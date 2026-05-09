@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>TMDB Company & Collection Lookup</title>
+  <title>TMDB Company & ID Lookup</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -34,6 +34,11 @@
       color: white;
       font-size: 16px;
       box-sizing: border-box;
+    }
+
+    input::placeholder {
+      font-size: 14px;
+      color: #8f98a8;
     }
 
     select {
@@ -185,6 +190,36 @@
       border-color: #8ab4ff;
     }
 
+    .notice {
+      max-width: 860px;
+      margin: 12px 0 18px;
+      padding: 13px 15px;
+      border: 1px solid rgba(138, 180, 255, 0.35);
+      border-left: 4px solid #8ab4ff;
+      border-radius: 10px;
+      background: rgba(32, 42, 62, 0.9);
+      color: #d4e2ff;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .company-summary {
+      margin: 16px 0 14px;
+    }
+
+    .company-cache-count {
+      margin: 0 0 6px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #f5f5f5;
+    }
+
+    .company-updated {
+      margin: 0;
+      font-size: 15px;
+      color: #aeb7c2;
+    }
+
     .controls-row {
       display: flex;
       flex-wrap: wrap;
@@ -277,14 +312,18 @@
       font-size: 12px;
     }
 
+    .header-note,
     .movie-count-note {
-      color: #7f8a99;
-      font-size: 12px;
-      font-weight: normal;
       display: block;
       margin-top: 3px;
-      line-height: 1.25;
-      max-width: 160px;
+      color: #7f8a99;
+      font-size: 11px;
+      font-weight: normal;
+      line-height: 1.2;
+    }
+
+    .movie-count-note {
+      max-width: 120px;
     }
 
     .logo-cell {
@@ -318,6 +357,20 @@
       border: 1px solid #2b313b;
       border-radius: 6px;
       box-sizing: border-box;
+    }
+
+    .copy-id-button {
+      padding: 4px 8px;
+      border-radius: 7px;
+      border: 1px solid #2b313b;
+      background: #151922;
+      color: #8ab4ff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .copy-id-button:hover {
+      border-color: #8ab4ff;
     }
 
     .section-divider {
@@ -373,6 +426,12 @@
       margin: 32px auto 56px;
       max-width: 900px;
       text-align: center;
+    }
+
+    .footer-meta {
+      margin-top: 10px;
+      color: #6f7a89;
+      font-size: 11px;
     }
 
     @media (max-width: 720px) {
@@ -440,79 +499,15 @@
         min-width: 900px;
       }
     }
-
-    .notice {
-      max-width: 860px;
-      margin: 12px 0 18px;
-      padding: 13px 15px;
-      border: 1px solid rgba(138, 180, 255, 0.35);
-      border-left: 4px solid #8ab4ff;
-      border-radius: 10px;
-      background: rgba(32, 42, 62, 0.9);
-      color: #d4e2ff;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    
-        .copy-id-button {
-      padding: 4px 8px;
-      border-radius: 7px;
-      border: 1px solid #2b313b;
-      background: #151922;
-      color: #8ab4ff;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    
-    .copy-id-button:hover {
-      border-color: #8ab4ff;
-    }
-    
-        input::placeholder {
-      font-size: 14px;
-      color: #8f98a8;
-    }
-    
-        .company-summary {
-      margin: 16px 0 14px;
-    }
-    
-    .company-cache-count {
-      margin: 0 0 6px;
-      font-size: 17px;
-      font-weight: 700;
-      color: #f5f5f5;
-    }
-    
-    .company-updated {
-      margin: 0;
-      font-size: 15px;
-      color: #aeb7c2;
-    }
-    
-    .footer-meta {
-      margin-top: 10px;
-      color: #6f7a89;
-      font-size: 11px;
-    }
-    
-        .header-note {
-      display: block;
-      margin-top: 3px;
-      font-size: 11px;
-      font-weight: normal;
-      color: #7f8a99;
-      line-height: 1.2;
-    }
   </style>
 </head>
 
 <body>
-<h1>TMDB ID Lookup</h1>
+  <h1>TMDB ID Lookup</h1>
 
-<p>
-  Search TMDB movie collections and people by name or ID.
-</p>
+  <p>
+    Search TMDB movie collections and people by name or ID.
+  </p>
 
   <div class="search-row">
     <input
@@ -536,14 +531,16 @@
   <h1>TMDB Company Lookup</h1>
 
   <p>Search cached TMDB production companies.</p>
-<p class="notice">
-  This company database is still being built in batches, so not every TMDB studio/ID is listed yet.
-  More companies are being added over the next few days.
-</p>
-<div class="company-summary">
-  <p id="stats" class="company-cache-count"></p>
-  <p id="last-updated" class="company-updated"></p>
-</div>
+
+  <p class="notice">
+    This company database is still being built in batches, so not every TMDB studio/ID is listed yet.
+    More companies are being added over the next few days.
+  </p>
+
+  <div class="company-summary">
+    <p id="stats" class="company-cache-count"></p>
+    <p id="last-updated" class="company-updated"></p>
+  </div>
 
   <div class="download-links">
     <a href="./data/companies.json" download>Download JSON</a>
@@ -594,13 +591,10 @@
           <th>Logo</th>
 
           <th class="sortable" data-sort="id">
-          TMDB ID
-          <span class="sort-indicator"></span>
-        
-          <span class="header-note">
-            Click ID to copy
-          </span>
-        </th>
+            TMDB ID
+            <span class="sort-indicator"></span>
+            <span class="header-note">Click ID to copy</span>
+          </th>
 
           <th class="sortable" data-sort="name">
             Company <span class="sort-indicator"></span>
@@ -612,10 +606,7 @@
 
           <th class="sortable" data-sort="titles_count">
             Movie Count <span class="sort-indicator"></span>
-
-            <span class="movie-count-note">
-            TMDB movie credits
-            </span>
+            <span class="movie-count-note">TMDB movie credits</span>
           </th>
 
           <th class="sortable" data-sort="origin_country">
@@ -649,6 +640,7 @@
       This product uses the TMDB API but is not endorsed or certified by TMDB.
       Company names, logos, posters, and trademarks remain the property of their respective owners.
     </p>
+
     <p id="scan-stats" class="footer-meta"></p>
   </footer>
 
@@ -698,309 +690,314 @@
     }
 
     function copyId(id) {
-  navigator.clipboard.writeText(String(id));
-  showCopyToast();
-}
+      navigator.clipboard.writeText(String(id));
+      showCopyToast();
+    }
 
-async function tmdbJson(url) {
-  const res = await fetch(url);
+    async function tmdbJson(url) {
+      const res = await fetch(url);
 
-  if (!res.ok) {
-    return null;
-  }
+      if (!res.ok) {
+        return null;
+      }
 
-  return res.json();
-}
+      return res.json();
+    }
 
     async function getPersonKnownCredits(personId) {
-  const credits = await tmdbJson(
-    `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`
-  );
+      try {
+        const credits = await tmdbJson(
+          `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`
+        );
 
-  if (!credits) {
-    return "—";
-  }
+        if (!credits) {
+          return "—";
+        }
 
-  const castCount = Array.isArray(credits.cast)
-    ? credits.cast.length
-    : 0;
+        const castCount = Array.isArray(credits.cast)
+          ? credits.cast.length
+          : 0;
 
-  const crewCount = Array.isArray(credits.crew)
-    ? credits.crew.length
-    : 0;
+        const crewCount = Array.isArray(credits.crew)
+          ? credits.crew.length
+          : 0;
 
-  return (castCount + crewCount).toLocaleString();
-}
-    
-   async function loadCompanies() {
-  const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
-  companies = await companiesRes.json();
+        return (castCount + crewCount).toLocaleString();
+      } catch {
+        return "—";
+      }
+    }
 
-  document.getElementById("stats").innerText =
-    `${companies.length.toLocaleString()} companies cached`;
-
-  try {
-    const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
-
-    if (metaRes.ok) {
-      const meta = await metaRes.json();
-      const lastScan = meta.last_scan;
-      const updated = new Date(lastScan.finished_at);
+    async function loadCompanies() {
+      const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
+      companies = await companiesRes.json();
 
       document.getElementById("stats").innerText =
-        `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`
+        `${companies.length.toLocaleString()} companies cached`;
 
-      document.getElementById("last-updated").innerText =
-        `Last updated ${updated.toLocaleString()}`;
+      try {
+        const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
 
-      if (lastScan.mode === "tmdb_daily_export") {
-        const nextOffset =
-          Number(lastScan.offset || 0) +
-          Number(lastScan.limit || 0);
+        if (metaRes.ok) {
+          const meta = await metaRes.json();
+          const lastScan = meta.last_scan;
+          const updated = new Date(lastScan.finished_at);
 
-        document.getElementById("scan-stats").innerText =
-          `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
-      } else {
-        document.getElementById("scan-stats").innerText =
-          `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
-      }
-    }
-  } catch (error) {
-    console.warn("scan-meta.json not available yet");
-  }
+          document.getElementById("stats").innerText =
+            `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
 
-  applyFiltersAndSort();
-}
+          document.getElementById("last-updated").innerText =
+            `Last updated ${updated.toLocaleString()}`;
 
-function createResultCard({
-  title,
-  type,
-  id,
-  imageUrl,
-  imageAlt,
-  metaRows,
-  tmdbUrl,
-  imageClass = ""
-}) {
-  return `
-    <div class="collection-card">
-      ${
-        imageUrl
-          ? `<img
-              src="${imageUrl}"
-              alt="${imageAlt}"
-              class="collection-poster ${imageClass}"
-            >`
-          : `<div class="collection-poster ${imageClass}"></div>`
+          if (lastScan.mode === "tmdb_daily_export") {
+            const nextOffset =
+              Number(lastScan.offset || 0) +
+              Number(lastScan.limit || 0);
+
+            document.getElementById("scan-stats").innerText =
+              `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
+          } else {
+            document.getElementById("scan-stats").innerText =
+              `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
+          }
+        }
+      } catch (error) {
+        console.warn("scan-meta.json not available yet");
       }
 
-      <div class="collection-info">
-        <h3>${title}</h3>
-
-        <div class="collection-meta">
-          <div><strong>Type:</strong> ${type}</div>
-          <div><strong>ID:</strong> ${id}</div>
-          ${metaRows.join("")}
-        </div>
-
-        <div class="collection-actions">
-          <button type="button" onclick="copyId('${id}')">
-            Copy ID
-          </button>
-
-          <a href="${tmdbUrl}" target="_blank" rel="noopener">
-            Open on TMDB
-          </a>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function collectionCard(collection, movieCount = "—") {
-  const poster = collection.poster_path
-    ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
-    : "";
-
-  return createResultCard({
-    title: collection.name || "Untitled Collection",
-    type: "Movie Collection",
-    id: collection.id,
-    imageUrl: poster,
-    imageAlt: collection.name || "Collection poster",
-    metaRows: [`<div><strong>Movies:</strong> ${movieCount}</div>`],
-    tmdbUrl: `https://www.themoviedb.org/collection/${collection.id}`
-  });
-}
-
-function personCard(person, knownCredits = "—") {
-  const profile = person.profile_path
-    ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-    : "";
-
-  const knownFor = person.known_for_department || "—";
-  const popularity = person.popularity
-    ? Number(person.popularity).toFixed(1)
-    : "—";
-
-const metaRows = [
-  `<div><strong>Known for:</strong> ${knownFor}</div>`,
-  `<div><strong>Known credits:</strong> ${knownCredits}</div>`,
-  `<div><strong>TMDB popularity score:</strong> ${popularity}</div>`
-];
-
-  if (person.birthday) {
-    metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
-  }
-
-  return createResultCard({
-    title: person.name || "Untitled Person",
-    type: "Person",
-    id: person.id,
-    imageUrl: profile,
-    imageAlt: person.name || "Person profile",
-    metaRows,
-    tmdbUrl: `https://www.themoviedb.org/person/${person.id}`
-  });
-}
-
-async function getCollectionMovieCount(collectionId) {
-  const detailData = await tmdbJson(
-    `https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`
-  );
-
-  if (!detailData || detailData.success === false) {
-    return null;
-  }
-
-  return {
-    collection: detailData,
-    movieCount: detailData.parts
-      ? detailData.parts.length.toLocaleString()
-      : "—"
-  };
-}
-
-async function searchTmdbIds() {
-  let query = document
-    .getElementById("collection-search")
-    .value
-    .trim();
-
-  const resultsContainer =
-    document.getElementById("collection-results");
-
-  if (!query) {
-    resultsContainer.innerHTML = "";
-    return;
-  }
-
-  const normalizedQuery = query.toLowerCase();
-
-  if (collectionAliases[normalizedQuery]) {
-    query = collectionAliases[normalizedQuery];
-  }
-
-  const isNumeric = /^\d+$/.test(query);
-
-  resultsContainer.innerHTML =
-    `<p class="meta">Searching TMDB...</p>`;
-
-  try {
-    const cards = [];
-
-    if (isNumeric) {
-      const collectionResult = await getCollectionMovieCount(query);
-
-      if (collectionResult) {
-        cards.push(
-          collectionCard(
-            collectionResult.collection,
-            collectionResult.movieCount
-          )
-        );
-      }
-
-      const person = await tmdbJson(
-        `https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`
-      );
-
-      if (person && person.success !== false) {
-  const knownCredits = await getPersonKnownCredits(person.id);
-  cards.push(personCard(person, knownCredits));
-}
-    } else {
-      const collectionSearch = await tmdbJson(
-        `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
-      );
-
-      const personSearch = await tmdbJson(
-        `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
-      );
-
-      const collections =
-        (collectionSearch?.results || []).slice(0, 5);
-
-      const people =
-        (personSearch?.results || []).slice(0, 5);
-
-      const totalCollectionResults =
-  collectionSearch?.total_results || 0;
-
-const totalPersonResults =
-  personSearch?.total_results || 0;
-
-const totalAvailableResults =
-  totalCollectionResults + totalPersonResults;
-
-const displayedResults =
-  collections.length + people.length;
-
-      const collectionCards = await Promise.all(
-        collections.map(async collection => {
-          const detail = await getCollectionMovieCount(collection.id);
-
-          return collectionCard(
-            detail?.collection || collection,
-            detail?.movieCount || "—"
-          );
-        })
-      );
-
-      cards.push(...collectionCards);
-      const personCards = await Promise.all(
-  people.map(async person => {
-    const knownCredits = await getPersonKnownCredits(person.id);
-    return personCard(person, knownCredits);
-  })
-);
-
-cards.push(...personCards);
+      applyFiltersAndSort();
     }
 
-    if (!cards.length) {
+    function createResultCard({
+      title,
+      type,
+      id,
+      imageUrl,
+      imageAlt,
+      metaRows,
+      tmdbUrl,
+      imageClass = ""
+    }) {
+      return `
+        <div class="collection-card">
+          ${
+            imageUrl
+              ? `<img
+                  src="${imageUrl}"
+                  alt="${imageAlt}"
+                  class="collection-poster ${imageClass}"
+                >`
+              : `<div class="collection-poster ${imageClass}"></div>`
+          }
+
+          <div class="collection-info">
+            <h3>${title}</h3>
+
+            <div class="collection-meta">
+              <div><strong>Type:</strong> ${type}</div>
+              <div><strong>ID:</strong> ${id}</div>
+              ${metaRows.join("")}
+            </div>
+
+            <div class="collection-actions">
+              <button type="button" onclick="copyId('${id}')">
+                Copy ID
+              </button>
+
+              <a href="${tmdbUrl}" target="_blank" rel="noopener">
+                Open on TMDB
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function collectionCard(collection, movieCount = "—") {
+      const poster = collection.poster_path
+        ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
+        : "";
+
+      return createResultCard({
+        title: collection.name || "Untitled Collection",
+        type: "Movie Collection",
+        id: collection.id,
+        imageUrl: poster,
+        imageAlt: collection.name || "Collection poster",
+        metaRows: [`<div><strong>Movies:</strong> ${movieCount}</div>`],
+        tmdbUrl: `https://www.themoviedb.org/collection/${collection.id}`
+      });
+    }
+
+    function personCard(person, knownCredits = "—") {
+      const profile = person.profile_path
+        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+        : "";
+
+      const knownFor = person.known_for_department || "—";
+      const popularity = person.popularity
+        ? Number(person.popularity).toFixed(1)
+        : "—";
+
+      const metaRows = [
+        `<div><strong>Known for:</strong> ${knownFor}</div>`,
+        `<div><strong>Known credits:</strong> ${knownCredits}</div>`,
+        `<div><strong>TMDB popularity:</strong> ${popularity}</div>`
+      ];
+
+      if (person.birthday) {
+        metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
+      }
+
+      return createResultCard({
+        title: person.name || "Untitled Person",
+        type: "Person",
+        id: person.id,
+        imageUrl: profile,
+        imageAlt: person.name || "Person profile",
+        metaRows,
+        tmdbUrl: `https://www.themoviedb.org/person/${person.id}`
+      });
+    }
+
+    async function getCollectionMovieCount(collectionId) {
+      const detailData = await tmdbJson(
+        `https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`
+      );
+
+      if (!detailData || detailData.success === false) {
+        return null;
+      }
+
+      return {
+        collection: detailData,
+        movieCount: detailData.parts
+          ? detailData.parts.length.toLocaleString()
+          : "—"
+      };
+    }
+
+    async function searchTmdbIds() {
+      let query = document
+        .getElementById("collection-search")
+        .value
+        .trim();
+
+      const resultsContainer =
+        document.getElementById("collection-results");
+
+      if (!query) {
+        resultsContainer.innerHTML = "";
+        return;
+      }
+
+      const normalizedQuery = query.toLowerCase();
+
+      if (collectionAliases[normalizedQuery]) {
+        query = collectionAliases[normalizedQuery];
+      }
+
+      const isNumeric = /^\d+$/.test(query);
+
       resultsContainer.innerHTML =
-        `<p class="meta">No matching movie collections or people found.</p>`;
-      return;
+        `<p class="meta">Searching TMDB...</p>`;
+
+      try {
+        const cards = [];
+        let totalAvailableResults = 0;
+        let displayedResults = 0;
+
+        if (isNumeric) {
+          const collectionResult = await getCollectionMovieCount(query);
+
+          if (collectionResult) {
+            cards.push(
+              collectionCard(
+                collectionResult.collection,
+                collectionResult.movieCount
+              )
+            );
+          }
+
+          const person = await tmdbJson(
+            `https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`
+          );
+
+          if (person && person.success !== false) {
+            const knownCredits = await getPersonKnownCredits(person.id);
+            cards.push(personCard(person, knownCredits));
+          }
+        } else {
+          const collectionSearch = await tmdbJson(
+            `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+          );
+
+          const personSearch = await tmdbJson(
+            `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+          );
+
+          const collections =
+            (collectionSearch?.results || []).slice(0, 5);
+
+          const people =
+            (personSearch?.results || []).slice(0, 5);
+
+          totalAvailableResults =
+            (collectionSearch?.total_results || 0) +
+            (personSearch?.total_results || 0);
+
+          displayedResults =
+            collections.length + people.length;
+
+          const collectionCards = await Promise.all(
+            collections.map(async collection => {
+              const detail = await getCollectionMovieCount(collection.id);
+
+              return collectionCard(
+                detail?.collection || collection,
+                detail?.movieCount || "—"
+              );
+            })
+          );
+
+          const personCards = await Promise.all(
+            people.map(async person => {
+              const knownCredits = await getPersonKnownCredits(person.id);
+              return personCard(person, knownCredits);
+            })
+          );
+
+          cards.push(...collectionCards);
+          cards.push(...personCards);
+        }
+
+        if (!cards.length) {
+          resultsContainer.innerHTML =
+            `<p class="meta">No matching movie collections or people found.</p>`;
+          return;
+        }
+
+        let resultsHtml = cards.join("");
+
+        if (
+          !isNumeric &&
+          totalAvailableResults > displayedResults
+        ) {
+          resultsHtml += `
+            <p class="meta">
+              More results may be available. Refine your search for better matches.
+            </p>
+          `;
+        }
+
+        resultsContainer.innerHTML = resultsHtml;
+      } catch (error) {
+        resultsContainer.innerHTML =
+          `<p class="meta">TMDB lookup failed.</p>`;
+
+        console.error(error);
+      }
     }
-let resultsHtml = cards.join("");
-
-if (totalAvailableResults > displayedResults) {
-  resultsHtml += `
-    <p class="meta">
-      More results may be available. Refine your search for better matches.
-    </p>
-  `;
-}
-
-resultsContainer.innerHTML = resultsHtml;
-  } catch (error) {
-    resultsContainer.innerHTML =
-      `<p class="meta">TMDB lookup failed.</p>`;
-
-    console.error(error);
-  }
-}
 
     function getSortValue(company, key) {
       const value = company[key];
@@ -1059,11 +1056,13 @@ resultsContainer.innerHTML = resultsHtml;
         const aValue = getSortValue(a, sortKey);
         const bValue = getSortValue(b, sortKey);
 
-        if (aValue < bValue)
+        if (aValue < bValue) {
           return sortDirection === "asc" ? -1 : 1;
+        }
 
-        if (aValue > bValue)
+        if (aValue > bValue) {
           return sortDirection === "asc" ? 1 : -1;
+        }
 
         return Number(a.id || 0) - Number(b.id || 0);
       });
@@ -1144,17 +1143,16 @@ resultsContainer.innerHTML = resultsHtml;
           </td>
 
           <td>
-  <button
-    type="button"
-    class="copy-id-button"
-    title="Copy company ID"
-    onclick="
-      onclick="copyId('${company.id}')"
-    "
-  >
-    ${company.id}
-  </button>
-</td>
+            <button
+              type="button"
+              class="copy-id-button"
+              title="Copy company ID"
+              onclick="copyId('${company.id}')"
+            >
+              ${company.id}
+            </button>
+          </td>
+
           <td>${company.name || ""}</td>
           <td>${company.parent_company || ""}</td>
           <td>${Number(company.titles_count || 0).toLocaleString()}</td>
