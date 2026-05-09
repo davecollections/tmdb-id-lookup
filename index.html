@@ -341,6 +341,23 @@
         max-height: 20px;
       }
     }
+    #back-to-top {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 20;
+  padding: 10px 13px;
+  border-radius: 999px;
+  background: #151922;
+  border: 1px solid #2b313b;
+  color: #8ab4ff;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+#back-to-top:hover {
+  border-color: #8ab4ff;
+}
   </style>
 </head>
 
@@ -661,8 +678,14 @@
         applyFiltersAndSort();
       });
     });
-
+document.getElementById("back-to-top").addEventListener("click", () => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+});
     loadCompanies();
   </script>
+  <button id="back-to-top" type="button" aria-label="Back to top">↑ Top</button>
 </body>
 </html>
