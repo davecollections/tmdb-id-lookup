@@ -78,6 +78,7 @@
 <p id="last-updated"></p>
   <p id="scan-stats"></p>
   <input id="search" placeholder="Search by ID or company name…">
+  <p id="result-count"></p>
 
   <table>
     <thead>
@@ -128,6 +129,8 @@ async function loadCompanies() {
    function render(items) {
   const tbody = document.getElementById("results");
   tbody.innerHTML = "";
+     document.getElementById("result-count").innerText =
+  `Showing ${items.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
 
   for (const company of items) {
     const tr = document.createElement("tr");
