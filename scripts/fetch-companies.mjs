@@ -141,7 +141,13 @@ stats.finished_at = new Date().toISOString();
 
 await fs.writeFile(
   META_PATH,
-  JSON.stringify(stats, null, 2)
+  JSON.stringify(
+    {
+      last_scan: stats
+    },
+    null,
+    2
+  )
 );
 
 console.log(`Saved ${companies.length} total companies.`);
