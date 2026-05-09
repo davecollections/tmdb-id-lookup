@@ -495,6 +495,15 @@ thead th {
   color: #6f7a89;
   font-size: 11px;
 }
+
+    .header-note {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: normal;
+  color: #7f8a99;
+  line-height: 1.2;
+}
   </style>
 </head>
 
@@ -585,8 +594,13 @@ thead th {
           <th>Logo</th>
 
           <th class="sortable" data-sort="id">
-            ID <span class="sort-indicator"></span>
-          </th>
+          TMDB ID
+          <span class="sort-indicator"></span>
+        
+          <span class="header-note">
+            Click ID to copy
+          </span>
+        </th>
 
           <th class="sortable" data-sort="name">
             Company <span class="sort-indicator"></span>
@@ -600,7 +614,7 @@ thead th {
             Movie Count <span class="sort-indicator"></span>
 
             <span class="movie-count-note">
-              Uses TMDB discover/movie results.
+            TMDB movie credits
             </span>
           </th>
 
