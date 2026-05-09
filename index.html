@@ -116,7 +116,7 @@ async function loadCompanies() {
         `Last updated ${updated.toLocaleString()}`;
 
       document.getElementById("scan-stats").innerText =
-        `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Found ${lastScan.found.toLocaleString()} | Missing ${lastScan.missing.toLocaleString()}`;
+  `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
     }
   } catch (error) {
     console.warn("scan-meta.json not available yet");
