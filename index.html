@@ -14,7 +14,8 @@
       padding: 32px;
     }
 
-    input {
+    input,
+    select {
       width: 100%;
       max-width: 520px;
       padding: 14px;
@@ -24,6 +25,13 @@
       color: white;
       font-size: 16px;
       box-sizing: border-box;
+    }
+
+    select {
+      width: auto;
+      min-width: 110px;
+      padding: 10px 12px;
+      font-size: 14px;
     }
 
     button {
@@ -37,8 +45,13 @@
       white-space: nowrap;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       border-color: #8ab4ff;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
 
     .table-wrap {
@@ -141,7 +154,46 @@
     #result-count {
       color: #aeb7c2;
       font-size: 14px;
+      margin: 0;
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
       margin: 0 0 18px;
+    }
+
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pagination button {
+      padding: 9px 12px;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+
+    .page-status,
+    .rows-control {
+      color: #aeb7c2;
+      font-size: 14px;
+    }
+
+    .rows-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pagination-bottom {
+      margin-top: 16px;
+      justify-content: flex-end;
     }
 
     .mobile-scroll-hint {
@@ -230,6 +282,27 @@
         display: none;
       }
 
+      .controls-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .pagination {
+        width: 100%;
+      }
+
+      .pagination button {
+        flex: 1;
+      }
+
+      .rows-control {
+        justify-content: space-between;
+      }
+
+      .rows-control select {
+        flex: 1;
+      }
+
       .mobile-scroll-hint {
         display: block;
       }
@@ -290,7 +363,28 @@
     <button id="clear-search" type="button">Clear</button>
   </div>
 
-  <p id="result-count"></p>
+  <div class="controls-row">
+    <p id="result-count"></p>
+
+    <div class="rows-control">
+      <label for="rows-per-page">Rows per page</label>
+      <select id="rows-per-page">
+        <option value="100">100</option>
+        <option value="250" selected>250</option>
+        <option value="500">500</option>
+        <option value="all">All</option>
+      </select>
+    </div>
+
+    <div class="pagination">
+      <button id="first-page" type="button">First</button>
+      <button id="prev-page" type="button">Previous</button>
+      <span id="page-status" class="page-status"></span>
+      <button id="next-page" type="button">Next</button>
+      <button id="last-page" type="button">Last</button>
+    </div>
+  </div>
+
   <p class="mobile-scroll-hint">Swipe sideways to view all columns.</p>
 
   <div class="table-wrap">
@@ -314,11 +408,22 @@
     </table>
   </div>
 
+  <div class="pagination pagination-bottom">
+    <button id="first-page-bottom" type="button">First</button>
+    <button id="prev-page-bottom" type="button">Previous</button>
+    <span id="page-status-bottom" class="page-status"></span>
+    <button id="next-page-bottom" type="button">Next</button>
+    <button id="last-page-bottom" type="button">Last</button>
+  </div>
+
   <script>
     let companies = [];
+    let filteredCompanies = [];
     let currentSearch = "";
     let sortKey = "id";
     let sortDirection = "asc";
+    let currentPage = 1;
+    let rowsPerPage = 250;
 
     async function loadCompanies() {
       const companiesRes = await fetch("./data/companies.json");
@@ -337,16 +442,16 @@
 
           document.getElementById("last-updated").innerText =
             `Last updated ${updated.toLocaleString()}`;
-if (lastScan.mode === "tmdb_daily_export") {
-  const nextOffset = Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
 
-  document.getElementById("scan-stats").innerText =
-    `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
-          
-} else {
-  document.getElementById("scan-stats").innerText =
-    `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
-}
+          if (lastScan.mode === "tmdb_daily_export") {
+            const nextOffset = Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
+
+            document.getElementById("scan-stats").innerText =
+              `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
+          } else {
+            document.getElementById("scan-stats").innerText =
+              `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
+          }
         }
       } catch (error) {
         console.warn("scan-meta.json not available yet");
@@ -365,10 +470,29 @@ if (lastScan.mode === "tmdb_daily_export") {
       return String(value || "").toLowerCase();
     }
 
+    function getTotalPages() {
+      if (rowsPerPage === "all") {
+        return 1;
+      }
+
+      return Math.max(1, Math.ceil(filteredCompanies.length / rowsPerPage));
+    }
+
+    function getPageItems() {
+      if (rowsPerPage === "all") {
+        return filteredCompanies;
+      }
+
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+
+      return filteredCompanies.slice(start, end);
+    }
+
     function applyFiltersAndSort() {
       const query = currentSearch.toLowerCase().trim();
 
-      let filtered = companies.filter(company => {
+      filteredCompanies = companies.filter(company => {
         return (
           String(company.id).includes(query) ||
           String(company.name || "").toLowerCase().includes(query) ||
@@ -377,7 +501,7 @@ if (lastScan.mode === "tmdb_daily_export") {
         );
       });
 
-      filtered.sort((a, b) => {
+      filteredCompanies.sort((a, b) => {
         const aValue = getSortValue(a, sortKey);
         const bValue = getSortValue(b, sortKey);
 
@@ -386,8 +510,15 @@ if (lastScan.mode === "tmdb_daily_export") {
         return Number(a.id || 0) - Number(b.id || 0);
       });
 
-      render(filtered);
+      const totalPages = getTotalPages();
+
+      if (currentPage > totalPages) {
+        currentPage = totalPages;
+      }
+
+      render(getPageItems());
       updateSortIndicators();
+      updatePagination();
     }
 
     function updateSortIndicators() {
@@ -402,12 +533,41 @@ if (lastScan.mode === "tmdb_daily_export") {
       });
     }
 
+    function updatePagination() {
+      const totalPages = getTotalPages();
+      const isFirst = currentPage <= 1;
+      const isLast = currentPage >= totalPages;
+
+      const pageStatus =
+        rowsPerPage === "all"
+          ? `Page 1 of 1`
+          : `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
+
+      document.getElementById("page-status").innerText = pageStatus;
+      document.getElementById("page-status-bottom").innerText = pageStatus;
+
+      const buttonStates = [
+        ["first-page", isFirst],
+        ["prev-page", isFirst],
+        ["next-page", isLast],
+        ["last-page", isLast],
+        ["first-page-bottom", isFirst],
+        ["prev-page-bottom", isFirst],
+        ["next-page-bottom", isLast],
+        ["last-page-bottom", isLast]
+      ];
+
+      for (const [id, disabled] of buttonStates) {
+        document.getElementById(id).disabled = disabled;
+      }
+
+      document.getElementById("result-count").innerText =
+        `Showing ${filteredCompanies.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
+    }
+
     function render(items) {
       const tbody = document.getElementById("results");
       tbody.innerHTML = "";
-
-      document.getElementById("result-count").innerText =
-        `Showing ${items.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
 
       for (const company of items) {
         const tr = document.createElement("tr");
@@ -442,17 +602,49 @@ if (lastScan.mode === "tmdb_daily_export") {
       }
     }
 
+    function goToPage(page) {
+      currentPage = Math.min(Math.max(1, page), getTotalPages());
+      render(getPageItems());
+      updatePagination();
+
+      document.querySelector(".table-wrap").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+
     document.getElementById("search").addEventListener("input", event => {
       currentSearch = event.target.value;
+      currentPage = 1;
       applyFiltersAndSort();
     });
 
     document.getElementById("clear-search").addEventListener("click", () => {
       currentSearch = "";
+      currentPage = 1;
       document.getElementById("search").value = "";
       applyFiltersAndSort();
       document.getElementById("search").focus();
     });
+
+    document.getElementById("rows-per-page").addEventListener("change", event => {
+      rowsPerPage = event.target.value === "all"
+        ? "all"
+        : Number(event.target.value);
+
+      currentPage = 1;
+      applyFiltersAndSort();
+    });
+
+    document.getElementById("first-page").addEventListener("click", () => goToPage(1));
+    document.getElementById("prev-page").addEventListener("click", () => goToPage(currentPage - 1));
+    document.getElementById("next-page").addEventListener("click", () => goToPage(currentPage + 1));
+    document.getElementById("last-page").addEventListener("click", () => goToPage(getTotalPages()));
+
+    document.getElementById("first-page-bottom").addEventListener("click", () => goToPage(1));
+    document.getElementById("prev-page-bottom").addEventListener("click", () => goToPage(currentPage - 1));
+    document.getElementById("next-page-bottom").addEventListener("click", () => goToPage(currentPage + 1));
+    document.getElementById("last-page-bottom").addEventListener("click", () => goToPage(getTotalPages()));
 
     document.querySelectorAll("th.sortable").forEach(th => {
       th.addEventListener("click", () => {
@@ -465,6 +657,7 @@ if (lastScan.mode === "tmdb_daily_export") {
           sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
         }
 
+        currentPage = 1;
         applyFiltersAndSort();
       });
     });
