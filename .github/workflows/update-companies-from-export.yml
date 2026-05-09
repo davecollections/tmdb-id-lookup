@@ -29,9 +29,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Fetch TMDB companies from daily export
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
