@@ -342,7 +342,6 @@ if (lastScan.mode === "tmdb_daily_export") {
 
   document.getElementById("scan-stats").innerText =
     `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
-} else {
           
 } else {
   document.getElementById("scan-stats").innerText =
