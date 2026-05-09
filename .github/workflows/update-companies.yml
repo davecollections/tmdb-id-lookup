@@ -7,6 +7,7 @@ on:
         description: "Start TMDB company ID"
         required: true
         default: "1"
+
       end_id:
         description: "End TMDB company ID"
         required: true
@@ -20,23 +21,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Fetch TMDB companies
-        run: node scripts/fetch-companies.mjs
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
           START_ID: ${{ github.event.inputs.start_id }}
           END_ID: ${{ github.event.inputs.end_id }}
+        run: node scripts/fetch-companies.mjs
 
       - name: Commit updated company data
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           git add data/companies.json data/companies.csv data/scan-meta.json
-          git commit -m "Update TMDB company lookup" || echo "No changes"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update TMDB company lookup"
+
+          git pull --rebase origin main
+
           git push
