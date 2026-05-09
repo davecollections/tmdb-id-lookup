@@ -86,27 +86,29 @@
     let companies = [];
 
 async function loadCompanies() {
-  const [companiesRes, metaRes] = await Promise.all([
-    fetch("./data/companies.json"),
-    fetch("./data/scan-meta.json")
-  ]);
-
+  const companiesRes = await fetch("./data/companies.json");
   companies = await companiesRes.json();
 
-  const meta = await metaRes.json();
-
   document.getElementById("stats").innerText =
-  `${companies.length.toLocaleString()} companies cached`;
+    `${companies.length.toLocaleString()} companies cached`;
 
-const lastScan = meta.last_scan;
+  try {
+    const metaRes = await fetch("./data/scan-meta.json");
 
-const updated = new Date(lastScan.finished_at);
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      const lastScan = meta.last_scan;
+      const updated = new Date(lastScan.finished_at);
 
-document.getElementById("last-updated").innerText =
-  `Last updated ${updated.toLocaleString()}`;
+      document.getElementById("last-updated").innerText =
+        `Last updated ${updated.toLocaleString()}`;
 
-document.getElementById("scan-stats").innerText =
-  `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Found ${lastScan.found.toLocaleString()} | Missing ${lastScan.missing.toLocaleString()}`;
+      document.getElementById("scan-stats").innerText =
+        `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Found ${lastScan.found.toLocaleString()} | Missing ${lastScan.missing.toLocaleString()}`;
+    }
+  } catch (error) {
+    console.warn("scan-meta.json not available yet");
+  }
 
   render(companies);
 }
