@@ -47,7 +47,12 @@ jobs:
 
           git add .
 
-          git commit -m "Update TMDB company lookup from export" || echo "No changes to commit"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update TMDB company lookup from export"
 
           git pull --rebase origin main
 
