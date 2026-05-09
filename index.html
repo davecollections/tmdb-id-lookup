@@ -854,6 +854,12 @@
       document.getElementById("page-status-bottom").innerText =
         `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
+if (!filteredCompanies.length) {
+  document.getElementById("result-count").innerText =
+    `Showing 0 of 0 companies`;
+  return;
+}
+
 let startItem = 1;
 let endItem = filteredCompanies.length;
 
