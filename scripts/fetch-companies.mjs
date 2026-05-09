@@ -60,6 +60,27 @@ for (let id = START_ID; id <= END_ID; id++) {
     if (res.status === 200) {
       const data = await res.json();
 
+let titlesCount = 0;
+
+try {
+  const moviesRes = await fetch(
+    `https://api.themoviedb.org/3/company/${id}/movies`,
+    {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        accept: "application/json"
+      }
+    }
+  );
+
+  if (moviesRes.status === 200) {
+    const moviesData = await moviesRes.json();
+    titlesCount = moviesData.total_results || 0;
+  }
+} catch (err) {
+  console.log(`${id}: movie count failed`);
+}
+
       companyMap.set(data.id, {
         id: data.id,
         name: data.name || "",
@@ -69,6 +90,7 @@ for (let id = START_ID; id <= END_ID; id++) {
         logo_path: data.logo_path || "",
         origin_country: data.origin_country || "",
         parent_company: data.parent_company?.name || "",
+        titles_count: titlesCount,
         tmdb_url: `https://www.themoviedb.org/company/${data.id}`,
         updated_at: new Date().toISOString()
       });
