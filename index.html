@@ -452,6 +452,20 @@ thead th {
   font-size: 14px;
   line-height: 1.5;
 }
+
+    .copy-id-button {
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1px solid #2b313b;
+  background: #151922;
+  color: #8ab4ff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.copy-id-button:hover {
+  border-color: #8ab4ff;
+}
   </style>
 </head>
 
@@ -931,7 +945,19 @@ thead th {
             }
           </td>
 
-          <td>${company.id}</td>
+          <td>
+  <button
+    type="button"
+    class="copy-id-button"
+    title="Copy company ID"
+    onclick="
+      navigator.clipboard.writeText('${company.id}');
+      showCopyToast();
+    "
+  >
+    ${company.id}
+  </button>
+</td>
           <td>${company.name || ""}</td>
           <td>${company.parent_company || ""}</td>
           <td>${Number(company.titles_count || 0).toLocaleString()}</td>
