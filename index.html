@@ -14,6 +14,11 @@
       padding: 32px;
     }
 
+    h1,
+    h2 {
+      margin-top: 0;
+    }
+
     input,
     select {
       width: 100%;
@@ -54,62 +59,11 @@
       cursor: not-allowed;
     }
 
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid #1c222c;
-      border-radius: 12px;
-      background: #0f1218;
-    }
-
-    table {
-      width: 100%;
-      min-width: 920px;
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #222;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      background: #111720;
-      z-index: 2;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
-    tbody tr:hover {
-      background: #111720;
-    }
-
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-
-    th.sortable:hover {
-      color: #8ab4ff;
-    }
-
-    .sort-indicator {
-      opacity: 0.65;
-      margin-left: 4px;
-      font-size: 12px;
-    }
-
-    a {
-      color: #8ab4ff;
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
     }
 
     .meta {
@@ -144,17 +98,117 @@
       border-color: #8ab4ff;
     }
 
-    .search-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
+    .collection-results {
+      display: grid;
+      gap: 14px;
+      margin: 18px 0 36px;
     }
 
-    #result-count {
+    .collection-card {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: #111720;
+      border: 1px solid #222b36;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .collection-poster {
+      width: 80px;
+      min-width: 80px;
+      aspect-ratio: 2 / 3;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #1b1f27;
+    }
+
+    .collection-info {
+      flex: 1;
+    }
+
+    .collection-info h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .collection-meta {
       color: #aeb7c2;
       font-size: 14px;
-      margin: 0;
+      line-height: 1.6;
+    }
+
+    .collection-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .collection-actions button,
+    .collection-actions a {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #2b313b;
+      background: #151922;
+      color: #8ab4ff;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .collection-actions button:hover,
+    .collection-actions a:hover {
+      border-color: #8ab4ff;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid #1c222c;
+      border-radius: 12px;
+      background: #0f1218;
+    }
+
+    table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #222;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #111720;
+      z-index: 2;
+    }
+
+    tbody tr:hover {
+      background: #111720;
+    }
+
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th.sortable:hover {
+      color: #8ab4ff;
+    }
+
+    .sort-indicator {
+      opacity: 0.65;
+      margin-left: 4px;
+      font-size: 12px;
     }
 
     .controls-row {
@@ -194,13 +248,6 @@
     .pagination-bottom {
       margin-top: 16px;
       justify-content: flex-end;
-    }
-
-    .mobile-scroll-hint {
-      display: none;
-      color: #7f8a99;
-      font-size: 13px;
-      margin: -6px 0 12px;
     }
 
     .movie-count-note {
@@ -260,8 +307,13 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
 
-    #back-to-top:hover {
-      border-color: #8ab4ff;
+    .site-footer {
+      color: #7f8a99;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 32px auto 56px;
+      max-width: 900px;
+      text-align: center;
     }
 
     @media (max-width: 720px) {
@@ -269,46 +321,23 @@
         padding: 18px;
       }
 
-      h1 {
-        font-size: 26px;
-        margin-bottom: 10px;
-      }
-
       .search-row {
         flex-direction: column;
         align-items: stretch;
       }
 
-      input {
-        max-width: none;
+      .collection-card {
+        flex-direction: column;
       }
 
-      button {
-        width: 100%;
-      }
-
-      #back-to-top {
-        width: auto;
-        right: 14px;
-        bottom: 14px;
-      }
-
-      .download-links {
-        gap: 8px;
-      }
-
-      .download-links a {
-        flex: 1;
-        text-align: center;
-      }
-
-      .download-links span {
-        display: none;
+      .collection-poster {
+        width: 100px;
+        min-width: 100px;
       }
 
       .controls-row {
-        align-items: stretch;
         flex-direction: column;
+        align-items: stretch;
       }
 
       .pagination {
@@ -327,56 +356,10 @@
         flex: 1;
       }
 
-      .mobile-scroll-hint {
-        display: block;
-      }
-
-      .table-wrap {
-        border-radius: 10px;
-      }
-
       table {
         min-width: 840px;
       }
-
-      th,
-      td {
-        padding: 10px;
-        font-size: 14px;
-      }
-
-      .movie-count-note {
-        font-size: 11px;
-        max-width: 130px;
-      }
-
-      .logo-cell {
-        width: 68px;
-      }
-
-      .logo-box,
-      .logo-placeholder {
-        width: 58px;
-        height: 28px;
-      }
-
-      .studio-logo {
-        max-width: 50px;
-        max-height: 20px;
-      }
     }
-.site-footer {
-  color: #7f8a99;
-  font-size: 12px;
-  line-height: 1.5;
-  margin: 32px auto 56px;
-  max-width: 900px;
-  text-align: center;
-}
-
-.site-footer p {
-  margin: 0;
-}
   </style>
 </head>
 
@@ -384,6 +367,7 @@
   <h1>TMDB Company Lookup</h1>
 
   <p>Search cached TMDB company IDs.</p>
+
   <p id="stats" class="meta"></p>
   <p id="last-updated" class="meta"></p>
   <p id="scan-stats" class="meta"></p>
@@ -394,9 +378,34 @@
     <a href="./data/companies.csv" download>Download CSV</a>
   </div>
 
+  <h2 style="margin-top:40px;">TMDB Collection Lookup</h2>
+
+  <p class="meta">
+    Find TMDB collection IDs for Nuvio collections.
+  </p>
+
   <div class="search-row">
-    <input id="search" placeholder="Search by ID, company name, country, or headquarters…">
-    <button id="clear-search" type="button">Clear</button>
+    <input
+      id="collection-search"
+      placeholder="Search collections (e.g. Harry Potter)"
+    >
+
+    <button id="collection-search-btn" type="button">
+      Search
+    </button>
+  </div>
+
+  <div id="collection-results" class="collection-results"></div>
+
+  <div class="search-row">
+    <input
+      id="search"
+      placeholder="Search by ID, company name, country, or headquarters…"
+    >
+
+    <button id="clear-search" type="button">
+      Clear
+    </button>
   </div>
 
   <div class="controls-row">
@@ -404,6 +413,7 @@
 
     <div class="rows-control">
       <label for="rows-per-page">Rows per page</label>
+
       <select id="rows-per-page">
         <option value="100">100</option>
         <option value="250" selected>250</option>
@@ -421,21 +431,36 @@
     </div>
   </div>
 
-  <p class="mobile-scroll-hint">Swipe sideways to view all columns.</p>
-
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Logo</th>
-          <th class="sortable" data-sort="id">ID <span class="sort-indicator"></span></th>
-          <th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
+
+          <th class="sortable" data-sort="id">
+            ID <span class="sort-indicator"></span>
+          </th>
+
+          <th class="sortable" data-sort="name">
+            Company <span class="sort-indicator"></span>
+          </th>
+
           <th class="sortable" data-sort="titles_count">
             Movie Count <span class="sort-indicator"></span>
-            <span class="movie-count-note">Uses TMDB discover/movie results.</span>
+
+            <span class="movie-count-note">
+              Uses TMDB discover/movie results.
+            </span>
           </th>
-          <th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
-          <th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
+
+          <th class="sortable" data-sort="origin_country">
+            Country <span class="sort-indicator"></span>
+          </th>
+
+          <th class="sortable" data-sort="headquarters">
+            Headquarters <span class="sort-indicator"></span>
+          </th>
+
           <th>TMDB</th>
         </tr>
       </thead>
@@ -451,16 +476,21 @@
     <button id="next-page-bottom" type="button">Next</button>
     <button id="last-page-bottom" type="button">Last</button>
   </div>
-<footer class="site-footer">
-  <p>
-    This product uses the TMDB API but is not endorsed or certified by TMDB.
-    Company names, logos, and trademarks remain the property of their respective owners.
-  </p>
-</footer>
 
-<button id="back-to-top" type="button" aria-label="Back to top">↑ Top</button>
+  <footer class="site-footer">
+    <p>
+      This product uses the TMDB API but is not endorsed or certified by TMDB.
+      Company names, logos, posters, and trademarks remain the property of their respective owners.
+    </p>
+  </footer>
+
+  <button id="back-to-top" type="button" aria-label="Back to top">
+    ↑ Top
+  </button>
 
   <script>
+    const TMDB_API_KEY = "YOUR_TMDB_V3_API_KEY";
+
     let companies = [];
     let filteredCompanies = [];
     let currentSearch = "";
@@ -488,7 +518,9 @@
             `Last updated ${updated.toLocaleString()}`;
 
           if (lastScan.mode === "tmdb_daily_export") {
-            const nextOffset = Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
+            const nextOffset =
+              Number(lastScan.offset || 0) +
+              Number(lastScan.limit || 0);
 
             document.getElementById("scan-stats").innerText =
               `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
@@ -502,6 +534,112 @@
       }
 
       applyFiltersAndSort();
+    }
+
+    async function searchCollections() {
+      const query = document
+        .getElementById("collection-search")
+        .value
+        .trim();
+
+      const resultsContainer =
+        document.getElementById("collection-results");
+
+      if (!query) {
+        resultsContainer.innerHTML = "";
+        return;
+      }
+
+      resultsContainer.innerHTML =
+        `<p class="meta">Searching collections...</p>`;
+
+      try {
+        const searchRes = await fetch(
+          `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
+        );
+
+        const searchData = await searchRes.json();
+
+        const collections =
+          (searchData.results || []).slice(0, 5);
+
+        if (!collections.length) {
+          resultsContainer.innerHTML =
+            `<p class="meta">No collections found.</p>`;
+          return;
+        }
+
+        const cards = await Promise.all(
+          collections.map(async collection => {
+            let movieCount = "—";
+
+            try {
+              const detailRes = await fetch(
+                `https://api.themoviedb.org/3/collection/${collection.id}?api_key=${TMDB_API_KEY}`
+              );
+
+              const detailData = await detailRes.json();
+
+              movieCount = detailData.parts
+                ? detailData.parts.length.toLocaleString()
+                : "—";
+            } catch {
+              movieCount = "—";
+            }
+
+            const poster = collection.poster_path
+              ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
+              : "";
+
+            return `
+              <div class="collection-card">
+                ${
+                  poster
+                    ? `<img
+                        src="${poster}"
+                        alt="${collection.name}"
+                        class="collection-poster"
+                      >`
+                    : `<div class="collection-poster"></div>`
+                }
+
+                <div class="collection-info">
+                  <h3>${collection.name}</h3>
+
+                  <div class="collection-meta">
+                    <div><strong>ID:</strong> ${collection.id}</div>
+                    <div><strong>Movies:</strong> ${movieCount}</div>
+                  </div>
+
+                  <div class="collection-actions">
+                    <button
+                      type="button"
+                      onclick="navigator.clipboard.writeText('${collection.id}')"
+                    >
+                      Copy ID
+                    </button>
+
+                    <a
+                      href="https://www.themoviedb.org/collection/${collection.id}"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Open on TMDB
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+        );
+
+        resultsContainer.innerHTML = cards.join("");
+      } catch (error) {
+        resultsContainer.innerHTML =
+          `<p class="meta">Collection search failed.</p>`;
+
+        console.error(error);
+      }
     }
 
     function getSortValue(company, key) {
@@ -519,7 +657,10 @@
         return 1;
       }
 
-      return Math.max(1, Math.ceil(filteredCompanies.length / rowsPerPage));
+      return Math.max(
+        1,
+        Math.ceil(filteredCompanies.length / rowsPerPage)
+      );
     }
 
     function getPageItems() {
@@ -539,9 +680,15 @@
       filteredCompanies = companies.filter(company => {
         return (
           String(company.id).includes(query) ||
-          String(company.name || "").toLowerCase().includes(query) ||
-          String(company.origin_country || "").toLowerCase().includes(query) ||
-          String(company.headquarters || "").toLowerCase().includes(query)
+          String(company.name || "")
+            .toLowerCase()
+            .includes(query) ||
+          String(company.origin_country || "")
+            .toLowerCase()
+            .includes(query) ||
+          String(company.headquarters || "")
+            .toLowerCase()
+            .includes(query)
         );
       });
 
@@ -549,28 +696,28 @@
         const aValue = getSortValue(a, sortKey);
         const bValue = getSortValue(b, sortKey);
 
-        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        if (aValue < bValue)
+          return sortDirection === "asc" ? -1 : 1;
+
+        if (aValue > bValue)
+          return sortDirection === "asc" ? 1 : -1;
+
         return Number(a.id || 0) - Number(b.id || 0);
       });
 
-      const totalPages = getTotalPages();
-
-      if (currentPage > totalPages) {
-        currentPage = totalPages;
-      }
-
       render(getPageItems());
-      updateSortIndicators();
       updatePagination();
+      updateSortIndicators();
     }
 
     function updateSortIndicators() {
       document.querySelectorAll("th.sortable").forEach(th => {
-        const indicator = th.querySelector(".sort-indicator");
+        const indicator =
+          th.querySelector(".sort-indicator");
 
         if (th.dataset.sort === sortKey) {
-          indicator.textContent = sortDirection === "asc" ? "▲" : "▼";
+          indicator.textContent =
+            sortDirection === "asc" ? "▲" : "▼";
         } else {
           indicator.textContent = "";
         }
@@ -579,31 +726,12 @@
 
     function updatePagination() {
       const totalPages = getTotalPages();
-      const isFirst = currentPage <= 1;
-      const isLast = currentPage >= totalPages;
 
-      const pageStatus =
-        rowsPerPage === "all"
-          ? "Page 1 of 1"
-          : `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
+      document.getElementById("page-status").innerText =
+        `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
-      document.getElementById("page-status").innerText = pageStatus;
-      document.getElementById("page-status-bottom").innerText = pageStatus;
-
-      const buttonStates = [
-        ["first-page", isFirst],
-        ["prev-page", isFirst],
-        ["next-page", isLast],
-        ["last-page", isLast],
-        ["first-page-bottom", isFirst],
-        ["prev-page-bottom", isFirst],
-        ["next-page-bottom", isLast],
-        ["last-page-bottom", isLast]
-      ];
-
-      for (const [id, disabled] of buttonStates) {
-        document.getElementById(id).disabled = disabled;
-      }
+      document.getElementById("page-status-bottom").innerText =
+        `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
       document.getElementById("result-count").innerText =
         `Showing ${filteredCompanies.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
@@ -624,7 +752,13 @@
           <td class="logo-cell">
             ${
               logoUrl
-                ? `<div class="logo-box"><img src="${logoUrl}" alt="${company.name}" class="studio-logo"></div>`
+                ? `<div class="logo-box">
+                    <img
+                      src="${logoUrl}"
+                      alt="${company.name}"
+                      class="studio-logo"
+                    >
+                  </div>`
                 : `<div class="logo-placeholder"></div>`
             }
           </td>
@@ -636,7 +770,11 @@
           <td>${company.headquarters || ""}</td>
 
           <td>
-            <a href="${company.tmdb_url}" target="_blank" rel="noopener">
+            <a
+              href="${company.tmdb_url}"
+              target="_blank"
+              rel="noopener"
+            >
               Open
             </a>
           </td>
@@ -647,71 +785,137 @@
     }
 
     function goToPage(page) {
-      currentPage = Math.min(Math.max(1, page), getTotalPages());
+      currentPage = Math.min(
+        Math.max(1, page),
+        getTotalPages()
+      );
+
       render(getPageItems());
       updatePagination();
-
-      document.querySelector(".table-wrap").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
     }
 
-    document.getElementById("search").addEventListener("input", event => {
-      currentSearch = event.target.value;
-      currentPage = 1;
-      applyFiltersAndSort();
-    });
+    document
+      .getElementById("collection-search-btn")
+      .addEventListener("click", searchCollections);
 
-    document.getElementById("clear-search").addEventListener("click", () => {
-      currentSearch = "";
-      currentPage = 1;
-      document.getElementById("search").value = "";
-      applyFiltersAndSort();
-      document.getElementById("search").focus();
-    });
-
-    document.getElementById("rows-per-page").addEventListener("change", event => {
-      rowsPerPage = event.target.value === "all"
-        ? "all"
-        : Number(event.target.value);
-
-      currentPage = 1;
-      applyFiltersAndSort();
-    });
-
-    document.getElementById("first-page").addEventListener("click", () => goToPage(1));
-    document.getElementById("prev-page").addEventListener("click", () => goToPage(currentPage - 1));
-    document.getElementById("next-page").addEventListener("click", () => goToPage(currentPage + 1));
-    document.getElementById("last-page").addEventListener("click", () => goToPage(getTotalPages()));
-
-    document.getElementById("first-page-bottom").addEventListener("click", () => goToPage(1));
-    document.getElementById("prev-page-bottom").addEventListener("click", () => goToPage(currentPage - 1));
-    document.getElementById("next-page-bottom").addEventListener("click", () => goToPage(currentPage + 1));
-    document.getElementById("last-page-bottom").addEventListener("click", () => goToPage(getTotalPages()));
-
-    document.querySelectorAll("th.sortable").forEach(th => {
-      th.addEventListener("click", () => {
-        const selectedSortKey = th.dataset.sort;
-
-        if (sortKey === selectedSortKey) {
-          sortDirection = sortDirection === "asc" ? "desc" : "asc";
-        } else {
-          sortKey = selectedSortKey;
-          sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
+    document
+      .getElementById("collection-search")
+      .addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          searchCollections();
         }
+      });
 
+    document
+      .getElementById("search")
+      .addEventListener("input", event => {
+        currentSearch = event.target.value;
         currentPage = 1;
         applyFiltersAndSort();
       });
-    });
 
-    document.getElementById("back-to-top").addEventListener("click", () => {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth"
+    document
+      .getElementById("clear-search")
+      .addEventListener("click", () => {
+        currentSearch = "";
+        currentPage = 1;
+
+        document.getElementById("search").value = "";
+
+        applyFiltersAndSort();
       });
-    });
+
+    document
+      .getElementById("rows-per-page")
+      .addEventListener("change", event => {
+        rowsPerPage =
+          event.target.value === "all"
+            ? "all"
+            : Number(event.target.value);
+
+        currentPage = 1;
+
+        applyFiltersAndSort();
+      });
+
+    document
+      .querySelectorAll("th.sortable")
+      .forEach(th => {
+        th.addEventListener("click", () => {
+          const selectedSortKey = th.dataset.sort;
+
+          if (sortKey === selectedSortKey) {
+            sortDirection =
+              sortDirection === "asc"
+                ? "desc"
+                : "asc";
+          } else {
+            sortKey = selectedSortKey;
+
+            sortDirection =
+              selectedSortKey === "titles_count"
+                ? "desc"
+                : "asc";
+          }
+
+          currentPage = 1;
+
+          applyFiltersAndSort();
+        });
+      });
+
+    document
+      .getElementById("first-page")
+      .addEventListener("click", () => goToPage(1));
+
+    document
+      .getElementById("prev-page")
+      .addEventListener("click", () =>
+        goToPage(currentPage - 1)
+      );
+
+    document
+      .getElementById("next-page")
+      .addEventListener("click", () =>
+        goToPage(currentPage + 1)
+      );
+
+    document
+      .getElementById("last-page")
+      .addEventListener("click", () =>
+        goToPage(getTotalPages())
+      );
+
+    document
+      .getElementById("first-page-bottom")
+      .addEventListener("click", () => goToPage(1));
+
+    document
+      .getElementById("prev-page-bottom")
+      .addEventListener("click", () =>
+        goToPage(currentPage - 1)
+      );
+
+    document
+      .getElementById("next-page-bottom")
+      .addEventListener("click", () =>
+        goToPage(currentPage + 1)
+      );
+
+    document
+      .getElementById("last-page-bottom")
+      .addEventListener("click", () =>
+        goToPage(getTotalPages())
+      );
+
+    document
+      .getElementById("back-to-top")
+      .addEventListener("click", () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+      });
 
     loadCompanies();
   </script>
