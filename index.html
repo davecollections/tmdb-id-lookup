@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TMDB Company Lookup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: #0b0d10;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 32px;
+    }
+
+    input {
+      width: 100%;
+      max-width: 520px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #151922;
+      color: white;
+      font-size: 16px;
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #222;
+      text-align: left;
+    }
+
+    a {
+      color: #8ab4ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>TMDB Company Lookup</h1>
+  <p>Search cached TMDB company IDs.</p>
+
+  <input id="search" placeholder="Search by ID or company name…">
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Company</th>
+        <th>Headquarters</th>
+        <th>TMDB</th>
+      </tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+
+  <script>
+    let companies = [];
+
+    async function loadCompanies() {
+      const res = await fetch("./data/companies.json");
+      companies = await res.json();
+      render(companies);
+    }
+
+    function render(items) {
+      const tbody = document.getElementById("results");
+      tbody.innerHTML = "";
+
+      for (const company of items) {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${company.id}</td>
+          <td>${company.name}</td>
+          <td>${company.headquarters || ""}</td>
+          <td><a href="${company.tmdb_url}" target="_blank">Open</a></td>
+        `;
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", event => {
+      const q = event.target.value.toLowerCase().trim();
+
+      const filtered = companies.filter(company =>
+        String(company.id).includes(q) ||
+        company.name.toLowerCase().includes(q)
+      );
+
+      render(filtered);
+    });
+
+    loadCompanies();
+  </script>
+</body>
+</html>
