@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>TMDB Company Lookup</title>
+  <title>TMDB Company & Collection Lookup</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -17,6 +17,10 @@
     h1,
     h2 {
       margin-top: 0;
+    }
+
+    a {
+      color: #8ab4ff;
     }
 
     input,
@@ -57,10 +61,6 @@
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
-    }
-
-    a {
-      color: #8ab4ff;
     }
 
     .meta {
@@ -114,10 +114,11 @@
     }
 
     .collection-results {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(320px, 1fr));
       gap: 14px;
       margin: 18px 0 36px;
+      max-width: 1200px;
     }
 
     .collection-card {
@@ -128,10 +129,11 @@
       border: 1px solid #222b36;
       border-radius: 14px;
       padding: 14px;
-      width: fit-content;
-      min-width: 420px;
-      max-width: 820px;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     .collection-poster {
@@ -145,11 +147,13 @@
 
     .collection-info {
       flex: 1;
+      min-width: 0;
     }
 
     .collection-info h3 {
       margin: 0 0 8px;
       font-size: 18px;
+      word-break: break-word;
     }
 
     .collection-meta {
@@ -366,7 +370,7 @@
 
     @media (max-width: 720px) {
       body {
-        padding: 18px;
+        padding: 16px;
       }
 
       .search-row {
@@ -378,9 +382,15 @@
         width: 100%;
       }
 
+      .collection-results {
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+
       .collection-card {
         flex-direction: column;
-        min-width: 100%;
+        width: 100%;
+        padding: 12px;
       }
 
       .collection-poster {
@@ -444,7 +454,7 @@
 
   <h1 style="margin-top:60px;">TMDB Company Lookup</h1>
 
-  <p>Search cached TMDB company IDs.</p>
+  <p>Search cached TMDB production companies.</p>
 
   <p id="stats" class="meta"></p>
   <p id="last-updated" class="meta"></p>
@@ -556,7 +566,7 @@
   </div>
 
   <script>
-    const TMDB_API_KEY = "2b4b26c9d4ffa38e803507840236eec8";
+    const TMDB_API_KEY = "YOUR_TMDB_V3_API_KEY";
 
     let companies = [];
     let filteredCompanies = [];
@@ -640,7 +650,7 @@
         const searchData = await searchRes.json();
 
         const collections =
-          (searchData.results || []).slice(0, 5);
+          (searchData.results || []).slice(0, 10);
 
         if (!collections.length) {
           resultsContainer.innerHTML =
