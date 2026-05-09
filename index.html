@@ -944,6 +944,18 @@ async function searchTmdbIds() {
       const people =
         (personSearch?.results || []).slice(0, 5);
 
+      const totalCollectionResults =
+  collectionSearch?.total_results || 0;
+
+const totalPersonResults =
+  personSearch?.total_results || 0;
+
+const totalAvailableResults =
+  totalCollectionResults + totalPersonResults;
+
+const displayedResults =
+  collections.length + people.length;
+
       const collectionCards = await Promise.all(
         collections.map(async collection => {
           const detail = await getCollectionMovieCount(collection.id);
@@ -971,8 +983,17 @@ cards.push(...personCards);
         `<p class="meta">No matching movie collections or people found.</p>`;
       return;
     }
+let resultsHtml = cards.join("");
 
-    resultsContainer.innerHTML = cards.join("");
+if (totalAvailableResults > displayedResults) {
+  resultsHtml += `
+    <p class="meta">
+      More results may be available. Refine your search for better matches.
+    </p>
+  `;
+}
+
+resultsContainer.innerHTML = resultsHtml;
   } catch (error) {
     resultsContainer.innerHTML =
       `<p class="meta">TMDB lookup failed.</p>`;
