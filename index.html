@@ -440,6 +440,18 @@ thead th {
         min-width: 900px;
       }
     }
+
+    .notice {
+  max-width: 760px;
+  margin: 10px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #2b313b;
+  border-radius: 10px;
+  background: rgba(21, 25, 34, 0.75);
+  color: #aeb7c2;
+  font-size: 14px;
+  line-height: 1.5;
+}
   </style>
 </head>
 
@@ -472,7 +484,10 @@ thead th {
   <h1>TMDB Company Lookup</h1>
 
   <p>Search cached TMDB production companies.</p>
-
+<p class="notice">
+  This company database is still being built in batches, so not every TMDB studio/ID is listed yet.
+  More companies are being added over the next few days.
+</p>
   <p id="stats" class="meta"></p>
   <p id="last-updated" class="meta"></p>
   <p id="scan-stats" class="meta"></p>
