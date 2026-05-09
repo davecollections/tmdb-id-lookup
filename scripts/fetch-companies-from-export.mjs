@@ -32,6 +32,61 @@ async function readJson(path, fallback) {
   }
 }
 
+async function tmdbFetch(url, options = {}) {
+  const maxAttempts = 5;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          accept: "application/json",
+          ...(options.headers || {})
+        }
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(
+          `TMDB auth/permission error HTTP ${res.status}. Check TMDB_BEARER_TOKEN.`
+        );
+      }
+
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get("retry-after") || 5);
+        console.log(
+          `Rate limited. Waiting ${retryAfter}s before retry ${attempt}/${maxAttempts}...`
+        );
+        await sleep(retryAfter * 1000);
+        continue;
+      }
+
+      if (res.status >= 500) {
+        const waitMs = attempt * 2000;
+        console.log(
+          `TMDB server error ${res.status}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`
+        );
+        await sleep(waitMs);
+        continue;
+      }
+
+      return res;
+    } catch (error) {
+      if (error.message.includes("auth/permission")) {
+        throw error;
+      }
+
+      const waitMs = attempt * 2000;
+      console.log(
+        `Network/request error: ${error.message}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`
+      );
+      await sleep(waitMs);
+    }
+  }
+
+  throw new Error(`TMDB request failed after ${maxAttempts} attempts: ${url}`);
+}
+
 function formatExportDate(date) {
   const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(date.getUTCDate()).padStart(2, "0");
@@ -80,7 +135,9 @@ async function fetchExport() {
       .map(line => JSON.parse(line))
       .sort((a, b) => Number(a.id) - Number(b.id));
 
-    console.log(`Loaded ${companies.length.toLocaleString()} company IDs from export ${candidate.date}`);
+    console.log(
+      `Loaded ${companies.length.toLocaleString()} company IDs from export ${candidate.date}`
+    );
 
     return {
       export_date: candidate.date,
@@ -92,41 +149,30 @@ async function fetchExport() {
 }
 
 async function fetchCompanyDetails(id) {
-  const res = await fetch(`https://api.themoviedb.org/3/company/${id}`, {
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      accept: "application/json"
-    }
-  });
+  const res = await tmdbFetch(`https://api.themoviedb.org/3/company/${id}`);
+
+  if (res.status === 404) {
+    return null;
+  }
 
   if (!res.ok) {
-    return null;
+    throw new Error(`Company details failed for ${id}: HTTP ${res.status}`);
   }
 
   return res.json();
 }
 
 async function fetchMovieCount(id) {
-  try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/discover/movie?with_companies=${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          accept: "application/json"
-        }
-      }
-    );
+  const res = await tmdbFetch(
+    `https://api.themoviedb.org/3/discover/movie?with_companies=${id}`
+  );
 
-    if (!res.ok) {
-      return 0;
-    }
-
-    const data = await res.json();
-    return data.total_results || 0;
-  } catch {
-    return 0;
+  if (!res.ok) {
+    throw new Error(`Movie count failed for ${id}: HTTP ${res.status}`);
   }
+
+  const data = await res.json();
+  return data.total_results || 0;
 }
 
 function normaliseCompany(data, movieCount) {
@@ -199,7 +245,37 @@ await fs.writeFile(
   )
 );
 
+if (OFFSET >= exportData.companies.length) {
+  console.log(
+    `Offset ${OFFSET.toLocaleString()} is beyond the export total of ${exportData.companies.length.toLocaleString()}. Nothing to scan.`
+  );
+
+  const companies = Array
+    .from(companyMap.values())
+    .sort((a, b) => Number(a.id) - Number(b.id));
+
+  const stats = {
+    mode: "tmdb_daily_export",
+    export_date: exportData.export_date,
+    export_total_ids: exportData.companies.length,
+    offset: OFFSET,
+    limit: LIMIT,
+    actual_limit: 0,
+    checked: 0,
+    found: 0,
+    missing: 0,
+    total_cached: companies.length,
+    started_at: new Date().toISOString(),
+    finished_at: new Date().toISOString()
+  };
+
+  await fs.writeFile(META_PATH, JSON.stringify({ last_scan: stats }, null, 2));
+
+  process.exit(0);
+}
+
 const selectedCompanies = exportData.companies.slice(OFFSET, OFFSET + LIMIT);
+const actualLimit = selectedCompanies.length;
 
 const stats = {
   mode: "tmdb_daily_export",
@@ -207,13 +283,16 @@ const stats = {
   export_total_ids: exportData.companies.length,
   offset: OFFSET,
   limit: LIMIT,
+  actual_limit: actualLimit,
   checked: 0,
   found: 0,
   missing: 0,
   started_at: new Date().toISOString()
 };
 
-console.log(`Enriching ${selectedCompanies.length.toLocaleString()} companies from export offset ${OFFSET}.`);
+console.log(
+  `Enriching ${actualLimit.toLocaleString()} companies from export offset ${OFFSET.toLocaleString()}.`
+);
 
 for (const exportCompany of selectedCompanies) {
   const id = Number(exportCompany.id);
