@@ -338,8 +338,15 @@
           document.getElementById("last-updated").innerText =
             `Last updated ${updated.toLocaleString()}`;
 
-          document.getElementById("scan-stats").innerText =
-            `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
+          if (lastScan.mode === "tmdb_daily_export") {
+  const nextOffset = Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
+
+  document.getElementById("scan-stats").innerText =
+    `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
+} else {
+  document.getElementById("scan-stats").innerText =
+    `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
+}
         }
       } catch (error) {
         console.warn("scan-meta.json not available yet");
