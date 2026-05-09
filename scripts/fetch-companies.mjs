@@ -64,7 +64,7 @@ let titlesCount = 0;
 
 try {
   const moviesRes = await fetch(
-    `https://api.themoviedb.org/3/company/${id}/movies`,
+    `https://api.themoviedb.org/3/discover/movie?with_companies=${id}`,
     {
       headers: {
         Authorization: `Bearer ${TOKEN}`,
@@ -78,7 +78,7 @@ try {
     titlesCount = moviesData.total_results || 0;
   }
 } catch (err) {
-  console.log(`${id}: movie count failed`);
+  console.log(`${id}: title count failed`);
 }
 
       companyMap.set(data.id, {
