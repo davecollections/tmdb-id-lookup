@@ -39,23 +39,35 @@
     a {
       color: #8ab4ff;
     }
-    .logo-cell {
-  width: 70px;
+   .logo-cell {
+  width: 76px;
+}
+
+.logo-box {
+  width: 64px;
+  height: 30px;
+  background: #f2f4f7;
+  border: 1px solid #d8dde6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
 }
 
 .studio-logo {
-  height: 24px;
-  max-width: 60px;
+  max-height: 22px;
+  max-width: 56px;
   object-fit: contain;
-  opacity: 0.9;
   display: block;
 }
 
 .logo-placeholder {
-  width: 60px;
-  height: 24px;
+  width: 64px;
+  height: 30px;
   background: #1b1f27;
-  border-radius: 4px;
+  border: 1px solid #2b313b;
+  border-radius: 6px;
 }
   </style>
 </head>
@@ -127,9 +139,9 @@ async function loadCompanies() {
     tr.innerHTML = `
       <td class="logo-cell">
         ${
-          logoUrl
-            ? `<img src="${logoUrl}" alt="${company.name}" class="studio-logo">`
-            : `<div class="logo-placeholder"></div>`
+logoUrl
+  ? `<div class="logo-box"><img src="${logoUrl}" alt="${company.name}" class="studio-logo"></div>`
+  : `<div class="logo-placeholder"></div>`
         }
       </td>
 
