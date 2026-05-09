@@ -1,12 +1,15 @@
 {
   "last_scan": {
-    "start_id": 1,
-    "end_id": 50,
-    "checked": 50,
-    "found": 47,
-    "missing": 3,
-    "started_at": "2026-05-09T06:33:45.849Z",
+    "mode": "tmdb_daily_export",
+    "export_date": "05_09_2026",
+    "export_total_ids": 247822,
+    "offset": 0,
+    "limit": 100,
+    "checked": 100,
+    "found": 100,
+    "missing": 0,
+    "started_at": "2026-05-09T07:30:03.120Z",
     "total_cached": 461,
-    "finished_at": "2026-05-09T06:33:53.138Z"
+    "finished_at": "2026-05-09T07:30:18.102Z"
   }
 }
