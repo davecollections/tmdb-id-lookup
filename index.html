@@ -23,7 +23,20 @@
       background: #151922;
       color: white;
       font-size: 16px;
-      margin-bottom: 12px;
+    }
+
+    button {
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #151922;
+      color: #8ab4ff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #8ab4ff;
     }
 
     table {
@@ -90,10 +103,27 @@
       border-color: #8ab4ff;
     }
 
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
     #result-count {
       color: #aeb7c2;
       font-size: 14px;
       margin: 0 0 18px;
+    }
+
+    .movie-count-note {
+      color: #7f8a99;
+      font-size: 12px;
+      font-weight: normal;
+      display: block;
+      margin-top: 3px;
+      line-height: 1.25;
+      max-width: 160px;
     }
 
     .logo-cell {
@@ -143,7 +173,11 @@
     <a href="./data/companies.csv" download>Download CSV</a>
   </div>
 
-  <input id="search" placeholder="Search by ID, company name, country, or headquarters…">
+  <div class="search-row">
+    <input id="search" placeholder="Search by ID, company name, country, or headquarters…">
+    <button id="clear-search" type="button">Clear</button>
+  </div>
+
   <p id="result-count"></p>
 
   <table>
@@ -152,7 +186,10 @@
         <th>Logo</th>
         <th class="sortable" data-sort="id">ID <span class="sort-indicator"></span></th>
         <th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
-        <th class="sortable" data-sort="titles_count">Movie Count <span class="sort-indicator"></span></th>
+        <th class="sortable" data-sort="titles_count">
+          Movie Count <span class="sort-indicator"></span>
+          <span class="movie-count-note">Uses TMDB discover/movie results.</span>
+        </th>
         <th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
         <th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
         <th>TMDB</th>
@@ -286,6 +323,13 @@
     document.getElementById("search").addEventListener("input", event => {
       currentSearch = event.target.value;
       applyFiltersAndSort();
+    });
+
+    document.getElementById("clear-search").addEventListener("click", () => {
+      currentSearch = "";
+      document.getElementById("search").value = "";
+      applyFiltersAndSort();
+      document.getElementById("search").focus();
     });
 
     document.querySelectorAll("th.sortable").forEach(th => {
