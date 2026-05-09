@@ -1,1 +1,82 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "Lucasfilm Ltd.",
+    "headquarters": "San Francisco, California",
+    "homepage": "https://www.lucasfilm.com",
+    "logo_path": "/tlVSws0RvvtPBwViUyOFAO0vcQS.png",
+    "tmdb_url": "https://www.themoviedb.org/company/1"
+  },
+  {
+    "id": 2,
+    "name": "Walt Disney Pictures",
+    "headquarters": "Burbank, California",
+    "homepage": "https://movies.disney.com",
+    "logo_path": "/wdrCwmRnLFJhEoH8GSfymY85KHT.png",
+    "tmdb_url": "https://www.themoviedb.org/company/2"
+  },
+  {
+    "id": 3,
+    "name": "Pixar",
+    "headquarters": "Emeryville, California",
+    "homepage": "http://www.pixar.com",
+    "logo_path": "/1TjvGVDMYsj6JBxOAkUHpPEwLf7.png",
+    "tmdb_url": "https://www.themoviedb.org/company/3"
+  },
+  {
+    "id": 4,
+    "name": "Paramount Pictures",
+    "headquarters": "Hollywood, California",
+    "homepage": "https://www.paramountpictures.com/movies",
+    "logo_path": "/jay6WcMgagAklUt7i9Euwj1pzTF.png",
+    "tmdb_url": "https://www.themoviedb.org/company/4"
+  },
+  {
+    "id": 5,
+    "name": "Columbia Pictures",
+    "headquarters": "Culver City, California",
+    "homepage": "http://www.sonypictures.com",
+    "logo_path": "/71BqEFAF4V3qjjMPCpLuyJFB9A.png",
+    "tmdb_url": "https://www.themoviedb.org/company/5"
+  },
+  {
+    "id": 6,
+    "name": "RKO Radio Pictures",
+    "headquarters": "New York City",
+    "homepage": "",
+    "logo_path": "/n53F7K9scQWFXYbrCablqLKqJdp.png",
+    "tmdb_url": "https://www.themoviedb.org/company/6"
+  },
+  {
+    "id": 7,
+    "name": "DreamWorks Pictures",
+    "headquarters": "Universal City, California",
+    "homepage": "",
+    "logo_path": "/zcKhWbxFJ4CohZ9dLBMxmOArTVn.png",
+    "tmdb_url": "https://www.themoviedb.org/company/7"
+  },
+  {
+    "id": 8,
+    "name": "Fine Line Features",
+    "headquarters": "",
+    "homepage": "",
+    "logo_path": "/78ilmDNTpdCfsakrsLqmAUkFTrO.png",
+    "tmdb_url": "https://www.themoviedb.org/company/8"
+  },
+  {
+    "id": 9,
+    "name": "Gaumont",
+    "headquarters": "Neuilly sur Seine",
+    "homepage": "http://www.gaumont.fr",
+    "logo_path": "/nda3dTUYdDrJ6rZqBpYvY865aDv.png",
+    "tmdb_url": "https://www.themoviedb.org/company/9"
+  },
+  {
+    "id": 10,
+    "name": "Highlight",
+    "headquarters": "",
+    "homepage": "",
+    "logo_path": "",
+    "tmdb_url": "https://www.themoviedb.org/company/10"
+  }
+]
