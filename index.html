@@ -39,6 +39,24 @@
     a {
       color: #8ab4ff;
     }
+    .logo-cell {
+  width: 70px;
+}
+
+.studio-logo {
+  height: 24px;
+  max-width: 60px;
+  object-fit: contain;
+  opacity: 0.9;
+  display: block;
+}
+
+.logo-placeholder {
+  width: 60px;
+  height: 24px;
+  background: #1b1f27;
+  border-radius: 4px;
+}
   </style>
 </head>
 <body>
@@ -51,11 +69,14 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Company</th>
-        <th>Headquarters</th>
-        <th>TMDB</th>
-      </tr>
+  <th>Logo</th>
+  <th>ID</th>
+  <th>Company</th>
+  <th>Titles</th>
+  <th>Country</th>
+  <th>Headquarters</th>
+  <th>TMDB</th>
+</tr>
     </thead>
     <tbody id="results"></tbody>
   </table>
