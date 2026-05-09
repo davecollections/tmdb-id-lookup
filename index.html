@@ -65,6 +65,31 @@
       margin: 6px 0;
     }
 
+    .download-links {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 14px 0 18px;
+      font-size: 14px;
+    }
+
+    .download-links span {
+      color: #566171;
+    }
+
+    .download-links a {
+      background: #151922;
+      border: 1px solid #2b313b;
+      border-radius: 8px;
+      color: #8ab4ff;
+      padding: 8px 11px;
+      text-decoration: none;
+    }
+
+    .download-links a:hover {
+      border-color: #8ab4ff;
+    }
+
     #result-count {
       color: #aeb7c2;
       font-size: 14px;
@@ -111,6 +136,12 @@
   <p id="stats" class="meta"></p>
   <p id="last-updated" class="meta"></p>
   <p id="scan-stats" class="meta"></p>
+
+  <div class="download-links">
+    <a href="./data/companies.json" download>Download JSON</a>
+    <span>·</span>
+    <a href="./data/companies.csv" download>Download CSV</a>
+  </div>
 
   <input id="search" placeholder="Search by ID, company name, country, or headquarters…">
   <p id="result-count"></p>
