@@ -246,6 +246,24 @@
       box-sizing: border-box;
     }
 
+    #back-to-top {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: #151922;
+      border: 1px solid #2b313b;
+      color: #8ab4ff;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    #back-to-top:hover {
+      border-color: #8ab4ff;
+    }
+
     @media (max-width: 720px) {
       body {
         padding: 18px;
@@ -267,6 +285,12 @@
 
       button {
         width: 100%;
+      }
+
+      #back-to-top {
+        width: auto;
+        right: 14px;
+        bottom: 14px;
       }
 
       .download-links {
@@ -341,23 +365,6 @@
         max-height: 20px;
       }
     }
-    #back-to-top {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 20;
-  padding: 10px 13px;
-  border-radius: 999px;
-  background: #151922;
-  border: 1px solid #2b313b;
-  color: #8ab4ff;
-  font-size: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-}
-
-#back-to-top:hover {
-  border-color: #8ab4ff;
-}
   </style>
 </head>
 
@@ -432,6 +439,8 @@
     <button id="next-page-bottom" type="button">Next</button>
     <button id="last-page-bottom" type="button">Last</button>
   </div>
+
+  <button id="back-to-top" type="button" aria-label="Back to top">↑ Top</button>
 
   <script>
     let companies = [];
@@ -557,7 +566,7 @@
 
       const pageStatus =
         rowsPerPage === "all"
-          ? `Page 1 of 1`
+          ? "Page 1 of 1"
           : `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
       document.getElementById("page-status").innerText = pageStatus;
@@ -678,15 +687,15 @@
         applyFiltersAndSort();
       });
     });
-document.getElementById("back-to-top").addEventListener("click", () => {
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-});
+
+    document.getElementById("back-to-top").addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    });
+
     loadCompanies();
-   
   </script>
-  <button id="back-to-top" type="button" aria-label="Back to top">↑ Top</button>
 </body>
 </html>
