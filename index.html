@@ -968,9 +968,17 @@ for (let page = 1; page <= maxPages; page++) {
 
   downloadCsv(filename, rows);
 
-  status.innerText =
-    `Downloaded ${matches.length} results`;
-}
+status.innerText =
+  `Downloaded ${matches.length} results`;
+
+setTimeout(() => {
+  if (
+    status.innerText ===
+    `Downloaded ${matches.length} results`
+  ) {
+    status.innerText = "";
+  }
+}, 5000);
 
     async function loadCompanies() {
       const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
