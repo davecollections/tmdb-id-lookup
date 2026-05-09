@@ -977,8 +977,8 @@
           return;
         }
 
-        let resultsHtml = cards.join("");
-
+        let resultsHtml = "";
+        
         if (
           !isNumeric &&
           totalAvailableResults > displayedResults
@@ -989,6 +989,8 @@
             </p>
           `;
         }
+
+resultsHtml += cards.join("");
 
         resultsContainer.innerHTML = resultsHtml;
       } catch (error) {
