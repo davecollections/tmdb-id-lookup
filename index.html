@@ -99,10 +99,11 @@
     }
 
 .collection-results {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   margin: 18px 0 36px;
-  max-width: 1200px;
+  max-width: 900px;
 }
 
     .collection-card {
@@ -368,7 +369,7 @@
 
 <body>
 
-    <h2 style="margin-top:40px;">TMDB Collection Lookup</h2>
+    <h1 style="margin-top:40px;">TMDB Collection Lookup</h1>
 
   <p class="meta">
     Find TMDB collection IDs for Nuvio collections.
