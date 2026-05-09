@@ -238,7 +238,9 @@ await fs.writeFile(
     {
       export_date: exportData.export_date,
       total_ids: exportData.companies.length,
-      ids: exportData.companies.map(company => company.id)
+      last_offset: OFFSET,
+      last_limit: LIMIT,
+      updated_at: new Date().toISOString()
     },
     null,
     2
