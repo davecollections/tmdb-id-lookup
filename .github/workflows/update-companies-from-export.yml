@@ -4,39 +4,51 @@ on:
   workflow_dispatch:
     inputs:
       offset:
-        description: "Start offset in TMDB production company export"
+        description: "Starting export offset"
         required: true
         default: "0"
-      limit:
-        description: "Number of valid company IDs to enrich"
-        required: true
-        default: "500"
 
-permissions:
-  contents: write
+      limit:
+        description: "Number of export IDs to process"
+        required: true
+        default: "1000"
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    permissions:
+      contents: write
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
+      - name: Install dependencies
+        run: npm install
+
       - name: Fetch TMDB companies from daily export
-        run: node scripts/fetch-companies-from-export.mjs
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-          OFFSET: ${{ github.event.inputs.offset }}
-          LIMIT: ${{ github.event.inputs.limit }}
+        run: |
+          node scripts/fetch-companies-from-export.mjs \
+            ${{ github.event.inputs.offset }} \
+            ${{ github.event.inputs.limit }}
 
       - name: Commit updated company data
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/companies.json data/companies.csv data/scan-meta.json data/production-company-export.json
-          git commit -m "Update TMDB company lookup from export" || echo "No changes"
+
+          git add .
+
+          git commit -m "Update TMDB company lookup from export" || echo "No changes to commit"
+
+          git pull --rebase origin main
+
           git push
