@@ -96,6 +96,9 @@
 
     function render(items) {
       const tbody = document.getElementById("results");
+      const logoUrl = company.logo_path
+  ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
+  : "";
       tbody.innerHTML = "";
 
       for (const company of items) {
