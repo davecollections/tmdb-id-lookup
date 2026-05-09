@@ -23,6 +23,7 @@
       background: #151922;
       color: white;
       font-size: 16px;
+      box-sizing: border-box;
     }
 
     button {
@@ -33,14 +34,25 @@
       color: #8ab4ff;
       font-size: 16px;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     button:hover {
       border-color: #8ab4ff;
     }
 
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid #1c222c;
+      border-radius: 12px;
+      background: #0f1218;
+    }
+
     table {
       width: 100%;
+      min-width: 920px;
       border-collapse: collapse;
     }
 
@@ -50,6 +62,21 @@
       border-bottom: 1px solid #222;
       text-align: left;
       vertical-align: middle;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #111720;
+      z-index: 2;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr:hover {
+      background: #111720;
     }
 
     th.sortable {
@@ -80,6 +107,7 @@
 
     .download-links {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       align-items: center;
       margin: 14px 0 18px;
@@ -116,6 +144,13 @@
       margin: 0 0 18px;
     }
 
+    .mobile-scroll-hint {
+      display: none;
+      color: #7f8a99;
+      font-size: 13px;
+      margin: -6px 0 12px;
+    }
+
     .movie-count-note {
       color: #7f8a99;
       font-size: 12px;
@@ -140,6 +175,7 @@
       align-items: center;
       justify-content: center;
       padding: 4px;
+      box-sizing: border-box;
     }
 
     .studio-logo {
@@ -155,6 +191,82 @@
       background: #1b1f27;
       border: 1px solid #2b313b;
       border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 18px;
+      }
+
+      h1 {
+        font-size: 26px;
+        margin-bottom: 10px;
+      }
+
+      .search-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      input {
+        max-width: none;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .download-links {
+        gap: 8px;
+      }
+
+      .download-links a {
+        flex: 1;
+        text-align: center;
+      }
+
+      .download-links span {
+        display: none;
+      }
+
+      .mobile-scroll-hint {
+        display: block;
+      }
+
+      .table-wrap {
+        border-radius: 10px;
+      }
+
+      table {
+        min-width: 840px;
+      }
+
+      th,
+      td {
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      .movie-count-note {
+        font-size: 11px;
+        max-width: 130px;
+      }
+
+      .logo-cell {
+        width: 68px;
+      }
+
+      .logo-box,
+      .logo-placeholder {
+        width: 58px;
+        height: 28px;
+      }
+
+      .studio-logo {
+        max-width: 50px;
+        max-height: 20px;
+      }
     }
   </style>
 </head>
@@ -179,25 +291,28 @@
   </div>
 
   <p id="result-count"></p>
+  <p class="mobile-scroll-hint">Swipe sideways to view all columns.</p>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Logo</th>
-        <th class="sortable" data-sort="id">ID <span class="sort-indicator"></span></th>
-        <th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
-        <th class="sortable" data-sort="titles_count">
-          Movie Count <span class="sort-indicator"></span>
-          <span class="movie-count-note">Uses TMDB discover/movie results.</span>
-        </th>
-        <th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
-        <th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
-        <th>TMDB</th>
-      </tr>
-    </thead>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Logo</th>
+          <th class="sortable" data-sort="id">ID <span class="sort-indicator"></span></th>
+          <th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
+          <th class="sortable" data-sort="titles_count">
+            Movie Count <span class="sort-indicator"></span>
+            <span class="movie-count-note">Uses TMDB discover/movie results.</span>
+          </th>
+          <th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
+          <th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
+          <th>TMDB</th>
+        </tr>
+      </thead>
 
-    <tbody id="results"></tbody>
-  </table>
+      <tbody id="results"></tbody>
+    </table>
+  </div>
 
   <script>
     let companies = [];
