@@ -59,9 +59,7 @@ for (let id = START_ID; id <= END_ID; id++) {
 
     if (res.status === 200) {
       const data = await res.json();
-
-let titlesCount = 0;
-
+    let titlesCount = 0;
 try {
   const moviesRes = await fetch(
     `https://api.themoviedb.org/3/discover/movie?with_companies=${id}`,
@@ -121,6 +119,7 @@ await fs.writeFile(
 const csvHeaders = [
   "id",
   "name",
+  "titles_count",
   "headquarters",
   "origin_country",
   "homepage",
