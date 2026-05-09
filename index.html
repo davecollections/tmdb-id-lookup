@@ -796,6 +796,178 @@
       }
     }
 
+    function csvEscape(value) {
+  const stringValue = String(value ?? "");
+
+  return `"${stringValue.replace(/"/g, '""')}"`;
+}
+
+function downloadCsv(filename, rows) {
+  const csvContent = rows
+    .map(row => row.map(csvEscape).join(","))
+    .join("\n");
+
+  const blob = new Blob(
+    [csvContent],
+    { type: "text/csv;charset=utf-8;" }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+async function getKnownCreditsNumber(personId) {
+  try {
+    const credits = await tmdbJson(
+      `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!credits) {
+      return 0;
+    }
+
+    const castCount = Array.isArray(credits.cast)
+      ? credits.cast.length
+      : 0;
+
+    const crewCount = Array.isArray(credits.crew)
+      ? credits.crew.length
+      : 0;
+
+    return castCount + crewCount;
+  } catch {
+    return 0;
+  }
+}
+
+    async function downloadPopularPeopleCsv(department) {
+  const status =
+    document.getElementById("people-download-status");
+
+  const popularityInput = Number(
+    document.getElementById(
+      "people-popularity-filter"
+    ).value
+  );
+
+  const creditsInput = Number(
+    document.getElementById(
+      "people-credits-filter"
+    ).value
+  );
+
+  const minPopularity =
+    popularityInput ||
+    (department === "Acting" ? 5 : 3);
+
+  const minCredits =
+    creditsInput || 20;
+
+  const rows = [[
+    "Rank",
+    "Name",
+    "TMDB ID",
+    "Known For",
+    "Known Credits",
+    "TMDB Popularity",
+    "TMDB URL"
+  ]];
+
+  const matches = [];
+
+  let scannedPages = 0;
+
+  status.innerText =
+    "Generating CSV...";
+
+  for (let page = 1; page <= 10; page++) {
+    scannedPages++;
+
+    status.innerText =
+      `Generating CSV... scanned ${scannedPages} pages`;
+
+    const data = await tmdbJson(
+      `https://api.themoviedb.org/3/person/popular?api_key=${TMDB_API_KEY}&page=${page}`
+    );
+
+    if (!data?.results) {
+      continue;
+    }
+
+    for (const person of data.results) {
+      if (
+        person.known_for_department !== department
+      ) {
+        continue;
+      }
+
+      const popularity =
+        Number(person.popularity || 0);
+
+      if (popularity < minPopularity) {
+        continue;
+      }
+
+      const knownCredits =
+        await getKnownCreditsNumber(person.id);
+
+      if (knownCredits < minCredits) {
+        continue;
+      }
+
+      matches.push({
+        name: person.name,
+        id: person.id,
+        knownFor: person.known_for_department,
+        knownCredits,
+        popularity
+      });
+
+      if (matches.length >= 50) {
+        break;
+      }
+    }
+
+    if (matches.length >= 50) {
+      break;
+    }
+  }
+
+  matches.forEach((person, index) => {
+    rows.push([
+      index + 1,
+      person.name,
+      person.id,
+      person.knownFor,
+      person.knownCredits,
+      person.popularity.toFixed(1),
+      `https://www.themoviedb.org/person/${person.id}`
+    ]);
+  });
+
+  const filename =
+    department === "Acting"
+      ? "popular-actors.csv"
+      : "popular-directors.csv";
+
+  downloadCsv(filename, rows);
+
+  status.innerText =
+    `Downloaded ${matches.length} results`;
+}
+
     async function loadCompanies() {
       const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
       companies = await companiesRes.json();
@@ -1384,7 +1556,17 @@ resultsHtml += cards.join("");
           behavior: "smooth"
         });
       });
+document
+  .getElementById("download-popular-actors")
+  .addEventListener("click", () => {
+    downloadPopularPeopleCsv("Acting");
+  });
 
+document
+  .getElementById("download-popular-directors")
+  .addEventListener("click", () => {
+    downloadPopularPeopleCsv("Directing");
+  });
     loadCompanies();
   </script>
 </body>
