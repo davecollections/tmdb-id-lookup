@@ -94,26 +94,46 @@
   render(companies);
 }
 
-    function render(items) {
-      const tbody = document.getElementById("results");
-      const logoUrl = company.logo_path
-  ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
-  : "";
-      tbody.innerHTML = "";
+   function render(items) {
+  const tbody = document.getElementById("results");
+  tbody.innerHTML = "";
 
-      for (const company of items) {
-        const tr = document.createElement("tr");
+  for (const company of items) {
+    const tr = document.createElement("tr");
 
-        tr.innerHTML = `
-          <td>${company.id}</td>
-          <td>${company.name}</td>
-          <td>${company.headquarters || ""}</td>
-          <td><a href="${company.tmdb_url}" target="_blank">Open</a></td>
-        `;
+    const logoUrl = company.logo_path
+      ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
+      : "";
 
-        tbody.appendChild(tr);
-      }
-    }
+    tr.innerHTML = `
+      <td class="logo-cell">
+        ${
+          logoUrl
+            ? `<img src="${logoUrl}" alt="${company.name}" class="studio-logo">`
+            : `<div class="logo-placeholder"></div>`
+        }
+      </td>
+
+      <td>${company.id}</td>
+
+      <td>${company.name}</td>
+
+      <td>${company.titles_count || 0}</td>
+
+      <td>${company.origin_country || ""}</td>
+
+      <td>${company.headquarters || ""}</td>
+
+      <td>
+        <a href="${company.tmdb_url}" target="_blank">
+          Open
+        </a>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  }
+}
 
     document.getElementById("search").addEventListener("input", event => {
       const q = event.target.value.toLowerCase().trim();
