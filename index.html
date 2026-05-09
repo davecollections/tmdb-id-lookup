@@ -84,12 +84,23 @@
   <script>
     let companies = [];
 
-    async function loadCompanies() {
-  const res = await fetch("./data/companies.json");
-  companies = await res.json();
+async function loadCompanies() {
+  const [companiesRes, metaRes] = await Promise.all([
+    fetch("./data/companies.json"),
+    fetch("./data/scan-meta.json")
+  ]);
+
+  companies = await companiesRes.json();
+
+  const meta = await metaRes.json();
 
   document.getElementById("stats").innerText =
     `${companies.length.toLocaleString()} companies cached`;
+
+  const updated = new Date(meta.last_scan.finished_at);
+
+  document.getElementById("last-updated").innerText =
+    `Last updated ${updated.toLocaleString()}`;
 
   render(companies);
 }
