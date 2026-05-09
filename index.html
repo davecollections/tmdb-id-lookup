@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>TMDB Company Lookup</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
     body {
       font-family: Inter, system-ui, sans-serif;
@@ -22,7 +23,7 @@
       background: #151922;
       color: white;
       font-size: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 12px;
     }
 
     table {
@@ -30,154 +31,245 @@
       border-collapse: collapse;
     }
 
-    th, td {
+    th,
+    td {
       padding: 12px;
       border-bottom: 1px solid #222;
       text-align: left;
+      vertical-align: middle;
+    }
+
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th.sortable:hover {
+      color: #8ab4ff;
+    }
+
+    .sort-indicator {
+      opacity: 0.65;
+      margin-left: 4px;
+      font-size: 12px;
     }
 
     a {
       color: #8ab4ff;
     }
-   .logo-cell {
-  width: 76px;
-}
 
-.logo-box {
-  width: 64px;
-  height: 30px;
-  background: #f2f4f7;
-  border: 1px solid #d8dde6;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-}
+    .meta {
+      color: #aeb7c2;
+      font-size: 14px;
+      margin: 6px 0;
+    }
 
-.studio-logo {
-  max-height: 22px;
-  max-width: 56px;
-  object-fit: contain;
-  display: block;
-}
+    #result-count {
+      color: #aeb7c2;
+      font-size: 14px;
+      margin: 0 0 18px;
+    }
 
-.logo-placeholder {
-  width: 64px;
-  height: 30px;
-  background: #1b1f27;
-  border: 1px solid #2b313b;
-  border-radius: 6px;
-}
+    .logo-cell {
+      width: 76px;
+    }
+
+    .logo-box {
+      width: 64px;
+      height: 30px;
+      background: #f2f4f7;
+      border: 1px solid #d8dde6;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+
+    .studio-logo {
+      max-height: 22px;
+      max-width: 56px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .logo-placeholder {
+      width: 64px;
+      height: 30px;
+      background: #1b1f27;
+      border: 1px solid #2b313b;
+      border-radius: 6px;
+    }
   </style>
 </head>
+
 <body>
   <h1>TMDB Company Lookup</h1>
+
   <p>Search cached TMDB company IDs.</p>
-  <p id="stats"></p>
-<p id="last-updated"></p>
-  <p id="scan-stats"></p>
-  <input id="search" placeholder="Search by ID or company name…">
+  <p id="stats" class="meta"></p>
+  <p id="last-updated" class="meta"></p>
+  <p id="scan-stats" class="meta"></p>
+
+  <input id="search" placeholder="Search by ID, company name, country, or headquarters…">
   <p id="result-count"></p>
 
   <table>
     <thead>
       <tr>
-  <th>Logo</th>
-  <th>ID</th>
-  <th>Company</th>
-  <th>Movie Count</th>
-  <th>Country</th>
-  <th>Headquarters</th>
-  <th>TMDB</th>
-</tr>
+        <th>Logo</th>
+        <th class="sortable" data-sort="id">ID <span class="sort-indicator"></span></th>
+        <th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
+        <th class="sortable" data-sort="titles_count">Movie Count <span class="sort-indicator"></span></th>
+        <th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
+        <th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
+        <th>TMDB</th>
+      </tr>
     </thead>
+
     <tbody id="results"></tbody>
   </table>
 
   <script>
     let companies = [];
+    let currentSearch = "";
+    let sortKey = "id";
+    let sortDirection = "asc";
 
-async function loadCompanies() {
-  const companiesRes = await fetch("./data/companies.json");
-  companies = await companiesRes.json();
+    async function loadCompanies() {
+      const companiesRes = await fetch("./data/companies.json");
+      companies = await companiesRes.json();
 
-  document.getElementById("stats").innerText =
-    `${companies.length.toLocaleString()} companies cached`;
+      document.getElementById("stats").innerText =
+        `${companies.length.toLocaleString()} companies cached`;
 
-  try {
-    const metaRes = await fetch("./data/scan-meta.json");
+      try {
+        const metaRes = await fetch("./data/scan-meta.json");
 
-    if (metaRes.ok) {
-      const meta = await metaRes.json();
-      const lastScan = meta.last_scan;
-      const updated = new Date(lastScan.finished_at);
+        if (metaRes.ok) {
+          const meta = await metaRes.json();
+          const lastScan = meta.last_scan;
+          const updated = new Date(lastScan.finished_at);
 
-      document.getElementById("last-updated").innerText =
-        `Last updated ${updated.toLocaleString()}`;
+          document.getElementById("last-updated").innerText =
+            `Last updated ${updated.toLocaleString()}`;
 
-      document.getElementById("scan-stats").innerText =
-  `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
-    }
-  } catch (error) {
-    console.warn("scan-meta.json not available yet");
-  }
-
-  render(companies);
-}
-
-   function render(items) {
-  const tbody = document.getElementById("results");
-  tbody.innerHTML = "";
-     document.getElementById("result-count").innerText =
-  `Showing ${items.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
-
-  for (const company of items) {
-    const tr = document.createElement("tr");
-
-    const logoUrl = company.logo_path
-      ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
-      : "";
-
-    tr.innerHTML = `
-      <td class="logo-cell">
-        ${
-logoUrl
-  ? `<div class="logo-box"><img src="${logoUrl}" alt="${company.name}" class="studio-logo"></div>`
-  : `<div class="logo-placeholder"></div>`
+          document.getElementById("scan-stats").innerText =
+            `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
         }
-      </td>
+      } catch (error) {
+        console.warn("scan-meta.json not available yet");
+      }
 
-      <td>${company.id}</td>
+      applyFiltersAndSort();
+    }
 
-      <td>${company.name}</td>
+    function getSortValue(company, key) {
+      const value = company[key];
 
-      <td>${company.titles_count || 0}</td>
+      if (key === "id" || key === "titles_count") {
+        return Number(value || 0);
+      }
 
-      <td>${company.origin_country || ""}</td>
+      return String(value || "").toLowerCase();
+    }
 
-      <td>${company.headquarters || ""}</td>
+    function applyFiltersAndSort() {
+      const query = currentSearch.toLowerCase().trim();
 
-      <td>
-        <a href="${company.tmdb_url}" target="_blank">
-          Open
-        </a>
-      </td>
-    `;
+      let filtered = companies.filter(company => {
+        return (
+          String(company.id).includes(query) ||
+          String(company.name || "").toLowerCase().includes(query) ||
+          String(company.origin_country || "").toLowerCase().includes(query) ||
+          String(company.headquarters || "").toLowerCase().includes(query)
+        );
+      });
 
-    tbody.appendChild(tr);
-  }
-}
+      filtered.sort((a, b) => {
+        const aValue = getSortValue(a, sortKey);
+        const bValue = getSortValue(b, sortKey);
 
-    document.getElementById("search").addEventListener("input", event => {
-      const q = event.target.value.toLowerCase().trim();
-
-      const filtered = companies.filter(company =>
-        String(company.id).includes(q) ||
-        company.name.toLowerCase().includes(q)
-      );
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return Number(a.id || 0) - Number(b.id || 0);
+      });
 
       render(filtered);
+      updateSortIndicators();
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll("th.sortable").forEach(th => {
+        const indicator = th.querySelector(".sort-indicator");
+
+        if (th.dataset.sort === sortKey) {
+          indicator.textContent = sortDirection === "asc" ? "▲" : "▼";
+        } else {
+          indicator.textContent = "";
+        }
+      });
+    }
+
+    function render(items) {
+      const tbody = document.getElementById("results");
+      tbody.innerHTML = "";
+
+      document.getElementById("result-count").innerText =
+        `Showing ${items.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
+
+      for (const company of items) {
+        const tr = document.createElement("tr");
+
+        const logoUrl = company.logo_path
+          ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
+          : "";
+
+        tr.innerHTML = `
+          <td class="logo-cell">
+            ${
+              logoUrl
+                ? `<div class="logo-box"><img src="${logoUrl}" alt="${company.name}" class="studio-logo"></div>`
+                : `<div class="logo-placeholder"></div>`
+            }
+          </td>
+
+          <td>${company.id}</td>
+          <td>${company.name || ""}</td>
+          <td>${Number(company.titles_count || 0).toLocaleString()}</td>
+          <td>${company.origin_country || ""}</td>
+          <td>${company.headquarters || ""}</td>
+
+          <td>
+            <a href="${company.tmdb_url}" target="_blank" rel="noopener">
+              Open
+            </a>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", event => {
+      currentSearch = event.target.value;
+      applyFiltersAndSort();
+    });
+
+    document.querySelectorAll("th.sortable").forEach(th => {
+      th.addEventListener("click", () => {
+        const selectedSortKey = th.dataset.sort;
+
+        if (sortKey === selectedSortKey) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortKey = selectedSortKey;
+          sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
+        }
+
+        applyFiltersAndSort();
+      });
     });
 
     loadCompanies();
