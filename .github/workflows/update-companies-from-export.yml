@@ -32,10 +32,9 @@ jobs:
       - name: Fetch TMDB companies from daily export
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-        run: |
-          node scripts/fetch-companies-from-export.mjs \
-            ${{ github.event.inputs.offset }} \
-            ${{ github.event.inputs.limit }}
+          OFFSET: ${{ github.event.inputs.offset }}
+          LIMIT: ${{ github.event.inputs.limit }}
+        run: node scripts/fetch-companies-from-export.mjs
 
       - name: Commit updated company data
         run: |
