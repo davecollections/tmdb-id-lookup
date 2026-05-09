@@ -114,8 +114,8 @@ const companies = Array
   .sort((a, b) => a.id - b.id);
 
 await fs.writeFile(
-  META_PATH,
-  JSON.stringify({ last_scan: stats }, null, 2)
+  JSON_PATH,
+  JSON.stringify(companies, null, 2)
 );
 
 const csvHeaders = [
