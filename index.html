@@ -854,8 +854,19 @@
       document.getElementById("page-status-bottom").innerText =
         `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
-      document.getElementById("result-count").innerText =
-        `Showing ${filteredCompanies.length.toLocaleString()} of ${companies.length.toLocaleString()} companies`;
+let startItem = 1;
+let endItem = filteredCompanies.length;
+
+if (rowsPerPage !== "all") {
+  startItem = ((currentPage - 1) * rowsPerPage) + 1;
+  endItem = Math.min(
+    currentPage * rowsPerPage,
+    filteredCompanies.length
+  );
+}
+
+document.getElementById("result-count").innerText =
+  `Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${filteredCompanies.length.toLocaleString()} companies`;
     }
 
     function render(items) {
