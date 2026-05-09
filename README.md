@@ -24,14 +24,18 @@ Movie counts are based on TMDB movie credit/discover results and are intended as
 
 ## Collection lookup
 
-The collection lookup uses the TMDB API directly.
+The collection lookup uses the TMDB API directly and searches **movie collections only**.
 
-Example searches:
+In TMDB, a collection usually means a franchise or grouped movie series, not an individual movie. This means a search for a standalone movie may return no results, even if the movie exists on TMDB.
+
+For example, searches like these are more likely to return collection results:
 
 - Harry Potter
 - Lord of the Rings
 - Jurassic Park
 - Mission Impossible
+
+A standalone movie title may not return anything unless TMDB has it grouped as part of an official movie collection.
 
 The tool returns matching TMDB collection IDs, poster previews, movie counts, and direct TMDB links.
 
