@@ -1,0 +1,12 @@
+{
+  "last_scan": {
+    "start_id": 1,
+    "end_id": 50,
+    "checked": 50,
+    "found": 47,
+    "missing": 3,
+    "started_at": "2026-05-09T06:33:45.849Z",
+    "total_cached": 461,
+    "finished_at": "2026-05-09T06:33:53.138Z"
+  }
+}
