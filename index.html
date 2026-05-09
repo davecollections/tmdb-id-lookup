@@ -64,6 +64,7 @@
   <p>Search cached TMDB company IDs.</p>
   <p id="stats"></p>
 <p id="last-updated"></p>
+  <p id="scan-stats"></p>
   <input id="search" placeholder="Search by ID or company name…">
 
   <table>
@@ -95,12 +96,17 @@ async function loadCompanies() {
   const meta = await metaRes.json();
 
   document.getElementById("stats").innerText =
-    `${companies.length.toLocaleString()} companies cached`;
+  `${companies.length.toLocaleString()} companies cached`;
 
-  const updated = new Date(meta.last_scan.finished_at);
+const lastScan = meta.last_scan;
 
-  document.getElementById("last-updated").innerText =
-    `Last updated ${updated.toLocaleString()}`;
+const updated = new Date(lastScan.finished_at);
+
+document.getElementById("last-updated").innerText =
+  `Last updated ${updated.toLocaleString()}`;
+
+document.getElementById("scan-stats").innerText =
+  `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Found ${lastScan.found.toLocaleString()} | Missing ${lastScan.missing.toLocaleString()}`;
 
   render(companies);
 }
