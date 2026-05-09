@@ -10,7 +10,7 @@
     "parent_company": "",
     "titles_count": 104,
     "tmdb_url": "https://www.themoviedb.org/company/1",
-    "updated_at": "2026-05-09T07:32:50.640Z"
+    "updated_at": "2026-05-09T11:49:51.105Z"
   },
   {
     "id": 2,
@@ -21,9 +21,9 @@
     "logo_path": "/wdrCwmRnLFJhEoH8GSfymY85KHT.png",
     "origin_country": "US",
     "parent_company": "",
-    "titles_count": 382,
+    "titles_count": 381,
     "tmdb_url": "https://www.themoviedb.org/company/2",
-    "updated_at": "2026-05-09T07:32:50.957Z"
+    "updated_at": "2026-05-09T11:49:51.350Z"
   },
   {
     "id": 3,
@@ -36,7 +36,7 @@
     "parent_company": "Walt Disney Pictures",
     "titles_count": 135,
     "tmdb_url": "https://www.themoviedb.org/company/3",
-    "updated_at": "2026-05-09T07:32:51.288Z"
+    "updated_at": "2026-05-09T11:49:51.526Z"
   },
   {
     "id": 4,
@@ -47,9 +47,9 @@
     "logo_path": "/jay6WcMgagAklUt7i9Euwj1pzTF.png",
     "origin_country": "US",
     "parent_company": "Viacom International",
-    "titles_count": 2836,
+    "titles_count": 2837,
     "tmdb_url": "https://www.themoviedb.org/company/4",
-    "updated_at": "2026-05-09T07:32:51.607Z"
+    "updated_at": "2026-05-09T11:49:51.774Z"
   },
   {
     "id": 5,
@@ -62,7 +62,7 @@
     "parent_company": "",
     "titles_count": 2988,
     "tmdb_url": "https://www.themoviedb.org/company/5",
-    "updated_at": "2026-05-09T07:32:51.964Z"
+    "updated_at": "2026-05-09T11:49:51.975Z"
   },
   {
     "id": 6,
@@ -75,7 +75,7 @@
     "parent_company": "",
     "titles_count": 1143,
     "tmdb_url": "https://www.themoviedb.org/company/6",
-    "updated_at": "2026-05-09T07:32:52.280Z"
+    "updated_at": "2026-05-09T11:49:52.211Z"
   },
   {
     "id": 7,
@@ -88,7 +88,7 @@
     "parent_company": "",
     "titles_count": 130,
     "tmdb_url": "https://www.themoviedb.org/company/7",
-    "updated_at": "2026-05-09T07:32:52.632Z"
+    "updated_at": "2026-05-09T11:49:52.410Z"
   },
   {
     "id": 8,
@@ -101,7 +101,7 @@
     "parent_company": "New Line Cinema",
     "titles_count": 42,
     "tmdb_url": "https://www.themoviedb.org/company/8",
-    "updated_at": "2026-05-09T07:32:52.961Z"
+    "updated_at": "2026-05-09T11:49:52.569Z"
   },
   {
     "id": 9,
@@ -114,7 +114,7 @@
     "parent_company": "",
     "titles_count": 769,
     "tmdb_url": "https://www.themoviedb.org/company/9",
-    "updated_at": "2026-05-09T07:32:53.277Z"
+    "updated_at": "2026-05-09T11:49:52.776Z"
   },
   {
     "id": 10,
@@ -127,7 +127,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/10",
-    "updated_at": "2026-05-09T07:32:53.625Z"
+    "updated_at": "2026-05-09T11:49:52.963Z"
   },
   {
     "id": 11,
@@ -140,7 +140,7 @@
     "parent_company": "",
     "titles_count": 29,
     "tmdb_url": "https://www.themoviedb.org/company/11",
-    "updated_at": "2026-05-09T07:32:53.939Z"
+    "updated_at": "2026-05-09T11:49:53.178Z"
   },
   {
     "id": 12,
@@ -153,7 +153,7 @@
     "parent_company": "",
     "titles_count": 431,
     "tmdb_url": "https://www.themoviedb.org/company/12",
-    "updated_at": "2026-05-09T07:32:54.252Z"
+    "updated_at": "2026-05-09T11:49:53.308Z"
   },
   {
     "id": 14,
@@ -166,7 +166,7 @@
     "parent_company": "",
     "titles_count": 302,
     "tmdb_url": "https://www.themoviedb.org/company/14",
-    "updated_at": "2026-05-09T07:32:54.564Z"
+    "updated_at": "2026-05-09T11:49:53.479Z"
   },
   {
     "id": 15,
@@ -179,7 +179,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/15",
-    "updated_at": "2026-05-09T07:32:54.876Z"
+    "updated_at": "2026-05-09T11:49:53.699Z"
   },
   {
     "id": 16,
@@ -192,7 +192,7 @@
     "parent_company": "",
     "titles_count": 119,
     "tmdb_url": "https://www.themoviedb.org/company/16",
-    "updated_at": "2026-05-09T07:32:55.186Z"
+    "updated_at": "2026-05-09T11:49:53.879Z"
   },
   {
     "id": 17,
@@ -205,7 +205,7 @@
     "parent_company": "Time Warner",
     "titles_count": 55,
     "tmdb_url": "https://www.themoviedb.org/company/17",
-    "updated_at": "2026-05-09T07:32:55.502Z"
+    "updated_at": "2026-05-09T11:49:54.036Z"
   },
   {
     "id": 18,
@@ -218,7 +218,7 @@
     "parent_company": "",
     "titles_count": 34,
     "tmdb_url": "https://www.themoviedb.org/company/18",
-    "updated_at": "2026-05-09T07:32:55.812Z"
+    "updated_at": "2026-05-09T11:49:54.251Z"
   },
   {
     "id": 19,
@@ -231,7 +231,7 @@
     "parent_company": "",
     "titles_count": 40,
     "tmdb_url": "https://www.themoviedb.org/company/19",
-    "updated_at": "2026-05-09T07:32:56.126Z"
+    "updated_at": "2026-05-09T11:49:54.420Z"
   },
   {
     "id": 20,
@@ -244,7 +244,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/20",
-    "updated_at": "2026-05-09T07:32:56.438Z"
+    "updated_at": "2026-05-09T11:49:54.668Z"
   },
   {
     "id": 21,
@@ -257,7 +257,7 @@
     "parent_company": "Sony Pictures",
     "titles_count": 2862,
     "tmdb_url": "https://www.themoviedb.org/company/21",
-    "updated_at": "2026-05-09T07:32:56.754Z"
+    "updated_at": "2026-05-09T11:49:54.865Z"
   },
   {
     "id": 22,
@@ -270,7 +270,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/22",
-    "updated_at": "2026-05-09T07:32:57.122Z"
+    "updated_at": "2026-05-09T11:49:55.052Z"
   },
   {
     "id": 23,
@@ -283,7 +283,7 @@
     "parent_company": "",
     "titles_count": 161,
     "tmdb_url": "https://www.themoviedb.org/company/23",
-    "updated_at": "2026-05-09T07:32:57.436Z"
+    "updated_at": "2026-05-09T11:49:55.295Z"
   },
   {
     "id": 24,
@@ -296,7 +296,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/24",
-    "updated_at": "2026-05-09T07:32:57.741Z"
+    "updated_at": "2026-05-09T11:49:55.453Z"
   },
   {
     "id": 25,
@@ -309,7 +309,7 @@
     "parent_company": "",
     "titles_count": 1674,
     "tmdb_url": "https://www.themoviedb.org/company/25",
-    "updated_at": "2026-05-09T07:32:58.061Z"
+    "updated_at": "2026-05-09T11:49:55.593Z"
   },
   {
     "id": 26,
@@ -322,7 +322,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/26",
-    "updated_at": "2026-05-09T07:32:58.364Z"
+    "updated_at": "2026-05-09T11:49:55.781Z"
   },
   {
     "id": 28,
@@ -335,7 +335,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/28",
-    "updated_at": "2026-05-09T07:32:58.672Z"
+    "updated_at": "2026-05-09T11:49:55.949Z"
   },
   {
     "id": 29,
@@ -348,7 +348,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/29",
-    "updated_at": "2026-05-09T07:32:58.985Z"
+    "updated_at": "2026-05-09T11:49:56.106Z"
   },
   {
     "id": 30,
@@ -361,7 +361,7 @@
     "parent_company": "",
     "titles_count": 27,
     "tmdb_url": "https://www.themoviedb.org/company/30",
-    "updated_at": "2026-05-09T07:32:59.301Z"
+    "updated_at": "2026-05-09T11:49:56.343Z"
   },
   {
     "id": 31,
@@ -374,7 +374,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/31",
-    "updated_at": "2026-05-09T07:32:59.610Z"
+    "updated_at": "2026-05-09T11:49:56.544Z"
   },
   {
     "id": 32,
@@ -387,7 +387,7 @@
     "parent_company": "",
     "titles_count": 17,
     "tmdb_url": "https://www.themoviedb.org/company/32",
-    "updated_at": "2026-05-09T07:32:59.960Z"
+    "updated_at": "2026-05-09T11:49:56.744Z"
   },
   {
     "id": 33,
@@ -400,7 +400,7 @@
     "parent_company": "",
     "titles_count": 2754,
     "tmdb_url": "https://www.themoviedb.org/company/33",
-    "updated_at": "2026-05-09T07:33:00.311Z"
+    "updated_at": "2026-05-09T11:49:56.915Z"
   },
   {
     "id": 34,
@@ -413,7 +413,7 @@
     "parent_company": "",
     "titles_count": 149,
     "tmdb_url": "https://www.themoviedb.org/company/34",
-    "updated_at": "2026-05-09T07:33:00.626Z"
+    "updated_at": "2026-05-09T11:49:57.107Z"
   },
   {
     "id": 35,
@@ -426,7 +426,7 @@
     "parent_company": "",
     "titles_count": 84,
     "tmdb_url": "https://www.themoviedb.org/company/35",
-    "updated_at": "2026-05-09T07:33:00.997Z"
+    "updated_at": "2026-05-09T11:49:57.247Z"
   },
   {
     "id": 37,
@@ -439,7 +439,7 @@
     "parent_company": "",
     "titles_count": 36,
     "tmdb_url": "https://www.themoviedb.org/company/37",
-    "updated_at": "2026-05-09T07:33:01.414Z"
+    "updated_at": "2026-05-09T11:49:57.403Z"
   },
   {
     "id": 38,
@@ -452,7 +452,7 @@
     "parent_company": "",
     "titles_count": 117,
     "tmdb_url": "https://www.themoviedb.org/company/38",
-    "updated_at": "2026-05-09T07:33:01.733Z"
+    "updated_at": "2026-05-09T11:49:57.607Z"
   },
   {
     "id": 39,
@@ -465,7 +465,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/39",
-    "updated_at": "2026-05-09T07:33:02.074Z"
+    "updated_at": "2026-05-09T11:49:57.775Z"
   },
   {
     "id": 40,
@@ -478,7 +478,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/40",
-    "updated_at": "2026-05-09T07:33:02.384Z"
+    "updated_at": "2026-05-09T11:49:58.001Z"
   },
   {
     "id": 41,
@@ -491,7 +491,7 @@
     "parent_company": "",
     "titles_count": 136,
     "tmdb_url": "https://www.themoviedb.org/company/41",
-    "updated_at": "2026-05-09T07:33:02.770Z"
+    "updated_at": "2026-05-09T11:49:58.156Z"
   },
   {
     "id": 42,
@@ -504,7 +504,7 @@
     "parent_company": "",
     "titles_count": 27,
     "tmdb_url": "https://www.themoviedb.org/company/42",
-    "updated_at": "2026-05-09T07:33:03.082Z"
+    "updated_at": "2026-05-09T11:49:58.359Z"
   },
   {
     "id": 43,
@@ -517,7 +517,7 @@
     "parent_company": "",
     "titles_count": 123,
     "tmdb_url": "https://www.themoviedb.org/company/43",
-    "updated_at": "2026-05-09T07:33:03.398Z"
+    "updated_at": "2026-05-09T11:49:58.560Z"
   },
   {
     "id": 44,
@@ -530,7 +530,7 @@
     "parent_company": "",
     "titles_count": 16,
     "tmdb_url": "https://www.themoviedb.org/company/44",
-    "updated_at": "2026-05-09T07:33:03.708Z"
+    "updated_at": "2026-05-09T11:49:58.729Z"
   },
   {
     "id": 45,
@@ -543,7 +543,7 @@
     "parent_company": "",
     "titles_count": 55,
     "tmdb_url": "https://www.themoviedb.org/company/45",
-    "updated_at": "2026-05-09T07:33:04.024Z"
+    "updated_at": "2026-05-09T11:49:58.889Z"
   },
   {
     "id": 46,
@@ -556,7 +556,7 @@
     "parent_company": "",
     "titles_count": 1197,
     "tmdb_url": "https://www.themoviedb.org/company/46",
-    "updated_at": "2026-05-09T07:33:04.337Z"
+    "updated_at": "2026-05-09T11:49:59.132Z"
   },
   {
     "id": 47,
@@ -569,7 +569,7 @@
     "parent_company": "",
     "titles_count": 336,
     "tmdb_url": "https://www.themoviedb.org/company/47",
-    "updated_at": "2026-05-09T07:33:04.696Z"
+    "updated_at": "2026-05-09T11:49:59.332Z"
   },
   {
     "id": 48,
@@ -582,7 +582,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/48",
-    "updated_at": "2026-05-09T07:33:05.008Z"
+    "updated_at": "2026-05-09T11:49:59.541Z"
   },
   {
     "id": 49,
@@ -595,7 +595,7 @@
     "parent_company": "",
     "titles_count": 58,
     "tmdb_url": "https://www.themoviedb.org/company/49",
-    "updated_at": "2026-05-09T07:33:05.328Z"
+    "updated_at": "2026-05-09T11:49:59.777Z"
   },
   {
     "id": 50,
@@ -608,7 +608,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/50",
-    "updated_at": "2026-05-09T07:33:05.636Z"
+    "updated_at": "2026-05-09T11:49:59.971Z"
   },
   {
     "id": 51,
@@ -621,7 +621,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/51",
-    "updated_at": "2026-05-09T07:33:05.980Z"
+    "updated_at": "2026-05-09T11:50:00.194Z"
   },
   {
     "id": 52,
@@ -634,7 +634,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/52",
-    "updated_at": "2026-05-09T07:33:06.281Z"
+    "updated_at": "2026-05-09T11:50:00.390Z"
   },
   {
     "id": 53,
@@ -647,7 +647,7 @@
     "parent_company": "",
     "titles_count": 32,
     "tmdb_url": "https://www.themoviedb.org/company/53",
-    "updated_at": "2026-05-09T07:33:06.593Z"
+    "updated_at": "2026-05-09T11:50:00.617Z"
   },
   {
     "id": 54,
@@ -660,7 +660,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/54",
-    "updated_at": "2026-05-09T07:33:06.901Z"
+    "updated_at": "2026-05-09T11:50:00.812Z"
   },
   {
     "id": 55,
@@ -673,7 +673,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/55",
-    "updated_at": "2026-05-09T07:33:07.217Z"
+    "updated_at": "2026-05-09T11:50:01.013Z"
   },
   {
     "id": 56,
@@ -686,7 +686,7 @@
     "parent_company": "",
     "titles_count": 128,
     "tmdb_url": "https://www.themoviedb.org/company/56",
-    "updated_at": "2026-05-09T07:33:07.538Z"
+    "updated_at": "2026-05-09T11:50:01.212Z"
   },
   {
     "id": 57,
@@ -699,7 +699,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/57",
-    "updated_at": "2026-05-09T07:33:07.843Z"
+    "updated_at": "2026-05-09T11:50:01.433Z"
   },
   {
     "id": 58,
@@ -712,7 +712,7 @@
     "parent_company": "",
     "titles_count": 46,
     "tmdb_url": "https://www.themoviedb.org/company/58",
-    "updated_at": "2026-05-09T07:33:08.158Z"
+    "updated_at": "2026-05-09T11:50:01.778Z"
   },
   {
     "id": 59,
@@ -725,7 +725,7 @@
     "parent_company": "",
     "titles_count": 16,
     "tmdb_url": "https://www.themoviedb.org/company/59",
-    "updated_at": "2026-05-09T07:33:08.474Z"
+    "updated_at": "2026-05-09T11:50:02.005Z"
   },
   {
     "id": 60,
@@ -738,7 +738,7 @@
     "parent_company": "Metro-Goldwyn-Mayer",
     "titles_count": 656,
     "tmdb_url": "https://www.themoviedb.org/company/60",
-    "updated_at": "2026-05-09T07:33:08.792Z"
+    "updated_at": "2026-05-09T11:50:02.157Z"
   },
   {
     "id": 62,
@@ -751,7 +751,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/62",
-    "updated_at": "2026-05-09T07:33:09.114Z"
+    "updated_at": "2026-05-09T11:50:02.347Z"
   },
   {
     "id": 64,
@@ -764,7 +764,7 @@
     "parent_company": "",
     "titles_count": 72,
     "tmdb_url": "https://www.themoviedb.org/company/64",
-    "updated_at": "2026-05-09T07:33:09.490Z"
+    "updated_at": "2026-05-09T11:50:02.548Z"
   },
   {
     "id": 65,
@@ -777,7 +777,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/65",
-    "updated_at": "2026-05-09T07:33:09.796Z"
+    "updated_at": "2026-05-09T11:50:02.727Z"
   },
   {
     "id": 66,
@@ -790,7 +790,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/66",
-    "updated_at": "2026-05-09T07:33:10.101Z"
+    "updated_at": "2026-05-09T11:50:02.954Z"
   },
   {
     "id": 67,
@@ -803,7 +803,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/67",
-    "updated_at": "2026-05-09T07:33:10.409Z"
+    "updated_at": "2026-05-09T11:50:03.190Z"
   },
   {
     "id": 68,
@@ -816,7 +816,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/68",
-    "updated_at": "2026-05-09T07:33:10.716Z"
+    "updated_at": "2026-05-09T11:50:03.384Z"
   },
   {
     "id": 69,
@@ -829,7 +829,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/69",
-    "updated_at": "2026-05-09T07:33:11.030Z"
+    "updated_at": "2026-05-09T11:50:03.628Z"
   },
   {
     "id": 70,
@@ -842,7 +842,7 @@
     "parent_company": "",
     "titles_count": 93,
     "tmdb_url": "https://www.themoviedb.org/company/70",
-    "updated_at": "2026-05-09T07:33:11.354Z"
+    "updated_at": "2026-05-09T11:50:03.832Z"
   },
   {
     "id": 71,
@@ -855,7 +855,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/71",
-    "updated_at": "2026-05-09T07:33:11.664Z"
+    "updated_at": "2026-05-09T11:50:04.032Z"
   },
   {
     "id": 72,
@@ -868,7 +868,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/72",
-    "updated_at": "2026-05-09T07:33:11.972Z"
+    "updated_at": "2026-05-09T11:50:04.208Z"
   },
   {
     "id": 73,
@@ -881,7 +881,7 @@
     "parent_company": "",
     "titles_count": 47,
     "tmdb_url": "https://www.themoviedb.org/company/73",
-    "updated_at": "2026-05-09T07:33:12.284Z"
+    "updated_at": "2026-05-09T11:50:04.385Z"
   },
   {
     "id": 74,
@@ -894,7 +894,7 @@
     "parent_company": "",
     "titles_count": 45,
     "tmdb_url": "https://www.themoviedb.org/company/74",
-    "updated_at": "2026-05-09T07:33:12.635Z"
+    "updated_at": "2026-05-09T11:50:04.582Z"
   },
   {
     "id": 75,
@@ -907,7 +907,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/75",
-    "updated_at": "2026-05-09T07:33:12.983Z"
+    "updated_at": "2026-05-09T11:50:04.784Z"
   },
   {
     "id": 76,
@@ -920,7 +920,7 @@
     "parent_company": "",
     "titles_count": 224,
     "tmdb_url": "https://www.themoviedb.org/company/76",
-    "updated_at": "2026-05-09T07:33:13.295Z"
+    "updated_at": "2026-05-09T11:50:05.003Z"
   },
   {
     "id": 77,
@@ -933,7 +933,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/77",
-    "updated_at": "2026-05-09T07:33:13.605Z"
+    "updated_at": "2026-05-09T11:50:05.209Z"
   },
   {
     "id": 78,
@@ -946,7 +946,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/78",
-    "updated_at": "2026-05-09T07:33:13.908Z"
+    "updated_at": "2026-05-09T11:50:05.421Z"
   },
   {
     "id": 79,
@@ -959,7 +959,7 @@
     "parent_company": "",
     "titles_count": 130,
     "tmdb_url": "https://www.themoviedb.org/company/79",
-    "updated_at": "2026-05-09T07:33:14.219Z"
+    "updated_at": "2026-05-09T11:50:05.620Z"
   },
   {
     "id": 80,
@@ -972,7 +972,7 @@
     "parent_company": "",
     "titles_count": 21,
     "tmdb_url": "https://www.themoviedb.org/company/80",
-    "updated_at": "2026-05-09T07:33:14.534Z"
+    "updated_at": "2026-05-09T11:50:05.789Z"
   },
   {
     "id": 81,
@@ -985,7 +985,7 @@
     "parent_company": "",
     "titles_count": 80,
     "tmdb_url": "https://www.themoviedb.org/company/81",
-    "updated_at": "2026-05-09T07:33:14.844Z"
+    "updated_at": "2026-05-09T11:50:05.986Z"
   },
   {
     "id": 82,
@@ -998,7 +998,7 @@
     "parent_company": "",
     "titles_count": 84,
     "tmdb_url": "https://www.themoviedb.org/company/82",
-    "updated_at": "2026-05-09T07:33:15.156Z"
+    "updated_at": "2026-05-09T11:50:06.154Z"
   },
   {
     "id": 83,
@@ -1011,7 +1011,7 @@
     "parent_company": "",
     "titles_count": 759,
     "tmdb_url": "https://www.themoviedb.org/company/83",
-    "updated_at": "2026-05-09T07:33:15.542Z"
+    "updated_at": "2026-05-09T11:50:06.353Z"
   },
   {
     "id": 84,
@@ -1024,7 +1024,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/84",
-    "updated_at": "2026-05-09T07:33:15.855Z"
+    "updated_at": "2026-05-09T11:50:06.503Z"
   },
   {
     "id": 85,
@@ -1037,7 +1037,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/85",
-    "updated_at": "2026-05-09T07:33:16.164Z"
+    "updated_at": "2026-05-09T11:50:06.671Z"
   },
   {
     "id": 86,
@@ -1050,7 +1050,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/86",
-    "updated_at": "2026-05-09T07:33:16.481Z"
+    "updated_at": "2026-05-09T11:50:06.849Z"
   },
   {
     "id": 88,
@@ -1063,7 +1063,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/88",
-    "updated_at": "2026-05-09T07:33:16.790Z"
+    "updated_at": "2026-05-09T11:50:07.081Z"
   },
   {
     "id": 89,
@@ -1076,7 +1076,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/89",
-    "updated_at": "2026-05-09T07:33:17.100Z"
+    "updated_at": "2026-05-09T11:50:07.254Z"
   },
   {
     "id": 90,
@@ -1089,7 +1089,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/90",
-    "updated_at": "2026-05-09T07:33:17.410Z"
+    "updated_at": "2026-05-09T11:50:07.487Z"
   },
   {
     "id": 91,
@@ -1102,7 +1102,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/91",
-    "updated_at": "2026-05-09T07:33:17.725Z"
+    "updated_at": "2026-05-09T11:50:07.687Z"
   },
   {
     "id": 93,
@@ -1115,7 +1115,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/93",
-    "updated_at": "2026-05-09T07:33:18.030Z"
+    "updated_at": "2026-05-09T11:50:07.885Z"
   },
   {
     "id": 94,
@@ -1128,7 +1128,7 @@
     "parent_company": "",
     "titles_count": 786,
     "tmdb_url": "https://www.themoviedb.org/company/94",
-    "updated_at": "2026-05-09T07:33:18.346Z"
+    "updated_at": "2026-05-09T11:50:08.087Z"
   },
   {
     "id": 95,
@@ -1141,7 +1141,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/95",
-    "updated_at": "2026-05-09T07:33:18.658Z"
+    "updated_at": "2026-05-09T11:50:08.287Z"
   },
   {
     "id": 96,
@@ -1154,7 +1154,7 @@
     "parent_company": "",
     "titles_count": 78,
     "tmdb_url": "https://www.themoviedb.org/company/96",
-    "updated_at": "2026-05-09T07:33:19.009Z"
+    "updated_at": "2026-05-09T11:50:08.548Z"
   },
   {
     "id": 97,
@@ -1167,7 +1167,7 @@
     "parent_company": "Warner Bros. Entertainment",
     "titles_count": 97,
     "tmdb_url": "https://www.themoviedb.org/company/97",
-    "updated_at": "2026-05-09T07:33:19.320Z"
+    "updated_at": "2026-05-09T11:50:08.796Z"
   },
   {
     "id": 98,
@@ -1180,7 +1180,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/98",
-    "updated_at": "2026-05-09T07:33:19.624Z"
+    "updated_at": "2026-05-09T11:50:09.012Z"
   },
   {
     "id": 99,
@@ -1193,7 +1193,7 @@
     "parent_company": "",
     "titles_count": 30,
     "tmdb_url": "https://www.themoviedb.org/company/99",
-    "updated_at": "2026-05-09T07:33:19.933Z"
+    "updated_at": "2026-05-09T11:50:09.249Z"
   },
   {
     "id": 100,
@@ -1206,7 +1206,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/100",
-    "updated_at": "2026-05-09T07:33:20.245Z"
+    "updated_at": "2026-05-09T11:50:09.400Z"
   },
   {
     "id": 101,
@@ -1219,7 +1219,7 @@
     "parent_company": "",
     "titles_count": 98,
     "tmdb_url": "https://www.themoviedb.org/company/101",
-    "updated_at": "2026-05-09T07:33:20.563Z"
+    "updated_at": "2026-05-09T11:50:09.603Z"
   },
   {
     "id": 102,
@@ -1232,7 +1232,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/102",
-    "updated_at": "2026-05-09T07:33:20.871Z"
+    "updated_at": "2026-05-09T11:50:09.832Z"
   },
   {
     "id": 104,
@@ -1245,7 +1245,7 @@
     "parent_company": "",
     "titles_count": 1414,
     "tmdb_url": "https://www.themoviedb.org/company/104",
-    "updated_at": "2026-05-09T07:33:21.184Z"
+    "updated_at": "2026-05-09T11:50:10.073Z"
   },
   {
     "id": 105,
@@ -1258,7 +1258,7 @@
     "parent_company": "",
     "titles_count": 45,
     "tmdb_url": "https://www.themoviedb.org/company/105",
-    "updated_at": "2026-05-09T07:33:21.500Z"
+    "updated_at": "2026-05-09T11:50:10.244Z"
   },
   {
     "id": 107,
@@ -1271,7 +1271,7 @@
     "parent_company": "",
     "titles_count": 7,
     "tmdb_url": "https://www.themoviedb.org/company/107",
-    "updated_at": "2026-05-09T07:33:21.849Z"
+    "updated_at": "2026-05-09T11:50:10.411Z"
   },
   {
     "id": 108,
@@ -1284,7 +1284,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/108",
-    "updated_at": "2026-05-09T07:33:22.156Z"
+    "updated_at": "2026-05-09T11:50:10.594Z"
   },
   {
     "id": 109,
@@ -1297,7 +1297,7 @@
     "parent_company": "",
     "titles_count": 26,
     "tmdb_url": "https://www.themoviedb.org/company/109",
-    "updated_at": "2026-05-09T07:33:22.473Z"
+    "updated_at": "2026-05-09T11:50:10.746Z"
   },
   {
     "id": 110,
@@ -1310,7 +1310,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/110",
-    "updated_at": "2026-05-09T07:33:22.783Z"
+    "updated_at": "2026-05-09T11:50:10.917Z"
   },
   {
     "id": 111,
@@ -1323,7 +1323,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/111",
-    "updated_at": "2026-05-09T07:33:23.157Z"
+    "updated_at": "2026-05-09T11:50:11.113Z"
   },
   {
     "id": 113,
@@ -1336,7 +1336,7 @@
     "parent_company": "",
     "titles_count": 25,
     "tmdb_url": "https://www.themoviedb.org/company/113",
-    "updated_at": "2026-05-09T07:33:23.471Z"
+    "updated_at": "2026-05-09T11:50:11.306Z"
   },
   {
     "id": 115,
@@ -1349,7 +1349,7 @@
     "parent_company": "",
     "titles_count": 40,
     "tmdb_url": "https://www.themoviedb.org/company/115",
-    "updated_at": "2026-05-09T07:33:23.781Z"
+    "updated_at": "2026-05-09T11:50:11.478Z"
   },
   {
     "id": 116,
@@ -1362,7 +1362,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/116",
-    "updated_at": "2026-05-09T07:33:24.093Z"
+    "updated_at": "2026-05-09T11:50:11.642Z"
   },
   {
     "id": 117,
@@ -1375,7 +1375,7 @@
     "parent_company": "",
     "titles_count": 148,
     "tmdb_url": "https://www.themoviedb.org/company/117",
-    "updated_at": "2026-05-09T07:33:24.404Z"
+    "updated_at": "2026-05-09T11:50:11.811Z"
   },
   {
     "id": 118,
@@ -1388,7 +1388,7 @@
     "parent_company": "",
     "titles_count": 190,
     "tmdb_url": "https://www.themoviedb.org/company/118",
-    "updated_at": "2026-05-09T07:33:24.718Z"
+    "updated_at": "2026-05-09T11:50:12.010Z"
   },
   {
     "id": 119,
@@ -1401,7 +1401,7 @@
     "parent_company": "",
     "titles_count": 394,
     "tmdb_url": "https://www.themoviedb.org/company/119",
-    "updated_at": "2026-05-09T07:33:25.030Z"
+    "updated_at": "2026-05-09T11:50:12.176Z"
   },
   {
     "id": 120,
@@ -1414,7 +1414,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/120",
-    "updated_at": "2026-05-09T07:33:25.387Z"
+    "updated_at": "2026-05-09T11:50:12.379Z"
   },
   {
     "id": 121,
@@ -1427,7 +1427,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/121",
-    "updated_at": "2026-05-09T07:33:25.698Z"
+    "updated_at": "2026-05-09T11:50:12.554Z"
   },
   {
     "id": 122,
@@ -1440,7 +1440,7 @@
     "parent_company": "",
     "titles_count": 42,
     "tmdb_url": "https://www.themoviedb.org/company/122",
-    "updated_at": "2026-05-09T07:33:26.015Z"
+    "updated_at": "2026-05-09T11:50:12.729Z"
   },
   {
     "id": 123,
@@ -1453,7 +1453,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/123",
-    "updated_at": "2026-05-09T07:33:26.326Z"
+    "updated_at": "2026-05-09T11:50:12.900Z"
   },
   {
     "id": 124,
@@ -1466,7 +1466,7 @@
     "parent_company": "",
     "titles_count": 476,
     "tmdb_url": "https://www.themoviedb.org/company/124",
-    "updated_at": "2026-05-09T07:33:26.640Z"
+    "updated_at": "2026-05-09T11:50:13.099Z"
   },
   {
     "id": 126,
@@ -1479,7 +1479,7 @@
     "parent_company": "",
     "titles_count": 68,
     "tmdb_url": "https://www.themoviedb.org/company/126",
-    "updated_at": "2026-05-09T07:33:26.953Z"
+    "updated_at": "2026-05-09T11:50:13.250Z"
   },
   {
     "id": 128,
@@ -1492,7 +1492,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/128",
-    "updated_at": "2026-05-09T07:33:27.325Z"
+    "updated_at": "2026-05-09T11:50:13.419Z"
   },
   {
     "id": 129,
@@ -1505,7 +1505,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/129",
-    "updated_at": "2026-05-09T07:33:27.635Z"
+    "updated_at": "2026-05-09T11:50:13.622Z"
   },
   {
     "id": 130,
@@ -1518,7 +1518,7 @@
     "parent_company": "",
     "titles_count": 43,
     "tmdb_url": "https://www.themoviedb.org/company/130",
-    "updated_at": "2026-05-09T07:33:27.946Z"
+    "updated_at": "2026-05-09T11:50:13.820Z"
   },
   {
     "id": 131,
@@ -1531,7 +1531,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/131",
-    "updated_at": "2026-05-09T07:33:28.273Z"
+    "updated_at": "2026-05-09T11:50:14.022Z"
   },
   {
     "id": 132,
@@ -1544,7 +1544,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/132",
-    "updated_at": "2026-05-09T07:33:28.577Z"
+    "updated_at": "2026-05-09T11:50:14.223Z"
   },
   {
     "id": 133,
@@ -1557,7 +1557,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/133",
-    "updated_at": "2026-05-09T07:33:28.897Z"
+    "updated_at": "2026-05-09T11:50:14.392Z"
   },
   {
     "id": 134,
@@ -1570,7 +1570,7 @@
     "parent_company": "",
     "titles_count": 31,
     "tmdb_url": "https://www.themoviedb.org/company/134",
-    "updated_at": "2026-05-09T07:33:29.211Z"
+    "updated_at": "2026-05-09T11:50:14.561Z"
   },
   {
     "id": 136,
@@ -1583,7 +1583,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/136",
-    "updated_at": "2026-05-09T07:33:29.516Z"
+    "updated_at": "2026-05-09T11:50:14.759Z"
   },
   {
     "id": 137,
@@ -1596,7 +1596,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/137",
-    "updated_at": "2026-05-09T07:33:29.826Z"
+    "updated_at": "2026-05-09T11:50:14.956Z"
   },
   {
     "id": 138,
@@ -1609,7 +1609,7 @@
     "parent_company": "",
     "titles_count": 29,
     "tmdb_url": "https://www.themoviedb.org/company/138",
-    "updated_at": "2026-05-09T07:33:30.140Z"
+    "updated_at": "2026-05-09T11:50:15.120Z"
   },
   {
     "id": 139,
@@ -1622,7 +1622,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/139",
-    "updated_at": "2026-05-09T07:33:30.454Z"
+    "updated_at": "2026-05-09T11:50:15.288Z"
   },
   {
     "id": 140,
@@ -1635,7 +1635,7 @@
     "parent_company": "",
     "titles_count": 114,
     "tmdb_url": "https://www.themoviedb.org/company/140",
-    "updated_at": "2026-05-09T07:33:30.768Z"
+    "updated_at": "2026-05-09T11:50:15.491Z"
   },
   {
     "id": 141,
@@ -1648,7 +1648,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/141",
-    "updated_at": "2026-05-09T07:33:31.080Z"
+    "updated_at": "2026-05-09T11:50:15.665Z"
   },
   {
     "id": 142,
@@ -1661,7 +1661,7 @@
     "parent_company": "",
     "titles_count": 34,
     "tmdb_url": "https://www.themoviedb.org/company/142",
-    "updated_at": "2026-05-09T07:33:31.391Z"
+    "updated_at": "2026-05-09T11:50:15.869Z"
   },
   {
     "id": 143,
@@ -1674,7 +1674,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/143",
-    "updated_at": "2026-05-09T07:33:31.742Z"
+    "updated_at": "2026-05-09T11:50:16.087Z"
   },
   {
     "id": 144,
@@ -1687,7 +1687,7 @@
     "parent_company": "",
     "titles_count": 50,
     "tmdb_url": "https://www.themoviedb.org/company/144",
-    "updated_at": "2026-05-09T07:33:32.052Z"
+    "updated_at": "2026-05-09T11:50:16.252Z"
   },
   {
     "id": 145,
@@ -1700,7 +1700,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/145",
-    "updated_at": "2026-05-09T07:33:32.359Z"
+    "updated_at": "2026-05-09T11:50:16.447Z"
   },
   {
     "id": 146,
@@ -1713,7 +1713,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/146",
-    "updated_at": "2026-05-09T07:33:32.667Z"
+    "updated_at": "2026-05-09T11:50:16.669Z"
   },
   {
     "id": 147,
@@ -1726,7 +1726,7 @@
     "parent_company": "",
     "titles_count": 39,
     "tmdb_url": "https://www.themoviedb.org/company/147",
-    "updated_at": "2026-05-09T07:33:32.982Z"
+    "updated_at": "2026-05-09T11:50:16.859Z"
   },
   {
     "id": 148,
@@ -1739,7 +1739,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/148",
-    "updated_at": "2026-05-09T07:33:33.291Z"
+    "updated_at": "2026-05-09T11:50:17.035Z"
   },
   {
     "id": 149,
@@ -1752,7 +1752,7 @@
     "parent_company": "",
     "titles_count": 18,
     "tmdb_url": "https://www.themoviedb.org/company/149",
-    "updated_at": "2026-05-09T07:33:33.603Z"
+    "updated_at": "2026-05-09T11:50:17.205Z"
   },
   {
     "id": 150,
@@ -1765,7 +1765,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/150",
-    "updated_at": "2026-05-09T07:33:33.951Z"
+    "updated_at": "2026-05-09T11:50:17.371Z"
   },
   {
     "id": 151,
@@ -1778,7 +1778,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/151",
-    "updated_at": "2026-05-09T07:33:34.258Z"
+    "updated_at": "2026-05-09T11:50:17.543Z"
   },
   {
     "id": 152,
@@ -1791,7 +1791,7 @@
     "parent_company": "",
     "titles_count": 76,
     "tmdb_url": "https://www.themoviedb.org/company/152",
-    "updated_at": "2026-05-09T07:33:34.568Z"
+    "updated_at": "2026-05-09T11:50:17.726Z"
   },
   {
     "id": 153,
@@ -1804,7 +1804,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/153",
-    "updated_at": "2026-05-09T07:33:34.890Z"
+    "updated_at": "2026-05-09T11:50:17.922Z"
   },
   {
     "id": 154,
@@ -1817,7 +1817,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/154",
-    "updated_at": "2026-05-09T07:33:35.194Z"
+    "updated_at": "2026-05-09T11:50:18.118Z"
   },
   {
     "id": 155,
@@ -1830,7 +1830,7 @@
     "parent_company": "",
     "titles_count": 84,
     "tmdb_url": "https://www.themoviedb.org/company/155",
-    "updated_at": "2026-05-09T07:33:35.506Z"
+    "updated_at": "2026-05-09T11:50:18.319Z"
   },
   {
     "id": 156,
@@ -1843,7 +1843,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/156",
-    "updated_at": "2026-05-09T07:33:35.815Z"
+    "updated_at": "2026-05-09T11:50:18.489Z"
   },
   {
     "id": 157,
@@ -1856,7 +1856,7 @@
     "parent_company": "",
     "titles_count": 134,
     "tmdb_url": "https://www.themoviedb.org/company/157",
-    "updated_at": "2026-05-09T07:33:36.125Z"
+    "updated_at": "2026-05-09T11:50:18.692Z"
   },
   {
     "id": 158,
@@ -1869,7 +1869,7 @@
     "parent_company": "",
     "titles_count": 46,
     "tmdb_url": "https://www.themoviedb.org/company/158",
-    "updated_at": "2026-05-09T07:33:36.440Z"
+    "updated_at": "2026-05-09T11:50:18.909Z"
   },
   {
     "id": 159,
@@ -1882,7 +1882,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/159",
-    "updated_at": "2026-05-09T07:33:36.749Z"
+    "updated_at": "2026-05-09T11:50:19.076Z"
   },
   {
     "id": 160,
@@ -1895,7 +1895,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/160",
-    "updated_at": "2026-05-09T07:33:37.062Z"
+    "updated_at": "2026-05-09T11:50:19.245Z"
   },
   {
     "id": 161,
@@ -1908,7 +1908,7 @@
     "parent_company": "",
     "titles_count": 29,
     "tmdb_url": "https://www.themoviedb.org/company/161",
-    "updated_at": "2026-05-09T07:33:37.383Z"
+    "updated_at": "2026-05-09T11:50:19.415Z"
   },
   {
     "id": 162,
@@ -1921,7 +1921,7 @@
     "parent_company": "",
     "titles_count": 906,
     "tmdb_url": "https://www.themoviedb.org/company/162",
-    "updated_at": "2026-05-09T07:33:37.700Z"
+    "updated_at": "2026-05-09T11:50:19.619Z"
   },
   {
     "id": 163,
@@ -1934,7 +1934,7 @@
     "parent_company": "",
     "titles_count": 45,
     "tmdb_url": "https://www.themoviedb.org/company/163",
-    "updated_at": "2026-05-09T07:33:38.020Z"
+    "updated_at": "2026-05-09T11:50:19.856Z"
   },
   {
     "id": 164,
@@ -1947,7 +1947,7 @@
     "parent_company": "",
     "titles_count": 61,
     "tmdb_url": "https://www.themoviedb.org/company/164",
-    "updated_at": "2026-05-09T07:33:38.333Z"
+    "updated_at": "2026-05-09T11:50:20.024Z"
   },
   {
     "id": 165,
@@ -1960,7 +1960,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/165",
-    "updated_at": "2026-05-09T07:33:38.642Z"
+    "updated_at": "2026-05-09T11:50:20.226Z"
   },
   {
     "id": 166,
@@ -1973,7 +1973,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/166",
-    "updated_at": "2026-05-09T07:33:38.957Z"
+    "updated_at": "2026-05-09T11:50:20.410Z"
   },
   {
     "id": 167,
@@ -1986,7 +1986,7 @@
     "parent_company": "",
     "titles_count": 17,
     "tmdb_url": "https://www.themoviedb.org/company/167",
-    "updated_at": "2026-05-09T07:33:39.271Z"
+    "updated_at": "2026-05-09T11:50:20.606Z"
   },
   {
     "id": 168,
@@ -1999,7 +1999,7 @@
     "parent_company": "",
     "titles_count": 241,
     "tmdb_url": "https://www.themoviedb.org/company/168",
-    "updated_at": "2026-05-09T07:33:39.584Z"
+    "updated_at": "2026-05-09T11:50:20.807Z"
   },
   {
     "id": 169,
@@ -2012,7 +2012,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/169",
-    "updated_at": "2026-05-09T07:33:39.896Z"
+    "updated_at": "2026-05-09T11:50:20.982Z"
   },
   {
     "id": 170,
@@ -2025,7 +2025,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/170",
-    "updated_at": "2026-05-09T07:33:40.207Z"
+    "updated_at": "2026-05-09T11:50:21.148Z"
   },
   {
     "id": 171,
@@ -2038,7 +2038,7 @@
     "parent_company": "",
     "titles_count": 66,
     "tmdb_url": "https://www.themoviedb.org/company/171",
-    "updated_at": "2026-05-09T07:33:40.528Z"
+    "updated_at": "2026-05-09T11:50:21.317Z"
   },
   {
     "id": 172,
@@ -2051,7 +2051,7 @@
     "parent_company": "",
     "titles_count": 28,
     "tmdb_url": "https://www.themoviedb.org/company/172",
-    "updated_at": "2026-05-09T07:33:40.840Z"
+    "updated_at": "2026-05-09T11:50:21.620Z"
   },
   {
     "id": 173,
@@ -2064,7 +2064,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/173",
-    "updated_at": "2026-05-09T07:33:41.160Z"
+    "updated_at": "2026-05-09T11:50:21.792Z"
   },
   {
     "id": 174,
@@ -2077,7 +2077,7 @@
     "parent_company": "Warner Bros. Entertainment",
     "titles_count": 3124,
     "tmdb_url": "https://www.themoviedb.org/company/174",
-    "updated_at": "2026-05-09T07:33:41.475Z"
+    "updated_at": "2026-05-09T11:50:21.987Z"
   },
   {
     "id": 175,
@@ -2090,7 +2090,7 @@
     "parent_company": "",
     "titles_count": 28,
     "tmdb_url": "https://www.themoviedb.org/company/175",
-    "updated_at": "2026-05-09T07:33:41.786Z"
+    "updated_at": "2026-05-09T11:50:22.168Z"
   },
   {
     "id": 176,
@@ -2103,7 +2103,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/176",
-    "updated_at": "2026-05-09T07:33:42.091Z"
+    "updated_at": "2026-05-09T11:50:22.340Z"
   },
   {
     "id": 177,
@@ -2116,7 +2116,7 @@
     "parent_company": "Sony Pictures",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/177",
-    "updated_at": "2026-05-09T07:33:42.411Z"
+    "updated_at": "2026-05-09T11:50:22.536Z"
   },
   {
     "id": 178,
@@ -2129,7 +2129,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/178",
-    "updated_at": "2026-05-09T07:33:42.723Z"
+    "updated_at": "2026-05-09T11:50:22.721Z"
   },
   {
     "id": 179,
@@ -2142,7 +2142,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/179",
-    "updated_at": "2026-05-09T07:33:43.031Z"
+    "updated_at": "2026-05-09T11:50:22.914Z"
   },
   {
     "id": 181,
@@ -2155,7 +2155,7 @@
     "parent_company": "",
     "titles_count": 74,
     "tmdb_url": "https://www.themoviedb.org/company/181",
-    "updated_at": "2026-05-09T07:33:43.345Z"
+    "updated_at": "2026-05-09T11:50:23.096Z"
   },
   {
     "id": 182,
@@ -2168,7 +2168,7 @@
     "parent_company": "",
     "titles_count": 34,
     "tmdb_url": "https://www.themoviedb.org/company/182",
-    "updated_at": "2026-05-09T07:33:43.656Z"
+    "updated_at": "2026-05-09T11:50:23.290Z"
   },
   {
     "id": 183,
@@ -2181,7 +2181,7 @@
     "parent_company": "",
     "titles_count": 72,
     "tmdb_url": "https://www.themoviedb.org/company/183",
-    "updated_at": "2026-05-09T07:33:43.967Z"
+    "updated_at": "2026-05-09T11:50:23.488Z"
   },
   {
     "id": 184,
@@ -2194,7 +2194,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/184",
-    "updated_at": "2026-05-09T07:33:44.276Z"
+    "updated_at": "2026-05-09T11:50:23.637Z"
   },
   {
     "id": 185,
@@ -2207,7 +2207,7 @@
     "parent_company": "",
     "titles_count": 15,
     "tmdb_url": "https://www.themoviedb.org/company/185",
-    "updated_at": "2026-05-09T07:33:44.591Z"
+    "updated_at": "2026-05-09T11:50:23.875Z"
   },
   {
     "id": 186,
@@ -2220,7 +2220,7 @@
     "parent_company": "",
     "titles_count": 62,
     "tmdb_url": "https://www.themoviedb.org/company/186",
-    "updated_at": "2026-05-09T07:33:44.915Z"
+    "updated_at": "2026-05-09T11:50:24.066Z"
   },
   {
     "id": 187,
@@ -2233,7 +2233,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/187",
-    "updated_at": "2026-05-09T07:33:45.222Z"
+    "updated_at": "2026-05-09T11:50:24.231Z"
   },
   {
     "id": 188,
@@ -2246,7 +2246,7 @@
     "parent_company": "",
     "titles_count": 33,
     "tmdb_url": "https://www.themoviedb.org/company/188",
-    "updated_at": "2026-05-09T07:33:45.531Z"
+    "updated_at": "2026-05-09T11:50:24.421Z"
   },
   {
     "id": 189,
@@ -2259,7 +2259,7 @@
     "parent_company": "",
     "titles_count": 52,
     "tmdb_url": "https://www.themoviedb.org/company/189",
-    "updated_at": "2026-05-09T07:33:45.848Z"
+    "updated_at": "2026-05-09T11:50:24.588Z"
   },
   {
     "id": 190,
@@ -2272,7 +2272,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/190",
-    "updated_at": "2026-05-09T07:33:46.166Z"
+    "updated_at": "2026-05-09T11:50:24.738Z"
   },
   {
     "id": 191,
@@ -2285,7 +2285,7 @@
     "parent_company": "",
     "titles_count": 102,
     "tmdb_url": "https://www.themoviedb.org/company/191",
-    "updated_at": "2026-05-09T07:33:46.481Z"
+    "updated_at": "2026-05-09T11:50:24.908Z"
   },
   {
     "id": 192,
@@ -2298,7 +2298,7 @@
     "parent_company": "",
     "titles_count": 1736,
     "tmdb_url": "https://www.themoviedb.org/company/192",
-    "updated_at": "2026-05-09T07:33:46.801Z"
+    "updated_at": "2026-05-09T11:50:25.075Z"
   },
   {
     "id": 193,
@@ -2311,7 +2311,7 @@
     "parent_company": "",
     "titles_count": 55,
     "tmdb_url": "https://www.themoviedb.org/company/193",
-    "updated_at": "2026-05-09T07:33:47.122Z"
+    "updated_at": "2026-05-09T11:50:25.283Z"
   },
   {
     "id": 194,
@@ -2324,7 +2324,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/194",
-    "updated_at": "2026-05-09T07:33:47.431Z"
+    "updated_at": "2026-05-09T11:50:25.463Z"
   },
   {
     "id": 195,
@@ -2337,7 +2337,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/195",
-    "updated_at": "2026-05-09T07:33:47.736Z"
+    "updated_at": "2026-05-09T11:50:25.694Z"
   },
   {
     "id": 196,
@@ -2350,7 +2350,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/196",
-    "updated_at": "2026-05-09T07:33:48.083Z"
+    "updated_at": "2026-05-09T11:50:25.895Z"
   },
   {
     "id": 197,
@@ -2363,7 +2363,7 @@
     "parent_company": "",
     "titles_count": 18,
     "tmdb_url": "https://www.themoviedb.org/company/197",
-    "updated_at": "2026-05-09T07:33:48.389Z"
+    "updated_at": "2026-05-09T11:50:26.070Z"
   },
   {
     "id": 199,
@@ -2376,7 +2376,7 @@
     "parent_company": "",
     "titles_count": 12,
     "tmdb_url": "https://www.themoviedb.org/company/199",
-    "updated_at": "2026-05-09T07:33:48.702Z"
+    "updated_at": "2026-05-09T11:50:26.243Z"
   },
   {
     "id": 200,
@@ -2389,7 +2389,7 @@
     "parent_company": "",
     "titles_count": 15,
     "tmdb_url": "https://www.themoviedb.org/company/200",
-    "updated_at": "2026-05-09T07:33:49.008Z"
+    "updated_at": "2026-05-09T11:50:26.413Z"
   },
   {
     "id": 201,
@@ -2402,7 +2402,7 @@
     "parent_company": "",
     "titles_count": 2112,
     "tmdb_url": "https://www.themoviedb.org/company/201",
-    "updated_at": "2026-05-09T07:33:49.322Z"
+    "updated_at": "2026-05-09T11:50:26.602Z"
   },
   {
     "id": 203,
@@ -2415,7 +2415,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/203",
-    "updated_at": "2026-05-09T07:33:49.628Z"
+    "updated_at": "2026-05-09T11:50:26.777Z"
   },
   {
     "id": 204,
@@ -2428,7 +2428,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/204",
-    "updated_at": "2026-05-09T07:33:49.940Z"
+    "updated_at": "2026-05-09T11:50:27.028Z"
   },
   {
     "id": 205,
@@ -2441,7 +2441,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/205",
-    "updated_at": "2026-05-09T07:33:50.250Z"
+    "updated_at": "2026-05-09T11:50:27.208Z"
   },
   {
     "id": 206,
@@ -2454,7 +2454,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/206",
-    "updated_at": "2026-05-09T07:33:50.567Z"
+    "updated_at": "2026-05-09T11:50:27.372Z"
   },
   {
     "id": 207,
@@ -2467,7 +2467,7 @@
     "parent_company": "",
     "titles_count": 231,
     "tmdb_url": "https://www.themoviedb.org/company/207",
-    "updated_at": "2026-05-09T07:33:50.885Z"
+    "updated_at": "2026-05-09T11:50:27.564Z"
   },
   {
     "id": 208,
@@ -2480,7 +2480,7 @@
     "parent_company": "",
     "titles_count": 78,
     "tmdb_url": "https://www.themoviedb.org/company/208",
-    "updated_at": "2026-05-09T07:33:51.199Z"
+    "updated_at": "2026-05-09T11:50:27.759Z"
   },
   {
     "id": 209,
@@ -2493,7 +2493,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/209",
-    "updated_at": "2026-05-09T07:33:51.512Z"
+    "updated_at": "2026-05-09T11:50:27.939Z"
   },
   {
     "id": 210,
@@ -2506,7 +2506,7 @@
     "parent_company": "",
     "titles_count": 138,
     "tmdb_url": "https://www.themoviedb.org/company/210",
-    "updated_at": "2026-05-09T07:33:51.866Z"
+    "updated_at": "2026-05-09T11:50:28.105Z"
   },
   {
     "id": 211,
@@ -2519,7 +2519,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/211",
-    "updated_at": "2026-05-09T07:33:52.197Z"
+    "updated_at": "2026-05-09T11:50:28.335Z"
   },
   {
     "id": 212,
@@ -2532,7 +2532,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/212",
-    "updated_at": "2026-05-09T07:33:52.506Z"
+    "updated_at": "2026-05-09T11:50:28.538Z"
   },
   {
     "id": 213,
@@ -2545,7 +2545,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/213",
-    "updated_at": "2026-05-09T07:33:52.810Z"
+    "updated_at": "2026-05-09T11:50:28.706Z"
   },
   {
     "id": 214,
@@ -2558,7 +2558,7 @@
     "parent_company": "",
     "titles_count": 35,
     "tmdb_url": "https://www.themoviedb.org/company/214",
-    "updated_at": "2026-05-09T07:33:53.126Z"
+    "updated_at": "2026-05-09T11:50:28.917Z"
   },
   {
     "id": 215,
@@ -2571,7 +2571,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/215",
-    "updated_at": "2026-05-09T07:33:53.437Z"
+    "updated_at": "2026-05-09T11:50:29.119Z"
   },
   {
     "id": 216,
@@ -2584,7 +2584,7 @@
     "parent_company": "",
     "titles_count": 23,
     "tmdb_url": "https://www.themoviedb.org/company/216",
-    "updated_at": "2026-05-09T07:33:53.748Z"
+    "updated_at": "2026-05-09T11:50:29.299Z"
   },
   {
     "id": 217,
@@ -2597,7 +2597,7 @@
     "parent_company": "",
     "titles_count": 32,
     "tmdb_url": "https://www.themoviedb.org/company/217",
-    "updated_at": "2026-05-09T07:33:54.061Z"
+    "updated_at": "2026-05-09T11:50:29.481Z"
   },
   {
     "id": 218,
@@ -2610,7 +2610,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/218",
-    "updated_at": "2026-05-09T07:33:54.367Z"
+    "updated_at": "2026-05-09T11:50:29.661Z"
   },
   {
     "id": 219,
@@ -2623,7 +2623,7 @@
     "parent_company": "",
     "titles_count": 81,
     "tmdb_url": "https://www.themoviedb.org/company/219",
-    "updated_at": "2026-05-09T07:33:54.720Z"
+    "updated_at": "2026-05-09T11:50:29.828Z"
   },
   {
     "id": 220,
@@ -2636,7 +2636,7 @@
     "parent_company": "",
     "titles_count": 61,
     "tmdb_url": "https://www.themoviedb.org/company/220",
-    "updated_at": "2026-05-09T07:33:55.034Z"
+    "updated_at": "2026-05-09T11:50:29.996Z"
   },
   {
     "id": 221,
@@ -2649,7 +2649,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/221",
-    "updated_at": "2026-05-09T07:33:55.336Z"
+    "updated_at": "2026-05-09T11:50:30.194Z"
   },
   {
     "id": 222,
@@ -2662,7 +2662,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/222",
-    "updated_at": "2026-05-09T07:33:55.644Z"
+    "updated_at": "2026-05-09T11:50:30.391Z"
   },
   {
     "id": 223,
@@ -2675,7 +2675,7 @@
     "parent_company": "",
     "titles_count": 129,
     "tmdb_url": "https://www.themoviedb.org/company/223",
-    "updated_at": "2026-05-09T07:33:55.998Z"
+    "updated_at": "2026-05-09T11:50:30.541Z"
   },
   {
     "id": 224,
@@ -2688,7 +2688,7 @@
     "parent_company": "",
     "titles_count": 76,
     "tmdb_url": "https://www.themoviedb.org/company/224",
-    "updated_at": "2026-05-09T07:33:56.314Z"
+    "updated_at": "2026-05-09T11:50:30.692Z"
   },
   {
     "id": 225,
@@ -2701,7 +2701,7 @@
     "parent_company": "",
     "titles_count": 43,
     "tmdb_url": "https://www.themoviedb.org/company/225",
-    "updated_at": "2026-05-09T07:33:56.641Z"
+    "updated_at": "2026-05-09T11:50:30.931Z"
   },
   {
     "id": 227,
@@ -2714,7 +2714,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/227",
-    "updated_at": "2026-05-09T07:33:56.955Z"
+    "updated_at": "2026-05-09T11:50:31.098Z"
   },
   {
     "id": 228,
@@ -2727,7 +2727,7 @@
     "parent_company": "",
     "titles_count": 104,
     "tmdb_url": "https://www.themoviedb.org/company/228",
-    "updated_at": "2026-05-09T07:33:57.274Z"
+    "updated_at": "2026-05-09T11:50:31.266Z"
   },
   {
     "id": 229,
@@ -2740,7 +2740,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/229",
-    "updated_at": "2026-05-09T07:33:57.586Z"
+    "updated_at": "2026-05-09T11:50:31.461Z"
   },
   {
     "id": 230,
@@ -2753,7 +2753,7 @@
     "parent_company": "",
     "titles_count": 23,
     "tmdb_url": "https://www.themoviedb.org/company/230",
-    "updated_at": "2026-05-09T07:33:57.934Z"
+    "updated_at": "2026-05-09T11:50:31.628Z"
   },
   {
     "id": 231,
@@ -2766,7 +2766,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/231",
-    "updated_at": "2026-05-09T07:33:58.286Z"
+    "updated_at": "2026-05-09T11:50:31.780Z"
   },
   {
     "id": 232,
@@ -2779,7 +2779,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/232",
-    "updated_at": "2026-05-09T07:33:58.595Z"
+    "updated_at": "2026-05-09T11:50:31.944Z"
   },
   {
     "id": 233,
@@ -2792,7 +2792,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/233",
-    "updated_at": "2026-05-09T07:33:58.901Z"
+    "updated_at": "2026-05-09T11:50:32.120Z"
   },
   {
     "id": 234,
@@ -2805,7 +2805,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/234",
-    "updated_at": "2026-05-09T07:33:59.261Z"
+    "updated_at": "2026-05-09T11:50:32.289Z"
   },
   {
     "id": 235,
@@ -2818,7 +2818,7 @@
     "parent_company": "",
     "titles_count": 576,
     "tmdb_url": "https://www.themoviedb.org/company/235",
-    "updated_at": "2026-05-09T07:33:59.579Z"
+    "updated_at": "2026-05-09T11:50:32.490Z"
   },
   {
     "id": 236,
@@ -2831,7 +2831,7 @@
     "parent_company": "",
     "titles_count": 25,
     "tmdb_url": "https://www.themoviedb.org/company/236",
-    "updated_at": "2026-05-09T07:33:59.889Z"
+    "updated_at": "2026-05-09T11:50:32.715Z"
   },
   {
     "id": 237,
@@ -2844,7 +2844,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/237",
-    "updated_at": "2026-05-09T07:34:00.192Z"
+    "updated_at": "2026-05-09T11:50:32.944Z"
   },
   {
     "id": 239,
@@ -2857,7 +2857,7 @@
     "parent_company": "",
     "titles_count": 258,
     "tmdb_url": "https://www.themoviedb.org/company/239",
-    "updated_at": "2026-05-09T07:34:00.510Z"
+    "updated_at": "2026-05-09T11:50:33.180Z"
   },
   {
     "id": 240,
@@ -2870,7 +2870,7 @@
     "parent_company": "",
     "titles_count": 7,
     "tmdb_url": "https://www.themoviedb.org/company/240",
-    "updated_at": "2026-05-09T07:34:00.859Z"
+    "updated_at": "2026-05-09T11:50:33.332Z"
   },
   {
     "id": 241,
@@ -2883,7 +2883,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/241",
-    "updated_at": "2026-05-09T07:34:01.163Z"
+    "updated_at": "2026-05-09T11:50:33.525Z"
   },
   {
     "id": 242,
@@ -2896,7 +2896,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/242",
-    "updated_at": "2026-05-09T07:34:01.479Z"
+    "updated_at": "2026-05-09T11:50:33.741Z"
   },
   {
     "id": 243,
@@ -2909,7 +2909,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/243",
-    "updated_at": "2026-05-09T07:34:01.827Z"
+    "updated_at": "2026-05-09T11:50:33.938Z"
   },
   {
     "id": 244,
@@ -2922,7 +2922,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/244",
-    "updated_at": "2026-05-09T07:34:02.149Z"
+    "updated_at": "2026-05-09T11:50:34.175Z"
   },
   {
     "id": 245,
@@ -2935,7 +2935,7 @@
     "parent_company": "",
     "titles_count": 17,
     "tmdb_url": "https://www.themoviedb.org/company/245",
-    "updated_at": "2026-05-09T07:34:02.460Z"
+    "updated_at": "2026-05-09T11:50:34.360Z"
   },
   {
     "id": 247,
@@ -2948,7 +2948,7 @@
     "parent_company": "",
     "titles_count": 60,
     "tmdb_url": "https://www.themoviedb.org/company/247",
-    "updated_at": "2026-05-09T07:34:02.771Z"
+    "updated_at": "2026-05-09T11:50:34.525Z"
   },
   {
     "id": 248,
@@ -2961,7 +2961,7 @@
     "parent_company": "",
     "titles_count": 17,
     "tmdb_url": "https://www.themoviedb.org/company/248",
-    "updated_at": "2026-05-09T07:34:03.094Z"
+    "updated_at": "2026-05-09T11:50:34.703Z"
   },
   {
     "id": 249,
@@ -2974,7 +2974,7 @@
     "parent_company": "",
     "titles_count": 32,
     "tmdb_url": "https://www.themoviedb.org/company/249",
-    "updated_at": "2026-05-09T07:34:03.402Z"
+    "updated_at": "2026-05-09T11:50:34.858Z"
   },
   {
     "id": 250,
@@ -2987,7 +2987,7 @@
     "parent_company": "",
     "titles_count": 212,
     "tmdb_url": "https://www.themoviedb.org/company/250",
-    "updated_at": "2026-05-09T07:34:03.714Z"
+    "updated_at": "2026-05-09T11:50:35.106Z"
   },
   {
     "id": 251,
@@ -3000,7 +3000,7 @@
     "parent_company": "",
     "titles_count": 21,
     "tmdb_url": "https://www.themoviedb.org/company/251",
-    "updated_at": "2026-05-09T07:34:04.023Z"
+    "updated_at": "2026-05-09T11:50:35.318Z"
   },
   {
     "id": 252,
@@ -3013,7 +3013,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/252",
-    "updated_at": "2026-05-09T07:34:04.334Z"
+    "updated_at": "2026-05-09T11:50:35.468Z"
   },
   {
     "id": 253,
@@ -3026,7 +3026,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/253",
-    "updated_at": "2026-05-09T07:34:04.640Z"
+    "updated_at": "2026-05-09T11:50:35.641Z"
   },
   {
     "id": 254,
@@ -3039,7 +3039,7 @@
     "parent_company": "",
     "titles_count": 30,
     "tmdb_url": "https://www.themoviedb.org/company/254",
-    "updated_at": "2026-05-09T07:34:04.956Z"
+    "updated_at": "2026-05-09T11:50:35.847Z"
   },
   {
     "id": 255,
@@ -3052,7 +3052,7 @@
     "parent_company": "",
     "titles_count": 46,
     "tmdb_url": "https://www.themoviedb.org/company/255",
-    "updated_at": "2026-05-09T07:34:05.276Z"
+    "updated_at": "2026-05-09T11:50:36.015Z"
   },
   {
     "id": 256,
@@ -3065,7 +3065,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/256",
-    "updated_at": "2026-05-09T07:34:05.584Z"
+    "updated_at": "2026-05-09T11:50:36.253Z"
   },
   {
     "id": 257,
@@ -3078,7 +3078,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/257",
-    "updated_at": "2026-05-09T07:34:05.892Z"
+    "updated_at": "2026-05-09T11:50:36.429Z"
   },
   {
     "id": 258,
@@ -3091,7 +3091,7 @@
     "parent_company": "",
     "titles_count": 69,
     "tmdb_url": "https://www.themoviedb.org/company/258",
-    "updated_at": "2026-05-09T07:34:06.203Z"
+    "updated_at": "2026-05-09T11:50:36.614Z"
   },
   {
     "id": 259,
@@ -3104,7 +3104,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/259",
-    "updated_at": "2026-05-09T07:34:06.515Z"
+    "updated_at": "2026-05-09T11:50:36.784Z"
   },
   {
     "id": 260,
@@ -3117,7 +3117,7 @@
     "parent_company": "",
     "titles_count": 24,
     "tmdb_url": "https://www.themoviedb.org/company/260",
-    "updated_at": "2026-05-09T07:34:06.832Z"
+    "updated_at": "2026-05-09T11:50:36.931Z"
   },
   {
     "id": 262,
@@ -3130,7 +3130,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/262",
-    "updated_at": "2026-05-09T07:34:07.182Z"
+    "updated_at": "2026-05-09T11:50:37.109Z"
   },
   {
     "id": 263,
@@ -3143,7 +3143,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/263",
-    "updated_at": "2026-05-09T07:34:07.490Z"
+    "updated_at": "2026-05-09T11:50:37.304Z"
   },
   {
     "id": 264,
@@ -3156,7 +3156,7 @@
     "parent_company": "",
     "titles_count": 88,
     "tmdb_url": "https://www.themoviedb.org/company/264",
-    "updated_at": "2026-05-09T07:34:07.811Z"
+    "updated_at": "2026-05-09T11:50:37.528Z"
   },
   {
     "id": 265,
@@ -3169,7 +3169,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/265",
-    "updated_at": "2026-05-09T07:34:08.119Z"
+    "updated_at": "2026-05-09T11:50:37.707Z"
   },
   {
     "id": 266,
@@ -3182,7 +3182,7 @@
     "parent_company": "",
     "titles_count": 95,
     "tmdb_url": "https://www.themoviedb.org/company/266",
-    "updated_at": "2026-05-09T07:34:08.435Z"
+    "updated_at": "2026-05-09T11:50:37.881Z"
   },
   {
     "id": 267,
@@ -3195,7 +3195,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/267",
-    "updated_at": "2026-05-09T07:34:08.779Z"
+    "updated_at": "2026-05-09T11:50:38.051Z"
   },
   {
     "id": 271,
@@ -3208,7 +3208,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/271",
-    "updated_at": "2026-05-09T07:34:09.089Z"
+    "updated_at": "2026-05-09T11:50:38.236Z"
   },
   {
     "id": 272,
@@ -3221,7 +3221,7 @@
     "parent_company": "",
     "titles_count": 18,
     "tmdb_url": "https://www.themoviedb.org/company/272",
-    "updated_at": "2026-05-09T07:34:09.422Z"
+    "updated_at": "2026-05-09T11:50:38.450Z"
   },
   {
     "id": 273,
@@ -3234,7 +3234,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/273",
-    "updated_at": "2026-05-09T07:34:09.733Z"
+    "updated_at": "2026-05-09T11:50:38.623Z"
   },
   {
     "id": 274,
@@ -3247,7 +3247,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/274",
-    "updated_at": "2026-05-09T07:34:10.039Z"
+    "updated_at": "2026-05-09T11:50:38.872Z"
   },
   {
     "id": 275,
@@ -3260,7 +3260,7 @@
     "parent_company": "",
     "titles_count": 52,
     "tmdb_url": "https://www.themoviedb.org/company/275",
-    "updated_at": "2026-05-09T07:34:10.353Z"
+    "updated_at": "2026-05-09T11:50:39.070Z"
   },
   {
     "id": 276,
@@ -3273,7 +3273,7 @@
     "parent_company": "",
     "titles_count": 25,
     "tmdb_url": "https://www.themoviedb.org/company/276",
-    "updated_at": "2026-05-09T07:34:10.666Z"
+    "updated_at": "2026-05-09T11:50:39.237Z"
   },
   {
     "id": 277,
@@ -3286,7 +3286,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/277",
-    "updated_at": "2026-05-09T07:34:10.975Z"
+    "updated_at": "2026-05-09T11:50:39.409Z"
   },
   {
     "id": 278,
@@ -3299,7 +3299,7 @@
     "parent_company": "",
     "titles_count": 56,
     "tmdb_url": "https://www.themoviedb.org/company/278",
-    "updated_at": "2026-05-09T07:34:11.286Z"
+    "updated_at": "2026-05-09T11:50:39.577Z"
   },
   {
     "id": 279,
@@ -3312,7 +3312,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/279",
-    "updated_at": "2026-05-09T07:34:11.591Z"
+    "updated_at": "2026-05-09T11:50:39.768Z"
   },
   {
     "id": 280,
@@ -3325,7 +3325,7 @@
     "parent_company": "",
     "titles_count": 52,
     "tmdb_url": "https://www.themoviedb.org/company/280",
-    "updated_at": "2026-05-09T07:34:11.904Z"
+    "updated_at": "2026-05-09T11:50:39.958Z"
   },
   {
     "id": 281,
@@ -3338,7 +3338,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/281",
-    "updated_at": "2026-05-09T07:34:12.214Z"
+    "updated_at": "2026-05-09T11:50:40.145Z"
   },
   {
     "id": 282,
@@ -3351,7 +3351,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/282",
-    "updated_at": "2026-05-09T07:34:12.518Z"
+    "updated_at": "2026-05-09T11:50:40.355Z"
   },
   {
     "id": 283,
@@ -3364,7 +3364,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/283",
-    "updated_at": "2026-05-09T07:34:12.825Z"
+    "updated_at": "2026-05-09T11:50:40.521Z"
   },
   {
     "id": 284,
@@ -3377,7 +3377,7 @@
     "parent_company": "",
     "titles_count": 38,
     "tmdb_url": "https://www.themoviedb.org/company/284",
-    "updated_at": "2026-05-09T07:34:13.162Z"
+    "updated_at": "2026-05-09T11:50:40.690Z"
   },
   {
     "id": 285,
@@ -3390,7 +3390,7 @@
     "parent_company": "",
     "titles_count": 23,
     "tmdb_url": "https://www.themoviedb.org/company/285",
-    "updated_at": "2026-05-09T07:34:13.479Z"
+    "updated_at": "2026-05-09T11:50:40.889Z"
   },
   {
     "id": 286,
@@ -3403,7 +3403,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/286",
-    "updated_at": "2026-05-09T07:34:13.790Z"
+    "updated_at": "2026-05-09T11:50:41.057Z"
   },
   {
     "id": 287,
@@ -3416,7 +3416,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/287",
-    "updated_at": "2026-05-09T07:34:14.095Z"
+    "updated_at": "2026-05-09T11:50:41.256Z"
   },
   {
     "id": 288,
@@ -3429,7 +3429,7 @@
     "parent_company": "",
     "titles_count": 418,
     "tmdb_url": "https://www.themoviedb.org/company/288",
-    "updated_at": "2026-05-09T07:34:14.409Z"
+    "updated_at": "2026-05-09T11:50:41.441Z"
   },
   {
     "id": 290,
@@ -3442,7 +3442,7 @@
     "parent_company": "",
     "titles_count": 160,
     "tmdb_url": "https://www.themoviedb.org/company/290",
-    "updated_at": "2026-05-09T07:34:14.723Z"
+    "updated_at": "2026-05-09T11:50:41.607Z"
   },
   {
     "id": 291,
@@ -3455,7 +3455,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/291",
-    "updated_at": "2026-05-09T07:34:15.065Z"
+    "updated_at": "2026-05-09T11:50:41.798Z"
   },
   {
     "id": 292,
@@ -3468,7 +3468,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/292",
-    "updated_at": "2026-05-09T07:34:15.374Z"
+    "updated_at": "2026-05-09T11:50:41.964Z"
   },
   {
     "id": 293,
@@ -3481,7 +3481,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/293",
-    "updated_at": "2026-05-09T07:34:15.686Z"
+    "updated_at": "2026-05-09T11:50:42.137Z"
   },
   {
     "id": 294,
@@ -3494,7 +3494,7 @@
     "parent_company": "",
     "titles_count": 172,
     "tmdb_url": "https://www.themoviedb.org/company/294",
-    "updated_at": "2026-05-09T07:34:16.059Z"
+    "updated_at": "2026-05-09T11:50:42.357Z"
   },
   {
     "id": 295,
@@ -3507,7 +3507,7 @@
     "parent_company": "",
     "titles_count": 46,
     "tmdb_url": "https://www.themoviedb.org/company/295",
-    "updated_at": "2026-05-09T07:34:16.368Z"
+    "updated_at": "2026-05-09T11:50:42.527Z"
   },
   {
     "id": 296,
@@ -3520,7 +3520,7 @@
     "parent_company": "",
     "titles_count": 470,
     "tmdb_url": "https://www.themoviedb.org/company/296",
-    "updated_at": "2026-05-09T07:34:16.679Z"
+    "updated_at": "2026-05-09T11:50:42.694Z"
   },
   {
     "id": 297,
@@ -3533,7 +3533,7 @@
     "parent_company": "",
     "titles_count": 107,
     "tmdb_url": "https://www.themoviedb.org/company/297",
-    "updated_at": "2026-05-09T07:34:16.990Z"
+    "updated_at": "2026-05-09T11:50:42.878Z"
   },
   {
     "id": 298,
@@ -3546,7 +3546,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/298",
-    "updated_at": "2026-05-09T07:34:17.298Z"
+    "updated_at": "2026-05-09T11:50:43.078Z"
   },
   {
     "id": 299,
@@ -3559,7 +3559,7 @@
     "parent_company": "",
     "titles_count": 591,
     "tmdb_url": "https://www.themoviedb.org/company/299",
-    "updated_at": "2026-05-09T07:34:17.651Z"
+    "updated_at": "2026-05-09T11:50:43.319Z"
   },
   {
     "id": 300,
@@ -3572,7 +3572,7 @@
     "parent_company": "",
     "titles_count": 49,
     "tmdb_url": "https://www.themoviedb.org/company/300",
-    "updated_at": "2026-05-09T07:34:17.961Z"
+    "updated_at": "2026-05-09T11:50:43.540Z"
   },
   {
     "id": 301,
@@ -3585,7 +3585,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/301",
-    "updated_at": "2026-05-09T07:34:18.272Z"
+    "updated_at": "2026-05-09T11:50:43.711Z"
   },
   {
     "id": 302,
@@ -3598,7 +3598,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/302",
-    "updated_at": "2026-05-09T07:34:18.579Z"
+    "updated_at": "2026-05-09T11:50:43.910Z"
   },
   {
     "id": 303,
@@ -3611,7 +3611,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/303",
-    "updated_at": "2026-05-09T07:34:18.925Z"
+    "updated_at": "2026-05-09T11:50:44.078Z"
   },
   {
     "id": 304,
@@ -3624,7 +3624,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/304",
-    "updated_at": "2026-05-09T07:34:19.236Z"
+    "updated_at": "2026-05-09T11:50:44.246Z"
   },
   {
     "id": 305,
@@ -3637,7 +3637,7 @@
     "parent_company": "",
     "titles_count": 189,
     "tmdb_url": "https://www.themoviedb.org/company/305",
-    "updated_at": "2026-05-09T07:34:19.545Z"
+    "updated_at": "2026-05-09T11:50:44.414Z"
   },
   {
     "id": 307,
@@ -3650,7 +3650,7 @@
     "parent_company": "",
     "titles_count": 29,
     "tmdb_url": "https://www.themoviedb.org/company/307",
-    "updated_at": "2026-05-09T07:34:19.861Z"
+    "updated_at": "2026-05-09T11:50:44.631Z"
   },
   {
     "id": 308,
@@ -3663,7 +3663,7 @@
     "parent_company": "",
     "titles_count": 85,
     "tmdb_url": "https://www.themoviedb.org/company/308",
-    "updated_at": "2026-05-09T07:34:20.173Z"
+    "updated_at": "2026-05-09T11:50:44.831Z"
   },
   {
     "id": 309,
@@ -3676,7 +3676,7 @@
     "parent_company": "",
     "titles_count": 101,
     "tmdb_url": "https://www.themoviedb.org/company/309",
-    "updated_at": "2026-05-09T07:34:20.490Z"
+    "updated_at": "2026-05-09T11:50:45.029Z"
   },
   {
     "id": 310,
@@ -3689,7 +3689,7 @@
     "parent_company": "",
     "titles_count": 1397,
     "tmdb_url": "https://www.themoviedb.org/company/310",
-    "updated_at": "2026-05-09T07:34:20.804Z"
+    "updated_at": "2026-05-09T11:50:45.225Z"
   },
   {
     "id": 311,
@@ -3702,7 +3702,7 @@
     "parent_company": "",
     "titles_count": 259,
     "tmdb_url": "https://www.themoviedb.org/company/311",
-    "updated_at": "2026-05-09T07:34:21.117Z"
+    "updated_at": "2026-05-09T11:50:45.402Z"
   },
   {
     "id": 312,
@@ -3715,7 +3715,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/312",
-    "updated_at": "2026-05-09T07:34:21.427Z"
+    "updated_at": "2026-05-09T11:50:45.571Z"
   },
   {
     "id": 313,
@@ -3728,7 +3728,7 @@
     "parent_company": "",
     "titles_count": 81,
     "tmdb_url": "https://www.themoviedb.org/company/313",
-    "updated_at": "2026-05-09T07:34:21.744Z"
+    "updated_at": "2026-05-09T11:50:45.792Z"
   },
   {
     "id": 314,
@@ -3741,7 +3741,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/314",
-    "updated_at": "2026-05-09T07:34:22.050Z"
+    "updated_at": "2026-05-09T11:50:45.993Z"
   },
   {
     "id": 315,
@@ -3754,7 +3754,7 @@
     "parent_company": "",
     "titles_count": 28,
     "tmdb_url": "https://www.themoviedb.org/company/315",
-    "updated_at": "2026-05-09T07:34:22.368Z"
+    "updated_at": "2026-05-09T11:50:46.189Z"
   },
   {
     "id": 316,
@@ -3767,7 +3767,7 @@
     "parent_company": "",
     "titles_count": 23,
     "tmdb_url": "https://www.themoviedb.org/company/316",
-    "updated_at": "2026-05-09T07:34:22.685Z"
+    "updated_at": "2026-05-09T11:50:46.404Z"
   },
   {
     "id": 317,
@@ -3780,7 +3780,7 @@
     "parent_company": "",
     "titles_count": 284,
     "tmdb_url": "https://www.themoviedb.org/company/317",
-    "updated_at": "2026-05-09T07:34:23.000Z"
+    "updated_at": "2026-05-09T11:50:46.604Z"
   },
   {
     "id": 318,
@@ -3793,7 +3793,7 @@
     "parent_company": "",
     "titles_count": 235,
     "tmdb_url": "https://www.themoviedb.org/company/318",
-    "updated_at": "2026-05-09T07:34:23.312Z"
+    "updated_at": "2026-05-09T11:50:46.756Z"
   },
   {
     "id": 319,
@@ -3806,7 +3806,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/319",
-    "updated_at": "2026-05-09T07:34:23.623Z"
+    "updated_at": "2026-05-09T11:50:46.943Z"
   },
   {
     "id": 320,
@@ -3819,7 +3819,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/320",
-    "updated_at": "2026-05-09T07:34:23.930Z"
+    "updated_at": "2026-05-09T11:50:47.095Z"
   },
   {
     "id": 321,
@@ -3832,7 +3832,7 @@
     "parent_company": "",
     "titles_count": 42,
     "tmdb_url": "https://www.themoviedb.org/company/321",
-    "updated_at": "2026-05-09T07:34:24.246Z"
+    "updated_at": "2026-05-09T11:50:47.262Z"
   },
   {
     "id": 322,
@@ -3845,7 +3845,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/322",
-    "updated_at": "2026-05-09T07:34:24.555Z"
+    "updated_at": "2026-05-09T11:50:47.458Z"
   },
   {
     "id": 323,
@@ -3858,7 +3858,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/323",
-    "updated_at": "2026-05-09T07:34:24.868Z"
+    "updated_at": "2026-05-09T11:50:47.633Z"
   },
   {
     "id": 324,
@@ -3871,7 +3871,7 @@
     "parent_company": "",
     "titles_count": 82,
     "tmdb_url": "https://www.themoviedb.org/company/324",
-    "updated_at": "2026-05-09T07:34:25.181Z"
+    "updated_at": "2026-05-09T11:50:47.782Z"
   },
   {
     "id": 326,
@@ -3884,7 +3884,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/326",
-    "updated_at": "2026-05-09T07:34:25.488Z"
+    "updated_at": "2026-05-09T11:50:48.017Z"
   },
   {
     "id": 327,
@@ -3897,7 +3897,7 @@
     "parent_company": "",
     "titles_count": 93,
     "tmdb_url": "https://www.themoviedb.org/company/327",
-    "updated_at": "2026-05-09T07:34:25.807Z"
+    "updated_at": "2026-05-09T11:50:48.188Z"
   },
   {
     "id": 329,
@@ -3910,7 +3910,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/329",
-    "updated_at": "2026-05-09T07:34:26.114Z"
+    "updated_at": "2026-05-09T11:50:48.363Z"
   },
   {
     "id": 330,
@@ -3923,7 +3923,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/330",
-    "updated_at": "2026-05-09T07:34:26.435Z"
+    "updated_at": "2026-05-09T11:50:48.539Z"
   },
   {
     "id": 331,
@@ -3936,7 +3936,7 @@
     "parent_company": "",
     "titles_count": 30,
     "tmdb_url": "https://www.themoviedb.org/company/331",
-    "updated_at": "2026-05-09T07:34:26.748Z"
+    "updated_at": "2026-05-09T11:50:48.734Z"
   },
   {
     "id": 333,
@@ -3949,7 +3949,7 @@
     "parent_company": "",
     "titles_count": 89,
     "tmdb_url": "https://www.themoviedb.org/company/333",
-    "updated_at": "2026-05-09T07:34:27.060Z"
+    "updated_at": "2026-05-09T11:50:48.935Z"
   },
   {
     "id": 334,
@@ -3962,7 +3962,7 @@
     "parent_company": "",
     "titles_count": 12,
     "tmdb_url": "https://www.themoviedb.org/company/334",
-    "updated_at": "2026-05-09T07:34:27.369Z"
+    "updated_at": "2026-05-09T11:50:49.169Z"
   },
   {
     "id": 335,
@@ -3975,7 +3975,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/335",
-    "updated_at": "2026-05-09T07:34:27.681Z"
+    "updated_at": "2026-05-09T11:50:49.369Z"
   },
   {
     "id": 336,
@@ -3988,7 +3988,7 @@
     "parent_company": "",
     "titles_count": 37,
     "tmdb_url": "https://www.themoviedb.org/company/336",
-    "updated_at": "2026-05-09T07:34:28.005Z"
+    "updated_at": "2026-05-09T11:50:49.567Z"
   },
   {
     "id": 337,
@@ -4001,7 +4001,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/337",
-    "updated_at": "2026-05-09T07:34:28.313Z"
+    "updated_at": "2026-05-09T11:50:49.786Z"
   },
   {
     "id": 338,
@@ -4014,7 +4014,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/338",
-    "updated_at": "2026-05-09T07:34:28.629Z"
+    "updated_at": "2026-05-09T11:50:49.957Z"
   },
   {
     "id": 339,
@@ -4027,7 +4027,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/339",
-    "updated_at": "2026-05-09T07:34:28.940Z"
+    "updated_at": "2026-05-09T11:50:50.174Z"
   },
   {
     "id": 340,
@@ -4040,7 +4040,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/340",
-    "updated_at": "2026-05-09T07:34:29.262Z"
+    "updated_at": "2026-05-09T11:50:50.404Z"
   },
   {
     "id": 341,
@@ -4053,7 +4053,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/341",
-    "updated_at": "2026-05-09T07:34:29.621Z"
+    "updated_at": "2026-05-09T11:50:50.584Z"
   },
   {
     "id": 342,
@@ -4066,7 +4066,7 @@
     "parent_company": "",
     "titles_count": 70,
     "tmdb_url": "https://www.themoviedb.org/company/342",
-    "updated_at": "2026-05-09T07:34:30.007Z"
+    "updated_at": "2026-05-09T11:50:50.734Z"
   },
   {
     "id": 344,
@@ -4079,7 +4079,7 @@
     "parent_company": "",
     "titles_count": 1523,
     "tmdb_url": "https://www.themoviedb.org/company/344",
-    "updated_at": "2026-05-09T07:34:30.319Z"
+    "updated_at": "2026-05-09T11:50:50.899Z"
   },
   {
     "id": 345,
@@ -4092,7 +4092,7 @@
     "parent_company": "",
     "titles_count": 55,
     "tmdb_url": "https://www.themoviedb.org/company/345",
-    "updated_at": "2026-05-09T07:34:30.630Z"
+    "updated_at": "2026-05-09T11:50:51.098Z"
   },
   {
     "id": 346,
@@ -4105,7 +4105,7 @@
     "parent_company": "",
     "titles_count": 70,
     "tmdb_url": "https://www.themoviedb.org/company/346",
-    "updated_at": "2026-05-09T07:34:30.946Z"
+    "updated_at": "2026-05-09T11:50:51.318Z"
   },
   {
     "id": 347,
@@ -4118,7 +4118,7 @@
     "parent_company": "",
     "titles_count": 20,
     "tmdb_url": "https://www.themoviedb.org/company/347",
-    "updated_at": "2026-05-09T07:34:31.258Z"
+    "updated_at": "2026-05-09T11:50:51.551Z"
   },
   {
     "id": 348,
@@ -4131,7 +4131,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/348",
-    "updated_at": "2026-05-09T07:34:31.573Z"
+    "updated_at": "2026-05-09T11:50:51.715Z"
   },
   {
     "id": 350,
@@ -4144,7 +4144,7 @@
     "parent_company": "",
     "titles_count": 34,
     "tmdb_url": "https://www.themoviedb.org/company/350",
-    "updated_at": "2026-05-09T07:34:31.885Z"
+    "updated_at": "2026-05-09T11:50:51.935Z"
   },
   {
     "id": 351,
@@ -4157,7 +4157,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/351",
-    "updated_at": "2026-05-09T07:34:32.258Z"
+    "updated_at": "2026-05-09T11:50:52.160Z"
   },
   {
     "id": 352,
@@ -4170,7 +4170,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/352",
-    "updated_at": "2026-05-09T07:34:32.566Z"
+    "updated_at": "2026-05-09T11:50:52.362Z"
   },
   {
     "id": 353,
@@ -4183,7 +4183,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/353",
-    "updated_at": "2026-05-09T07:34:32.913Z"
+    "updated_at": "2026-05-09T11:50:52.533Z"
   },
   {
     "id": 354,
@@ -4196,7 +4196,7 @@
     "parent_company": "",
     "titles_count": 28,
     "tmdb_url": "https://www.themoviedb.org/company/354",
-    "updated_at": "2026-05-09T07:34:33.228Z"
+    "updated_at": "2026-05-09T11:50:52.704Z"
   },
   {
     "id": 355,
@@ -4209,7 +4209,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/355",
-    "updated_at": "2026-05-09T07:34:33.541Z"
+    "updated_at": "2026-05-09T11:50:52.877Z"
   },
   {
     "id": 356,
@@ -4222,7 +4222,7 @@
     "parent_company": "",
     "titles_count": 550,
     "tmdb_url": "https://www.themoviedb.org/company/356",
-    "updated_at": "2026-05-09T07:34:33.896Z"
+    "updated_at": "2026-05-09T11:50:53.046Z"
   },
   {
     "id": 357,
@@ -4235,7 +4235,7 @@
     "parent_company": "",
     "titles_count": 50,
     "tmdb_url": "https://www.themoviedb.org/company/357",
-    "updated_at": "2026-05-09T07:34:34.207Z"
+    "updated_at": "2026-05-09T11:50:53.254Z"
   },
   {
     "id": 358,
@@ -4248,7 +4248,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/358",
-    "updated_at": "2026-05-09T07:34:34.511Z"
+    "updated_at": "2026-05-09T11:50:53.462Z"
   },
   {
     "id": 359,
@@ -4261,7 +4261,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/359",
-    "updated_at": "2026-05-09T07:34:34.818Z"
+    "updated_at": "2026-05-09T11:50:53.729Z"
   },
   {
     "id": 360,
@@ -4274,7 +4274,7 @@
     "parent_company": "",
     "titles_count": 17,
     "tmdb_url": "https://www.themoviedb.org/company/360",
-    "updated_at": "2026-05-09T07:34:35.126Z"
+    "updated_at": "2026-05-09T11:50:53.924Z"
   },
   {
     "id": 361,
@@ -4287,7 +4287,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/361",
-    "updated_at": "2026-05-09T07:34:35.440Z"
+    "updated_at": "2026-05-09T11:50:54.103Z"
   },
   {
     "id": 363,
@@ -4300,7 +4300,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/363",
-    "updated_at": "2026-05-09T07:34:35.781Z"
+    "updated_at": "2026-05-09T11:50:54.290Z"
   },
   {
     "id": 364,
@@ -4313,7 +4313,7 @@
     "parent_company": "",
     "titles_count": 166,
     "tmdb_url": "https://www.themoviedb.org/company/364",
-    "updated_at": "2026-05-09T07:34:36.097Z"
+    "updated_at": "2026-05-09T11:50:54.471Z"
   },
   {
     "id": 365,
@@ -4326,7 +4326,7 @@
     "parent_company": "",
     "titles_count": 24,
     "tmdb_url": "https://www.themoviedb.org/company/365",
-    "updated_at": "2026-05-09T07:34:36.413Z"
+    "updated_at": "2026-05-09T11:50:54.623Z"
   },
   {
     "id": 366,
@@ -4339,7 +4339,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/366",
-    "updated_at": "2026-05-09T07:34:36.724Z"
+    "updated_at": "2026-05-09T11:50:54.819Z"
   },
   {
     "id": 367,
@@ -4352,7 +4352,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/367",
-    "updated_at": "2026-05-09T07:34:37.031Z"
+    "updated_at": "2026-05-09T11:50:54.995Z"
   },
   {
     "id": 368,
@@ -4365,7 +4365,7 @@
     "parent_company": "",
     "titles_count": 7,
     "tmdb_url": "https://www.themoviedb.org/company/368",
-    "updated_at": "2026-05-09T07:34:37.343Z"
+    "updated_at": "2026-05-09T11:50:55.231Z"
   },
   {
     "id": 369,
@@ -4378,7 +4378,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/369",
-    "updated_at": "2026-05-09T07:34:37.653Z"
+    "updated_at": "2026-05-09T11:50:55.381Z"
   },
   {
     "id": 370,
@@ -4391,7 +4391,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/370",
-    "updated_at": "2026-05-09T07:34:37.965Z"
+    "updated_at": "2026-05-09T11:50:55.622Z"
   },
   {
     "id": 371,
@@ -4404,7 +4404,7 @@
     "parent_company": "",
     "titles_count": 107,
     "tmdb_url": "https://www.themoviedb.org/company/371",
-    "updated_at": "2026-05-09T07:34:38.281Z"
+    "updated_at": "2026-05-09T11:50:55.805Z"
   },
   {
     "id": 372,
@@ -4417,7 +4417,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/372",
-    "updated_at": "2026-05-09T07:34:38.633Z"
+    "updated_at": "2026-05-09T11:50:55.967Z"
   },
   {
     "id": 373,
@@ -4430,7 +4430,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/373",
-    "updated_at": "2026-05-09T07:34:38.940Z"
+    "updated_at": "2026-05-09T11:50:56.132Z"
   },
   {
     "id": 374,
@@ -4443,7 +4443,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/374",
-    "updated_at": "2026-05-09T07:34:39.244Z"
+    "updated_at": "2026-05-09T11:50:56.329Z"
   },
   {
     "id": 375,
@@ -4456,7 +4456,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/375",
-    "updated_at": "2026-05-09T07:34:39.552Z"
+    "updated_at": "2026-05-09T11:50:56.503Z"
   },
   {
     "id": 376,
@@ -4469,7 +4469,7 @@
     "parent_company": "",
     "titles_count": 35,
     "tmdb_url": "https://www.themoviedb.org/company/376",
-    "updated_at": "2026-05-09T07:34:39.911Z"
+    "updated_at": "2026-05-09T11:50:56.693Z"
   },
   {
     "id": 377,
@@ -4482,7 +4482,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/377",
-    "updated_at": "2026-05-09T07:34:40.221Z"
+    "updated_at": "2026-05-09T11:50:56.860Z"
   },
   {
     "id": 379,
@@ -4495,7 +4495,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/379",
-    "updated_at": "2026-05-09T07:34:40.535Z"
+    "updated_at": "2026-05-09T11:50:57.064Z"
   },
   {
     "id": 380,
@@ -4508,7 +4508,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/380",
-    "updated_at": "2026-05-09T07:34:40.880Z"
+    "updated_at": "2026-05-09T11:50:57.300Z"
   },
   {
     "id": 381,
@@ -4521,7 +4521,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/381",
-    "updated_at": "2026-05-09T07:34:41.185Z"
+    "updated_at": "2026-05-09T11:50:57.469Z"
   },
   {
     "id": 382,
@@ -4534,7 +4534,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/382",
-    "updated_at": "2026-05-09T07:34:41.529Z"
+    "updated_at": "2026-05-09T11:50:57.669Z"
   },
   {
     "id": 383,
@@ -4547,7 +4547,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/383",
-    "updated_at": "2026-05-09T07:34:41.834Z"
+    "updated_at": "2026-05-09T11:50:57.837Z"
   },
   {
     "id": 384,
@@ -4560,7 +4560,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/384",
-    "updated_at": "2026-05-09T07:34:42.153Z"
+    "updated_at": "2026-05-09T11:50:58.072Z"
   },
   {
     "id": 385,
@@ -4573,7 +4573,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/385",
-    "updated_at": "2026-05-09T07:34:42.466Z"
+    "updated_at": "2026-05-09T11:50:58.269Z"
   },
   {
     "id": 386,
@@ -4586,7 +4586,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/386",
-    "updated_at": "2026-05-09T07:34:42.775Z"
+    "updated_at": "2026-05-09T11:50:58.466Z"
   },
   {
     "id": 387,
@@ -4599,7 +4599,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/387",
-    "updated_at": "2026-05-09T07:34:43.127Z"
+    "updated_at": "2026-05-09T11:50:58.684Z"
   },
   {
     "id": 388,
@@ -4612,7 +4612,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/388",
-    "updated_at": "2026-05-09T07:34:43.450Z"
+    "updated_at": "2026-05-09T11:50:58.875Z"
   },
   {
     "id": 389,
@@ -4625,7 +4625,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/389",
-    "updated_at": "2026-05-09T07:34:43.760Z"
+    "updated_at": "2026-05-09T11:50:59.048Z"
   },
   {
     "id": 390,
@@ -4638,7 +4638,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/390",
-    "updated_at": "2026-05-09T07:34:44.068Z"
+    "updated_at": "2026-05-09T11:50:59.219Z"
   },
   {
     "id": 391,
@@ -4651,7 +4651,7 @@
     "parent_company": "",
     "titles_count": 35,
     "tmdb_url": "https://www.themoviedb.org/company/391",
-    "updated_at": "2026-05-09T07:34:44.381Z"
+    "updated_at": "2026-05-09T11:50:59.416Z"
   },
   {
     "id": 392,
@@ -4664,7 +4664,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/392",
-    "updated_at": "2026-05-09T07:34:44.696Z"
+    "updated_at": "2026-05-09T11:50:59.608Z"
   },
   {
     "id": 393,
@@ -4677,7 +4677,7 @@
     "parent_company": "",
     "titles_count": 70,
     "tmdb_url": "https://www.themoviedb.org/company/393",
-    "updated_at": "2026-05-09T07:34:45.007Z"
+    "updated_at": "2026-05-09T11:50:59.782Z"
   },
   {
     "id": 394,
@@ -4690,7 +4690,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/394",
-    "updated_at": "2026-05-09T07:34:45.314Z"
+    "updated_at": "2026-05-09T11:50:59.948Z"
   },
   {
     "id": 396,
@@ -4703,7 +4703,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/396",
-    "updated_at": "2026-05-09T07:34:45.656Z"
+    "updated_at": "2026-05-09T11:51:00.155Z"
   },
   {
     "id": 397,
@@ -4716,7 +4716,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/397",
-    "updated_at": "2026-05-09T07:34:45.966Z"
+    "updated_at": "2026-05-09T11:51:00.304Z"
   },
   {
     "id": 398,
@@ -4729,7 +4729,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/398",
-    "updated_at": "2026-05-09T07:34:46.276Z"
+    "updated_at": "2026-05-09T11:51:00.473Z"
   },
   {
     "id": 399,
@@ -4742,7 +4742,7 @@
     "parent_company": "",
     "titles_count": 16,
     "tmdb_url": "https://www.themoviedb.org/company/399",
-    "updated_at": "2026-05-09T07:34:46.592Z"
+    "updated_at": "2026-05-09T11:51:00.706Z"
   },
   {
     "id": 400,
@@ -4755,7 +4755,7 @@
     "parent_company": "",
     "titles_count": 7,
     "tmdb_url": "https://www.themoviedb.org/company/400",
-    "updated_at": "2026-05-09T07:34:46.901Z"
+    "updated_at": "2026-05-09T11:51:00.886Z"
   },
   {
     "id": 401,
@@ -4768,7 +4768,7 @@
     "parent_company": "",
     "titles_count": 12,
     "tmdb_url": "https://www.themoviedb.org/company/401",
-    "updated_at": "2026-05-09T07:34:47.210Z"
+    "updated_at": "2026-05-09T11:51:01.035Z"
   },
   {
     "id": 402,
@@ -4781,7 +4781,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/402",
-    "updated_at": "2026-05-09T07:34:47.520Z"
+    "updated_at": "2026-05-09T11:51:01.237Z"
   },
   {
     "id": 403,
@@ -4794,7 +4794,7 @@
     "parent_company": "",
     "titles_count": 64,
     "tmdb_url": "https://www.themoviedb.org/company/403",
-    "updated_at": "2026-05-09T07:34:47.871Z"
+    "updated_at": "2026-05-09T11:51:01.434Z"
   },
   {
     "id": 404,
@@ -4807,7 +4807,7 @@
     "parent_company": "",
     "titles_count": 59,
     "tmdb_url": "https://www.themoviedb.org/company/404",
-    "updated_at": "2026-05-09T07:34:48.191Z"
+    "updated_at": "2026-05-09T11:51:01.637Z"
   },
   {
     "id": 405,
@@ -4820,7 +4820,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/405",
-    "updated_at": "2026-05-09T07:34:48.500Z"
+    "updated_at": "2026-05-09T11:51:01.808Z"
   },
   {
     "id": 406,
@@ -4833,7 +4833,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/406",
-    "updated_at": "2026-05-09T07:34:48.808Z"
+    "updated_at": "2026-05-09T11:51:01.989Z"
   },
   {
     "id": 407,
@@ -4846,7 +4846,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/407",
-    "updated_at": "2026-05-09T07:34:49.121Z"
+    "updated_at": "2026-05-09T11:51:02.245Z"
   },
   {
     "id": 408,
@@ -4859,7 +4859,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/408",
-    "updated_at": "2026-05-09T07:34:49.436Z"
+    "updated_at": "2026-05-09T11:51:02.416Z"
   },
   {
     "id": 409,
@@ -4872,7 +4872,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/409",
-    "updated_at": "2026-05-09T07:34:49.747Z"
+    "updated_at": "2026-05-09T11:51:02.590Z"
   },
   {
     "id": 410,
@@ -4885,7 +4885,7 @@
     "parent_company": "",
     "titles_count": 82,
     "tmdb_url": "https://www.themoviedb.org/company/410",
-    "updated_at": "2026-05-09T07:34:50.064Z"
+    "updated_at": "2026-05-09T11:51:02.841Z"
   },
   {
     "id": 411,
@@ -4898,7 +4898,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/411",
-    "updated_at": "2026-05-09T07:34:50.371Z"
+    "updated_at": "2026-05-09T11:51:03.071Z"
   },
   {
     "id": 412,
@@ -4911,7 +4911,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/412",
-    "updated_at": "2026-05-09T07:34:50.682Z"
+    "updated_at": "2026-05-09T11:51:03.309Z"
   },
   {
     "id": 413,
@@ -4924,7 +4924,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/413",
-    "updated_at": "2026-05-09T07:34:50.990Z"
+    "updated_at": "2026-05-09T11:51:03.478Z"
   },
   {
     "id": 414,
@@ -4937,7 +4937,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/414",
-    "updated_at": "2026-05-09T07:34:51.300Z"
+    "updated_at": "2026-05-09T11:51:03.735Z"
   },
   {
     "id": 415,
@@ -4950,7 +4950,7 @@
     "parent_company": "",
     "titles_count": 20,
     "tmdb_url": "https://www.themoviedb.org/company/415",
-    "updated_at": "2026-05-09T07:34:51.613Z"
+    "updated_at": "2026-05-09T11:51:03.934Z"
   },
   {
     "id": 416,
@@ -4963,7 +4963,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/416",
-    "updated_at": "2026-05-09T07:34:51.925Z"
+    "updated_at": "2026-05-09T11:51:04.141Z"
   },
   {
     "id": 417,
@@ -4976,7 +4976,7 @@
     "parent_company": "",
     "titles_count": 169,
     "tmdb_url": "https://www.themoviedb.org/company/417",
-    "updated_at": "2026-05-09T07:34:52.234Z"
+    "updated_at": "2026-05-09T11:51:04.313Z"
   },
   {
     "id": 418,
@@ -4989,7 +4989,7 @@
     "parent_company": "",
     "titles_count": 67,
     "tmdb_url": "https://www.themoviedb.org/company/418",
-    "updated_at": "2026-05-09T07:34:52.594Z"
+    "updated_at": "2026-05-09T11:51:04.512Z"
   },
   {
     "id": 419,
@@ -5002,7 +5002,7 @@
     "parent_company": "",
     "titles_count": 16,
     "tmdb_url": "https://www.themoviedb.org/company/419",
-    "updated_at": "2026-05-09T07:34:52.902Z"
+    "updated_at": "2026-05-09T11:51:04.683Z"
   },
   {
     "id": 420,
@@ -5015,7 +5015,7 @@
     "parent_company": "",
     "titles_count": 96,
     "tmdb_url": "https://www.themoviedb.org/company/420",
-    "updated_at": "2026-05-09T07:34:53.213Z"
+    "updated_at": "2026-05-09T11:51:04.929Z"
   },
   {
     "id": 421,
@@ -5028,7 +5028,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/421",
-    "updated_at": "2026-05-09T07:34:53.523Z"
+    "updated_at": "2026-05-09T11:51:05.110Z"
   },
   {
     "id": 422,
@@ -5041,7 +5041,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/422",
-    "updated_at": "2026-05-09T07:34:53.843Z"
+    "updated_at": "2026-05-09T11:51:05.260Z"
   },
   {
     "id": 423,
@@ -5054,7 +5054,7 @@
     "parent_company": "",
     "titles_count": 18,
     "tmdb_url": "https://www.themoviedb.org/company/423",
-    "updated_at": "2026-05-09T07:34:54.192Z"
+    "updated_at": "2026-05-09T11:51:05.457Z"
   },
   {
     "id": 424,
@@ -5067,7 +5067,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/424",
-    "updated_at": "2026-05-09T07:34:54.499Z"
+    "updated_at": "2026-05-09T11:51:05.635Z"
   },
   {
     "id": 425,
@@ -5080,7 +5080,7 @@
     "parent_company": "",
     "titles_count": 50,
     "tmdb_url": "https://www.themoviedb.org/company/425",
-    "updated_at": "2026-05-09T07:34:54.849Z"
+    "updated_at": "2026-05-09T11:51:05.803Z"
   },
   {
     "id": 428,
@@ -5093,7 +5093,7 @@
     "parent_company": "",
     "titles_count": 12,
     "tmdb_url": "https://www.themoviedb.org/company/428",
-    "updated_at": "2026-05-09T07:34:55.158Z"
+    "updated_at": "2026-05-09T11:51:05.955Z"
   },
   {
     "id": 429,
@@ -5106,7 +5106,7 @@
     "parent_company": "",
     "titles_count": 116,
     "tmdb_url": "https://www.themoviedb.org/company/429",
-    "updated_at": "2026-05-09T07:34:55.508Z"
+    "updated_at": "2026-05-09T11:51:06.190Z"
   },
   {
     "id": 430,
@@ -5119,7 +5119,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/430",
-    "updated_at": "2026-05-09T07:34:55.819Z"
+    "updated_at": "2026-05-09T11:51:06.356Z"
   },
   {
     "id": 431,
@@ -5132,7 +5132,7 @@
     "parent_company": "",
     "titles_count": 22,
     "tmdb_url": "https://www.themoviedb.org/company/431",
-    "updated_at": "2026-05-09T07:34:56.135Z"
+    "updated_at": "2026-05-09T11:51:06.528Z"
   },
   {
     "id": 432,
@@ -5145,7 +5145,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/432",
-    "updated_at": "2026-05-09T07:34:56.453Z"
+    "updated_at": "2026-05-09T11:51:06.679Z"
   },
   {
     "id": 433,
@@ -5158,7 +5158,7 @@
     "parent_company": "",
     "titles_count": 27,
     "tmdb_url": "https://www.themoviedb.org/company/433",
-    "updated_at": "2026-05-09T07:34:56.766Z"
+    "updated_at": "2026-05-09T11:51:06.918Z"
   },
   {
     "id": 435,
@@ -5171,7 +5171,7 @@
     "parent_company": "",
     "titles_count": 56,
     "tmdb_url": "https://www.themoviedb.org/company/435",
-    "updated_at": "2026-05-09T07:34:57.080Z"
+    "updated_at": "2026-05-09T11:51:07.087Z"
   },
   {
     "id": 436,
@@ -5184,7 +5184,7 @@
     "parent_company": "",
     "titles_count": 26,
     "tmdb_url": "https://www.themoviedb.org/company/436",
-    "updated_at": "2026-05-09T07:34:57.388Z"
+    "updated_at": "2026-05-09T11:51:07.257Z"
   },
   {
     "id": 437,
@@ -5197,7 +5197,7 @@
     "parent_company": "",
     "titles_count": 47,
     "tmdb_url": "https://www.themoviedb.org/company/437",
-    "updated_at": "2026-05-09T07:34:57.699Z"
+    "updated_at": "2026-05-09T11:51:07.455Z"
   },
   {
     "id": 438,
@@ -5210,7 +5210,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/438",
-    "updated_at": "2026-05-09T07:34:58.012Z"
+    "updated_at": "2026-05-09T11:51:07.625Z"
   },
   {
     "id": 439,
@@ -5223,7 +5223,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/439",
-    "updated_at": "2026-05-09T07:34:58.324Z"
+    "updated_at": "2026-05-09T11:51:07.807Z"
   },
   {
     "id": 440,
@@ -5236,7 +5236,7 @@
     "parent_company": "",
     "titles_count": 43,
     "tmdb_url": "https://www.themoviedb.org/company/440",
-    "updated_at": "2026-05-09T07:34:58.636Z"
+    "updated_at": "2026-05-09T11:51:08.010Z"
   },
   {
     "id": 442,
@@ -5249,7 +5249,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/442",
-    "updated_at": "2026-05-09T07:34:58.948Z"
+    "updated_at": "2026-05-09T11:51:08.217Z"
   },
   {
     "id": 443,
@@ -5262,7 +5262,7 @@
     "parent_company": "",
     "titles_count": 23,
     "tmdb_url": "https://www.themoviedb.org/company/443",
-    "updated_at": "2026-05-09T07:34:59.261Z"
+    "updated_at": "2026-05-09T11:51:08.365Z"
   },
   {
     "id": 444,
@@ -5275,7 +5275,7 @@
     "parent_company": "",
     "titles_count": 74,
     "tmdb_url": "https://www.themoviedb.org/company/444",
-    "updated_at": "2026-05-09T07:34:59.576Z"
+    "updated_at": "2026-05-09T11:51:08.530Z"
   },
   {
     "id": 445,
@@ -5288,7 +5288,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/445",
-    "updated_at": "2026-05-09T07:35:00.092Z"
+    "updated_at": "2026-05-09T11:51:08.696Z"
   },
   {
     "id": 446,
@@ -5301,7 +5301,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/446",
-    "updated_at": "2026-05-09T07:35:00.402Z"
+    "updated_at": "2026-05-09T11:51:08.847Z"
   },
   {
     "id": 447,
@@ -5314,7 +5314,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/447",
-    "updated_at": "2026-05-09T07:35:00.753Z"
+    "updated_at": "2026-05-09T11:51:09.030Z"
   },
   {
     "id": 448,
@@ -5327,7 +5327,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/448",
-    "updated_at": "2026-05-09T07:35:01.065Z"
+    "updated_at": "2026-05-09T11:51:09.184Z"
   },
   {
     "id": 449,
@@ -5340,7 +5340,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/449",
-    "updated_at": "2026-05-09T07:35:01.444Z"
+    "updated_at": "2026-05-09T11:51:09.386Z"
   },
   {
     "id": 450,
@@ -5353,7 +5353,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/450",
-    "updated_at": "2026-05-09T07:35:01.777Z"
+    "updated_at": "2026-05-09T11:51:09.556Z"
   },
   {
     "id": 452,
@@ -5366,7 +5366,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/452",
-    "updated_at": "2026-05-09T07:35:02.084Z"
+    "updated_at": "2026-05-09T11:51:09.737Z"
   },
   {
     "id": 453,
@@ -5379,7 +5379,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/453",
-    "updated_at": "2026-05-09T07:35:02.496Z"
+    "updated_at": "2026-05-09T11:51:09.904Z"
   },
   {
     "id": 454,
@@ -5392,7 +5392,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/454",
-    "updated_at": "2026-05-09T07:35:02.855Z"
+    "updated_at": "2026-05-09T11:51:10.075Z"
   },
   {
     "id": 455,
@@ -5405,7 +5405,7 @@
     "parent_company": "",
     "titles_count": 24,
     "tmdb_url": "https://www.themoviedb.org/company/455",
-    "updated_at": "2026-05-09T07:35:03.189Z"
+    "updated_at": "2026-05-09T11:51:10.272Z"
   },
   {
     "id": 456,
@@ -5418,7 +5418,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/456",
-    "updated_at": "2026-05-09T07:35:03.500Z"
+    "updated_at": "2026-05-09T11:51:10.492Z"
   },
   {
     "id": 457,
@@ -5431,7 +5431,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/457",
-    "updated_at": "2026-05-09T07:35:03.818Z"
+    "updated_at": "2026-05-09T11:51:10.643Z"
   },
   {
     "id": 458,
@@ -5444,7 +5444,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/458",
-    "updated_at": "2026-05-09T07:35:04.136Z"
+    "updated_at": "2026-05-09T11:51:10.812Z"
   },
   {
     "id": 459,
@@ -5457,7 +5457,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/459",
-    "updated_at": "2026-05-09T07:35:04.460Z"
+    "updated_at": "2026-05-09T11:51:11.008Z"
   },
   {
     "id": 460,
@@ -5470,7 +5470,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/460",
-    "updated_at": "2026-05-09T07:35:04.772Z"
+    "updated_at": "2026-05-09T11:51:11.187Z"
   },
   {
     "id": 461,
@@ -5483,7 +5483,7 @@
     "parent_company": "",
     "titles_count": 43,
     "tmdb_url": "https://www.themoviedb.org/company/461",
-    "updated_at": "2026-05-09T07:35:05.124Z"
+    "updated_at": "2026-05-09T11:51:11.354Z"
   },
   {
     "id": 462,
@@ -5496,7 +5496,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/462",
-    "updated_at": "2026-05-09T07:35:05.433Z"
+    "updated_at": "2026-05-09T11:51:11.527Z"
   },
   {
     "id": 463,
@@ -5509,7 +5509,7 @@
     "parent_company": "",
     "titles_count": 13,
     "tmdb_url": "https://www.themoviedb.org/company/463",
-    "updated_at": "2026-05-09T07:35:05.743Z"
+    "updated_at": "2026-05-09T11:51:11.762Z"
   },
   {
     "id": 464,
@@ -5522,7 +5522,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/464",
-    "updated_at": "2026-05-09T07:35:06.052Z"
+    "updated_at": "2026-05-09T11:51:11.914Z"
   },
   {
     "id": 465,
@@ -5535,7 +5535,7 @@
     "parent_company": "",
     "titles_count": 18,
     "tmdb_url": "https://www.themoviedb.org/company/465",
-    "updated_at": "2026-05-09T07:35:06.365Z"
+    "updated_at": "2026-05-09T11:51:12.063Z"
   },
   {
     "id": 466,
@@ -5548,7 +5548,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/466",
-    "updated_at": "2026-05-09T07:35:06.684Z"
+    "updated_at": "2026-05-09T11:51:12.228Z"
   },
   {
     "id": 467,
@@ -5561,7 +5561,7 @@
     "parent_company": "",
     "titles_count": 20,
     "tmdb_url": "https://www.themoviedb.org/company/467",
-    "updated_at": "2026-05-09T07:35:06.994Z"
+    "updated_at": "2026-05-09T11:51:12.462Z"
   },
   {
     "id": 468,
@@ -5574,7 +5574,7 @@
     "parent_company": "",
     "titles_count": 23,
     "tmdb_url": "https://www.themoviedb.org/company/468",
-    "updated_at": "2026-05-09T07:35:07.315Z"
+    "updated_at": "2026-05-09T11:51:12.661Z"
   },
   {
     "id": 469,
@@ -5587,7 +5587,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/469",
-    "updated_at": "2026-05-09T07:35:07.623Z"
+    "updated_at": "2026-05-09T11:51:12.863Z"
   },
   {
     "id": 470,
@@ -5600,7 +5600,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/470",
-    "updated_at": "2026-05-09T07:35:07.931Z"
+    "updated_at": "2026-05-09T11:51:13.012Z"
   },
   {
     "id": 471,
@@ -5613,7 +5613,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/471",
-    "updated_at": "2026-05-09T07:35:08.243Z"
+    "updated_at": "2026-05-09T11:51:13.207Z"
   },
   {
     "id": 472,
@@ -5626,7 +5626,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/472",
-    "updated_at": "2026-05-09T07:35:08.555Z"
+    "updated_at": "2026-05-09T11:51:13.381Z"
   },
   {
     "id": 473,
@@ -5639,7 +5639,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/473",
-    "updated_at": "2026-05-09T07:35:08.871Z"
+    "updated_at": "2026-05-09T11:51:13.595Z"
   },
   {
     "id": 474,
@@ -5652,7 +5652,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/474",
-    "updated_at": "2026-05-09T07:35:09.181Z"
+    "updated_at": "2026-05-09T11:51:13.767Z"
   },
   {
     "id": 475,
@@ -5665,7 +5665,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/475",
-    "updated_at": "2026-05-09T07:35:09.488Z"
+    "updated_at": "2026-05-09T11:51:13.937Z"
   },
   {
     "id": 476,
@@ -5678,7 +5678,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/476",
-    "updated_at": "2026-05-09T07:35:09.793Z"
+    "updated_at": "2026-05-09T11:51:14.117Z"
   },
   {
     "id": 477,
@@ -5691,7 +5691,7 @@
     "parent_company": "",
     "titles_count": 20,
     "tmdb_url": "https://www.themoviedb.org/company/477",
-    "updated_at": "2026-05-09T07:35:10.103Z"
+    "updated_at": "2026-05-09T11:51:14.284Z"
   },
   {
     "id": 478,
@@ -5704,7 +5704,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/478",
-    "updated_at": "2026-05-09T07:35:10.416Z"
+    "updated_at": "2026-05-09T11:51:14.456Z"
   },
   {
     "id": 479,
@@ -5717,7 +5717,7 @@
     "parent_company": "",
     "titles_count": 14,
     "tmdb_url": "https://www.themoviedb.org/company/479",
-    "updated_at": "2026-05-09T07:35:10.726Z"
+    "updated_at": "2026-05-09T11:51:14.624Z"
   },
   {
     "id": 480,
@@ -5730,7 +5730,7 @@
     "parent_company": "",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/480",
-    "updated_at": "2026-05-09T07:35:11.076Z"
+    "updated_at": "2026-05-09T11:51:14.856Z"
   },
   {
     "id": 481,
@@ -5743,7 +5743,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/481",
-    "updated_at": "2026-05-09T07:35:11.387Z"
+    "updated_at": "2026-05-09T11:51:15.048Z"
   },
   {
     "id": 482,
@@ -5756,7 +5756,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/482",
-    "updated_at": "2026-05-09T07:35:11.698Z"
+    "updated_at": "2026-05-09T11:51:15.197Z"
   },
   {
     "id": 483,
@@ -5769,7 +5769,7 @@
     "parent_company": "",
     "titles_count": 48,
     "tmdb_url": "https://www.themoviedb.org/company/483",
-    "updated_at": "2026-05-09T07:35:12.012Z"
+    "updated_at": "2026-05-09T11:51:15.365Z"
   },
   {
     "id": 484,
@@ -5782,7 +5782,7 @@
     "parent_company": "",
     "titles_count": 26,
     "tmdb_url": "https://www.themoviedb.org/company/484",
-    "updated_at": "2026-05-09T07:35:12.329Z"
+    "updated_at": "2026-05-09T11:51:15.581Z"
   },
   {
     "id": 485,
@@ -5795,7 +5795,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/485",
-    "updated_at": "2026-05-09T07:35:12.674Z"
+    "updated_at": "2026-05-09T11:51:15.815Z"
   },
   {
     "id": 486,
@@ -5808,7 +5808,7 @@
     "parent_company": "",
     "titles_count": 16,
     "tmdb_url": "https://www.themoviedb.org/company/486",
-    "updated_at": "2026-05-09T07:35:12.990Z"
+    "updated_at": "2026-05-09T11:51:15.988Z"
   },
   {
     "id": 487,
@@ -5821,7 +5821,7 @@
     "parent_company": "",
     "titles_count": 1666,
     "tmdb_url": "https://www.themoviedb.org/company/487",
-    "updated_at": "2026-05-09T07:35:13.305Z"
+    "updated_at": "2026-05-09T11:51:16.179Z"
   },
   {
     "id": 488,
@@ -5834,7 +5834,7 @@
     "parent_company": "",
     "titles_count": 48,
     "tmdb_url": "https://www.themoviedb.org/company/488",
-    "updated_at": "2026-05-09T07:35:13.621Z"
+    "updated_at": "2026-05-09T11:51:16.370Z"
   },
   {
     "id": 489,
@@ -5847,7 +5847,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/489",
-    "updated_at": "2026-05-09T07:35:13.974Z"
+    "updated_at": "2026-05-09T11:51:16.600Z"
   },
   {
     "id": 490,
@@ -5860,7 +5860,7 @@
     "parent_company": "Regency Enterprises",
     "titles_count": 4,
     "tmdb_url": "https://www.themoviedb.org/company/490",
-    "updated_at": "2026-05-09T07:35:14.279Z"
+    "updated_at": "2026-05-09T11:51:16.767Z"
   },
   {
     "id": 491,
@@ -5873,7 +5873,7 @@
     "parent_company": "",
     "titles_count": 131,
     "tmdb_url": "https://www.themoviedb.org/company/491",
-    "updated_at": "2026-05-09T07:35:14.592Z"
+    "updated_at": "2026-05-09T11:51:17.004Z"
   },
   {
     "id": 492,
@@ -5886,7 +5886,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/492",
-    "updated_at": "2026-05-09T07:35:14.896Z"
+    "updated_at": "2026-05-09T11:51:17.175Z"
   },
   {
     "id": 493,
@@ -5899,7 +5899,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/493",
-    "updated_at": "2026-05-09T07:35:15.211Z"
+    "updated_at": "2026-05-09T11:51:17.349Z"
   },
   {
     "id": 494,
@@ -5912,7 +5912,7 @@
     "parent_company": "",
     "titles_count": 49,
     "tmdb_url": "https://www.themoviedb.org/company/494",
-    "updated_at": "2026-05-09T07:35:15.518Z"
+    "updated_at": "2026-05-09T11:51:17.513Z"
   },
   {
     "id": 495,
@@ -5925,7 +5925,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/495",
-    "updated_at": "2026-05-09T07:35:15.831Z"
+    "updated_at": "2026-05-09T11:51:17.678Z"
   },
   {
     "id": 496,
@@ -5938,7 +5938,7 @@
     "parent_company": "",
     "titles_count": 11,
     "tmdb_url": "https://www.themoviedb.org/company/496",
-    "updated_at": "2026-05-09T07:35:16.137Z"
+    "updated_at": "2026-05-09T11:51:17.847Z"
   },
   {
     "id": 497,
@@ -5951,7 +5951,7 @@
     "parent_company": "",
     "titles_count": 56,
     "tmdb_url": "https://www.themoviedb.org/company/497",
-    "updated_at": "2026-05-09T07:35:16.455Z"
+    "updated_at": "2026-05-09T11:51:18.038Z"
   },
   {
     "id": 498,
@@ -5964,7 +5964,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/498",
-    "updated_at": "2026-05-09T07:35:16.767Z"
+    "updated_at": "2026-05-09T11:51:18.187Z"
   },
   {
     "id": 499,
@@ -5977,7 +5977,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/499",
-    "updated_at": "2026-05-09T07:35:17.077Z"
+    "updated_at": "2026-05-09T11:51:18.384Z"
   },
   {
     "id": 500,
@@ -5990,7 +5990,7 @@
     "parent_company": "",
     "titles_count": 63,
     "tmdb_url": "https://www.themoviedb.org/company/500",
-    "updated_at": "2026-05-09T07:35:17.393Z"
+    "updated_at": "2026-05-09T11:51:18.617Z"
   },
   {
     "id": 501,
@@ -6003,7 +6003,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/501",
-    "updated_at": "2026-05-09T07:35:17.704Z"
+    "updated_at": "2026-05-09T11:51:18.817Z"
   },
   {
     "id": 502,
@@ -6016,7 +6016,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/502",
-    "updated_at": "2026-05-09T07:35:18.053Z"
+    "updated_at": "2026-05-09T11:51:19.075Z"
   },
   {
     "id": 504,
@@ -6029,7 +6029,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/504",
-    "updated_at": "2026-05-09T07:35:18.361Z"
+    "updated_at": "2026-05-09T11:51:19.310Z"
   },
   {
     "id": 505,
@@ -6042,7 +6042,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/505",
-    "updated_at": "2026-05-09T07:35:18.672Z"
+    "updated_at": "2026-05-09T11:51:19.510Z"
   },
   {
     "id": 506,
@@ -6055,7 +6055,7 @@
     "parent_company": "",
     "titles_count": 21,
     "tmdb_url": "https://www.themoviedb.org/company/506",
-    "updated_at": "2026-05-09T07:35:18.987Z"
+    "updated_at": "2026-05-09T11:51:19.746Z"
   },
   {
     "id": 507,
@@ -6068,7 +6068,7 @@
     "parent_company": "",
     "titles_count": 41,
     "tmdb_url": "https://www.themoviedb.org/company/507",
-    "updated_at": "2026-05-09T07:35:19.303Z"
+    "updated_at": "2026-05-09T11:51:19.942Z"
   },
   {
     "id": 508,
@@ -6081,7 +6081,7 @@
     "parent_company": "",
     "titles_count": 125,
     "tmdb_url": "https://www.themoviedb.org/company/508",
-    "updated_at": "2026-05-09T07:35:19.617Z"
+    "updated_at": "2026-05-09T11:51:20.179Z"
   },
   {
     "id": 509,
@@ -6094,7 +6094,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/509",
-    "updated_at": "2026-05-09T07:35:19.923Z"
+    "updated_at": "2026-05-09T11:51:20.409Z"
   },
   {
     "id": 510,
@@ -6107,7 +6107,7 @@
     "parent_company": "",
     "titles_count": 9,
     "tmdb_url": "https://www.themoviedb.org/company/510",
-    "updated_at": "2026-05-09T07:35:20.238Z"
+    "updated_at": "2026-05-09T11:51:20.606Z"
   },
   {
     "id": 511,
@@ -6120,7 +6120,7 @@
     "parent_company": "",
     "titles_count": 10,
     "tmdb_url": "https://www.themoviedb.org/company/511",
-    "updated_at": "2026-05-09T07:35:20.559Z"
+    "updated_at": "2026-05-09T11:51:20.802Z"
   },
   {
     "id": 512,
@@ -6133,7 +6133,7 @@
     "parent_company": "",
     "titles_count": 44,
     "tmdb_url": "https://www.themoviedb.org/company/512",
-    "updated_at": "2026-05-09T07:35:20.869Z"
+    "updated_at": "2026-05-09T11:51:21.005Z"
   },
   {
     "id": 513,
@@ -6146,7 +6146,7 @@
     "parent_company": "",
     "titles_count": 6,
     "tmdb_url": "https://www.themoviedb.org/company/513",
-    "updated_at": "2026-05-09T07:35:21.190Z"
+    "updated_at": "2026-05-09T11:51:21.314Z"
   },
   {
     "id": 514,
@@ -6159,7 +6159,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/514",
-    "updated_at": "2026-05-09T07:35:21.511Z"
+    "updated_at": "2026-05-09T11:51:21.523Z"
   },
   {
     "id": 515,
@@ -6172,7 +6172,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/515",
-    "updated_at": "2026-05-09T07:35:21.821Z"
+    "updated_at": "2026-05-09T11:51:21.717Z"
   },
   {
     "id": 516,
@@ -6185,7 +6185,7 @@
     "parent_company": "",
     "titles_count": 44,
     "tmdb_url": "https://www.themoviedb.org/company/516",
-    "updated_at": "2026-05-09T07:35:22.170Z"
+    "updated_at": "2026-05-09T11:51:21.949Z"
   },
   {
     "id": 517,
@@ -6198,7 +6198,7 @@
     "parent_company": "",
     "titles_count": 31,
     "tmdb_url": "https://www.themoviedb.org/company/517",
-    "updated_at": "2026-05-09T07:35:22.484Z"
+    "updated_at": "2026-05-09T11:51:22.186Z"
   },
   {
     "id": 518,
@@ -6211,7 +6211,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/518",
-    "updated_at": "2026-05-09T07:35:22.794Z"
+    "updated_at": "2026-05-09T11:51:22.417Z"
   },
   {
     "id": 519,
@@ -6224,7 +6224,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/519",
-    "updated_at": "2026-05-09T07:35:23.099Z"
+    "updated_at": "2026-05-09T11:51:22.616Z"
   },
   {
     "id": 520,
@@ -6237,7 +6237,7 @@
     "parent_company": "",
     "titles_count": 45,
     "tmdb_url": "https://www.themoviedb.org/company/520",
-    "updated_at": "2026-05-09T07:35:23.408Z"
+    "updated_at": "2026-05-09T11:51:22.815Z"
   },
   {
     "id": 521,
@@ -6250,7 +6250,7 @@
     "parent_company": "",
     "titles_count": 134,
     "tmdb_url": "https://www.themoviedb.org/company/521",
-    "updated_at": "2026-05-09T07:35:23.731Z"
+    "updated_at": "2026-05-09T11:51:23.010Z"
   },
   {
     "id": 522,
@@ -6263,7 +6263,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/522",
-    "updated_at": "2026-05-09T07:35:24.039Z"
+    "updated_at": "2026-05-09T11:51:23.238Z"
   },
   {
     "id": 523,
@@ -6276,7 +6276,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/523",
-    "updated_at": "2026-05-09T07:35:24.352Z"
+    "updated_at": "2026-05-09T11:51:23.474Z"
   },
   {
     "id": 524,
@@ -6289,7 +6289,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/524",
-    "updated_at": "2026-05-09T07:35:24.662Z"
+    "updated_at": "2026-05-09T11:51:23.706Z"
   },
   {
     "id": 525,
@@ -6302,7 +6302,7 @@
     "parent_company": "",
     "titles_count": 17,
     "tmdb_url": "https://www.themoviedb.org/company/525",
-    "updated_at": "2026-05-09T07:35:25.008Z"
+    "updated_at": "2026-05-09T11:51:23.924Z"
   },
   {
     "id": 526,
@@ -6315,7 +6315,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/526",
-    "updated_at": "2026-05-09T07:35:25.318Z"
+    "updated_at": "2026-05-09T11:51:24.118Z"
   },
   {
     "id": 527,
@@ -6328,7 +6328,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/527",
-    "updated_at": "2026-05-09T07:35:25.630Z"
+    "updated_at": "2026-05-09T11:51:24.308Z"
   },
   {
     "id": 528,
@@ -6341,7 +6341,7 @@
     "parent_company": "",
     "titles_count": 304,
     "tmdb_url": "https://www.themoviedb.org/company/528",
-    "updated_at": "2026-05-09T07:35:25.949Z"
+    "updated_at": "2026-05-09T11:51:24.569Z"
   },
   {
     "id": 529,
@@ -6354,7 +6354,7 @@
     "parent_company": "",
     "titles_count": 173,
     "tmdb_url": "https://www.themoviedb.org/company/529",
-    "updated_at": "2026-05-09T07:35:26.256Z"
+    "updated_at": "2026-05-09T11:51:24.773Z"
   },
   {
     "id": 530,
@@ -6367,7 +6367,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/530",
-    "updated_at": "2026-05-09T07:35:26.560Z"
+    "updated_at": "2026-05-09T11:51:24.980Z"
   },
   {
     "id": 531,
@@ -6380,7 +6380,7 @@
     "parent_company": "",
     "titles_count": 0,
     "tmdb_url": "https://www.themoviedb.org/company/531",
-    "updated_at": "2026-05-09T07:35:26.866Z"
+    "updated_at": "2026-05-09T11:51:25.172Z"
   },
   {
     "id": 532,
@@ -6393,7 +6393,7 @@
     "parent_company": "",
     "titles_count": 2,
     "tmdb_url": "https://www.themoviedb.org/company/532",
-    "updated_at": "2026-05-09T07:35:27.191Z"
+    "updated_at": "2026-05-09T11:51:25.366Z"
   },
   {
     "id": 533,
@@ -6406,7 +6406,7 @@
     "parent_company": "",
     "titles_count": 8,
     "tmdb_url": "https://www.themoviedb.org/company/533",
-    "updated_at": "2026-05-09T07:35:27.501Z"
+    "updated_at": "2026-05-09T11:51:25.604Z"
   },
   {
     "id": 534,
@@ -6419,7 +6419,7 @@
     "parent_company": "",
     "titles_count": 55,
     "tmdb_url": "https://www.themoviedb.org/company/534",
-    "updated_at": "2026-05-09T07:35:27.812Z"
+    "updated_at": "2026-05-09T11:51:25.801Z"
   },
   {
     "id": 536,
@@ -6432,7 +6432,7 @@
     "parent_company": "",
     "titles_count": 3,
     "tmdb_url": "https://www.themoviedb.org/company/536",
-    "updated_at": "2026-05-09T07:35:28.121Z"
+    "updated_at": "2026-05-09T11:51:25.994Z"
   },
   {
     "id": 538,
@@ -6445,7 +6445,7 @@
     "parent_company": "",
     "titles_count": 71,
     "tmdb_url": "https://www.themoviedb.org/company/538",
-    "updated_at": "2026-05-09T07:35:28.439Z"
+    "updated_at": "2026-05-09T11:51:26.187Z"
   },
   {
     "id": 539,
@@ -6458,7 +6458,7 @@
     "parent_company": "",
     "titles_count": 19,
     "tmdb_url": "https://www.themoviedb.org/company/539",
-    "updated_at": "2026-05-09T07:35:28.756Z"
+    "updated_at": "2026-05-09T11:51:26.446Z"
   },
   {
     "id": 540,
@@ -6471,7 +6471,7 @@
     "parent_company": "",
     "titles_count": 24,
     "tmdb_url": "https://www.themoviedb.org/company/540",
-    "updated_at": "2026-05-09T07:35:29.069Z"
+    "updated_at": "2026-05-09T11:51:26.668Z"
   },
   {
     "id": 541,
@@ -6484,7 +6484,7 @@
     "parent_company": "",
     "titles_count": 1,
     "tmdb_url": "https://www.themoviedb.org/company/541",
-    "updated_at": "2026-05-09T07:35:29.415Z"
+    "updated_at": "2026-05-09T11:51:26.860Z"
   },
   {
     "id": 542,
@@ -6497,7 +6497,7 @@
     "parent_company": "",
     "titles_count": 5,
     "tmdb_url": "https://www.themoviedb.org/company/542",
-    "updated_at": "2026-05-09T07:35:29.725Z"
+    "updated_at": "2026-05-09T11:51:27.101Z"
   },
   {
     "id": 543,
