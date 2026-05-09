@@ -639,14 +639,14 @@ thead th {
     }
 
     async function loadCompanies() {
-      const companiesRes = await fetch("./data/companies.json");
+      const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
       companies = await companiesRes.json();
 
       document.getElementById("stats").innerText =
         `${companies.length.toLocaleString()} companies cached`;
 
       try {
-        const metaRes = await fetch("./data/scan-meta.json");
+        const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
 
         if (metaRes.ok) {
           const meta = await metaRes.json();
