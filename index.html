@@ -321,10 +321,17 @@
       text-align: center;
     }
 
-    @media (max-width: 720px) {
-      body {
-        padding: 18px;
-      }
+@media (max-width: 720px) {
+  .collection-card {
+    flex-direction: column;
+    min-width: 100%;
+  }
+
+  .collection-poster {
+    width: 100px;
+    min-width: 100px;
+  }
+}
 
       .search-row {
         flex-direction: column;
