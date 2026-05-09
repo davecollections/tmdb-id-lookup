@@ -499,6 +499,10 @@
         min-width: 900px;
       }
     }
+
+    .lookup-note {
+  grid-column: 1 / -1;
+}
   </style>
 </head>
 
@@ -984,7 +988,7 @@
           totalAvailableResults > displayedResults
         ) {
           resultsHtml += `
-            <p class="meta">
+            <p class="meta lookup-note">
               More results may be available. Refine your search for better matches.
             </p>
           `;
