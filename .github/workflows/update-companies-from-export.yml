@@ -1,0 +1,42 @@
+name: Update TMDB Companies From Export
+
+on:
+  workflow_dispatch:
+    inputs:
+      offset:
+        description: "Start offset in TMDB production company export"
+        required: true
+        default: "0"
+      limit:
+        description: "Number of valid company IDs to enrich"
+        required: true
+        default: "500"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch TMDB companies from daily export
+        run: node scripts/fetch-companies-from-export.mjs
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          OFFSET: ${{ github.event.inputs.offset }}
+          LIMIT: ${{ github.event.inputs.limit }}
+
+      - name: Commit updated company data
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/companies.json data/companies.csv data/scan-meta.json data/production-company-export.json
+          git commit -m "Update TMDB company lookup from export" || echo "No changes"
+          git push
