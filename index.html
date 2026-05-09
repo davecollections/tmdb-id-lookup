@@ -220,6 +220,8 @@
     .page-status {
       color: #aeb7c2;
       font-size: 14px;
+      min-width: 72px;
+      text-align: center;
     }
 
     .pagination-bottom {
@@ -413,11 +415,19 @@
       .pagination {
         width: 100%;
         justify-content: center;
+        flex-wrap: nowrap;
+        gap: 6px;
       }
 
       .pagination button {
-        flex: 1;
-        min-width: 120px;
+        flex: 0 0 auto;
+        min-width: 44px;
+        padding: 9px 10px;
+      }
+
+      .page-status {
+        min-width: 66px;
+        text-align: center;
       }
 
       .rows-control {
@@ -502,11 +512,11 @@
 
     <div class="pagination">
       <button id="first-page" type="button">First</button>
-      <button id="prev-page" type="button">Previous</button>
+      <button id="prev-page" type="button" aria-label="Previous page">&lt;</button>
 
       <span id="page-status" class="page-status"></span>
 
-      <button id="next-page" type="button">Next</button>
+      <button id="next-page" type="button" aria-label="Next page">&gt;</button>
       <button id="last-page" type="button">Last</button>
     </div>
   </div>
@@ -555,11 +565,11 @@
 
   <div class="pagination pagination-bottom">
     <button id="first-page-bottom" type="button">First</button>
-    <button id="prev-page-bottom" type="button">Previous</button>
+    <button id="prev-page-bottom" type="button" aria-label="Previous page">&lt;</button>
 
     <span id="page-status-bottom" class="page-status"></span>
 
-    <button id="next-page-bottom" type="button">Next</button>
+    <button id="next-page-bottom" type="button" aria-label="Next page">&gt;</button>
     <button id="last-page-bottom" type="button">Last</button>
   </div>
 
@@ -856,10 +866,10 @@
       const totalPages = getTotalPages();
 
       document.getElementById("page-status").innerText =
-        `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
+        `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
       document.getElementById("page-status-bottom").innerText =
-        `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
+        `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
       if (!filteredCompanies.length) {
         document.getElementById("result-count").innerText =
