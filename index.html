@@ -238,7 +238,7 @@
 
     table {
       width: 100%;
-      min-width: 920px;
+      min-width: 1040px;
       border-collapse: collapse;
     }
 
@@ -429,7 +429,7 @@
       }
 
       table {
-        min-width: 720px;
+        min-width: 900px;
       }
     }
   </style>
@@ -478,7 +478,7 @@
   <div class="search-row">
     <input
       id="search"
-      placeholder="Search by ID, company name, country, or headquarters…"
+      placeholder="Search by ID, company name, parent company, country, or headquarters…"
     >
 
     <button id="clear-search" type="button">
@@ -523,6 +523,10 @@
 
           <th class="sortable" data-sort="name">
             Company <span class="sort-indicator"></span>
+          </th>
+
+          <th class="sortable" data-sort="parent_company">
+            Parent Company <span class="sort-indicator"></span>
           </th>
 
           <th class="sortable" data-sort="titles_count">
@@ -804,6 +808,9 @@
           String(company.name || "")
             .toLowerCase()
             .includes(query) ||
+          String(company.parent_company || "")
+            .toLowerCase()
+            .includes(query) ||
           String(company.origin_country || "")
             .toLowerCase()
             .includes(query) ||
@@ -854,25 +861,25 @@
       document.getElementById("page-status-bottom").innerText =
         `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
-if (!filteredCompanies.length) {
-  document.getElementById("result-count").innerText =
-    `Showing 0 of 0 companies`;
-  return;
-}
+      if (!filteredCompanies.length) {
+        document.getElementById("result-count").innerText =
+          `Showing 0 of 0 companies`;
+        return;
+      }
 
-let startItem = 1;
-let endItem = filteredCompanies.length;
+      let startItem = 1;
+      let endItem = filteredCompanies.length;
 
-if (rowsPerPage !== "all") {
-  startItem = ((currentPage - 1) * rowsPerPage) + 1;
-  endItem = Math.min(
-    currentPage * rowsPerPage,
-    filteredCompanies.length
-  );
-}
+      if (rowsPerPage !== "all") {
+        startItem = ((currentPage - 1) * rowsPerPage) + 1;
+        endItem = Math.min(
+          currentPage * rowsPerPage,
+          filteredCompanies.length
+        );
+      }
 
-document.getElementById("result-count").innerText =
-  `Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${filteredCompanies.length.toLocaleString()} companies`;
+      document.getElementById("result-count").innerText =
+        `Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${filteredCompanies.length.toLocaleString()} companies`;
     }
 
     function render(items) {
@@ -903,6 +910,7 @@ document.getElementById("result-count").innerText =
 
           <td>${company.id}</td>
           <td>${company.name || ""}</td>
+          <td>${company.parent_company || ""}</td>
           <td>${Number(company.titles_count || 0).toLocaleString()}</td>
           <td>${company.origin_country || ""}</td>
           <td>${company.headquarters || ""}</td>
