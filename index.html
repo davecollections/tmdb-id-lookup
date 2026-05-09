@@ -713,7 +713,7 @@ thead th {
       const updated = new Date(lastScan.finished_at);
 
       document.getElementById("stats").innerText =
-        `${companies.length.toLocaleString()} cached of ${lastScan.export_total_ids.toLocaleString()} available`;
+        `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs currently cached and searchable`
 
       document.getElementById("last-updated").innerText =
         `Last updated ${updated.toLocaleString()}`;
