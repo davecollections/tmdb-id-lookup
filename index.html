@@ -503,6 +503,39 @@
     .lookup-note {
   grid-column: 1 / -1;
 }
+
+    .people-download-tools {
+  margin: 18px 0 24px;
+  padding: 16px;
+  border: 1px solid #222b36;
+  border-radius: 14px;
+  background: #111720;
+  max-width: 920px;
+}
+
+.people-download-tools h3 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.people-download-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.people-download-row input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.people-download-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
   </style>
 </head>
 
@@ -528,7 +561,47 @@
     </button>
   </div>
 
-  <div id="collection-results" class="collection-results"></div>
+  <div class="people-download-tools">
+  <h3>People CSV Downloads</h3>
+
+  <div class="people-download-row">
+    <input
+      id="people-popularity-filter"
+      type="number"
+      step="0.1"
+      placeholder="TMDB popularity above"
+    >
+
+    <input
+      id="people-credits-filter"
+      type="number"
+      placeholder="Known credits above"
+    >
+  </div>
+
+  <div class="people-download-buttons">
+    <button
+      id="download-popular-actors"
+      type="button"
+    >
+      Download popular actors CSV
+    </button>
+
+    <button
+      id="download-popular-directors"
+      type="button"
+    >
+      Download popular directors CSV
+    </button>
+  </div>
+
+  <p
+    id="people-download-status"
+    class="meta"
+  ></p>
+</div>
+
+<div id="collection-results" class="collection-results"></div>
 
   <div class="section-divider"></div>
 
