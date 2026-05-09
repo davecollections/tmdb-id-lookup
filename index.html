@@ -320,6 +320,13 @@
       box-sizing: border-box;
     }
 
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #2b313b, transparent);
+      margin: 48px 0;
+      opacity: 0.9;
+    }
+
     #back-to-top {
       position: fixed;
       right: 18px;
@@ -425,20 +432,6 @@
         min-width: 840px;
       }
     }
-
-    .section-divider {
-  height: 1px;
-  background:
-    linear-gradient(
-      to right,
-      transparent,
-      #2b313b,
-      transparent
-    );
-
-  margin: 48px 0;
-  opacity: 0.9;
-}
   </style>
 </head>
 
@@ -468,7 +461,7 @@
 
   <div class="section-divider"></div>
 
-  <h1 style="margin-top:60px;">TMDB Company Lookup</h1>
+  <h1>TMDB Company Lookup</h1>
 
   <p>Search cached TMDB production companies.</p>
 
@@ -584,6 +577,20 @@
   <script>
     const TMDB_API_KEY = "__TMDB_API_KEY__";
 
+    const collectionAliases = {
+      lotr: "lord of the rings",
+      hp: "harry potter",
+      mcu: "marvel",
+      dceu: "dc",
+      bttf: "back to the future",
+      mi: "mission impossible",
+      tdk: "dark knight",
+      potc: "pirates of the caribbean",
+      sw: "star wars",
+      jp: "jurassic park",
+      jw: "jurassic world"
+    };
+
     let companies = [];
     let filteredCompanies = [];
     let currentSearch = "";
@@ -642,16 +649,10 @@
     }
 
     async function searchCollections() {
-let query = document
-  .getElementById("collection-search")
-  .value
-  .trim();
-
-const normalizedQuery = query.toLowerCase();
-
-if (aliases[normalizedQuery]) {
-  query = aliases[normalizedQuery];
-}
+      let query = document
+        .getElementById("collection-search")
+        .value
+        .trim();
 
       const resultsContainer =
         document.getElementById("collection-results");
@@ -659,6 +660,12 @@ if (aliases[normalizedQuery]) {
       if (!query) {
         resultsContainer.innerHTML = "";
         return;
+      }
+
+      const normalizedQuery = query.toLowerCase();
+
+      if (collectionAliases[normalizedQuery]) {
+        query = collectionAliases[normalizedQuery];
       }
 
       resultsContainer.innerHTML =
@@ -697,16 +704,6 @@ if (aliases[normalizedQuery]) {
             } catch {
               movieCount = "—";
             }
-
-            const aliases = {
-            lotr: "lord of the rings",
-            hp: "harry potter",
-            mcu: "marvel",
-            dceu: "dc",
-            bttf: "back to the future",
-            mi: "mission impossible",
-            tdk: "dark knight"
-            };
 
             const poster = collection.poster_path
               ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
