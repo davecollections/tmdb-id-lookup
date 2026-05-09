@@ -372,15 +372,19 @@
   </p>
 
   <div class="search-row">
-    <input
-      id="collection-search"
-      placeholder="Search collections (e.g. Harry Potter)"
-    >
+  <input
+    id="collection-search"
+    placeholder="Search collections (e.g. Harry Potter)"
+  >
 
-    <button id="collection-search-btn" type="button">
-      Search
-    </button>
-  </div>
+  <button id="collection-search-btn" type="button">
+    Search
+  </button>
+
+  <button id="clear-collection-search" type="button">
+    Clear
+  </button>
+</div>
 
   <div id="collection-results" class="collection-results"></div>
   <h1>TMDB Company Lookup</h1>
@@ -918,6 +922,14 @@
           behavior: "smooth"
         });
       });
+
+    document
+  .getElementById("clear-collection-search")
+  .addEventListener("click", () => {
+    document.getElementById("collection-search").value = "";
+    document.getElementById("collection-results").innerHTML = "";
+    document.getElementById("collection-search").focus();
+  });
 
     loadCompanies();
   </script>
