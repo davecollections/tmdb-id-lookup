@@ -3,14 +3,14 @@
     "mode": "tmdb_daily_export",
     "export_date": "05_09_2026",
     "export_total_ids": 247822,
-    "offset": 65000,
-    "limit": 10000,
-    "actual_limit": 10000,
-    "checked": 10000,
-    "found": 10000,
+    "offset": 75000,
+    "limit": 15000,
+    "actual_limit": 15000,
+    "checked": 15000,
+    "found": 15000,
     "missing": 0,
-    "started_at": "2026-05-10T03:45:01.827Z",
-    "total_cached": 75000,
-    "finished_at": "2026-05-10T04:38:42.780Z"
+    "started_at": "2026-05-10T04:56:16.850Z",
+    "total_cached": 90000,
+    "finished_at": "2026-05-10T05:56:59.590Z"
   }
 }
