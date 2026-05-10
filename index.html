@@ -1,1037 +1,1012 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>TMDB Company & ID Lookup</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="utf-8" />
+    <title>TMDB Company & ID Lookup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <style>
-    body {
-      font-family: Inter, system-ui, sans-serif;
-      background: #0b0d10;
-      color: #f5f5f5;
-      margin: 0;
-      padding: 32px;
-    }
-
-    h1,
-    h2 {
-      margin-top: 0;
-    }
-
-    a {
-      color: #8ab4ff;
-    }
-
-    input,
-    select {
-      width: 100%;
-      max-width: 520px;
-      padding: 14px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #151922;
-      color: white;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-
-    input::placeholder {
-      font-size: 14px;
-      color: #8f98a8;
-    }
-
-    select {
-      width: auto;
-      min-width: 110px;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-
-    button {
-      padding: 14px 16px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #151922;
-      color: #8ab4ff;
-      font-size: 16px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    button:hover:not(:disabled) {
-      border-color: #8ab4ff;
-    }
-
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .meta {
-      color: #aeb7c2;
-      font-size: 14px;
-      margin: 6px 0;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .search-row input {
-      flex: 1;
-      min-width: 280px;
-    }
-
-    .search-row button {
-      width: auto;
-      flex: 0 0 auto;
-    }
-
-    .download-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin: 14px 0 18px;
-      font-size: 14px;
-    }
-
-    .download-links span {
-      color: #566171;
-    }
-
-    .download-links a {
-      background: #151922;
-      border: 1px solid #2b313b;
-      border-radius: 8px;
-      color: #8ab4ff;
-      padding: 8px 11px;
-      text-decoration: none;
-    }
-
-    .download-links a:hover {
-      border-color: #8ab4ff;
-    }
-
-    .collection-results {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(320px, 1fr));
-      gap: 14px;
-      margin: 18px 0 36px;
-      max-width: 1200px;
-    }
-
-    .collection-card {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      background: #111720;
-      border: 1px solid #222b36;
-      border-radius: 14px;
-      padding: 14px;
-      width: 100%;
-      min-width: 0;
-      max-width: none;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-
-    .collection-poster {
-      width: 80px;
-      min-width: 80px;
-      aspect-ratio: 2 / 3;
-      border-radius: 10px;
-      object-fit: cover;
-      background: #1b1f27;
-    }
-
-    .collection-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .collection-info h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      word-break: break-word;
-    }
-
-    .collection-meta {
-      color: #aeb7c2;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .collection-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .collection-actions button,
-    .collection-actions a {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #2b313b;
-      background: #151922;
-      color: #8ab4ff;
-      text-decoration: none;
-      font-size: 14px;
-    }
-
-    .collection-actions button:hover,
-    .collection-actions a:hover {
-      border-color: #8ab4ff;
-    }
-
-    .notice {
-      max-width: 860px;
-      margin: 12px 0 18px;
-      padding: 13px 15px;
-      border: 1px solid rgba(138, 180, 255, 0.35);
-      border-left: 4px solid #8ab4ff;
-      border-radius: 10px;
-      background: rgba(32, 42, 62, 0.9);
-      color: #d4e2ff;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .company-summary {
-      margin: 16px 0 14px;
-    }
-
-    .company-cache-count {
-      margin: 0 0 6px;
-      font-size: 17px;
-      font-weight: 700;
-      color: #f5f5f5;
-    }
-
-    .company-updated {
-      margin: 0;
-      font-size: 15px;
-      color: #aeb7c2;
-    }
-
-    .controls-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-      margin: 0 0 18px;
-    }
-
-    .rows-control {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #aeb7c2;
-      font-size: 14px;
-    }
-
-    .pagination {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .pagination button {
-      padding: 9px 12px;
-      font-size: 14px;
-      border-radius: 8px;
-      width: auto;
-      flex: 0 0 auto;
-    }
-
-    .page-status {
-      color: #aeb7c2;
-      font-size: 14px;
-      min-width: 72px;
-      text-align: center;
-    }
-
-    .pagination-bottom {
-      margin-top: 16px;
-      justify-content: flex-end;
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid #1c222c;
-      border-radius: 12px;
-      background: #0f1218;
-    }
-
-    table {
-      width: 100%;
-      min-width: 1040px;
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #222;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    thead th {
-      background: #111720;
-      z-index: 2;
-    }
-
-    tbody tr:hover {
-      background: #111720;
-    }
-
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-
-    th.sortable:hover {
-      color: #8ab4ff;
-    }
-
-    .sort-indicator {
-      opacity: 0.65;
-      margin-left: 4px;
-      font-size: 12px;
-    }
-
-    .header-note,
-    .movie-count-note {
-      display: block;
-      margin-top: 3px;
-      color: #7f8a99;
-      font-size: 11px;
-      font-weight: normal;
-      line-height: 1.2;
-    }
-
-    .movie-count-note {
-      max-width: 120px;
-    }
-
-    .logo-cell {
-      width: 76px;
-    }
-
-    .logo-box {
-      width: 64px;
-      height: 30px;
-      background: #f2f4f7;
-      border: 1px solid #d8dde6;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-      box-sizing: border-box;
-    }
-
-    .studio-logo {
-      max-height: 22px;
-      max-width: 56px;
-      object-fit: contain;
-      display: block;
-    }
-
-    .logo-placeholder {
-      width: 64px;
-      height: 30px;
-      background: #1b1f27;
-      border: 1px solid #2b313b;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-
-    .copy-id-button {
-      padding: 4px 8px;
-      border-radius: 7px;
-      border: 1px solid #2b313b;
-      background: #151922;
-      color: #8ab4ff;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .copy-id-button:hover {
-      border-color: #8ab4ff;
-    }
-
-    .section-divider {
-      height: 1px;
-      background: linear-gradient(to right, transparent, #2b313b, transparent);
-      margin: 48px 0;
-      opacity: 0.9;
-    }
-
-    #back-to-top {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 20;
-      padding: 10px 13px;
-      border-radius: 999px;
-      background: #151922;
-      border: 1px solid #2b313b;
-      color: #8ab4ff;
-      font-size: 14px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    }
-
-    #copy-toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(20, 25, 34, 0.96);
-      border: 1px solid #2b313b;
-      color: #f5f5f5;
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-size: 14px;
-      opacity: 0;
-      pointer-events: none;
-      transition:
-        opacity 0.25s ease,
-        transform 0.25s ease;
-      z-index: 1000;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-    }
-
-    #copy-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .site-footer {
-      color: #7f8a99;
-      font-size: 12px;
-      line-height: 1.5;
-      margin: 32px auto 56px;
-      max-width: 900px;
-      text-align: center;
-    }
-
-    .footer-meta {
-      margin-top: 10px;
-      color: #6f7a89;
-      font-size: 11px;
-    }
-
-    @media (max-width: 720px) {
+    <style>
       body {
-        padding: 16px;
+        font-family: Inter, system-ui, sans-serif;
+        background: #0b0d10;
+        color: #f5f5f5;
+        margin: 0;
+        padding: 32px;
+      }
+
+      h1,
+      h2 {
+        margin-top: 0;
+      }
+
+      a {
+        color: #8ab4ff;
+      }
+
+      input,
+      select {
+        width: 100%;
+        max-width: 520px;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid #333;
+        background: #151922;
+        color: white;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+
+      input::placeholder {
+        font-size: 14px;
+        color: #8f98a8;
+      }
+
+      select {
+        width: auto;
+        min-width: 110px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      button {
+        padding: 14px 16px;
+        border-radius: 10px;
+        border: 1px solid #333;
+        background: #151922;
+        color: #8ab4ff;
+        font-size: 16px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      button:hover:not(:disabled) {
+        border-color: #8ab4ff;
+      }
+
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .meta {
+        color: #aeb7c2;
+        font-size: 14px;
+        margin: 6px 0;
       }
 
       .search-row {
-        flex-direction: column;
-        align-items: stretch;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+
+      .search-row input {
+        flex: 1;
+        min-width: 280px;
       }
 
       .search-row button {
-        width: 100%;
+        width: auto;
+        flex: 0 0 auto;
+      }
+
+      .download-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin: 14px 0 18px;
+        font-size: 14px;
+      }
+
+      .download-links span {
+        color: #566171;
+      }
+
+      .download-links a {
+        background: #151922;
+        border: 1px solid #2b313b;
+        border-radius: 8px;
+        color: #8ab4ff;
+        padding: 8px 11px;
+        text-decoration: none;
+      }
+
+      .download-links a:hover {
+        border-color: #8ab4ff;
       }
 
       .collection-results {
-        grid-template-columns: 1fr;
-        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(320px, 1fr));
+        gap: 14px;
+        margin: 18px 0 36px;
+        max-width: 1200px;
       }
 
       .collection-card {
-        flex-direction: column;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        background: #111720;
+        border: 1px solid #222b36;
+        border-radius: 14px;
+        padding: 14px;
         width: 100%;
-        padding: 12px;
+        min-width: 0;
+        max-width: none;
+        box-sizing: border-box;
+        overflow: hidden;
       }
 
       .collection-poster {
-        width: 100px;
-        min-width: 100px;
+        width: 80px;
+        min-width: 80px;
+        aspect-ratio: 2 / 3;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #1b1f27;
+      }
+
+      .collection-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .collection-info h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+        word-break: break-word;
+      }
+
+      .collection-meta {
+        color: #aeb7c2;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .collection-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .collection-actions button,
+      .collection-actions a {
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #2b313b;
+        background: #151922;
+        color: #8ab4ff;
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .collection-actions button:hover,
+      .collection-actions a:hover {
+        border-color: #8ab4ff;
+      }
+
+      .notice {
+        max-width: 860px;
+        margin: 12px 0 18px;
+        padding: 13px 15px;
+        border: 1px solid rgba(138, 180, 255, 0.35);
+        border-left: 4px solid #8ab4ff;
+        border-radius: 10px;
+        background: rgba(32, 42, 62, 0.9);
+        color: #d4e2ff;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .company-summary {
+        margin: 16px 0 14px;
+      }
+
+      .company-cache-count {
+        margin: 0 0 6px;
+        font-size: 17px;
+        font-weight: 700;
+        color: #f5f5f5;
+      }
+
+      .company-updated {
+        margin: 0;
+        font-size: 15px;
+        color: #aeb7c2;
       }
 
       .controls-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .pagination {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: nowrap;
-        gap: 6px;
-      }
-
-      .pagination button {
-        flex: 0 0 auto;
-        min-width: 44px;
-        padding: 9px 10px;
-      }
-
-      .page-status {
-        min-width: 66px;
-        text-align: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 0 0 18px;
       }
 
       .rows-control {
-        justify-content: space-between;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #aeb7c2;
+        font-size: 14px;
       }
 
-      .rows-control select {
-        flex: 1;
+      .pagination {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .pagination button {
+        padding: 9px 12px;
+        font-size: 14px;
+        border-radius: 8px;
+        width: auto;
+        flex: 0 0 auto;
+      }
+
+      .page-status {
+        color: #aeb7c2;
+        font-size: 14px;
+        min-width: 72px;
+        text-align: center;
+      }
+
+      .pagination-bottom {
+        margin-top: 16px;
+        justify-content: flex-end;
+      }
+
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #1c222c;
+        border-radius: 12px;
+        background: #0f1218;
       }
 
       table {
-        min-width: 900px;
+        width: 100%;
+        min-width: 1040px;
+        border-collapse: collapse;
       }
-    }
 
-    .lookup-note {
-  grid-column: 1 / -1;
-}
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #222;
+        text-align: left;
+        vertical-align: middle;
+      }
 
-    .people-download-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin: 12px 0 6px;
-}
+      thead th {
+        background: #111720;
+        z-index: 2;
+      }
 
-.people-download-label {
-  color: #aeb7c2;
-  font-size: 14px;
-  white-space: nowrap;
-}
+      tbody tr:hover {
+        background: #111720;
+      }
 
-.people-download-tools input {
-  width: 170px;
-  min-width: 170px;
-  padding: 10px 12px;
-  font-size: 14px;
-}
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+      }
 
-.people-download-tools button {
-  padding: 10px 12px;
-  font-size: 14px;
-}
-  </style>
-</head>
+      th.sortable:hover {
+        color: #8ab4ff;
+      }
 
-<body>
-  <h1>TMDB ID Lookup</h1>
+      .sort-indicator {
+        opacity: 0.65;
+        margin-left: 4px;
+        font-size: 12px;
+      }
 
-  <p>
-    Search TMDB movie collections and people by name or ID.
-  </p>
+      .header-note,
+      .movie-count-note {
+        display: block;
+        margin-top: 3px;
+        color: #7f8a99;
+        font-size: 11px;
+        font-weight: normal;
+        line-height: 1.2;
+      }
 
-  <div class="search-row">
-    <input
-      id="collection-search"
-      placeholder="Search collections or people by name or ID (e.g. Matrix, Spielberg)"
-    >
+      .movie-count-note {
+        max-width: 120px;
+      }
 
-    <button id="collection-search-btn" type="button">
-      Search
-    </button>
+      .logo-cell {
+        width: 76px;
+      }
 
-    <button id="clear-collection-search" type="button">
-      Clear
-    </button>
-  </div>
+      .logo-box {
+        width: 64px;
+        height: 30px;
+        background: #f2f4f7;
+        border: 1px solid #d8dde6;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        box-sizing: border-box;
+      }
 
-<div class="people-download-tools">
-  <span class="people-download-label">
-    People CSV downloads
-  </span>
+      .studio-logo {
+        max-height: 22px;
+        max-width: 56px;
+        object-fit: contain;
+        display: block;
+      }
 
-  <input
-    id="people-popularity-filter"
-    type="number"
-    step="0.1"
-    placeholder="Popularity above"
-  >
+      .logo-placeholder {
+        width: 64px;
+        height: 30px;
+        background: #1b1f27;
+        border: 1px solid #2b313b;
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
 
-  <input
-    id="people-credits-filter"
-    type="number"
-    placeholder="Credits above"
-  >
+      .copy-id-button {
+        padding: 4px 8px;
+        border-radius: 7px;
+        border: 1px solid #2b313b;
+        background: #151922;
+        color: #8ab4ff;
+        font-size: 14px;
+        cursor: pointer;
+      }
 
-  <button
-    id="download-popular-actors"
-    type="button"
-  >
-    Actors CSV
-  </button>
+      .copy-id-button:hover {
+        border-color: #8ab4ff;
+      }
 
-  <button
-    id="download-popular-directors"
-    type="button"
-  >
-    Directors CSV
-  </button>
-</div>
+      .section-divider {
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          #2b313b,
+          transparent
+        );
+        margin: 48px 0;
+        opacity: 0.9;
+      }
 
-<p
-  id="people-download-status"
-  class="meta"
-></p>
+      #back-to-top {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 20;
+        padding: 10px 13px;
+        border-radius: 999px;
+        background: #151922;
+        border: 1px solid #2b313b;
+        color: #8ab4ff;
+        font-size: 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
 
-<div id="collection-results" class="collection-results"></div>
+      #copy-toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: rgba(20, 25, 34, 0.96);
+        border: 1px solid #2b313b;
+        color: #f5f5f5;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-size: 14px;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.25s ease,
+          transform 0.25s ease;
+        z-index: 1000;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      }
 
-  <div class="section-divider"></div>
+      #copy-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
 
-  <h1>TMDB Company Lookup</h1>
+      .site-footer {
+        color: #7f8a99;
+        font-size: 12px;
+        line-height: 1.5;
+        margin: 32px auto 56px;
+        max-width: 900px;
+        text-align: center;
+      }
 
-  <p>Search cached TMDB production companies.</p>
+      .footer-meta {
+        margin-top: 10px;
+        color: #6f7a89;
+        font-size: 11px;
+      }
 
-  <p class="notice">
-    This company database is still being built in batches, so not every TMDB studio/ID is listed yet.
-    More companies are being added over the next few days.
-  </p>
+      @media (max-width: 720px) {
+        body {
+          padding: 16px;
+        }
 
-  <div class="company-summary">
-    <p id="stats" class="company-cache-count"></p>
-    <p id="last-updated" class="company-updated"></p>
-  </div>
+        .search-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
 
-  <div class="download-links">
-    <a href="./data/companies.json" download>Download JSON</a>
-    <span>·</span>
-    <a href="./data/companies.csv" download>Download CSV</a>
-  </div>
+        .search-row button {
+          width: 100%;
+        }
 
-  <div class="search-row">
-    <input
-      id="search"
-      placeholder="Search by ID, company name, parent company, country, or headquarters…"
-    >
+        .collection-results {
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
 
-    <button id="clear-search" type="button">
-      Clear
-    </button>
-  </div>
+        .collection-card {
+          flex-direction: column;
+          width: 100%;
+          padding: 12px;
+        }
 
-  <p id="result-count"></p>
+        .collection-poster {
+          width: 100px;
+          min-width: 100px;
+        }
 
-  <div class="controls-row">
-    <div class="rows-control">
-      <label for="rows-per-page">Rows per page</label>
+        .controls-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
 
-      <select id="rows-per-page">
-        <option value="100">100</option>
-        <option value="250" selected>250</option>
-        <option value="500">500</option>
-        <option value="all">All — may be slow</option>
-      </select>
+        .pagination {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: nowrap;
+          gap: 6px;
+        }
+
+        .pagination button {
+          flex: 0 0 auto;
+          min-width: 44px;
+          padding: 9px 10px;
+        }
+
+        .page-status {
+          min-width: 66px;
+          text-align: center;
+        }
+
+        .rows-control {
+          justify-content: space-between;
+        }
+
+        .rows-control select {
+          flex: 1;
+        }
+
+        table {
+          min-width: 900px;
+        }
+      }
+
+      .lookup-note {
+        grid-column: 1 / -1;
+      }
+
+      .people-download-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin: 12px 0 6px;
+      }
+
+      .people-download-label {
+        color: #aeb7c2;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+
+      .people-download-tools input {
+        width: 170px;
+        min-width: 170px;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .people-download-tools button {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>TMDB ID Lookup</h1>
+
+    <p>Search TMDB movie collections and people by name or ID.</p>
+
+    <div class="search-row">
+      <input
+        id="collection-search"
+        placeholder="Search collections or people by name or ID (e.g. Matrix, Spielberg)"
+      />
+
+      <button id="collection-search-btn" type="button">Search</button>
+
+      <button id="clear-collection-search" type="button">Clear</button>
     </div>
 
-    <div class="pagination">
-      <button id="first-page" type="button">First</button>
-      <button id="prev-page" type="button" aria-label="Previous page">&lt;</button>
+    <div class="people-download-tools">
+      <span class="people-download-label"> People CSV downloads </span>
 
-      <span id="page-status" class="page-status"></span>
+      <input
+        id="people-popularity-filter"
+        type="number"
+        step="0.1"
+        placeholder="Popularity above"
+      />
 
-      <button id="next-page" type="button" aria-label="Next page">&gt;</button>
-      <button id="last-page" type="button">Last</button>
+      <input
+        id="people-credits-filter"
+        type="number"
+        placeholder="Credits above"
+      />
+
+      <button id="download-popular-actors" type="button">Actors CSV</button>
+
+      <button id="download-popular-directors" type="button">
+        Directors CSV
+      </button>
     </div>
-  </div>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Logo</th>
+    <p id="people-download-status" class="meta"></p>
 
-          <th class="sortable" data-sort="id">
-            TMDB ID
-            <span class="sort-indicator"></span>
-            <span class="header-note">Click ID to copy</span>
-          </th>
+    <div id="collection-results" class="collection-results"></div>
 
-          <th class="sortable" data-sort="name">
-            Company <span class="sort-indicator"></span>
-          </th>
+    <div class="section-divider"></div>
 
-          <th class="sortable" data-sort="parent_company">
-            Parent Company <span class="sort-indicator"></span>
-          </th>
+    <h1>TMDB Company Lookup</h1>
 
-          <th class="sortable" data-sort="titles_count">
-            Movie Count <span class="sort-indicator"></span>
-            <span class="movie-count-note">TMDB movie credits</span>
-          </th>
+    <p>Search cached TMDB production companies.</p>
 
-          <th class="sortable" data-sort="origin_country">
-            Country <span class="sort-indicator"></span>
-          </th>
-
-          <th class="sortable" data-sort="headquarters">
-            Headquarters <span class="sort-indicator"></span>
-          </th>
-
-          <th>TMDB</th>
-        </tr>
-      </thead>
-
-      <tbody id="results"></tbody>
-    </table>
-  </div>
-
-  <div class="pagination pagination-bottom">
-    <button id="first-page-bottom" type="button">First</button>
-    <button id="prev-page-bottom" type="button" aria-label="Previous page">&lt;</button>
-
-    <span id="page-status-bottom" class="page-status"></span>
-
-    <button id="next-page-bottom" type="button" aria-label="Next page">&gt;</button>
-    <button id="last-page-bottom" type="button">Last</button>
-  </div>
-
-  <footer class="site-footer">
-    <p>
-      This product uses the TMDB API but is not endorsed or certified by TMDB.
-      Company names, logos, posters, and trademarks remain the property of their respective owners.
+    <p class="notice">
+      This company database is still being built in batches, so not every TMDB
+      studio/ID is listed yet. More companies are being added over the next few
+      days.
     </p>
 
-    <p id="scan-stats" class="footer-meta"></p>
-  </footer>
+    <div class="company-summary">
+      <p id="stats" class="company-cache-count"></p>
+      <p id="last-updated" class="company-updated"></p>
+    </div>
 
-  <button id="back-to-top" type="button" aria-label="Back to top">
-    ↑ Top
-  </button>
+    <div class="download-links">
+      <a href="./data/companies.json" download>Download JSON</a>
+      <span>·</span>
+      <a href="./data/companies.csv" download>Download CSV</a>
+    </div>
 
-  <div id="copy-toast">
-    Copied to clipboard
-  </div>
+    <div class="search-row">
+      <input
+        id="search"
+        placeholder="Search by ID, company name, parent company, country, or headquarters…"
+      />
 
-  <script>
-    const TMDB_API_KEY = "__TMDB_API_KEY__";
+      <button id="clear-search" type="button">Clear</button>
+    </div>
 
-    const collectionAliases = {
-      lotr: "lord of the rings",
-      hp: "harry potter",
-      mcu: "marvel",
-      dceu: "dc",
-      bttf: "back to the future",
-      mi: "mission impossible",
-      tdk: "dark knight",
-      potc: "pirates of the caribbean",
-      sw: "star wars",
-      jp: "jurassic park",
-      jw: "jurassic world"
-    };
+    <p id="result-count"></p>
 
-    let companies = [];
-    let filteredCompanies = [];
-    let currentSearch = "";
-    let sortKey = "id";
-    let sortDirection = "asc";
-    let currentPage = 1;
-    let rowsPerPage = 250;
+    <div class="controls-row">
+      <div class="rows-control">
+        <label for="rows-per-page">Rows per page</label>
 
-    function showCopyToast() {
-      const toast = document.getElementById("copy-toast");
+        <select id="rows-per-page">
+          <option value="100">100</option>
+          <option value="250" selected>250</option>
+          <option value="500">500</option>
+          <option value="all">All — may be slow</option>
+        </select>
+      </div>
 
-      toast.classList.add("show");
+      <div class="pagination">
+        <button id="first-page" type="button">First</button>
+        <button id="prev-page" type="button" aria-label="Previous page">
+          &lt;
+        </button>
 
-      clearTimeout(window.copyToastTimeout);
+        <span id="page-status" class="page-status"></span>
 
-      window.copyToastTimeout = setTimeout(() => {
-        toast.classList.remove("show");
-      }, 1800);
-    }
+        <button id="next-page" type="button" aria-label="Next page">
+          &gt;
+        </button>
+        <button id="last-page" type="button">Last</button>
+      </div>
+    </div>
 
-    function copyId(id) {
-      navigator.clipboard.writeText(String(id));
-      showCopyToast();
-    }
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Logo</th>
 
-    async function tmdbJson(url) {
-      const res = await fetch(url);
+            <th class="sortable" data-sort="id">
+              TMDB ID
+              <span class="sort-indicator"></span>
+              <span class="header-note">Click ID to copy</span>
+            </th>
 
-      if (!res.ok) {
-        return null;
+            <th class="sortable" data-sort="name">
+              Company <span class="sort-indicator"></span>
+            </th>
+
+            <th class="sortable" data-sort="parent_company">
+              Parent Company <span class="sort-indicator"></span>
+            </th>
+
+            <th class="sortable" data-sort="titles_count">
+              Movie Count <span class="sort-indicator"></span>
+              <span class="movie-count-note">TMDB movie credits</span>
+            </th>
+
+            <th class="sortable" data-sort="origin_country">
+              Country <span class="sort-indicator"></span>
+            </th>
+
+            <th class="sortable" data-sort="headquarters">
+              Headquarters <span class="sort-indicator"></span>
+            </th>
+
+            <th>TMDB</th>
+          </tr>
+        </thead>
+
+        <tbody id="results"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination pagination-bottom">
+      <button id="first-page-bottom" type="button">First</button>
+      <button id="prev-page-bottom" type="button" aria-label="Previous page">
+        &lt;
+      </button>
+
+      <span id="page-status-bottom" class="page-status"></span>
+
+      <button id="next-page-bottom" type="button" aria-label="Next page">
+        &gt;
+      </button>
+      <button id="last-page-bottom" type="button">Last</button>
+    </div>
+
+    <footer class="site-footer">
+      <p>
+        This product uses the TMDB API but is not endorsed or certified by TMDB.
+        Company names, logos, posters, and trademarks remain the property of
+        their respective owners.
+      </p>
+
+      <p id="scan-stats" class="footer-meta"></p>
+    </footer>
+
+    <button id="back-to-top" type="button" aria-label="Back to top">
+      ↑ Top
+    </button>
+
+    <div id="copy-toast">Copied to clipboard</div>
+
+    <script>
+      const TMDB_API_KEY = "__TMDB_API_KEY__";
+
+      const collectionAliases = {
+        lotr: "lord of the rings",
+        hp: "harry potter",
+        mcu: "marvel",
+        dceu: "dc",
+        bttf: "back to the future",
+        mi: "mission impossible",
+        tdk: "dark knight",
+        potc: "pirates of the caribbean",
+        sw: "star wars",
+        jp: "jurassic park",
+        jw: "jurassic world",
+      };
+
+      let companies = [];
+      let filteredCompanies = [];
+      let currentSearch = "";
+      let sortKey = "id";
+      let sortDirection = "asc";
+      let currentPage = 1;
+      let rowsPerPage = 250;
+
+      function showCopyToast() {
+        const toast = document.getElementById("copy-toast");
+
+        toast.classList.add("show");
+
+        clearTimeout(window.copyToastTimeout);
+
+        window.copyToastTimeout = setTimeout(() => {
+          toast.classList.remove("show");
+        }, 1800);
       }
 
-      return res.json();
-    }
+      function copyId(id) {
+        navigator.clipboard.writeText(String(id));
+        showCopyToast();
+      }
 
-    async function getPersonKnownCredits(personId) {
-      try {
-        const credits = await tmdbJson(
-          `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`
-        );
+      async function tmdbJson(url) {
+        const res = await fetch(url);
 
-        if (!credits) {
+        if (!res.ok) {
+          return null;
+        }
+
+        return res.json();
+      }
+
+      async function getPersonKnownCredits(personId) {
+        try {
+          const credits = await tmdbJson(
+            `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`,
+          );
+
+          if (!credits) {
+            return "—";
+          }
+
+          const castCount = Array.isArray(credits.cast)
+            ? credits.cast.length
+            : 0;
+
+          const crewCount = Array.isArray(credits.crew)
+            ? credits.crew.length
+            : 0;
+
+          return (castCount + crewCount).toLocaleString();
+        } catch {
           return "—";
         }
-
-        const castCount = Array.isArray(credits.cast)
-          ? credits.cast.length
-          : 0;
-
-        const crewCount = Array.isArray(credits.crew)
-          ? credits.crew.length
-          : 0;
-
-        return (castCount + crewCount).toLocaleString();
-      } catch {
-        return "—";
-      }
-    }
-
-    function csvEscape(value) {
-  const stringValue = String(value ?? "");
-
-  return `"${stringValue.replace(/"/g, '""')}"`;
-}
-
-function downloadCsv(filename, rows) {
-  const csvContent = rows
-    .map(row => row.map(csvEscape).join(","))
-    .join("\n");
-
-  const blob = new Blob(
-    [csvContent],
-    { type: "text/csv;charset=utf-8;" }
-  );
-
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = filename;
-
-  document.body.appendChild(link);
-
-  link.click();
-
-  link.remove();
-
-  URL.revokeObjectURL(url);
-}
-
-async function getKnownCreditsNumber(personId) {
-  try {
-    const credits = await tmdbJson(
-      `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`
-    );
-
-    if (!credits) {
-      return 0;
-    }
-
-    const castCount = Array.isArray(credits.cast)
-      ? credits.cast.length
-      : 0;
-
-    const crewCount = Array.isArray(credits.crew)
-      ? credits.crew.length
-      : 0;
-
-    return castCount + crewCount;
-  } catch {
-    return 0;
-  }
-}
-
-    async function downloadPopularPeopleCsv(department) {
-  const status =
-    document.getElementById("people-download-status");
-
-  const popularityInput = Number(
-    document.getElementById(
-      "people-popularity-filter"
-    ).value
-  );
-
-  const creditsInput = Number(
-    document.getElementById(
-      "people-credits-filter"
-    ).value
-  );
-
-  const minPopularity =
-    popularityInput ||
-    (department === "Acting" ? 5 : 3);
-
-  const minCredits =
-    creditsInput || 20;
-
-  const rows = [[
-    "Rank",
-    "Name",
-    "TMDB ID",
-    "Known For",
-    "Known Credits",
-    "TMDB Popularity",
-    "TMDB URL"
-  ]];
-
-  const matches = [];
-
-  let scannedPages = 0;
-
-  status.innerText =
-    "Generating CSV...";
-
-  const maxPages =
-  department === "Directing" ? 50 : 10;
-
-for (let page = 1; page <= maxPages; page++) {
-    scannedPages++;
-
-    
-    status.innerText =
-      `Generating CSV... scanned ${scannedPages} of ${maxPages} pages`;
-
-    const data = await tmdbJson(
-      `https://api.themoviedb.org/3/person/popular?api_key=${TMDB_API_KEY}&page=${page}`
-    );
-
-    if (!data?.results) {
-      continue;
-    }
-
-    for (const person of data.results) {
-      if (
-        person.known_for_department !== department
-      ) {
-        continue;
       }
 
-      const popularity =
-        Number(person.popularity || 0);
+      function csvEscape(value) {
+        const stringValue = String(value ?? "");
 
-      if (popularity < minPopularity) {
-        continue;
+        return `"${stringValue.replace(/"/g, '""')}"`;
       }
 
-      const knownCredits =
-        await getKnownCreditsNumber(person.id);
+      function downloadCsv(filename, rows) {
+        const csvContent = rows
+          .map((row) => row.map(csvEscape).join(","))
+          .join("\n");
 
-      if (knownCredits < minCredits) {
-        continue;
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        URL.revokeObjectURL(url);
       }
 
-      matches.push({
-        name: person.name,
-        id: person.id,
-        knownFor: person.known_for_department,
-        knownCredits,
-        popularity
-      });
+      async function getKnownCreditsNumber(personId) {
+        try {
+          const credits = await tmdbJson(
+            `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`,
+          );
 
-      if (matches.length >= 50) {
-        break;
+          if (!credits) {
+            return 0;
+          }
+
+          const castCount = Array.isArray(credits.cast)
+            ? credits.cast.length
+            : 0;
+
+          const crewCount = Array.isArray(credits.crew)
+            ? credits.crew.length
+            : 0;
+
+          return castCount + crewCount;
+        } catch {
+          return 0;
+        }
       }
-    }
 
-    if (matches.length >= 50) {
-      break;
-    }
-  }
+      async function downloadPopularPeopleCsv(department) {
+        const status = document.getElementById("people-download-status");
 
-  matches.forEach((person, index) => {
-    rows.push([
-      index + 1,
-      person.name,
-      person.id,
-      person.knownFor,
-      person.knownCredits,
-      person.popularity.toFixed(1),
-      `https://www.themoviedb.org/person/${person.id}`
-    ]);
-  });
+        const popularityInput = Number(
+          document.getElementById("people-popularity-filter").value,
+        );
 
-  const filename =
-    department === "Acting"
-      ? "popular-actors.csv"
-      : "popular-directors.csv";
+        const creditsInput = Number(
+          document.getElementById("people-credits-filter").value,
+        );
 
-  downloadCsv(filename, rows);
+        const minPopularity =
+          popularityInput || (department === "Acting" ? 5 : 3);
 
-status.innerText =
-  `Downloaded ${matches.length} results`;
+        const minCredits = creditsInput || 20;
 
-setTimeout(() => {
-  if (
-    status.innerText ===
-    `Downloaded ${matches.length} results`
-  ) {
-    status.innerText = "";
-  }
-}, 5000);
-}
+        const rows = [
+          [
+            "Rank",
+            "Name",
+            "TMDB ID",
+            "Known For",
+            "Known Credits",
+            "TMDB Popularity",
+            "TMDB URL",
+          ],
+        ];
 
-async function loadCompanies() {
-      const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
-      companies = await companiesRes.json();
+        const matches = [];
 
-      document.getElementById("stats").innerText =
-        `${companies.length.toLocaleString()} companies cached`;
+        let scannedPages = 0;
 
-      try {
-        const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
+        status.innerText = "Generating CSV...";
 
-        if (metaRes.ok) {
-          const meta = await metaRes.json();
-          const lastScan = meta.last_scan;
-          const updated = new Date(lastScan.finished_at);
+        const maxPages = department === "Directing" ? 50 : 10;
 
-          document.getElementById("stats").innerText =
-            `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
+        for (let page = 1; page <= maxPages; page++) {
+          scannedPages++;
 
-          document.getElementById("last-updated").innerText =
-            `Last updated ${updated.toLocaleString()}`;
+          status.innerText = `Generating CSV... scanned ${scannedPages} of ${maxPages} pages`;
 
-          if (lastScan.mode === "tmdb_daily_export") {
-            const nextOffset =
-              Number(lastScan.offset || 0) +
-              Number(lastScan.limit || 0);
+          const data = await tmdbJson(
+            `https://api.themoviedb.org/3/person/popular?api_key=${TMDB_API_KEY}&page=${page}`,
+          );
 
-            document.getElementById("scan-stats").innerText =
-              `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
-          } else {
-            document.getElementById("scan-stats").innerText =
-              `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
+          if (!data?.results) {
+            continue;
+          }
+
+          for (const person of data.results) {
+            if (person.known_for_department !== department) {
+              continue;
+            }
+
+            const popularity = Number(person.popularity || 0);
+
+            if (popularity < minPopularity) {
+              continue;
+            }
+
+            const knownCredits = await getKnownCreditsNumber(person.id);
+
+            if (knownCredits < minCredits) {
+              continue;
+            }
+
+            matches.push({
+              name: person.name,
+              id: person.id,
+              knownFor: person.known_for_department,
+              knownCredits,
+              popularity,
+            });
+
+            if (matches.length >= 50) {
+              break;
+            }
+          }
+
+          if (matches.length >= 50) {
+            break;
           }
         }
-      } catch (error) {
-        console.warn("scan-meta.json not available yet");
+
+        matches.forEach((person, index) => {
+          rows.push([
+            index + 1,
+            person.name,
+            person.id,
+            person.knownFor,
+            person.knownCredits,
+            person.popularity.toFixed(1),
+            `https://www.themoviedb.org/person/${person.id}`,
+          ]);
+        });
+
+        const filename =
+          department === "Acting"
+            ? "popular-actors.csv"
+            : "popular-directors.csv";
+
+        downloadCsv(filename, rows);
+
+        status.innerText = `Downloaded ${matches.length} results`;
+
+        setTimeout(() => {
+          if (status.innerText === `Downloaded ${matches.length} results`) {
+            status.innerText = "";
+          }
+        }, 5000);
       }
 
-      applyFiltersAndSort();
-    }
+      async function loadCompanies() {
+        const companiesRes = await fetch(
+          `./data/companies.json?v=${Date.now()}`,
+        );
+        companies = await companiesRes.json();
 
-    function createResultCard({
-      title,
-      type,
-      id,
-      imageUrl,
-      imageAlt,
-      metaRows,
-      tmdbUrl,
-      imageClass = ""
-    }) {
-      return `
+        document.getElementById("stats").innerText =
+          `${companies.length.toLocaleString()} companies cached`;
+
+        try {
+          const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
+
+          if (metaRes.ok) {
+            const meta = await metaRes.json();
+            const lastScan = meta.last_scan;
+            const updated = new Date(lastScan.finished_at);
+
+            document.getElementById("stats").innerText =
+              `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
+
+            document.getElementById("last-updated").innerText =
+              `Last updated ${updated.toLocaleString()}`;
+
+            if (lastScan.mode === "tmdb_daily_export") {
+              const nextOffset =
+                Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
+
+              document.getElementById("scan-stats").innerText =
+                `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
+            } else {
+              document.getElementById("scan-stats").innerText =
+                `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
+            }
+          }
+        } catch (error) {
+          console.warn("scan-meta.json not available yet");
+        }
+
+        applyFiltersAndSort();
+      }
+
+      function createResultCard({
+        title,
+        type,
+        id,
+        imageUrl,
+        imageAlt,
+        metaRows,
+        tmdbUrl,
+        imageClass = "",
+      }) {
+        return `
         <div class="collection-card">
           ${
             imageUrl
@@ -1064,325 +1039,307 @@ async function loadCompanies() {
           </div>
         </div>
       `;
-    }
-
-    function collectionCard(collection, movieCount = "—") {
-      const poster = collection.poster_path
-        ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
-        : "";
-
-      return createResultCard({
-        title: collection.name || "Untitled Collection",
-        type: "Movie Collection",
-        id: collection.id,
-        imageUrl: poster,
-        imageAlt: collection.name || "Collection poster",
-        metaRows: [`<div><strong>Movies:</strong> ${movieCount}</div>`],
-        tmdbUrl: `https://www.themoviedb.org/collection/${collection.id}`
-      });
-    }
-
-    function personCard(person, knownCredits = "—") {
-      const profile = person.profile_path
-        ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-        : "";
-
-      const knownFor = person.known_for_department || "—";
-      const popularity = person.popularity
-        ? Number(person.popularity).toFixed(1)
-        : "—";
-
-      const metaRows = [
-        `<div><strong>Known for:</strong> ${knownFor}</div>`,
-        `<div><strong>Known credits:</strong> ${knownCredits}</div>`,
-        `<div><strong>TMDB popularity:</strong> ${popularity}</div>`
-      ];
-
-      if (person.birthday) {
-        metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
       }
 
-      return createResultCard({
-        title: person.name || "Untitled Person",
-        type: "Person",
-        id: person.id,
-        imageUrl: profile,
-        imageAlt: person.name || "Person profile",
-        metaRows,
-        tmdbUrl: `https://www.themoviedb.org/person/${person.id}`
-      });
-    }
+      function collectionCard(collection, movieCount = "—") {
+        const poster = collection.poster_path
+          ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
+          : "";
 
-    async function getCollectionMovieCount(collectionId) {
-      const detailData = await tmdbJson(
-        `https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`
-      );
-
-      if (!detailData || detailData.success === false) {
-        return null;
+        return createResultCard({
+          title: collection.name || "Untitled Collection",
+          type: "Movie Collection",
+          id: collection.id,
+          imageUrl: poster,
+          imageAlt: collection.name || "Collection poster",
+          metaRows: [`<div><strong>Movies:</strong> ${movieCount}</div>`],
+          tmdbUrl: `https://www.themoviedb.org/collection/${collection.id}`,
+        });
       }
 
-      return {
-        collection: detailData,
-        movieCount: detailData.parts
-          ? detailData.parts.length.toLocaleString()
-          : "—"
-      };
-    }
+      function personCard(person, knownCredits = "—") {
+        const profile = person.profile_path
+          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+          : "";
 
-    async function searchTmdbIds() {
-      let query = document
-        .getElementById("collection-search")
-        .value
-        .trim();
+        const knownFor = person.known_for_department || "—";
+        const popularity = person.popularity
+          ? Number(person.popularity).toFixed(1)
+          : "—";
 
-      const resultsContainer =
-        document.getElementById("collection-results");
+        const metaRows = [
+          `<div><strong>Known for:</strong> ${knownFor}</div>`,
+          `<div><strong>Known credits:</strong> ${knownCredits}</div>`,
+          `<div><strong>TMDB popularity:</strong> ${popularity}</div>`,
+        ];
 
-      if (!query) {
-        resultsContainer.innerHTML = "";
-        return;
-      }
-
-      const normalizedQuery = query.toLowerCase();
-
-      if (collectionAliases[normalizedQuery]) {
-        query = collectionAliases[normalizedQuery];
-      }
-
-      const isNumeric = /^\d+$/.test(query);
-
-      resultsContainer.innerHTML =
-        `<p class="meta">Searching TMDB...</p>`;
-
-      try {
-        const cards = [];
-        let totalAvailableResults = 0;
-        let displayedResults = 0;
-
-        if (isNumeric) {
-          const collectionResult = await getCollectionMovieCount(query);
-
-          if (collectionResult) {
-            cards.push(
-              collectionCard(
-                collectionResult.collection,
-                collectionResult.movieCount
-              )
-            );
-          }
-
-          const person = await tmdbJson(
-            `https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`
-          );
-
-          if (person && person.success !== false) {
-            const knownCredits = await getPersonKnownCredits(person.id);
-            cards.push(personCard(person, knownCredits));
-          }
-        } else {
-          const collectionSearch = await tmdbJson(
-            `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
-          );
-
-          const personSearch = await tmdbJson(
-            `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`
-          );
-
-          const collections =
-            (collectionSearch?.results || []).slice(0, 5);
-
-          const people =
-            (personSearch?.results || []).slice(0, 5);
-
-          totalAvailableResults =
-            (collectionSearch?.total_results || 0) +
-            (personSearch?.total_results || 0);
-
-          displayedResults =
-            collections.length + people.length;
-
-          const collectionCards = await Promise.all(
-            collections.map(async collection => {
-              const detail = await getCollectionMovieCount(collection.id);
-
-              return collectionCard(
-                detail?.collection || collection,
-                detail?.movieCount || "—"
-              );
-            })
-          );
-
-          const personCards = await Promise.all(
-            people.map(async person => {
-              const knownCredits = await getPersonKnownCredits(person.id);
-              return personCard(person, knownCredits);
-            })
-          );
-
-          cards.push(...collectionCards);
-          cards.push(...personCards);
+        if (person.birthday) {
+          metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
         }
 
-        if (!cards.length) {
-          resultsContainer.innerHTML =
-            `<p class="meta">No matching movie collections or people found.</p>`;
+        return createResultCard({
+          title: person.name || "Untitled Person",
+          type: "Person",
+          id: person.id,
+          imageUrl: profile,
+          imageAlt: person.name || "Person profile",
+          metaRows,
+          tmdbUrl: `https://www.themoviedb.org/person/${person.id}`,
+        });
+      }
+
+      async function getCollectionMovieCount(collectionId) {
+        const detailData = await tmdbJson(
+          `https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`,
+        );
+
+        if (!detailData || detailData.success === false) {
+          return null;
+        }
+
+        return {
+          collection: detailData,
+          movieCount: detailData.parts
+            ? detailData.parts.length.toLocaleString()
+            : "—",
+        };
+      }
+
+      async function searchTmdbIds() {
+        let query = document.getElementById("collection-search").value.trim();
+
+        const resultsContainer = document.getElementById("collection-results");
+
+        if (!query) {
+          resultsContainer.innerHTML = "";
           return;
         }
 
-        let resultsHtml = "";
-        
-        if (
-          !isNumeric &&
-          totalAvailableResults > displayedResults
-        ) {
-          resultsHtml += `
+        const normalizedQuery = query.toLowerCase();
+
+        if (collectionAliases[normalizedQuery]) {
+          query = collectionAliases[normalizedQuery];
+        }
+
+        const isNumeric = /^\d+$/.test(query);
+
+        resultsContainer.innerHTML = `<p class="meta">Searching TMDB...</p>`;
+
+        try {
+          const cards = [];
+          let totalAvailableResults = 0;
+          let displayedResults = 0;
+
+          if (isNumeric) {
+            const collectionResult = await getCollectionMovieCount(query);
+
+            if (collectionResult) {
+              cards.push(
+                collectionCard(
+                  collectionResult.collection,
+                  collectionResult.movieCount,
+                ),
+              );
+            }
+
+            const person = await tmdbJson(
+              `https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`,
+            );
+
+            if (person && person.success !== false) {
+              const knownCredits = await getPersonKnownCredits(person.id);
+              cards.push(personCard(person, knownCredits));
+            }
+          } else {
+            const collectionSearch = await tmdbJson(
+              `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`,
+            );
+
+            const personSearch = await tmdbJson(
+              `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`,
+            );
+
+            const collections = (collectionSearch?.results || []).slice(0, 5);
+
+            const people = (personSearch?.results || []).slice(0, 5);
+
+            totalAvailableResults =
+              (collectionSearch?.total_results || 0) +
+              (personSearch?.total_results || 0);
+
+            displayedResults = collections.length + people.length;
+
+            const collectionCards = await Promise.all(
+              collections.map(async (collection) => {
+                const detail = await getCollectionMovieCount(collection.id);
+
+                return collectionCard(
+                  detail?.collection || collection,
+                  detail?.movieCount || "—",
+                );
+              }),
+            );
+
+            const personCards = await Promise.all(
+              people.map(async (person) => {
+                const knownCredits = await getPersonKnownCredits(person.id);
+                return personCard(person, knownCredits);
+              }),
+            );
+
+            cards.push(...collectionCards);
+            cards.push(...personCards);
+          }
+
+          if (!cards.length) {
+            resultsContainer.innerHTML = `<p class="meta">No matching movie collections or people found.</p>`;
+            return;
+          }
+
+          let resultsHtml = "";
+
+          if (!isNumeric && totalAvailableResults > displayedResults) {
+            resultsHtml += `
             <p class="meta lookup-note">
               More results may be available. Refine your search for better matches.
             </p>
           `;
+          }
+
+          resultsHtml += cards.join("");
+
+          resultsContainer.innerHTML = resultsHtml;
+        } catch (error) {
+          resultsContainer.innerHTML = `<p class="meta">TMDB lookup failed.</p>`;
+
+          console.error(error);
         }
-
-resultsHtml += cards.join("");
-
-        resultsContainer.innerHTML = resultsHtml;
-      } catch (error) {
-        resultsContainer.innerHTML =
-          `<p class="meta">TMDB lookup failed.</p>`;
-
-        console.error(error);
-      }
-    }
-
-    function getSortValue(company, key) {
-      const value = company[key];
-
-      if (key === "id" || key === "titles_count") {
-        return Number(value || 0);
       }
 
-      return String(value || "").toLowerCase();
-    }
+      function getSortValue(company, key) {
+        const value = company[key];
 
-    function getTotalPages() {
-      if (rowsPerPage === "all") {
-        return 1;
+        if (key === "id" || key === "titles_count") {
+          return Number(value || 0);
+        }
+
+        return String(value || "").toLowerCase();
       }
 
-      return Math.max(
-        1,
-        Math.ceil(filteredCompanies.length / rowsPerPage)
-      );
-    }
+      function getTotalPages() {
+        if (rowsPerPage === "all") {
+          return 1;
+        }
 
-    function getPageItems() {
-      if (rowsPerPage === "all") {
-        return filteredCompanies;
+        return Math.max(1, Math.ceil(filteredCompanies.length / rowsPerPage));
       }
 
-      const start = (currentPage - 1) * rowsPerPage;
-      const end = start + rowsPerPage;
-
-      return filteredCompanies.slice(start, end);
-    }
-
-    function applyFiltersAndSort() {
-      const query = currentSearch.toLowerCase().trim();
-
-      filteredCompanies = companies.filter(company => {
-        return (
-          String(company.id).includes(query) ||
-          String(company.name || "")
-            .toLowerCase()
-            .includes(query) ||
-          String(company.parent_company || "")
-            .toLowerCase()
-            .includes(query) ||
-          String(company.origin_country || "")
-            .toLowerCase()
-            .includes(query) ||
-          String(company.headquarters || "")
-            .toLowerCase()
-            .includes(query)
-        );
-      });
-
-      filteredCompanies.sort((a, b) => {
-        const aValue = getSortValue(a, sortKey);
-        const bValue = getSortValue(b, sortKey);
-
-        if (aValue < bValue) {
-          return sortDirection === "asc" ? -1 : 1;
+      function getPageItems() {
+        if (rowsPerPage === "all") {
+          return filteredCompanies;
         }
 
-        if (aValue > bValue) {
-          return sortDirection === "asc" ? 1 : -1;
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+
+        return filteredCompanies.slice(start, end);
+      }
+
+      function applyFiltersAndSort() {
+        const query = currentSearch.toLowerCase().trim();
+
+        filteredCompanies = companies.filter((company) => {
+          return (
+            String(company.id).includes(query) ||
+            String(company.name || "")
+              .toLowerCase()
+              .includes(query) ||
+            String(company.parent_company || "")
+              .toLowerCase()
+              .includes(query) ||
+            String(company.origin_country || "")
+              .toLowerCase()
+              .includes(query) ||
+            String(company.headquarters || "")
+              .toLowerCase()
+              .includes(query)
+          );
+        });
+
+        filteredCompanies.sort((a, b) => {
+          const aValue = getSortValue(a, sortKey);
+          const bValue = getSortValue(b, sortKey);
+
+          if (aValue < bValue) {
+            return sortDirection === "asc" ? -1 : 1;
+          }
+
+          if (aValue > bValue) {
+            return sortDirection === "asc" ? 1 : -1;
+          }
+
+          return Number(a.id || 0) - Number(b.id || 0);
+        });
+
+        render(getPageItems());
+        updatePagination();
+        updateSortIndicators();
+      }
+
+      function updateSortIndicators() {
+        document.querySelectorAll("th.sortable").forEach((th) => {
+          const indicator = th.querySelector(".sort-indicator");
+
+          if (th.dataset.sort === sortKey) {
+            indicator.textContent = sortDirection === "asc" ? "▲" : "▼";
+          } else {
+            indicator.textContent = "";
+          }
+        });
+      }
+
+      function updatePagination() {
+        const totalPages = getTotalPages();
+
+        document.getElementById("page-status").innerText =
+          `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
+
+        document.getElementById("page-status-bottom").innerText =
+          `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
+
+        if (!filteredCompanies.length) {
+          document.getElementById("result-count").innerText =
+            `Showing 0 of 0 companies`;
+          return;
         }
 
-        return Number(a.id || 0) - Number(b.id || 0);
-      });
+        let startItem = 1;
+        let endItem = filteredCompanies.length;
 
-      render(getPageItems());
-      updatePagination();
-      updateSortIndicators();
-    }
-
-    function updateSortIndicators() {
-      document.querySelectorAll("th.sortable").forEach(th => {
-        const indicator =
-          th.querySelector(".sort-indicator");
-
-        if (th.dataset.sort === sortKey) {
-          indicator.textContent =
-            sortDirection === "asc" ? "▲" : "▼";
-        } else {
-          indicator.textContent = "";
+        if (rowsPerPage !== "all") {
+          startItem = (currentPage - 1) * rowsPerPage + 1;
+          endItem = Math.min(
+            currentPage * rowsPerPage,
+            filteredCompanies.length,
+          );
         }
-      });
-    }
 
-    function updatePagination() {
-      const totalPages = getTotalPages();
-
-      document.getElementById("page-status").innerText =
-        `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
-
-      document.getElementById("page-status-bottom").innerText =
-        `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
-
-      if (!filteredCompanies.length) {
         document.getElementById("result-count").innerText =
-          `Showing 0 of 0 companies`;
-        return;
+          `Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${filteredCompanies.length.toLocaleString()} companies`;
       }
 
-      let startItem = 1;
-      let endItem = filteredCompanies.length;
+      function render(items) {
+        const tbody = document.getElementById("results");
+        tbody.innerHTML = "";
 
-      if (rowsPerPage !== "all") {
-        startItem = ((currentPage - 1) * rowsPerPage) + 1;
-        endItem = Math.min(
-          currentPage * rowsPerPage,
-          filteredCompanies.length
-        );
-      }
+        for (const company of items) {
+          const tr = document.createElement("tr");
 
-      document.getElementById("result-count").innerText =
-        `Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${filteredCompanies.length.toLocaleString()} companies`;
-    }
+          const logoUrl = company.logo_path
+            ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
+            : "";
 
-    function render(items) {
-      const tbody = document.getElementById("results");
-      tbody.innerHTML = "";
-
-      for (const company of items) {
-        const tr = document.createElement("tr");
-
-        const logoUrl = company.logo_path
-          ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
-          : "";
-
-        tr.innerHTML = `
+          tr.innerHTML = `
           <td class="logo-cell">
             ${
               logoUrl
@@ -1425,51 +1382,44 @@ resultsHtml += cards.join("");
           </td>
         `;
 
-        tbody.appendChild(tr);
-      }
-    }
-
-    function goToPage(page) {
-      currentPage = Math.min(
-        Math.max(1, page),
-        getTotalPages()
-      );
-
-      render(getPageItems());
-      updatePagination();
-    }
-
-    document
-      .getElementById("collection-search-btn")
-      .addEventListener("click", searchTmdbIds);
-
-    document
-      .getElementById("collection-search")
-      .addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-          searchTmdbIds();
+          tbody.appendChild(tr);
         }
-      });
+      }
 
-    document
-      .getElementById("clear-collection-search")
-      .addEventListener("click", () => {
-        document.getElementById("collection-search").value = "";
-        document.getElementById("collection-results").innerHTML = "";
-        document.getElementById("collection-search").focus();
-      });
+      function goToPage(page) {
+        currentPage = Math.min(Math.max(1, page), getTotalPages());
 
-    document
-      .getElementById("search")
-      .addEventListener("input", event => {
+        render(getPageItems());
+        updatePagination();
+      }
+
+      document
+        .getElementById("collection-search-btn")
+        .addEventListener("click", searchTmdbIds);
+
+      document
+        .getElementById("collection-search")
+        .addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            searchTmdbIds();
+          }
+        });
+
+      document
+        .getElementById("clear-collection-search")
+        .addEventListener("click", () => {
+          document.getElementById("collection-search").value = "";
+          document.getElementById("collection-results").innerHTML = "";
+          document.getElementById("collection-search").focus();
+        });
+
+      document.getElementById("search").addEventListener("input", (event) => {
         currentSearch = event.target.value;
         currentPage = 1;
         applyFiltersAndSort();
       });
 
-    document
-      .getElementById("clear-search")
-      .addEventListener("click", () => {
+      document.getElementById("clear-search").addEventListener("click", () => {
         currentSearch = "";
         currentPage = 1;
 
@@ -1478,37 +1428,27 @@ resultsHtml += cards.join("");
         applyFiltersAndSort();
       });
 
-    document
-      .getElementById("rows-per-page")
-      .addEventListener("change", event => {
-        rowsPerPage =
-          event.target.value === "all"
-            ? "all"
-            : Number(event.target.value);
+      document
+        .getElementById("rows-per-page")
+        .addEventListener("change", (event) => {
+          rowsPerPage =
+            event.target.value === "all" ? "all" : Number(event.target.value);
 
-        currentPage = 1;
+          currentPage = 1;
 
-        applyFiltersAndSort();
-      });
+          applyFiltersAndSort();
+        });
 
-    document
-      .querySelectorAll("th.sortable")
-      .forEach(th => {
+      document.querySelectorAll("th.sortable").forEach((th) => {
         th.addEventListener("click", () => {
           const selectedSortKey = th.dataset.sort;
 
           if (sortKey === selectedSortKey) {
-            sortDirection =
-              sortDirection === "asc"
-                ? "desc"
-                : "asc";
+            sortDirection = sortDirection === "asc" ? "desc" : "asc";
           } else {
             sortKey = selectedSortKey;
 
-            sortDirection =
-              selectedSortKey === "titles_count"
-                ? "desc"
-                : "asc";
+            sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
           }
 
           currentPage = 1;
@@ -1517,70 +1457,56 @@ resultsHtml += cards.join("");
         });
       });
 
-    document
-      .getElementById("first-page")
-      .addEventListener("click", () => goToPage(1));
+      document
+        .getElementById("first-page")
+        .addEventListener("click", () => goToPage(1));
 
-    document
-      .getElementById("prev-page")
-      .addEventListener("click", () =>
-        goToPage(currentPage - 1)
-      );
+      document
+        .getElementById("prev-page")
+        .addEventListener("click", () => goToPage(currentPage - 1));
 
-    document
-      .getElementById("next-page")
-      .addEventListener("click", () =>
-        goToPage(currentPage + 1)
-      );
+      document
+        .getElementById("next-page")
+        .addEventListener("click", () => goToPage(currentPage + 1));
 
-    document
-      .getElementById("last-page")
-      .addEventListener("click", () =>
-        goToPage(getTotalPages())
-      );
+      document
+        .getElementById("last-page")
+        .addEventListener("click", () => goToPage(getTotalPages()));
 
-    document
-      .getElementById("first-page-bottom")
-      .addEventListener("click", () => goToPage(1));
+      document
+        .getElementById("first-page-bottom")
+        .addEventListener("click", () => goToPage(1));
 
-    document
-      .getElementById("prev-page-bottom")
-      .addEventListener("click", () =>
-        goToPage(currentPage - 1)
-      );
+      document
+        .getElementById("prev-page-bottom")
+        .addEventListener("click", () => goToPage(currentPage - 1));
 
-    document
-      .getElementById("next-page-bottom")
-      .addEventListener("click", () =>
-        goToPage(currentPage + 1)
-      );
+      document
+        .getElementById("next-page-bottom")
+        .addEventListener("click", () => goToPage(currentPage + 1));
 
-    document
-      .getElementById("last-page-bottom")
-      .addEventListener("click", () =>
-        goToPage(getTotalPages())
-      );
+      document
+        .getElementById("last-page-bottom")
+        .addEventListener("click", () => goToPage(getTotalPages()));
 
-    document
-      .getElementById("back-to-top")
-      .addEventListener("click", () => {
+      document.getElementById("back-to-top").addEventListener("click", () => {
         window.scrollTo({
           top: 0,
-          behavior: "smooth"
+          behavior: "smooth",
         });
       });
-document
-  .getElementById("download-popular-actors")
-  .addEventListener("click", () => {
-    downloadPopularPeopleCsv("Acting");
-  });
+      document
+        .getElementById("download-popular-actors")
+        .addEventListener("click", () => {
+          downloadPopularPeopleCsv("Acting");
+        });
 
-document
-  .getElementById("download-popular-directors")
-  .addEventListener("click", () => {
-    downloadPopularPeopleCsv("Directing");
-  });
-    loadCompanies();
-  </script>
-</body>
+      document
+        .getElementById("download-popular-directors")
+        .addEventListener("click", () => {
+          downloadPopularPeopleCsv("Directing");
+        });
+      loadCompanies();
+    </script>
+  </body>
 </html>
