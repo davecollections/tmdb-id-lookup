@@ -664,7 +664,7 @@
       <h2>Bulk People ID Lookup</h2>
 
       <p class="meta">
-        Paste up to 25 actor or director names, one per line, then download a
+        Paste up to 50 actor or director names, one per line, then download a
         CSV of matched TMDB person IDs.
       </p>
 
@@ -688,7 +688,6 @@
         people may not appear in every category.
       </p>
 
-      <div id="bulk-people-results" class="bulk-results"></div>
       <div id="bulk-people-results" class="bulk-results"></div>
     </div>
 
@@ -962,7 +961,43 @@
 
         return res.json();
       }
+      async function tmdbJsonWithStatus(url) {
+        try {
+          const res = await fetch(url);
 
+          if (res.status === 429) {
+            return {
+              ok: false,
+              rateLimited: true,
+              status: 429,
+              data: null,
+            };
+          }
+
+          if (!res.ok) {
+            return {
+              ok: false,
+              rateLimited: false,
+              status: res.status,
+              data: null,
+            };
+          }
+
+          return {
+            ok: true,
+            rateLimited: false,
+            status: res.status,
+            data: await res.json(),
+          };
+        } catch {
+          return {
+            ok: false,
+            rateLimited: false,
+            status: 0,
+            data: null,
+          };
+        }
+      }
       async function getPersonKnownCredits(personId) {
         try {
           const credits = await tmdbJson(
@@ -1656,11 +1691,11 @@
           return;
         }
 
-        if (names.length > 25) {
+        if (names.length > 50) {
           lastBulkPeopleResults = [];
           renderBulkPeopleResults([]);
 
-          status.innerText = "Please limit each bulk lookup to 25 names.";
+          status.innerText = `You entered ${names.length} names. Please limit each bulk lookup to 50 names.`;
           return;
         }
 
@@ -1670,12 +1705,37 @@
 
         for (const input of names) {
           try {
-            const data = await tmdbJson(
+            const response = await tmdbJsonWithStatus(
               `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(input)}&page=1`,
             );
+            if (response.rateLimited) {
+              lastBulkPeopleResults.push({
+                input,
+                name: "",
+                id: "",
+                creditCount: "",
+                status: "TMDB rate limit reached",
+              });
+
+              break;
+            }
+
+            if (!response.ok) {
+              lastBulkPeopleResults.push({
+                input,
+                name: "",
+                id: "",
+                creditCount: "",
+                status: response.status
+                  ? `TMDB error HTTP ${response.status}`
+                  : "Network error",
+              });
+
+              continue;
+            }
 
             const match = findBestPeopleMatch(
-              data?.results || [],
+              response.data?.results || [],
               input,
               department,
             );
