@@ -1366,19 +1366,16 @@
         .addEventListener("click", () => {
           document.getElementById("collection-search").value = "";
           document.getElementById("collection-results").innerHTML = "";
-          setTmdbFilter("all");
-          document.getElementById("collection-search").focus();
-
           document
-            .querySelectorAll(".lookup-filter-button")
-            .forEach((button) => {
-              button.classList.toggle(
-                "active",
-                button.dataset.tmdbFilter === currentTmdbFilter,
-              );
-            });
+            .getElementById("clear-collection-search")
+            .addEventListener("click", () => {
+              document.getElementById("collection-search").value = "";
+              document.getElementById("collection-results").innerHTML = "";
 
-          document.getElementById("collection-search").focus();
+              setTmdbFilter("all");
+
+              document.getElementById("collection-search").focus();
+            });
         });
 
       document.getElementById("search").addEventListener("input", (event) => {
