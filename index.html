@@ -529,6 +529,14 @@
         min-width: 90px;
         text-align: center;
       }
+      .lookup-pagination-help {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: #7f8a99;
+        font-size: 13px;
+        margin-top: -2px;
+        margin-bottom: 6px;
+      }
     </style>
   </head>
 
@@ -1031,6 +1039,14 @@
           </button>
         </div>
       `;
+          }
+
+          if (!isNumeric && currentTmdbTotalPages > 3) {
+            resultsHtml += `
+    <div class="lookup-pagination-help">
+      Lots of results? Try a more specific search for better matches.
+    </div>
+  `;
           }
 
           resultsHtml += cards.join("");
