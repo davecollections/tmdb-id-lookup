@@ -1366,16 +1366,10 @@
         .addEventListener("click", () => {
           document.getElementById("collection-search").value = "";
           document.getElementById("collection-results").innerHTML = "";
-          document
-            .getElementById("clear-collection-search")
-            .addEventListener("click", () => {
-              document.getElementById("collection-search").value = "";
-              document.getElementById("collection-results").innerHTML = "";
 
-              setTmdbFilter("all");
+          setTmdbFilter("all");
 
-              document.getElementById("collection-search").focus();
-            });
+          document.getElementById("collection-search").focus();
         });
 
       document.getElementById("search").addEventListener("input", (event) => {
