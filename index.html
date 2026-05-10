@@ -850,6 +850,17 @@
           );
         });
       }
+
+      function setCompanyMovieCountFilter(minCount) {
+  minCompanyMovieCount = Number(minCount || 0);
+
+  document.querySelectorAll(".company-filter-button").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.companyMinCount === String(minCompanyMovieCount),
+    );
+  });
+}
       async function tmdbJson(url) {
         const res = await fetch(url);
 
@@ -1449,14 +1460,16 @@
         applyFiltersAndSort();
       });
 
-      document.getElementById("clear-search").addEventListener("click", () => {
-        currentSearch = "";
-        currentPage = 1;
+document.getElementById("clear-search").addEventListener("click", () => {
+  currentSearch = "";
+  currentPage = 1;
 
-        document.getElementById("search").value = "";
+  document.getElementById("search").value = "";
 
-        applyFiltersAndSort();
-      });
+  setCompanyMovieCountFilter(0);
+
+  applyFiltersAndSort();
+});
 
       document
         .getElementById("rows-per-page")
@@ -1534,24 +1547,16 @@
           }
         });
       });
-      document.querySelectorAll(".company-filter-button").forEach((button) => {
-        button.addEventListener("click", () => {
-          minCompanyMovieCount = Number(button.dataset.companyMinCount || 0);
+document.querySelectorAll(".company-filter-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    setCompanyMovieCountFilter(
+      button.dataset.companyMinCount || 0,
+    );
 
-          document
-            .querySelectorAll(".company-filter-button")
-            .forEach((otherButton) => {
-              otherButton.classList.toggle(
-                "active",
-                otherButton.dataset.companyMinCount ===
-                  String(minCompanyMovieCount),
-              );
-            });
-
-          currentPage = 1;
-          applyFiltersAndSort();
-        });
-      });
+    currentPage = 1;
+    applyFiltersAndSort();
+  });
+});
       loadCompanies();
     </script>
   </body>
