@@ -545,16 +545,31 @@
         margin: 12px 0 4px;
       }
 
-      .lookup-filter-button {
+      .lookup-filter-button,
+      .company-filter-button {
         padding: 8px 12px;
         font-size: 14px;
         border-radius: 999px;
       }
 
-      .lookup-filter-button.active {
+      .lookup-filter-button.active,
+      .company-filter-button.active {
         border-color: #8ab4ff;
         background: rgba(138, 180, 255, 0.12);
         color: #ffffff;
+      }
+
+      .company-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0 14px;
+      }
+
+      .company-filter-button {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 999px;
       }
     </style>
   </head>
@@ -638,6 +653,47 @@
 
       <button id="clear-search" type="button">Clear</button>
     </div>
+    <div class="company-filters" aria-label="Company movie count filters">
+      <button
+        class="company-filter-button active"
+        type="button"
+        data-company-min-count="0"
+      >
+        All
+      </button>
+
+      <button
+        class="company-filter-button"
+        type="button"
+        data-company-min-count="10"
+      >
+        10+ movies
+      </button>
+
+      <button
+        class="company-filter-button"
+        type="button"
+        data-company-min-count="50"
+      >
+        50+ movies
+      </button>
+
+      <button
+        class="company-filter-button"
+        type="button"
+        data-company-min-count="100"
+      >
+        100+ movies
+      </button>
+
+      <button
+        class="company-filter-button"
+        type="button"
+        data-company-min-count="500"
+      >
+        500+ movies
+      </button>
+    </div>
 
     <p id="result-count"></p>
 
@@ -649,7 +705,7 @@
           <option value="100">100</option>
           <option value="250" selected>250</option>
           <option value="500">500</option>
-          <option value="all">All — may be slow</option>
+          <option value="1000">1000</option>
         </select>
       </div>
 
@@ -763,6 +819,7 @@
       let sortDirection = "asc";
       let currentPage = 1;
       let rowsPerPage = 250;
+      let minCompanyMovieCount = 0;
       let currentTmdbQuery = "";
       let currentTmdbPage = 1;
       let currentTmdbTotalPages = 1;
@@ -1211,7 +1268,10 @@
         const query = currentSearch.toLowerCase().trim();
 
         filteredCompanies = companies.filter((company) => {
-          return (
+          const matchesMovieCount =
+            Number(company.titles_count || 0) >= minCompanyMovieCount;
+
+          const matchesSearch =
             String(company.id).includes(query) ||
             String(company.name || "")
               .toLowerCase()
@@ -1224,8 +1284,9 @@
               .includes(query) ||
             String(company.headquarters || "")
               .toLowerCase()
-              .includes(query)
-          );
+              .includes(query);
+
+          return matchesMovieCount && matchesSearch;
         });
 
         filteredCompanies.sort((a, b) => {
@@ -1400,8 +1461,7 @@
       document
         .getElementById("rows-per-page")
         .addEventListener("change", (event) => {
-          rowsPerPage =
-            event.target.value === "all" ? "all" : Number(event.target.value);
+          rowsPerPage = Number(event.target.value);
 
           currentPage = 1;
 
@@ -1474,7 +1534,24 @@
           }
         });
       });
+      document.querySelectorAll(".company-filter-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          minCompanyMovieCount = Number(button.dataset.companyMinCount || 0);
 
+          document
+            .querySelectorAll(".company-filter-button")
+            .forEach((otherButton) => {
+              otherButton.classList.toggle(
+                "active",
+                otherButton.dataset.companyMinCount ===
+                  String(minCompanyMovieCount),
+              );
+            });
+
+          currentPage = 1;
+          applyFiltersAndSort();
+        });
+      });
       loadCompanies();
     </script>
   </body>
