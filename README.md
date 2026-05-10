@@ -48,30 +48,9 @@ Results can be filtered by:
 
 Each result includes the TMDB ID, useful metadata, a copy button, and a direct TMDB link.
 
-## Bulk people ID lookup
+### Movie collection searches
 
-The bulk people lookup helps resolve actor or director names into TMDB person IDs.
-
-Users can paste up to 50 names, one per line, then choose:
-
-- Resolve Actor IDs
-- Resolve Director IDs
-
-The tool returns the best exact name match for the selected role, along with:
-
-- matched name
-- TMDB person ID
-- known credit count
-- match status
-- TMDB link
-
-Matched results can be downloaded as a CSV.
-
-Bulk role matching uses TMDB’s “known for department” data, so some multi-role people may not appear in every category.
-
-## Collection lookup
-
-Collection lookup searches **movie collections only**.
+Movie collection lookup searches **TMDB movie collections only**.
 
 In TMDB, a collection usually means a franchise or grouped movie series, not an individual movie. This means a search for a standalone movie may return no results, even if the movie exists on TMDB.
 
@@ -85,6 +64,27 @@ For example, searches like these are more likely to return collection results:
 A standalone movie title may not return anything unless TMDB has it grouped as part of an official movie collection.
 
 The tool returns matching TMDB collection IDs, poster previews, movie counts, and direct TMDB links.
+
+## Bulk people ID lookup
+
+The bulk people lookup helps resolve actor or director names into TMDB person IDs.
+
+Users can paste up to 50 names, one per line, then choose:
+
+- Resolve Actor IDs
+- Resolve Director IDs
+
+The tool returns exact name matches for the selected role, along with:
+
+- Matched name
+- TMDB person ID
+- Known credit count
+- Match status
+- TMDB link
+
+Matched results can be downloaded as a CSV.
+
+Bulk role matching uses TMDB's "known for department" data, so some multi-role people may not appear in every category.
 
 ## Useful for
 
