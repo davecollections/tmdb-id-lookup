@@ -508,6 +508,27 @@
       .lookup-note {
         grid-column: 1 / -1;
       }
+
+      .lookup-pagination {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 4px;
+      }
+
+      .lookup-pagination button {
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+
+      .lookup-pagination-status {
+        color: #aeb7c2;
+        font-size: 14px;
+        min-width: 90px;
+        text-align: center;
+      }
     </style>
   </head>
 
@@ -685,7 +706,9 @@
       let sortDirection = "asc";
       let currentPage = 1;
       let rowsPerPage = 250;
-
+      let currentTmdbQuery = "";
+      let currentTmdbPage = 1;
+      let currentTmdbTotalPages = 1;
       function showCopyToast() {
         const toast = document.getElementById("copy-toast");
 
@@ -887,7 +910,7 @@
         };
       }
 
-      async function searchTmdbIds() {
+      async function searchTmdbIds(page = 1) {
         let query = document.getElementById("collection-search").value.trim();
 
         const resultsContainer = document.getElementById("collection-results");
@@ -896,6 +919,9 @@
           resultsContainer.innerHTML = "";
           return;
         }
+
+        currentTmdbQuery = query;
+        currentTmdbPage = page;
 
         const normalizedQuery = query.toLowerCase();
 
@@ -909,10 +935,10 @@
 
         try {
           const cards = [];
-          let totalAvailableResults = 0;
-          let displayedResults = 0;
 
           if (isNumeric) {
+            currentTmdbTotalPages = 1;
+
             const collectionResult = await getCollectionMovieCount(query);
 
             if (collectionResult) {
@@ -930,26 +956,26 @@
 
             if (person && person.success !== false) {
               const knownCredits = await getPersonKnownCredits(person.id);
+
               cards.push(personCard(person, knownCredits));
             }
           } else {
             const collectionSearch = await tmdbJson(
-              `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`,
+              `https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
             );
 
             const personSearch = await tmdbJson(
-              `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`,
+              `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
             );
 
             const collections = (collectionSearch?.results || []).slice(0, 5);
 
             const people = (personSearch?.results || []).slice(0, 5);
 
-            totalAvailableResults =
-              (collectionSearch?.total_results || 0) +
-              (personSearch?.total_results || 0);
-
-            displayedResults = collections.length + people.length;
+            currentTmdbTotalPages = Math.max(
+              collectionSearch?.total_pages || 1,
+              personSearch?.total_pages || 1,
+            );
 
             const collectionCards = await Promise.all(
               collections.map(async (collection) => {
@@ -965,6 +991,7 @@
             const personCards = await Promise.all(
               people.map(async (person) => {
                 const knownCredits = await getPersonKnownCredits(person.id);
+
                 return personCard(person, knownCredits);
               }),
             );
@@ -980,12 +1007,30 @@
 
           let resultsHtml = "";
 
-          if (!isNumeric && totalAvailableResults > displayedResults) {
+          if (!isNumeric && currentTmdbTotalPages > 1) {
             resultsHtml += `
-            <p class="meta lookup-note">
-              More results may be available. Refine your search for better matches.
-            </p>
-          `;
+        <div class="lookup-pagination">
+          <button
+            type="button"
+            ${currentTmdbPage <= 1 ? "disabled" : ""}
+            onclick="searchTmdbIds(${currentTmdbPage - 1})"
+          >
+            Previous
+          </button>
+
+          <span class="lookup-pagination-status">
+            ${currentTmdbPage} of ${currentTmdbTotalPages}
+          </span>
+
+          <button
+            type="button"
+            ${currentTmdbPage >= currentTmdbTotalPages ? "disabled" : ""}
+            onclick="searchTmdbIds(${currentTmdbPage + 1})"
+          >
+            Next
+          </button>
+        </div>
+      `;
           }
 
           resultsHtml += cards.join("");
