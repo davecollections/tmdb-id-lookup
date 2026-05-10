@@ -829,9 +829,21 @@
 
       async function loadCompanies() {
         const companiesRes = await fetch(
-          `./data/companies.json?v=${Date.now()}`,
+          `./data/companies.min.json?v=${Date.now()}`,
         );
-        companies = await companiesRes.json();
+
+        const compactCompanies = await companiesRes.json();
+
+        companies = compactCompanies.map((company) => ({
+          id: company.i,
+          name: company.n || "",
+          parent_company: company.p || "",
+          origin_country: company.c || "",
+          headquarters: company.h || "",
+          logo_path: company.l || "",
+          titles_count: company.t || 0,
+          tmdb_url: `https://www.themoviedb.org/company/${company.i}`,
+        }));
 
         document.getElementById("stats").innerText =
           `${companies.length.toLocaleString()} companies cached`;
