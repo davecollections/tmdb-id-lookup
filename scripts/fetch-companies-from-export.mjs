@@ -11,6 +11,7 @@ const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
 
 const DATA_DIR = "data";
 const JSON_PATH = `${DATA_DIR}/companies.json`;
+const MIN_JSON_PATH = `${DATA_DIR}/companies.min.json`;
 const CSV_PATH = `${DATA_DIR}/companies.csv`;
 const META_PATH = `${DATA_DIR}/scan-meta.json`;
 const EXPORT_PATH = `${DATA_DIR}/production-company-export.json`;
@@ -219,6 +220,25 @@ function toCsv(companies) {
   return [headers.join(","), ...rows].join("\n") + "\n";
 }
 
+function compactCompany(company) {
+  const compact = {
+    i: company.id,
+    n: company.name
+  };
+
+  if (company.parent_company) compact.p = company.parent_company;
+  if (company.origin_country) compact.c = company.origin_country;
+  if (company.headquarters) compact.h = company.headquarters;
+  if (company.logo_path) compact.l = company.logo_path;
+  if (company.titles_count) compact.t = company.titles_count;
+
+  return compact;
+}
+
+function toMinJson(companies) {
+  return JSON.stringify(companies.map(compactCompany));
+}
+
 await fs.mkdir(DATA_DIR, { recursive: true });
 
 const existing = await readJson(JSON_PATH, []);
@@ -330,6 +350,7 @@ const companies = Array
   .sort((a, b) => Number(a.id) - Number(b.id));
 
 await fs.writeFile(JSON_PATH, JSON.stringify(companies, null, 2));
+await fs.writeFile(MIN_JSON_PATH, toMinJson(companies));
 await fs.writeFile(CSV_PATH, toCsv(companies));
 
 stats.total_cached = companies.length;
