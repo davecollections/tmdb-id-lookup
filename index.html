@@ -668,10 +668,6 @@
         CSV of matched TMDB person IDs.
       </p>
 
-      <p class="meta">
-        TMDB role matching uses “known for department”, so some multi-role
-        people may not appear in every category.
-      </p>
       <textarea
         id="bulk-people-input"
         placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig"
@@ -687,6 +683,12 @@
 
       <p id="bulk-people-status" class="bulk-status"></p>
 
+      <p class="meta">
+        TMDB role matching uses “known for department”, so some multi-role
+        people may not appear in every category.
+      </p>
+
+      <div id="bulk-people-results" class="bulk-results"></div>
       <div id="bulk-people-results" class="bulk-results"></div>
     </div>
 
@@ -1539,7 +1541,7 @@
           <th>Input</th>
           <th>Match</th>
           <th>TMDB ID</th>
-          <th>Department</th>
+          <th>Credit Count</th>
           <th>Status</th>
           <th>TMDB</th>
         </tr>
@@ -1564,7 +1566,7 @@
                       : ""
                   }
                 </td>
-                <td>${result.department || ""}</td>
+                <td>${result.creditCount || "—"}</td>
                 <td>${result.status}</td>
                 <td>
                   ${
@@ -1597,7 +1599,7 @@
           "input",
           "matched_name",
           "tmdb_person_id",
-          "department",
+          "credit_count",
           "status",
         ];
 
@@ -1610,7 +1612,7 @@
                 result.input,
                 result.name || "",
                 result.id || "",
-                result.department || "",
+                result.creditCount || "",
                 result.status,
               ]
                 .map(csvEscape)
@@ -1621,7 +1623,26 @@
 
         downloadTextFile(`tmdb-${mode}-ids.csv`, csv);
       }
+      function normalizePersonName(name) {
+        return String(name || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      }
 
+      function findBestPeopleMatch(results, input, department) {
+        const departmentMatches = (results || []).filter(
+          (person) => person.known_for_department === department,
+        );
+
+        const normalizedInput = normalizePersonName(input);
+
+        return (
+          departmentMatches.find(
+            (person) => normalizePersonName(person.name) === normalizedInput,
+          ) || null
+        );
+      }
       async function resolveBulkPeople(mode) {
         const status = document.getElementById("bulk-people-status");
         const names = getBulkPeopleNames();
@@ -1643,7 +1664,7 @@
           return;
         }
 
-        status.innerText = `Resolving ${names.length} ${mode}...`;
+        status.innerText = `Resolving ${mode === "actors" ? "actor" : "director"} IDs...`;
         lastBulkPeopleResults = [];
         renderBulkPeopleResults([]);
 
@@ -1653,16 +1674,20 @@
               `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(input)}&page=1`,
             );
 
-            const match = (data?.results || []).find(
-              (person) => person.known_for_department === department,
+            const match = findBestPeopleMatch(
+              data?.results || [],
+              input,
+              department,
             );
 
             if (match) {
+              const knownCredits = await getPersonKnownCredits(match.id);
+
               lastBulkPeopleResults.push({
                 input,
                 name: match.name || "",
                 id: match.id,
-                department: match.known_for_department || "",
+                creditCount: knownCredits,
                 status: "Matched",
               });
             } else {
@@ -1670,7 +1695,7 @@
                 input,
                 name: "",
                 id: "",
-                department,
+                creditCount: "",
                 status: `No matching ${mode === "actors" ? "actor" : "director"}`,
               });
             }
@@ -1679,7 +1704,7 @@
               input,
               name: "",
               id: "",
-              department,
+              creditCount: "",
               status: "Lookup failed",
             });
           }
@@ -1692,7 +1717,8 @@
         ).length;
 
         status.innerHTML = `
-    Matched ${matchedCount} of ${names.length}.
+    Resolved ${mode === "actors" ? "actor" : "director"} IDs:
+matched ${matchedCount} of ${names.length}.
     ${
       matchedCount
         ? `<button type="button" onclick="downloadBulkPeopleCsv('${mode}')">
