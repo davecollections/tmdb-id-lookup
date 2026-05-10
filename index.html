@@ -785,7 +785,16 @@
         navigator.clipboard.writeText(String(id));
         showCopyToast();
       }
+      function setTmdbFilter(filter) {
+        currentTmdbFilter = filter;
 
+        document.querySelectorAll(".lookup-filter-button").forEach((button) => {
+          button.classList.toggle(
+            "active",
+            button.dataset.tmdbFilter === currentTmdbFilter,
+          );
+        });
+      }
       async function tmdbJson(url) {
         const res = await fetch(url);
 
@@ -1338,13 +1347,17 @@
 
       document
         .getElementById("collection-search-btn")
-        .addEventListener("click", searchTmdbIds);
+        .addEventListener("click", () => {
+          setTmdbFilter("all");
+          searchTmdbIds(1);
+        });
 
       document
         .getElementById("collection-search")
         .addEventListener("keydown", (event) => {
           if (event.key === "Enter") {
-            searchTmdbIds();
+            setTmdbFilter("all");
+            searchTmdbIds(1);
           }
         });
 
@@ -1353,7 +1366,8 @@
         .addEventListener("click", () => {
           document.getElementById("collection-search").value = "";
           document.getElementById("collection-results").innerHTML = "";
-          currentTmdbFilter = "all";
+          setTmdbFilter("all");
+          document.getElementById("collection-search").focus();
 
           document
             .querySelectorAll(".lookup-filter-button")
@@ -1452,16 +1466,7 @@
 
       document.querySelectorAll(".lookup-filter-button").forEach((button) => {
         button.addEventListener("click", () => {
-          currentTmdbFilter = button.dataset.tmdbFilter || "all";
-
-          document
-            .querySelectorAll(".lookup-filter-button")
-            .forEach((otherButton) => {
-              otherButton.classList.toggle(
-                "active",
-                otherButton.dataset.tmdbFilter === currentTmdbFilter,
-              );
-            });
+          setTmdbFilter(button.dataset.tmdbFilter || "all");
 
           if (document.getElementById("collection-search").value.trim()) {
             searchTmdbIds(1);
