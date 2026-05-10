@@ -13,6 +13,10 @@ on:
         required: true
         default: "1000"
 
+concurrency:
+  group: tmdb-company-cache
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -36,12 +40,41 @@ jobs:
           LIMIT: ${{ github.event.inputs.limit }}
         run: node scripts/fetch-companies-from-export.mjs
 
+      - name: Update auto cache progress
+        run: |
+          OFFSET=${{ github.event.inputs.offset }}
+          LIMIT=${{ github.event.inputs.limit }}
+          MANUAL_NEXT_OFFSET=$((OFFSET + LIMIT))
+          CURRENT_NEXT_OFFSET=$(jq -r '.next_offset // 0' data/company-cache-progress.json)
+          EXPORT_TOTAL=$(jq -r '.total_ids' data/production-company-export.json)
+
+          if [ "$MANUAL_NEXT_OFFSET" -gt "$CURRENT_NEXT_OFFSET" ]; then
+            NEXT_OFFSET=$MANUAL_NEXT_OFFSET
+          else
+            NEXT_OFFSET=$CURRENT_NEXT_OFFSET
+          fi
+
+          if [ "$NEXT_OFFSET" -ge "$EXPORT_TOTAL" ]; then
+            IS_COMPLETE=true
+          else
+            IS_COMPLETE=false
+          fi
+
+          jq \
+            --argjson next "$NEXT_OFFSET" \
+            --argjson complete "$IS_COMPLETE" \
+            '.next_offset = $next | .is_complete = $complete | .updated_at = (now | todate)' \
+            data/company-cache-progress.json \
+            > progress.tmp.json
+
+          mv progress.tmp.json data/company-cache-progress.json
+
       - name: Commit updated company data
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add data/companies.json data/companies.min.json data/companies.csv data/scan-meta.json data/production-company-export.json
+          git add data/companies.json data/companies.min.json data/companies.csv data/scan-meta.json data/production-company-export.json data/company-cache-progress.json
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
