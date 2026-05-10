@@ -23,12 +23,18 @@ jobs:
           node-version: 22
 
       - name: Read progress
-        id: progress
         run: |
           echo "OFFSET=$(jq -r '.next_offset' data/company-cache-progress.json)" >> $GITHUB_ENV
           echo "LIMIT=$(jq -r '.limit' data/company-cache-progress.json)" >> $GITHUB_ENV
+          echo "IS_COMPLETE=$(jq -r '.is_complete' data/company-cache-progress.json)" >> $GITHUB_ENV
+
+      - name: Stop if complete
+        if: env.IS_COMPLETE == 'true'
+        run: |
+          echo "Company cache automation is marked complete. Nothing to do."
 
       - name: Run company export batch
+        if: env.IS_COMPLETE != 'true'
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
           OFFSET: ${{ env.OFFSET }}
@@ -36,18 +42,28 @@ jobs:
         run: node scripts/fetch-companies-from-export.mjs
 
       - name: Update progress
+        if: env.IS_COMPLETE != 'true'
         run: |
+          EXPORT_TOTAL=$(jq -r '.total_ids' data/production-company-export.json)
           NEXT_OFFSET=$((OFFSET + LIMIT))
+
+          if [ "$NEXT_OFFSET" -ge "$EXPORT_TOTAL" ]; then
+            IS_COMPLETE=true
+          else
+            IS_COMPLETE=false
+          fi
 
           jq \
             --argjson next "$NEXT_OFFSET" \
-            '.next_offset = $next | .updated_at = now | todate' \
+            --argjson complete "$IS_COMPLETE" \
+            '.next_offset = $next | .is_complete = $complete | .updated_at = (now | todate)' \
             data/company-cache-progress.json \
             > progress.tmp.json
 
           mv progress.tmp.json data/company-cache-progress.json
 
       - name: Commit changes
+        if: env.IS_COMPLETE != 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
