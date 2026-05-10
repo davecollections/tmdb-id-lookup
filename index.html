@@ -979,8 +979,9 @@ setTimeout(() => {
     status.innerText = "";
   }
 }, 5000);
+}
 
-    async function loadCompanies() {
+async function loadCompanies() {
       const companiesRes = await fetch(`./data/companies.json?v=${Date.now()}`);
       companies = await companiesRes.json();
 
