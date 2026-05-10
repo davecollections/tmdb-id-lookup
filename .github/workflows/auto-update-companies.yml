@@ -1,0 +1,66 @@
+name: Auto Update TMDB Companies
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read progress
+        id: progress
+        run: |
+          echo "OFFSET=$(jq -r '.next_offset' data/company-cache-progress.json)" >> $GITHUB_ENV
+          echo "LIMIT=$(jq -r '.limit' data/company-cache-progress.json)" >> $GITHUB_ENV
+
+      - name: Run company export batch
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          OFFSET: ${{ env.OFFSET }}
+          LIMIT: ${{ env.LIMIT }}
+        run: node scripts/fetch-companies-from-export.mjs
+
+      - name: Update progress
+        run: |
+          NEXT_OFFSET=$((OFFSET + LIMIT))
+
+          jq \
+            --argjson next "$NEXT_OFFSET" \
+            '.next_offset = $next | .updated_at = now | todate' \
+            data/company-cache-progress.json \
+            > progress.tmp.json
+
+          mv progress.tmp.json data/company-cache-progress.json
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add data/
+
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+
+          git commit -m "Auto update TMDB company cache"
+
+          git pull --rebase origin main
+
+          git push
