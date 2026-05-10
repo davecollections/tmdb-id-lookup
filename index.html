@@ -1353,6 +1353,17 @@
         .addEventListener("click", () => {
           document.getElementById("collection-search").value = "";
           document.getElementById("collection-results").innerHTML = "";
+          currentTmdbFilter = "all";
+
+          document
+            .querySelectorAll(".lookup-filter-button")
+            .forEach((button) => {
+              button.classList.toggle(
+                "active",
+                button.dataset.tmdbFilter === currentTmdbFilter,
+              );
+            });
+
           document.getElementById("collection-search").focus();
         });
 
