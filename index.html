@@ -508,32 +508,6 @@
       .lookup-note {
         grid-column: 1 / -1;
       }
-
-      .people-download-tools {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-        margin: 12px 0 6px;
-      }
-
-      .people-download-label {
-        color: #aeb7c2;
-        font-size: 14px;
-        white-space: nowrap;
-      }
-
-      .people-download-tools input {
-        width: 170px;
-        min-width: 170px;
-        padding: 10px 12px;
-        font-size: 14px;
-      }
-
-      .people-download-tools button {
-        padding: 10px 12px;
-        font-size: 14px;
-      }
     </style>
   </head>
 
@@ -552,31 +526,6 @@
 
       <button id="clear-collection-search" type="button">Clear</button>
     </div>
-
-    <div class="people-download-tools">
-      <span class="people-download-label"> People CSV downloads </span>
-
-      <input
-        id="people-popularity-filter"
-        type="number"
-        step="0.1"
-        placeholder="Popularity above"
-      />
-
-      <input
-        id="people-credits-filter"
-        type="number"
-        placeholder="Credits above"
-      />
-
-      <button id="download-popular-actors" type="button">Actors CSV</button>
-
-      <button id="download-popular-directors" type="button">
-        Directors CSV
-      </button>
-    </div>
-
-    <p id="people-download-status" class="meta"></p>
 
     <div id="collection-results" class="collection-results"></div>
 
@@ -786,173 +735,6 @@
         } catch {
           return "—";
         }
-      }
-
-      function csvEscape(value) {
-        const stringValue = String(value ?? "");
-
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-
-      function downloadCsv(filename, rows) {
-        const csvContent = rows
-          .map((row) => row.map(csvEscape).join(","))
-          .join("\n");
-
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-
-        link.href = url;
-        link.download = filename;
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        link.remove();
-
-        URL.revokeObjectURL(url);
-      }
-
-      async function getKnownCreditsNumber(personId) {
-        try {
-          const credits = await tmdbJson(
-            `https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`,
-          );
-
-          if (!credits) {
-            return 0;
-          }
-
-          const castCount = Array.isArray(credits.cast)
-            ? credits.cast.length
-            : 0;
-
-          const crewCount = Array.isArray(credits.crew)
-            ? credits.crew.length
-            : 0;
-
-          return castCount + crewCount;
-        } catch {
-          return 0;
-        }
-      }
-
-      async function downloadPopularPeopleCsv(department) {
-        const status = document.getElementById("people-download-status");
-
-        const popularityInput = Number(
-          document.getElementById("people-popularity-filter").value,
-        );
-
-        const creditsInput = Number(
-          document.getElementById("people-credits-filter").value,
-        );
-
-        const minPopularity =
-          popularityInput || (department === "Acting" ? 5 : 3);
-
-        const minCredits = creditsInput || 20;
-
-        const rows = [
-          [
-            "Rank",
-            "Name",
-            "TMDB ID",
-            "Known For",
-            "Known Credits",
-            "TMDB Popularity",
-            "TMDB URL",
-          ],
-        ];
-
-        const matches = [];
-
-        let scannedPages = 0;
-
-        status.innerText = "Generating CSV...";
-
-        const maxPages = department === "Directing" ? 50 : 10;
-
-        for (let page = 1; page <= maxPages; page++) {
-          scannedPages++;
-
-          status.innerText = `Generating CSV... scanned ${scannedPages} of ${maxPages} pages`;
-
-          const data = await tmdbJson(
-            `https://api.themoviedb.org/3/person/popular?api_key=${TMDB_API_KEY}&page=${page}`,
-          );
-
-          if (!data?.results) {
-            continue;
-          }
-
-          for (const person of data.results) {
-            if (person.known_for_department !== department) {
-              continue;
-            }
-
-            const popularity = Number(person.popularity || 0);
-
-            if (popularity < minPopularity) {
-              continue;
-            }
-
-            const knownCredits = await getKnownCreditsNumber(person.id);
-
-            if (knownCredits < minCredits) {
-              continue;
-            }
-
-            matches.push({
-              name: person.name,
-              id: person.id,
-              knownFor: person.known_for_department,
-              knownCredits,
-              popularity,
-            });
-
-            if (matches.length >= 50) {
-              break;
-            }
-          }
-
-          if (matches.length >= 50) {
-            break;
-          }
-        }
-
-        matches.forEach((person, index) => {
-          rows.push([
-            index + 1,
-            person.name,
-            person.id,
-            person.knownFor,
-            person.knownCredits,
-            person.popularity.toFixed(1),
-            `https://www.themoviedb.org/person/${person.id}`,
-          ]);
-        });
-
-        const filename =
-          department === "Acting"
-            ? "popular-actors.csv"
-            : "popular-directors.csv";
-
-        downloadCsv(filename, rows);
-
-        status.innerText = `Downloaded ${matches.length} results`;
-
-        setTimeout(() => {
-          if (status.innerText === `Downloaded ${matches.length} results`) {
-            status.innerText = "";
-          }
-        }, 5000);
       }
 
       async function loadCompanies() {
@@ -1495,17 +1277,7 @@
           behavior: "smooth",
         });
       });
-      document
-        .getElementById("download-popular-actors")
-        .addEventListener("click", () => {
-          downloadPopularPeopleCsv("Acting");
-        });
 
-      document
-        .getElementById("download-popular-directors")
-        .addEventListener("click", () => {
-          downloadPopularPeopleCsv("Directing");
-        });
       loadCompanies();
     </script>
   </body>
