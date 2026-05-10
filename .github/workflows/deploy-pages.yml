@@ -11,6 +11,7 @@ on:
     workflows:
       - Update TMDB Companies From Export
       - Update TMDB Companies
+      - Auto Update TMDB Companies
     types:
       - completed
 
