@@ -1514,7 +1514,7 @@
           <th>TMDB ID</th>
 <th>Known For</th>
 <th>Credit Count</th>
-<th>Status</th>
+<th>Match Type</th>
           <th>TMDB</th>
         </tr>
       </thead>
@@ -1568,7 +1568,7 @@
           return;
         }
 
-        const headers = ["input", "matched_name", "tmdb_person_id", "known_for", "credit_count", "status"];
+        const headers = ["input", "matched_name", "tmdb_person_id", "known_for", "credit_count", "match_type"];
 
         const csv =
           headers.join(",") +
@@ -1600,12 +1600,28 @@
 
       function findBestPeopleMatch(results, input) {
         const normalizedInput = normalizePersonName(input);
+        const exactMatch = (results || []).find((person) => normalizePersonName(person.name) === normalizedInput);
 
-        return (
-          (results || []).find((person) => normalizePersonName(person.name) === normalizedInput) ||
-          (results || [])[0] ||
-          null
-        );
+        if (exactMatch) {
+          return {
+            person: exactMatch,
+            matchType: "Exact match",
+          };
+        }
+
+        const bestResult = (results || [])[0];
+
+        if (bestResult) {
+          return {
+            person: bestResult,
+            matchType: "TMDB best result",
+          };
+        }
+
+        return {
+          person: null,
+          matchType: "No match",
+        };
       }
       async function resolveBulkPeople() {
         const status = document.getElementById("bulk-people-status");
@@ -1665,16 +1681,16 @@
 
             const match = findBestPeopleMatch(response.data?.results || [], input);
 
-            if (match) {
-              const knownCredits = await getPersonKnownCredits(match.id);
+            if (match.person) {
+              const knownCredits = await getPersonKnownCredits(match.person.id);
 
               lastBulkPeopleResults.push({
                 input,
-                name: match.name || "",
-                id: match.id,
-                knownFor: match.known_for_department || "—",
+                name: match.person.name || "",
+                id: match.person.id,
+                knownFor: match.person.known_for_department || "—",
                 creditCount: knownCredits,
-                status: "Matched",
+                status: match.matchType,
               });
             } else {
               lastBulkPeopleResults.push({
@@ -1683,7 +1699,7 @@
                 id: "",
                 knownFor: "",
                 creditCount: "",
-                status: "No matching person",
+                status: match.matchType,
               });
             }
           } catch {
