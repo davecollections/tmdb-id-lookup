@@ -127,10 +127,10 @@
 
       .collection-results {
         display: grid;
-        grid-template-columns: repeat(2, minmax(320px, 1fr));
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
         gap: 14px;
-        margin: 18px 0 36px;
-        max-width: 1200px;
+        margin: 18px 0 24px;
+        max-width: 760px;
       }
 
       .collection-card {
@@ -463,6 +463,7 @@
         .collection-results {
           grid-template-columns: 1fr;
           width: 100%;
+          max-width: 100%;
         }
 
         .collection-card {
@@ -623,6 +624,15 @@
         background: #0f1218;
       }
 
+      .lookup-section,
+      .bulk-lookup {
+        max-width: 900px;
+      }
+
+      .company-lookup {
+        max-width: 1200px;
+      }
+
       .tool-section h2 {
         margin-bottom: 6px;
       }
@@ -694,7 +704,7 @@
       >.
     </p>
 
-    <section class="tool-section">
+    <section class="tool-section lookup-section">
       <div class="tool-header">
         <h2>Movie Collection & People Lookup</h2>
         <p class="meta">
@@ -1272,7 +1282,9 @@
             : "—",
         };
       }
-
+      function getLookupResultLimit() {
+        return window.matchMedia("(max-width: 720px)").matches ? 5 : 10;
+      }
       async function searchTmdbIds(page = 1) {
         let query = document.getElementById("collection-search").value.trim();
 
@@ -1351,9 +1363,21 @@
               `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
             );
 
+            const lookupResultLimit = getLookupResultLimit();
+
+            const collectionLimit =
+              currentTmdbFilter === "all"
+                ? Math.ceil(lookupResultLimit / 2)
+                : lookupResultLimit;
+
+            const peopleLimit =
+              currentTmdbFilter === "all"
+                ? Math.floor(lookupResultLimit / 2)
+                : lookupResultLimit;
+
             const collections =
               currentTmdbFilter === "all" || currentTmdbFilter === "collections"
-                ? (collectionSearch?.results || []).slice(0, 5)
+                ? (collectionSearch?.results || []).slice(0, collectionLimit)
                 : [];
 
             let people = personSearch?.results || [];
@@ -1374,7 +1398,7 @@
               people = [];
             }
 
-            people = people.slice(0, 5);
+            people = people.slice(0, peopleLimit);
 
             if (currentTmdbFilter === "collections") {
               currentTmdbTotalPages = collectionSearch?.total_pages || 1;
