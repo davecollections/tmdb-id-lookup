@@ -1,4 +1,4 @@
-# TMDB Company & ID Lookup
+# TMDB ID Lookup
 
 A lightweight TMDB helper tool for finding useful TMDB IDs.
 
