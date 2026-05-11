@@ -10,7 +10,6 @@ const LIMIT = Number(process.env.LIMIT || 500);
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
 
 const DATA_DIR = "data";
-const JSON_PATH = `${DATA_DIR}/companies.json`;
 const MIN_JSON_PATH = `${DATA_DIR}/companies.min.json`;
 const CSV_PATH = `${DATA_DIR}/companies.csv`;
 const META_PATH = `${DATA_DIR}/scan-meta.json`;
@@ -180,15 +179,27 @@ function normaliseCompany(data, movieCount) {
   return {
     id: data.id,
     name: data.name || "",
-    description: data.description || "",
     headquarters: data.headquarters || "",
     homepage: data.homepage || "",
     logo_path: data.logo_path || "",
     origin_country: data.origin_country || "",
     parent_company: data.parent_company?.name || "",
     titles_count: movieCount,
-    tmdb_url: `https://www.themoviedb.org/company/${data.id}`,
-    updated_at: new Date().toISOString()
+    tmdb_url: `https://www.themoviedb.org/company/${data.id}`
+  };
+}
+
+function expandCompactCompany(company) {
+  return {
+    id: company.i,
+    name: company.n || "",
+    parent_company: company.p || "",
+    origin_country: company.c || "",
+    headquarters: company.h || "",
+    logo_path: company.l || "",
+    titles_count: company.t || 0,
+    homepage: "",
+    tmdb_url: `https://www.themoviedb.org/company/${company.i}`
   };
 }
 
@@ -241,12 +252,13 @@ function toMinJson(companies) {
 
 await fs.mkdir(DATA_DIR, { recursive: true });
 
-const existing = await readJson(JSON_PATH, []);
+const existingCompact = await readJson(MIN_JSON_PATH, []);
 const companyMap = new Map();
 
-for (const company of existing) {
-  if (company?.id) {
-    companyMap.set(Number(company.id), company);
+for (const company of existingCompact) {
+  if (company?.i) {
+    const expandedCompany = expandCompactCompany(company);
+    companyMap.set(Number(expandedCompany.id), expandedCompany);
   }
 }
 
@@ -349,7 +361,6 @@ const companies = Array
   .from(companyMap.values())
   .sort((a, b) => Number(a.id) - Number(b.id));
 
-await fs.writeFile(JSON_PATH, JSON.stringify(companies, null, 2));
 await fs.writeFile(MIN_JSON_PATH, toMinJson(companies));
 await fs.writeFile(CSV_PATH, toCsv(companies));
 
