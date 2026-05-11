@@ -580,11 +580,6 @@
       }
       .bulk-lookup {
         max-width: 900px;
-        margin: 16px 0 28px;
-        padding: 14px;
-        border: 1px solid #222b36;
-        border-radius: 14px;
-        background: #0f1218;
       }
 
       .bulk-actions {
@@ -635,6 +630,48 @@
       .tool-section > .meta:first-of-type {
         margin-bottom: 16px;
       }
+      .lookup-filters,
+      .company-filters {
+        gap: 10px;
+        margin: 16px 0 18px;
+      }
+
+      .lookup-filter-button,
+      .company-filter-button {
+        border-color: #283142;
+        background: rgba(21, 25, 34, 0.9);
+        color: #aeb7c2;
+        transition:
+          border-color 0.18s ease,
+          background 0.18s ease,
+          color 0.18s ease,
+          transform 0.18s ease;
+      }
+
+      .lookup-filter-button:hover,
+      .company-filter-button:hover {
+        border-color: rgba(138, 180, 255, 0.75);
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+
+      .lookup-filter-button.active,
+      .company-filter-button.active {
+        border-color: #8ab4ff;
+        background: rgba(138, 180, 255, 0.16);
+        color: #ffffff;
+      }
+      .tool-header {
+        margin-bottom: 18px;
+      }
+
+      .tool-header h2 {
+        margin-bottom: 6px;
+      }
+
+      .tool-header .meta {
+        max-width: 720px;
+      }
     </style>
   </head>
 
@@ -657,52 +694,60 @@
       >.
     </p>
 
-    <h2>Movie Collection & People Lookup</h2>
-    <div class="search-row">
-      <input
-        id="collection-search"
-        placeholder="Search collections or people by name or ID (e.g. Matrix, Spielberg, 1226179)"
-      />
+    <section class="tool-section">
+      <div class="tool-header">
+        <h2>Movie Collection & People Lookup</h2>
+        <p class="meta">
+          Search TMDB movie collections and people by name or ID.
+        </p>
+      </div>
 
-      <button id="collection-search-btn" type="button">Search</button>
+      <div class="search-row">
+        <input
+          id="collection-search"
+          placeholder="Search collections or people by name or ID (e.g. Matrix, Spielberg, 1226179)"
+        />
 
-      <button id="clear-collection-search" type="button">Clear</button>
-    </div>
-    <div class="lookup-filters" aria-label="TMDB result filters">
-      <button
-        class="lookup-filter-button active"
-        type="button"
-        data-tmdb-filter="all"
-      >
-        All
-      </button>
+        <button id="collection-search-btn" type="button">Search</button>
 
-      <button
-        class="lookup-filter-button"
-        type="button"
-        data-tmdb-filter="directors"
-      >
-        Directors
-      </button>
+        <button id="clear-collection-search" type="button">Clear</button>
+      </div>
+      <div class="lookup-filters" aria-label="TMDB result filters">
+        <button
+          class="lookup-filter-button active"
+          type="button"
+          data-tmdb-filter="all"
+        >
+          All
+        </button>
 
-      <button
-        class="lookup-filter-button"
-        type="button"
-        data-tmdb-filter="actors"
-      >
-        Actors
-      </button>
+        <button
+          class="lookup-filter-button"
+          type="button"
+          data-tmdb-filter="directors"
+        >
+          Directors
+        </button>
 
-      <button
-        class="lookup-filter-button"
-        type="button"
-        data-tmdb-filter="collections"
-      >
-        Collections
-      </button>
-    </div>
-    <div id="collection-results" class="collection-results"></div>
-    <div class="bulk-lookup">
+        <button
+          class="lookup-filter-button"
+          type="button"
+          data-tmdb-filter="actors"
+        >
+          Actors
+        </button>
+
+        <button
+          class="lookup-filter-button"
+          type="button"
+          data-tmdb-filter="collections"
+        >
+          Collections
+        </button>
+      </div>
+      <div id="collection-results" class="collection-results"></div>
+    </section>
+    <section class="tool-section bulk-lookup">
       <h2>Bulk People ID Lookup</h2>
 
       <p class="meta">
@@ -731,163 +776,165 @@
       </p>
 
       <div id="bulk-people-results" class="bulk-results"></div>
-    </div>
+    </section>
 
     <div class="section-divider"></div>
 
-    <h2>Company ID Lookup</h2>
-
-    <p>Search cached TMDB production companies.</p>
-
-    <p class="notice">
-      This company database is still being built in batches, so not every TMDB
-      studio/ID is listed yet. More companies are being added over the next few
-      days.
-    </p>
-
-    <div class="company-summary">
-      <p id="stats" class="company-cache-count"></p>
-      <p id="last-updated" class="company-updated"></p>
-    </div>
-
-    <div class="download-links">
-      <a href="./data/companies.csv" download>Download CSV</a>
-    </div>
-
-    <div class="search-row">
-      <input
-        id="search"
-        placeholder="Search by ID, company name, parent company, country, or headquarters…"
-      />
-
-      <button id="clear-search" type="button">Clear</button>
-    </div>
-    <div class="company-filters" aria-label="Company movie count filters">
-      <button
-        class="company-filter-button active"
-        type="button"
-        data-company-min-count="0"
-      >
-        All
-      </button>
-
-      <button
-        class="company-filter-button"
-        type="button"
-        data-company-min-count="10"
-      >
-        10+ movies
-      </button>
-
-      <button
-        class="company-filter-button"
-        type="button"
-        data-company-min-count="50"
-      >
-        50+ movies
-      </button>
-
-      <button
-        class="company-filter-button"
-        type="button"
-        data-company-min-count="100"
-      >
-        100+ movies
-      </button>
-
-      <button
-        class="company-filter-button"
-        type="button"
-        data-company-min-count="500"
-      >
-        500+ movies
-      </button>
-    </div>
-
-    <p id="result-count"></p>
-
-    <div class="controls-row">
-      <div class="rows-control">
-        <label for="rows-per-page">Rows per page</label>
-
-        <select id="rows-per-page">
-          <option value="100">100</option>
-          <option value="250" selected>250</option>
-          <option value="500">500</option>
-          <option value="1000">1000</option>
-        </select>
+    <section class="tool-section company-lookup">
+      <div class="tool-header">
+        <h2>Company ID Lookup</h2>
+        <p class="meta">Search the cached TMDB production company database.</p>
       </div>
 
-      <div class="pagination">
-        <button id="first-page" type="button">First</button>
-        <button id="prev-page" type="button" aria-label="Previous page">
+      <p class="notice">
+        This company database is still being built in batches, so not every TMDB
+        studio/ID is listed yet. More companies are being added over the next
+        few days.
+      </p>
+
+      <div class="company-summary">
+        <p id="stats" class="company-cache-count"></p>
+        <p id="last-updated" class="company-updated"></p>
+      </div>
+
+      <div class="download-links">
+        <a href="./data/companies.csv" download>Download CSV</a>
+      </div>
+
+      <div class="search-row">
+        <input
+          id="search"
+          placeholder="Search by ID, company name, parent company, country, or headquarters…"
+        />
+
+        <button id="clear-search" type="button">Clear</button>
+      </div>
+      <div class="company-filters" aria-label="Company movie count filters">
+        <button
+          class="company-filter-button active"
+          type="button"
+          data-company-min-count="0"
+        >
+          All
+        </button>
+
+        <button
+          class="company-filter-button"
+          type="button"
+          data-company-min-count="10"
+        >
+          10+ movies
+        </button>
+
+        <button
+          class="company-filter-button"
+          type="button"
+          data-company-min-count="50"
+        >
+          50+ movies
+        </button>
+
+        <button
+          class="company-filter-button"
+          type="button"
+          data-company-min-count="100"
+        >
+          100+ movies
+        </button>
+
+        <button
+          class="company-filter-button"
+          type="button"
+          data-company-min-count="500"
+        >
+          500+ movies
+        </button>
+      </div>
+
+      <p id="result-count"></p>
+
+      <div class="controls-row">
+        <div class="rows-control">
+          <label for="rows-per-page">Rows per page</label>
+
+          <select id="rows-per-page">
+            <option value="100">100</option>
+            <option value="250" selected>250</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+          </select>
+        </div>
+
+        <div class="pagination">
+          <button id="first-page" type="button">First</button>
+          <button id="prev-page" type="button" aria-label="Previous page">
+            &lt;
+          </button>
+
+          <span id="page-status" class="page-status"></span>
+
+          <button id="next-page" type="button" aria-label="Next page">
+            &gt;
+          </button>
+          <button id="last-page" type="button">Last</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Logo</th>
+
+              <th class="sortable" data-sort="id">
+                TMDB ID
+                <span class="sort-indicator"></span>
+                <span class="header-note">Click ID to copy</span>
+              </th>
+
+              <th class="sortable" data-sort="name">
+                Company <span class="sort-indicator"></span>
+              </th>
+
+              <th class="sortable" data-sort="parent_company">
+                Parent Company <span class="sort-indicator"></span>
+              </th>
+
+              <th class="sortable" data-sort="titles_count">
+                Movie Count <span class="sort-indicator"></span>
+                <span class="movie-count-note">TMDB movie credits</span>
+              </th>
+
+              <th class="sortable" data-sort="origin_country">
+                Country <span class="sort-indicator"></span>
+              </th>
+
+              <th class="sortable" data-sort="headquarters">
+                Headquarters <span class="sort-indicator"></span>
+              </th>
+
+              <th>TMDB</th>
+            </tr>
+          </thead>
+
+          <tbody id="results"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination pagination-bottom">
+        <button id="first-page-bottom" type="button">First</button>
+        <button id="prev-page-bottom" type="button" aria-label="Previous page">
           &lt;
         </button>
 
-        <span id="page-status" class="page-status"></span>
+        <span id="page-status-bottom" class="page-status"></span>
 
-        <button id="next-page" type="button" aria-label="Next page">
+        <button id="next-page-bottom" type="button" aria-label="Next page">
           &gt;
         </button>
-        <button id="last-page" type="button">Last</button>
+        <button id="last-page-bottom" type="button">Last</button>
       </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Logo</th>
-
-            <th class="sortable" data-sort="id">
-              TMDB ID
-              <span class="sort-indicator"></span>
-              <span class="header-note">Click ID to copy</span>
-            </th>
-
-            <th class="sortable" data-sort="name">
-              Company <span class="sort-indicator"></span>
-            </th>
-
-            <th class="sortable" data-sort="parent_company">
-              Parent Company <span class="sort-indicator"></span>
-            </th>
-
-            <th class="sortable" data-sort="titles_count">
-              Movie Count <span class="sort-indicator"></span>
-              <span class="movie-count-note">TMDB movie credits</span>
-            </th>
-
-            <th class="sortable" data-sort="origin_country">
-              Country <span class="sort-indicator"></span>
-            </th>
-
-            <th class="sortable" data-sort="headquarters">
-              Headquarters <span class="sort-indicator"></span>
-            </th>
-
-            <th>TMDB</th>
-          </tr>
-        </thead>
-
-        <tbody id="results"></tbody>
-      </table>
-    </div>
-
-    <div class="pagination pagination-bottom">
-      <button id="first-page-bottom" type="button">First</button>
-      <button id="prev-page-bottom" type="button" aria-label="Previous page">
-        &lt;
-      </button>
-
-      <span id="page-status-bottom" class="page-status"></span>
-
-      <button id="next-page-bottom" type="button" aria-label="Next page">
-        &gt;
-      </button>
-      <button id="last-page-bottom" type="button">Last</button>
-    </div>
-
+    </section>
     <footer class="site-footer">
       <p>
         This product uses the TMDB API but is not endorsed or certified by TMDB.
