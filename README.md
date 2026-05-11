@@ -2,7 +2,7 @@
 
 A lightweight TMDB helper tool for finding useful TMDB IDs.
 
-The site helps users look up TMDB production company IDs, movie collection IDs, and person IDs in a clean searchable interface.
+The site helps users look up TMDB production company IDs, official movie collection IDs, and person IDs in a clean searchable interface.
 
 ## What it does
 
@@ -10,10 +10,11 @@ The site helps users look up TMDB production company IDs, movie collection IDs, 
 - Copy company IDs with one click
 - Sort companies by ID, name, parent company, country, headquarters, and movie count
 - Filter company results by minimum movie count
-- Search TMDB movie collections by name or ID
+- Search TMDB official movie collections by name or ID
 - Search TMDB people by name or ID
 - Filter TMDB ID results by actors, directors, collections, or all results
-- Bulk lookup actor or director names and export matching TMDB person IDs as CSV
+- Bulk lookup person names and export matching TMDB person IDs as CSV
+- Show known-for department, credit count, and match type for bulk person results
 - Open matching TMDB pages directly
 - Download cached company data as CSV
 
@@ -33,7 +34,7 @@ The TMDB ID lookup uses the TMDB API directly.
 
 It can search for:
 
-- Movie collections
+- Official movie collections
 - Actors
 - Directors
 - People by TMDB person ID
@@ -50,9 +51,9 @@ Each result includes the TMDB ID, useful metadata, a copy button, and a direct T
 
 ### Movie collection searches
 
-Movie collection lookup searches **TMDB movie collections only**.
+Movie collection lookup searches **TMDB official movie collections only**.
 
-In TMDB, a collection usually means a franchise or grouped movie series, not an individual movie. This means a search for a standalone movie may return no results, even if the movie exists on TMDB.
+In TMDB, a collection usually means an official franchise or grouped movie series, not an individual movie or a custom user list. This means a search for a standalone movie may return no results, even if the movie exists on TMDB.
 
 For example, searches like these are more likely to return collection results:
 
@@ -67,34 +68,39 @@ The tool returns matching TMDB collection IDs, poster previews, movie counts, an
 
 ## Bulk people ID lookup
 
-The bulk people lookup helps resolve actor or director names into TMDB person IDs.
+The bulk people lookup helps resolve person names into TMDB person IDs.
 
-Users can paste up to 50 names, one per line, then choose:
+Users can paste up to 50 names, one per line, then select **Resolve People IDs**.
 
-- Resolve Actor IDs
-- Resolve Director IDs
+The tool returns the best TMDB person-name match, along with:
 
-The tool returns exact name matches for the selected role, along with:
-
+- Input name
 - Matched name
 - TMDB person ID
+- Known-for department
 - Known credit count
-- Match status
+- Match type
 - TMDB link
+
+Match type helps users review the result quality. Current match types include:
+
+- Exact match
+- TMDB best result
+- No match
 
 Matched results can be downloaded as a CSV.
 
-Bulk role matching uses TMDB's "known for department" data, so some multi-role people may not appear in every category.
+Bulk people lookup uses TMDB search results and TMDB's known-for department data. Some people may be best known for acting, directing, writing, production, or another department.
 
 ## Useful for
 
 - Finding TMDB company IDs
-- Finding TMDB collection IDs
-- Finding TMDB actor and director IDs
+- Finding TMDB official movie collection IDs
+- Finding TMDB actor, director, writer, and general person IDs
 - Building curated media collections
 - Creating discovery rows or metadata lists
 - Checking studio/movie counts
-- Exporting actor or director ID lists as CSV
+- Exporting person ID lists as CSV
 
 ## Notes
 
