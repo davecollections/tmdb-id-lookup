@@ -382,12 +382,7 @@
 
       .section-divider {
         height: 1px;
-        background: linear-gradient(
-          to right,
-          transparent,
-          #2b313b,
-          transparent
-        );
+        background: linear-gradient(to right, transparent, #2b313b, transparent);
         margin: 48px 0;
         opacity: 0.9;
       }
@@ -688,28 +683,17 @@
   <body>
     <h1>TMDB ID Lookup</h1>
 
-    <p class="intro-text">
-      Quickly find TMDB IDs for movie collections, people, and production
-      companies.
-    </p>
+    <p class="intro-text">Quickly find TMDB IDs for movie collections, people, and production companies.</p>
 
     <p class="meta hero-help">
       Need help? Read the
-      <a
-        href="https://github.com/davecollections/tmdb-id-lookup"
-        target="_blank"
-        rel="noopener"
-      >
-        project guide </a
-      >.
+      <a href="https://github.com/davecollections/tmdb-id-lookup" target="_blank" rel="noopener"> project guide </a>.
     </p>
 
     <section class="tool-section lookup-section">
       <div class="tool-header">
         <h2>Movie Collection & People Lookup</h2>
-        <p class="meta">
-          Search TMDB movie collections and people by name or ID.
-        </p>
+        <p class="meta">Search TMDB movie collections and people by name or ID.</p>
       </div>
 
       <div class="search-row">
@@ -723,66 +707,32 @@
         <button id="clear-collection-search" type="button">Clear</button>
       </div>
       <div class="lookup-filters" aria-label="TMDB result filters">
-        <button
-          class="lookup-filter-button active"
-          type="button"
-          data-tmdb-filter="all"
-        >
-          All
-        </button>
+        <button class="lookup-filter-button active" type="button" data-tmdb-filter="all">All</button>
 
-        <button
-          class="lookup-filter-button"
-          type="button"
-          data-tmdb-filter="directors"
-        >
-          Directors
-        </button>
+        <button class="lookup-filter-button" type="button" data-tmdb-filter="directors">Directors</button>
 
-        <button
-          class="lookup-filter-button"
-          type="button"
-          data-tmdb-filter="actors"
-        >
-          Actors
-        </button>
+        <button class="lookup-filter-button" type="button" data-tmdb-filter="actors">Actors</button>
 
-        <button
-          class="lookup-filter-button"
-          type="button"
-          data-tmdb-filter="collections"
-        >
-          Collections
-        </button>
+        <button class="lookup-filter-button" type="button" data-tmdb-filter="collections">Collections</button>
       </div>
       <div id="collection-results" class="collection-results"></div>
     </section>
     <section class="tool-section bulk-lookup">
       <h2>Bulk People ID Lookup</h2>
 
-      <p class="meta">
-        Paste up to 50 actor or director names, one per line, then download a
-        CSV of matched TMDB person IDs.
-      </p>
+      <p class="meta">Paste up to 50 person names, one per line, then download a CSV of matched TMDB person IDs.</p>
 
-      <textarea
-        id="bulk-people-input"
-        placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig"
-      ></textarea>
+      <textarea id="bulk-people-input" placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig"></textarea>
 
       <div class="bulk-actions">
-        <button id="bulk-actors-btn" type="button">Resolve Actor IDs</button>
-        <button id="bulk-directors-btn" type="button">
-          Resolve Director IDs
-        </button>
+        <button id="bulk-people-btn" type="button">Resolve People IDs</button>
         <button id="clear-bulk-people" type="button">Clear</button>
       </div>
 
       <p id="bulk-people-status" class="bulk-status"></p>
 
       <p class="meta">
-        TMDB role matching uses “known for department”, so some multi-role
-        people may not appear in every category.
+        Bulk lookup returns the best TMDB person-name match and shows each person’s known-for department.
       </p>
 
       <div id="bulk-people-results" class="bulk-results"></div>
@@ -797,9 +747,8 @@
       </div>
 
       <p class="notice">
-        This company database is still being built in batches, so not every TMDB
-        studio/ID is listed yet. More companies are being added over the next
-        few days.
+        This company database is still being built in batches, so not every TMDB studio/ID is listed yet. More companies
+        are being added over the next few days.
       </p>
 
       <div class="company-summary">
@@ -812,53 +761,20 @@
       </div>
 
       <div class="search-row">
-        <input
-          id="search"
-          placeholder="Search by ID, company name, parent company, country, or headquarters…"
-        />
+        <input id="search" placeholder="Search by ID, company name, parent company, country, or headquarters…" />
 
         <button id="clear-search" type="button">Clear</button>
       </div>
       <div class="company-filters" aria-label="Company movie count filters">
-        <button
-          class="company-filter-button active"
-          type="button"
-          data-company-min-count="0"
-        >
-          All
-        </button>
+        <button class="company-filter-button active" type="button" data-company-min-count="0">All</button>
 
-        <button
-          class="company-filter-button"
-          type="button"
-          data-company-min-count="10"
-        >
-          10+ movies
-        </button>
+        <button class="company-filter-button" type="button" data-company-min-count="10">10+ movies</button>
 
-        <button
-          class="company-filter-button"
-          type="button"
-          data-company-min-count="50"
-        >
-          50+ movies
-        </button>
+        <button class="company-filter-button" type="button" data-company-min-count="50">50+ movies</button>
 
-        <button
-          class="company-filter-button"
-          type="button"
-          data-company-min-count="100"
-        >
-          100+ movies
-        </button>
+        <button class="company-filter-button" type="button" data-company-min-count="100">100+ movies</button>
 
-        <button
-          class="company-filter-button"
-          type="button"
-          data-company-min-count="500"
-        >
-          500+ movies
-        </button>
+        <button class="company-filter-button" type="button" data-company-min-count="500">500+ movies</button>
       </div>
 
       <p id="result-count"></p>
@@ -877,15 +793,11 @@
 
         <div class="pagination">
           <button id="first-page" type="button">First</button>
-          <button id="prev-page" type="button" aria-label="Previous page">
-            &lt;
-          </button>
+          <button id="prev-page" type="button" aria-label="Previous page">&lt;</button>
 
           <span id="page-status" class="page-status"></span>
 
-          <button id="next-page" type="button" aria-label="Next page">
-            &gt;
-          </button>
+          <button id="next-page" type="button" aria-label="Next page">&gt;</button>
           <button id="last-page" type="button">Last</button>
         </div>
       </div>
@@ -902,26 +814,18 @@
                 <span class="header-note">Click ID to copy</span>
               </th>
 
-              <th class="sortable" data-sort="name">
-                Company <span class="sort-indicator"></span>
-              </th>
+              <th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
 
-              <th class="sortable" data-sort="parent_company">
-                Parent Company <span class="sort-indicator"></span>
-              </th>
+              <th class="sortable" data-sort="parent_company">Parent Company <span class="sort-indicator"></span></th>
 
               <th class="sortable" data-sort="titles_count">
                 Movie Count <span class="sort-indicator"></span>
                 <span class="movie-count-note">TMDB movie credits</span>
               </th>
 
-              <th class="sortable" data-sort="origin_country">
-                Country <span class="sort-indicator"></span>
-              </th>
+              <th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
 
-              <th class="sortable" data-sort="headquarters">
-                Headquarters <span class="sort-indicator"></span>
-              </th>
+              <th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
 
               <th>TMDB</th>
             </tr>
@@ -933,31 +837,24 @@
 
       <div class="pagination pagination-bottom">
         <button id="first-page-bottom" type="button">First</button>
-        <button id="prev-page-bottom" type="button" aria-label="Previous page">
-          &lt;
-        </button>
+        <button id="prev-page-bottom" type="button" aria-label="Previous page">&lt;</button>
 
         <span id="page-status-bottom" class="page-status"></span>
 
-        <button id="next-page-bottom" type="button" aria-label="Next page">
-          &gt;
-        </button>
+        <button id="next-page-bottom" type="button" aria-label="Next page">&gt;</button>
         <button id="last-page-bottom" type="button">Last</button>
       </div>
     </section>
     <footer class="site-footer">
       <p>
-        This product uses the TMDB API but is not endorsed or certified by TMDB.
-        Company names, logos, posters, and trademarks remain the property of
-        their respective owners.
+        This product uses the TMDB API but is not endorsed or certified by TMDB. Company names, logos, posters, and
+        trademarks remain the property of their respective owners.
       </p>
 
       <p id="scan-stats" class="footer-meta"></p>
     </footer>
 
-    <button id="back-to-top" type="button" aria-label="Back to top">
-      ↑ Top
-    </button>
+    <button id="back-to-top" type="button" aria-label="Back to top">↑ Top</button>
 
     <div id="copy-toast">Copied to clipboard</div>
 
@@ -1032,24 +929,16 @@
         currentTmdbFilter = filter;
 
         document.querySelectorAll(".lookup-filter-button").forEach((button) => {
-          button.classList.toggle(
-            "active",
-            button.dataset.tmdbFilter === currentTmdbFilter,
-          );
+          button.classList.toggle("active", button.dataset.tmdbFilter === currentTmdbFilter);
         });
       }
 
       function setCompanyMovieCountFilter(minCount) {
         minCompanyMovieCount = Number(minCount || 0);
 
-        document
-          .querySelectorAll(".company-filter-button")
-          .forEach((button) => {
-            button.classList.toggle(
-              "active",
-              button.dataset.companyMinCount === String(minCompanyMovieCount),
-            );
-          });
+        document.querySelectorAll(".company-filter-button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.companyMinCount === String(minCompanyMovieCount));
+        });
       }
       async function tmdbJson(url) {
         const res = await fetch(url);
@@ -1107,13 +996,9 @@
             return "—";
           }
 
-          const castCount = Array.isArray(credits.cast)
-            ? credits.cast.length
-            : 0;
+          const castCount = Array.isArray(credits.cast) ? credits.cast.length : 0;
 
-          const crewCount = Array.isArray(credits.crew)
-            ? credits.crew.length
-            : 0;
+          const crewCount = Array.isArray(credits.crew) ? credits.crew.length : 0;
 
           return (castCount + crewCount).toLocaleString();
         } catch {
@@ -1122,9 +1007,7 @@
       }
 
       async function loadCompanies() {
-        const companiesRes = await fetch(
-          `./data/companies.min.json?v=${Date.now()}`,
-        );
+        const companiesRes = await fetch(`./data/companies.min.json?v=${Date.now()}`);
 
         const compactCompanies = await companiesRes.json();
 
@@ -1139,8 +1022,7 @@
           tmdb_url: `https://www.themoviedb.org/company/${company.i}`,
         }));
 
-        document.getElementById("stats").innerText =
-          `${companies.length.toLocaleString()} companies cached`;
+        document.getElementById("stats").innerText = `${companies.length.toLocaleString()} companies cached`;
 
         try {
           const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
@@ -1153,12 +1035,10 @@
             document.getElementById("stats").innerText =
               `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
 
-            document.getElementById("last-updated").innerText =
-              `Last updated ${updated.toLocaleString()}`;
+            document.getElementById("last-updated").innerText = `Last updated ${updated.toLocaleString()}`;
 
             if (lastScan.mode === "tmdb_daily_export") {
-              const nextOffset =
-                Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
+              const nextOffset = Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
 
               document.getElementById("scan-stats").innerText =
                 `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
@@ -1174,16 +1054,7 @@
         applyFiltersAndSort();
       }
 
-      function createResultCard({
-        title,
-        type,
-        id,
-        imageUrl,
-        imageAlt,
-        metaRows,
-        tmdbUrl,
-        imageClass = "",
-      }) {
+      function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbUrl, imageClass = "" }) {
         return `
               <div class="collection-card">
                 ${
@@ -1220,9 +1091,7 @@
       }
 
       function collectionCard(collection, movieCount = "—") {
-        const poster = collection.poster_path
-          ? `https://image.tmdb.org/t/p/w185${collection.poster_path}`
-          : "";
+        const poster = collection.poster_path ? `https://image.tmdb.org/t/p/w185${collection.poster_path}` : "";
 
         return createResultCard({
           title: collection.name || "Untitled Collection",
@@ -1236,14 +1105,10 @@
       }
 
       function personCard(person, knownCredits = "—") {
-        const profile = person.profile_path
-          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-          : "";
+        const profile = person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : "";
 
         const knownFor = person.known_for_department || "—";
-        const popularity = person.popularity
-          ? Number(person.popularity).toFixed(1)
-          : "—";
+        const popularity = person.popularity ? Number(person.popularity).toFixed(1) : "—";
 
         const metaRows = [
           `<div><strong>Known for:</strong> ${knownFor}</div>`,
@@ -1277,9 +1142,7 @@
 
         return {
           collection: detailData,
-          movieCount: detailData.parts
-            ? detailData.parts.length.toLocaleString()
-            : "—",
+          movieCount: detailData.parts ? detailData.parts.length.toLocaleString() : "—",
         };
       }
       function getLookupResultLimit() {
@@ -1314,30 +1177,16 @@
           if (isNumeric) {
             currentTmdbTotalPages = 1;
 
-            if (
-              currentTmdbFilter === "all" ||
-              currentTmdbFilter === "collections"
-            ) {
+            if (currentTmdbFilter === "all" || currentTmdbFilter === "collections") {
               const collectionResult = await getCollectionMovieCount(query);
 
               if (collectionResult) {
-                cards.push(
-                  collectionCard(
-                    collectionResult.collection,
-                    collectionResult.movieCount,
-                  ),
-                );
+                cards.push(collectionCard(collectionResult.collection, collectionResult.movieCount));
               }
             }
 
-            if (
-              currentTmdbFilter === "all" ||
-              currentTmdbFilter === "actors" ||
-              currentTmdbFilter === "directors"
-            ) {
-              const person = await tmdbJson(
-                `https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`,
-              );
+            if (currentTmdbFilter === "all" || currentTmdbFilter === "actors" || currentTmdbFilter === "directors") {
+              const person = await tmdbJson(`https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`);
 
               if (person && person.success !== false) {
                 const isActor = person.known_for_department === "Acting";
@@ -1365,15 +1214,9 @@
 
             const lookupResultLimit = getLookupResultLimit();
 
-            const collectionLimit =
-              currentTmdbFilter === "all"
-                ? Math.ceil(lookupResultLimit / 2)
-                : lookupResultLimit;
+            const collectionLimit = currentTmdbFilter === "all" ? Math.ceil(lookupResultLimit / 2) : lookupResultLimit;
 
-            const peopleLimit =
-              currentTmdbFilter === "all"
-                ? Math.floor(lookupResultLimit / 2)
-                : lookupResultLimit;
+            const peopleLimit = currentTmdbFilter === "all" ? Math.floor(lookupResultLimit / 2) : lookupResultLimit;
 
             const collections =
               currentTmdbFilter === "all" || currentTmdbFilter === "collections"
@@ -1383,15 +1226,11 @@
             let people = personSearch?.results || [];
 
             if (currentTmdbFilter === "actors") {
-              people = people.filter(
-                (person) => person.known_for_department === "Acting",
-              );
+              people = people.filter((person) => person.known_for_department === "Acting");
             }
 
             if (currentTmdbFilter === "directors") {
-              people = people.filter(
-                (person) => person.known_for_department === "Directing",
-              );
+              people = people.filter((person) => person.known_for_department === "Directing");
             }
 
             if (currentTmdbFilter === "collections") {
@@ -1402,26 +1241,17 @@
 
             if (currentTmdbFilter === "collections") {
               currentTmdbTotalPages = collectionSearch?.total_pages || 1;
-            } else if (
-              currentTmdbFilter === "actors" ||
-              currentTmdbFilter === "directors"
-            ) {
+            } else if (currentTmdbFilter === "actors" || currentTmdbFilter === "directors") {
               currentTmdbTotalPages = personSearch?.total_pages || 1;
             } else {
-              currentTmdbTotalPages = Math.max(
-                collectionSearch?.total_pages || 1,
-                personSearch?.total_pages || 1,
-              );
+              currentTmdbTotalPages = Math.max(collectionSearch?.total_pages || 1, personSearch?.total_pages || 1);
             }
 
             const collectionCards = await Promise.all(
               collections.map(async (collection) => {
                 const detail = await getCollectionMovieCount(collection.id);
 
-                return collectionCard(
-                  detail?.collection || collection,
-                  detail?.movieCount || "—",
-                );
+                return collectionCard(detail?.collection || collection, detail?.movieCount || "—");
               }),
             );
 
@@ -1519,8 +1349,7 @@
         const query = currentSearch.toLowerCase().trim();
 
         filteredCompanies = companies.filter((company) => {
-          const matchesMovieCount =
-            Number(company.titles_count || 0) >= minCompanyMovieCount;
+          const matchesMovieCount = Number(company.titles_count || 0) >= minCompanyMovieCount;
 
           const matchesSearch =
             String(company.id).includes(query) ||
@@ -1582,8 +1411,7 @@
           `${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
 
         if (!filteredCompanies.length) {
-          document.getElementById("result-count").innerText =
-            `Showing 0 of 0 companies`;
+          document.getElementById("result-count").innerText = `Showing 0 of 0 companies`;
           return;
         }
 
@@ -1592,10 +1420,7 @@
 
         if (rowsPerPage !== "all") {
           startItem = (currentPage - 1) * rowsPerPage + 1;
-          endItem = Math.min(
-            currentPage * rowsPerPage,
-            filteredCompanies.length,
-          );
+          endItem = Math.min(currentPage * rowsPerPage, filteredCompanies.length);
         }
 
         document.getElementById("result-count").innerText =
@@ -1609,9 +1434,7 @@
         for (const company of items) {
           const tr = document.createElement("tr");
 
-          const logoUrl = company.logo_path
-            ? `https://image.tmdb.org/t/p/w92${company.logo_path}`
-            : "";
+          const logoUrl = company.logo_path ? `https://image.tmdb.org/t/p/w92${company.logo_path}` : "";
 
           tr.innerHTML = `
                 <td class="logo-cell">
@@ -1689,8 +1512,9 @@
           <th>Input</th>
           <th>Match</th>
           <th>TMDB ID</th>
-          <th>Credit Count</th>
-          <th>Status</th>
+<th>Known For</th>
+<th>Credit Count</th>
+<th>Status</th>
           <th>TMDB</th>
         </tr>
       </thead>
@@ -1714,8 +1538,9 @@
                       : ""
                   }
                 </td>
-                <td>${result.creditCount || "—"}</td>
-                <td>${result.status}</td>
+<td>${result.knownFor || "—"}</td>
+<td>${result.creditCount || "—"}</td>
+<td>${result.status}</td>
                 <td>
                   ${
                     result.id
@@ -1743,13 +1568,7 @@
           return;
         }
 
-        const headers = [
-          "input",
-          "matched_name",
-          "tmdb_person_id",
-          "credit_count",
-          "status",
-        ];
+        const headers = ["input", "matched_name", "tmdb_person_id", "known_for", "credit_count", "status"];
 
         const csv =
           headers.join(",") +
@@ -1760,6 +1579,7 @@
                 result.input,
                 result.name || "",
                 result.id || "",
+                result.knownFor || "",
                 result.creditCount || "",
                 result.status,
               ]
@@ -1778,23 +1598,18 @@
           .trim();
       }
 
-      function findBestPeopleMatch(results, input, department) {
-        const departmentMatches = (results || []).filter(
-          (person) => person.known_for_department === department,
-        );
-
+      function findBestPeopleMatch(results, input) {
         const normalizedInput = normalizePersonName(input);
 
         return (
-          departmentMatches.find(
-            (person) => normalizePersonName(person.name) === normalizedInput,
-          ) || null
+          (results || []).find((person) => normalizePersonName(person.name) === normalizedInput) ||
+          (results || [])[0] ||
+          null
         );
       }
-      async function resolveBulkPeople(mode) {
+      async function resolveBulkPeople() {
         const status = document.getElementById("bulk-people-status");
         const names = getBulkPeopleNames();
-        const department = mode === "actors" ? "Acting" : "Directing";
 
         if (!names.length) {
           lastBulkPeopleResults = [];
@@ -1812,7 +1627,7 @@
           return;
         }
 
-        status.innerText = `Resolving ${mode === "actors" ? "actor" : "director"} IDs...`;
+        status.innerText = "Resolving people IDs...";
         lastBulkPeopleResults = [];
         renderBulkPeopleResults([]);
 
@@ -1821,11 +1636,13 @@
             const response = await tmdbJsonWithStatus(
               `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(input)}&page=1`,
             );
+
             if (response.rateLimited) {
               lastBulkPeopleResults.push({
                 input,
                 name: "",
                 id: "",
+                knownFor: "",
                 creditCount: "",
                 status: "TMDB rate limit reached",
               });
@@ -1838,20 +1655,15 @@
                 input,
                 name: "",
                 id: "",
+                knownFor: "",
                 creditCount: "",
-                status: response.status
-                  ? `TMDB error HTTP ${response.status}`
-                  : "Network error",
+                status: response.status ? `TMDB error HTTP ${response.status}` : "Network error",
               });
 
               continue;
             }
 
-            const match = findBestPeopleMatch(
-              response.data?.results || [],
-              input,
-              department,
-            );
+            const match = findBestPeopleMatch(response.data?.results || [], input);
 
             if (match) {
               const knownCredits = await getPersonKnownCredits(match.id);
@@ -1860,6 +1672,7 @@
                 input,
                 name: match.name || "",
                 id: match.id,
+                knownFor: match.known_for_department || "—",
                 creditCount: knownCredits,
                 status: "Matched",
               });
@@ -1868,8 +1681,9 @@
                 input,
                 name: "",
                 id: "",
+                knownFor: "",
                 creditCount: "",
-                status: `No matching ${mode === "actors" ? "actor" : "director"}`,
+                status: "No matching person",
               });
             }
           } catch {
@@ -1877,6 +1691,7 @@
               input,
               name: "",
               id: "",
+              knownFor: "",
               creditCount: "",
               status: "Lookup failed",
             });
@@ -1885,48 +1700,40 @@
 
         renderBulkPeopleResults(lastBulkPeopleResults);
 
-        const matchedCount = lastBulkPeopleResults.filter(
-          (result) => result.id,
-        ).length;
+        const matchedCount = lastBulkPeopleResults.filter((result) => result.id).length;
 
         status.innerHTML = `
-    Resolved ${mode === "actors" ? "actor" : "director"} IDs:
-matched ${matchedCount} of ${names.length}.
+    Resolved people IDs:
+    matched ${matchedCount} of ${names.length}.
     ${
       matchedCount
-        ? `<button type="button" onclick="downloadBulkPeopleCsv('${mode}')">
+        ? `<button type="button" onclick="downloadBulkPeopleCsv('people')">
             Download CSV
           </button>`
         : ""
     }
   `;
       }
-      document
-        .getElementById("collection-search-btn")
-        .addEventListener("click", () => {
+      document.getElementById("collection-search-btn").addEventListener("click", () => {
+        setTmdbFilter("all");
+        searchTmdbIds(1);
+      });
+
+      document.getElementById("collection-search").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
           setTmdbFilter("all");
           searchTmdbIds(1);
-        });
+        }
+      });
 
-      document
-        .getElementById("collection-search")
-        .addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            setTmdbFilter("all");
-            searchTmdbIds(1);
-          }
-        });
+      document.getElementById("clear-collection-search").addEventListener("click", () => {
+        document.getElementById("collection-search").value = "";
+        document.getElementById("collection-results").innerHTML = "";
 
-      document
-        .getElementById("clear-collection-search")
-        .addEventListener("click", () => {
-          document.getElementById("collection-search").value = "";
-          document.getElementById("collection-results").innerHTML = "";
+        setTmdbFilter("all");
 
-          setTmdbFilter("all");
-
-          document.getElementById("collection-search").focus();
-        });
+        document.getElementById("collection-search").focus();
+      });
 
       document.getElementById("search").addEventListener("input", (event) => {
         currentSearch = event.target.value;
@@ -1945,15 +1752,13 @@ matched ${matchedCount} of ${names.length}.
         applyFiltersAndSort();
       });
 
-      document
-        .getElementById("rows-per-page")
-        .addEventListener("change", (event) => {
-          rowsPerPage = Number(event.target.value);
+      document.getElementById("rows-per-page").addEventListener("change", (event) => {
+        rowsPerPage = Number(event.target.value);
 
-          currentPage = 1;
+        currentPage = 1;
 
-          applyFiltersAndSort();
-        });
+        applyFiltersAndSort();
+      });
 
       document.querySelectorAll("th.sortable").forEach((th) => {
         th.addEventListener("click", () => {
@@ -1973,37 +1778,21 @@ matched ${matchedCount} of ${names.length}.
         });
       });
 
-      document
-        .getElementById("first-page")
-        .addEventListener("click", () => goToPage(1));
+      document.getElementById("first-page").addEventListener("click", () => goToPage(1));
 
-      document
-        .getElementById("prev-page")
-        .addEventListener("click", () => goToPage(currentPage - 1));
+      document.getElementById("prev-page").addEventListener("click", () => goToPage(currentPage - 1));
 
-      document
-        .getElementById("next-page")
-        .addEventListener("click", () => goToPage(currentPage + 1));
+      document.getElementById("next-page").addEventListener("click", () => goToPage(currentPage + 1));
 
-      document
-        .getElementById("last-page")
-        .addEventListener("click", () => goToPage(getTotalPages()));
+      document.getElementById("last-page").addEventListener("click", () => goToPage(getTotalPages()));
 
-      document
-        .getElementById("first-page-bottom")
-        .addEventListener("click", () => goToPage(1));
+      document.getElementById("first-page-bottom").addEventListener("click", () => goToPage(1));
 
-      document
-        .getElementById("prev-page-bottom")
-        .addEventListener("click", () => goToPage(currentPage - 1));
+      document.getElementById("prev-page-bottom").addEventListener("click", () => goToPage(currentPage - 1));
 
-      document
-        .getElementById("next-page-bottom")
-        .addEventListener("click", () => goToPage(currentPage + 1));
+      document.getElementById("next-page-bottom").addEventListener("click", () => goToPage(currentPage + 1));
 
-      document
-        .getElementById("last-page-bottom")
-        .addEventListener("click", () => goToPage(getTotalPages()));
+      document.getElementById("last-page-bottom").addEventListener("click", () => goToPage(getTotalPages()));
 
       document.getElementById("back-to-top").addEventListener("click", () => {
         window.scrollTo({
@@ -2029,26 +1818,16 @@ matched ${matchedCount} of ${names.length}.
           applyFiltersAndSort();
         });
       });
-      document
-        .getElementById("bulk-actors-btn")
-        .addEventListener("click", () => {
-          resolveBulkPeople("actors");
-        });
+      document.getElementById("bulk-people-btn").addEventListener("click", () => {
+        resolveBulkPeople();
+      });
 
-      document
-        .getElementById("bulk-directors-btn")
-        .addEventListener("click", () => {
-          resolveBulkPeople("directors");
-        });
-
-      document
-        .getElementById("clear-bulk-people")
-        .addEventListener("click", () => {
-          document.getElementById("bulk-people-input").value = "";
-          document.getElementById("bulk-people-status").innerText = "";
-          document.getElementById("bulk-people-results").innerHTML = "";
-          lastBulkPeopleResults = [];
-        });
+      document.getElementById("clear-bulk-people").addEventListener("click", () => {
+        document.getElementById("bulk-people-input").value = "";
+        document.getElementById("bulk-people-status").innerText = "";
+        document.getElementById("bulk-people-results").innerHTML = "";
+        lastBulkPeopleResults = [];
+      });
       loadCompanies();
     </script>
   </body>
