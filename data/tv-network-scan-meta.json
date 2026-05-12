@@ -1,0 +1,11 @@
+{
+  "last_scan": {
+    "mode": "tmdb_daily_export",
+    "export_date": "05_12_2026",
+    "export_total_ids": 5372,
+    "valid_networks": 5372,
+    "lowest_id": 1,
+    "highest_id": 9183,
+    "updated_at": "2026-05-12T09:44:17.906Z"
+  }
+}
