@@ -2111,23 +2111,6 @@
 					applyFiltersAndSort();
 				});
 			});
-			document.querySelectorAll("th.sortable").forEach((th) => {
-				th.addEventListener("click", () => {
-					const selectedSortKey = th.dataset.sort;
-
-					if (sortKey === selectedSortKey) {
-						sortDirection = sortDirection === "asc" ? "desc" : "asc";
-					} else {
-						sortKey = selectedSortKey;
-
-						sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
-					}
-
-					currentPage = 1;
-
-					applyFiltersAndSort();
-				});
-			});
 
 			document.querySelectorAll(".network-sortable").forEach((th) => {
 				th.addEventListener("click", () => {
@@ -2146,6 +2129,24 @@
 					applyNetworkFiltersAndSort();
 				});
 			});
+			document.querySelectorAll("th.sortable").forEach((th) => {
+				th.addEventListener("click", () => {
+					const selectedSortKey = th.dataset.sort;
+
+					if (sortKey === selectedSortKey) {
+						sortDirection = sortDirection === "asc" ? "desc" : "asc";
+					} else {
+						sortKey = selectedSortKey;
+
+						sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
+					}
+
+					currentPage = 1;
+
+					applyFiltersAndSort();
+				});
+			});
+
 			document.getElementById("first-page").addEventListener("click", () => goToPage(1));
 
 			document.getElementById("prev-page").addEventListener("click", () => goToPage(currentPage - 1));
