@@ -1,16 +1,16 @@
-name: Repair Company Cache From Audit
+name: Repair Cache From Audit
 
 on:
   workflow_dispatch:
 
 concurrency:
-  group: repair-company-cache
+  group: repair-cache-from-audit
   cancel-in-progress: false
 
 jobs:
   repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     permissions:
       contents: write
@@ -30,19 +30,31 @@ jobs:
           REQUEST_DELAY_MS: 120
         run: node scripts/repair-company-cache-from-audit.mjs
 
-      - name: Commit repaired company cache
+      - name: Repair TV network cache from audit
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          REQUEST_DELAY_MS: 120
+        run: node scripts/repair-tv-network-cache-from-audit.mjs
+
+      - name: Commit repaired caches
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add data/companies.min.json data/companies.csv data/company-cache-repair-meta.json
+          git add \
+            data/companies.min.json \
+            data/companies.csv \
+            data/company-cache-repair-meta.json \
+            data/tv-networks.min.json \
+            data/tv-networks.csv \
+            data/tv-network-cache-repair-meta.json
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git commit -m "Repair TMDB company cache from audit"
+          git commit -m "Repair TMDB caches from audit"
 
           git pull --rebase origin main
 
