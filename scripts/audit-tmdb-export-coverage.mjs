@@ -117,6 +117,28 @@ function duplicateIds(ids) {
   return Array.from(duplicates).sort((a, b) => a - b);
 }
 
+function idRange(ids) {
+  if (!ids.length) {
+    return {
+      lowest: null,
+      highest: null
+    };
+  }
+
+  let lowest = ids[0];
+  let highest = ids[0];
+
+  for (const id of ids) {
+    if (id < lowest) lowest = id;
+    if (id > highest) highest = id;
+  }
+
+  return {
+    lowest,
+    highest
+  };
+}
+
 async function auditDataset(key, config) {
   console.log(`\n===== AUDITING ${config.label.toUpperCase()} =====`);
 
@@ -136,6 +158,9 @@ async function auditDataset(key, config) {
     ? Number(((matchedCount / exportData.ids.length) * 100).toFixed(4))
     : 0;
 
+  const exportRange = idRange(exportData.ids);
+  const cachedRange = idRange(cachedIds);
+
   const audit = {
     dataset: key,
     label: config.label,
@@ -148,10 +173,10 @@ async function auditDataset(key, config) {
     missing_from_cache_count: missingFromCache.length,
     extra_in_cache_count: extraInCache.length,
     duplicate_cached_ids_count: duplicateCachedIds.length,
-    lowest_export_id: exportData.ids.length ? Math.min(...exportData.ids) : null,
-    highest_export_id: exportData.ids.length ? Math.max(...exportData.ids) : null,
-    lowest_cached_id: cachedIds.length ? Math.min(...cachedIds) : null,
-    highest_cached_id: cachedIds.length ? Math.max(...cachedIds) : null,
+    lowest_export_id: exportRange.lowest,
+    highest_export_id: exportRange.highest,
+    lowest_cached_id: cachedRange.lowest,
+    highest_cached_id: cachedRange.highest,
     missing_from_cache: missingFromCache,
     extra_in_cache: extraInCache,
     duplicate_cached_ids: duplicateCachedIds,
