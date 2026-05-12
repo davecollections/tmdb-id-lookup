@@ -194,9 +194,29 @@ if (!audit) {
 const missingIds = Array.isArray(audit.missing_from_cache) ? audit.missing_from_cache.map(Number).filter(Boolean) : [];
 const extraIds = Array.isArray(audit.extra_in_cache) ? audit.extra_in_cache.map(Number).filter(Boolean) : [];
 
+const repairStats = {
+  source_audit_date: audit.audited_at || "",
+  missing_requested: missingIds,
+  extra_requested: extraIds,
+  added: [],
+  removed: [],
+  not_found: [],
+  failed: [],
+  started_at: new Date().toISOString()
+};
+
 console.log("\n===== COMPANY CACHE REPAIR =====");
 console.log(`Missing IDs to add : ${missingIds.length ? missingIds.join(", ") : "none"}`);
 console.log(`Extra IDs to remove: ${extraIds.length ? extraIds.join(", ") : "none"}`);
+
+if (missingIds.length === 0 && extraIds.length === 0) {
+  repairStats.skipped = true;
+  repairStats.reason = "nothing_to_repair";
+  repairStats.finished_at = new Date().toISOString();
+  await fs.writeFile(REPAIR_META_PATH, JSON.stringify({ last_repair: repairStats }, null, 2));
+  console.log("Nothing to repair. Skipping company cache update.");
+  process.exit(0);
+}
 
 const existingCompact = await readJson(MIN_JSON_PATH, []);
 const companyMap = new Map();
@@ -210,22 +230,12 @@ for (const company of existingCompact) {
 
 for (const id of extraIds) {
   if (companyMap.delete(id)) {
+    repairStats.removed.push(id);
     console.log(`${id}: removed stale cached company`);
   } else {
     console.log(`${id}: extra ID was not present in cache`);
   }
 }
-
-const repairStats = {
-  source_audit_date: audit.audited_at || "",
-  missing_requested: missingIds,
-  extra_requested: extraIds,
-  added: [],
-  removed: extraIds,
-  not_found: [],
-  failed: [],
-  started_at: new Date().toISOString()
-};
 
 for (const id of missingIds) {
   try {
@@ -267,6 +277,6 @@ await fs.writeFile(REPAIR_META_PATH, JSON.stringify({ last_repair: repairStats }
 
 console.log(`Saved ${companies.length.toLocaleString()} total cached companies.`);
 console.log(`Added ${repairStats.added.length.toLocaleString()} missing companies.`);
-console.log(`Removed ${extraIds.length.toLocaleString()} stale companies.`);
+console.log(`Removed ${repairStats.removed.length.toLocaleString()} stale companies.`);
 console.log(`Repair meta: ${REPAIR_META_PATH}`);
 console.log("================================\n");
