@@ -1,0 +1,45 @@
+name: Update TMDB TV Networks From Export
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: tmdb-tv-network-cache
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch TMDB TV networks from daily export
+        run: node scripts/fetch-tv-networks-from-export.mjs
+
+      - name: Commit updated TV network data
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add data/tv-networks.min.json data/tv-networks.csv data/tv-network-scan-meta.json data/tv-network-export.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update TMDB TV network lookup from export"
+
+          git pull --rebase origin main
+
+          git push
