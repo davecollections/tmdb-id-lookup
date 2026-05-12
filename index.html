@@ -1055,15 +1055,6 @@
 					button.classList.toggle("active", button.dataset.companyMinCount === String(minCompanyMovieCount));
 				});
 			}
-			document.querySelectorAll(".network-filter-button").forEach((button) => {
-				button.addEventListener("click", () => {
-					setNetworkTitleCountFilter(button.dataset.networkMinCount || 0);
-
-					currentNetworkPage = 1;
-
-					applyNetworkFiltersAndSort();
-				});
-			});
 			function setNetworkTitleCountFilter(minCount) {
 				minNetworkTitleCount = Number(minCount || 0);
 
@@ -2129,23 +2120,6 @@
 					applyNetworkFiltersAndSort();
 				});
 			});
-			document.querySelectorAll("th.sortable").forEach((th) => {
-				th.addEventListener("click", () => {
-					const selectedSortKey = th.dataset.sort;
-
-					if (sortKey === selectedSortKey) {
-						sortDirection = sortDirection === "asc" ? "desc" : "asc";
-					} else {
-						sortKey = selectedSortKey;
-
-						sortDirection = selectedSortKey === "titles_count" ? "desc" : "asc";
-					}
-
-					currentPage = 1;
-
-					applyFiltersAndSort();
-				});
-			});
 
 			document.getElementById("first-page").addEventListener("click", () => goToPage(1));
 
@@ -2211,6 +2185,15 @@
 
 					currentPage = 1;
 					applyFiltersAndSort();
+				});
+			});
+			document.querySelectorAll(".network-filter-button").forEach((button) => {
+				button.addEventListener("click", () => {
+					setNetworkTitleCountFilter(button.dataset.networkMinCount || 0);
+
+					currentNetworkPage = 1;
+
+					applyNetworkFiltersAndSort();
 				});
 			});
 			document.getElementById("bulk-people-btn").addEventListener("click", () => {
