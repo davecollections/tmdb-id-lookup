@@ -3,25 +3,21 @@
   "label": "Production Companies",
   "export_date": "05_12_2026",
   "export_total_ids": 248082,
-  "cached_total_ids": 248082,
-  "cached_unique_ids": 248082,
-  "matched_count": 248080,
-  "coverage_percent": 99.9992,
-  "missing_from_cache_count": 2,
-  "extra_in_cache_count": 2,
+  "cached_total_ids": 248081,
+  "cached_unique_ids": 248081,
+  "matched_count": 248081,
+  "coverage_percent": 99.9996,
+  "missing_from_cache_count": 1,
+  "extra_in_cache_count": 0,
   "duplicate_cached_ids_count": 0,
   "lowest_export_id": 1,
   "highest_export_id": 298231,
   "lowest_cached_id": 1,
   "highest_cached_id": 298231,
   "missing_from_cache": [
-    209944,
     297776
   ],
-  "extra_in_cache": [
-    20671,
-    181374
-  ],
+  "extra_in_cache": [],
   "duplicate_cached_ids": [],
-  "audited_at": "2026-05-12T10:50:50.007Z"
+  "audited_at": "2026-05-12T21:23:34.313Z"
 }
