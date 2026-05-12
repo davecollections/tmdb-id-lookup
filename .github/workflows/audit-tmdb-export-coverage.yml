@@ -1,0 +1,57 @@
+name: Audit TMDB Export Coverage
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "Dataset to audit"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - companies
+          - networks
+
+concurrency:
+  group: tmdb-export-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run TMDB export coverage audit
+        env:
+          DATASET: ${{ github.event.inputs.dataset }}
+        run: node scripts/audit-tmdb-export-coverage.mjs
+
+      - name: Commit updated audit data
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add data/company-id-audit.json data/tv-network-id-audit.json data/id-audit-summary.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update TMDB export coverage audit"
+
+          git pull --rebase origin main
+
+          git push
