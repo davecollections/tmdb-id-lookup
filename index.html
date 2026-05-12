@@ -753,9 +753,11 @@
         <p id="last-updated" class="company-updated"></p>
       </div>
 
-      <div class="download-links">
-        <a href="./data/companies.csv" download>Download CSV</a>
-      </div>
+<div class="download-links">
+ <a id="download-csv-link" href="./data/companies.csv" download>
+  Download CSV
+</a>
+</div>
 
       <div class="search-row">
         <input id="search" placeholder="Search by ID, company name, parent company, country, or headquarters…" />
@@ -857,7 +859,9 @@
 
     <script>
       const TMDB_API_KEY = "__TMDB_API_KEY__";
+const CACHE_VERSION = "20260512";
 
+      
       const collectionAliases = {
         lotr: "lord of the rings",
         hp: "harry potter",
@@ -1004,7 +1008,8 @@
       }
 
       async function loadCompanies() {
-        const companiesRes = await fetch(`./data/companies.min.json?v=${Date.now()}`);
+        
+        const companiesRes = await fetch(`./data/companies.min.json?v=${CACHE_VERSION}`);
 
         const compactCompanies = await companiesRes.json();
 
@@ -1022,30 +1027,22 @@
         document.getElementById("stats").innerText = `${companies.length.toLocaleString()} companies cached`;
 
         try {
-          const metaRes = await fetch(`./data/scan-meta.json?v=${Date.now()}`);
+          const metaRes = await fetch(`./data/company-rebuild-meta.json?v=${CACHE_VERSION}`);
 
           if (metaRes.ok) {
             const meta = await metaRes.json();
-            const lastScan = meta.last_scan;
-            const updated = new Date(lastScan.finished_at);
+            const lastRebuild = meta.last_rebuild;
+            const updated = new Date(lastRebuild.finished_at);
 
             document.getElementById("stats").innerText =
-              `${companies.length.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
+              `${companies.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
 
             document.getElementById("last-updated").innerText = `Last updated ${updated.toLocaleString()}`;
 
-            if (lastScan.mode === "tmdb_daily_export") {
-              const nextOffset = Number(lastScan.offset || 0) + Number(lastScan.limit || 0);
-
-              document.getElementById("scan-stats").innerText =
-                `Last scan: export offset ${Number(lastScan.offset || 0).toLocaleString()} → ${(nextOffset - 1).toLocaleString()} | Processed ${lastScan.checked.toLocaleString()} | Next offset: ${nextOffset.toLocaleString()} of ${lastScan.export_total_ids.toLocaleString()}`;
-            } else {
-              document.getElementById("scan-stats").innerText =
-                `Last scan: IDs ${lastScan.start_id.toLocaleString()} → ${lastScan.end_id.toLocaleString()} | Checked ${lastScan.checked.toLocaleString()} | Valid ${lastScan.found.toLocaleString()} | IDs with no record: ${lastScan.missing.toLocaleString()}`;
-            }
-          }
+            document.getElementById("scan-stats").innerText =
+  `TMDB company cache rebuilt from export data • ${lastRebuild.total_cached.toLocaleString()} companies cached • Last updated ${updated.toLocaleString()}`;  }
         } catch (error) {
-          console.warn("scan-meta.json not available yet");
+          console.warn("company-rebuild-meta.json not available yet");
         }
 
         applyFiltersAndSort();
@@ -1841,6 +1838,7 @@
         document.getElementById("bulk-people-results").innerHTML = "";
         lastBulkPeopleResults = [];
       });
+      document.getElementById("download-csv-link").href = `./data/companies.csv?v=${CACHE_VERSION}`;
       loadCompanies();
     </script>
   </body>
