@@ -1,0 +1,16 @@
+{
+  "last_rebuild": {
+    "mode": "manual_company_rebuild_from_export",
+    "export_date": "05_12_2026",
+    "export_total_ids": 248082,
+    "offset": 244000,
+    "limit": 5000,
+    "actual_limit": 4082,
+    "checked": 4082,
+    "found": 4081,
+    "missing": 1,
+    "started_at": "2026-05-12T09:05:35.997Z",
+    "total_cached": 248082,
+    "finished_at": "2026-05-12T09:23:38.087Z"
+  }
+}
