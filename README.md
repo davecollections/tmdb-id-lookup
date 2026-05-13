@@ -25,8 +25,6 @@ The site helps users look up TMDB production companies, TV networks, genres, off
 
 The production company database is built from TMDB production company exports and enriched in batches using the TMDB API.
 
-Not every TMDB company ID is cached yet. The site shows how many IDs are currently cached and searchable.
-
 Movie counts are based on TMDB movie credit/discover results and are intended as a useful guide when deciding which studio IDs may be worth using.
 
 Company search uses the cached local dataset. Cached company data can be downloaded as a CSV.
