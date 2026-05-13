@@ -68,7 +68,6 @@ jobs:
               owner,
               repo,
               state: 'open',
-              labels: 'audit',
               per_page: 100,
             });
 
@@ -79,7 +78,6 @@ jobs:
                 owner,
                 repo,
                 title: issueTitle,
-                labels: ['audit'],
                 body: [
                   'Daily TMDB cache audit reports are posted here when coverage needs attention.',
                   '',
