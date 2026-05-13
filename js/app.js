@@ -879,7 +879,53 @@ function getGenreSearchText(genre) {
 		.join(" ")
 		.toLowerCase();
 }
+async function fetchGenreTitleCount(genre) {
+	if (genre.titleCount && genre.titleCount !== "—") {
+		return genre.titleCount;
+	}
 
+	let url = "";
+
+	if (genre.type === "Official TMDB Genre" && genre.media === "Movie") {
+		url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genre.id}&page=1`;
+	}
+
+	if (genre.type === "Official TMDB Genre" && genre.media === "TV") {
+		url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genre.id}&page=1`;
+	}
+
+	if (genre.type === "Curated TMDB List") {
+		url = `https://api.themoviedb.org/3/list/${genre.id}?api_key=${TMDB_API_KEY}`;
+	}
+
+	if (!url) {
+		return "—";
+	}
+
+	try {
+		const data = await tmdbJson(url);
+
+		if (!data) {
+			return "—";
+		}
+
+		if (typeof data.total_results === "number") {
+			return data.total_results.toLocaleString();
+		}
+
+		if (typeof data.item_count === "number") {
+			return data.item_count.toLocaleString();
+		}
+
+		if (Array.isArray(data.items)) {
+			return data.items.length.toLocaleString();
+		}
+
+		return "—";
+	} catch {
+		return "—";
+	}
+}
 function genreMatchesFilter(genre) {
 	if (currentGenreFilter === "movie") {
 		return genre.type === "Official TMDB Genre" && genre.media === "Movie";
@@ -941,6 +987,8 @@ function renderGenres(items) {
 	for (const genre of items) {
 		const tr = document.createElement("tr");
 
+		const countCellId = `genre-count-${String(genre.media).toLowerCase()}-${genre.id}`;
+
 		tr.innerHTML = `
 			<td>${genre.name || ""}</td>
 			<td>${genre.type || ""}</td>
@@ -955,7 +1003,7 @@ function renderGenres(items) {
 					${genre.id}
 				</button>
 			</td>
-			<td>${genre.titleCount || "—"}</td>
+			<td id="${countCellId}">${genre.titleCount || "Loading..."}</td>
 			<td>
 				<a
 					href="${genre.url}"
@@ -968,6 +1016,18 @@ function renderGenres(items) {
 		`;
 
 		tbody.appendChild(tr);
+
+		if (!genre.titleCount) {
+			fetchGenreTitleCount(genre).then((titleCount) => {
+				genre.titleCount = titleCount;
+
+				const countCell = document.getElementById(countCellId);
+
+				if (countCell) {
+					countCell.innerText = titleCount;
+				}
+			});
+		}
 	}
 }
 function goToPage(page) {
