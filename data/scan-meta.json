@@ -1,16 +1,16 @@
 {
   "last_scan": {
-    "mode": "repair_cache_from_audit",
+    "mode": "manual_company_rebuild_from_export",
     "export_date": "05_13_2026",
     "export_total_ids": 248188,
-    "offset": null,
-    "limit": null,
-    "actual_limit": 116,
-    "checked": 116,
-    "found": 116,
-    "missing": 0,
-    "started_at": "2026-05-13T10:08:21.641Z",
+    "offset": 235716,
+    "limit": 19643,
+    "actual_limit": 12472,
+    "checked": 12472,
+    "found": 12470,
+    "missing": 2,
+    "started_at": "2026-05-13T17:22:40.005Z",
     "total_cached": 248188,
-    "finished_at": "2026-05-13T10:08:40.944Z"
+    "finished_at": "2026-05-13T17:58:03.421Z"
   }
 }
