@@ -1080,10 +1080,8 @@
 
 		<script>
 			const TMDB_API_KEY = "__TMDB_API_KEY__";
-			const TRAKT_CLIENT_ID = "__TRAKT_CLIENT_ID__";
 			const CACHE_VERSION = "20260512";
 
-			const traktLookupPromises = new Map();
 
 			const collectionAliases = {
 				lotr: "lord of the rings",
@@ -1258,152 +1256,6 @@
 					};
 				}
 			}
-			function isTraktEnabled() {
-				return Boolean(TRAKT_CLIENT_ID && TRAKT_CLIENT_ID !== "__TRAKT_CLIENT_ID__");
-			}
-
-			async function traktJson(url) {
-				if (!isTraktEnabled()) {
-					return null;
-				}
-
-				try {
-					const res = await fetch(url, {
-						headers: {
-							"Content-Type": "application/json",
-							"trakt-api-key": TRAKT_CLIENT_ID,
-							"trakt-api-version": "2",
-						},
-					});
-
-					if (!res.ok) {
-						return null;
-					}
-
-					return res.json();
-				} catch {
-					return null;
-				}
-			}
-
-			function getDedupePromise(key, fetcher) {
-				if (traktLookupPromises.has(key)) {
-					return traktLookupPromises.get(key);
-				}
-
-				const promise = fetcher()
-					.catch(() => null)
-					.finally(() => {
-						traktLookupPromises.delete(key);
-					});
-
-				traktLookupPromises.set(key, promise);
-
-				return promise;
-			}
-
-			function normalizeTraktMatchName(name) {
-				return String(name || "")
-					.toLowerCase()
-					.replace(/&/g, "and")
-					.replace(/\bthe\b/g, "")
-					.replace(/collection/g, "")
-					.replace(/[^a-z0-9]+/g, " ")
-					.trim();
-			}
-
-			async function getPersonExternalIds(personId) {
-				if (!personId) {
-					return null;
-				}
-
-				return tmdbJson(`https://api.themoviedb.org/3/person/${personId}/external_ids?api_key=${TMDB_API_KEY}`);
-			}
-
-			function findTraktPersonMatch(matches) {
-				return Array.isArray(matches)
-					? matches.find((item) => item.type === "person" && item.person?.ids?.trakt)?.person || null
-					: null;
-			}
-
-			async function findTraktPersonByTmdbId(tmdbPersonId) {
-				if (!tmdbPersonId || !isTraktEnabled()) {
-					return null;
-				}
-
-				return getDedupePromise(`person:${tmdbPersonId}`, async () => {
-					const externalIds = await getPersonExternalIds(tmdbPersonId);
-					const imdbId = externalIds?.imdb_id || "";
-
-					if (imdbId) {
-						const imdbMatches = await traktJson(`https://api.trakt.tv/search/imdb/${imdbId}`);
-						const imdbMatch = findTraktPersonMatch(imdbMatches);
-
-						if (imdbMatch) {
-							return imdbMatch;
-						}
-					}
-
-					const tmdbMatches = await traktJson(`https://api.trakt.tv/search/tmdb/${tmdbPersonId}`);
-
-					return findTraktPersonMatch(tmdbMatches);
-				});
-			}
-
-			async function findExactTraktListByCollectionName(collectionName) {
-				if (!collectionName || !isTraktEnabled()) {
-					return null;
-				}
-
-				const normalizedCollectionName = normalizeTraktMatchName(collectionName);
-
-				if (!normalizedCollectionName) {
-					return null;
-				}
-
-				return getDedupePromise(`collection-list:${normalizedCollectionName}`, async () => {
-					const matches = await traktJson(
-						`https://api.trakt.tv/search/list?query=${encodeURIComponent(collectionName)}`,
-					);
-
-					if (!Array.isArray(matches)) {
-						return null;
-					}
-
-					const exactMatch = matches.find((item) => {
-						const list = item.list;
-
-						if (!list?.ids?.trakt || !list.name) {
-							return false;
-						}
-
-						return normalizeTraktMatchName(list.name) === normalizedCollectionName;
-					});
-
-					return exactMatch?.list || null;
-				});
-			}
-
-			function traktIdRow(label, id) {
-				if (!id) {
-					return "";
-				}
-
-				return `
-					<div>
-						<strong>${label}:</strong>
-						<button
-							type="button"
-							class="copy-id-button"
-							title="Copy ${label}"
-							onclick="copyId('${id}')"
-						>
-							${id}
-						</button>
-					</div>
-				`;
-			}
-
 			async function getPersonKnownCredits(personId) {
 				try {
 					const credits = await tmdbJson(
@@ -1534,13 +1386,10 @@
             `;
 			}
 
-			function collectionCard(collection, movieCount = "—", traktList = null) {
+			function collectionCard(collection, movieCount = "—") {
 				const poster = collection.poster_path ? `https://image.tmdb.org/t/p/w185${collection.poster_path}` : "";
 				const metaRows = [`<div><strong>Movies:</strong> ${movieCount}</div>`];
 
-				if (traktList?.ids?.trakt) {
-					metaRows.push(traktIdRow("Trakt List ID", traktList.ids.trakt));
-				}
 
 				return createResultCard({
 					title: collection.name || "Untitled Collection",
@@ -1553,7 +1402,7 @@
 				});
 			}
 
-			function personCard(person, knownCredits = "—", traktPerson = null) {
+			function personCard(person, knownCredits = "—") {
 				const profile = person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : "";
 
 				const knownFor = person.known_for_department || "—";
@@ -1565,9 +1414,6 @@
 					`<div><strong>TMDB popularity:</strong> ${popularity}</div>`,
 				];
 
-				if (traktPerson?.ids?.trakt) {
-					metaRows.push(traktIdRow("Trakt ID", traktPerson.ids.trakt));
-				}
 
 				if (person.birthday) {
 					metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
@@ -1634,8 +1480,7 @@
 							const collectionResult = await getCollectionMovieCount(query);
 
 							if (collectionResult) {
-								const traktList = await findExactTraktListByCollectionName(collectionResult.collection.name);
-								cards.push(collectionCard(collectionResult.collection, collectionResult.movieCount, traktList));
+								cards.push(collectionCard(collectionResult.collection, collectionResult.movieCount));
 							}
 						}
 
@@ -1652,12 +1497,9 @@
 									(currentTmdbFilter === "directors" && isDirector);
 
 								if (shouldShowPerson) {
-									const [knownCredits, traktPerson] = await Promise.all([
-										getPersonKnownCredits(person.id),
-										findTraktPersonByTmdbId(person.id),
-									]);
+									const knownCredits = await getPersonKnownCredits(person.id);
 
-									cards.push(personCard(person, knownCredits, traktPerson));
+									cards.push(personCard(person, knownCredits));
 								}
 							}
 						}
@@ -1709,9 +1551,7 @@
 							collections.map(async (collection) => {
 								const detail = await getCollectionMovieCount(collection.id);
 								const hydratedCollection = detail?.collection || collection;
-								const traktList = await findExactTraktListByCollectionName(hydratedCollection.name);
-
-								return collectionCard(hydratedCollection, detail?.movieCount || "—", traktList);
+								return collectionCard(hydratedCollection, detail?.movieCount || "—");
 							}),
 						);
 
@@ -2128,7 +1968,6 @@
           <th>Input</th>
           <th>Match</th>
           <th>TMDB ID</th>
-<th>Trakt ID</th>
 <th>Known For</th>
 <th>Credit Count</th>
 <th>Match Type</th>
@@ -2151,19 +1990,6 @@
                           onclick="copyId('${result.id}')"
                         >
                           ${result.id}
-                        </button>`
-											: ""
-									}
-                </td>
-<td>
-                  ${
-										result.traktId
-											? `<button
-                          type="button"
-                          class="copy-id-button"
-                          onclick="copyId('${result.traktId}')"
-                        >
-                          ${result.traktId}
                         </button>`
 											: ""
 									}
@@ -2202,7 +2028,6 @@
 					"input",
 					"matched_name",
 					"tmdb_person_id",
-					"trakt_person_id",
 					"known_for",
 					"credit_count",
 					"match_type",
@@ -2217,7 +2042,6 @@
 								result.input,
 								result.name || "",
 								result.id || "",
-								result.traktId || "",
 								result.knownFor || "",
 								result.creditCount || "",
 								result.status,
@@ -2321,16 +2145,12 @@
 						const match = findBestPeopleMatch(response.data?.results || [], input);
 
 						if (match.person) {
-							const [knownCredits, traktPerson] = await Promise.all([
-								getPersonKnownCredits(match.person.id),
-								findTraktPersonByTmdbId(match.person.id),
-							]);
+							const knownCredits = await getPersonKnownCredits(match.person.id);
 
 							lastBulkPeopleResults.push({
 								input,
 								name: match.person.name || "",
 								id: match.person.id,
-								traktId: traktPerson?.ids?.trakt || "",
 								knownFor: match.person.known_for_department || "—",
 								creditCount: knownCredits,
 								status: match.matchType,
