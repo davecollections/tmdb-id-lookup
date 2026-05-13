@@ -15,6 +15,9 @@ on:
       - Update TMDB Genre Counts
       - Monthly TMDB Company Refresh
       - Monthly TMDB Network Refresh
+      - Manual Company Rebuild From Export
+      - Update TMDB TV Network Details From Export
+      - Repair Cache From Audit
     types:
       - completed
 
