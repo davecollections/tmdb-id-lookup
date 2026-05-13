@@ -1,94 +1,63 @@
 # TMDB ID Lookup
 
-A lightweight TMDB helper tool for finding useful TMDB IDs.
-
 Live site: [https://davecollections.github.io/tmdb-id-lookup/](https://davecollections.github.io/tmdb-id-lookup/)
 
-The site helps users look up TMDB production companies, TV networks, genres, official movie collections, and people in a clean searchable interface.
+A simple lookup tool for finding useful TMDB IDs for production companies, TV networks, genres, official movie collections, and people.
 
-## What it does
+The site is designed for people building media libraries, curated collections, discovery rows, metadata lists, or other TMDB-based workflows where the correct ID matters.
 
-* Search cached TMDB production companies
-* Search cached TMDB TV networks
-* Search TMDB genres and curated genre references
-* Copy IDs with one click
-* Sort cached results by ID, name, country, headquarters, and title count
+## Common uses
+
+* Find TMDB production company IDs
+* Find TMDB TV network IDs
+* Find official TMDB movie collection IDs
+* Find actor, director, writer, and general person IDs
+* Browse TMDB genre IDs and curated list references
+* Check company and network title counts
+* Copy IDs quickly while building media collections
+* Export cached company, network, or person lookup results as CSV
+
+## Features
+
+* Search cached production company and TV network databases
 * Filter company and network results by minimum title count
-* Search TMDB official movie collections by name or ID
+* Sort cached results by ID, name, country, headquarters, and title count
+* Search TMDB movie collections by name or ID
 * Search TMDB people by name or ID
-* Filter TMDB ID results by actors, directors, collections, or all results
-* Bulk lookup person names and export matching TMDB person IDs as CSV
+* Filter TMDB lookup results by actors, directors, collections, or all results
+* Bulk lookup up to 50 person names at a time
+* Copy IDs with one click
 * Open matching TMDB pages directly
-* Download cached company and network data as CSV
 
-## Cached databases
+## Cached Company And Network Data
 
-### Production companies
+Production company and TV network data is cached so it can be searched quickly without querying TMDB for every result.
 
-The production company database is built from TMDB production company exports and enriched in batches using the TMDB API.
+Company and network results can include:
 
-Movie counts are based on TMDB movie credit/discover results and are intended as a useful guide when deciding which studio IDs may be worth using.
-
-Company search uses the cached local dataset. Cached company data can be downloaded as a CSV.
-
-### TV networks
-
-The TV network database is also built from TMDB export files and enriched using the TMDB API.
-
-Network results include:
-
-* TMDB network IDs
-* TV title counts
+* TMDB ID
+* Name
 * Country
 * Headquarters
-* Logos
-* Direct TMDB links
+* Logo
+* Title count
+* Direct TMDB link
 
-Cached network data can also be downloaded as CSV.
+Cached company and network data can also be downloaded as CSV.
 
-### Genres & curated references
+Title counts are intended as a practical guide when deciding which company or network IDs may be useful. They are based on TMDB data and may change as TMDB updates its records.
 
-The genre lookup includes:
+## Genres And Curated References
 
-* Official TMDB movie genres
-* Official TMDB TV genres
-* Curated TMDB list references for categories TMDB does not officially expose as genres
+The genre lookup includes official TMDB movie and TV genres, plus curated TMDB list references for categories that TMDB does not expose as official genres.
 
-Examples include:
+Examples of curated references include categories such as musicals, space, disaster, and holiday themes.
 
-* Musicals
-* Space
-* Disaster
-* Holiday themes
+## Movie Collection And People Lookup
 
-Genre references include cached title counts where available.
+The TMDB lookup can search for official movie collections and people.
 
-## TMDB ID lookup
-
-The TMDB ID lookup uses the TMDB API directly.
-
-It can search for:
-
-* Official movie collections
-* Actors
-* Directors
-* People by TMDB person ID
-* Movie collections by TMDB collection ID
-
-Results can be filtered by:
-
-* All
-* Directors
-* Actors
-* Collections
-
-Each result includes the TMDB ID, useful metadata, a copy button, and a direct TMDB link.
-
-### Movie collection searches
-
-Movie collection lookup searches **TMDB official movie collections only**.
-
-In TMDB, a collection usually means an official franchise or grouped movie series, not an individual movie or a custom user list. This means a search for a standalone movie may return no results, even if the movie exists on TMDB.
+Movie collection lookup searches **TMDB official movie collections only**. In TMDB, a collection usually means an official franchise or grouped movie series, not an individual movie or a custom user list.
 
 For example, searches like these are more likely to return collection results:
 
@@ -99,58 +68,21 @@ For example, searches like these are more likely to return collection results:
 
 A standalone movie title may not return anything unless TMDB has it grouped as part of an official movie collection.
 
-The tool returns matching TMDB collection IDs, poster previews, movie counts, and direct TMDB links.
+People lookup can search by name or TMDB person ID, and results can be filtered by actors, directors, or all people results.
 
-## Bulk people ID lookup
+## Bulk People Lookup
 
-The bulk people lookup helps resolve person names into TMDB person IDs.
+Bulk people lookup helps resolve multiple person names into TMDB person IDs.
 
-Users can paste up to 50 names, one per line, then select **Resolve People IDs**.
-
-The tool returns the best TMDB person-name match, along with:
-
-* Input name
-* Matched name
-* TMDB person ID
-* Known-for department
-* Known credit count
-* Match type
-* TMDB link
-
-Match type helps users review the result quality. Current match types include:
-
-* Exact match
-* TMDB best result
-* No match
+Paste up to 50 names, one per line, then select **Resolve People IDs**. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
 
 Matched results can be downloaded as a CSV.
 
-Bulk people lookup uses TMDB search results and TMDB's known-for department data. Some people may be best known for acting, directing, writing, production, or another department.
+## Data Freshness
 
-## Automation
+Cached company, TV network, and genre data is updated automatically from TMDB data and API responses.
 
-The project includes GitHub Actions workflows for:
-
-* Daily genre count updates
-* Monthly rolling company refreshes
-* Monthly TV network refreshes
-* Daily TMDB export coverage audits
-* Automatic capped cache repairs after audits
-* Automatic GitHub Pages deployments
-
-The cache system is designed to keep datasets reasonably fresh without requiring extremely large TMDB API runs.
-
-## Useful for
-
-* Finding TMDB company IDs
-* Finding TMDB TV network IDs
-* Finding TMDB genre and curated list IDs
-* Finding TMDB official movie collection IDs
-* Finding TMDB actor, director, writer, and general person IDs
-* Building curated media collections
-* Creating discovery rows or metadata lists
-* Checking studio/network title counts
-* Exporting person ID lists as CSV
+The site is deployed with GitHub Pages.
 
 ## Notes
 
