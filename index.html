@@ -95,10 +95,23 @@
 				>
 					TV Networks
 				</button>
+
+				<button
+					id="genre-tab"
+					class="cached-tab-button"
+					type="button"
+					role="tab"
+					aria-selected="false"
+					aria-controls="genre-panel"
+					data-cached-tab="genres"
+				>
+					Genres
+				</button>
 			</div>
 
 			<section
 				id="company-panel"
+				data-cached-panel="companies"
 				class="tool-section company-lookup cached-tab-panel active"
 				role="tabpanel"
 				aria-labelledby="company-tab"
@@ -206,6 +219,7 @@
 
 			<section
 				id="network-panel"
+				data-cached-panel="networks"
 				class="tool-section network-lookup cached-tab-panel"
 				role="tabpanel"
 				aria-labelledby="network-tab"
@@ -312,6 +326,51 @@
 					<button id="network-last-page-bottom" type="button">Last</button>
 				</div>
 			</section>
+
+			<section
+				id="genre-panel"
+				data-cached-panel="genres"
+				class="tool-section genre-lookup cached-tab-panel"
+				role="tabpanel"
+				aria-labelledby="genre-tab"
+			>
+				<div class="tool-header">
+					<h2>Genre ID Lookup</h2>
+					<p class="meta">Browse official TMDB genre IDs and curated list references for categories TMDB does not expose as genres.</p>
+				</div>
+
+				<div class="search-row">
+					<input id="genre-search" placeholder="Search genres, media type, IDs, or curated references…" />
+
+					<button id="clear-genre-search" type="button">Clear</button>
+				</div>
+
+				<div class="company-filters" aria-label="Genre reference filters">
+					<button class="genre-filter-button active" type="button" data-genre-filter="all">All</button>
+					<button class="genre-filter-button" type="button" data-genre-filter="movie">Official Movie Genres</button>
+					<button class="genre-filter-button" type="button" data-genre-filter="tv">Official TV Genres</button>
+					<button class="genre-filter-button" type="button" data-genre-filter="curated">Curated Lists</button>
+				</div>
+
+				<p id="genre-result-count"></p>
+
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Type</th>
+								<th>Media</th>
+								<th>TMDB ID <span class="header-note">Click ID to copy</span></th>
+								<th>Notes</th>
+								<th>TMDB</th>
+							</tr>
+						</thead>
+
+						<tbody id="genre-results"></tbody>
+					</table>
+				</div>
+			</section>
 		</div>
 
 		<footer class="site-footer">
@@ -327,6 +386,7 @@
 
 		<div id="copy-toast">Copied to clipboard</div>
 
+		<script src="./js/genres.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/app.js?v=__APP_ASSET_VERSION__" defer></script>
 	</body>
 </html>
