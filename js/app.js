@@ -274,8 +274,7 @@ async function loadNetworks() {
 		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
 	}));
 
-	document.getElementById("network-stats").innerText =
-		`${networks.length.toLocaleString()} TMDB TV network IDs cached`;
+	document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TMDB TV network IDs cached`;
 	try {
 		const metaRes = await fetch(`./data/tv-network-rebuild-meta.json?v=${CACHE_VERSION}`);
 
@@ -298,14 +297,14 @@ function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbU
 	return `
               <div class="collection-card">
                 ${
-						imageUrl
-							? `<img
+									imageUrl
+										? `<img
                         src="${imageUrl}"
                         alt="${imageAlt}"
                         class="collection-poster ${imageClass}"
                       >`
-							: `<div class="collection-poster ${imageClass}"></div>`
-					}
+										: `<div class="collection-poster ${imageClass}"></div>`
+								}
 
                 <div class="collection-info">
                   <h3>${title}</h3>
@@ -350,10 +349,10 @@ function personCard(person, knownCredits = "—") {
 
 	const knownFor = person.known_for_department || "—";
 
-const metaRows = [
-	`<div><strong>Known for:</strong> ${knownFor}</div>`,
-	`<div><strong>Known credits:</strong> ${knownCredits}</div>`,
-];
+	const metaRows = [
+		`<div><strong>Known for:</strong> ${knownFor}</div>`,
+		`<div><strong>Known credits:</strong> ${knownCredits}</div>`,
+	];
 
 	if (person.birthday) {
 		metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
@@ -371,9 +370,7 @@ const metaRows = [
 }
 
 async function getCollectionMovieCount(collectionId) {
-	const detailData = await tmdbJson(
-		`https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`,
-	);
+	const detailData = await tmdbJson(`https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`);
 
 	if (!detailData || detailData.success === false) {
 		return null;
@@ -771,16 +768,16 @@ function render(items) {
 		tr.innerHTML = `
                 <td class="logo-cell">
                   ${
-							logoUrl
-								? `<div class="logo-box">
+										logoUrl
+											? `<div class="logo-box">
                           <img
                             src="${logoUrl}"
                             alt="${company.name}"
                             class="studio-logo"
                           >
                         </div>`
-								: `<div class="logo-placeholder"></div>`
-						}
+											: `<div class="logo-placeholder"></div>`
+									}
                 </td>
 
                 <td>
@@ -878,14 +875,7 @@ function getGenreReferenceItems() {
 }
 
 function getGenreSearchText(genre) {
-	return [
-		genre.name,
-		genre.type,
-		genre.media,
-		genre.id,
-		genre.notes,
-		...(genre.searchTerms || []),
-	]
+	return [genre.name, genre.type, genre.media, genre.id, genre.notes, ...(genre.searchTerms || [])]
 		.join(" ")
 		.toLowerCase();
 }
@@ -1023,44 +1013,44 @@ function renderBulkPeopleResults(results) {
       </thead>
       <tbody>
         ${results
-		.map(
-			(result) => `
+					.map(
+						(result) => `
               <tr>
                 <td>${result.input}</td>
                 <td>${result.name || ""}</td>
                 <td>
                   ${
-							result.id
-								? `<button
+										result.id
+											? `<button
                           type="button"
                           class="copy-id-button"
                           onclick="copyId('${result.id}')"
                         >
                           ${result.id}
                         </button>`
-								: ""
-						}
+											: ""
+									}
                 </td>
 <td>${result.knownFor || "—"}</td>
 <td>${result.creditCount || "—"}</td>
 <td>${result.status}</td>
                 <td>
                   ${
-							result.id
-								? `<a
+										result.id
+											? `<a
                           href="https://www.themoviedb.org/person/${result.id}"
                           target="_blank"
                           rel="noopener"
                         >
                           Open
                         </a>`
-								: ""
-						}
+											: ""
+									}
                 </td>
               </tr>
             `,
-		)
-		.join("")}
+					)
+					.join("")}
       </tbody>
     </table>
   `;
@@ -1225,12 +1215,12 @@ async function resolveBulkPeople() {
     Resolved people IDs:
     matched ${matchedCount} of ${names.length}.
     ${
-matchedCount
-	? `<button type="button" onclick="downloadBulkPeopleCsv('people')">
+			matchedCount
+				? `<button type="button" onclick="downloadBulkPeopleCsv('people')">
             Download CSV
           </button>`
-	: ""
-}
+				: ""
+		}
   `;
 }
 
@@ -1369,17 +1359,11 @@ document.getElementById("back-to-top").addEventListener("click", () => {
 });
 document.getElementById("network-first-page").addEventListener("click", () => goToNetworkPage(1));
 
-document
-	.getElementById("network-prev-page")
-	.addEventListener("click", () => goToNetworkPage(currentNetworkPage - 1));
+document.getElementById("network-prev-page").addEventListener("click", () => goToNetworkPage(currentNetworkPage - 1));
 
-document
-	.getElementById("network-next-page")
-	.addEventListener("click", () => goToNetworkPage(currentNetworkPage + 1));
+document.getElementById("network-next-page").addEventListener("click", () => goToNetworkPage(currentNetworkPage + 1));
 
-document
-	.getElementById("network-last-page")
-	.addEventListener("click", () => goToNetworkPage(getNetworkTotalPages()));
+document.getElementById("network-last-page").addEventListener("click", () => goToNetworkPage(getNetworkTotalPages()));
 
 document.getElementById("network-first-page-bottom").addEventListener("click", () => goToNetworkPage(1));
 
@@ -1439,7 +1423,6 @@ document.querySelectorAll(".genre-filter-button").forEach((button) => {
 		applyGenreFilters();
 	});
 });
-
 
 document.getElementById("bulk-people-btn").addEventListener("click", () => {
 	resolveBulkPeople();
