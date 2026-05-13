@@ -875,14 +875,7 @@ function getGenreReferenceItems() {
 }
 
 function getGenreSearchText(genre) {
-	return [
-		genre.name,
-		genre.type,
-		genre.media,
-		genre.id,
-		genre.titleCount,
-		...(genre.searchTerms || []),
-	]
+	return [genre.name, genre.type, genre.media, genre.id, genre.titleCount, ...(genre.searchTerms || [])]
 		.join(" ")
 		.toLowerCase();
 }
