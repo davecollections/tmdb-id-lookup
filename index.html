@@ -1285,6 +1285,8 @@
 					tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
 				}));
 
+				document.getElementById("network-stats").innerText =
+					`${networks.length.toLocaleString()} TMDB TV network IDs cached`;
 				try {
 					const metaRes = await fetch(`./data/tv-network-rebuild-meta.json?v=${CACHE_VERSION}`);
 
