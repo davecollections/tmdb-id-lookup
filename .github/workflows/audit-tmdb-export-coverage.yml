@@ -26,6 +26,7 @@ jobs:
 
     permissions:
       contents: write
+      issues: write
 
     steps:
       - name: Checkout repository
@@ -40,6 +41,85 @@ jobs:
         env:
           DATASET: ${{ github.event.inputs.dataset || 'all' }}
         run: node scripts/audit-tmdb-export-coverage.mjs
+
+      - name: Report audit issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const issueTitle = 'TMDB Cache Audit Reports';
+            const summary = JSON.parse(fs.readFileSync('data/id-audit-summary.json', 'utf8'));
+            const datasets = summary.datasets || [];
+            const needsAttention = datasets.filter((dataset) =>
+              Number(dataset.coverage_percent || 0) < 100 ||
+              Number(dataset.missing_from_cache_count || 0) > 0 ||
+              Number(dataset.extra_in_cache_count || 0) > 0 ||
+              Number(dataset.duplicate_cached_ids_count || 0) > 0
+            );
+
+            if (!needsAttention.length) {
+              core.info('Audit is clean. No issue comment needed.');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const existingIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              labels: 'audit',
+              per_page: 100,
+            });
+
+            let issue = existingIssues.find((item) => item.title === issueTitle && !item.pull_request);
+
+            if (!issue) {
+              const created = await github.rest.issues.create({
+                owner,
+                repo,
+                title: issueTitle,
+                labels: ['audit'],
+                body: [
+                  'Daily TMDB cache audit reports are posted here when coverage needs attention.',
+                  '',
+                  'Subscribe to this issue to receive GitHub email notifications for future audit findings.',
+                ].join('\n'),
+              });
+
+              issue = created.data;
+            }
+
+            const lines = [];
+            lines.push(`## TMDB cache audit needs attention`);
+            lines.push('');
+            lines.push(`Audited at: ${summary.audited_at || new Date().toISOString()}`);
+            lines.push(`Workflow run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`);
+            lines.push('');
+            lines.push('| Dataset | Coverage | Export IDs | Cached IDs | Missing | Extra | Duplicates |');
+            lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+
+            for (const dataset of needsAttention) {
+              lines.push([
+                `| ${dataset.label || dataset.dataset}`,
+                `${dataset.coverage_percent ?? 'unknown'}%`,
+                Number(dataset.export_total_ids || 0).toLocaleString(),
+                Number(dataset.cached_total_ids || 0).toLocaleString(),
+                Number(dataset.missing_from_cache_count || 0).toLocaleString(),
+                Number(dataset.extra_in_cache_count || 0).toLocaleString(),
+                `${Number(dataset.duplicate_cached_ids_count || 0).toLocaleString()} |`,
+              ].join(' | '));
+            }
+
+            lines.push('');
+            lines.push('The daily capped repair workflow will attempt to repair datasets with 200 or fewer requested add/remove changes. Larger repair sets should be reviewed and repaired manually.');
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issue.number,
+              body: lines.join('\n'),
+            });
 
       - name: Commit updated audit data
         run: |
