@@ -1,0 +1,15 @@
+{
+  "last_rebuild": {
+    "mode": "tmdb_daily_export_full_enrichment",
+    "export_date": "05_13_2026",
+    "export_total_ids": 5372,
+    "lowest_id": 1,
+    "highest_id": 9183,
+    "checked": 5372,
+    "found": 5372,
+    "missing": 0,
+    "started_at": "2026-05-12T09:57:56.532Z",
+    "total_cached": 5372,
+    "finished_at": "2026-05-13T10:29:33.668Z"
+  }
+}
