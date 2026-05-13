@@ -1013,15 +1013,20 @@ function renderGenres(items) {
 		return;
 	}
 
-	tbody.innerHTML = "";
+	tbody.replaceChildren();
 
 	if (!items.length) {
 		resultCount.innerText = "Showing 0 genre references";
-		tbody.innerHTML = `
-			<tr>
-				<td colspan="6">No matching genre references found.</td>
-			</tr>
-		`;
+		tbody.appendChild(
+			createElement("tr", {}, [
+				createElement("td", {
+					text: "No matching genre references found.",
+					attrs: {
+						colspan: "6",
+					},
+				}),
+			]),
+		);
 		return;
 	}
 
@@ -1029,35 +1034,27 @@ function renderGenres(items) {
 
 	for (const genre of items) {
 		const tr = document.createElement("tr");
-		const count = genreCounts[getGenreCountKey(genre)] ?? genre.titleCount ?? "—";
+		const count = genreCounts[getGenreCountKey(genre)] ?? genre.titleCount ?? "\u2014";
 		const displayCount = typeof count === "number" ? count.toLocaleString() : count;
+		const idCell = document.createElement("td");
+		const copyButton = createElement("button", {
+			className: "copy-id-button",
+			text: genre.id,
+			attrs: {
+				type: "button",
+				title: "Copy genre or list ID",
+			},
+		});
 
-		tr.innerHTML = `
-	<td>${genre.name || ""}</td>
-	<td>
-		<button
-			type="button"
-			class="copy-id-button"
-			title="Copy genre or list ID"
-			onclick="copyId('${genre.id}')"
-		>
-			${genre.id}
-		</button>
-	</td>
-	<td>${genre.type || ""}</td>
-	<td>${genre.media || ""}</td>
-	<td>${displayCount}</td>
-	<td>
-				<a
-					href="${genre.url}"
-					target="_blank"
-					rel="noopener"
-				>
-					Open
-				</a>
-			</td>
-		`;
+		copyButton.addEventListener("click", () => copyId(genre.id));
+		idCell.appendChild(copyButton);
 
+		tr.appendChild(createElement("td", { text: genre.name || "" }));
+		tr.appendChild(idCell);
+		tr.appendChild(createElement("td", { text: genre.type || "" }));
+		tr.appendChild(createElement("td", { text: genre.media || "" }));
+		tr.appendChild(createElement("td", { text: displayCount }));
+		tr.appendChild(createOpenLinkCell(genre.url));
 		tbody.appendChild(tr);
 	}
 }
