@@ -303,6 +303,8 @@ function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbU
                         src="${imageUrl}"
                         alt="${imageAlt}"
                         class="collection-poster ${imageClass}"
+                        loading="lazy"
+                        decoding="async"
                       >`
 										: `<div class="collection-poster ${imageClass}"></div>`
 								}
@@ -775,6 +777,8 @@ function render(items) {
                             src="${logoUrl}"
                             alt="${company.name}"
                             class="studio-logo"
+                            loading="lazy"
+                            decoding="async"
                           >
                         </div>`
 											: `<div class="logo-placeholder"></div>`
@@ -831,6 +835,8 @@ function renderNetworks(items) {
 						src="${logoUrl}"
 						alt="${network.name}"
 						class="studio-logo"
+						loading="lazy"
+						decoding="async"
 					>
 				</div>`
 			: `<div class="logo-placeholder"></div>`
