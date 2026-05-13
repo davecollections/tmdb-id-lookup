@@ -1,0 +1,38 @@
+name: Update TMDB Genre Counts
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "30 7 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-genre-counts
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update genre counts
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: node scripts/update-genre-counts.js
+
+      - name: Commit updated genre counts
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Update TMDB genre count cache
+          file_pattern: data/genre-counts.json
