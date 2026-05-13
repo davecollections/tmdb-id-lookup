@@ -1,0 +1,78 @@
+name: Monthly TMDB Network Refresh
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "45 8 1,2 * *"
+
+concurrency:
+  group: monthly-network-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Calculate network refresh slice
+        id: slice
+        run: |
+          DAY=$(date -u +%-d)
+
+          if [ "$DAY" = "1" ]; then
+            SLICE_INDEX=0
+          else
+            SLICE_INDEX=1
+          fi
+
+          TOTAL_SLICES=2
+          TOTAL_IDS=12000
+          SLICE_SIZE=$(((TOTAL_IDS + TOTAL_SLICES - 1) / TOTAL_SLICES))
+          OFFSET=$((SLICE_INDEX * SLICE_SIZE))
+
+          echo "slice_index=$SLICE_INDEX" >> $GITHUB_OUTPUT
+          echo "slice_size=$SLICE_SIZE" >> $GITHUB_OUTPUT
+          echo "offset=$OFFSET" >> $GITHUB_OUTPUT
+
+      - name: Run monthly network refresh slice
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          OFFSET: ${{ steps.slice.outputs.offset }}
+          LIMIT: ${{ steps.slice.outputs.slice_size }}
+          REQUEST_DELAY_MS: 120
+        run: node scripts/fetch-tv-network-details-from-export.mjs
+
+      - name: Commit refreshed network cache
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add \
+            data/tv-networks.min.json \
+            data/tv-networks.csv \
+            data/tv-network-scan-meta.json \
+            data/tv-network-export.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Monthly TMDB network refresh slice"
+
+          git pull --rebase origin main
+
+          git push
