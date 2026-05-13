@@ -1,0 +1,72 @@
+name: Monthly TMDB Company Refresh
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 9 1-14 * *"
+
+concurrency:
+  group: monthly-company-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Calculate company refresh slice
+        id: slice
+        run: |
+          DAY=$(date -u +%-d)
+          SLICE_INDEX=$((DAY - 1))
+          TOTAL_SLICES=14
+          TOTAL_IDS=275000
+          SLICE_SIZE=$(((TOTAL_IDS + TOTAL_SLICES - 1) / TOTAL_SLICES))
+          OFFSET=$((SLICE_INDEX * SLICE_SIZE))
+
+          echo "slice_index=$SLICE_INDEX" >> $GITHUB_OUTPUT
+          echo "slice_size=$SLICE_SIZE" >> $GITHUB_OUTPUT
+          echo "offset=$OFFSET" >> $GITHUB_OUTPUT
+
+      - name: Run monthly company refresh slice
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          OFFSET: ${{ steps.slice.outputs.offset }}
+          LIMIT: ${{ steps.slice.outputs.slice_size }}
+          REQUEST_DELAY_MS: 120
+        run: node scripts/manual-company-rebuild-from-export.mjs
+
+      - name: Commit refreshed company cache
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add \
+            data/companies.min.json \
+            data/companies.csv \
+            data/scan-meta.json \
+            data/production-company-export.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Monthly TMDB company refresh slice"
+
+          git pull --rebase origin main
+
+          git push
