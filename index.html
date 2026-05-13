@@ -1117,6 +1117,25 @@
 			let currentTmdbTotalPages = 1;
 			let currentTmdbFilter = "all";
 			let lastBulkPeopleResults = [];
+			let companyMeta = null;
+			let networkMeta = null;
+			function updateFooterStats() {
+				const footer = document.getElementById("scan-stats");
+
+				if (!footer || (!companyMeta && !networkMeta && !companies.length && !networks.length)) {
+					return;
+				}
+
+				const companyCount = companyMeta?.total_cached || companies.length || 0;
+				const networkCount = networkMeta?.total_cached || networks.length || 0;
+
+				const updatedAt = companyMeta?.finished_at || networkMeta?.finished_at;
+
+				const formattedDate = updatedAt ? new Date(updatedAt).toLocaleString() : "Unknown";
+
+				footer.innerText = `TMDB export sync • Companies: ${companyCount.toLocaleString()} • Networks: ${networkCount.toLocaleString()} • Updated ${formattedDate}`;
+			}
+
 			function showCopyToast() {
 				const toast = document.getElementById("copy-toast");
 
@@ -1280,20 +1299,19 @@
 					if (metaRes.ok) {
 						const meta = await metaRes.json();
 						const lastRebuild = meta.last_rebuild;
+						companyMeta = lastRebuild;
 						const updated = new Date(lastRebuild.finished_at);
 
 						document.getElementById("stats").innerText =
 							`${companies.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB company IDs cached`;
 
 						document.getElementById("last-updated").innerText = `Last updated ${updated.toLocaleString()}`;
-
-						document.getElementById("scan-stats").innerText =
-							`TMDB company cache rebuilt from export data • ${lastRebuild.total_cached.toLocaleString()} companies cached • Last updated ${updated.toLocaleString()}`;
 					}
 				} catch (error) {
 					console.warn("company-rebuild-meta.json not available yet");
 				}
 
+				updateFooterStats();
 				applyFiltersAndSort();
 			}
 			async function loadNetworks() {
@@ -1319,6 +1337,7 @@
 					if (metaRes.ok) {
 						const meta = await metaRes.json();
 						const lastRebuild = meta.last_rebuild;
+						networkMeta = lastRebuild;
 
 						document.getElementById("network-stats").innerText =
 							`${networks.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB TV network IDs cached`;
@@ -1327,6 +1346,7 @@
 					console.warn("tv-network-rebuild-meta.json not available yet");
 				}
 
+				updateFooterStats();
 				applyNetworkFiltersAndSort();
 			}
 			function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbUrl, imageClass = "" }) {
