@@ -1318,7 +1318,7 @@
 				}
 
 				return getDedupePromise(`person:${tmdbPersonId}`, async () => {
-					const matches = await traktJson(`https://api.trakt.tv/search/tmdb/${tmdbPersonId}?type=person`);
+					const matches = await traktJson(`https://api.trakt.tv/search/tmdb/${tmdbPersonId}`);
 
 					const match = Array.isArray(matches)
 						? matches.find((item) => item.type === "person" && item.person?.ids?.trakt)
