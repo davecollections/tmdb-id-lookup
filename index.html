@@ -446,12 +446,18 @@
 					padding: 16px;
 				}
 
+				.cached-tools-section {
+					margin: 28px 0;
+				}
+
 				.cached-tabs {
-					margin-top: 28px;
+					padding-left: 8px;
+					overflow-x: auto;
+					flex-wrap: nowrap;
 				}
 
 				.cached-tab-button {
-					flex: 1 1 160px;
+					flex: 0 0 auto;
 				}
 
 				.search-row {
@@ -679,38 +685,56 @@
 				background: rgba(138, 180, 255, 0.16);
 				color: #ffffff;
 			}
+			.cached-tools-section {
+				max-width: 1200px;
+				margin: 36px 0;
+			}
+
 			.cached-tabs {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 10px;
-				margin: 34px 0 14px;
-				max-width: 1200px;
+				gap: 8px;
+				margin: 0 0 -1px;
+				padding: 0 0 0 14px;
+				position: relative;
+				z-index: 2;
 			}
 
 			.cached-tab-button {
-				border-color: #283142;
-				background: rgba(21, 25, 34, 0.9);
-				color: #aeb7c2;
 				padding: 10px 14px;
-				border-radius: 999px;
+				border: 1px solid #283142;
+				border-bottom-color: #1f2733;
+				border-radius: 12px 12px 0 0;
+				background: rgba(21, 25, 34, 0.75);
+				color: #aeb7c2;
 				font-size: 14px;
+				cursor: pointer;
 				transition:
 					border-color 0.18s ease,
 					background 0.18s ease,
-					color 0.18s ease,
-					transform 0.18s ease;
+					color 0.18s ease;
 			}
 
 			.cached-tab-button:hover {
 				border-color: rgba(138, 180, 255, 0.75);
 				color: #ffffff;
-				transform: translateY(-1px);
 			}
 
 			.cached-tab-button.active {
-				border-color: #8ab4ff;
-				background: rgba(138, 180, 255, 0.16);
+				border-color: #1f2733;
+				border-bottom-color: #0f1218;
+				background: #0f1218;
 				color: #ffffff;
+			}
+
+			.cached-tools-section .tool-section {
+				margin: 0;
+				border-radius: 18px;
+			}
+
+			.cached-tools-section .company-lookup,
+			.cached-tools-section .network-lookup {
+				max-width: 1200px;
 			}
 
 			.cached-tab-panel {
@@ -797,247 +821,249 @@
 
 		<div class="section-divider"></div>
 
-		<div class="cached-tabs" role="tablist" aria-label="Cached TMDB lookups">
-			<button
-				id="company-tab"
-				class="cached-tab-button active"
-				type="button"
-				role="tab"
-				aria-selected="true"
-				aria-controls="company-panel"
-				data-cached-tab="companies"
-			>
-				Production Companies
-			</button>
+		<div class="cached-tools-section">
+			<div class="cached-tabs" role="tablist" aria-label="Cached TMDB lookups">
+				<button
+					id="company-tab"
+					class="cached-tab-button active"
+					type="button"
+					role="tab"
+					aria-selected="true"
+					aria-controls="company-panel"
+					data-cached-tab="companies"
+				>
+					Production Companies
+				</button>
 
-			<button
-				id="network-tab"
-				class="cached-tab-button"
-				type="button"
-				role="tab"
-				aria-selected="false"
-				aria-controls="network-panel"
-				data-cached-tab="networks"
+				<button
+					id="network-tab"
+					class="cached-tab-button"
+					type="button"
+					role="tab"
+					aria-selected="false"
+					aria-controls="network-panel"
+					data-cached-tab="networks"
+				>
+					TV Networks
+				</button>
+			</div>
+
+			<section
+				id="company-panel"
+				class="tool-section company-lookup cached-tab-panel active"
+				role="tabpanel"
+				aria-labelledby="company-tab"
 			>
-				TV Networks
-			</button>
+				<div class="tool-header">
+					<h2>Company ID Lookup</h2>
+					<p class="meta">Search the cached TMDB production company database.</p>
+				</div>
+
+				<div class="company-summary">
+					<p id="stats" class="company-cache-count"></p>
+					<p id="last-updated" class="company-updated"></p>
+				</div>
+
+				<div class="download-links">
+					<a id="download-csv-link" href="./data/companies.csv" download> Download CSV </a>
+				</div>
+
+				<div class="search-row">
+					<input id="search" placeholder="Search by ID, company name, parent company, country, or headquarters…" />
+
+					<button id="clear-search" type="button">Clear</button>
+				</div>
+				<div class="company-filters" aria-label="Company movie count filters">
+					<button class="company-filter-button active" type="button" data-company-min-count="0">All</button>
+
+					<button class="company-filter-button" type="button" data-company-min-count="10">10+ movies</button>
+
+					<button class="company-filter-button" type="button" data-company-min-count="50">50+ movies</button>
+
+					<button class="company-filter-button" type="button" data-company-min-count="100">100+ movies</button>
+
+					<button class="company-filter-button" type="button" data-company-min-count="500">500+ movies</button>
+				</div>
+
+				<p id="result-count"></p>
+
+				<div class="controls-row">
+					<div class="rows-control">
+						<label for="rows-per-page">Rows per page</label>
+
+						<select id="rows-per-page">
+							<option value="25" selected>25</option>
+							<option value="100">100</option>
+							<option value="250">250</option>
+							<option value="500">500</option>
+							<option value="1000">1000</option>
+						</select>
+					</div>
+
+					<div class="pagination">
+						<button id="first-page" type="button">First</button>
+						<button id="prev-page" type="button" aria-label="Previous page">&lt;</button>
+
+						<span id="page-status" class="page-status"></span>
+
+						<button id="next-page" type="button" aria-label="Next page">&gt;</button>
+						<button id="last-page" type="button">Last</button>
+					</div>
+				</div>
+
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>Logo</th>
+
+								<th class="sortable" data-sort="id">
+									TMDB ID
+									<span class="sort-indicator"></span>
+									<span class="header-note">Click ID to copy</span>
+								</th>
+
+								<th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
+
+								<th class="sortable" data-sort="parent_company">Parent Company <span class="sort-indicator"></span></th>
+
+								<th class="sortable" data-sort="titles_count">
+									Movie Count <span class="sort-indicator"></span>
+									<span class="movie-count-note">TMDB movie credits</span>
+								</th>
+
+								<th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
+
+								<th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
+
+								<th>TMDB</th>
+							</tr>
+						</thead>
+
+						<tbody id="results"></tbody>
+					</table>
+				</div>
+
+				<div class="pagination pagination-bottom">
+					<button id="first-page-bottom" type="button">First</button>
+					<button id="prev-page-bottom" type="button" aria-label="Previous page">&lt;</button>
+
+					<span id="page-status-bottom" class="page-status"></span>
+
+					<button id="next-page-bottom" type="button" aria-label="Next page">&gt;</button>
+					<button id="last-page-bottom" type="button">Last</button>
+				</div>
+			</section>
+
+			<section
+				id="network-panel"
+				class="tool-section network-lookup cached-tab-panel"
+				role="tabpanel"
+				aria-labelledby="network-tab"
+			>
+				<div class="tool-header">
+					<h2>TV Network ID Lookup</h2>
+					<p class="meta">Search the cached TMDB TV network database.</p>
+				</div>
+
+				<div class="company-summary">
+					<p id="network-stats" class="company-cache-count"></p>
+				</div>
+
+				<div class="download-links">
+					<a id="download-network-csv-link" href="./data/tv-networks.csv" download> Download TV Networks CSV </a>
+				</div>
+
+				<div class="search-row">
+					<input id="network-search" placeholder="Search by ID, network name, country, or headquarters…" />
+
+					<button id="clear-network-search" type="button">Clear</button>
+				</div>
+
+				<div class="company-filters" aria-label="TV network title count filters">
+					<button class="network-filter-button active" type="button" data-network-min-count="0">All</button>
+
+					<button class="network-filter-button" type="button" data-network-min-count="10">10+ TV titles</button>
+
+					<button class="network-filter-button" type="button" data-network-min-count="50">50+ TV titles</button>
+
+					<button class="network-filter-button" type="button" data-network-min-count="100">100+ TV titles</button>
+
+					<button class="network-filter-button" type="button" data-network-min-count="500">500+ TV titles</button>
+				</div>
+
+				<p id="network-result-count"></p>
+
+				<div class="controls-row">
+					<div class="rows-control">
+						<label for="network-rows-per-page">Rows per page</label>
+
+						<select id="network-rows-per-page">
+							<option value="25" selected>25</option>
+							<option value="100">100</option>
+							<option value="250">250</option>
+							<option value="500">500</option>
+							<option value="1000">1000</option>
+						</select>
+					</div>
+
+					<div class="pagination">
+						<button id="network-first-page" type="button">First</button>
+						<button id="network-prev-page" type="button" aria-label="Previous network page">&lt;</button>
+
+						<span id="network-page-status" class="page-status"></span>
+
+						<button id="network-next-page" type="button" aria-label="Next network page">&gt;</button>
+						<button id="network-last-page" type="button">Last</button>
+					</div>
+				</div>
+
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>Logo</th>
+
+								<th class="network-sortable" data-network-sort="id">
+									TMDB ID
+									<span class="sort-indicator"></span>
+									<span class="header-note">Click ID to copy</span>
+								</th>
+
+								<th class="network-sortable" data-network-sort="name">Network <span class="sort-indicator"></span></th>
+
+								<th class="network-sortable" data-network-sort="titles_count">
+									TV Count <span class="sort-indicator"></span>
+									<span class="movie-count-note">TMDB TV credits</span>
+								</th>
+
+								<th class="network-sortable" data-network-sort="origin_country">
+									Country <span class="sort-indicator"></span>
+								</th>
+
+								<th class="network-sortable" data-network-sort="headquarters">
+									Headquarters <span class="sort-indicator"></span>
+								</th>
+
+								<th>TMDB</th>
+							</tr>
+						</thead>
+
+						<tbody id="network-results"></tbody>
+					</table>
+				</div>
+
+				<div class="pagination pagination-bottom">
+					<button id="network-first-page-bottom" type="button">First</button>
+					<button id="network-prev-page-bottom" type="button" aria-label="Previous network page">&lt;</button>
+
+					<span id="network-page-status-bottom" class="page-status"></span>
+
+					<button id="network-next-page-bottom" type="button" aria-label="Next network page">&gt;</button>
+					<button id="network-last-page-bottom" type="button">Last</button>
+				</div>
+			</section>
 		</div>
-
-		<section
-			id="company-panel"
-			class="tool-section company-lookup cached-tab-panel active"
-			role="tabpanel"
-			aria-labelledby="company-tab"
-		>
-			<div class="tool-header">
-				<h2>Company ID Lookup</h2>
-				<p class="meta">Search the cached TMDB production company database.</p>
-			</div>
-
-			<div class="company-summary">
-				<p id="stats" class="company-cache-count"></p>
-				<p id="last-updated" class="company-updated"></p>
-			</div>
-
-			<div class="download-links">
-				<a id="download-csv-link" href="./data/companies.csv" download> Download CSV </a>
-			</div>
-
-			<div class="search-row">
-				<input id="search" placeholder="Search by ID, company name, parent company, country, or headquarters…" />
-
-				<button id="clear-search" type="button">Clear</button>
-			</div>
-			<div class="company-filters" aria-label="Company movie count filters">
-				<button class="company-filter-button active" type="button" data-company-min-count="0">All</button>
-
-				<button class="company-filter-button" type="button" data-company-min-count="10">10+ movies</button>
-
-				<button class="company-filter-button" type="button" data-company-min-count="50">50+ movies</button>
-
-				<button class="company-filter-button" type="button" data-company-min-count="100">100+ movies</button>
-
-				<button class="company-filter-button" type="button" data-company-min-count="500">500+ movies</button>
-			</div>
-
-			<p id="result-count"></p>
-
-			<div class="controls-row">
-				<div class="rows-control">
-					<label for="rows-per-page">Rows per page</label>
-
-					<select id="rows-per-page">
-						<option value="25" selected>25</option>
-						<option value="100">100</option>
-						<option value="250">250</option>
-						<option value="500">500</option>
-						<option value="1000">1000</option>
-					</select>
-				</div>
-
-				<div class="pagination">
-					<button id="first-page" type="button">First</button>
-					<button id="prev-page" type="button" aria-label="Previous page">&lt;</button>
-
-					<span id="page-status" class="page-status"></span>
-
-					<button id="next-page" type="button" aria-label="Next page">&gt;</button>
-					<button id="last-page" type="button">Last</button>
-				</div>
-			</div>
-
-			<div class="table-wrap">
-				<table>
-					<thead>
-						<tr>
-							<th>Logo</th>
-
-							<th class="sortable" data-sort="id">
-								TMDB ID
-								<span class="sort-indicator"></span>
-								<span class="header-note">Click ID to copy</span>
-							</th>
-
-							<th class="sortable" data-sort="name">Company <span class="sort-indicator"></span></th>
-
-							<th class="sortable" data-sort="parent_company">Parent Company <span class="sort-indicator"></span></th>
-
-							<th class="sortable" data-sort="titles_count">
-								Movie Count <span class="sort-indicator"></span>
-								<span class="movie-count-note">TMDB movie credits</span>
-							</th>
-
-							<th class="sortable" data-sort="origin_country">Country <span class="sort-indicator"></span></th>
-
-							<th class="sortable" data-sort="headquarters">Headquarters <span class="sort-indicator"></span></th>
-
-							<th>TMDB</th>
-						</tr>
-					</thead>
-
-					<tbody id="results"></tbody>
-				</table>
-			</div>
-
-			<div class="pagination pagination-bottom">
-				<button id="first-page-bottom" type="button">First</button>
-				<button id="prev-page-bottom" type="button" aria-label="Previous page">&lt;</button>
-
-				<span id="page-status-bottom" class="page-status"></span>
-
-				<button id="next-page-bottom" type="button" aria-label="Next page">&gt;</button>
-				<button id="last-page-bottom" type="button">Last</button>
-			</div>
-		</section>
-
-		<section
-			id="network-panel"
-			class="tool-section network-lookup cached-tab-panel"
-			role="tabpanel"
-			aria-labelledby="network-tab"
-		>
-			<div class="tool-header">
-				<h2>TV Network ID Lookup</h2>
-				<p class="meta">Search the cached TMDB TV network database.</p>
-			</div>
-
-			<div class="company-summary">
-				<p id="network-stats" class="company-cache-count"></p>
-			</div>
-
-			<div class="download-links">
-				<a id="download-network-csv-link" href="./data/tv-networks.csv" download> Download TV Networks CSV </a>
-			</div>
-
-			<div class="search-row">
-				<input id="network-search" placeholder="Search by ID, network name, country, or headquarters…" />
-
-				<button id="clear-network-search" type="button">Clear</button>
-			</div>
-
-			<div class="company-filters" aria-label="TV network title count filters">
-				<button class="network-filter-button active" type="button" data-network-min-count="0">All</button>
-
-				<button class="network-filter-button" type="button" data-network-min-count="10">10+ TV titles</button>
-
-				<button class="network-filter-button" type="button" data-network-min-count="50">50+ TV titles</button>
-
-				<button class="network-filter-button" type="button" data-network-min-count="100">100+ TV titles</button>
-
-				<button class="network-filter-button" type="button" data-network-min-count="500">500+ TV titles</button>
-			</div>
-
-			<p id="network-result-count"></p>
-
-			<div class="controls-row">
-				<div class="rows-control">
-					<label for="network-rows-per-page">Rows per page</label>
-
-					<select id="network-rows-per-page">
-						<option value="25" selected>25</option>
-						<option value="100">100</option>
-						<option value="250">250</option>
-						<option value="500">500</option>
-						<option value="1000">1000</option>
-					</select>
-				</div>
-
-				<div class="pagination">
-					<button id="network-first-page" type="button">First</button>
-					<button id="network-prev-page" type="button" aria-label="Previous network page">&lt;</button>
-
-					<span id="network-page-status" class="page-status"></span>
-
-					<button id="network-next-page" type="button" aria-label="Next network page">&gt;</button>
-					<button id="network-last-page" type="button">Last</button>
-				</div>
-			</div>
-
-			<div class="table-wrap">
-				<table>
-					<thead>
-						<tr>
-							<th>Logo</th>
-
-							<th class="network-sortable" data-network-sort="id">
-								TMDB ID
-								<span class="sort-indicator"></span>
-								<span class="header-note">Click ID to copy</span>
-							</th>
-
-							<th class="network-sortable" data-network-sort="name">Network <span class="sort-indicator"></span></th>
-
-							<th class="network-sortable" data-network-sort="titles_count">
-								TV Count <span class="sort-indicator"></span>
-								<span class="movie-count-note">TMDB TV credits</span>
-							</th>
-
-							<th class="network-sortable" data-network-sort="origin_country">
-								Country <span class="sort-indicator"></span>
-							</th>
-
-							<th class="network-sortable" data-network-sort="headquarters">
-								Headquarters <span class="sort-indicator"></span>
-							</th>
-
-							<th>TMDB</th>
-						</tr>
-					</thead>
-
-					<tbody id="network-results"></tbody>
-				</table>
-			</div>
-
-			<div class="pagination pagination-bottom">
-				<button id="network-first-page-bottom" type="button">First</button>
-				<button id="network-prev-page-bottom" type="button" aria-label="Previous network page">&lt;</button>
-
-				<span id="network-page-status-bottom" class="page-status"></span>
-
-				<button id="network-next-page-bottom" type="button" aria-label="Next network page">&gt;</button>
-				<button id="network-last-page-bottom" type="button">Last</button>
-			</div>
-		</section>
 
 		<footer class="site-footer">
 			<p>
