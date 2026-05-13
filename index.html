@@ -1082,7 +1082,6 @@
 			const TMDB_API_KEY = "__TMDB_API_KEY__";
 			const CACHE_VERSION = "20260512";
 
-
 			const collectionAliases = {
 				lotr: "lord of the rings",
 				hp: "harry potter",
@@ -1390,7 +1389,6 @@
 				const poster = collection.poster_path ? `https://image.tmdb.org/t/p/w185${collection.poster_path}` : "";
 				const metaRows = [`<div><strong>Movies:</strong> ${movieCount}</div>`];
 
-
 				return createResultCard({
 					title: collection.name || "Untitled Collection",
 					type: "Movie Collection",
@@ -1413,7 +1411,6 @@
 					`<div><strong>Known credits:</strong> ${knownCredits}</div>`,
 					`<div><strong>TMDB popularity:</strong> ${popularity}</div>`,
 				];
-
 
 				if (person.birthday) {
 					metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
@@ -1557,12 +1554,9 @@
 
 						const personCards = await Promise.all(
 							people.map(async (person) => {
-								const [knownCredits, traktPerson] = await Promise.all([
-									getPersonKnownCredits(person.id),
-									findTraktPersonByTmdbId(person.id),
-								]);
+								const knownCredits = await getPersonKnownCredits(person.id);
 
-								return personCard(person, knownCredits, traktPerson);
+								return personCard(person, knownCredits);
 							}),
 						);
 
@@ -2024,14 +2018,7 @@
 					return;
 				}
 
-				const headers = [
-					"input",
-					"matched_name",
-					"tmdb_person_id",
-					"known_for",
-					"credit_count",
-					"match_type",
-				];
+				const headers = ["input", "matched_name", "tmdb_person_id", "known_for", "credit_count", "match_type"];
 
 				const csv =
 					headers.join(",") +
