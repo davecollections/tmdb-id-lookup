@@ -1,17 +1,17 @@
 {
-  "audited_at": "2026-05-13T10:06:06.595Z",
+  "audited_at": "2026-05-13T10:29:33.668Z",
   "datasets": [
     {
       "dataset": "companies",
       "label": "Production Companies",
       "export_date": "05_13_2026",
       "export_total_ids": 248188,
-      "cached_total_ids": 248081,
-      "cached_unique_ids": 248081,
-      "matched_count": 248072,
-      "coverage_percent": 99.9533,
-      "missing_from_cache_count": 116,
-      "extra_in_cache_count": 9,
+      "cached_total_ids": 248188,
+      "cached_unique_ids": 248188,
+      "matched_count": 248188,
+      "coverage_percent": 100,
+      "missing_from_cache_count": 0,
+      "extra_in_cache_count": 0,
       "duplicate_cached_ids_count": 0
     },
     {
