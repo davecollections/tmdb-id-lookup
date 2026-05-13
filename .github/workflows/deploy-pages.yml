@@ -18,6 +18,7 @@ on:
       - Manual Company Rebuild From Export
       - Update TMDB TV Network Details From Export
       - Repair Cache From Audit
+      - Daily Capped Repair Cache From Audit
     types:
       - completed
 
