@@ -1,0 +1,57 @@
+@media (max-width: 720px) {
+	.collection-actions {
+		display: flex;
+		justify-content: center;
+		gap: 12px;
+		flex-wrap: nowrap;
+		width: 100%;
+	}
+
+	.collection-actions button,
+	.collection-actions a {
+		box-sizing: border-box;
+		width: 150px;
+		text-align: center;
+		justify-content: center;
+	}
+
+	.cached-tabs {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 8px;
+		padding-left: 0;
+		overflow-x: visible;
+		flex-wrap: unset;
+	}
+
+	.cached-tab-button {
+		width: 100%;
+		min-width: 0;
+		padding: 12px 8px;
+		text-align: center;
+		justify-content: center;
+		white-space: normal;
+		line-height: 1.25;
+		border-radius: 12px 12px 0 0;
+	}
+
+	#back-to-top {
+		right: 14px;
+		bottom: 88px;
+	}
+}
+
+@media (max-width: 390px) {
+	.collection-actions button,
+	.collection-actions a {
+		width: 136px;
+		padding-left: 8px;
+		padding-right: 8px;
+	}
+
+	.cached-tab-button {
+		font-size: 13px;
+		padding-left: 6px;
+		padding-right: 6px;
+	}
+}
