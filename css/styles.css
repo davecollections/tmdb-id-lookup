@@ -469,8 +469,22 @@ th.sortable:hover {
 
 	.collection-card {
 		flex-direction: column;
+		align-items: center;
 		width: 100%;
 		padding: 12px;
+		text-align: center;
+	}
+
+	.collection-info {
+		width: 100%;
+	}
+
+	.collection-actions {
+		justify-content: center;
+	}
+
+	.collection-meta {
+		text-align: center;
 	}
 
 	.collection-poster {
