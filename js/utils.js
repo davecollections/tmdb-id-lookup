@@ -75,3 +75,16 @@ function createElement(tagName, options = {}, children = []) {
 
 	return element;
 }
+
+function createOpenLinkCell(url) {
+	return createElement("td", {}, [
+		createElement("a", {
+			text: "Open",
+			attrs: {
+				href: url,
+				target: "_blank",
+				rel: "noopener",
+			},
+		}),
+	]);
+}
