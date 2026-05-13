@@ -875,7 +875,14 @@ function getGenreReferenceItems() {
 }
 
 function getGenreSearchText(genre) {
-	return [genre.name, genre.type, genre.media, genre.id, genre.notes, ...(genre.searchTerms || [])]
+	return [
+		genre.name,
+		genre.type,
+		genre.media,
+		genre.id,
+		genre.titleCount,
+		...(genre.searchTerms || []),
+	]
 		.join(" ")
 		.toLowerCase();
 }
@@ -955,7 +962,7 @@ function renderGenres(items) {
 					${genre.id}
 				</button>
 			</td>
-			<td>${genre.notes || ""}</td>
+			<td>${genre.titleCount || "—"}</td>
 			<td>
 				<a
 					href="${genre.url}"
