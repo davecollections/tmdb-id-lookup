@@ -2,6 +2,8 @@
 
 A lightweight TMDB helper tool for finding useful TMDB IDs.
 
+Live site: [https://davecollections.github.io/tmdb-id-lookup/](https://davecollections.github.io/tmdb-id-lookup/)
+
 The site helps users look up TMDB production companies, TV networks, genres, official movie collections, and people in a clean searchable interface.
 
 ## What it does
@@ -132,7 +134,8 @@ The project includes GitHub Actions workflows for:
 * Daily genre count updates
 * Monthly rolling company refreshes
 * Monthly TV network refreshes
-* Weekly TMDB export coverage audits
+* Daily TMDB export coverage audits
+* Automatic capped cache repairs after audits
 * Automatic GitHub Pages deployments
 
 The cache system is designed to keep datasets reasonably fresh without requiring extremely large TMDB API runs.
@@ -155,12 +158,8 @@ This project uses the TMDB API but is not endorsed or certified by TMDB.
 
 Company names, logos, posters, and trademarks remain the property of their respective owners.
 
+Project maintained by [Dave Collections](https://github.com/davecollections).
+
 ## License
 
 MIT License
-
------text
-[https://github.com/davecollections](https://github.com/davecollections)
-
-```
-```
