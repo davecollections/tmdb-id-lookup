@@ -2,6 +2,7 @@ import fs from "fs/promises";
 
 const TOKEN = process.env.TMDB_BEARER_TOKEN;
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
+const MAX_REPAIR_IDS = process.env.MAX_REPAIR_IDS ? Number(process.env.MAX_REPAIR_IDS) : null;
 
 const DATA_DIR = "data";
 const MIN_JSON_PATH = `${DATA_DIR}/tv-networks.min.json`;
@@ -139,6 +140,7 @@ const extraIds = Array.isArray(audit.extra_in_cache) ? audit.extra_in_cache.map(
 
 const repairStats = {
   source_audit_date: audit.audited_at || "",
+  max_repair_ids: MAX_REPAIR_IDS,
   missing_requested: missingIds,
   extra_requested: extraIds,
   added: [],
@@ -158,6 +160,22 @@ if (missingIds.length === 0 && extraIds.length === 0) {
   repairStats.finished_at = new Date().toISOString();
   await fs.writeFile(REPAIR_META_PATH, JSON.stringify({ last_repair: repairStats }, null, 2));
   console.log("Nothing to repair. Skipping TV network cache update.");
+  process.exit(0);
+}
+
+const requestedRepairCount = missingIds.length + extraIds.length;
+
+if (MAX_REPAIR_IDS !== null && requestedRepairCount > MAX_REPAIR_IDS) {
+  repairStats.skipped = true;
+  repairStats.reason = "max_repair_ids_exceeded";
+  repairStats.requested_repair_count = requestedRepairCount;
+  repairStats.finished_at = new Date().toISOString();
+
+  await fs.writeFile(REPAIR_META_PATH, JSON.stringify({ last_repair: repairStats }, null, 2));
+
+  console.log(
+    `Repair skipped: ${requestedRepairCount.toLocaleString()} requested changes exceed MAX_REPAIR_IDS=${MAX_REPAIR_IDS.toLocaleString()}.`
+  );
   process.exit(0);
 }
 
