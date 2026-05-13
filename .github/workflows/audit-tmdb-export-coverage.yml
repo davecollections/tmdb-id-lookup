@@ -14,7 +14,7 @@ on:
           - networks
 
   schedule:
-    - cron: "15 8 * * 0"
+    - cron: "15 8 * * *"
 
 concurrency:
   group: tmdb-export-audit
