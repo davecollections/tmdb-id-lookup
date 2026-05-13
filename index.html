@@ -1312,19 +1312,41 @@
 					.trim();
 			}
 
+			async function getPersonExternalIds(personId) {
+				if (!personId) {
+					return null;
+				}
+
+				return tmdbJson(`https://api.themoviedb.org/3/person/${personId}/external_ids?api_key=${TMDB_API_KEY}`);
+			}
+
+			function findTraktPersonMatch(matches) {
+				return Array.isArray(matches)
+					? matches.find((item) => item.type === "person" && item.person?.ids?.trakt)?.person || null
+					: null;
+			}
+
 			async function findTraktPersonByTmdbId(tmdbPersonId) {
 				if (!tmdbPersonId || !isTraktEnabled()) {
 					return null;
 				}
 
 				return getDedupePromise(`person:${tmdbPersonId}`, async () => {
-					const matches = await traktJson(`https://api.trakt.tv/search/tmdb/${tmdbPersonId}`);
+					const externalIds = await getPersonExternalIds(tmdbPersonId);
+					const imdbId = externalIds?.imdb_id || "";
 
-					const match = Array.isArray(matches)
-						? matches.find((item) => item.type === "person" && item.person?.ids?.trakt)
-						: null;
+					if (imdbId) {
+						const imdbMatches = await traktJson(`https://api.trakt.tv/search/imdb/${imdbId}`);
+						const imdbMatch = findTraktPersonMatch(imdbMatches);
 
-					return match?.person || null;
+						if (imdbMatch) {
+							return imdbMatch;
+						}
+					}
+
+					const tmdbMatches = await traktJson(`https://api.trakt.tv/search/tmdb/${tmdbPersonId}`);
+
+					return findTraktPersonMatch(tmdbMatches);
 				});
 			}
 
@@ -1340,7 +1362,9 @@
 				}
 
 				return getDedupePromise(`collection-list:${normalizedCollectionName}`, async () => {
-					const matches = await traktJson(`https://api.trakt.tv/search/list?query=${encodeURIComponent(collectionName)}`);
+					const matches = await traktJson(
+						`https://api.trakt.tv/search/list?query=${encodeURIComponent(collectionName)}`,
+					);
 
 					if (!Array.isArray(matches)) {
 						return null;
@@ -2174,7 +2198,15 @@
 					return;
 				}
 
-				const headers = ["input", "matched_name", "tmdb_person_id", "trakt_person_id", "known_for", "credit_count", "match_type"];
+				const headers = [
+					"input",
+					"matched_name",
+					"tmdb_person_id",
+					"trakt_person_id",
+					"known_for",
+					"credit_count",
+					"match_type",
+				];
 
 				const csv =
 					headers.join(",") +
