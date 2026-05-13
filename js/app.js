@@ -1,6 +1,41 @@
 const TMDB_API_KEY = "__TMDB_API_KEY__";
 const CACHE_VERSION = "20260512";
+const countryDisplayNames =
+	typeof Intl !== "undefined" && Intl.DisplayNames ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
 
+const countrySearchAliases = {
+	AU: ["australia"],
+	CA: ["canada"],
+	CN: ["china"],
+	DE: ["germany", "deutschland"],
+	FR: ["france"],
+	GB: ["united kingdom", "uk", "great britain", "britain", "england"],
+	HK: ["hong kong"],
+	IE: ["ireland"],
+	IN: ["india"],
+	IT: ["italy"],
+	JP: ["japan"],
+	KR: ["south korea", "korea"],
+	MX: ["mexico"],
+	NZ: ["new zealand"],
+	RU: ["russia"],
+	US: ["united states", "usa", "america"],
+};
+
+function getCountrySearchText(countryCode) {
+	const code = String(countryCode || "")
+		.trim()
+		.toUpperCase();
+
+	if (!code) {
+		return "";
+	}
+
+	const countryName = countryDisplayNames?.of(code) || "";
+	const aliases = countrySearchAliases[code] || [];
+
+	return [code, countryName, ...aliases].join(" ").toLowerCase();
+}
 const collectionAliases = {
 	lotr: "lord of the rings",
 	hp: "harry potter",
@@ -248,8 +283,7 @@ async function loadNetworks() {
 		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
 	}));
 
-	document.getElementById("network-stats").innerText =
-		`${networks.length.toLocaleString()} TMDB TV network IDs cached`;
+	document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TMDB TV network IDs cached`;
 	try {
 		const metaRes = await fetch(`./data/tv-network-rebuild-meta.json?v=${CACHE_VERSION}`);
 
@@ -272,14 +306,14 @@ function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbU
 	return `
               <div class="collection-card">
                 ${
-						imageUrl
-							? `<img
+									imageUrl
+										? `<img
                         src="${imageUrl}"
                         alt="${imageAlt}"
                         class="collection-poster ${imageClass}"
                       >`
-							: `<div class="collection-poster ${imageClass}"></div>`
-					}
+										: `<div class="collection-poster ${imageClass}"></div>`
+								}
 
                 <div class="collection-info">
                   <h3>${title}</h3>
@@ -347,9 +381,7 @@ function personCard(person, knownCredits = "—") {
 }
 
 async function getCollectionMovieCount(collectionId) {
-	const detailData = await tmdbJson(
-		`https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`,
-	);
+	const detailData = await tmdbJson(`https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`);
 
 	if (!detailData || detailData.success === false) {
 		return null;
@@ -595,6 +627,7 @@ function applyFiltersAndSort() {
 			String(company.parent_company || "")
 				.toLowerCase()
 				.includes(query) ||
+			getCountrySearchText(company.origin_country).includes(query) ||
 			String(company.origin_country || "")
 				.toLowerCase()
 				.includes(query) ||
@@ -635,6 +668,7 @@ function applyNetworkFiltersAndSort() {
 			String(network.name || "")
 				.toLowerCase()
 				.includes(query) ||
+			getCountrySearchText(network.origin_country).includes(query) ||
 			String(network.origin_country || "")
 				.toLowerCase()
 				.includes(query) ||
@@ -745,16 +779,16 @@ function render(items) {
 		tr.innerHTML = `
                 <td class="logo-cell">
                   ${
-							logoUrl
-								? `<div class="logo-box">
+										logoUrl
+											? `<div class="logo-box">
                           <img
                             src="${logoUrl}"
                             alt="${company.name}"
                             class="studio-logo"
                           >
                         </div>`
-								: `<div class="logo-placeholder"></div>`
-						}
+											: `<div class="logo-placeholder"></div>`
+									}
                 </td>
 
                 <td>
@@ -889,44 +923,44 @@ function renderBulkPeopleResults(results) {
       </thead>
       <tbody>
         ${results
-		.map(
-			(result) => `
+					.map(
+						(result) => `
               <tr>
                 <td>${result.input}</td>
                 <td>${result.name || ""}</td>
                 <td>
                   ${
-							result.id
-								? `<button
+										result.id
+											? `<button
                           type="button"
                           class="copy-id-button"
                           onclick="copyId('${result.id}')"
                         >
                           ${result.id}
                         </button>`
-								: ""
-						}
+											: ""
+									}
                 </td>
 <td>${result.knownFor || "—"}</td>
 <td>${result.creditCount || "—"}</td>
 <td>${result.status}</td>
                 <td>
                   ${
-							result.id
-								? `<a
+										result.id
+											? `<a
                           href="https://www.themoviedb.org/person/${result.id}"
                           target="_blank"
                           rel="noopener"
                         >
                           Open
                         </a>`
-								: ""
-						}
+											: ""
+									}
                 </td>
               </tr>
             `,
-		)
-		.join("")}
+					)
+					.join("")}
       </tbody>
     </table>
   `;
@@ -1091,12 +1125,12 @@ async function resolveBulkPeople() {
     Resolved people IDs:
     matched ${matchedCount} of ${names.length}.
     ${
-matchedCount
-	? `<button type="button" onclick="downloadBulkPeopleCsv('people')">
+			matchedCount
+				? `<button type="button" onclick="downloadBulkPeopleCsv('people')">
             Download CSV
           </button>`
-	: ""
-}
+				: ""
+		}
   `;
 }
 
@@ -1235,17 +1269,11 @@ document.getElementById("back-to-top").addEventListener("click", () => {
 });
 document.getElementById("network-first-page").addEventListener("click", () => goToNetworkPage(1));
 
-document
-	.getElementById("network-prev-page")
-	.addEventListener("click", () => goToNetworkPage(currentNetworkPage - 1));
+document.getElementById("network-prev-page").addEventListener("click", () => goToNetworkPage(currentNetworkPage - 1));
 
-document
-	.getElementById("network-next-page")
-	.addEventListener("click", () => goToNetworkPage(currentNetworkPage + 1));
+document.getElementById("network-next-page").addEventListener("click", () => goToNetworkPage(currentNetworkPage + 1));
 
-document
-	.getElementById("network-last-page")
-	.addEventListener("click", () => goToNetworkPage(getNetworkTotalPages()));
+document.getElementById("network-last-page").addEventListener("click", () => goToNetworkPage(getNetworkTotalPages()));
 
 document.getElementById("network-first-page-bottom").addEventListener("click", () => goToNetworkPage(1));
 
