@@ -878,9 +878,7 @@ function getGenreReferenceItems() {
 function getGenreSearchText(genre) {
 	const count = genreCounts[getGenreCountKey(genre)] ?? genre.titleCount ?? "";
 
-	return [genre.name, genre.type, genre.media, genre.id, count, ...(genre.searchTerms || [])]
-		.join(" ")
-		.toLowerCase();
+	return [genre.name, genre.type, genre.media, genre.id, count, ...(genre.searchTerms || [])].join(" ").toLowerCase();
 }
 
 function genreMatchesFilter(genre) {
@@ -978,21 +976,21 @@ function renderGenres(items) {
 		const displayCount = typeof count === "number" ? count.toLocaleString() : count;
 
 		tr.innerHTML = `
-			<td>${genre.name || ""}</td>
-			<td>${genre.type || ""}</td>
-			<td>${genre.media || ""}</td>
-			<td>
-				<button
-					type="button"
-					class="copy-id-button"
-					title="Copy genre or list ID"
-					onclick="copyId('${genre.id}')"
-				>
-					${genre.id}
-				</button>
-			</td>
-			<td>${displayCount}</td>
-			<td>
+	<td>${genre.name || ""}</td>
+	<td>
+		<button
+			type="button"
+			class="copy-id-button"
+			title="Copy genre or list ID"
+			onclick="copyId('${genre.id}')"
+		>
+			${genre.id}
+		</button>
+	</td>
+	<td>${genre.type || ""}</td>
+	<td>${genre.media || ""}</td>
+	<td>${displayCount}</td>
+	<td>
 				<a
 					href="${genre.url}"
 					target="_blank"
@@ -1007,7 +1005,6 @@ function renderGenres(items) {
 	}
 }
 
-		
 function goToPage(page) {
 	currentPage = Math.min(Math.max(1, page), getTotalPages());
 
