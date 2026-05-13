@@ -12,7 +12,7 @@ The site is designed for people building media libraries, curated collections, d
 * Find TMDB TV network IDs
 * Find official TMDB movie collection IDs
 * Find actor, director, writer, and general person IDs
-* Browse TMDB genre IDs and curated list references
+* Browse official TMDB genre IDs
 * Check company and network title counts
 * Copy IDs quickly while building media collections
 * Export cached company, network, or person lookup results as CSV
@@ -47,11 +47,9 @@ Cached company and network data can also be downloaded as CSV.
 
 Title counts are intended as a practical guide when deciding which company or network IDs may be useful. They are based on TMDB data and may change as TMDB updates its records.
 
-## Genres And Curated References
+## Genres
 
-The genre lookup includes official TMDB movie and TV genres, plus curated TMDB list references for categories that TMDB does not expose as official genres.
-
-Examples of curated references include categories such as musicals, space, disaster, and holiday themes.
+The genre lookup includes official TMDB movie and TV genre IDs.
 
 ## Movie Collection And People Lookup
 
