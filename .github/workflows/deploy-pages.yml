@@ -43,13 +43,11 @@ jobs:
           ref: main
           fetch-depth: 1
 
-      - name: Inject frontend API keys
+      - name: Inject TMDB API key
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-          TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
         run: |
           sed -i "s|__TMDB_API_KEY__|${TMDB_API_KEY}|g" index.html
-          sed -i "s|__TRAKT_CLIENT_ID__|${TRAKT_CLIENT_ID}|g" index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
