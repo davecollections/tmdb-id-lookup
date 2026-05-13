@@ -13,6 +13,8 @@ on:
       - Update TMDB Companies
       - Auto Update TMDB Companies
       - Update TMDB Genre Counts
+      - Monthly TMDB Company Refresh
+      - Monthly TMDB Network Refresh
     types:
       - completed
 
