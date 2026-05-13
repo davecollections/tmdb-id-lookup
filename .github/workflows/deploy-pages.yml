@@ -48,6 +48,7 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
           sed -i "s|__TMDB_API_KEY__|${TMDB_API_KEY}|g" index.html
+          sed -i "s|__TMDB_API_KEY__|${TMDB_API_KEY}|g" js/app.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
