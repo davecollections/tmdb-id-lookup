@@ -1257,7 +1257,7 @@
 						const updated = new Date(lastRebuild.finished_at);
 
 						document.getElementById("stats").innerText =
-							`${companies.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB company IDs cached and searchable`;
+							`${companies.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB company IDs cached`;
 
 						document.getElementById("last-updated").innerText = `Last updated ${updated.toLocaleString()}`;
 
@@ -1285,7 +1285,19 @@
 					tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
 				}));
 
-				document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TV networks cached`;
+				try {
+					const metaRes = await fetch(`./data/tv-network-rebuild-meta.json?v=${CACHE_VERSION}`);
+
+					if (metaRes.ok) {
+						const meta = await metaRes.json();
+						const lastRebuild = meta.last_rebuild;
+
+						document.getElementById("network-stats").innerText =
+							`${networks.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB TV network IDs cached`;
+					}
+				} catch (error) {
+					console.warn("tv-network-rebuild-meta.json not available yet");
+				}
 
 				applyNetworkFiltersAndSort();
 			}
