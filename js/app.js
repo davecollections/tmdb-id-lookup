@@ -833,119 +833,96 @@ function updateNetworkPagination() {
 	document.getElementById("network-result-count").innerText =
 		`Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${filteredNetworks.length.toLocaleString()} TV networks`;
 }
+function createLogoCell(logoUrl, altText) {
+	const cell = createElement("td", { className: "logo-cell" });
+
+	if (logoUrl) {
+		cell.appendChild(
+			createElement("div", { className: "logo-box" }, [
+				createElement("img", {
+					className: "studio-logo",
+					attrs: {
+						src: logoUrl,
+						alt: altText,
+						loading: "lazy",
+						decoding: "async",
+					},
+				}),
+			]),
+		);
+	} else {
+		cell.appendChild(createElement("div", { className: "logo-placeholder" }));
+	}
+
+	return cell;
+}
+
+function createCopyIdCell(id, title) {
+	const cell = document.createElement("td");
+	const button = createElement("button", {
+		className: "copy-id-button",
+		text: id,
+		attrs: {
+			type: "button",
+			title,
+		},
+	});
+
+	button.addEventListener("click", () => copyId(id));
+	cell.appendChild(button);
+
+	return cell;
+}
+
+function createOpenLinkCell(url) {
+	return createElement("td", {}, [
+		createElement("a", {
+			text: "Open",
+			attrs: {
+				href: url,
+				target: "_blank",
+				rel: "noopener",
+			},
+		}),
+	]);
+}
+
 function render(items) {
 	const tbody = document.getElementById("results");
-	tbody.innerHTML = "";
+	tbody.replaceChildren();
 
 	for (const company of items) {
 		const tr = document.createElement("tr");
-
 		const logoUrl = company.logo_path ? `https://image.tmdb.org/t/p/w92${company.logo_path}` : "";
 
-		tr.innerHTML = `
-                <td class="logo-cell">
-                  ${
-										logoUrl
-											? `<div class="logo-box">
-                          <img
-                            src="${logoUrl}"
-                            alt="${company.name}"
-                            class="studio-logo"
-                            loading="lazy"
-                            decoding="async"
-                          >
-                        </div>`
-											: `<div class="logo-placeholder"></div>`
-									}
-                </td>
-
-                <td>
-                  <button
-                    type="button"
-                    class="copy-id-button"
-                    title="Copy company ID"
-                    onclick="copyId('${company.id}')"
-                  >
-                    ${company.id}
-                  </button>
-                </td>
-
-                <td>${company.name || ""}</td>
-                <td>${company.parent_company || ""}</td>
-                <td>${Number(company.titles_count || 0).toLocaleString()}</td>
-                <td>${company.origin_country || ""}</td>
-                <td>${company.headquarters || ""}</td>
-
-                <td>
-                  <a
-                    href="${company.tmdb_url}"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    Open
-                  </a>
-                </td>
-              `;
+		tr.appendChild(createLogoCell(logoUrl, company.name || "Company logo"));
+		tr.appendChild(createCopyIdCell(company.id, "Copy company ID"));
+		tr.appendChild(createElement("td", { text: company.name || "" }));
+		tr.appendChild(createElement("td", { text: company.parent_company || "" }));
+		tr.appendChild(createElement("td", { text: Number(company.titles_count || 0).toLocaleString() }));
+		tr.appendChild(createElement("td", { text: company.origin_country || "" }));
+		tr.appendChild(createElement("td", { text: company.headquarters || "" }));
+		tr.appendChild(createOpenLinkCell(company.tmdb_url));
 
 		tbody.appendChild(tr);
 	}
 }
+
 function renderNetworks(items) {
 	const tbody = document.getElementById("network-results");
-
-	tbody.innerHTML = "";
+	tbody.replaceChildren();
 
 	for (const network of items) {
 		const tr = document.createElement("tr");
-
 		const logoUrl = network.logo_path ? `https://image.tmdb.org/t/p/w92${network.logo_path}` : "";
 
-		tr.innerHTML = `
-<td class="logo-cell">
-	${
-		logoUrl
-			? `<div class="logo-box">
-					<img
-						src="${logoUrl}"
-						alt="${network.name}"
-						class="studio-logo"
-						loading="lazy"
-						decoding="async"
-					>
-				</div>`
-			: `<div class="logo-placeholder"></div>`
-	}
-</td>
-
-<td>
-	<button
-		type="button"
-		class="copy-id-button"
-		title="Copy network ID"
-		onclick="copyId('${network.id}')"
-	>
-		${network.id}
-	</button>
-</td>
-
-<td>${network.name || ""}</td>
-
-<td>${Number(network.titles_count || 0).toLocaleString()}</td>
-
-<td>${network.origin_country || ""}</td>
-
-<td>${network.headquarters || ""}</td>
-
-<td>
-	<a
-		href="${network.tmdb_url}"
-		target="_blank"
-		rel="noopener"
-	>
-		Open
-	</a>
-</td>
-`;
+		tr.appendChild(createLogoCell(logoUrl, network.name || "Network logo"));
+		tr.appendChild(createCopyIdCell(network.id, "Copy network ID"));
+		tr.appendChild(createElement("td", { text: network.name || "" }));
+		tr.appendChild(createElement("td", { text: Number(network.titles_count || 0).toLocaleString() }));
+		tr.appendChild(createElement("td", { text: network.origin_country || "" }));
+		tr.appendChild(createElement("td", { text: network.headquarters || "" }));
+		tr.appendChild(createOpenLinkCell(network.tmdb_url));
 
 		tbody.appendChild(tr);
 	}
