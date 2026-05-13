@@ -12,6 +12,7 @@ on:
       - Update TMDB Companies From Export
       - Update TMDB Companies
       - Auto Update TMDB Companies
+      - Update TMDB Genre Counts
     types:
       - completed
 
