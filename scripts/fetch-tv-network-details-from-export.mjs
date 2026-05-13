@@ -6,6 +6,8 @@ const gunzip = promisify(zlib.gunzip);
 
 const TOKEN = process.env.TMDB_BEARER_TOKEN;
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
+const OFFSET = Number(process.env.OFFSET || 0);
+const LIMIT = process.env.LIMIT ? Number(process.env.LIMIT) : null;
 
 const DATA_DIR = "data";
 const MIN_JSON_PATH = `${DATA_DIR}/tv-networks.min.json`;
@@ -45,25 +47,19 @@ async function tmdbFetch(url, options = {}) {
       });
 
       if (res.status === 401 || res.status === 403) {
-        throw new Error(
-          `TMDB auth/permission error HTTP ${res.status}. Check TMDB_BEARER_TOKEN.`
-        );
+        throw new Error(`TMDB auth/permission error HTTP ${res.status}. Check TMDB_BEARER_TOKEN.`);
       }
 
       if (res.status === 429) {
         const retryAfter = Number(res.headers.get("retry-after") || 5);
-        console.log(
-          `Rate limited. Waiting ${retryAfter}s before retry ${attempt}/${maxAttempts}...`
-        );
+        console.log(`Rate limited. Waiting ${retryAfter}s before retry ${attempt}/${maxAttempts}...`);
         await sleep(retryAfter * 1000);
         continue;
       }
 
       if (res.status >= 500) {
         const waitMs = attempt * 2000;
-        console.log(
-          `TMDB server error ${res.status}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`
-        );
+        console.log(`TMDB server error ${res.status}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`);
         await sleep(waitMs);
         continue;
       }
@@ -75,9 +71,7 @@ async function tmdbFetch(url, options = {}) {
       }
 
       const waitMs = attempt * 2000;
-      console.log(
-        `Network/request error: ${error.message}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`
-      );
+      console.log(`Network/request error: ${error.message}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`);
       await sleep(waitMs);
     }
   }
@@ -133,9 +127,7 @@ async function fetchExport() {
       .map(line => JSON.parse(line))
       .sort((a, b) => Number(a.id) - Number(b.id));
 
-    console.log(
-      `Loaded ${networks.length.toLocaleString()} TV network IDs from export ${candidate.date}`
-    );
+    console.log(`Loaded ${networks.length.toLocaleString()} TV network IDs from export ${candidate.date}`);
 
     return {
       export_date: candidate.date,
@@ -161,9 +153,7 @@ async function fetchNetworkDetails(id) {
 }
 
 async function fetchTvCount(id) {
-  const res = await tmdbFetch(
-    `https://api.themoviedb.org/3/discover/tv?with_networks=${id}`
-  );
+  const res = await tmdbFetch(`https://api.themoviedb.org/3/discover/tv?with_networks=${id}`);
 
   if (!res.ok) {
     throw new Error(`TV count failed for ${id}: HTTP ${res.status}`);
@@ -210,19 +200,9 @@ function csvEscape(value) {
 }
 
 function toCsv(networks) {
-  const headers = [
-    "id",
-    "name",
-    "titles_count",
-    "headquarters",
-    "origin_country",
-    "homepage",
-    "tmdb_url"
-  ];
+  const headers = ["id", "name", "titles_count", "headquarters", "origin_country", "homepage", "tmdb_url"];
 
-  const rows = networks.map(network =>
-    headers.map(header => csvEscape(network[header])).join(",")
-  );
+  const rows = networks.map(network => headers.map(header => csvEscape(network[header])).join(","));
 
   return [headers.join(","), ...rows].join("\n") + "\n";
 }
@@ -261,11 +241,15 @@ const exportData = await fetchExport();
 const ids = exportData.networks.map(network => Number(network.id)).filter(Boolean);
 const lowestId = ids.length ? Math.min(...ids) : null;
 const highestId = ids.length ? Math.max(...ids) : null;
+const selectedNetworks = LIMIT ? exportData.networks.slice(OFFSET, OFFSET + LIMIT) : exportData.networks.slice(OFFSET);
 
 const stats = {
-  mode: "tmdb_daily_export_full_enrichment",
+  mode: LIMIT ? "tmdb_export_sliced_enrichment" : "tmdb_daily_export_full_enrichment",
   export_date: exportData.export_date,
   export_total_ids: exportData.networks.length,
+  offset: OFFSET,
+  limit: LIMIT,
+  actual_limit: selectedNetworks.length,
   lowest_id: lowestId,
   highest_id: highestId,
   checked: 0,
@@ -280,6 +264,8 @@ await fs.writeFile(
     {
       export_date: exportData.export_date,
       total_ids: exportData.networks.length,
+      last_offset: OFFSET,
+      last_limit: LIMIT,
       lowest_id: lowestId,
       highest_id: highestId,
       updated_at: new Date().toISOString()
@@ -290,10 +276,10 @@ await fs.writeFile(
 );
 
 console.log(
-  `Enriching ${exportData.networks.length.toLocaleString()} TV networks from export ${exportData.export_date}.`
+  `Enriching ${selectedNetworks.length.toLocaleString()} of ${exportData.networks.length.toLocaleString()} TV networks from export ${exportData.export_date} at offset ${OFFSET.toLocaleString()}.`
 );
 
-for (const exportNetwork of exportData.networks) {
+for (const exportNetwork of selectedNetworks) {
   const id = Number(exportNetwork.id);
   stats.checked += 1;
 
@@ -332,9 +318,6 @@ await fs.writeFile(CSV_PATH, toCsv(networks));
 stats.total_cached = networks.length;
 stats.finished_at = new Date().toISOString();
 
-await fs.writeFile(
-  META_PATH,
-  JSON.stringify({ last_scan: stats }, null, 2)
-);
+await fs.writeFile(META_PATH, JSON.stringify({ last_scan: stats }, null, 2));
 
 console.log(`Saved ${networks.length.toLocaleString()} total cached TV networks.`);
