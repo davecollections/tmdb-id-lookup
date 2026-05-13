@@ -318,47 +318,80 @@ async function loadNetworks() {
 	updateFooterStats();
 	applyNetworkFiltersAndSort();
 }
-function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbUrl, imageClass = "" }) {
-	return `
-              <div class="collection-card">
-                ${
-									imageUrl
-										? `<img
-                        src="${imageUrl}"
-                        alt="${imageAlt}"
-                        class="collection-poster ${imageClass}"
-                        loading="lazy"
-                        decoding="async"
-                      >`
-										: `<div class="collection-poster ${imageClass}"></div>`
-								}
+function createMetaRow(label, value) {
+	const row = document.createElement("div");
+	const labelElement = createElement("strong", { text: label + ":" });
 
-                <div class="collection-info">
-                  <h3>${title}</h3>
+	row.appendChild(labelElement);
+	row.appendChild(document.createTextNode(" " + value));
 
-                  <div class="collection-meta">
-                    <div><strong>Type:</strong> ${type}</div>
-                    <div><strong>TMDB ID:</strong> ${id}</div>
-                    ${metaRows.join("")}
-                  </div>
-
-                  <div class="collection-actions">
-                    <button type="button" onclick="copyId('${id}')">
-                      Copy ID
-                    </button>
-
-                    <a href="${tmdbUrl}" target="_blank" rel="noopener">
-                      Open on TMDB
-                    </a>
-                  </div>
-                </div>
-              </div>
-            `;
+	return row;
 }
 
-function collectionCard(collection, movieCount = "—") {
+function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbUrl, imageClass = "" }) {
+	const card = createElement("div", { className: "collection-card" });
+	const imageClasses = ["collection-poster", imageClass].filter(Boolean).join(" ");
+
+	if (imageUrl) {
+		card.appendChild(
+			createElement("img", {
+				className: imageClasses,
+				attrs: {
+					src: imageUrl,
+					alt: imageAlt,
+					loading: "lazy",
+					decoding: "async",
+				},
+			}),
+		);
+	} else {
+		card.appendChild(createElement("div", { className: imageClasses }));
+	}
+
+	const info = createElement("div", { className: "collection-info" });
+
+	info.appendChild(createElement("h3", { text: title }));
+
+	const meta = createElement("div", { className: "collection-meta" });
+	meta.appendChild(createMetaRow("Type", type));
+	meta.appendChild(createMetaRow("TMDB ID", id));
+
+	for (const row of metaRows) {
+		meta.appendChild(row);
+	}
+
+	info.appendChild(meta);
+
+	const actions = createElement("div", { className: "collection-actions" });
+	const copyButton = createElement("button", {
+		text: "Copy ID",
+		attrs: {
+			type: "button",
+		},
+	});
+
+	copyButton.addEventListener("click", () => copyId(id));
+	actions.appendChild(copyButton);
+	actions.appendChild(
+		createElement("a", {
+			text: "Open on TMDB",
+			attrs: {
+				href: tmdbUrl,
+				target: "_blank",
+				rel: "noopener",
+			},
+		}),
+	);
+
+	info.appendChild(actions);
+	card.appendChild(info);
+
+	return card;
+}
+
+function collectionCard(collection, movieCount = "\u2014") {
 	const poster = collection.poster_path ? `https://image.tmdb.org/t/p/w185${collection.poster_path}` : "";
-	const metaRows = [`<div><strong>Movies:</strong> ${movieCount}</div>`];
+	const metaRows = [createMetaRow("Movies", movieCount)];
 
 	return createResultCard({
 		title: collection.name || "Untitled Collection",
@@ -371,18 +404,15 @@ function collectionCard(collection, movieCount = "—") {
 	});
 }
 
-function personCard(person, knownCredits = "—") {
+function personCard(person, knownCredits = "\u2014") {
 	const profile = person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : "";
 
-	const knownFor = person.known_for_department || "—";
+	const knownFor = person.known_for_department || "\u2014";
 
-	const metaRows = [
-		`<div><strong>Known for:</strong> ${knownFor}</div>`,
-		`<div><strong>Known credits:</strong> ${knownCredits}</div>`,
-	];
+	const metaRows = [createMetaRow("Known for", knownFor), createMetaRow("Known credits", knownCredits)];
 
 	if (person.birthday) {
-		metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
+		metaRows.push(createMetaRow("Born", person.birthday));
 	}
 
 	return createResultCard({
@@ -411,13 +441,71 @@ async function getCollectionMovieCount(collectionId) {
 function getLookupResultLimit() {
 	return window.matchMedia("(max-width: 720px)").matches ? 5 : 10;
 }
+
+function setLookupMessage(container, message) {
+	container.replaceChildren(createElement("p", { className: "meta", text: message }));
+}
+
+function createLookupPagination() {
+	const pagination = createElement("div", { className: "lookup-pagination" });
+	const previousButton = createElement("button", {
+		text: "Previous",
+		attrs: {
+			type: "button",
+		},
+	});
+	const nextButton = createElement("button", {
+		text: "Next",
+		attrs: {
+			type: "button",
+		},
+	});
+
+	previousButton.disabled = currentTmdbPage <= 1;
+	previousButton.addEventListener("click", () => searchTmdbIds(currentTmdbPage - 1));
+	nextButton.disabled = currentTmdbPage >= currentTmdbTotalPages;
+	nextButton.addEventListener("click", () => searchTmdbIds(currentTmdbPage + 1));
+
+	pagination.appendChild(previousButton);
+	pagination.appendChild(
+		createElement("span", {
+			className: "lookup-pagination-status",
+			text: `${currentTmdbPage} of ${currentTmdbTotalPages}`,
+		}),
+	);
+	pagination.appendChild(nextButton);
+
+	return pagination;
+}
+
+function renderLookupResults(container, cards, isNumeric) {
+	container.replaceChildren();
+
+	if (!isNumeric && currentTmdbTotalPages > 1) {
+		container.appendChild(createLookupPagination());
+	}
+
+	if (!isNumeric && currentTmdbTotalPages > 3) {
+		container.appendChild(
+			createElement("div", {
+				className: "lookup-pagination-help",
+				text: "Lots of results? Try a more specific search for better matches.",
+			}),
+		);
+	}
+
+	for (const card of cards) {
+		container.appendChild(card);
+	}
+}
+
 async function searchTmdbIds(page = 1) {
 	let query = document.getElementById("collection-search").value.trim();
 
 	const resultsContainer = document.getElementById("collection-results");
 
 	if (!query) {
-		resultsContainer.innerHTML = "";
+		resultsContainer.replaceChildren();
 		return;
 	}
 
@@ -432,7 +520,7 @@ async function searchTmdbIds(page = 1) {
 
 	const isNumeric = /^\d+$/.test(query);
 
-	resultsContainer.innerHTML = `<p class="meta">Searching TMDB...</p>`;
+	setLookupMessage(resultsContainer, "Searching TMDB...");
 
 	try {
 		const cards = [];
@@ -532,51 +620,13 @@ async function searchTmdbIds(page = 1) {
 		}
 
 		if (!cards.length) {
-			resultsContainer.innerHTML = `<p class="meta">No matching movie collections or people found.</p>`;
+			setLookupMessage(resultsContainer, "No matching movie collections or people found.");
 			return;
 		}
 
-		let resultsHtml = "";
-
-		if (!isNumeric && currentTmdbTotalPages > 1) {
-			resultsHtml += `
-        <div class="lookup-pagination">
-          <button
-            type="button"
-            ${currentTmdbPage <= 1 ? "disabled" : ""}
-            onclick="searchTmdbIds(${currentTmdbPage - 1})"
-          >
-            Previous
-          </button>
-
-          <span class="lookup-pagination-status">
-            ${currentTmdbPage} of ${currentTmdbTotalPages}
-          </span>
-
-          <button
-            type="button"
-            ${currentTmdbPage >= currentTmdbTotalPages ? "disabled" : ""}
-            onclick="searchTmdbIds(${currentTmdbPage + 1})"
-          >
-            Next
-          </button>
-        </div>
-      `;
-		}
-
-		if (!isNumeric && currentTmdbTotalPages > 3) {
-			resultsHtml += `
-        <div class="lookup-pagination-help">
-          Lots of results? Try a more specific search for better matches.
-        </div>
-      `;
-		}
-
-		resultsHtml += cards.join("");
-
-		resultsContainer.innerHTML = resultsHtml;
+		renderLookupResults(resultsContainer, cards, isNumeric);
 	} catch (error) {
-		resultsContainer.innerHTML = `<p class="meta">TMDB lookup failed.</p>`;
+		setLookupMessage(resultsContainer, "TMDB lookup failed.");
 		console.error(error);
 	}
 }
@@ -1316,7 +1366,7 @@ document.getElementById("collection-search").addEventListener("keydown", (event)
 
 document.getElementById("clear-collection-search").addEventListener("click", () => {
 	document.getElementById("collection-search").value = "";
-	document.getElementById("collection-results").innerHTML = "";
+	document.getElementById("collection-results").replaceChildren();
 
 	setTmdbFilter("all");
 
