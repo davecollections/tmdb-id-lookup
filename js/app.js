@@ -64,6 +64,7 @@ let companyMeta = null;
 let networkMeta = null;
 let currentGenreSearch = "";
 let currentGenreFilter = "all";
+let genreCounts = {};
 function updateFooterStats() {
 	const footer = document.getElementById("scan-stats");
 
@@ -875,57 +876,13 @@ function getGenreReferenceItems() {
 }
 
 function getGenreSearchText(genre) {
-	return [genre.name, genre.type, genre.media, genre.id, genre.titleCount, ...(genre.searchTerms || [])]
+	const count = genreCounts[getGenreCountKey(genre)] ?? genre.titleCount ?? "";
+
+	return [genre.name, genre.type, genre.media, genre.id, count, ...(genre.searchTerms || [])]
 		.join(" ")
 		.toLowerCase();
 }
-async function fetchGenreTitleCount(genre) {
-	if (genre.titleCount && genre.titleCount !== "—") {
-		return genre.titleCount;
-	}
 
-	let url = "";
-
-	if (genre.type === "Official TMDB Genre" && genre.media === "Movie") {
-		url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genre.id}&page=1`;
-	}
-
-	if (genre.type === "Official TMDB Genre" && genre.media === "TV") {
-		url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genre.id}&page=1`;
-	}
-
-	if (genre.type === "Curated TMDB List") {
-		url = `https://api.themoviedb.org/3/list/${genre.id}?api_key=${TMDB_API_KEY}`;
-	}
-
-	if (!url) {
-		return "—";
-	}
-
-	try {
-		const data = await tmdbJson(url);
-
-		if (!data) {
-			return "—";
-		}
-
-		if (typeof data.total_results === "number") {
-			return data.total_results.toLocaleString();
-		}
-
-		if (typeof data.item_count === "number") {
-			return data.item_count.toLocaleString();
-		}
-
-		if (Array.isArray(data.items)) {
-			return data.items.length.toLocaleString();
-		}
-
-		return "—";
-	} catch {
-		return "—";
-	}
-}
 function genreMatchesFilter(genre) {
 	if (currentGenreFilter === "movie") {
 		return genre.type === "Official TMDB Genre" && genre.media === "Movie";
@@ -949,7 +906,38 @@ function setGenreFilter(filter) {
 		button.classList.toggle("active", button.dataset.genreFilter === currentGenreFilter);
 	});
 }
+function getGenreCountKey(genre) {
+	if (genre.type === "Official TMDB Genre" && genre.media === "Movie") {
+		return `movie:${genre.id}`;
+	}
 
+	if (genre.type === "Official TMDB Genre" && genre.media === "TV") {
+		return `tv:${genre.id}`;
+	}
+
+	if (genre.type === "Curated TMDB List") {
+		return `list:${genre.id}`;
+	}
+
+	return "";
+}
+
+async function loadGenreCounts() {
+	try {
+		const res = await fetch(`./data/genre-counts.json?v=${CACHE_VERSION}`);
+
+		if (!res.ok) {
+			return;
+		}
+
+		const data = await res.json();
+
+		genreCounts = data.counts || {};
+		applyGenreFilters();
+	} catch (error) {
+		console.warn("genre-counts.json not available yet");
+	}
+}
 function applyGenreFilters() {
 	const query = currentGenreSearch.toLowerCase().trim();
 
@@ -986,8 +974,8 @@ function renderGenres(items) {
 
 	for (const genre of items) {
 		const tr = document.createElement("tr");
-
-		const countCellId = `genre-count-${String(genre.media).toLowerCase()}-${genre.id}`;
+		const count = genreCounts[getGenreCountKey(genre)] ?? genre.titleCount ?? "—";
+		const displayCount = typeof count === "number" ? count.toLocaleString() : count;
 
 		tr.innerHTML = `
 			<td>${genre.name || ""}</td>
@@ -1003,7 +991,7 @@ function renderGenres(items) {
 					${genre.id}
 				</button>
 			</td>
-			<td id="${countCellId}">${genre.titleCount || "Loading..."}</td>
+			<td>${displayCount}</td>
 			<td>
 				<a
 					href="${genre.url}"
@@ -1016,20 +1004,10 @@ function renderGenres(items) {
 		`;
 
 		tbody.appendChild(tr);
-
-		if (!genre.titleCount) {
-			fetchGenreTitleCount(genre).then((titleCount) => {
-				genre.titleCount = titleCount;
-
-				const countCell = document.getElementById(countCellId);
-
-				if (countCell) {
-					countCell.innerText = titleCount;
-				}
-			});
-		}
 	}
 }
+
+		
 function goToPage(page) {
 	currentPage = Math.min(Math.max(1, page), getTotalPages());
 
@@ -1500,3 +1478,4 @@ setActiveCachedTab("companies");
 loadCompanies();
 loadNetworks();
 applyGenreFilters();
+loadGenreCounts();
