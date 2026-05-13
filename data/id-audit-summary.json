@@ -1,23 +1,23 @@
 {
-  "audited_at": "2026-05-13T00:48:27.505Z",
+  "audited_at": "2026-05-13T10:06:06.595Z",
   "datasets": [
     {
       "dataset": "companies",
       "label": "Production Companies",
-      "export_date": "05_12_2026",
-      "export_total_ids": 248082,
+      "export_date": "05_13_2026",
+      "export_total_ids": 248188,
       "cached_total_ids": 248081,
       "cached_unique_ids": 248081,
-      "matched_count": 248081,
-      "coverage_percent": 99.9996,
-      "missing_from_cache_count": 1,
-      "extra_in_cache_count": 0,
+      "matched_count": 248072,
+      "coverage_percent": 99.9533,
+      "missing_from_cache_count": 116,
+      "extra_in_cache_count": 9,
       "duplicate_cached_ids_count": 0
     },
     {
       "dataset": "networks",
       "label": "TV Networks",
-      "export_date": "05_12_2026",
+      "export_date": "05_13_2026",
       "export_total_ids": 5372,
       "cached_total_ids": 5372,
       "cached_unique_ids": 5372,
