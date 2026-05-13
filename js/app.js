@@ -119,6 +119,30 @@ function downloadTextFile(filename, content, mimeType = "text/csv") {
 
 	URL.revokeObjectURL(url);
 }
+
+function createElement(tagName, options = {}, children = []) {
+	const element = document.createElement(tagName);
+
+	if (options.className) {
+		element.className = options.className;
+	}
+
+	if (options.text !== undefined) {
+		element.textContent = String(options.text);
+	}
+
+	for (const [name, value] of Object.entries(options.attrs || {})) {
+		element.setAttribute(name, String(value));
+	}
+
+	for (const child of children) {
+		if (child !== null && child !== undefined) {
+			element.appendChild(child);
+		}
+	}
+
+	return element;
+}
 function setTmdbFilter(filter) {
 	currentTmdbFilter = filter;
 
@@ -1033,68 +1057,72 @@ function getBulkPeopleNames() {
 
 function renderBulkPeopleResults(results) {
 	const container = document.getElementById("bulk-people-results");
+	container.replaceChildren();
 
 	if (!results.length) {
-		container.innerHTML = "";
 		return;
 	}
 
-	container.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Input</th>
-          <th>Match</th>
-          <th>TMDB ID</th>
-<th>Known For</th>
-<th>Credit Count</th>
-<th>Match Type</th>
-          <th>TMDB</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${results
-					.map(
-						(result) => `
-              <tr>
-                <td>${result.input}</td>
-                <td>${result.name || ""}</td>
-                <td>
-                  ${
-										result.id
-											? `<button
-                          type="button"
-                          class="copy-id-button"
-                          onclick="copyId('${result.id}')"
-                        >
-                          ${result.id}
-                        </button>`
-											: ""
-									}
-                </td>
-<td>${result.knownFor || "—"}</td>
-<td>${result.creditCount || "—"}</td>
-<td>${result.status}</td>
-                <td>
-                  ${
-										result.id
-											? `<a
-                          href="https://www.themoviedb.org/person/${result.id}"
-                          target="_blank"
-                          rel="noopener"
-                        >
-                          Open
-                        </a>`
-											: ""
-									}
-                </td>
-              </tr>
-            `,
-					)
-					.join("")}
-      </tbody>
-    </table>
-  `;
+	const table = document.createElement("table");
+	const thead = document.createElement("thead");
+	const headerRow = document.createElement("tr");
+
+	for (const heading of ["Input", "Match", "TMDB ID", "Known For", "Credit Count", "Match Type", "TMDB"]) {
+		headerRow.appendChild(createElement("th", { text: heading }));
+	}
+
+	thead.appendChild(headerRow);
+	table.appendChild(thead);
+
+	const tbody = document.createElement("tbody");
+
+	for (const result of results) {
+		const tr = document.createElement("tr");
+
+		tr.appendChild(createElement("td", { text: result.input }));
+		tr.appendChild(createElement("td", { text: result.name || "" }));
+
+		const idCell = document.createElement("td");
+
+		if (result.id) {
+			const copyButton = createElement("button", {
+				className: "copy-id-button",
+				text: result.id,
+				attrs: {
+					type: "button",
+				},
+			});
+
+			copyButton.addEventListener("click", () => copyId(result.id));
+			idCell.appendChild(copyButton);
+		}
+
+		tr.appendChild(idCell);
+		tr.appendChild(createElement("td", { text: result.knownFor || "\u2014" }));
+		tr.appendChild(createElement("td", { text: result.creditCount || "\u2014" }));
+		tr.appendChild(createElement("td", { text: result.status }));
+
+		const tmdbCell = document.createElement("td");
+
+		if (result.id) {
+			tmdbCell.appendChild(
+				createElement("a", {
+					text: "Open",
+					attrs: {
+						href: `https://www.themoviedb.org/person/${result.id}`,
+						target: "_blank",
+						rel: "noopener",
+					},
+				}),
+			);
+		}
+
+		tr.appendChild(tmdbCell);
+		tbody.appendChild(tr);
+	}
+
+	table.appendChild(tbody);
+	container.appendChild(table);
 }
 
 function downloadBulkPeopleCsv(mode) {
@@ -1252,17 +1280,20 @@ async function resolveBulkPeople() {
 
 	const matchedCount = lastBulkPeopleResults.filter((result) => result.id).length;
 
-	status.innerHTML = `
-    Resolved people IDs:
-    matched ${matchedCount} of ${names.length}.
-    ${
-			matchedCount
-				? `<button type="button" onclick="downloadBulkPeopleCsv('people')">
-            Download CSV
-          </button>`
-				: ""
-		}
-  `;
+	status.replaceChildren(document.createTextNode(`Resolved people IDs: matched ${matchedCount} of ${names.length}.`));
+
+	if (matchedCount) {
+		const downloadButton = createElement("button", {
+			text: "Download CSV",
+			attrs: {
+				type: "button",
+			},
+		});
+
+		downloadButton.addEventListener("click", () => downloadBulkPeopleCsv("people"));
+		status.appendChild(document.createTextNode(" "));
+		status.appendChild(downloadButton);
+	}
 }
 
 document.querySelectorAll(".cached-tab-button").forEach((button) => {
@@ -1472,7 +1503,7 @@ document.getElementById("bulk-people-btn").addEventListener("click", () => {
 document.getElementById("clear-bulk-people").addEventListener("click", () => {
 	document.getElementById("bulk-people-input").value = "";
 	document.getElementById("bulk-people-status").innerText = "";
-	document.getElementById("bulk-people-results").innerHTML = "";
+	document.getElementById("bulk-people-results").replaceChildren();
 	lastBulkPeopleResults = [];
 });
 document.getElementById("download-csv-link").href = `./data/companies.csv?v=${CACHE_VERSION}`;
