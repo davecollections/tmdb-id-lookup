@@ -446,6 +446,14 @@
 					padding: 16px;
 				}
 
+				.cached-tabs {
+					margin-top: 28px;
+				}
+
+				.cached-tab-button {
+					flex: 1 1 160px;
+				}
+
 				.search-row {
 					flex-direction: column;
 					align-items: stretch;
@@ -671,6 +679,48 @@
 				background: rgba(138, 180, 255, 0.16);
 				color: #ffffff;
 			}
+			.cached-tabs {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				margin: 34px 0 14px;
+				max-width: 1200px;
+			}
+
+			.cached-tab-button {
+				border-color: #283142;
+				background: rgba(21, 25, 34, 0.9);
+				color: #aeb7c2;
+				padding: 10px 14px;
+				border-radius: 999px;
+				font-size: 14px;
+				transition:
+					border-color 0.18s ease,
+					background 0.18s ease,
+					color 0.18s ease,
+					transform 0.18s ease;
+			}
+
+			.cached-tab-button:hover {
+				border-color: rgba(138, 180, 255, 0.75);
+				color: #ffffff;
+				transform: translateY(-1px);
+			}
+
+			.cached-tab-button.active {
+				border-color: #8ab4ff;
+				background: rgba(138, 180, 255, 0.16);
+				color: #ffffff;
+			}
+
+			.cached-tab-panel {
+				display: none;
+			}
+
+			.cached-tab-panel.active {
+				display: block;
+			}
+
 			.tool-header {
 				margin-bottom: 18px;
 			}
@@ -747,7 +797,38 @@
 
 		<div class="section-divider"></div>
 
-		<section class="tool-section company-lookup">
+		<div class="cached-tabs" role="tablist" aria-label="Cached TMDB lookups">
+			<button
+				id="company-tab"
+				class="cached-tab-button active"
+				type="button"
+				role="tab"
+				aria-selected="true"
+				aria-controls="company-panel"
+				data-cached-tab="companies"
+			>
+				Production Companies
+			</button>
+
+			<button
+				id="network-tab"
+				class="cached-tab-button"
+				type="button"
+				role="tab"
+				aria-selected="false"
+				aria-controls="network-panel"
+				data-cached-tab="networks"
+			>
+				TV Networks
+			</button>
+		</div>
+
+		<section
+			id="company-panel"
+			class="tool-section company-lookup cached-tab-panel active"
+			role="tabpanel"
+			aria-labelledby="company-tab"
+		>
 			<div class="tool-header">
 				<h2>Company ID Lookup</h2>
 				<p class="meta">Search the cached TMDB production company database.</p>
@@ -849,7 +930,12 @@
 			</div>
 		</section>
 
-		<section class="tool-section network-lookup">
+		<section
+			id="network-panel"
+			class="tool-section network-lookup cached-tab-panel"
+			role="tabpanel"
+			aria-labelledby="network-tab"
+		>
 			<div class="tool-header">
 				<h2>TV Network ID Lookup</h2>
 				<p class="meta">Search the cached TMDB TV network database.</p>
@@ -1062,6 +1148,19 @@
 
 				document.querySelectorAll(".network-filter-button").forEach((button) => {
 					button.classList.toggle("active", button.dataset.networkMinCount === String(minNetworkTitleCount));
+				});
+			}
+
+			function setActiveCachedTab(tabName) {
+				document.querySelectorAll(".cached-tab-button").forEach((button) => {
+					const isActive = button.dataset.cachedTab === tabName;
+
+					button.classList.toggle("active", isActive);
+					button.setAttribute("aria-selected", String(isActive));
+				});
+
+				document.querySelectorAll(".cached-tab-panel").forEach((panel) => {
+					panel.classList.toggle("active", panel.id === `${tabName === "companies" ? "company" : "network"}-panel`);
 				});
 			}
 
@@ -2018,6 +2117,13 @@
 		}
   `;
 			}
+
+			document.querySelectorAll(".cached-tab-button").forEach((button) => {
+				button.addEventListener("click", () => {
+					setActiveCachedTab(button.dataset.cachedTab || "companies");
+				});
+			});
+
 			document.getElementById("collection-search-btn").addEventListener("click", () => {
 				setTmdbFilter("all");
 				searchTmdbIds(1);
@@ -2210,6 +2316,7 @@
 			});
 			document.getElementById("download-csv-link").href = `./data/companies.csv?v=${CACHE_VERSION}`;
 			document.getElementById("download-network-csv-link").href = `./data/tv-networks.csv?v=${CACHE_VERSION}`;
+			setActiveCachedTab("companies");
 			loadCompanies();
 			loadNetworks();
 		</script>
