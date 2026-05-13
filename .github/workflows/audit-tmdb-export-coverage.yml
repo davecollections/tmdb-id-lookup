@@ -13,6 +13,9 @@ on:
           - companies
           - networks
 
+  schedule:
+    - cron: "15 8 * * 0"
+
 concurrency:
   group: tmdb-export-audit
   cancel-in-progress: false
@@ -35,7 +38,7 @@ jobs:
 
       - name: Run TMDB export coverage audit
         env:
-          DATASET: ${{ github.event.inputs.dataset }}
+          DATASET: ${{ github.event.inputs.dataset || 'all' }}
         run: node scripts/audit-tmdb-export-coverage.mjs
 
       - name: Commit updated audit data
