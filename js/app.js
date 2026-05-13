@@ -312,7 +312,7 @@ function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbU
 
                   <div class="collection-meta">
                     <div><strong>Type:</strong> ${type}</div>
-                    <div><strong>ID:</strong> ${id}</div>
+                    <div><strong>TMDB ID:</strong> ${id}</div>
                     ${metaRows.join("")}
                   </div>
 
@@ -349,13 +349,11 @@ function personCard(person, knownCredits = "—") {
 	const profile = person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : "";
 
 	const knownFor = person.known_for_department || "—";
-	const popularity = person.popularity ? Number(person.popularity).toFixed(1) : "—";
 
-	const metaRows = [
-		`<div><strong>Known for:</strong> ${knownFor}</div>`,
-		`<div><strong>Known credits:</strong> ${knownCredits}</div>`,
-		`<div><strong>TMDB popularity:</strong> ${popularity}</div>`,
-	];
+const metaRows = [
+	`<div><strong>Known for:</strong> ${knownFor}</div>`,
+	`<div><strong>Known credits:</strong> ${knownCredits}</div>`,
+];
 
 	if (person.birthday) {
 		metaRows.push(`<div><strong>Born:</strong> ${person.birthday}</div>`);
