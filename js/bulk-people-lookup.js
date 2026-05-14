@@ -47,7 +47,7 @@ function createNuvioId(prefix) {
 }
 
 function getNuvioTmdbSourceType(sourceType) {
-	return "PERSON";
+	return sourceType === "DIRECTOR" ? "DIRECTOR" : "PERSON";
 }
 
 function getNuvioExportOptions() {

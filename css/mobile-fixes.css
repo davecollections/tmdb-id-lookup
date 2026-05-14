@@ -65,8 +65,12 @@
 		height: 112px;
 	}
 
-	.nuvio-checkbox-option {
+	.nuvio-toggle-option {
 		min-height: auto;
+	}
+
+	.nuvio-preview-grid {
+		max-width: none;
 	}
 }
 
