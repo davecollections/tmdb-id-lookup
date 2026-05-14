@@ -17,6 +17,28 @@ let minNetworkTitleCount = 0;
 let companyMeta = null;
 let networkMeta = null;
 let cacheAuditSummary = null;
+const selectedCompanyIds = new Set();
+const companySelectionPresets = {
+	major: [2, 127928, 127929, 43, 174, 12, 33, 10146, 5, 559, 58, 4],
+	miniMajor: [1632, 491, 21, 60, 41],
+	animation: [
+		6125, 3475, 3, 2785, 7899, 6760, 6704, 521, 42141, 2251, 3464, 24955, 4859, 10342,
+	],
+};
+const companyPresetCollectionNames = {
+	major: "Major Studios",
+	miniMajor: "Mini-Major Studios",
+	animation: "Animation Studios",
+};
+const companyDefaultCollectionNames = new Set(["Studios", ...Object.values(companyPresetCollectionNames)]);
+
+function createNuvioExportId(prefix) {
+	if (window.crypto?.randomUUID) {
+		return window.crypto.randomUUID();
+	}
+
+	return `${prefix}-${Math.random().toString(16).slice(2, 10)}`;
+}
 
 async function fetchJsonIfAvailable(path) {
 	try {
@@ -441,14 +463,211 @@ function createCopyIdCell(id, title) {
 	return cell;
 }
 
+function getSelectedCompanies() {
+	return companies
+		.filter((company) => selectedCompanyIds.has(Number(company.id)))
+		.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+}
+
+function updateCompanySelectionStatus() {
+	const selectedCount = selectedCompanyIds.size;
+	const status = document.getElementById("company-selection-status");
+	const createButton = document.getElementById("create-company-nuvio-json");
+	const clearButton = document.getElementById("clear-company-selection");
+
+	status.textContent = selectedCount
+		? `${selectedCount.toLocaleString()} selected`
+		: "0 selected";
+
+	createButton.disabled = selectedCount === 0;
+	clearButton.disabled = selectedCount === 0;
+	updateCompanyPresetButtons();
+}
+
+function createCompanySelectionCell(company) {
+	const cell = createElement("td", { className: "selection-cell" });
+	const checkbox = createElement("input", {
+		className: "selection-checkbox",
+		attrs: {
+			type: "checkbox",
+			"aria-label": `Add ${company.name || "company"} to collection`,
+		},
+	});
+
+	checkbox.checked = selectedCompanyIds.has(Number(company.id));
+	checkbox.addEventListener("change", () => {
+		if (checkbox.checked) {
+			selectedCompanyIds.add(Number(company.id));
+		} else {
+			selectedCompanyIds.delete(Number(company.id));
+		}
+
+		updateCompanySelectionStatus();
+	});
+
+	cell.appendChild(checkbox);
+
+	return cell;
+}
+
+function getCompanyLogoUrl(company, size = "w500") {
+	return company.logo_path ? `https://image.tmdb.org/t/p/${size}${company.logo_path}` : "";
+}
+
+function getCompanyNuvioOptions() {
+	return {
+		collectionName: document.getElementById("company-nuvio-collection-name").value.trim() || "Studios",
+		collectionCoverUrl: document.getElementById("company-nuvio-cover-url").value.trim(),
+	};
+}
+
+function getSelectedCompanyPresetName() {
+	const selectedIds = [...selectedCompanyIds].map(Number);
+
+	for (const [presetName, presetIds] of Object.entries(companySelectionPresets)) {
+		if (selectedIds.length !== presetIds.length) {
+			continue;
+		}
+
+		if (presetIds.every((id) => selectedCompanyIds.has(Number(id)))) {
+			return presetName;
+		}
+	}
+
+	return null;
+}
+
+function getCompanyDefaultCollectionName() {
+	const presetName = getSelectedCompanyPresetName();
+
+	return presetName ? companyPresetCollectionNames[presetName] : "Studios";
+}
+
+function createCompanyNuvioJson() {
+	const options = getCompanyNuvioOptions();
+	const folders = getSelectedCompanies().map((company) => ({
+		id: createNuvioExportId("folder"),
+		title: company.name,
+		sources: [
+			{
+				title: company.name,
+				sortBy: "popularity.desc",
+				tmdbId: Number(company.id),
+				filters: {},
+				provider: "tmdb",
+				mediaType: "MOVIE",
+				tmdbSourceType: "COMPANY",
+			},
+		],
+		hideTitle: true,
+		tileShape: "LANDSCAPE",
+		coverEmoji: "",
+		focusGifUrl: "",
+		heroVideoUrl: "",
+		titleLogoUrl: "",
+		coverImageUrl: getCompanyLogoUrl(company),
+		catalogSources: [],
+		focusGifEnabled: false,
+		heroBackdropUrl: "",
+	}));
+
+	const collection = {
+		id: createNuvioExportId("collection"),
+		title: options.collectionName,
+		folders,
+		pinToTop: false,
+		viewMode: "TABBED_GRID",
+		showAllTab: false,
+		backdropImageUrl: options.collectionCoverUrl,
+		focusGlowEnabled: true,
+	};
+
+	return [collection];
+}
+
+function openCompanyNuvioExportModal() {
+	const selectedCount = selectedCompanyIds.size;
+
+	if (!selectedCount) {
+		return;
+	}
+
+	const nameInput = document.getElementById("company-nuvio-collection-name");
+	const defaultCollectionName = getCompanyDefaultCollectionName();
+
+	if (!nameInput.value.trim() || companyDefaultCollectionNames.has(nameInput.value.trim())) {
+		nameInput.value = defaultCollectionName;
+	}
+
+	document.getElementById("company-nuvio-export-summary").textContent =
+		`This will create one ${nameInput.value.trim()} collection with ${selectedCount.toLocaleString()} folder${selectedCount === 1 ? "" : "s"}.`;
+	document.getElementById("company-nuvio-export-modal").hidden = false;
+	nameInput.focus();
+}
+
+function closeCompanyNuvioExportModal() {
+	document.getElementById("company-nuvio-export-modal").hidden = true;
+}
+
+function downloadCompanyNuvioJson() {
+	if (!selectedCompanyIds.size) {
+		return;
+	}
+
+	const options = getCompanyNuvioOptions();
+	const json = JSON.stringify(createCompanyNuvioJson(), null, "\t");
+	const filename = `${String(options.collectionName || "studios")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "") || "studios"}.nuvio.json`;
+
+	downloadTextFile(filename, `${json}\n`, "application/json");
+}
+
+function clearCompanySelection() {
+	selectedCompanyIds.clear();
+	render(getPageItems());
+	updateCompanySelectionStatus();
+	closeCompanyNuvioExportModal();
+}
+
+function selectCompanyPreset(presetName) {
+	const presetIds = companySelectionPresets[presetName] || [];
+	const availableIds = new Set(companies.map((company) => Number(company.id)));
+	const selectableIds = presetIds.filter((id) => availableIds.has(Number(id))).map(Number);
+	const shouldRemovePreset = selectableIds.length && selectableIds.every((id) => selectedCompanyIds.has(id));
+
+	for (const id of selectableIds) {
+		if (shouldRemovePreset) {
+			selectedCompanyIds.delete(id);
+		} else {
+			selectedCompanyIds.add(id);
+		}
+	}
+
+	render(getPageItems());
+	updateCompanySelectionStatus();
+}
+
+function updateCompanyPresetButtons() {
+	document.querySelectorAll(".company-preset-button").forEach((button) => {
+		const presetIds = companySelectionPresets[button.dataset.companyPreset] || [];
+		const isActive = presetIds.length && presetIds.every((id) => selectedCompanyIds.has(Number(id)));
+
+		button.classList.toggle("active", Boolean(isActive));
+		button.setAttribute("aria-pressed", String(Boolean(isActive)));
+	});
+}
+
 function render(items) {
 	const tbody = document.getElementById("results");
 	tbody.replaceChildren();
 
 	for (const company of items) {
 		const tr = document.createElement("tr");
-		const logoUrl = company.logo_path ? `https://image.tmdb.org/t/p/w92${company.logo_path}` : "";
+		const logoUrl = getCompanyLogoUrl(company, "w92");
 
+		tr.appendChild(createCompanySelectionCell(company));
 		tr.appendChild(createLogoCell(logoUrl, company.name || "Company logo"));
 		tr.appendChild(createCopyIdCell(company.id, "Copy company ID"));
 		tr.appendChild(createElement("td", { text: company.name || "" }));
@@ -460,6 +679,8 @@ function render(items) {
 
 		tbody.appendChild(tr);
 	}
+
+	updateCompanySelectionStatus();
 }
 
 function renderNetworks(items) {
@@ -639,6 +860,19 @@ function initCachedLookups() {
 
 	document.getElementById("download-csv-link").href = `./data/companies.csv?v=${CACHE_VERSION}`;
 	document.getElementById("download-network-csv-link").href = `./data/tv-networks.csv?v=${CACHE_VERSION}`;
+	document.querySelectorAll(".company-preset-button").forEach((button) => {
+		button.addEventListener("click", () => selectCompanyPreset(button.dataset.companyPreset));
+	});
+	document.getElementById("create-company-nuvio-json").addEventListener("click", openCompanyNuvioExportModal);
+	document.getElementById("clear-company-selection").addEventListener("click", clearCompanySelection);
+	document.getElementById("close-company-nuvio-export").addEventListener("click", closeCompanyNuvioExportModal);
+	document.getElementById("cancel-company-nuvio-export").addEventListener("click", closeCompanyNuvioExportModal);
+	document.getElementById("download-company-nuvio-json").addEventListener("click", downloadCompanyNuvioJson);
+	document.getElementById("company-nuvio-export-modal").addEventListener("click", (event) => {
+		if (event.target.id === "company-nuvio-export-modal") {
+			closeCompanyNuvioExportModal();
+		}
+	});
 
 	loadCompanies();
 	loadNetworks();

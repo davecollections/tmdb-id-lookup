@@ -40,6 +40,19 @@
 		bottom: 88px;
 	}
 
+	.lookup-panel-header {
+		grid-template-columns: 1fr;
+	}
+
+	.lookup-panel-actions {
+		align-items: flex-start;
+		min-width: 0;
+	}
+
+	.selection-actions {
+		justify-content: flex-start;
+	}
+
 	.nuvio-export-grid {
 		grid-template-columns: 1fr;
 	}
@@ -80,6 +93,10 @@
 	.modal-footer {
 		align-items: flex-start;
 		gap: 12px;
+	}
+
+	.nuvio-export-grid-single {
+		grid-template-columns: 1fr;
 	}
 }
 

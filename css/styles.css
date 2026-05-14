@@ -117,6 +117,59 @@ button:disabled {
 	border-color: #8ab4ff;
 }
 
+.lookup-panel-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 18px;
+	align-items: start;
+	margin-bottom: 16px;
+}
+
+.lookup-panel-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	align-items: stretch;
+	min-width: 340px;
+	padding: 14px;
+	border: 1px solid #243040;
+	border-radius: 12px;
+	background: #111720;
+}
+
+.lookup-panel-actions h3 {
+	margin: 0;
+	font-size: 16px;
+}
+
+.lookup-panel-actions p {
+	margin: 0;
+	color: #aeb7c2;
+	font-size: 13px;
+	line-height: 1.35;
+}
+
+.preset-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	color: #aeb7c2;
+	font-size: 13px;
+}
+
+.preset-actions button {
+	padding: 7px 10px;
+	border-radius: 8px;
+	font-size: 13px;
+}
+
+.preset-actions button.active {
+	border-color: #8ab4ff;
+	background: rgba(59, 130, 246, 0.22);
+	color: #dbeafe;
+}
+
 .collection-results {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(260px, 1fr));
@@ -208,7 +261,7 @@ button:disabled {
 
 .company-cache-count {
 	margin: 0 0 6px;
-	font-size: 17px;
+	font-size: 15px;
 	font-weight: 700;
 	color: #f5f5f5;
 }
@@ -263,6 +316,23 @@ button:disabled {
 	justify-content: flex-end;
 }
 
+.selection-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+	justify-content: flex-start;
+	margin: 0;
+	color: #aeb7c2;
+	font-size: 14px;
+}
+
+.selection-actions button {
+	padding: 9px 12px;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
 .table-wrap {
 	width: 100%;
 	overflow-x: auto;
@@ -274,7 +344,7 @@ button:disabled {
 
 table {
 	width: 100%;
-	min-width: 1040px;
+	min-width: 1100px;
 	border-collapse: collapse;
 }
 
@@ -327,6 +397,18 @@ th.sortable:hover {
 
 .logo-cell {
 	width: 76px;
+}
+
+.selection-cell {
+	width: 58px;
+	text-align: center;
+}
+
+.selection-checkbox {
+	width: auto;
+	max-width: none;
+	padding: 0;
+	transform: scale(1.05);
 }
 
 .logo-box {
@@ -644,6 +726,10 @@ th.sortable:hover {
 	width: min(640px, 100%);
 }
 
+.modal-panel-small {
+	width: min(520px, 100%);
+}
+
 .modal-header {
 	display: flex;
 	align-items: center;
@@ -670,6 +756,10 @@ th.sortable:hover {
 	display: grid;
 	grid-template-columns: repeat(2, 320px);
 	gap: 10px 14px;
+}
+
+.nuvio-export-grid-single {
+	grid-template-columns: 1fr;
 }
 
 .nuvio-export-grid label {
