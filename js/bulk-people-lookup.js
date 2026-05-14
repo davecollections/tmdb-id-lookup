@@ -1,5 +1,9 @@
 let lastBulkPeopleResults = [];
 
+function getTmdbProfileImageUrl(profilePath) {
+	return profilePath ? `https://image.tmdb.org/t/p/w500${profilePath}` : "";
+}
+
 function getBulkPeopleNames() {
 	return document
 		.getElementById("bulk-people-input")
@@ -83,7 +87,16 @@ function downloadBulkPeopleCsv(mode) {
 		return;
 	}
 
-	const headers = ["input", "matched_name", "tmdb_person_id", "known_for", "credit_count", "match_type"];
+	const headers = [
+		"input",
+		"matched_name",
+		"tmdb_person_id",
+		"known_for",
+		"credit_count",
+		"profile_path",
+		"profile_image_url",
+		"match_type",
+	];
 
 	const csv =
 		headers.join(",") +
@@ -96,6 +109,8 @@ function downloadBulkPeopleCsv(mode) {
 					result.id || "",
 					result.knownFor || "",
 					result.creditCount || "",
+					result.profilePath || "",
+					result.profileImageUrl || "",
 					result.status,
 				]
 					.map(csvEscape)
@@ -177,6 +192,8 @@ async function resolveBulkPeople() {
 					id: "",
 					knownFor: "",
 					creditCount: "",
+					profilePath: "",
+					profileImageUrl: "",
 					status: "TMDB rate limit reached",
 				});
 
@@ -190,6 +207,8 @@ async function resolveBulkPeople() {
 					id: "",
 					knownFor: "",
 					creditCount: "",
+					profilePath: "",
+					profileImageUrl: "",
 					status: response.status ? `TMDB error HTTP ${response.status}` : "Network error",
 				});
 
@@ -207,6 +226,8 @@ async function resolveBulkPeople() {
 					id: match.person.id,
 					knownFor: match.person.known_for_department || "\u2014",
 					creditCount: knownCredits,
+					profilePath: match.person.profile_path || "",
+					profileImageUrl: getTmdbProfileImageUrl(match.person.profile_path),
 					status: match.matchType,
 				});
 			} else {
@@ -216,6 +237,8 @@ async function resolveBulkPeople() {
 					id: "",
 					knownFor: "",
 					creditCount: "",
+					profilePath: "",
+					profileImageUrl: "",
 					status: match.matchType,
 				});
 			}
@@ -226,6 +249,8 @@ async function resolveBulkPeople() {
 				id: "",
 				knownFor: "",
 				creditCount: "",
+				profilePath: "",
+				profileImageUrl: "",
 				status: "Lookup failed",
 			});
 		}
