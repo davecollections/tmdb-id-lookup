@@ -1,24 +1,11 @@
-function hasConfiguredTmdbProxy() {
-	return TMDB_PROXY_BASE_URL && !TMDB_PROXY_BASE_URL.includes("__");
-}
-
-function hasConfiguredTmdbApiKey() {
-	return TMDB_API_KEY && !TMDB_API_KEY.includes("__");
-}
-
 function tmdbApiUrl(path, params = {}) {
-	const baseUrl = hasConfiguredTmdbProxy() ? TMDB_PROXY_BASE_URL : "https://api.themoviedb.org";
-	const url = new URL(path, baseUrl);
+	const url = new URL(path, TMDB_PROXY_BASE_URL);
 
 	Object.entries(params).forEach(([key, value]) => {
 		if (value !== undefined && value !== null && value !== "") {
 			url.searchParams.set(key, value);
 		}
 	});
-
-	if (!hasConfiguredTmdbProxy() && hasConfiguredTmdbApiKey()) {
-		url.searchParams.set("api_key", TMDB_API_KEY);
-	}
 
 	return url.toString();
 }

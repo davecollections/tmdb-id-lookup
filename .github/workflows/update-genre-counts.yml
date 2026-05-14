@@ -28,7 +28,7 @@ jobs:
 
       - name: Update genre counts
         env:
-          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
         run: node scripts/update-genre-counts.js
 
       - name: Commit updated genre counts

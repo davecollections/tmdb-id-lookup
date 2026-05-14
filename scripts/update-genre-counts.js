@@ -2,10 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_BEARER_TOKEN = process.env.TMDB_BEARER_TOKEN;
 
-if (!TMDB_API_KEY) {
-	console.error("Missing TMDB_API_KEY environment variable.");
+if (!TMDB_BEARER_TOKEN) {
+	console.error("Missing TMDB_BEARER_TOKEN environment variable.");
 	process.exit(1);
 }
 
@@ -45,15 +45,15 @@ function getCountKey(genre) {
 
 function getCountUrl(genre) {
 	if (genre.type === "Official TMDB Genre" && genre.media === "Movie") {
-		return `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=${genre.id}&page=1`;
+		return `https://api.themoviedb.org/3/discover/movie?with_genres=${genre.id}&page=1`;
 	}
 
 	if (genre.type === "Official TMDB Genre" && genre.media === "TV") {
-		return `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&with_genres=${genre.id}&page=1`;
+		return `https://api.themoviedb.org/3/discover/tv?with_genres=${genre.id}&page=1`;
 	}
 
 	if (genre.type === "Curated TMDB List") {
-		return `https://api.themoviedb.org/3/list/${genre.id}?api_key=${TMDB_API_KEY}`;
+		return `https://api.themoviedb.org/3/list/${genre.id}`;
 	}
 
 	return null;
@@ -66,7 +66,12 @@ async function fetchCount(genre) {
 		return null;
 	}
 
-	const response = await fetch(url);
+	const response = await fetch(url, {
+		headers: {
+			Authorization: `Bearer ${TMDB_BEARER_TOKEN}`,
+			Accept: "application/json",
+		},
+	});
 
 	if (!response.ok) {
 		console.warn(`Failed ${genre.name} (${genre.media} ${genre.id}): HTTP ${response.status}`);
