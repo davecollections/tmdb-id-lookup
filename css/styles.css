@@ -726,6 +726,17 @@ th.sortable:hover {
 	width: min(640px, 100%);
 }
 
+.modal-panel-help .modal-header {
+	justify-content: center;
+	text-align: center;
+}
+
+.modal-panel-help .modal-close {
+	position: absolute;
+	right: 16px;
+	top: 16px;
+}
+
 .modal-panel-small {
 	width: min(520px, 100%);
 }
@@ -912,6 +923,16 @@ th.sortable:hover {
 
 .nuvio-import-help p {
 	margin: 0 0 10px;
+}
+
+.nuvio-import-beta-note {
+	text-align: center;
+}
+
+.nuvio-import-metadata-note {
+	margin: 18px auto 0;
+	max-width: 560px;
+	text-align: center;
 }
 
 .nuvio-import-help-grid {

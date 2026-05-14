@@ -663,6 +663,7 @@ function openCompanyNuvioExportModal() {
 
 function closeCompanyNuvioExportModal() {
 	document.getElementById("company-nuvio-export-modal").hidden = true;
+	closeNuvioImportHelpModal();
 }
 
 function downloadCompanyNuvioJson() {
@@ -805,6 +806,7 @@ function openNetworkNuvioExportModal() {
 
 function closeNetworkNuvioExportModal() {
 	document.getElementById("network-nuvio-export-modal").hidden = true;
+	closeNuvioImportHelpModal();
 }
 
 function downloadNetworkNuvioJson() {
@@ -1082,11 +1084,13 @@ function initCachedLookups() {
 	document.getElementById("close-company-nuvio-export").addEventListener("click", closeCompanyNuvioExportModal);
 	document.getElementById("cancel-company-nuvio-export").addEventListener("click", closeCompanyNuvioExportModal);
 	document.getElementById("download-company-nuvio-json").addEventListener("click", downloadCompanyNuvioJson);
+	document.getElementById("open-company-nuvio-import-help").addEventListener("click", openNuvioImportHelpModal);
 	document.getElementById("create-network-nuvio-json").addEventListener("click", openNetworkNuvioExportModal);
 	document.getElementById("clear-network-selection").addEventListener("click", clearNetworkSelection);
 	document.getElementById("close-network-nuvio-export").addEventListener("click", closeNetworkNuvioExportModal);
 	document.getElementById("cancel-network-nuvio-export").addEventListener("click", closeNetworkNuvioExportModal);
 	document.getElementById("download-network-nuvio-json").addEventListener("click", downloadNetworkNuvioJson);
+	document.getElementById("open-network-nuvio-import-help").addEventListener("click", openNuvioImportHelpModal);
 	document.getElementById("company-nuvio-export-modal").addEventListener("click", (event) => {
 		if (event.target.id === "company-nuvio-export-modal") {
 			closeCompanyNuvioExportModal();

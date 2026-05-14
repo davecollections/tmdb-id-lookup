@@ -161,7 +161,7 @@
 				</div>
 
 				<div class="nuvio-import-help">
-					<p>Nuvio is currently in beta, so these import steps may change.</p>
+					<p class="nuvio-import-beta-note">Nuvio is currently in beta, so these import steps may change.</p>
 
 					<div class="nuvio-import-help-grid">
 						<div>
@@ -189,6 +189,10 @@
 							</ol>
 						</div>
 					</div>
+
+					<p class="nuvio-import-metadata-note">
+						For metadata enrichment, turn on the TMDB integration in Nuvio: Settings &gt; Integrations &gt; TMDB.
+					</p>
 				</div>
 			</div>
 		</div>
@@ -225,9 +229,15 @@
 
 				<p id="company-nuvio-export-summary" class="meta"></p>
 
-				<div class="modal-actions">
-					<button id="download-company-nuvio-json" type="button">Download JSON</button>
-					<button id="cancel-company-nuvio-export" type="button">Cancel</button>
+				<div class="modal-footer">
+					<button id="open-company-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-company-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-company-nuvio-export" type="button">Cancel</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -264,9 +274,15 @@
 
 				<p id="network-nuvio-export-summary" class="meta"></p>
 
-				<div class="modal-actions">
-					<button id="download-network-nuvio-json" type="button">Download JSON</button>
-					<button id="cancel-network-nuvio-export" type="button">Cancel</button>
+				<div class="modal-footer">
+					<button id="open-network-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-network-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-network-nuvio-export" type="button">Cancel</button>
+					</div>
 				</div>
 			</div>
 		</div>
