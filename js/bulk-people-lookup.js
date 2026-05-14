@@ -307,9 +307,7 @@ async function resolveBulkPeople() {
 
 	for (const input of names) {
 		try {
-			const response = await tmdbJsonWithStatus(
-				`https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(input)}&page=1`,
-			);
+			const response = await tmdbJsonWithStatus(tmdbApiUrl("/3/search/person", { query: input, page: 1 }));
 
 			if (response.rateLimited) {
 				lastBulkPeopleResults.push({

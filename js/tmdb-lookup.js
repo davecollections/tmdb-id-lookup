@@ -120,7 +120,7 @@ function personCard(person, knownCredits = "\u2014") {
 }
 
 async function getCollectionMovieCount(collectionId) {
-	const detailData = await tmdbJson(`https://api.themoviedb.org/3/collection/${collectionId}?api_key=${TMDB_API_KEY}`);
+	const detailData = await tmdbJson(tmdbApiUrl(`/3/collection/${collectionId}`));
 
 	if (!detailData || detailData.success === false) {
 		return null;
@@ -231,7 +231,7 @@ async function searchTmdbIds(page = 1) {
 			}
 
 			if (currentTmdbFilter === "all" || currentTmdbFilter === "actors" || currentTmdbFilter === "directors") {
-				const person = await tmdbJson(`https://api.themoviedb.org/3/person/${query}?api_key=${TMDB_API_KEY}`);
+				const person = await tmdbJson(tmdbApiUrl(`/3/person/${query}`));
 
 				if (person && person.success !== false) {
 					const isActor = person.known_for_department === "Acting";
@@ -250,13 +250,9 @@ async function searchTmdbIds(page = 1) {
 				}
 			}
 		} else {
-			const collectionSearch = await tmdbJson(
-				`https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
-			);
+			const collectionSearch = await tmdbJson(tmdbApiUrl("/3/search/collection", { query, page }));
 
-			const personSearch = await tmdbJson(
-				`https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
-			);
+			const personSearch = await tmdbJson(tmdbApiUrl("/3/search/person", { query, page }));
 
 			const lookupResultLimit = getLookupResultLimit();
 
