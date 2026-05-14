@@ -60,6 +60,41 @@
 				<button id="clear-bulk-people" type="button">Clear</button>
 			</div>
 
+			<div class="nuvio-export-options" aria-label="Nuvio JSON export options">
+				<div class="nuvio-export-grid">
+					<label>
+						Collection name
+						<input id="nuvio-collection-name" placeholder="Favourite actors" />
+					</label>
+
+					<label>
+						Cover image URL
+						<input id="nuvio-cover-image-url" placeholder="Optional cover image URL" />
+					</label>
+
+					<label>
+						Folder hero URL
+						<input id="nuvio-folder-hero-url" placeholder="Optional folder hero image URL" />
+					</label>
+
+					<label>
+						Media type
+						<select id="nuvio-media-type">
+							<option value="MOVIE" selected>Movie</option>
+							<option value="TV">TV</option>
+						</select>
+					</label>
+
+					<label>
+						Source type
+						<select id="nuvio-source-type">
+							<option value="PERSON" selected>Person</option>
+							<option value="DIRECTOR">Director</option>
+						</select>
+					</label>
+				</div>
+			</div>
+
 			<p id="bulk-people-status" class="bulk-status"></p>
 
 			<p class="meta">

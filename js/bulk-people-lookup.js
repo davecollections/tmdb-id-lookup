@@ -1,7 +1,107 @@
 let lastBulkPeopleResults = [];
 
+const DEFAULT_NUVIO_IMAGES = {
+	PERSON: {
+		coverImageUrl:
+			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/actors.jpg?raw=true",
+		folderHeroImageUrl:
+			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/actor%20hero.jpg?raw=true",
+	},
+	DIRECTOR: {
+		coverImageUrl:
+			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/directors.jpg?raw=true",
+		folderHeroImageUrl:
+			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/director%20hero.jpg?raw=true",
+	},
+};
+
 function getTmdbProfileImageUrl(profilePath) {
 	return profilePath ? `https://image.tmdb.org/t/p/w500${profilePath}` : "";
+}
+
+function slugifyFilename(value) {
+	return (
+		String(value || "nuvio-people-collection")
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-+|-+$/g, "") || "nuvio-people-collection"
+	);
+}
+
+function getMatchedBulkPeopleResults() {
+	return lastBulkPeopleResults.filter((result) => result.id);
+}
+
+function getNuvioExportOptions() {
+	const collectionName =
+		document.getElementById("nuvio-collection-name").value.trim() || "TMDB People Collection";
+	const customCoverImageUrl = document.getElementById("nuvio-cover-image-url").value.trim();
+	const customFolderHeroUrl = document.getElementById("nuvio-folder-hero-url").value.trim();
+	const sourceType = document.getElementById("nuvio-source-type").value || "PERSON";
+	const defaultImages = DEFAULT_NUVIO_IMAGES[sourceType] || DEFAULT_NUVIO_IMAGES.PERSON;
+
+	return {
+		collectionName,
+		coverImageUrl: customCoverImageUrl || defaultImages.coverImageUrl,
+		folderHeroImageUrl: customFolderHeroUrl || defaultImages.folderHeroImageUrl,
+		mediaType: document.getElementById("nuvio-media-type").value || "MOVIE",
+		sourceType,
+	};
+}
+
+function createNuvioSource(result, options) {
+	return {
+		title: result.name,
+		sortBy: "popularity.desc",
+		tmdbId: Number(result.id),
+		filters: {},
+		provider: "tmdb",
+		mediaType: options.mediaType,
+		tmdbSourceType: options.sourceType,
+	};
+}
+
+function createNuvioFolder(result, options) {
+	const folder = {
+		title: result.name,
+		sources: [createNuvioSource(result, options)],
+	};
+
+	if (result.profileImageUrl) {
+		folder.coverImageUrl = result.profileImageUrl;
+	}
+
+	if (options.folderHeroImageUrl) {
+		folder.backdropImageUrl = options.folderHeroImageUrl;
+	}
+
+	return folder;
+}
+
+function createNuvioCollectionJson() {
+	const options = getNuvioExportOptions();
+	const matchedPeople = getMatchedBulkPeopleResults();
+
+	return {
+		title: options.collectionName,
+		name: options.collectionName,
+		coverImageUrl: options.coverImageUrl,
+		folders: matchedPeople.map((result) => createNuvioFolder(result, options)),
+	};
+}
+
+function downloadNuvioJson() {
+	const matchedPeople = getMatchedBulkPeopleResults();
+
+	if (!matchedPeople.length) {
+		return;
+	}
+
+	const options = getNuvioExportOptions();
+	const json = JSON.stringify(createNuvioCollectionJson(), null, "\t");
+	const filename = `${slugifyFilename(options.collectionName)}.nuvio.json`;
+
+	downloadTextFile(filename, `${json}\n`, "application/json");
 }
 
 function getBulkPeopleNames() {
@@ -273,6 +373,17 @@ async function resolveBulkPeople() {
 		downloadButton.addEventListener("click", () => downloadBulkPeopleCsv("people"));
 		status.appendChild(document.createTextNode(" "));
 		status.appendChild(downloadButton);
+
+		const nuvioJsonButton = createElement("button", {
+			text: "Download Nuvio JSON",
+			attrs: {
+				type: "button",
+			},
+		});
+
+		nuvioJsonButton.addEventListener("click", downloadNuvioJson);
+		status.appendChild(document.createTextNode(" "));
+		status.appendChild(nuvioJsonButton);
 	}
 }
 

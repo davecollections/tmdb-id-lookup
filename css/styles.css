@@ -607,6 +607,35 @@ th.sortable:hover {
 	margin-top: 10px;
 }
 
+.nuvio-export-options {
+	max-width: 760px;
+	margin: 16px 0 4px;
+	padding: 14px;
+	border: 1px solid #1f2733;
+	border-radius: 12px;
+	background: rgba(11, 13, 16, 0.45);
+}
+
+.nuvio-export-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(180px, 1fr));
+	gap: 12px;
+}
+
+.nuvio-export-grid label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	color: #aeb7c2;
+	font-size: 13px;
+}
+
+.nuvio-export-grid input,
+.nuvio-export-grid select {
+	width: 100%;
+	max-width: none;
+}
+
 .bulk-results {
 	margin-top: 14px;
 	overflow-x: auto;
