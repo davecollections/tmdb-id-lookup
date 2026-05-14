@@ -161,7 +161,7 @@
 				</div>
 
 				<div class="nuvio-import-help">
-					<p>Nuvio is currently in beta, so these import steps may change.</p>
+					<p class="nuvio-import-beta-note">Nuvio is currently in beta, so these import steps may change.</p>
 
 					<div class="nuvio-import-help-grid">
 						<div>
@@ -188,6 +188,100 @@
 								<li>For From URL, enter the URL, fetch it, then confirm import.</li>
 							</ol>
 						</div>
+					</div>
+
+					<p class="nuvio-import-metadata-note">
+						For metadata enrichment, turn on the TMDB integration in Nuvio: Settings &gt; Integrations &gt; TMDB.
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<div id="company-nuvio-export-modal" class="modal-backdrop" hidden>
+			<div class="modal-panel modal-panel-small" role="dialog" aria-modal="true" aria-labelledby="company-nuvio-export-title">
+				<div class="modal-header">
+					<h2 id="company-nuvio-export-title">Create Company Nuvio JSON</h2>
+					<button id="close-company-nuvio-export" class="modal-close" type="button" aria-label="Close company Nuvio JSON export">
+						&times;
+					</button>
+				</div>
+
+				<div class="nuvio-export-grid nuvio-export-grid-single">
+					<label>
+						Collection name
+						<input id="company-nuvio-collection-name" placeholder="Studios" />
+					</label>
+
+					<label>
+						Collection cover URL
+						<input id="company-nuvio-cover-url" placeholder="Leave blank for no collection cover" />
+					</label>
+
+					<label class="nuvio-toggle-option">
+						<input id="company-nuvio-use-logos" type="checkbox" checked />
+						<span class="nuvio-toggle-copy">
+							<span class="nuvio-toggle-label">Use TMDB logos</span>
+							<span class="nuvio-toggle-help">TMDB logos may look inconsistent as Nuvio folder covers. Turn off to use 🎬.</span>
+						</span>
+						<span class="nuvio-toggle-track" aria-hidden="true"></span>
+					</label>
+				</div>
+
+				<p id="company-nuvio-export-summary" class="meta"></p>
+
+				<div class="modal-footer">
+					<button id="open-company-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-company-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-company-nuvio-export" type="button">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="network-nuvio-export-modal" class="modal-backdrop" hidden>
+			<div class="modal-panel modal-panel-small" role="dialog" aria-modal="true" aria-labelledby="network-nuvio-export-title">
+				<div class="modal-header">
+					<h2 id="network-nuvio-export-title">Create Network Nuvio JSON</h2>
+					<button id="close-network-nuvio-export" class="modal-close" type="button" aria-label="Close network Nuvio JSON export">
+						&times;
+					</button>
+				</div>
+
+				<div class="nuvio-export-grid nuvio-export-grid-single">
+					<label>
+						Collection name
+						<input id="network-nuvio-collection-name" placeholder="Networks" />
+					</label>
+
+					<label>
+						Collection cover URL
+						<input id="network-nuvio-cover-url" placeholder="Leave blank for no collection cover" />
+					</label>
+
+					<label class="nuvio-toggle-option">
+						<input id="network-nuvio-use-logos" type="checkbox" checked />
+						<span class="nuvio-toggle-copy">
+							<span class="nuvio-toggle-label">Use TMDB logos</span>
+							<span class="nuvio-toggle-help">TMDB logos may look inconsistent as Nuvio folder covers. Turn off to use 📺.</span>
+						</span>
+						<span class="nuvio-toggle-track" aria-hidden="true"></span>
+					</label>
+				</div>
+
+				<p id="network-nuvio-export-summary" class="meta"></p>
+
+				<div class="modal-footer">
+					<button id="open-network-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-network-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-network-nuvio-export" type="button">Cancel</button>
 					</div>
 				</div>
 			</div>
@@ -241,18 +335,40 @@
 				role="tabpanel"
 				aria-labelledby="company-tab"
 			>
-				<div class="tool-header">
-					<h2>Company ID Lookup</h2>
-					<p class="meta">Search the cached TMDB production company database.</p>
-				</div>
+				<div class="lookup-panel-header">
+					<div>
+						<div class="tool-header">
+							<h2>Company ID Lookup</h2>
+							<p class="meta">Search the cached TMDB production company database.</p>
+						</div>
 
-				<div class="company-summary">
-					<p id="stats" class="company-cache-count"></p>
-					<p id="last-updated" class="company-updated"></p>
-				</div>
+						<div class="company-summary">
+							<p id="stats" class="company-cache-count"></p>
+							<p id="last-updated" class="company-updated"></p>
+						</div>
 
-				<div class="download-links">
-					<a id="download-csv-link" href="./data/companies.csv" download> Download CSV </a>
+						<div class="download-links">
+							<a id="download-csv-link" href="./data/companies.csv" download>Download CSV</a>
+						</div>
+					</div>
+
+					<div class="lookup-panel-actions">
+						<h3>Nuvio JSON export</h3>
+						<p>Select companies below, then create a Studios collection.</p>
+
+						<div class="preset-actions" aria-label="Company quick select presets">
+							<span>Quick select</span>
+							<button class="company-preset-button" type="button" data-company-preset="major" aria-pressed="false">Major</button>
+							<button class="company-preset-button" type="button" data-company-preset="miniMajor" aria-pressed="false">Mini-major</button>
+							<button class="company-preset-button" type="button" data-company-preset="animation" aria-pressed="false">Animation</button>
+						</div>
+
+						<div class="selection-actions" aria-label="Selected companies actions">
+							<span id="company-selection-status">0 selected</span>
+							<button id="create-company-nuvio-json" type="button" disabled>Create JSON</button>
+							<button id="clear-company-selection" type="button" disabled>Clear</button>
+						</div>
+					</div>
 				</div>
 
 				<div class="search-row">
@@ -302,6 +418,8 @@
 					<table>
 						<thead>
 							<tr>
+								<th>Select</th>
+
 								<th>Logo</th>
 
 								<th class="sortable" data-sort="id">
@@ -349,17 +467,40 @@
 				role="tabpanel"
 				aria-labelledby="network-tab"
 			>
-				<div class="tool-header">
-					<h2>TV Network ID Lookup</h2>
-					<p class="meta">Search the cached TMDB TV network database.</p>
-				</div>
+				<div class="lookup-panel-header">
+					<div>
+						<div class="tool-header">
+							<h2>TV Network ID Lookup</h2>
+							<p class="meta">Search the cached TMDB TV network database.</p>
+						</div>
 
-				<div class="company-summary">
-					<p id="network-stats" class="company-cache-count"></p>
-				</div>
+						<div class="company-summary">
+							<p id="network-stats" class="company-cache-count"></p>
+							<p id="network-last-updated" class="company-updated"></p>
+						</div>
 
-				<div class="download-links">
-					<a id="download-network-csv-link" href="./data/tv-networks.csv" download> Download TV Networks CSV </a>
+						<div class="download-links">
+							<a id="download-network-csv-link" href="./data/tv-networks.csv" download>Download CSV</a>
+						</div>
+					</div>
+
+					<div class="lookup-panel-actions">
+						<h3>Nuvio JSON export</h3>
+						<p>Select networks below, then create a Networks collection.</p>
+
+						<div class="preset-actions" aria-label="Network quick select presets">
+							<span>Quick select</span>
+							<button class="network-preset-button" type="button" data-network-preset="popularServices" aria-pressed="false">
+								Popular Services
+							</button>
+						</div>
+
+						<div class="selection-actions" aria-label="Selected networks actions">
+							<span id="network-selection-status">0 selected</span>
+							<button id="create-network-nuvio-json" type="button" disabled>Create JSON</button>
+							<button id="clear-network-selection" type="button" disabled>Clear</button>
+						</div>
+					</div>
 				</div>
 
 				<div class="search-row">
@@ -410,6 +551,8 @@
 					<table>
 						<thead>
 							<tr>
+								<th>Select</th>
+
 								<th>Logo</th>
 
 								<th class="network-sortable" data-network-sort="id">
