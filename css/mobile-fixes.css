@@ -68,6 +68,10 @@
 	.nuvio-preview-grid {
 		max-width: none;
 	}
+
+	.nuvio-toggle-help {
+		max-width: none;
+	}
 }
 
 @media (max-width: 390px) {

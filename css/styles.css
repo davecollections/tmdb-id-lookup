@@ -629,7 +629,7 @@ th.sortable:hover {
 }
 
 .modal-panel {
-	width: min(680px, 100%);
+	width: min(704px, 100%);
 	max-height: calc(100vh - 48px);
 	overflow: auto;
 	padding: 16px;
@@ -664,8 +664,8 @@ th.sortable:hover {
 
 .nuvio-export-grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(180px, 1fr));
-	gap: 10px 12px;
+	grid-template-columns: repeat(2, 320px);
+	gap: 10px 14px;
 }
 
 .nuvio-export-grid label {
@@ -682,43 +682,52 @@ th.sortable:hover {
 	max-width: none;
 }
 
-.nuvio-toggle-option {
+.nuvio-export-grid .nuvio-toggle-option {
+	display: flex;
 	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	min-height: 63px;
-	padding: 10px 12px;
+	align-items: flex-start;
+	justify-content: flex-start;
+	gap: 32px;
+	min-height: auto;
+	padding: 12px 14px;
 	border: 1px solid #2b313b;
 	border-radius: 8px;
 	background: #111722;
+	cursor: pointer;
 }
 
 .nuvio-toggle-option input {
 	position: absolute;
 	opacity: 0;
-	pointer-events: none;
 }
 
 .nuvio-toggle-label {
 	color: #e6edf7;
-	font-size: 15px;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.2;
+	white-space: nowrap;
 }
 
 .nuvio-toggle-copy {
 	display: flex;
 	flex-direction: column;
-	gap: 3px;
+	align-items: flex-start;
+	gap: 2px;
+	min-width: 0;
 }
 
 .nuvio-toggle-help {
 	color: #8f9aaa;
 	font-size: 12px;
 	line-height: 1.3;
+	display: block;
+	max-width: 210px;
 }
 
 .nuvio-toggle-track {
 	position: relative;
+	align-self: center;
 	width: 46px;
 	height: 26px;
 	flex: 0 0 auto;
@@ -742,27 +751,26 @@ th.sortable:hover {
 	transition: transform 0.18s ease;
 }
 
-.nuvio-toggle-option input:checked + .nuvio-toggle-label + .nuvio-toggle-track {
+.nuvio-toggle-option input:checked + .nuvio-toggle-copy + .nuvio-toggle-track {
 	border-color: #3b82f6;
 	background: #1d4ed8;
 }
 
-.nuvio-toggle-option input:checked + .nuvio-toggle-label + .nuvio-toggle-track::after {
+.nuvio-toggle-option input:checked + .nuvio-toggle-copy + .nuvio-toggle-track::after {
 	transform: translateX(20px);
 	background: #ffffff;
 }
 
-.nuvio-toggle-option input:focus-visible + .nuvio-toggle-label + .nuvio-toggle-track {
+.nuvio-toggle-option input:focus-visible + .nuvio-toggle-copy + .nuvio-toggle-track {
 	outline: 2px solid #93c5fd;
 	outline-offset: 2px;
 }
 
 .nuvio-preview-grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(180px, 1fr));
-	gap: 12px;
+	grid-template-columns: repeat(2, 320px);
+	gap: 14px;
 	margin-top: 12px;
-	max-width: 520px;
 }
 
 .nuvio-image-preview {
