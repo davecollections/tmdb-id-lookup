@@ -688,7 +688,10 @@ th.sortable:hover {
 	justify-content: space-between;
 	gap: 12px;
 	min-height: 63px;
-	padding: 0 2px;
+	padding: 10px 12px;
+	border: 1px solid #2b313b;
+	border-radius: 8px;
+	background: #111722;
 }
 
 .nuvio-toggle-option input {
@@ -700,6 +703,18 @@ th.sortable:hover {
 .nuvio-toggle-label {
 	color: #e6edf7;
 	font-size: 15px;
+}
+
+.nuvio-toggle-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.nuvio-toggle-help {
+	color: #8f9aaa;
+	font-size: 12px;
+	line-height: 1.3;
 }
 
 .nuvio-toggle-track {
@@ -747,13 +762,13 @@ th.sortable:hover {
 	grid-template-columns: repeat(2, minmax(180px, 1fr));
 	gap: 12px;
 	margin-top: 12px;
-	max-width: 560px;
+	max-width: 520px;
 }
 
 .nuvio-image-preview {
 	display: block;
 	width: 100%;
-	height: 96px;
+	aspect-ratio: 16 / 9;
 	object-fit: cover;
 	border: 1px solid #2b313b;
 	border-radius: 8px;
