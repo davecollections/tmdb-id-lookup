@@ -16,6 +16,68 @@ let networkRowsPerPage = 25;
 let minNetworkTitleCount = 0;
 let companyMeta = null;
 let networkMeta = null;
+let cacheAuditSummary = null;
+
+async function fetchJsonIfAvailable(path) {
+	try {
+		const response = await fetch(`${path}?v=${CACHE_VERSION}`);
+
+		if (!response.ok) {
+			return null;
+		}
+
+		return response.json();
+	} catch {
+		return null;
+	}
+}
+
+async function loadCacheAuditSummary() {
+	if (cacheAuditSummary !== null) {
+		return cacheAuditSummary;
+	}
+
+	cacheAuditSummary = await fetchJsonIfAvailable("./data/id-audit-summary.json");
+
+	return cacheAuditSummary;
+}
+
+function getAuditDataset(summary, datasetName) {
+	return (summary?.datasets || []).find((dataset) => dataset.dataset === datasetName) || null;
+}
+
+function latestTimestamp(...timestamps) {
+	let latest = "";
+
+	for (const timestamp of timestamps) {
+		if (!timestamp) {
+			continue;
+		}
+
+		if (!latest || new Date(timestamp) > new Date(latest)) {
+			latest = timestamp;
+		}
+	}
+
+	return latest;
+}
+
+function normaliseCacheMeta({ auditSummary, datasetName, itemCount, rebuildMeta, repairMeta }) {
+	const audit = getAuditDataset(auditSummary, datasetName);
+	const rebuild = rebuildMeta?.last_rebuild || rebuildMeta?.last_scan || null;
+	const repair = repairMeta?.last_repair || null;
+
+	return {
+		total_cached: itemCount,
+		export_total_ids: audit?.export_total_ids ?? rebuild?.export_total_ids ?? itemCount,
+		coverage_percent: audit?.coverage_percent ?? null,
+		finished_at: latestTimestamp(auditSummary?.audited_at, rebuild?.finished_at, repair?.finished_at),
+	};
+}
+
+function formatUpdatedDate(timestamp) {
+	return timestamp ? new Date(timestamp).toLocaleString() : "Unknown";
+}
 
 function updateFooterStats() {
 	const footer = document.getElementById("scan-stats");
@@ -27,9 +89,9 @@ function updateFooterStats() {
 	const companyCount = companyMeta?.total_cached || companies.length || 0;
 	const networkCount = networkMeta?.total_cached || networks.length || 0;
 
-	const updatedAt = companyMeta?.finished_at || networkMeta?.finished_at;
+	const updatedAt = latestTimestamp(companyMeta?.finished_at, networkMeta?.finished_at);
 
-	const formattedDate = updatedAt ? new Date(updatedAt).toLocaleString() : "Unknown";
+	const formattedDate = formatUpdatedDate(updatedAt);
 
 	footer.innerText = `TMDB export sync • Companies: ${companyCount.toLocaleString()} • Networks: ${networkCount.toLocaleString()} • Updated ${formattedDate}`;
 }
@@ -68,23 +130,24 @@ async function loadCompanies() {
 
 	document.getElementById("stats").innerText = `${companies.length.toLocaleString()} companies cached`;
 
-	try {
-		const metaRes = await fetch(`./data/company-rebuild-meta.json?v=${CACHE_VERSION}`);
+	const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
+		loadCacheAuditSummary(),
+		fetchJsonIfAvailable("./data/company-rebuild-meta.json"),
+		fetchJsonIfAvailable("./data/company-cache-repair-meta.json"),
+	]);
 
-		if (metaRes.ok) {
-			const meta = await metaRes.json();
-			const lastRebuild = meta.last_rebuild;
-			companyMeta = lastRebuild;
-			const updated = new Date(lastRebuild.finished_at);
+	companyMeta = normaliseCacheMeta({
+		auditSummary,
+		datasetName: "companies",
+		itemCount: companies.length,
+		rebuildMeta,
+		repairMeta,
+	});
 
-			document.getElementById("stats").innerText =
-				`${companies.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB company IDs cached`;
+	document.getElementById("stats").innerText =
+		`${companyMeta.total_cached.toLocaleString()} of ${companyMeta.export_total_ids.toLocaleString()} TMDB company IDs cached`;
 
-			document.getElementById("last-updated").innerText = `Last updated ${updated.toLocaleString()}`;
-		}
-	} catch (error) {
-		console.warn("company-rebuild-meta.json not available yet");
-	}
+	document.getElementById("last-updated").innerText = `Last updated ${formatUpdatedDate(companyMeta.finished_at)}`;
 
 	updateFooterStats();
 	applyFiltersAndSort();
@@ -106,20 +169,22 @@ async function loadNetworks() {
 	}));
 
 	document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TMDB TV network IDs cached`;
-	try {
-		const metaRes = await fetch(`./data/tv-network-rebuild-meta.json?v=${CACHE_VERSION}`);
+	const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
+		loadCacheAuditSummary(),
+		fetchJsonIfAvailable("./data/tv-network-rebuild-meta.json"),
+		fetchJsonIfAvailable("./data/tv-network-cache-repair-meta.json"),
+	]);
 
-		if (metaRes.ok) {
-			const meta = await metaRes.json();
-			const lastRebuild = meta.last_rebuild;
-			networkMeta = lastRebuild;
+	networkMeta = normaliseCacheMeta({
+		auditSummary,
+		datasetName: "networks",
+		itemCount: networks.length,
+		rebuildMeta,
+		repairMeta,
+	});
 
-			document.getElementById("network-stats").innerText =
-				`${networks.length.toLocaleString()} of ${lastRebuild.export_total_ids.toLocaleString()} TMDB TV network IDs cached`;
-		}
-	} catch (error) {
-		console.warn("tv-network-rebuild-meta.json not available yet");
-	}
+	document.getElementById("network-stats").innerText =
+		`${networkMeta.total_cached.toLocaleString()} of ${networkMeta.export_total_ids.toLocaleString()} TMDB TV network IDs cached`;
 
 	updateFooterStats();
 	applyNetworkFiltersAndSort();

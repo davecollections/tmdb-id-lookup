@@ -1,5 +1,5 @@
 const TMDB_API_KEY = "__TMDB_API_KEY__";
-const CACHE_VERSION = "20260512";
+const CACHE_VERSION = "__APP_ASSET_VERSION__";
 
 const countryDisplayNames =
 	typeof Intl !== "undefined" && Intl.DisplayNames ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
