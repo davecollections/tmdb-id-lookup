@@ -43,6 +43,14 @@
 	.nuvio-export-grid {
 		grid-template-columns: 1fr;
 	}
+
+	.nuvio-preview-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.modal-panel {
+		padding: 14px;
+	}
 }
 
 @media (max-width: 390px) {

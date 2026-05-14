@@ -49,6 +49,32 @@ function getNuvioExportOptions() {
 	};
 }
 
+function updateNuvioImagePreviews() {
+	const options = getNuvioExportOptions();
+	const coverPreview = document.getElementById("nuvio-cover-preview");
+	const folderHeroPreview = document.getElementById("nuvio-folder-hero-preview");
+
+	coverPreview.src = options.coverImageUrl;
+	folderHeroPreview.src = options.folderHeroImageUrl;
+}
+
+function openNuvioExportModal() {
+	const modal = document.getElementById("nuvio-export-modal");
+	const defaultCollectionName = document.getElementById("nuvio-collection-name");
+
+	if (!defaultCollectionName.value.trim()) {
+		defaultCollectionName.value = "TMDB People Collection";
+	}
+
+	updateNuvioImagePreviews();
+	modal.hidden = false;
+	document.getElementById("nuvio-collection-name").focus();
+}
+
+function closeNuvioExportModal() {
+	document.getElementById("nuvio-export-modal").hidden = true;
+}
+
 function createNuvioSource(result, options) {
 	return {
 		title: result.name,
@@ -375,13 +401,13 @@ async function resolveBulkPeople() {
 		status.appendChild(downloadButton);
 
 		const nuvioJsonButton = createElement("button", {
-			text: "Download Nuvio JSON",
+			text: "Create Nuvio JSON from matches",
 			attrs: {
 				type: "button",
 			},
 		});
 
-		nuvioJsonButton.addEventListener("click", downloadNuvioJson);
+		nuvioJsonButton.addEventListener("click", openNuvioExportModal);
 		status.appendChild(document.createTextNode(" "));
 		status.appendChild(nuvioJsonButton);
 	}
@@ -396,6 +422,19 @@ function initBulkPeopleLookup() {
 		document.getElementById("bulk-people-input").value = "";
 		document.getElementById("bulk-people-status").innerText = "";
 		document.getElementById("bulk-people-results").replaceChildren();
+		closeNuvioExportModal();
 		lastBulkPeopleResults = [];
+	});
+
+	document.getElementById("close-nuvio-export-modal").addEventListener("click", closeNuvioExportModal);
+	document.getElementById("cancel-nuvio-export").addEventListener("click", closeNuvioExportModal);
+	document.getElementById("download-nuvio-json").addEventListener("click", downloadNuvioJson);
+	document.getElementById("nuvio-source-type").addEventListener("change", updateNuvioImagePreviews);
+	document.getElementById("nuvio-cover-image-url").addEventListener("input", updateNuvioImagePreviews);
+	document.getElementById("nuvio-folder-hero-url").addEventListener("input", updateNuvioImagePreviews);
+	document.getElementById("nuvio-export-modal").addEventListener("click", (event) => {
+		if (event.target.id === "nuvio-export-modal") {
+			closeNuvioExportModal();
+		}
 	});
 }

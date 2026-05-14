@@ -608,12 +608,56 @@ th.sortable:hover {
 }
 
 .nuvio-export-options {
-	max-width: 760px;
-	margin: 16px 0 4px;
-	padding: 14px;
+	margin: 0;
+	padding: 0;
+}
+
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 1200;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 18px;
+	background: rgba(0, 0, 0, 0.72);
+}
+
+.modal-backdrop[hidden] {
+	display: none;
+}
+
+.modal-panel {
+	width: min(860px, 100%);
+	max-height: calc(100vh - 36px);
+	overflow: auto;
+	padding: 18px;
 	border: 1px solid #1f2733;
-	border-radius: 12px;
-	background: rgba(11, 13, 16, 0.45);
+	border-radius: 14px;
+	background: #0f1218;
+	box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+	box-sizing: border-box;
+}
+
+.modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	margin-bottom: 16px;
+}
+
+.modal-header h2 {
+	margin: 0;
+}
+
+.modal-close {
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border-radius: 999px;
+	font-size: 26px;
+	line-height: 1;
 }
 
 .nuvio-export-grid {
@@ -634,6 +678,31 @@ th.sortable:hover {
 .nuvio-export-grid select {
 	width: 100%;
 	max-width: none;
+}
+
+.nuvio-preview-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(180px, 1fr));
+	gap: 12px;
+	margin-top: 14px;
+}
+
+.nuvio-image-preview {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	border: 1px solid #2b313b;
+	border-radius: 10px;
+	background: #151922;
+}
+
+.modal-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: flex-end;
+	margin-top: 16px;
 }
 
 .bulk-results {
