@@ -15,7 +15,8 @@ The site is designed for people building media libraries, curated collections, d
 * Browse official TMDB genre IDs
 * Check company and network title counts
 * Copy IDs quickly while building media collections
-* Export cached company, network, or person lookup results as CSV
+* Export cached company and network results as CSV
+* Export bulk people matches as CSV or Nuvio collections JSON
 
 ## Features
 
@@ -26,6 +27,7 @@ The site is designed for people building media libraries, curated collections, d
 * Search TMDB people by name or ID
 * Filter TMDB lookup results by actors, directors, collections, or all results
 * Bulk lookup up to 50 person names at a time
+* Create Nuvio collections JSON from matched bulk people results
 * Copy IDs with one click
 * Open matching TMDB pages directly
 
@@ -74,7 +76,9 @@ Bulk people lookup helps resolve multiple person names into TMDB person IDs.
 
 Paste up to 50 names, one per line, then select **Resolve People IDs**. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
 
-Matched results can be downloaded as a CSV.
+Matched results can be downloaded as a CSV or exported as Nuvio collections JSON.
+
+The Nuvio JSON export can create people-based collections for actors, directors, or mixed people lists. It includes optional default collection artwork, folder hero artwork, and a hide-title setting for TMDB person images.
 
 ## Data Freshness
 
