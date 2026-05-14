@@ -640,6 +640,10 @@ th.sortable:hover {
 	box-sizing: border-box;
 }
 
+.modal-panel-help {
+	width: min(640px, 100%);
+}
+
 .modal-header {
 	display: flex;
 	align-items: center;
@@ -783,12 +787,63 @@ th.sortable:hover {
 	background: #151922;
 }
 
+.modal-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 14px;
+}
+
 .modal-actions {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px;
 	justify-content: flex-end;
-	margin-top: 14px;
+}
+
+.modal-help-button {
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border-radius: 999px;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.modal-backdrop-secondary {
+	z-index: 1300;
+}
+
+.nuvio-import-help {
+	color: #aeb7c2;
+	font-size: 13px;
+}
+
+.nuvio-import-help p {
+	margin: 0 0 10px;
+}
+
+.nuvio-import-help-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.nuvio-import-help h3 {
+	margin: 8px 0 6px;
+	color: #e6edf7;
+	font-size: 14px;
+}
+
+.nuvio-import-help ol {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.nuvio-import-help li {
+	margin: 4px 0;
+	line-height: 1.35;
 }
 
 .bulk-results {

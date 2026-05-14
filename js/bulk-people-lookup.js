@@ -93,6 +93,16 @@ function openNuvioExportModal() {
 
 function closeNuvioExportModal() {
 	document.getElementById("nuvio-export-modal").hidden = true;
+	closeNuvioImportHelpModal();
+}
+
+function openNuvioImportHelpModal() {
+	document.getElementById("nuvio-import-help-modal").hidden = false;
+	document.getElementById("close-nuvio-import-help").focus();
+}
+
+function closeNuvioImportHelpModal() {
+	document.getElementById("nuvio-import-help-modal").hidden = true;
 }
 
 function createNuvioSource(result, options) {
@@ -462,6 +472,8 @@ function initBulkPeopleLookup() {
 
 	document.getElementById("close-nuvio-export-modal").addEventListener("click", closeNuvioExportModal);
 	document.getElementById("cancel-nuvio-export").addEventListener("click", closeNuvioExportModal);
+	document.getElementById("open-nuvio-import-help").addEventListener("click", openNuvioImportHelpModal);
+	document.getElementById("close-nuvio-import-help").addEventListener("click", closeNuvioImportHelpModal);
 	document.getElementById("download-nuvio-json").addEventListener("click", downloadNuvioJson);
 	document.getElementById("nuvio-source-type").addEventListener("change", updateNuvioImagePreviews);
 	document.getElementById("nuvio-cover-image-url").addEventListener("input", updateNuvioImagePreviews);
@@ -469,6 +481,11 @@ function initBulkPeopleLookup() {
 	document.getElementById("nuvio-export-modal").addEventListener("click", (event) => {
 		if (event.target.id === "nuvio-export-modal") {
 			closeNuvioExportModal();
+		}
+	});
+	document.getElementById("nuvio-import-help-modal").addEventListener("click", (event) => {
+		if (event.target.id === "nuvio-import-help-modal") {
+			closeNuvioImportHelpModal();
 		}
 	});
 }

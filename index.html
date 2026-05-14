@@ -116,7 +116,7 @@
 							<input id="nuvio-hide-folder-title" type="checkbox" />
 							<span class="nuvio-toggle-copy">
 								<span class="nuvio-toggle-label">Hide folder title</span>
-								<span class="nuvio-toggle-help">Note: TMDB poster artwork does not include a title.</span>
+								<span class="nuvio-toggle-help">Note: TMDB person images do not display the person's name.</span>
 							</span>
 							<span class="nuvio-toggle-track" aria-hidden="true"></span>
 						</label>
@@ -135,9 +135,57 @@
 					</div>
 				</div>
 
-				<div class="modal-actions">
-					<button id="download-nuvio-json" type="button">Download JSON</button>
-					<button id="cancel-nuvio-export" type="button">Cancel</button>
+				<div class="modal-footer">
+					<button id="open-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-nuvio-export" type="button">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="nuvio-import-help-modal" class="modal-backdrop modal-backdrop-secondary" hidden>
+			<div class="modal-panel modal-panel-help" role="dialog" aria-modal="true" aria-labelledby="nuvio-import-help-title">
+				<div class="modal-header">
+					<h2 id="nuvio-import-help-title">Import into Nuvio</h2>
+					<button id="close-nuvio-import-help" class="modal-close" type="button" aria-label="Close Nuvio import help">
+						&times;
+					</button>
+				</div>
+
+				<div class="nuvio-import-help">
+					<p>Nuvio is currently in beta, so these import steps may change.</p>
+
+					<div class="nuvio-import-help-grid">
+						<div>
+							<h3>Web login</h3>
+							<ol>
+								<li>Log in to Nuvio.</li>
+								<li>Select the correct profile.</li>
+								<li>Open Collections.</li>
+								<li>Click Import.</li>
+								<li>Select the downloaded JSON file.</li>
+								<li>Choose Add as new, Merge, or Overwrite.</li>
+								<li>Click Add collections.</li>
+							</ol>
+						</div>
+
+						<div>
+							<h3>TV app</h3>
+							<ol>
+								<li>Open Nuvio and choose a profile.</li>
+								<li>Open Addons, then Collections.</li>
+								<li>Select Import.</li>
+								<li>Choose From File or From URL.</li>
+								<li>For From File, load the JSON from Downloads, then confirm import.</li>
+								<li>For From URL, enter the URL, fetch it, then confirm import.</li>
+							</ol>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>

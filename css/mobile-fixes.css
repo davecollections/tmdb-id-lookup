@@ -72,6 +72,15 @@
 	.nuvio-toggle-help {
 		max-width: none;
 	}
+
+	.nuvio-import-help-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.modal-footer {
+		align-items: flex-start;
+		gap: 12px;
+	}
 }
 
 @media (max-width: 390px) {
