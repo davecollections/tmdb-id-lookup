@@ -96,19 +96,25 @@
 						<label>
 							Source type
 							<select id="nuvio-source-type">
-								<option value="PERSON" selected>Person</option>
-								<option value="DIRECTOR">Director</option>
+								<option value="ACTOR" selected>Actors</option>
+								<option value="DIRECTOR">Directors</option>
+								<option value="PERSON">People</option>
 							</select>
 						</label>
 
 						<label>
 							Cover image URL
-							<input id="nuvio-cover-image-url" placeholder="Blank uses the actor/director default cover" />
+							<input id="nuvio-cover-image-url" placeholder="Blank uses the source type default cover" />
 						</label>
 
 						<label>
 							Folder hero URL
-							<input id="nuvio-folder-hero-url" placeholder="Blank uses the actor/director default hero" />
+							<input id="nuvio-folder-hero-url" placeholder="Blank uses the source type default hero" />
+						</label>
+
+						<label class="nuvio-checkbox-option">
+							<input id="nuvio-hide-folder-title" type="checkbox" />
+							<span>Hide folder title</span>
 						</label>
 					</div>
 

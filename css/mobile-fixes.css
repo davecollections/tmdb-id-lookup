@@ -49,7 +49,24 @@
 	}
 
 	.modal-panel {
+		max-height: calc(100vh - 24px);
 		padding: 14px;
+	}
+
+	.modal-backdrop {
+		padding: 12px;
+	}
+
+	.modal-header h2 {
+		font-size: 22px;
+	}
+
+	.nuvio-image-preview {
+		height: 112px;
+	}
+
+	.nuvio-checkbox-option {
+		min-height: auto;
 	}
 }
 

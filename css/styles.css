@@ -617,10 +617,11 @@ th.sortable:hover {
 	inset: 0;
 	z-index: 1200;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
-	padding: 18px;
+	padding: 24px 14px;
 	background: rgba(0, 0, 0, 0.72);
+	overflow: auto;
 }
 
 .modal-backdrop[hidden] {
@@ -628,12 +629,12 @@ th.sortable:hover {
 }
 
 .modal-panel {
-	width: min(860px, 100%);
-	max-height: calc(100vh - 36px);
+	width: min(720px, 100%);
+	max-height: calc(100vh - 48px);
 	overflow: auto;
-	padding: 18px;
+	padding: 16px;
 	border: 1px solid #1f2733;
-	border-radius: 14px;
+	border-radius: 12px;
 	background: #0f1218;
 	box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
 	box-sizing: border-box;
@@ -644,26 +645,27 @@ th.sortable:hover {
 	align-items: center;
 	justify-content: space-between;
 	gap: 14px;
-	margin-bottom: 16px;
+	margin-bottom: 12px;
 }
 
 .modal-header h2 {
 	margin: 0;
+	font-size: 24px;
 }
 
 .modal-close {
-	width: 40px;
-	height: 40px;
+	width: 36px;
+	height: 36px;
 	padding: 0;
 	border-radius: 999px;
-	font-size: 26px;
+	font-size: 24px;
 	line-height: 1;
 }
 
 .nuvio-export-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(180px, 1fr));
-	gap: 12px;
+	gap: 10px 12px;
 }
 
 .nuvio-export-grid label {
@@ -680,20 +682,37 @@ th.sortable:hover {
 	max-width: none;
 }
 
+.nuvio-checkbox-option {
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-end;
+	min-height: 63px;
+}
+
+.nuvio-checkbox-option input {
+	width: auto;
+	margin: 0;
+}
+
+.nuvio-checkbox-option span {
+	color: #e6edf7;
+	font-size: 15px;
+}
+
 .nuvio-preview-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(180px, 1fr));
 	gap: 12px;
-	margin-top: 14px;
+	margin-top: 12px;
 }
 
 .nuvio-image-preview {
 	display: block;
 	width: 100%;
-	aspect-ratio: 16 / 9;
+	height: 132px;
 	object-fit: cover;
 	border: 1px solid #2b313b;
-	border-radius: 10px;
+	border-radius: 8px;
 	background: #151922;
 }
 
@@ -702,7 +721,7 @@ th.sortable:hover {
 	flex-wrap: wrap;
 	gap: 10px;
 	justify-content: flex-end;
-	margin-top: 16px;
+	margin-top: 14px;
 }
 
 .bulk-results {

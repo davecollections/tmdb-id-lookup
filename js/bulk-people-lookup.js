@@ -1,7 +1,7 @@
 let lastBulkPeopleResults = [];
 
 const DEFAULT_NUVIO_IMAGES = {
-	PERSON: {
+	ACTOR: {
 		coverImageUrl:
 			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/actors.jpg?raw=true",
 		folderHeroImageUrl:
@@ -12,6 +12,12 @@ const DEFAULT_NUVIO_IMAGES = {
 			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/directors.jpg?raw=true",
 		folderHeroImageUrl:
 			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/director%20hero.jpg?raw=true",
+	},
+	PERSON: {
+		coverImageUrl:
+			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/people.jpg?raw=true",
+		folderHeroImageUrl:
+			"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/people%20hero%20backdrop.jpg?raw=true",
 	},
 };
 
@@ -32,20 +38,34 @@ function getMatchedBulkPeopleResults() {
 	return lastBulkPeopleResults.filter((result) => result.id);
 }
 
+function createNuvioId(prefix) {
+	if (window.crypto?.randomUUID) {
+		return window.crypto.randomUUID();
+	}
+
+	return `${prefix}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+function getNuvioTmdbSourceType(sourceType) {
+	return "PERSON";
+}
+
 function getNuvioExportOptions() {
 	const collectionName =
 		document.getElementById("nuvio-collection-name").value.trim() || "TMDB People Collection";
 	const customCoverImageUrl = document.getElementById("nuvio-cover-image-url").value.trim();
 	const customFolderHeroUrl = document.getElementById("nuvio-folder-hero-url").value.trim();
-	const sourceType = document.getElementById("nuvio-source-type").value || "PERSON";
-	const defaultImages = DEFAULT_NUVIO_IMAGES[sourceType] || DEFAULT_NUVIO_IMAGES.PERSON;
+	const sourceType = document.getElementById("nuvio-source-type").value || "ACTOR";
+	const defaultImages = DEFAULT_NUVIO_IMAGES[sourceType] || DEFAULT_NUVIO_IMAGES.ACTOR;
 
 	return {
 		collectionName,
 		coverImageUrl: customCoverImageUrl || defaultImages.coverImageUrl,
 		folderHeroImageUrl: customFolderHeroUrl || defaultImages.folderHeroImageUrl,
+		hideFolderTitle: document.getElementById("nuvio-hide-folder-title").checked,
 		mediaType: document.getElementById("nuvio-media-type").value || "MOVIE",
 		sourceType,
+		tmdbSourceType: getNuvioTmdbSourceType(sourceType),
 	};
 }
 
@@ -83,14 +103,21 @@ function createNuvioSource(result, options) {
 		filters: {},
 		provider: "tmdb",
 		mediaType: options.mediaType,
-		tmdbSourceType: options.sourceType,
+		tmdbSourceType: options.tmdbSourceType,
 	};
 }
 
 function createNuvioFolder(result, options) {
 	const folder = {
+		id: createNuvioId("folder"),
 		title: result.name,
 		sources: [createNuvioSource(result, options)],
+		hideTitle: options.hideFolderTitle,
+		tileShape: "POSTER",
+		coverEmoji: "",
+		focusGifUrl: "",
+		heroVideoUrl: "",
+		titleLogoUrl: "",
 	};
 
 	if (result.profileImageUrl) {
@@ -98,8 +125,11 @@ function createNuvioFolder(result, options) {
 	}
 
 	if (options.folderHeroImageUrl) {
-		folder.backdropImageUrl = options.folderHeroImageUrl;
+		folder.heroBackdropUrl = options.folderHeroImageUrl;
 	}
+
+	folder.catalogSources = [];
+	folder.focusGifEnabled = false;
 
 	return folder;
 }
@@ -108,12 +138,18 @@ function createNuvioCollectionJson() {
 	const options = getNuvioExportOptions();
 	const matchedPeople = getMatchedBulkPeopleResults();
 
-	return {
+	const collection = {
+		id: createNuvioId("collection"),
 		title: options.collectionName,
-		name: options.collectionName,
-		coverImageUrl: options.coverImageUrl,
 		folders: matchedPeople.map((result) => createNuvioFolder(result, options)),
+		pinToTop: false,
+		viewMode: "TABBED_GRID",
+		showAllTab: false,
+		backdropImageUrl: options.coverImageUrl,
+		focusGlowEnabled: true,
 	};
+
+	return [collection];
 }
 
 function downloadNuvioJson() {
