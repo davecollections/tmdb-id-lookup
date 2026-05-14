@@ -607,6 +607,245 @@ th.sortable:hover {
 	margin-top: 10px;
 }
 
+.nuvio-export-options {
+	margin: 0;
+	padding: 0;
+}
+
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 1200;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 24px 14px;
+	background: rgba(0, 0, 0, 0.72);
+	overflow: auto;
+}
+
+.modal-backdrop[hidden] {
+	display: none;
+}
+
+.modal-panel {
+	width: min(704px, 100%);
+	max-height: calc(100vh - 48px);
+	overflow: auto;
+	padding: 16px;
+	border: 1px solid #1f2733;
+	border-radius: 12px;
+	background: #0f1218;
+	box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+	box-sizing: border-box;
+}
+
+.modal-panel-help {
+	width: min(640px, 100%);
+}
+
+.modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	margin-bottom: 12px;
+}
+
+.modal-header h2 {
+	margin: 0;
+	font-size: 24px;
+}
+
+.modal-close {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border-radius: 999px;
+	font-size: 24px;
+	line-height: 1;
+}
+
+.nuvio-export-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 320px);
+	gap: 10px 14px;
+}
+
+.nuvio-export-grid label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	color: #aeb7c2;
+	font-size: 13px;
+}
+
+.nuvio-export-grid input,
+.nuvio-export-grid select {
+	width: 100%;
+	max-width: none;
+}
+
+.nuvio-export-grid .nuvio-toggle-option {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: flex-start;
+	gap: 32px;
+	min-height: auto;
+	padding: 12px 14px;
+	border: 1px solid #2b313b;
+	border-radius: 8px;
+	background: #111722;
+	cursor: pointer;
+}
+
+.nuvio-toggle-option input {
+	position: absolute;
+	opacity: 0;
+}
+
+.nuvio-toggle-label {
+	color: #e6edf7;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+.nuvio-toggle-copy {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	min-width: 0;
+}
+
+.nuvio-toggle-help {
+	color: #8f9aaa;
+	font-size: 12px;
+	line-height: 1.3;
+	display: block;
+	max-width: 210px;
+}
+
+.nuvio-toggle-track {
+	position: relative;
+	align-self: center;
+	width: 46px;
+	height: 26px;
+	flex: 0 0 auto;
+	border: 1px solid #334155;
+	border-radius: 999px;
+	background: #151922;
+	transition:
+		background 0.18s ease,
+		border-color 0.18s ease;
+}
+
+.nuvio-toggle-track::after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 18px;
+	height: 18px;
+	border-radius: 999px;
+	background: #cbd5e1;
+	transition: transform 0.18s ease;
+}
+
+.nuvio-toggle-option input:checked + .nuvio-toggle-copy + .nuvio-toggle-track {
+	border-color: #3b82f6;
+	background: #1d4ed8;
+}
+
+.nuvio-toggle-option input:checked + .nuvio-toggle-copy + .nuvio-toggle-track::after {
+	transform: translateX(20px);
+	background: #ffffff;
+}
+
+.nuvio-toggle-option input:focus-visible + .nuvio-toggle-copy + .nuvio-toggle-track {
+	outline: 2px solid #93c5fd;
+	outline-offset: 2px;
+}
+
+.nuvio-preview-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 320px);
+	gap: 14px;
+	margin-top: 12px;
+}
+
+.nuvio-image-preview {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	border: 1px solid #2b313b;
+	border-radius: 8px;
+	background: #151922;
+}
+
+.modal-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 14px;
+}
+
+.modal-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.modal-help-button {
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border-radius: 999px;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.modal-backdrop-secondary {
+	z-index: 1300;
+}
+
+.nuvio-import-help {
+	color: #aeb7c2;
+	font-size: 13px;
+}
+
+.nuvio-import-help p {
+	margin: 0 0 10px;
+}
+
+.nuvio-import-help-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.nuvio-import-help h3 {
+	margin: 8px 0 6px;
+	color: #e6edf7;
+	font-size: 14px;
+}
+
+.nuvio-import-help ol {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.nuvio-import-help li {
+	margin: 4px 0;
+	line-height: 1.35;
+}
+
 .bulk-results {
 	margin-top: 14px;
 	overflow-x: auto;

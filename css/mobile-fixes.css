@@ -39,6 +39,48 @@
 		right: 14px;
 		bottom: 88px;
 	}
+
+	.nuvio-export-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.nuvio-preview-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.modal-panel {
+		max-height: calc(100vh - 24px);
+		padding: 14px;
+	}
+
+	.modal-backdrop {
+		padding: 12px;
+	}
+
+	.modal-header h2 {
+		font-size: 22px;
+	}
+
+	.nuvio-toggle-option {
+		min-height: auto;
+	}
+
+	.nuvio-preview-grid {
+		max-width: none;
+	}
+
+	.nuvio-toggle-help {
+		max-width: none;
+	}
+
+	.nuvio-import-help-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.modal-footer {
+		align-items: flex-start;
+		gap: 12px;
+	}
 }
 
 @media (max-width: 390px) {

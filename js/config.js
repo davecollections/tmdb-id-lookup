@@ -1,4 +1,5 @@
 const TMDB_API_KEY = "__TMDB_API_KEY__";
+const TMDB_PROXY_BASE_URL = "https://tmdb-id-lookup-proxy.dpegan20.workers.dev";
 const CACHE_VERSION = "__APP_ASSET_VERSION__";
 
 const countryDisplayNames =

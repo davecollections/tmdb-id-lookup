@@ -69,6 +69,127 @@
 			<div id="bulk-people-results" class="bulk-results"></div>
 		</section>
 
+		<div id="nuvio-export-modal" class="modal-backdrop" hidden>
+			<div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="nuvio-export-title">
+				<div class="modal-header">
+					<h2 id="nuvio-export-title">Create Nuvio JSON</h2>
+					<button id="close-nuvio-export-modal" class="modal-close" type="button" aria-label="Close Nuvio JSON export">
+						&times;
+					</button>
+				</div>
+
+				<div class="nuvio-export-options" aria-label="Nuvio JSON export options">
+					<div class="nuvio-export-grid">
+						<label>
+							Collection name
+							<input id="nuvio-collection-name" placeholder="Favourite actors" />
+						</label>
+
+						<label>
+							Media type
+							<select id="nuvio-media-type">
+								<option value="MOVIE" selected>Movie</option>
+								<option value="TV">TV</option>
+							</select>
+						</label>
+
+						<label>
+							Source type
+							<select id="nuvio-source-type">
+								<option value="ACTOR" selected>Actors</option>
+								<option value="DIRECTOR">Directors</option>
+								<option value="PERSON">People</option>
+							</select>
+						</label>
+
+						<label>
+							Cover image URL
+							<input id="nuvio-cover-image-url" placeholder="Leave blank to use default" />
+						</label>
+
+						<label>
+							Folder hero URL
+							<input id="nuvio-folder-hero-url" placeholder="Leave blank to use default" />
+						</label>
+
+						<label class="nuvio-toggle-option">
+							<input id="nuvio-hide-folder-title" type="checkbox" />
+							<span class="nuvio-toggle-copy">
+								<span class="nuvio-toggle-label">Hide folder title</span>
+								<span class="nuvio-toggle-help">Note: TMDB person images do not display the person's name.</span>
+							</span>
+							<span class="nuvio-toggle-track" aria-hidden="true"></span>
+						</label>
+					</div>
+
+					<div class="nuvio-preview-grid" aria-label="Nuvio image previews">
+						<div>
+							<p class="meta">Collection cover preview</p>
+							<img id="nuvio-cover-preview" class="nuvio-image-preview" alt="Nuvio collection cover preview" />
+						</div>
+
+						<div>
+							<p class="meta">Folder hero preview</p>
+							<img id="nuvio-folder-hero-preview" class="nuvio-image-preview" alt="Nuvio folder hero preview" />
+						</div>
+					</div>
+				</div>
+
+				<div class="modal-footer">
+					<button id="open-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-nuvio-export" type="button">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="nuvio-import-help-modal" class="modal-backdrop modal-backdrop-secondary" hidden>
+			<div class="modal-panel modal-panel-help" role="dialog" aria-modal="true" aria-labelledby="nuvio-import-help-title">
+				<div class="modal-header">
+					<h2 id="nuvio-import-help-title">Import into Nuvio</h2>
+					<button id="close-nuvio-import-help" class="modal-close" type="button" aria-label="Close Nuvio import help">
+						&times;
+					</button>
+				</div>
+
+				<div class="nuvio-import-help">
+					<p>Nuvio is currently in beta, so these import steps may change.</p>
+
+					<div class="nuvio-import-help-grid">
+						<div>
+							<h3>Web login</h3>
+							<ol>
+								<li>Log in to Nuvio.</li>
+								<li>Select the correct profile.</li>
+								<li>Open Collections.</li>
+								<li>Click Import.</li>
+								<li>Select the downloaded JSON file.</li>
+								<li>Choose Add as new, Merge, or Overwrite.</li>
+								<li>Click Add collections.</li>
+							</ol>
+						</div>
+
+						<div>
+							<h3>TV app</h3>
+							<ol>
+								<li>Open Nuvio and choose a profile.</li>
+								<li>Open Addons, then Collections.</li>
+								<li>Select Import.</li>
+								<li>Choose From File or From URL.</li>
+								<li>For From File, load the JSON from Downloads, then confirm import.</li>
+								<li>For From URL, enter the URL, fetch it, then confirm import.</li>
+							</ol>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="section-divider"></div>
 
 		<div class="cached-tools-section">

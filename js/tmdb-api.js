@@ -1,3 +1,28 @@
+function hasConfiguredTmdbProxy() {
+	return TMDB_PROXY_BASE_URL && !TMDB_PROXY_BASE_URL.includes("__");
+}
+
+function hasConfiguredTmdbApiKey() {
+	return TMDB_API_KEY && !TMDB_API_KEY.includes("__");
+}
+
+function tmdbApiUrl(path, params = {}) {
+	const baseUrl = hasConfiguredTmdbProxy() ? TMDB_PROXY_BASE_URL : "https://api.themoviedb.org";
+	const url = new URL(path, baseUrl);
+
+	Object.entries(params).forEach(([key, value]) => {
+		if (value !== undefined && value !== null && value !== "") {
+			url.searchParams.set(key, value);
+		}
+	});
+
+	if (!hasConfiguredTmdbProxy() && hasConfiguredTmdbApiKey()) {
+		url.searchParams.set("api_key", TMDB_API_KEY);
+	}
+
+	return url.toString();
+}
+
 async function tmdbJson(url) {
 	const res = await fetch(url);
 
@@ -48,9 +73,7 @@ async function tmdbJsonWithStatus(url) {
 
 async function getPersonKnownCredits(personId) {
 	try {
-		const credits = await tmdbJson(
-			`https://api.themoviedb.org/3/person/${personId}/combined_credits?api_key=${TMDB_API_KEY}`,
-		);
+		const credits = await tmdbJson(tmdbApiUrl(`/3/person/${personId}/combined_credits`));
 
 		if (!credits) {
 			return "\u2014";
