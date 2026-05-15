@@ -98,6 +98,16 @@
 	.nuvio-export-grid-single {
 		grid-template-columns: 1fr;
 	}
+
+	.genre-export-layout,
+	.genre-merge-options {
+		grid-template-columns: 1fr;
+	}
+
+	.genre-preview-poster,
+	.genre-preview-landscape {
+		width: min(220px, 100%);
+	}
 }
 
 @media (max-width: 390px) {

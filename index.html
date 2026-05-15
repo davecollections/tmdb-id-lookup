@@ -287,6 +287,99 @@
 			</div>
 		</div>
 
+		<div id="genre-nuvio-export-modal" class="modal-backdrop" hidden>
+			<div class="modal-panel modal-panel-genre" role="dialog" aria-modal="true" aria-labelledby="genre-nuvio-export-title">
+				<div class="modal-header">
+					<h2 id="genre-nuvio-export-title">Create Genre Nuvio JSON</h2>
+					<button id="close-genre-nuvio-export" class="modal-close" type="button" aria-label="Close genre Nuvio JSON export">
+						&times;
+					</button>
+				</div>
+
+				<div class="genre-export-layout">
+					<div class="nuvio-export-grid">
+						<label>
+							Collection name
+							<input id="genre-nuvio-collection-name" placeholder="Genres" />
+						</label>
+
+						<label>
+							View mode
+							<select id="genre-nuvio-view-mode">
+								<option value="TABBED_GRID" selected>Tabbed</option>
+								<option value="ROWS">Rows</option>
+								<option value="FOLLOW_LAYOUT">Follow</option>
+							</select>
+						</label>
+
+						<label>
+							Artwork shape
+							<select id="genre-nuvio-tile-shape">
+								<option value="POSTER" selected>Poster</option>
+								<option value="LANDSCAPE">Wide</option>
+							</select>
+						</label>
+
+						<label>
+							Date from
+							<input id="genre-nuvio-date-from" type="date" />
+						</label>
+
+						<label>
+							Date to
+							<input id="genre-nuvio-date-to" type="date" />
+						</label>
+
+						<label>
+							Minimum rating
+							<input id="genre-nuvio-min-rating" type="number" min="0" max="10" step="0.1" placeholder="Optional" />
+						</label>
+
+						<label>
+							Language
+							<input id="genre-nuvio-language" maxlength="8" value="en" />
+						</label>
+
+						<label>
+							Country
+							<input id="genre-nuvio-country" maxlength="8" value="US" />
+						</label>
+					</div>
+
+					<div class="genre-export-preview">
+						<p class="meta">Artwork preview</p>
+						<img id="genre-nuvio-artwork-preview" class="nuvio-image-preview genre-preview-poster" alt="Genre artwork preview" />
+						<p id="genre-nuvio-preview-note" class="meta"></p>
+					</div>
+				</div>
+
+				<div id="genre-nuvio-merge-options" class="genre-merge-options" hidden>
+					<label id="genre-action-adventure-merge-wrap" hidden>
+						Action &amp; Adventure
+						<select id="genre-action-adventure-merge"></select>
+					</label>
+
+					<label id="genre-scifi-fantasy-merge-wrap" hidden>
+						Sci-Fi &amp; Fantasy
+						<select id="genre-scifi-fantasy-merge"></select>
+					</label>
+				</div>
+
+				<p id="genre-nuvio-export-summary" class="meta"></p>
+
+				<div class="modal-footer">
+					<button id="open-genre-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-genre-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-genre-nuvio-export" type="button">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="section-divider"></div>
 
 		<div class="cached-tools-section">
@@ -602,11 +695,41 @@
 				role="tabpanel"
 				aria-labelledby="genre-tab"
 			>
-				<div class="tool-header">
-					<h2>Genre ID Lookup</h2>
-					<p class="meta">
-						Browse official TMDB genre IDs and curated list references for categories TMDB does not expose as genres.
-					</p>
+				<div class="lookup-panel-header">
+					<div>
+						<div class="tool-header">
+							<h2>Genre ID Lookup</h2>
+							<p class="meta">
+								Browse official TMDB genre IDs and curated list references for categories TMDB does not expose as genres.
+							</p>
+						</div>
+
+						<div class="company-summary">
+							<p id="genre-stats" class="company-cache-count"></p>
+							<p id="genre-last-updated" class="company-updated"></p>
+						</div>
+
+						<div class="download-links">
+							<a id="download-genre-csv-link" href="./data/genres.csv" download>Download CSV</a>
+						</div>
+					</div>
+
+					<div class="lookup-panel-actions">
+						<h3>Nuvio JSON export</h3>
+						<p class="lookup-panel-action-copy">Select TMDB genres or curated lists below, then create a Genres collection.</p>
+
+						<div class="preset-actions" aria-label="Genre quick select presets">
+							<span>Quick select</span>
+							<button class="genre-preset-button" type="button" data-genre-preset="movies" aria-pressed="false">Movies</button>
+							<button class="genre-preset-button" type="button" data-genre-preset="tv" aria-pressed="false">TV</button>
+						</div>
+
+						<div class="selection-actions" aria-label="Selected genres actions">
+							<span id="genre-selection-status">0 selected</span>
+							<button id="create-genre-nuvio-json" type="button" disabled>Create JSON</button>
+							<button id="clear-genre-selection" type="button" disabled>Clear</button>
+						</div>
+					</div>
 				</div>
 
 				<div class="search-row">
@@ -624,21 +747,62 @@
 
 				<p id="genre-result-count"></p>
 
+				<div class="controls-row">
+					<div class="rows-control">
+						<label for="genre-rows-per-page">Rows per page</label>
+
+						<select id="genre-rows-per-page">
+							<option value="25" selected>25</option>
+							<option value="50">50</option>
+							<option value="100">100</option>
+							<option value="250">250</option>
+						</select>
+					</div>
+
+					<div class="pagination">
+						<button id="genre-first-page" type="button">First</button>
+						<button id="genre-prev-page" type="button" aria-label="Previous genre page">&lt;</button>
+
+						<span id="genre-page-status" class="page-status"></span>
+
+						<button id="genre-next-page" type="button" aria-label="Next genre page">&gt;</button>
+						<button id="genre-last-page" type="button">Last</button>
+					</div>
+				</div>
+
 				<div class="table-wrap">
 					<table>
 						<thead>
 							<tr>
-								<th>Name</th>
-								<th>TMDB ID <span class="header-note">Click ID to copy</span></th>
-								<th>Type</th>
-								<th>Media</th>
-								<th>Title Count</th>
+								<th>Select</th>
+								<th class="genre-sortable" data-genre-sort="name">Name <span class="sort-indicator"></span></th>
+								<th class="genre-sortable" data-genre-sort="id">
+									TMDB ID
+									<span class="sort-indicator"></span>
+									<span class="header-note">Click ID to copy</span>
+								</th>
+								<th class="genre-sortable" data-genre-sort="type">Type <span class="sort-indicator"></span></th>
+								<th class="genre-sortable" data-genre-sort="media">Media <span class="sort-indicator"></span></th>
+								<th class="genre-sortable" data-genre-sort="title_count">
+									Title Count <span class="sort-indicator"></span>
+									<span class="movie-count-note">TMDB Discover total</span>
+								</th>
 								<th>TMDB</th>
 							</tr>
 						</thead>
 
 						<tbody id="genre-results"></tbody>
 					</table>
+				</div>
+
+				<div class="pagination pagination-bottom">
+					<button id="genre-first-page-bottom" type="button">First</button>
+					<button id="genre-prev-page-bottom" type="button" aria-label="Previous genre page">&lt;</button>
+
+					<span id="genre-page-status-bottom" class="page-status"></span>
+
+					<button id="genre-next-page-bottom" type="button" aria-label="Next genre page">&gt;</button>
+					<button id="genre-last-page-bottom" type="button">Last</button>
 				</div>
 			</section>
 		</div>
