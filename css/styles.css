@@ -750,7 +750,15 @@ th.sortable:hover {
 }
 
 .modal-panel-genre {
-	width: min(820px, 100%);
+	width: min(880px, 100%);
+}
+
+.modal-panel-genre.genre-modal-poster {
+	width: min(780px, 100%);
+}
+
+.modal-panel-genre.genre-modal-wide {
+	width: min(880px, 100%);
 }
 
 .modal-header {
@@ -892,9 +900,54 @@ th.sortable:hover {
 
 .genre-export-layout {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 220px;
-	gap: 18px;
+	grid-template-columns: 540px 240px;
+	gap: 16px;
 	align-items: start;
+}
+
+.genre-modal-poster .genre-export-layout {
+	grid-template-columns: 540px 150px;
+}
+
+.genre-export-fields {
+	grid-template-columns: 260px 260px;
+	gap: 12px 14px;
+}
+
+.genre-compact-fields {
+	display: grid;
+	grid-template-columns: 100px 68px 68px;
+	gap: 6px;
+	align-items: start;
+}
+
+.genre-compact-fields label {
+	min-width: 0;
+}
+
+#genre-nuvio-min-rating,
+#genre-nuvio-language,
+#genre-nuvio-country {
+	appearance: textfield;
+	display: block;
+	height: 42px !important;
+	min-height: 42px !important;
+	max-height: 42px !important;
+	padding: 0 10px !important;
+	border-radius: 8px;
+	font-size: 14px;
+	line-height: 42px !important;
+	box-sizing: border-box;
+}
+
+#genre-nuvio-min-rating::-webkit-outer-spin-button,
+#genre-nuvio-min-rating::-webkit-inner-spin-button {
+	margin: 0;
+	appearance: none;
+}
+
+.genre-export-fields input[type="date"] {
+	max-width: 260px;
 }
 
 .genre-export-preview {
@@ -907,27 +960,38 @@ th.sortable:hover {
 	margin: 0;
 }
 
-.genre-preview-poster {
-	width: 180px;
+.genre-export-preview .genre-preview-poster {
+	width: 126px;
+	height: 189px;
 	aspect-ratio: 2 / 3;
-	object-fit: cover;
+	object-fit: contain;
+	object-position: center;
 }
 
-.genre-preview-landscape {
-	width: 220px;
+.genre-export-preview .genre-preview-landscape {
+	width: 240px;
+	height: auto;
 	aspect-ratio: 16 / 9;
-	object-fit: cover;
+	object-fit: contain;
+	object-position: center;
 }
 
 .genre-merge-options {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 12px;
+	grid-template-columns: repeat(2, 252px);
+	width: max-content;
+	max-width: 100%;
+	gap: 10px;
 	margin-top: 14px;
-	padding: 12px;
+	padding: 10px;
 	border: 1px solid #243040;
 	border-radius: 10px;
 	background: #111720;
+}
+
+.genre-merge-options[hidden],
+.genre-merge-options label[hidden] {
+	display: none !important;
 }
 
 .genre-merge-options label {

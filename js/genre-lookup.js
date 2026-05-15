@@ -33,10 +33,14 @@ const genrePosterArtworkFiles = new Set([
 	"War",
 	"Western",
 ]);
-const genreWideArtworkNames = {};
+const genreWideArtworkNames = {
+	Action: "Action",
+};
+const genreWideArtworkFiles = new Set(["Action"]);
 const genreSpecialMergeRules = {
 	"Action & Adventure": ["Action", "Adventure"],
 	"Sci-Fi & Fantasy": ["Science Fiction", "Fantasy"],
+	"War & Politics": ["War"],
 };
 const genreTmdbDiscoverSort = "popularity.desc";
 const genreCuratedListSort = "vote_average.desc";
@@ -63,6 +67,10 @@ function isExportableGenreReference(genre) {
 
 function getGenreSelectionKey(genre) {
 	return `${genre.media}:${genre.id}:${genre.name}`;
+}
+
+function isGenreSelectedByNameAndMedia(name, media) {
+	return getSelectedGenres().some((genre) => genre.name === name && genre.media === media);
 }
 
 function getSelectedGenres() {
@@ -366,6 +374,14 @@ function getGenreArtworkUrl(genreName, tileShape) {
 
 	const artworkName = getGenreArtworkName(genreName, tileShape);
 
+	if (tileShape === "LANDSCAPE") {
+		if (!genreWideArtworkFiles.has(artworkName)) {
+			return "";
+		}
+
+		return `./assets/genre-wide-test/${encodeURIComponent(artworkName)}.png`;
+	}
+
 	if (tileShape !== "LANDSCAPE" && !genrePosterArtworkFiles.has(artworkName)) {
 		return "";
 	}
@@ -387,6 +403,7 @@ function getGenreNuvioOptions() {
 		country: document.getElementById("genre-nuvio-country").value.trim(),
 		actionAdventureMerge: document.getElementById("genre-action-adventure-merge").value || "standalone",
 		scifiFantasyMerge: document.getElementById("genre-scifi-fantasy-merge").value || "standalone",
+		warPoliticsMerge: document.getElementById("genre-war-politics-merge").value || "standalone",
 	};
 }
 
@@ -470,17 +487,30 @@ function updateGenreMergeOptions() {
 	const selectedNames = new Set(selectedGenres.map((genre) => genre.name));
 	const movieGenreNames = getSelectedMovieGenreNames();
 	const container = document.getElementById("genre-nuvio-merge-options");
+	const controlIds = {
+		"Action & Adventure": {
+			wrap: "genre-action-adventure-merge-wrap",
+			select: "genre-action-adventure-merge",
+		},
+		"Sci-Fi & Fantasy": {
+			wrap: "genre-scifi-fantasy-merge-wrap",
+			select: "genre-scifi-fantasy-merge",
+		},
+		"War & Politics": {
+			wrap: "genre-war-politics-merge-wrap",
+			select: "genre-war-politics-merge",
+		},
+	};
 	let hasVisibleOption = false;
 
 	for (const [specialName, targetNames] of Object.entries(genreSpecialMergeRules)) {
-		const wrapId = specialName === "Action & Adventure" ? "genre-action-adventure-merge-wrap" : "genre-scifi-fantasy-merge-wrap";
-		const selectId = specialName === "Action & Adventure" ? "genre-action-adventure-merge" : "genre-scifi-fantasy-merge";
-		const wrap = document.getElementById(wrapId);
-		const select = document.getElementById(selectId);
+		const wrap = document.getElementById(controlIds[specialName].wrap);
+		const select = document.getElementById(controlIds[specialName].select);
 		const availableTargets = targetNames.filter((name) => movieGenreNames.has(name));
 
-		if (!selectedNames.has(specialName) || !availableTargets.length) {
+		if (!isGenreSelectedByNameAndMedia(specialName, "TV") || !availableTargets.length) {
 			wrap.hidden = true;
+			select.replaceChildren();
 			continue;
 		}
 
@@ -502,6 +532,23 @@ function updateGenreMergeOptions() {
 	container.hidden = !hasVisibleOption;
 }
 
+function addSpecialMergedGenreSources(folderMap, genre, options, mergeTarget, targetNames) {
+	if (mergeTarget === "both") {
+		for (const targetName of targetNames) {
+			addGenreFolderSource(folderMap, targetName, genre, options);
+		}
+
+		return true;
+	}
+
+	if (targetNames.includes(mergeTarget)) {
+		addGenreFolderSource(folderMap, mergeTarget, genre, options);
+		return true;
+	}
+
+	return false;
+}
+
 function addGenreFolderSource(folderMap, folderName, genre, options) {
 	if (!folderMap.has(folderName)) {
 		folderMap.set(folderName, []);
@@ -521,17 +568,7 @@ function buildGenreFolderSourceMap(options) {
 		}
 
 		if (genre.name === "Action & Adventure" && genreSpecialMergeRules["Action & Adventure"].some((name) => movieGenreNames.has(name))) {
-			const mergeTarget = options.actionAdventureMerge;
-
-			if (mergeTarget === "Action" || mergeTarget === "both") {
-				addGenreFolderSource(folderMap, "Action", genre, options);
-			}
-
-			if (mergeTarget === "Adventure" || mergeTarget === "both") {
-				addGenreFolderSource(folderMap, "Adventure", genre, options);
-			}
-
-			if (mergeTarget !== "Action" && mergeTarget !== "Adventure" && mergeTarget !== "both") {
+			if (!addSpecialMergedGenreSources(folderMap, genre, options, options.actionAdventureMerge, genreSpecialMergeRules["Action & Adventure"])) {
 				addGenreFolderSource(folderMap, genre.name, genre, options);
 			}
 
@@ -539,17 +576,15 @@ function buildGenreFolderSourceMap(options) {
 		}
 
 		if (genre.name === "Sci-Fi & Fantasy" && genreSpecialMergeRules["Sci-Fi & Fantasy"].some((name) => movieGenreNames.has(name))) {
-			const mergeTarget = options.scifiFantasyMerge;
-
-			if (mergeTarget === "Science Fiction" || mergeTarget === "both") {
-				addGenreFolderSource(folderMap, "Science Fiction", genre, options);
+			if (!addSpecialMergedGenreSources(folderMap, genre, options, options.scifiFantasyMerge, genreSpecialMergeRules["Sci-Fi & Fantasy"])) {
+				addGenreFolderSource(folderMap, genre.name, genre, options);
 			}
 
-			if (mergeTarget === "Fantasy" || mergeTarget === "both") {
-				addGenreFolderSource(folderMap, "Fantasy", genre, options);
-			}
+			continue;
+		}
 
-			if (mergeTarget !== "Science Fiction" && mergeTarget !== "Fantasy" && mergeTarget !== "both") {
+		if (genre.name === "War & Politics" && genreSpecialMergeRules["War & Politics"].some((name) => movieGenreNames.has(name))) {
+			if (!addSpecialMergedGenreSources(folderMap, genre, options, options.warPoliticsMerge, genreSpecialMergeRules["War & Politics"])) {
 				addGenreFolderSource(folderMap, genre.name, genre, options);
 			}
 
@@ -603,19 +638,18 @@ function createGenreNuvioJson() {
 
 function updateGenreArtworkPreview() {
 	const options = getGenreNuvioOptions();
+	const modal = document.querySelector("#genre-nuvio-export-modal .modal-panel-genre");
 	const preview = document.getElementById("genre-nuvio-artwork-preview");
-	const note = document.getElementById("genre-nuvio-preview-note");
 	const folderMap = buildGenreFolderSourceMap(options);
 	const firstFolderName = [...folderMap.keys()].find((folderName) => getGenreArtworkUrl(folderName, options.tileShape));
 	const artworkUrl = firstFolderName ? getGenreArtworkUrl(firstFolderName, options.tileShape) : "";
 
+	modal.classList.toggle("genre-modal-poster", options.tileShape !== "LANDSCAPE");
+	modal.classList.toggle("genre-modal-wide", options.tileShape === "LANDSCAPE");
 	preview.classList.toggle("genre-preview-landscape", options.tileShape === "LANDSCAPE");
 	preview.classList.toggle("genre-preview-poster", options.tileShape !== "LANDSCAPE");
 	preview.hidden = !artworkUrl;
 	preview.src = artworkUrl;
-	note.textContent = artworkUrl
-		? `Preview uses ${firstFolderName}.`
-		: "No artwork preview available for the current shape.";
 }
 
 function openGenreNuvioExportModal() {
@@ -786,6 +820,7 @@ function initGenreLookup() {
 	document.getElementById("genre-nuvio-tile-shape").addEventListener("change", updateGenreArtworkPreview);
 	document.getElementById("genre-action-adventure-merge").addEventListener("change", updateGenreArtworkPreview);
 	document.getElementById("genre-scifi-fantasy-merge").addEventListener("change", updateGenreArtworkPreview);
+	document.getElementById("genre-war-politics-merge").addEventListener("change", updateGenreArtworkPreview);
 	document.getElementById("genre-nuvio-export-modal").addEventListener("click", (event) => {
 		if (event.target.id === "genre-nuvio-export-modal") {
 			closeGenreNuvioExportModal();

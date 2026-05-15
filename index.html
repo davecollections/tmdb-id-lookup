@@ -297,7 +297,7 @@
 				</div>
 
 				<div class="genre-export-layout">
-					<div class="nuvio-export-grid">
+					<div class="nuvio-export-grid genre-export-fields">
 						<label>
 							Collection name
 							<input id="genre-nuvio-collection-name" placeholder="Genres" />
@@ -320,6 +320,23 @@
 							</select>
 						</label>
 
+						<div class="genre-compact-fields">
+							<label>
+								Minimum rating
+								<input id="genre-nuvio-min-rating" type="number" min="0" max="10" step="0.1" placeholder="eg 7.0" />
+							</label>
+
+							<label>
+								Language
+								<input id="genre-nuvio-language" maxlength="8" value="en" />
+							</label>
+
+							<label>
+								Country
+								<input id="genre-nuvio-country" maxlength="8" value="US" />
+							</label>
+						</div>
+
 						<label>
 							Date from
 							<input id="genre-nuvio-date-from" type="date" />
@@ -329,27 +346,11 @@
 							Date to
 							<input id="genre-nuvio-date-to" type="date" />
 						</label>
-
-						<label>
-							Minimum rating
-							<input id="genre-nuvio-min-rating" type="number" min="0" max="10" step="0.1" placeholder="Optional" />
-						</label>
-
-						<label>
-							Language
-							<input id="genre-nuvio-language" maxlength="8" value="en" />
-						</label>
-
-						<label>
-							Country
-							<input id="genre-nuvio-country" maxlength="8" value="US" />
-						</label>
 					</div>
 
 					<div class="genre-export-preview">
 						<p class="meta">Artwork preview</p>
 						<img id="genre-nuvio-artwork-preview" class="nuvio-image-preview genre-preview-poster" alt="Genre artwork preview" />
-						<p id="genre-nuvio-preview-note" class="meta"></p>
 					</div>
 				</div>
 
@@ -362,6 +363,11 @@
 					<label id="genre-scifi-fantasy-merge-wrap" hidden>
 						Sci-Fi &amp; Fantasy
 						<select id="genre-scifi-fantasy-merge"></select>
+					</label>
+
+					<label id="genre-war-politics-merge-wrap" hidden>
+						War &amp; Politics
+						<select id="genre-war-politics-merge"></select>
 					</label>
 				</div>
 

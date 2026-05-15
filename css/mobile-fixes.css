@@ -104,9 +104,26 @@
 		grid-template-columns: 1fr;
 	}
 
-	.genre-preview-poster,
-	.genre-preview-landscape {
+	.genre-export-fields {
+		grid-template-columns: 1fr;
+	}
+
+	.genre-export-layout {
+		gap: 14px;
+	}
+
+	.genre-compact-fields {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.genre-export-preview .genre-preview-poster,
+	.genre-export-preview .genre-preview-landscape {
 		width: min(220px, 100%);
+	}
+
+	.genre-export-preview .genre-preview-poster {
+		height: auto;
+		aspect-ratio: 2 / 3;
 	}
 }
 
