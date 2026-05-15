@@ -34,9 +34,13 @@ const genrePosterArtworkFiles = new Set([
 	"Western",
 ]);
 const genreWideArtworkNames = {
-	Action: "Action",
+	Action: "action wide",
+	Adventure: "adventure wide",
+	Animation: "animation wide",
+	Comedy: "comedy wide",
+	Crime: "crime wide",
 };
-const genreWideArtworkFiles = new Set(["Action"]);
+const genreWideArtworkFiles = new Set(["action wide", "adventure wide", "animation wide", "comedy wide", "crime wide"]);
 const genreSpecialMergeRules = {
 	"Action & Adventure": ["Action", "Adventure"],
 	"Sci-Fi & Fantasy": ["Science Fiction", "Fantasy"],
@@ -379,7 +383,9 @@ function getGenreArtworkUrl(genreName, tileShape) {
 			return "";
 		}
 
-		return `./assets/genre-wide-test/${encodeURIComponent(artworkName)}.png`;
+		const encodedWideName = encodeURIComponent(artworkName).replace(/%20/g, "%20");
+
+		return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection%20covers/genre/${encodedWideName}.jpg`;
 	}
 
 	if (tileShape !== "LANDSCAPE" && !genrePosterArtworkFiles.has(artworkName)) {
