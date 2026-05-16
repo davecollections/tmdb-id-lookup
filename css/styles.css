@@ -1059,15 +1059,20 @@ th.sortable:hover {
 }
 
 .nuvio-import-metadata-note {
-	margin: 18px auto 0;
+	margin: 24px auto 0;
 	max-width: 560px;
+	padding: 10px 12px;
+	border: 1px solid #243040;
+	border-radius: 10px;
+	background: #111720;
 	text-align: center;
 }
 
 .nuvio-import-help-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 14px;
+	gap: 24px;
+	text-align: left;
 }
 
 .nuvio-import-help h3 {
@@ -1079,6 +1084,7 @@ th.sortable:hover {
 .nuvio-import-help ol {
 	margin: 0;
 	padding-left: 18px;
+	text-align: left;
 }
 
 .nuvio-import-help li {

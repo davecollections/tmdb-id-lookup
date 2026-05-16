@@ -48,6 +48,7 @@ const genreSpecialMergeRules = {
 };
 const genreTmdbDiscoverSort = "popularity.desc";
 const genreCuratedListSort = "vote_average.desc";
+const genreDefaultCollectionNames = new Set(["Genres", "Movie Genre", "TV Series Genre"]);
 
 function createGenreNuvioExportId(prefix) {
 	if (window.crypto?.randomUUID) {
@@ -413,6 +414,22 @@ function getGenreNuvioOptions() {
 	};
 }
 
+function getGenreDefaultCollectionName() {
+	const selectedGenres = getSelectedGenres().filter(isExportableGenreReference);
+	const hasMovies = selectedGenres.some((genre) => genre.media === "Movie");
+	const hasTv = selectedGenres.some((genre) => genre.media === "TV");
+
+	if (hasMovies && !hasTv) {
+		return "Movie Genre";
+	}
+
+	if (hasTv && !hasMovies) {
+		return "TV Series Genre";
+	}
+
+	return "Genres";
+}
+
 function createGenreFilters(genre, options) {
 	const filters = {
 		withGenres: String(genre.id),
@@ -455,7 +472,7 @@ function createGenreSource(genre, options) {
 	}
 
 	return {
-		title: "TMDB Discover",
+		title: `${genre.name} ${genre.media === "TV" ? "Series" : "Movies"}`,
 		sortBy: genreTmdbDiscoverSort,
 		tmdbId: null,
 		filters: createGenreFilters(genre, options),
@@ -664,9 +681,10 @@ function openGenreNuvioExportModal() {
 	}
 
 	const nameInput = document.getElementById("genre-nuvio-collection-name");
+	const defaultCollectionName = getGenreDefaultCollectionName();
 
-	if (!nameInput.value.trim()) {
-		nameInput.value = "Genres";
+	if (!nameInput.value.trim() || genreDefaultCollectionNames.has(nameInput.value.trim())) {
+		nameInput.value = defaultCollectionName;
 	}
 
 	updateGenreMergeOptions();
