@@ -55,6 +55,7 @@ const genreWideArtworkNames = {
 	Kids: "kids wide",
 	Music: "music wide",
 	Musicals: "musicals wide",
+	Mystery: "mystery wide",
 	News: "news wide",
 	Reality: "reality wide",
 	Romance: "romance wide",
