@@ -100,6 +100,8 @@
 	}
 
 	.genre-export-layout,
+	.genre-modal-poster .genre-export-layout,
+	.genre-modal-wide .genre-export-layout,
 	.genre-merge-options {
 		grid-template-columns: 1fr;
 	}
