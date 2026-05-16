@@ -39,6 +39,41 @@ const companyPresetCollectionNames = {
 };
 const companyDefaultCollectionNames = new Set(["Studios", ...Object.values(companyPresetCollectionNames)]);
 const networkDefaultCollectionNames = new Set(["Networks", ...Object.values(networkPresetCollectionNames)]);
+const curatedCompanyCoverUrls = {
+	3: "https://i.postimg.cc/1XFm0LjT/Pixar.png",
+	21: "https://i.postimg.cc/SxQF7DDY/MGM.png",
+	521: "https://i.postimg.cc/vZhWY6kH/Dream-Works.png",
+	2251: "https://i.postimg.cc/fTYXnL1P/Sony-Pictures-Animation.png",
+	2785: "https://i.postimg.cc/mrdNwFyC/Cartoon-Network.png",
+	3475: "https://i.postimg.cc/RFkWGgsv/Disney-Studios.png",
+	4859: "https://i.postimg.cc/QC78gRyR/Nickelodeon.png",
+	6125: "https://i.postimg.cc/RFkWGgsv/Disney-Studios.png",
+	6704: "https://i.postimg.cc/8c6Q6Mgj/Illumination.png",
+	7899: "https://i.postimg.cc/mrdNwFyC/Cartoon-Network.png",
+	10342: "https://i.postimg.cc/WzkLkgcd/Studio-Ghibli.png",
+	42141: "https://i.postimg.cc/vZhWY6kH/Dream-Works.png",
+};
+const curatedNetworkCoverUrls = {
+	2: "https://nuvioapp.space/uploads/covers/5ba4170a-5c7d-429e-af49-9d5735dfa229.jpg",
+	4: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/BBC_One_logo_2021.svg/960px-BBC_One_logo_2021.svg.png",
+	6: "https://nuvioapp.space/uploads/covers/257cb2c0-d716-427f-a60e-a7ad8307df49.jpg",
+	9: "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/ITV1_logo_%282022%29.svg/960px-ITV1_logo_%282022%29.svg.png",
+	16: "https://nuvioapp.space/uploads/covers/772006b6-af76-4fa5-85eb-04ab61f241cd.png",
+	26: "https://i.postimg.cc/mgLCMLrz/Channel-4.png",
+	213: "https://i.postimg.cc/bYSwjtwD/Netflix.png",
+	247: "https://i.postimg.cc/fydz76r8/You-Tube.png",
+	318: "https://i.postimg.cc/J0Xr392d/Starz.png",
+	453: "https://i.postimg.cc/QC78gRzr/Hulu.png",
+	1024: "https://i.postimg.cc/RCJZzHZH/Prime.png",
+	1112: "https://i.postimg.cc/59Q2MC20/Crunchyroll.png",
+	1255: "https://nuvioapp.space/uploads/covers/33c0ffcf-d617-475a-89d2-20649fd4ba26.png",
+	2552: "https://i.postimg.cc/MHB60hLx/Apple-TV.png",
+	2739: "https://i.postimg.cc/nV9htDhM/Disney.png",
+	2949: "https://i.postimg.cc/DwtM86Jj/Shudder.png",
+	3186: "https://i.postimg.cc/QC78gRzh/HBO-max.png",
+	3353: "https://i.postimg.cc/Kc38yM8g/Peacock.png",
+	4330: "https://i.postimg.cc/QC78gRzZ/Paramount.png",
+};
 
 function createNuvioExportId(prefix) {
 	if (window.crypto?.randomUUID) {
@@ -569,6 +604,14 @@ function getNetworkLogoUrl(network, size = "w500") {
 	return network.logo_path ? `https://image.tmdb.org/t/p/${size}${network.logo_path}` : "";
 }
 
+function getCompanyNuvioCoverUrl(company) {
+	return curatedCompanyCoverUrls[Number(company.id)] || getCompanyLogoUrl(company);
+}
+
+function getNetworkNuvioCoverUrl(network) {
+	return curatedNetworkCoverUrls[Number(network.id)] || getNetworkLogoUrl(network);
+}
+
 function getCompanyNuvioOptions() {
 	return {
 		collectionName: document.getElementById("company-nuvio-collection-name").value.trim() || "Studios",
@@ -621,7 +664,7 @@ function createCompanyNuvioJson() {
 		focusGifUrl: "",
 		heroVideoUrl: "",
 		titleLogoUrl: "",
-		coverImageUrl: options.useLogos ? getCompanyLogoUrl(company) : "",
+		coverImageUrl: options.useLogos ? getCompanyNuvioCoverUrl(company) : "",
 		catalogSources: [],
 		focusGifEnabled: false,
 		heroBackdropUrl: "",
@@ -764,7 +807,7 @@ function createNetworkNuvioJson() {
 		focusGifUrl: "",
 		heroVideoUrl: "",
 		titleLogoUrl: "",
-		coverImageUrl: options.useLogos ? getNetworkLogoUrl(network) : "",
+		coverImageUrl: options.useLogos ? getNetworkNuvioCoverUrl(network) : "",
 		catalogSources: [],
 		focusGifEnabled: false,
 		heroBackdropUrl: "",
