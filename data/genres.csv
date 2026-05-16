@@ -1,0 +1,37 @@
+name,tmdb_id,type,media,notes,url
+Action,28,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=28
+Adventure,12,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=12
+Animation,16,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=16
+Comedy,35,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=35
+Crime,80,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=80
+Documentary,99,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=99
+Drama,18,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=18
+Family,10751,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=10751
+Fantasy,14,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=14
+History,36,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=36
+Horror,27,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=27
+Music,10402,Official TMDB Genre,Movie,Official movie genre ID. TMDB does not currently have a separate official Musical genre.,https://www.themoviedb.org/movie?with_genres=10402
+Mystery,9648,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=9648
+Romance,10749,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=10749
+Science Fiction,878,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=878
+TV Movie,10770,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=10770
+Thriller,53,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=53
+War,10752,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=10752
+Western,37,Official TMDB Genre,Movie,Official movie genre ID.,https://www.themoviedb.org/movie?with_genres=37
+Action & Adventure,10759,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10759
+Animation,16,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=16
+Comedy,35,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=35
+Crime,80,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=80
+Documentary,99,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=99
+Drama,18,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=18
+Family,10751,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10751
+Kids,10762,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10762
+Mystery,9648,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=9648
+News,10763,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10763
+Reality,10764,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10764
+Sci-Fi & Fantasy,10765,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10765
+Soap,10766,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10766
+Talk,10767,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10767
+War & Politics,10768,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=10768
+Western,37,Official TMDB Genre,TV,Official TV genre ID.,https://www.themoviedb.org/tv?with_genres=37
+Musicals,5916,Curated TMDB List,Movie,"TMDB user list used as a curated musical reference because TMDB has Music, but no separate official Musical genre.",https://www.themoviedb.org/list/5916-musicals

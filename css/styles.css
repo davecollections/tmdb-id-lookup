@@ -149,6 +149,10 @@ button:disabled {
 	line-height: 1.35;
 }
 
+.lookup-panel-action-copy {
+	max-width: 260px;
+}
+
 .preset-actions {
 	display: flex;
 	flex-wrap: wrap;
@@ -409,6 +413,10 @@ th.sortable:hover {
 	max-width: none;
 	padding: 0;
 	transform: scale(1.05);
+}
+
+.muted-cell {
+	color: #7f8a99;
 }
 
 .logo-box {
@@ -741,6 +749,18 @@ th.sortable:hover {
 	width: min(520px, 100%);
 }
 
+.modal-panel-genre {
+	width: min(880px, 100%);
+}
+
+.modal-panel-genre.genre-modal-poster {
+	width: min(780px, 100%);
+}
+
+.modal-panel-genre.genre-modal-wide {
+	width: min(880px, 100%);
+}
+
 .modal-header {
 	display: flex;
 	align-items: center;
@@ -878,6 +898,115 @@ th.sortable:hover {
 	margin-top: 12px;
 }
 
+.genre-export-layout {
+	display: grid;
+	grid-template-columns: 540px 240px;
+	gap: 16px;
+	align-items: start;
+}
+
+.genre-modal-poster .genre-export-layout {
+	grid-template-columns: 540px 150px;
+}
+
+.genre-export-fields {
+	grid-template-columns: 260px 260px;
+	gap: 12px 14px;
+}
+
+.genre-compact-fields {
+	display: grid;
+	grid-template-columns: 100px 68px 68px;
+	gap: 6px;
+	align-items: start;
+}
+
+.genre-compact-fields label {
+	min-width: 0;
+}
+
+#genre-nuvio-min-rating,
+#genre-nuvio-language,
+#genre-nuvio-country {
+	appearance: textfield;
+	display: block;
+	height: 42px !important;
+	min-height: 42px !important;
+	max-height: 42px !important;
+	padding: 0 10px !important;
+	border-radius: 8px;
+	font-size: 14px;
+	line-height: 42px !important;
+	box-sizing: border-box;
+}
+
+#genre-nuvio-min-rating::-webkit-outer-spin-button,
+#genre-nuvio-min-rating::-webkit-inner-spin-button {
+	margin: 0;
+	appearance: none;
+}
+
+.genre-export-fields input[type="date"] {
+	max-width: 260px;
+}
+
+.genre-export-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.genre-export-preview .meta {
+	margin: 0;
+}
+
+.genre-export-preview .genre-preview-poster {
+	width: 126px;
+	height: 189px;
+	aspect-ratio: 2 / 3;
+	object-fit: contain;
+	object-position: center;
+}
+
+.genre-export-preview .genre-preview-landscape {
+	width: 240px;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	object-fit: contain;
+	object-position: center;
+}
+
+.genre-merge-options {
+	display: grid;
+	grid-template-columns: repeat(2, 252px);
+	width: max-content;
+	max-width: 100%;
+	gap: 10px;
+	margin-top: 14px;
+	padding: 10px;
+	border: 1px solid #243040;
+	border-radius: 10px;
+	background: #111720;
+}
+
+.genre-merge-options[hidden],
+.genre-merge-options label[hidden] {
+	display: none !important;
+}
+
+.genre-merge-options label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	color: #aeb7c2;
+	font-size: 13px;
+}
+
+.genre-merge-options select {
+	width: 100%;
+	max-width: none;
+}
+
 .nuvio-image-preview {
 	display: block;
 	width: 100%;
@@ -930,15 +1059,20 @@ th.sortable:hover {
 }
 
 .nuvio-import-metadata-note {
-	margin: 18px auto 0;
+	margin: 24px auto 0;
 	max-width: 560px;
+	padding: 10px 12px;
+	border: 1px solid #243040;
+	border-radius: 10px;
+	background: #111720;
 	text-align: center;
 }
 
 .nuvio-import-help-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 14px;
+	gap: 24px;
+	text-align: left;
 }
 
 .nuvio-import-help h3 {
@@ -950,6 +1084,7 @@ th.sortable:hover {
 .nuvio-import-help ol {
 	margin: 0;
 	padding-left: 18px;
+	text-align: left;
 }
 
 .nuvio-import-help li {
