@@ -8,39 +8,66 @@ let currentGenrePage = 1;
 let genreRowsPerPage = 25;
 let genreCountsUpdatedAt = "";
 const selectedGenreKeys = new Set();
-const genrePosterArtworkNames = {
-	"Science Fiction": "Sci-Fi",
+const genreBackdropImageUrl = "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/backdrops/genre/genre%20hero%20backdrop.jpg";
+const genrePosterArtworkFiles = {
+	Action: "Action",
+	"Action & Adventure": "action_and_adventure",
+	Adventure: "Adventure",
+	Animation: "Animation",
+	Comedy: "Comedy",
+	Crime: "crime",
+	Documentary: "Documentary",
+	Drama: "Drama",
+	Family: "family",
+	Fantasy: "Fantasy",
+	History: "history",
+	Horror: "Horror",
+	Kids: "kids",
+	Music: "Music",
 	Musicals: "Musical",
+	Mystery: "Mystery",
+	News: "news",
+	Reality: "reality",
+	Romance: "Romance",
+	"Science Fiction": "Sci-Fi",
+	"Sci-Fi & Fantasy": "sci-fi_and_fantasy",
+	Soap: "soap",
+	Talk: "talk",
+	Thriller: "Thriller",
+	"TV Movie": "tv movie",
+	War: "War",
+	"War & Politics": "war_and_politics",
+	Western: "Western",
 };
-const genrePosterArtworkFiles = new Set([
-	"Action",
-	"Adventure",
-	"Animation",
-	"Comedy",
-	"Disaster",
-	"Documentary",
-	"Drama",
-	"Fantasy",
-	"Horror",
-	"Music",
-	"Musical",
-	"Mystery",
-	"Queer",
-	"Rom Com",
-	"Romance",
-	"Sci-Fi",
-	"Thriller",
-	"War",
-	"Western",
-]);
 const genreWideArtworkNames = {
 	Action: "action wide",
+	"Action & Adventure": "action_and_adventure wide",
 	Adventure: "adventure wide",
 	Animation: "animation wide",
 	Comedy: "comedy wide",
 	Crime: "crime wide",
+	Documentary: "documentary wide",
+	Drama: "drama wide",
+	Family: "family wide",
+	Fantasy: "fantasy wide",
+	History: "history wide",
+	Horror: "horror wide",
+	Kids: "kids wide",
+	Music: "music wide",
+	Musicals: "musicals wide",
+	News: "news wide",
+	Reality: "reality wide",
+	Romance: "romance wide",
+	"Science Fiction": "science fiction wide",
+	"Sci-Fi & Fantasy": "sci-fi_and_fantasy wide",
+	Soap: "soap wide",
+	Talk: "talk wide",
+	Thriller: "thriller wide",
+	"TV Movie": "tv movie wide",
+	War: "war wide",
+	"War & Politics": "war_and_politics wide",
+	Western: "western wide",
 };
-const genreWideArtworkFiles = new Set(["action wide", "adventure wide", "animation wide", "comedy wide", "crime wide"]);
 const genreSpecialMergeRules = {
 	"Action & Adventure": ["Action", "Adventure"],
 	"Sci-Fi & Fantasy": ["Science Fiction", "Fantasy"],
@@ -367,35 +394,22 @@ function renderGenres(items) {
 }
 
 function getGenreArtworkName(genreName, tileShape) {
-	const map = tileShape === "LANDSCAPE" ? genreWideArtworkNames : genrePosterArtworkNames;
+	const map = tileShape === "LANDSCAPE" ? genreWideArtworkNames : genrePosterArtworkFiles;
 
-	return map[genreName] || genreName;
+	return map[genreName] || "";
 }
 
 function getGenreArtworkUrl(genreName, tileShape) {
-	if (tileShape === "LANDSCAPE" && !genreWideArtworkNames[genreName]) {
-		return "";
-	}
-
 	const artworkName = getGenreArtworkName(genreName, tileShape);
 
-	if (tileShape === "LANDSCAPE") {
-		if (!genreWideArtworkFiles.has(artworkName)) {
-			return "";
-		}
-
-		const encodedWideName = encodeURIComponent(artworkName).replace(/%20/g, "%20");
-
-		return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection%20covers/genre/${encodedWideName}.jpg`;
-	}
-
-	if (tileShape !== "LANDSCAPE" && !genrePosterArtworkFiles.has(artworkName)) {
+	if (!artworkName) {
 		return "";
 	}
 
 	const encodedName = encodeURIComponent(artworkName).replace(/%20/g, "%20");
+	const artworkFolder = tileShape === "LANDSCAPE" ? "wide" : "vertical";
 
-	return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection%20covers/genre/${encodedName}.jpg`;
+	return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection%20covers/genre/${artworkFolder}/${encodedName}.jpg`;
 }
 
 function getGenreNuvioOptions() {
@@ -653,7 +667,7 @@ function createGenreNuvioJson() {
 			pinToTop: false,
 			viewMode: options.viewMode,
 			showAllTab: false,
-			backdropImageUrl: "",
+			backdropImageUrl: genreBackdropImageUrl,
 			focusGlowEnabled: true,
 		},
 	];
