@@ -4938,7 +4938,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8680,αντ,0,,,,https://www.themoviedb.org/network/8680
 8681,SWEET.TV Originals,5,"Kyiv, Ukraine ",UA,,https://www.themoviedb.org/network/8681
 8683,DStv,1,,,,https://www.themoviedb.org/network/8683
-8684,Suspilne,2,,UA,,https://www.themoviedb.org/network/8684
 8685,super channel,1,,,,https://www.themoviedb.org/network/8685
 8686,HTV3,2,Việt Nam,VN,,https://www.themoviedb.org/network/8686
 8687,SaoTV,1,Việt Nam,VN,,https://www.themoviedb.org/network/8687
@@ -5036,9 +5035,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8800,British Broadcasting Corporation (BBC): United Kingdom,0,,,,https://www.themoviedb.org/network/8800
 8802,Discovery+ (SE),1,,,,https://www.themoviedb.org/network/8802
 8803,Ponta Pass,0,,JP,,https://www.themoviedb.org/network/8803
-8806,EBU,1,,CH,,https://www.themoviedb.org/network/8806
 8807,Vietnam Today,1,"43 Nguyễn Chí Thanh, Giảng Võ, Hà Nội, Việt Nam",VN,,https://www.themoviedb.org/network/8807
-8808,ebu,0,,,,https://www.themoviedb.org/network/8808
 8809,European Broadcasting Union,0,,,,https://www.themoviedb.org/network/8809
 8810,MTVA,0,Budapest,HU,,https://www.themoviedb.org/network/8810
 8811,BHRT,0,Sarajevo,BA,,https://www.themoviedb.org/network/8811
@@ -5376,3 +5373,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9186,Daewon Broadcasting,0,,,,https://www.themoviedb.org/network/9186
 9187,CBCテレビ,1,,,,https://www.themoviedb.org/network/9187
 9188,Zee Kannada,1,,,,https://www.themoviedb.org/network/9188
+9189,TV Globo Minas,1,"Belo Horizonte, Minas Gerais, Brasil ",BR,https://redeglobo.globo.com/globominas/,https://www.themoviedb.org/network/9189
+9190,Lp Originals,1,,,,https://www.themoviedb.org/network/9190
+9191,InterTV Grande Minas,4,"Montes Claros, Minas Gerais, Brasil",BR,https://redeglobo.globo.com/mg/intertvmg/,https://www.themoviedb.org/network/9191
