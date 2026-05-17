@@ -15,43 +15,56 @@ The site is designed for people building media libraries, curated collections, d
 * Browse official TMDB genre IDs
 * Check company and network title counts
 * Copy IDs quickly while building media collections
-* Export cached company and network results as CSV
+* Export cached company, network, and genre results as CSV
 * Export bulk people matches as CSV or Nuvio collections JSON
+* Build Nuvio collections JSON from selected companies, networks, genres, and people
 
 ## Features
 
 * Search cached production company and TV network databases
-* Filter company and network results by minimum title count
-* Sort cached results by ID, name, country, headquarters, and title count
+* Search cached official TMDB genre IDs and curated genre-style list references
+* Filter company, network, and genre results
+* Sort cached results by ID, name, type, media, country, headquarters, and title count where available
 * Search TMDB movie collections by name or ID
 * Search TMDB people by name or ID
 * Filter TMDB lookup results by actors, directors, collections, or all results
 * Bulk lookup up to 50 person names at a time
 * Create Nuvio collections JSON from matched bulk people results
+* Create Nuvio collections JSON from selected companies, networks, and genres
+* Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
 * Copy IDs with one click
 * Open matching TMDB pages directly
 
-## Cached Company And Network Data
+## Cached Company, Network, And Genre Data
 
-Production company and TV network data is cached so it can be searched quickly without querying TMDB for every result.
+Production company, TV network, and genre reference data is cached so it can be searched quickly without querying TMDB for every result.
 
-Company and network results can include:
+Company, network, and genre results can include:
 
 * TMDB ID
 * Name
+* Type or media category
 * Country
 * Headquarters
 * Logo
 * Title count
 * Direct TMDB link
 
-Cached company and network data can also be downloaded as CSV.
+Cached company, network, and genre data can also be downloaded as CSV.
 
-Title counts are intended as a practical guide when deciding which company or network IDs may be useful. They are based on TMDB data and may change as TMDB updates its records.
+Title counts are intended as a practical guide when deciding which company, network, or genre references may be useful. They are based on TMDB data and may change as TMDB updates its records.
 
 ## Genres
 
-The genre lookup includes official TMDB movie and TV genre IDs.
+The genre lookup includes official TMDB movie and TV genre IDs, plus curated TMDB list references for useful categories that TMDB does not expose as official genres.
+
+Genre Nuvio JSON export can create a single Genres collection from selected movie genres, TV genres, and curated list references. Export options include:
+
+* Tabbed, rows, or follow-layout view mode
+* Poster or wide folder artwork
+* Optional date, rating, language, and country filters
+* Movie-only and TV-only quick select buttons
+* Merge choices for overlapping TV/movie categories such as Action & Adventure, Sci-Fi & Fantasy, and War & Politics
 
 ## Movie Collection And People Lookup
 
@@ -80,6 +93,19 @@ Matched results can be downloaded as a CSV or exported as Nuvio collections JSON
 
 The Nuvio JSON export can create people-based collections for actors, directors, or mixed people lists. It includes optional default collection artwork, folder hero artwork, and a hide-title setting for TMDB person images.
 
+## Nuvio JSON Exports
+
+Nuvio JSON exports are portable collection files that can be imported into Nuvio. The site currently supports:
+
+* People collections from bulk people lookup matches
+* Studio collections from selected production companies
+* Network collections from selected TV networks
+* Genre collections from selected official genres and curated list references
+
+Company and network exports include quick select presets. Network exports can optionally use curated cover images and supported LuckyNumbers focus GIF artwork. If cover images are turned off, exports use emoji fallbacks and visible folder titles.
+
+Each Nuvio export modal includes a help button with current import steps for Nuvio web and TV app flows. Nuvio is in beta, so those import steps may change.
+
 ## Data Freshness
 
 Cached company, TV network, and genre data is updated automatically from TMDB data and API responses.
@@ -91,6 +117,10 @@ The site is deployed with GitHub Pages.
 This project uses the TMDB API but is not endorsed or certified by TMDB.
 
 Company names, logos, posters, and trademarks remain the property of their respective owners.
+
+Some optional Nuvio export artwork references community artwork from the
+[LuckyNumbers Nuvio setup guide](https://luckynumb3rs.github.io/stremio-perfect-setup/guide/Nuvio/)
+and [tomato's transparent covers pack](https://www.reddit.com/r/Nuvio/comments/1sk3ks6/transparent_covers_pack/).
 
 Project maintained by [Dave Collections](https://github.com/davecollections).
 

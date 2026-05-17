@@ -523,6 +523,14 @@ th.sortable:hover {
 	font-size: 11px;
 }
 
+.footer-credits {
+	margin-top: 10px;
+}
+
+.footer-credits a {
+	color: #9ec5ff;
+}
+
 @media (max-width: 720px) {
 	body {
 		padding: 16px;

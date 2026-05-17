@@ -74,6 +74,15 @@ const curatedNetworkCoverUrls = {
 	3353: "https://i.postimg.cc/Kc38yM8g/Peacock.png",
 	4330: "https://i.postimg.cc/QC78gRzZ/Paramount.png",
 };
+const networkFocusGifUrls = {
+	213: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/netflix.gif",
+	1024: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/prime-video.webp",
+	1112: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/crunchyroll.gifv",
+	2552: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/apple-tv.gifv",
+	2739: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/disney-plus.gif",
+	3186: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/hbo-max.gif",
+	3353: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/peacock.gifv",
+};
 
 function createNuvioExportId(prefix) {
 	if (window.crypto?.randomUUID) {
@@ -612,6 +621,10 @@ function getNetworkNuvioCoverUrl(network) {
 	return curatedNetworkCoverUrls[Number(network.id)] || getNetworkLogoUrl(network);
 }
 
+function getNetworkFocusGifUrl(network) {
+	return networkFocusGifUrls[Number(network.id)] || "";
+}
+
 function getCompanyNuvioOptions() {
 	return {
 		collectionName: document.getElementById("company-nuvio-collection-name").value.trim() || "Studios",
@@ -760,6 +773,7 @@ function getNetworkNuvioOptions() {
 		collectionName: document.getElementById("network-nuvio-collection-name").value.trim() || "Networks",
 		collectionCoverUrl: document.getElementById("network-nuvio-cover-url").value.trim(),
 		useLogos: document.getElementById("network-nuvio-use-logos").checked,
+		useFocusGifs: document.getElementById("network-nuvio-use-focus-gifs").checked,
 	};
 }
 
@@ -804,12 +818,12 @@ function createNetworkNuvioJson() {
 		hideTitle: options.useLogos,
 		tileShape: "LANDSCAPE",
 		coverEmoji: options.useLogos ? "" : "📺",
-		focusGifUrl: "",
+		focusGifUrl: options.useFocusGifs ? getNetworkFocusGifUrl(network) : "",
 		heroVideoUrl: "",
 		titleLogoUrl: "",
 		coverImageUrl: options.useLogos ? getNetworkNuvioCoverUrl(network) : "",
 		catalogSources: [],
-		focusGifEnabled: false,
+		focusGifEnabled: Boolean(options.useFocusGifs && getNetworkFocusGifUrl(network)),
 		heroBackdropUrl: "",
 	}));
 
