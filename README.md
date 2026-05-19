@@ -87,7 +87,7 @@ People lookup can search by name or TMDB person ID, and results can be filtered 
 
 Bulk people lookup helps resolve multiple person names into TMDB person IDs.
 
-Paste up to 50 names, one per line, then select **Resolve People IDs**. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
+Paste names, paste CSV text, or load a CSV/text file, then select **Resolve People IDs**. CSV imports use a `name`, `person`, `actor`, `director`, or first/last name column when one exists, and otherwise use the first column. Each lookup uses the first 50 names and tells you the last included name so larger lists can be split into batches. If the CSV only has partial names, the page warns that matches may not be accurate. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
 
 Matched results can be downloaded as a CSV or exported as Nuvio collections JSON.
 

@@ -1,4 +1,7 @@
 let lastBulkPeopleResults = [];
+const BULK_PEOPLE_LIMIT = 50;
+let lastBulkPeopleBatchMessage = "";
+let lastBulkPeopleIncompleteInputs = new Set();
 
 const DEFAULT_NUVIO_IMAGES = {
 	ACTOR: {
@@ -176,12 +179,296 @@ function downloadNuvioJson() {
 	downloadTextFile(filename, `${json}\n`, "application/json");
 }
 
+function parseCsvRows(csvText) {
+	const rows = [];
+	let row = [];
+	let value = "";
+	let inQuotes = false;
+
+	for (let index = 0; index < csvText.length; index += 1) {
+		const character = csvText[index];
+		const nextCharacter = csvText[index + 1];
+
+		if (character === '"' && inQuotes && nextCharacter === '"') {
+			value += '"';
+			index += 1;
+			continue;
+		}
+
+		if (character === '"') {
+			inQuotes = !inQuotes;
+			continue;
+		}
+
+		if (character === "," && !inQuotes) {
+			row.push(value);
+			value = "";
+			continue;
+		}
+
+		if ((character === "\n" || character === "\r") && !inQuotes) {
+			if (character === "\r" && nextCharacter === "\n") {
+				index += 1;
+			}
+
+			row.push(value);
+			rows.push(row);
+			row = [];
+			value = "";
+			continue;
+		}
+
+		value += character;
+	}
+
+	row.push(value);
+	rows.push(row);
+
+	return rows
+		.map((cells) => cells.map((cell) => String(cell || "").replace(/^\uFEFF/, "").trim()))
+		.filter((cells) => cells.some(Boolean));
+}
+
+function getCsvNameColumnIndex(headerRow) {
+	const preferredHeaders = [
+		"name",
+		"person",
+		"people",
+		"actor",
+		"actors",
+		"director",
+		"directors",
+		"personname",
+		"peoplename",
+		"actorname",
+		"directorname",
+		"fullname",
+	];
+
+	return headerRow.findIndex((header) =>
+		preferredHeaders.includes(
+			String(header || "")
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z]+/g, ""),
+		),
+	);
+}
+
+function getCsvColumnIndex(headerRow, columnNames) {
+	return headerRow.findIndex((header) =>
+		columnNames.includes(
+			String(header || "")
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z]+/g, ""),
+		),
+	);
+}
+
+function setIncompleteNameWarning(isVisible) {
+	document.getElementById("bulk-people-name-warning").hidden = !isVisible;
+}
+
+function isLikelyIncompleteName(name) {
+	return !String(name || "").trim().includes(" ");
+}
+
+function looksLikePersonName(value) {
+	return String(value || "").trim().includes(" ");
+}
+
+function hasLikelyIncompleteName(names) {
+	return names.some(isLikelyIncompleteName);
+}
+
+function getIncompleteNameSet(names) {
+	return new Set(names.filter(isLikelyIncompleteName));
+}
+
+function limitIncompleteNamesToBatch(names) {
+	lastBulkPeopleIncompleteInputs = new Set(
+		[...lastBulkPeopleIncompleteInputs].filter((name) => names.includes(name)),
+	);
+	setIncompleteNameWarning(lastBulkPeopleIncompleteInputs.size > 0);
+}
+
+function updateIncompleteInputsFromNames(names) {
+	lastBulkPeopleIncompleteInputs = getIncompleteNameSet(names);
+	setIncompleteNameWarning(lastBulkPeopleIncompleteInputs.size > 0);
+}
+
+function getBulkPeopleMatchStatus(matchType, hasIncompleteInput) {
+	return hasIncompleteInput ? "Incomplete name - check match" : matchType;
+}
+
+function getNamesFromCsvText(csvText) {
+	const rows = parseCsvRows(csvText);
+
+	if (!rows.length) {
+		return {
+			hasIncompleteNames: false,
+			names: [],
+		};
+	}
+
+	if (rows.length === 1) {
+		const names = rows[0].map((name) => String(name || "").trim()).filter(Boolean);
+
+		return {
+			hasIncompleteNames: hasLikelyIncompleteName(names),
+			incompleteNames: getIncompleteNameSet(names),
+			names,
+		};
+	}
+
+	const nameColumnIndex = getCsvNameColumnIndex(rows[0]);
+	const shouldUseNameColumn = nameColumnIndex >= 0 && !(nameColumnIndex > 0 && looksLikePersonName(rows[0][0]));
+
+	if (shouldUseNameColumn) {
+		const names = rows
+			.slice(1)
+			.map((row) => row[nameColumnIndex])
+			.map((name) => String(name || "").trim())
+			.filter(Boolean);
+
+		return {
+			hasIncompleteNames: hasLikelyIncompleteName(names),
+			incompleteNames: getIncompleteNameSet(names),
+			names,
+		};
+	}
+
+	const firstNameColumnIndex = getCsvColumnIndex(rows[0], [
+		"first",
+		"firstname",
+		"forename",
+		"given",
+		"givenname",
+	]);
+	const lastNameColumnIndex = getCsvColumnIndex(rows[0], [
+		"family",
+		"familyname",
+		"last",
+		"lastname",
+		"surname",
+	]);
+
+	if (firstNameColumnIndex >= 0 || lastNameColumnIndex >= 0) {
+		let hasIncompleteNames = false;
+		const incompleteNames = new Set();
+		const names = rows
+			.slice(1)
+			.map((row) => {
+				const firstName = String(row[firstNameColumnIndex] || "").trim();
+				const lastName = String(row[lastNameColumnIndex] || "").trim();
+
+				if ((firstName && !lastName) || (!firstName && lastName)) {
+					hasIncompleteNames = true;
+				}
+
+				const name = [firstName, lastName].filter(Boolean).join(" ");
+
+				if ((firstName && !lastName) || (!firstName && lastName) || isLikelyIncompleteName(name)) {
+					incompleteNames.add(name);
+				}
+
+				return name;
+			})
+			.filter(Boolean);
+
+		return {
+			hasIncompleteNames: hasIncompleteNames || hasLikelyIncompleteName(names),
+			incompleteNames,
+			names,
+		};
+	}
+
+	const names = rows
+		.map((row) => row[0])
+		.map((name) => String(name || "").trim())
+		.filter(Boolean);
+
+	return {
+		hasIncompleteNames: hasLikelyIncompleteName(names),
+		incompleteNames: getIncompleteNameSet(names),
+		names,
+	};
+}
+
 function getBulkPeopleNames() {
-	return document
-		.getElementById("bulk-people-input")
-		.value.split("\n")
+	const inputText = document.getElementById("bulk-people-input").value;
+
+	if (inputText.includes(",") || inputText.includes('"')) {
+		const csvResult = getNamesFromCsvText(inputText);
+
+		setIncompleteNameWarning(csvResult.hasIncompleteNames);
+		lastBulkPeopleIncompleteInputs = csvResult.incompleteNames || new Set();
+
+		if (csvResult.names.length) {
+			return csvResult.names;
+		}
+	}
+
+	setIncompleteNameWarning(false);
+	lastBulkPeopleIncompleteInputs = new Set();
+
+	const names = inputText
+		.split("\n")
 		.map((name) => name.trim())
 		.filter(Boolean);
+
+	updateIncompleteInputsFromNames(names);
+
+	return names;
+}
+
+function loadBulkPeopleCsvFile(file) {
+	const status = document.getElementById("bulk-people-status");
+
+	if (!file) {
+		return;
+	}
+
+	const reader = new FileReader();
+
+	reader.addEventListener("load", () => {
+		const csvResult = getNamesFromCsvText(String(reader.result || ""));
+		const fileName = document.getElementById("bulk-people-csv-name");
+
+		fileName.textContent = file.name;
+		setIncompleteNameWarning(csvResult.hasIncompleteNames);
+		lastBulkPeopleIncompleteInputs = csvResult.incompleteNames || new Set();
+
+		if (!csvResult.names.length) {
+			status.innerText =
+				"No people names were found. Use a name, person, actor, director, or first/last name column, or put names in the first column.";
+			return;
+		}
+
+		const namesToUse = csvResult.names.slice(0, BULK_PEOPLE_LIMIT);
+		const extraCount = csvResult.names.length - namesToUse.length;
+
+		limitIncompleteNamesToBatch(namesToUse);
+		document.getElementById("bulk-people-input").value = namesToUse.join("\n");
+
+		if (extraCount > 0) {
+			lastBulkPeopleBatchMessage = `More than ${BULK_PEOPLE_LIMIT} names were provided, matching the first ${BULK_PEOPLE_LIMIT} of ${csvResult.names.length} names. Last included: ${
+				namesToUse[namesToUse.length - 1]
+			}. Start the next batch after that name.`;
+			status.innerText = lastBulkPeopleBatchMessage;
+			return;
+		}
+
+		lastBulkPeopleBatchMessage = "";
+		status.innerText = `Loaded ${csvResult.names.length} names from ${file.name}.`;
+	});
+
+	reader.addEventListener("error", () => {
+		status.innerText = "Could not read that CSV file.";
+	});
+
+	reader.readAsText(file);
 }
 
 function renderBulkPeopleResults(results) {
@@ -208,7 +495,12 @@ function renderBulkPeopleResults(results) {
 	for (const result of results) {
 		const tr = document.createElement("tr");
 
-		tr.appendChild(createElement("td", { text: result.input }));
+		tr.appendChild(
+			createElement("td", {
+				className: result.hasIncompleteInput ? "bulk-warning-cell" : "",
+				text: result.input,
+			}),
+		);
 		tr.appendChild(createElement("td", { text: result.name || "" }));
 
 		const idCell = document.createElement("td");
@@ -329,7 +621,7 @@ function findBestPeopleMatch(results, input) {
 
 async function resolveBulkPeople() {
 	const status = document.getElementById("bulk-people-status");
-	const names = getBulkPeopleNames();
+	let names = getBulkPeopleNames();
 
 	if (!names.length) {
 		lastBulkPeopleResults = [];
@@ -339,24 +631,35 @@ async function resolveBulkPeople() {
 		return;
 	}
 
-	if (names.length > 50) {
-		lastBulkPeopleResults = [];
-		renderBulkPeopleResults([]);
+	if (names.length > BULK_PEOPLE_LIMIT) {
+		const originalCount = names.length;
 
-		status.innerText = `You entered ${names.length} names. Please limit each bulk lookup to 50 names.`;
-		return;
+		names = names.slice(0, BULK_PEOPLE_LIMIT);
+		document.getElementById("bulk-people-input").value = names.join("\n");
+		limitIncompleteNamesToBatch(names);
+		lastBulkPeopleBatchMessage = `More than ${BULK_PEOPLE_LIMIT} names were provided, matching the first ${BULK_PEOPLE_LIMIT} of ${originalCount} names. Last included: ${
+			names[names.length - 1]
+		}. Start the next batch after that name.`;
+		status.innerText = lastBulkPeopleBatchMessage;
+	} else if (!lastBulkPeopleBatchMessage.startsWith("More than")) {
+		lastBulkPeopleBatchMessage = "";
 	}
 
-	status.innerText = "Resolving people IDs...";
+	status.innerText = status.innerText
+		? `${status.innerText} Resolving people IDs...`
+		: "Resolving people IDs...";
 	lastBulkPeopleResults = [];
 	renderBulkPeopleResults([]);
 
 	for (const input of names) {
+		const hasIncompleteInput = lastBulkPeopleIncompleteInputs.has(input);
+
 		try {
 			const response = await tmdbJsonWithStatus(tmdbApiUrl("/3/search/person", { query: input, page: 1 }));
 
 			if (response.rateLimited) {
 				lastBulkPeopleResults.push({
+					hasIncompleteInput,
 					input,
 					name: "",
 					id: "",
@@ -364,7 +667,7 @@ async function resolveBulkPeople() {
 					creditCount: "",
 					profilePath: "",
 					profileImageUrl: "",
-					status: "TMDB rate limit reached",
+					status: getBulkPeopleMatchStatus("TMDB rate limit reached", hasIncompleteInput),
 				});
 
 				break;
@@ -372,6 +675,7 @@ async function resolveBulkPeople() {
 
 			if (!response.ok) {
 				lastBulkPeopleResults.push({
+					hasIncompleteInput,
 					input,
 					name: "",
 					id: "",
@@ -379,7 +683,10 @@ async function resolveBulkPeople() {
 					creditCount: "",
 					profilePath: "",
 					profileImageUrl: "",
-					status: response.status ? `TMDB error HTTP ${response.status}` : "Network error",
+					status: getBulkPeopleMatchStatus(
+						response.status ? `TMDB error HTTP ${response.status}` : "Network error",
+						hasIncompleteInput,
+					),
 				});
 
 				continue;
@@ -391,6 +698,7 @@ async function resolveBulkPeople() {
 				const knownCredits = await getPersonKnownCredits(match.person.id);
 
 				lastBulkPeopleResults.push({
+					hasIncompleteInput,
 					input,
 					name: match.person.name || "",
 					id: match.person.id,
@@ -398,10 +706,11 @@ async function resolveBulkPeople() {
 					creditCount: knownCredits,
 					profilePath: match.person.profile_path || "",
 					profileImageUrl: getTmdbProfileImageUrl(match.person.profile_path),
-					status: match.matchType,
+					status: getBulkPeopleMatchStatus(match.matchType, hasIncompleteInput),
 				});
 			} else {
 				lastBulkPeopleResults.push({
+					hasIncompleteInput,
 					input,
 					name: "",
 					id: "",
@@ -409,11 +718,12 @@ async function resolveBulkPeople() {
 					creditCount: "",
 					profilePath: "",
 					profileImageUrl: "",
-					status: match.matchType,
+					status: getBulkPeopleMatchStatus(match.matchType, hasIncompleteInput),
 				});
 			}
 		} catch {
 			lastBulkPeopleResults.push({
+				hasIncompleteInput,
 				input,
 				name: "",
 				id: "",
@@ -421,7 +731,7 @@ async function resolveBulkPeople() {
 				creditCount: "",
 				profilePath: "",
 				profileImageUrl: "",
-				status: "Lookup failed",
+				status: getBulkPeopleMatchStatus("Lookup failed", hasIncompleteInput),
 			});
 		}
 	}
@@ -431,6 +741,15 @@ async function resolveBulkPeople() {
 	const matchedCount = lastBulkPeopleResults.filter((result) => result.id).length;
 
 	status.replaceChildren(document.createTextNode(`Resolved people IDs: matched ${matchedCount} of ${names.length}.`));
+
+	if (lastBulkPeopleBatchMessage) {
+		status.appendChild(
+			createElement("span", {
+				className: "bulk-batch-notice",
+				text: lastBulkPeopleBatchMessage,
+			}),
+		);
+	}
 
 	if (matchedCount) {
 		const downloadButton = createElement("button", {
@@ -458,16 +777,31 @@ async function resolveBulkPeople() {
 }
 
 function initBulkPeopleLookup() {
+	document.getElementById("bulk-people-input").addEventListener("input", () => {
+		lastBulkPeopleBatchMessage = "";
+		lastBulkPeopleIncompleteInputs = new Set();
+		setIncompleteNameWarning(false);
+	});
+
 	document.getElementById("bulk-people-btn").addEventListener("click", () => {
 		resolveBulkPeople();
 	});
 
 	document.getElementById("clear-bulk-people").addEventListener("click", () => {
 		document.getElementById("bulk-people-input").value = "";
+		document.getElementById("bulk-people-csv-file").value = "";
+		document.getElementById("bulk-people-csv-name").textContent = "No file selected";
+		setIncompleteNameWarning(false);
+		lastBulkPeopleBatchMessage = "";
+		lastBulkPeopleIncompleteInputs = new Set();
 		document.getElementById("bulk-people-status").innerText = "";
 		document.getElementById("bulk-people-results").replaceChildren();
 		closeNuvioExportModal();
 		lastBulkPeopleResults = [];
+	});
+
+	document.getElementById("bulk-people-csv-file").addEventListener("change", (event) => {
+		loadBulkPeopleCsvFile(event.target.files[0]);
 	});
 
 	document.getElementById("close-nuvio-export-modal").addEventListener("click", closeNuvioExportModal);

@@ -698,6 +698,89 @@ th.sortable:hover {
 	max-width: 900px;
 }
 
+.bulk-file-input {
+	display: grid;
+	gap: 6px;
+	max-width: 520px;
+	margin: 12px 0 8px;
+	color: #d8dee8;
+	font-size: 14px;
+}
+
+.bulk-file-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.bulk-file-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	padding: 0 16px;
+	border: 1px solid #333;
+	border-radius: 10px;
+	background: #151922;
+	color: #8ab4ff;
+	font-size: 16px;
+	cursor: pointer;
+	box-sizing: border-box;
+}
+
+.bulk-file-button:hover {
+	border-color: #8ab4ff;
+}
+
+.bulk-file-input input[type="file"] {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+}
+
+.bulk-file-name {
+	color: #aeb7c2;
+	font-size: 14px;
+}
+
+.bulk-input-help {
+	margin: 0 0 10px;
+	font-size: 13px;
+}
+
+.bulk-name-warning {
+	max-width: 520px;
+	margin: 0 0 10px;
+	padding: 10px 12px;
+	border: 1px solid rgba(245, 199, 92, 0.45);
+	border-radius: 10px;
+	background: rgba(245, 199, 92, 0.12);
+	color: #f5d98a;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.bulk-warning-cell {
+	background: rgba(245, 199, 92, 0.12);
+	color: #f5d98a;
+}
+
+.bulk-batch-notice {
+	display: block;
+	max-width: 720px;
+	margin-top: 10px;
+	padding: 10px 12px;
+	border: 1px solid rgba(138, 180, 255, 0.45);
+	border-radius: 10px;
+	background: rgba(138, 180, 255, 0.12);
+	color: #cfe0ff;
+	line-height: 1.4;
+}
+
 .bulk-actions {
 	display: flex;
 	flex-wrap: wrap;

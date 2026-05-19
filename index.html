@@ -52,11 +52,33 @@
 			<h2>Bulk People Lookup</h2>
 
 			<p class="meta">
-				Paste up to 50 person names, one per line, then download matched TMDB person IDs as CSV or Nuvio
-				JSON.
+				Paste person names, paste CSV text, or load a CSV file, then download matched TMDB person IDs
+				as CSV or Nuvio JSON.
 			</p>
 
-			<textarea id="bulk-people-input" placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig"></textarea>
+			<div class="bulk-file-input">
+				<span class="bulk-file-label">CSV or text file</span>
+				<div class="bulk-file-row">
+					<label class="bulk-file-button" for="bulk-people-csv-file">Choose file</label>
+					<input id="bulk-people-csv-file" type="file" accept=".csv,.txt,text/csv,text/plain" />
+					<span id="bulk-people-csv-name" class="bulk-file-name">No file selected</span>
+				</div>
+			</div>
+
+			<p class="meta bulk-input-help">
+				CSV imports use a name, person, actor, director, or first/last name column when one exists.
+				Otherwise, names should be in the first column.
+			</p>
+
+			<p id="bulk-people-name-warning" class="bulk-name-warning" hidden>
+				This input includes incomplete names. Matches may not be accurate, so check the results before
+				exporting JSON.
+			</p>
+
+			<textarea
+				id="bulk-people-input"
+				placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig&#10;&#10;Or paste CSV text"
+			></textarea>
 
 			<div class="bulk-actions">
 				<button id="bulk-people-btn" type="button">Resolve People IDs</button>
