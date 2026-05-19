@@ -16,8 +16,9 @@ The site is designed for people building media libraries, curated collections, d
 * Check company and network title counts
 * Copy IDs quickly while building media collections
 * Export cached company, network, and genre results as CSV
+* Import pasted names, pasted CSV text, or CSV/text files for bulk people lookup
 * Export bulk people matches as CSV or Nuvio collections JSON
-* Combine multiple people Nuvio JSON batch files into one collection JSON
+* Combine multiple people Nuvio JSON batch files into one downloadable JSON
 * Build Nuvio collections JSON from selected companies, networks, genres, and people
 
 ## Features
@@ -29,9 +30,11 @@ The site is designed for people building media libraries, curated collections, d
 * Search TMDB movie collections by name or ID
 * Search TMDB people by name or ID
 * Filter TMDB lookup results by actors, directors, collections, or all results
-* Bulk lookup person names in 50-name batches
+* Bulk lookup person names from pasted text, pasted CSV, or uploaded CSV/text files
+* Split larger people lists into clear 50-name batches
 * Create Nuvio collections JSON from matched bulk people results
 * Combine split people JSON batches into one Nuvio collection JSON
+* Append people batch folders into an existing Nuvio collections JSON file
 * Create Nuvio collections JSON from selected companies, networks, and genres
 * Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
 * Copy IDs with one click
@@ -89,13 +92,15 @@ People lookup can search by name or TMDB person ID, and results can be filtered 
 
 Bulk people lookup helps resolve multiple person names into TMDB person IDs.
 
-Paste names, paste CSV text, or load a CSV/text file, then select **Resolve People IDs**. CSV imports use a `name`, `person`, `actor`, `director`, or first/last name column when one exists, and otherwise use the first column. Each lookup uses the first 50 names and tells you the last included name so larger lists can be split into batches. If the CSV only has partial names, the page warns that matches may not be accurate. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
+Paste names, paste CSV text, or load a CSV/text file, then select **Resolve People IDs**. CSV imports use a `name`, `person`, `actor`, `director`, or first/last name column when one exists, and otherwise use the first column. Plain comma-separated name lists are also accepted.
+
+Each lookup uses the first 50 names and tells you the last included name so larger lists can be split into batches. If the active batch includes partial names, the page warns that matches may not be accurate. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
 
 Matched results can be downloaded as a CSV or exported as Nuvio collections JSON.
 
 The Nuvio JSON export can create people-based collections for actors, directors, or mixed people lists. It includes optional default collection artwork, folder hero artwork, and a hide-title setting for TMDB person images.
 
-If a people list needs to be split into multiple 50-name batches, the bulk people tool can also combine exported Nuvio JSON files. Files can be flattened into one collection, sorted by first or last name, or kept as separate collections in one combined JSON file.
+If a people list needs to be split into multiple 50-name batches, the bulk people tool can also combine exported Nuvio JSON files. Files can be added in batches, reviewed, and removed if needed. The combined download can merge every folder into one collection, sort folders by first or last name, keep uploaded collections separate, or append people batch folders into an existing Nuvio collections JSON file.
 
 ## Nuvio JSON Exports
 
