@@ -17,6 +17,7 @@ The site is designed for people building media libraries, curated collections, d
 * Copy IDs quickly while building media collections
 * Export cached company, network, and genre results as CSV
 * Export bulk people matches as CSV or Nuvio collections JSON
+* Combine multiple people Nuvio JSON batch files into one collection JSON
 * Build Nuvio collections JSON from selected companies, networks, genres, and people
 
 ## Features
@@ -28,8 +29,9 @@ The site is designed for people building media libraries, curated collections, d
 * Search TMDB movie collections by name or ID
 * Search TMDB people by name or ID
 * Filter TMDB lookup results by actors, directors, collections, or all results
-* Bulk lookup up to 50 person names at a time
+* Bulk lookup person names in 50-name batches
 * Create Nuvio collections JSON from matched bulk people results
+* Combine split people JSON batches into one Nuvio collection JSON
 * Create Nuvio collections JSON from selected companies, networks, and genres
 * Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
 * Copy IDs with one click
@@ -92,6 +94,8 @@ Paste names, paste CSV text, or load a CSV/text file, then select **Resolve Peop
 Matched results can be downloaded as a CSV or exported as Nuvio collections JSON.
 
 The Nuvio JSON export can create people-based collections for actors, directors, or mixed people lists. It includes optional default collection artwork, folder hero artwork, and a hide-title setting for TMDB person images.
+
+If a people list needs to be split into multiple 50-name batches, the bulk people tool can also combine exported Nuvio JSON files. Files can be flattened into one collection, sorted by first or last name, or kept as separate collections in one combined JSON file.
 
 ## Nuvio JSON Exports
 

@@ -82,6 +82,7 @@
 
 			<div class="bulk-actions">
 				<button id="bulk-people-btn" type="button">Resolve People IDs</button>
+				<button id="open-json-combine-modal" type="button">Combine Nuvio JSON files</button>
 				<button id="clear-bulk-people" type="button">Clear</button>
 			</div>
 
@@ -216,6 +217,158 @@
 						For metadata enrichment, turn on the TMDB integration in Nuvio: Settings &gt; Integrations &gt; TMDB.
 					</p>
 				</div>
+			</div>
+		</div>
+
+		<div id="json-combine-modal" class="modal-backdrop" hidden>
+			<div class="modal-panel modal-panel-small" role="dialog" aria-modal="true" aria-labelledby="json-combine-title">
+				<div class="modal-header">
+					<h2 id="json-combine-title">Combine Nuvio JSON Files</h2>
+					<button id="close-json-combine-modal" class="modal-close" type="button" aria-label="Close Nuvio JSON combiner">
+						&times;
+					</button>
+				</div>
+
+				<div class="json-combine-options">
+					<p class="meta">
+						Add one or more Nuvio collection JSON files. You can add files in batches, then choose how to merge them.
+					</p>
+
+					<div class="bulk-file-input json-combine-file-input">
+						<span class="bulk-file-label">Nuvio JSON files</span>
+						<div class="bulk-file-row json-combine-file-row">
+							<label class="bulk-file-button" for="json-combine-files">Add JSON files</label>
+							<input id="json-combine-files" type="file" accept=".json,application/json" multiple />
+							<span id="json-combine-file-name" class="bulk-file-name">No files selected</span>
+							<button id="manage-json-combine-files" class="json-combine-manage-files" type="button" disabled>
+								Manage files
+							</button>
+						</div>
+					</div>
+
+					<div class="json-combine-mode-grid" aria-label="Nuvio JSON combine mode">
+						<label class="json-combine-choice">
+							<input type="radio" name="json-combine-mode" value="single" checked />
+							<span>
+								<span class="json-combine-choice-title">Single collection</span>
+								<span class="json-combine-choice-help">Merge every folder into one collection.</span>
+							</span>
+						</label>
+
+						<label class="json-combine-choice">
+							<input type="radio" name="json-combine-mode" value="separate" />
+							<span>
+								<span class="json-combine-choice-title">Keep collections</span>
+								<span class="json-combine-choice-help">Keep each uploaded collection separate, but download one JSON file.</span>
+							</span>
+						</label>
+					</div>
+
+					<div id="json-combine-single-options" class="json-combine-single-options">
+						<label>
+							Collection name
+							<input id="json-combine-collection-name" placeholder="Leave blank to use the first collection" />
+						</label>
+
+						<label>
+							Collection image URL
+							<input id="json-combine-image-url" placeholder="Leave blank to use the first collection image" />
+						</label>
+
+						<fieldset class="json-combine-sort-options">
+							<legend>Folder order</legend>
+
+							<div class="json-combine-sort-grid" aria-label="Folder sort order">
+								<label class="json-combine-choice json-combine-sort-choice">
+									<input type="radio" name="json-combine-sort-mode" value="original" checked />
+									<span>
+										<span class="json-combine-choice-title">Original order</span>
+										<span class="json-combine-choice-help">Keep the file order.</span>
+									</span>
+								</label>
+
+								<label class="json-combine-choice json-combine-sort-choice">
+									<input type="radio" name="json-combine-sort-mode" value="first" />
+									<span>
+										<span class="json-combine-choice-title">First name</span>
+										<span class="json-combine-choice-help">A to Z by folder title.</span>
+									</span>
+								</label>
+
+								<label class="json-combine-choice json-combine-sort-choice">
+									<input type="radio" name="json-combine-sort-mode" value="last" />
+									<span>
+										<span class="json-combine-choice-title">Last name</span>
+										<span class="json-combine-choice-help">Useful for people lists.</span>
+									</span>
+								</label>
+							</div>
+						</fieldset>
+					</div>
+
+					<div id="json-combine-existing-options" class="json-combine-existing-options" hidden>
+						<p id="json-combine-existing-summary" class="meta"></p>
+
+						<div class="json-combine-mode-grid" aria-label="Existing Nuvio JSON destination">
+							<label class="json-combine-choice">
+								<input type="radio" name="json-combine-existing-mode" value="new" checked />
+								<span>
+									<span class="json-combine-choice-title">Create new collection</span>
+									<span class="json-combine-choice-help">Keep existing collections and add a new combined collection.</span>
+								</span>
+							</label>
+
+							<label class="json-combine-choice">
+								<input type="radio" name="json-combine-existing-mode" value="append" />
+								<span>
+									<span class="json-combine-choice-title">Append to existing</span>
+									<span class="json-combine-choice-help">Add batch folders to one collection already in the JSON.</span>
+								</span>
+							</label>
+
+							<label class="json-combine-choice">
+								<input type="radio" name="json-combine-existing-mode" value="ignore" />
+								<span>
+									<span class="json-combine-choice-title">Ignore existing JSON</span>
+									<span class="json-combine-choice-help">Use only people batch files and skip the full JSON file.</span>
+								</span>
+							</label>
+						</div>
+
+						<label id="json-combine-target-label" class="json-combine-target-label" hidden>
+							Existing collection
+							<select id="json-combine-target-collection"></select>
+						</label>
+					</div>
+
+					<p id="json-combine-status" class="json-combine-status"></p>
+				</div>
+
+				<div class="modal-footer">
+					<button id="open-json-combine-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="download-combined-json" type="button" disabled>Download Combined JSON</button>
+						<button id="cancel-json-combine" type="button">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="json-combine-file-manager-modal" class="modal-backdrop modal-backdrop-secondary" hidden>
+			<div class="modal-panel modal-panel-small" role="dialog" aria-modal="true" aria-labelledby="json-combine-file-manager-title">
+				<div class="modal-header">
+					<h2 id="json-combine-file-manager-title">Manage JSON Files</h2>
+					<button id="close-json-combine-file-manager" class="modal-close" type="button" aria-label="Close JSON file manager">
+						&times;
+					</button>
+				</div>
+
+				<p class="meta">Remove any file that was added by mistake. The merged JSON updates automatically.</p>
+
+				<div id="json-combine-file-list" class="json-combine-file-list" aria-label="Added Nuvio JSON files"></div>
 			</div>
 		</div>
 
