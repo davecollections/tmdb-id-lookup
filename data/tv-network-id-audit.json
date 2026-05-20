@@ -1,27 +1,29 @@
 {
   "dataset": "networks",
   "label": "TV Networks",
-  "export_date": "05_19_2026",
-  "export_total_ids": 5380,
+  "export_date": "05_20_2026",
+  "export_total_ids": 5382,
   "cached_total_ids": 5380,
   "cached_unique_ids": 5380,
   "matched_count": 5378,
-  "coverage_percent": 99.9628,
-  "missing_from_cache_count": 2,
+  "coverage_percent": 99.9257,
+  "missing_from_cache_count": 4,
   "extra_in_cache_count": 2,
   "duplicate_cached_ids_count": 0,
   "lowest_export_id": 1,
-  "highest_export_id": 9196,
+  "highest_export_id": 9200,
   "lowest_cached_id": 1,
-  "highest_cached_id": 9194,
+  "highest_cached_id": 9196,
   "missing_from_cache": [
-    9195,
-    9196
+    9197,
+    9198,
+    9199,
+    9200
   ],
   "extra_in_cache": [
-    9187,
-    9193
+    8881,
+    9131
   ],
   "duplicate_cached_ids": [],
-  "audited_at": "2026-05-19T17:42:13.389Z"
+  "audited_at": "2026-05-20T18:03:44.650Z"
 }
