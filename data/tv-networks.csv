@@ -5097,7 +5097,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8877,Waypoint TV,1,,,,https://www.themoviedb.org/network/8877
 8878,SCI TV,1,,,,https://www.themoviedb.org/network/8878
 8880,MTV Live,1,"New York, NY, USA",US,,https://www.themoviedb.org/network/8880
-8881,ITV3,0,,,,https://www.themoviedb.org/network/8881
 8882,Comedy Central,1,,FR,,https://www.themoviedb.org/network/8882
 8883,tivibu,1,,,,https://www.themoviedb.org/network/8883
 8886,bilibili,0,,,,https://www.themoviedb.org/network/8886
@@ -5322,7 +5321,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9128,TV25,1,,,,https://www.themoviedb.org/network/9128
 9129,ETB 1 ON,0,,ES,,https://www.themoviedb.org/network/9129
 9130,ETB2 ON,0,,ES,,https://www.themoviedb.org/network/9130
-9131,iqiyi,0,,,,https://www.themoviedb.org/network/9131
 9132,MangoTV International,2,"Changsha City, Hunan province, China",,,https://www.themoviedb.org/network/9132
 9134,University of California Television,0,,,,https://www.themoviedb.org/network/9134
 9135,University of California Television (UCTV),1,,,,https://www.themoviedb.org/network/9135
@@ -5377,5 +5375,9 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9191,InterTV Grande Minas,4,"Montes Claros, Minas Gerais, Brasil",BR,,https://www.themoviedb.org/network/9191
 9192,indietürk,2,İstanbul,TR,,https://www.themoviedb.org/network/9192
 9194,澳視澳門頻道,1,,,,https://www.themoviedb.org/network/9194
-9195,Chzzk,1,"95, Jeongjail-ro, Bundang-gu, Seongnam-si, Gyeonggi-do, NAVER 1784, 13561",KR,https://chzzk.naver.com/,https://www.themoviedb.org/network/9195
+9195,Chzzk,1,"95, Jeongjail-ro, Bundang-gu, Seongnam-si, Gyeonggi-do, NAVER 1784, 13561",KR,,https://www.themoviedb.org/network/9195
 9196,亚洲旅游台,1,,,,https://www.themoviedb.org/network/9196
+9197,froots,2,,JP,https://froots-video.com/,https://www.themoviedb.org/network/9197
+9198,InterTV dos Vales,1,"Governador Valadares / Coronel Fabriciano, Minas Gerais, Brasil",BR,,https://www.themoviedb.org/network/9198
+9199,Mix with the Masters,4,,,,https://www.themoviedb.org/network/9199
+9200,NAVER Clip,2,,KR,https://clip.naver.com/,https://www.themoviedb.org/network/9200
