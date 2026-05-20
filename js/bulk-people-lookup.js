@@ -91,7 +91,6 @@ function updateNuvioImagePreviews() {
 }
 
 function openNuvioExportModal() {
-	const modal = document.getElementById("nuvio-export-modal");
 	const defaultCollectionName = document.getElementById("nuvio-collection-name");
 
 	if (!defaultCollectionName.value.trim()) {
@@ -99,22 +98,20 @@ function openNuvioExportModal() {
 	}
 
 	updateNuvioImagePreviews();
-	modal.hidden = false;
-	document.getElementById("nuvio-collection-name").focus();
+	openAppModal("nuvio-export-modal", "nuvio-collection-name");
 }
 
 function closeNuvioExportModal() {
-	document.getElementById("nuvio-export-modal").hidden = true;
 	closeNuvioImportHelpModal();
+	closeAppModal("nuvio-export-modal");
 }
 
 function openNuvioImportHelpModal() {
-	document.getElementById("nuvio-import-help-modal").hidden = false;
-	document.getElementById("close-nuvio-import-help").focus();
+	openAppModal("nuvio-import-help-modal", "close-nuvio-import-help");
 }
 
 function closeNuvioImportHelpModal() {
-	document.getElementById("nuvio-import-help-modal").hidden = true;
+	closeAppModal("nuvio-import-help-modal");
 }
 
 function createNuvioSource(result, options) {
@@ -337,12 +334,11 @@ function renderJsonCombineFileList() {
 
 function openJsonCombineFileManager() {
 	renderJsonCombineFileList();
-	document.getElementById("json-combine-file-manager-modal").hidden = false;
-	document.getElementById("close-json-combine-file-manager").focus();
+	openAppModal("json-combine-file-manager-modal", "close-json-combine-file-manager");
 }
 
 function closeJsonCombineFileManager() {
-	document.getElementById("json-combine-file-manager-modal").hidden = true;
+	closeAppModal("json-combine-file-manager-modal");
 }
 
 function removeJsonCombineFile(signature) {
@@ -456,14 +452,13 @@ function resetJsonCombineState() {
 
 function openJsonCombineModal() {
 	resetJsonCombineState();
-	document.getElementById("json-combine-modal").hidden = false;
-	document.getElementById("json-combine-collection-name").focus();
+	openAppModal("json-combine-modal", "json-combine-collection-name");
 }
 
 function closeJsonCombineModal() {
-	document.getElementById("json-combine-modal").hidden = true;
 	closeJsonCombineFileManager();
 	closeNuvioImportHelpModal();
+	closeAppModal("json-combine-modal");
 }
 
 function getJsonCombineCollectionName(defaultName) {

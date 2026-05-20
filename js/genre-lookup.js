@@ -706,13 +706,12 @@ function openGenreNuvioExportModal() {
 	updateGenreArtworkPreview();
 	document.getElementById("genre-nuvio-export-summary").textContent =
 		`This will create one ${nameInput.value.trim()} collection with ${selectedGenreKeys.size.toLocaleString()} selected genre reference${selectedGenreKeys.size === 1 ? "" : "s"}.`;
-	document.getElementById("genre-nuvio-export-modal").hidden = false;
-	nameInput.focus();
+	openAppModal("genre-nuvio-export-modal", nameInput);
 }
 
 function closeGenreNuvioExportModal() {
-	document.getElementById("genre-nuvio-export-modal").hidden = true;
 	closeNuvioImportHelpModal();
+	closeAppModal("genre-nuvio-export-modal");
 }
 
 function downloadGenreNuvioJson() {

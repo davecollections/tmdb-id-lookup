@@ -17,6 +17,10 @@ let minNetworkTitleCount = 0;
 let companyMeta = null;
 let networkMeta = null;
 let cacheAuditSummary = null;
+let companiesLoaded = false;
+let companiesLoading = false;
+let networksLoaded = false;
+let networksLoading = false;
 const selectedCompanyIds = new Set();
 const selectedNetworkIds = new Set();
 const companySelectionPresets = {
@@ -187,82 +191,185 @@ function setNetworkTitleCountFilter(minCount) {
 }
 
 async function loadCompanies() {
-	const companiesRes = await fetch(`./data/companies.min.json?v=${CACHE_VERSION}`);
+	if (companiesLoaded || companiesLoading) {
+		return;
+	}
 
-	const compactCompanies = await companiesRes.json();
+	companiesLoading = true;
+	showTableLoading("results", 9, "Loading company IDs...");
+	document.getElementById("stats").innerText = "Loading TMDB company IDs...";
+	document.getElementById("result-count").innerText = "Loading companies...";
 
-	companies = compactCompanies.map((company) => ({
-		id: company.i,
-		name: company.n || "",
-		parent_company: company.p || "",
-		origin_country: company.c || "",
-		headquarters: company.h || "",
-		logo_path: company.l || "",
-		titles_count: company.t || 0,
-		tmdb_url: `https://www.themoviedb.org/company/${company.i}`,
-	}));
+	try {
+		const companiesRes = await fetch(`./data/companies.min.json?v=${CACHE_VERSION}`);
 
-	document.getElementById("stats").innerText = `${companies.length.toLocaleString()} companies cached`;
+		if (!companiesRes.ok) {
+			throw new Error(`Company cache HTTP ${companiesRes.status}`);
+		}
 
-	const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
-		loadCacheAuditSummary(),
-		fetchJsonIfAvailable("./data/company-rebuild-meta.json"),
-		fetchJsonIfAvailable("./data/company-cache-repair-meta.json"),
-	]);
+		const compactCompanies = await companiesRes.json();
 
-	companyMeta = normaliseCacheMeta({
-		auditSummary,
-		datasetName: "companies",
-		itemCount: companies.length,
-		rebuildMeta,
-		repairMeta,
-	});
+		companies = compactCompanies.map((company) => ({
+			id: company.i,
+			name: company.n || "",
+			parent_company: company.p || "",
+			origin_country: company.c || "",
+			headquarters: company.h || "",
+			logo_path: company.l || "",
+			titles_count: company.t || 0,
+			tmdb_url: `https://www.themoviedb.org/company/${company.i}`,
+		}));
 
-	document.getElementById("stats").innerText =
-		`${companyMeta.total_cached.toLocaleString()} of ${companyMeta.export_total_ids.toLocaleString()} TMDB company IDs cached`;
+		document.getElementById("stats").innerText = `${companies.length.toLocaleString()} companies cached`;
 
-	document.getElementById("last-updated").innerText = `Last updated ${formatUpdatedDate(companyMeta.finished_at)}`;
+		const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
+			loadCacheAuditSummary(),
+			fetchJsonIfAvailable("./data/company-rebuild-meta.json"),
+			fetchJsonIfAvailable("./data/company-cache-repair-meta.json"),
+		]);
 
-	updateFooterStats();
-	applyFiltersAndSort();
+		companyMeta = normaliseCacheMeta({
+			auditSummary,
+			datasetName: "companies",
+			itemCount: companies.length,
+			rebuildMeta,
+			repairMeta,
+		});
+
+		document.getElementById("stats").innerText =
+			`${companyMeta.total_cached.toLocaleString()} of ${companyMeta.export_total_ids.toLocaleString()} TMDB company IDs cached`;
+
+		document.getElementById("last-updated").innerText = `Last updated ${formatUpdatedDate(companyMeta.finished_at)}`;
+
+		updateFooterStats();
+		companiesLoaded = true;
+		applyFiltersAndSort();
+	} catch {
+		document.getElementById("stats").innerText = "Company cache could not be loaded.";
+		document.getElementById("result-count").innerText = "Could not load companies";
+		showTableLoading("results", 9, "Company cache could not be loaded.");
+	} finally {
+		companiesLoading = false;
+	}
 }
 
 async function loadNetworks() {
-	const networksRes = await fetch(`./data/tv-networks.min.json?v=${CACHE_VERSION}`);
+	if (networksLoaded || networksLoading) {
+		return;
+	}
 
-	const compactNetworks = await networksRes.json();
+	networksLoading = true;
+	showTableLoading("network-results", 8, "Loading TV network IDs...");
+	document.getElementById("network-stats").innerText = "Loading TMDB TV network IDs...";
+	document.getElementById("network-result-count").innerText = "Loading TV networks...";
 
-	networks = compactNetworks.map((network) => ({
-		id: network.i,
-		name: network.n || "",
-		origin_country: network.c || "",
-		headquarters: network.h || "",
-		logo_path: network.l || "",
-		titles_count: network.t || 0,
-		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
-	}));
+	try {
+		const networksRes = await fetch(`./data/tv-networks.min.json?v=${CACHE_VERSION}`);
 
-	document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TMDB TV network IDs cached`;
-	const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
-		loadCacheAuditSummary(),
-		fetchJsonIfAvailable("./data/tv-network-rebuild-meta.json"),
-		fetchJsonIfAvailable("./data/tv-network-cache-repair-meta.json"),
-	]);
+		if (!networksRes.ok) {
+			throw new Error(`TV network cache HTTP ${networksRes.status}`);
+		}
 
-	networkMeta = normaliseCacheMeta({
-		auditSummary,
-		datasetName: "networks",
-		itemCount: networks.length,
-		rebuildMeta,
-		repairMeta,
-	});
+		const compactNetworks = await networksRes.json();
 
-	document.getElementById("network-stats").innerText =
-		`${networkMeta.total_cached.toLocaleString()} of ${networkMeta.export_total_ids.toLocaleString()} TMDB TV network IDs cached`;
-	document.getElementById("network-last-updated").innerText = `Last updated ${formatUpdatedDate(networkMeta.finished_at)}`;
+		networks = compactNetworks.map((network) => ({
+			id: network.i,
+			name: network.n || "",
+			origin_country: network.c || "",
+			headquarters: network.h || "",
+			logo_path: network.l || "",
+			titles_count: network.t || 0,
+			tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
+		}));
 
-	updateFooterStats();
-	applyNetworkFiltersAndSort();
+		document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TMDB TV network IDs cached`;
+		const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
+			loadCacheAuditSummary(),
+			fetchJsonIfAvailable("./data/tv-network-rebuild-meta.json"),
+			fetchJsonIfAvailable("./data/tv-network-cache-repair-meta.json"),
+		]);
+
+		networkMeta = normaliseCacheMeta({
+			auditSummary,
+			datasetName: "networks",
+			itemCount: networks.length,
+			rebuildMeta,
+			repairMeta,
+		});
+
+		document.getElementById("network-stats").innerText =
+			`${networkMeta.total_cached.toLocaleString()} of ${networkMeta.export_total_ids.toLocaleString()} TMDB TV network IDs cached`;
+		document.getElementById("network-last-updated").innerText = `Last updated ${formatUpdatedDate(networkMeta.finished_at)}`;
+
+		updateFooterStats();
+		networksLoaded = true;
+		applyNetworkFiltersAndSort();
+	} catch {
+		document.getElementById("network-stats").innerText = "TV network cache could not be loaded.";
+		document.getElementById("network-result-count").innerText = "Could not load TV networks";
+		showTableLoading("network-results", 8, "TV network cache could not be loaded.");
+	} finally {
+		networksLoading = false;
+	}
+}
+
+function showTableLoading(tbodyId, columnCount, message) {
+	const tbody = document.getElementById(tbodyId);
+
+	if (!tbody) {
+		return;
+	}
+
+	tbody.replaceChildren(
+		createElement("tr", {}, [
+			createElement("td", {
+				text: message,
+				attrs: {
+					colspan: String(columnCount),
+				},
+			}),
+		]),
+	);
+}
+
+function ensureCachedLookupDataForTab(tabName) {
+	if (tabName === "companies") {
+		loadCompanies();
+		return;
+	}
+
+	if (tabName === "networks") {
+		loadNetworks();
+	}
+}
+
+function initCachedLookupLazyLoad() {
+	const cachedSection = document.querySelector(".cached-tools-section");
+
+	document.getElementById("stats").innerText = "Company IDs will load when this section opens.";
+	document.getElementById("last-updated").innerText = "Last updated after cache loads";
+	document.getElementById("network-stats").innerText = "TV network IDs will load when this tab opens.";
+	document.getElementById("network-last-updated").innerText = "Last updated after cache loads";
+	showTableLoading("results", 9, "Company IDs loading...");
+
+	if (!cachedSection || !("IntersectionObserver" in window)) {
+		window.requestIdleCallback?.(() => loadCompanies(), { timeout: 1500 }) || setTimeout(loadCompanies, 0);
+		return;
+	}
+
+	const observer = new IntersectionObserver(
+		(entries) => {
+			if (entries.some((entry) => entry.isIntersecting)) {
+				loadCompanies();
+				observer.disconnect();
+			}
+		},
+		{
+			rootMargin: "600px 0px",
+		},
+	);
+
+	observer.observe(cachedSection);
 }
 
 function getSortValue(company, key) {
@@ -713,13 +820,12 @@ function openCompanyNuvioExportModal() {
 
 	document.getElementById("company-nuvio-export-summary").textContent =
 		`This will create one ${nameInput.value.trim()} collection with ${selectedCount.toLocaleString()} folder${selectedCount === 1 ? "" : "s"}.`;
-	document.getElementById("company-nuvio-export-modal").hidden = false;
-	nameInput.focus();
+	openAppModal("company-nuvio-export-modal", nameInput);
 }
 
 function closeCompanyNuvioExportModal() {
-	document.getElementById("company-nuvio-export-modal").hidden = true;
 	closeNuvioImportHelpModal();
+	closeAppModal("company-nuvio-export-modal");
 }
 
 function downloadCompanyNuvioJson() {
@@ -857,13 +963,12 @@ function openNetworkNuvioExportModal() {
 
 	document.getElementById("network-nuvio-export-summary").textContent =
 		`This will create one ${nameInput.value.trim()} collection with ${selectedCount.toLocaleString()} folder${selectedCount === 1 ? "" : "s"}.`;
-	document.getElementById("network-nuvio-export-modal").hidden = false;
-	nameInput.focus();
+	openAppModal("network-nuvio-export-modal", nameInput);
 }
 
 function closeNetworkNuvioExportModal() {
-	document.getElementById("network-nuvio-export-modal").hidden = true;
 	closeNuvioImportHelpModal();
+	closeAppModal("network-nuvio-export-modal");
 }
 
 function downloadNetworkNuvioJson() {
@@ -1159,6 +1264,5 @@ function initCachedLookups() {
 		}
 	});
 
-	loadCompanies();
-	loadNetworks();
+	initCachedLookupLazyLoad();
 }
