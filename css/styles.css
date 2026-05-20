@@ -784,6 +784,7 @@ th.sortable:hover {
 .json-combine-options {
 	display: grid;
 	gap: 12px;
+	min-width: 0;
 }
 
 .json-combine-options input {
@@ -801,6 +802,7 @@ th.sortable:hover {
 	display: flex;
 	gap: 10px;
 	align-items: flex-start;
+	min-width: 0;
 	padding: 12px;
 	border: 1px solid #253244;
 	border-radius: 10px;
@@ -814,8 +816,15 @@ th.sortable:hover {
 
 .json-combine-choice input {
 	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	overflow: hidden;
 	opacity: 0;
 	pointer-events: none;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
 }
 
 .json-combine-choice:hover,
@@ -835,6 +844,8 @@ th.sortable:hover {
 .json-combine-choice-title,
 .json-combine-choice-help {
 	display: block;
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .json-combine-choice-title {

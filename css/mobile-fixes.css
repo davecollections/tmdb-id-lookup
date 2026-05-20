@@ -101,7 +101,7 @@
 
 	.json-combine-mode-grid,
 	.json-combine-sort-grid {
-		grid-template-columns: 1fr;
+		grid-template-columns: 1fr !important;
 	}
 
 	.genre-export-layout,

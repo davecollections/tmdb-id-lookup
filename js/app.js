@@ -1,4 +1,4 @@
-function setActiveCachedTab(tabName) {
+function setActiveCachedTab(tabName, options = {}) {
 	document.querySelectorAll(".cached-tab-button").forEach((button) => {
 		const isActive = button.dataset.cachedTab === tabName;
 
@@ -9,6 +9,10 @@ function setActiveCachedTab(tabName) {
 	document.querySelectorAll(".cached-tab-panel").forEach((panel) => {
 		panel.classList.toggle("active", panel.dataset.cachedPanel === tabName);
 	});
+
+	if (options.load !== false && typeof ensureCachedLookupDataForTab === "function") {
+		ensureCachedLookupDataForTab(tabName);
+	}
 }
 
 document.querySelectorAll(".cached-tab-button").forEach((button) => {
@@ -23,7 +27,8 @@ document.getElementById("back-to-top").addEventListener("click", () => {
 		behavior: "smooth",
 	});
 });
-setActiveCachedTab("companies");
+setActiveCachedTab("companies", { load: false });
+initAppModalSystem();
 initCachedLookups();
 initTmdbLookup();
 initGenreLookup();
