@@ -1042,6 +1042,38 @@ function getBulkPeopleNames() {
 	return names;
 }
 
+function isSupportedBulkPeopleFile(file) {
+	const filename = String(file.name || "").toLowerCase();
+	const mimeType = String(file.type || "").toLowerCase();
+	const hasSupportedExtension = filename.endsWith(".csv") || filename.endsWith(".txt");
+	const hasSupportedMimeType = ["text/csv", "text/plain", "application/vnd.ms-excel"].includes(mimeType);
+
+	return hasSupportedExtension || hasSupportedMimeType;
+}
+
+function looksLikeJsonFileText(text) {
+	const trimmedText = String(text || "").trim();
+
+	if (!trimmedText || !["[", "{"].includes(trimmedText[0])) {
+		return false;
+	}
+
+	try {
+		JSON.parse(trimmedText);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function rejectBulkPeopleFile(message) {
+	document.getElementById("bulk-people-csv-file").value = "";
+	document.getElementById("bulk-people-csv-name").textContent = "No file selected";
+	setIncompleteNameWarning(false);
+	lastBulkPeopleIncompleteInputs = new Set();
+	document.getElementById("bulk-people-status").innerText = message;
+}
+
 function loadBulkPeopleCsvFile(file) {
 	const status = document.getElementById("bulk-people-status");
 
@@ -1049,11 +1081,23 @@ function loadBulkPeopleCsvFile(file) {
 		return;
 	}
 
+	if (!isSupportedBulkPeopleFile(file)) {
+		rejectBulkPeopleFile("Unsupported file type. Choose a CSV or TXT file with person names.");
+		return;
+	}
+
 	const reader = new FileReader();
 
 	reader.addEventListener("load", () => {
-		const csvResult = getNamesFromCsvText(String(reader.result || ""));
+		const fileText = String(reader.result || "");
 		const fileName = document.getElementById("bulk-people-csv-name");
+
+		if (looksLikeJsonFileText(fileText)) {
+			rejectBulkPeopleFile("That file looks like JSON. Choose a CSV or TXT file with person names, or paste CSV text instead.");
+			return;
+		}
+
+		const csvResult = getNamesFromCsvText(fileText);
 
 		fileName.textContent = file.name;
 		setIncompleteNameWarning(csvResult.hasIncompleteNames);
@@ -1084,7 +1128,7 @@ function loadBulkPeopleCsvFile(file) {
 	});
 
 	reader.addEventListener("error", () => {
-		status.innerText = "Could not read that CSV file.";
+		status.innerText = "Could not read that CSV or TXT file.";
 	});
 
 	reader.readAsText(file);
