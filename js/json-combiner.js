@@ -405,7 +405,7 @@ function buildCombinedNuvioJson() {
 			mode: "existing-only",
 		};
 		setJsonCombineStatus(
-			`Ready: ${activeExistingCollections.length} existing collection${activeExistingCollections.length === 1 ? "" : "s"} kept unchanged.${duplicateFileText} Add people batch files if you want to merge new folders into this JSON.`,
+			`Ready: ${activeExistingCollections.length} existing collection${activeExistingCollections.length === 1 ? "" : "s"} kept unchanged.${duplicateFileText} Add people batch files if you want to merge folders into this JSON.`,
 			"ready",
 		);
 		document.getElementById("download-combined-json").disabled = false;
@@ -437,7 +437,7 @@ function buildCombinedNuvioJson() {
 		const duplicateText = duplicateCount ? ` ${duplicateCount} duplicate folder${duplicateCount === 1 ? "" : "s"} skipped.` : "";
 
 		setJsonCombineStatus(
-			`Ready: ${appendedCount} folder${appendedCount === 1 ? "" : "s"} added to ${targetCollection.title || "the selected collection"}.${duplicateText}${duplicateFileText}${sortText}`,
+			`Ready: ${appendedCount} folder${appendedCount === 1 ? "" : "s"} merged into ${targetCollection.title || "the selected collection"}.${duplicateText}${duplicateFileText}${sortText}`,
 			"ready",
 		);
 		document.getElementById("download-combined-json").disabled = false;
@@ -458,7 +458,7 @@ function buildCombinedNuvioJson() {
 			mode: "separate",
 		};
 		setJsonCombineStatus(
-			`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"}, ${collections.length} collection${collections.length === 1 ? "" : "s"}, ${folderCount} folder${folderCount === 1 ? "" : "s"} kept separate.${duplicateFileText}`,
+			`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined into one download, with ${collections.length} collection${collections.length === 1 ? "" : "s"} and ${folderCount} folder${folderCount === 1 ? "" : "s"} kept separate.${duplicateFileText}`,
 			"ready",
 		);
 		document.getElementById("download-combined-json").disabled = false;
@@ -499,7 +499,7 @@ function buildCombinedNuvioJson() {
 			: "";
 
 	setJsonCombineStatus(
-		`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"}, ${batchCollections.length} people batch collection${batchCollections.length === 1 ? "" : "s"}, ${folderCount} folder${folderCount === 1 ? "" : "s"} combined.${duplicateText}${duplicateFileText}${sortText}${flattenText}${existingText}`,
+		`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined, with ${folderCount} folder${folderCount === 1 ? "" : "s"} merged into one collection.${duplicateText}${duplicateFileText}${sortText}${flattenText}${existingText}`,
 		"ready",
 	);
 	document.getElementById("download-combined-json").disabled = false;

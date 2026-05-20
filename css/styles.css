@@ -73,6 +73,10 @@ button:disabled {
 	margin: 6px 0;
 }
 
+.lookup-copy-help {
+	margin: 10px 0 14px;
+}
+
 .search-row {
 	display: flex;
 	gap: 10px;

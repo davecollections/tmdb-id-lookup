@@ -33,7 +33,7 @@ The site is designed for people building media libraries, curated collections, d
 * Bulk lookup person names from pasted text, pasted CSV, or uploaded CSV/text files
 * Split larger people lists into clear 50-name batches
 * Create Nuvio collections JSON from matched bulk people results
-* Combine split people JSON batches into one Nuvio collection JSON
+* Merge split people JSON batches into one Nuvio collection JSON
 * Append people batch folders into an existing Nuvio collections JSON file
 * Create Nuvio collections JSON from selected companies, networks, and genres
 * Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
@@ -100,7 +100,7 @@ Matched results can be downloaded as a CSV or exported as Nuvio collections JSON
 
 The Nuvio JSON export can create people-based collections for actors, directors, or mixed people lists. It includes optional default collection artwork, folder hero artwork, and a hide-title setting for TMDB person images.
 
-If a people list needs to be split into multiple 50-name batches, the bulk people tool can also combine exported Nuvio JSON files. Files can be added in batches, reviewed, and removed if needed. The combined download can merge every folder into one collection, sort folders by first or last name, keep uploaded collections separate, or append people batch folders into an existing Nuvio collections JSON file.
+If a people list needs to be split into multiple 50-name batches, the bulk people tool can combine exported Nuvio JSON files into one download. Files can be added in batches, reviewed, and removed if needed. Single-collection mode merges every folder into one collection, with optional first-name or last-name sorting. Keep-collections mode combines the uploaded collections into one file without merging their folders. Existing Nuvio JSON files can also be kept, skipped, or used as the target for appended people batch folders.
 
 ## Nuvio JSON Exports
 
@@ -120,6 +120,12 @@ Each Nuvio export modal includes a help button with current import steps for Nuv
 Cached company, TV network, and genre data is updated automatically from TMDB data and API responses.
 
 The site is deployed with GitHub Pages.
+
+## Local Checks
+
+Run `scripts\check.cmd` before pushing changes on Windows. This validates frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, and unsafe rendering patterns.
+
+If you are not on Windows, run `node scripts/check-frontend.mjs` directly.
 
 ## Notes
 

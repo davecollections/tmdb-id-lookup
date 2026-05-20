@@ -46,6 +46,10 @@
 
 				<button class="lookup-filter-button" type="button" data-tmdb-filter="collections">Collections</button>
 			</div>
+			<p class="meta lookup-copy-help">
+				Copy the TMDB ID from a result, then paste it into the matching Nuvio field. This site does not
+				connect to your Nuvio account.
+			</p>
 			<div id="collection-results" class="collection-results"></div>
 		</section>
 		<section class="tool-section bulk-lookup">
@@ -231,7 +235,7 @@
 
 				<div class="json-combine-options">
 					<p class="meta">
-						Add one or more Nuvio collection JSON files. You can add files in batches, then choose how to merge them.
+						Add one or more Nuvio collection JSON files. Combine files into one download, or merge folders into one collection.
 					</p>
 
 					<div class="bulk-file-input json-combine-file-input">
@@ -259,7 +263,7 @@
 							<input type="radio" name="json-combine-mode" value="separate" />
 							<span>
 								<span class="json-combine-choice-title">Keep collections</span>
-								<span class="json-combine-choice-help">Keep each uploaded collection separate, but download one JSON file.</span>
+								<span class="json-combine-choice-help">Combine uploaded collections into one download without merging folders.</span>
 							</span>
 						</label>
 					</div>
@@ -314,7 +318,7 @@
 								<input type="radio" name="json-combine-existing-mode" value="new" checked />
 								<span>
 									<span class="json-combine-choice-title">Create new collection</span>
-									<span class="json-combine-choice-help">Keep existing collections and add a new combined collection.</span>
+									<span class="json-combine-choice-help">Keep existing collections and add a new merged collection.</span>
 								</span>
 							</label>
 
@@ -322,7 +326,7 @@
 								<input type="radio" name="json-combine-existing-mode" value="append" />
 								<span>
 									<span class="json-combine-choice-title">Append to existing</span>
-									<span class="json-combine-choice-help">Add batch folders to one collection already in the JSON.</span>
+									<span class="json-combine-choice-help">Merge batch folders into one collection already in the JSON.</span>
 								</span>
 							</label>
 
@@ -330,7 +334,7 @@
 								<input type="radio" name="json-combine-existing-mode" value="ignore" />
 								<span>
 									<span class="json-combine-choice-title">Ignore existing JSON</span>
-									<span class="json-combine-choice-help">Use only people batch files and skip the full JSON file.</span>
+									<span class="json-combine-choice-help">Skip full JSON files and combine only people batch files.</span>
 								</span>
 							</label>
 						</div>
@@ -350,7 +354,7 @@
 					</button>
 
 					<div class="modal-actions">
-						<button id="download-combined-json" type="button" disabled>Download Combined JSON</button>
+						<button id="download-combined-json" type="button" disabled>Download JSON</button>
 						<button id="cancel-json-combine" type="button">Cancel</button>
 					</div>
 				</div>
@@ -366,7 +370,7 @@
 					</button>
 				</div>
 
-				<p class="meta">Remove any file that was added by mistake. The merged JSON updates automatically.</p>
+				<p class="meta">Remove any file that was added by mistake. The combined JSON updates automatically.</p>
 
 				<div id="json-combine-file-list" class="json-combine-file-list" aria-label="Added Nuvio JSON files"></div>
 			</div>
