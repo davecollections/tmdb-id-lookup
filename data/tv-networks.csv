@@ -3294,7 +3294,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 6133,Ultraman Connection,2,,,,https://www.themoviedb.org/network/6133
 6134,BS Shochiku-Tokyu,16,,JP,,https://www.themoviedb.org/network/6134
 6137,Mindvalley,1,,,,https://www.themoviedb.org/network/6137
-6141,Net5,0,,,,https://www.themoviedb.org/network/6141
 6142,BBC One Wales,28,"Cardiff, Wales",GB,,https://www.themoviedb.org/network/6142
 6143,SETV,19,"Fuzhou, Fujian Province",CN,,https://www.themoviedb.org/network/6143
 6144,FJTV,5,"Fuzhou, Fujian Province",CN,,https://www.themoviedb.org/network/6144
@@ -4453,7 +4452,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8039,c,0,,,,https://www.themoviedb.org/network/8039
 8041,1001,1,,,,https://www.themoviedb.org/network/8041
 8042,FR3,0,,,,https://www.themoviedb.org/network/8042
-8043,OWN,1,,,,https://www.themoviedb.org/network/8043
 8044,Viu,1,,,,https://www.themoviedb.org/network/8044
 8045,SVT,3,,,,https://www.themoviedb.org/network/8045
 8046,X,6,"Bastrop, Texas",,,https://www.themoviedb.org/network/8046
@@ -4806,7 +4804,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8514,ONE GRAND,1,,TH,,https://www.themoviedb.org/network/8514
 8515,LAFTEL,0,,,,https://www.themoviedb.org/network/8515
 8516,Disney+ Hotstar,5,,TH,,https://www.themoviedb.org/network/8516
-8517,iHeart Radio,0,,,,https://www.themoviedb.org/network/8517
 8518,MTV,1,,,,https://www.themoviedb.org/network/8518
 8519,湖北经济电视台,2,,,,https://www.themoviedb.org/network/8519
 8520,Machinima,0,,,,https://www.themoviedb.org/network/8520
@@ -5377,7 +5374,13 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9194,澳視澳門頻道,1,,,,https://www.themoviedb.org/network/9194
 9195,Chzzk,1,"95, Jeongjail-ro, Bundang-gu, Seongnam-si, Gyeonggi-do, NAVER 1784, 13561",KR,,https://www.themoviedb.org/network/9195
 9196,亚洲旅游台,1,,,,https://www.themoviedb.org/network/9196
-9197,froots,2,,JP,https://froots-video.com/,https://www.themoviedb.org/network/9197
+9197,froots,2,,JP,,https://www.themoviedb.org/network/9197
 9198,InterTV dos Vales,1,"Governador Valadares / Coronel Fabriciano, Minas Gerais, Brasil",BR,,https://www.themoviedb.org/network/9198
 9199,Mix with the Masters,4,,,,https://www.themoviedb.org/network/9199
-9200,NAVER Clip,2,,KR,https://clip.naver.com/,https://www.themoviedb.org/network/9200
+9200,NAVER Clip,2,,KR,,https://www.themoviedb.org/network/9200
+9201,wrest,0,,,,https://www.themoviedb.org/network/9201
+9202,Saina play,1,"Kochi, Kerala, India",IN,https://sainaplay.com/,https://www.themoviedb.org/network/9202
+9203,Globoplay,0,,,,https://www.themoviedb.org/network/9203
+9204,MADACY HOME VIDEO,0,,,,https://www.themoviedb.org/network/9204
+9205,Hiru TV,1,"35th Floor, East Tower, World Trade Center, Colombo 01",LK,https://www.hirutv.lk,https://www.themoviedb.org/network/9205
+9206,https://www.bukids.com/32018.html,1,,,,https://www.themoviedb.org/network/9206
