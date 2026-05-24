@@ -5380,7 +5380,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9200,NAVER Clip,2,,KR,,https://www.themoviedb.org/network/9200
 9201,wrest,0,,,,https://www.themoviedb.org/network/9201
 9202,Saina play,1,"Kochi, Kerala, India",IN,,https://www.themoviedb.org/network/9202
-9203,Globoplay,0,,,,https://www.themoviedb.org/network/9203
 9204,MADACY HOME VIDEO,0,,,,https://www.themoviedb.org/network/9204
 9205,Hiru TV,1,"35th Floor, East Tower, World Trade Center, Colombo 01",LK,,https://www.themoviedb.org/network/9205
 9206,https://www.bukids.com/32018.html,1,,,,https://www.themoviedb.org/network/9206
@@ -5390,3 +5389,5 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9210,蒋明希,0,,,,https://www.themoviedb.org/network/9210
 9211,VillaTV,1,,,,https://www.themoviedb.org/network/9211
 9212,Hua Sheng Short Drama (CN),1,,CN,,https://www.themoviedb.org/network/9212
+9213,Milliy TV,1,,UZ,http://milliy.tv/,https://www.themoviedb.org/network/9213
+9214,إذاعة صوت العرب - اتحاد الإذاعة والتلفزيون (ج.م.ع),1,,EG,,https://www.themoviedb.org/network/9214
