@@ -11,13 +11,23 @@ function tmdbApiUrl(path, params = {}) {
 }
 
 async function tmdbJson(url) {
-	const res = await fetch(url);
+	try {
+		const res = await fetch(url);
 
-	if (!res.ok) {
+		if (!res.ok) {
+			return null;
+		}
+
+		const contentType = res.headers.get("content-type");
+		if (!contentType || !contentType.includes("application/json")) {
+			return null;
+		}
+
+		return await res.json();
+	} catch (error) {
+		console.error("TMDB API request failed:", error);
 		return null;
 	}
-
-	return res.json();
 }
 
 async function tmdbJsonWithStatus(url) {
@@ -42,13 +52,24 @@ async function tmdbJsonWithStatus(url) {
 			};
 		}
 
+		const contentType = res.headers.get("content-type");
+		if (!contentType || !contentType.includes("application/json")) {
+			return {
+				ok: false,
+				rateLimited: false,
+				status: 200,
+				data: null,
+			};
+		}
+
 		return {
 			ok: true,
 			rateLimited: false,
 			status: res.status,
 			data: await res.json(),
 		};
-	} catch {
+	} catch (error) {
+		console.error("TMDB API request failed:", error);
 		return {
 			ok: false,
 			rateLimited: false,
@@ -59,19 +80,14 @@ async function tmdbJsonWithStatus(url) {
 }
 
 async function getPersonKnownCredits(personId) {
-	try {
-		const credits = await tmdbJson(tmdbApiUrl(`/3/person/${personId}/combined_credits`));
+	const credits = await tmdbJson(tmdbApiUrl(`/3/person/${personId}/combined_credits`));
 
-		if (!credits) {
-			return "\u2014";
-		}
-
-		const castCount = Array.isArray(credits.cast) ? credits.cast.length : 0;
-
-		const crewCount = Array.isArray(credits.crew) ? credits.crew.length : 0;
-
-		return (castCount + crewCount).toLocaleString();
-	} catch {
+	if (!credits || typeof credits !== 'object') {
 		return "\u2014";
 	}
+
+	const castCount = Array.isArray(credits.cast) ? credits.cast.length : 0;
+	const crewCount = Array.isArray(credits.crew) ? credits.crew.length : 0;
+
+	return (castCount + crewCount).toLocaleString();
 }
