@@ -1,19 +1,16 @@
 {
   "last_repair": {
-    "source_audit_date": "2026-06-01T13:46:56.158Z",
+    "source_audit_date": "2026-06-02T12:14:11.195Z",
     "max_repair_ids": 200,
-    "missing_requested": [
-      9231
-    ],
+    "missing_requested": [],
     "extra_requested": [],
-    "added": [
-      9231
-    ],
+    "added": [],
     "removed": [],
     "not_found": [],
     "failed": [],
-    "started_at": "2026-06-01T13:47:37.287Z",
-    "total_cached": 5408,
-    "finished_at": "2026-06-01T13:47:37.647Z"
+    "started_at": "2026-06-02T12:15:16.753Z",
+    "skipped": true,
+    "reason": "nothing_to_repair",
+    "finished_at": "2026-06-02T12:15:16.757Z"
   }
 }
