@@ -1,18 +1,18 @@
 {
   "last_scan": {
     "mode": "tmdb_export_sliced_enrichment",
-    "export_date": "06_01_2026",
+    "export_date": "06_02_2026",
     "export_total_ids": 5408,
-    "offset": 0,
+    "offset": 6000,
     "limit": 6000,
-    "actual_limit": 5408,
+    "actual_limit": 0,
     "lowest_id": 1,
     "highest_id": 9231,
-    "checked": 5408,
-    "found": 5408,
+    "checked": 0,
+    "found": 0,
     "missing": 0,
-    "started_at": "2026-06-01T21:46:31.279Z",
+    "started_at": "2026-06-02T12:28:15.385Z",
     "total_cached": 5408,
-    "finished_at": "2026-06-01T22:06:29.723Z"
+    "finished_at": "2026-06-02T12:28:15.406Z"
   }
 }
