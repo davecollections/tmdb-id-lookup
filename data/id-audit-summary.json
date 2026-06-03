@@ -1,30 +1,30 @@
 {
-  "audited_at": "2026-06-02T12:14:11.195Z",
+  "audited_at": "2026-06-03T12:49:27.209Z",
   "datasets": [
     {
       "dataset": "companies",
       "label": "Production Companies",
-      "export_date": "06_02_2026",
-      "export_total_ids": 250081,
-      "cached_total_ids": 249990,
-      "cached_unique_ids": 249990,
-      "matched_count": 249983,
-      "coverage_percent": 99.9608,
-      "missing_from_cache_count": 98,
-      "extra_in_cache_count": 7,
+      "export_date": "06_03_2026",
+      "export_total_ids": 250184,
+      "cached_total_ids": 250081,
+      "cached_unique_ids": 250081,
+      "matched_count": 250070,
+      "coverage_percent": 99.9544,
+      "missing_from_cache_count": 114,
+      "extra_in_cache_count": 11,
       "duplicate_cached_ids_count": 0
     },
     {
       "dataset": "networks",
       "label": "TV Networks",
-      "export_date": "06_02_2026",
-      "export_total_ids": 5408,
+      "export_date": "06_03_2026",
+      "export_total_ids": 5409,
       "cached_total_ids": 5408,
       "cached_unique_ids": 5408,
-      "matched_count": 5408,
-      "coverage_percent": 100,
-      "missing_from_cache_count": 0,
-      "extra_in_cache_count": 0,
+      "matched_count": 5407,
+      "coverage_percent": 99.963,
+      "missing_from_cache_count": 2,
+      "extra_in_cache_count": 1,
       "duplicate_cached_ids_count": 0
     }
   ]
