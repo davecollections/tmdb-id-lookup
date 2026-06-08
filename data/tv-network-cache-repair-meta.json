@@ -1,23 +1,33 @@
 {
   "last_repair": {
-    "source_audit_date": "2026-06-07T10:35:59.636Z",
+    "source_audit_date": "2026-06-08T12:41:28.764Z",
     "max_repair_ids": 200,
     "missing_requested": [
-      9241,
-      9242,
-      9243
+      9244,
+      9245,
+      9246,
+      9247,
+      9248,
+      9249,
+      9250,
+      9251
     ],
     "extra_requested": [],
     "added": [
-      9241,
-      9242,
-      9243
+      9244,
+      9245,
+      9246,
+      9247,
+      9248,
+      9249,
+      9250,
+      9251
     ],
     "removed": [],
     "not_found": [],
     "failed": [],
-    "started_at": "2026-06-07T10:36:28.215Z",
-    "total_cached": 5419,
-    "finished_at": "2026-06-07T10:36:28.811Z"
+    "started_at": "2026-06-08T12:41:58.734Z",
+    "total_cached": 5427,
+    "finished_at": "2026-06-08T12:42:00.197Z"
   }
 }
