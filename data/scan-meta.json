@@ -1,16 +1,16 @@
 {
   "last_scan": {
     "mode": "manual_company_rebuild_from_export",
-    "export_date": "06_09_2026",
-    "export_total_ids": 250707,
-    "offset": 157144,
+    "export_date": "06_10_2026",
+    "export_total_ids": 250777,
+    "offset": 176787,
     "limit": 19643,
     "actual_limit": 19643,
     "checked": 19643,
-    "found": 19643,
-    "missing": 0,
-    "started_at": "2026-06-09T11:50:55.100Z",
-    "total_cached": 250707,
-    "finished_at": "2026-06-09T13:41:15.244Z"
+    "found": 19642,
+    "missing": 1,
+    "started_at": "2026-06-10T12:11:34.334Z",
+    "total_cached": 250777,
+    "finished_at": "2026-06-10T13:57:50.543Z"
   }
 }
