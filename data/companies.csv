@@ -27502,7 +27502,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 41649,Melbarken,0,,,,https://www.themoviedb.org/company/41649
 41651,Ralf Westhoff Filmproduktion,1,,,,https://www.themoviedb.org/company/41651
 41653,INDI FILM,16,Stuttgart,DE,,https://www.themoviedb.org/company/41653
-41654,Techfilm Studio,1,,,,https://www.themoviedb.org/company/41654
 41656,Lupin Film,15,Rome,IT,,https://www.themoviedb.org/company/41656
 41658,Residaco,1,,,,https://www.themoviedb.org/company/41658
 41659,Round Films,3,"New York City, New York",US,,https://www.themoviedb.org/company/41659
@@ -39218,7 +39217,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 66103,Newark S.A. Panama,1,,,,https://www.themoviedb.org/company/66103
 66105,Dibulitoon,0,,,,https://www.themoviedb.org/company/66105
 66108,Vox Lucida,0,,,,https://www.themoviedb.org/company/66108
-66110,KTV Original Drama,1,,JP,,https://www.themoviedb.org/company/66110
 66115,Lunabeach TV und Media,6,Hamburg,DE,,https://www.themoviedb.org/company/66115
 66116,Angry Dragon Entertainment,1,,,,https://www.themoviedb.org/company/66116
 66117,Dragon Productions LLC,2,,,,https://www.themoviedb.org/company/66117
@@ -74814,7 +74812,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 109145,Firefly Films,4,,US,,https://www.themoviedb.org/company/109145
 109146,Magnolia TV Spain,0,Madrid,ES,,https://www.themoviedb.org/company/109146
 109147,Telemark,13,Warsaw,PL,,https://www.themoviedb.org/company/109147
-109148,Beijing Sparkle Roll Media Corporation,1,Beijing,CN,,https://www.themoviedb.org/company/109148
 109149,P.R.P.,0,,,,https://www.themoviedb.org/company/109149
 109150,Arte Creative,1,,,,https://www.themoviedb.org/company/109150
 109151,Heaven Scent Films,1,,,,https://www.themoviedb.org/company/109151
@@ -100045,7 +100042,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 136872,GFA Entertainment,1,,,,https://www.themoviedb.org/company/136872
 136873,Gap Financing,1,,,,https://www.themoviedb.org/company/136873
 136874,Lime Studios,1,,,,https://www.themoviedb.org/company/136874
-136875,Sparkle Roll Media,1,,,,https://www.themoviedb.org/company/136875
 136876,늘푸른시네마,3,,KR,,https://www.themoviedb.org/company/136876
 136877,늘푸른시네마,0,,,,https://www.themoviedb.org/company/136877
 136878,Too Right Productions,1,,,,https://www.themoviedb.org/company/136878
@@ -174864,7 +174860,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 220718,Ol Pejeta Conservancy,1,,,,https://www.themoviedb.org/company/220718
 220720,Fugues de Barbarie,1,"Fugues de Barbarie, 8 rue Blaise Pascal, 42000 Saint-Étienne, France",FR,,https://www.themoviedb.org/company/220720
 220721,盛世鸿达与麦田映画联合出品,1,,,,https://www.themoviedb.org/company/220721
-220722,北京唐德国际电影文化有限公司,3,,,,https://www.themoviedb.org/company/220722
 220723,Tem Dendê Produções,4,,,,https://www.themoviedb.org/company/220723
 220724,Toonot Pictures,1,,,,https://www.themoviedb.org/company/220724
 220726,东韵星文化传媒,1,,,,https://www.themoviedb.org/company/220726
@@ -206210,7 +206205,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 254373,Dinu Pass Productions,1,,,,https://www.themoviedb.org/company/254373
 254374,IndieRock Films,1,,,,https://www.themoviedb.org/company/254374
 254375,Les Productions Contre-Jour,1,,,,https://www.themoviedb.org/company/254375
-254376,Moscow Studio of Technical Films,1,,,,https://www.themoviedb.org/company/254376
 254377,Catalyst Pictures Ltd,1,,,,https://www.themoviedb.org/company/254377
 254378,Lumen Visual,0,,,,https://www.themoviedb.org/company/254378
 254379,Ophiuchus Project,0,,,,https://www.themoviedb.org/company/254379
@@ -219829,7 +219823,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 268877,Reflektor Media,1,Dublin,IE,,https://www.themoviedb.org/company/268877
 268878,Jack Gill's Chips Production,1,,,,https://www.themoviedb.org/company/268878
 268879,Everyday People Productions,1,"Toronto, Ontario",CA,,https://www.themoviedb.org/company/268879
-268880,KTV,2,,JP,,https://www.themoviedb.org/company/268880
 268881,vegue,0,,,,https://www.themoviedb.org/company/268881
 268882,Tatari Film,1,,,,https://www.themoviedb.org/company/268882
 268883,Tatari & Seeger Filmproduktion,1,Cologne,DE,,https://www.themoviedb.org/company/268883
@@ -251059,7 +251052,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 301501,A&A Produktion AB,1,,,,https://www.themoviedb.org/company/301501
 301503,Loughrea Films LLC,1,,,,https://www.themoviedb.org/company/301503
 301504,HOCA Studio,1,,,,https://www.themoviedb.org/company/301504
-301505,I've Gained Sentience,1,,AU,https://www.ivegainedsentience.com,https://www.themoviedb.org/company/301505
+301505,I've Gained Sentience,1,,AU,,https://www.themoviedb.org/company/301505
 301506,Streulicht Kollektiv,2,,,,https://www.themoviedb.org/company/301506
 301507,AmateurBoxxx,0,,,,https://www.themoviedb.org/company/301507
 301508,TGF productions,1,,,,https://www.themoviedb.org/company/301508
@@ -251101,7 +251094,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 301544,La brèche,1,,,,https://www.themoviedb.org/company/301544
 301545,Kenwood Corporation,1,,,,https://www.themoviedb.org/company/301545
 301546,GravadoraNT,0,,,,https://www.themoviedb.org/company/301546
-301547,Grabadora Nuevo Tiempo,0,"Jacareí, São Paulo",BR,https://youtube.com/@grabadorant?si=R3cyRpsgvuFQlS-v,https://www.themoviedb.org/company/301547
+301547,Grabadora Nuevo Tiempo,0,"Jacareí, São Paulo",BR,,https://www.themoviedb.org/company/301547
 301548,Ntkids,0,,,,https://www.themoviedb.org/company/301548
 301549,Our Star Productions,1,,,,https://www.themoviedb.org/company/301549
 301550,Dravo Films,1,,,,https://www.themoviedb.org/company/301550
@@ -251128,7 +251121,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 301571,Picanha Films Chile,0,,,,https://www.themoviedb.org/company/301571
 301572,Picanha Films,0,,,,https://www.themoviedb.org/company/301572
 301573,Marcus James Studios,3,,US,,https://www.themoviedb.org/company/301573
-301574,NITRO,0,,JP,https://www.crystal-eizou.jp/,https://www.themoviedb.org/company/301574
+301574,NITRO,0,,JP,,https://www.themoviedb.org/company/301574
 301575,Vulkan Film,1,,,,https://www.themoviedb.org/company/301575
 301576,Notefromus,0,,,,https://www.themoviedb.org/company/301576
 301577,NOTEFROMUS™,0,,,,https://www.themoviedb.org/company/301577
@@ -251136,3 +251129,86 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 301579,Siva Shakti Films,1,,,,https://www.themoviedb.org/company/301579
 301580,Jagadish Cine Makers,1,,,,https://www.themoviedb.org/company/301580
 301581,Jack Pop Productions,1,,,,https://www.themoviedb.org/company/301581
+301582,Jolly Octopus Media,0,,,,https://www.themoviedb.org/company/301582
+301583,Paperboy Productions,1,,,,https://www.themoviedb.org/company/301583
+301584,Ryuu,0,,,,https://www.themoviedb.org/company/301584
+301585,Sarazon Creative,1,,,,https://www.themoviedb.org/company/301585
+301586,iron Hill Media,0,,,,https://www.themoviedb.org/company/301586
+301587,Defend the Wild,1,,,,https://www.themoviedb.org/company/301587
+301588,Dingo Culture,1,,,,https://www.themoviedb.org/company/301588
+301589,Mandla Media,1,,PL,,https://www.themoviedb.org/company/301589
+301590,KJM Productions,0,,,,https://www.themoviedb.org/company/301590
+301591,Creative Caption Company,0,,,,https://www.themoviedb.org/company/301591
+301592,This But Not That Productions,1,,AU,,https://www.themoviedb.org/company/301592
+301593,Pawbert,0,,,,https://www.themoviedb.org/company/301593
+301594,Institut Sejarah Sosial Indonesia,0,,,,https://www.themoviedb.org/company/301594
+301595,Yayasan Tifa,1,,,,https://www.themoviedb.org/company/301595
+301596,Institut Sejarah Sosial Indonesia (ISSI),1,,,,https://www.themoviedb.org/company/301596
+301597,Whitfield Studio,1,,AU,https://www.whitfieldstudio.com,https://www.themoviedb.org/company/301597
+301598,Yes Please Production,0,,,,https://www.themoviedb.org/company/301598
+301599,ASTIV,1,,,,https://www.themoviedb.org/company/301599
+301600,institut francais du egypt,1,,,,https://www.themoviedb.org/company/301600
+301601,The Unlimited Production,1,,,,https://www.themoviedb.org/company/301601
+301602,Sunrise Studio,1,,,,https://www.themoviedb.org/company/301602
+301603,SETRALOV,1,,,,https://www.themoviedb.org/company/301603
+301604,Entremont Productions,1,,,,https://www.themoviedb.org/company/301604
+301605,Lupa & Lanterna,1,,,,https://www.themoviedb.org/company/301605
+301606,Cserépy-Film Co. GmbH,1,,,,https://www.themoviedb.org/company/301606
+301607,Stained Glass Productions,2,,PH,,https://www.themoviedb.org/company/301607
+301608,ish,2,,,,https://www.themoviedb.org/company/301608
+301609,Associação Jupaú,1,,BR,,https://www.themoviedb.org/company/301609
+301610,Filmfabriek F.A. Nöggerath,1,,,,https://www.themoviedb.org/company/301610
+301611,MRD Pictures,2,,,,https://www.themoviedb.org/company/301611
+301612,Flop Films,0,,,,https://www.themoviedb.org/company/301612
+301613,A. G. Films Arthur Günsburg,1,,,,https://www.themoviedb.org/company/301613
+301614,Cosmic Rust Animations,1,,,,https://www.themoviedb.org/company/301614
+301615,Kinematografi Zagreb,1,,,,https://www.themoviedb.org/company/301615
+301616,Nelly Inc Ltd,1,,,,https://www.themoviedb.org/company/301616
+301617,IFF/CINV,0,,,,https://www.themoviedb.org/company/301617
+301618,El Techo de la Ballena,2,"Caracas, Venezuela",VE,,https://www.themoviedb.org/company/301618
+301619,Szplin Productions,0,,,,https://www.themoviedb.org/company/301619
+301620,MANSE Productions,1,,,,https://www.themoviedb.org/company/301620
+301621,"АНО  ""Здравоохранительное просвещение""",1,,,,https://www.themoviedb.org/company/301621
+301622,Gedeon Richter,1,,,,https://www.themoviedb.org/company/301622
+301623,FANZA Video,0,,,,https://www.themoviedb.org/company/301623
+301624,QLS,1,,,,https://www.themoviedb.org/company/301624
+301625,Seabirds Picture,1,,NP,,https://www.themoviedb.org/company/301625
+301626,Buddy Entertainment,1,,NP,,https://www.themoviedb.org/company/301626
+301627,South East Pictures,1,,,,https://www.themoviedb.org/company/301627
+301628,마이애미 미디어,1,,,,https://www.themoviedb.org/company/301628
+301629,Basement Stuff,1,,ES,,https://www.themoviedb.org/company/301629
+301630,Synscope media,1,,,,https://www.themoviedb.org/company/301630
+301631,Ryt Networks,1,,,,https://www.themoviedb.org/company/301631
+301632,3319 Producciones,1,,,,https://www.themoviedb.org/company/301632
+301633,GoAnimate Studios,0,,,,https://www.themoviedb.org/company/301633
+301634,AMMAK,1,,,,https://www.themoviedb.org/company/301634
+301635,MegaPixels Studio,1,,,,https://www.themoviedb.org/company/301635
+301636,Cinema Teca - EWRS,1,,,,https://www.themoviedb.org/company/301636
+301637,阿达奥华影业,1,,,,https://www.themoviedb.org/company/301637
+301638,"Walter Sittler, Sigrid Klausmann",1,,,,https://www.themoviedb.org/company/301638
+301639,002 Films,2,,,,https://www.themoviedb.org/company/301639
+301640,Generation Ziwe,0,,US,,https://www.themoviedb.org/company/301640
+301641,Maghaa Creations,1,,,,https://www.themoviedb.org/company/301641
+301642,Prods. Greencopper,1,,,,https://www.themoviedb.org/company/301642
+301643,Fundación Universidad del Cine,1,,,,https://www.themoviedb.org/company/301643
+301644,Filmed by Elsa,0,,,,https://www.themoviedb.org/company/301644
+301645,Cotrain,8,"Caracas, Venezuela",VE,,https://www.themoviedb.org/company/301645
+301646,Cat Basket Productions,1,,,,https://www.themoviedb.org/company/301646
+301647,Zengerling,1,,,,https://www.themoviedb.org/company/301647
+301648,Ocinemax Studios,1,,,,https://www.themoviedb.org/company/301648
+301649,HopeMedia,0,,,,https://www.themoviedb.org/company/301649
+301650,Amariglio Studios,1,,,,https://www.themoviedb.org/company/301650
+301651,B.K Productions,1,,,,https://www.themoviedb.org/company/301651
+301652,Why Is He Smiling Incorporated,1,,,,https://www.themoviedb.org/company/301652
+301653,Diego Productions,1,,,,https://www.themoviedb.org/company/301653
+301654,Bodega Boys Original Chopped Cheese,0,,US,,https://www.themoviedb.org/company/301654
+301655,Nobis Contra Mundum,1,,,,https://www.themoviedb.org/company/301655
+301656,Iron Circus Animation,0,"Chicago, Illinois",US,http://www.ironcircus.com/,https://www.themoviedb.org/company/301656
+301657,Memory Pencils Pictures,4,,,,https://www.themoviedb.org/company/301657
+301658,W Entertainment,1,,,,https://www.themoviedb.org/company/301658
+301659,Planet Loud,0,,,,https://www.themoviedb.org/company/301659
+301660,Liv Movies,1,,,,https://www.themoviedb.org/company/301660
+301661,FIA | Federação Internacional de Automobilismo,0,,,,https://www.themoviedb.org/company/301661
+301662,Estudios N27,1,,,,https://www.themoviedb.org/company/301662
+301663,Madison Media Group,0,,VN,https://madisonmedia.vn/,https://www.themoviedb.org/company/301663
+301664,INCOLORE（アンコロール）,1,,,,https://www.themoviedb.org/company/301664
