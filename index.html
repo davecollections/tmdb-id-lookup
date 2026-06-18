@@ -13,7 +13,7 @@
 		<h1>TMDB ID Lookup</h1>
 
 		<p class="intro-text">
-			Quickly find TMDB IDs for movie collections, people, production companies, and TV networks.
+			Quickly find TMDB IDs for movie collections, TV series, people, production companies, TV networks, and genres.
 		</p>
 
 		<p class="meta hero-help">
@@ -23,14 +23,14 @@
 
 		<section class="tool-section lookup-section">
 			<div class="tool-header">
-				<h2>Movie Collection & People Lookup</h2>
-				<p class="meta">Search TMDB official movie collections and people by name or ID.</p>
+				<h2>Movie Collection, People & TV Series Lookup</h2>
+				<p class="meta">Search TMDB official movie collections, people, and TV series by name or ID.</p>
 			</div>
 
 			<div class="search-row">
 				<input
 					id="collection-search"
-					placeholder="Search official collections or people by name or ID (e.g. Matrix, Spielberg)"
+					placeholder="Search by name or TMDB ID"
 				/>
 
 				<button id="collection-search-btn" type="button">Search</button>
@@ -44,7 +44,9 @@
 
 				<button class="lookup-filter-button" type="button" data-tmdb-filter="actors">Actors</button>
 
-				<button class="lookup-filter-button" type="button" data-tmdb-filter="collections">Collections</button>
+				<button class="lookup-filter-button" type="button" data-tmdb-filter="collections">Movie Collections</button>
+
+				<button class="lookup-filter-button" type="button" data-tmdb-filter="tv">TV Series</button>
 			</div>
 			<p class="meta lookup-copy-help">
 				Copy the TMDB ID from a result, then paste it into the matching Nuvio field. This site does not

@@ -9,7 +9,7 @@
 
 Live site: [https://davecollections.github.io/tmdb-id-lookup/](https://davecollections.github.io/tmdb-id-lookup/)
 
-A simple lookup tool for finding useful TMDB IDs for production companies, TV networks, genres, official movie collections, and people.
+A simple lookup tool for finding useful TMDB IDs for production companies, TV networks, genres, official movie collections, people, and TV series.
 
 The site is designed for people building media libraries, curated collections, discovery rows, metadata lists, or other TMDB-based workflows where the correct ID matters.
 
@@ -18,6 +18,7 @@ The site is designed for people building media libraries, curated collections, d
 * Find TMDB production company IDs
 * Find TMDB TV network IDs
 * Find official TMDB movie collection IDs
+* Find TMDB TV series IDs
 * Find actor, director, writer, and general person IDs
 * Browse official TMDB genre IDs
 * Check company and network title counts
@@ -36,7 +37,8 @@ The site is designed for people building media libraries, curated collections, d
 * Sort cached results by ID, name, type, media, country, headquarters, and title count where available
 * Search TMDB movie collections by name or ID
 * Search TMDB people by name or ID
-* Filter TMDB lookup results by actors, directors, collections, or all results
+* Search TMDB TV series by name or ID
+* Filter TMDB lookup results by actors, directors, collections, TV series, or all results
 * Bulk lookup person names from pasted text, pasted CSV, or uploaded CSV/text files
 * Split larger people lists into clear 50-name batches
 * Create Nuvio collections JSON from matched bulk people results
@@ -78,9 +80,9 @@ Genre Nuvio JSON export can create a single Genres collection from selected movi
 * Movie-only and TV-only quick select buttons
 * Merge choices for overlapping TV/movie categories such as Action & Adventure, Sci-Fi & Fantasy, and War & Politics
 
-## Movie Collection And People Lookup
+## Movie Collection, People, And TV Series Lookup
 
-The TMDB lookup can search for official movie collections and people.
+The TMDB lookup can search for official movie collections, people, and TV series.
 
 Movie collection lookup searches **TMDB official movie collections only**. In TMDB, a collection usually means an official franchise or grouped movie series, not an individual movie or a custom user list.
 
@@ -91,9 +93,11 @@ For example, searches like these are more likely to return collection results:
 * Jurassic Park
 * Mission Impossible
 
-A standalone movie title may not return anything unless TMDB has it grouped as part of an official movie collection.
+A standalone movie title may not return anything unless TMDB has it grouped as part of an official movie collection. The tool does not currently search individual movies.
 
 People lookup can search by name or TMDB person ID, and results can be filtered by actors, directors, or all people results.
+
+TV series lookup can search by series name or TMDB TV series ID. This is useful when building Nuvio folders for specific shows, such as favorite animated series.
 
 ## Bulk People Lookup
 
