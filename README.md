@@ -117,7 +117,9 @@ Each Nuvio export modal includes a help button with current import steps for Nuv
 
 ## Data Freshness
 
-Cached company, TV network, and genre data is updated automatically from TMDB data and API responses.
+Cached company, TV network, and genre data is maintained automatically from TMDB data and API responses.
+
+The project runs daily checks for TMDB export changes, repairs small cache differences automatically, and refreshes genre title counts. Production company and TV network caches also run scheduled full-refresh passes at the start of each month so the local lookup data stays aligned with TMDB's exported ID lists.
 
 The site is deployed with GitHub Pages.
 
@@ -126,6 +128,12 @@ The site is deployed with GitHub Pages.
 Run `scripts\check.cmd` before pushing changes on Windows. This validates frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, and unsafe rendering patterns.
 
 If you are not on Windows, run `node scripts/check-frontend.mjs` directly.
+
+## Local TMDB Testing
+
+The app uses a Cloudflare Worker proxy for live TMDB API calls. Local static testing still works without extra setup, but live TMDB lookups from `localhost` or `127.0.0.1` require that local origin to be allowed by the Worker CORS rules.
+
+If local lookup requests fail while the live site works, check the Worker origin allowlist before changing frontend code.
 
 ## Notes
 

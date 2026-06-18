@@ -1,3 +1,5 @@
+const MAX_BULK_PEOPLE_FILE_BYTES = 1024 * 1024;
+
 function parseCsvRows(csvText) {
 	const rows = [];
 	let row = [];
@@ -347,6 +349,11 @@ function loadBulkPeopleCsvFile(file) {
 
 	if (!isSupportedBulkPeopleFile(file)) {
 		rejectBulkPeopleFile("Unsupported file type. Choose a CSV or TXT file with person names.");
+		return;
+	}
+
+	if (file.size > MAX_BULK_PEOPLE_FILE_BYTES) {
+		rejectBulkPeopleFile("That file is too large. Choose a CSV or TXT file smaller than 1 MB.");
 		return;
 	}
 

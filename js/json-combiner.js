@@ -9,6 +9,9 @@ let lastJsonCombineExistingFileName = "";
 let lastJsonCombineFileCount = 0;
 let lastJsonCombineDuplicateFileCount = 0;
 
+const MAX_JSON_COMBINE_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_JSON_COMBINE_TOTAL_BYTES = 10 * 1024 * 1024;
+
 function readTextFile(file) {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
@@ -520,9 +523,18 @@ async function addNuvioJsonFiles(files) {
 		return;
 	}
 
+	const existingTotalBytes = lastJsonCombineFiles.reduce((total, file) => total + (file.size || 0), 0);
+	const incomingTotalBytes = files.reduce((total, file) => total + (file.size || 0), 0);
+
 	const errors = [];
 	const duplicateFiles = [];
 	const acceptedFiles = [];
+
+	if (existingTotalBytes + incomingTotalBytes > MAX_JSON_COMBINE_TOTAL_BYTES) {
+		setJsonCombineStatus("Those files are too large together. Keep the total JSON upload size under 10 MB.", "warning");
+		document.getElementById("json-combine-files").value = "";
+		return;
+	}
 
 	for (const file of files) {
 		const fileSignature = getFileSignature(file);
@@ -532,6 +544,11 @@ async function addNuvioJsonFiles(files) {
 			acceptedFiles.some((selectedFile) => selectedFile.signature === fileSignature)
 		) {
 			duplicateFiles.push(file.name);
+			continue;
+		}
+
+		if (file.size > MAX_JSON_COMBINE_FILE_BYTES) {
+			errors.push(`${file.name} is too large. Keep each JSON file under 2 MB.`);
 			continue;
 		}
 
@@ -557,6 +574,7 @@ async function addNuvioJsonFiles(files) {
 				isExistingJson,
 				name: file.name,
 				signature: fileSignature,
+				size: file.size || 0,
 			});
 		} catch {
 			errors.push(`${file.name} could not be read as JSON.`);

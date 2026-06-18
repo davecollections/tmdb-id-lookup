@@ -53,10 +53,12 @@ function normaliseCacheMeta({ auditSummary, datasetName, itemCount, rebuildMeta,
 	const audit = getAuditDataset(auditSummary, datasetName);
 	const rebuild = rebuildMeta?.last_rebuild || rebuildMeta?.last_scan || null;
 	const repair = repairMeta?.last_repair || null;
+	const totalCached =
+		itemCount ?? repair?.total_cached ?? rebuild?.total_cached ?? audit?.cached_unique_ids ?? audit?.cached_total_ids ?? 0;
 
 	return {
-		total_cached: itemCount,
-		export_total_ids: audit?.export_total_ids ?? rebuild?.export_total_ids ?? itemCount,
+		total_cached: totalCached,
+		export_total_ids: audit?.export_total_ids ?? rebuild?.export_total_ids ?? totalCached,
 		coverage_percent: audit?.coverage_percent ?? null,
 		finished_at: latestTimestamp(auditSummary?.audited_at, rebuild?.finished_at, repair?.finished_at),
 	};
@@ -64,6 +66,70 @@ function normaliseCacheMeta({ auditSummary, datasetName, itemCount, rebuildMeta,
 
 function formatUpdatedDate(timestamp) {
 	return timestamp ? new Date(timestamp).toLocaleString() : "Unknown";
+}
+
+function updateCacheMetaSummary({ countElementId, datasetLabel, lastUpdatedElementId, meta }) {
+	if (!meta) {
+		return;
+	}
+
+	const countElement = document.getElementById(countElementId);
+	const lastUpdatedElement = document.getElementById(lastUpdatedElementId);
+
+	if (countElement) {
+		countElement.innerText =
+			`${meta.total_cached.toLocaleString()} of ${meta.export_total_ids.toLocaleString()} ${datasetLabel} cached`;
+	}
+
+	if (lastUpdatedElement) {
+		lastUpdatedElement.innerText = `Last updated ${formatUpdatedDate(meta.finished_at)}`;
+	}
+}
+
+async function loadCachedLookupMetadata() {
+	const [auditSummary, companyRebuildMeta, companyRepairMeta, networkRebuildMeta, networkRepairMeta] = await Promise.all([
+		loadCacheAuditSummary(),
+		fetchJsonIfAvailable("./data/company-rebuild-meta.json"),
+		fetchJsonIfAvailable("./data/company-cache-repair-meta.json"),
+		fetchJsonIfAvailable("./data/tv-network-rebuild-meta.json"),
+		fetchJsonIfAvailable("./data/tv-network-cache-repair-meta.json"),
+	]);
+
+	if (!companiesLoaded) {
+		companyMeta = normaliseCacheMeta({
+			auditSummary,
+			datasetName: "companies",
+			itemCount: companies.length || undefined,
+			rebuildMeta: companyRebuildMeta,
+			repairMeta: companyRepairMeta,
+		});
+
+		updateCacheMetaSummary({
+			countElementId: "stats",
+			datasetLabel: "TMDB company IDs",
+			lastUpdatedElementId: "last-updated",
+			meta: companyMeta,
+		});
+	}
+
+	if (!networksLoaded) {
+		networkMeta = normaliseCacheMeta({
+			auditSummary,
+			datasetName: "networks",
+			itemCount: networks.length || undefined,
+			rebuildMeta: networkRebuildMeta,
+			repairMeta: networkRepairMeta,
+		});
+
+		updateCacheMetaSummary({
+			countElementId: "network-stats",
+			datasetLabel: "TMDB TV network IDs",
+			lastUpdatedElementId: "network-last-updated",
+			meta: networkMeta,
+		});
+	}
+
+	updateFooterStats();
 }
 
 function updateFooterStats() {
@@ -121,6 +187,7 @@ function initCachedLookupLazyLoad() {
 	document.getElementById("network-stats").innerText = "TV network IDs will load when this tab opens.";
 	document.getElementById("network-last-updated").innerText = "Last updated after cache loads";
 	showTableLoading("results", 9, "Company IDs loading...");
+	loadCachedLookupMetadata();
 
 	if (!cachedSection || !("IntersectionObserver" in window)) {
 		window.requestIdleCallback?.(() => loadCompanies(), { timeout: 1500 }) || setTimeout(loadCompanies, 0);

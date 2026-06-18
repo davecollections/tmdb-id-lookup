@@ -56,8 +56,9 @@ async function tmdbJsonWithStatus(url) {
 		if (!contentType || !contentType.includes("application/json")) {
 			return {
 				ok: false,
+				invalidResponse: true,
 				rateLimited: false,
-				status: 200,
+				status: 0,
 				data: null,
 			};
 		}

@@ -236,7 +236,11 @@ async function resolveBulkPeople() {
 					profilePath: "",
 					profileImageUrl: "",
 					status: getBulkPeopleMatchStatus(
-						response.status ? `TMDB error HTTP ${response.status}` : "Network error",
+						response.invalidResponse
+							? "TMDB invalid response"
+							: response.status
+								? `TMDB error HTTP ${response.status}`
+								: "Network error",
 						hasIncompleteInput,
 					),
 				});
