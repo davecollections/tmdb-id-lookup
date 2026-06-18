@@ -1,5 +1,12 @@
 # TMDB ID Lookup
 
+[![Deploy Pages](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/deploy-pages.yml)
+[![TMDB Audit](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/audit-tmdb-export-coverage.yml/badge.svg)](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/audit-tmdb-export-coverage.yml)
+[![Daily Repair](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/daily-repair-cache-from-audit.yml/badge.svg)](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/daily-repair-cache-from-audit.yml)
+[![Genre Counts](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/update-genre-counts.yml/badge.svg)](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/update-genre-counts.yml)
+[![Monthly Company Refresh](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/monthly-company-refresh.yml/badge.svg)](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/monthly-company-refresh.yml)
+[![Monthly Network Refresh](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/monthly-network-refresh.yml/badge.svg)](https://github.com/davecollections/tmdb-id-lookup/actions/workflows/monthly-network-refresh.yml)
+
 Live site: [https://davecollections.github.io/tmdb-id-lookup/](https://davecollections.github.io/tmdb-id-lookup/)
 
 A simple lookup tool for finding useful TMDB IDs for production companies, TV networks, genres, official movie collections, and people.
