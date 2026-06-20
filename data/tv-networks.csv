@@ -5270,7 +5270,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9077,Scary World Tingz,1,,,,https://www.themoviedb.org/network/9077
 9078,Melodie TV,3,,,,https://www.themoviedb.org/network/9078
 9081,8 канал,1,,RU,,https://www.themoviedb.org/network/9081
-9082,FOD,0,,,,https://www.themoviedb.org/network/9082
 9084,TNT4,3,,RU,,https://www.themoviedb.org/network/9084
 9085,ТАСС,0,,,,https://www.themoviedb.org/network/9085
 9086,ТАСС,1,Moscow,RU,,https://www.themoviedb.org/network/9086
@@ -5432,5 +5431,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9261,Viu,1,,HK,,https://www.themoviedb.org/network/9261
 9262,Toni Tagiam Network,1,,,,https://www.themoviedb.org/network/9262
 9263,canale 21,0,,,,https://www.themoviedb.org/network/9263
-9264,Canale 21,1,,IT,https://www.canale21.it/,https://www.themoviedb.org/network/9264
+9264,Canale 21,1,,IT,,https://www.themoviedb.org/network/9264
 9265,TV4 Sportkanalen,1,,SE,,https://www.themoviedb.org/network/9265
+9266,Flat Video,1,,JP,https://douga.flat-flat.jp,https://www.themoviedb.org/network/9266
+9267,Newgrounds,1,"323 W Glenside Ave, Glenside, Pennsylvania, U.S.",US,http://newgrounds.com,https://www.themoviedb.org/network/9267
