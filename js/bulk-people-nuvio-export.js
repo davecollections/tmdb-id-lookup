@@ -854,23 +854,35 @@ function createNuvioCollectionJson(options = getNuvioExportOptions(), exportStat
 	return [collection];
 }
 
-function countNuvioMissingExplicitSourcePairs(options) {
+function getNuvioMissingExplicitSourcePairSummary(options) {
+	const summary = {
+		belowThresholdCount: 0,
+		zeroCreditCount: 0,
+	};
+
 	if (options.creditSelectionMode !== "custom" && options.mediaSelectionMode !== "custom") {
-		return 0;
+		return summary;
 	}
 
-	return getMatchedBulkPeopleResults().reduce((total, result) => {
+	return getMatchedBulkPeopleResults().reduce((counts, result) => {
 		if (!hasNuvioCreditData(result)) {
-			return total;
+			return counts;
 		}
 
-		return (
-			total +
-			getNuvioSourcePairs(result, options).filter(
-				(pair) => !isNuvioSourcePairAvailable(result, pair.creditType, pair.mediaType, options),
-			).length
-		);
-	}, 0);
+		for (const pair of getNuvioSourcePairs(result, options)) {
+			if (isNuvioSourcePairAvailable(result, pair.creditType, pair.mediaType, options)) {
+				continue;
+			}
+
+			if (getNuvioSourcePairCount(result, pair.creditType, pair.mediaType) > 0) {
+				counts.belowThresholdCount += 1;
+			} else {
+				counts.zeroCreditCount += 1;
+			}
+		}
+
+		return counts;
+	}, summary);
 }
 
 function countNuvioAutomaticallyPrunedSourcePairs(options) {
@@ -910,7 +922,8 @@ function updateNuvioSourceWarning() {
 	}
 
 	const options = getNuvioExportOptions();
-	const missingCount = countNuvioMissingExplicitSourcePairs(options);
+	const missingSummary = getNuvioMissingExplicitSourcePairSummary(options);
+	const missingCount = missingSummary.belowThresholdCount + missingSummary.zeroCreditCount;
 	const prunedCount = countNuvioAutomaticallyPrunedSourcePairs(options);
 	const exportState = getNuvioExportState(options);
 	const skippedCount = exportState.skippedRows.length;
@@ -933,11 +946,19 @@ function updateNuvioSourceWarning() {
 		messages.push("Some unavailable source choices were set to None automatically.");
 	}
 
-	if (missingCount) {
+	if (missingSummary.belowThresholdCount) {
 		messages.push(
-			missingCount === 1
-				? "1 custom source choice is below the minimum detected credits and may show no results in Nuvio. Export is still allowed."
-				: "Some custom source choices are below the minimum detected credits and may show no results in Nuvio. Export is still allowed.",
+			missingSummary.belowThresholdCount === 1
+				? "1 custom source choice is below the minimum detected credits. It will still be exported because you selected it manually."
+				: "Some custom source choices are below the minimum detected credits. They will still be exported because you selected them manually.",
+		);
+	}
+
+	if (missingSummary.zeroCreditCount) {
+		messages.push(
+			missingSummary.zeroCreditCount === 1
+				? "1 custom source choice has no detected credits and may show no results in Nuvio. Export is still allowed."
+				: "Some custom source choices have no detected credits and may show no results in Nuvio. Export is still allowed.",
 		);
 	}
 
