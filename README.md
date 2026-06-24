@@ -29,7 +29,7 @@ The site is designed for people building media libraries, curated collections, d
 * Export bulk people matches as CSV or Nuvio collections JSON
 * Combine multiple Nuvio collection JSON files into one downloadable JSON
 * Build Nuvio collections JSON from selected companies, networks, genres, movie collections, and people
-* Copy generated JSON or download it as a file where JSON export is supported
+* Copy generated JSON or download it as a file
 
 ## Features
 
