@@ -24,11 +24,12 @@ The site is designed for people building media libraries, curated collections, d
 * Browse official TMDB genre IDs
 * Check company and network title counts
 * Copy IDs quickly while building media collections
-* Export cached company, network, and genre results as CSV
+* Export cached company, network, and genre results as CSV or Nuvio collections JSON
 * Import pasted names, pasted CSV text, or CSV/text files for bulk people lookup
 * Export bulk people matches as CSV or Nuvio collections JSON
 * Combine multiple Nuvio collection JSON files into one downloadable JSON
 * Build Nuvio collections JSON from selected companies, networks, genres, movie collections, and people
+* Copy generated JSON or download it as a file
 
 ## Features
 
@@ -47,6 +48,7 @@ The site is designed for people building media libraries, curated collections, d
 * Combine or merge Nuvio collection JSON files, with duplicate ID fixes and preservation-first handling
 * Append uploaded folders into an existing Nuvio collections JSON file
 * Create Nuvio collections JSON from selected companies, networks, and genres
+* Copy or download generated Nuvio JSON, with visible button-level copy feedback
 * Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
 * Copy IDs with one click
 * Open matching TMDB pages directly
@@ -68,6 +70,8 @@ Company, network, and genre results can include:
 * Direct TMDB link
 
 Cached company, network, and genre data can also be downloaded as CSV.
+
+Selected company, network, and genre results can also be exported as Nuvio collections JSON. Those export modals support both Copy JSON and Download JSON, and both actions use the same generated output for the current export settings.
 
 Title counts are intended as a practical guide when deciding which company, network, or genre references may be useful. They are based on TMDB data and may change as TMDB updates its records.
 
@@ -122,7 +126,7 @@ The People tab can create people-based Nuvio collections for actors, directors, 
 
 The Movie Collections tab can create one Nuvio collection with one folder per matched TMDB movie collection. It uses the confirmed Nuvio `COLLECTION` source schema and can export either landscape backdrop artwork or poster artwork.
 
-Nuvio's built-in TMDB integration does not currently let you manually add TV shows, seasons, or miniseries by TMDB ID, so TV Series bulk export stays CSV-only.
+Nuvio's built-in TMDB integration does not currently support direct TMDB TV series sources in collection JSON, so TV Series bulk export stays CSV-only. The tool does not create TV Series Nuvio JSON yet.
 
 If a list needs to be split into multiple 50-item chunks, or you have several Nuvio collection exports to manage, the combiner can create one clean Nuvio JSON download. Files can be added, reviewed, and removed if needed. Merge mode combines every folder into one collection, with optional name/title sorting or last-name sorting for people lists. Name/title sorting ignores leading English articles such as `The`, `A`, and `An`. Keep-separate mode combines uploaded collections into one file without merging their folders. The combiner preserves original collection data where possible, normalizes duplicate or missing collection/folder IDs, and preserves community metadata when collections are kept separate.
 
@@ -138,6 +142,8 @@ Nuvio JSON exports are portable collection files that can be imported into Nuvio
 * Combined Nuvio collection JSON exports from uploaded Nuvio files
 
 Company and network exports include quick select presets. Network exports can optionally use curated cover images and supported LuckyNumbers focus GIF artwork. If cover images are turned off, exports use emoji fallbacks and visible folder titles.
+
+JSON export flows support Copy JSON and Download JSON where available. Copy actions show immediate button-level feedback, and matching Copy/Download actions reuse the same generated JSON output for the current export state so generated IDs stay consistent.
 
 Each Nuvio export modal includes a help button with current import steps for Nuvio web and TV app flows. Nuvio is in beta, so those import steps may change.
 
@@ -155,7 +161,9 @@ Feedback, bug reports, data issues, and feature requests are tracked through
 [GitHub Issues](https://github.com/davecollections/tmdb-id-lookup/issues/new/choose).
 The live site links to the issue chooser instead of collecting feedback by email or embedded forms.
 
-The live site uses GoatCounter for lightweight page analytics. This helps estimate whether the tool is being used without adding account tracking, Nuvio access, or TMDB API keys to the page.
+The live site uses GoatCounter for privacy-focused aggregate analytics. This helps estimate whether the tool is being used without adding account tracking, Nuvio access, or TMDB API keys to the page.
+
+TMDB API requests from the live lookup tools go through the Cloudflare Worker proxy. Imported Nuvio JSON files and generated collection JSON are processed locally in the browser unless the user explicitly downloads or copies the output.
 
 ## Local Checks
 
