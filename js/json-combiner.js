@@ -1182,14 +1182,14 @@ function getCombinedNuvioExportPayload() {
 	};
 }
 
-function copyCombinedNuvioJson() {
+function copyCombinedNuvioJson(button) {
 	const payload = getCombinedNuvioExportPayload();
 
 	if (!payload) {
 		return;
 	}
 
-	copyText(payload.json);
+	copyTextWithButtonFeedback(payload.json, button);
 }
 
 function initJsonCombiner() {
@@ -1230,7 +1230,7 @@ function initJsonCombiner() {
 		existingModeInput.addEventListener("change", refreshJsonCombineOutput);
 	}
 	document.getElementById("json-combine-target-collection").addEventListener("change", refreshJsonCombineOutput);
-	document.getElementById("copy-combined-json").addEventListener("click", copyCombinedNuvioJson);
+	document.getElementById("copy-combined-json").addEventListener("click", (event) => copyCombinedNuvioJson(event.currentTarget));
 	document.getElementById("download-combined-json").addEventListener("click", downloadCombinedNuvioJson);
 	document.getElementById("json-combine-modal").addEventListener("click", (event) => {
 		if (event.target.id === "json-combine-modal") {
