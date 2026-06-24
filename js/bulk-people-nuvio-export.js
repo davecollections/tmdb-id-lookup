@@ -915,7 +915,6 @@ function updateNuvioSourceWarning() {
 	const exportState = getNuvioExportState(options);
 	const skippedCount = exportState.skippedRows.length;
 	const allSkipped = Boolean(exportState.rows.length && !exportState.exportableRows.length);
-	const customMode = options.creditSelectionMode === "custom" || options.mediaSelectionMode === "custom";
 	const messages = [];
 
 	if (allSkipped) {
@@ -953,7 +952,7 @@ function updateNuvioSourceWarning() {
 	warning.hidden = false;
 	warning.textContent = messages.join(" ");
 
-	if (allSkipped || missingCount || (skippedCount && customMode)) {
+	if (allSkipped || missingCount || skippedCount) {
 		warning.classList.add("nuvio-source-warning-note");
 		warning.classList.remove("nuvio-source-info-note");
 		return;
