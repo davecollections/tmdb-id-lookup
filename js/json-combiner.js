@@ -1159,33 +1159,37 @@ async function addNuvioJsonFiles(files) {
 }
 
 function downloadCombinedNuvioJson() {
-	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
+	const payload = getCombinedNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	buildCombinedNuvioJson();
+	downloadTextFile("nuvio-combined-collections.json", payload.json, "application/json");
+}
 
+function getCombinedNuvioExportPayload() {
 	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
-		return;
+		buildCombinedNuvioJson();
 	}
 
-	const json = JSON.stringify(lastCombinedNuvioJson, null, 2);
+	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
+		return null;
+	}
 
-	downloadTextFile("nuvio-combined-collections.json", `${json}\n`, "application/json");
+	return {
+		json: `${JSON.stringify(lastCombinedNuvioJson, null, 2)}\n`,
+	};
 }
 
 function copyCombinedNuvioJson() {
-	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
+	const payload = getCombinedNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	buildCombinedNuvioJson(true);
-
-	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
-		return;
-	}
-
-	copyText(`${JSON.stringify(lastCombinedNuvioJson, null, 2)}\n`);
+	copyText(payload.json);
 }
 
 function initJsonCombiner() {
