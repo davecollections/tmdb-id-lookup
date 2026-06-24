@@ -671,11 +671,17 @@ function renderNuvioPersonOptions() {
 
 	for (const result of matchedPeople) {
 		const lineModes = getNuvioSourceLineModes(result, options);
+		const sourcePairs = getNuvioSourcePairs(result, options);
 		const warningPairs =
 			options.creditSelectionMode === "custom" || options.mediaSelectionMode === "custom"
-				? getNuvioSourcePairs(result, options)
+				? sourcePairs
 				: [];
 		const warningTexts = getNuvioPairWarningTexts(result, warningPairs, options);
+
+		if (!sourcePairs.length) {
+			warningTexts.push(getNuvioSkippedPersonWarningText(options));
+		}
+
 		const row = createElement("div", {
 			className: "nuvio-person-option-row",
 		});
@@ -775,6 +781,23 @@ function getNuvioSourcePairs(result, options) {
 	return sortNuvioSourcePairs(getNuvioBaseSourcePairs(result, options));
 }
 
+function getNuvioPeopleExportRows(options) {
+	return getMatchedBulkPeopleResultsForExport().map((result) => ({
+		result,
+		pairs: getNuvioSourcePairs(result, options),
+	}));
+}
+
+function getNuvioExportState(options) {
+	const rows = getNuvioPeopleExportRows(options);
+
+	return {
+		rows,
+		exportableRows: rows.filter((row) => row.pairs.length),
+		skippedRows: rows.filter((row) => !row.pairs.length),
+	};
+}
+
 function getNuvioSourceTitle(pair) {
 	return NUVIO_SOURCE_PAIR_TITLES[getNuvioSourcePairKey(pair)] || "TMDB Credits";
 }
@@ -791,8 +814,7 @@ function createNuvioSource(result, options, pair) {
 	};
 }
 
-function createNuvioFolder(result, options) {
-	const pairs = getNuvioSourcePairs(result, options);
+function createNuvioFolder(result, options, pairs = getNuvioSourcePairs(result, options)) {
 	const folder = {
 		id: createNuvioId("folder"),
 		title: result.name,
@@ -815,9 +837,8 @@ function createNuvioFolder(result, options) {
 	return folder;
 }
 
-function createNuvioCollectionJson() {
-	const options = getNuvioExportOptions();
-	const folders = getMatchedBulkPeopleResultsForExport().map((result) => createNuvioFolder(result, options));
+function createNuvioCollectionJson(options = getNuvioExportOptions(), exportState = getNuvioExportState(options)) {
+	const folders = exportState.exportableRows.map((row) => createNuvioFolder(row.result, options, row.pairs));
 	const hasMultipleSources = folders.some((folder) => folder.sources.length > 1);
 	const collection = {
 		id: createNuvioId("collection"),
@@ -873,6 +894,14 @@ function countNuvioAutomaticallyPrunedSourcePairs(options) {
 	}, 0);
 }
 
+function getNuvioSkippedPersonWarningText(options) {
+	if (options.creditSelectionMode === "custom" || options.mediaSelectionMode === "custom") {
+		return "No source lines selected; this person will be skipped.";
+	}
+
+	return "No sources meet the minimum detected credits; this person will be skipped.";
+}
+
 function updateNuvioSourceWarning() {
 	const warning = document.getElementById("nuvio-source-warning-note");
 
@@ -883,30 +912,55 @@ function updateNuvioSourceWarning() {
 	const options = getNuvioExportOptions();
 	const missingCount = countNuvioMissingExplicitSourcePairs(options);
 	const prunedCount = countNuvioAutomaticallyPrunedSourcePairs(options);
+	const exportState = getNuvioExportState(options);
+	const skippedCount = exportState.skippedRows.length;
+	const allSkipped = Boolean(exportState.rows.length && !exportState.exportableRows.length);
+	const customMode = options.creditSelectionMode === "custom" || options.mediaSelectionMode === "custom";
+	const messages = [];
 
-	if (!missingCount) {
-		if (!prunedCount) {
-			warning.hidden = true;
-			warning.textContent = "";
-			warning.classList.remove("nuvio-source-info-note");
-			warning.classList.remove("nuvio-source-warning-note");
-			return;
-		}
+	if (allSkipped) {
+		messages.push(
+			"No exportable people sources were found. Lower the minimum detected credits or choose sources manually before copying or downloading JSON.",
+		);
+	} else if (skippedCount) {
+		messages.push(
+			skippedCount === 1
+				? "1 person will be skipped because no sources are selected or meet the minimum detected credits."
+				: `${skippedCount.toLocaleString()} people will be skipped because no sources are selected or meet the minimum detected credits.`,
+		);
+	}
 
-		warning.hidden = false;
-		warning.classList.add("nuvio-source-info-note");
+	if (prunedCount && !allSkipped) {
+		messages.push("Some unavailable source choices were set to None automatically.");
+	}
+
+	if (missingCount) {
+		messages.push(
+			missingCount === 1
+				? "1 custom source choice is below the minimum detected credits and may show no results in Nuvio. Export is still allowed."
+				: "Some custom source choices are below the minimum detected credits and may show no results in Nuvio. Export is still allowed.",
+		);
+	}
+
+	if (!messages.length) {
+		warning.hidden = true;
+		warning.textContent = "";
+		warning.classList.remove("nuvio-source-info-note");
 		warning.classList.remove("nuvio-source-warning-note");
-		warning.textContent = "Some unavailable source choices were set to None automatically.";
 		return;
 	}
 
 	warning.hidden = false;
-	warning.classList.add("nuvio-source-warning-note");
-	warning.classList.remove("nuvio-source-info-note");
-	warning.textContent =
-		missingCount === 1
-			? "1 custom source choice is below the minimum detected credits and may show no results in Nuvio. Export is still allowed."
-			: "Some custom source choices are below the minimum detected credits and may show no results in Nuvio. Export is still allowed.";
+	warning.textContent = messages.join(" ");
+
+	if (allSkipped || missingCount || (skippedCount && customMode)) {
+		warning.classList.add("nuvio-source-warning-note");
+		warning.classList.remove("nuvio-source-info-note");
+		return;
+	}
+
+	warning.classList.add("nuvio-source-info-note");
+	warning.classList.remove("nuvio-source-warning-note");
 }
 
 function downloadNuvioJson() {
@@ -917,7 +971,14 @@ function downloadNuvioJson() {
 	}
 
 	const options = getNuvioExportOptions();
-	const json = JSON.stringify(createNuvioCollectionJson(), null, "\t");
+	const exportState = getNuvioExportState(options);
+
+	if (!exportState.exportableRows.length) {
+		updateNuvioSourceWarning();
+		return;
+	}
+
+	const json = JSON.stringify(createNuvioCollectionJson(options, exportState), null, "\t");
 	const filename = `${slugifyFilename(options.collectionName)}.nuvio.json`;
 
 	downloadTextFile(filename, `${json}\n`, "application/json");
@@ -928,7 +989,15 @@ function copyNuvioJson() {
 		return;
 	}
 
-	copyText(`${JSON.stringify(createNuvioCollectionJson(), null, "\t")}\n`);
+	const options = getNuvioExportOptions();
+	const exportState = getNuvioExportState(options);
+
+	if (!exportState.exportableRows.length) {
+		updateNuvioSourceWarning();
+		return;
+	}
+
+	copyText(`${JSON.stringify(createNuvioCollectionJson(options, exportState), null, "\t")}\n`);
 }
 
 function initBulkPeopleNuvioExport() {
