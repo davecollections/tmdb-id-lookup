@@ -427,12 +427,12 @@ function getGenreNuvioExportPayload() {
 	return genreNuvioExportCache;
 }
 
-function copyGenreNuvioJson() {
+function copyGenreNuvioJson(button) {
 	const payload = getGenreNuvioExportPayload();
 
 	if (!payload) {
 		return;
 	}
 
-	copyText(payload.json);
+	copyTextWithButtonFeedback(payload.json, button);
 }

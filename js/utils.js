@@ -25,13 +25,7 @@ function showCopyToast() {
 	}, 1800);
 }
 
-function copyText(text) {
-	if (navigator.clipboard?.writeText) {
-		navigator.clipboard.writeText(String(text));
-		showCopyToast();
-		return;
-	}
-
+function copyTextWithTextarea(text) {
 	const textarea = document.createElement("textarea");
 	textarea.value = String(text);
 	textarea.setAttribute("readonly", "");
@@ -39,9 +33,55 @@ function copyText(text) {
 	textarea.style.left = "-9999px";
 	document.body.appendChild(textarea);
 	textarea.select();
-	document.execCommand("copy");
+	const copied = document.execCommand("copy");
 	textarea.remove();
-	showCopyToast();
+
+	return copied;
+}
+
+async function copyText(text, options = {}) {
+	let copied = false;
+
+	if (navigator.clipboard?.writeText) {
+		try {
+			await navigator.clipboard.writeText(String(text));
+			copied = true;
+		} catch {
+			copied = copyTextWithTextarea(text);
+		}
+	} else {
+		copied = copyTextWithTextarea(text);
+	}
+
+	if (copied && options.showToast !== false) {
+		showCopyToast();
+	}
+
+	return copied;
+}
+
+async function copyTextWithButtonFeedback(text, button) {
+	if (!button) {
+		return copyText(text);
+	}
+
+	if (!button.copyFeedbackOriginalText) {
+		button.copyFeedbackOriginalText = button.textContent;
+	}
+
+	const originalText = button.copyFeedbackOriginalText;
+	const copied = await copyText(text, { showToast: false });
+
+	clearTimeout(button.copyFeedbackTimeout);
+	button.textContent = copied ? "Copied!" : "Copy failed";
+
+	button.copyFeedbackTimeout = setTimeout(() => {
+		button.textContent = originalText;
+		button.copyFeedbackOriginalText = null;
+		button.copyFeedbackTimeout = null;
+	}, 1800);
+
+	return copied;
 }
 
 function copyId(id) {

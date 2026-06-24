@@ -1034,14 +1034,14 @@ function getNuvioJsonExportPayload() {
 	return nuvioJsonExportCache;
 }
 
-function copyNuvioJson() {
+function copyNuvioJson(button) {
 	const payload = getNuvioJsonExportPayload();
 
 	if (!payload) {
 		return;
 	}
 
-	copyText(payload.json);
+	copyTextWithButtonFeedback(payload.json, button);
 }
 
 function initBulkPeopleNuvioExport() {
@@ -1049,7 +1049,7 @@ function initBulkPeopleNuvioExport() {
 	document.getElementById("cancel-nuvio-export").addEventListener("click", closeNuvioExportModal);
 	document.getElementById("open-nuvio-import-help").addEventListener("click", openNuvioImportHelpModal);
 	document.getElementById("close-nuvio-import-help").addEventListener("click", closeNuvioImportHelpModal);
-	document.getElementById("copy-nuvio-json").addEventListener("click", copyNuvioJson);
+	document.getElementById("copy-nuvio-json").addEventListener("click", (event) => copyNuvioJson(event.currentTarget));
 	document.getElementById("download-nuvio-json").addEventListener("click", downloadNuvioJson);
 	document.querySelectorAll('input[name="nuvio-credit-mode"]').forEach((input) => {
 		input.addEventListener("change", () => {

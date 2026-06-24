@@ -218,14 +218,14 @@ function getCompanyNuvioExportPayload() {
 	return companyNuvioExportCache;
 }
 
-function copyCompanyNuvioJson() {
+function copyCompanyNuvioJson(button) {
 	const payload = getCompanyNuvioExportPayload();
 
 	if (!payload) {
 		return;
 	}
 
-	copyText(payload.json);
+	copyTextWithButtonFeedback(payload.json, button);
 }
 
 function clearCompanySelection() {
@@ -393,14 +393,14 @@ function getNetworkNuvioExportPayload() {
 	return networkNuvioExportCache;
 }
 
-function copyNetworkNuvioJson() {
+function copyNetworkNuvioJson(button) {
 	const payload = getNetworkNuvioExportPayload();
 
 	if (!payload) {
 		return;
 	}
 
-	copyText(payload.json);
+	copyTextWithButtonFeedback(payload.json, button);
 }
 
 function clearNetworkSelection() {

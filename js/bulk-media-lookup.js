@@ -990,20 +990,22 @@ function downloadBulkCollectionNuvioJson() {
 	downloadTextFile(payload.filename, payload.json, "application/json");
 }
 
-function copyBulkCollectionNuvioJson() {
+function copyBulkCollectionNuvioJson(button) {
 	const payload = getBulkCollectionNuvioExportPayload();
 
 	if (!payload) {
 		return;
 	}
 
-	copyText(payload.json);
+	copyTextWithButtonFeedback(payload.json, button);
 }
 
 function initBulkCollectionNuvioExport() {
 	document.getElementById("close-bulk-collection-nuvio-export").addEventListener("click", closeBulkCollectionNuvioExportModal);
 	document.getElementById("cancel-bulk-collection-nuvio-export").addEventListener("click", closeBulkCollectionNuvioExportModal);
-	document.getElementById("copy-bulk-collection-nuvio-json").addEventListener("click", copyBulkCollectionNuvioJson);
+	document
+		.getElementById("copy-bulk-collection-nuvio-json")
+		.addEventListener("click", (event) => copyBulkCollectionNuvioJson(event.currentTarget));
 	document.getElementById("download-bulk-collection-nuvio-json").addEventListener("click", downloadBulkCollectionNuvioJson);
 	document.getElementById("open-bulk-collection-nuvio-import-help").addEventListener("click", openNuvioImportHelpModal);
 	document.getElementById("bulk-collection-nuvio-collection-name").addEventListener("input", updateBulkCollectionNuvioSummary);
