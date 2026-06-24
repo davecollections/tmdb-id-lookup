@@ -1,5 +1,6 @@
 let lastBulkCollectionResults = [];
 let lastBulkTvResults = [];
+let bulkCollectionNuvioExportCache = null;
 
 const BULK_MEDIA_LIMIT = 50;
 const MAX_BULK_MEDIA_FILE_BYTES = 1024 * 1024;
@@ -856,9 +857,7 @@ function createBulkCollectionNuvioFolder(result, options) {
 	};
 }
 
-function createBulkCollectionNuvioJson() {
-	const options = getBulkCollectionNuvioOptions();
-
+function createBulkCollectionNuvioJson(options = getBulkCollectionNuvioOptions()) {
 	return [
 		{
 			id: createNuvioId("collection"),
@@ -871,6 +870,38 @@ function createBulkCollectionNuvioJson() {
 			focusGlowEnabled: true,
 		},
 	];
+}
+
+function getBulkCollectionNuvioCacheKey(options) {
+	return JSON.stringify({
+		options,
+		results: getMatchedBulkCollectionResults().map((result) => ({
+			id: String(result.id || ""),
+			input: result.input || "",
+			name: result.name || "",
+			posterImageUrl: result.posterImageUrl || "",
+			backdropImageUrl: result.backdropImageUrl || "",
+		})),
+	});
+}
+
+function getBulkCollectionNuvioExportPayload() {
+	if (!getMatchedBulkCollectionResults().length) {
+		return null;
+	}
+
+	const options = getBulkCollectionNuvioOptions();
+	const cacheKey = getBulkCollectionNuvioCacheKey(options);
+
+	if (!bulkCollectionNuvioExportCache || bulkCollectionNuvioExportCache.cacheKey !== cacheKey) {
+		bulkCollectionNuvioExportCache = {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(createBulkCollectionNuvioJson(options), null, "\t")}\n`,
+		};
+	}
+
+	return bulkCollectionNuvioExportCache;
 }
 
 function updateBulkCollectionNuvioSummary() {
@@ -948,22 +979,23 @@ function closeBulkCollectionNuvioExportModal() {
 }
 
 function downloadBulkCollectionNuvioJson() {
-	if (!getMatchedBulkCollectionResults().length) {
+	const payload = getBulkCollectionNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	const options = getBulkCollectionNuvioOptions();
-	const json = JSON.stringify(createBulkCollectionNuvioJson(), null, "\t");
-
-	downloadTextFile(`${slugifyFilename(options.collectionName)}.nuvio.json`, `${json}\n`, "application/json");
+	downloadTextFile(payload.filename, payload.json, "application/json");
 }
 
 function copyBulkCollectionNuvioJson() {
-	if (!getMatchedBulkCollectionResults().length) {
+	const payload = getBulkCollectionNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	copyText(`${JSON.stringify(createBulkCollectionNuvioJson(), null, "\t")}\n`);
+	copyText(payload.json);
 }
 
 function initBulkCollectionNuvioExport() {

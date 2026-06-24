@@ -39,6 +39,7 @@ const NUVIO_SOURCE_PAIR_TITLES = {
 
 let nuvioCreditSelectionMode = "auto";
 let nuvioMediaSelectionMode = "auto";
+let nuvioJsonExportCache = null;
 
 function getMatchedBulkPeopleResults() {
 	return lastBulkPeopleResults.filter((result) => result.id);
@@ -798,6 +799,19 @@ function getNuvioExportState(options) {
 	};
 }
 
+function getNuvioExportCacheKey(options, exportState) {
+	return JSON.stringify({
+		options,
+		rows: exportState.exportableRows.map((row) => ({
+			id: String(row.result.id || ""),
+			name: row.result.name || "",
+			profileImageUrl: row.result.profileImageUrl || "",
+			sourceLineOverrides: getNuvioSourceLineOverrides(row.result),
+			pairs: row.pairs.map(getNuvioSourcePairKey),
+		})),
+	});
+}
+
 function getNuvioSourceTitle(pair) {
 	return NUVIO_SOURCE_PAIR_TITLES[getNuvioSourcePairKey(pair)] || "TMDB Credits";
 }
@@ -984,10 +998,18 @@ function updateNuvioSourceWarning() {
 }
 
 function downloadNuvioJson() {
-	const matchedPeople = getMatchedBulkPeopleResults();
+	const payload = getNuvioJsonExportPayload();
 
-	if (!matchedPeople.length) {
+	if (!payload) {
 		return;
+	}
+
+	downloadTextFile(payload.filename, payload.json, "application/json");
+}
+
+function getNuvioJsonExportPayload() {
+	if (!getMatchedBulkPeopleResults().length) {
+		return null;
 	}
 
 	const options = getNuvioExportOptions();
@@ -995,29 +1017,30 @@ function downloadNuvioJson() {
 
 	if (!exportState.exportableRows.length) {
 		updateNuvioSourceWarning();
-		return;
+		return null;
 	}
 
-	const json = JSON.stringify(createNuvioCollectionJson(options, exportState), null, "\t");
-	const filename = `${slugifyFilename(options.collectionName)}.nuvio.json`;
+	const cacheKey = getNuvioExportCacheKey(options, exportState);
 
-	downloadTextFile(filename, `${json}\n`, "application/json");
+	if (!nuvioJsonExportCache || nuvioJsonExportCache.cacheKey !== cacheKey) {
+		nuvioJsonExportCache = {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(createNuvioCollectionJson(options, exportState), null, "\t")}\n`,
+		};
+	}
+
+	return nuvioJsonExportCache;
 }
 
 function copyNuvioJson() {
-	if (!getMatchedBulkPeopleResults().length) {
+	const payload = getNuvioJsonExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	const options = getNuvioExportOptions();
-	const exportState = getNuvioExportState(options);
-
-	if (!exportState.exportableRows.length) {
-		updateNuvioSourceWarning();
-		return;
-	}
-
-	copyText(`${JSON.stringify(createNuvioCollectionJson(options, exportState), null, "\t")}\n`);
+	copyText(payload.json);
 }
 
 function initBulkPeopleNuvioExport() {
