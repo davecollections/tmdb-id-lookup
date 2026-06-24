@@ -440,6 +440,7 @@ function initGenreLookup() {
 	document.getElementById("clear-genre-selection").addEventListener("click", clearGenreSelection);
 	document.getElementById("close-genre-nuvio-export").addEventListener("click", closeGenreNuvioExportModal);
 	document.getElementById("cancel-genre-nuvio-export").addEventListener("click", closeGenreNuvioExportModal);
+	document.getElementById("copy-genre-nuvio-json").addEventListener("click", copyGenreNuvioJson);
 	document.getElementById("download-genre-nuvio-json").addEventListener("click", downloadGenreNuvioJson);
 	document.getElementById("open-genre-nuvio-import-help").addEventListener("click", openNuvioImportHelpModal);
 	document.getElementById("genre-nuvio-tile-shape").addEventListener("change", updateGenreArtworkPreview);

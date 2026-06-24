@@ -18,6 +18,8 @@ const companyPresetCollectionNames = {
 };
 const companyDefaultCollectionNames = new Set(["Studios", ...Object.values(companyPresetCollectionNames)]);
 const networkDefaultCollectionNames = new Set(["Networks", ...Object.values(networkPresetCollectionNames)]);
+let companyNuvioExportCache = null;
+let networkNuvioExportCache = null;
 const curatedCompanyCoverUrls = {
 	3: "https://i.postimg.cc/1XFm0LjT/Pixar.png",
 	21: "https://i.postimg.cc/SxQF7DDY/MGM.png",
@@ -181,18 +183,49 @@ function closeCompanyNuvioExportModal() {
 }
 
 function downloadCompanyNuvioJson() {
-	if (!selectedCompanyIds.size) {
+	const payload = getCompanyNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	const options = getCompanyNuvioOptions();
-	const json = JSON.stringify(createCompanyNuvioJson(), null, "\t");
-	const filename = `${String(options.collectionName || "studios")
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "") || "studios"}.nuvio.json`;
+	downloadTextFile(payload.filename, payload.json, "application/json");
+}
 
-	downloadTextFile(filename, `${json}\n`, "application/json");
+function getCompanyNuvioExportCacheKey(options) {
+	return JSON.stringify({
+		options,
+		ids: getSelectedCompanies().map((company) => Number(company.id)),
+	});
+}
+
+function getCompanyNuvioExportPayload() {
+	if (!selectedCompanyIds.size) {
+		return null;
+	}
+
+	const options = getCompanyNuvioOptions();
+	const cacheKey = getCompanyNuvioExportCacheKey(options);
+
+	if (!companyNuvioExportCache || companyNuvioExportCache.cacheKey !== cacheKey) {
+		companyNuvioExportCache = {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(createCompanyNuvioJson(), null, "\t")}\n`,
+		};
+	}
+
+	return companyNuvioExportCache;
+}
+
+function copyCompanyNuvioJson() {
+	const payload = getCompanyNuvioExportPayload();
+
+	if (!payload) {
+		return;
+	}
+
+	copyText(payload.json);
 }
 
 function clearCompanySelection() {
@@ -325,18 +358,49 @@ function closeNetworkNuvioExportModal() {
 }
 
 function downloadNetworkNuvioJson() {
-	if (!selectedNetworkIds.size) {
+	const payload = getNetworkNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	const options = getNetworkNuvioOptions();
-	const json = JSON.stringify(createNetworkNuvioJson(), null, "\t");
-	const filename = `${String(options.collectionName || "networks")
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "") || "networks"}.nuvio.json`;
+	downloadTextFile(payload.filename, payload.json, "application/json");
+}
 
-	downloadTextFile(filename, `${json}\n`, "application/json");
+function getNetworkNuvioExportCacheKey(options) {
+	return JSON.stringify({
+		options,
+		ids: getSelectedNetworks().map((network) => Number(network.id)),
+	});
+}
+
+function getNetworkNuvioExportPayload() {
+	if (!selectedNetworkIds.size) {
+		return null;
+	}
+
+	const options = getNetworkNuvioOptions();
+	const cacheKey = getNetworkNuvioExportCacheKey(options);
+
+	if (!networkNuvioExportCache || networkNuvioExportCache.cacheKey !== cacheKey) {
+		networkNuvioExportCache = {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(createNetworkNuvioJson(), null, "\t")}\n`,
+		};
+	}
+
+	return networkNuvioExportCache;
+}
+
+function copyNetworkNuvioJson() {
+	const payload = getNetworkNuvioExportPayload();
+
+	if (!payload) {
+		return;
+	}
+
+	copyText(payload.json);
 }
 
 function clearNetworkSelection() {

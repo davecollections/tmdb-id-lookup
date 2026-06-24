@@ -67,6 +67,7 @@ const genreSpecialMergeRules = {
 const genreTmdbDiscoverSort = "popularity.desc";
 const genreCuratedListSort = "vote_average.desc";
 const genreDefaultCollectionNames = new Set(["Genres", "Movie Genre", "TV Series Genre"]);
+let genreNuvioExportCache = null;
 
 function getGenreArtworkName(genreName, tileShape) {
 	const map = tileShape === "LANDSCAPE" ? genreWideArtworkNames : genrePosterArtworkFiles;
@@ -389,16 +390,49 @@ function closeGenreNuvioExportModal() {
 }
 
 function downloadGenreNuvioJson() {
-	if (!selectedGenreKeys.size) {
+	const payload = getGenreNuvioExportPayload();
+
+	if (!payload) {
 		return;
 	}
 
-	const options = getGenreNuvioOptions();
-	const json = JSON.stringify(createGenreNuvioJson(), null, "\t");
-	const filename = `${String(options.collectionName || "genres")
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "") || "genres"}.nuvio.json`;
+	downloadTextFile(payload.filename, payload.json, "application/json");
+}
 
-	downloadTextFile(filename, `${json}\n`, "application/json");
+function getGenreNuvioExportCacheKey(options) {
+	return JSON.stringify({
+		options,
+		keys: getSelectedGenres()
+			.filter(isExportableGenreReference)
+			.map(getGenreSelectionKey),
+	});
+}
+
+function getGenreNuvioExportPayload() {
+	if (!selectedGenreKeys.size) {
+		return null;
+	}
+
+	const options = getGenreNuvioOptions();
+	const cacheKey = getGenreNuvioExportCacheKey(options);
+
+	if (!genreNuvioExportCache || genreNuvioExportCache.cacheKey !== cacheKey) {
+		genreNuvioExportCache = {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(createGenreNuvioJson(), null, "\t")}\n`,
+		};
+	}
+
+	return genreNuvioExportCache;
+}
+
+function copyGenreNuvioJson() {
+	const payload = getGenreNuvioExportPayload();
+
+	if (!payload) {
+		return;
+	}
+
+	copyText(payload.json);
 }
