@@ -620,6 +620,27 @@ th.sortable:hover {
 }
 
 @media (max-width: 720px) {
+	.footer-related-link {
+		border: 0;
+		border-radius: 0;
+		padding: 0;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.footer-related-link:hover,
+	.footer-related-link:focus-visible {
+		background: transparent;
+		border-color: transparent;
+		color: #cfe3ff;
+	}
+
+	.footer-related-prefix {
+		display: none;
+	}
+}
+
+@media (max-width: 720px) {
 	body {
 		padding: 16px;
 	}
