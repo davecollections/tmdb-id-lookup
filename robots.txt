@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://davecollections.github.io/tmdb-id-lookup/sitemap.xml

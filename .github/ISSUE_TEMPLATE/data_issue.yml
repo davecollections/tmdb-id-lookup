@@ -1,0 +1,30 @@
+name: Data or cache issue
+description: Report stale, missing, or unexpected cached TMDB data.
+title: "Data: "
+labels: ["data"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Data area
+      options:
+        - Production companies
+        - TV networks
+        - Genres
+        - Curated genre references
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What looks wrong?
+      description: Include the name, TMDB ID, expected value, and current value if known.
+      placeholder: "Example: Company ID ... appears to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Reference or evidence
+      description: Link to TMDB or another source if it helps confirm the issue.

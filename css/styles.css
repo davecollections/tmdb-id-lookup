@@ -531,8 +531,28 @@ th.sortable:hover {
 	margin-top: 10px;
 }
 
-.footer-credits a {
+.footer-links {
+	margin-top: 10px;
+}
+
+.footer-credits a,
+.footer-links a {
 	color: #9ec5ff;
+}
+
+.footer-links a {
+	border: 1px solid #263247;
+	border-radius: 999px;
+	display: inline-block;
+	padding: 5px 12px;
+	text-decoration: none;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible {
+	background: #121b2a;
+	border-color: #4f8cff;
+	color: #cfe3ff;
 }
 
 @media (max-width: 720px) {

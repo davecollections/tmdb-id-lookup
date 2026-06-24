@@ -1,0 +1,31 @@
+name: Bug report
+description: Report something that is not working correctly.
+title: "Bug: "
+labels: ["bug", "frontend"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen.
+      placeholder: "Example: Searching for ... shows ..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps that show the issue.
+      placeholder: "1. Open ...\n2. Search for ...\n3. Click ..."
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser or device
+      placeholder: "Example: Chrome on Windows, Safari on iPhone"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra details
+      description: Add screenshots, sample names, IDs, CSV text, or JSON details if useful.

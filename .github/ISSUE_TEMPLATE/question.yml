@@ -1,0 +1,18 @@
+name: Question or help
+description: Ask for help using the lookup or exported files.
+title: "Question: "
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: Include what you are trying to build or import.
+      placeholder: "Example: I am trying to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Add names, IDs, CSV text, JSON type, or Nuvio import details if relevant.

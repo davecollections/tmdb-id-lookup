@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a practical improvement for the TMDB ID utility.
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would this help you do?
+      description: Describe the workflow or problem this feature would improve.
+      placeholder: "Example: I want to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Suggested approach
+      description: Keep this focused on useful TMDB IDs, CSV exports, or portable Nuvio JSON files.
+      placeholder: "Example: Add a simple ..."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope notes
+      description: Mention anything this should not become or any edge cases to avoid.

@@ -48,6 +48,7 @@ The site is designed for people building media libraries, curated collections, d
 * Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
 * Copy IDs with one click
 * Open matching TMDB pages directly
+* Report feedback through structured GitHub issues
 
 ## Cached Company, Network, And Genre Data
 
@@ -133,6 +134,14 @@ Cached company, TV network, and genre data is maintained automatically from TMDB
 The project runs daily checks for TMDB export changes, repairs small cache differences automatically, and refreshes genre title counts. Production company and TV network caches also run scheduled full-refresh passes at the start of each month so the local lookup data stays aligned with TMDB's exported ID lists.
 
 The site is deployed with GitHub Pages.
+
+## Feedback And Privacy
+
+Feedback, bug reports, data issues, and feature requests are tracked through
+[GitHub Issues](https://github.com/davecollections/tmdb-id-lookup/issues/new/choose).
+The live site links to the issue chooser instead of collecting feedback by email or embedded forms.
+
+The live site uses GoatCounter for lightweight page analytics. This helps estimate whether the tool is being used without adding account tracking, Nuvio access, or TMDB API keys to the page.
 
 ## Local Checks
 
