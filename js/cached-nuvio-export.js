@@ -63,14 +63,6 @@ const networkFocusGifUrls = {
 	3353: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/peacock.gifv",
 };
 
-function createNuvioExportId(prefix) {
-	if (window.crypto?.randomUUID) {
-		return window.crypto.randomUUID();
-	}
-
-	return `${prefix}-${Math.random().toString(16).slice(2, 10)}`;
-}
-
 function getCompanyLogoUrl(company, size = "w500") {
 	return company.logo_path ? `https://image.tmdb.org/t/p/${size}${company.logo_path}` : "";
 }
@@ -123,8 +115,9 @@ function getCompanyDefaultCollectionName() {
 
 function createCompanyNuvioJson() {
 	const options = getCompanyNuvioOptions();
+	const idFactory = createNuvioIdFactory();
 	const folders = getSelectedCompanies().map((company) => ({
-		id: createNuvioExportId("folder"),
+		id: idFactory.create("folder"),
 		title: company.name,
 		sources: [
 			{
@@ -150,7 +143,7 @@ function createCompanyNuvioJson() {
 	}));
 
 	const collection = {
-		id: createNuvioExportId("collection"),
+		id: idFactory.create("collection"),
 		title: options.collectionName,
 		folders,
 		pinToTop: false,
@@ -266,8 +259,9 @@ function getNetworkDefaultCollectionName() {
 
 function createNetworkNuvioJson() {
 	const options = getNetworkNuvioOptions();
+	const idFactory = createNuvioIdFactory();
 	const folders = getSelectedNetworks().map((network) => ({
-		id: createNuvioExportId("folder"),
+		id: idFactory.create("folder"),
 		title: network.name,
 		sources: [
 			{
@@ -293,7 +287,7 @@ function createNetworkNuvioJson() {
 	}));
 
 	const collection = {
-		id: createNuvioExportId("collection"),
+		id: idFactory.create("collection"),
 		title: options.collectionName,
 		folders,
 		pinToTop: false,

@@ -743,20 +743,8 @@ function getCombinedFolders(collections, options) {
 	return combinedFolders;
 }
 
-function createUniqueNuvioId(prefix, seenIds) {
-	let id = createNuvioId(prefix);
-
-	while (seenIds.has(id)) {
-		id = createNuvioId(prefix);
-	}
-
-	seenIds.add(id);
-	return id;
-}
-
 function normalizeNuvioOutputIds(collections) {
-	const seenCollectionIds = new Set();
-	const seenFolderIds = new Set();
+	const idFactory = createNuvioIdFactory();
 	const fixes = {
 		duplicateCollectionIdsFixed: 0,
 		duplicateFolderIdsFixed: 0,
@@ -768,28 +756,26 @@ function normalizeNuvioOutputIds(collections) {
 		const collectionId = getTrimmedId(collection.id);
 
 		if (!collectionId) {
-			collection.id = createUniqueNuvioId("collection", seenCollectionIds);
+			collection.id = idFactory.create("collection");
 			fixes.missingCollectionIdsFixed += 1;
-		} else if (seenCollectionIds.has(collectionId)) {
-			collection.id = createUniqueNuvioId("collection", seenCollectionIds);
+		} else if (!idFactory.add(collectionId)) {
+			collection.id = idFactory.create("collection");
 			fixes.duplicateCollectionIdsFixed += 1;
 		} else {
 			collection.id = collectionId;
-			seenCollectionIds.add(collectionId);
 		}
 
 		for (const folder of getCollectionFolders(collection)) {
 			const folderId = getTrimmedId(folder.id);
 
 			if (!folderId) {
-				folder.id = createUniqueNuvioId("folder", seenFolderIds);
+				folder.id = idFactory.create("folder");
 				fixes.missingFolderIdsFixed += 1;
-			} else if (seenFolderIds.has(folderId)) {
-				folder.id = createUniqueNuvioId("folder", seenFolderIds);
+			} else if (!idFactory.add(folderId)) {
+				folder.id = idFactory.create("folder");
 				fixes.duplicateFolderIdsFixed += 1;
 			} else {
 				folder.id = folderId;
-				seenFolderIds.add(folderId);
 			}
 		}
 	}
@@ -821,6 +807,7 @@ function stripCommunityMetadata(collection) {
 
 function createCombinedCollection(collections, options) {
 	const folders = getCombinedFolders(collections, options);
+	const idFactory = createNuvioIdFactory(folders.map((folder) => getTrimmedId(folder.id)));
 
 	if (!folders.length) {
 		return { collection: null, folderCount: 0 };
@@ -828,7 +815,7 @@ function createCombinedCollection(collections, options) {
 
 	const combinedCollection = cloneJson(collections[0]);
 	const communityLinksRemoved = collections.some(hasCommunityMetadata);
-	combinedCollection.id = createNuvioId("collection");
+	combinedCollection.id = idFactory.create("collection");
 	combinedCollection.folders = folders;
 	combinedCollection.title = getJsonCombineCollectionName(combinedCollection.title || "Combined Nuvio Collection");
 	stripCommunityMetadata(combinedCollection);

@@ -15,14 +15,6 @@ function slugifyFilename(value) {
 	);
 }
 
-function createNuvioId(prefix) {
-	if (window.crypto?.randomUUID) {
-		return window.crypto.randomUUID();
-	}
-
-	return `${prefix}-${Math.random().toString(16).slice(2, 10)}`;
-}
-
 function renderBulkPeopleResults(results) {
 	const container = document.getElementById("bulk-people-results");
 	container.replaceChildren();

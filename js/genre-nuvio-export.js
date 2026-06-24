@@ -68,14 +68,6 @@ const genreTmdbDiscoverSort = "popularity.desc";
 const genreCuratedListSort = "vote_average.desc";
 const genreDefaultCollectionNames = new Set(["Genres", "Movie Genre", "TV Series Genre"]);
 
-function createGenreNuvioExportId(prefix) {
-	if (window.crypto?.randomUUID) {
-		return window.crypto.randomUUID();
-	}
-
-	return `${prefix}-${Math.random().toString(16).slice(2, 10)}`;
-}
-
 function getGenreArtworkName(genreName, tileShape) {
 	const map = tileShape === "LANDSCAPE" ? genreWideArtworkNames : genrePosterArtworkFiles;
 
@@ -318,6 +310,7 @@ function buildGenreFolderSourceMap(options) {
 
 function createGenreNuvioJson() {
 	const options = getGenreNuvioOptions();
+	const idFactory = createNuvioIdFactory();
 	const folderMap = buildGenreFolderSourceMap(options);
 	const folders = [...folderMap.entries()]
 		.sort(([a], [b]) => a.localeCompare(b))
@@ -325,7 +318,7 @@ function createGenreNuvioJson() {
 			const coverImageUrl = getGenreArtworkUrl(folderName, options.tileShape);
 
 			return {
-				id: createGenreNuvioExportId("folder"),
+				id: idFactory.create("folder"),
 				title: folderName,
 				sources,
 				hideTitle: Boolean(coverImageUrl),
@@ -343,7 +336,7 @@ function createGenreNuvioJson() {
 
 	return [
 		{
-			id: createGenreNuvioExportId("collection"),
+			id: idFactory.create("collection"),
 			title: options.collectionName,
 			folders,
 			pinToTop: false,

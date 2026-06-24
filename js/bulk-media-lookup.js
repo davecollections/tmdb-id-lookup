@@ -839,9 +839,9 @@ function createBulkCollectionNuvioSource(result) {
 	};
 }
 
-function createBulkCollectionNuvioFolder(result, options) {
+function createBulkCollectionNuvioFolder(result, options, idFactory) {
 	return {
-		id: createNuvioId("folder"),
+		id: idFactory.create("folder"),
 		title: getBulkCollectionFolderTitle(result),
 		sources: [createBulkCollectionNuvioSource(result)],
 		hideTitle: options.hideFolderTitle,
@@ -858,11 +858,13 @@ function createBulkCollectionNuvioFolder(result, options) {
 }
 
 function createBulkCollectionNuvioJson(options = getBulkCollectionNuvioOptions()) {
+	const idFactory = createNuvioIdFactory();
+
 	return [
 		{
-			id: createNuvioId("collection"),
+			id: idFactory.create("collection"),
 			title: options.collectionName,
-			folders: getMatchedBulkCollectionResults().map((result) => createBulkCollectionNuvioFolder(result, options)),
+			folders: getMatchedBulkCollectionResults().map((result) => createBulkCollectionNuvioFolder(result, options, idFactory)),
 			pinToTop: false,
 			viewMode: "TABBED_GRID",
 			showAllTab: false,

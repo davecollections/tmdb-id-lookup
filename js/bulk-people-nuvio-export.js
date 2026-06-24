@@ -828,9 +828,9 @@ function createNuvioSource(result, options, pair) {
 	};
 }
 
-function createNuvioFolder(result, options, pairs = getNuvioSourcePairs(result, options)) {
+function createNuvioFolder(result, options, idFactory, pairs = getNuvioSourcePairs(result, options)) {
 	const folder = {
-		id: createNuvioId("folder"),
+		id: idFactory.create("folder"),
 		title: result.name,
 		sources: pairs.map((pair) => createNuvioSource(result, options, pair)),
 		hideTitle: options.hideFolderTitle,
@@ -852,10 +852,11 @@ function createNuvioFolder(result, options, pairs = getNuvioSourcePairs(result, 
 }
 
 function createNuvioCollectionJson(options = getNuvioExportOptions(), exportState = getNuvioExportState(options)) {
-	const folders = exportState.exportableRows.map((row) => createNuvioFolder(row.result, options, row.pairs));
+	const idFactory = createNuvioIdFactory();
+	const folders = exportState.exportableRows.map((row) => createNuvioFolder(row.result, options, idFactory, row.pairs));
 	const hasMultipleSources = folders.some((folder) => folder.sources.length > 1);
 	const collection = {
-		id: createNuvioId("collection"),
+		id: idFactory.create("collection"),
 		title: options.collectionName,
 		folders,
 		pinToTop: false,
