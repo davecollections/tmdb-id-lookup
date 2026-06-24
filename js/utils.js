@@ -25,9 +25,27 @@ function showCopyToast() {
 	}, 1800);
 }
 
-function copyId(id) {
-	navigator.clipboard.writeText(String(id));
+function copyText(text) {
+	if (navigator.clipboard?.writeText) {
+		navigator.clipboard.writeText(String(text));
+		showCopyToast();
+		return;
+	}
+
+	const textarea = document.createElement("textarea");
+	textarea.value = String(text);
+	textarea.setAttribute("readonly", "");
+	textarea.style.position = "fixed";
+	textarea.style.left = "-9999px";
+	document.body.appendChild(textarea);
+	textarea.select();
+	document.execCommand("copy");
+	textarea.remove();
 	showCopyToast();
+}
+
+function copyId(id) {
+	copyText(id);
 }
 
 function csvEscape(value) {
@@ -83,7 +101,7 @@ function createOpenLinkCell(url) {
 			attrs: {
 				href: url,
 				target: "_blank",
-				rel: "noopener",
+				rel: "noopener noreferrer",
 			},
 		}),
 	]);

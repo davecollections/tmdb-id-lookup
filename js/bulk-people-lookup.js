@@ -84,7 +84,7 @@ function renderBulkPeopleResults(results) {
 					attrs: {
 						href: `https://www.themoviedb.org/person/${result.id}`,
 						target: "_blank",
-						rel: "noopener",
+						rel: "noopener noreferrer",
 					},
 				}),
 			);
@@ -251,7 +251,7 @@ async function resolveBulkPeople() {
 			const match = findBestPeopleMatch(response.data?.results || [], input);
 
 			if (match.person) {
-				const knownCredits = await getPersonKnownCredits(match.person.id);
+				const creditSummary = await getPersonCreditSummary(match.person.id);
 
 				lastBulkPeopleResults.push({
 					hasIncompleteInput,
@@ -259,7 +259,12 @@ async function resolveBulkPeople() {
 					name: match.person.name || "",
 					id: match.person.id,
 					knownFor: match.person.known_for_department || "\u2014",
-					creditCount: knownCredits,
+					creditCount: creditSummary.formattedTotal,
+					creditSummary,
+					sourceLineOverrides: {
+						PERSON: "",
+						DIRECTOR: "",
+					},
 					profilePath: match.person.profile_path || "",
 					profileImageUrl: getTmdbProfileImageUrl(match.person.profile_path),
 					status: getBulkPeopleMatchStatus(match.matchType, hasIncompleteInput),

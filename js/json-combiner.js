@@ -4,10 +4,13 @@ let lastCombinedNuvioStats = null;
 let lastJsonCombineSourceCollections = [];
 let lastJsonCombineFiles = [];
 let lastJsonCombineBatchCollections = [];
+let lastJsonCombineBatchEntries = [];
 let lastJsonCombineExistingCollections = [];
+let lastJsonCombineExistingEntries = [];
 let lastJsonCombineExistingFileName = "";
 let lastJsonCombineFileCount = 0;
 let lastJsonCombineDuplicateFileCount = 0;
+let lastJsonCombineCollectionEdits = new Map();
 
 const MAX_JSON_COMBINE_FILE_BYTES = 2 * 1024 * 1024;
 const MAX_JSON_COMBINE_TOTAL_BYTES = 10 * 1024 * 1024;
@@ -26,54 +29,232 @@ function cloneJson(value) {
 	return JSON.parse(JSON.stringify(value));
 }
 
-function getSourceSignature(source) {
-	return JSON.stringify({
-		addonId: source.addonId || "",
-		catalogId: source.catalogId || "",
-		filters: source.filters || {},
-		genre: source.genre || "",
-		mediaType: source.mediaType || "",
-		provider: source.provider || "",
-		sortBy: source.sortBy || "",
-		title: source.title || "",
-		tmdbId: source.tmdbId || "",
-		tmdbSourceType: source.tmdbSourceType || "",
-		type: source.type || "",
-	});
-}
-
-function getFolderSignature(folder) {
-	const sourceSignature = (folder.sources || [])
-		.map(getSourceSignature)
-		.join(";");
-
-	return sourceSignature || folder.id || folder.title || "";
-}
-
 function getFileSignature(file) {
 	return `${file.name}:${file.size}:${file.lastModified}`;
 }
 
-function isPeopleBatchCollection(collection) {
-	const folders = collection?.folders || [];
+function getCollectionFolders(collection) {
+	return Array.isArray(collection?.folders) ? collection.folders : [];
+}
+
+function getFolderSources(folder) {
+	return Array.isArray(folder?.sources) ? folder.sources : [];
+}
+
+function hasValue(value) {
+	return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
+function hasNumericValue(value) {
+	return hasValue(value) && Number.isFinite(Number(value));
+}
+
+function getTrimmedId(value) {
+	return hasValue(value) ? String(value).trim() : "";
+}
+
+function getMergeableBatchType(collection) {
+	const folders = getCollectionFolders(collection);
 	const peopleSourceTypes = new Set(["DIRECTOR", "PERSON"]);
 
-	return (
-		folders.length > 0 &&
-		folders.every((folder) => {
-			const sources = folder.sources || [];
+	if (!folders.length) {
+		return "";
+	}
 
-			return (
-				sources.length > 0 &&
-				sources.every(
-					(source) =>
-						source.provider === "tmdb" &&
-						peopleSourceTypes.has(source.tmdbSourceType) &&
-						Number.isFinite(Number(source.tmdbId)),
-				)
-			);
-		})
-	);
+	const isPeopleBatch = folders.every((folder) => {
+		const sources = getFolderSources(folder);
+
+		return (
+			sources.length > 0 &&
+			sources.every(
+				(source) =>
+					source.provider === "tmdb" &&
+					peopleSourceTypes.has(source.tmdbSourceType) &&
+					hasNumericValue(source.tmdbId),
+			)
+		);
+	});
+
+	if (isPeopleBatch) {
+		return "people";
+	}
+
+	const isMovieCollectionBatch = folders.every((folder) => {
+		const sources = getFolderSources(folder);
+
+		return (
+			sources.length > 0 &&
+			sources.every(
+				(source) =>
+					source.provider === "tmdb" &&
+					source.tmdbSourceType === "COLLECTION" &&
+					source.mediaType === "MOVIE" &&
+					hasNumericValue(source.tmdbId),
+			)
+		);
+	});
+
+	return isMovieCollectionBatch ? "movieCollection" : "";
+}
+
+function isMergeableBatchCollection(collection) {
+	return Boolean(getMergeableBatchType(collection));
+}
+
+function getJsonCombineFileTypeLabel(file) {
+	if (file.isExistingJson) {
+		return "Full Nuvio export";
+	}
+
+	if (file.batchType === "people") {
+		return "People JSON";
+	}
+
+	if (file.batchType === "movieCollection") {
+		return "Movie collection JSON";
+	}
+
+	return "Nuvio collection JSON";
+}
+
+function getSortModeLabel(sortMethod) {
+	return sortMethod === "last" ? "last name" : "name/title";
+}
+
+function addJsonCombineWarning(warnings, message) {
+	warnings.set(message, (warnings.get(message) || 0) + 1);
+}
+
+function formatJsonCombineWarning([message, count]) {
+	return count === 1 ? message : `${message} (${count})`;
+}
+
+function validateJsonCombineSource(source, warnings) {
+	if (!source || typeof source !== "object") {
+		addJsonCombineWarning(warnings, "Source is not an object.");
+		return;
+	}
+
+	if (!source.provider) {
+		addJsonCombineWarning(warnings, "Source missing provider.");
+		return;
+	}
+
+	if (source.provider === "tmdb") {
+		if (!source.tmdbSourceType) {
+			addJsonCombineWarning(warnings, "TMDB source missing source type.");
+		}
+
+		if (!source.mediaType) {
+			addJsonCombineWarning(warnings, "TMDB source missing media type.");
+		}
+
+		if (source.tmdbSourceType === "DISCOVER") {
+			if (!source.filters || typeof source.filters !== "object") {
+				addJsonCombineWarning(warnings, "TMDB Discover source missing filters.");
+			}
+			return;
+		}
+
+		if (source.tmdbSourceType === "COLLECTION") {
+			if (!hasNumericValue(source.tmdbId)) {
+				addJsonCombineWarning(warnings, "TMDB collection source missing numeric TMDB ID.");
+			}
+			return;
+		}
+
+		if (!hasValue(source.tmdbId)) {
+			addJsonCombineWarning(warnings, "TMDB direct source missing TMDB ID.");
+		}
+
+		return;
+	}
+
+	if (source.provider === "trakt") {
+		if (!hasValue(source.traktListId)) {
+			addJsonCombineWarning(warnings, "Trakt source missing list ID.");
+		}
+
+		if (!source.mediaType) {
+			addJsonCombineWarning(warnings, "Trakt source missing media type.");
+		}
+
+		return;
+	}
+
+	if (source.provider === "addon") {
+		if (!source.addonId) {
+			addJsonCombineWarning(warnings, "Add-on source missing add-on ID.");
+		}
+
+		if (!source.catalogId) {
+			addJsonCombineWarning(warnings, "Add-on source missing catalog ID.");
+		}
+
+		if (!source.type) {
+			addJsonCombineWarning(warnings, "Add-on source missing type.");
+		}
+	}
+}
+
+function getJsonCombineWarnings(collections) {
+	const warnings = new Map();
+
+	collections.forEach((collection) => {
+		if (!collection || typeof collection !== "object") {
+			addJsonCombineWarning(warnings, "Collection is not an object.");
+			return;
+		}
+
+		if (!hasValue(collection.title)) {
+			addJsonCombineWarning(warnings, "Collection missing title.");
+		}
+
+		if (!Array.isArray(collection.folders)) {
+			addJsonCombineWarning(warnings, "Collection missing folders.");
+			return;
+		}
+
+		for (const folder of collection.folders) {
+			if (!folder || typeof folder !== "object") {
+				addJsonCombineWarning(warnings, "Folder is not an object.");
+				continue;
+			}
+
+			if (!hasValue(folder.title)) {
+				addJsonCombineWarning(warnings, "Folder missing title.");
+			}
+
+			if (!Array.isArray(folder.sources)) {
+				addJsonCombineWarning(warnings, "Folder missing sources.");
+				continue;
+			}
+
+			if (!folder.sources.length) {
+				addJsonCombineWarning(warnings, "Folder has no sources.");
+			}
+
+			for (const source of folder.sources) {
+				validateJsonCombineSource(source, warnings);
+			}
+		}
+	});
+
+	return [...warnings.entries()].map(formatJsonCombineWarning);
+}
+
+function stripLeadingSortArticle(title) {
+	return String(title || "").trim().replace(/^(the|an|a)\s+/i, "");
+}
+
+function getFolderSortWords(title, sortMethod) {
+	const sortTitle = sortMethod === "last" ? title : stripLeadingSortArticle(title);
+
+	return String(sortTitle || "")
+		.replace(/[^\p{L}\p{N}\s'-]/gu, " ")
+		.trim()
+		.split(/\s+/)
+		.filter(Boolean);
 }
 
 function getExistingJsonMode() {
@@ -85,6 +266,11 @@ function setJsonCombineStatus(message, statusType = "") {
 
 	status.className = statusType ? `json-combine-status ${statusType}` : "json-combine-status";
 	status.textContent = message;
+}
+
+function setJsonCombineExportDisabled(disabled) {
+	document.getElementById("download-combined-json").disabled = disabled;
+	document.getElementById("copy-combined-json").disabled = disabled;
 }
 
 function updateJsonCombineFileLabel(files) {
@@ -104,16 +290,119 @@ function updateJsonCombineFileLabel(files) {
 	manageButton.textContent = `Manage files (${fileCount})`;
 }
 
+function getJsonCombineFileEntries(files) {
+	return files.flatMap((file) =>
+		file.collections.map((collection, index) => ({
+			collection,
+			fileName: file.name,
+			key: `${file.signature}:${index}`,
+		})),
+	);
+}
+
 function rebuildJsonCombineFileState() {
 	const existingFiles = lastJsonCombineFiles.filter((file) => file.isExistingJson);
 	const batchFiles = lastJsonCombineFiles.filter((file) => !file.isExistingJson);
 
-	lastJsonCombineExistingCollections = existingFiles.flatMap((file) => file.collections);
+	lastJsonCombineExistingEntries = getJsonCombineFileEntries(existingFiles);
+	lastJsonCombineBatchEntries = getJsonCombineFileEntries(batchFiles);
+	lastJsonCombineExistingCollections = lastJsonCombineExistingEntries.map((entry) => entry.collection);
 	lastJsonCombineExistingFileName =
 		existingFiles.length === 1 ? existingFiles[0].name : `${existingFiles.length} existing JSON files`;
-	lastJsonCombineBatchCollections = batchFiles.flatMap((file) => file.collections);
+	lastJsonCombineBatchCollections = lastJsonCombineBatchEntries.map((entry) => entry.collection);
 	lastJsonCombineSourceCollections = [...lastJsonCombineExistingCollections, ...lastJsonCombineBatchCollections];
 	lastJsonCombineFileCount = lastJsonCombineFiles.length;
+}
+
+function getJsonCombineOutputCounts(collections) {
+	const folders = collections.flatMap(getCollectionFolders);
+	const sources = folders.flatMap(getFolderSources);
+
+	return {
+		collectionCount: collections.length,
+		folderCount: folders.length,
+		sourceCount: sources.length,
+	};
+}
+
+function renderJsonCombineSummary(stats) {
+	const summary = document.getElementById("json-combine-summary");
+
+	summary.replaceChildren();
+
+	if (!stats) {
+		summary.hidden = true;
+		return;
+	}
+
+	summary.hidden = false;
+
+	const grid = document.createElement("div");
+	grid.className = "json-combine-summary-grid";
+
+	const items = [
+		["Files", stats.fileCount],
+		["Collections", stats.collectionCount],
+		["Folders", stats.folderCount],
+		["Sources", stats.sourceCount],
+		["ID fixes", stats.idFixCount],
+		["Warnings", stats.warningCount],
+	];
+
+	for (const [label, value] of items) {
+		const item = document.createElement("div");
+		item.className = "json-combine-summary-item";
+
+		const number = document.createElement("strong");
+		number.textContent = String(value || 0);
+
+		const text = document.createElement("span");
+		text.textContent = label;
+
+		item.appendChild(number);
+		item.appendChild(text);
+		grid.appendChild(item);
+	}
+
+	summary.appendChild(grid);
+
+	const detailMessages = [];
+
+	if (stats.idFixCount) {
+		const fixes = [];
+
+		if (stats.missingCollectionIdsFixed) {
+			fixes.push(`${stats.missingCollectionIdsFixed} missing collection ID${stats.missingCollectionIdsFixed === 1 ? "" : "s"}`);
+		}
+
+		if (stats.duplicateCollectionIdsFixed) {
+			fixes.push(`${stats.duplicateCollectionIdsFixed} duplicate collection ID${stats.duplicateCollectionIdsFixed === 1 ? "" : "s"}`);
+		}
+
+		if (stats.missingFolderIdsFixed) {
+			fixes.push(`${stats.missingFolderIdsFixed} missing folder ID${stats.missingFolderIdsFixed === 1 ? "" : "s"}`);
+		}
+
+		if (stats.duplicateFolderIdsFixed) {
+			fixes.push(`${stats.duplicateFolderIdsFixed} duplicate folder ID${stats.duplicateFolderIdsFixed === 1 ? "" : "s"}`);
+		}
+
+		detailMessages.push(`Fixes: regenerated ${fixes.join(", ")}.`);
+	}
+
+	if (stats.warnings?.length) {
+		const shownWarnings = stats.warnings.slice(0, 4).join(" ");
+		const remainingWarnings = stats.warnings.length > 4 ? ` +${stats.warnings.length - 4} more.` : "";
+
+		detailMessages.push(`Warnings: ${shownWarnings}${remainingWarnings}`);
+	}
+
+	for (const message of detailMessages) {
+		const detail = document.createElement("p");
+		detail.className = "json-combine-summary-detail";
+		detail.textContent = message;
+		summary.appendChild(detail);
+	}
 }
 
 function renderJsonCombineFileList() {
@@ -142,7 +431,7 @@ function renderJsonCombineFileList() {
 
 		const type = document.createElement("span");
 		type.className = "json-combine-file-type";
-		type.textContent = file.isExistingJson ? "Existing Nuvio JSON" : "People batch";
+		type.textContent = getJsonCombineFileTypeLabel(file);
 
 		const removeButton = document.createElement("button");
 		removeButton.className = "json-combine-remove-file";
@@ -168,11 +457,111 @@ function closeJsonCombineFileManager() {
 	closeAppModal("json-combine-file-manager-modal");
 }
 
+function getSeparateJsonCombineEntries() {
+	const existingMode = getExistingJsonMode();
+	const hasExistingJson = lastJsonCombineExistingEntries.length > 0;
+	const activeExistingEntries = hasExistingJson && existingMode !== "ignore" ? lastJsonCombineExistingEntries : [];
+
+	return [...activeExistingEntries, ...lastJsonCombineBatchEntries];
+}
+
+function setJsonCombineCollectionEdit(key, fieldName, value) {
+	const currentEdit = lastJsonCombineCollectionEdits.get(key) || {};
+	const nextEdit = {
+		...currentEdit,
+		[fieldName]: value,
+	};
+
+	if (!nextEdit.title && !nextEdit.imageUrl) {
+		lastJsonCombineCollectionEdits.delete(key);
+	} else {
+		lastJsonCombineCollectionEdits.set(key, nextEdit);
+	}
+
+	buildCombinedNuvioJson(true);
+}
+
+function renderJsonCombineCollectionEdits() {
+	const editList = document.getElementById("json-combine-collection-edit-list");
+	const editToggle = document.getElementById("json-combine-edit-collections");
+	const entries = getSeparateJsonCombineEntries();
+
+	editList.replaceChildren();
+
+	if (!entries.length) {
+		editToggle.checked = false;
+		editToggle.disabled = true;
+		editList.hidden = true;
+		return;
+	}
+
+	editToggle.disabled = false;
+	editList.hidden = !editToggle.checked;
+
+	if (!editToggle.checked) {
+		return;
+	}
+
+	entries.forEach((entry, index) => {
+		const edit = lastJsonCombineCollectionEdits.get(entry.key) || {};
+		const row = document.createElement("div");
+		row.className = "json-combine-collection-edit-row";
+
+		const source = document.createElement("div");
+		source.className = "json-combine-collection-edit-source";
+
+		const title = document.createElement("strong");
+		title.textContent = entry.collection.title || `Collection ${index + 1}`;
+
+		const fileName = document.createElement("span");
+		fileName.textContent = entry.fileName;
+
+		source.appendChild(title);
+		source.appendChild(fileName);
+
+		const fields = document.createElement("div");
+		fields.className = "json-combine-collection-edit-fields";
+
+		const nameLabel = document.createElement("label");
+		nameLabel.textContent = "New name";
+		const nameInput = document.createElement("input");
+		nameInput.value = edit.title || "";
+		nameInput.placeholder = "Leave blank to keep original";
+		nameInput.addEventListener("input", (event) => {
+			setJsonCombineCollectionEdit(entry.key, "title", event.target.value.trim());
+		});
+		nameLabel.appendChild(nameInput);
+
+		const imageLabel = document.createElement("label");
+		imageLabel.textContent = "Image URL";
+		const imageInput = document.createElement("input");
+		imageInput.value = edit.imageUrl || "";
+		imageInput.placeholder = "Leave blank to keep original";
+		imageInput.addEventListener("input", (event) => {
+			setJsonCombineCollectionEdit(entry.key, "imageUrl", event.target.value.trim());
+		});
+		imageLabel.appendChild(imageInput);
+
+		fields.appendChild(nameLabel);
+		fields.appendChild(imageLabel);
+		row.appendChild(source);
+		row.appendChild(fields);
+		editList.appendChild(row);
+	});
+}
+
 function removeJsonCombineFile(signature) {
 	lastJsonCombineFiles = lastJsonCombineFiles.filter((file) => file.signature !== signature);
 	lastJsonCombineDuplicateFileCount = 0;
 	lastCombinedNuvioJson = null;
 	lastCombinedNuvioStats = null;
+
+	for (const key of lastJsonCombineCollectionEdits.keys()) {
+		if (key.startsWith(`${signature}:`)) {
+			lastJsonCombineCollectionEdits.delete(key);
+		}
+	}
+
 	rebuildJsonCombineFileState();
 	updateJsonCombineExistingSummary();
 	updateJsonCombineModeUi();
@@ -180,7 +569,8 @@ function removeJsonCombineFile(signature) {
 	renderJsonCombineFileList();
 
 	if (!lastJsonCombineFiles.length) {
-		document.getElementById("download-combined-json").disabled = true;
+		setJsonCombineExportDisabled(true);
+		renderJsonCombineSummary(null);
 		setJsonCombineStatus("Select one or more Nuvio JSON files to combine.");
 		return;
 	}
@@ -208,17 +598,33 @@ function getJsonCombineOptions() {
 	};
 }
 
-function updateJsonCombineModeUi() {
+function updateJsonCombineModeUi(skipEditRender = false) {
 	const isSingleCollection = getJsonCombineMode() === "single";
 	const hasExistingJson = lastJsonCombineExistingCollections.length > 0;
-	const existingMode = getExistingJsonMode();
+	const hasBatchCollections = lastJsonCombineBatchCollections.length > 0;
+	const showExistingOptions = hasExistingJson && hasBatchCollections && isSingleCollection;
+	let existingMode = getExistingJsonMode();
+
+	if (!showExistingOptions && existingMode !== "new") {
+		const newModeInput = document.querySelector('input[name="json-combine-existing-mode"][value="new"]');
+
+		if (newModeInput) {
+			newModeInput.checked = true;
+			existingMode = "new";
+		}
+	}
 
 	document.getElementById("json-combine-single-options").hidden = !isSingleCollection;
-	document.getElementById("json-combine-existing-options").hidden = !hasExistingJson;
-	document.getElementById("json-combine-target-label").hidden = !hasExistingJson || existingMode !== "append";
+	document.getElementById("json-combine-separate-options").hidden = isSingleCollection || !lastJsonCombineSourceCollections.length;
+	document.getElementById("json-combine-existing-options").hidden = !showExistingOptions;
+	document.getElementById("json-combine-target-label").hidden = !showExistingOptions || existingMode !== "append";
 
 	for (const sortInput of document.querySelectorAll('input[name="json-combine-sort-mode"]')) {
 		sortInput.disabled = !isSingleCollection && existingMode !== "append";
+	}
+
+	if (!skipEditRender) {
+		renderJsonCombineCollectionEdits();
 	}
 }
 
@@ -239,7 +645,7 @@ function updateJsonCombineExistingSummary() {
 		0,
 	);
 
-	summary.textContent = `${lastJsonCombineExistingFileName || "Existing JSON"} includes ${lastJsonCombineExistingCollections.length} existing collection${lastJsonCombineExistingCollections.length === 1 ? "" : "s"} and ${folderCount} folder${folderCount === 1 ? "" : "s"}. Choose how to handle it.`;
+	summary.textContent = `${lastJsonCombineExistingFileName || "Full Nuvio JSON"} includes ${lastJsonCombineExistingCollections.length} existing collection${lastJsonCombineExistingCollections.length === 1 ? "" : "s"} and ${folderCount} folder${folderCount === 1 ? "" : "s"}. Because other JSON files were also added, choose where those folders should go.`;
 
 	lastJsonCombineExistingCollections.forEach((collection, index) => {
 		const option = document.createElement("option");
@@ -259,21 +665,26 @@ function resetJsonCombineState() {
 	lastJsonCombineSourceCollections = [];
 	lastJsonCombineFiles = [];
 	lastJsonCombineBatchCollections = [];
+	lastJsonCombineBatchEntries = [];
 	lastJsonCombineExistingCollections = [];
+	lastJsonCombineExistingEntries = [];
 	lastJsonCombineExistingFileName = "";
 	lastJsonCombineFileCount = 0;
 	lastJsonCombineDuplicateFileCount = 0;
+	lastJsonCombineCollectionEdits = new Map();
 	document.getElementById("json-combine-files").value = "";
 	document.getElementById("json-combine-collection-name").value = "";
 	document.getElementById("json-combine-image-url").value = "";
+	document.getElementById("json-combine-edit-collections").checked = false;
 	document.querySelector('input[name="json-combine-sort-mode"][value="original"]').checked = true;
 	document.querySelector('input[name="json-combine-mode"][value="single"]').checked = true;
 	document.querySelector('input[name="json-combine-existing-mode"][value="new"]').checked = true;
-	document.getElementById("download-combined-json").disabled = true;
+	setJsonCombineExportDisabled(true);
 	updateJsonCombineExistingSummary();
 	updateJsonCombineModeUi();
 	updateJsonCombineFileLabel([]);
 	renderJsonCombineFileList();
+	renderJsonCombineSummary(null);
 	setJsonCombineStatus("Select one or more Nuvio JSON files to combine.");
 }
 
@@ -293,11 +704,7 @@ function getJsonCombineCollectionName(defaultName) {
 }
 
 function getFolderSortText(title, sortMethod) {
-	const words = String(title || "")
-		.replace(/[^\p{L}\p{N}\s'-]/gu, " ")
-		.trim()
-		.split(/\s+/)
-		.filter(Boolean);
+	const words = getFolderSortWords(title, sortMethod);
 
 	if (!words.length) {
 		return "";
@@ -321,23 +728,10 @@ function sortFoldersByName(folders, sortMethod) {
 }
 
 function getCombinedFolders(collections, options) {
-	const seenFolders = new Set();
 	let combinedFolders = [];
-	let duplicateCount = 0;
 
 	for (const collection of collections) {
-		for (const folder of collection.folders || []) {
-			const signature = getFolderSignature(folder);
-
-			if (signature && seenFolders.has(signature)) {
-				duplicateCount += 1;
-				continue;
-			}
-
-			if (signature) {
-				seenFolders.add(signature);
-			}
-
+		for (const folder of getCollectionFolders(collection)) {
 			combinedFolders.push(cloneJson(folder));
 		}
 	}
@@ -346,26 +740,104 @@ function getCombinedFolders(collections, options) {
 		combinedFolders = sortFoldersByName(combinedFolders, options.sortMethod);
 	}
 
-	return { duplicateCount, folders: combinedFolders };
+	return combinedFolders;
+}
+
+function createUniqueNuvioId(prefix, seenIds) {
+	let id = createNuvioId(prefix);
+
+	while (seenIds.has(id)) {
+		id = createNuvioId(prefix);
+	}
+
+	seenIds.add(id);
+	return id;
+}
+
+function normalizeNuvioOutputIds(collections) {
+	const seenCollectionIds = new Set();
+	const seenFolderIds = new Set();
+	const fixes = {
+		duplicateCollectionIdsFixed: 0,
+		duplicateFolderIdsFixed: 0,
+		missingCollectionIdsFixed: 0,
+		missingFolderIdsFixed: 0,
+	};
+
+	for (const collection of collections) {
+		const collectionId = getTrimmedId(collection.id);
+
+		if (!collectionId) {
+			collection.id = createUniqueNuvioId("collection", seenCollectionIds);
+			fixes.missingCollectionIdsFixed += 1;
+		} else if (seenCollectionIds.has(collectionId)) {
+			collection.id = createUniqueNuvioId("collection", seenCollectionIds);
+			fixes.duplicateCollectionIdsFixed += 1;
+		} else {
+			collection.id = collectionId;
+			seenCollectionIds.add(collectionId);
+		}
+
+		for (const folder of getCollectionFolders(collection)) {
+			const folderId = getTrimmedId(folder.id);
+
+			if (!folderId) {
+				folder.id = createUniqueNuvioId("folder", seenFolderIds);
+				fixes.missingFolderIdsFixed += 1;
+			} else if (seenFolderIds.has(folderId)) {
+				folder.id = createUniqueNuvioId("folder", seenFolderIds);
+				fixes.duplicateFolderIdsFixed += 1;
+			} else {
+				folder.id = folderId;
+				seenFolderIds.add(folderId);
+			}
+		}
+	}
+
+	return fixes;
+}
+
+function getJsonCombineIdFixCount(idFixes) {
+	return (
+		idFixes.duplicateCollectionIdsFixed +
+		idFixes.duplicateFolderIdsFixed +
+		idFixes.missingCollectionIdsFixed +
+		idFixes.missingFolderIdsFixed
+	);
+}
+
+function hasCommunityMetadata(collection) {
+	return Boolean(collection && Object.prototype.hasOwnProperty.call(collection, "community"));
+}
+
+function stripCommunityMetadata(collection) {
+	if (collection && Object.prototype.hasOwnProperty.call(collection, "community")) {
+		delete collection.community;
+		return true;
+	}
+
+	return false;
 }
 
 function createCombinedCollection(collections, options) {
-	const { duplicateCount, folders } = getCombinedFolders(collections, options);
+	const folders = getCombinedFolders(collections, options);
 
 	if (!folders.length) {
-		return { collection: null, duplicateCount, folderCount: 0 };
+		return { collection: null, folderCount: 0 };
 	}
 
 	const combinedCollection = cloneJson(collections[0]);
+	const communityLinksRemoved = collections.some(hasCommunityMetadata);
 	combinedCollection.id = createNuvioId("collection");
 	combinedCollection.folders = folders;
 	combinedCollection.title = getJsonCombineCollectionName(combinedCollection.title || "Combined Nuvio Collection");
+	stripCommunityMetadata(combinedCollection);
 
 	if (options.collectionImageUrl) {
 		combinedCollection.backdropImageUrl = options.collectionImageUrl;
 	}
 
-	return { collection: combinedCollection, duplicateCount, folderCount: folders.length };
+	return { collection: combinedCollection, communityLinksRemoved, folderCount: folders.length };
 }
 
 function getTargetExistingCollection(collections) {
@@ -374,138 +846,214 @@ function getTargetExistingCollection(collections) {
 	return collections[targetIndex] || collections[0];
 }
 
-function buildCombinedNuvioJson() {
+function applyJsonCombineCollectionEdits(collection, key, index) {
+	const edit = lastJsonCombineCollectionEdits.get(key) || {};
+
+	if (edit.title) {
+		collection.title = edit.title;
+	} else if (!hasValue(collection.title)) {
+		collection.title = `Collection ${index + 1}`;
+	}
+
+	if (edit.imageUrl) {
+		collection.backdropImageUrl = edit.imageUrl;
+	}
+}
+
+function buildSeparateJsonCombineCollections() {
+	return getSeparateJsonCombineEntries().map((entry, index) => {
+		const collection = cloneJson(entry.collection);
+
+		applyJsonCombineCollectionEdits(collection, entry.key, index);
+		return collection;
+	});
+}
+
+function finalizeCombinedNuvioJson(collections, stats) {
+	const idFixes = normalizeNuvioOutputIds(collections);
+	const outputCounts = getJsonCombineOutputCounts(collections);
+	const warnings = getJsonCombineWarnings(collections);
+	const normalizedStats = {
+		...stats,
+		...outputCounts,
+		...idFixes,
+		idFixCount: getJsonCombineIdFixCount(idFixes),
+		warningCount: warnings.length,
+		warnings,
+	};
+
+	lastCombinedNuvioJson = collections;
+	lastCombinedNuvioStats = normalizedStats;
+	renderJsonCombineSummary(normalizedStats);
+	setJsonCombineExportDisabled(false);
+
+	return normalizedStats;
+}
+
+function getJsonCombineFixStatusText(stats) {
+	const messages = [];
+
+	if (stats.missingCollectionIdsFixed) {
+		messages.push(`${stats.missingCollectionIdsFixed} missing collection ID${stats.missingCollectionIdsFixed === 1 ? "" : "s"} fixed`);
+	}
+
+	if (stats.duplicateCollectionIdsFixed) {
+		messages.push(`${stats.duplicateCollectionIdsFixed} duplicate collection ID${stats.duplicateCollectionIdsFixed === 1 ? "" : "s"} fixed`);
+	}
+
+	if (stats.missingFolderIdsFixed) {
+		messages.push(`${stats.missingFolderIdsFixed} missing folder ID${stats.missingFolderIdsFixed === 1 ? "" : "s"} fixed`);
+	}
+
+	if (stats.duplicateFolderIdsFixed) {
+		messages.push(`${stats.duplicateFolderIdsFixed} duplicate folder ID${stats.duplicateFolderIdsFixed === 1 ? "" : "s"} fixed`);
+	}
+
+	return messages.length ? ` ${messages.join("; ")}.` : "";
+}
+
+function getJsonCombineWarningStatusText(stats) {
+	return stats.warningCount ? ` ${stats.warningCount} validation warning${stats.warningCount === 1 ? "" : "s"}.` : "";
+}
+
+function getJsonCombineCommunityStatusText(communityLinksRemoved) {
+	return communityLinksRemoved ? " Community update links were removed." : "";
+}
+
+function buildCombinedNuvioJson(skipEditRender = false) {
 	const options = getJsonCombineOptions();
-	const existingMode = getExistingJsonMode();
+	let existingMode = getExistingJsonMode();
 	const hasExistingJson = lastJsonCombineExistingCollections.length > 0;
-	const activeExistingCollections =
-		hasExistingJson && existingMode !== "ignore" ? lastJsonCombineExistingCollections.map((collection) => cloneJson(collection)) : [];
 	const batchCollections = lastJsonCombineBatchCollections;
 	const duplicateFileText = lastJsonCombineDuplicateFileCount
 		? ` ${lastJsonCombineDuplicateFileCount} duplicate file${lastJsonCombineDuplicateFileCount === 1 ? "" : "s"} skipped.`
 		: "";
 
 	updateJsonCombineExistingSummary();
-	updateJsonCombineModeUi();
+	updateJsonCombineModeUi(skipEditRender);
+	existingMode = getExistingJsonMode();
+
+	const activeExistingCollections =
+		hasExistingJson && existingMode !== "ignore" ? lastJsonCombineExistingCollections.map((collection) => cloneJson(collection)) : [];
 
 	if (!batchCollections.length && !activeExistingCollections.length) {
 		lastCombinedNuvioJson = null;
 		lastCombinedNuvioStats = null;
-		document.getElementById("download-combined-json").disabled = true;
-		setJsonCombineStatus("Choose one or more people-batch Nuvio JSON files to combine.", "warning");
+		setJsonCombineExportDisabled(true);
+		renderJsonCombineSummary(null);
+		setJsonCombineStatus("Choose one or more Nuvio JSON files to combine.", "warning");
 		return;
 	}
 
 	if (!batchCollections.length && activeExistingCollections.length) {
-		const folderCount = activeExistingCollections.reduce((count, collection) => count + (collection.folders?.length || 0), 0);
+		if (options.mode === "single") {
+			const { collection: combinedCollection, communityLinksRemoved } = createCombinedCollection(activeExistingCollections, options);
 
-		lastCombinedNuvioJson = activeExistingCollections;
-		lastCombinedNuvioStats = {
-			collectionCount: activeExistingCollections.length,
-			duplicateCount: 0,
+			if (!combinedCollection) {
+				lastCombinedNuvioJson = null;
+				lastCombinedNuvioStats = null;
+				setJsonCombineExportDisabled(true);
+				renderJsonCombineSummary(null);
+				setJsonCombineStatus("No folders were found in those files.", "warning");
+				return;
+			}
+
+			const stats = finalizeCombinedNuvioJson([combinedCollection], {
+				defaultCollectionName: combinedCollection.title || "Combined Nuvio Collection",
+				fileCount: lastJsonCombineFileCount,
+				mode: "single",
+			});
+			const sortText = options.sortFolders ? ` Sorted by ${getSortModeLabel(options.sortMethod)}.` : "";
+
+			setJsonCombineStatus(
+				`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined into 1 collection with ${stats.folderCount} folder${stats.folderCount === 1 ? "" : "s"}.${duplicateFileText}${sortText}${getJsonCombineFixStatusText(stats)}${getJsonCombineWarningStatusText(stats)}${getJsonCombineCommunityStatusText(communityLinksRemoved)}`,
+				"ready",
+			);
+			return;
+		}
+
+		const outputCollections = buildSeparateJsonCombineCollections();
+		const stats = finalizeCombinedNuvioJson(outputCollections, {
 			fileCount: lastJsonCombineFileCount,
-			folderCount,
 			mode: "existing-only",
-		};
+		});
+
 		setJsonCombineStatus(
-			`Ready: ${activeExistingCollections.length} existing collection${activeExistingCollections.length === 1 ? "" : "s"} kept unchanged.${duplicateFileText} Add people batch files if you want to merge folders into this JSON.`,
+				`Ready: ${stats.collectionCount} existing collection${stats.collectionCount === 1 ? "" : "s"} kept ${options.mode === "separate" ? "separate" : "unchanged"}.${duplicateFileText}${getJsonCombineFixStatusText(stats)}${getJsonCombineWarningStatusText(stats)} Add more Nuvio JSON files if you want to merge folders into this JSON.`,
 			"ready",
 		);
-		document.getElementById("download-combined-json").disabled = false;
 		return;
 	}
 
 	if (hasExistingJson && existingMode === "append") {
 		const outputCollections = activeExistingCollections;
 		const targetCollection = getTargetExistingCollection(outputCollections);
-		const { duplicateCount, folders } = getCombinedFolders([targetCollection, ...batchCollections], options);
+		const folders = getCombinedFolders([targetCollection, ...batchCollections], options);
 		const appendedCount = Math.max(folders.length - (targetCollection.folders?.length || 0), 0);
 
 		targetCollection.folders = folders;
+		const communityLinksRemoved = stripCommunityMetadata(targetCollection);
 
 		if (options.collectionImageUrl) {
 			targetCollection.backdropImageUrl = options.collectionImageUrl;
 		}
 
-		lastCombinedNuvioJson = outputCollections;
-		lastCombinedNuvioStats = {
-			collectionCount: outputCollections.length,
-			duplicateCount,
+		const stats = finalizeCombinedNuvioJson(outputCollections, {
 			fileCount: lastJsonCombineFileCount,
-			folderCount: outputCollections.reduce((count, collection) => count + (collection.folders?.length || 0), 0),
 			mode: "append",
-		};
+		});
 
-		const sortText = options.sortFolders ? ` Sorted by ${options.sortMethod === "last" ? "last name" : "first name"}.` : "";
-		const duplicateText = duplicateCount ? ` ${duplicateCount} duplicate folder${duplicateCount === 1 ? "" : "s"} skipped.` : "";
+		const sortText = options.sortFolders ? ` Sorted by ${getSortModeLabel(options.sortMethod)}.` : "";
 
 		setJsonCombineStatus(
-			`Ready: ${appendedCount} folder${appendedCount === 1 ? "" : "s"} merged into ${targetCollection.title || "the selected collection"}.${duplicateText}${duplicateFileText}${sortText}`,
+			`Ready: ${appendedCount} folder${appendedCount === 1 ? "" : "s"} merged into ${targetCollection.title || "the selected collection"}.${duplicateFileText}${sortText}${getJsonCombineFixStatusText(stats)}${getJsonCombineWarningStatusText(stats)}${getJsonCombineCommunityStatusText(communityLinksRemoved)}`,
 			"ready",
 		);
-		document.getElementById("download-combined-json").disabled = false;
 		return;
 	}
 
 	if (options.mode === "separate") {
-		const batchOutput = batchCollections.map((collection) => cloneJson(collection));
-		const collections = [...activeExistingCollections, ...batchOutput];
-		const folderCount = collections.reduce((count, collection) => count + (collection.folders?.length || 0), 0);
-
-		lastCombinedNuvioJson = collections;
-		lastCombinedNuvioStats = {
-			collectionCount: collections.length,
-			duplicateCount: 0,
+		const collections = buildSeparateJsonCombineCollections();
+		const stats = finalizeCombinedNuvioJson(collections, {
 			fileCount: lastJsonCombineFileCount,
-			folderCount,
 			mode: "separate",
-		};
+		});
+
 		setJsonCombineStatus(
-			`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined into one download, with ${collections.length} collection${collections.length === 1 ? "" : "s"} and ${folderCount} folder${folderCount === 1 ? "" : "s"} kept separate.${duplicateFileText}`,
+			`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined into one download, with ${stats.collectionCount} collection${stats.collectionCount === 1 ? "" : "s"} and ${stats.folderCount} folder${stats.folderCount === 1 ? "" : "s"} kept separate.${duplicateFileText}${getJsonCombineFixStatusText(stats)}${getJsonCombineWarningStatusText(stats)}`,
 			"ready",
 		);
-		document.getElementById("download-combined-json").disabled = false;
 		return;
 	}
 
-	const { collection: combinedCollection, duplicateCount, folderCount } = createCombinedCollection(batchCollections, options);
+	const { collection: combinedCollection, communityLinksRemoved } = createCombinedCollection(batchCollections, options);
 
 	if (!combinedCollection) {
 		lastCombinedNuvioJson = null;
 		lastCombinedNuvioStats = null;
-		document.getElementById("download-combined-json").disabled = true;
-		setJsonCombineStatus("No people batch folders were found in those files.", "warning");
+		setJsonCombineExportDisabled(true);
+		renderJsonCombineSummary(null);
+		setJsonCombineStatus("No mergeable folders were found in those files.", "warning");
 		return;
 	}
 
 	const outputCollections = [...activeExistingCollections, combinedCollection];
-
-	lastCombinedNuvioStats = {
-		collectionCount: outputCollections.length,
+	const stats = finalizeCombinedNuvioJson(outputCollections, {
 		defaultCollectionName: combinedCollection.title || "Combined Nuvio Collection",
-		duplicateCount,
 		fileCount: lastJsonCombineFileCount,
-		folderCount,
 		mode: "single",
-	};
-	lastCombinedNuvioJson = outputCollections;
+	});
 
-	const duplicateText = duplicateCount ? ` ${duplicateCount} duplicate folder${duplicateCount === 1 ? "" : "s"} skipped.` : "";
-	const sortText = options.sortFolders ? ` Sorted by ${options.sortMethod === "last" ? "last name" : "first name"}.` : "";
-	const flattenText =
-		batchCollections.length > 1
-			? " Flattened into one collection using the first collection's settings."
-			: "";
+	const sortText = options.sortFolders ? ` Sorted by ${getSortModeLabel(options.sortMethod)}.` : "";
 	const existingText =
 		hasExistingJson && existingMode === "new"
 			? ` Added as a new collection beside ${activeExistingCollections.length} existing collection${activeExistingCollections.length === 1 ? "" : "s"}.`
 			: "";
 
 	setJsonCombineStatus(
-		`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined, with ${folderCount} folder${folderCount === 1 ? "" : "s"} merged into one collection.${duplicateText}${duplicateFileText}${sortText}${flattenText}${existingText}`,
+		`Ready: ${lastJsonCombineFileCount} file${lastJsonCombineFileCount === 1 ? "" : "s"} combined into 1 collection with ${stats.folderCount} folder${stats.folderCount === 1 ? "" : "s"}.${duplicateFileText}${sortText}${existingText}${getJsonCombineFixStatusText(stats)}${getJsonCombineWarningStatusText(stats)}${getJsonCombineCommunityStatusText(communityLinksRemoved)}`,
 		"ready",
 	);
-	document.getElementById("download-combined-json").disabled = false;
 }
 
 function refreshJsonCombineOutput() {
@@ -516,7 +1064,7 @@ function refreshJsonCombineOutput() {
 async function addNuvioJsonFiles(files) {
 	lastCombinedNuvioJson = null;
 	lastCombinedNuvioStats = null;
-	document.getElementById("download-combined-json").disabled = true;
+	setJsonCombineExportDisabled(true);
 
 	if (!files.length) {
 		buildCombinedNuvioJson();
@@ -560,16 +1108,20 @@ async function addNuvioJsonFiles(files) {
 				continue;
 			}
 
-			const validCollections = json.filter((collection) => collection && Array.isArray(collection.folders));
+			const validCollections = json.filter(
+				(collection) => collection && typeof collection === "object" && !Array.isArray(collection),
+			);
 
 			if (!validCollections.length) {
-				errors.push(`${file.name} does not contain any collections with folders.`);
+				errors.push(`${file.name} does not contain any usable Nuvio collections.`);
 				continue;
 			}
 
-			const isExistingJson = validCollections.some((collection) => !isPeopleBatchCollection(collection));
+			const batchTypes = new Set(validCollections.map(getMergeableBatchType).filter(Boolean));
+			const isExistingJson = validCollections.some((collection) => !isMergeableBatchCollection(collection));
 
 			acceptedFiles.push({
+				batchType: isExistingJson || batchTypes.size !== 1 ? "" : [...batchTypes][0],
 				collections: validCollections,
 				isExistingJson,
 				name: file.name,
@@ -630,14 +1182,23 @@ function downloadCombinedNuvioJson() {
 		return;
 	}
 
-	const collectionName =
-		lastCombinedNuvioStats.mode === "separate"
-			? "combined-nuvio-collections"
-			: lastCombinedNuvioJson[0].title || "Combined Nuvio Collection";
-	const json = JSON.stringify(lastCombinedNuvioJson, null, "\t");
-	const filename = `${slugifyFilename(collectionName)}.combined.nuvio.json`;
+	const json = JSON.stringify(lastCombinedNuvioJson, null, 2);
 
-	downloadTextFile(filename, `${json}\n`, "application/json");
+	downloadTextFile("nuvio-combined-collections.json", `${json}\n`, "application/json");
+}
+
+function copyCombinedNuvioJson() {
+	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
+		return;
+	}
+
+	buildCombinedNuvioJson(true);
+
+	if (!lastCombinedNuvioJson?.length || !lastCombinedNuvioStats) {
+		return;
+	}
+
+	copyText(`${JSON.stringify(lastCombinedNuvioJson, null, 2)}\n`);
 }
 
 function initJsonCombiner() {
@@ -664,6 +1225,10 @@ function initJsonCombiner() {
 	});
 	document.getElementById("json-combine-collection-name").addEventListener("input", refreshJsonCombineOutput);
 	document.getElementById("json-combine-image-url").addEventListener("input", refreshJsonCombineOutput);
+	document.getElementById("json-combine-edit-collections").addEventListener("change", () => {
+		renderJsonCombineCollectionEdits();
+		buildCombinedNuvioJson(true);
+	});
 	for (const modeInput of document.querySelectorAll('input[name="json-combine-mode"]')) {
 		modeInput.addEventListener("change", refreshJsonCombineOutput);
 	}
@@ -674,6 +1239,7 @@ function initJsonCombiner() {
 		existingModeInput.addEventListener("change", refreshJsonCombineOutput);
 	}
 	document.getElementById("json-combine-target-collection").addEventListener("change", refreshJsonCombineOutput);
+	document.getElementById("copy-combined-json").addEventListener("click", copyCombinedNuvioJson);
 	document.getElementById("download-combined-json").addEventListener("click", downloadCombinedNuvioJson);
 	document.getElementById("json-combine-modal").addEventListener("click", (event) => {
 		if (event.target.id === "json-combine-modal") {

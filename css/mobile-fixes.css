@@ -1,4 +1,14 @@
 @media (max-width: 720px) {
+	.bulk-lookup-header {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.bulk-combine-button {
+		width: 100%;
+		white-space: normal;
+	}
+
 	.collection-actions {
 		display: flex;
 		justify-content: center;
@@ -15,7 +25,8 @@
 		justify-content: center;
 	}
 
-	.cached-tabs {
+	.cached-tabs,
+	.bulk-tabs {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 8px;
@@ -24,7 +35,8 @@
 		flex-wrap: unset;
 	}
 
-	.cached-tab-button {
+	.cached-tab-button,
+	.bulk-tab-button {
 		width: 100%;
 		min-width: 0;
 		padding: 12px 8px;
@@ -57,12 +69,62 @@
 		grid-template-columns: 1fr;
 	}
 
+	#nuvio-export-modal .modal-panel {
+		--nuvio-modal-pad: 12px;
+	}
+
+	.nuvio-choice-grid-three {
+		grid-template-columns: 1fr;
+	}
+
+	.nuvio-sort-pill-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 6px;
+	}
+
+	.nuvio-sort-pill {
+		min-height: 34px;
+		padding: 6px 5px;
+	}
+
+	#nuvio-export-modal .nuvio-sort-pill {
+		min-height: 32px;
+		padding: 5px 4px;
+	}
+
+	.nuvio-sort-pill .json-combine-choice-title {
+		font-size: 13px;
+	}
+
+	.nuvio-person-option-row {
+		grid-template-columns: 1fr;
+	}
+
+	.nuvio-choice-grid-two {
+		grid-template-columns: 1fr;
+	}
+
+	.nuvio-choice-grid-four {
+		grid-template-columns: 1fr;
+	}
+
+	.nuvio-person-overrides-header,
+	.nuvio-person-media-row {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.nuvio-person-overrides-header {
+		align-items: flex-start;
+	}
+
 	.nuvio-preview-grid {
 		grid-template-columns: 1fr;
 	}
 
 	.modal-panel {
 		max-height: calc(100vh - 24px);
+		max-height: calc(100dvh - 24px);
 		padding: 14px;
 	}
 
@@ -95,13 +157,39 @@
 		gap: 12px;
 	}
 
+	.modal-actions {
+		width: 100%;
+		justify-content: flex-start;
+	}
+
+	.modal-actions button {
+		flex: 1 1 150px;
+		white-space: normal;
+	}
+
+	#nuvio-export-modal .modal-actions button {
+		flex: 1 1 120px;
+	}
+
 	.nuvio-export-grid-single {
 		grid-template-columns: 1fr;
+	}
+
+	.nuvio-export-grid-single select,
+	.nuvio-export-grid-single input {
+		min-width: 0;
+		width: 100%;
 	}
 
 	.json-combine-mode-grid,
 	.json-combine-sort-grid {
 		grid-template-columns: 1fr !important;
+	}
+
+	.json-combine-summary-grid,
+	.json-combine-collection-edit-row,
+	.json-combine-collection-edit-fields {
+		grid-template-columns: 1fr;
 	}
 
 	.genre-export-layout,
@@ -142,7 +230,8 @@
 		padding-right: 8px;
 	}
 
-	.cached-tab-button {
+	.cached-tab-button,
+	.bulk-tab-button {
 		font-size: 13px;
 		padding-left: 6px;
 		padding-right: 6px;

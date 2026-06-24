@@ -80,15 +80,79 @@ async function tmdbJsonWithStatus(url) {
 	}
 }
 
-async function getPersonKnownCredits(personId) {
-	const credits = await tmdbJson(tmdbApiUrl(`/3/person/${personId}/combined_credits`));
+function createEmptyPersonCreditSummary() {
+	return {
+		hasCreditData: false,
+		totalCount: 0,
+		formattedTotal: "\u2014",
+		movieCount: 0,
+		tvCount: 0,
+		castMovieCount: 0,
+		castTvCount: 0,
+		directorMovieCount: 0,
+		directorTvCount: 0,
+	};
+}
 
-	if (!credits || typeof credits !== 'object') {
-		return "\u2014";
+function addCreditMediaId(credit, movieIds, tvIds) {
+	if (!credit || !credit.id) {
+		return;
 	}
 
-	const castCount = Array.isArray(credits.cast) ? credits.cast.length : 0;
-	const crewCount = Array.isArray(credits.crew) ? credits.crew.length : 0;
+	if (credit.media_type === "movie") {
+		movieIds.add(credit.id);
+	} else if (credit.media_type === "tv") {
+		tvIds.add(credit.id);
+	}
+}
 
-	return (castCount + crewCount).toLocaleString();
+async function getPersonCreditSummary(personId) {
+	const credits = await tmdbJson(tmdbApiUrl(`/3/person/${personId}/combined_credits`));
+
+	if (!credits || typeof credits !== "object") {
+		return createEmptyPersonCreditSummary();
+	}
+
+	const castCredits = Array.isArray(credits.cast) ? credits.cast : [];
+	const crewCredits = Array.isArray(credits.crew) ? credits.crew : [];
+	const movieIds = new Set();
+	const tvIds = new Set();
+	const castMovieIds = new Set();
+	const castTvIds = new Set();
+	const directorMovieIds = new Set();
+	const directorTvIds = new Set();
+
+	for (const credit of castCredits) {
+		addCreditMediaId(credit, castMovieIds, castTvIds);
+	}
+
+	for (const credit of [...castCredits, ...crewCredits]) {
+		addCreditMediaId(credit, movieIds, tvIds);
+	}
+
+	for (const credit of crewCredits) {
+		if (String(credit.job || "").toLowerCase() === "director") {
+			addCreditMediaId(credit, directorMovieIds, directorTvIds);
+		}
+	}
+
+	const totalCount = castCredits.length + crewCredits.length;
+
+	return {
+		hasCreditData: true,
+		totalCount,
+		formattedTotal: totalCount.toLocaleString(),
+		movieCount: movieIds.size,
+		tvCount: tvIds.size,
+		castMovieCount: castMovieIds.size,
+		castTvCount: castTvIds.size,
+		directorMovieCount: directorMovieIds.size,
+		directorTvCount: directorTvIds.size,
+	};
+}
+
+async function getPersonKnownCredits(personId) {
+	const summary = await getPersonCreditSummary(personId);
+
+	return summary.formattedTotal;
 }

@@ -17,9 +17,82 @@ function createMetaRow(label, value) {
 	const labelElement = createElement("strong", { text: label + ":" });
 
 	row.appendChild(labelElement);
-	row.appendChild(document.createTextNode(" " + value));
+	row.appendChild(document.createTextNode(" "));
+
+	if (value instanceof Node) {
+		row.appendChild(value);
+	} else {
+		row.appendChild(document.createTextNode(value));
+	}
 
 	return row;
+}
+
+function getPrimaryTvNetwork(series) {
+	return Array.isArray(series.networks) && series.networks.length ? series.networks[0] : null;
+}
+
+function getTvNetworkLogoUrl(network, size = "w92") {
+	return network?.logo_path ? `https://image.tmdb.org/t/p/${size}${network.logo_path}` : "";
+}
+
+function copyNetworkId(network) {
+	if (network?.id) {
+		copyId(network.id);
+	}
+}
+
+function createTvNetworkDisplay(network) {
+	if (!network) {
+		return createElement("span", { text: "\u2014" });
+	}
+
+	const container = createElement("span", { className: "tv-network-display" });
+	const logoUrl = getTvNetworkLogoUrl(network);
+	const networkName = network.name || "TV network";
+
+	if (logoUrl) {
+		const logoButton = createElement(
+			"button",
+			{
+				className: "tv-network-logo-box",
+				attrs: {
+					type: "button",
+					title: `Copy ${networkName} network ID`,
+					"aria-label": `Copy ${networkName} network ID`,
+				},
+			},
+			[
+				createElement("img", {
+					className: "tv-network-logo",
+					attrs: {
+						src: logoUrl,
+						alt: `${networkName} logo`,
+						loading: "lazy",
+						decoding: "async",
+					},
+				}),
+			],
+		);
+
+		logoButton.addEventListener("click", () => copyNetworkId(network));
+		container.appendChild(logoButton);
+	} else {
+		const textButton = createElement("button", {
+			className: "tv-network-text-button",
+			text: networkName,
+			attrs: {
+				type: "button",
+				title: `Copy ${networkName} network ID`,
+				"aria-label": `Copy ${networkName} network ID`,
+			},
+		});
+
+		textButton.addEventListener("click", () => copyNetworkId(network));
+		container.appendChild(textButton);
+	}
+
+	return container;
 }
 
 function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbUrl, imageClass = "" }) {
@@ -72,7 +145,7 @@ function createResultCard({ title, type, id, imageUrl, imageAlt, metaRows, tmdbU
 			attrs: {
 				href: tmdbUrl,
 				target: "_blank",
-				rel: "noopener",
+				rel: "noopener noreferrer",
 			},
 		}),
 	);
@@ -96,6 +169,63 @@ function collectionCard(collection, movieCount = "\u2014") {
 		metaRows,
 		tmdbUrl: `https://www.themoviedb.org/collection/${collection.id}`,
 	});
+}
+
+function movieCard(movie) {
+	const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w185${movie.poster_path}` : "";
+	const language = movie.original_language ? movie.original_language.toUpperCase() : "";
+	const directorMeta = getMovieDirectorMeta(movie);
+	const metaRows = [];
+
+	if (directorMeta) {
+		metaRows.push(createMetaRow(directorMeta.label, directorMeta.text));
+	}
+
+	metaRows.push(createMetaRow("Release date", movie.release_date || "\u2014"));
+
+	if (Number.isFinite(movie.runtime) && movie.runtime > 0) {
+		metaRows.push(createMetaRow("Runtime", `${movie.runtime} min`));
+	}
+
+	if (language) {
+		metaRows.push(createMetaRow("Language", language));
+	}
+
+	return createResultCard({
+		title: movie.title || movie.original_title || "Untitled Movie",
+		type: "Movie",
+		id: movie.id,
+		imageUrl: poster,
+		imageAlt: movie.title || movie.original_title || "Movie poster",
+		metaRows,
+		tmdbUrl: `https://www.themoviedb.org/movie/${movie.id}`,
+	});
+}
+
+function getMovieDirectors(movie) {
+	const crew = movie?.credits?.crew;
+
+	if (!Array.isArray(crew)) {
+		return [];
+	}
+
+	return crew.filter((member) => member.job === "Director" && member.name).map((member) => member.name);
+}
+
+function getMovieDirectorMeta(movie) {
+	const directors = [...new Set(getMovieDirectors(movie))];
+
+	if (!directors.length) {
+		return null;
+	}
+
+	const shownDirectors = directors.slice(0, 2).join(", ");
+	const remainingCount = directors.length - 2;
+
+	return {
+		label: directors.length > 1 ? "Directors" : "Director",
+		text: remainingCount > 0 ? `${shownDirectors} +${remainingCount} more` : shownDirectors,
+	};
 }
 
 function personCard(person, knownCredits = "\u2014") {
@@ -152,6 +282,7 @@ function tvSeriesCard(series) {
 	const language = series.original_language ? series.original_language.toUpperCase() : "";
 	const metaRows = [createMetaRow("First aired", series.first_air_date || "\u2014")];
 	const scaleRow = getTvSeriesScaleRow(series);
+	const network = getPrimaryTvNetwork(series);
 
 	if (scaleRow) {
 		metaRows.push(scaleRow);
@@ -163,6 +294,10 @@ function tvSeriesCard(series) {
 
 	if (language) {
 		metaRows.push(createMetaRow("Language", language));
+	}
+
+	if (network) {
+		metaRows.push(createMetaRow("Network", createTvNetworkDisplay(network)));
 	}
 
 	return createResultCard({
@@ -199,12 +334,32 @@ async function getTvSeriesDetails(seriesId) {
 	return detailData;
 }
 
+async function getMovieDetails(movieId) {
+	const detailData = await tmdbJson(tmdbApiUrl(`/3/movie/${movieId}`, { append_to_response: "credits" }));
+
+	if (!detailData || detailData.success === false) {
+		return null;
+	}
+
+	return detailData;
+}
+
 async function hydrateTvSeriesResults(seriesList) {
 	return Promise.all(
 		seriesList.map(async (series) => {
 			const detail = await getTvSeriesDetails(series.id);
 
 			return detail || series;
+		}),
+	);
+}
+
+async function hydrateMovieResults(movieList) {
+	return Promise.all(
+		movieList.map(async (movie) => {
+			const detail = await getMovieDetails(movie.id);
+
+			return detail || movie;
 		}),
 	);
 }
@@ -216,24 +371,27 @@ function getLookupResultLimit() {
 function getAllLookupLimits(lookupResultLimit) {
 	if (lookupResultLimit <= 5) {
 		return {
-			collections: 2,
-			tvSeries: 2,
+			collections: 1,
+			tvSeries: 1,
+			movies: 2,
 			people: 1,
 		};
 	}
 
 	return {
-		collections: 3,
-		tvSeries: 3,
-		people: Math.max(lookupResultLimit - 6, 0),
+		collections: 2,
+		tvSeries: 2,
+		movies: 3,
+		people: Math.max(lookupResultLimit - 7, 0),
 	};
 }
 
 function fillLookupSlots(groups, initialLimits, totalLimit) {
-	const resultOrder = ["collections", "tvSeries", "people"];
+	const resultOrder = ["collections", "tvSeries", "movies", "people"];
 	const selected = {
 		collections: [],
 		tvSeries: [],
+		movies: [],
 		people: [],
 	};
 	let remaining = totalLimit;
@@ -364,6 +522,22 @@ async function searchTmdbIds(page = 1) {
 				}
 			}
 
+			if (currentTmdbFilter === "all" || currentTmdbFilter === "tv") {
+				const series = await getTvSeriesDetails(query);
+
+				if (series) {
+					cards.push(tvSeriesCard(series));
+				}
+			}
+
+			if (currentTmdbFilter === "all" || currentTmdbFilter === "movies") {
+				const movie = await getMovieDetails(query);
+
+				if (movie) {
+					cards.push(movieCard(movie));
+				}
+			}
+
 			if (currentTmdbFilter === "all" || currentTmdbFilter === "actors" || currentTmdbFilter === "directors") {
 				const person = await tmdbJson(tmdbApiUrl(`/3/person/${query}`));
 
@@ -383,22 +557,16 @@ async function searchTmdbIds(page = 1) {
 					}
 				}
 			}
-
-			if (currentTmdbFilter === "all" || currentTmdbFilter === "tv") {
-				const series = await getTvSeriesDetails(query);
-
-				if (series) {
-					cards.push(tvSeriesCard(series));
-				}
-			}
 		} else {
 			const shouldSearchCollections = currentTmdbFilter === "all" || currentTmdbFilter === "collections";
+			const shouldSearchMovies = currentTmdbFilter === "all" || currentTmdbFilter === "movies";
 			const shouldSearchPeople =
 				currentTmdbFilter === "all" || currentTmdbFilter === "actors" || currentTmdbFilter === "directors";
 			const shouldSearchTv = currentTmdbFilter === "all" || currentTmdbFilter === "tv";
 
-			const [collectionSearch, personSearch, tvSearch] = await Promise.all([
+			const [collectionSearch, movieSearch, personSearch, tvSearch] = await Promise.all([
 				shouldSearchCollections ? tmdbJson(tmdbApiUrl("/3/search/collection", { query, page })) : null,
+				shouldSearchMovies ? tmdbJson(tmdbApiUrl("/3/search/movie", { query, page })) : null,
 				shouldSearchPeople ? tmdbJson(tmdbApiUrl("/3/search/person", { query, page })) : null,
 				shouldSearchTv ? tmdbJson(tmdbApiUrl("/3/search/tv", { query, page })) : null,
 			]);
@@ -408,6 +576,8 @@ async function searchTmdbIds(page = 1) {
 			let collections = collectionSearch?.results || [];
 
 			let people = personSearch?.results || [];
+
+			let movies = movieSearch?.results || [];
 
 			let tvSeries = tvSearch?.results || [];
 
@@ -428,6 +598,7 @@ async function searchTmdbIds(page = 1) {
 					{
 						collections,
 						tvSeries,
+						movies,
 						people,
 					},
 					getAllLookupLimits(lookupResultLimit),
@@ -436,9 +607,11 @@ async function searchTmdbIds(page = 1) {
 
 				collections = selectedResults.collections;
 				tvSeries = selectedResults.tvSeries;
+				movies = selectedResults.movies;
 				people = selectedResults.people;
 			} else {
 				collections = currentTmdbFilter === "collections" ? collections.slice(0, lookupResultLimit) : [];
+				movies = currentTmdbFilter === "movies" ? movies.slice(0, lookupResultLimit) : [];
 				tvSeries = currentTmdbFilter === "tv" ? tvSeries.slice(0, lookupResultLimit) : [];
 				people =
 					currentTmdbFilter === "actors" || currentTmdbFilter === "directors"
@@ -448,6 +621,8 @@ async function searchTmdbIds(page = 1) {
 
 			if (currentTmdbFilter === "collections") {
 				currentTmdbTotalPages = collectionSearch?.total_pages || 1;
+			} else if (currentTmdbFilter === "movies") {
+				currentTmdbTotalPages = movieSearch?.total_pages || 1;
 			} else if (currentTmdbFilter === "tv") {
 				currentTmdbTotalPages = tvSearch?.total_pages || 1;
 			} else if (currentTmdbFilter === "actors" || currentTmdbFilter === "directors") {
@@ -455,6 +630,7 @@ async function searchTmdbIds(page = 1) {
 			} else {
 				currentTmdbTotalPages = Math.max(
 					collectionSearch?.total_pages || 1,
+					movieSearch?.total_pages || 1,
 					personSearch?.total_pages || 1,
 					tvSearch?.total_pages || 1,
 				);
@@ -479,8 +655,12 @@ async function searchTmdbIds(page = 1) {
 			const hydratedTvSeries = await hydrateTvSeriesResults(tvSeries);
 			const tvSeriesCards = hydratedTvSeries.map((series) => tvSeriesCard(series));
 
+			const hydratedMovies = await hydrateMovieResults(movies);
+			const movieCards = hydratedMovies.map((movie) => movieCard(movie));
+
 			cards.push(...collectionCards);
 			cards.push(...tvSeriesCards);
+			cards.push(...movieCards);
 			cards.push(...personCards);
 		}
 
@@ -489,7 +669,7 @@ async function searchTmdbIds(page = 1) {
 		}
 
 		if (!cards.length) {
-			setLookupMessage(resultsContainer, "No matching movie collections, people, or TV series found.");
+			setLookupMessage(resultsContainer, "No matching movies, movie collections, people, or TV series found.");
 			return;
 		}
 

@@ -9,7 +9,7 @@
 
 Live site: [https://davecollections.github.io/tmdb-id-lookup/](https://davecollections.github.io/tmdb-id-lookup/)
 
-A simple lookup tool for finding useful TMDB IDs for production companies, TV networks, genres, official movie collections, people, and TV series.
+A simple lookup tool for finding useful TMDB IDs for production companies, TV networks, genres, movies, official movie collections, people, and TV series.
 
 The site is designed for people building media libraries, curated collections, discovery rows, metadata lists, or other TMDB-based workflows where the correct ID matters.
 
@@ -17,6 +17,7 @@ The site is designed for people building media libraries, curated collections, d
 
 * Find TMDB production company IDs
 * Find TMDB TV network IDs
+* Find individual TMDB movie IDs
 * Find official TMDB movie collection IDs
 * Find TMDB TV series IDs
 * Find actor, director, writer, and general person IDs
@@ -26,8 +27,8 @@ The site is designed for people building media libraries, curated collections, d
 * Export cached company, network, and genre results as CSV
 * Import pasted names, pasted CSV text, or CSV/text files for bulk people lookup
 * Export bulk people matches as CSV or Nuvio collections JSON
-* Combine multiple people Nuvio JSON batch files into one downloadable JSON
-* Build Nuvio collections JSON from selected companies, networks, genres, and people
+* Combine multiple Nuvio collection JSON files into one downloadable JSON
+* Build Nuvio collections JSON from selected companies, networks, genres, movie collections, and people
 
 ## Features
 
@@ -35,15 +36,16 @@ The site is designed for people building media libraries, curated collections, d
 * Search cached official TMDB genre IDs and curated genre-style list references
 * Filter company, network, and genre results
 * Sort cached results by ID, name, type, media, country, headquarters, and title count where available
+* Search TMDB movies by title or ID
 * Search TMDB movie collections by name or ID
 * Search TMDB people by name or ID
 * Search TMDB TV series by name or ID
-* Filter TMDB lookup results by actors, directors, collections, TV series, or all results
-* Bulk lookup person names from pasted text, pasted CSV, or uploaded CSV/text files
-* Split larger people lists into clear 50-name batches
-* Create Nuvio collections JSON from matched bulk people results
-* Merge split people JSON batches into one Nuvio collection JSON
-* Append people batch folders into an existing Nuvio collections JSON file
+* Filter TMDB lookup results by actors, directors, movies, movie collections, TV series, or all results
+* Bulk lookup people, official movie collections, and TV series from pasted text, pasted CSV, or uploaded CSV/text files
+* Split larger bulk lists into clear 50-item chunks
+* Create Nuvio collections JSON from matched bulk people and movie collection results
+* Combine or merge Nuvio collection JSON files, with duplicate ID fixes and preservation-first handling
+* Append uploaded folders into an existing Nuvio collections JSON file
 * Create Nuvio collections JSON from selected companies, networks, and genres
 * Add optional curated cover artwork and supported focus GIF artwork to Nuvio network exports
 * Copy IDs with one click
@@ -81,9 +83,11 @@ Genre Nuvio JSON export can create a single Genres collection from selected movi
 * Movie-only and TV-only quick select buttons
 * Merge choices for overlapping TV/movie categories such as Action & Adventure, Sci-Fi & Fantasy, and War & Politics
 
-## Movie Collection, People, And TV Series Lookup
+## Movie, Movie Collection, People, And TV Series Lookup
 
-The TMDB lookup can search for official movie collections, people, and TV series.
+The top TMDB lookup can search for individual movies, official movie collections, people, and TV series.
+
+Movie lookup searches individual TMDB movies by title or TMDB movie ID. It is intended for quickly copying a movie ID only; it does not add bulk movie lookup or Nuvio JSON export for individual movies.
 
 Movie collection lookup searches **TMDB official movie collections only**. In TMDB, a collection usually means an official franchise or grouped movie series, not an individual movie or a custom user list.
 
@@ -94,34 +98,44 @@ For example, searches like these are more likely to return collection results:
 * Jurassic Park
 * Mission Impossible
 
-A standalone movie title may not return anything unless TMDB has it grouped as part of an official movie collection. The tool does not currently search individual movies.
-
 People lookup can search by name or TMDB person ID, and results can be filtered by actors, directors, or all people results.
 
 TV series lookup can search by series name or TMDB TV series ID. This is useful when building Nuvio folders for specific shows, such as favorite animated series.
 
-## Bulk People Lookup
+## Bulk Lookup
 
-Bulk people lookup helps resolve multiple person names into TMDB person IDs.
+Bulk lookup helps resolve multiple pasted or uploaded items into TMDB IDs.
 
-Paste names, paste CSV text, or load a CSV/text file, then select **Resolve People IDs**. CSV imports use a `name`, `person`, `actor`, `director`, or first/last name column when one exists, and otherwise use the first column. Plain comma-separated name lists are also accepted.
+The bulk area has three tabs:
 
-Each lookup uses the first 50 names and tells you the last included name so larger lists can be split into batches. If the active batch includes partial names, the page warns that matches may not be accurate. Results include the matched name, TMDB person ID, known-for department, credit count, match type, and TMDB link.
+* **People** resolves person names to TMDB person IDs.
+* **Movie Collections** resolves official TMDB movie collection names or IDs. It does not search individual movies.
+* **TV Series** resolves TV series names or IDs.
 
-Matched results can be downloaded as a CSV or exported as Nuvio collections JSON.
+Paste names, paste CSV text, or load a CSV/text file, then select the matching resolve button. People CSV imports use a `name`, `person`, `actor`, `director`, or first/last name column when one exists. Movie Collection and TV Series CSV imports use a `name`, `title`, type-specific column, or the first column. Plain comma-separated lists are also accepted.
 
-The Nuvio JSON export can create people-based collections for actors, directors, or mixed people lists. It includes optional default collection artwork, folder hero artwork, and a hide-title setting for TMDB person images.
+Each lookup uses the first 50 items and tells you the last included item so larger lists can be split into chunks. If the active people chunk includes partial names, the page warns that matches may not be accurate. Results include the matched title/name, TMDB ID, match type, and type-specific details.
 
-If a people list needs to be split into multiple 50-name batches, the bulk people tool can combine exported Nuvio JSON files into one download. Files can be added in batches, reviewed, and removed if needed. Single-collection mode merges every folder into one collection, with optional first-name or last-name sorting. Keep-collections mode combines the uploaded collections into one file without merging their folders. Existing Nuvio JSON files can also be kept, skipped, or used as the target for appended people batch folders.
+Matched results from all three tabs can be downloaded as CSV. TV Series CSV exports include one row per TMDB season when season summary data is available, using the same TMDB series ID plus the season number and season URL.
+
+The People tab can create people-based Nuvio collections for actors, directors, or mixed people lists. It can auto-select movie, series, or movie-plus-series sources per person from TMDB credit data, use the same source type for every person, or let you manually choose sources per person. It also includes optional default collection artwork, folder hero artwork, sort options, copy/download JSON actions, and a hide-title setting for TMDB person images.
+
+The Movie Collections tab can create one Nuvio collection with one folder per matched TMDB movie collection. It uses the confirmed Nuvio `COLLECTION` source schema and can export either landscape backdrop artwork or poster artwork.
+
+Nuvio's built-in TMDB integration does not currently let you manually add TV shows, seasons, or miniseries by TMDB ID, so TV Series bulk export stays CSV-only.
+
+If a list needs to be split into multiple 50-item chunks, or you have several Nuvio collection exports to manage, the combiner can create one clean Nuvio JSON download. Files can be added, reviewed, and removed if needed. Merge mode combines every folder into one collection, with optional name/title sorting or last-name sorting for people lists. Name/title sorting ignores leading English articles such as `The`, `A`, and `An`. Keep-separate mode combines uploaded collections into one file without merging their folders. The combiner preserves original collection data where possible, normalizes duplicate or missing collection/folder IDs, and preserves community metadata when collections are kept separate.
 
 ## Nuvio JSON Exports
 
 Nuvio JSON exports are portable collection files that can be imported into Nuvio. The site currently supports:
 
 * People collections from bulk people lookup matches
+* Movie collection exports from bulk movie collection lookup matches
 * Studio collections from selected production companies
 * Network collections from selected TV networks
 * Genre collections from selected official genres and curated list references
+* Combined Nuvio collection JSON exports from uploaded Nuvio files
 
 Company and network exports include quick select presets. Network exports can optionally use curated cover images and supported LuckyNumbers focus GIF artwork. If cover images are turned off, exports use emoji fallbacks and visible folder titles.
 
@@ -153,7 +167,9 @@ If you are not on Windows, run `node scripts/check-frontend.mjs` directly.
 
 The app uses a Cloudflare Worker proxy for live TMDB API calls. Local static testing still works without extra setup, but live TMDB lookups from `localhost` or `127.0.0.1` require that local origin to be allowed by the Worker CORS rules.
 
-If local lookup requests fail while the live site works, check the Worker origin allowlist before changing frontend code.
+If local lookup requests fail while the live site works, check the Worker origin allowlist before changing frontend code. The top lookup currently needs the Worker to allow TMDB movie paths `/3/search/movie` and `/3/movie/{movie_id}` as well as the existing collection, person, and TV paths.
+
+The tracked Worker source is in `cloudflare-worker/tmdb-proxy.js`. The actual TMDB bearer token must stay in Cloudflare as the `TMDB_BEARER_TOKEN` secret and should never be committed to Git.
 
 ## Notes
 

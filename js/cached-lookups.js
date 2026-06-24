@@ -146,7 +146,7 @@ function updateFooterStats() {
 
 	const formattedDate = formatUpdatedDate(updatedAt);
 
-	footer.innerText = `TMDB export sync • Companies: ${companyCount.toLocaleString()} • Networks: ${networkCount.toLocaleString()} • Updated ${formattedDate}`;
+	footer.innerText = `Data sync: Companies ${companyCount.toLocaleString()} · Networks ${networkCount.toLocaleString()} · Updated ${formattedDate}`;
 }
 
 function showTableLoading(tbodyId, columnCount, message) {

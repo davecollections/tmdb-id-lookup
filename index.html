@@ -32,18 +32,19 @@
 		<h1>TMDB ID Lookup</h1>
 
 		<p class="intro-text">
-			Quickly find TMDB IDs for movie collections, TV series, people, production companies, TV networks, and genres.
+			Quickly find TMDB IDs for movies, movie collections, TV series, people, production companies, TV networks, and
+			genres.
 		</p>
 
 		<p class="meta hero-help">
 			Need help? Read the
-			<a href="https://github.com/davecollections/tmdb-id-lookup" target="_blank" rel="noopener"> project guide </a>.
+			<a href="https://github.com/davecollections/tmdb-id-lookup" target="_blank" rel="noopener noreferrer"> project guide </a>.
 		</p>
 
 		<section class="tool-section lookup-section">
 			<div class="tool-header">
-				<h2>Movie Collection, People & TV Series Lookup</h2>
-				<p class="meta">Search TMDB official movie collections, people, and TV series by name or ID.</p>
+				<h2>Movie, Movie Collection, People & TV Series Lookup</h2>
+				<p class="meta">Search TMDB movies, official movie collections, people, and TV series by name or ID.</p>
 			</div>
 
 			<div class="search-row">
@@ -65,6 +66,8 @@
 
 				<button class="lookup-filter-button" type="button" data-tmdb-filter="collections">Movie Collections</button>
 
+				<button class="lookup-filter-button" type="button" data-tmdb-filter="movies">Movies</button>
+
 				<button class="lookup-filter-button" type="button" data-tmdb-filter="tv">TV Series</button>
 			</div>
 			<p class="meta lookup-copy-help">
@@ -74,50 +77,204 @@
 			<div id="collection-results" class="collection-results"></div>
 		</section>
 		<section class="tool-section bulk-lookup">
-			<h2>Bulk People Lookup</h2>
+			<div class="bulk-lookup-header">
+				<div>
+					<h2>Bulk Lookup</h2>
 
-			<p class="meta">
-				Paste person names, paste CSV text, or load a CSV file, then download matched TMDB person IDs
-				as CSV or Nuvio JSON.
-			</p>
-
-			<div class="bulk-file-input">
-				<span class="bulk-file-label">CSV or text file</span>
-				<div class="bulk-file-row">
-					<label class="bulk-file-button" for="bulk-people-csv-file">Choose file</label>
-					<input id="bulk-people-csv-file" type="file" accept=".csv,.txt,text/csv,text/plain" />
-					<span id="bulk-people-csv-name" class="bulk-file-name">No file selected</span>
+					<p class="meta">
+						Resolve up to 50 people, official movie collections, or TV series at a time, then download matched
+						TMDB IDs as CSV. People and movie collection matches can also export Nuvio JSON.
+					</p>
 				</div>
+
+				<button id="open-json-combine-modal" class="bulk-combine-button" type="button">
+					Combine Nuvio JSON files
+				</button>
 			</div>
 
-			<p class="meta bulk-input-help">
-				CSV imports use a name, person, actor, director, or first/last name column when one exists.
-				Otherwise, names should be in the first column.
-			</p>
+			<div class="bulk-tabs" role="tablist" aria-label="Bulk lookup types">
+				<button
+					id="bulk-people-tab"
+					class="bulk-tab-button active"
+					type="button"
+					role="tab"
+					aria-selected="true"
+					aria-controls="bulk-people-panel"
+					data-bulk-tab="people"
+				>
+					People
+				</button>
 
-			<p id="bulk-people-name-warning" class="bulk-name-warning" hidden>
-				This input includes incomplete names. Matches may not be accurate, so check the results before
-				exporting JSON.
-			</p>
+				<button
+					id="bulk-collections-tab"
+					class="bulk-tab-button"
+					type="button"
+					role="tab"
+					aria-selected="false"
+					aria-controls="bulk-collections-panel"
+					data-bulk-tab="collections"
+				>
+					Movie Collections
+				</button>
 
-			<textarea
-				id="bulk-people-input"
-				placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig&#10;&#10;Or paste CSV text"
-			></textarea>
-
-			<div class="bulk-actions">
-				<button id="bulk-people-btn" type="button">Resolve People IDs</button>
-				<button id="open-json-combine-modal" type="button">Combine Nuvio JSON files</button>
-				<button id="clear-bulk-people" type="button">Clear</button>
+				<button
+					id="bulk-tv-tab"
+					class="bulk-tab-button"
+					type="button"
+					role="tab"
+					aria-selected="false"
+					aria-controls="bulk-tv-panel"
+					data-bulk-tab="tv"
+				>
+					TV Series
+				</button>
 			</div>
 
-			<p id="bulk-people-status" class="bulk-status"></p>
+			<div
+				id="bulk-people-panel"
+				class="bulk-tab-panel active"
+				role="tabpanel"
+				aria-labelledby="bulk-people-tab"
+				data-bulk-panel="people"
+			>
+				<h3>People</h3>
 
-			<p class="meta">
-				Bulk lookup returns the best TMDB person-name match and shows each person’s known-for department.
-			</p>
+				<p class="meta">
+					Paste person names, paste CSV text, or load a CSV file, then download matched TMDB person IDs
+					as CSV or Nuvio JSON.
+				</p>
 
-			<div id="bulk-people-results" class="bulk-results"></div>
+				<div class="bulk-file-input">
+					<span class="bulk-file-label">CSV or text file</span>
+					<div class="bulk-file-row">
+						<label class="bulk-file-button" for="bulk-people-csv-file">Choose file</label>
+						<input id="bulk-people-csv-file" type="file" accept=".csv,.txt,text/csv,text/plain" />
+						<span id="bulk-people-csv-name" class="bulk-file-name">No file selected</span>
+					</div>
+				</div>
+
+				<p class="meta bulk-input-help">
+					CSV imports use a name, person, actor, director, or first/last name column when one exists.
+					Otherwise, names should be in the first column.
+				</p>
+
+				<p id="bulk-people-name-warning" class="bulk-name-warning" hidden>
+					This input includes incomplete names. Matches may not be accurate, so check the results before
+					exporting JSON.
+				</p>
+
+				<textarea
+					id="bulk-people-input"
+					placeholder="Christopher Nolan&#10;Steven Spielberg&#10;Greta Gerwig&#10;&#10;Or paste CSV text"
+				></textarea>
+
+				<div class="bulk-actions">
+					<button id="bulk-people-btn" type="button">Resolve People IDs</button>
+					<button id="clear-bulk-people" type="button">Clear</button>
+				</div>
+
+				<p id="bulk-people-status" class="bulk-status"></p>
+
+				<p class="meta">
+					Bulk lookup returns the best TMDB person-name match and shows each person’s known-for department.
+				</p>
+
+				<div id="bulk-people-results" class="bulk-results"></div>
+			</div>
+
+			<div
+				id="bulk-collections-panel"
+				class="bulk-tab-panel"
+				role="tabpanel"
+				aria-labelledby="bulk-collections-tab"
+				data-bulk-panel="collections"
+				hidden
+			>
+				<h3>Movie Collections</h3>
+
+				<p class="meta">
+					Paste official TMDB movie collection names or IDs, then download matched collection IDs as CSV.
+					This does not search individual movies.
+				</p>
+
+				<div class="bulk-file-input">
+					<span class="bulk-file-label">CSV or text file</span>
+					<div class="bulk-file-row">
+						<label class="bulk-file-button" for="bulk-collections-file">Choose file</label>
+						<input id="bulk-collections-file" type="file" accept=".csv,.txt,text/csv,text/plain" />
+						<span id="bulk-collections-file-name" class="bulk-file-name">No file selected</span>
+					</div>
+				</div>
+
+				<p class="meta bulk-input-help">
+					CSV imports use a name, title, collection, or first-column value when one exists.
+				</p>
+
+				<textarea
+					id="bulk-collections-input"
+					placeholder="Harry Potter&#10;Lord of the Rings&#10;The Matrix&#10;&#10;Or paste CSV text"
+				></textarea>
+
+				<div class="bulk-actions">
+					<button id="bulk-collections-btn" type="button">Resolve Collection IDs</button>
+					<button id="clear-bulk-collections" type="button">Clear</button>
+				</div>
+
+				<p id="bulk-collections-status" class="bulk-status"></p>
+
+				<p class="meta">
+					Matched movie collections can also create Nuvio JSON, with one folder per collection.
+				</p>
+
+				<div id="bulk-collections-results" class="bulk-results"></div>
+			</div>
+
+			<div
+				id="bulk-tv-panel"
+				class="bulk-tab-panel"
+				role="tabpanel"
+				aria-labelledby="bulk-tv-tab"
+				data-bulk-panel="tv"
+				hidden
+			>
+				<h3>TV Series</h3>
+
+				<p class="meta">
+					Paste TMDB TV series names or IDs, then download matched series and season references as CSV.
+				</p>
+
+				<div class="bulk-file-input">
+					<span class="bulk-file-label">CSV or text file</span>
+					<div class="bulk-file-row">
+						<label class="bulk-file-button" for="bulk-tv-file">Choose file</label>
+						<input id="bulk-tv-file" type="file" accept=".csv,.txt,text/csv,text/plain" />
+						<span id="bulk-tv-file-name" class="bulk-file-name">No file selected</span>
+					</div>
+				</div>
+
+				<p class="meta bulk-input-help">
+					CSV imports use a name, title, series, show, tv, or first-column value when one exists.
+				</p>
+
+				<textarea
+					id="bulk-tv-input"
+					placeholder="The Simpsons&#10;Futurama&#10;Band of Brothers&#10;&#10;Or paste CSV text"
+				></textarea>
+
+				<div class="bulk-actions">
+					<button id="bulk-tv-btn" type="button">Resolve TV Series IDs</button>
+					<button id="clear-bulk-tv" type="button">Clear</button>
+				</div>
+
+				<p id="bulk-tv-status" class="bulk-status"></p>
+
+				<p class="meta">
+					Nuvio's built-in TMDB integration does not currently let you manually add TV shows, seasons,
+					or miniseries by TMDB ID, so this tab stays CSV-only.
+				</p>
+
+				<div id="bulk-tv-results" class="bulk-results"></div>
+			</div>
 		</section>
 
 		<div id="nuvio-export-modal" class="modal-backdrop" hidden>
@@ -130,39 +287,189 @@
 				</div>
 
 				<div class="nuvio-export-options" aria-label="Nuvio JSON export options">
-					<div class="nuvio-export-grid">
-						<label>
-							Collection name
-							<input id="nuvio-collection-name" placeholder="Favourite actors" />
-						</label>
+					<section class="nuvio-modal-section">
+						<h3>Collection details</h3>
+						<div class="nuvio-export-grid nuvio-export-grid-single">
+							<label>
+								Collection name
+								<input id="nuvio-collection-name" placeholder="Favourite actors" />
+							</label>
+						</div>
+					</section>
 
-						<label>
-							Media type
-							<select id="nuvio-media-type">
-								<option value="MOVIE" selected>Movie</option>
-								<option value="TV">TV</option>
-							</select>
-						</label>
+					<section class="nuvio-modal-section">
+						<h3>Credits to include</h3>
+						<div class="nuvio-choice-grid nuvio-choice-grid-three nuvio-workflow-grid" aria-label="People credit source workflow">
+							<label class="json-combine-choice nuvio-credit-mode-choice">
+								<input type="radio" name="nuvio-credit-mode" value="auto" checked />
+								<span>
+									<span class="json-combine-choice-title">Auto select</span>
+									<span class="json-combine-choice-help">
+										Uses available credits to choose People, Director, or both for each person.
+									</span>
+								</span>
+							</label>
+							<label class="json-combine-choice nuvio-credit-mode-choice">
+								<input type="radio" name="nuvio-credit-mode" value="same" />
+								<span>
+									<span class="json-combine-choice-title">Same for all</span>
+									<span class="json-combine-choice-help">Use one credit source setting for every person.</span>
+								</span>
+							</label>
+							<label class="json-combine-choice nuvio-credit-mode-choice">
+								<input type="radio" name="nuvio-credit-mode" value="custom" />
+								<span>
+									<span class="json-combine-choice-title">Custom per person</span>
+									<span class="json-combine-choice-help">
+										Manually choose People, Director, or both for each person.
+									</span>
+								</span>
+							</label>
+						</div>
 
-						<label>
-							Source type
-							<select id="nuvio-source-type">
-								<option value="ACTOR" selected>Actors</option>
-								<option value="DIRECTOR">Directors</option>
-								<option value="PERSON">People</option>
-							</select>
-						</label>
+						<p id="nuvio-auto-credit-note" class="nuvio-conditional-note">
+							Auto select uses available people and director credits for each person.
+						</p>
 
-						<label>
-							Cover image URL
-							<input id="nuvio-cover-image-url" placeholder="Leave blank to use default" />
-						</label>
+						<div id="nuvio-same-credit-options" class="nuvio-conditional-panel" hidden>
+							<div class="nuvio-choice-group" aria-label="Same credit source for every person">
+								<span>Use for every person</span>
+								<div class="nuvio-choice-grid nuvio-choice-grid-three nuvio-sort-pill-grid">
+									<label class="json-combine-choice nuvio-sort-pill">
+										<input type="radio" name="nuvio-same-credit-source" value="PERSON" checked />
+										<span class="json-combine-choice-title">People credits</span>
+									</label>
+									<label class="json-combine-choice nuvio-sort-pill">
+										<input type="radio" name="nuvio-same-credit-source" value="DIRECTOR" />
+										<span class="json-combine-choice-title">Director credits</span>
+									</label>
+									<label class="json-combine-choice nuvio-sort-pill">
+										<input type="radio" name="nuvio-same-credit-source" value="BOTH" />
+										<span class="json-combine-choice-title">People + Director</span>
+									</label>
+								</div>
+							</div>
+						</div>
+					</section>
 
-						<label>
-							Folder hero URL
-							<input id="nuvio-folder-hero-url" placeholder="Leave blank to use default" />
-						</label>
+					<section class="nuvio-modal-section">
+						<h3>Media sources</h3>
+						<div class="nuvio-choice-grid nuvio-choice-grid-three nuvio-workflow-grid" aria-label="People media source workflow">
+							<label class="json-combine-choice nuvio-media-mode-choice">
+								<input type="radio" name="nuvio-media-mode" value="auto" checked />
+								<span>
+									<span class="json-combine-choice-title">Auto select</span>
+									<span class="json-combine-choice-help">
+										Uses available credits to choose Movies, Series, or both for each person.
+									</span>
+								</span>
+							</label>
+							<label class="json-combine-choice nuvio-media-mode-choice">
+								<input type="radio" name="nuvio-media-mode" value="same" />
+								<span>
+									<span class="json-combine-choice-title">Same for all</span>
+									<span class="json-combine-choice-help">Use one media source setting for every person.</span>
+								</span>
+							</label>
+							<label class="json-combine-choice nuvio-media-mode-choice">
+								<input type="radio" name="nuvio-media-mode" value="custom" />
+								<span>
+									<span class="json-combine-choice-title">Custom per person</span>
+									<span class="json-combine-choice-help">
+										Manually choose Movies, Series, or both for each person.
+									</span>
+								</span>
+							</label>
+						</div>
 
+						<p id="nuvio-auto-media-note" class="nuvio-conditional-note">
+							Auto select uses available movie and TV credits for each person. Role-specific sources use role-aware matching.
+						</p>
+
+						<div id="nuvio-same-media-options" class="nuvio-conditional-panel" hidden>
+							<div class="nuvio-choice-group" aria-label="Same media source for every person">
+								<span>Use for every person</span>
+								<div class="nuvio-choice-grid nuvio-choice-grid-three nuvio-sort-pill-grid">
+									<label class="json-combine-choice nuvio-sort-pill">
+										<input type="radio" name="nuvio-same-media-source" value="MOVIE" checked />
+										<span class="json-combine-choice-title">Movies</span>
+									</label>
+									<label class="json-combine-choice nuvio-sort-pill">
+										<input type="radio" name="nuvio-same-media-source" value="TV" />
+										<span class="json-combine-choice-title">Series</span>
+									</label>
+									<label class="json-combine-choice nuvio-sort-pill">
+										<input type="radio" name="nuvio-same-media-source" value="BOTH" />
+										<span class="json-combine-choice-title">Movies + Series</span>
+									</label>
+								</div>
+							</div>
+						</div>
+
+					</section>
+
+					<section class="nuvio-modal-section">
+						<h3>Source rules</h3>
+						<div class="nuvio-minimum-credit-setting">
+							<span class="nuvio-minimum-credit-label">Minimum detected credits</span>
+							<div class="nuvio-minimum-credit-pills" role="radiogroup" aria-label="Minimum detected credits">
+								<label class="nuvio-threshold-pill">
+									<input type="radio" name="nuvio-minimum-credits" value="1" checked />
+									<span>1</span>
+								</label>
+								<label class="nuvio-threshold-pill">
+									<input type="radio" name="nuvio-minimum-credits" value="2" />
+									<span>2</span>
+								</label>
+								<label class="nuvio-threshold-pill">
+									<input type="radio" name="nuvio-minimum-credits" value="5" />
+									<span>5</span>
+								</label>
+								<label class="nuvio-threshold-pill">
+									<input type="radio" name="nuvio-minimum-credits" value="10" />
+									<span>10</span>
+								</label>
+							</div>
+							<span class="meta">Auto select and Same for all will skip sources below this count. Custom choices below this count are still exported.</span>
+						</div>
+					</section>
+
+					<section class="nuvio-modal-section">
+						<h3>Per-person source choices</h3>
+						<details id="nuvio-person-options" class="nuvio-person-overrides">
+							<summary>Review people</summary>
+							<div class="nuvio-person-overrides-body">
+								<div class="nuvio-person-overrides-header">
+									<p class="meta">
+										Review the generated choices for each person. Switch to Custom per person to edit.
+									</p>
+								</div>
+								<div id="nuvio-person-options-list" class="nuvio-person-media-list"></div>
+							</div>
+						</details>
+						<p id="nuvio-source-warning-note" class="nuvio-conditional-note nuvio-source-warning-note" hidden></p>
+					</section>
+
+					<section class="nuvio-modal-section">
+						<h3>Sort source results by</h3>
+						<div class="nuvio-choice-grid nuvio-choice-grid-three nuvio-sort-pill-grid" aria-label="People source sort order">
+							<label class="json-combine-choice nuvio-sort-pill">
+								<input type="radio" name="nuvio-sort-by" value="POPULAR" checked />
+								<span class="json-combine-choice-title">Popular</span>
+							</label>
+							<label class="json-combine-choice nuvio-sort-pill">
+								<input type="radio" name="nuvio-sort-by" value="RECENT" />
+								<span class="json-combine-choice-title">Recent</span>
+							</label>
+							<label class="json-combine-choice nuvio-sort-pill">
+								<input type="radio" name="nuvio-sort-by" value="TOP_RATED" />
+								<span class="json-combine-choice-title">Top rated</span>
+							</label>
+						</div>
+					</section>
+
+					<section class="nuvio-modal-section">
+						<h3>Display options</h3>
 						<label class="nuvio-toggle-option">
 							<input id="nuvio-hide-folder-title" type="checkbox" />
 							<span class="nuvio-toggle-copy">
@@ -171,19 +478,8 @@
 							</span>
 							<span class="nuvio-toggle-track" aria-hidden="true"></span>
 						</label>
-					</div>
+					</section>
 
-					<div class="nuvio-preview-grid" aria-label="Nuvio image previews">
-						<div>
-							<p class="meta">Collection cover preview</p>
-							<img id="nuvio-cover-preview" class="nuvio-image-preview" alt="Nuvio collection cover preview" />
-						</div>
-
-						<div>
-							<p class="meta">Folder hero preview</p>
-							<img id="nuvio-folder-hero-preview" class="nuvio-image-preview" alt="Nuvio folder hero preview" />
-						</div>
-					</div>
 				</div>
 
 				<div class="modal-footer">
@@ -192,6 +488,7 @@
 					</button>
 
 					<div class="modal-actions">
+						<button id="copy-nuvio-json" type="button">Copy JSON</button>
 						<button id="download-nuvio-json" type="button">Download JSON</button>
 						<button id="cancel-nuvio-export" type="button">Cancel</button>
 					</div>
@@ -245,6 +542,98 @@
 			</div>
 		</div>
 
+		<div id="bulk-collection-nuvio-export-modal" class="modal-backdrop" hidden>
+			<div
+				class="modal-panel modal-panel-small"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="bulk-collection-nuvio-export-title"
+			>
+				<div class="modal-header">
+					<h2 id="bulk-collection-nuvio-export-title">Create Movie Collection JSON</h2>
+					<button
+						id="close-bulk-collection-nuvio-export"
+						class="modal-close"
+						type="button"
+						aria-label="Close movie collection Nuvio JSON export"
+					>
+						&times;
+					</button>
+				</div>
+
+				<div class="nuvio-export-grid nuvio-export-grid-single">
+					<label>
+						Collection name
+						<input id="bulk-collection-nuvio-collection-name" placeholder="Movie Collections" />
+					</label>
+
+					<input id="bulk-collection-nuvio-artwork-shape" type="hidden" value="LANDSCAPE" />
+
+					<label class="nuvio-toggle-option">
+						<input id="bulk-collection-nuvio-hide-title" type="checkbox" checked />
+						<span class="nuvio-toggle-copy">
+							<span class="nuvio-toggle-label">Hide folder title</span>
+							<span class="nuvio-toggle-help">Turn off if the chosen artwork does not show the collection name.</span>
+						</span>
+						<span class="nuvio-toggle-track" aria-hidden="true"></span>
+					</label>
+				</div>
+
+				<div class="bulk-artwork-preview-heading">
+					<h3>Folder artwork style</h3>
+					<p class="meta">Choose the image shape Nuvio will use for each collection folder.</p>
+				</div>
+
+				<div class="bulk-artwork-preview-grid" aria-label="Movie collection artwork style preview">
+					<button
+						id="bulk-collection-poster-preview-choice"
+						class="bulk-artwork-preview-card"
+						type="button"
+						data-artwork-shape="POSTER"
+					>
+						<span class="bulk-artwork-preview-label">Poster tiles</span>
+						<span class="bulk-artwork-preview-description">Vertical poster artwork.</span>
+						<span class="bulk-artwork-preview-frame bulk-artwork-preview-frame-poster">
+							<img id="bulk-collection-poster-preview" alt="Poster artwork preview" />
+						</span>
+					</button>
+
+					<button
+						id="bulk-collection-landscape-preview-choice"
+						class="bulk-artwork-preview-card"
+						type="button"
+						data-artwork-shape="LANDSCAPE"
+					>
+						<span class="bulk-artwork-preview-label">Landscape tiles</span>
+						<span class="bulk-artwork-preview-description">Wide backdrop artwork.</span>
+						<span class="bulk-artwork-preview-frame bulk-artwork-preview-frame-landscape">
+							<img id="bulk-collection-landscape-preview" alt="Landscape artwork preview" />
+						</span>
+					</button>
+				</div>
+				<p class="meta bulk-artwork-preview-note">Preview images come from the first matched TMDB collection. The chosen style will be applied to all folders in this JSON.</p>
+
+				<p id="bulk-collection-nuvio-export-summary" class="meta"></p>
+
+				<div class="modal-footer">
+					<button
+						id="open-bulk-collection-nuvio-import-help"
+						class="modal-help-button"
+						type="button"
+						aria-label="How to import into Nuvio"
+					>
+						?
+					</button>
+
+					<div class="modal-actions">
+						<button id="copy-bulk-collection-nuvio-json" type="button">Copy JSON</button>
+						<button id="download-bulk-collection-nuvio-json" type="button">Download JSON</button>
+						<button id="cancel-bulk-collection-nuvio-export" type="button">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div id="json-combine-modal" class="modal-backdrop" hidden>
 			<div class="modal-panel modal-panel-small" role="dialog" aria-modal="true" aria-labelledby="json-combine-title">
 				<div class="modal-header">
@@ -275,21 +664,25 @@
 						<label class="json-combine-choice">
 							<input type="radio" name="json-combine-mode" value="single" checked />
 							<span>
-								<span class="json-combine-choice-title">Single collection</span>
-								<span class="json-combine-choice-help">Merge every folder into one collection.</span>
+								<span class="json-combine-choice-title">Merge into one collection</span>
+								<span class="json-combine-choice-help">Merge all folders from uploaded files into one collection.</span>
 							</span>
 						</label>
 
 						<label class="json-combine-choice">
 							<input type="radio" name="json-combine-mode" value="separate" />
 							<span>
-								<span class="json-combine-choice-title">Keep collections</span>
-								<span class="json-combine-choice-help">Combine uploaded collections into one download without merging folders.</span>
+								<span class="json-combine-choice-title">Keep separate collections</span>
+								<span class="json-combine-choice-help">Combine uploaded collections into one export without merging them.</span>
 							</span>
 						</label>
 					</div>
 
 					<div id="json-combine-single-options" class="json-combine-single-options">
+						<p class="json-combine-note">
+							If uploaded collections include community update links, merge mode removes them from the new custom collection.
+						</p>
+
 						<label>
 							Collection name
 							<input id="json-combine-collection-name" placeholder="Leave blank to use the first collection" />
@@ -315,8 +708,8 @@
 								<label class="json-combine-choice json-combine-sort-choice">
 									<input type="radio" name="json-combine-sort-mode" value="first" />
 									<span>
-										<span class="json-combine-choice-title">First name</span>
-										<span class="json-combine-choice-help">A to Z by folder title.</span>
+										<span class="json-combine-choice-title">Name / title</span>
+										<span class="json-combine-choice-help">A to Z, ignoring The, A, and An.</span>
 									</span>
 								</label>
 
@@ -331,6 +724,18 @@
 						</fieldset>
 					</div>
 
+					<div id="json-combine-separate-options" class="json-combine-separate-options" hidden>
+						<label class="json-combine-choice json-combine-edit-toggle">
+							<input id="json-combine-edit-collections" type="checkbox" />
+							<span>
+								<span class="json-combine-choice-title">Edit collection names/images</span>
+								<span class="json-combine-choice-help">Optional. Blank fields keep the original collection values.</span>
+							</span>
+						</label>
+
+						<div id="json-combine-collection-edit-list" class="json-combine-collection-edit-list" hidden></div>
+					</div>
+
 					<div id="json-combine-existing-options" class="json-combine-existing-options" hidden>
 						<p id="json-combine-existing-summary" class="meta"></p>
 
@@ -338,24 +743,24 @@
 							<label class="json-combine-choice">
 								<input type="radio" name="json-combine-existing-mode" value="new" checked />
 								<span>
-									<span class="json-combine-choice-title">Create new collection</span>
-									<span class="json-combine-choice-help">Keep existing collections and add a new merged collection.</span>
+									<span class="json-combine-choice-title">Keep full export + add merged JSON</span>
+									<span class="json-combine-choice-help">Keep full export collections and add one new collection from the other JSON files.</span>
 								</span>
 							</label>
 
 							<label class="json-combine-choice">
 								<input type="radio" name="json-combine-existing-mode" value="append" />
 								<span>
-									<span class="json-combine-choice-title">Append to existing</span>
-									<span class="json-combine-choice-help">Merge batch folders into one collection already in the JSON.</span>
+									<span class="json-combine-choice-title">Merge other JSON into existing</span>
+									<span class="json-combine-choice-help">Put folders from the other JSON files into one collection already in the full export.</span>
 								</span>
 							</label>
 
 							<label class="json-combine-choice">
 								<input type="radio" name="json-combine-existing-mode" value="ignore" />
 								<span>
-									<span class="json-combine-choice-title">Ignore existing JSON</span>
-									<span class="json-combine-choice-help">Skip full JSON files and combine only people batch files.</span>
+									<span class="json-combine-choice-title">Use other JSON files only</span>
+									<span class="json-combine-choice-help">Skip full export files and export only the other uploaded JSON files.</span>
 								</span>
 							</label>
 						</div>
@@ -366,6 +771,7 @@
 						</label>
 					</div>
 
+					<div id="json-combine-summary" class="json-combine-summary" hidden></div>
 					<p id="json-combine-status" class="json-combine-status"></p>
 				</div>
 
@@ -375,6 +781,7 @@
 					</button>
 
 					<div class="modal-actions">
+						<button id="copy-combined-json" type="button" disabled>Copy JSON</button>
 						<button id="download-combined-json" type="button" disabled>Download JSON</button>
 						<button id="cancel-json-combine" type="button">Cancel</button>
 					</div>
@@ -1023,20 +1430,19 @@
 		</div>
 
 		<footer class="site-footer">
-			<p>
-				This product uses the TMDB API but is not endorsed or certified by TMDB. Company names, logos, posters, and
-				trademarks remain the property of their respective owners.
+			<p class="footer-line">
+				Uses TMDB API <span aria-hidden="true">·</span> Not endorsed or certified by TMDB
 			</p>
 
-			<p class="footer-credits">
-				Additional Nuvio artwork credits:
-				<a href="https://luckynumb3rs.github.io/stremio-perfect-setup/guide/Nuvio/" target="_blank" rel="noreferrer">LuckyNumbers setup guide</a>
-				and
-				<a href="https://www.reddit.com/r/Nuvio/comments/1sk3ks6/transparent_covers_pack/" target="_blank" rel="noreferrer">tomato's transparent covers pack</a>.
+			<p class="footer-line footer-credits">
+				Artwork credits:
+				<a href="https://luckynumb3rs.github.io/stremio-perfect-setup/guide/Nuvio/" target="_blank" rel="noopener noreferrer">LuckyNumbers setup guide</a>
+				<span aria-hidden="true">·</span>
+				<a href="https://www.reddit.com/r/Nuvio/comments/1sk3ks6/transparent_covers_pack/" target="_blank" rel="noopener noreferrer">tomato's transparent covers pack</a>.
 			</p>
 
 			<p class="footer-links">
-				<a href="https://github.com/davecollections/tmdb-id-lookup/issues/new/choose" target="_blank" rel="noopener">Feedback / report an issue</a>
+				<a href="https://github.com/davecollections/tmdb-id-lookup/issues/new/choose" target="_blank" rel="noopener noreferrer">Feedback / report an issue</a>
 			</p>
 
 			<p id="scan-stats" class="footer-meta"></p>
@@ -1061,6 +1467,7 @@
 		<script src="./js/bulk-people-lookup.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/bulk-people-input.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/bulk-people-nuvio-export.js?v=__APP_ASSET_VERSION__" defer></script>
+		<script src="./js/bulk-media-lookup.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/json-combiner.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/app.js?v=__APP_ASSET_VERSION__" defer></script>
 	</body>
