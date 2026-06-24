@@ -293,16 +293,75 @@ function getTmdbImageUrl(path) {
 	return path ? `https://image.tmdb.org/t/p/w500${path}` : "";
 }
 
+function getBulkNumericLookupFailureStatus(response) {
+	if (response.status === 404) {
+		return "No match";
+	}
+
+	return getBulkLookupFailureStatus(response);
+}
+
+async function getBulkCollectionDetailWithStatus(collectionId) {
+	const response = await tmdbJsonWithStatus(tmdbApiUrl(`/3/collection/${collectionId}`));
+
+	if (!response.ok) {
+		return {
+			ok: false,
+			status: getBulkNumericLookupFailureStatus(response),
+		};
+	}
+
+	if (!response.data || response.data.success === false) {
+		return {
+			ok: false,
+			status: "No match",
+		};
+	}
+
+	return {
+		ok: true,
+		detail: {
+			collection: response.data,
+			movieCount: response.data.parts ? response.data.parts.length.toLocaleString() : "\u2014",
+		},
+	};
+}
+
+async function getBulkTvSeriesDetailWithStatus(seriesId) {
+	const response = await tmdbJsonWithStatus(tmdbApiUrl(`/3/tv/${seriesId}`));
+
+	if (!response.ok) {
+		return {
+			ok: false,
+			status: getBulkNumericLookupFailureStatus(response),
+		};
+	}
+
+	if (!response.data || response.data.success === false) {
+		return {
+			ok: false,
+			status: "No match",
+		};
+	}
+
+	return {
+		ok: true,
+		detail: response.data,
+	};
+}
+
 async function resolveBulkCollectionInput(input) {
 	if (/^\d+$/.test(input)) {
-		const detail = await getCollectionMovieCount(input);
+		const response = await getBulkCollectionDetailWithStatus(input);
 
-		if (!detail) {
+		if (!response.ok) {
 			return {
 				input,
-				status: "No match",
+				status: response.status,
 			};
 		}
+
+		const detail = response.detail;
 
 		return {
 			input,
@@ -398,16 +457,16 @@ function mapBulkTvResult(input, series, status) {
 
 async function resolveBulkTvInput(input) {
 	if (/^\d+$/.test(input)) {
-		const series = await getTvSeriesDetails(input);
+		const response = await getBulkTvSeriesDetailWithStatus(input);
 
-		if (!series) {
+		if (!response.ok) {
 			return {
 				input,
-				status: "No match",
+				status: response.status,
 			};
 		}
 
-		return mapBulkTvResult(input, series, "TMDB ID match");
+		return mapBulkTvResult(input, response.detail, "TMDB ID match");
 	}
 
 	const response = await tmdbJsonWithStatus(tmdbApiUrl("/3/search/tv", { query: input, page: 1 }));
