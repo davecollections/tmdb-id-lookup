@@ -138210,7 +138210,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 179369,Authors' Film Company,3,,,,https://www.themoviedb.org/company/179369
 179370,Black Mask Productions,1,,,,https://www.themoviedb.org/company/179370
 179371,Gail Kane Productions,1,,,,https://www.themoviedb.org/company/179371
-179372,Universal Cartoon Studios (US),0,,,,https://www.themoviedb.org/company/179372
 179373,Out of Character,1,,,,https://www.themoviedb.org/company/179373
 179374,Smiling Earth Films,3,"Kolkata, West Bengal ",IN,,https://www.themoviedb.org/company/179374
 179375,Full Motion Films,1,,,,https://www.themoviedb.org/company/179375
@@ -171058,7 +171057,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 216584,Gato Rojo Films,1,,,,https://www.themoviedb.org/company/216584
 216585,Small Media Large,1,,,,https://www.themoviedb.org/company/216585
 216586,Coisas Artisticas,0,,,,https://www.themoviedb.org/company/216586
-216587,Universal Cartoon Studios,0,,,,https://www.themoviedb.org/company/216587
 216588,n.CH엔터테인먼트,0,,,,https://www.themoviedb.org/company/216588
 216589,OREVI,2,,,,https://www.themoviedb.org/company/216589
 216592,GBF Productions,4,,,,https://www.themoviedb.org/company/216592
@@ -230095,7 +230093,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 279742,Shrine13,2,,,,https://www.themoviedb.org/company/279742
 279743,Park-Whiteside Productions,1,,,,https://www.themoviedb.org/company/279743
 279744,Freshwave,0,,,,https://www.themoviedb.org/company/279744
-279745,THE AIRPLANE,1,,,,https://www.themoviedb.org/company/279745
 279746,Rack Focus Productions,1,,,,https://www.themoviedb.org/company/279746
 279748,Phiphen Productions,0,"New York, New York",US,,https://www.themoviedb.org/company/279748
 279749,Volcanica Media,1,,,,https://www.themoviedb.org/company/279749
@@ -236892,7 +236889,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 286861,Goose Berry Films,2,,,,https://www.themoviedb.org/company/286861
 286862,Arc + Anchor,1,,,,https://www.themoviedb.org/company/286862
 286863,Brick for Sheep,1,,,,https://www.themoviedb.org/company/286863
-286864,Fifth Season,1,,,,https://www.themoviedb.org/company/286864
 286865,Tommy's Film Studio,1,,,,https://www.themoviedb.org/company/286865
 286866,Tuna Fish Films,1,,,,https://www.themoviedb.org/company/286866
 286867,Terminal Se7en,1,,,,https://www.themoviedb.org/company/286867
@@ -251842,7 +251838,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 302381,Cinexa Pictures,0,,,,https://www.themoviedb.org/company/302381
 302382,INNER TRAVEL,1,,,,https://www.themoviedb.org/company/302382
 302383,Panorama Studios,0,,,,https://www.themoviedb.org/company/302383
-302384,Slovenské národné divadlo,1,Bratislava,SK,https://snd.sk/en,https://www.themoviedb.org/company/302384
+302384,Slovenské národné divadlo,1,Bratislava,SK,,https://www.themoviedb.org/company/302384
 302385,Yuki Films,0,"No. 71/2, Govinna Road, Athurugiriya, Colombo",LK,,https://www.themoviedb.org/company/302385
 302386,ABC & ARC Grandson Films,1,,,,https://www.themoviedb.org/company/302386
 302387,Pablo Tocino,1,,,,https://www.themoviedb.org/company/302387
@@ -251918,7 +251914,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 302457,Bella Folk Collective,0,,,,https://www.themoviedb.org/company/302457
 302458,Tadeo Films,1,Barcelona,ES,,https://www.themoviedb.org/company/302458
 302459,Studio 35,1,,,,https://www.themoviedb.org/company/302459
-302460,Boom ! Films,0,,FR,https://www.boomfilmsparis.com/,https://www.themoviedb.org/company/302460
+302460,Boom ! Films,0,,FR,,https://www.themoviedb.org/company/302460
 302461,Sorbier Productions,1,,,,https://www.themoviedb.org/company/302461
 302462,O.P. Productions,1,,US,,https://www.themoviedb.org/company/302462
 302463,Milky Mid Movies,1,,,,https://www.themoviedb.org/company/302463
@@ -251926,3 +251922,82 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 302465,Saison Film,0,,JP,,https://www.themoviedb.org/company/302465
 302466,Teleview TV,0,"466/1/1, Carlton House, Galle Road, Colombo 03",LK,,https://www.themoviedb.org/company/302466
 302467,Teleview Sri Lanka,0,,,,https://www.themoviedb.org/company/302467
+302468,Santas Films,1,,,,https://www.themoviedb.org/company/302468
+302469,Silver Moon Pictures,1,,,,https://www.themoviedb.org/company/302469
+302470,Cool Shot Productions,1,,,,https://www.themoviedb.org/company/302470
+302471,NOS (Hilversum),1,,,,https://www.themoviedb.org/company/302471
+302472,Teepoi Films,1,,,,https://www.themoviedb.org/company/302472
+302473,P R Entertainments,1,,,,https://www.themoviedb.org/company/302473
+302474,Kaaitheater (Brussel),1,,,,https://www.themoviedb.org/company/302474
+302475,Elusive Pictures,0,,,,https://www.themoviedb.org/company/302475
+302476,AHA Productions (GB),0,,,,https://www.themoviedb.org/company/302476
+302477,TIF Motion Pictures,1,,,,https://www.themoviedb.org/company/302477
+302478,Chaar Chavanni Films,1,,,,https://www.themoviedb.org/company/302478
+302479,Misschief Records,1,,,,https://www.themoviedb.org/company/302479
+302480,Productions électriques,1,,,,https://www.themoviedb.org/company/302480
+302481,Nový film,1,Prešov,SK,https://novyfilm.sk/,https://www.themoviedb.org/company/302481
+302482,Mnohotoho,1,,SK,,https://www.themoviedb.org/company/302482
+302483,Notabene Film,1,,CZ,,https://www.themoviedb.org/company/302483
+302484,prospect animates,0,,,,https://www.themoviedb.org/company/302484
+302485,Orange Record Label,1,,,,https://www.themoviedb.org/company/302485
+302486,Alfio-Amore Film,1,,,,https://www.themoviedb.org/company/302486
+302487,The flow,1,,,,https://www.themoviedb.org/company/302487
+302488,Tailai Entertainment,0,,CN,,https://www.themoviedb.org/company/302488
+302489,Buzzmar Productions,1,,,,https://www.themoviedb.org/company/302489
+302490,bishiroad,0,,,,https://www.themoviedb.org/company/302490
+302491,Picturewerk,1,,,,https://www.themoviedb.org/company/302491
+302492,RAW Productions,1,,GB,,https://www.themoviedb.org/company/302492
+302493,55 Degree Films,1,,,,https://www.themoviedb.org/company/302493
+302494,MilneFilm Productions,1,,,,https://www.themoviedb.org/company/302494
+302495,Deca i Svet,1,,,,https://www.themoviedb.org/company/302495
+302496,John Lenin Prods,0,,,,https://www.themoviedb.org/company/302496
+302497,Kedokteran UMY,1,,,,https://www.themoviedb.org/company/302497
+302498,PulmoX Pictures,1,,,,https://www.themoviedb.org/company/302498
+302499,CHEEKA SOUND,0,,CN,,https://www.themoviedb.org/company/302499
+302500,El Postre Films,1,,,,https://www.themoviedb.org/company/302500
+302501,Country star,2,,,,https://www.themoviedb.org/company/302501
+302502,PANDOR GRIM,1,,,,https://www.themoviedb.org/company/302502
+302503,RACCOON MAN,1,,,,https://www.themoviedb.org/company/302503
+302504,ZEAUX Productions,2,,,,https://www.themoviedb.org/company/302504
+302505,NNC Film Production,1,,,,https://www.themoviedb.org/company/302505
+302506,Media Blasters [US],1,,,,https://www.themoviedb.org/company/302506
+302507,NAST Production,1,,RU,,https://www.themoviedb.org/company/302507
+302508,Pentimenti Productions,6,,US,http://pentimentiproductions.org,https://www.themoviedb.org/company/302508
+302509,ButtPlays,0,,,,https://www.themoviedb.org/company/302509
+302510,Centre d’Aide Technique et de Formation Théâtrale,1,,,,https://www.themoviedb.org/company/302510
+302511,Image Video Bruxelles,1,,,,https://www.themoviedb.org/company/302511
+302512,On The Real Film,1,,,,https://www.themoviedb.org/company/302512
+302513,Commissariat de l'Année de l'Algérie en France,1,,,,https://www.themoviedb.org/company/302513
+302514,Womp Stomp Films,1,,,,https://www.themoviedb.org/company/302514
+302515,Sinha Entertainments,0,,LK,,https://www.themoviedb.org/company/302515
+302516,NOIR Pictures,1,,ES,https://adriannunezrodriguez.my.canva.site/noir-pictures,https://www.themoviedb.org/company/302516
+302517,Aspekt,1,,,,https://www.themoviedb.org/company/302517
+302518,TheHardPlace,1,,,,https://www.themoviedb.org/company/302518
+302519,Fredbear Animation Studios,1,,,,https://www.themoviedb.org/company/302519
+302520,JQ Brothers Production,1,,,,https://www.themoviedb.org/company/302520
+302521,Hidroconstrucția SA,1,,,,https://www.themoviedb.org/company/302521
+302522,Misery Loves Co. Inc.,1,,,,https://www.themoviedb.org/company/302522
+302523,Hockeyrado Productions,1,,,,https://www.themoviedb.org/company/302523
+302524,Future Comedy Productions,1,,,,https://www.themoviedb.org/company/302524
+302525,Artful Dodger,1,,,,https://www.themoviedb.org/company/302525
+302526,Jonx/Dottie the Dog Productions,1,,,,https://www.themoviedb.org/company/302526
+302527,Albacete Balompié,1,,,,https://www.themoviedb.org/company/302527
+302528,Steel Blue Horizon,1,,,,https://www.themoviedb.org/company/302528
+302529,APHIDS,1,,,,https://www.themoviedb.org/company/302529
+302530,JunkArt Media,2,,,,https://www.themoviedb.org/company/302530
+302531,Oi Productions,0,,,,https://www.themoviedb.org/company/302531
+302532,oi Productions,1,,,,https://www.themoviedb.org/company/302532
+302533,Labrottie Films,1,,,,https://www.themoviedb.org/company/302533
+302534,Yarsa Film,1,,NP,,https://www.themoviedb.org/company/302534
+302535,ienerg,0,,,,https://www.themoviedb.org/company/302535
+302536,Nosha Pictures,1,,,,https://www.themoviedb.org/company/302536
+302537,Nagraj Entertainment,1,,NP,,https://www.themoviedb.org/company/302537
+302538,SBR Productions,1,,LK,,https://www.themoviedb.org/company/302538
+302539,湖南盛世鸿腾影业有限公司,1,,,,https://www.themoviedb.org/company/302539
+302540,Damo & Tim Productions,1,,,,https://www.themoviedb.org/company/302540
+302541,Shuvash Thapa Production,1,,NP,,https://www.themoviedb.org/company/302541
+302542,SG Films Pvt. Ltd. Nepal,1,,NP,,https://www.themoviedb.org/company/302542
+302543,Sulav Thapa Production,1,,NP,,https://www.themoviedb.org/company/302543
+302544,Çark Film,1,,,,https://www.themoviedb.org/company/302544
+302545,Syntax Films Entertainment,1,,,,https://www.themoviedb.org/company/302545
+302546,10/24 Productions,1,,,,https://www.themoviedb.org/company/302546
