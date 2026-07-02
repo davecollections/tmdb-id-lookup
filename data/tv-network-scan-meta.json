@@ -1,18 +1,18 @@
 {
   "last_scan": {
     "mode": "tmdb_export_sliced_enrichment",
-    "export_date": "07_01_2026",
-    "export_total_ids": 5453,
-    "offset": 0,
+    "export_date": "07_02_2026",
+    "export_total_ids": 5454,
+    "offset": 6000,
     "limit": 6000,
-    "actual_limit": 5453,
+    "actual_limit": 0,
     "lowest_id": 1,
-    "highest_id": 9286,
-    "checked": 5453,
-    "found": 5453,
+    "highest_id": 9287,
+    "checked": 0,
+    "found": 0,
     "missing": 0,
-    "started_at": "2026-07-01T11:41:37.570Z",
-    "total_cached": 5453,
-    "finished_at": "2026-07-01T12:12:25.067Z"
+    "started_at": "2026-07-02T11:18:04.513Z",
+    "total_cached": 5454,
+    "finished_at": "2026-07-02T11:18:04.534Z"
   }
 }

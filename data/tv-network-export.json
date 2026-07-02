@@ -1,9 +1,9 @@
 {
-  "export_date": "07_01_2026",
-  "total_ids": 5453,
-  "last_offset": 0,
+  "export_date": "07_02_2026",
+  "total_ids": 5454,
+  "last_offset": 6000,
   "last_limit": 6000,
   "lowest_id": 1,
-  "highest_id": 9286,
-  "updated_at": "2026-07-01T11:41:37.570Z"
+  "highest_id": 9287,
+  "updated_at": "2026-07-02T11:18:04.513Z"
 }
