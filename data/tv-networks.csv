@@ -5471,4 +5471,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9304,Sony,1,,,,https://www.themoviedb.org/network/9304
 9305,Telecinco,0,,,,https://www.themoviedb.org/network/9305
 9306,YouTube Red,35,,,,https://www.themoviedb.org/network/9306
-9309,Mythical Society,2,"Burbank, CA",US,https://www.mythicalsociety.com/,https://www.themoviedb.org/network/9309
+9309,Mythical Society,2,"Burbank, CA",US,,https://www.themoviedb.org/network/9309
+9310,Televisa,1,,,,https://www.themoviedb.org/network/9310
+9311,Titan TV,1,,,,https://www.themoviedb.org/network/9311
