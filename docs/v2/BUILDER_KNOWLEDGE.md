@@ -107,7 +107,6 @@ The addon is a convenient optional source, not the basis of all TMDB builder fun
 
 - **Currently unsupported:** `tmdb:series:456` and `tmdb:series:615` failed when incorrectly placed in addon `catalogId`. These are meta identifiers, not catalog IDs. The result does not prove that direct media can never be represented through another future model.
 - **Experimental and inconclusive:** guessed addon search persistence using `filters.search` was accepted structurally but did not produce convincing filtered results. Do not treat persisted addon search as supported.
-- **Currently unsupported:** no first-party Trakt catalog manifest was confirmed.
 
 ## 7. Source-array behaviour
 
@@ -117,9 +116,10 @@ The addon is a convenient optional source, not the basis of all TMDB builder fun
 - `catalogSources` is an addon compatibility projection/fallback.
 - Runtime does not execute both arrays independently.
 - Native-only canonical folders use populated `sources` and empty `catalogSources`.
-- Addon-backed folders use full addon entries in `sources` and matching projections in `catalogSources`.
-- A mixed folder mirrors only addon-backed entries into `catalogSources`.
-- Never emit an empty `sources` array while placing active addon data only in `catalogSources`.
+- Addon-backed sources may have matching projections in both arrays when compatibility output requires them.
+- In a mixed folder, compatibility output mirrors only addon-backed entries into `catalogSources`.
+- All active source data must remain represented in `sources`; never emit an empty `sources` array while placing active addon data only in `catalogSources`.
+- Do not change existing v1 exports merely to enforce this future policy.
 - Multiple sources resolve independently.
 - The optional All presentation interleaves and deduplicates results rather than combining them into one TMDB query.
 
@@ -152,7 +152,6 @@ Source and folder order is meaningful and must be preserved.
 - Can the builder and v1 safely share pure modules?
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
-- When, if ever, should Trakt become part of the combined builder?
 
 ## 11. Update rules
 

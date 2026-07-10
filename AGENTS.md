@@ -19,6 +19,7 @@ Repository evidence and confirmed manual tests override old assumptions.
 - Existing lookup and copy-ID workflows remain part of the product.
 - Do not rewrite or remove stable v1 features merely to modernise the code.
 - The isolated `/builder/` React/Vite direction is provisional until its contract and deployment gates pass.
+- Trakt integration is outside the current project scope unless explicitly approved in a future issue.
 
 ## Git and issue workflow
 
@@ -58,7 +59,7 @@ For future builder work:
 - `sources` is the authoritative current source representation.
 - `catalogSources` is a compatibility projection/fallback for addon-backed sources.
 - Native TMDB sources do not belong in `catalogSources`.
-- Addon-backed sources may require matching representations in both arrays.
+- Addon-backed sources may have matching projections in both arrays when compatibility output requires them.
 - Do not change existing v1 output merely to enforce a future canonical policy.
 - Source and folder ordering is meaningful.
 - Preserve imported opaque/community sources without guessing them into known types.
@@ -69,8 +70,13 @@ For future builder work:
 - Keep framework-independent source, validation, parsing, migration, serialization, and ID logic outside UI components.
 - Keep new builder work isolated from v1 until explicit integration issues are approved.
 - Do not introduce React/Vite merely because comparison sites use it.
+- Use wizard or step-based flows for complex collection creation.
+- Give controls large, mobile-friendly tap targets.
+- Use progressive disclosure for advanced options.
 - Test mobile-first work at common widths including 360, 384, 393, 402, and 412 pixels.
+- Treat desktop layouts as polished extensions of the mobile-first layout.
 - Follow a modern, dark, sleek direction with restrained TMDB-inspired blue, cyan, and green accents.
+- The visual direction is not warm or cosy.
 - Do not copy reference-site branding, wording, or layouts.
 
 ## Verification
