@@ -1,0 +1,20 @@
+[
+  {
+    "id": "collection-invalid-addon-only",
+    "title": "Invalid Addon Projection",
+    "folders": [
+      {
+        "id": "folder-invalid-addon-only",
+        "title": "Addon Missing From Sources",
+        "sources": [],
+        "catalogSources": [
+          {
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "trending-movies"
+          }
+        ]
+      }
+    ]
+  }
+]

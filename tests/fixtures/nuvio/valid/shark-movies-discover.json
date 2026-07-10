@@ -1,0 +1,36 @@
+[
+  {
+    "id": "collection-shark-movies",
+    "title": "Shark Movies",
+    "folders": [
+      {
+        "id": "folder-shark-movies",
+        "title": "Shark Movies",
+        "sources": [
+          {
+            "title": "Shark Movies",
+            "sortBy": "popularity.desc",
+            "tmdbId": null,
+            "filters": { "withKeywords": "15097" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "🦈",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true
+  }
+]

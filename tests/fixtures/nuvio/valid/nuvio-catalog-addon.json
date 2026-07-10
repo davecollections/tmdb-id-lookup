@@ -1,0 +1,41 @@
+[
+  {
+    "id": "collection-addon-horror",
+    "title": "Addon Horror",
+    "folders": [
+      {
+        "id": "folder-addon-horror",
+        "title": "Popular Horror Movies",
+        "sources": [
+          {
+            "provider": "addon",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "popular-movies",
+            "genre": "Horror"
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "👻",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [
+          {
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "popular-movies",
+            "genre": "Horror"
+          }
+        ],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "ROWS",
+    "showAllTab": false
+  }
+]
