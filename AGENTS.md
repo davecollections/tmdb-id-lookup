@@ -18,7 +18,7 @@ Repository evidence and confirmed manual tests override old assumptions.
 - v2 is planned as a mobile-first visual Nuvio Collection Builder powered primarily by TMDB.
 - Existing lookup and copy-ID workflows remain part of the product.
 - Do not rewrite or remove stable v1 features merely to modernise the code.
-- The isolated `/builder/` React/Vite direction is provisional until its contract and deployment gates pass.
+- React/Vite under `/builder/` is the confirmed builder direction; keep domain, parsing, validation, migration, serialization, and ID logic framework-independent.
 - Trakt integration is outside the current project scope unless explicitly approved in a future issue.
 
 ## Git and issue workflow

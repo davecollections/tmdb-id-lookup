@@ -181,6 +181,18 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - **Experimental:** actual public delivery at `/tmdb-id-lookup/builder/` remains a post-merge confirmation because the feature branch is deliberately never deployed to the live Pages environment.
 - History-based direct subroutes remain unproven and are not being adopted. The spike uses one entry page and no React Router.
 
+### Framework-independent builder domain — issue #34
+
+**Confirmed by repository tests — issue [#34](https://github.com/davecollections/tmdb-id-lookup/issues/34), 2026-07-10:** builder editor state now uses a plain-data project → collection → folder → source hierarchy under `builder/src/domain/`.
+
+- Every node has a stable builder-only `internalId` supplied by an injectable ID factory; the default uses `crypto.randomUUID()` with no weak fallback.
+- Current known values live under `editable`, while optional deep-cloned imported JSON lives under `rawImported`. Editing and reordering do not mutate the raw snapshot.
+- Sources require an explicit `native-tmdb`, `addon`, or `opaque` category. Fields such as `addonId`, `type`, `catalogId`, and `filters` are not used to guess a category.
+- A folder has one authoritative editable `sources` array. Imported `catalogSources` may remain inside the raw folder snapshot, but the domain does not expose a second editable list or create a compatibility projection.
+- Pure immutable helpers cover creation, editable updates, ordered insertion, sibling movement, removal, traversal, lookup, and project-wide duplicate-ID detection.
+- The domain permits incomplete editor drafts and remains separate from import parsing, export validation, raw overlay, and serialization.
+- Node tests prove deterministic identity, identity stability, ordering, immutability, opaque sentinel preservation, the `catalogSources` boundary, explicit categories, duplicate detection, `structuredClone`, and JSON encoding compatibility.
+
 ## 11. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
@@ -215,9 +227,11 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 | 2026-07-10 | Mixed native/addon runtime order, addon isolation, projection deduplication, and exported order | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `mixed-native-and-addon.json` |
 | 2026-07-10 | Opaque sentinel import/export preservation and client normalisation behaviour | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `opaque-community-import.json` |
 | 2026-07-10 | Isolated React/Vite build, relative asset paths, combined v1 plus `/builder/` Pages staging, and branch-safe validation | [TMDB ID Lookup issue #33](https://github.com/davecollections/tmdb-id-lookup/issues/33) |
+| 2026-07-10 | Plain-data builder hierarchy, stable internal identity, immutable operations, raw snapshot preservation, and explicit source categories | [TMDB ID Lookup issue #34](https://github.com/davecollections/tmdb-id-lookup/issues/34) |
 
 ## Decision history
 
 - **2026-07-10 — Planning checkpoint:** treat `sources` as authoritative, use `catalogSources` only as the addon compatibility projection/fallback, preserve unknown imported data, and gate the isolated React/Vite candidate behind contract and deployment proof.
 - **2026-07-10 — Contract baseline:** add evidence-classified fixtures and stable invariant checks before any builder framework, production parser, serializer, or exporter work.
 - **2026-07-10 — Deployment coexistence spike:** recommend isolated React/Vite for the next builder phase based on local and branch-artifact evidence, while reserving live `/builder/` confirmation for the post-merge Pages deployment and declining history-based routing.
+- **2026-07-10 — Builder domain model:** adopt a framework-independent plain-data hierarchy with stable builder-only IDs, explicit source categories, authoritative editable `sources`, detached raw import snapshots, and small immutable operations before importer or serializer work.
