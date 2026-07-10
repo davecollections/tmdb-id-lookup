@@ -171,6 +171,21 @@ Run `scripts\check.cmd` before pushing changes on Windows. This runs the shared 
 
 On any platform, the equivalent command is `node scripts/check-all.mjs`. To run only the Nuvio contract suite, use `node --test tests/nuvio-contracts.test.mjs`.
 
+## Builder Deployment Spike
+
+Issue [#33](https://github.com/davecollections/tmdb-id-lookup/issues/33) keeps the placeholder React/Vite builder isolated in `builder/`. Install and build it with the committed builder lockfile, then prepare and validate the combined GitHub Pages artifact:
+
+```powershell
+npm ci --prefix builder
+npm run build --prefix builder
+node scripts/prepare-pages-site.mjs
+node scripts/validate-pages-site.mjs
+```
+
+Vite writes temporary compiled output to `builder/dist/`. The staging script copies the tracked v1 site without changing its root paths, excludes builder source, and places the compiled builder directly in `.pages-site/builder/`. Vite uses a relative `./` asset base, so generated JavaScript, CSS, and local asset URLs resolve beneath the deployed `/tmdb-id-lookup/builder/` project path rather than the domain root.
+
+The non-deployment validation workflow runs the existing checks and validates this combined artifact on branches and pull requests. Only the existing Pages workflow publishes, and it still deploys from `main` or its existing successful maintenance-workflow triggers. Public `/builder/` behaviour therefore still requires confirmation after merge; history-based builder subroutes are not supported or claimed by this spike.
+
 The contract fixtures distinguish canonical builder output from import-preservation input. They cover the currently confirmed native TMDB source types, addon compatibility projections, mixed source folders, and opaque imported fields. They intentionally do not define a complete Nuvio schema or change current v1 export output.
 
 ## Local TMDB Testing
