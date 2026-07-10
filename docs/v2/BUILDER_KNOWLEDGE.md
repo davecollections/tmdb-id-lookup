@@ -21,6 +21,8 @@ Future findings must use one of these labels:
 
 - **Manually confirmed in Nuvio:** observed in an actual Nuvio client using a recorded input.
 - **Confirmed from current Nuvio source code:** directly supported by the reviewed, pinned Nuvio source revision.
+- **Confirmed by repository tests:** behaviour or an invariant demonstrated by deterministic repository tests and successful CI.
+- **Confirmed by live deployment:** behaviour directly verified on the deployed production site through recorded HTTP or browser checks.
 - **Strongly inferred:** consistent with available code or behaviour but not directly verified end to end.
 - **Experimental:** a candidate shape or behaviour that still requires controlled testing.
 - **Currently unsupported:** absent from, rejected by, or not reliably implemented in the published model currently under review. This does not mean impossible forever.
@@ -177,9 +179,20 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - The robots directive controls discoverability, not security: the deployed builder URL remains publicly reachable, and no client-side login or fake password gate is being added.
 - Genuine restricted testing would require a separately protected staging environment, which is outside issue [#33](https://github.com/davecollections/tmdb-id-lookup/issues/33). A future release-readiness issue can remove the noindex directive when the builder is ready to be advertised.
 - Framework-independent Nuvio source, parsing, validation, migration, serialization, and ID modules should stay outside React components.
-- **Strongly inferred — issue [#33](https://github.com/davecollections/tmdb-id-lookup/issues/33), 2026-07-10:** local builds and combined-artifact validation support adopting the isolated React/Vite direction for the next builder phase, provided the merged artifact receives a final public GitHub Pages check.
-- **Experimental:** actual public delivery at `/tmdb-id-lookup/builder/` remains a post-merge confirmation because the feature branch is deliberately never deployed to the live Pages environment.
-- History-based direct subroutes remain unproven and are not being adopted. The spike uses one entry page and no React Router.
+- **Confirmed by live deployment — issue [#33](https://github.com/davecollections/tmdb-id-lookup/issues/33), 2026-07-10:** recorded GitHub Pages HTTP and browser checks confirmed that stable v1 remained at the project root and the isolated React/Vite builder loaded successfully under `/builder/`. Generated JavaScript, CSS, and imported local assets loaded correctly, the backlink to v1 worked, and mobile-width checks passed. The builder remained unlinked from v1 and retained `noindex, nofollow`. Isolated React/Vite under `/builder/` is therefore the confirmed builder direction.
+- **Currently unsupported:** history-based direct builder subroutes remain unproven and unsupported. Issue #33 did not test or adopt React Router or history fallback behaviour.
+
+### Framework-independent builder domain — issue #34
+
+**Confirmed by repository tests — issue [#34](https://github.com/davecollections/tmdb-id-lookup/issues/34), 2026-07-10:** builder editor state now uses a plain-data project → collection → folder → source hierarchy under `builder/src/domain/`.
+
+- Every node has a stable builder-only `internalId` supplied by an injectable ID factory; the default uses `crypto.randomUUID()` with no weak fallback.
+- Current known values live under `editable`, while optional deep-cloned imported JSON lives under `rawImported`. Editing and reordering do not mutate the raw snapshot.
+- Sources require an explicit `native-tmdb`, `addon`, or `opaque` category. Fields such as `addonId`, `type`, `catalogId`, and `filters` are not used to guess a category.
+- A folder has one authoritative editable `sources` array. Imported `catalogSources` may remain inside the raw folder snapshot, but the domain does not expose a second editable list or create a compatibility projection.
+- Pure immutable helpers cover creation, editable updates, ordered insertion, sibling movement, removal, traversal, lookup, and project-wide duplicate-ID detection.
+- The domain permits incomplete editor drafts and remains separate from import parsing, export validation, raw overlay, and serialization.
+- Node tests prove deterministic identity, identity stability, ordering, immutability, opaque sentinel preservation, the `catalogSources` boundary, explicit categories, duplicate detection, `structuredClone`, and JSON encoding compatibility.
 
 ## 11. Open questions
 
@@ -214,10 +227,12 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 | 2026-07-10 | Deterministic canonical, invalid, and import-preservation contract fixtures | [TMDB ID Lookup issue #31](https://github.com/davecollections/tmdb-id-lookup/issues/31) |
 | 2026-07-10 | Mixed native/addon runtime order, addon isolation, projection deduplication, and exported order | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `mixed-native-and-addon.json` |
 | 2026-07-10 | Opaque sentinel import/export preservation and client normalisation behaviour | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `opaque-community-import.json` |
-| 2026-07-10 | Isolated React/Vite build, relative asset paths, combined v1 plus `/builder/` Pages staging, and branch-safe validation | [TMDB ID Lookup issue #33](https://github.com/davecollections/tmdb-id-lookup/issues/33) |
+| 2026-07-10 | Isolated React/Vite build, combined v1 plus `/builder/` Pages staging, and successful live deployment checks for assets, the v1 backlink, mobile widths, and unlinked `noindex, nofollow` behaviour | [TMDB ID Lookup issue #33](https://github.com/davecollections/tmdb-id-lookup/issues/33) |
+| 2026-07-10 | Plain-data builder hierarchy, stable internal identity, immutable operations, raw snapshot preservation, and explicit source categories | [TMDB ID Lookup issue #34](https://github.com/davecollections/tmdb-id-lookup/issues/34) |
 
 ## Decision history
 
 - **2026-07-10 — Planning checkpoint:** treat `sources` as authoritative, use `catalogSources` only as the addon compatibility projection/fallback, preserve unknown imported data, and gate the isolated React/Vite candidate behind contract and deployment proof.
 - **2026-07-10 — Contract baseline:** add evidence-classified fixtures and stable invariant checks before any builder framework, production parser, serializer, or exporter work.
-- **2026-07-10 — Deployment coexistence spike:** recommend isolated React/Vite for the next builder phase based on local and branch-artifact evidence, while reserving live `/builder/` confirmation for the post-merge Pages deployment and declining history-based routing.
+- **2026-07-10 — Deployment coexistence:** completed branch validation and recorded live GitHub Pages checks confirmed stable v1 at the project root and the isolated React/Vite builder under `/builder/`, including generated assets, the v1 backlink, mobile-width behaviour, and the unlinked `noindex, nofollow` state. Adopt isolated React/Vite under `/builder/` as the confirmed direction while leaving history-based direct subroutes unsupported.
+- **2026-07-10 — Builder domain model:** adopt a framework-independent plain-data hierarchy with stable builder-only IDs, explicit source categories, authoritative editable `sources`, detached raw import snapshots, and small immutable operations before importer or serializer work.
