@@ -110,6 +110,68 @@
       "provenance": "Deliberate guessed direct-media type. It is absent from the published native TMDB source enum reviewed at NuvioMobile 4e17faa and is not treated as canonical output.",
       "expected": { "valid": false, "errorCodes": ["UNSUPPORTED_TMDB_SOURCE_TYPE"] },
       "coverage": { "nativeTypes": [], "addonBacked": false, "mixed": false, "opaqueImport": false }
+    },
+    {
+      "id": "compat-active-compact-addon-input",
+      "file": "compatibility/active-compact-addon-input.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Sanitised reproduction of manually confirmed Nuvio Desktop evidence",
+      "provenance": "Small structural reproduction of the private active-addon pair. It records compact movie and series sources, matching projections, empty-string versus null no-genre compatibility, presentation data, and an unknown sentinel without redistributing the original third-party file or configuration URLs.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": [], "addonBacked": true, "mixed": false, "opaqueImport": false },
+      "expectedOrder": {
+        "folderIds": ["compat-active-folder"],
+        "sourcesByFolder": {
+          "compat-active-folder": [
+            "addon:example.sanitised.catalogs:movie:featured-movies:",
+            "addon:example.sanitised.catalogs:series:featured-series:"
+          ]
+        }
+      }
+    },
+    {
+      "id": "compat-active-nuvio-normalised",
+      "file": "compatibility/active-nuvio-normalised.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Sanitised reproduction of manually confirmed Nuvio Desktop evidence",
+      "provenance": "Small structural reproduction of the Nuvio-normalised side of the private active-addon pair, including explicit null/default fields and unchanged order and identity. It is not a redistributed original file.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": [], "addonBacked": true, "mixed": false, "opaqueImport": false },
+      "expectedOrder": {
+        "folderIds": ["compat-active-folder"],
+        "sourcesByFolder": {
+          "compat-active-folder": [
+            "addon:example.sanitised.catalogs:movie:featured-movies:",
+            "addon:example.sanitised.catalogs:series:featured-series:"
+          ]
+        }
+      }
+    },
+    {
+      "id": "compat-legacy-projection-only-input",
+      "file": "compatibility/legacy-projection-only-input.json",
+      "classification": "legacy-migration-input",
+      "evidenceLevel": "Sanitised reproduction of manually confirmed Nuvio Desktop evidence",
+      "provenance": "Small structural reproduction of the private projection-only pair with movie, series, and anime identities, exact None values, one real genre, presentation data, and an unknown projection sentinel. It is deliberately invalid canonical builder output until explicit migration and is not a redistributed original file.",
+      "expected": { "valid": false, "errorCodes": ["SOURCES_NOT_ARRAY", "ADDON_SOURCE_MISSING_FROM_SOURCES", "SOURCES_NOT_ARRAY"] },
+      "coverage": { "nativeTypes": [], "addonBacked": true, "mixed": false, "opaqueImport": false }
+    },
+    {
+      "id": "compat-legacy-nuvio-normalised",
+      "file": "compatibility/legacy-nuvio-normalised.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Sanitised reproduction of manually confirmed Nuvio Desktop evidence",
+      "provenance": "Small structural reproduction of the Nuvio-normalised side of the private projection-only pair, showing authoritative source promotion, exact None to null conversion, real-genre preservation, anime type preservation, explicit defaults, and retained projections. It is not a redistributed original file.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": [], "addonBacked": true, "mixed": false, "opaqueImport": false },
+      "expectedOrder": {
+        "folderIds": ["compat-legacy-movie", "compat-legacy-series", "compat-legacy-anime"],
+        "sourcesByFolder": {
+          "compat-legacy-movie": ["addon:example.sanitised.metadata:movie:movie-catalog:"],
+          "compat-legacy-series": ["addon:example.sanitised.metadata:series:series-catalog:Action"],
+          "compat-legacy-anime": ["addon:example.sanitised.metadata:anime:anime-catalog:"]
+        }
+      }
     }
   ]
 }

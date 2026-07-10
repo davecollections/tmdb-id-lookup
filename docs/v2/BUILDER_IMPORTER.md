@@ -12,7 +12,7 @@ The implementation lives under `builder/src/import/`. It uses plain JavaScript, 
 
 Recognised collection, folder, source, and Discover-filter field lists and the confirmed native TMDB type list are shared with the serializer through `builder/src/nuvio/known-fields.js`. This centralisation does not change importer behavior or turn the contract into a complete schema. The matching export contract is documented in [BUILDER_SERIALIZER.md](./BUILDER_SERIALIZER.md).
 
-Import establishes safe editor state. It does not define canonical Nuvio output and does not implement migration, editable-over-raw overlay, projection generation, or serialization.
+Import establishes safe editor state. It does not define canonical Nuvio output and does not implement migration, editable-over-raw overlay, projection generation, or serialization. Callers that deliberately opt into the confirmed addon projection-only conversion may invoke the separate contract documented in [BUILDER_MIGRATION.md](./BUILDER_MIGRATION.md) after a successful import.
 
 ## Public API
 
@@ -195,7 +195,7 @@ The active domain source list comes only from `folder.sources`. The importer nev
 
 The complete original `catalogSources` value remains in `folder.rawImported`. A populated array with missing or empty authoritative `sources` produces `LEGACY_CATALOG_SOURCES_ONLY` while importing zero active sources. A non-array compatibility value produces `CATALOG_SOURCES_NOT_ARRAY_PRESERVED` and remains raw-only.
 
-This detection does not implement legacy migration or Ultra MAX compatibility. A later controlled compatibility issue needs a real exported Ultra MAX sample before defining transformation or projection behaviour.
+This detection does not implement legacy migration or Ultra MAX compatibility. The evidence-based addon projection migration is an explicit caller action documented in [BUILDER_MIGRATION.md](./BUILDER_MIGRATION.md); it is not part of `importNuvioCollections`.
 
 ## Deliberately deferred
 

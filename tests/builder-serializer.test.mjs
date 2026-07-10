@@ -474,6 +474,39 @@ test("matches an edited addon by original identity then overlays its current ide
 	});
 });
 
+test("matches exact None projections to current null no-genre identities", () => {
+	const project = importValue([{
+		id: "c", title: "C", folders: [{
+			id: "f", title: "F",
+			sources: [{ provider: "addon", addonId: "a", type: "movie", catalogId: "catalog", genre: null }],
+			catalogSources: [{
+				addonId: "a", type: "movie", catalogId: "catalog", genre: "None", future: { keep: true },
+			}],
+		}],
+	}]);
+	const result = serializeNuvioProject(project);
+
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.warnings, []);
+	assert.deepEqual(onlyFolder(result).catalogSources[0], {
+		addonId: "a", type: "movie", catalogId: "catalog", genre: null, future: { keep: true },
+	});
+});
+
+test("identity alias does not rewrite unrelated imported None values", () => {
+	const project = importValue([{
+		id: "c", title: "C", folders: [{
+			id: "f", title: "F",
+			sources: [{ provider: "addon", addonId: "a", type: "movie", catalogId: "catalog", genre: "None" }],
+			catalogSources: [{ addonId: "a", type: "movie", catalogId: "catalog", genre: "None" }],
+		}],
+	}]);
+	const result = serializeNuvioProject(project);
+
+	assert.equal(onlyFolder(result).sources[0].genre, "None");
+	assert.equal(onlyFolder(result).catalogSources[0].genre, "None");
+});
+
 test("consumes duplicate matching raw projections deterministically", () => {
 	const project = importValue([{
 		id: "c", title: "C", folders: [{ id: "f", title: "F", sources: [
