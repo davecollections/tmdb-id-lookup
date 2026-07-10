@@ -8,7 +8,7 @@ Last reviewed: 2026-07-11
 
 The serializer converts the framework-independent builder project into Nuvio collection data. It supports compact output for new builder nodes and preservation-first output for imported nodes. It does not provide browser download handling, file APIs, React UI, migration, storage, networking, or user-visible diagnostic presentation.
 
-The production implementation lives under `builder/src/serialize/`. Import and serialization share recognised field lists and the confirmed native TMDB type list from `builder/src/nuvio/known-fields.js`; that module is a small Nuvio contract, not a complete schema.
+The production implementation lives under `builder/src/serialize/`. Import and serialization share recognised field lists and the confirmed native TMDB type list from `builder/src/nuvio/known-fields.js`; that module is a small Nuvio contract, not a complete schema. The separate explicit addon projection migration is documented in [BUILDER_MIGRATION.md](./BUILDER_MIGRATION.md).
 
 ## Public API
 
@@ -119,13 +119,13 @@ A supported native source cannot emit an unreplaced non-object raw filters value
 
 Projection order is current source order filtered to addon-category sources. A new projection contains `addonId`, `type`, `catalogId`, and optional `genre`; it does not contain `provider`.
 
-Imported raw projections are queued by exact `addonId`, `type`, `catalogId`, and `genre`-or-empty identity. Each current addon first tries the original identity from its source raw snapshot and then its current serialized identity. At most one raw projection is consumed. Duplicate identities consume raw projections in original order.
+Imported raw projections are queued by exact `addonId`, `type`, and `catalogId`, plus an evidence-based no-genre identity. Missing genre, `null`, empty string, and exact `"None"` share that identity only for addon projection matching. Real genre strings remain distinct, and matching never rewrites unrelated imported values. Each current addon first tries the original identity from its source raw snapshot and then its current serialized identity. At most one raw projection is consumed. Duplicate identities consume raw projections in original order.
 
 When matched, unknown projection fields such as `id`, `addonName`, `manifestUrl`, `showInHome`, and future metadata survive while old identity fields are replaced by current source identity. If an imported addon moves to a folder with no matching raw projection, only own `id`, `addonName`, `manifestUrl`, and `showInHome` values are copied from source raw data before current identity is applied.
 
 Unmatched old projections are omitted because current authoritative sources no longer reference them, with one `UNMATCHED_CATALOG_SOURCE_REMOVED` warning per raw entry. A non-array raw `catalogSources` value or non-object raw entry blocks serialization.
 
-Populated legacy `catalogSources` whose original `sources` was missing or empty must be fully resolved by current addon sources. Any unmatched legacy projection blocks serialization with `LEGACY_CATALOG_SOURCES_ONLY_UNRESOLVED`; it is neither dropped silently nor promoted into the domain. This does not define Ultra MAX migration behavior.
+Populated legacy `catalogSources` whose original `sources` was missing or empty must be fully resolved by current addon sources. Any unmatched legacy projection blocks serialization with `LEGACY_CATALOG_SOURCES_ONLY_UNRESOLVED`; it is neither dropped silently nor promoted into the domain. Callers may explicitly apply the evidence-based migration first. The serializer never invokes it and this does not define Ultra MAX migration behavior.
 
 ## Stable diagnostics
 

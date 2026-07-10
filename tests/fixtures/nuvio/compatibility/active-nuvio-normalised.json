@@ -1,0 +1,70 @@
+[
+  {
+    "id": "compat-active-addon",
+    "title": "Sanitised Active Addon Evidence",
+    "backdropImageUrl": null,
+    "folders": [
+      {
+        "id": "compat-active-folder",
+        "title": "Compact Addon Sources",
+        "coverImageUrl": "https://example.invalid/active-cover.jpg",
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": null,
+        "focusGifUrl": null,
+        "heroVideoUrl": null,
+        "titleLogoUrl": null,
+        "focusGifEnabled": false,
+        "heroBackdropUrl": null,
+        "sources": [
+          {
+            "provider": "addon",
+            "title": null,
+            "tmdbSourceType": null,
+            "tmdbId": null,
+            "mediaType": null,
+            "sortBy": null,
+            "filters": null,
+            "addonId": "example.sanitised.catalogs",
+            "type": "movie",
+            "catalogId": "featured-movies",
+            "genre": ""
+          },
+          {
+            "provider": "addon",
+            "title": null,
+            "tmdbSourceType": null,
+            "tmdbId": null,
+            "mediaType": null,
+            "sortBy": null,
+            "filters": null,
+            "addonId": "example.sanitised.catalogs",
+            "type": "series",
+            "catalogId": "featured-series",
+            "genre": null
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "example.sanitised.catalogs",
+            "type": "movie",
+            "catalogId": "featured-movies",
+            "genre": null,
+            "showInHome": false,
+            "unknownProjectionSentinel": { "pair": "active-compact" }
+          },
+          {
+            "addonId": "example.sanitised.catalogs",
+            "type": "series",
+            "catalogId": "featured-series",
+            "genre": null,
+            "showInHome": false
+          }
+        ]
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "ROWS",
+    "showAllTab": true
+  }
+]

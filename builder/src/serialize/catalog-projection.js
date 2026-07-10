@@ -1,4 +1,5 @@
 import { cloneJsonValue } from "../domain/index.js";
+import { addonProjectionIdentityKey } from "../nuvio/addon-projection-identity.js";
 import { diagnostic } from "./validation.js";
 import { isPlainObject, setOwn } from "./overlay.js";
 
@@ -123,12 +124,7 @@ function projectionKey(value) {
 	if (!isPlainObject(value)) {
 		return null;
 	}
-	return JSON.stringify([
-		value.addonId,
-		value.type,
-		value.catalogId,
-		value.genre ?? "",
-	]);
+	return addonProjectionIdentityKey(value);
 }
 
 function compatibilityMetadataFromSource(rawImported) {

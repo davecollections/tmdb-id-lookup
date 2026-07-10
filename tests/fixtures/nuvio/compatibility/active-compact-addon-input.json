@@ -1,0 +1,44 @@
+[
+  {
+    "id": "compat-active-addon",
+    "title": "Sanitised Active Addon Evidence",
+    "folders": [
+      {
+        "id": "compat-active-folder",
+        "title": "Compact Addon Sources",
+        "coverImageUrl": "https://example.invalid/active-cover.jpg",
+        "sources": [
+          {
+            "provider": "addon",
+            "addonId": "example.sanitised.catalogs",
+            "type": "movie",
+            "catalogId": "featured-movies",
+            "genre": ""
+          },
+          {
+            "provider": "addon",
+            "addonId": "example.sanitised.catalogs",
+            "type": "series",
+            "catalogId": "featured-series"
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "example.sanitised.catalogs",
+            "type": "movie",
+            "catalogId": "featured-movies",
+            "genre": null,
+            "showInHome": false,
+            "unknownProjectionSentinel": { "pair": "active-compact" }
+          },
+          {
+            "addonId": "example.sanitised.catalogs",
+            "type": "series",
+            "catalogId": "featured-series",
+            "showInHome": false
+          }
+        ]
+      }
+    ]
+  }
+]

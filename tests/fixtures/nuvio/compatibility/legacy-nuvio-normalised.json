@@ -1,0 +1,109 @@
+[
+  {
+    "id": "compat-legacy-addon",
+    "title": "Sanitised Projection-Only Evidence",
+    "backdropImageUrl": null,
+    "folders": [
+      {
+        "id": "compat-legacy-movie",
+        "title": "Legacy Movies",
+        "coverImageUrl": "https://example.invalid/legacy-movie.jpg",
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": null,
+        "sources": [
+          {
+            "provider": "addon",
+            "title": null,
+            "tmdbSourceType": null,
+            "tmdbId": null,
+            "mediaType": null,
+            "sortBy": null,
+            "filters": null,
+            "addonId": "example.sanitised.metadata",
+            "type": "movie",
+            "catalogId": "movie-catalog",
+            "genre": null
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "example.sanitised.metadata",
+            "type": "movie",
+            "catalogId": "movie-catalog",
+            "genre": null,
+            "showInHome": false,
+            "unknownProjectionSentinel": { "preserve": true }
+          }
+        ]
+      },
+      {
+        "id": "compat-legacy-series",
+        "title": "Legacy Series",
+        "heroBackdropUrl": "https://example.invalid/legacy-series.jpg",
+        "hideTitle": false,
+        "tileShape": "LANDSCAPE",
+        "coverEmoji": null,
+        "sources": [
+          {
+            "provider": "addon",
+            "title": null,
+            "tmdbSourceType": null,
+            "tmdbId": null,
+            "mediaType": null,
+            "sortBy": null,
+            "filters": null,
+            "addonId": "example.sanitised.metadata",
+            "type": "series",
+            "catalogId": "series-catalog",
+            "genre": "Action"
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "example.sanitised.metadata",
+            "type": "series",
+            "catalogId": "series-catalog",
+            "genre": "Action",
+            "showInHome": false
+          }
+        ]
+      },
+      {
+        "id": "compat-legacy-anime",
+        "title": "Legacy Anime",
+        "titleLogoUrl": "https://example.invalid/legacy-anime-logo.png",
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": null,
+        "sources": [
+          {
+            "provider": "addon",
+            "title": null,
+            "tmdbSourceType": null,
+            "tmdbId": null,
+            "mediaType": null,
+            "sortBy": null,
+            "filters": null,
+            "addonId": "example.sanitised.metadata",
+            "type": "anime",
+            "catalogId": "anime-catalog",
+            "genre": null
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "example.sanitised.metadata",
+            "type": "anime",
+            "catalogId": "anime-catalog",
+            "genre": null,
+            "showInHome": false
+          }
+        ]
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "ROWS",
+    "showAllTab": true
+  }
+]
