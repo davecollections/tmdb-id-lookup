@@ -167,10 +167,16 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 ## 10. Current architecture decision
 
 - Preserve v1 at the repository root.
-- An isolated `/builder/` React/Vite app is the leading candidate, not a final decision.
-- Contract fixtures and a deployment/coexistence spike are required before committing to the framework direction.
+- Keep builder source and dependencies isolated under `builder/`; no root npm package is needed.
+- Use `builder/dist/` only as generated local/CI output and `.pages-site/` only as generated combined deployment staging. Neither directory is committed.
+- Use Vite's relative `./` base so generated JavaScript, CSS, and imported local assets resolve from `/tmdb-id-lookup/builder/` without hard-coding the repository name or incorrectly targeting `/assets/` at the domain root.
+- The Pages staging process preserves tracked v1 files at the artifact root and replaces the public `builder/` path with the contents of `builder/dist/`, producing `.pages-site/index.html` and `.pages-site/builder/index.html` without a public `builder/dist/` level.
+- Branch and pull-request CI builds the builder, runs existing frontend and Nuvio contract checks, and validates the combined artifact without calling `actions/deploy-pages` or using the `github-pages` environment.
+- The existing Pages workflow remains the only publisher and retains its `main` push, manual dispatch, successful maintenance `workflow_run` triggers, permissions, concurrency, asset-version injection, and deployment steps.
 - Framework-independent Nuvio source, parsing, validation, migration, serialization, and ID modules should stay outside React components.
-- Initial builder navigation should avoid direct-history subroutes until GitHub Pages refresh handling is proven.
+- **Strongly inferred — issue [#33](https://github.com/davecollections/tmdb-id-lookup/issues/33), 2026-07-10:** local builds and combined-artifact validation support adopting the isolated React/Vite direction for the next builder phase, provided the merged artifact receives a final public GitHub Pages check.
+- **Experimental:** actual public delivery at `/tmdb-id-lookup/builder/` remains a post-merge confirmation because the feature branch is deliberately never deployed to the live Pages environment.
+- History-based direct subroutes remain unproven and are not being adopted. The spike uses one entry page and no React Router.
 
 ## 11. Open questions
 
@@ -205,8 +211,10 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 | 2026-07-10 | Deterministic canonical, invalid, and import-preservation contract fixtures | [TMDB ID Lookup issue #31](https://github.com/davecollections/tmdb-id-lookup/issues/31) |
 | 2026-07-10 | Mixed native/addon runtime order, addon isolation, projection deduplication, and exported order | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `mixed-native-and-addon.json` |
 | 2026-07-10 | Opaque sentinel import/export preservation and client normalisation behaviour | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `opaque-community-import.json` |
+| 2026-07-10 | Isolated React/Vite build, relative asset paths, combined v1 plus `/builder/` Pages staging, and branch-safe validation | [TMDB ID Lookup issue #33](https://github.com/davecollections/tmdb-id-lookup/issues/33) |
 
 ## Decision history
 
 - **2026-07-10 — Planning checkpoint:** treat `sources` as authoritative, use `catalogSources` only as the addon compatibility projection/fallback, preserve unknown imported data, and gate the isolated React/Vite candidate behind contract and deployment proof.
 - **2026-07-10 — Contract baseline:** add evidence-classified fixtures and stable invariant checks before any builder framework, production parser, serializer, or exporter work.
+- **2026-07-10 — Deployment coexistence spike:** recommend isolated React/Vite for the next builder phase based on local and branch-artifact evidence, while reserving live `/builder/` confirmation for the post-merge Pages deployment and declining history-based routing.

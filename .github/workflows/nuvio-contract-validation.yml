@@ -20,6 +20,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: builder/package-lock.json
 
       - name: Run frontend and Nuvio contract checks
         run: node scripts/check-all.mjs
+
+      - name: Install builder dependencies
+        run: npm ci --prefix builder
+
+      - name: Build builder
+        run: npm run build --prefix builder
+
+      - name: Prepare combined Pages artifact
+        run: node scripts/prepare-pages-site.mjs
+
+      - name: Validate combined Pages artifact
+        run: node scripts/validate-pages-site.mjs
