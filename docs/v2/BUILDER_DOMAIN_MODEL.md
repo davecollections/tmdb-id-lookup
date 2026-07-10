@@ -55,7 +55,7 @@ The three concerns are deliberately separate:
 
 Factories deep-clone caller-provided `editable` and `rawImported` data. They reject functions, class instances, maps, sets, dates, circular references, non-finite numbers, sparse arrays at any nesting depth, and other non-JSON values so project state remains plain data. Immutable operations may structurally share untouched snapshots, but they never mutate them.
 
-The final import parser, editable-over-raw overlay policy, and serializer are deliberately not part of this model.
+The domain remains independent of import parsing and serialization. The implemented editable-over-raw export policy is documented separately in [BUILDER_SERIALIZER.md](./BUILDER_SERIALIZER.md).
 
 ## Internal identity
 
@@ -77,7 +77,7 @@ The source factory requires one of those explicit categories. It does not inspec
 
 A folder has exactly one active editable source array: `sources`. There is no independently editable `catalogSources` domain array.
 
-When imported folder JSON contains `catalogSources`, it can remain untouched within `folder.rawImported.catalogSources`. A future serializer may derive an addon compatibility projection from authoritative `sources`; this issue does not generate, normalize, or export that projection.
+When imported folder JSON contains `catalogSources`, it can remain untouched within `folder.rawImported.catalogSources`. The separate serializer derives addon compatibility projections from authoritative `sources`; the domain itself still does not generate, normalize, or expose that projection.
 
 ## Public API
 
@@ -93,4 +93,4 @@ When imported folder JSON contains `catalogSources`, it can remain untouched wit
 
 ## Deliberately unimplemented
 
-This issue does not implement Nuvio import parsing, export validation, JSON serialization, raw overlay, `catalogSources` projection generation, storage, undo/redo, React state integration, forms, screens, networking, TMDB/addon requests, routing, authentication, or changes to v1 and the Worker.
+This domain-model issue did not implement Nuvio import parsing, export validation, JSON serialization, raw overlay, `catalogSources` projection generation, storage, undo/redo, React state integration, forms, screens, networking, TMDB/addon requests, routing, authentication, or changes to v1 and the Worker. Import and serialization now exist as separate framework-independent modules without changing this boundary.
