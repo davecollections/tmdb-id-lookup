@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import {
 	checkInternalIdUniqueness,
+	cloneJsonValue,
 	createCollection,
 	createEmptyProject,
 	createFolder,
@@ -159,6 +160,21 @@ test("deep-clones raw imported snapshots and never mutates them during operation
 	assert.equal(findNodeByInternalId(project, "collection-raw").rawImported.unknown.nested[1].value, 7);
 	assert.deepEqual(findNodeByInternalId(updated, "collection-raw").rawImported, before);
 	assert.deepEqual(rawImported, { unknown: { nested: ["preserve", { value: 99 }] } });
+});
+
+test("rejects sparse arrays recursively in editable and raw imported data", () => {
+	const sparseArray = [];
+	sparseArray.length = 2;
+	sparseArray[1] = "present";
+
+	assert.throws(
+		() => cloneJsonValue({ nested: sparseArray }, "editable"),
+		/editable must not contain sparse arrays/,
+	);
+	assert.throws(
+		() => createCollection({ idFactory: () => "collection-sparse", rawImported: { nested: sparseArray } }),
+		/rawImported must not contain sparse arrays/,
+	);
 });
 
 test("preserves opaque community sentinels in collection, folder, and source raw snapshots", () => {

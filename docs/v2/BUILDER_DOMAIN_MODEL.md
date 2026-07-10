@@ -2,13 +2,13 @@
 
 Status: implemented for issue [#34](https://github.com/davecollections/tmdb-id-lookup/issues/34)
 
-Last reviewed: 2026-07-10
+Last reviewed: 2026-07-11
 
 ## Purpose and boundary
 
 The builder domain is a framework-independent representation of editor state. It lives under `builder/src/domain/` and does not depend on React, Vite, browser storage, networking, UI components, or a schema/state library.
 
-Domain state contains only plain JSON-compatible objects, ordered arrays, and primitive values. It can be copied with `structuredClone` and encoded with `JSON.stringify`. The domain is editor state, not validated Nuvio export output: incomplete drafts are allowed.
+Domain state contains only plain JSON-compatible objects, dense ordered arrays, and primitive values. Sparse arrays are rejected recursively because missing numeric slots are not plain JSON values and must not be silently normalised. Valid domain state can be copied with `structuredClone` and encoded with `JSON.stringify`. The domain is editor state, not validated Nuvio export output: incomplete drafts are allowed.
 
 ## Hierarchy and exact shapes
 
@@ -53,7 +53,7 @@ The three concerns are deliberately separate:
 - `rawImported` is an optional deep-cloned snapshot of the original collection, folder, or source JSON. It preserves unknown/community fields and is not changed by domain operations.
 - `internalId`, `nodeType`, and source `category` are builder-only metadata. A future exporter must not include them automatically.
 
-Factories deep-clone caller-provided `editable` and `rawImported` data. They reject functions, class instances, maps, sets, dates, circular references, non-finite numbers, and other non-JSON values so project state remains plain data. Immutable operations may structurally share untouched snapshots, but they never mutate them.
+Factories deep-clone caller-provided `editable` and `rawImported` data. They reject functions, class instances, maps, sets, dates, circular references, non-finite numbers, sparse arrays at any nesting depth, and other non-JSON values so project state remains plain data. Immutable operations may structurally share untouched snapshots, but they never mutate them.
 
 The final import parser, editable-over-raw overlay policy, and serializer are deliberately not part of this model.
 
