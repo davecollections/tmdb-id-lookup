@@ -193,6 +193,12 @@ and [tomato's transparent covers pack](https://www.reddit.com/r/Nuvio/comments/1
 
 Project maintained by [Dave Collections](https://github.com/davecollections).
 
+## Built Something With This Project?
+
+If you’ve used or adapted TMDB ID Lookup in your own app or project, attribution is appreciated, and we’d love to hear what you built. Feel free to let us know through a [GitHub issue](https://github.com/davecollections/tmdb-id-lookup/issues/new/choose).
+
+Simply using the hosted tool to create your own collections does not require attribution or notification.
+
 ## License
 
 MIT License
