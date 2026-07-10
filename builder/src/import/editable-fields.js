@@ -1,54 +1,9 @@
-const COLLECTION_EDITABLE_FIELDS = Object.freeze([
-	"id",
-	"title",
-	"pinToTop",
-	"viewMode",
-	"showAllTab",
-]);
-
-const FOLDER_EDITABLE_FIELDS = Object.freeze([
-	"id",
-	"title",
-	"hideTitle",
-	"tileShape",
-	"coverEmoji",
-	"focusGifUrl",
-	"heroVideoUrl",
-	"titleLogoUrl",
-	"coverImageUrl",
-	"focusGifEnabled",
-	"heroBackdropUrl",
-]);
-
-const SOURCE_EDITABLE_FIELDS = Object.freeze([
-	"provider",
-	"title",
-	"tmdbSourceType",
-	"tmdbId",
-	"mediaType",
-	"sortBy",
-	"addonId",
-	"type",
-	"catalogId",
-	"genre",
-]);
-
-const DISCOVER_FILTER_FIELDS = Object.freeze([
-	"withGenres",
-	"releaseDateGte",
-	"releaseDateLte",
-	"voteAverageGte",
-	"voteAverageLte",
-	"voteCountGte",
-	"withOriginalLanguage",
-	"withOriginCountry",
-	"withKeywords",
-	"withCompanies",
-	"withNetworks",
-	"year",
-	"watchRegion",
-	"withWatchProviders",
-]);
+import {
+	COLLECTION_EDITABLE_FIELDS,
+	DISCOVER_FILTER_FIELDS,
+	FOLDER_EDITABLE_FIELDS,
+	SOURCE_EDITABLE_FIELDS,
+} from "../nuvio/known-fields.js";
 
 /**
  * @param {{[key: string]: import("../domain/model.js").JsonValue}} collection

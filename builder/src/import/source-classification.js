@@ -1,14 +1,7 @@
 import { SOURCE_CATEGORIES } from "../domain/index.js";
+import { NATIVE_TMDB_SOURCE_TYPES } from "../nuvio/known-fields.js";
 
-export const NATIVE_TMDB_SOURCE_TYPES = Object.freeze([
-	"LIST",
-	"COLLECTION",
-	"COMPANY",
-	"NETWORK",
-	"DISCOVER",
-	"PERSON",
-	"DIRECTOR",
-]);
+export { NATIVE_TMDB_SOURCE_TYPES };
 
 const nativeTmdbSourceTypes = new Set(NATIVE_TMDB_SOURCE_TYPES);
 const addonIdentityFields = Object.freeze([

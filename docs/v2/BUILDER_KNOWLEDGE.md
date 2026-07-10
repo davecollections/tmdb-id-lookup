@@ -209,14 +209,31 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - Ultra MAX compatibility still requires a real exported sample in a later controlled compatibility issue. This importer does not establish a canonical export shape.
 - Thirty-two importer tests cover JSON parsing, public diagnostic contracts, structural and sparse-array errors, all seven native types, addon and opaque classification, ordering, conservative editable extraction, filters, raw preservation, legacy projection detection, input immutability, ID collisions, and plain-data encoding.
 
+### Preservation-first Nuvio serializer — issue #36
+
+**Confirmed by repository tests — issue [#36](https://github.com/davecollections/tmdb-id-lookup/issues/36), 2026-07-11:** a framework-independent serializer under `builder/src/serialize/` now converts the builder domain into detached Nuvio collection values or deterministic JSON text.
+
+- Imported unknown and community collection, folder, source, filter, and matched projection fields survive unrelated recognised edits through safe editable-over-raw overlays.
+- Current domain collections, folders, and sources replace raw structural arrays and retain current order. Inserted nodes appear, removed nodes disappear, and raw child arrays are never authoritative.
+- New nodes use compact supported output. Optional recognised values appear only when present; explicit null envelopes, presentation defaults, backdrop/glow defaults, language fields, and v1 exporter defaults are not invented.
+- Recognised field lists are centralised under `builder/src/nuvio/known-fields.js` and shared with the importer without changing importer behavior.
+- Only explicit addon-category sources generate `catalogSources` compatibility projections. Native TMDB and opaque sources never generate projections, even when opaque raw data contains addon-looking fields.
+- Raw projections are matched deterministically by original identity first and current identity second. Matched unknown metadata survives, and duplicate identities consume projections in original order.
+- A source moved between folders can carry only the approved `id`, `addonName`, `manifestUrl`, and `showInHome` compatibility metadata from its own raw snapshot when no folder projection matches.
+- Unmatched old projections are removed with stable warnings because current authoritative sources no longer reference them.
+- Unresolved `catalogSources`-only legacy data blocks serialization instead of being silently lost or promoted. The serializer does not establish Ultra MAX migration behavior.
+- Opaque sources require raw import evidence and serialize with preservation warnings. Incomplete supported native or addon sources fail atomically with stable diagnostics and no partial output.
+- Recognised Discover filters are replaced as a group from editable state while unknown raw filter keys survive. Explicit property-removal semantics beyond supported value replacement remain deferred.
+- Fifty-four serializer tests cover the 70 required API, compact-output, ordering, preservation, filter, native, addon, opaque, validation, prototype-safety, determinism, and contract-integration behaviors. The existing 8 contract, 14 domain, and 32 importer tests remain unchanged and passing.
+- No visible UI calls the serializer yet.
+
 ## 11. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
 - Which Discover filters work identically across mobile and TV clients?
 - How should existing v1 exporters be consolidated without changing output?
-- How should a future serializer overlay edited known paths onto preserved raw imports?
-- Should the future builder emit complete explicit-null source envelopes or a compact canonical form?
+- Which future controls need explicit property-removal semantics beyond assigning supported empty or null values?
 - Can the builder and v1 safely share pure modules?
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
@@ -245,6 +262,7 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 | 2026-07-10 | Isolated React/Vite build, combined v1 plus `/builder/` Pages staging, and successful live deployment checks for assets, the v1 backlink, mobile widths, and unlinked `noindex, nofollow` behaviour | [TMDB ID Lookup issue #33](https://github.com/davecollections/tmdb-id-lookup/issues/33) |
 | 2026-07-10 | Plain-data builder hierarchy, stable internal identity, immutable operations, raw snapshot preservation, and explicit source categories | [TMDB ID Lookup issue #34](https://github.com/davecollections/tmdb-id-lookup/issues/34) |
 | 2026-07-11 | Atomic preservation-first import, provider-led source classification, conservative editable extraction, raw snapshot detachment, and legacy compatibility detection | [TMDB ID Lookup issue #35](https://github.com/davecollections/tmdb-id-lookup/issues/35) |
+| 2026-07-11 | Atomic preservation-first serialization, compact new-node output, editable-over-raw overlay, addon projection matching, legacy blocking, and deterministic JSON output | [TMDB ID Lookup issue #36](https://github.com/davecollections/tmdb-id-lookup/issues/36) |
 
 ## Decision history
 
@@ -253,3 +271,4 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - **2026-07-10 — Deployment coexistence:** completed branch validation and recorded live GitHub Pages checks confirmed stable v1 at the project root and the isolated React/Vite builder under `/builder/`, including generated assets, the v1 backlink, mobile-width behaviour, and the unlinked `noindex, nofollow` state. Adopt isolated React/Vite under `/builder/` as the confirmed direction while leaving history-based direct subroutes unsupported.
 - **2026-07-10 — Builder domain model:** adopt a framework-independent plain-data hierarchy with stable builder-only IDs, explicit source categories, authoritative editable `sources`, detached raw import snapshots, and small immutable operations before importer or serializer work.
 - **2026-07-11 — Preservation-first importer:** accept JSON text and parsed collection arrays through an atomic importer; hydrate only recognised editable fields, classify from explicit providers, preserve unknown and unsupported sources as opaque, retain complete detached raw snapshots, and detect `catalogSources`-only compatibility data without migration or export assumptions.
+- **2026-07-11 — Preservation-first serializer:** serialize compact new nodes and preservation-based imported nodes atomically; replace raw child arrays from current domain state; generate projections only for addon-category sources; preserve matched projection metadata; warn when unmatched projections are removed; and block unresolved legacy projection-only data without migration. Explicit property deletion, Ultra MAX conversion, language support, and visible UI integration remain deferred.

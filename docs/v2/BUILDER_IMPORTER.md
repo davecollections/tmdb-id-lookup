@@ -10,6 +10,8 @@ The importer converts Nuvio collection JSON into the framework-independent build
 
 The implementation lives under `builder/src/import/`. It uses plain JavaScript, JSDoc, the existing builder domain factories, and standard JavaScript APIs. It has no React, browser, state-management, schema-library, validation-library, or networking dependency.
 
+Recognised collection, folder, source, and Discover-filter field lists and the confirmed native TMDB type list are shared with the serializer through `builder/src/nuvio/known-fields.js`. This centralisation does not change importer behavior or turn the contract into a complete schema. The matching export contract is documented in [BUILDER_SERIALIZER.md](./BUILDER_SERIALIZER.md).
+
 Import establishes safe editor state. It does not define canonical Nuvio output and does not implement migration, editable-over-raw overlay, projection generation, or serialization.
 
 ## Public API
