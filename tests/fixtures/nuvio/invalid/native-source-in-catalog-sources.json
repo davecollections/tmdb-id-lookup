@@ -1,0 +1,34 @@
+[
+  {
+    "id": "collection-invalid-native-projection",
+    "title": "Invalid Native Projection",
+    "folders": [
+      {
+        "id": "folder-invalid-native-projection",
+        "title": "Native Source Mirrored Incorrectly",
+        "sources": [
+          {
+            "title": "Company Source",
+            "sortBy": "popularity.desc",
+            "tmdbId": 1003,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "COMPANY"
+          }
+        ],
+        "catalogSources": [
+          {
+            "title": "Company Source",
+            "sortBy": "popularity.desc",
+            "tmdbId": 1003,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "COMPANY"
+          }
+        ]
+      }
+    ]
+  }
+]

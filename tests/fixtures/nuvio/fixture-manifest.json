@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "issue": "https://github.com/davecollections/tmdb-id-lookup/issues/31",
+  "fixtures": [
+    {
+      "id": "valid-all-native-types",
+      "file": "valid/all-native-tmdb-source-types.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Confirmed from current Nuvio source code",
+      "provenance": "Native source envelopes are represented by current v1 exporters and the NuvioMobile CollectionSource model at 4e17faa. Values are deterministic test sentinels, not live TMDB lookups.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": {
+        "nativeTypes": ["LIST", "COLLECTION", "COMPANY", "NETWORK", "DISCOVER", "PERSON", "DIRECTOR"],
+        "addonBacked": false,
+        "mixed": false,
+        "opaqueImport": false
+      },
+      "expectedOrder": {
+        "folderIds": ["folder-list", "folder-collection", "folder-company", "folder-network", "folder-discover", "folder-person", "folder-director"],
+        "sourcesByFolder": {
+          "folder-list": ["tmdb:LIST:1001:MOVIE"],
+          "folder-collection": ["tmdb:COLLECTION:1002:MOVIE"],
+          "folder-company": ["tmdb:COMPANY:1003:MOVIE"],
+          "folder-network": ["tmdb:NETWORK:1004:TV"],
+          "folder-discover": ["tmdb:DISCOVER::MOVIE"],
+          "folder-person": ["tmdb:PERSON:1005:MOVIE"],
+          "folder-director": ["tmdb:DIRECTOR:1006:MOVIE"]
+        }
+      }
+    },
+    {
+      "id": "valid-shark-movies-discover",
+      "file": "valid/shark-movies-discover.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Manually confirmed in Nuvio",
+      "provenance": "Project Shark Movies manual test recorded in docs/v2/BUILDER_KNOWLEDGE.md: native TMDB Discover, movie media, popularity descending, keyword 15097.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": ["DISCOVER"], "addonBacked": false, "mixed": false, "opaqueImport": false },
+      "expectedOrder": {
+        "folderIds": ["folder-shark-movies"],
+        "sourcesByFolder": { "folder-shark-movies": ["tmdb:DISCOVER::MOVIE"] }
+      }
+    },
+    {
+      "id": "valid-addon-backed",
+      "file": "valid/nuvio-catalog-addon.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Manually confirmed in Nuvio",
+      "provenance": "Nuvio Catalog Addon manifest reviewed 2026-07-10 plus the recorded popular-movies Horror manual test. Unified and compatibility field shapes come from NuvioMobile 4e17faa.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": [], "addonBacked": true, "mixed": false, "opaqueImport": false },
+      "expectedOrder": {
+        "folderIds": ["folder-addon-horror"],
+        "sourcesByFolder": { "folder-addon-horror": ["addon:com.nuvio.tmdb.catalogs:movie:popular-movies:Horror"] }
+      }
+    },
+    {
+      "id": "valid-mixed-folder",
+      "file": "valid/mixed-native-and-addon.json",
+      "classification": "canonical-builder-output",
+      "evidenceLevel": "Manually confirmed in Nuvio Desktop and Mobile",
+      "provenance": "Manually tested 2026-07-10 in Nuvio Desktop for Windows and Nuvio Mobile on iOS: native Discover loaded first, addon-backed Trending Series loaded second without duplication, disabling and re-enabling the addon removed and restored only addon results, and export retained native-first/addon-second order. NuvioMobile 4e17faa remains supporting source-model evidence.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": ["DISCOVER"], "addonBacked": true, "mixed": true, "opaqueImport": false },
+      "expectedOrder": {
+        "folderIds": ["folder-mixed"],
+        "sourcesByFolder": {
+          "folder-mixed": ["tmdb:DISCOVER::MOVIE", "addon:com.nuvio.tmdb.catalogs:series:trending-series:"]
+        }
+      }
+    },
+    {
+      "id": "valid-opaque-community-import",
+      "file": "valid/opaque-community-import.json",
+      "classification": "import-preservation",
+      "evidenceLevel": "Manually confirmed in Nuvio Desktop and Mobile",
+      "provenance": "Manually round-trip tested 2026-07-10 in Nuvio Desktop for Windows and Nuvio Mobile on iOS: import succeeded, the fake addon produced the expected not-found message, and export retained all sentinel and source-identity fields. Both clients added a matching catalogSources projection, fuller explicit-null source fields, and default presentation fields. NuvioMobile CollectionJsonPreserver at 4e17faa remains supporting preservation evidence. This synthetic probe does not claim byte-for-byte preservation, a supported community schema, or a canonical builder output shape.",
+      "expected": { "valid": true, "errorCodes": [] },
+      "coverage": { "nativeTypes": [], "addonBacked": false, "mixed": false, "opaqueImport": true },
+      "expectedOrder": {
+        "folderIds": ["folder-community"],
+        "sourcesByFolder": {
+          "folder-community": ["community:community.example.catalogs:movie:editor-picks:"]
+        }
+      }
+    },
+    {
+      "id": "invalid-addon-only-catalog-sources",
+      "file": "invalid/addon-only-in-catalog-sources.json",
+      "classification": "deliberately-invalid-output",
+      "evidenceLevel": "Confirmed from current Nuvio source code",
+      "provenance": "Deliberate violation of the NuvioMobile 4e17faa authoritative sources rule: active addon data exists only in the fallback projection.",
+      "expected": { "valid": false, "errorCodes": ["ADDON_SOURCE_MISSING_FROM_SOURCES"] },
+      "coverage": { "nativeTypes": [], "addonBacked": true, "mixed": false, "opaqueImport": false }
+    },
+    {
+      "id": "invalid-native-mirrored",
+      "file": "invalid/native-source-in-catalog-sources.json",
+      "classification": "deliberately-invalid-output",
+      "evidenceLevel": "Confirmed from current Nuvio source code",
+      "provenance": "Deliberate mutation of a native TMDB source into catalogSources, which NuvioMobile 4e17faa reserves for addon catalog compatibility projections.",
+      "expected": { "valid": false, "errorCodes": ["NATIVE_SOURCE_IN_CATALOG_SOURCES"] },
+      "coverage": { "nativeTypes": ["COMPANY"], "addonBacked": false, "mixed": false, "opaqueImport": false }
+    },
+    {
+      "id": "invalid-guessed-direct-movie",
+      "file": "invalid/unsupported-direct-movie-source.json",
+      "classification": "deliberately-invalid-output",
+      "evidenceLevel": "Currently unsupported",
+      "provenance": "Deliberate guessed direct-media type. It is absent from the published native TMDB source enum reviewed at NuvioMobile 4e17faa and is not treated as canonical output.",
+      "expected": { "valid": false, "errorCodes": ["UNSUPPORTED_TMDB_SOURCE_TYPE"] },
+      "coverage": { "nativeTypes": [], "addonBacked": false, "mixed": false, "opaqueImport": false }
+    }
+  ]
+}

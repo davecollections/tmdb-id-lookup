@@ -167,9 +167,11 @@ TMDB API requests from the live lookup tools go through the Cloudflare Worker pr
 
 ## Local Checks
 
-Run `scripts\check.cmd` before pushing changes on Windows. This validates frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, and unsafe rendering patterns.
+Run `scripts\check.cmd` before pushing changes on Windows. This runs the shared validation sequence for frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, unsafe rendering patterns, and deterministic Nuvio contract fixtures.
 
-If you are not on Windows, run `node scripts/check-frontend.mjs` directly.
+On any platform, the equivalent command is `node scripts/check-all.mjs`. To run only the Nuvio contract suite, use `node --test tests/nuvio-contracts.test.mjs`.
+
+The contract fixtures distinguish canonical builder output from import-preservation input. They cover the currently confirmed native TMDB source types, addon compatibility projections, mixed source folders, and opaque imported fields. They intentionally do not define a complete Nuvio schema or change current v1 export output.
 
 ## Local TMDB Testing
 

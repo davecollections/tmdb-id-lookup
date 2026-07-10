@@ -1,0 +1,34 @@
+[
+  {
+    "id": "collection-community",
+    "title": "Imported Community Collection",
+    "folders": [
+      {
+        "id": "folder-community",
+        "title": "Opaque Community Source",
+        "sources": [
+          {
+            "provider": "community",
+            "addonId": "community.example.catalogs",
+            "type": "movie",
+            "catalogId": "editor-picks",
+            "communityOptions": {
+              "quality": "curated",
+              "includeUnreleased": false
+            },
+            "unknownBoolean": true
+          }
+        ],
+        "catalogSources": [],
+        "communityLayout": {
+          "density": "compact",
+          "accent": "violet"
+        }
+      }
+    ],
+    "communityMetadata": {
+      "owner": "fixture-sentinel",
+      "revision": 7
+    }
+  }
+]

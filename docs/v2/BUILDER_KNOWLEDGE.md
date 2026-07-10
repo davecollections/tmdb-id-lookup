@@ -133,7 +133,38 @@ Source and folder order is meaningful and must be preserved.
 - Imported opaque sources must remain preservable, movable, and removable without being guessed into a known provider type.
 - Each source needs an internal stable identity independent of mutable filter values.
 
-## 9. Current architecture decision
+## 9. Contract fixture baseline
+
+**Confirmed from current Nuvio source code and existing v1 exporters — issue [#31](https://github.com/davecollections/tmdb-id-lookup/issues/31), 2026-07-10:** the repository now has deterministic Nuvio contract fixtures and Node built-in tests that establish a pre-builder baseline.
+
+The positive fixture set proves that:
+
+- all seven currently confirmed native TMDB source types have representative source envelopes;
+- the manually confirmed Shark Movies Discover source retains `DISCOVER`, movie media, `popularity.desc`, and keyword `15097`;
+- addon-backed active data remains in `sources`, with an optional matching compatibility projection in `catalogSources`;
+- a mixed folder projects only its addon-backed source into `catalogSources`;
+- source and folder array order is retained by the validation path;
+- import-preservation mode accepts an opaque community source and leaves unknown collection, folder, and source sentinel fields untouched.
+
+The negative fixture set detects:
+
+- addon data placed only in `catalogSources`;
+- a native TMDB source incorrectly copied into `catalogSources`;
+- a guessed direct-movie TMDB source type used as canonical builder output.
+
+The fixture suite deliberately does **not** prove a complete or final Nuvio schema, client rendering parity, live TMDB/addon responses, every Discover filter combination, or production parsing/serialization behaviour. The opaque community fixture is a synthetic preservation probe based on confirmed raw-object overlay behaviour; its sentinel fields do not claim to define a real community provider schema.
+
+### Manual Desktop and Mobile verification — 2026-07-10
+
+**Runtime source behaviour — manually confirmed in Nuvio Desktop for Windows and Nuvio Mobile on iOS:** importing `mixed-native-and-addon.json` loaded the native TMDB Discover source first and the addon-backed Trending Series source second. The addon-backed source was not duplicated despite its matching `catalogSources` compatibility projection. Disabling the Nuvio Catalog Addon removed only the addon-backed results while native Discover remained available; re-enabling the addon restored the addon-backed results. Export retained native-first, addon-second source order.
+
+**Import/export preservation behaviour — manually confirmed in Nuvio Desktop for Windows and Nuvio Mobile on iOS:** `opaque-community-import.json` imported successfully, and its deliberately fake addon produced the expected addon-not-found runtime message. Export preserved `communityMetadata`, `communityLayout`, `communityOptions`, `unknownBoolean`, `provider`, `addonId`, `type`, and `catalogId`. This proves that the unknown sentinel fields survived import/export round trips on both tested clients. It does not prove byte-for-byte preservation and does not make the fake community provider a supported schema.
+
+**Client normalisation behaviour — manually confirmed in both tested clients:** export added a matching `catalogSources` projection, expanded the compact imported source into a fuller explicit-null envelope, and added default collection and folder presentation fields. Compact valid input can therefore be accepted and normalised by these clients, but client-normalised imported data is not automatically the canonical shape the future builder should emit.
+
+`scripts\check.cmd` remains the Windows entry point. It and the dedicated GitHub Actions workflow both execute `node scripts/check-all.mjs`, which runs the existing frontend checks followed by the contract suite without secrets or network requests.
+
+## 10. Current architecture decision
 
 - Preserve v1 at the repository root.
 - An isolated `/builder/` React/Vite app is the leading candidate, not a final decision.
@@ -141,7 +172,7 @@ Source and folder order is meaningful and must be preserved.
 - Framework-independent Nuvio source, parsing, validation, migration, serialization, and ID modules should stay outside React components.
 - Initial builder navigation should avoid direct-history subroutes until GitHub Pages refresh handling is proven.
 
-## 10. Open questions
+## 11. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
@@ -153,7 +184,7 @@ Source and folder order is meaningful and must be preserved.
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
 
-## 11. Update rules
+## 12. Update rules
 
 - Update this file when a test becomes confirmed or disproved.
 - Include the evidence level, review/test date, and source.
@@ -171,7 +202,11 @@ Source and folder order is meaningful and must be preserved.
 | 2026-07-10 | Catalog IDs, resource types, and metadata prefixes | [Nuvio Catalog Addon manifest](https://catalog.nuvio.tv/manifest.json) |
 | 2026-07-10 | Shark Movies, addon catalog, genre, disable-addon, and failed identifier tests | Project manual-test notes recorded during the v2 investigation |
 | 2026-07-10 | Existing v1 generators, checks, deployment, and Worker boundaries | [TMDB ID Lookup at `62b0ba2`](https://github.com/davecollections/tmdb-id-lookup/tree/62b0ba25f1dd49ad1a1bb515ee2461f61bc18681) |
+| 2026-07-10 | Deterministic canonical, invalid, and import-preservation contract fixtures | [TMDB ID Lookup issue #31](https://github.com/davecollections/tmdb-id-lookup/issues/31) |
+| 2026-07-10 | Mixed native/addon runtime order, addon isolation, projection deduplication, and exported order | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `mixed-native-and-addon.json` |
+| 2026-07-10 | Opaque sentinel import/export preservation and client normalisation behaviour | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `opaque-community-import.json` |
 
 ## Decision history
 
 - **2026-07-10 — Planning checkpoint:** treat `sources` as authoritative, use `catalogSources` only as the addon compatibility projection/fallback, preserve unknown imported data, and gate the isolated React/Vite candidate behind contract and deployment proof.
+- **2026-07-10 — Contract baseline:** add evidence-classified fixtures and stable invariant checks before any builder framework, production parser, serializer, or exporter work.

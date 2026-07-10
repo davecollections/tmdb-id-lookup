@@ -1,0 +1,130 @@
+[
+  {
+    "id": "collection-native-types",
+    "title": "Native TMDB Source Types",
+    "folders": [
+      {
+        "id": "folder-list",
+        "title": "List Source",
+        "sources": [
+          { "title": "List Source", "sortBy": "original", "tmdbId": 1001, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "LIST" }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "📋",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      },
+      {
+        "id": "folder-collection",
+        "title": "Collection Source",
+        "sources": [
+          { "title": "Collection Source", "sortBy": "original", "tmdbId": 1002, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "COLLECTION" }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "🎞️",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      },
+      {
+        "id": "folder-company",
+        "title": "Company Source",
+        "sources": [
+          { "title": "Company Source", "sortBy": "popularity.desc", "tmdbId": 1003, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "COMPANY" }
+        ],
+        "hideTitle": false,
+        "tileShape": "LANDSCAPE",
+        "coverEmoji": "🎬",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      },
+      {
+        "id": "folder-network",
+        "title": "Network Source",
+        "sources": [
+          { "title": "Network Source", "sortBy": "popularity.desc", "tmdbId": 1004, "filters": {}, "provider": "tmdb", "mediaType": "TV", "tmdbSourceType": "NETWORK" }
+        ],
+        "hideTitle": false,
+        "tileShape": "LANDSCAPE",
+        "coverEmoji": "📺",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      },
+      {
+        "id": "folder-discover",
+        "title": "Discover Source",
+        "sources": [
+          { "title": "Discover Source", "sortBy": "popularity.desc", "tmdbId": null, "filters": { "withGenres": "878" }, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "DISCOVER" }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "🔎",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      },
+      {
+        "id": "folder-person",
+        "title": "Person Source",
+        "sources": [
+          { "title": "Person Source", "sortBy": "popularity.desc", "tmdbId": 1005, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "👤",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      },
+      {
+        "id": "folder-director",
+        "title": "Director Source",
+        "sources": [
+          { "title": "Director Source", "sortBy": "popularity.desc", "tmdbId": 1006, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "DIRECTOR" }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "🎥",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true
+  }
+]

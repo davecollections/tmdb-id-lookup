@@ -1,0 +1,24 @@
+[
+  {
+    "id": "collection-invalid-direct-movie",
+    "title": "Invalid Direct Movie Source",
+    "folders": [
+      {
+        "id": "folder-invalid-direct-movie",
+        "title": "Guessed Direct Movie",
+        "sources": [
+          {
+            "title": "Direct Movie",
+            "sortBy": "original",
+            "tmdbId": 2001,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DIRECT_MOVIE"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

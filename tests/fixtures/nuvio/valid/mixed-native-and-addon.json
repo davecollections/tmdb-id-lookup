@@ -1,0 +1,48 @@
+[
+  {
+    "id": "collection-mixed",
+    "title": "Mixed Sources",
+    "folders": [
+      {
+        "id": "folder-mixed",
+        "title": "Native Then Addon",
+        "sources": [
+          {
+            "title": "Recent Science Fiction Movies",
+            "sortBy": "popularity.desc",
+            "tmdbId": null,
+            "filters": { "withGenres": "878" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "provider": "addon",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "series",
+            "catalogId": "trending-series"
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "LANDSCAPE",
+        "coverEmoji": "🎬",
+        "focusGifUrl": "",
+        "heroVideoUrl": "",
+        "titleLogoUrl": "",
+        "coverImageUrl": "",
+        "catalogSources": [
+          {
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "series",
+            "catalogId": "trending-series"
+          }
+        ],
+        "focusGifEnabled": false,
+        "heroBackdropUrl": ""
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "ROWS",
+    "showAllTab": true
+  }
+]
