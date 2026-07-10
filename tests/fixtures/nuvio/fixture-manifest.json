@@ -58,8 +58,8 @@
       "id": "valid-mixed-folder",
       "file": "valid/mixed-native-and-addon.json",
       "classification": "canonical-builder-output",
-      "evidenceLevel": "Confirmed from current Nuvio source code",
-      "provenance": "NuvioMobile 4e17faa resolves ordered unified sources and projects only addon-backed sources into catalogSources. Source values use confirmed native Discover and published addon catalog fields.",
+      "evidenceLevel": "Manually confirmed in Nuvio Desktop and Mobile",
+      "provenance": "Manually tested 2026-07-10 in Nuvio Desktop for Windows and Nuvio Mobile on iOS: native Discover loaded first, addon-backed Trending Series loaded second without duplication, disabling and re-enabling the addon removed and restored only addon results, and export retained native-first/addon-second order. NuvioMobile 4e17faa remains supporting source-model evidence.",
       "expected": { "valid": true, "errorCodes": [] },
       "coverage": { "nativeTypes": ["DISCOVER"], "addonBacked": true, "mixed": true, "opaqueImport": false },
       "expectedOrder": {
@@ -73,8 +73,8 @@
       "id": "valid-opaque-community-import",
       "file": "valid/opaque-community-import.json",
       "classification": "import-preservation",
-      "evidenceLevel": "Confirmed from current Nuvio source code",
-      "provenance": "Synthetic preservation probe based on NuvioMobile CollectionJsonPreserver at 4e17faa. Sentinel community fields are intentionally opaque and do not claim to define a real community provider schema.",
+      "evidenceLevel": "Manually confirmed in Nuvio Desktop and Mobile",
+      "provenance": "Manually round-trip tested 2026-07-10 in Nuvio Desktop for Windows and Nuvio Mobile on iOS: import succeeded, the fake addon produced the expected not-found message, and export retained all sentinel and source-identity fields. Both clients added a matching catalogSources projection, fuller explicit-null source fields, and default presentation fields. NuvioMobile CollectionJsonPreserver at 4e17faa remains supporting preservation evidence. This synthetic probe does not claim byte-for-byte preservation, a supported community schema, or a canonical builder output shape.",
       "expected": { "valid": true, "errorCodes": [] },
       "coverage": { "nativeTypes": [], "addonBacked": false, "mixed": false, "opaqueImport": true },
       "expectedOrder": {
