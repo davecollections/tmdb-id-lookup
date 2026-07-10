@@ -2,7 +2,7 @@
 
 Status: Planning and contract groundwork
 
-Last reviewed: 2026-07-10
+Last reviewed: 2026-07-11
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope.
 
@@ -194,13 +194,27 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - The domain permits incomplete editor drafts and remains separate from import parsing, export validation, raw overlay, and serialization.
 - Node tests prove deterministic identity, identity stability, ordering, immutability, opaque sentinel preservation, the `catalogSources` boundary, explicit categories, duplicate detection, `structuredClone`, and JSON encoding compatibility.
 
+### Preservation-first Nuvio importer — issue #35
+
+**Confirmed by repository tests — issue [#35](https://github.com/davecollections/tmdb-id-lookup/issues/35), 2026-07-11:** a framework-independent importer under `builder/src/import/` now converts JSON text or already-parsed collection arrays into the builder domain.
+
+- Structural validation is atomic. Invalid roots and non-object collection, folder, or active source entries return stable diagnostics and no partial project.
+- Collection, folder, and authoritative `sources` order is retained exactly. One injectable ID factory supplies every builder-only internal ID, and project-wide collisions reject the import.
+- Recognised fields alone enter `editable`; complete detached collection, folder, and source objects remain in `rawImported`, including unknown/community fields and unknown Discover filter keys.
+- Provider-led classification is conservative. Only explicit `tmdb` with one of the seven confirmed types becomes `native-tmdb`, and only explicit `addon` becomes `addon`.
+- Unknown, missing, and `community` providers remain `opaque`. Addon-looking fields alone do not prove addon category.
+- Explicit TMDB sources with missing or unsupported types remain importable as opaque sources with warnings rather than being rejected or guessed into support.
+- `catalogSources`-only compatibility data is detected and preserved but is not promoted, merged, or migrated into authoritative active `sources`.
+- Ultra MAX compatibility still requires a real exported sample in a later controlled compatibility issue. This importer does not establish a canonical export shape.
+- Thirty importer tests cover JSON parsing, structural errors, all seven native types, addon and opaque classification, ordering, conservative editable extraction, filters, raw preservation, legacy projection detection, input immutability, ID collisions, and plain-data encoding.
+
 ## 11. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
 - Which Discover filters work identically across mobile and TV clients?
 - How should existing v1 exporters be consolidated without changing output?
-- How should imported unknown data be preserved across edits?
+- How should a future serializer overlay edited known paths onto preserved raw imports?
 - Should the future builder emit complete explicit-null source envelopes or a compact canonical form?
 - Can the builder and v1 safely share pure modules?
 - How should known TMDB list IDs be validated?
@@ -229,6 +243,7 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 | 2026-07-10 | Opaque sentinel import/export preservation and client normalisation behaviour | Manual tests in Nuvio Desktop for Windows and Nuvio Mobile on iOS using `opaque-community-import.json` |
 | 2026-07-10 | Isolated React/Vite build, combined v1 plus `/builder/` Pages staging, and successful live deployment checks for assets, the v1 backlink, mobile widths, and unlinked `noindex, nofollow` behaviour | [TMDB ID Lookup issue #33](https://github.com/davecollections/tmdb-id-lookup/issues/33) |
 | 2026-07-10 | Plain-data builder hierarchy, stable internal identity, immutable operations, raw snapshot preservation, and explicit source categories | [TMDB ID Lookup issue #34](https://github.com/davecollections/tmdb-id-lookup/issues/34) |
+| 2026-07-11 | Atomic preservation-first import, provider-led source classification, conservative editable extraction, raw snapshot detachment, and legacy compatibility detection | [TMDB ID Lookup issue #35](https://github.com/davecollections/tmdb-id-lookup/issues/35) |
 
 ## Decision history
 
@@ -236,3 +251,4 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - **2026-07-10 — Contract baseline:** add evidence-classified fixtures and stable invariant checks before any builder framework, production parser, serializer, or exporter work.
 - **2026-07-10 — Deployment coexistence:** completed branch validation and recorded live GitHub Pages checks confirmed stable v1 at the project root and the isolated React/Vite builder under `/builder/`, including generated assets, the v1 backlink, mobile-width behaviour, and the unlinked `noindex, nofollow` state. Adopt isolated React/Vite under `/builder/` as the confirmed direction while leaving history-based direct subroutes unsupported.
 - **2026-07-10 — Builder domain model:** adopt a framework-independent plain-data hierarchy with stable builder-only IDs, explicit source categories, authoritative editable `sources`, detached raw import snapshots, and small immutable operations before importer or serializer work.
+- **2026-07-11 — Preservation-first importer:** accept JSON text and parsed collection arrays through an atomic importer; hydrate only recognised editable fields, classify from explicit providers, preserve unknown and unsupported sources as opaque, retain complete detached raw snapshots, and detect `catalogSources`-only compatibility data without migration or export assumptions.

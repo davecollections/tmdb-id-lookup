@@ -14,5 +14,6 @@ function runNode(args) {
 runNode([path.join("scripts", "check-frontend.mjs")]);
 runNode(["--test", path.join("tests", "nuvio-contracts.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-domain.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-import.test.mjs")]);
 
 console.log("All checks passed.");
