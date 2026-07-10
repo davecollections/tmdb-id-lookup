@@ -45,6 +45,17 @@ function warningCodes(result) {
 	return result.warnings.map((warning) => warning.code);
 }
 
+function assertStructuredFailure(result, code) {
+	assert.equal(result.ok, false);
+	assert.equal(result.project, null);
+	assert.equal(result.errors.length, 1);
+	assert.equal(result.errors[0].code, code);
+	assert.equal(result.errors[0].path, "$");
+	assert.equal(typeof result.errors[0].message, "string");
+	assert.deepEqual(Object.keys(result.errors[0]).sort(), ["code", "message", "path"]);
+	assert.deepEqual(result.warnings, []);
+}
+
 test("imports a valid empty collection array as an empty project", () => {
 	const result = importNuvioCollections([], {
 		idFactory: () => "project-1",
@@ -78,6 +89,19 @@ test("reports invalid JSON syntax without exposing engine parser details", () =>
 		errors: [{ code: "JSON_PARSE_ERROR", path: "$", message: "The input is not valid JSON." }],
 		warnings: [],
 	});
+});
+
+test("returns the documented public diagnostics with only stable fields", () => {
+	const cases = [
+		{ result: parseNuvioJsonText(7), code: "JSON_TEXT_REQUIRED" },
+		{ result: importNuvioCollections([], null), code: "INVALID_IMPORT_OPTIONS" },
+		{ result: importNuvioCollections([], { idFactory: "invalid" }), code: "INVALID_ID_FACTORY" },
+		{ result: importNuvioCollections([], { projectTitle: 7 }), code: "INVALID_PROJECT_TITLE" },
+	];
+
+	for (const { result, code } of cases) {
+		assertStructuredFailure(result, code);
+	}
 });
 
 test("rejects a non-array root atomically", () => {
@@ -449,6 +473,36 @@ test("rejects non-JSON-compatible parsed values without mutation", () => {
 	assert.equal(result.project, null);
 	assert.equal(result.errors[0].code, "INVALID_JSON_VALUE");
 	assert.equal(Number.isNaN(input[0].unknown), true);
+});
+
+test("rejects sparse parsed arrays at every import depth without throwing", () => {
+	const sparseRoot = [];
+	sparseRoot.length = 1;
+
+	const sparseFolders = [];
+	sparseFolders.length = 1;
+
+	const sparseSources = [];
+	sparseSources.length = 1;
+
+	const sparseUnknown = [];
+	sparseUnknown.length = 2;
+	sparseUnknown[1] = { preserved: true };
+
+	const cases = [
+		sparseRoot,
+		[{ folders: sparseFolders }],
+		[{ folders: [{ sources: sparseSources }] }],
+		[{ folders: [], unknown: { nested: sparseUnknown } }],
+	];
+
+	for (const input of cases) {
+		let result;
+		assert.doesNotThrow(() => {
+			result = importNuvioCollections(input, { idFactory: countingIdFactory() });
+		});
+		assertStructuredFailure(result, "INVALID_JSON_VALUE");
+	}
 });
 
 test("produces projects compatible with structuredClone and JSON encoding", () => {

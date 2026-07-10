@@ -164,7 +164,7 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 
 **Client normalisation behaviour — manually confirmed in both tested clients:** export added a matching `catalogSources` projection, expanded the compact imported source into a fuller explicit-null envelope, and added default collection and folder presentation fields. Compact valid input can therefore be accepted and normalised by these clients, but client-normalised imported data is not automatically the canonical shape the future builder should emit.
 
-`scripts\check.cmd` remains the Windows entry point. It and the dedicated GitHub Actions workflow both execute `node scripts/check-all.mjs`, which runs the existing frontend checks followed by the contract suite without secrets or network requests.
+`scripts\check.cmd` remains the Windows entry point. It and the dedicated GitHub Actions workflow both execute `node scripts/check-all.mjs`, which runs the frontend checks, Nuvio contract tests, builder domain tests, and builder importer tests without secrets or network requests.
 
 ## 10. Current architecture decision
 
@@ -205,8 +205,9 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - Unknown, missing, and `community` providers remain `opaque`. Addon-looking fields alone do not prove addon category.
 - Explicit TMDB sources with missing or unsupported types remain importable as opaque sources with warnings rather than being rejected or guessed into support.
 - `catalogSources`-only compatibility data is detected and preserved but is not promoted, merged, or migrated into authoritative active `sources`.
+- Already-parsed sparse arrays are rejected recursively as invalid JSON values, producing a structured atomic importer failure rather than normalisation or partial hydration.
 - Ultra MAX compatibility still requires a real exported sample in a later controlled compatibility issue. This importer does not establish a canonical export shape.
-- Thirty importer tests cover JSON parsing, structural errors, all seven native types, addon and opaque classification, ordering, conservative editable extraction, filters, raw preservation, legacy projection detection, input immutability, ID collisions, and plain-data encoding.
+- Thirty-two importer tests cover JSON parsing, public diagnostic contracts, structural and sparse-array errors, all seven native types, addon and opaque classification, ordering, conservative editable extraction, filters, raw preservation, legacy projection detection, input immutability, ID collisions, and plain-data encoding.
 
 ## 11. Open questions
 

@@ -95,6 +95,11 @@ function cloneJsonValueInternal(value, label, ancestors) {
 	let clone;
 
 	if (Array.isArray(value)) {
+		for (let index = 0; index < value.length; index += 1) {
+			if (!Object.hasOwn(value, index)) {
+				throw new TypeError(`${label} must not contain sparse arrays`);
+			}
+		}
 		clone = value.map((entry) => cloneJsonValueInternal(entry, label, ancestors));
 	} else {
 		const prototype = Object.getPrototypeOf(value);

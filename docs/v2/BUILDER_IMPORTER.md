@@ -67,7 +67,9 @@ Before creating any domain node, the importer checks every active hierarchy edge
 - `sources`, when present, must be an array;
 - each active source entry must be a plain object.
 
-Any structural error makes the entire result atomic: `ok` is false and `project` is null. Invalid nodes are never dropped to produce a partial project. The importer also rejects non-JSON values, circular references, non-finite numbers, class instances, and other data that cannot be represented safely in plain domain state.
+Any structural error makes the entire result atomic: `ok` is false and `project` is null. Invalid nodes are never dropped to produce a partial project. The importer also rejects non-JSON values, circular references, non-finite numbers, class instances, sparse arrays, and other data that cannot be represented safely in plain domain state.
+
+Already-parsed sparse arrays are rejected recursively at the root or within collection, folder, source, filter, and unknown raw values. They return the existing structured `INVALID_JSON_VALUE` failure and no project; missing slots are never normalised to `null` or `undefined`, and no partial import is returned.
 
 Stable error codes are:
 
@@ -81,7 +83,7 @@ Stable error codes are:
 | `FOLDER_NOT_OBJECT` | A folder entry is not a plain object. |
 | `SOURCES_NOT_ARRAY` | A present `sources` value is not an array. |
 | `SOURCE_NOT_OBJECT` | An active source entry is not a plain object. |
-| `INVALID_JSON_VALUE` | Parsed input cannot be represented as finite plain JSON data. |
+| `INVALID_JSON_VALUE` | Parsed input cannot be represented as finite, dense plain JSON data, including when it contains sparse arrays. |
 | `INVALID_IMPORT_OPTIONS` | Options are not a plain object. |
 | `INVALID_ID_FACTORY` | A supplied ID factory is not a function. |
 | `INVALID_PROJECT_TITLE` | A supplied project title is not a string. |
