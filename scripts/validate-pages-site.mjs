@@ -33,12 +33,31 @@ function assertFile(file) {
 	}
 }
 
+function getHtmlAttribute(tag, attribute) {
+	const match = tag.match(new RegExp(`\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
+	return match?.[1] ?? match?.[2] ?? match?.[3] ?? "";
+}
+
 for (const file of requiredFiles) {
 	assertFile(path.join(stagingDir, file));
 }
 
 if (fs.existsSync(path.join(stagedBuilderDir, "dist"))) {
 	failures.push("Builder output is nested at .pages-site/builder/dist instead of .pages-site/builder.");
+}
+
+const stagedBuilderEntry = path.join(stagedBuilderDir, "index.html");
+
+if (fs.statSync(stagedBuilderEntry, { throwIfNoEntry: false })?.isFile()) {
+	const builderHtml = fs.readFileSync(stagedBuilderEntry, "utf8");
+	const robotsDirectives = [...builderHtml.matchAll(/<meta\b[^>]*>/gi)]
+		.filter((match) => getHtmlAttribute(match[0], "name").toLowerCase() === "robots")
+		.flatMap((match) => getHtmlAttribute(match[0], "content").toLowerCase().split(/[\s,]+/))
+		.filter(Boolean);
+
+	if (!robotsDirectives.includes("noindex") || !robotsDirectives.includes("nofollow")) {
+		failures.push("The staged builder entry must contain a robots directive equivalent to: noindex, nofollow.");
+	}
 }
 
 if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
