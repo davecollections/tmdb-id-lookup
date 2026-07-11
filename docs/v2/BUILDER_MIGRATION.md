@@ -154,19 +154,15 @@ The projection-only pair contains movie, series, and anime folders; absent and e
 
 ## Manual Nuvio Desktop verification
 
-The owner-supplied private pairs are manual evidence for this migration contract. The newly generated repository migration output has not yet been manually re-tested in Nuvio Desktop for issue #37.
+The migration evidence is deliberately separated into three levels:
 
-To perform that follow-up:
+- **Automated repository evidence:** issue #37 tests prove importer preservation, explicit migration, serializer matching, canonical validation, ordering, genre normalization, and unknown-field retention against sanitised fixtures.
+- **Owner-reviewed private pair evidence:** the private active-addon and AIO Metadata projection-only pairs establish the real-client behavior summarized above without committing third-party files or unique configuration URLs.
+- **Pending builder-generated round trip:** issue [#38](https://github.com/davecollections/tmdb-id-lookup/issues/38) generates the exact sanitised input through the production importer → migration → serializer path and prepares it for a controlled Nuvio Desktop import/export.
 
-1. Import `compatibility/legacy-projection-only-input.json` through the production importer.
-2. Apply `migrateLegacyAddonProjections` explicitly.
-3. Serialize the successful migrated project.
-4. Import that generated JSON into Nuvio Desktop.
-5. Confirm all three folders load.
-6. Export the collection from Nuvio Desktop.
-7. Confirm source count equals projection count, source order equals projection order, every provider is `addon`, exact `"None"` values are `null`, `"Action"` remains, movie/series/anime types remain, and Nuvio-preserved projection metadata and presentation fields remain.
+The reproducible input, generation report, and owner procedure are in [`manual-tests/nuvio-desktop/addon-projection-migration/`](../../manual-tests/nuvio-desktop/addon-projection-migration/). The builder-generated Nuvio Desktop round trip is not manual-client evidence until the owner returns the untouched export and client details.
 
-Record the client version, generated input, exported result, counts, and any normalization differences before changing the evidence status.
+Stage B must record the Nuvio Desktop version/build and operating system, preserve the returned `nuvio-desktop-export.json`, compare the collection/folder/source/projection counts and order, verify movie/series/anime and `null`/`"Action"`/`null` genres, and document retained sentinels, presentation fields, Nuvio-added defaults/nulls, and any dropped or normalized fields before changing the evidence status.
 
 ## Deferred work
 
