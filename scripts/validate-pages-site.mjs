@@ -196,8 +196,12 @@ if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
 
 	const builderJavaScript = scripts.map((file) => fs.readFileSync(file, "utf8")).join("\n");
 
-	if (!builderJavaScript.includes("Deployment coexistence test")) {
-		failures.push("The generated builder JavaScript does not contain the deployment-test marker.");
+	if (!builderJavaScript.includes("Nuvio Collection Builder")) {
+		failures.push("The generated builder JavaScript does not contain the builder product marker.");
+	}
+
+	if (!builderJavaScript.includes("data-builder-shell")) {
+		failures.push("The generated builder JavaScript does not contain the builder shell marker.");
 	}
 
 	if (!/\bhref\s*:\s*(["'`])\.\.\/\1/.test(builderJavaScript) || !builderJavaScript.includes("data-root-link")) {

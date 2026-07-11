@@ -721,7 +721,7 @@ test("diagnostic clearing validates scope and avoids commits when nothing change
 	assert.deepEqual(controller.getState().diagnostics.operation, { errors: [], warnings: [] });
 });
 
-test("application production modules remain environment-neutral and outside React", () => {
+test("application production modules remain environment-neutral and React uses only the public entry point", () => {
 	const applicationDir = path.join(rootDir, "builder", "src", "application");
 	const applicationFiles = fs.readdirSync(applicationDir)
 		.filter((name) => name.endsWith(".js"))
@@ -731,11 +731,13 @@ test("application production modules remain environment-neutral and outside Reac
 	assert.doesNotMatch(applicationSource, /\b(?:window|document|localStorage|indexedDB|fetch)\b/);
 	assert.doesNotMatch(applicationSource, /\b(?:showOpenFilePicker|showSaveFilePicker|URL\.createObjectURL)\b/);
 
-	const reactFiles = [
-		path.join(rootDir, "builder", "src", "App.jsx"),
-		path.join(rootDir, "builder", "src", "main.jsx"),
-	].filter((file) => fs.existsSync(file));
-	for (const file of reactFiles) {
-		assert.doesNotMatch(fs.readFileSync(file, "utf8"), /application\/|createBuilderController/);
-	}
+	const mainSource = fs.readFileSync(path.join(rootDir, "builder", "src", "main.jsx"), "utf8");
+	assert.match(mainSource, /from\s+["']\.\/application\/index\.js["']/);
+	assert.doesNotMatch(mainSource, /from\s+["']\.\/application\/(?!index\.js)/);
+	const uiDir = path.join(rootDir, "builder", "src", "ui");
+	const uiSource = fs.readdirSync(uiDir)
+		.filter((name) => /\.(?:js|jsx)$/.test(name))
+		.map((name) => fs.readFileSync(path.join(uiDir, name), "utf8"))
+		.join("\n");
+	assert.doesNotMatch(uiSource, /application\/|createBuilderController/);
 });
