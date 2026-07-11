@@ -35,6 +35,10 @@ function detail(label, value) {
 	return value === null || value === undefined ? null : { label, value: displayValue(value) };
 }
 
+function metadata(key, value) {
+	return value === null || value === undefined ? null : { key, value: displayValue(value) };
+}
+
 function compactDetails(details) {
 	return details.filter(Boolean);
 }
@@ -112,21 +116,21 @@ function sourceMetadata(source) {
 	const editable = source.editable;
 	if (source.category === "native-tmdb") {
 		return compactDetails([
-			detail("TMDB ID", presentValue(editable.tmdbId)),
-			detail("Media", presentValue(editable.mediaType)),
-			detail("Sort", presentValue(editable.sortBy)),
-		]).map((entry) => entry.value);
+			metadata("tmdb-id", presentValue(editable.tmdbId)),
+			metadata("media-type", presentValue(editable.mediaType)),
+			metadata("sort", presentValue(editable.sortBy)),
+		]);
 	}
 	if (source.category === "addon") {
 		return compactDetails([
-			detail("Addon", presentValue(editable.addonId)),
-			detail("Type", presentValue(editable.type)),
-			detail("Genre", presentValue(editable.genre)),
-		]).map((entry) => entry.value);
+			metadata("addon-id", presentValue(editable.addonId)),
+			metadata("addon-type", presentValue(editable.type)),
+			metadata("genre", presentValue(editable.genre)),
+		]);
 	}
 	return compactDetails([
-		detail("Provider", presentValue(editable.provider)),
-	]).map((entry) => entry.value);
+		metadata("provider", presentValue(editable.provider)),
+	]);
 }
 
 function buildSource(source, selectedInternalId) {

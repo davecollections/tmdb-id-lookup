@@ -125,9 +125,11 @@ Deployment and focused source tests use a small stable surface:
 
 Accessible text, semantic roles, and button state remain the primary testing surface.
 
+The Pages deployment workflow, workflow triggers, permissions, deployment environment, dependencies, and lockfile remain unchanged. The Nuvio validation workflow only moved its existing builder dependency installation ahead of `check-all.mjs`, because the UI tests load the existing React and Vite packages. Publishing behaviour is unchanged.
+
 ## Deliberate exclusions
 
-This milestone does not add import/export, browser file handling, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, forms, edit controls, source creation, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, networking, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 changes, Worker changes, Pages allowlist changes, workflow changes, or dependencies.
+This milestone does not add import/export, browser file handling, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, forms, edit controls, source creation, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, networking, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
 
 ## Next likely UI milestone
 

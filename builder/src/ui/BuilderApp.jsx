@@ -107,7 +107,7 @@ function SourceList({ sources, onSelect }) {
 							</span>
 							{source.metadata.length > 0 ? (
 								<span className="node-meta">
-									{source.metadata.map((value) => <span key={value}>{value}</span>)}
+									{source.metadata.map((entry) => <span key={entry.key}>{entry.value}</span>)}
 								</span>
 							) : null}
 						</span>
@@ -119,7 +119,13 @@ function SourceList({ sources, onSelect }) {
 	);
 }
 
-function SelectionSummary({ node, selectedSource, selectedFolder, onShowFolderDetails }) {
+function SelectionSummary({
+	node,
+	headingId = "selection-summary-title",
+	selectedSource,
+	selectedFolder,
+	onShowFolderDetails,
+}) {
 	if (!node) {
 		return (
 			<div className="selection-summary selection-summary-empty">
@@ -130,11 +136,11 @@ function SelectionSummary({ node, selectedSource, selectedFolder, onShowFolderDe
 	}
 
 	return (
-		<section className="selection-summary" aria-labelledby="selection-summary-title">
+		<section className="selection-summary" aria-labelledby={headingId}>
 			<div className="summary-heading">
 				<div>
 					<p className="summary-label">Selection details</p>
-					<h3 id="selection-summary-title">{node.title}</h3>
+					<h3 id={headingId}>{node.title}</h3>
 				</div>
 				{selectedSource && selectedFolder ? (
 					<button className="quiet-button" type="button" onClick={onShowFolderDetails}>
@@ -272,7 +278,10 @@ export function BuilderApp({ controller }) {
 						)}
 						{view.selectedCollection && !view.selectedFolder ? (
 							<div className="mobile-summary mobile-only">
-								<SelectionSummary node={view.selectedCollection} />
+								<SelectionSummary
+									node={view.selectedCollection}
+									headingId="mobile-selection-summary-title"
+								/>
 							</div>
 						) : null}
 					</div>
@@ -303,6 +312,7 @@ export function BuilderApp({ controller }) {
 						)}
 						<SelectionSummary
 							node={view.selectedNode}
+							headingId="selection-summary-title"
 							selectedSource={view.selectedSource}
 							selectedFolder={view.selectedFolder}
 							onShowFolderDetails={() => controller.selectNode(view.selectedFolder.internalId)}

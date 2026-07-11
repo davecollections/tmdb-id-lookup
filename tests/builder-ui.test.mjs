@@ -45,6 +45,19 @@ function render(controller) {
 	return renderToStaticMarkup(createElement(BuilderApp, { controller }));
 }
 
+function assertUniqueSelectionSummaryHeadings(markup) {
+	const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
+	assert.equal(ids.length, new Set(ids).size, `Rendered IDs must be unique: ${ids.join(", ")}`);
+
+	const summaryTargets = [
+		...markup.matchAll(/<section class="selection-summary" aria-labelledby="([^"]+)"/g),
+	].map((match) => match[1]);
+	for (const target of summaryTargets) {
+		assert.equal(ids.filter((id) => id === target).length, 1, `${target} must reference one unique heading`);
+	}
+	return summaryTargets;
+}
+
 function loadFixture(relativePath) {
 	return JSON.parse(fs.readFileSync(path.join(fixtureRoot, relativePath), "utf8"));
 }
@@ -160,11 +173,89 @@ test("view model uses explicit source categories and safe human-readable summari
 	const view = buildBuilderViewModel(controller.getState());
 	assert.deepEqual(view.sources.map((source) => source.category), ["native-tmdb", "addon", "opaque"]);
 	assert.deepEqual(view.sources.map((source) => source.title), ["LIST", "catalog", "Preserved source"]);
-	assert.equal(view.sources[0].metadata.includes("123"), true);
-	assert.equal(view.sources[1].metadata.includes("example.addon"), true);
+	assert.equal(view.sources[0].metadata.some((entry) => entry.value === "123"), true);
+	assert.equal(view.sources[1].metadata.some((entry) => entry.value === "example.addon"), true);
 	assert.equal(view.sources[2].categoryLabel, "Preserved source");
 	assert.equal(view.selectedSource.note, "Preserved imported source");
 	assert.equal(JSON.stringify(view).includes("RAW_SENTINEL"), false);
+});
+
+test("selection summaries use unique stable heading IDs with valid associations", () => {
+	const controller = createController();
+	controller.importValue([{ id: "collection", title: "Collection", folders: [{
+		id: "folder", title: "Folder", sources: [{
+			provider: "tmdb", title: "Source", tmdbSourceType: "DISCOVER", mediaType: "MOVIE",
+		}],
+	}] }]);
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+
+	const collectionMarkup = render(controller);
+	assert.deepEqual(assertUniqueSelectionSummaryHeadings(collectionMarkup), [
+		"mobile-selection-summary-title",
+		"selection-summary-title",
+	]);
+	assert.match(collectionMarkup, /<h3 id="mobile-selection-summary-title">Collection<\/h3>/);
+	assert.match(collectionMarkup, /<h3 id="selection-summary-title">Collection<\/h3>/);
+
+	controller.selectNode(collection.folders[0].sources[0].internalId);
+	const sourceMarkup = render(controller);
+	assert.deepEqual(assertUniqueSelectionSummaryHeadings(sourceMarkup), ["selection-summary-title"]);
+	assert.match(sourceMarkup, /<h3 id="selection-summary-title">Source<\/h3>/);
+});
+
+test("repeated source metadata values retain semantic keys without React warnings", () => {
+	const controller = createController();
+	controller.importValue([{ id: "collection", title: "Collection", folders: [{
+		id: "folder", title: "Folder", sources: [
+			{
+				provider: "addon",
+				title: "Repeated metadata",
+				addonId: "movie",
+				type: "movie",
+				catalogId: "catalog",
+				genre: "movie",
+			},
+			{
+				provider: "addon",
+				title: "Second source",
+				addonId: "second.addon",
+				type: "series",
+				catalogId: "second",
+			},
+		],
+	}] }]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	controller.selectNode(folder.internalId);
+	const view = buildBuilderViewModel(controller.getState());
+	assert.deepEqual(view.sources.map((source) => source.title), ["Repeated metadata", "Second source"]);
+	assert.deepEqual(view.sources[0].metadata, [
+		{ key: "addon-id", value: "movie" },
+		{ key: "addon-type", value: "movie" },
+		{ key: "genre", value: "movie" },
+	]);
+	assert.equal(new Set(view.sources[0].metadata.map((entry) => entry.key)).size, 3);
+
+	const originalConsoleError = console.error;
+	const reactErrors = [];
+	let markup;
+	console.error = (...args) => {
+		reactErrors.push(args.map(String).join(" "));
+		originalConsoleError(...args);
+	};
+	try {
+		markup = render(controller);
+	} finally {
+		console.error = originalConsoleError;
+	}
+
+	assert.equal(
+		reactErrors.some((message) => /same key|duplicate key/i.test(message)),
+		false,
+		reactErrors.join("\n"),
+	);
+	assert.equal((markup.match(/>movie<\/span>/g) ?? []).length, 3);
+	assert.ok(markup.indexOf("Repeated metadata") < markup.indexOf("Second source"));
 });
 
 test("first draft collection uses the requested identity and becomes selected", () => {
