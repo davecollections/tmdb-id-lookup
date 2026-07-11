@@ -2,14 +2,14 @@
 
 Status: Planning and contract groundwork
 
-Last reviewed: 2026-07-11
+Last reviewed: 2026-07-12
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope.
 
 ## 1. Product direction
 
 - v1 is working and stable.
-- v2 changes the product from primarily an ID lookup/export utility into a visual Nuvio Collection Builder powered by TMDB.
+- v2 changes the product from primarily an ID lookup/export utility into the visual **TMDB Collection Builder**, built for Nuvio collections and powered primarily by TMDB.
 - Lookup and copy-ID tools remain available.
 - v2 should be mobile-first, modern, and sleek.
 - No login is required.
@@ -291,8 +291,23 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Deterministic UI helpers create the smallest available `collection-N` or project-wide `folder-N` draft identity through existing controller actions and select only successful creations. They never create sources automatically.
 - Operation errors use one inline alert. Legacy migration preview can produce a small available or blocked notice, but no migration action or automatic migration was added.
 - The builder keeps its relative marked v1 backlink and `noindex, nofollow` state. The generated Pages validation marker now checks the real product title and `data-builder-shell` while retaining the existing allowlist and evidence-containment safeguards.
-- Eighteen focused UI test functions cover 74 requested bootstrap, shell, view-model, creation, hierarchy, diagnostics, metadata, environment, and style behaviours. Together with the unchanged 174-function baseline, the Node suite contains 192 test functions.
+- Twenty focused UI test functions preserve the bootstrap, shell, view-model, creation, hierarchy, diagnostics, metadata, environment, and style contract. Together with the unchanged 174-function baseline, the Node suite contains 194 test functions.
 - Import/export, forms, source creation, deletion, reordering, storage, networking, routing, dependencies, v1, Worker, workflow, Pages allowlist, Ultra MAX, AIO Metadata, language, and Trakt work remain outside this shell milestone.
+
+### Welcome screen and local JSON import — issue #41
+
+**Confirmed by repository tests — issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41), 2026-07-12:** the public builder entry now opens on a real welcome screen under the corrected **TMDB Collection Builder** product name before entering the preserved issue #40 workspace.
+
+- `BuilderApp` remains subscribed to the single production controller on both screens. Its local screen state is presentation-only and is absent from controller snapshots.
+- Start New Project calls the existing controller replacement action with `Untitled project`, creates no hierarchy children, leaves the project clean, and enters the workspace only after success.
+- Pasted JSON is passed unchanged to `controller.importJsonText` after a UI-only empty check. File import validates explicit selection, JSON filename/MIME support, and a 10 MiB limit before `file.text()` and the same controller call.
+- File-derived project titles remove one final case-insensitive `.json` suffix and fall back to `Imported project`; imported hierarchy titles and order remain importer-owned.
+- UI transport diagnostics use only stable `code`, `path`, and `message` fields. Controller parse/import diagnostics pass through without parser internals or partial-project replacement.
+- Successful importer warnings enter the workspace as a collapsed, bounded details summary without becoming fatal or exposing raw JSON.
+- Imported content remains local: no networking, upload, persistence, object URL, logging, query parameter, or original-text controller state is introduced.
+- Welcome controls are labelled, keyboard-operable, busy-aware, and mobile-first at the required 360–412px widths; wider action columns remain restrained and the existing 1024/1280px workspace is preserved.
+- Twenty-nine focused welcome/import test functions cover 94 requested behaviours. With the unchanged 194-function baseline, the Node suite contains 223 test functions.
+- Export, persistence, dirty replacement UI, editing, source creation, deletion, reordering, migration actions, routing, dependencies, v1 runtime, Worker, Pages allowlist/preparation/deployment, Ultra MAX, AIO Metadata, language, and Trakt work remain outside this milestone.
 
 ## 11. Open questions
 
@@ -335,6 +350,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-11 | Reverted Pages exposure, recovered unchanged issue #38 evidence, and shared allowlist enforcement for v1 runtime files, compiled builder output, and repository-only path exclusion | [TMDB ID Lookup issue #38](https://github.com/davecollections/tmdb-id-lookup/issues/38) |
 | 2026-07-11 | Framework-independent controller ownership, frozen external-store snapshots, guarded replacement, hierarchical selection, disposable production migration preview, explicit migration application, coordinated edits, diagnostics, and export lifecycle | [TMDB ID Lookup issue #39](https://github.com/davecollections/tmdb-id-lookup/issues/39) |
 | 2026-07-11 | First visible controller-connected builder shell, ordered hierarchy navigator, deterministic collection/folder drafts, read-only summaries, mobile drill-down, desktop panels, accessibility, and real-shell Pages markers | [TMDB ID Lookup issue #40](https://github.com/davecollections/tmdb-id-lookup/issues/40) |
+| 2026-07-12 | Corrected TMDB Collection Builder naming, local-only welcome entry, controller-delegated new-project and JSON import flows, stable diagnostics, warning summary, responsive accessibility, and welcome Pages marker | [TMDB ID Lookup issue #41](https://github.com/davecollections/tmdb-id-lookup/issues/41) |
 
 ## Decision history
 
@@ -349,3 +365,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-11 — Pages publication boundary recovery:** after the controlled issue #38 merge exposed repository-only manual evidence through broad tracked-file staging, revert production, recover the approved evidence unchanged, and replace default publication with one shared explicit v1-plus-compiled-builder allowlist enforced by preparation, exhaustive validation, and regression tests. Keep the evidence public in source control but absent from the deployed website, with no runtime or workflow change.
 - **2026-07-11 — Application controller boundary:** place immutable current-project ownership, subscriptions, hierarchical selection, dirty-state replacement protection, explicit migration preview/application, coordinated domain edits, diagnostic scopes, and serialization calls under `builder/src/application/`. Keep domain, parsing, classification, migration eligibility/transformation, raw preservation, projection generation, and export validation in their existing production modules. Leave visible React integration, browser file handling, persistence, and undo/redo for later issues.
 - **2026-07-11 — First visible builder shell:** connect React to the controller through one external-store adapter and one production controller singleton; derive mobile drill-down directly from hierarchical selection; display only safe known summaries; and permit deterministic draft collection/folder creation without starting editing, import/export, source creation, persistence, or migration workflows.
+- **2026-07-12 — Welcome and local JSON import:** make TMDB Collection Builder the visible product name; keep welcome/workspace selection UI-only above one subscribed controller; delegate new-project and JSON parsing/import to public controller APIs; keep browser file transport local, explicit, size-limited, and structured; and preserve the existing workspace without adding export, editing, persistence, migration actions, or networking.

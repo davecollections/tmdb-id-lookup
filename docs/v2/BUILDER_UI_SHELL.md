@@ -2,13 +2,13 @@
 
 Status: implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40)
 
-Last reviewed: 2026-07-11
+Last reviewed: 2026-07-12
 
 ## Purpose and scope
 
-The first visible builder interface replaces the deployment placeholder under `/builder/`. It is a contained navigation shell for the current project hierarchy, not a complete collection editor.
+The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The shell displays the current project, ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and draft folders through existing controller actions. Source creation, editing, deletion, reordering, import, export, persistence, and migration application remain deferred.
+The workspace displays the current project, ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and draft folders through existing controller actions. Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation, editing, deletion, reordering, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -22,7 +22,7 @@ const controller = createBuilderController({
 });
 ```
 
-The controller exists before React rendering and is passed to `BuilderApp` as a prop. React StrictMode can therefore render the component more than once without creating another controller. Tests inject controlled controller instances through the same prop.
+The controller exists before React rendering and is passed to `BuilderApp` as a prop. React StrictMode can therefore render the component more than once without creating another controller. Welcome/workspace transitions reuse this instance. Tests inject controlled controller instances through the same prop.
 
 React imports `createBuilderController` only from the supported `builder/src/application/index.js` entry point. UI modules do not import controller implementation details or domain, importer, migration, or serializer modules.
 
@@ -30,13 +30,16 @@ React imports `createBuilderController` only from the supported `builder/src/app
 
 `useBuilderControllerState` is the only React subscription adapter. It calls `useSyncExternalStore` with `controller.subscribe`, `controller.getState`, and the same `getState` function as the server/static snapshot reader.
 
-The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot.
+The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation and browser import transport values use local React state.
 
 ## UI module structure
 
 ```text
 builder/src/ui/
-  BuilderApp.jsx              application shell and semantic hierarchy rendering
+  BuilderApp.jsx              subscribed welcome/workspace presentation boundary
+  BuilderWelcome.jsx          welcome, file selection, pasted text and diagnostics
+  BuilderWorkspace.jsx        semantic hierarchy workspace rendering
+  import-actions.js           public-controller-only browser transport helpers
   use-builder-controller.js   external-store subscription adapter
   view-model.js               pure safe display derivation
   draft-actions.js            deterministic collection/folder draft conveniences
@@ -87,7 +90,7 @@ The UI never renders full raw JSON, arbitrary unknown/community fields, serializ
 
 ## Diagnostics and migration status
 
-The first current operation error appears in one inline `role="alert"` area with its stable message and optional code. It does not render historical diagnostic lists or use modal dialogs.
+The first current operation error appears in one inline `role="alert"` area with its stable message and optional code. Successful-import warnings appear separately in a collapsed, bounded native details element. The workspace does not render raw imported JSON, historical diagnostic dumps, or modal dialogs.
 
 Migration remains non-interactive. The shell shows a small notice only when preview status is `available` or `blocked`. There is no migration action, automatic migration, or raw migration diagnostic display.
 
@@ -117,10 +120,12 @@ The palette uses deep blue-black page and panel surfaces with restrained cyan an
 Deployment and focused source tests use a small stable surface:
 
 - `data-builder-root="true"`
+- `data-builder-welcome="true"`
 - `data-builder-shell="true"`
 - `data-root-link="true"`
 - `data-panel="collections|folders|sources"`
-- `data-action="create-collection|create-folder"`
+- `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder"`
+- `data-import-control="file|pasted-json"`
 - `data-node-type="collection|folder|source"`
 
 Accessible text, semantic roles, and button state remain the primary testing surface.
@@ -129,8 +134,8 @@ The Pages deployment workflow, workflow triggers, permissions, deployment enviro
 
 ## Deliberate exclusions
 
-This milestone does not add import/export, browser file handling, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, forms, edit controls, source creation, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, networking, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
+The current welcome/import milestone does not add export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, edit controls, source creation, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, network import, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
 
 ## Next likely UI milestone
 
-The next separately approved issue can introduce one deliberately scoped editing or import/export workflow on top of this controller-connected shell. It should retain the current external-store boundary and must not broaden supported Nuvio source assumptions without new evidence.
+The next separately approved issue can introduce one deliberately scoped editing or export workflow on top of this controller-connected shell. It should retain the current external-store boundary and must not broaden supported Nuvio source assumptions without new evidence.
