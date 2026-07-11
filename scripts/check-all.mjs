@@ -18,5 +18,6 @@ runNode(["--test", path.join("tests", "builder-import.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-serializer.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-migration.test.mjs")]);
 runNode([path.join("scripts", "generate-migration-round-trip.mjs"), "--check"]);
+runNode([path.join("scripts", "check-migration-round-trip-export.mjs")]);
 
 console.log("All checks passed.");

@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Record the controlled Nuvio Desktop round trip for the sanitised builder-generated addon projection migration output.",
+  "issue": 38,
+  "evidenceStatus": "manually-confirmed-nuvio-desktop-compatibility",
+  "client": {
+    "product": "Nuvio Desktop",
+    "version": "0.1.11-alpha",
+    "build": "11",
+    "basedOnNuvio": "0.2.19",
+    "operatingSystem": "Windows"
+  },
+  "observedUiResult": {
+    "importSucceeded": true,
+    "collectionVisible": true,
+    "collectionCount": 1,
+    "folderCount": 3,
+    "folderOrderCorrect": true,
+    "folderNames": [
+      "Legacy Movies",
+      "Legacy Series",
+      "Legacy Anime"
+    ],
+    "allFoldersOpened": true,
+    "expectedAddonNotFoundMessageObserved": true,
+    "addonNotFoundId": "example.sanitised.metadata"
+  },
+  "inputSha256": "c14d7e9f9c4c3becccb95718d5b91e94e059652adbd6f8192dbb0c5794491970",
+  "exportSha256": "6390428217959af42572038fdd818def5fc9136a98285b6e879504826a0aa7bc",
+  "counts": {
+    "input": {
+      "collections": 1,
+      "folders": 3,
+      "sources": 3,
+      "catalogSources": 3
+    },
+    "export": {
+      "collections": 1,
+      "folders": 3,
+      "sources": 3,
+      "catalogSources": 3
+    }
+  },
+  "sourceTypeOrder": [
+    "movie",
+    "series",
+    "anime"
+  ],
+  "projectionTypeOrder": [
+    "movie",
+    "series",
+    "anime"
+  ],
+  "sourceGenreOrder": [
+    null,
+    "Action",
+    null
+  ],
+  "projectionGenreOrder": [
+    null,
+    "Action",
+    null
+  ],
+  "preservationResults": {
+    "collectionId": "compat-legacy-addon",
+    "collectionTitle": "Sanitised Projection-Only Evidence",
+    "folderIds": [
+      "compat-legacy-movie",
+      "compat-legacy-series",
+      "compat-legacy-anime"
+    ],
+    "folderTitles": [
+      "Legacy Movies",
+      "Legacy Series",
+      "Legacy Anime"
+    ],
+    "sourceIdentities": [
+      {
+        "addonId": "example.sanitised.metadata",
+        "type": "movie",
+        "catalogId": "movie-catalog",
+        "genre": null
+      },
+      {
+        "addonId": "example.sanitised.metadata",
+        "type": "series",
+        "catalogId": "series-catalog",
+        "genre": "Action"
+      },
+      {
+        "addonId": "example.sanitised.metadata",
+        "type": "anime",
+        "catalogId": "anime-catalog",
+        "genre": null
+      }
+    ],
+    "projectionIdentities": [
+      {
+        "addonId": "example.sanitised.metadata",
+        "type": "movie",
+        "catalogId": "movie-catalog",
+        "genre": null
+      },
+      {
+        "addonId": "example.sanitised.metadata",
+        "type": "series",
+        "catalogId": "series-catalog",
+        "genre": "Action"
+      },
+      {
+        "addonId": "example.sanitised.metadata",
+        "type": "anime",
+        "catalogId": "anime-catalog",
+        "genre": null
+      }
+    ],
+    "orderPreserved": true,
+    "projectionSentinelPreserved": true,
+    "presentationUrlsPreserved": true
+  },
+  "normalizationResults": {
+    "sourceExplicitNullProperties": [
+      "tmdbSourceType",
+      "title",
+      "tmdbId",
+      "traktListId",
+      "mediaType",
+      "sortBy",
+      "sortHow",
+      "filters"
+    ],
+    "folderDefaults": {
+      "focusGifUrl": null,
+      "focusGifEnabled": true,
+      "coverEmoji": null,
+      "tileShape": "poster",
+      "hideTitle": false,
+      "heroVideoUrl": null
+    },
+    "completedPresentationNulls": {
+      "movie": [
+        "heroBackdropUrl",
+        "titleLogoUrl"
+      ],
+      "series": [
+        "coverImageUrl",
+        "titleLogoUrl"
+      ],
+      "anime": [
+        "coverImageUrl",
+        "heroBackdropUrl"
+      ]
+    },
+    "collectionDefaults": {
+      "backdropImageUrl": null,
+      "pinToTop": false,
+      "viewMode": "TABBED_GRID",
+      "showAllTab": true
+    },
+    "lowercasePosterTileShape": true
+  },
+  "semanticDiff": {
+    "additions": 52,
+    "removals": 0,
+    "changedValues": 0,
+    "arrayLengthChanges": 0,
+    "orderChanges": 0
+  },
+  "canonicalExportValidation": true,
+  "networkRequired": false,
+  "liveAddonResolutionExpected": false,
+  "liveAddonResolutionConfirmed": false,
+  "unexpectedDifferences": []
+}
