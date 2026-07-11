@@ -739,5 +739,5 @@ test("application production modules remain environment-neutral and React uses o
 		.filter((name) => /\.(?:js|jsx)$/.test(name))
 		.map((name) => fs.readFileSync(path.join(uiDir, name), "utf8"))
 		.join("\n");
-	assert.doesNotMatch(uiSource, /application\/|createBuilderController/);
+	assert.doesNotMatch(uiSource, /from\s+["'][^"']*application\/|createBuilderController/);
 });

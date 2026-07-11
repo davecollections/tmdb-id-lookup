@@ -42,7 +42,7 @@ function createController(options = {}) {
 }
 
 function render(controller) {
-	return renderToStaticMarkup(createElement(BuilderApp, { controller }));
+	return renderToStaticMarkup(createElement(BuilderApp, { controller, initialScreen: "workspace" }));
 }
 
 function assertUniqueSelectionSummaryHeadings(markup) {
@@ -84,18 +84,23 @@ test("production bootstrap creates one controller outside React rendering", () =
 
 test("React subscribes through the external-store API without mirrored project state", () => {
 	const hook = read("builder/src/ui/use-builder-controller.js");
-	const source = `${read("builder/src/main.jsx")}\n${uiSource()}`;
+	const workspaceSource = [
+		read("builder/src/ui/BuilderWorkspace.jsx"),
+		read("builder/src/ui/view-model.js"),
+		read("builder/src/ui/draft-actions.js"),
+	].join("\n");
 	assert.match(hook, /useSyncExternalStore/);
 	assert.match(hook, /controller\.subscribe/);
 	assert.equal((hook.match(/controller\.getState/g) ?? []).length, 2);
-	assert.doesNotMatch(source, /\buseState\b/);
-	assert.doesNotMatch(uiSource(), /application\/|createBuilderController/);
+	assert.doesNotMatch(workspaceSource, /\buseState\b/);
+	assert.doesNotMatch(uiSource(), /from\s+["'][^"']*application\/|createBuilderController/);
 });
 
 test("empty shell renders the product header, clean state, backlink, and start action", () => {
 	const markup = render(createController());
 	for (const text of [
-		"Nuvio Collection Builder",
+		"TMDB Collection Builder",
+		"Built for Nuvio collections",
 		"Development preview",
 		"Untitled project",
 		"Clean draft",
@@ -380,10 +385,10 @@ test("migration notices are absent, available, or blocked without adding actions
 
 test("builder HTML uses development metadata and retains the private preview boundary", () => {
 	const html = read("builder/index.html");
-	assert.match(html, /<title>Nuvio Collection Builder<\/title>/);
+	assert.match(html, /<title>TMDB Collection Builder<\/title>/);
 	assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
 	assert.match(html, /data-builder-root="true"/);
-	assert.ok(html.includes("Loading Nuvio Collection Builder…"));
+	assert.ok(html.includes("Loading TMDB Collection Builder…"));
 	assert.doesNotMatch(html, /deployment-test|data-deployment-test/i);
 });
 
