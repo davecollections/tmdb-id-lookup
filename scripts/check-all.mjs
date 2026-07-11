@@ -18,6 +18,7 @@ runNode(["--test", path.join("tests", "builder-domain.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-import.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-serializer.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-migration.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-controller.test.mjs")]);
 runNode([path.join("scripts", "generate-migration-round-trip.mjs"), "--check"]);
 runNode([path.join("scripts", "check-migration-round-trip-export.mjs")]);
 

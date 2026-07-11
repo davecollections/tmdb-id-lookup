@@ -164,7 +164,7 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 
 **Client normalisation behaviour — manually confirmed in both tested clients:** export added a matching `catalogSources` projection, expanded the compact imported source into a fuller explicit-null envelope, and added default collection and folder presentation fields. Compact valid input can therefore be accepted and normalised by these clients, but client-normalised imported data is not automatically the canonical shape the future builder should emit.
 
-`scripts\check.cmd` remains the Windows entry point. It and the dedicated GitHub Actions workflow both execute `node scripts/check-all.mjs`, which runs the frontend checks and the Nuvio contract, builder domain, importer, serializer, and migration tests without secrets or network requests.
+`scripts\check.cmd` remains the Windows entry point. It and the dedicated GitHub Actions workflow both execute `node scripts/check-all.mjs`, which runs the frontend checks and the Nuvio contract, builder domain, importer, serializer, migration, and application-controller tests without secrets or network requests.
 
 ## 10. Current architecture decision
 
@@ -264,6 +264,22 @@ Stage C recovered the feature branch from that revert without rewriting the appr
 
 All four issue #38 evidence JSON files, including the untouched owner export, are explicitly forbidden from the Pages artifact. The owner export bytes and its recorded SHA-256 are also checked for absence. The sanitised evidence remains available in the public source repository for auditability, while `manual-tests/`, `tests/`, `docs/`, `scripts/`, builder source, and other repository-only material are not deployed as website content. No Pages workflow, v1 runtime behaviour, builder production module, Worker setting, dependency, or UI/controller behaviour changed.
 
+### Framework-independent application controller — issue #39
+
+**Confirmed by repository tests — issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39), 2026-07-11:** the application/controller layer under `builder/src/application/` now coordinates the existing production modules without moving their rules into UI state.
+
+- `createBuilderController` owns one current project plus deeply frozen, stable-identity snapshots containing revision, hierarchical selection, dirty state, migration preview, and four diagnostic scopes.
+- One snapshot commit increments revision once and notifies a stable listener snapshot once. True no-ops retain the previous snapshot identity, and previous snapshots remain unchanged.
+- New-project and import replacement are blocked while dirty until the caller explicitly supplies `discardChanges: true`; a blocked replacement does not consume the configured production ID factory.
+- Import delegates to the production text/parser entry points, remains atomic and preservation-first, clears selection on success, stores importer diagnostics, and never applies migration automatically.
+- Migration preview invokes the production migration with deterministic disposable IDs that avoid all current internal IDs and never consume the controller's real factory. It exposes only unavailable, available, or blocked status, potential counts, and preview errors.
+- Migration application remains explicit, uses the real configured factory, retains production atomicity and diagnostics, and marks dirty only when sources are created.
+- Creation, editable update, sibling move, and removal delegate to the existing domain factories and immutable operations. Controller insertion adds project-wide collision protection, while selection reconciliation retains surviving ancestors without choosing siblings.
+- Serialization and stringification delegate to the production serializer, store export diagnostics, do not auto-migrate, and do not clear dirty state.
+- The visible React placeholder does not import the application layer. Browser file reading and download, persistent project format, storage, undo/redo, networking, and visible editor UI remain deferred.
+- Thirty-three controller test functions cover 85 requested behaviours. Together with the unchanged 141 existing functions, the Node suite contains 174 test functions.
+- The next planned work is the first visible builder shell/list interface.
+
 ## 11. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
@@ -303,6 +319,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-11 | Owner-reviewed Nuvio Desktop pairs for compact active-addon expansion and deterministic addon projection-only promotion, plus sanitised repository reproductions and explicit migration tests | [TMDB ID Lookup issue #37](https://github.com/davecollections/tmdb-id-lookup/issues/37) |
 | 2026-07-11 | Manually confirmed sanitised builder-generated Nuvio Desktop migration round trip with untouched export, additive-only semantic comparison, exact hashes, and canonical validation | [TMDB ID Lookup issue #38](https://github.com/davecollections/tmdb-id-lookup/issues/38) |
 | 2026-07-11 | Reverted Pages exposure, recovered unchanged issue #38 evidence, and shared allowlist enforcement for v1 runtime files, compiled builder output, and repository-only path exclusion | [TMDB ID Lookup issue #38](https://github.com/davecollections/tmdb-id-lookup/issues/38) |
+| 2026-07-11 | Framework-independent controller ownership, frozen external-store snapshots, guarded replacement, hierarchical selection, disposable production migration preview, explicit migration application, coordinated edits, diagnostics, and export lifecycle | [TMDB ID Lookup issue #39](https://github.com/davecollections/tmdb-id-lookup/issues/39) |
 
 ## Decision history
 
@@ -315,3 +332,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-11 — Evidence-based addon projection migration:** add an explicit atomic migration for the confirmed addon projection-only shape; create compact authoritative addon sources in projection order; normalize only exact `"None"` to `null`; preserve raw projection evidence for serializer overlay; and use a narrow no-genre identity alias for matching. Keep import automaticity, manifests, networking, UI, Ultra MAX conversion, and AIO Metadata runtime integration deferred.
 - **2026-07-11 — Reproducible manual migration round trip:** generate the sanitised checkpoint through production importer, explicit migration, and serializer APIs; preserve the untouched Nuvio Desktop export; verify exact hashes and additive-only normalization; and adopt manual compatibility evidence for this generated collection shape while keeping live addon resolution, playback, automatic migration, and broader runtime conversions outside scope.
 - **2026-07-11 — Pages publication boundary recovery:** after the controlled issue #38 merge exposed repository-only manual evidence through broad tracked-file staging, revert production, recover the approved evidence unchanged, and replace default publication with one shared explicit v1-plus-compiled-builder allowlist enforced by preparation, exhaustive validation, and regression tests. Keep the evidence public in source control but absent from the deployed website, with no runtime or workflow change.
+- **2026-07-11 — Application controller boundary:** place immutable current-project ownership, subscriptions, hierarchical selection, dirty-state replacement protection, explicit migration preview/application, coordinated domain edits, diagnostic scopes, and serialization calls under `builder/src/application/`. Keep domain, parsing, classification, migration eligibility/transformation, raw preservation, projection generation, and export validation in their existing production modules. Leave visible React integration, browser file handling, persistence, and undo/redo for later issues.

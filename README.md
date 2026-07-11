@@ -190,6 +190,8 @@ The non-deployment validation workflow runs the existing checks and validates th
 
 The contract fixtures distinguish canonical builder output from import-preservation input. They cover the currently confirmed native TMDB source types, addon compatibility projections, mixed source folders, and opaque imported fields. They intentionally do not define a complete Nuvio schema or change current v1 export output.
 
+Issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39) adds the framework-independent application controller under `builder/src/application/`. It is the future React boundary over the separate domain, importer, explicit migration, and serializer modules. The controller owns immutable state snapshots, subscriptions, selection, dirty-state protection, coordinated edits, diagnostics, and export calls, while migration remains an explicit user action. The current visible `/builder/` placeholder does not use the controller and remains unchanged. Browser file reading and download, persistent project storage or a project-file format, undo/redo, and visible editor UI remain deferred; the next planned builder work is the first shell/list interface.
+
 ## Local TMDB Testing
 
 The app uses a Cloudflare Worker proxy for live TMDB API calls. Local static testing still works without extra setup, but live TMDB lookups from `localhost` or `127.0.0.1` require that local origin to be allowed by the Worker CORS rules.
