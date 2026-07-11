@@ -1,12 +1,15 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { isPagesPublicFilePath, normalizePagesPublicPath, pagesPublicPathContract } from "./pages-public-paths.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const stagingDir = path.join(rootDir, ".pages-site");
 const stagedBuilderDir = path.join(stagingDir, "builder");
 const requiredFiles = [
-	"index.html",
+	...pagesPublicPathContract.v1RootFiles,
 	"css/styles.css",
 	"css/mobile-fixes.css",
 	"js/config.js",
@@ -14,6 +17,31 @@ const requiredFiles = [
 	"builder/index.html",
 ];
 const assetExtension = /\.(?:avif|css|gif|ico|jpe?g|js|png|svg|webp|woff2?)(?:[?#].*)?$/i;
+const repositoryOnlyPrefixes = [
+	".github/",
+	"builder/src/",
+	"cloudflare-worker/",
+	"docs/",
+	"manual-tests/",
+	"scripts/",
+	"tests/",
+];
+const repositoryOnlyFiles = new Set([
+	".gitattributes",
+	".gitignore",
+	"AGENTS.md",
+	"README.md",
+	"builder/package-lock.json",
+	"builder/package.json",
+	"builder/vite.config.js",
+]);
+const issue38EvidenceFiles = [
+	"manual-tests/nuvio-desktop/addon-projection-migration/builder-migrated-input.json",
+	"manual-tests/nuvio-desktop/addon-projection-migration/generation-report.json",
+	"manual-tests/nuvio-desktop/addon-projection-migration/nuvio-desktop-export.json",
+	"manual-tests/nuvio-desktop/addon-projection-migration/round-trip-report.json",
+];
+const issue38OwnerExportSha256 = "6390428217959af42572038fdd818def5fc9136a98285b6e879504826a0aa7bc";
 const failures = [];
 
 function listFiles(directory) {
@@ -25,6 +53,10 @@ function listFiles(directory) {
 
 function relative(file) {
 	return path.relative(rootDir, file).replaceAll("\\", "/");
+}
+
+function stagedRelative(file) {
+	return path.relative(stagingDir, file).replaceAll("\\", "/");
 }
 
 function assertFile(file) {
@@ -40,6 +72,52 @@ function getHtmlAttribute(tag, attribute) {
 
 for (const file of requiredFiles) {
 	assertFile(path.join(stagingDir, file));
+}
+
+const stagedFiles = fs.statSync(stagingDir, { throwIfNoEntry: false })?.isDirectory() ? listFiles(stagingDir) : [];
+
+for (const file of stagedFiles) {
+	const artifactPath = stagedRelative(file);
+	let normalizedPath;
+
+	try {
+		normalizedPath = normalizePagesPublicPath(artifactPath);
+	} catch (error) {
+		failures.push(`Invalid Pages artifact path ${artifactPath}: ${error.message}`);
+		continue;
+	}
+
+	if (!isPagesPublicFilePath(normalizedPath)) {
+		failures.push(`Unexpected file outside the Pages public-path contract: ${normalizedPath}`);
+	}
+
+	if (
+		repositoryOnlyFiles.has(normalizedPath) ||
+		repositoryOnlyPrefixes.some((prefix) => normalizedPath.startsWith(prefix))
+	) {
+		failures.push(`Repository-only file is present in the Pages artifact: ${normalizedPath}`);
+	}
+
+	if (/\.(?:md|mjs)$/i.test(normalizedPath) && !isPagesPublicFilePath(normalizedPath)) {
+		failures.push(`Repository documentation or source is present in the Pages artifact: ${normalizedPath}`);
+	}
+
+	const contents = fs.readFileSync(file);
+	const digest = crypto.createHash("sha256").update(contents).digest("hex");
+
+	if (digest === issue38OwnerExportSha256) {
+		failures.push(`Issue #38 owner export bytes are present in the Pages artifact as: ${normalizedPath}`);
+	}
+
+	if (contents.length <= 2_000_000 && contents.toString("utf8").toLowerCase().includes(issue38OwnerExportSha256)) {
+		failures.push(`Issue #38 owner export hash is present in the Pages artifact as: ${normalizedPath}`);
+	}
+}
+
+for (const evidenceFile of issue38EvidenceFiles) {
+	if (fs.existsSync(path.join(stagingDir, ...evidenceFile.split("/")))) {
+		failures.push(`Issue #38 manual evidence must not be deployed: ${evidenceFile}`);
+	}
 }
 
 if (fs.existsSync(path.join(stagedBuilderDir, "dist"))) {
@@ -61,7 +139,7 @@ if (fs.statSync(stagedBuilderEntry, { throwIfNoEntry: false })?.isFile()) {
 }
 
 if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
-	const builderFiles = listFiles(stagedBuilderDir);
+	const builderFiles = stagedFiles.filter((file) => file.startsWith(`${stagedBuilderDir}${path.sep}`));
 	const builderAssets = builderFiles.filter((file) => path.dirname(file).startsWith(path.join(stagedBuilderDir, "assets")));
 	const scripts = builderAssets.filter((file) => file.endsWith(".js"));
 	const styles = builderAssets.filter((file) => file.endsWith(".css"));

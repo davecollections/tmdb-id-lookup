@@ -182,7 +182,9 @@ node scripts/prepare-pages-site.mjs
 node scripts/validate-pages-site.mjs
 ```
 
-Vite writes temporary compiled output to `builder/dist/`. The staging script copies the tracked v1 site without changing its root paths, excludes builder source, and places the compiled builder directly in `.pages-site/builder/`. Vite uses a relative `./` asset base, so generated JavaScript, CSS, and local asset URLs resolve beneath the deployed `/tmdb-id-lookup/builder/` project path rather than the domain root.
+Vite writes temporary compiled output to `builder/dist/`. The staging script copies only the reviewed v1 public contract—`index.html`, `robots.txt`, `sitemap.xml`, and the `css/`, `js/`, and `data/` trees—then places the compiled builder directly in `.pages-site/builder/`. Preparation and validation share this explicit allowlist, and validation rejects every unexpected staged path. Vite uses a relative `./` asset base, so generated JavaScript, CSS, and local asset URLs resolve beneath the deployed `/tmdb-id-lookup/builder/` project path rather than the domain root.
+
+Issue [#38](https://github.com/davecollections/tmdb-id-lookup/issues/38) exposed that the previous broad tracked-file staging rule could publish repository-only manual evidence. The merge was reverted immediately, production was restored, and the recovery retained the approved evidence while adding the shared public-path boundary and regression suite. Manual evidence remains intentionally available in the public source repository for review, but `manual-tests/`, `tests/`, `docs/`, `scripts/`, and other repository-only paths are excluded from the deployed website. This containment change does not alter v1 runtime behaviour or the compiled builder output.
 
 The non-deployment validation workflow runs the existing checks and validates this combined artifact on branches and pull requests. Only the existing Pages workflow publishes, and it still deploys from `main` or its existing successful maintenance-workflow triggers. Public `/builder/` behaviour therefore still requires confirmation after merge; history-based builder subroutes are not supported or claimed by this spike.
 
