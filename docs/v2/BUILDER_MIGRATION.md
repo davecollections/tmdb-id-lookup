@@ -154,19 +154,17 @@ The projection-only pair contains movie, series, and anime folders; absent and e
 
 ## Manual Nuvio Desktop verification
 
-The owner-supplied private pairs are manual evidence for this migration contract. The newly generated repository migration output has not yet been manually re-tested in Nuvio Desktop for issue #37.
+The migration evidence is deliberately separated into three levels:
 
-To perform that follow-up:
+- **Automated repository evidence:** issue #37 tests prove importer preservation, explicit migration, serializer matching, canonical validation, ordering, genre normalization, and unknown-field retention against sanitised fixtures.
+- **Owner-reviewed private pair evidence:** the private active-addon and AIO Metadata projection-only pairs establish the real-client behavior summarized above without committing third-party files or unique configuration URLs.
+- **Manually confirmed builder-generated round trip:** issue [#38](https://github.com/davecollections/tmdb-id-lookup/issues/38) generated the exact sanitised input through the production importer → migration → serializer path and recorded its controlled Nuvio Desktop import/export.
 
-1. Import `compatibility/legacy-projection-only-input.json` through the production importer.
-2. Apply `migrateLegacyAddonProjections` explicitly.
-3. Serialize the successful migrated project.
-4. Import that generated JSON into Nuvio Desktop.
-5. Confirm all three folders load.
-6. Export the collection from Nuvio Desktop.
-7. Confirm source count equals projection count, source order equals projection order, every provider is `addon`, exact `"None"` values are `null`, `"Action"` remains, movie/series/anime types remain, and Nuvio-preserved projection metadata and presentation fields remain.
+Stage B is complete for this sanitised migration output. The reproducible input, untouched owner export, deterministic reports, and owner procedure are in [`manual-tests/nuvio-desktop/addon-projection-migration/`](../../manual-tests/nuvio-desktop/addon-projection-migration/). Nuvio Desktop `0.1.11-alpha` build `11`, based on Nuvio `0.2.19` on Windows, accepted the collection and displayed all three folders in movie, series, anime order. Every folder opened and showed the expected addon-not-found result for the synthetic identity.
 
-Record the client version, generated input, exported result, counts, and any normalization differences before changing the evidence status.
+The untouched export SHA-256 is `6390428217959af42572038fdd818def5fc9136a98285b6e879504826a0aa7bc`; the generated input SHA-256 remains `c14d7e9f9c4c3becccb95718d5b91e94e059652adbd6f8192dbb0c5794491970`. `scripts/check-migration-round-trip-export.mjs` proves the export retained the collection, three folders, three authoritative sources, three projections, identities, order, movie/series/anime types, `null`/`"Action"`/`null` genres, sentinel, and supplied presentation URLs. The computed difference is exactly 52 approved additions with zero removals, changed values, array-length changes, order changes, or unexpected differences. The export passes canonical validation.
+
+This evidence confirms the generated collection shape in the recorded client. It does not validate a live addon manifest, playback, every future Nuvio version, automatic migration, Ultra MAX conversion, or AIO Metadata runtime behaviour.
 
 ## Deferred work
 

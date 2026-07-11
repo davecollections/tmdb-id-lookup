@@ -3,11 +3,19 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isV1PublicFilePath, normalizePagesPublicPath, pagesPublicPathContract } from "./pages-public-paths.mjs";
+
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const stagingDir = path.join(rootDir, ".pages-site");
 const builderDistDir = path.join(rootDir, "builder", "dist");
 const builderStageDir = path.join(stagingDir, "builder");
-const requiredV1Files = ["index.html", "css/styles.css", "css/mobile-fixes.css", "js/config.js", "js/app.js"];
+const requiredV1Files = [
+	...pagesPublicPathContract.v1RootFiles,
+	"css/styles.css",
+	"css/mobile-fixes.css",
+	"js/config.js",
+	"js/app.js",
+];
 
 function assertFile(file, label) {
 	if (!fs.statSync(file, { throwIfNoEntry: false })?.isFile()) {
@@ -26,20 +34,17 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z"], {
 	encoding: "utf8",
 })
 	.split("\0")
-	.filter(Boolean);
+	.filter(Boolean)
+	.map((file) => normalizePagesPublicPath(file))
+	.filter((file) => isV1PublicFilePath(file))
+	.sort();
 
 fs.rmSync(stagingDir, { recursive: true, force: true });
 fs.mkdirSync(stagingDir, { recursive: true });
 
 for (const relativeFile of trackedFiles) {
-	const portablePath = relativeFile.replaceAll("\\", "/");
-
-	if (portablePath === ".gitignore" || portablePath.startsWith(".github/") || portablePath.startsWith("builder/")) {
-		continue;
-	}
-
-	const source = path.join(rootDir, relativeFile);
-	const destination = path.join(stagingDir, relativeFile);
+	const source = path.join(rootDir, ...relativeFile.split("/"));
+	const destination = path.join(stagingDir, ...relativeFile.split("/"));
 
 	assertFile(source, "Tracked deployment file");
 	fs.mkdirSync(path.dirname(destination), { recursive: true });
