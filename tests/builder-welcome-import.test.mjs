@@ -16,6 +16,10 @@ import {
 	startNewBuilderProject,
 	validateImportFile,
 } from "../builder/src/ui/import-actions.js";
+import {
+	createWelcomeActionGate,
+	runWelcomeAction,
+} from "../builder/src/ui/welcome-action-coordinator.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureRoot = path.join(rootDir, "tests", "fixtures", "nuvio");
@@ -60,6 +64,14 @@ function fakeFile({ name = "collection.json", type = "application/json", size = 
 		size,
 		text: async () => text,
 	};
+}
+
+function deferred() {
+	let resolve;
+	const promise = new Promise((resolvePromise) => {
+		resolve = resolvePromise;
+	});
+	return { promise, resolve };
 }
 
 function assertDiagnostic(result, code, message) {
@@ -158,6 +170,150 @@ test("start-new helper returns structured controller failure without partial cre
 	assert.equal(result.errors[0].code, "CONTROLLER_OPERATION_FAILED");
 	assert.equal(controller.getState().project, before);
 	assert.deepEqual(controller.getState().project.collections, []);
+});
+
+test("welcome action gate synchronously rejects overlap and permits a later action after release", () => {
+	const gate = createWelcomeActionGate();
+	assert.equal(gate.isActive(), false);
+	assert.equal(gate.tryAcquire(), true);
+	assert.equal(gate.isActive(), true);
+	assert.equal(gate.tryAcquire(), false);
+	gate.release();
+	assert.equal(gate.isActive(), false);
+	assert.equal(gate.tryAcquire(), true);
+	gate.release();
+	assert.equal(gate.isActive(), false);
+});
+
+test("welcome action runner releases structured and unexpected failures for retry", async () => {
+	const gate = createWelcomeActionGate();
+	const busyStates = [];
+	const failures = [];
+	let transitions = 0;
+	const base = {
+		gate,
+		setBusyAction: (value) => busyStates.push(value),
+		onFailure: (result) => failures.push(result.errors[0].code),
+		onEnterWorkspace: () => { transitions += 1; },
+	};
+
+	const structured = await runWelcomeAction({
+		...base,
+		actionName: "file",
+		action: () => ({ ok: false, errors: [{ code: "EXPECTED" }], warnings: [] }),
+	});
+	assert.equal(structured.started, true);
+	assert.equal(structured.ok, false);
+	assert.deepEqual(failures, ["EXPECTED"]);
+	assert.equal(gate.isActive(), false);
+
+	const rejected = await runWelcomeAction({
+		...base,
+		actionName: "file",
+		action: async () => { throw new Error("PRIVATE_FAILURE"); },
+	});
+	assert.deepEqual(rejected, { started: true, ok: false });
+	assert.equal(JSON.stringify(rejected).includes("PRIVATE_FAILURE"), false);
+	assert.equal(gate.isActive(), false);
+
+	const retry = await runWelcomeAction({
+		...base,
+		actionName: "pasted",
+		action: () => ({ ok: true, errors: [], warnings: [] }),
+	});
+	assert.equal(retry.ok, true);
+	assert.equal(transitions, 1);
+	assert.equal(gate.isActive(), false);
+	assert.deepEqual(busyStates, ["file", null, "file", null, "pasted", null]);
+});
+
+test("delayed file import keeps the gate active and is the only controller mutation", async () => {
+	const gate = createWelcomeActionGate();
+	const delayedRead = deferred();
+	const mutations = [];
+	let transitions = 0;
+	const controller = {
+		importJsonText(text, options) {
+			mutations.push({ action: "file", text, options });
+			return { ok: true, errors: [], warnings: [] };
+		},
+	};
+	const file = fakeFile({ name: "delayed-project.json" });
+	file.text = () => delayedRead.promise;
+
+	const fileRun = runWelcomeAction({
+		gate,
+		actionName: "file",
+		setBusyAction: () => {},
+		action: () => importJsonFile(controller, file),
+		onEnterWorkspace: () => { transitions += 1; },
+	});
+	assert.equal(gate.isActive(), true);
+
+	const rivalRun = await runWelcomeAction({
+		gate,
+		actionName: "start",
+		setBusyAction: () => {},
+		action: () => {
+			mutations.push({ action: "start" });
+			return { ok: true, errors: [], warnings: [] };
+		},
+		onEnterWorkspace: () => { transitions += 1; },
+	});
+	assert.deepEqual(rivalRun, { started: false, ok: false });
+	assert.deepEqual(mutations, []);
+
+	delayedRead.resolve('[{"id":"one","title":"One","folders":[]}]');
+	const fileResult = await fileRun;
+	assert.equal(fileResult.ok, true);
+	assert.deepEqual(mutations, [{
+		action: "file",
+		text: '[{"id":"one","title":"One","folders":[]}]',
+		options: { projectTitle: "delayed-project" },
+	}]);
+	assert.equal(transitions, 1);
+	assert.equal(gate.isActive(), false);
+});
+
+test("pasted import sequencing paints busy before parsing and transitions after release", async () => {
+	const sequence = [];
+	const innerGate = createWelcomeActionGate();
+	const gate = {
+		tryAcquire() {
+			const acquired = innerGate.tryAcquire();
+			if (acquired) sequence.push("gate acquired");
+			return acquired;
+		},
+		release() {
+			innerGate.release();
+			sequence.push("gate released");
+		},
+	};
+
+	const result = await runWelcomeAction({
+		gate,
+		actionName: "pasted",
+		setBusyAction: (value) => sequence.push(value ? `busy ${value}` : "busy cleared"),
+		beforeAction: async () => { sequence.push("browser task yielded"); },
+		action: () => {
+			sequence.push("controller pasted import");
+			return { ok: true, errors: [], warnings: [] };
+		},
+		onSuccess: () => sequence.push("local input cleared"),
+		onEnterWorkspace: () => sequence.push("workspace entered"),
+	});
+
+	assert.equal(result.ok, true);
+	assert.deepEqual(sequence, [
+		"gate acquired",
+		"busy pasted",
+		"browser task yielded",
+		"controller pasted import",
+		"local input cleared",
+		"gate released",
+		"busy cleared",
+		"workspace entered",
+	]);
 });
 
 test("pasted import passes original text and builder-only title to the controller", () => {
@@ -392,6 +548,7 @@ test("welcome/import production code stays local-only and browser-safe", () => {
 		read("builder/src/ui/BuilderApp.jsx"),
 		read("builder/src/ui/BuilderWelcome.jsx"),
 		read("builder/src/ui/import-actions.js"),
+		read("builder/src/ui/welcome-action-coordinator.js"),
 	].join("\n");
 	for (const forbidden of [
 		/from\s+["']node:/,
@@ -434,6 +591,8 @@ test("branding metadata, README naming, and Pages markers are corrected narrowly
 	const readme = read("README.md");
 	assert.match(readme, /## TMDB Collection Builder/);
 	assert.equal(readme.includes("## Nuvio Collection Builder"), false);
+	assert.equal(readme.includes("development placeholder"), false);
+	assert.ok(readme.includes("development-preview welcome and collection-building interface"));
 	const validator = read("scripts/validate-pages-site.mjs");
 	assert.ok(validator.includes('builderJavaScript.includes("TMDB Collection Builder")'));
 	assert.ok(validator.includes('builderJavaScript.includes("data-builder-welcome")'));
@@ -441,10 +600,22 @@ test("branding metadata, README naming, and Pages markers are corrected narrowly
 
 test("welcome source contains busy and disabled behavior without routes or deferred controls", () => {
 	const source = `${read("builder/src/ui/BuilderWelcome.jsx")}\n${read("builder/src/ui/BuilderWorkspace.jsx")}`;
+	assert.match(source, /aria-busy=\{isBusy\}/);
 	assert.match(source, /aria-busy=\{busyAction === "file"\}/);
-	assert.match(source, /disabled=\{busyAction === "file"\}/);
 	assert.match(source, /aria-busy=\{busyAction === "pasted"\}/);
-	assert.match(source, /disabled=\{busyAction === "pasted"\}/);
+	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 5);
+	for (const controlPattern of [
+		/data-action="start-new-project"[\s\S]{0,120}disabled=\{isBusy\}/,
+		/data-import-control="file"[\s\S]{0,160}disabled=\{isBusy\}/,
+		/data-action="import-file"[\s\S]{0,100}disabled=\{isBusy\}/,
+		/data-import-control="pasted-json"[\s\S]{0,140}disabled=\{isBusy\}/,
+		/data-action="import-pasted-json"[\s\S]{0,100}disabled=\{isBusy\}/,
+	]) {
+		assert.match(source, controlPattern);
+	}
+	assert.equal((source.match(/actionGateRef\.current\.isActive\(\)/g) ?? []).length, 2);
+	assert.doesNotMatch(source, /disabled=\{busyAction ===/);
+	assert.match(source, /beforeAction:\s*yieldToBrowser/);
 	for (const deferred of [
 		"Export",
 		"Download",

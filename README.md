@@ -173,7 +173,7 @@ On any platform, the equivalent command is `node scripts/check-all.mjs`. To run 
 
 ## TMDB Collection Builder
 
-A new React/Vite TMDB Collection Builder is being developed under `builder/`. The existing TMDB ID Lookup remains available at the site root, while the public `/builder/` page is currently a development placeholder.
+A new React/Vite TMDB Collection Builder is being developed under `builder/`. The existing TMDB ID Lookup remains available at the site root, while `/builder/` provides the current development-preview welcome and collection-building interface.
 
 For builder architecture, compatibility decisions, and contributor guidance, read [`AGENTS.md`](./AGENTS.md) and [`docs/v2/BUILDER_KNOWLEDGE.md`](./docs/v2/BUILDER_KNOWLEDGE.md).
 

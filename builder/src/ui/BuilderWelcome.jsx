@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import {
 	importJsonFile,
 	importPastedJson,
 	startNewBuilderProject,
 } from "./import-actions.js";
+import {
+	createWelcomeActionGate,
+	runWelcomeAction,
+	yieldToBrowser,
+} from "./welcome-action-coordinator.js";
 
 function DiagnosticList({ diagnostics, kind }) {
 	if (diagnostics.length === 0) {
@@ -34,6 +39,11 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 	const [pastedText, setPastedText] = useState("");
 	const [localDiagnostics, setLocalDiagnostics] = useState([]);
 	const [busyAction, setBusyAction] = useState(null);
+	const actionGateRef = useRef(null);
+	if (actionGateRef.current === null) {
+		actionGateRef.current = createWelcomeActionGate();
+	}
+	const isBusy = busyAction !== null;
 
 	const controllerErrors = [
 		...state.diagnostics.operation.errors,
@@ -42,42 +52,59 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 	const visibleErrors = localDiagnostics.length > 0 ? localDiagnostics : controllerErrors;
 	const visibleWarnings = localDiagnostics.length > 0 ? [] : state.diagnostics.import.warnings;
 
-	function completeAction(result, clearLocal = true) {
-		if (result.ok) {
-			if (clearLocal) setLocalDiagnostics([]);
-			onEnterWorkspace();
-			return true;
-		}
+	function showFailure(result) {
 		setLocalDiagnostics(result.errors[0]?.path === "$ui.import" ? result.errors : []);
-		return false;
 	}
 
 	function handleStartNewProject() {
-		completeAction(startNewBuilderProject(controller));
+		void runWelcomeAction({
+			gate: actionGateRef.current,
+			actionName: "start",
+			setBusyAction,
+			action: () => startNewBuilderProject(controller),
+			onFailure: showFailure,
+			onSuccess: () => setLocalDiagnostics([]),
+			onEnterWorkspace,
+		});
 	}
 
 	async function handleFileImport(event) {
 		event.preventDefault();
-		setBusyAction("file");
-		const result = await importJsonFile(controller, selectedFile);
-		if (completeAction(result)) {
-			setSelectedFile(null);
-		}
-		setBusyAction(null);
+		const file = selectedFile;
+		await runWelcomeAction({
+			gate: actionGateRef.current,
+			actionName: "file",
+			setBusyAction,
+			action: () => importJsonFile(controller, file),
+			onFailure: showFailure,
+			onSuccess: () => {
+				setLocalDiagnostics([]);
+				setSelectedFile(null);
+			},
+			onEnterWorkspace,
+		});
 	}
 
 	async function handlePastedImport(event) {
 		event.preventDefault();
-		setBusyAction("pasted");
-		const result = await Promise.resolve(importPastedJson(controller, pastedText));
-		if (completeAction(result)) {
-			setPastedText("");
-		}
-		setBusyAction(null);
+		const text = pastedText;
+		await runWelcomeAction({
+			gate: actionGateRef.current,
+			actionName: "pasted",
+			setBusyAction,
+			beforeAction: yieldToBrowser,
+			action: () => importPastedJson(controller, text),
+			onFailure: showFailure,
+			onSuccess: () => {
+				setLocalDiagnostics([]);
+				setPastedText("");
+			},
+			onEnterWorkspace,
+		});
 	}
 
 	return (
-		<main className="builder-welcome" data-builder-welcome="true">
+		<main className="builder-welcome" data-builder-welcome="true" aria-busy={isBusy}>
 			<header className="welcome-brand">
 				<img className="welcome-mark" src={builderMark} alt="" width="68" height="68" />
 				<div>
@@ -101,6 +128,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 					type="button"
 					data-action="start-new-project"
 					onClick={handleStartNewProject}
+					disabled={isBusy}
 				>
 					Start a new project
 				</button>
@@ -132,7 +160,9 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 							accept=".json,application/json"
 							data-import-control="file"
 							aria-describedby="file-import-guidance selected-file-name"
+							disabled={isBusy}
 							onChange={(event) => {
+								if (actionGateRef.current.isActive()) return;
 								setSelectedFile(event.target.files?.[0] ?? null);
 								setLocalDiagnostics([]);
 							}}
@@ -145,7 +175,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 							className="import-action"
 							type="submit"
 							data-action="import-file"
-							disabled={busyAction === "file"}
+							disabled={isBusy}
 						>
 							{busyAction === "file" ? "Importing…" : "Import selected file"}
 						</button>
@@ -162,7 +192,9 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 							value={pastedText}
 							data-import-control="pasted-json"
 							aria-describedby="pasted-import-guidance"
+							disabled={isBusy}
 							onChange={(event) => {
+								if (actionGateRef.current.isActive()) return;
 								setPastedText(event.target.value);
 								setLocalDiagnostics([]);
 							}}
@@ -171,7 +203,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 							className="import-action"
 							type="submit"
 							data-action="import-pasted-json"
-							disabled={busyAction === "pasted"}
+							disabled={isBusy}
 						>
 							{busyAction === "pasted" ? "Importing…" : "Import pasted JSON"}
 						</button>

@@ -24,6 +24,8 @@ Only the following presentation/transport values use local React state:
 
 Project, collection, folder, source, selection, dirty, migration-preview, and controller diagnostic values remain in the controller snapshot. Refresh creates the normal production presentation again and returns to welcome; there is no persistence, route, or browser-history entry.
 
+Welcome project actions are mutually exclusive. A synchronous in-flight gate held by the welcome presentation protects the shared controller before React state can repaint. While Start New Project, file import, or pasted import is active, all five project-changing controls are disabled: the start button, file input, file-import button, pasted textarea, and pasted-import button. A second action is ignored while the gate is held. Pasted import yields one browser task after setting its busy presentation so disabled controls and **Importing…** can paint before synchronous controller parsing begins. Success and every structured or unexpected failure release the gate and clear the busy presentation; successful local input cleanup happens before the final workspace transition.
+
 ## Start New Project
 
 `startNewBuilderProject(controller)` calls:
