@@ -239,7 +239,21 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - The migration is atomic, immutable, deterministic with an injected ID factory, collision-checked across the whole project, and independent of addon manifests and networking.
 - Addon projection matching now treats missing genre, `null`, empty string, and exact `"None"` as one no-genre identity. This is a narrow evidence-based compatibility alias, not a universal string-normalization rule, and unrelated serialized values are not rewritten.
 - Manifest validation, live catalog validation, automatic import conversion, visible UI, Ultra MAX conversion, and AIO Metadata runtime integration remain outside this issue.
-- Twenty migration test functions plus the unchanged regression suites cover the 76 requested migration, integration, fixture, and regression behaviours. The newly generated sanitised migration output still requires a recorded Nuvio Desktop follow-up; existing private pairs are the current manual client evidence.
+- Twenty migration test functions plus the unchanged regression suites cover the 76 requested migration, integration, fixture, and regression behaviours. Issue #38 now records the builder-generated sanitised Nuvio Desktop follow-up alongside the existing private-pair evidence.
+
+### Reproducible Nuvio Desktop migration round trip — issue #38
+
+**Manually confirmed in Nuvio Desktop and confirmed by repository verification — issue [#38](https://github.com/davecollections/tmdb-id-lookup/issues/38), 2026-07-11:** the reproducible sanitised manual-test evidence under `manual-tests/nuvio-desktop/addon-projection-migration/` completed a controlled round trip.
+
+- The issue #37 migration implementation is complete, and its builder-generated client checkpoint is now recorded.
+- `builder-migrated-input.json` is generated through the production `importNuvioCollections` → `migrateLegacyAddonProjections` → `serializeNuvioProject` path rather than being authored as an independent expected result.
+- The committed input contains 1 collection, 3 folders, 3 authoritative addon sources, and 3 matching compatibility projections in movie, series, anime order with `null`, `"Action"`, `null` genres.
+- Canonical contract validation succeeds, and `generation-report.json` records the deterministic input SHA-256 `c14d7e9f9c4c3becccb95718d5b91e94e059652adbd6f8192dbb0c5794491970`.
+- Nuvio Desktop `0.1.11-alpha` build `11`, based on Nuvio `0.2.19` on Windows, accepted the collection; one collection and all three ordered folders appeared, every folder opened, and each showed the expected addon-not-found message for `example.sanitised.metadata`.
+- The untouched export SHA-256 is `6390428217959af42572038fdd818def5fc9136a98285b6e879504826a0aa7bc`. It retained every collection, folder, source, projection, addon, catalog, genre, order, sentinel, and non-null presentation value.
+- Nuvio added explicit source nulls, folder defaults and missing presentation nulls, and collection defaults, including lowercase `tileShape: "poster"`. The recursive semantic comparison found 52 approved additions and zero removals, changed values, array-length changes, order changes, or unexpected differences.
+- `scripts/check-migration-round-trip-export.mjs` verifies both exact hashes, all semantic invariants, the deterministic Stage B report, and canonical validation fully offline.
+- This is manually confirmed Nuvio Desktop compatibility for the sanitised generated collection shape only. It does not validate live addon resolution, playback, every future client version, automatic migration, Ultra MAX conversion, or AIO Metadata runtime behaviour.
 
 ## 11. Open questions
 
@@ -278,6 +292,7 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 | 2026-07-11 | Atomic preservation-first import, provider-led source classification, conservative editable extraction, raw snapshot detachment, and legacy compatibility detection | [TMDB ID Lookup issue #35](https://github.com/davecollections/tmdb-id-lookup/issues/35) |
 | 2026-07-11 | Atomic preservation-first serialization, compact new-node output, editable-over-raw overlay, addon projection matching, legacy blocking, and deterministic JSON output | [TMDB ID Lookup issue #36](https://github.com/davecollections/tmdb-id-lookup/issues/36) |
 | 2026-07-11 | Owner-reviewed Nuvio Desktop pairs for compact active-addon expansion and deterministic addon projection-only promotion, plus sanitised repository reproductions and explicit migration tests | [TMDB ID Lookup issue #37](https://github.com/davecollections/tmdb-id-lookup/issues/37) |
+| 2026-07-11 | Manually confirmed sanitised builder-generated Nuvio Desktop migration round trip with untouched export, additive-only semantic comparison, exact hashes, and canonical validation | [TMDB ID Lookup issue #38](https://github.com/davecollections/tmdb-id-lookup/issues/38) |
 
 ## Decision history
 
@@ -288,3 +303,4 @@ The fixture suite deliberately does **not** prove a complete or final Nuvio sche
 - **2026-07-11 — Preservation-first importer:** accept JSON text and parsed collection arrays through an atomic importer; hydrate only recognised editable fields, classify from explicit providers, preserve unknown and unsupported sources as opaque, retain complete detached raw snapshots, and detect `catalogSources`-only compatibility data without migration or export assumptions.
 - **2026-07-11 — Preservation-first serializer:** serialize compact new nodes and preservation-based imported nodes atomically; replace raw child arrays from current domain state; generate projections only for addon-category sources; preserve matched projection metadata; warn when unmatched projections are removed; and block unresolved legacy projection-only data without migration. Explicit property deletion, Ultra MAX conversion, language support, and visible UI integration remain deferred.
 - **2026-07-11 — Evidence-based addon projection migration:** add an explicit atomic migration for the confirmed addon projection-only shape; create compact authoritative addon sources in projection order; normalize only exact `"None"` to `null`; preserve raw projection evidence for serializer overlay; and use a narrow no-genre identity alias for matching. Keep import automaticity, manifests, networking, UI, Ultra MAX conversion, and AIO Metadata runtime integration deferred.
+- **2026-07-11 — Reproducible manual migration round trip:** generate the sanitised checkpoint through production importer, explicit migration, and serializer APIs; preserve the untouched Nuvio Desktop export; verify exact hashes and additive-only normalization; and adopt manual compatibility evidence for this generated collection shape while keeping live addon resolution, playback, automatic migration, and broader runtime conversions outside scope.
