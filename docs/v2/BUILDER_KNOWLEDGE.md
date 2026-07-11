@@ -280,6 +280,20 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Thirty-three controller test functions cover 85 requested behaviours. Together with the unchanged 141 existing functions, the Node suite contains 174 test functions.
 - The next planned work is the first visible builder shell/list interface.
 
+### First visible builder shell and hierarchy navigator — issue #40
+
+**Confirmed by repository tests — issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), 2026-07-11:** the `/builder/` deployment placeholder has been replaced by the first controller-connected, mobile-first application shell.
+
+- `builder/src/main.jsx` creates one production `createBuilderController` at module scope with the `Untitled project` title and passes it into `BuilderApp`; React StrictMode does not create additional controllers.
+- React subscribes through `useSyncExternalStore` with a server/static snapshot reader. Project, selection, revision, dirty state, migration preview, and diagnostics remain controller-owned rather than mirrored into component state.
+- Pure UI helpers derive safe collection, folder, source, count, selection, and read-only-detail values while preserving controller order and explicit source categories. Raw imported data and builder internal IDs are not shown.
+- Desktop uses a three-panel collections, folders, and sources/details workspace. Mobile uses a selection-driven drill-down with explicit parent navigation and no routes or browser-history model.
+- Deterministic UI helpers create the smallest available `collection-N` or project-wide `folder-N` draft identity through existing controller actions and select only successful creations. They never create sources automatically.
+- Operation errors use one inline alert. Legacy migration preview can produce a small available or blocked notice, but no migration action or automatic migration was added.
+- The builder keeps its relative marked v1 backlink and `noindex, nofollow` state. The generated Pages validation marker now checks the real product title and `data-builder-shell` while retaining the existing allowlist and evidence-containment safeguards.
+- Eighteen focused UI test functions cover 74 requested bootstrap, shell, view-model, creation, hierarchy, diagnostics, metadata, environment, and style behaviours. Together with the unchanged 174-function baseline, the Node suite contains 192 test functions.
+- Import/export, forms, source creation, deletion, reordering, storage, networking, routing, dependencies, v1, Worker, workflow, Pages allowlist, Ultra MAX, AIO Metadata, language, and Trakt work remain outside this shell milestone.
+
 ## 11. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
@@ -320,6 +334,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-11 | Manually confirmed sanitised builder-generated Nuvio Desktop migration round trip with untouched export, additive-only semantic comparison, exact hashes, and canonical validation | [TMDB ID Lookup issue #38](https://github.com/davecollections/tmdb-id-lookup/issues/38) |
 | 2026-07-11 | Reverted Pages exposure, recovered unchanged issue #38 evidence, and shared allowlist enforcement for v1 runtime files, compiled builder output, and repository-only path exclusion | [TMDB ID Lookup issue #38](https://github.com/davecollections/tmdb-id-lookup/issues/38) |
 | 2026-07-11 | Framework-independent controller ownership, frozen external-store snapshots, guarded replacement, hierarchical selection, disposable production migration preview, explicit migration application, coordinated edits, diagnostics, and export lifecycle | [TMDB ID Lookup issue #39](https://github.com/davecollections/tmdb-id-lookup/issues/39) |
+| 2026-07-11 | First visible controller-connected builder shell, ordered hierarchy navigator, deterministic collection/folder drafts, read-only summaries, mobile drill-down, desktop panels, accessibility, and real-shell Pages markers | [TMDB ID Lookup issue #40](https://github.com/davecollections/tmdb-id-lookup/issues/40) |
 
 ## Decision history
 
@@ -333,3 +348,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-11 — Reproducible manual migration round trip:** generate the sanitised checkpoint through production importer, explicit migration, and serializer APIs; preserve the untouched Nuvio Desktop export; verify exact hashes and additive-only normalization; and adopt manual compatibility evidence for this generated collection shape while keeping live addon resolution, playback, automatic migration, and broader runtime conversions outside scope.
 - **2026-07-11 — Pages publication boundary recovery:** after the controlled issue #38 merge exposed repository-only manual evidence through broad tracked-file staging, revert production, recover the approved evidence unchanged, and replace default publication with one shared explicit v1-plus-compiled-builder allowlist enforced by preparation, exhaustive validation, and regression tests. Keep the evidence public in source control but absent from the deployed website, with no runtime or workflow change.
 - **2026-07-11 — Application controller boundary:** place immutable current-project ownership, subscriptions, hierarchical selection, dirty-state replacement protection, explicit migration preview/application, coordinated domain edits, diagnostic scopes, and serialization calls under `builder/src/application/`. Keep domain, parsing, classification, migration eligibility/transformation, raw preservation, projection generation, and export validation in their existing production modules. Leave visible React integration, browser file handling, persistence, and undo/redo for later issues.
+- **2026-07-11 — First visible builder shell:** connect React to the controller through one external-store adapter and one production controller singleton; derive mobile drill-down directly from hierarchical selection; display only safe known summaries; and permit deterministic draft collection/folder creation without starting editing, import/export, source creation, persistence, or migration workflows.

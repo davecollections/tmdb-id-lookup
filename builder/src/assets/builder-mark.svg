@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-labelledby="title">
+	<title id="title">Collection builder mark</title>
+	<defs>
+		<linearGradient id="builder-gradient" x1="15" y1="13" x2="65" y2="67" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#01b4e4" />
+			<stop offset="1" stop-color="#63e6be" />
+		</linearGradient>
+	</defs>
+	<rect x="6" y="8" width="68" height="64" rx="20" fill="#0b2432" stroke="url(#builder-gradient)" stroke-width="3" />
+	<path d="M22 27h15l5 6h16v24H22V27Z" fill="none" stroke="url(#builder-gradient)" stroke-linejoin="round" stroke-width="4" />
+	<path d="M29 41h22M29 49h16" fill="none" stroke="#e9f7ff" stroke-linecap="round" stroke-width="3" />
+</svg>
