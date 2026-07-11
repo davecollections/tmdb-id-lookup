@@ -171,9 +171,13 @@ Run `scripts\check.cmd` before pushing changes on Windows. This runs the shared 
 
 On any platform, the equivalent command is `node scripts/check-all.mjs`. To run only the Nuvio contract suite, use `node --test tests/nuvio-contracts.test.mjs`.
 
-## Builder Deployment Spike
+## Nuvio Collection Builder
 
-Issue [#33](https://github.com/davecollections/tmdb-id-lookup/issues/33) keeps the placeholder React/Vite builder isolated in `builder/`. Install and build it with the committed builder lockfile, then prepare and validate the combined GitHub Pages artifact:
+A new React/Vite Nuvio Collection Builder is being developed under `builder/`. The existing TMDB ID Lookup remains available at the site root, while the public `/builder/` page is currently a development placeholder.
+
+For builder architecture, compatibility decisions, and contributor guidance, read [`AGENTS.md`](./AGENTS.md) and [`docs/v2/BUILDER_KNOWLEDGE.md`](./docs/v2/BUILDER_KNOWLEDGE.md).
+
+To build and validate the combined site locally:
 
 ```powershell
 npm ci --prefix builder
@@ -182,13 +186,7 @@ node scripts/prepare-pages-site.mjs
 node scripts/validate-pages-site.mjs
 ```
 
-Vite writes temporary compiled output to `builder/dist/`. The staging script copies only the reviewed v1 public contract—`index.html`, `robots.txt`, `sitemap.xml`, and the `css/`, `js/`, and `data/` trees—then places the compiled builder directly in `.pages-site/builder/`. Preparation and validation share this explicit allowlist, and validation rejects every unexpected staged path. Vite uses a relative `./` asset base, so generated JavaScript, CSS, and local asset URLs resolve beneath the deployed `/tmdb-id-lookup/builder/` project path rather than the domain root.
-
-Issue [#38](https://github.com/davecollections/tmdb-id-lookup/issues/38) exposed that the previous broad tracked-file staging rule could publish repository-only manual evidence. The merge was reverted immediately, production was restored, and the recovery retained the approved evidence while adding the shared public-path boundary and regression suite. Manual evidence remains intentionally available in the public source repository for review, but `manual-tests/`, `tests/`, `docs/`, `scripts/`, and other repository-only paths are excluded from the deployed website. This containment change does not alter v1 runtime behaviour or the compiled builder output.
-
-The non-deployment validation workflow runs the existing checks and validates this combined artifact on branches and pull requests. Only the existing Pages workflow publishes, and it still deploys from `main` or its existing successful maintenance-workflow triggers. Public `/builder/` behaviour therefore still requires confirmation after merge; history-based builder subroutes are not supported or claimed by this spike.
-
-The contract fixtures distinguish canonical builder output from import-preservation input. They cover the currently confirmed native TMDB source types, addon compatibility projections, mixed source folders, and opaque imported fields. They intentionally do not define a complete Nuvio schema or change current v1 export output.
+GitHub Pages publishes the stable root application and compiled builder output only. Builder source, tests, documentation, and manual evidence remain in the repository but are not deployed as website content.
 
 ## Local TMDB Testing
 
