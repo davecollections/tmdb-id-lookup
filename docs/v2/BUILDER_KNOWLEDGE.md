@@ -328,6 +328,8 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 
 **Confirmed by repository tests — issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), 2026-07-12:** collection/folder Nuvio IDs are securely generated, hidden, preserved when usable, and silently repaired when missing, invalid, or duplicated. Controller import remains clean and preservation-first, title editing is UI-only and title-only, visible project/dirty status is removed, workspace return is guarded by inline discard confirmation, and collection/folder empty-state creation controls are functional. Presentation settings must be completed next, followed by a mandatory owner UI/flow review before source creation.
 
+- Twenty-seven focused automatic-ID/workspace-flow test functions bring the Node suite from the existing 272-function baseline to 299 test functions.
+
 ## 12. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
