@@ -26,13 +26,13 @@ The collection/folder editor contains one Title field. Its UI draft contains tar
 
 Collection/folder IDs, project title, and dirty badges are absent from hierarchy cards, details, editor markup, visible status text, and accessible labels. Dirty state remains controller-owned.
 
-The workspace provides a distinct **Back to builder home** button and retains the relative **Back to TMDB ID Lookup** link. Clean return resets the controller before showing welcome. Dirty return opens one inline confirmation with **Stay here** and **Discard and return**. While confirmation is open, workspace mutation/navigation controls are disabled; confirmation controls and the root backlink remain available. No routes, history APIs, browser confirmation, or persistence are used.
+The workspace provides a distinct **Back to builder home** button and retains the relative **Back to TMDB ID Lookup** link. Clean return resets the controller before showing welcome. Dirty return opens one inline confirmation with **Stay here** and **Discard and return**. Return completion uses a synchronous exact-once gate: successful completion keeps the gate held until workspace unmount, while structured or contained unexpected failure releases it for retry. While confirmation is open, workspace mutation/navigation controls are disabled; confirmation controls and the root backlink remain available. No routes, history APIs, browser confirmation, or persistence are used.
 
 Collection and folder empty states contain real creation buttons sharing the heading-action helpers. The source empty state is neutral and has no plus or source-creation control.
 
 ## Accessibility, responsive behavior, and markers
 
-The flow uses native buttons and `disabled`, moves focus to **Stay here**, restores return-button focus on cancellation, keeps approximately 48px targets, strong focus styles, semantic headings, and an inline section rather than a modal. Layout remains mobile-first at 360, 384, 393, 402, 412, and 768px, with the three-panel desktop workspace at 1024 and 1280px.
+The flow uses native buttons and `disabled`, moves focus to **Stay here**, restores return-button focus on cancellation, keeps approximately 48px targets, strong focus styles, semantic headings, and an inline section rather than a modal. The confirmation section programmatically associates both its heading and explanatory description. Layout remains mobile-first at 360, 384, 393, 402, 412, and 768px, with the three-panel desktop workspace at 1024 and 1280px.
 
 Stable markers include `return-builder-home`, `data-return-confirmation`, `stay-in-workspace`, `discard-and-return`, `create-collection-empty`, `create-folder-empty`, `data-node-editor`, and `data-editor-field="title"`. `data-editor-field="id"` is removed.
 

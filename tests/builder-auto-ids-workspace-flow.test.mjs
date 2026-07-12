@@ -11,7 +11,14 @@ import {
 	createUniqueNuvioId, defaultNuvioIdFactory, isUsableNuvioId,
 	NuvioIdGenerationError, prepareNewNodeEditable,
 } from "../builder/src/nuvio/nuvio-ids.js";
-import { resetBuilderWorkspace, workspaceNeedsDiscardConfirmation } from "../builder/src/ui/workspace-return-actions.js";
+import { createNodeEditorDraft } from "../builder/src/ui/node-editor.js";
+import {
+	completeWorkspaceReturn,
+	createWorkspaceReturnGate,
+	requestWorkspaceReturn,
+	resetBuilderWorkspace,
+	workspaceNeedsDiscardConfirmation,
+} from "../builder/src/ui/workspace-return-actions.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const vite = await createServer({ root: path.join(rootDir, "builder"), appType: "custom", logLevel: "silent", server: { middlewareMode: true } });
@@ -23,8 +30,13 @@ function sequence(prefix) { let count = 0; return () => `${prefix}-${++count}`; 
 function makeController(options = {}) {
 	return createBuilderController({ idFactory: sequence("internal"), nuvioIdFactory: sequence("nuvio"), ...options });
 }
-function renderWorkspace(controller) {
-	return renderToStaticMarkup(createElement(BuilderWorkspace, { controller, state: controller.getState() }));
+function renderWorkspace(controller, options = {}) {
+	return renderToStaticMarkup(createElement(BuilderWorkspace, { controller, state: controller.getState(), ...options }));
+}
+function openingTag(markup, marker) {
+	const markerIndex = markup.indexOf(marker);
+	assert.notEqual(markerIndex, -1, `Missing markup marker: ${marker}`);
+	return markup.slice(markup.lastIndexOf("<", markerIndex), markup.indexOf(">", markerIndex) + 1);
 }
 
 test("default factory delegates to crypto.randomUUID and has no weak fallback", () => {
@@ -194,6 +206,132 @@ test("reset uses explicit discard permission and contains raw exceptions", () =>
 	assert.equal(resetBuilderWorkspace({ startNewProject(value) { options = value; return { ok: true }; } }).ok, true);
 	assert.deepEqual(options, { title: "Untitled project", discardChanges: true });
 	assert.equal(resetBuilderWorkspace({ startNewProject() { throw new Error("raw"); } }).errors[0].code, "CONTROLLER_OPERATION_FAILED");
+});
+
+test("successful workspace return holds an exact-once gate through unmount", () => {
+	const gate = createWorkspaceReturnGate();
+	let resetCalls = 0;
+	let successCalls = 0;
+	const controller = {
+		startNewProject() {
+			resetCalls += 1;
+			return { ok: true, errors: [], warnings: [] };
+		},
+	};
+
+	assert.equal(gate.isActive(), false);
+	const first = completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+	const immediateSecond = completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+
+	assert.equal(first.ok, true);
+	assert.equal(first.started, true);
+	assert.equal(gate.isActive(), true);
+	assert.deepEqual(immediateSecond, { ok: false, started: false, ignored: true, errors: [], warnings: [] });
+	assert.equal(resetCalls, 1);
+	assert.equal(successCalls, 1);
+});
+
+test("structured workspace return failure releases the gate for one successful retry", () => {
+	const gate = createWorkspaceReturnGate();
+	let resetCalls = 0;
+	let successCalls = 0;
+	const controller = {
+		startNewProject() {
+			resetCalls += 1;
+			return resetCalls === 1
+				? { ok: false, errors: [{ code: "RESET_BLOCKED", path: "$controller", message: "Try again." }], warnings: [] }
+				: { ok: true, errors: [], warnings: [] };
+		},
+	};
+
+	const failure = completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+	assert.equal(failure.ok, false);
+	assert.equal(failure.started, true);
+	assert.equal(gate.isActive(), false);
+	assert.equal(successCalls, 0);
+
+	const retry = completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+	assert.equal(retry.ok, true);
+	assert.equal(gate.isActive(), true);
+	assert.equal(resetCalls, 2);
+	assert.equal(successCalls, 1);
+});
+
+test("unexpected workspace return failure is contained and permits retry without raw text", () => {
+	const gate = createWorkspaceReturnGate();
+	let resetCalls = 0;
+	let successCalls = 0;
+	const controller = {
+		startNewProject() {
+			resetCalls += 1;
+			if (resetCalls === 1) throw new Error("private reset detail");
+			return { ok: true, errors: [], warnings: [] };
+		},
+	};
+
+	const failure = completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+	assert.equal(failure.ok, false);
+	assert.equal(failure.errors[0].code, "CONTROLLER_OPERATION_FAILED");
+	assert.equal(JSON.stringify(failure).includes("private reset detail"), false);
+	assert.equal(gate.isActive(), false);
+	assert.equal(successCalls, 0);
+
+	assert.equal(completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } }).ok, true);
+	assert.equal(resetCalls, 2);
+	assert.equal(successCalls, 1);
+});
+
+test("clean and dirty workspace return decisions keep Stay and Discard paths distinct", () => {
+	let confirmationCalls = 0;
+	let completionCalls = 0;
+	assert.deepEqual(requestWorkspaceReturn({
+		state: { dirty: false },
+		onConfirm() { confirmationCalls += 1; },
+		onComplete() { completionCalls += 1; },
+	}), { action: "complete" });
+	assert.equal(confirmationCalls, 0);
+	assert.equal(completionCalls, 1);
+
+	assert.deepEqual(requestWorkspaceReturn({
+		state: { dirty: true },
+		onConfirm() { confirmationCalls += 1; },
+		onComplete() { completionCalls += 1; },
+	}), { action: "confirm" });
+	assert.equal(confirmationCalls, 1);
+	assert.equal(completionCalls, 1);
+
+	const gate = createWorkspaceReturnGate();
+	let resetCalls = 0;
+	let successCalls = 0;
+	const controller = { startNewProject() { resetCalls += 1; return { ok: true, errors: [], warnings: [] }; } };
+	completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+	completeWorkspaceReturn({ controller, gate, onSuccess() { successCalls += 1; } });
+	assert.equal(resetCalls, 1);
+	assert.equal(successCalls, 1);
+});
+
+test("confirmation markup associates its description and locks only workspace controls", () => {
+	const controller = makeController();
+	const created = controller.createCollection({ editable: { title: "C" } });
+	controller.selectNode(created.createdInternalId);
+	const collection = controller.getState().project.collections[0];
+	const markup = renderWorkspace(controller, { initialReturnConfirmationOpen: true });
+	const confirmation = openingTag(markup, "data-return-confirmation");
+
+	assert.equal(markup.match(/data-return-confirmation/g)?.length, 1);
+	assert.ok(confirmation.includes('aria-labelledby="return-confirmation-title"'));
+	assert.ok(confirmation.includes('aria-describedby="return-confirmation-description"'));
+	assert.equal(markup.match(/id="return-confirmation-title"/g)?.length, 1);
+	assert.equal(markup.match(/id="return-confirmation-description"/g)?.length, 1);
+	assert.equal(openingTag(markup, 'data-action="stay-in-workspace"').includes("disabled"), false);
+	assert.equal(openingTag(markup, 'data-action="discard-and-return"').includes("disabled"), false);
+	assert.equal(openingTag(markup, 'data-action="return-builder-home"').includes("disabled"), true);
+	assert.equal(openingTag(markup, 'data-node-type="collection"').includes("disabled"), true);
+	assert.equal(openingTag(markup, 'data-action="create-collection"').includes("disabled"), true);
+	assert.equal(confirmation.includes('role="dialog"'), false);
+
+	const editorMarkup = renderWorkspace(controller, { initialEditorDraft: createNodeEditorDraft(collection) });
+	assert.equal(openingTag(editorMarkup, 'data-action="return-builder-home"').includes("disabled"), true);
 });
 
 test("collection and folder empty states expose real creation buttons", () => {

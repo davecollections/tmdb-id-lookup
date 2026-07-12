@@ -9,8 +9,9 @@ import {
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import { buildBuilderViewModel } from "./view-model.js";
 import {
-	resetBuilderWorkspace,
-	workspaceNeedsDiscardConfirmation,
+	completeWorkspaceReturn,
+	createWorkspaceReturnGate,
+	requestWorkspaceReturn,
 } from "./workspace-return-actions.js";
 
 function PanelHeader({ id, title, count, action }) {
@@ -215,11 +216,16 @@ function InlineNotices({ diagnostic, migrationNotice, importWarnings }) {
 
 function ReturnConfirmation({ stayButtonRef, onStay, onDiscard }) {
 	return (
-		<section className="return-confirmation" data-return-confirmation="true" aria-labelledby="return-confirmation-title">
+		<section
+			className="return-confirmation"
+			data-return-confirmation="true"
+			aria-labelledby="return-confirmation-title"
+			aria-describedby="return-confirmation-description"
+		>
 			<div>
 				<p className="panel-kicker">Return to builder home</p>
 				<h2 id="return-confirmation-title">Discard this workspace?</h2>
-				<p>Returning to builder home will discard changes made in this browser.</p>
+				<p id="return-confirmation-description">Returning to builder home will discard changes made in this browser.</p>
 			</div>
 			<div className="return-confirmation-actions">
 				<button ref={stayButtonRef} type="button" data-action="stay-in-workspace" onClick={onStay}>Stay here</button>
@@ -239,18 +245,29 @@ function findEditableNode(project, internalId) {
 	return null;
 }
 
-export function BuilderWorkspace({ controller, state, onReturnHome = () => {}, initialEditorDraft = null, initialEditorDiagnostics = [] }) {
+export function BuilderWorkspace({
+	controller,
+	state,
+	onReturnHome = () => {},
+	initialEditorDraft = null,
+	initialEditorDiagnostics = [],
+	initialReturnConfirmationOpen = false,
+}) {
 	const view = buildBuilderViewModel(state);
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
+	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
 	const collectionEditButtonRef = useRef(null);
 	const folderEditButtonRef = useRef(null);
 	const titleInputRef = useRef(null);
 	const restoreFocusRef = useRef(null);
 	const returnHomeButtonRef = useRef(null);
 	const stayButtonRef = useRef(null);
-	const returnActionActiveRef = useRef(false);
-	const [returnConfirmationOpen, setReturnConfirmationOpen] = useState(false);
+	const returnGateRef = useRef(null);
+	if (returnGateRef.current === null) {
+		returnGateRef.current = createWorkspaceReturnGate();
+	}
+	const [returnConfirmationOpen, setReturnConfirmationOpen] = useState(initialReturnConfirmationOpen);
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
 	const selectedCollectionNode = view.selectedCollection
 		? state.project.collections.find((entry) => entry.internalId === view.selectedCollection.internalId) ?? null
@@ -323,27 +340,30 @@ export function BuilderWorkspace({ controller, state, onReturnHome = () => {}, i
 	}
 
 	function resetAndReturnHome() {
-		if (returnActionActiveRef.current) return;
-		returnActionActiveRef.current = true;
-		try {
-			const result = resetBuilderWorkspace(controller);
-			if (!result.ok) return;
-			setEditorDraft(null);
-			setEditorDiagnostics([]);
-			setReturnConfirmationOpen(false);
-			onReturnHome();
-		} finally {
-			returnActionActiveRef.current = false;
+		const result = completeWorkspaceReturn({
+			controller,
+			gate: returnGateRef.current,
+			onSuccess: () => {
+				setEditorDraft(null);
+				setEditorDiagnostics([]);
+				setReturnDiagnostic(null);
+				setReturnConfirmationOpen(false);
+				onReturnHome();
+			},
+		});
+
+		if (!result.ok && result.started) {
+			setReturnDiagnostic(result.errors?.[0] ?? null);
 		}
 	}
 
 	function handleReturnHome() {
-		if (navigationLocked || returnActionActiveRef.current) return;
-		if (workspaceNeedsDiscardConfirmation(state)) {
-			setReturnConfirmationOpen(true);
-			return;
-		}
-		resetAndReturnHome();
+		if (navigationLocked || returnGateRef.current.isActive()) return;
+		requestWorkspaceReturn({
+			state,
+			onConfirm: () => setReturnConfirmationOpen(true),
+			onComplete: resetAndReturnHome,
+		});
 	}
 
 	function stayInWorkspace() {
@@ -404,7 +424,7 @@ export function BuilderWorkspace({ controller, state, onReturnHome = () => {}, i
 			) : null}
 
 			<InlineNotices
-				diagnostic={view.operationDiagnostic}
+				diagnostic={view.operationDiagnostic ?? returnDiagnostic}
 				migrationNotice={view.migrationNotice}
 				importWarnings={state.diagnostics.import.warnings}
 			/>
