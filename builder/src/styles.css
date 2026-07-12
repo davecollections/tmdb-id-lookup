@@ -557,6 +557,143 @@ h1 {
 	margin-top: 12px;
 }
 
+.node-editor {
+	display: grid;
+	max-width: 900px;
+	gap: 16px;
+	margin-top: 12px;
+	padding: 18px;
+	background: linear-gradient(145deg, rgb(13 38 52 / 98%), rgb(7 24 33 / 98%));
+	border: 1px solid var(--border-strong);
+	border-radius: 18px;
+	box-shadow: var(--shadow);
+}
+
+.node-editor-heading {
+	display: grid;
+	gap: 10px;
+}
+
+.node-editor-heading h2 {
+	margin: 4px 0 0;
+	font-size: 1.25rem;
+	letter-spacing: -0.02em;
+}
+
+.node-editor-heading > p {
+	max-width: 620px;
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.84rem;
+	line-height: 1.55;
+}
+
+.editor-lock-note {
+	margin: 0;
+	padding: 11px 12px;
+	color: #d8f5ff;
+	font-size: 0.8rem;
+	line-height: 1.5;
+	background: rgb(1 180 228 / 8%);
+	border-left: 3px solid var(--cyan);
+	border-radius: 8px;
+}
+
+.node-editor-form {
+	display: grid;
+	max-width: 760px;
+	gap: 16px;
+}
+
+.editor-field {
+	display: grid;
+	min-width: 0;
+	align-content: start;
+	gap: 7px;
+}
+
+.editor-field label {
+	font-size: 0.8rem;
+	font-weight: 800;
+}
+
+.editor-field input {
+	width: 100%;
+	min-width: 0;
+	min-height: 48px;
+	padding: 11px 12px;
+	color: var(--text);
+	font: inherit;
+	background: rgb(5 17 25 / 90%);
+	border: 1px solid var(--border-strong);
+	border-radius: 10px;
+}
+
+.editor-field input[aria-invalid="true"] {
+	border-color: var(--coral);
+	box-shadow: 0 0 0 1px rgb(255 142 134 / 24%);
+}
+
+.editor-field-help,
+.editor-field-status {
+	margin: 0;
+	font-size: 0.72rem;
+	line-height: 1.5;
+}
+
+.editor-field-help {
+	color: var(--muted);
+}
+
+.editor-field-status {
+	color: #fff0ca;
+}
+
+.editor-diagnostics:empty {
+	display: none;
+}
+
+.editor-diagnostics ul {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 11px 12px 11px 30px;
+	color: #ffe7e4;
+	font-size: 0.78rem;
+	line-height: 1.45;
+	background: rgb(255 142 134 / 10%);
+	border: 1px solid rgb(255 142 134 / 32%);
+	border-radius: 10px;
+}
+
+.node-editor-actions {
+	display: grid;
+	gap: 9px;
+}
+
+.editor-apply,
+.editor-cancel,
+.secondary-action {
+	min-height: 48px;
+	padding: 10px 13px;
+	font-weight: 800;
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+.editor-apply {
+	color: #031119;
+	background: linear-gradient(135deg, var(--cyan), var(--green));
+	border: 0;
+}
+
+.editor-cancel,
+.secondary-action {
+	color: var(--cyan-bright);
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 24%);
+}
+
 .workspace-panel {
 	min-width: 0;
 	min-height: 480px;
@@ -618,6 +755,7 @@ h1 {
 }
 
 .primary-action,
+.secondary-action,
 .quiet-button,
 .back-control {
 	min-height: 46px;
@@ -642,6 +780,16 @@ h1 {
 .primary-action > span {
 	font-size: 1rem;
 	line-height: 1;
+}
+
+button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+}
+
+.node-button.is-selected:disabled,
+.source-button.is-selected:disabled {
+	opacity: 0.78;
 }
 
 .panel-body {
@@ -991,6 +1139,15 @@ h1 {
 		min-height: 48px;
 	}
 
+	.panel-header-actions {
+		max-width: 58%;
+	}
+
+	.panel-header-actions .primary-action,
+	.panel-header-actions .secondary-action {
+		width: 100%;
+	}
+
 	.detail-grid {
 		grid-template-columns: minmax(0, 1fr);
 	}
@@ -1020,6 +1177,20 @@ h1 {
 
 	.builder-shell {
 		padding: 22px;
+	}
+
+	.node-editor {
+		padding: 22px;
+	}
+
+	.node-editor-heading {
+		grid-template-columns: minmax(0, 0.7fr) minmax(280px, 1fr);
+		align-items: end;
+	}
+
+	.node-editor-actions {
+		grid-template-columns: auto auto;
+		justify-content: start;
 	}
 
 	.app-header {
@@ -1064,6 +1235,15 @@ h1 {
 	.welcome-start {
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
+	}
+
+	.node-editor-form {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.editor-diagnostics,
+	.node-editor-actions {
+		grid-column: 1 / -1;
 	}
 }
 
@@ -1166,7 +1346,9 @@ h1 {
 
 	.root-link:hover,
 	.back-control:hover,
-	.quiet-button:hover {
+	.quiet-button:hover,
+	.secondary-action:hover,
+	.editor-cancel:hover {
 		color: #fff;
 		border-color: var(--border-strong);
 	}
@@ -1185,11 +1367,14 @@ h1 {
 
 @media (prefers-reduced-motion: no-preference) {
 	.primary-action,
+	.secondary-action,
 	.node-button,
 	.source-button,
 	.root-link,
 	.back-control,
-	.quiet-button {
+	.quiet-button,
+	.editor-apply,
+	.editor-cancel {
 		transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, filter 150ms ease, transform 150ms ease;
 	}
 

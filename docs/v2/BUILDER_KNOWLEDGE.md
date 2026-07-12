@@ -306,8 +306,23 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Successful importer warnings enter the workspace as a collapsed, bounded details summary without becoming fatal or exposing raw JSON.
 - Imported content remains local: no networking, upload, persistence, object URL, logging, query parameter, or original-text controller state is introduced.
 - Welcome controls are labelled, keyboard-operable, busy-aware, and mobile-first at the required 360–412px widths; wider action columns remain restrained and the existing 1024/1280px workspace is preserved.
-- Twenty-nine focused welcome/import test functions cover 94 requested behaviours. With the unchanged 194-function baseline, the Node suite contains 223 test functions.
+- Thirty-three focused welcome/import test functions cover 116 tracked behaviours. With the unchanged 194-function baseline, the Node suite contains 227 test functions.
 - Export, persistence, dirty replacement UI, editing, source creation, deletion, reordering, migration actions, routing, dependencies, v1 runtime, Worker, Pages allowlist/preparation/deployment, Ultra MAX, AIO Metadata, language, and Trakt work remain outside this milestone.
+
+### Essential collection and folder editing — issue #42
+
+**Confirmed by repository tests — issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), 2026-07-12:** the workspace now supports one controlled inline editor for collection/folder Nuvio-facing IDs and titles.
+
+- The editor targets stable builder-only internal identity but never displays or changes it. Duplicate Nuvio-facing IDs remain valid and independently selectable.
+- Local React state contains only target identity/type, two form strings, original string/presence/support metadata, touched flags, and structured field diagnostics. Complete nodes, projects, children, sources, and raw imported snapshots remain outside the draft.
+- Absent or non-string imported known values are not stringified or rendered. They remain untouched unless the user enters valid replacement text for both required fields.
+- Validation checks trimmed length without trimming submitted data. Minimal patches contain only effectively changed `id` and/or `title` fields and are delegated through `controller.updateNode`.
+- Opening, cancelling, and unchanged Apply are controller-free. Actual edits retain selection, mark the project dirty, and increment controller revision once; controller failure keeps the form and remains structured.
+- While editing, hierarchy selection, both mobile back controls, collection/folder creation, both edit triggers, and selection-changing folder-summary navigation are natively disabled. Apply and Cancel stay available.
+- Opaque/community and mixed native/addon fixtures confirm raw/unknown-field preservation, source category/order retention, `catalogSources` compatibility evidence, serializer overlay behavior, and unchanged migration eligibility.
+- The single responsive editor keeps labelled fields, unique descriptions, one local alert, first-invalid-field focus, edit-trigger focus restoration, strong focus styles, and approximately 48px controls.
+- Forty-five focused node-editing test functions cover 86 requested behaviours. With the existing 227-function baseline, the Node suite contains 272 test functions.
+- Project/presentation/source editing, source creation, export, deletion, reordering, persistence, migration actions, networking, dependencies, v1, Worker, language, Ultra MAX, AIO Metadata, and Trakt remain outside this milestone.
 
 ## 11. Open questions
 
@@ -351,6 +366,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-11 | Framework-independent controller ownership, frozen external-store snapshots, guarded replacement, hierarchical selection, disposable production migration preview, explicit migration application, coordinated edits, diagnostics, and export lifecycle | [TMDB ID Lookup issue #39](https://github.com/davecollections/tmdb-id-lookup/issues/39) |
 | 2026-07-11 | First visible controller-connected builder shell, ordered hierarchy navigator, deterministic collection/folder drafts, read-only summaries, mobile drill-down, desktop panels, accessibility, and real-shell Pages markers | [TMDB ID Lookup issue #40](https://github.com/davecollections/tmdb-id-lookup/issues/40) |
 | 2026-07-12 | Corrected TMDB Collection Builder naming, local-only welcome entry, controller-delegated new-project and JSON import flows, stable diagnostics, warning summary, responsive accessibility, and welcome Pages marker | [TMDB ID Lookup issue #41](https://github.com/davecollections/tmdb-id-lookup/issues/41) |
+| 2026-07-12 | UI-only collection/folder ID and title drafts, minimal controller patches, navigation locking, unusual imported-value handling, accessibility, and raw/unknown/source-order preservation | [TMDB ID Lookup issue #42](https://github.com/davecollections/tmdb-id-lookup/issues/42) |
 
 ## Decision history
 
@@ -366,3 +382,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-11 — Application controller boundary:** place immutable current-project ownership, subscriptions, hierarchical selection, dirty-state replacement protection, explicit migration preview/application, coordinated domain edits, diagnostic scopes, and serialization calls under `builder/src/application/`. Keep domain, parsing, classification, migration eligibility/transformation, raw preservation, projection generation, and export validation in their existing production modules. Leave visible React integration, browser file handling, persistence, and undo/redo for later issues.
 - **2026-07-11 — First visible builder shell:** connect React to the controller through one external-store adapter and one production controller singleton; derive mobile drill-down directly from hierarchical selection; display only safe known summaries; and permit deterministic draft collection/folder creation without starting editing, import/export, source creation, persistence, or migration workflows.
 - **2026-07-12 — Welcome and local JSON import:** make TMDB Collection Builder the visible product name; keep welcome/workspace selection UI-only above one subscribed controller; delegate new-project and JSON parsing/import to public controller APIs; keep browser file transport local, explicit, size-limited, and structured; and preserve the existing workspace without adding export, editing, persistence, migration actions, or networking.
+- **2026-07-12 — Essential hierarchy editing:** add one UI-only inline draft for collection/folder Nuvio-facing IDs and titles; target controller nodes only by stable internal ID; validate required text locally; send only minimal changed fields through `updateNode`; lock hierarchy navigation until Apply or Cancel; and preserve raw/unknown/source evidence without changing controller, domain, importer, serializer, migration, v1, Worker, or dependency contracts.

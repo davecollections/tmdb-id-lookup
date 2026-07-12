@@ -8,7 +8,7 @@ Last reviewed: 2026-07-12
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The workspace displays the current project, ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and draft folders through existing controller actions. Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation, editing, deletion, reordering, export, persistence, and migration application remain deferred.
+The workspace displays the current project, ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and draft folders through existing controller actions. Issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42) adds the first narrow inline editor for collection/folder Nuvio-facing IDs and titles, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, presentation editing, deletion, reordering, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -30,7 +30,7 @@ React imports `createBuilderController` only from the supported `builder/src/app
 
 `useBuilderControllerState` is the only React subscription adapter. It calls `useSyncExternalStore` with `controller.subscribe`, `controller.getState`, and the same `getState` function as the server/static snapshot reader.
 
-The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation and browser import transport values use local React state.
+The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, and the two-field uncommitted node-editor draft/diagnostics use local React state.
 
 ## UI module structure
 
@@ -39,6 +39,9 @@ builder/src/ui/
   BuilderApp.jsx              subscribed welcome/workspace presentation boundary
   BuilderWelcome.jsx          welcome, file selection, pasted text and diagnostics
   BuilderWorkspace.jsx        semantic hierarchy workspace rendering
+  NodeEditor.jsx              single inline collection/folder editor form
+  node-editor.js              pure draft, validation, and patch helpers
+  node-editor-actions.js      public controller update delegation
   import-actions.js           public-controller-only browser transport helpers
   use-builder-controller.js   external-store subscription adapter
   view-model.js               pure safe display derivation
@@ -88,6 +91,12 @@ The selected-node summary includes only relevant known editable fields. Collecti
 
 The UI never renders full raw JSON, arbitrary unknown/community fields, serializer output, migration projections, exception objects, stack traces, or builder internal IDs.
 
+## Essential collection and folder editing
+
+Selected collections expose `Edit collection` in the folders context, and selected folders expose `Edit folder` in the sources context. One inline editor appears between notices and the hierarchy. It edits only Nuvio-facing `id` and `title`, keeps builder `internalId` hidden and stable, validates both values as required text, and creates a minimal changed-field patch for `controller.updateNode`.
+
+Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While the editor is open, hierarchy selection, creation, edit triggers, mobile parent navigation, and folder-summary navigation are natively disabled; Apply and Cancel remain available. Imported absent/non-string values are never displayed or stringified and require an explicit valid text replacement.
+
 ## Diagnostics and migration status
 
 The first current operation error appears in one inline `role="alert"` area with its stable message and optional code. Successful-import warnings appear separately in a collapsed, bounded native details element. The workspace does not render raw imported JSON, historical diagnostic dumps, or modal dialogs.
@@ -125,8 +134,12 @@ Deployment and focused source tests use a small stable surface:
 - `data-root-link="true"`
 - `data-panel="collections|folders|sources"`
 - `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder"`
+- `data-action="edit-collection|edit-folder|apply-node-edit|cancel-node-edit"`
 - `data-import-control="file|pasted-json"`
 - `data-node-type="collection|folder|source"`
+- `data-node-editor="collection|folder"`
+- `data-editor-field="id|title"`
+- `data-editor-lock="true"` while editing
 
 Accessible text, semantic roles, and button state remain the primary testing surface.
 
@@ -134,8 +147,8 @@ The Pages deployment workflow, workflow triggers, permissions, deployment enviro
 
 ## Deliberate exclusions
 
-The current welcome/import milestone does not add export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, edit controls, source creation, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, network import, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
+The current essential-editing milestone does not add project-title or presentation editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, network import, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
 
 ## Next likely UI milestone
 
-The next separately approved issue can introduce one deliberately scoped editing or export workflow on top of this controller-connected shell. It should retain the current external-store boundary and must not broaden supported Nuvio source assumptions without new evidence.
+The next separately approved issue can define presentation-settings editing, source creation, or export as one contained workflow. Presentation controls must first decide supported values, defaults, clearing, and property-removal semantics; source work must not broaden supported Nuvio assumptions without new evidence.
