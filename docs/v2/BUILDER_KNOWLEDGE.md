@@ -306,7 +306,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Successful importer warnings enter the workspace as a collapsed, bounded details summary without becoming fatal or exposing raw JSON.
 - Imported content remains local: no networking, upload, persistence, object URL, logging, query parameter, or original-text controller state is introduced.
 - Welcome controls are labelled, keyboard-operable, busy-aware, and mobile-first at the required 360–412px widths; wider action columns remain restrained and the existing 1024/1280px workspace is preserved.
-- Twenty-nine focused welcome/import test functions cover 94 requested behaviours. With the unchanged 194-function baseline, the Node suite contains 223 test functions.
+- Thirty-three focused welcome/import test functions cover 116 tracked behaviours. With the unchanged 194-function baseline, the Node suite contains 227 test functions.
 - Export, persistence, dirty replacement UI, editing, source creation, deletion, reordering, migration actions, routing, dependencies, v1 runtime, Worker, Pages allowlist/preparation/deployment, Ultra MAX, AIO Metadata, language, and Trakt work remain outside this milestone.
 
 ### Essential collection and folder editing — issue #42
