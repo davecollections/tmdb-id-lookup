@@ -39,8 +39,9 @@ builder/src/application/
 import { createBuilderController } from "./application/index.js";
 
 const controller = createBuilderController({
-  idFactory: deterministicIdFactory,
-  initialProjectTitle: "My project"
+	idFactory: deterministicIdFactory,
+	nuvioIdFactory: deterministicNuvioIdFactory,
+	initialProjectTitle: "My project"
 });
 ```
 
@@ -48,12 +49,13 @@ Options are:
 
 ```js
 {
-  idFactory?: () => string,
-  initialProjectTitle?: string
+	idFactory?: () => string,
+	nuvioIdFactory?: () => string,
+	initialProjectTitle?: string
 }
 ```
 
-The controller passes the configured factory to existing domain, importer, and real migration APIs. When it is omitted, the existing domain default uses `globalThis.crypto.randomUUID()`. The application layer does not create a second production ID system.
+`idFactory` remains builder-internal identity and is passed to domain, importer, and migration APIs. `nuvioIdFactory` manages only collection/folder `editable.id` values. Both secure defaults delegate independently to `globalThis.crypto.randomUUID()` and have no weak fallback.
 
 Invalid controller configuration throws `TypeError`. Normal user-action failures return structured results.
 
@@ -196,7 +198,7 @@ Successful replacement clears selection. A new project clears all diagnostics. S
 
 `importJsonText` calls `parseNuvioJsonText`. `importValue` calls `importNuvioCollections`. The controller does not parse, classify, merge, or repair import data itself.
 
-Successful import atomically installs the returned project, retains imported order and raw evidence, stays clean, clears selection, stores importer diagnostics unchanged, and recomputes migration preview.
+Successful import repairs collection/folder Nuvio-facing IDs after structural import and before the atomic commit. It preserves the first usable unique ID exactly, generates missing/invalid/later-duplicate values, retains imported order and raw evidence, stays clean, clears selection, stores importer diagnostics unchanged, and recomputes migration preview.
 
 Failed import retains current project, selection, dirty state, and migration preview. It stores the returned importer diagnostics and never exposes a partial project.
 
@@ -263,7 +265,7 @@ Folder options use the same shape and require one collection parent. Source opti
 }
 ```
 
-Creation uses domain factories plus `insertChild`, preserves domain draft defaults, detaches caller values, supports an optional insertion index, validates full-project internal-ID uniqueness, does not infer source category, and does not auto-select the new node. Success adds `createdInternalId` to the result.
+Collection/folder creation preserves a supplied usable unique Nuvio ID or generates one before committing. Source creation does not use the Nuvio ID factory. Creation otherwise uses domain factories plus `insertChild`, detaches caller values, supports an optional insertion index, validates full-project internal-ID uniqueness, does not infer source category, and does not auto-select the new node. Success adds `createdInternalId` to the result.
 
 `updateNode` delegates to `updateEditableValues` and supports project, collection, folder, and source nodes. It changes only editable values. Identity, type, category, raw evidence, and children remain intact. A structurally equal patch is a no-op.
 
@@ -325,6 +327,7 @@ Controller-owned codes are:
 - `INVALID_INSERTION_INDEX`
 - `INVALID_SOURCE_CATEGORY`
 - `INTERNAL_ID_COLLISION`
+- `NUVIO_ID_GENERATION_FAILED`
 - `MIGRATION_NOT_AVAILABLE`
 - `CONTROLLER_OPERATION_FAILED`
 - `INVALID_DIAGNOSTIC_SCOPE`

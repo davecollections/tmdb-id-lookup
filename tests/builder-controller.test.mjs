@@ -654,6 +654,8 @@ test("object serialization and JSON stringification leave project selection and 
 test("serializer errors and warnings are stored without partial project changes", () => {
 	const controller = createBuilderController({ idFactory: countingIdFactory() });
 	controller.createCollection();
+	const collectionId = controller.getState().project.collections[0].internalId;
+	controller.updateNode(collectionId, { id: "" });
 	const beforeFailure = controller.getState();
 	const failed = controller.serializeProject();
 	assert.equal(failed.ok, false);

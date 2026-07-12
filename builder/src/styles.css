@@ -384,8 +384,7 @@ summary:focus-visible {
 
 .preview-label,
 .panel-kicker,
-.summary-label,
-.project-status-label {
+.summary-label {
 	margin: 0;
 	color: var(--cyan-bright);
 	font-size: 0.7rem;
@@ -408,47 +407,20 @@ h1 {
 	letter-spacing: -0.035em;
 }
 
-.project-status {
-	display: flex;
-	min-width: 0;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 12px;
-	padding-top: 16px;
-	border-top: 1px solid var(--border);
-}
 
-.project-status > div {
+.workspace-header-actions {
 	display: grid;
-	min-width: 0;
-	gap: 4px;
+	gap: 9px;
 }
 
-.project-status strong {
-	font-size: 0.98rem;
-	overflow-wrap: anywhere;
-}
-
-.project-status-label {
-	color: var(--quiet);
-	font-size: 0.62rem;
-}
-
-.status-badge {
-	flex: 0 0 auto;
-	padding: 6px 9px;
-	color: var(--green);
-	font-size: 0.72rem;
-	font-weight: 750;
-	background: rgb(99 230 190 / 9%);
-	border: 1px solid rgb(99 230 190 / 24%);
-	border-radius: 999px;
-}
-
-.status-badge.is-dirty {
-	color: var(--amber);
-	background: rgb(242 196 109 / 9%);
-	border-color: rgb(242 196 109 / 24%);
+.builder-home-action {
+	min-height: 48px;
+	padding: 11px 14px;
+	color: var(--cyan-bright);
+	font-weight: 800;
+	background: transparent;
+	border: 1px solid var(--border-strong);
+	border-radius: 11px;
 }
 
 .root-link {
@@ -471,6 +443,57 @@ h1 {
 	display: grid;
 	gap: 10px;
 	margin-top: 12px;
+}
+
+.return-confirmation {
+	display: grid;
+	gap: 16px;
+	margin-top: 12px;
+	padding: 18px;
+	background: linear-gradient(145deg, rgb(34 29 34 / 98%), rgb(16 24 31 / 98%));
+	border: 1px solid rgb(255 142 134 / 34%);
+	border-radius: 16px;
+	box-shadow: var(--shadow);
+}
+
+.return-confirmation h2,
+.return-confirmation p {
+	margin: 0;
+}
+
+.return-confirmation h2 {
+	margin-top: 4px;
+	font-size: 1.2rem;
+}
+
+.return-confirmation h2 + p {
+	margin-top: 8px;
+	color: var(--muted);
+	line-height: 1.5;
+}
+
+.return-confirmation-actions {
+	display: grid;
+	gap: 9px;
+}
+
+.return-confirmation-actions button {
+	min-height: 48px;
+	padding: 10px 14px;
+	font-weight: 800;
+	border-radius: 10px;
+}
+
+.return-confirmation-actions button:first-child {
+	color: var(--cyan-bright);
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 28%);
+}
+
+.danger-action {
+	color: #ffe7e4;
+	background: rgb(255 142 134 / 10%);
+	border: 1px solid rgb(255 142 134 / 36%);
 }
 
 .inline-alert,
@@ -965,10 +988,10 @@ button:disabled {
 	text-align: center;
 }
 
-.empty-state-mark {
+.empty-state-action {
 	display: grid;
-	width: 40px;
-	height: 40px;
+	width: 48px;
+	height: 48px;
 	place-items: center;
 	margin-bottom: 13px;
 	color: var(--cyan-bright);
@@ -1199,16 +1222,19 @@ button:disabled {
 		padding: 20px 22px;
 	}
 
-	.project-status {
-		min-width: 290px;
-		padding: 0 0 0 20px;
-		border-top: 0;
-		border-left: 1px solid var(--border);
+	.workspace-header-actions {
+		grid-template-columns: repeat(2, auto);
+		align-items: center;
 	}
 
-	.root-link {
-		grid-column: 1 / -1;
-		justify-self: start;
+	.return-confirmation {
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		padding: 20px 22px;
+	}
+
+	.return-confirmation-actions {
+		grid-template-columns: repeat(2, auto);
 	}
 
 	.panel-header,
@@ -1238,12 +1264,7 @@ button:disabled {
 	}
 
 	.node-editor-form {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-
-	.editor-diagnostics,
-	.node-editor-actions {
-		grid-column: 1 / -1;
+		max-width: 620px;
 	}
 }
 
@@ -1263,12 +1284,7 @@ button:disabled {
 	}
 
 	.app-header {
-		grid-template-columns: minmax(0, 1fr) minmax(260px, 0.55fr) auto;
-	}
-
-	.root-link {
-		grid-column: auto;
-		justify-self: end;
+		grid-template-columns: minmax(0, 1fr) auto;
 	}
 
 	.workspace {

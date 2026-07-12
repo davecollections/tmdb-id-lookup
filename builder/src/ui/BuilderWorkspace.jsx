@@ -8,6 +8,10 @@ import {
 } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import { buildBuilderViewModel } from "./view-model.js";
+import {
+	resetBuilderWorkspace,
+	workspaceNeedsDiscardConfirmation,
+} from "./workspace-return-actions.js";
 
 function PanelHeader({ id, title, count, action }) {
 	const countLabel = count === 1 && title.endsWith("s")
@@ -28,10 +32,10 @@ function PanelHeader({ id, title, count, action }) {
 	);
 }
 
-function EmptyState({ title, children }) {
+function EmptyState({ title, children, action = null }) {
 	return (
 		<div className="empty-state">
-			<span className="empty-state-mark" aria-hidden="true">+</span>
+			{action}
 			<p className="empty-state-title">{title}</p>
 			<p>{children}</p>
 		</div>
@@ -62,7 +66,6 @@ function CollectionList({ collections, onSelect, disabled }) {
 				<li key={collection.internalId}>
 					<NodeButton node={collection} type="collection" onSelect={onSelect} disabled={disabled}>
 						<span className="node-title">{collection.title}</span>
-						{collection.id !== null ? <span className="node-id">{collection.id}</span> : null}
 						<span className="node-meta">
 							<span>{collection.folderCountLabel}</span>
 							<span>{collection.sourceCountLabel}</span>
@@ -81,7 +84,6 @@ function FolderList({ folders, onSelect, disabled }) {
 				<li key={folder.internalId}>
 					<NodeButton node={folder} type="folder" onSelect={onSelect} disabled={disabled}>
 						<span className="node-title">{folder.title}</span>
-						{folder.id !== null ? <span className="node-id">{folder.id}</span> : null}
 						<span className="node-meta">
 							<span>{folder.sourceCountLabel}</span>
 							{folder.tileShape !== null ? <span>{folder.tileShape}</span> : null}
@@ -211,6 +213,22 @@ function InlineNotices({ diagnostic, migrationNotice, importWarnings }) {
 	);
 }
 
+function ReturnConfirmation({ stayButtonRef, onStay, onDiscard }) {
+	return (
+		<section className="return-confirmation" data-return-confirmation="true" aria-labelledby="return-confirmation-title">
+			<div>
+				<p className="panel-kicker">Return to builder home</p>
+				<h2 id="return-confirmation-title">Discard this workspace?</h2>
+				<p>Returning to builder home will discard changes made in this browser.</p>
+			</div>
+			<div className="return-confirmation-actions">
+				<button ref={stayButtonRef} type="button" data-action="stay-in-workspace" onClick={onStay}>Stay here</button>
+				<button className="danger-action" type="button" data-action="discard-and-return" onClick={onDiscard}>Discard and return</button>
+			</div>
+		</section>
+	);
+}
+
 function findEditableNode(project, internalId) {
 	for (const collection of project.collections) {
 		if (collection.internalId === internalId) return collection;
@@ -221,15 +239,19 @@ function findEditableNode(project, internalId) {
 	return null;
 }
 
-export function BuilderWorkspace({ controller, state, initialEditorDraft = null, initialEditorDiagnostics = [] }) {
+export function BuilderWorkspace({ controller, state, onReturnHome = () => {}, initialEditorDraft = null, initialEditorDiagnostics = [] }) {
 	const view = buildBuilderViewModel(state);
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
 	const collectionEditButtonRef = useRef(null);
 	const folderEditButtonRef = useRef(null);
-	const idInputRef = useRef(null);
 	const titleInputRef = useRef(null);
 	const restoreFocusRef = useRef(null);
+	const returnHomeButtonRef = useRef(null);
+	const stayButtonRef = useRef(null);
+	const returnActionActiveRef = useRef(false);
+	const [returnConfirmationOpen, setReturnConfirmationOpen] = useState(false);
+	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
 	const selectedCollectionNode = view.selectedCollection
 		? state.project.collections.find((entry) => entry.internalId === view.selectedCollection.internalId) ?? null
 		: null;
@@ -238,7 +260,8 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 		: null;
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
-	const navigationLocked = visibleEditorDraft !== null;
+	const editorLocked = visibleEditorDraft !== null;
+	const navigationLocked = editorLocked || returnConfirmationOpen;
 
 	useEffect(() => {
 		if (editorDraft && !visibleEditorDraft) {
@@ -256,6 +279,16 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 		restoreFocusRef.current = null;
 		target?.focus();
 	}, [editorDraft]);
+
+	useEffect(() => {
+		if (returnConfirmationOpen) stayButtonRef.current?.focus();
+	}, [returnConfirmationOpen]);
+
+	useEffect(() => {
+		if (!restoreReturnFocus) return;
+		setRestoreReturnFocus(false);
+		returnHomeButtonRef.current?.focus();
+	}, [restoreReturnFocus]);
 
 	function selectNode(internalId) {
 		if (!navigationLocked) controller.selectNode(internalId);
@@ -283,20 +316,57 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 		const result = applyNodeEditorDraft(controller, visibleEditorDraft);
 		if (result.diagnostics.length > 0) {
 			setEditorDiagnostics(result.diagnostics);
-			queueMicrotask(() => {
-				const inputRef = result.diagnostics[0].path === "$ui.editor.title" ? titleInputRef : idInputRef;
-				inputRef.current?.focus();
-			});
+			queueMicrotask(() => titleInputRef.current?.focus());
 			return;
 		}
 		if (result.ok) closeEditor();
+	}
+
+	function resetAndReturnHome() {
+		if (returnActionActiveRef.current) return;
+		returnActionActiveRef.current = true;
+		try {
+			const result = resetBuilderWorkspace(controller);
+			if (!result.ok) return;
+			setEditorDraft(null);
+			setEditorDiagnostics([]);
+			setReturnConfirmationOpen(false);
+			onReturnHome();
+		} finally {
+			returnActionActiveRef.current = false;
+		}
+	}
+
+	function handleReturnHome() {
+		if (navigationLocked || returnActionActiveRef.current) return;
+		if (workspaceNeedsDiscardConfirmation(state)) {
+			setReturnConfirmationOpen(true);
+			return;
+		}
+		resetAndReturnHome();
+	}
+
+	function stayInWorkspace() {
+		if (!returnConfirmationOpen) return;
+		setReturnConfirmationOpen(false);
+		setRestoreReturnFocus(true);
+	}
+
+	function createCollection() {
+		if (!navigationLocked) createDraftCollection(controller);
+	}
+
+	function createFolder() {
+		if (!navigationLocked && view.selectedCollection) {
+			createDraftFolder(controller, view.selectedCollection.internalId);
+		}
 	}
 
 	return (
 		<main
 			className="builder-shell"
 			data-builder-shell="true"
-			data-editor-lock={navigationLocked ? "true" : undefined}
+			data-editor-lock={editorLocked ? "true" : undefined}
 		>
 			<header className="app-header">
 				<div className="brand-lockup">
@@ -307,20 +377,31 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 						<p className="workspace-subtitle">Built for Nuvio collections</p>
 					</div>
 				</div>
-				<div className="project-status">
-					<div>
-						<span className="project-status-label">Current project</span>
-						<strong>{view.projectTitle}</strong>
-					</div>
-					<span className={`status-badge${view.dirty ? " is-dirty" : ""}`}>
-						{view.dirty ? "Unsaved changes" : "Clean draft"}
-					</span>
+				<div className="workspace-header-actions">
+					<button
+						ref={returnHomeButtonRef}
+						className="builder-home-action"
+						type="button"
+						data-action="return-builder-home"
+						disabled={navigationLocked}
+						onClick={handleReturnHome}
+					>
+						Back to builder home
+					</button>
+					<a className="root-link" data-root-link="true" href="../">
+						<span aria-hidden="true">←</span>
+						Back to TMDB ID Lookup
+					</a>
 				</div>
-				<a className="root-link" data-root-link="true" href="../">
-					<span aria-hidden="true">←</span>
-					Back to TMDB ID Lookup
-				</a>
 			</header>
+
+			{returnConfirmationOpen ? (
+				<ReturnConfirmation
+					stayButtonRef={stayButtonRef}
+					onStay={stayInWorkspace}
+					onDiscard={resetAndReturnHome}
+				/>
+			) : null}
 
 			<InlineNotices
 				diagnostic={view.operationDiagnostic}
@@ -332,7 +413,6 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 				<NodeEditor
 					draft={visibleEditorDraft}
 					diagnostics={editorDiagnostics}
-					idInputRef={idInputRef}
 					titleInputRef={titleInputRef}
 					onChange={(field, value) => {
 						setEditorDraft((current) => updateNodeEditorField(current, field, value));
@@ -355,7 +435,7 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 								type="button"
 								data-action="create-collection"
 								disabled={navigationLocked}
-								onClick={() => { if (!navigationLocked) createDraftCollection(controller); }}
+								onClick={createCollection}
 							>
 								<span aria-hidden="true">+</span>
 								New collection
@@ -366,7 +446,14 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 						{view.collections.length > 0 ? (
 							<CollectionList collections={view.collections} onSelect={selectNode} disabled={navigationLocked} />
 						) : (
-							<EmptyState title="Start your first collection">
+							<EmptyState
+								title="Start your first collection"
+								action={(
+									<button className="empty-state-action" type="button" data-action="create-collection-empty" disabled={navigationLocked} onClick={createCollection} aria-label="Create first collection">
+										<span aria-hidden="true">+</span>
+									</button>
+								)}
+							>
 								Create a draft collection to begin organising folders and sources.
 							</EmptyState>
 						)}
@@ -405,9 +492,7 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 									type="button"
 									data-action="create-folder"
 									disabled={navigationLocked}
-									onClick={() => {
-										if (!navigationLocked) createDraftFolder(controller, view.selectedCollection.internalId);
-									}}
+									onClick={createFolder}
 								>
 									<span aria-hidden="true">+</span>
 									New folder
@@ -421,7 +506,16 @@ export function BuilderWorkspace({ controller, state, initialEditorDraft = null,
 						) : view.folders.length > 0 ? (
 							<FolderList folders={view.folders} onSelect={selectNode} disabled={navigationLocked} />
 						) : (
-							<EmptyState title="No folders yet">Add a draft folder inside {view.selectedCollection.title}.</EmptyState>
+							<EmptyState
+								title="No folders yet"
+								action={(
+									<button className="empty-state-action" type="button" data-action="create-folder-empty" disabled={navigationLocked} onClick={createFolder} aria-label="Create first folder">
+										<span aria-hidden="true">+</span>
+									</button>
+								)}
+							>
+								Add a draft folder inside {view.selectedCollection.title}.
+							</EmptyState>
 						)}
 						{view.selectedCollection && !view.selectedFolder ? (
 							<div className="mobile-summary mobile-only">

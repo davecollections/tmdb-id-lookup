@@ -36,6 +36,7 @@ function sequenceIdFactory(...ids) {
 function createController(options = {}) {
 	return createBuilderController({
 		idFactory: countingIdFactory(),
+		nuvioIdFactory: countingIdFactory("nuvio"),
 		initialProjectTitle: "Untitled project",
 		...options,
 	});
@@ -99,14 +100,13 @@ test("React subscribes through the external-store API without mirrored project s
 	assert.doesNotMatch(uiSource(), /from\s+["'][^"']*application\/|createBuilderController/);
 });
 
-test("empty shell renders the product header, clean state, backlink, and start action", () => {
+test("empty shell renders the product header, navigation, and start action", () => {
 	const markup = render(createController());
 	for (const text of [
 		"TMDB Collection Builder",
 		"Built for Nuvio collections",
 		"Development preview",
-		"Untitled project",
-		"Clean draft",
+		"Back to builder home",
 		"Back to TMDB ID Lookup",
 		"Start your first collection",
 		"New collection",
@@ -137,8 +137,8 @@ test("empty shell omits old placeholder and deferred controls", () => {
 test("empty view model derives fallbacks and the collection mobile level", () => {
 	const state = createController({ initialProjectTitle: "" }).getState();
 	const view = buildBuilderViewModel(state);
-	assert.equal(view.projectTitle, "Untitled project");
-	assert.equal(view.dirty, false);
+	assert.equal(Object.hasOwn(view, "projectTitle"), false);
+	assert.equal(Object.hasOwn(view, "dirty"), false);
 	assert.deepEqual(view.collections, []);
 	assert.equal(view.selectedNode, null);
 	assert.equal(view.activeMobileLevel, "collections");
@@ -158,11 +158,11 @@ test("view model resolves hierarchy, preserves order, counts children, and falls
 	const [firstCollection] = controller.getState().project.collections;
 	controller.selectNode(firstCollection.folders[0].internalId);
 	const view = buildBuilderViewModel(controller.getState());
-	assert.deepEqual(view.collections.map((item) => item.id), ["first", "second"]);
+	assert.equal(view.collections.every((item) => !Object.hasOwn(item, "id")), true);
 	assert.equal(view.collections[0].title, "Untitled collection");
 	assert.equal(view.collections[0].folderCount, 2);
 	assert.equal(view.collections[0].sourceCount, 1);
-	assert.deepEqual(view.folders.map((item) => item.id), ["folder-a", "folder-b"]);
+	assert.equal(view.folders.every((item) => !Object.hasOwn(item, "id")), true);
 	assert.equal(view.folders[0].title, "Untitled folder");
 	assert.equal(view.selectedCollection.internalId, firstCollection.internalId);
 	assert.equal(view.selectedFolder.internalId, firstCollection.folders[0].internalId);
@@ -266,42 +266,42 @@ test("repeated source metadata values retain semantic keys without React warning
 	assert.ok(markup.indexOf("Repeated metadata") < markup.indexOf("Second source"));
 });
 
-test("first draft collection uses the requested identity and becomes selected", () => {
+test("first draft collection uses an automatic identity and becomes selected", () => {
 	const controller = createController();
 	const result = createDraftCollection(controller);
 	const collection = controller.getState().project.collections[0];
 	assert.equal(result.ok, true);
 	assert.equal(result.createdInternalId, collection.internalId);
-	assert.deepEqual(collection.editable, { id: "collection-1", title: "Untitled Collection" });
+	assert.deepEqual(collection.editable, { id: "nuvio-1", title: "Untitled Collection" });
 	assert.equal(controller.getState().selection.collectionInternalId, collection.internalId);
 	assert.equal(controller.getState().dirty, true);
 	assert.deepEqual(collection.folders, []);
 });
 
-test("later draft collections use the smallest free imported or existing ID", () => {
+test("later draft collections use the smallest free exact draft title", () => {
 	const controller = createController();
 	controller.importValue([
-		{ id: "collection-1", title: "Imported one", folders: [] },
-		{ id: "collection-3", title: "Imported three", folders: [] },
+		{ id: "collection-1", title: "Untitled Collection", folders: [] },
+		{ id: "collection-3", title: "Untitled Collection 3", folders: [] },
 	]);
 	createDraftCollection(controller);
 	const created = controller.getState().project.collections[2];
-	assert.equal(created.editable.id, "collection-2");
+	assert.equal(created.editable.id, "nuvio-1");
 	assert.equal(created.editable.title, "Untitled Collection 2");
 	assert.deepEqual(controller.getState().project.collections.slice(0, 2).map((item) => item.editable.id), ["collection-1", "collection-3"]);
 });
 
-test("draft folder IDs are unique across the whole project and no source is created", () => {
+test("draft folder titles use the smallest free exact title and no source is created", () => {
 	const controller = createController();
 	controller.importValue([
-		{ id: "c1", title: "One", folders: [{ id: "folder-1", title: "Existing", sources: [] }] },
+		{ id: "c1", title: "One", folders: [{ id: "folder-1", title: "Untitled Folder", sources: [] }] },
 		{ id: "c2", title: "Two", folders: [] },
 	]);
 	const secondCollection = controller.getState().project.collections[1];
 	const result = createDraftFolder(controller, secondCollection.internalId);
 	const created = controller.getState().project.collections[1].folders[0];
 	assert.equal(result.ok, true);
-	assert.deepEqual(created.editable, { id: "folder-2", title: "Untitled Folder 2" });
+	assert.deepEqual(created.editable, { id: "nuvio-1", title: "Untitled Folder 2" });
 	assert.equal(controller.getState().selection.folderInternalId, created.internalId);
 	assert.deepEqual(created.sources, []);
 });
@@ -347,13 +347,15 @@ test("injected hierarchy renders every level in order with selected state and kn
 	assert.equal(markup.includes("builder-only-"), false);
 });
 
-test("dirty status changes after creation while an imported project remains clean", () => {
+test("dirty status remains internal and is not rendered", () => {
 	const controller = createController();
 	controller.importValue([{ id: "c", title: "C", folders: [] }]);
-	assert.ok(render(controller).includes("Clean draft"));
+	assert.equal(controller.getState().dirty, false);
+	assert.equal(render(controller).includes("Clean draft"), false);
 	createDraftCollection(controller);
 	const markup = render(controller);
-	assert.ok(markup.includes("Unsaved changes"));
+	assert.equal(controller.getState().dirty, true);
+	assert.equal(markup.includes("Unsaved changes"), false);
 	assert.equal(markup.includes("Clean draft"), false);
 });
 

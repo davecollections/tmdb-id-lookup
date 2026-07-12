@@ -49,7 +49,6 @@ function buildCollection(collection, selectedInternalId) {
 	return {
 		internalId: collection.internalId,
 		title: nonBlankText(collection.editable.title) ?? "Untitled collection",
-		id: presentValue(collection.editable.id),
 		folderCount,
 		sourceCount,
 		folderCountLabel: countLabel(folderCount, "folder"),
@@ -57,7 +56,6 @@ function buildCollection(collection, selectedInternalId) {
 		selected: collection.internalId === selectedInternalId,
 		details: compactDetails([
 			detail("Title", nonBlankText(collection.editable.title) ?? "Untitled collection"),
-			detail("Collection ID", presentValue(collection.editable.id)),
 			detail("Folders", folderCount),
 			detail("Sources", sourceCount),
 			Object.hasOwn(collection.editable, "pinToTop") ? detail("Pinned to top", presentValue(collection.editable.pinToTop)) : null,
@@ -72,14 +70,12 @@ function buildFolder(folder, selectedInternalId) {
 	return {
 		internalId: folder.internalId,
 		title: nonBlankText(folder.editable.title) ?? "Untitled folder",
-		id: presentValue(folder.editable.id),
 		sourceCount,
 		sourceCountLabel: countLabel(sourceCount, "source"),
 		tileShape: presentValue(folder.editable.tileShape),
 		selected: folder.internalId === selectedInternalId,
 		details: compactDetails([
 			detail("Title", nonBlankText(folder.editable.title) ?? "Untitled folder"),
-			detail("Folder ID", presentValue(folder.editable.id)),
 			detail("Sources", sourceCount),
 			detail("Tile shape", presentValue(folder.editable.tileShape)),
 			Object.hasOwn(folder.editable, "hideTitle") ? detail("Title hidden", presentValue(folder.editable.hideTitle)) : null,
@@ -190,8 +186,6 @@ export function buildBuilderViewModel(state) {
 	const selectedNode = selectedSource ?? selectedFolder ?? selectedCollection;
 
 	return {
-		projectTitle: nonBlankText(state.project.editable.title) ?? "Untitled project",
-		dirty: state.dirty,
 		collections,
 		selectedCollection,
 		folders,
