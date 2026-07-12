@@ -70,6 +70,26 @@ function checkUnsafeFrontendPatterns() {
 	}
 }
 
+function checkCollectionCoverAssetPaths() {
+	const exporterFiles = ["js/genre-nuvio-export.js", "js/bulk-people-nuvio-export.js"];
+	const obsoletePaths = ["assets/collection%20covers/", "assets/collection covers/"];
+	const canonicalPath = "assets/collection_covers/";
+
+	for (const file of exporterFiles) {
+		const source = readText(file);
+
+		for (const obsoletePath of obsoletePaths) {
+			if (source.includes(obsoletePath)) {
+				failures.push(`${file}: contains obsolete collection-cover path ${obsoletePath}`);
+			}
+		}
+
+		if (!source.includes(canonicalPath)) {
+			failures.push(`${file}: missing canonical collection-cover path ${canonicalPath}`);
+		}
+	}
+}
+
 function parseCsvLine(line) {
 	const values = [];
 	let value = "";
@@ -354,6 +374,7 @@ checkJavaScriptSyntax();
 checkDataJson();
 checkDuplicateHtmlIds();
 checkUnsafeFrontendPatterns();
+checkCollectionCoverAssetPaths();
 checkCachedDataIds();
 checkNuvioExportSanity();
 

@@ -1,5 +1,5 @@
 const NUVIO_PEOPLE_BACKDROP_URL =
-	"https://github.com/davecollections/nuvio-assets/blob/main/assets/collection%20covers/people/people%20hero%20backdrop.jpg?raw=true";
+	"https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/people%20hero%20backdrop.jpg";
 
 const NUVIO_PERSON_SORTS = {
 	POPULAR: {
