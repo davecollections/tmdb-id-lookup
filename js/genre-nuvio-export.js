@@ -85,7 +85,7 @@ function getGenreArtworkUrl(genreName, tileShape) {
 	const encodedName = encodeURIComponent(artworkName).replace(/%20/g, "%20");
 	const artworkFolder = tileShape === "LANDSCAPE" ? "wide" : "vertical";
 
-	return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection%20covers/genre/${artworkFolder}/${encodedName}.jpg`;
+	return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/${artworkFolder}/${encodedName}.jpg`;
 }
 
 function getGenreNuvioOptions() {
