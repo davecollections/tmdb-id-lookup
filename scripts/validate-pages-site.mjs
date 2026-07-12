@@ -208,6 +208,10 @@ if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
 		failures.push("The generated builder JavaScript does not contain the builder shell marker.");
 	}
 
+	if (!builderJavaScript.includes("data-node-editor")) {
+		failures.push("The generated builder JavaScript does not contain the node editor marker.");
+	}
+
 	if (!/\bhref\s*:\s*(["'`])\.\.\/\1/.test(builderJavaScript) || !builderJavaScript.includes("data-root-link")) {
 		failures.push("The generated builder link back to the root application is missing or incorrect.");
 	}

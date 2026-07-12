@@ -1,5 +1,12 @@
+import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
+import { NodeEditor } from "./NodeEditor.jsx";
+import {
+	createNodeEditorDraft,
+	updateNodeEditorField,
+} from "./node-editor.js";
+import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import { buildBuilderViewModel } from "./view-model.js";
 
 function PanelHeader({ id, title, count, action }) {
@@ -31,13 +38,14 @@ function EmptyState({ title, children }) {
 	);
 }
 
-function NodeButton({ node, type, children, onSelect }) {
+function NodeButton({ node, type, children, onSelect, disabled }) {
 	return (
 		<button
 			className={`node-button${node.selected ? " is-selected" : ""}`}
 			type="button"
 			data-node-type={type}
 			aria-pressed={node.selected}
+			disabled={disabled}
 			onClick={() => onSelect(node.internalId)}
 		>
 			<span className="node-button-content">{children}</span>
@@ -47,12 +55,12 @@ function NodeButton({ node, type, children, onSelect }) {
 	);
 }
 
-function CollectionList({ collections, onSelect }) {
+function CollectionList({ collections, onSelect, disabled }) {
 	return (
 		<ul className="node-list" aria-label="Collections">
 			{collections.map((collection) => (
 				<li key={collection.internalId}>
-					<NodeButton node={collection} type="collection" onSelect={onSelect}>
+					<NodeButton node={collection} type="collection" onSelect={onSelect} disabled={disabled}>
 						<span className="node-title">{collection.title}</span>
 						{collection.id !== null ? <span className="node-id">{collection.id}</span> : null}
 						<span className="node-meta">
@@ -66,12 +74,12 @@ function CollectionList({ collections, onSelect }) {
 	);
 }
 
-function FolderList({ folders, onSelect }) {
+function FolderList({ folders, onSelect, disabled }) {
 	return (
 		<ul className="node-list" aria-label="Folders">
 			{folders.map((folder) => (
 				<li key={folder.internalId}>
-					<NodeButton node={folder} type="folder" onSelect={onSelect}>
+					<NodeButton node={folder} type="folder" onSelect={onSelect} disabled={disabled}>
 						<span className="node-title">{folder.title}</span>
 						{folder.id !== null ? <span className="node-id">{folder.id}</span> : null}
 						<span className="node-meta">
@@ -85,7 +93,7 @@ function FolderList({ folders, onSelect }) {
 	);
 }
 
-function SourceList({ sources, onSelect }) {
+function SourceList({ sources, onSelect, disabled }) {
 	return (
 		<ul className="source-list" aria-label="Sources">
 			{sources.map((source, index) => (
@@ -96,6 +104,7 @@ function SourceList({ sources, onSelect }) {
 						data-node-type="source"
 						data-source-category={source.category}
 						aria-pressed={source.selected}
+						disabled={disabled}
 						onClick={() => onSelect(source.internalId)}
 					>
 						<span className="source-order" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
@@ -124,6 +133,7 @@ function SelectionSummary({
 	selectedSource,
 	selectedFolder,
 	onShowFolderDetails,
+	navigationLocked = false,
 }) {
 	if (!node) {
 		return (
@@ -142,7 +152,7 @@ function SelectionSummary({
 					<h3 id={headingId}>{node.title}</h3>
 				</div>
 				{selectedSource && selectedFolder ? (
-					<button className="quiet-button" type="button" onClick={onShowFolderDetails}>
+					<button className="quiet-button" type="button" disabled={navigationLocked} onClick={onShowFolderDetails}>
 						Show folder details
 					</button>
 				) : null}
@@ -201,12 +211,93 @@ function InlineNotices({ diagnostic, migrationNotice, importWarnings }) {
 	);
 }
 
-export function BuilderWorkspace({ controller, state }) {
+function findEditableNode(project, internalId) {
+	for (const collection of project.collections) {
+		if (collection.internalId === internalId) return collection;
+		for (const folder of collection.folders) {
+			if (folder.internalId === internalId) return folder;
+		}
+	}
+	return null;
+}
+
+export function BuilderWorkspace({ controller, state, initialEditorDraft = null, initialEditorDiagnostics = [] }) {
 	const view = buildBuilderViewModel(state);
-	const selectNode = (internalId) => controller.selectNode(internalId);
+	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
+	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
+	const collectionEditButtonRef = useRef(null);
+	const folderEditButtonRef = useRef(null);
+	const idInputRef = useRef(null);
+	const titleInputRef = useRef(null);
+	const restoreFocusRef = useRef(null);
+	const selectedCollectionNode = view.selectedCollection
+		? state.project.collections.find((entry) => entry.internalId === view.selectedCollection.internalId) ?? null
+		: null;
+	const selectedFolderNode = selectedCollectionNode && view.selectedFolder
+		? selectedCollectionNode.folders.find((entry) => entry.internalId === view.selectedFolder.internalId) ?? null
+		: null;
+	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
+	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
+	const navigationLocked = visibleEditorDraft !== null;
+
+	useEffect(() => {
+		if (editorDraft && !visibleEditorDraft) {
+			setEditorDraft(null);
+			setEditorDiagnostics([]);
+			restoreFocusRef.current = null;
+		}
+	}, [editorDraft, visibleEditorDraft]);
+
+	useEffect(() => {
+		if (editorDraft !== null || restoreFocusRef.current === null) return;
+		const target = restoreFocusRef.current === "folder"
+			? folderEditButtonRef.current
+			: collectionEditButtonRef.current;
+		restoreFocusRef.current = null;
+		target?.focus();
+	}, [editorDraft]);
+
+	function selectNode(internalId) {
+		if (!navigationLocked) controller.selectNode(internalId);
+	}
+
+	function openEditor(node) {
+		if (navigationLocked) return;
+		const draft = createNodeEditorDraft(node);
+		if (!draft) return;
+		setEditorDiagnostics([]);
+		setEditorDraft(draft);
+	}
+
+	function closeEditor() {
+		if (!visibleEditorDraft) return;
+		restoreFocusRef.current = visibleEditorDraft.nodeType;
+		setEditorDiagnostics([]);
+		setEditorDraft(null);
+	}
+
+	function handleEditorSubmit(event) {
+		event.preventDefault();
+		if (!visibleEditorDraft) return;
+
+		const result = applyNodeEditorDraft(controller, visibleEditorDraft);
+		if (result.diagnostics.length > 0) {
+			setEditorDiagnostics(result.diagnostics);
+			queueMicrotask(() => {
+				const inputRef = result.diagnostics[0].path === "$ui.editor.title" ? titleInputRef : idInputRef;
+				inputRef.current?.focus();
+			});
+			return;
+		}
+		if (result.ok) closeEditor();
+	}
 
 	return (
-		<main className="builder-shell" data-builder-shell="true">
+		<main
+			className="builder-shell"
+			data-builder-shell="true"
+			data-editor-lock={navigationLocked ? "true" : undefined}
+		>
 			<header className="app-header">
 				<div className="brand-lockup">
 					<img className="builder-mark" src={builderMark} alt="" width="56" height="56" />
@@ -237,6 +328,21 @@ export function BuilderWorkspace({ controller, state }) {
 				importWarnings={state.diagnostics.import.warnings}
 			/>
 
+			{visibleEditorDraft ? (
+				<NodeEditor
+					draft={visibleEditorDraft}
+					diagnostics={editorDiagnostics}
+					idInputRef={idInputRef}
+					titleInputRef={titleInputRef}
+					onChange={(field, value) => {
+						setEditorDraft((current) => updateNodeEditorField(current, field, value));
+						setEditorDiagnostics((current) => current.filter((entry) => entry.path !== `$ui.editor.${field}`));
+					}}
+					onSubmit={handleEditorSubmit}
+					onCancel={closeEditor}
+				/>
+			) : null}
+
 			<div className="workspace" data-mobile-level={view.activeMobileLevel}>
 				<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
 					<PanelHeader
@@ -248,7 +354,8 @@ export function BuilderWorkspace({ controller, state }) {
 								className="primary-action"
 								type="button"
 								data-action="create-collection"
-								onClick={() => createDraftCollection(controller)}
+								disabled={navigationLocked}
+								onClick={() => { if (!navigationLocked) createDraftCollection(controller); }}
 							>
 								<span aria-hidden="true">+</span>
 								New collection
@@ -257,7 +364,7 @@ export function BuilderWorkspace({ controller, state }) {
 					/>
 					<div className="panel-body">
 						{view.collections.length > 0 ? (
-							<CollectionList collections={view.collections} onSelect={selectNode} />
+							<CollectionList collections={view.collections} onSelect={selectNode} disabled={navigationLocked} />
 						) : (
 							<EmptyState title="Start your first collection">
 								Create a draft collection to begin organising folders and sources.
@@ -267,7 +374,12 @@ export function BuilderWorkspace({ controller, state }) {
 				</section>
 
 				<section className="workspace-panel folders-panel" data-panel="folders" aria-labelledby="folders-title">
-					<button className="back-control mobile-only" type="button" onClick={() => controller.clearSelection()}>
+					<button
+						className="back-control mobile-only"
+						type="button"
+						disabled={navigationLocked}
+						onClick={() => { if (!navigationLocked) controller.clearSelection(); }}
+					>
 						<span aria-hidden="true">←</span>
 						All collections
 					</button>
@@ -277,28 +389,47 @@ export function BuilderWorkspace({ controller, state }) {
 						title="Folders"
 						count={view.folders.length}
 						action={view.selectedCollection ? (
-							<button
-								className="primary-action"
-								type="button"
-								data-action="create-folder"
-								onClick={() => createDraftFolder(controller, view.selectedCollection.internalId)}
-							>
-								<span aria-hidden="true">+</span>
-								New folder
-							</button>
+							<>
+								<button
+									ref={collectionEditButtonRef}
+									className="secondary-action"
+									type="button"
+									data-action="edit-collection"
+									disabled={navigationLocked}
+									onClick={() => openEditor(selectedCollectionNode)}
+								>
+									Edit collection
+								</button>
+								<button
+									className="primary-action"
+									type="button"
+									data-action="create-folder"
+									disabled={navigationLocked}
+									onClick={() => {
+										if (!navigationLocked) createDraftFolder(controller, view.selectedCollection.internalId);
+									}}
+								>
+									<span aria-hidden="true">+</span>
+									New folder
+								</button>
+							</>
 						) : null}
 					/>
 					<div className="panel-body">
 						{!view.selectedCollection ? (
 							<p className="neutral-state">Select a collection to view its folders.</p>
 						) : view.folders.length > 0 ? (
-							<FolderList folders={view.folders} onSelect={selectNode} />
+							<FolderList folders={view.folders} onSelect={selectNode} disabled={navigationLocked} />
 						) : (
 							<EmptyState title="No folders yet">Add a draft folder inside {view.selectedCollection.title}.</EmptyState>
 						)}
 						{view.selectedCollection && !view.selectedFolder ? (
 							<div className="mobile-summary mobile-only">
-								<SelectionSummary node={view.selectedCollection} headingId="mobile-selection-summary-title" />
+								<SelectionSummary
+									node={view.selectedCollection}
+									headingId="mobile-selection-summary-title"
+									navigationLocked={navigationLocked}
+								/>
 							</div>
 						) : null}
 					</div>
@@ -309,19 +440,36 @@ export function BuilderWorkspace({ controller, state }) {
 						<button
 							className="back-control mobile-only"
 							type="button"
-							onClick={() => controller.selectNode(view.selectedCollection.internalId)}
+							disabled={navigationLocked}
+							onClick={() => selectNode(view.selectedCollection.internalId)}
 						>
 							<span aria-hidden="true">←</span>
 							{view.selectedCollection.title}
 						</button>
 					) : null}
 					{view.selectedFolder ? <p className="mobile-context mobile-only">{view.selectedFolder.title}</p> : null}
-					<PanelHeader id="sources-title" title="Sources" count={view.sources.length} />
+					<PanelHeader
+						id="sources-title"
+						title="Sources"
+						count={view.sources.length}
+						action={view.selectedFolder ? (
+							<button
+								ref={folderEditButtonRef}
+								className="secondary-action"
+								type="button"
+								data-action="edit-folder"
+								disabled={navigationLocked}
+								onClick={() => openEditor(selectedFolderNode)}
+							>
+								Edit folder
+							</button>
+						) : null}
+					/>
 					<div className="panel-body sources-body">
 						{!view.selectedFolder ? (
 							<p className="neutral-state">Select a folder to view its sources.</p>
 						) : view.sources.length > 0 ? (
-							<SourceList sources={view.sources} onSelect={selectNode} />
+							<SourceList sources={view.sources} onSelect={selectNode} disabled={navigationLocked} />
 						) : (
 							<EmptyState title="No sources in this folder yet.">Source creation will arrive in a later builder step.</EmptyState>
 						)}
@@ -330,7 +478,8 @@ export function BuilderWorkspace({ controller, state }) {
 							headingId="selection-summary-title"
 							selectedSource={view.selectedSource}
 							selectedFolder={view.selectedFolder}
-							onShowFolderDetails={() => controller.selectNode(view.selectedFolder.internalId)}
+							navigationLocked={navigationLocked}
+							onShowFolderDetails={() => selectNode(view.selectedFolder.internalId)}
 						/>
 					</div>
 				</section>

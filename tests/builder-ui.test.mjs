@@ -85,14 +85,17 @@ test("production bootstrap creates one controller outside React rendering", () =
 test("React subscribes through the external-store API without mirrored project state", () => {
 	const hook = read("builder/src/ui/use-builder-controller.js");
 	const workspaceSource = [
-		read("builder/src/ui/BuilderWorkspace.jsx"),
 		read("builder/src/ui/view-model.js"),
 		read("builder/src/ui/draft-actions.js"),
 	].join("\n");
+	const editorWorkspaceSource = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(hook, /useSyncExternalStore/);
 	assert.match(hook, /controller\.subscribe/);
 	assert.equal((hook.match(/controller\.getState/g) ?? []).length, 2);
 	assert.doesNotMatch(workspaceSource, /\buseState\b/);
+	assert.match(editorWorkspaceSource, /useState\(initialEditorDraft\)/);
+	assert.match(editorWorkspaceSource, /useState\(initialEditorDiagnostics\)/);
+	assert.doesNotMatch(editorWorkspaceSource, /useState\(state\.project|setProject|setCollections|setFolders|setSources/);
 	assert.doesNotMatch(uiSource(), /from\s+["'][^"']*application\/|createBuilderController/);
 });
 
