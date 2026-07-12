@@ -15,6 +15,12 @@ import {
 } from "../domain/index.js";
 import { importNuvioCollections, parseNuvioJsonText } from "../import/index.js";
 import { migrateLegacyAddonProjections } from "../migrate/index.js";
+import {
+	defaultNuvioIdFactory,
+	NuvioIdGenerationError,
+	prepareNewNodeEditable,
+	repairProjectNuvioIds,
+} from "../nuvio/nuvio-ids.js";
 import { serializeNuvioProject, stringifyNuvioProject } from "../serialize/index.js";
 import {
 	CONTROLLER_DIAGNOSTIC_CODES,
@@ -43,11 +49,12 @@ const diagnosticScopes = new Set(DIAGNOSTIC_SCOPES);
 /**
  * Creates the framework-independent owner of current builder application state.
  *
- * @param {{idFactory?: () => string, initialProjectTitle?: string}} [options]
+ * @param {{idFactory?: () => string, nuvioIdFactory?: () => string, initialProjectTitle?: string}} [options]
  */
 export function createBuilderController(options = {}) {
 	validateControllerOptions(options);
 	const idFactory = options.idFactory ?? defaultInternalIdFactory;
+	const nuvioIdFactory = options.nuvioIdFactory ?? defaultNuvioIdFactory;
 	let initialProject;
 
 	try {
@@ -218,6 +225,18 @@ export function createBuilderController(options = {}) {
 			return failWithDiagnostics("import", result.errors, result.warnings);
 		}
 
+		let repairedProject;
+		try {
+			repairedProject = repairProjectNuvioIds(result.project, nuvioIdFactory);
+		} catch {
+			return failWithControllerDiagnostic(
+				"import",
+				CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+				"$controller.nuvioIds",
+				"A unique Nuvio collection or folder ID could not be generated.",
+			);
+		}
+
 		const diagnostics = replaceDiagnosticScope(
 			createEmptyDiagnostics(),
 			"import",
@@ -225,10 +244,10 @@ export function createBuilderController(options = {}) {
 			result.warnings,
 		);
 		commitPatch({
-			project: result.project,
+			project: repairedProject,
 			selection: createEmptySelection(),
 			dirty: false,
-			migrationPreview: createMigrationPreview(result.project),
+			migrationPreview: createMigrationPreview(repairedProject),
 			diagnostics,
 		});
 		return actionResult(true, state.diagnostics.import.errors, state.diagnostics.import.warnings);
@@ -360,14 +379,27 @@ export function createBuilderController(options = {}) {
 		let node;
 		let project;
 		try {
+			const editable = requiresCategory
+				? actionOptions.editable
+				: prepareNewNodeEditable(state.project, actionOptions.editable ?? {}, nuvioIdFactory);
 			node = factory({
 				idFactory,
 				...(requiresCategory ? { category: actionOptions.category } : {}),
-				...(Object.hasOwn(actionOptions, "editable") ? { editable: actionOptions.editable } : {}),
+				...(requiresCategory
+					? (Object.hasOwn(actionOptions, "editable") ? { editable } : {})
+					: { editable }),
 				...(Object.hasOwn(actionOptions, "rawImported") ? { rawImported: actionOptions.rawImported } : {}),
 			});
 			project = insertChild(state.project, parentInternalId, node, actionOptions.index);
-		} catch {
+		} catch (error) {
+			if (error instanceof NuvioIdGenerationError) {
+				return failWithControllerDiagnostic(
+					"operation",
+					CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+					"$controller.nuvioIds",
+					"A unique Nuvio collection or folder ID could not be generated.",
+				);
+			}
 			return failWithControllerDiagnostic(
 				"operation",
 				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
@@ -686,7 +718,7 @@ export function createBuilderController(options = {}) {
 function validateControllerOptions(options) {
 	const error = validatePlainOptions(
 		options,
-		new Set(["idFactory", "initialProjectTitle"]),
+		new Set(["idFactory", "nuvioIdFactory", "initialProjectTitle"]),
 		"$controller",
 		"Controller options",
 	);
@@ -695,6 +727,9 @@ function validateControllerOptions(options) {
 	}
 	if (Object.hasOwn(options, "idFactory") && typeof options.idFactory !== "function") {
 		throw new TypeError("INVALID_CONTROLLER_ARGUMENT: idFactory must be a function when supplied.");
+	}
+	if (Object.hasOwn(options, "nuvioIdFactory") && typeof options.nuvioIdFactory !== "function") {
+		throw new TypeError("INVALID_CONTROLLER_ARGUMENT: nuvioIdFactory must be a function when supplied.");
 	}
 	if (Object.hasOwn(options, "initialProjectTitle") && typeof options.initialProjectTitle !== "string") {
 		throw new TypeError("INVALID_CONTROLLER_ARGUMENT: initialProjectTitle must be a string when supplied.");

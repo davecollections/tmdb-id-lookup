@@ -21,3 +21,4 @@ export {
 } from "./import-actions.js";
 export { useBuilderControllerState } from "./use-builder-controller.js";
 export { buildBuilderViewModel } from "./view-model.js";
+export { resetBuilderWorkspace, workspaceNeedsDiscardConfirmation } from "./workspace-return-actions.js";

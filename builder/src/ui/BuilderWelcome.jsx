@@ -120,8 +120,8 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 			<section className="welcome-start" aria-labelledby="start-project-title">
 				<div>
 					<p className="panel-kicker">Create</p>
-					<h2 id="start-project-title">Begin with a clean project</h2>
-					<p>Open the hierarchy workspace with an empty, clean draft.</p>
+					<h2 id="start-project-title">Begin with a clean collection file</h2>
+					<p>Open an empty workspace for a new Nuvio collection file.</p>
 				</div>
 				<button
 					className="welcome-primary-action"
@@ -130,7 +130,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 					onClick={handleStartNewProject}
 					disabled={isBusy}
 				>
-					Start a new project
+					Start a new collection file
 				</button>
 			</section>
 

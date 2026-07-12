@@ -91,7 +91,7 @@ test("production welcome is the default and exposes the corrected brand hierarch
 		"Development preview",
 		"TMDB Collection Builder",
 		"Built for Nuvio collections",
-		"Start a new project",
+		"Start a new collection file",
 		"Import selected file",
 		"Import pasted JSON",
 		"processed locally in this browser and is not uploaded",

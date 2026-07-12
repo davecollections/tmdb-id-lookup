@@ -6,22 +6,22 @@ Last reviewed: 2026-07-12
 
 ## Scope and sequencing
 
-This milestone adds controlled editing for exactly four Nuvio-facing values: collection `id`, collection `title`, folder `id`, and folder `title`. Essential identity and label correction comes before source creation because users must first be able to repair or rename the hierarchy they create or import without exposing broader source and presentation contracts.
+Issue #43 narrows controlled collection/folder editing to titles. Nuvio-facing IDs are hidden and automatically managed; users do not view, validate, copy, or repair them.
 
 Project titles, collection/folder presentation fields, artwork, sources, export, deletion, reordering, persistence, and migration actions remain outside this workflow.
 
 ## Internal identity and Nuvio-facing identity
 
-Every builder node retains its stable builder-only `internalId`. The editor never renders or changes that value. The visible `ID` input edits the collection or folder `editable.id` value overlaid into Nuvio output. Duplicate Nuvio-facing IDs remain permitted; selection and controller targeting continue to use `internalId`, so equal exported IDs do not merge or confuse nodes.
+Every builder node retains its stable builder-only `internalId`. The editor never renders or changes that value. Selection and controller targeting continue to use `internalId`; collection/folder `editable.id` values remain exported implementation details managed by the controller's separate Nuvio ID factory.
 
 ## UI-only draft boundary
 
 `node-editor.js` creates a plain JSON-compatible draft containing only:
 
 - the target internal ID and `collection` or `folder` node type;
-- two form strings (`id` and `title`);
+- one form string (`title`);
 - supported original strings plus presence/support flags;
-- touched flags for the two fields.
+- one title touched flag.
 
 It does not copy the complete node, project, child arrays, source data, raw imported snapshots, controller snapshots, callbacks, promises, DOM nodes, or exceptions. The subscribed controller state remains the sole source of committed project data.
 
@@ -36,7 +36,7 @@ Imported known fields can be absent or contain a non-string JSON value. The draf
 - Objects, arrays, numbers, and booleans are never rendered or stringified.
 - Untouched absent or unsupported values do not enter a patch.
 - Cancelling leaves every original value unchanged.
-- Applying requires valid text replacements for both fields.
+- Applying requires a valid title replacement.
 
 Touched state also prevents a touched-then-reverted supported value from entering the patch.
 
@@ -44,12 +44,11 @@ Touched state also prevents a touched-then-reverted supported value from enterin
 
 Validation checks trimmed length but never rewrites submitted values. Missing or whitespace-only values return all current field errors with exactly `code`, `path`, and `message`:
 
-- `EDITOR_ID_REQUIRED` at `$ui.editor.id`;
 - `EDITOR_TITLE_REQUIRED` at `$ui.editor.title`.
 
 Messages use collection or folder wording. One local `role="alert"` region presents errors, each invalid field references its own error and helper text, and the first invalid field receives focus.
 
-Patch generation includes only touched `id` and/or `title` values that differ effectively from the original. It never includes internal identity, node type, raw data, children, sources, presentation settings, or unknown fields. An empty patch is a clean no-op.
+Patch generation returns only `{}` or `{ title }`. It never includes a Nuvio ID, internal identity, node type, raw data, children, sources, presentation settings, or unknown fields. An empty patch is a clean no-op.
 
 ## Apply lifecycle
 
@@ -77,18 +76,18 @@ Handlers also check the lock so queued or synthetic hierarchy actions cannot cha
 
 ## Preservation
 
-Controller and serializer tests prove that editing only ID/title preserves internal identity, node type, raw snapshots, community/unknown collection and folder fields, child arrays, source arrays and order, explicit source categories, source raw snapshots, imported `catalogSources` evidence, compatibility projection behavior, and migration eligibility. Serialization overlays edited known values and emits no builder wrappers.
+Controller and serializer tests prove that title editing preserves Nuvio and internal identity, node type, raw snapshots, community/unknown collection and folder fields, child arrays, source arrays and order, explicit source categories, source raw snapshots, imported `catalogSources` evidence, compatibility projection behavior, and migration eligibility. Serialization overlays edited titles and emits no builder wrappers.
 
 ## Accessibility and responsive behavior
 
-The inline editor keeps the single page-level `h1` and adds a logical `h2`. Labels use `htmlFor`, referenced descriptions are unique, controls are real buttons, Cancel is `type="button"`, Enter may submit the form, and opening focuses ID without a server-render focus attempt. Disabled state is visible without relying only on colour, focus outlines remain strong, and controls retain approximately 48px targets.
+The inline editor keeps the single page-level `h1` and adds a logical `h2`. Labels use `htmlFor`, referenced descriptions are unique, controls are real buttons, Cancel is `type="button"`, Enter may submit the form, and opening focuses Title without a server-render focus attempt. Disabled state is visible without relying only on colour, focus outlines remain strong, and controls retain approximately 48px targets.
 
 The form is one DOM instance at all widths. It stacks fields and actions on narrow screens, wraps guidance/errors safely, and remains bounded on wide screens without creating a fourth hierarchy column. The existing mobile drill-down resumes after Apply or Cancel, while the desktop workspace remains three panels.
 
 ## Stable DOM markers
 
 - `data-node-editor="collection|folder"`
-- `data-editor-field="id|title"`
+- `data-editor-field="title"`
 - `data-action="edit-collection|edit-folder"`
 - `data-action="apply-node-edit|cancel-node-edit"`
 - `data-editor-lock="true"` while editing

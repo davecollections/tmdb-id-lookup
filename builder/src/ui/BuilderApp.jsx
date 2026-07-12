@@ -8,7 +8,7 @@ export function BuilderApp({ controller, initialScreen = "welcome" }) {
 	const [screen, setScreen] = useState(initialScreen === "workspace" ? "workspace" : "welcome");
 
 	return screen === "workspace"
-		? <BuilderWorkspace controller={controller} state={state} />
+		? <BuilderWorkspace controller={controller} state={state} onReturnHome={() => setScreen("welcome")} />
 		: (
 			<BuilderWelcome
 				controller={controller}

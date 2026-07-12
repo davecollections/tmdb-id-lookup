@@ -28,7 +28,7 @@ Welcome project actions are mutually exclusive. A synchronous in-flight gate hel
 
 ## Start New Project
 
-`startNewBuilderProject(controller)` calls:
+Visible wording describes a new collection file rather than a saved or switchable project. `startNewBuilderProject(controller)` still calls the existing internal controller method:
 
 ```js
 controller.startNewProject({ title: "Untitled project" })
@@ -94,6 +94,8 @@ The welcome milestone adds:
 - `data-import-control="pasted-json"`.
 
 The existing builder root, workspace shell, backlink, panel, action, and node markers remain unchanged.
+
+The workspace can now return to welcome only after resetting the shared controller. Dirty workspaces require the inline discard flow documented in [BUILDER_AUTOMATIC_IDS_WORKSPACE_FLOW.md](./BUILDER_AUTOMATIC_IDS_WORKSPACE_FLOW.md).
 
 ## Deliberate exclusions
 

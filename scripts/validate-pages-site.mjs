@@ -212,6 +212,12 @@ if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
 		failures.push("The generated builder JavaScript does not contain the node editor marker.");
 	}
 
+	for (const marker of ["data-action", "return-builder-home", "create-collection-empty", "create-folder-empty"]) {
+		if (!builderJavaScript.includes(marker)) {
+			failures.push(`The generated builder JavaScript is missing the required workspace marker: ${marker}.`);
+		}
+	}
+
 	if (!/\bhref\s*:\s*(["'`])\.\.\/\1/.test(builderJavaScript) || !builderJavaScript.includes("data-root-link")) {
 		failures.push("The generated builder link back to the root application is missing or incorrect.");
 	}

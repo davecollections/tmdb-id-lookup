@@ -1,5 +1,4 @@
 const editableNodeTypes = new Set(["collection", "folder"]);
-const editableFields = Object.freeze(["id", "title"]);
 
 function isPlainObject(value) {
 	if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -37,33 +36,27 @@ export function createNodeEditorDraft(node) {
 		return null;
 	}
 
-	const id = originalField(node, "id");
 	const title = originalField(node, "title");
 
 	return {
 		internalId: node.internalId,
 		nodeType: node.nodeType,
 		values: {
-			id: id.supported ? id.value : "",
 			title: title.supported ? title.value : "",
 		},
 		original: {
-			id: id.value,
 			title: title.value,
-			hasId: id.hasField,
 			hasTitle: title.hasField,
-			idSupported: id.supported,
 			titleSupported: title.supported,
 		},
 		touched: {
-			id: false,
 			title: false,
 		},
 	};
 }
 
 export function updateNodeEditorField(draft, field, value) {
-	if (!editableFields.includes(field) || typeof value !== "string") {
+	if (field !== "title" || typeof value !== "string") {
 		return draft;
 	}
 
@@ -84,13 +77,6 @@ export function validateNodeEditorDraft(draft) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
 	const diagnostics = [];
 
-	if (typeof draft.values.id !== "string" || draft.values.id.trim().length === 0) {
-		diagnostics.push({
-			code: "EDITOR_ID_REQUIRED",
-			path: "$ui.editor.id",
-			message: `Enter a ${noun} ID before applying changes.`,
-		});
-	}
 	if (typeof draft.values.title !== "string" || draft.values.title.trim().length === 0) {
 		diagnostics.push({
 			code: "EDITOR_TITLE_REQUIRED",
@@ -103,20 +89,9 @@ export function validateNodeEditorDraft(draft) {
 }
 
 export function buildNodeEditorPatch(draft) {
-	const patch = {};
-
-	for (const field of editableFields) {
-		if (!draft.touched[field]) {
-			continue;
-		}
-		const supportedKey = `${field}Supported`;
-		if (draft.original[supportedKey] && draft.values[field] === draft.original[field]) {
-			continue;
-		}
-		patch[field] = draft.values[field];
-	}
-
-	return patch;
+	if (!draft.touched.title) return {};
+	if (draft.original.titleSupported && draft.values.title === draft.original.title) return {};
+	return { title: draft.values.title };
 }
 
 export function hasNodeEditorChanges(draft) {

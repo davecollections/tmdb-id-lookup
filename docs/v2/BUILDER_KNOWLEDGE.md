@@ -324,7 +324,13 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Forty-five focused node-editing test functions cover 86 requested behaviours. With the existing 227-function baseline, the Node suite contains 272 test functions.
 - Project/presentation/source editing, source creation, export, deletion, reordering, persistence, migration actions, networking, dependencies, v1, Worker, language, Ultra MAX, AIO Metadata, and Trakt remain outside this milestone.
 
-## 11. Open questions
+## 11. Automatic IDs and workspace flow — issue #43
+
+**Confirmed by repository tests — issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), 2026-07-12:** collection/folder Nuvio IDs are securely generated, hidden, preserved when usable, and silently repaired when missing, invalid, or duplicated. Controller import remains clean and preservation-first, title editing is UI-only and title-only, visible project/dirty status is removed, workspace return is guarded by inline discard confirmation, and collection/folder empty-state creation controls are functional. Presentation settings must be completed next, followed by a mandatory owner UI/flow review before source creation.
+
+- Twenty-seven focused automatic-ID/workspace-flow test functions bring the Node suite from the existing 272-function baseline to 299 test functions.
+
+## 12. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
@@ -335,7 +341,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
 
-## 12. Update rules
+## 13. Update rules
 
 - Update this file when a test becomes confirmed or disproved.
 - Include the evidence level, review/test date, and source.
@@ -367,6 +373,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-11 | First visible controller-connected builder shell, ordered hierarchy navigator, deterministic collection/folder drafts, read-only summaries, mobile drill-down, desktop panels, accessibility, and real-shell Pages markers | [TMDB ID Lookup issue #40](https://github.com/davecollections/tmdb-id-lookup/issues/40) |
 | 2026-07-12 | Corrected TMDB Collection Builder naming, local-only welcome entry, controller-delegated new-project and JSON import flows, stable diagnostics, warning summary, responsive accessibility, and welcome Pages marker | [TMDB ID Lookup issue #41](https://github.com/davecollections/tmdb-id-lookup/issues/41) |
 | 2026-07-12 | UI-only collection/folder ID and title drafts, minimal controller patches, navigation locking, unusual imported-value handling, accessibility, and raw/unknown/source-order preservation | [TMDB ID Lookup issue #42](https://github.com/davecollections/tmdb-id-lookup/issues/42) |
+| 2026-07-12 | Hidden automatic collection/folder Nuvio IDs, deterministic import repair, title-only editing, guarded builder-home return, and functional hierarchy empty states | [TMDB ID Lookup issue #43](https://github.com/davecollections/tmdb-id-lookup/issues/43) |
 
 ## Decision history
 

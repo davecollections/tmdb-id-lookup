@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 
-function FieldStatus({ draft, field, statusId }) {
-	const capitalized = field[0].toUpperCase() + field.slice(1);
-	const hasField = draft.original[`has${capitalized}`];
-	const supported = draft.original[`${field}Supported`];
+function FieldStatus({ draft, statusId }) {
+	const hasField = draft.original.hasTitle;
+	const supported = draft.original.titleSupported;
 
 	if (supported) {
 		return null;
@@ -21,7 +20,6 @@ function FieldStatus({ draft, field, statusId }) {
 export function NodeEditor({
 	draft,
 	diagnostics,
-	idInputRef,
 	titleInputRef,
 	onChange,
 	onSubmit,
@@ -31,17 +29,16 @@ export function NodeEditor({
 	const heading = `Edit ${noun}`;
 	const context = noun === "folder" ? "Folder settings" : "Collection settings";
 	const prefix = `node-editor-${noun}`;
-	const idError = diagnostics.find((entry) => entry.path === "$ui.editor.id") ?? null;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 
 	useEffect(() => {
-		idInputRef.current?.focus();
-	}, [draft.internalId, idInputRef]);
+		titleInputRef.current?.focus();
+	}, [draft.internalId, titleInputRef]);
 
-	function describedBy(field, diagnostic) {
-		const ids = [`${prefix}-${field}-help`];
-		if (!draft.original[`${field}Supported`]) ids.push(`${prefix}-${field}-status`);
-		if (diagnostic) ids.push(`${prefix}-${field}-error`);
+	function describedBy(diagnostic) {
+		const ids = [`${prefix}-title-help`];
+		if (!draft.original.titleSupported) ids.push(`${prefix}-title-status`);
+		if (diagnostic) ids.push(`${prefix}-title-error`);
 		return ids.join(" ");
 	}
 
@@ -52,7 +49,7 @@ export function NodeEditor({
 				<p className="panel-kicker">{context}</p>
 				<h2 id={`${prefix}-title`}>{heading}</h2>
 			</div>
-			<p>Update the values Nuvio uses for this {noun}. Builder identity stays unchanged.</p>
+			<p>Update the title shown for this {noun}.</p>
 		</div>
 
 		<p className="editor-lock-note">
@@ -60,25 +57,6 @@ export function NodeEditor({
 		</p>
 
 		<form className="node-editor-form" onSubmit={onSubmit} noValidate>
-			<div className="editor-field">
-				<label htmlFor={`${prefix}-id`}>ID</label>
-				<input
-					ref={idInputRef}
-					id={`${prefix}-id`}
-					name="id"
-					type="text"
-					value={draft.values.id}
-					data-editor-field="id"
-					aria-invalid={idError ? "true" : undefined}
-					aria-describedby={describedBy("id", idError)}
-					onChange={(event) => onChange("id", event.target.value)}
-				/>
-				<p className="editor-field-help" id={`${prefix}-id-help`}>
-					Used in the exported Nuvio collection file. This does not change the builder’s internal identity.
-				</p>
-				<FieldStatus draft={draft} field="id" statusId={`${prefix}-id-status`} />
-			</div>
-
 			<div className="editor-field">
 				<label htmlFor={`${prefix}-title-input`}>Title</label>
 				<input
@@ -89,13 +67,13 @@ export function NodeEditor({
 					value={draft.values.title}
 					data-editor-field="title"
 					aria-invalid={titleError ? "true" : undefined}
-					aria-describedby={describedBy("title", titleError)}
+					aria-describedby={describedBy(titleError)}
 					onChange={(event) => onChange("title", event.target.value)}
 				/>
 				<p className="editor-field-help" id={`${prefix}-title-help`}>
 					Displayed as the {noun} title in Nuvio.
 				</p>
-				<FieldStatus draft={draft} field="title" statusId={`${prefix}-title-status`} />
+				<FieldStatus draft={draft} statusId={`${prefix}-title-status`} />
 			</div>
 
 			<div className="editor-diagnostics" role="alert" aria-atomic="true">
@@ -104,7 +82,7 @@ export function NodeEditor({
 						{diagnostics.map((entry) => (
 							<li
 								key={entry.code}
-								id={`${prefix}-${entry.path === "$ui.editor.id" ? "id" : "title"}-error`}
+								id={`${prefix}-title-error`}
 							>
 								{entry.message}
 							</li>

@@ -8,7 +8,7 @@ Last reviewed: 2026-07-12
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The workspace displays the current project, ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and draft folders through existing controller actions. Issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42) adds the first narrow inline editor for collection/folder Nuvio-facing IDs and titles, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, presentation editing, deletion, reordering, export, persistence, and migration application remain deferred.
+The workspace displays ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden and narrows the inline editor to titles, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, presentation editing, deletion, reordering, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -30,7 +30,7 @@ React imports `createBuilderController` only from the supported `builder/src/app
 
 `useBuilderControllerState` is the only React subscription adapter. It calls `useSyncExternalStore` with `controller.subscribe`, `controller.getState`, and the same `getState` function as the server/static snapshot reader.
 
-The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, and the two-field uncommitted node-editor draft/diagnostics use local React state.
+The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, and the title-only uncommitted node-editor draft/diagnostics use local React state.
 
 ## UI module structure
 
@@ -45,7 +45,8 @@ builder/src/ui/
   import-actions.js           public-controller-only browser transport helpers
   use-builder-controller.js   external-store subscription adapter
   view-model.js               pure safe display derivation
-  draft-actions.js            deterministic collection/folder draft conveniences
+  draft-actions.js            deterministic collection/folder title conveniences
+  workspace-return-actions.js guarded controller reset helpers
   index.js                    UI exports
 ```
 
@@ -133,12 +134,14 @@ Deployment and focused source tests use a small stable surface:
 - `data-builder-shell="true"`
 - `data-root-link="true"`
 - `data-panel="collections|folders|sources"`
-- `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder"`
+- `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder|return-builder-home"`
 - `data-action="edit-collection|edit-folder|apply-node-edit|cancel-node-edit"`
 - `data-import-control="file|pasted-json"`
 - `data-node-type="collection|folder|source"`
 - `data-node-editor="collection|folder"`
-- `data-editor-field="id|title"`
+- `data-editor-field="title"`
+- `data-return-confirmation="true"`
+- `data-action="stay-in-workspace|discard-and-return|create-collection-empty|create-folder-empty"`
 - `data-editor-lock="true"` while editing
 
 Accessible text, semantic roles, and button state remain the primary testing surface.

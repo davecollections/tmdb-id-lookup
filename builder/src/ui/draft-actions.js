@@ -1,10 +1,10 @@
-function nextAvailableNumber(ids, prefix) {
-	const existingIds = new Set(ids.filter((id) => typeof id === "string"));
+function nextAvailableTitle(titles, baseTitle) {
+	const existingTitles = new Set(titles.filter((title) => typeof title === "string"));
 	let number = 1;
-	while (existingIds.has(`${prefix}-${number}`)) {
+	while (existingTitles.has(number === 1 ? baseTitle : `${baseTitle} ${number}`)) {
 		number += 1;
 	}
-	return number;
+	return number === 1 ? baseTitle : `${baseTitle} ${number}`;
 }
 
 function selectCreatedNode(controller, creationResult) {
@@ -21,15 +21,12 @@ function selectCreatedNode(controller, creationResult) {
 
 export function createDraftCollection(controller) {
 	const state = controller.getState();
-	const number = nextAvailableNumber(
-		state.project.collections.map((collection) => collection.editable.id),
-		"collection",
+	const title = nextAvailableTitle(
+		state.project.collections.map((collection) => collection.editable.title),
+		"Untitled Collection",
 	);
 	const result = controller.createCollection({
-		editable: {
-			id: `collection-${number}`,
-			title: number === 1 ? "Untitled Collection" : `Untitled Collection ${number}`,
-		},
+		editable: { title },
 	});
 
 	return selectCreatedNode(controller, result);
@@ -37,17 +34,14 @@ export function createDraftCollection(controller) {
 
 export function createDraftFolder(controller, collectionInternalId) {
 	const state = controller.getState();
-	const number = nextAvailableNumber(
+	const title = nextAvailableTitle(
 		state.project.collections.flatMap((collection) => (
-			collection.folders.map((folder) => folder.editable.id)
+			collection.folders.map((folder) => folder.editable.title)
 		)),
-		"folder",
+		"Untitled Folder",
 	);
 	const result = controller.createFolder(collectionInternalId, {
-		editable: {
-			id: `folder-${number}`,
-			title: number === 1 ? "Untitled Folder" : `Untitled Folder ${number}`,
-		},
+		editable: { title },
 	});
 
 	return selectCreatedNode(controller, result);

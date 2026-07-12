@@ -35,7 +35,11 @@ function countingIdFactory(prefix = "internal") {
 }
 
 function createController() {
-	return createBuilderController({ idFactory: countingIdFactory(), initialProjectTitle: "Editing test" });
+	return createBuilderController({
+		idFactory: countingIdFactory(),
+		nuvioIdFactory: countingIdFactory("nuvio"),
+		initialProjectTitle: "Editing test",
+	});
 }
 
 function loadFixture(relativePath) {
@@ -93,7 +97,8 @@ test("collection draft retains only stable target identity and editor values", (
 	const draft = createNodeEditorDraft(collection);
 	assert.equal(draft.internalId, collection.internalId);
 	assert.equal(draft.nodeType, "collection");
-	assert.deepEqual(draft.values, { id: "collection-id", title: "Collection title" });
+	assert.deepEqual(draft.values, { title: "Collection title" });
+	assert.equal(JSON.stringify(draft).includes("collection-id"), false);
 });
 
 test("folder draft retains only stable target identity and editor values", () => {
@@ -101,7 +106,8 @@ test("folder draft retains only stable target identity and editor values", () =>
 	const draft = createNodeEditorDraft(folder);
 	assert.equal(draft.internalId, folder.internalId);
 	assert.equal(draft.nodeType, "folder");
-	assert.deepEqual(draft.values, { id: "folder-id", title: "Folder title" });
+	assert.deepEqual(draft.values, { title: "Folder title" });
+	assert.equal(JSON.stringify(draft).includes("folder-id"), false);
 });
 
 test("project and source targets are rejected", () => {
@@ -110,27 +116,25 @@ test("project and source targets are rejected", () => {
 	assert.equal(createNodeEditorDraft(project.collections[0].folders[0].sources[0]), null);
 });
 
-test("string IDs and titles are copied exactly without trimming", () => {
+test("title strings are copied exactly without trimming while IDs stay absent", () => {
 	const controller = importTree([{ id: "  id  ", title: "  title  ", folders: [] }]);
 	const draft = createNodeEditorDraft(controller.getState().project.collections[0]);
-	assert.deepEqual(draft.values, { id: "  id  ", title: "  title  " });
+	assert.deepEqual(draft.values, { title: "  title  " });
+	assert.equal(Object.hasOwn(draft.values, "id"), false);
 });
 
 test("absent imported values become empty unsupported form strings", () => {
 	const collection = importTree([{ folders: [] }]).getState().project.collections[0];
 	const draft = createNodeEditorDraft(collection);
-	assert.deepEqual(draft.values, { id: "", title: "" });
-	assert.deepEqual(
-		{ hasId: draft.original.hasId, hasTitle: draft.original.hasTitle, idSupported: draft.original.idSupported, titleSupported: draft.original.titleSupported },
-		{ hasId: false, hasTitle: false, idSupported: false, titleSupported: false },
-	);
+	assert.deepEqual(draft.values, { title: "" });
+	assert.deepEqual(draft.original, { title: null, hasTitle: false, titleSupported: false });
 });
 
 test("non-string imported values are never stringified", () => {
 	const collection = importTree([{ id: { sentinel: "RAW_ID" }, title: ["RAW_TITLE"], folders: [] }])
 		.getState().project.collections[0];
 	const draft = createNodeEditorDraft(collection);
-	assert.deepEqual(draft.values, { id: "", title: "" });
+	assert.deepEqual(draft.values, { title: "" });
 	assert.equal(JSON.stringify(draft).includes("RAW_ID"), false);
 	assert.equal(JSON.stringify(draft).includes("RAW_TITLE"), false);
 });
@@ -144,18 +148,18 @@ test("local draft excludes raw snapshots, children, sources, and complete nodes"
 	assert.doesNotThrow(() => JSON.stringify(draft));
 });
 
-test("updating ID changes only ID form state and touched state", () => {
+test("updating ID is ignored because ID is not an editor field", () => {
 	const original = createNodeEditorDraft(importTree().getState().project.collections[0]);
 	const next = updateNodeEditorField(original, "id", "new-id");
-	assert.deepEqual(next.values, { id: "new-id", title: "Collection title" });
-	assert.deepEqual(next.touched, { id: true, title: false });
+	assert.equal(next, original);
+	assert.equal(Object.hasOwn(next.values, "id"), false);
 });
 
 test("updating title changes only title form state and touched state", () => {
 	const original = createNodeEditorDraft(importTree().getState().project.collections[0]);
 	const next = updateNodeEditorField(original, "title", "New title");
-	assert.deepEqual(next.values, { id: "collection-id", title: "New title" });
-	assert.deepEqual(next.touched, { id: false, title: true });
+	assert.deepEqual(next.values, { title: "New title" });
+	assert.deepEqual(next.touched, { title: true });
 });
 
 test("field updates are immutable and retain original comparison data", () => {
@@ -170,7 +174,7 @@ test("field updates are immutable and retain original comparison data", () => {
 test("unsupported field updates are ignored without mutation", () => {
 	const original = createNodeEditorDraft(importTree().getState().project.collections[0]);
 	assert.equal(updateNodeEditorField(original, "presentation", "ROWS"), original);
-	assert.equal(updateNodeEditorField(original, "id", 42), original);
+	assert.equal(updateNodeEditorField(original, "id", "replacement"), original);
 });
 
 test("valid collection and folder drafts pass validation", () => {
@@ -179,20 +183,19 @@ test("valid collection and folder drafts pass validation", () => {
 	assert.deepEqual(validateNodeEditorDraft(createNodeEditorDraft(project.collections[0].folders[0])), []);
 });
 
-test("blank collection ID returns the exact structured diagnostic", () => {
+test("draft state contains no ID validation or ID comparison metadata", () => {
 	const draft = changedDraft(importTree().getState().project.collections[0], { id: "" });
-	assert.deepEqual(validateNodeEditorDraft(draft), [{
-		code: "EDITOR_ID_REQUIRED",
-		path: "$ui.editor.id",
-		message: "Enter a collection ID before applying changes.",
-	}]);
+	assert.deepEqual(validateNodeEditorDraft(draft), []);
+	assert.equal(Object.hasOwn(draft.values, "id"), false);
+	assert.equal(Object.hasOwn(draft.original, "id"), false);
+	assert.equal(Object.hasOwn(draft.touched, "id"), false);
 });
 
-test("whitespace-only folder ID is rejected without rewriting its value", () => {
+test("hidden folder IDs do not affect local title validation", () => {
 	const folder = importTree().getState().project.collections[0].folders[0];
 	const draft = changedDraft(folder, { id: " \t " });
-	assert.equal(validateNodeEditorDraft(draft)[0].message, "Enter a folder ID before applying changes.");
-	assert.equal(draft.values.id, " \t ");
+	assert.deepEqual(validateNodeEditorDraft(draft), []);
+	assert.equal(Object.hasOwn(draft.values, "id"), false);
 });
 
 test("blank collection title returns the exact structured diagnostic", () => {
@@ -211,12 +214,9 @@ test("whitespace-only folder title is rejected without rewriting its value", () 
 	assert.equal(draft.values.title, "   ");
 });
 
-test("both current field errors are returned together in field order", () => {
+test("title-only validation returns exactly one current field error", () => {
 	const draft = changedDraft(importTree().getState().project.collections[0], { id: "", title: " " });
-	assert.deepEqual(validateNodeEditorDraft(draft).map((entry) => entry.code), [
-		"EDITOR_ID_REQUIRED",
-		"EDITOR_TITLE_REQUIRED",
-	]);
+	assert.deepEqual(validateNodeEditorDraft(draft).map((entry) => entry.code), ["EDITOR_TITLE_REQUIRED"]);
 });
 
 test("every local diagnostic contains exactly code, path, and message", () => {
@@ -231,14 +231,14 @@ test("patch generation produces a title-only patch", () => {
 	assert.deepEqual(buildNodeEditorPatch(draft), { title: "Comedy" });
 });
 
-test("patch generation produces an ID-only patch", () => {
+test("patch generation never produces an ID patch", () => {
 	const draft = changedDraft(importTree().getState().project.collections[0], { id: "collection-comedy" });
-	assert.deepEqual(buildNodeEditorPatch(draft), { id: "collection-comedy" });
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
 });
 
-test("patch generation produces a combined minimal patch", () => {
+test("patch generation remains title-only when an ID update is attempted", () => {
 	const draft = changedDraft(importTree().getState().project.collections[0], { id: "new-id", title: "New title" });
-	assert.deepEqual(buildNodeEditorPatch(draft), { id: "new-id", title: "New title" });
+	assert.deepEqual(buildNodeEditorPatch(draft), { title: "New title" });
 });
 
 test("untouched and touched-but-reverted fields are omitted", () => {
@@ -249,15 +249,15 @@ test("untouched and touched-but-reverted fields are omitted", () => {
 	assert.equal(hasNodeEditorChanges(draft), false);
 });
 
-test("untouched absent and non-string originals remain omitted", () => {
-	const project = importTree([{ id: { unusual: true }, folders: [] }]).getState().project;
+test("untouched absent and non-string title originals remain omitted", () => {
+	const project = importTree([{ id: "valid", title: { unusual: true }, folders: [] }]).getState().project;
 	assert.deepEqual(buildNodeEditorPatch(createNodeEditorDraft(project.collections[0])), {});
 });
 
 test("explicit text replacement of a non-string original appears in the patch", () => {
 	const node = importTree([{ id: 7, title: false, folders: [] }]).getState().project.collections[0];
 	const draft = changedDraft(node, { id: "seven", title: "Replacement" });
-	assert.deepEqual(buildNodeEditorPatch(draft), { id: "seven", title: "Replacement" });
+	assert.deepEqual(buildNodeEditorPatch(draft), { title: "Replacement" });
 });
 
 test("patch never includes target identity, type, raw data, or children", () => {
@@ -273,11 +273,13 @@ test("collection apply delegates through updateNode and marks one revision dirty
 	const controller = importTree();
 	const collection = controller.getState().project.collections[0];
 	const beforeRevision = controller.getState().revision;
+	const originalId = collection.editable.id;
 	const outcome = applyNodeEditorDraft(controller, changedDraft(collection, { id: "edited-id", title: "Edited" }));
 	assert.deepEqual(outcome, { ok: true, controllerCalled: true, diagnostics: [] });
 	assert.equal(controller.getState().revision, beforeRevision + 1);
 	assert.equal(controller.getState().dirty, true);
-	assert.deepEqual(controller.getState().project.collections[0].editable.id, "edited-id");
+	assert.deepEqual(controller.getState().project.collections[0].editable.id, originalId);
+	assert.equal(controller.getState().project.collections[0].editable.title, "Edited");
 });
 
 test("folder apply delegates through updateNode and retains selection", () => {
@@ -294,7 +296,7 @@ test("folder apply delegates through updateNode and retains selection", () => {
 test("invalid apply never calls the controller", () => {
 	let calls = 0;
 	const controller = { updateNode() { calls += 1; return { ok: true }; } };
-	const draft = changedDraft(importTree().getState().project.collections[0], { id: "" });
+	const draft = changedDraft(importTree().getState().project.collections[0], { title: "" });
 	const outcome = applyNodeEditorDraft(controller, draft);
 	assert.equal(outcome.ok, false);
 	assert.equal(outcome.controllerCalled, false);
@@ -312,7 +314,7 @@ test("no-op apply closes cleanly without controller call or revision", () => {
 test("cancelled local changes perform no controller action", () => {
 	const controller = importTree();
 	const before = controller.getState();
-	changedDraft(before.project.collections[0], { id: "discard", title: "Discard" });
+	changedDraft(before.project.collections[0], { title: "Discard" });
 	assert.equal(controller.getState(), before);
 	assert.equal(controller.getState().dirty, false);
 });
@@ -329,38 +331,39 @@ test("controller failure remains structured and leaves the project atomic", () =
 	assert.equal(controller.getState().diagnostics.operation.errors[0].code, "TARGET_NODE_NOT_FOUND");
 });
 
-test("collection internal identity remains stable when Nuvio ID and title change", () => {
+test("collection internal and Nuvio identities remain stable when title changes", () => {
 	const controller = importTree();
 	const before = controller.getState().project.collections[0];
-	applyNodeEditorDraft(controller, changedDraft(before, { id: "renamed", title: "Renamed" }));
+	applyNodeEditorDraft(controller, changedDraft(before, { title: "Renamed" }));
 	const after = controller.getState().project.collections[0];
 	assert.equal(after.internalId, before.internalId);
 	assert.equal(after.nodeType, "collection");
+	assert.equal(after.editable.id, before.editable.id);
 	assert.equal(controller.getState().selection.collectionInternalId, null);
 });
 
-test("duplicate Nuvio-facing collection IDs remain distinct by internal ID", () => {
+test("repaired duplicate collection IDs remain distinct by internal ID", () => {
 	const controller = importTree([
 		{ id: "duplicate", title: "One", folders: [] },
 		{ id: "two", title: "Two", folders: [] },
 	]);
 	const [first, second] = controller.getState().project.collections;
-	applyNodeEditorDraft(controller, changedDraft(second, { id: "duplicate" }));
 	const current = controller.getState().project.collections;
-	assert.deepEqual(current.map((entry) => entry.editable.id), ["duplicate", "duplicate"]);
+	assert.equal(current[0].editable.id, "duplicate");
+	assert.notEqual(current[1].editable.id, "duplicate");
 	assert.notEqual(first.internalId, second.internalId);
 	controller.selectNode(second.internalId);
 	assert.equal(controller.getState().selection.collectionInternalId, second.internalId);
 });
 
-test("duplicate Nuvio-facing folder IDs remain distinct by internal ID", () => {
+test("repaired duplicate folder IDs remain distinct by internal ID", () => {
 	const controller = importTree([{ id: "c", title: "C", folders: [
 		{ id: "duplicate", title: "One", sources: [] },
 		{ id: "two", title: "Two", sources: [] },
 	] }]);
 	const [first, second] = controller.getState().project.collections[0].folders;
-	applyNodeEditorDraft(controller, changedDraft(second, { id: "duplicate" }));
 	assert.notEqual(first.internalId, second.internalId);
+	assert.notEqual(first.editable.id, second.editable.id);
 	controller.selectNode(second.internalId);
 	assert.equal(controller.getState().selection.folderInternalId, second.internalId);
 });
@@ -374,17 +377,17 @@ test("opaque community edits preserve raw snapshots, unknown fields, children, a
 		folder: folder.rawImported,
 		source: folder.sources[0].rawImported,
 	});
-	applyNodeEditorDraft(controller, changedDraft(collection, { id: "edited-community", title: "Edited Community" }));
+	applyNodeEditorDraft(controller, changedDraft(collection, { title: "Edited Community" }));
 	const currentFolder = controller.getState().project.collections[0].folders[0];
-	applyNodeEditorDraft(controller, changedDraft(currentFolder, { id: "edited-folder", title: "Edited Folder" }));
+	applyNodeEditorDraft(controller, changedDraft(currentFolder, { title: "Edited Folder" }));
 	const current = controller.getState().project.collections[0];
 	assert.deepEqual(current.rawImported, beforeRaw.collection);
 	assert.deepEqual(current.folders[0].rawImported, beforeRaw.folder);
 	assert.deepEqual(current.folders[0].sources[0].rawImported, beforeRaw.source);
 	const output = serializeNuvioProject(controller.getState().project).value[0];
-	assert.equal(output.id, "edited-community");
+	assert.equal(output.id, collection.editable.id);
 	assert.equal(output.title, "Edited Community");
-	assert.equal(output.folders[0].id, "edited-folder");
+	assert.equal(output.folders[0].id, folder.editable.id);
 	assert.deepEqual(output.communityMetadata, { owner: "fixture-sentinel", revision: 7 });
 	assert.deepEqual(output.folders[0].communityLayout, { density: "compact", accent: "violet" });
 	assert.equal(output.folders[0].sources[0].unknownBoolean, true);
@@ -436,14 +439,13 @@ test("collection editor renders exactly one labelled form with stable markers an
 	assert.equal((markup.match(/data-node-editor=/g) ?? []).length, 1);
 	for (const marker of [
 		'data-node-editor="collection"',
-		'data-editor-field="id"',
 		'data-editor-field="title"',
 		'data-action="apply-node-edit"',
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
 	assert.ok(markup.includes("Edit collection"));
-	assert.match(markup, /<label for="node-editor-collection-id">ID<\/label>/);
+	assert.equal(markup.includes('data-editor-field="id"'), false);
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
 });
 
@@ -451,8 +453,8 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	const controller = importTree();
 	const folder = controller.getState().project.collections[0].folders[0];
 	controller.selectNode(folder.internalId);
-	const diagnostics = validateNodeEditorDraft(changedDraft(folder, { id: "", title: "" }));
-	const markup = renderWorkspace(controller, { draft: changedDraft(folder, { id: "", title: "" }), diagnostics });
+	const diagnostics = validateNodeEditorDraft(changedDraft(folder, { title: "" }));
+	const markup = renderWorkspace(controller, { draft: changedDraft(folder, { title: "" }), diagnostics });
 	const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 	assert.equal(ids.length, new Set(ids).size);
 	for (const match of markup.matchAll(/aria-describedby="([^"]+)"/g)) {
@@ -468,7 +470,7 @@ test("unusual imported values show calm replacement guidance without raw values"
 	const collection = controller.getState().project.collections[0];
 	controller.selectNode(collection.internalId);
 	const markup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
-	assert.equal((markup.match(/The imported value is not text/g) ?? []).length, 2);
+	assert.equal((markup.match(/The imported value is not text/g) ?? []).length, 1);
 	assert.equal(markup.includes("RAW_OBJECT"), false);
 	assert.equal(markup.includes('value="false"'), false);
 });
