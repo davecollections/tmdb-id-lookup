@@ -4237,7 +4237,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7699,mtvU,1,,US,,https://www.themoviedb.org/network/7699
 7702,M6+,39,"Paris, France",FR,,https://www.themoviedb.org/network/7702
 7703,啊啊啊啊啊啊啊,0,,,,https://www.themoviedb.org/network/7703
-7705,Rai 1,2,,,,https://www.themoviedb.org/network/7705
 7706,DEF CON TV,1,,,,https://www.themoviedb.org/network/7706
 7708,Cambunny,0,,,,https://www.themoviedb.org/network/7708
 7710,Showcase,3,,AU,,https://www.themoviedb.org/network/7710
@@ -4910,7 +4909,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8647,Canale 5,0,,,,https://www.themoviedb.org/network/8647
 8648,KahaniPlay App,0,,,,https://www.themoviedb.org/network/8648
 8649,央视网（废弃）,0,,,,https://www.themoviedb.org/network/8649
-8650,A&E,1,,,,https://www.themoviedb.org/network/8650
 8651,Plex,2,"Campbell, California, U.S.",US,,https://www.themoviedb.org/network/8651
 8652,RTL Crime,1,,,,https://www.themoviedb.org/network/8652
 8653,Daekyo Newif Plus,1,,KR,,https://www.themoviedb.org/network/8653
@@ -5148,7 +5146,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8940,OneD,3,,TH,,https://www.themoviedb.org/network/8940
 8941,Süddeutscher Rundfunk,1,,,,https://www.themoviedb.org/network/8941
 8942,Kutingg,7,,IN,,https://www.themoviedb.org/network/8942
-8943,A&E,1,,,,https://www.themoviedb.org/network/8943
 8944,Eurosport 1,1,,PL,,https://www.themoviedb.org/network/8944
 8945,ANIBOX,1,,KR,,https://www.themoviedb.org/network/8945
 8946,UP Faith & Family,1,,US,,https://www.themoviedb.org/network/8946
@@ -5402,7 +5399,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9230,RTV-TV PLUS,1,,,,https://www.themoviedb.org/network/9230
 9231,Buzzfeed,1,,,,https://www.themoviedb.org/network/9231
 9232,Polsat Games,1,Warsaw,PL,,https://www.themoviedb.org/network/9232
-9233,A&e,0,,,,https://www.themoviedb.org/network/9233
 9234,wavve,0,,,,https://www.themoviedb.org/network/9234
 9237,Cims Show,0,,,,https://www.themoviedb.org/network/9237
 9238,Content & Co,1,,,,https://www.themoviedb.org/network/9238
@@ -5474,7 +5470,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9309,Mythical Society,2,"Burbank, CA",US,,https://www.themoviedb.org/network/9309
 9310,Televisa,1,,,,https://www.themoviedb.org/network/9310
 9311,Titan TV,1,,,,https://www.themoviedb.org/network/9311
-9312,Netflix,0,,,,https://www.themoviedb.org/network/9312
 9313,Samsung TV Network,1,,,,https://www.themoviedb.org/network/9313
 9314,SCTV,1,"thành phố Hồ Chí Minh, Việt Nam",VN,,https://www.themoviedb.org/network/9314
 9315,We The Studios,1,"Orlando,FL ",US,,https://www.themoviedb.org/network/9315
@@ -5487,3 +5482,9 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9322,KTNV,0,,,,https://www.themoviedb.org/network/9322
 9323,BLoOM,2,,TH,,https://www.themoviedb.org/network/9323
 9324,Canal 21,1,,ES,,https://www.themoviedb.org/network/9324
+9325,TAC 12,1,,ES,,https://www.themoviedb.org/network/9325
+9326,Canal Terres de l'Ebre,1,,ES,,https://www.themoviedb.org/network/9326
+9327,New Media Academy,1,,AE,,https://www.themoviedb.org/network/9327
+9328,New Media Academy,1,,,,https://www.themoviedb.org/network/9328
+9329,Logi Channel,1,,,,https://www.themoviedb.org/network/9329
+9330,TheoryVerse,4,,,https://theoryverse.tv/,https://www.themoviedb.org/network/9330
