@@ -15,6 +15,8 @@ const requiredV1Files = [
 	"css/mobile-fixes.css",
 	"js/config.js",
 	"js/app.js",
+	"js/artwork-runtime.mjs",
+	"js/artwork-runtime-v1.mjs",
 ];
 
 function assertFile(file, label) {

@@ -827,14 +827,23 @@
 					<label class="nuvio-toggle-option">
 						<input id="company-nuvio-use-logos" type="checkbox" checked />
 						<span class="nuvio-toggle-copy">
-							<span class="nuvio-toggle-label">Use cover images</span>
-							<span class="nuvio-toggle-help">Known matches use curated covers; others use TMDB logos. Turn off to use 🎬.</span>
+							<span class="nuvio-toggle-label">Use curated artwork</span>
+							<span class="nuvio-toggle-help">Published covers are used when available. Missing artwork uses visible titles and 🎬.</span>
 						</span>
 						<span class="nuvio-toggle-track" aria-hidden="true"></span>
 					</label>
 				</div>
 
 				<p id="company-nuvio-export-summary" class="meta"></p>
+				<div class="cached-nuvio-artwork-feedback">
+					<p
+						id="company-nuvio-artwork-status"
+						class="cached-nuvio-artwork-status idle"
+						role="status"
+						aria-live="polite"
+					></p>
+					<button id="retry-company-nuvio-artwork" class="cached-nuvio-artwork-retry" type="button" hidden>Retry artwork</button>
+				</div>
 
 				<div class="modal-footer">
 					<button id="open-company-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
@@ -842,8 +851,8 @@
 					</button>
 
 					<div class="modal-actions">
-						<button id="copy-company-nuvio-json" type="button">Copy JSON</button>
-						<button id="download-company-nuvio-json" type="button">Download JSON</button>
+						<button id="copy-company-nuvio-json" type="button" disabled>Copy JSON</button>
+						<button id="download-company-nuvio-json" type="button" disabled>Download JSON</button>
 						<button id="cancel-company-nuvio-export" type="button">Cancel</button>
 					</div>
 				</div>
@@ -873,23 +882,23 @@
 					<label class="nuvio-toggle-option">
 						<input id="network-nuvio-use-logos" type="checkbox" checked />
 						<span class="nuvio-toggle-copy">
-							<span class="nuvio-toggle-label">Use cover images</span>
-							<span class="nuvio-toggle-help">Known matches use curated covers; others use TMDB logos. Turn off to use 📺.</span>
-						</span>
-						<span class="nuvio-toggle-track" aria-hidden="true"></span>
-					</label>
-
-					<label class="nuvio-toggle-option">
-						<input id="network-nuvio-use-focus-gifs" type="checkbox" />
-						<span class="nuvio-toggle-copy">
-							<span class="nuvio-toggle-label">Use GIF focus art</span>
-							<span class="nuvio-toggle-help">Adds LuckyNumbers motion artwork for supported services.</span>
+							<span class="nuvio-toggle-label">Use curated artwork</span>
+							<span class="nuvio-toggle-help">Published covers are used when available. Missing artwork uses visible titles and 📺.</span>
 						</span>
 						<span class="nuvio-toggle-track" aria-hidden="true"></span>
 					</label>
 				</div>
 
 				<p id="network-nuvio-export-summary" class="meta"></p>
+				<div class="cached-nuvio-artwork-feedback">
+					<p
+						id="network-nuvio-artwork-status"
+						class="cached-nuvio-artwork-status idle"
+						role="status"
+						aria-live="polite"
+					></p>
+					<button id="retry-network-nuvio-artwork" class="cached-nuvio-artwork-retry" type="button" hidden>Retry artwork</button>
+				</div>
 
 				<div class="modal-footer">
 					<button id="open-network-nuvio-import-help" class="modal-help-button" type="button" aria-label="How to import into Nuvio">
@@ -897,8 +906,8 @@
 					</button>
 
 					<div class="modal-actions">
-						<button id="copy-network-nuvio-json" type="button">Copy JSON</button>
-						<button id="download-network-nuvio-json" type="button">Download JSON</button>
+						<button id="copy-network-nuvio-json" type="button" disabled>Copy JSON</button>
+						<button id="download-network-nuvio-json" type="button" disabled>Download JSON</button>
 						<button id="cancel-network-nuvio-export" type="button">Cancel</button>
 					</div>
 				</div>
@@ -1438,9 +1447,7 @@
 			</p>
 
 			<p class="footer-line footer-credits">
-				Artwork credits:
-				<a href="https://luckynumb3rs.github.io/stremio-perfect-setup/guide/Nuvio/" target="_blank" rel="noopener noreferrer">LuckyNumbers setup guide</a>
-				<span aria-hidden="true">·</span>
+				Artwork credit retained pending provenance review:
 				<a href="https://www.reddit.com/r/Nuvio/comments/1sk3ks6/transparent_covers_pack/" target="_blank" rel="noopener noreferrer">tomato's transparent covers pack</a>.
 			</p>
 
@@ -1456,6 +1463,7 @@
 
 		<div id="copy-toast">Copied to clipboard</div>
 
+		<script type="module" src="./js/artwork-runtime-v1.mjs?v=__APP_ASSET_VERSION__"></script>
 		<script src="./js/genres.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/config.js?v=__APP_ASSET_VERSION__" defer></script>
 		<script src="./js/utils.js?v=__APP_ASSET_VERSION__" defer></script>

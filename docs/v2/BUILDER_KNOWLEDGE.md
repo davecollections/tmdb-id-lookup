@@ -343,7 +343,19 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - The loader uses injectable fetch, validates the minimum complete consumer contract, deduplicates simultaneous loads, caches only successful data in memory per client, and permits retry after failure. Tests use synthetic fixtures only and make no live requests.
 - The browser needs no write credential, login, secret, or personal data. On-demand artwork requests and publication remain a deferred workflow outside browser code.
 - Persistent browser caching, refresh intervals, manual refresh, and multi-tab behaviour remain separate later product decisions.
-- `js/artwork-runtime.mjs` is deployed with the existing v1 `js/` tree and can later support a thin v1 module adapter and direct Vite import. No current v1 export, builder UI, Nuvio JSON, Worker, or visible artwork behaviour uses it in this issue.
+- `js/artwork-runtime.mjs` is deployed with the existing v1 `js/` tree and supports a thin v1 module adapter plus a future direct Vite import. Issue #45 itself did not change any consumer.
+
+### V1 company and network artwork migration — issue #46
+
+**Confirmed by repository tests and live development smoke verification — issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46), 2026-07-21:** v1 company and network exports now consume the shared published runtime without changing v2 or people exports.
+
+- `js/artwork-runtime-v1.mjs` creates one shared client per page and exposes only explicit company/network landscape batch resolution to the classic scripts. Module loading is harmless; runtime JSON loading remains lazy until a curated company/network export is prepared.
+- Ready published artwork supplies the exact SHA-versioned runtime URL. `fallbackUsed: true` remains approved published artwork. Missing typed keys keep their folder with empty `coverImageUrl`, visible selected cached name, and 🎬/📺 fallback.
+- Turning **Use curated artwork** off performs no runtime fetch and produces the same valid title/emoji fallback shape. Runtime load or validation failure is visible, blocks Copy/Download, permits retry, and suggests disabling curated artwork; it never restores hard-coded, guessed, borrowed, or TMDB-logo export artwork.
+- Prepared export caching preserves Copy/Download JSON and ID parity for unchanged selection/settings, deduplicates concurrent preparation, and invalidates on relevant changes. Company remains `COMPANY/MOVIE`; network remains `NETWORK/TV`; folder and preset order remain stable.
+- The borrowed v1 network focus-GIF option, maps, URLs, and LuckyNumbers claims/credit were removed. Exported `focusGifUrl` remains empty and `focusGifEnabled` remains false; `focusGlowEnabled` and builder import/preservation support are unchanged.
+- Ordinary v1 company/network lookup-table logos remain TMDB thumbnails. People runtime migration and all v2 artwork consumption remain pending.
+- The existing tomato transparent-covers credit is retained temporarily because the older self-hosted genre artwork commits do not record per-asset provenance. The artwork project should confirm whether any current genre assets derive from that pack before the credit is removed.
 
 ## 13. Open questions
 
@@ -390,6 +402,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-12 | Hidden automatic collection/folder Nuvio IDs, deterministic import repair, title-only editing, guarded builder-home return, and functional hierarchy empty states | [TMDB ID Lookup issue #43](https://github.com/davecollections/tmdb-id-lookup/issues/43) |
 | 2026-07-21 | Final published typed artwork identity, orientation, SHA-version, review-safety, and missing-key contract | [`davecollections/nuvio-assets` runtime lookup and schema](https://github.com/davecollections/nuvio-assets/tree/main/assets/collection_covers) |
 | 2026-07-21 | Shared pure artwork validation, resolution, loading, in-memory caching, retry, and offline fixture behaviour | [TMDB ID Lookup issue #45](https://github.com/davecollections/tmdb-id-lookup/issues/45) |
+| 2026-07-21 | V1 company/network lazy runtime consumption, async preparation, missing/error fallbacks, Copy/Download parity, and focus-GIF removal | [TMDB ID Lookup issue #46](https://github.com/davecollections/tmdb-id-lookup/issues/46) |
 
 ## Decision history
 
@@ -407,3 +420,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-12 — Welcome and local JSON import:** make TMDB Collection Builder the visible product name; keep welcome/workspace selection UI-only above one subscribed controller; delegate new-project and JSON parsing/import to public controller APIs; keep browser file transport local, explicit, size-limited, and structured; and preserve the existing workspace without adding export, editing, persistence, migration actions, or networking.
 - **2026-07-12 — Essential hierarchy editing:** add one UI-only inline draft for collection/folder Nuvio-facing IDs and titles; target controller nodes only by stable internal ID; validate required text locally; send only minimal changed fields through `updateNode`; lock hierarchy navigation until Apply or Cancel; and preserve raw/unknown/source evidence without changing controller, domain, importer, serializer, migration, v1, Worker, or dependency contracts.
 - **2026-07-21 — Shared artwork runtime foundation:** adopt one pure root-level ES module for typed published artwork validation, loading, and resolution; resolve only explicit company, network, and person maps; version every ready asset URL from its orientation SHA; keep successful caching memory-only per client; and defer v1 export, builder UI, persistent caching, refresh policy, and artwork-request integration to separately reviewed issues.
+- **2026-07-21 — V1 company/network runtime migration:** route classic company and network export artwork through one thin module adapter and the shared runtime; prepare and cache exports asynchronously; accept published text fallbacks; use visible title/emoji for missing or disabled artwork; block and retry runtime failures; remove borrowed focus animations; and leave people plus v2 consumption deferred.

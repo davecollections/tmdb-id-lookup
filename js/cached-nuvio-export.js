@@ -18,78 +18,27 @@ const companyPresetCollectionNames = {
 };
 const companyDefaultCollectionNames = new Set(["Studios", ...Object.values(companyPresetCollectionNames)]);
 const networkDefaultCollectionNames = new Set(["Networks", ...Object.values(networkPresetCollectionNames)]);
+const curatedArtworkFailureMessage =
+	"Curated artwork could not be loaded. Try again, or turn off curated artwork to export using folder titles and emoji.";
+
 let companyNuvioExportCache = null;
+let companyNuvioExportPending = null;
+let companyNuvioExportRevision = 0;
+let companyNuvioExportState = "idle";
+let companyNuvioExportActionPending = false;
+let companyNuvioPreparationVersion = 0;
 let networkNuvioExportCache = null;
-const curatedCompanyCoverUrls = {
-	3: "https://i.postimg.cc/1XFm0LjT/Pixar.png",
-	21: "https://i.postimg.cc/SxQF7DDY/MGM.png",
-	521: "https://i.postimg.cc/vZhWY6kH/Dream-Works.png",
-	2251: "https://i.postimg.cc/fTYXnL1P/Sony-Pictures-Animation.png",
-	2785: "https://i.postimg.cc/mrdNwFyC/Cartoon-Network.png",
-	3475: "https://i.postimg.cc/RFkWGgsv/Disney-Studios.png",
-	4859: "https://i.postimg.cc/QC78gRyR/Nickelodeon.png",
-	6125: "https://i.postimg.cc/RFkWGgsv/Disney-Studios.png",
-	6704: "https://i.postimg.cc/8c6Q6Mgj/Illumination.png",
-	7899: "https://i.postimg.cc/mrdNwFyC/Cartoon-Network.png",
-	10342: "https://i.postimg.cc/WzkLkgcd/Studio-Ghibli.png",
-	42141: "https://i.postimg.cc/vZhWY6kH/Dream-Works.png",
-};
-const curatedNetworkCoverUrls = {
-	2: "https://nuvioapp.space/uploads/covers/5ba4170a-5c7d-429e-af49-9d5735dfa229.jpg",
-	4: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/BBC_One_logo_2021.svg/960px-BBC_One_logo_2021.svg.png",
-	6: "https://nuvioapp.space/uploads/covers/257cb2c0-d716-427f-a60e-a7ad8307df49.jpg",
-	9: "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/ITV1_logo_%282022%29.svg/960px-ITV1_logo_%282022%29.svg.png",
-	16: "https://nuvioapp.space/uploads/covers/772006b6-af76-4fa5-85eb-04ab61f241cd.png",
-	26: "https://i.postimg.cc/mgLCMLrz/Channel-4.png",
-	213: "https://i.postimg.cc/bYSwjtwD/Netflix.png",
-	247: "https://i.postimg.cc/fydz76r8/You-Tube.png",
-	318: "https://i.postimg.cc/J0Xr392d/Starz.png",
-	453: "https://i.postimg.cc/QC78gRzr/Hulu.png",
-	1024: "https://i.postimg.cc/RCJZzHZH/Prime.png",
-	1112: "https://i.postimg.cc/59Q2MC20/Crunchyroll.png",
-	1255: "https://nuvioapp.space/uploads/covers/33c0ffcf-d617-475a-89d2-20649fd4ba26.png",
-	2552: "https://i.postimg.cc/MHB60hLx/Apple-TV.png",
-	2739: "https://i.postimg.cc/nV9htDhM/Disney.png",
-	2949: "https://i.postimg.cc/DwtM86Jj/Shudder.png",
-	3186: "https://i.postimg.cc/QC78gRzh/HBO-max.png",
-	3353: "https://i.postimg.cc/Kc38yM8g/Peacock.png",
-	4330: "https://i.postimg.cc/QC78gRzZ/Paramount.png",
-};
-const networkFocusGifUrls = {
-	213: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/netflix.gif",
-	1024: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/prime-video.webp",
-	1112: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/crunchyroll.gifv",
-	2552: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/apple-tv.gifv",
-	2739: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/disney-plus.gif",
-	3186: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/hbo-max.gif",
-	3353: "https://raw.githubusercontent.com/luckynumb3rs/stremio-perfect-setup/main/collections/assets/original/streaming/alternatives/peacock.gifv",
-};
-
-function getCompanyLogoUrl(company, size = "w500") {
-	return company.logo_path ? `https://image.tmdb.org/t/p/${size}${company.logo_path}` : "";
-}
-
-function getNetworkLogoUrl(network, size = "w500") {
-	return network.logo_path ? `https://image.tmdb.org/t/p/${size}${network.logo_path}` : "";
-}
-
-function getCompanyNuvioCoverUrl(company) {
-	return curatedCompanyCoverUrls[Number(company.id)] || getCompanyLogoUrl(company);
-}
-
-function getNetworkNuvioCoverUrl(network) {
-	return curatedNetworkCoverUrls[Number(network.id)] || getNetworkLogoUrl(network);
-}
-
-function getNetworkFocusGifUrl(network) {
-	return networkFocusGifUrls[Number(network.id)] || "";
-}
+let networkNuvioExportPending = null;
+let networkNuvioExportRevision = 0;
+let networkNuvioExportState = "idle";
+let networkNuvioExportActionPending = false;
+let networkNuvioPreparationVersion = 0;
 
 function getCompanyNuvioOptions() {
 	return {
 		collectionName: document.getElementById("company-nuvio-collection-name").value.trim() || "Studios",
 		collectionCoverUrl: document.getElementById("company-nuvio-cover-url").value.trim(),
-		useLogos: document.getElementById("company-nuvio-use-logos").checked,
+		useCuratedArtwork: document.getElementById("company-nuvio-use-logos").checked,
 	};
 }
 
@@ -115,144 +64,6 @@ function getCompanyDefaultCollectionName() {
 	return presetName ? companyPresetCollectionNames[presetName] : "Studios";
 }
 
-function createCompanyNuvioJson() {
-	const options = getCompanyNuvioOptions();
-	const idFactory = createNuvioIdFactory();
-	const folders = getSelectedCompanies().map((company) => ({
-		id: idFactory.create("folder"),
-		title: company.name,
-		sources: [
-			{
-				title: company.name,
-				sortBy: "popularity.desc",
-				tmdbId: Number(company.id),
-				filters: {},
-				provider: "tmdb",
-				mediaType: "MOVIE",
-				tmdbSourceType: "COMPANY",
-			},
-		],
-		hideTitle: options.useLogos,
-		tileShape: "LANDSCAPE",
-		coverEmoji: options.useLogos ? "" : "🎬",
-		focusGifUrl: "",
-		heroVideoUrl: "",
-		titleLogoUrl: "",
-		coverImageUrl: options.useLogos ? getCompanyNuvioCoverUrl(company) : "",
-		catalogSources: [],
-		focusGifEnabled: false,
-		heroBackdropUrl: "",
-	}));
-
-	const collection = {
-		id: idFactory.create("collection"),
-		title: options.collectionName,
-		folders,
-		pinToTop: false,
-		viewMode: "TABBED_GRID",
-		showAllTab: false,
-		backdropImageUrl: options.collectionCoverUrl,
-		focusGlowEnabled: true,
-	};
-
-	return [collection];
-}
-
-function openCompanyNuvioExportModal() {
-	const selectedCount = selectedCompanyIds.size;
-
-	if (!selectedCount) {
-		return;
-	}
-
-	const nameInput = document.getElementById("company-nuvio-collection-name");
-	const defaultCollectionName = getCompanyDefaultCollectionName();
-
-	if (!nameInput.value.trim() || companyDefaultCollectionNames.has(nameInput.value.trim())) {
-		nameInput.value = defaultCollectionName;
-	}
-
-	document.getElementById("company-nuvio-export-summary").textContent =
-		`This will create one ${nameInput.value.trim()} collection with ${selectedCount.toLocaleString()} folder${selectedCount === 1 ? "" : "s"}.`;
-	openAppModal("company-nuvio-export-modal", nameInput);
-}
-
-function closeCompanyNuvioExportModal() {
-	closeNuvioImportHelpModal();
-	closeAppModal("company-nuvio-export-modal");
-}
-
-function downloadCompanyNuvioJson() {
-	const payload = getCompanyNuvioExportPayload();
-
-	if (!payload) {
-		return;
-	}
-
-	downloadTextFile(payload.filename, payload.json, "application/json");
-}
-
-function getCompanyNuvioExportCacheKey(options) {
-	return JSON.stringify({
-		options,
-		ids: getSelectedCompanies().map((company) => Number(company.id)),
-	});
-}
-
-function getCompanyNuvioExportPayload() {
-	if (!selectedCompanyIds.size) {
-		return null;
-	}
-
-	const options = getCompanyNuvioOptions();
-	const cacheKey = getCompanyNuvioExportCacheKey(options);
-
-	if (!companyNuvioExportCache || companyNuvioExportCache.cacheKey !== cacheKey) {
-		companyNuvioExportCache = {
-			cacheKey,
-			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
-			json: `${JSON.stringify(createCompanyNuvioJson(), null, "\t")}\n`,
-		};
-	}
-
-	return companyNuvioExportCache;
-}
-
-function copyCompanyNuvioJson(button) {
-	const payload = getCompanyNuvioExportPayload();
-
-	if (!payload) {
-		return;
-	}
-
-	copyTextWithButtonFeedback(payload.json, button);
-}
-
-function clearCompanySelection() {
-	selectedCompanyIds.clear();
-	render(getPageItems());
-	updateCompanySelectionStatus();
-	closeCompanyNuvioExportModal();
-}
-
-function selectCompanyPreset(presetName) {
-	const presetIds = companySelectionPresets[presetName] || [];
-	const availableIds = new Set(companies.map((company) => Number(company.id)));
-	const selectableIds = presetIds.filter((id) => availableIds.has(Number(id))).map(Number);
-	const shouldRemovePreset = selectableIds.length && selectableIds.every((id) => selectedCompanyIds.has(id));
-
-	for (const id of selectableIds) {
-		if (shouldRemovePreset) {
-			selectedCompanyIds.delete(id);
-		} else {
-			selectedCompanyIds.add(id);
-		}
-	}
-
-	render(getPageItems());
-	updateCompanySelectionStatus();
-}
-
 function getSelectedNetworks() {
 	return networks
 		.filter((network) => selectedNetworkIds.has(Number(network.id)))
@@ -263,8 +74,7 @@ function getNetworkNuvioOptions() {
 	return {
 		collectionName: document.getElementById("network-nuvio-collection-name").value.trim() || "Networks",
 		collectionCoverUrl: document.getElementById("network-nuvio-cover-url").value.trim(),
-		useLogos: document.getElementById("network-nuvio-use-logos").checked,
-		useFocusGifs: document.getElementById("network-nuvio-use-focus-gifs").checked,
+		useCuratedArtwork: document.getElementById("network-nuvio-use-logos").checked,
 	};
 }
 
@@ -290,35 +100,114 @@ function getNetworkDefaultCollectionName() {
 	return presetName ? networkPresetCollectionNames[presetName] : "Networks";
 }
 
-function createNetworkNuvioJson() {
-	const options = getNetworkNuvioOptions();
-	const idFactory = createNuvioIdFactory();
-	const folders = getSelectedNetworks().map((network) => ({
+function invalidateCompanyNuvioExport() {
+	companyNuvioExportRevision += 1;
+	companyNuvioExportCache = null;
+}
+
+function invalidateNetworkNuvioExport() {
+	networkNuvioExportRevision += 1;
+	networkNuvioExportCache = null;
+}
+
+function getV1ArtworkRuntimeBridge() {
+	const bridge = window.nuvioArtworkRuntime;
+
+	if (!bridge || typeof bridge.resolveLandscapeBatch !== "function") {
+		throw new Error("The curated artwork runtime adapter is unavailable.");
+	}
+
+	return bridge;
+}
+
+async function resolveEntityArtwork(entityType, entities, enabled) {
+	if (!enabled) {
+		return {
+			results: entities.map(() => null),
+			summary: {
+				enabled: false,
+				readyCount: 0,
+				fallbackCount: 0,
+				missingCount: entities.length,
+			},
+		};
+	}
+
+	const results = await getV1ArtworkRuntimeBridge().resolveLandscapeBatch({
+		entityType,
+		tmdbIds: entities.map((entity) => Number(entity.id)),
+	});
+	let readyCount = 0;
+	let fallbackCount = 0;
+	let missingCount = 0;
+
+	for (const result of results) {
+		if (result.status === "ready") {
+			readyCount += 1;
+			fallbackCount += result.fallbackUsed ? 1 : 0;
+			continue;
+		}
+
+		if (result.status === "missing") {
+			missingCount += 1;
+			continue;
+		}
+
+		throw new Error(`Unexpected curated artwork result: ${String(result.status)}`);
+	}
+
+	return {
+		results,
+		summary: {
+			enabled: true,
+			readyCount,
+			fallbackCount,
+			missingCount,
+		},
+	};
+}
+
+function createEntityFolder({ entity, entityType, idFactory, artworkResult }) {
+	const isCompany = entityType === "company";
+	const hasArtwork = artworkResult?.status === "ready";
+
+	return {
 		id: idFactory.create("folder"),
-		title: network.name,
+		title: entity.name,
 		sources: [
 			{
-				title: network.name,
+				title: entity.name,
 				sortBy: "popularity.desc",
-				tmdbId: Number(network.id),
+				tmdbId: Number(entity.id),
 				filters: {},
 				provider: "tmdb",
-				mediaType: "TV",
-				tmdbSourceType: "NETWORK",
+				mediaType: isCompany ? "MOVIE" : "TV",
+				tmdbSourceType: isCompany ? "COMPANY" : "NETWORK",
 			},
 		],
-		hideTitle: options.useLogos,
+		hideTitle: hasArtwork,
 		tileShape: "LANDSCAPE",
-		coverEmoji: options.useLogos ? "" : "📺",
-		focusGifUrl: options.useFocusGifs ? getNetworkFocusGifUrl(network) : "",
+		coverEmoji: hasArtwork ? "" : isCompany ? "🎬" : "📺",
+		focusGifUrl: "",
 		heroVideoUrl: "",
 		titleLogoUrl: "",
-		coverImageUrl: options.useLogos ? getNetworkNuvioCoverUrl(network) : "",
+		coverImageUrl: hasArtwork ? artworkResult.assetUrl : "",
 		catalogSources: [],
-		focusGifEnabled: Boolean(options.useFocusGifs && getNetworkFocusGifUrl(network)),
+		focusGifEnabled: false,
 		heroBackdropUrl: "",
-	}));
+	};
+}
 
+function createEntityNuvioJson({ entities, entityType, options, artworkResults }) {
+	const idFactory = createNuvioIdFactory();
+	const folders = entities.map((entity, index) =>
+		createEntityFolder({
+			entity,
+			entityType,
+			idFactory,
+			artworkResult: artworkResults[index],
+		}),
+	);
 	const collection = {
 		id: idFactory.create("collection"),
 		title: options.collectionName,
@@ -331,6 +220,269 @@ function createNetworkNuvioJson() {
 	};
 
 	return [collection];
+}
+
+function getCompanyNuvioExportCacheKey(options, selectedCompanies) {
+	return JSON.stringify({
+		revision: companyNuvioExportRevision,
+		options,
+		ids: selectedCompanies.map((company) => Number(company.id)),
+	});
+}
+
+async function getCompanyNuvioExportPayload() {
+	if (!selectedCompanyIds.size) {
+		return null;
+	}
+
+	const options = getCompanyNuvioOptions();
+	const selectedCompanies = getSelectedCompanies();
+	const cacheKey = getCompanyNuvioExportCacheKey(options, selectedCompanies);
+
+	if (companyNuvioExportCache?.cacheKey === cacheKey) {
+		return companyNuvioExportCache;
+	}
+
+	if (companyNuvioExportPending?.cacheKey === cacheKey) {
+		return companyNuvioExportPending.promise;
+	}
+
+	const pendingRecord = {
+		cacheKey,
+		promise: null,
+	};
+	const promise = (async () => {
+		const artwork = await resolveEntityArtwork("company", selectedCompanies, options.useCuratedArtwork);
+		const value = createEntityNuvioJson({
+			entities: selectedCompanies,
+			entityType: "company",
+			options,
+			artworkResults: artwork.results,
+		});
+
+		return {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(value, null, "\t")}\n`,
+			summary: artwork.summary,
+		};
+	})();
+
+	pendingRecord.promise = promise;
+	companyNuvioExportPending = pendingRecord;
+
+	try {
+		const payload = await promise;
+
+		if (companyNuvioExportPending === pendingRecord) {
+			companyNuvioExportCache = payload;
+			companyNuvioExportPending = null;
+		}
+
+		return payload;
+	} catch (error) {
+		if (companyNuvioExportPending === pendingRecord) {
+			companyNuvioExportPending = null;
+		}
+
+		throw error;
+	}
+}
+
+function getNetworkNuvioExportCacheKey(options, selectedNetworks) {
+	return JSON.stringify({
+		revision: networkNuvioExportRevision,
+		options,
+		ids: selectedNetworks.map((network) => Number(network.id)),
+	});
+}
+
+async function getNetworkNuvioExportPayload() {
+	if (!selectedNetworkIds.size) {
+		return null;
+	}
+
+	const options = getNetworkNuvioOptions();
+	const selectedNetworks = getSelectedNetworks();
+	const cacheKey = getNetworkNuvioExportCacheKey(options, selectedNetworks);
+
+	if (networkNuvioExportCache?.cacheKey === cacheKey) {
+		return networkNuvioExportCache;
+	}
+
+	if (networkNuvioExportPending?.cacheKey === cacheKey) {
+		return networkNuvioExportPending.promise;
+	}
+
+	const pendingRecord = {
+		cacheKey,
+		promise: null,
+	};
+	const promise = (async () => {
+		const artwork = await resolveEntityArtwork("network", selectedNetworks, options.useCuratedArtwork);
+		const value = createEntityNuvioJson({
+			entities: selectedNetworks,
+			entityType: "network",
+			options,
+			artworkResults: artwork.results,
+		});
+
+		return {
+			cacheKey,
+			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
+			json: `${JSON.stringify(value, null, "\t")}\n`,
+			summary: artwork.summary,
+		};
+	})();
+
+	pendingRecord.promise = promise;
+	networkNuvioExportPending = pendingRecord;
+
+	try {
+		const payload = await promise;
+
+		if (networkNuvioExportPending === pendingRecord) {
+			networkNuvioExportCache = payload;
+			networkNuvioExportPending = null;
+		}
+
+		return payload;
+	} catch (error) {
+		if (networkNuvioExportPending === pendingRecord) {
+			networkNuvioExportPending = null;
+		}
+
+		throw error;
+	}
+}
+
+function refreshCachedExportSummary(prefix, collectionName, selectedCount) {
+	document.getElementById(`${prefix}-nuvio-export-summary`).textContent =
+		`This will create one ${collectionName} collection with ${selectedCount.toLocaleString()} folder${selectedCount === 1 ? "" : "s"}.`;
+}
+
+function formatArtworkSummary(summary, total, emoji) {
+	if (!summary.enabled) {
+		return `Curated artwork is off. ${total.toLocaleString()} folder${total === 1 ? "" : "s"} will use visible titles and ${emoji}.`;
+	}
+
+	const ready = `${summary.readyCount.toLocaleString()} folder${summary.readyCount === 1 ? "" : "s"}`;
+	const fallback = `${summary.fallbackCount.toLocaleString()} approved text fallback${summary.fallbackCount === 1 ? "" : "s"}`;
+	const missing = `${summary.missingCount.toLocaleString()} folder${summary.missingCount === 1 ? "" : "s"}`;
+
+	return `Published artwork is ready for ${ready}, including ${fallback}. ${missing} will use visible titles and ${emoji} because no published artwork is available.`;
+}
+
+function setCachedExportState(prefix, state, message, actionPending) {
+	const status = document.getElementById(`${prefix}-nuvio-artwork-status`);
+	const retry = document.getElementById(`retry-${prefix}-nuvio-artwork`);
+	const copyButton = document.getElementById(`copy-${prefix}-nuvio-json`);
+	const downloadButton = document.getElementById(`download-${prefix}-nuvio-json`);
+
+	status.className = `cached-nuvio-artwork-status ${state}`;
+	status.textContent = message;
+	status.setAttribute("role", state === "error" ? "alert" : "status");
+	status.setAttribute("aria-busy", String(state === "loading"));
+	retry.hidden = state !== "error";
+	copyButton.disabled = state !== "ready" || actionPending;
+	downloadButton.disabled = state !== "ready" || actionPending;
+}
+
+function setCompanyNuvioExportState(state, message) {
+	companyNuvioExportState = state;
+	setCachedExportState("company", state, message, companyNuvioExportActionPending);
+}
+
+function setNetworkNuvioExportState(state, message) {
+	networkNuvioExportState = state;
+	setCachedExportState("network", state, message, networkNuvioExportActionPending);
+}
+
+async function prepareCompanyNuvioExport() {
+	const version = ++companyNuvioPreparationVersion;
+	const options = getCompanyNuvioOptions();
+	const selectedCount = selectedCompanyIds.size;
+
+	refreshCachedExportSummary("company", options.collectionName, selectedCount);
+	setCompanyNuvioExportState(
+		"loading",
+		options.useCuratedArtwork ? "Preparing curated artwork…" : "Preparing export without curated artwork…",
+	);
+
+	try {
+		const payload = await getCompanyNuvioExportPayload();
+
+		if (version !== companyNuvioPreparationVersion || !payload) {
+			return null;
+		}
+
+		setCompanyNuvioExportState("ready", formatArtworkSummary(payload.summary, selectedCount, "🎬"));
+		return payload;
+	} catch (error) {
+		if (version !== companyNuvioPreparationVersion) {
+			return null;
+		}
+
+		console.error("Company Nuvio export preparation failed", error);
+		setCompanyNuvioExportState("error", curatedArtworkFailureMessage);
+		return null;
+	}
+}
+
+async function prepareNetworkNuvioExport() {
+	const version = ++networkNuvioPreparationVersion;
+	const options = getNetworkNuvioOptions();
+	const selectedCount = selectedNetworkIds.size;
+
+	refreshCachedExportSummary("network", options.collectionName, selectedCount);
+	setNetworkNuvioExportState(
+		"loading",
+		options.useCuratedArtwork ? "Preparing curated artwork…" : "Preparing export without curated artwork…",
+	);
+
+	try {
+		const payload = await getNetworkNuvioExportPayload();
+
+		if (version !== networkNuvioPreparationVersion || !payload) {
+			return null;
+		}
+
+		setNetworkNuvioExportState("ready", formatArtworkSummary(payload.summary, selectedCount, "📺"));
+		return payload;
+	} catch (error) {
+		if (version !== networkNuvioPreparationVersion) {
+			return null;
+		}
+
+		console.error("Network Nuvio export preparation failed", error);
+		setNetworkNuvioExportState("error", curatedArtworkFailureMessage);
+		return null;
+	}
+}
+
+function openCompanyNuvioExportModal() {
+	const selectedCount = selectedCompanyIds.size;
+
+	if (!selectedCount) {
+		return;
+	}
+
+	const nameInput = document.getElementById("company-nuvio-collection-name");
+	const defaultCollectionName = getCompanyDefaultCollectionName();
+
+	if (!nameInput.value.trim() || companyDefaultCollectionNames.has(nameInput.value.trim())) {
+		nameInput.value = defaultCollectionName;
+	}
+
+	refreshCachedExportSummary("company", nameInput.value.trim(), selectedCount);
+	openAppModal("company-nuvio-export-modal", nameInput);
+	void prepareCompanyNuvioExport();
+}
+
+function closeCompanyNuvioExportModal() {
+	companyNuvioPreparationVersion += 1;
+	closeNuvioImportHelpModal();
+	closeAppModal("company-nuvio-export-modal");
 }
 
 function openNetworkNuvioExportModal() {
@@ -347,64 +499,115 @@ function openNetworkNuvioExportModal() {
 		nameInput.value = defaultCollectionName;
 	}
 
-	document.getElementById("network-nuvio-export-summary").textContent =
-		`This will create one ${nameInput.value.trim()} collection with ${selectedCount.toLocaleString()} folder${selectedCount === 1 ? "" : "s"}.`;
+	refreshCachedExportSummary("network", nameInput.value.trim(), selectedCount);
 	openAppModal("network-nuvio-export-modal", nameInput);
+	void prepareNetworkNuvioExport();
 }
 
 function closeNetworkNuvioExportModal() {
+	networkNuvioPreparationVersion += 1;
 	closeNuvioImportHelpModal();
 	closeAppModal("network-nuvio-export-modal");
 }
 
-function downloadNetworkNuvioJson() {
-	const payload = getNetworkNuvioExportPayload();
-
-	if (!payload) {
+async function runCompanyNuvioExportAction(action) {
+	if (companyNuvioExportActionPending) {
 		return;
 	}
 
-	downloadTextFile(payload.filename, payload.json, "application/json");
+	companyNuvioExportActionPending = true;
+	setCompanyNuvioExportState(companyNuvioExportState, document.getElementById("company-nuvio-artwork-status").textContent);
+
+	try {
+		const payload = await getCompanyNuvioExportPayload();
+
+		if (payload) {
+			await action(payload);
+		}
+	} catch (error) {
+		console.error("Company Nuvio export action failed", error);
+		setCompanyNuvioExportState("error", curatedArtworkFailureMessage);
+	} finally {
+		companyNuvioExportActionPending = false;
+		setCompanyNuvioExportState(companyNuvioExportState, document.getElementById("company-nuvio-artwork-status").textContent);
+	}
 }
 
-function getNetworkNuvioExportCacheKey(options) {
-	return JSON.stringify({
-		options,
-		ids: getSelectedNetworks().map((network) => Number(network.id)),
+async function runNetworkNuvioExportAction(action) {
+	if (networkNuvioExportActionPending) {
+		return;
+	}
+
+	networkNuvioExportActionPending = true;
+	setNetworkNuvioExportState(networkNuvioExportState, document.getElementById("network-nuvio-artwork-status").textContent);
+
+	try {
+		const payload = await getNetworkNuvioExportPayload();
+
+		if (payload) {
+			await action(payload);
+		}
+	} catch (error) {
+		console.error("Network Nuvio export action failed", error);
+		setNetworkNuvioExportState("error", curatedArtworkFailureMessage);
+	} finally {
+		networkNuvioExportActionPending = false;
+		setNetworkNuvioExportState(networkNuvioExportState, document.getElementById("network-nuvio-artwork-status").textContent);
+	}
+}
+
+function downloadCompanyNuvioJson() {
+	return runCompanyNuvioExportAction(async (payload) => {
+		downloadTextFile(payload.filename, payload.json, "application/json");
+		await Promise.resolve();
 	});
 }
 
-function getNetworkNuvioExportPayload() {
-	if (!selectedNetworkIds.size) {
-		return null;
-	}
+function copyCompanyNuvioJson(button) {
+	return runCompanyNuvioExportAction((payload) => copyTextWithButtonFeedback(payload.json, button));
+}
 
-	const options = getNetworkNuvioOptions();
-	const cacheKey = getNetworkNuvioExportCacheKey(options);
-
-	if (!networkNuvioExportCache || networkNuvioExportCache.cacheKey !== cacheKey) {
-		networkNuvioExportCache = {
-			cacheKey,
-			filename: `${slugifyFilename(options.collectionName)}.nuvio.json`,
-			json: `${JSON.stringify(createNetworkNuvioJson(), null, "\t")}\n`,
-		};
-	}
-
-	return networkNuvioExportCache;
+function downloadNetworkNuvioJson() {
+	return runNetworkNuvioExportAction(async (payload) => {
+		downloadTextFile(payload.filename, payload.json, "application/json");
+		await Promise.resolve();
+	});
 }
 
 function copyNetworkNuvioJson(button) {
-	const payload = getNetworkNuvioExportPayload();
+	return runNetworkNuvioExportAction((payload) => copyTextWithButtonFeedback(payload.json, button));
+}
 
-	if (!payload) {
-		return;
+function clearCompanySelection() {
+	selectedCompanyIds.clear();
+	invalidateCompanyNuvioExport();
+	render(getPageItems());
+	updateCompanySelectionStatus();
+	closeCompanyNuvioExportModal();
+}
+
+function selectCompanyPreset(presetName) {
+	const presetIds = companySelectionPresets[presetName] || [];
+	const availableIds = new Set(companies.map((company) => Number(company.id)));
+	const selectableIds = presetIds.filter((id) => availableIds.has(Number(id))).map(Number);
+	const shouldRemovePreset = selectableIds.length && selectableIds.every((id) => selectedCompanyIds.has(id));
+
+	for (const id of selectableIds) {
+		if (shouldRemovePreset) {
+			selectedCompanyIds.delete(id);
+		} else {
+			selectedCompanyIds.add(id);
+		}
 	}
 
-	copyTextWithButtonFeedback(payload.json, button);
+	invalidateCompanyNuvioExport();
+	render(getPageItems());
+	updateCompanySelectionStatus();
 }
 
 function clearNetworkSelection() {
 	selectedNetworkIds.clear();
+	invalidateNetworkNuvioExport();
 	renderNetworks(getNetworkPageItems());
 	updateNetworkSelectionStatus();
 	closeNetworkNuvioExportModal();
@@ -424,6 +627,7 @@ function selectNetworkPreset(presetName) {
 		}
 	}
 
+	invalidateNetworkNuvioExport();
 	renderNetworks(getNetworkPageItems());
 	updateNetworkSelectionStatus();
 }
@@ -445,5 +649,34 @@ function updateNetworkPresetButtons() {
 
 		button.classList.toggle("active", Boolean(isActive));
 		button.setAttribute("aria-pressed", String(Boolean(isActive)));
+	});
+}
+
+function initCachedNuvioExportControls() {
+	for (const id of ["company-nuvio-collection-name", "company-nuvio-cover-url", "company-nuvio-use-logos"]) {
+		document.getElementById(id).addEventListener("change", () => {
+			invalidateCompanyNuvioExport();
+
+			if (!document.getElementById("company-nuvio-export-modal").hidden) {
+				void prepareCompanyNuvioExport();
+			}
+		});
+	}
+
+	for (const id of ["network-nuvio-collection-name", "network-nuvio-cover-url", "network-nuvio-use-logos"]) {
+		document.getElementById(id).addEventListener("change", () => {
+			invalidateNetworkNuvioExport();
+
+			if (!document.getElementById("network-nuvio-export-modal").hidden) {
+				void prepareNetworkNuvioExport();
+			}
+		});
+	}
+
+	document.getElementById("retry-company-nuvio-artwork").addEventListener("click", () => {
+		void prepareCompanyNuvioExport();
+	});
+	document.getElementById("retry-network-nuvio-artwork").addEventListener("click", () => {
+		void prepareNetworkNuvioExport();
 	});
 }

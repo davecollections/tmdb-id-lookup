@@ -209,6 +209,7 @@ function createNetworkSelectionCell(network) {
 			selectedNetworkIds.delete(Number(network.id));
 		}
 
+		invalidateNetworkNuvioExport();
 		updateNetworkSelectionStatus();
 	});
 

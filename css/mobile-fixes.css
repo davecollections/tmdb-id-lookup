@@ -148,6 +148,15 @@
 		max-width: none;
 	}
 
+	.cached-nuvio-artwork-feedback {
+		flex-direction: column;
+	}
+
+	.cached-nuvio-artwork-status,
+	.cached-nuvio-artwork-retry {
+		width: 100%;
+	}
+
 	.nuvio-import-help-grid {
 		grid-template-columns: 1fr;
 	}

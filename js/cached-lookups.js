@@ -209,6 +209,14 @@ function initCachedLookupLazyLoad() {
 	observer.observe(cachedSection);
 }
 
+function getCompanyLogoUrl(company, size = "w500") {
+	return company.logo_path ? `https://image.tmdb.org/t/p/${size}${company.logo_path}` : "";
+}
+
+function getNetworkLogoUrl(network, size = "w500") {
+	return network.logo_path ? `https://image.tmdb.org/t/p/${size}${network.logo_path}` : "";
+}
+
 function createLogoCell(logoUrl, altText) {
 	const cell = createElement("td", { className: "logo-cell" });
 
@@ -424,5 +432,6 @@ function initCachedLookups() {
 		}
 	});
 
+	initCachedNuvioExportControls();
 	initCachedLookupLazyLoad();
 }

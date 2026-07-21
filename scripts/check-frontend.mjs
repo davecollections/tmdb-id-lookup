@@ -24,7 +24,7 @@ function readJson(file) {
 }
 
 function checkJavaScriptSyntax() {
-	const files = [...listFiles("js", ".js"), ...listFiles("scripts", [".js", ".mjs"])];
+	const files = [...listFiles("js", [".js", ".mjs"]), ...listFiles("scripts", [".js", ".mjs"])];
 
 	for (const file of files) {
 		try {
@@ -59,7 +59,7 @@ function checkDuplicateHtmlIds() {
 function checkUnsafeFrontendPatterns() {
 	const patterns = [/\.innerHTML\b/, /\.outerHTML\b/, /\.insertAdjacentHTML\b/, /\beval\s*\(/, /\bnew Function\b/];
 
-	for (const file of listFiles("js", ".js")) {
+	for (const file of listFiles("js", [".js", ".mjs"])) {
 		const source = readText(file);
 
 		for (const pattern of patterns) {
@@ -276,13 +276,6 @@ function getObjectKeys(block) {
 	return [...block.matchAll(/^\s*(?:"([^"]+)"|([A-Za-z_$][\w$]*))\s*:/gm)].map((match) => match[1] || match[2]);
 }
 
-function getNumericObjectEntries(block) {
-	return [...block.matchAll(/^\s*(\d+)\s*:\s*"([^"]+)"/gm)].map((match) => ({
-		id: match[1],
-		url: match[2],
-	}));
-}
-
 function getPresetIds(block) {
 	return [...block.matchAll(/^\s*([A-Za-z_$][\w$]*)\s*:\s*\[([\s\S]*?)\]/gm)].flatMap(([, , values]) =>
 		[...values.matchAll(/\d+/g)].map((match) => match[0]),
@@ -297,14 +290,6 @@ function assertIdsExist(ids, validIds, label) {
 	}
 }
 
-function assertUrlEntries(entries, label) {
-	for (const entry of entries) {
-		if (!/^https?:\/\//.test(entry.url)) {
-			failures.push(`${label}: ID ${entry.id} has invalid URL`);
-		}
-	}
-}
-
 function checkNuvioExportSanity() {
 	const companyIds = new Set(readJson("data/companies.min.json").map((company) => String(company.i)));
 	const networkIds = new Set(readJson("data/tv-networks.min.json").map((network) => String(network.i)));
@@ -315,36 +300,9 @@ function checkNuvioExportSanity() {
 
 	const companyPresetIds = getPresetIds(getConstObjectBlock(cachedExportSource, "companySelectionPresets", "js/cached-nuvio-export.js"));
 	const networkPresetIds = getPresetIds(getConstObjectBlock(cachedExportSource, "networkSelectionPresets", "js/cached-nuvio-export.js"));
-	const companyCoverEntries = getNumericObjectEntries(
-		getConstObjectBlock(cachedExportSource, "curatedCompanyCoverUrls", "js/cached-nuvio-export.js"),
-	);
-	const networkCoverEntries = getNumericObjectEntries(
-		getConstObjectBlock(cachedExportSource, "curatedNetworkCoverUrls", "js/cached-nuvio-export.js"),
-	);
-	const networkGifEntries = getNumericObjectEntries(
-		getConstObjectBlock(cachedExportSource, "networkFocusGifUrls", "js/cached-nuvio-export.js"),
-	);
 
 	assertIdsExist(companyPresetIds, companyIds, "Company selection presets");
 	assertIdsExist(networkPresetIds, networkIds, "Network selection presets");
-	assertIdsExist(
-		companyCoverEntries.map((entry) => entry.id),
-		companyIds,
-		"Curated company cover URLs",
-	);
-	assertIdsExist(
-		networkCoverEntries.map((entry) => entry.id),
-		networkIds,
-		"Curated network cover URLs",
-	);
-	assertIdsExist(
-		networkGifEntries.map((entry) => entry.id),
-		networkIds,
-		"Network focus GIF URLs",
-	);
-	assertUrlEntries(companyCoverEntries, "Curated company cover URLs");
-	assertUrlEntries(networkCoverEntries, "Curated network cover URLs");
-	assertUrlEntries(networkGifEntries, "Network focus GIF URLs");
 
 	const genreNames = new Set(genreRows.map((row) => row.name));
 	const posterNames = new Set(getObjectKeys(getConstObjectBlock(genreExportSource, "genrePosterArtworkFiles", "js/genre-nuvio-export.js")));
@@ -370,6 +328,55 @@ function checkNuvioExportSanity() {
 	}
 }
 
+function checkV1ArtworkIntegration() {
+	const html = readText("index.html");
+	const readme = readText("README.md");
+	const exporter = readText("js/cached-nuvio-export.js");
+	const adapter = readText("js/artwork-runtime-v1.mjs");
+	const productionText = [html, readme, exporter].join("\n");
+	const obsoleteProductionReferences = [
+		"i.postimg.cc",
+		"nuvioapp.space/uploads/covers",
+		"upload.wikimedia.org",
+		"luckynumb3rs",
+		"networkFocusGifUrls",
+		"getNetworkFocusGifUrl",
+		"network-nuvio-use-focus-gifs",
+	];
+
+	if (!adapter.includes('from "./artwork-runtime.mjs"')) {
+		failures.push("js/artwork-runtime-v1.mjs: must import the shared artwork runtime module");
+	}
+
+	if (!adapter.includes("createArtworkRuntimeClient")) {
+		failures.push("js/artwork-runtime-v1.mjs: must create the shared artwork runtime client");
+	}
+
+	if (!exporter.includes("nuvioArtworkRuntime") || !exporter.includes("resolveLandscapeBatch")) {
+		failures.push("js/cached-nuvio-export.js: must resolve company/network artwork through the v1 runtime adapter");
+	}
+
+	if (!html.includes('type="module" src="./js/artwork-runtime-v1.mjs?v=__APP_ASSET_VERSION__"')) {
+		failures.push("index.html: missing versioned v1 artwork runtime module adapter");
+	}
+
+	if ((html.match(/Use curated artwork/g) || []).length !== 2) {
+		failures.push("index.html: company and network exports must both use curated-artwork wording");
+	}
+
+	for (const reference of obsoleteProductionReferences) {
+		if (productionText.toLowerCase().includes(reference.toLowerCase())) {
+			failures.push(`V1 company/network production or README still contains obsolete artwork reference: ${reference}`);
+		}
+	}
+
+	for (const field of ['focusGifUrl: ""', "focusGifEnabled: false", "focusGlowEnabled: true"]) {
+		if (!exporter.includes(field)) {
+			failures.push(`js/cached-nuvio-export.js: missing preserved field ${field}`);
+		}
+	}
+}
+
 checkJavaScriptSyntax();
 checkDataJson();
 checkDuplicateHtmlIds();
@@ -377,6 +384,7 @@ checkUnsafeFrontendPatterns();
 checkCollectionCoverAssetPaths();
 checkCachedDataIds();
 checkNuvioExportSanity();
+checkV1ArtworkIntegration();
 
 if (failures.length) {
 	console.error(failures.join("\n\n"));

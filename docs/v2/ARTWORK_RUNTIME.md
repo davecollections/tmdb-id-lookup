@@ -1,6 +1,6 @@
 # Shared artwork runtime lookup
 
-Status: foundation implemented; visible export integration deferred
+Status: shared foundation implemented; v1 company/network integration implemented
 
 Last reviewed: 2026-07-21
 
@@ -13,7 +13,7 @@ This contract is based on the final `davecollections/nuvio-assets` publication h
 
 The shared consumer implementation is [`js/artwork-runtime.mjs`](../../js/artwork-runtime.mjs). It deliberately validates only the application-facing safety and resolution contract rather than duplicating the complete publication schema. Publication generation, counts, fingerprints, source-manifest metadata, and review workflows remain owned by `nuvio-assets`.
 
-Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) adds the shared read-only foundation only. Existing v1 company, network, actor, and director exports do not call it yet, and the v2 builder has no artwork UI integration yet.
+Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) adds the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. V1 people exports and the v2 builder still do not consume the runtime.
 
 ## Published location
 
@@ -121,6 +121,16 @@ Its async `resolve()` method loads once and applies the same typed resolver. Tes
 
 There is no localStorage, IndexedDB, Cache API, or service-worker persistence. Persistent caching, refresh intervals, explicit refresh controls, and multi-tab behaviour remain separate product decisions for a later integration issue.
 
+## V1 company and network integration
+
+The classic v1 page loads [`js/artwork-runtime-v1.mjs`](../../js/artwork-runtime-v1.mjs) as a module. The adapter creates one shared client per page and exposes only batch landscape resolution for explicit `company` or `network` requests. Loading the adapter does not call `load()` or fetch the runtime; the request begins only when a company or network export modal prepares an export with **Use curated artwork** enabled.
+
+The classic export code treats `ready` as published folder artwork, including `fallbackUsed: true`, and treats `missing` as a valid visible-title plus 🎬/📺 fallback with an empty cover URL. It does not construct paths, scan maps, use hard-coded cover mappings, or substitute TMDB logo thumbnails. Lookup-table logo thumbnails remain a separate display-only TMDB path.
+
+Prepared company and network payloads are async and keyed by selection plus relevant settings. Simultaneous actions share one pending preparation, unchanged Copy/Download actions reuse the same JSON and generated IDs, and changes invalidate the prepared payload. A runtime load or validation error leaves Copy and Download disabled, remains retryable, and can be bypassed only by turning curated artwork off. Failures are not replaced with legacy or guessed artwork.
+
+The borrowed v1 network focus-animation option and URL mappings were removed. Company and network folder JSON still emits `focusGifUrl: ""` and `focusGifEnabled: false`; `focusGlowEnabled` remains unchanged. Optional user-supplied or first-party subtle focus animation remains only a possible future v2 feature.
+
 ## Browser and integration boundaries
 
 The runtime is a public read-only asset. Loading it requires no login, API key, bearer token, personal data, GitHub write permission, or publication credential. The browser consumer performs public reads only. Any future on-demand artwork request and approval workflow remains deferred and must not place GitHub write credentials in v1 or builder code.
@@ -129,7 +139,7 @@ The `.mjs` location under `js/` is intentional:
 
 - Node built-in tests can import it without a root package;
 - the existing Pages allowlist already publishes the `js/` tree;
-- a later v1 issue can add a thin `type="module"` adapter without duplicating resolution rules;
+- v1 uses a thin `type="module"` adapter without duplicating resolution rules;
 - a later builder issue can import the pure module through Vite.
 
-Issue #45 does not add either consumer import. This keeps stable v1 exports, builder output, Nuvio JSON, UI, Worker routes, and current artwork fallbacks unchanged until a separately reviewed migration issue.
+Issue #46 changes only v1 company/network export artwork preparation and related UI/documentation. People exports, builder output and UI, Worker routes, ordinary lookup thumbnails, and other export families remain unchanged.
