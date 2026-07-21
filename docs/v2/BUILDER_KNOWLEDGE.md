@@ -2,7 +2,7 @@
 
 Status: Planning and contract groundwork
 
-Last reviewed: 2026-07-12
+Last reviewed: 2026-07-21
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope.
 
@@ -330,18 +330,32 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 
 - Twenty-seven focused automatic-ID/workspace-flow test functions bring the Node suite from the existing 272-function baseline to 299 test functions.
 
-## 12. Open questions
+## 12. Shared artwork runtime foundation — issue #45
+
+**Confirmed from the final `davecollections/nuvio-assets` publication handover and current published schema, and confirmed by repository tests — issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45), 2026-07-21:** a pure shared runtime lookup client now establishes one future artwork resolution contract for v1 and the builder without changing either consumer yet. The focused contract and API documentation is in [`ARTWORK_RUNTIME.md`](./ARTWORK_RUNTIME.md).
+
+- The public runtime is read from `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/runtime-lookup.json`; the application does not hard-code its current fingerprint, file SHA, counts, or representative IDs.
+- Exact positive TMDB numeric IDs are authoritative only inside the explicit `companies`, `networks`, or `people` map selected by `company`, `network`, or `person`. Names and aliases are display metadata, ID spaces remain separate, and the resolver never scans other maps.
+- Company and network support landscape 1200×675 WebP only. People support landscape 1200×675 WebP and poster 1000×1500 WebP. Unsupported orientations return an expected result and are never substituted, stretched, or cropped.
+- Repository-relative published paths resolve beneath a configurable base URL. Every ready URL appends `?v=` plus the first 12 characters of that orientation's lowercase SHA-256.
+- Only globally published data and entries with `status: "published"` and `reviewRequired: false` are safe for automatic use. A published `fallbackUsed: true` record remains approved; the resolver propagates the flag rather than replacing the asset.
+- A missing typed key returns `missing` without guessing a numeric path, searching another map, or substituting a TMDB image. Malformed, unpublished, or unsafe data throws a typed error and cannot be mistaken for absence.
+- The loader uses injectable fetch, validates the minimum complete consumer contract, deduplicates simultaneous loads, caches only successful data in memory per client, and permits retry after failure. Tests use synthetic fixtures only and make no live requests.
+- The browser needs no write credential, login, secret, or personal data. On-demand artwork requests and publication remain a deferred workflow outside browser code.
+- Persistent browser caching, refresh intervals, manual refresh, and multi-tab behaviour remain separate later product decisions.
+- `js/artwork-runtime.mjs` is deployed with the existing v1 `js/` tree and can later support a thin v1 module adapter and direct Vite import. No current v1 export, builder UI, Nuvio JSON, Worker, or visible artwork behaviour uses it in this issue.
+
+## 13. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
 - Which Discover filters work identically across mobile and TV clients?
 - How should existing v1 exporters be consolidated without changing output?
 - Which future controls need explicit property-removal semantics beyond assigning supported empty or null values?
-- Can the builder and v1 safely share pure modules?
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
 
-## 13. Update rules
+## 14. Update rules
 
 - Update this file when a test becomes confirmed or disproved.
 - Include the evidence level, review/test date, and source.
@@ -374,6 +388,8 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-12 | Corrected TMDB Collection Builder naming, local-only welcome entry, controller-delegated new-project and JSON import flows, stable diagnostics, warning summary, responsive accessibility, and welcome Pages marker | [TMDB ID Lookup issue #41](https://github.com/davecollections/tmdb-id-lookup/issues/41) |
 | 2026-07-12 | UI-only collection/folder ID and title drafts, minimal controller patches, navigation locking, unusual imported-value handling, accessibility, and raw/unknown/source-order preservation | [TMDB ID Lookup issue #42](https://github.com/davecollections/tmdb-id-lookup/issues/42) |
 | 2026-07-12 | Hidden automatic collection/folder Nuvio IDs, deterministic import repair, title-only editing, guarded builder-home return, and functional hierarchy empty states | [TMDB ID Lookup issue #43](https://github.com/davecollections/tmdb-id-lookup/issues/43) |
+| 2026-07-21 | Final published typed artwork identity, orientation, SHA-version, review-safety, and missing-key contract | [`davecollections/nuvio-assets` runtime lookup and schema](https://github.com/davecollections/nuvio-assets/tree/main/assets/collection_covers) |
+| 2026-07-21 | Shared pure artwork validation, resolution, loading, in-memory caching, retry, and offline fixture behaviour | [TMDB ID Lookup issue #45](https://github.com/davecollections/tmdb-id-lookup/issues/45) |
 
 ## Decision history
 
@@ -390,3 +406,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-11 — First visible builder shell:** connect React to the controller through one external-store adapter and one production controller singleton; derive mobile drill-down directly from hierarchical selection; display only safe known summaries; and permit deterministic draft collection/folder creation without starting editing, import/export, source creation, persistence, or migration workflows.
 - **2026-07-12 — Welcome and local JSON import:** make TMDB Collection Builder the visible product name; keep welcome/workspace selection UI-only above one subscribed controller; delegate new-project and JSON parsing/import to public controller APIs; keep browser file transport local, explicit, size-limited, and structured; and preserve the existing workspace without adding export, editing, persistence, migration actions, or networking.
 - **2026-07-12 — Essential hierarchy editing:** add one UI-only inline draft for collection/folder Nuvio-facing IDs and titles; target controller nodes only by stable internal ID; validate required text locally; send only minimal changed fields through `updateNode`; lock hierarchy navigation until Apply or Cancel; and preserve raw/unknown/source evidence without changing controller, domain, importer, serializer, migration, v1, Worker, or dependency contracts.
+- **2026-07-21 — Shared artwork runtime foundation:** adopt one pure root-level ES module for typed published artwork validation, loading, and resolution; resolve only explicit company, network, and person maps; version every ready asset URL from its orientation SHA; keep successful caching memory-only per client; and defer v1 export, builder UI, persistent caching, refresh policy, and artwork-request integration to separately reviewed issues.
