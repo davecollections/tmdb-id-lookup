@@ -343,6 +343,14 @@ function checkV1ArtworkIntegration() {
 		"getNetworkFocusGifUrl",
 		"network-nuvio-use-focus-gifs",
 	];
+	const removedArtworkUiIds = [
+		"company-nuvio-use-logos",
+		"network-nuvio-use-logos",
+		"company-nuvio-artwork-status",
+		"network-nuvio-artwork-status",
+		"retry-company-nuvio-artwork",
+		"retry-network-nuvio-artwork",
+	];
 
 	if (!adapter.includes('from "./artwork-runtime.mjs"')) {
 		failures.push("js/artwork-runtime-v1.mjs: must import the shared artwork runtime module");
@@ -360,8 +368,18 @@ function checkV1ArtworkIntegration() {
 		failures.push("index.html: missing versioned v1 artwork runtime module adapter");
 	}
 
-	if ((html.match(/Use curated artwork/g) || []).length !== 2) {
-		failures.push("index.html: company and network exports must both use curated-artwork wording");
+	for (const id of removedArtworkUiIds) {
+		if (html.includes(id)) {
+			failures.push(`index.html: removed technical artwork control remains: ${id}`);
+		}
+	}
+
+	if (!exporter.includes("getCompanyLogoUrl(entity)") || !exporter.includes("getNetworkLogoUrl(entity)")) {
+		failures.push("js/cached-nuvio-export.js: missing cached TMDB logo fallback through the established lookup helpers");
+	}
+
+	if (!exporter.includes('preparing ? "Preparing…"')) {
+		failures.push("js/cached-nuvio-export.js: missing transient preparation feedback on export buttons");
 	}
 
 	for (const reference of obsoleteProductionReferences) {

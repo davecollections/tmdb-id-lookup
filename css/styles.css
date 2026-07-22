@@ -2010,52 +2010,6 @@ details.nuvio-modal-section[open] {
 	outline-offset: 2px;
 }
 
-.cached-nuvio-artwork-feedback {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-	min-height: 42px;
-}
-
-.cached-nuvio-artwork-status {
-	flex: 1 1 auto;
-	min-height: 20px;
-	margin: 0;
-	padding: 10px 12px;
-	border: 1px solid transparent;
-	border-radius: 10px;
-	color: #aeb7c2;
-	font-size: 14px;
-	line-height: 1.4;
-}
-
-.cached-nuvio-artwork-status.idle {
-	padding: 0;
-}
-
-.cached-nuvio-artwork-status.loading {
-	border-color: rgba(138, 180, 255, 0.42);
-	background: rgba(59, 130, 246, 0.1);
-	color: #cfe0ff;
-}
-
-.cached-nuvio-artwork-status.ready {
-	border-color: rgba(92, 214, 160, 0.42);
-	background: rgba(92, 214, 160, 0.1);
-	color: #b9f6d8;
-}
-
-.cached-nuvio-artwork-status.error {
-	border-color: rgba(248, 113, 113, 0.5);
-	background: rgba(127, 29, 29, 0.22);
-	color: #fecaca;
-}
-
-.cached-nuvio-artwork-retry {
-	flex: 0 0 auto;
-	padding: 10px 12px;
-}
-
 .nuvio-preview-grid {
 	display: grid;
 	grid-template-columns: repeat(2, 320px);

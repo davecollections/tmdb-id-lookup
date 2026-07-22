@@ -74,10 +74,6 @@ function createBridge(fetchImpl) {
 	});
 }
 
-function plain(value) {
-	return JSON.parse(JSON.stringify(value));
-}
-
 function createElementState(overrides = {}) {
 	return {
 		checked: false,
@@ -108,27 +104,19 @@ function createExporterHarness({
 	networks = [],
 	selectedCompanyIds = companies.map((company) => company.id),
 	selectedNetworkIds = networks.map((network) => network.id),
-	companyArtworkEnabled = true,
-	networkArtworkEnabled = true,
 } = {}) {
 	const elements = new Map();
 	const add = (id, overrides) => elements.set(id, createElementState(overrides));
 
 	add("company-nuvio-collection-name", { value: "Studios" });
 	add("company-nuvio-cover-url", { value: "https://example.test/company-backdrop.jpg" });
-	add("company-nuvio-use-logos", { checked: companyArtworkEnabled });
 	add("company-nuvio-export-summary");
-	add("company-nuvio-artwork-status");
-	add("retry-company-nuvio-artwork", { hidden: true });
 	add("copy-company-nuvio-json", { disabled: true, textContent: "Copy JSON" });
 	add("download-company-nuvio-json", { disabled: true, textContent: "Download JSON" });
 	add("company-nuvio-export-modal", { hidden: false });
 	add("network-nuvio-collection-name", { value: "Networks" });
 	add("network-nuvio-cover-url", { value: "https://example.test/network-backdrop.jpg" });
-	add("network-nuvio-use-logos", { checked: networkArtworkEnabled });
 	add("network-nuvio-export-summary");
-	add("network-nuvio-artwork-status");
-	add("retry-network-nuvio-artwork", { hidden: true });
 	add("copy-network-nuvio-json", { disabled: true, textContent: "Copy JSON" });
 	add("download-network-nuvio-json", { disabled: true, textContent: "Download JSON" });
 	add("network-nuvio-export-modal", { hidden: false });
@@ -136,6 +124,7 @@ function createExporterHarness({
 	const copied = [];
 	const downloads = [];
 	const loggedErrors = [];
+	const loggedWarnings = [];
 	let createdIdCount = 0;
 	let closedModalCount = 0;
 	const context = {
@@ -145,6 +134,9 @@ function createExporterHarness({
 		selectedNetworkIds: new Set(selectedNetworkIds.map(Number)),
 		console: {
 			log() {},
+			warn(...args) {
+				loggedWarnings.push(args);
+			},
 			error(...args) {
 				loggedErrors.push(args);
 			},
@@ -196,6 +188,12 @@ function createExporterHarness({
 		},
 		updateCompanySelectionStatus() {},
 		updateNetworkSelectionStatus() {},
+		getCompanyLogoUrl(company, size = "w500") {
+			return company.logo_path ? `https://image.tmdb.org/t/p/${size}${company.logo_path}` : "";
+		},
+		getNetworkLogoUrl(network, size = "w500") {
+			return network.logo_path ? `https://image.tmdb.org/t/p/${size}${network.logo_path}` : "";
+		},
 	};
 
 	context.getSelectedCompanies = () =>
@@ -213,6 +211,7 @@ function createExporterHarness({
 		copied,
 		downloads,
 		loggedErrors,
+		loggedWarnings,
 		get createdIdCount() {
 			return createdIdCount;
 		},
@@ -252,7 +251,7 @@ test("v1 adapter stays lazy and resolves explicit company/network landscape batc
 	await assert.rejects(() => bridge.resolveLandscapeBatch({ entityType: "person", tmdbIds: [30] }), TypeError);
 });
 
-test("company and network exports use published URLs, accept text fallbacks, and preserve missing/source contracts", async () => {
+test("company and network exports prefer curated artwork then cached TMDB logos then title/emoji", async () => {
 	let fetchCount = 0;
 	const bridge = createBridge(async () => {
 		fetchCount += 1;
@@ -261,14 +260,16 @@ test("company and network exports use published URLs, accept text fallbacks, and
 	const harness = createExporterHarness({
 		bridge,
 		companies: [
-			{ id: 12, name: "Missing Cached Studio", logo_path: "/must-not-export.png" },
-			{ id: 11, name: "Beta Cached Studio", logo_path: "/must-not-export.png" },
-			{ id: 10, name: "Alpha Cached Studio", logo_path: "/must-not-export.png" },
+			{ id: 13, name: "Delta No-Image Studio" },
+			{ id: 12, name: "Charlie TMDB Studio", logo_path: "/cached-company.png" },
+			{ id: 11, name: "Bravo Published Fallback Studio", logo_path: "/must-not-win-company-11.png" },
+			{ id: 10, name: "Alpha Curated Studio", logo_path: "/must-not-win-company-10.png" },
 		],
 		networks: [
-			{ id: 22, name: "Missing Cached Network", logo_path: "/must-not-export.png" },
-			{ id: 21, name: "Beta Cached Network", logo_path: "/must-not-export.png" },
-			{ id: 20, name: "Alpha Cached Network", logo_path: "/must-not-export.png" },
+			{ id: 23, name: "Delta No-Image Network" },
+			{ id: 22, name: "Charlie TMDB Network", logo_path: "/cached-network.png" },
+			{ id: 21, name: "Bravo Published Fallback Network", logo_path: "/must-not-win-network-21.png" },
+			{ id: 20, name: "Alpha Curated Network", logo_path: "/must-not-win-network-20.png" },
 		],
 	});
 
@@ -278,138 +279,97 @@ test("company and network exports use published URLs, accept text fallbacks, and
 	]);
 	const companyCollection = JSON.parse(companyPayload.json)[0];
 	const networkCollection = JSON.parse(networkPayload.json)[0];
-	const [readyCompany, fallbackCompany, missingCompany] = companyCollection.folders;
-	const [readyNetwork, fallbackNetwork, missingNetwork] = networkCollection.folders;
+	const [readyCompany, fallbackCompany, tmdbCompany, emojiCompany] = companyCollection.folders;
+	const [readyNetwork, fallbackNetwork, tmdbNetwork, emojiNetwork] = networkCollection.folders;
 
 	assert.equal(fetchCount, 1);
-	assert.deepEqual(plain(companyPayload.summary), { enabled: true, readyCount: 2, fallbackCount: 1, missingCount: 1 });
-	assert.deepEqual(plain(networkPayload.summary), { enabled: true, readyCount: 2, fallbackCount: 1, missingCount: 1 });
-	assert.equal(readyCompany.title, "Alpha Cached Studio");
+	assert.equal(companyPayload.runtimeLoadFailed, false);
+	assert.equal(networkPayload.runtimeLoadFailed, false);
+	assert.equal(readyCompany.title, "Alpha Curated Studio");
 	assert.match(readyCompany.coverImageUrl, /companies\/10\.webp\?v=a{12}$/);
 	assert.equal(readyCompany.hideTitle, true);
 	assert.equal(readyCompany.coverEmoji, "");
-	assert.equal(fallbackCompany.title, "Beta Cached Studio");
+	assert.equal(readyCompany.coverImageUrl.includes("must-not-win"), false);
+	assert.equal(fallbackCompany.title, "Bravo Published Fallback Studio");
 	assert.match(fallbackCompany.coverImageUrl, /companies\/11\.webp\?v=a{12}$/);
 	assert.equal(fallbackCompany.hideTitle, true);
-	assert.equal(missingCompany.coverImageUrl, "");
-	assert.equal(missingCompany.hideTitle, false);
-	assert.equal(missingCompany.coverEmoji, "🎬");
-	assert.equal(missingCompany.focusGifUrl, "");
-	assert.equal(missingCompany.focusGifEnabled, false);
-	assert.equal(missingCompany.sources[0].provider, "tmdb");
-	assert.equal(missingCompany.sources[0].tmdbSourceType, "COMPANY");
-	assert.equal(missingCompany.sources[0].mediaType, "MOVIE");
-	assert.equal(readyNetwork.title, "Alpha Cached Network");
+	assert.equal(tmdbCompany.coverImageUrl, "https://image.tmdb.org/t/p/w500/cached-company.png");
+	assert.equal(tmdbCompany.hideTitle, false);
+	assert.equal(tmdbCompany.coverEmoji, "");
+	assert.equal(emojiCompany.coverImageUrl, "");
+	assert.equal(emojiCompany.hideTitle, false);
+	assert.equal(emojiCompany.coverEmoji, "🎬");
+	assert.equal(emojiCompany.focusGifUrl, "");
+	assert.equal(emojiCompany.focusGifEnabled, false);
+	assert.equal(emojiCompany.sources[0].provider, "tmdb");
+	assert.equal(emojiCompany.sources[0].tmdbSourceType, "COMPANY");
+	assert.equal(emojiCompany.sources[0].mediaType, "MOVIE");
+	assert.equal(readyNetwork.title, "Alpha Curated Network");
 	assert.match(readyNetwork.coverImageUrl, /networks\/20\.webp\?v=b{12}$/);
 	assert.match(fallbackNetwork.coverImageUrl, /networks\/21\.webp\?v=b{12}$/);
-	assert.equal(missingNetwork.coverImageUrl, "");
-	assert.equal(missingNetwork.hideTitle, false);
-	assert.equal(missingNetwork.coverEmoji, "📺");
-	assert.equal(missingNetwork.focusGifUrl, "");
-	assert.equal(missingNetwork.focusGifEnabled, false);
-	assert.equal(missingNetwork.sources[0].tmdbSourceType, "NETWORK");
-	assert.equal(missingNetwork.sources[0].mediaType, "TV");
-	assert.deepEqual(missingNetwork.catalogSources, []);
+	assert.equal(tmdbNetwork.coverImageUrl, "https://image.tmdb.org/t/p/w500/cached-network.png");
+	assert.equal(tmdbNetwork.hideTitle, false);
+	assert.equal(tmdbNetwork.coverEmoji, "");
+	assert.equal(emojiNetwork.coverImageUrl, "");
+	assert.equal(emojiNetwork.hideTitle, false);
+	assert.equal(emojiNetwork.coverEmoji, "📺");
+	assert.equal(emojiNetwork.focusGifUrl, "");
+	assert.equal(emojiNetwork.focusGifEnabled, false);
+	assert.equal(emojiNetwork.sources[0].tmdbSourceType, "NETWORK");
+	assert.equal(emojiNetwork.sources[0].mediaType, "TV");
+	assert.deepEqual(emojiNetwork.catalogSources, []);
 	assert.equal(companyCollection.focusGlowEnabled, true);
 	assert.equal(networkCollection.focusGlowEnabled, true);
 	assert.equal(companyCollection.backdropImageUrl, "https://example.test/company-backdrop.jpg");
 	assert.equal(networkCollection.backdropImageUrl, "https://example.test/network-backdrop.jpg");
-	assert.equal(missingCompany.sources[0].sortBy, "popularity.desc");
-	assert.equal(missingNetwork.sources[0].sortBy, "popularity.desc");
-	assert.equal(companyPayload.json.includes("image.tmdb.org"), false);
-	assert.equal(networkPayload.json.includes("image.tmdb.org"), false);
-	await harness.context.prepareCompanyNuvioExport();
-	await harness.context.prepareNetworkNuvioExport();
-	assert.match(harness.elements.get("company-nuvio-artwork-status").textContent, /ready for 2 folders, including 1 approved text fallback/i);
-	assert.match(harness.elements.get("company-nuvio-artwork-status").textContent, /1 folder will use visible titles and 🎬/i);
-	assert.match(harness.elements.get("network-nuvio-artwork-status").textContent, /1 folder will use visible titles and 📺/i);
+	assert.equal(emojiCompany.sources[0].sortBy, "popularity.desc");
+	assert.equal(emojiNetwork.sources[0].sortBy, "popularity.desc");
+	assert.equal(harness.loggedWarnings.length, 0);
 });
 
-test("artwork-disabled exports perform no runtime request and use visible title/emoji fallbacks", async () => {
+test("runtime load failure still prepares valid cached-TMDB and title/emoji exports", async () => {
 	let fetchCount = 0;
 	const bridge = createBridge(async () => {
 		fetchCount += 1;
-		throw new Error("The runtime must remain lazy when artwork is disabled");
+		throw new Error("synthetic complete runtime failure");
 	});
 	const harness = createExporterHarness({
 		bridge,
-		companies: [{ id: 10, name: "Disabled Studio", logo_path: "/must-not-export.png" }],
-		networks: [{ id: 20, name: "Disabled Network", logo_path: "/must-not-export.png" }],
-		companyArtworkEnabled: false,
-		networkArtworkEnabled: false,
+		companies: [
+			{ id: 12, name: "Alpha Fallback Logo Studio", logo_path: "/failure-company.png" },
+			{ id: 13, name: "Bravo Fallback Emoji Studio" },
+		],
 	});
 
-	const [companyPayload, networkPayload] = await Promise.all([
-		harness.context.getCompanyNuvioExportPayload(),
-		harness.context.getNetworkNuvioExportPayload(),
-	]);
-	const companyFolder = JSON.parse(companyPayload.json)[0].folders[0];
-	const networkFolder = JSON.parse(networkPayload.json)[0].folders[0];
+	const companyPayload = await harness.context.prepareCompanyNuvioExport();
+	const [tmdbFolder, emojiFolder] = JSON.parse(companyPayload.json)[0].folders;
 
-	assert.equal(fetchCount, 0);
-	assert.deepEqual(plain(companyPayload.summary), { enabled: false, readyCount: 0, fallbackCount: 0, missingCount: 1 });
-	assert.equal(companyFolder.coverImageUrl, "");
-	assert.equal(companyFolder.hideTitle, false);
-	assert.equal(companyFolder.coverEmoji, "🎬");
-	assert.equal(networkFolder.coverImageUrl, "");
-	assert.equal(networkFolder.hideTitle, false);
-	assert.equal(networkFolder.coverEmoji, "📺");
-});
+	assert.equal(fetchCount, 1);
+	assert.equal(companyPayload.runtimeLoadFailed, true);
+	assert.equal(tmdbFolder.coverImageUrl, "https://image.tmdb.org/t/p/w500/failure-company.png");
+	assert.equal(tmdbFolder.hideTitle, false);
+	assert.equal(tmdbFolder.coverEmoji, "");
+	assert.equal(emojiFolder.coverImageUrl, "");
+	assert.equal(emojiFolder.hideTitle, false);
+	assert.equal(emojiFolder.coverEmoji, "🎬");
+	assert.equal(harness.loggedWarnings.length, 1);
+	assert.match(harness.loggedWarnings[0][0], /using cached TMDB or title fallbacks/i);
+	assert.equal(harness.loggedErrors.length, 0);
+	assert.equal(harness.elements.get("copy-company-nuvio-json").disabled, false);
+	assert.equal(harness.elements.get("download-company-nuvio-json").disabled, false);
+	assert.equal(harness.elements.get("copy-company-nuvio-json").textContent, "Copy JSON");
+	assert.equal(harness.elements.get("download-company-nuvio-json").textContent, "Download JSON");
 
-test("runtime failure blocks actions, remains retryable, and disabling artwork permits export", async () => {
-	let retryFetchCount = 0;
-	const retryBridge = createBridge(async () => {
-		retryFetchCount += 1;
+	await harness.context.copyCompanyNuvioJson(harness.elements.get("copy-company-nuvio-json"));
+	await harness.context.downloadCompanyNuvioJson();
+	assert.equal(harness.copied[0], companyPayload.json);
+	assert.equal(harness.downloads[0].value, companyPayload.json);
 
-		if (retryFetchCount === 1) {
-			throw new Error("synthetic load failure");
-		}
-
-		return responseFor(createLookup());
-	});
-	const retryHarness = createExporterHarness({
-		bridge: retryBridge,
-		companies: [{ id: 10, name: "Retry Studio" }],
-	});
-
-	assert.equal(await retryHarness.context.prepareCompanyNuvioExport(), null);
-	assert.equal(retryFetchCount, 1);
-	assert.equal(retryHarness.elements.get("company-nuvio-artwork-status").attributes.role, "alert");
-	assert.match(retryHarness.elements.get("company-nuvio-artwork-status").textContent, /turn off curated artwork/i);
-	assert.equal(retryHarness.elements.get("copy-company-nuvio-json").disabled, true);
-	assert.equal(retryHarness.elements.get("download-company-nuvio-json").disabled, true);
-	assert.equal(retryHarness.elements.get("retry-company-nuvio-artwork").hidden, false);
-	assert.equal(retryHarness.closedModalCount, 0);
-	assert.equal(retryHarness.createdIdCount, 0);
-
-	const retriedPayload = await retryHarness.context.prepareCompanyNuvioExport();
-
-	assert.ok(retriedPayload);
-	assert.equal(retryFetchCount, 2);
-	assert.equal(retryHarness.elements.get("copy-company-nuvio-json").disabled, false);
-	assert.equal(retryHarness.elements.get("download-company-nuvio-json").disabled, false);
-	assert.equal(retryHarness.elements.get("retry-company-nuvio-artwork").hidden, true);
-	assert.match(JSON.parse(retriedPayload.json)[0].folders[0].coverImageUrl, /companies\/10\.webp\?v=a{12}$/);
-
-	let disableFetchCount = 0;
-	const disableHarness = createExporterHarness({
-		bridge: createBridge(async () => {
-			disableFetchCount += 1;
-			throw new Error("synthetic persistent load failure");
-		}),
-		companies: [{ id: 10, name: "Disable After Failure Studio" }],
-	});
-
-	assert.equal(await disableHarness.context.prepareCompanyNuvioExport(), null);
-	disableHarness.elements.get("company-nuvio-use-logos").checked = false;
-	disableHarness.context.invalidateCompanyNuvioExport();
-	const disabledPayload = await disableHarness.context.prepareCompanyNuvioExport();
-	const disabledFolder = JSON.parse(disabledPayload.json)[0].folders[0];
-
-	assert.equal(disableFetchCount, 1);
-	assert.equal(disabledFolder.coverImageUrl, "");
-	assert.equal(disabledFolder.coverEmoji, "🎬");
-	assert.equal(disableHarness.elements.get("copy-company-nuvio-json").disabled, false);
+	harness.context.closeCompanyNuvioExportModal();
+	const laterPayload = await harness.context.prepareCompanyNuvioExport();
+	assert.ok(laterPayload);
+	assert.equal(fetchCount, 2);
+	assert.equal(harness.loggedWarnings.length, 2);
 });
 
 test("company and network presets retain their toggle order and collection-name defaults", () => {
@@ -457,8 +417,14 @@ test("concurrent preparation shares output and unchanged Copy/Download reuse IDs
 		],
 		selectedCompanyIds: [10],
 	});
-	const firstPending = harness.context.getCompanyNuvioExportPayload();
+
+	assert.equal(fetchCount, 0);
+	const firstPending = harness.context.prepareCompanyNuvioExport();
 	const secondPending = harness.context.getCompanyNuvioExportPayload();
+	assert.equal(harness.elements.get("copy-company-nuvio-json").disabled, true);
+	assert.equal(harness.elements.get("download-company-nuvio-json").disabled, true);
+	assert.equal(harness.elements.get("copy-company-nuvio-json").textContent, "Preparing…");
+	assert.equal(harness.elements.get("download-company-nuvio-json").textContent, "Preparing…");
 
 	releaseFetch();
 	const [firstPayload, secondPayload] = await Promise.all([firstPending, secondPending]);
@@ -468,8 +434,11 @@ test("concurrent preparation shares output and unchanged Copy/Download reuse IDs
 	assert.equal(harness.createdIdCount, 2);
 	assert.equal(await harness.context.getCompanyNuvioExportPayload(), firstPayload);
 	assert.equal(harness.createdIdCount, 2);
+	assert.equal(harness.elements.get("copy-company-nuvio-json").disabled, false);
+	assert.equal(harness.elements.get("download-company-nuvio-json").disabled, false);
+	assert.equal(harness.elements.get("copy-company-nuvio-json").textContent, "Copy JSON");
+	assert.equal(harness.elements.get("download-company-nuvio-json").textContent, "Download JSON");
 
-	await harness.context.prepareCompanyNuvioExport();
 	await harness.context.copyCompanyNuvioJson(harness.elements.get("copy-company-nuvio-json"));
 	await harness.context.downloadCompanyNuvioJson();
 
@@ -496,9 +465,17 @@ test("concurrent preparation shares output and unchanged Copy/Download reuse IDs
 	assert.equal(changedOptionsPayload.filename, "changed-studios.nuvio.json");
 	assert.equal(JSON.parse(changedOptionsPayload.json)[0].title, "Changed Studios");
 	assert.equal(harness.createdIdCount, 8);
+
+	harness.elements.get("company-nuvio-cover-url").value = "https://example.test/changed-backdrop.jpg";
+	harness.context.invalidateCompanyNuvioExport();
+	const changedCoverPayload = await harness.context.getCompanyNuvioExportPayload();
+
+	assert.notEqual(changedCoverPayload, changedOptionsPayload);
+	assert.equal(JSON.parse(changedCoverPayload.json)[0].backdropImageUrl, "https://example.test/changed-backdrop.jpg");
+	assert.equal(harness.createdIdCount, 11);
 });
 
-test("production markup and exporter contain no borrowed focus animation or legacy company/network cover hosts", () => {
+test("production markup keeps simplified automatic artwork UI and no borrowed focus mappings", () => {
 	const html = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
 	const readme = fs.readFileSync(path.join(rootDir, "README.md"), "utf8");
 	const adapter = fs.readFileSync(path.join(rootDir, "js", "artwork-runtime-v1.mjs"), "utf8");
@@ -512,13 +489,23 @@ test("production markup and exporter contain no borrowed focus animation or lega
 		"networkfocusgifurls",
 		"getnetworkfocusgifurl",
 		"network-nuvio-use-focus-gifs",
+		"company-nuvio-use-logos",
+		"network-nuvio-use-logos",
+		"company-nuvio-artwork-status",
+		"network-nuvio-artwork-status",
+		"retry-company-nuvio-artwork",
+		"retry-network-nuvio-artwork",
 	]) {
 		assert.equal(productionText.includes(obsolete), false, obsolete);
 	}
 
-	assert.equal((html.match(/Use curated artwork/g) || []).length, 2);
+	assert.equal(html.includes("Use curated artwork"), false);
+	assert.equal(html.includes("Published artwork is ready"), false);
 	assert.match(html, /type="module" src="\.\/js\/artwork-runtime-v1\.mjs\?v=__APP_ASSET_VERSION__"/);
 	assert.match(adapter, /from "\.\/artwork-runtime\.mjs"/);
+	assert.match(exporterSource, /getCompanyLogoUrl\(entity\)/);
+	assert.match(exporterSource, /getNetworkLogoUrl\(entity\)/);
+	assert.match(exporterSource, /Preparing…/);
 	assert.match(exporterSource, /focusGifUrl: ""/);
 	assert.match(exporterSource, /focusGifEnabled: false/);
 	assert.match(exporterSource, /focusGlowEnabled: true/);

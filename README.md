@@ -49,7 +49,7 @@ The site is designed for people building media libraries, curated collections, d
 * Append uploaded folders into an existing Nuvio collections JSON file
 * Create Nuvio collections JSON from selected companies, networks, and genres
 * Copy or download generated Nuvio JSON, with visible button-level copy feedback
-* Add optional published curated artwork to Nuvio company and network exports
+* Automatically choose published curated, cached TMDB, or title/emoji artwork for Nuvio company and network exports
 * Copy IDs with one click
 * Open matching TMDB pages directly
 * Report feedback through structured GitHub issues
@@ -141,9 +141,9 @@ Nuvio JSON exports are portable collection files that can be imported into Nuvio
 * Genre collections from selected official genres and curated list references
 * Combined Nuvio collection JSON exports from uploaded Nuvio files
 
-Company and network exports include quick select presets. Their optional curated folder artwork is resolved lazily from the shared published artwork runtime. Published text-fallback covers are accepted normally; missing published artwork uses an empty cover URL, a visible folder title, and the existing 🎬 or 📺 emoji. Ordinary company and network lookup-table logos remain TMDB thumbnails.
+Company and network exports include quick select presets and automatically choose the best available folder artwork. They prefer published curated landscape artwork, including approved published text fallbacks, then use the selected entity's cached TMDB `logo_path`, and finally use a visible title with the existing 🎬 or 📺 emoji when neither image exists. TMDB logo fallbacks are interim, keep the folder title visible, and require no additional TMDB request. Ordinary company and network lookup-table logos remain TMDB thumbnails.
 
-If curated artwork cannot be loaded or validated, the export modal keeps Copy and Download unavailable and offers a retry. Turning curated artwork off avoids the runtime request and creates a valid title-and-emoji export instead. The old borrowed network focus-GIF option has been removed; generated company and network folders retain empty/disabled focus-GIF fields.
+The published runtime remains lazy and starts preparing only when a company or network export modal opens. Copy and Download briefly show a preparing state; if the runtime cannot load or validate, export continues automatically with cached TMDB logos or title/emoji fallbacks. The old borrowed network focus-GIF option remains removed, and generated company and network folders retain empty/disabled focus-GIF fields.
 
 JSON export flows support Copy JSON and Download JSON where available. Copy actions show immediate button-level feedback, and matching Copy/Download actions reuse the same generated JSON output for the current export state so generated IDs stay consistent.
 
