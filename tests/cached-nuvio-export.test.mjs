@@ -104,6 +104,7 @@ function createExporterHarness({
 	networks = [],
 	selectedCompanyIds = companies.map((company) => company.id),
 	selectedNetworkIds = networks.map((network) => network.id),
+	copyGate = null,
 } = {}) {
 	const elements = new Map();
 	const add = (id, overrides) => elements.set(id, createElementState(overrides));
@@ -123,10 +124,20 @@ function createExporterHarness({
 
 	const copied = [];
 	const downloads = [];
+	const actionSnapshots = [];
 	const loggedErrors = [];
 	const loggedWarnings = [];
+	const pendingTimers = new Map();
 	let createdIdCount = 0;
 	let closedModalCount = 0;
+	let copySucceeds = true;
+	let nextTimerId = 1;
+	const setTimeout = (callback, delay) => {
+		const id = nextTimerId++;
+		pendingTimers.set(id, { callback, delay });
+		return id;
+	};
+	const clearTimeout = (id) => pendingTimers.delete(id);
 	const context = {
 		companies,
 		networks,
@@ -166,12 +177,48 @@ function createExporterHarness({
 		slugifyFilename(value) {
 			return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 		},
-		async copyTextWithButtonFeedback(value) {
+		setTimeout,
+		clearTimeout,
+		async copyTextWithButtonFeedback(value, button) {
 			copied.push(value);
-			return true;
+			actionSnapshots.push({
+				type: "copy",
+				copyDisabled: button.disabled,
+				copyBusy: button.attributes["aria-busy"],
+			});
+
+			if (!button.copyFeedbackOriginalText) {
+				button.copyFeedbackOriginalText = button.textContent;
+			}
+
+			const originalText = button.copyFeedbackOriginalText;
+
+			if (copyGate) {
+				await copyGate;
+			}
+
+			clearTimeout(button.copyFeedbackTimeout);
+			button.textContent = copySucceeds ? "Copied!" : "Copy failed";
+			button.copyFeedbackTimeout = setTimeout(() => {
+				button.textContent = originalText;
+				button.copyFeedbackOriginalText = null;
+				button.copyFeedbackTimeout = null;
+			}, 1800);
+
+			return copySucceeds;
 		},
 		downloadTextFile(filename, value, mimeType) {
 			downloads.push({ filename, value, mimeType });
+			const prefix = filename.startsWith("networks") ? "network" : "company";
+			const copyButton = elements.get(`copy-${prefix}-nuvio-json`);
+			const downloadButton = elements.get(`download-${prefix}-nuvio-json`);
+			actionSnapshots.push({
+				type: "download",
+				copyDisabled: copyButton.disabled,
+				downloadDisabled: downloadButton.disabled,
+				copyBusy: copyButton.attributes["aria-busy"],
+				downloadBusy: downloadButton.attributes["aria-busy"],
+			});
 		},
 		openAppModal() {},
 		closeAppModal() {
@@ -210,8 +257,25 @@ function createExporterHarness({
 		elements,
 		copied,
 		downloads,
+		actionSnapshots,
 		loggedErrors,
 		loggedWarnings,
+		setCopySucceeds(value) {
+			copySucceeds = value;
+		},
+		runAllTimers() {
+			const timers = [...pendingTimers.values()];
+			pendingTimers.clear();
+
+			for (const timer of timers) {
+				timer.callback();
+			}
+
+			return timers.map((timer) => timer.delay);
+		},
+		get pendingTimerCount() {
+			return pendingTimers.size;
+		},
 		get createdIdCount() {
 			return createdIdCount;
 		},
@@ -473,6 +537,111 @@ test("concurrent preparation shares output and unchanged Copy/Download reuse IDs
 	assert.notEqual(changedCoverPayload, changedOptionsPayload);
 	assert.equal(JSON.parse(changedCoverPayload.json)[0].backdropImageUrl, "https://example.test/changed-backdrop.jpg");
 	assert.equal(harness.createdIdCount, 11);
+});
+
+test("cached export button feedback survives action refreshes and resets deterministically", async () => {
+	let releaseCopy;
+	const copyGate = new Promise((resolve) => {
+		releaseCopy = resolve;
+	});
+	const bridge = createBridge(async () => responseFor(createLookup()));
+	const harness = createExporterHarness({
+		bridge,
+		companies: [{ id: 10, name: "Alpha Studio" }],
+		networks: [{ id: 20, name: "Alpha Network" }],
+		copyGate,
+	});
+	const companyCopyButton = harness.elements.get("copy-company-nuvio-json");
+	const companyDownloadButton = harness.elements.get("download-company-nuvio-json");
+	const networkCopyButton = harness.elements.get("copy-network-nuvio-json");
+	const networkDownloadButton = harness.elements.get("download-network-nuvio-json");
+
+	const companyPreparing = harness.context.prepareCompanyNuvioExport();
+	assert.equal(companyCopyButton.textContent, "Preparing…");
+	assert.equal(companyDownloadButton.textContent, "Preparing…");
+	assert.equal(companyCopyButton.disabled, true);
+	assert.equal(companyDownloadButton.disabled, true);
+	assert.equal(companyCopyButton.attributes["aria-busy"], "true");
+	assert.equal(companyDownloadButton.attributes["aria-busy"], "true");
+	const companyPayload = await companyPreparing;
+
+	const networkPreparing = harness.context.prepareNetworkNuvioExport();
+	assert.equal(networkCopyButton.textContent, "Preparing…");
+	assert.equal(networkDownloadButton.textContent, "Preparing…");
+	const networkPayload = await networkPreparing;
+
+	for (const [copyButton, downloadButton] of [
+		[companyCopyButton, companyDownloadButton],
+		[networkCopyButton, networkDownloadButton],
+	]) {
+		assert.equal(copyButton.textContent, "Copy JSON");
+		assert.equal(downloadButton.textContent, "Download JSON");
+		assert.equal(copyButton.disabled, false);
+		assert.equal(downloadButton.disabled, false);
+		assert.equal(copyButton.attributes["aria-busy"], "false");
+		assert.equal(downloadButton.attributes["aria-busy"], "false");
+	}
+
+	const companyCopyPending = harness.context.copyCompanyNuvioJson(companyCopyButton);
+	while (harness.copied.length === 0) {
+		await Promise.resolve();
+	}
+
+	assert.equal(companyCopyButton.disabled, true);
+	assert.equal(companyDownloadButton.disabled, true);
+	assert.equal(companyCopyButton.attributes["aria-busy"], "true");
+	assert.equal(companyDownloadButton.attributes["aria-busy"], "true");
+	releaseCopy();
+	await companyCopyPending;
+
+	assert.equal(companyCopyButton.textContent, "Copied!");
+	assert.equal(companyCopyButton.disabled, false);
+	assert.equal(companyCopyButton.attributes["aria-busy"], "false");
+	assert.deepEqual(harness.runAllTimers(), [1800]);
+	assert.equal(companyCopyButton.textContent, "Copy JSON");
+
+	harness.setCopySucceeds(false);
+	await harness.context.copyCompanyNuvioJson(companyCopyButton);
+	assert.equal(companyCopyButton.textContent, "Copy failed");
+	assert.equal(companyCopyButton.attributes["aria-busy"], "false");
+	assert.deepEqual(harness.runAllTimers(), [1800]);
+	assert.equal(companyCopyButton.textContent, "Copy JSON");
+
+	harness.setCopySucceeds(true);
+	await harness.context.copyNetworkNuvioJson(networkCopyButton);
+	assert.equal(networkCopyButton.textContent, "Copied!");
+	assert.equal(networkCopyButton.attributes["aria-busy"], "false");
+	assert.deepEqual(harness.runAllTimers(), [1800]);
+	assert.equal(networkCopyButton.textContent, "Copy JSON");
+
+	await harness.context.copyCompanyNuvioJson(companyCopyButton);
+	assert.equal(companyCopyButton.textContent, "Copied!");
+	assert.equal(harness.pendingTimerCount, 1);
+	const companyRepreparing = harness.context.prepareCompanyNuvioExport();
+	assert.equal(companyCopyButton.textContent, "Preparing…");
+	assert.equal(harness.pendingTimerCount, 0);
+	await companyRepreparing;
+	assert.equal(companyCopyButton.textContent, "Copy JSON");
+
+	await harness.context.downloadCompanyNuvioJson();
+	await harness.context.downloadNetworkNuvioJson();
+	assert.equal(harness.downloads[0].value, companyPayload.json);
+	assert.equal(harness.downloads[1].value, networkPayload.json);
+	assert.equal(harness.copied[0], companyPayload.json);
+	assert.equal(harness.copied[2], networkPayload.json);
+	assert.equal(harness.createdIdCount, 4);
+	assert.equal(
+		harness.actionSnapshots
+			.filter((snapshot) => snapshot.type === "download")
+			.every(
+				(snapshot) =>
+					snapshot.copyDisabled &&
+					snapshot.downloadDisabled &&
+					snapshot.copyBusy === "true" &&
+					snapshot.downloadBusy === "true",
+			),
+		true,
+	);
 });
 
 test("production markup keeps simplified automatic artwork UI and no borrowed focus mappings", () => {

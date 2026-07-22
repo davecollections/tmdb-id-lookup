@@ -345,7 +345,16 @@ function setCachedExportButtons(prefix, { preparing, ready, actionPending }) {
 
 	copyButton.disabled = !ready || busy;
 	downloadButton.disabled = !ready || busy;
-	copyButton.textContent = preparing ? "Preparing…" : "Copy JSON";
+
+	if (preparing) {
+		clearTimeout(copyButton.copyFeedbackTimeout);
+		copyButton.copyFeedbackOriginalText = null;
+		copyButton.copyFeedbackTimeout = null;
+		copyButton.textContent = "Preparing…";
+	} else if (!copyButton.copyFeedbackOriginalText) {
+		copyButton.textContent = "Copy JSON";
+	}
+
 	downloadButton.textContent = preparing ? "Preparing…" : "Download JSON";
 	copyButton.setAttribute("aria-busy", String(busy));
 	downloadButton.setAttribute("aria-busy", String(busy));
