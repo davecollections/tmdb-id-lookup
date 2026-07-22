@@ -14,6 +14,8 @@ const requiredFiles = [
 	"css/mobile-fixes.css",
 	"js/config.js",
 	"js/app.js",
+	"js/artwork-runtime.mjs",
+	"js/artwork-runtime-v1.mjs",
 	"builder/index.html",
 ];
 const assetExtension = /\.(?:avif|css|gif|ico|jpe?g|js|png|svg|webp|woff2?)(?:[?#].*)?$/i;

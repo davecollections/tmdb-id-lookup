@@ -14,6 +14,7 @@ function runNode(args) {
 runNode([path.join("scripts", "check-frontend.mjs")]);
 runNode(["--test", path.join("tests", "pages-public-paths.test.mjs")]);
 runNode(["--test", path.join("tests", "artwork-runtime.test.mjs")]);
+runNode(["--test", path.join("tests", "cached-nuvio-export.test.mjs")]);
 runNode(["--test", path.join("tests", "nuvio-contracts.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-domain.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-import.test.mjs")]);

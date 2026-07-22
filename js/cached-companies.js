@@ -231,6 +231,7 @@ function createCompanySelectionCell(company) {
 			selectedCompanyIds.delete(Number(company.id));
 		}
 
+		invalidateCompanyNuvioExport();
 		updateCompanySelectionStatus();
 	});
 

@@ -1913,6 +1913,7 @@ details.nuvio-modal-section[open] {
 
 .nuvio-export-grid .nuvio-toggle-option,
 .nuvio-modal-section > .nuvio-toggle-option {
+	position: relative;
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
@@ -1934,6 +1935,12 @@ details.nuvio-modal-section[open] {
 
 .nuvio-toggle-option input {
 	position: absolute;
+	top: 50%;
+	left: 14px;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	padding: 0;
 	opacity: 0;
 }
 
