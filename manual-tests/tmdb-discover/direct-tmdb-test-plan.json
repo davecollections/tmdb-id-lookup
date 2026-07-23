@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "reviewedDate": "2026-07-23",
   "hardRequestCap": 60,
-  "plannedRequestCount": 58,
-  "methodology": "One fixed-language, historical baseline per media; one candidate change per case where possible; compare both total_results and ordered first-page IDs; HTTP 200 alone is not effect evidence.",
+  "plannedRequestCount": 60,
+  "methodology": "One fixed-language, historical baseline per media; one candidate change per case where possible; two provider cases reproduce the W1/W2 client-effective query shape without historical date/vote constraints; compare both total_results and ordered first-page IDs; HTTP 200 alone is not effect evidence.",
   "testDataReferences": {
     "reviewedDate": "2026-07-23",
     "note": "Stable test identifiers are labelled here and tied to official TMDB lookup endpoints. Recheck dynamic watch-provider availability before a later live run; no credential is embedded in these URLs.",
@@ -63,8 +63,10 @@
     { "id": "movie-keyword-or", "media": "movie", "category": "and-or", "query": { "with_keywords": "15097|9951" }, "compareTo": "movie-baseline" },
     { "id": "movie-company-and", "media": "movie", "category": "and-or", "query": { "with_companies": "2,3" }, "compareTo": "movie-baseline" },
     { "id": "movie-company-or", "media": "movie", "category": "and-or", "query": { "with_companies": "2|3" }, "compareTo": "movie-baseline" },
-    { "id": "movie-provider-and", "media": "movie", "category": "and-or", "query": { "watch_region": "US", "with_watch_providers": "8,337" }, "compareTo": "movie-baseline" },
-    { "id": "movie-provider-or", "media": "movie", "category": "and-or", "query": { "watch_region": "US", "with_watch_providers": "8|337" }, "compareTo": "movie-baseline" },
+    { "id": "movie-provider-and", "media": "movie", "category": "and-or", "query": { "watch_region": "US", "with_watch_monetization_types": "flatrate|free|ads|rent|buy", "with_watch_providers": "8,337" }, "compareTo": "movie-baseline" },
+    { "id": "movie-provider-or", "media": "movie", "category": "and-or", "query": { "watch_region": "US", "with_watch_monetization_types": "flatrate|free|ads|rent|buy", "with_watch_providers": "8|337" }, "compareTo": "movie-baseline" },
+    { "id": "movie-provider-8-us", "media": "movie", "category": "client-effective-query", "omitBaselineParameters": ["primary_release_date.gte", "primary_release_date.lte", "vote_count.gte"], "query": { "watch_region": "US", "with_watch_monetization_types": "flatrate|free|ads|rent|buy", "with_watch_providers": "8" }, "compareTo": null },
+    { "id": "movie-provider-8-au", "media": "movie", "category": "client-effective-query", "omitBaselineParameters": ["primary_release_date.gte", "primary_release_date.lte", "vote_count.gte"], "query": { "watch_region": "AU", "with_watch_monetization_types": "flatrate|free|ads|rent|buy", "with_watch_providers": "8" }, "compareTo": "movie-provider-8-us" },
 
     { "id": "movie-runtime-min", "media": "movie", "category": "range", "query": { "with_runtime.gte": "90" }, "compareTo": "movie-baseline" },
     { "id": "movie-runtime-max", "media": "movie", "category": "range", "query": { "with_runtime.lte": "120" }, "compareTo": "movie-baseline" },

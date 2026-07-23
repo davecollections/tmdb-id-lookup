@@ -4,7 +4,7 @@ Reviewed: **2026-07-23**
 
 Issue: [#47 — Audit TMDB Discover filter compatibility across Nuvio clients](https://github.com/davecollections/tmdb-id-lookup/issues/47)
 
-Evidence: official TMDB documentation/OpenAPI, pinned public Nuvio source, and local builder source/tests. No direct TMDB or device requests were made in this audit.
+Evidence: official TMDB documentation/OpenAPI, pinned public Nuvio source, local builder source/tests, and owner-supplied visual evidence from the current Nuvio Windows Custom editor. No direct TMDB requests or controlled device result-effect tests were made in this audit.
 
 The normalized row-level artifact is [`manual-tests/tmdb-discover/compatibility-matrix.json`](../../manual-tests/tmdb-discover/compatibility-matrix.json). It is generated deterministically from [`scripts/lib/tmdb-discover-compatibility.mjs`](../../scripts/lib/tmdb-discover-compatibility.mjs) and keeps official acceptance, JSON deserialization, request mapping, defaults, preservation, and visible-result evidence separate.
 
@@ -65,9 +65,22 @@ The issue's preliminary Movie/TV inventories and sort sets exactly match the cur
 - Latest release: [`0.3.1`](https://github.com/NuvioMedia/NuvioMobile/releases/tag/0.3.1), resolving to the same SHA. There is no release/default implementation delta.
 - Reviewed paths: `CollectionModels.kt`, `CollectionRepository.kt`, `CollectionJsonPreserver.kt`, `TmdbCollectionSourceResolver.kt`, `TmdbService.kt`, `CollectionEditorScreen.kt`, `FolderDetailRepository.kt`, sync code, and serialization tests. Exact pinned links are recorded in the machine matrix.
 
+### Owner-supplied Windows editor screenshots
+
+The owner supplied screenshots of the current Nuvio Windows **TMDB Sources > Custom** editor. They are visual UI evidence only: the exact app version was not captured, so they are not version-pinned behavioral, request-forwarding, or visible-result proof.
+
+- The editor visibly exposes exactly the same 14 filter fields listed in the contract below; no additional Windows-only Discover filter was visible.
+- **Movies / Series / Both** is a media/source control, not a fifteenth filter. Quick chips are convenience inputs, not additional fields.
+- The four visible sort labels are **Popular**, **Top Rated**, **Most Voted**, and **Recent**.
+- Network IDs remains visible with Movies selected, while its helper says **“For series only.”** This visually supports the existing Movie `withNetworks` usability/client-divergence finding without proving runtime behavior.
+- Genre IDs and Watch provider IDs explicitly document comma as AND and pipe as OR. This agrees with the existing official TMDB delimiter findings for those parameters.
+- Language and country placeholders show comma-separated examples, but placeholder copy is not upgraded to official delimiter semantics; current TMDB evidence does not document comma/pipe behavior for `with_original_language` or `with_origin_country`.
+
+This visual evidence changes no official parameter count, 14-field contract count, client mapping count, or controlled-result-effect count.
+
 ## Exact current Nuvio JSON contract
 
-Both client models declare these 14 filter fields. Every member is optional/nullable, and no camelCase, snake_case, or other filter aliases were found. “Editor” refers to current client source creation, not this repository's builder UI.
+Both client models declare these 14 filter fields. Every member is optional/nullable, and no camelCase, snake_case, or other filter aliases were found. The owner-supplied Windows screenshots independently show the same visible 14-field editor surface, with no extra Windows-only field. “Editor” refers to current client source creation, not this repository's builder UI.
 
 | JSON field | Client type | Movie query | TV query | Current client editors | Limitation/transformation |
 | --- | --- | --- | --- | --- | --- |
@@ -235,6 +248,7 @@ Arbitrary invalid nonblank strings also reach TMDB. NuvioTV forwards `original` 
 | Unknown filter import | Gson ignores unknown keys; typed persistence/export drops them | Decoder accepts unknown keys, then shallow filter overlay loses them during import/persist/export/sync | Neither client is preservation-safe for unsupported nested filter keys |
 | Raw unknown source keys | Typed cycle drops them | Top-level source keys can survive while the source identity key remains stable | Mobile preservation does not extend into `filters` |
 | Language fallback | App TMDB setting | Profile setting, default `en` | Results may differ if client locale settings are not aligned |
+| Manual collection import | Imports/upserts by collection ID, so separately imported audit collections can coexist | Replaces the current collection list with the newly imported list | Use the combined fixture once for a full cross-client audit; component files are rerun-only |
 
 NuvioTV's browser editor can transiently retain unknown plain-JavaScript fields before save, but saving returns to the typed lossy path. That narrow browser-memory case is not durable preservation.
 
@@ -272,9 +286,11 @@ The supplied Kaptain collection patterns (`withoutGenres`, `withRuntimeGte`, com
 
 ## Direct and manual test status
 
-`TMDB_BEARER_TOKEN` was absent when this branch was prepared. Live request count: **0**. The deterministic direct plan contains **58 requests** under a hard cap of **60**, covering fixed baselines, documented AND/OR forms, runtime, exclusions, people, certification, release types/order, TV status/type, Movie/TV vote maxima, media-specific dates, Mobile's undocumented Movie `with_networks` query, an invalid sort, and all 26 endpoint-specific official sort values (the two popularity-descending baselines cover that official value).
+`TMDB_BEARER_TOKEN` was absent when this branch was prepared. Live request count: **0**. The deterministic direct plan now uses its exact **60-request** hard cap, covering fixed historical baselines, documented AND/OR forms, runtime, exclusions, people, certification, release types/order, TV status/type, Movie/TV vote maxima, media-specific dates, Mobile's undocumented Movie `with_networks` query, an invalid sort, and all 26 endpoint-specific official sort values (the two popularity-descending baselines cover that official value). Every direct case with `with_watch_providers` also carries an explicit nonblank `watch_region` and the exact client-injected `with_watch_monetization_types=flatrate|free|ads|rent|buy` union.
 
-Use [`manual-tests/tmdb-discover/README.md`](../../manual-tests/tmdb-discover/README.md) for exact PowerShell and device instructions. The harness uses Node built-ins, sends the token only as a bearer header, records sanitized URLs/status/count/IDs, refuses overwrite, and is not wired into CI. Compact client fixtures and a fillable results table are in the same directory.
+The two added provider cases, `movie-provider-8-us` and `movie-provider-8-au`, omit the historical date and vote-count constraints so their sanitized URLs can match W1/W2's effective provider query shape when the client language is aligned to `en-US` and the source is on page 1 with `popularity.desc`. The AU case compares to the US case; no live result is committed or claimed.
+
+Use [`manual-tests/tmdb-discover/README.md`](../../manual-tests/tmdb-discover/README.md) for exact PowerShell and device instructions. The harness uses Node built-ins, sends the token only as a bearer header, records sanitized URLs/status/count/IDs, refuses overwrite, and is not wired into CI. The complete audit fixture is an exact ordered concatenation of four retained component fixtures: four collections, 29 sources, and 19 essential sources. Import the combined file once for a full TV/Mobile audit. The individual files are targeted reruns only; because Mobile replaces its current list on each import, any cross-component `compareTo` (including essential U1→M1) still requires the combined fixture. Unknown-filter export/sync evidence must be captured while the combined fixture remains installed.
 
 ## Recommendations
 

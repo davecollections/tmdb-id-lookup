@@ -159,6 +159,13 @@ export const SOURCE_REFERENCES = {
 		title: "Builder knowledge base and prior Shark Movies manual evidence",
 		path: "docs/v2/BUILDER_KNOWLEDGE.md",
 	},
+	"owner-windows-custom-editor-screenshots": {
+		title: "Owner-supplied current Nuvio Windows TMDB Sources > Custom editor screenshots",
+		evidenceType: "owner-supplied-visual-ui-only",
+		reviewedDate: REVIEWED_DATE,
+		versionPinned: false,
+		note: "The exact app version was not captured; this supports visible editor controls and wording, not version-pinned request or runtime behavior.",
+	},
 };
 
 const MOVIE_SORTS = [
@@ -197,6 +204,25 @@ const UI_SORTS = {
 	movie: new Set(["popularity.desc", "vote_average.desc", "vote_count.desc", "primary_release_date.desc"]),
 	tv: new Set(["popularity.desc", "vote_average.desc", "vote_count.desc", "first_air_date.desc"]),
 };
+
+const OWNER_WINDOWS_FILTER_FIELDS = [
+	"withGenres",
+	"releaseDateGte",
+	"releaseDateLte",
+	"voteAverageGte",
+	"voteAverageLte",
+	"voteCountGte",
+	"withOriginalLanguage",
+	"withOriginCountry",
+	"withKeywords",
+	"withCompanies",
+	"withNetworks",
+	"year",
+	"withWatchProviders",
+	"watchRegion",
+];
+
+const OWNER_WINDOWS_EVIDENCE_REFERENCE = "owner-windows-custom-editor-screenshots";
 
 function parameter(name, kind, officialType, options = {}) {
 	return {
@@ -404,6 +430,7 @@ function parameterRow(media, item) {
 	const tv = parameterClientDetails(media, item, "tv");
 	const mobile = parameterClientDetails(media, item, "mobile");
 	const field = tv.field;
+	const ownerWindowsEditorVisible = field !== null && item.name !== "sort_by";
 	const refs = [
 		media === "movie" ? "tmdb-movie" : "tmdb-tv",
 		"tmdb-oas",
@@ -433,6 +460,7 @@ function parameterRow(media, item) {
 		"builder-ui",
 		"builder-contract-tests",
 		...(media === "movie" && item.name === "with_keywords" ? ["builder-knowledge"] : []),
+		...(ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : []),
 	];
 
 	return {
@@ -458,6 +486,8 @@ function parameterRow(media, item) {
 		mobileTransformationOrDefault: mobile.transformation,
 		nuvioTvEditorOffers: field !== null && item.name !== "sort_by",
 		nuvioMobileEditorOffers: field !== null && item.name !== "sort_by",
+		ownerWindowsEditorVisible,
+		ownerWindowsEditorEvidence: ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : [],
 		builderCurrentlyRecognizes: field !== null,
 		builderCurrentlyEditable: false,
 		builderImportedRepresentation: field === null ? "rawImported-only" : "editable-and-rawImported",
@@ -492,6 +522,7 @@ function parameterRow(media, item) {
 
 function sortRow(media, value) {
 	const endpoint = media === "movie" ? "Movie" : "TV";
+	const ownerWindowsEditorVisible = UI_SORTS[media].has(value);
 	return {
 		key: `${media}:sort:${value}`,
 		recordType: "sort-value",
@@ -513,8 +544,10 @@ function sortRow(media, value) {
 		nuvioMobileRequestMapping: `sortBy ${value} -> ${endpoint} sort_by unchanged`,
 		tvTransformationOrDefault: "No transformation for the correct-media official value.",
 		mobileTransformationOrDefault: "No transformation for the correct-media official value.",
-		nuvioTvEditorOffers: UI_SORTS[media].has(value),
-		nuvioMobileEditorOffers: UI_SORTS[media].has(value),
+		nuvioTvEditorOffers: ownerWindowsEditorVisible,
+		nuvioMobileEditorOffers: ownerWindowsEditorVisible,
+		ownerWindowsEditorVisible,
+		ownerWindowsEditorEvidence: ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : [],
 		builderCurrentlyRecognizes: true,
 		builderCurrentlyEditable: false,
 		builderImportedRepresentation: "editable-and-rawImported",
@@ -532,10 +565,10 @@ function sortRow(media, value) {
 		classification: "sort-pass-through",
 		confidence: "high-static-contract; runtime-effect-pending",
 		notes: [
-			UI_SORTS[media].has(value) ? "Offered in both clients' current Discover editor." : "Raw-JSON-only in both clients' current Discover editor.",
+			ownerWindowsEditorVisible ? "Offered in both clients' current Discover editor." : "Raw-JSON-only in both clients' current Discover editor.",
 			"Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence.",
 		],
-		sourceReferences: [media === "movie" ? "tmdb-movie" : "tmdb-tv", "tmdb-oas", "nuviotv-model", "nuviotv-resolver", "nuviotv-editor", "nuviotv-import", "nuviomobile-model", "nuviomobile-resolver", "nuviomobile-editor", "nuviomobile-import", "nuviomobile-preserver", "builder-fields", "builder-domain-model", "builder-overlay"],
+		sourceReferences: [media === "movie" ? "tmdb-movie" : "tmdb-tv", "tmdb-oas", "nuviotv-model", "nuviotv-resolver", "nuviotv-editor", "nuviotv-import", "nuviomobile-model", "nuviomobile-resolver", "nuviomobile-editor", "nuviomobile-import", "nuviomobile-preserver", "builder-fields", "builder-domain-model", "builder-overlay", ...(ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : [])],
 	};
 }
 
@@ -599,10 +632,30 @@ export function buildCompatibilityMatrix() {
 				releaseMateriallyDiffers: false,
 			},
 		},
+		ownerSuppliedVisualEvidence: {
+			windowsCustomEditor: {
+				sourceReference: OWNER_WINDOWS_EVIDENCE_REFERENCE,
+				evidenceLevel: "visible-ui-only",
+				versionPinned: false,
+				behaviorProven: false,
+				filterFields: OWNER_WINDOWS_FILTER_FIELDS,
+				additionalWindowsOnlyFilterFieldsVisible: [],
+				mediaSourceControls: ["Movies", "Series", "Both"],
+				sortChoiceLabels: ["Popular", "Top Rated", "Most Voted", "Recent"],
+				quickChipsAreAdditionalFields: false,
+				movieWithNetworksHelper: "For series only.",
+				delimiterHelp: {
+					withGenres: "comma=AND; pipe=OR",
+					withWatchProviders: "comma=AND; pipe=OR",
+				},
+				placeholderOnlyCommaExamples: ["withOriginalLanguage", "withOriginCountry"],
+				placeholderWarning: "Comma-separated placeholders are not treated as official delimiter semantics without TMDB evidence.",
+			},
+		},
 		liveResearch: {
 			tokenAvailable: false,
 			requestsSent: 0,
-			plannedRequests: 58,
+			plannedRequests: 60,
 			hardRequestCap: 60,
 			status: "pending-local-token-and-owner-device-evidence",
 		},

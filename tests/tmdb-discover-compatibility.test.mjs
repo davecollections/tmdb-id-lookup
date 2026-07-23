@@ -15,11 +15,15 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const manualDir = path.join(rootDir, "manual-tests", "tmdb-discover");
 const readText = (relativePath) => fs.readFileSync(path.join(rootDir, relativePath), "utf8");
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
+const normalizeLineEndings = (value) => value.replaceAll("\r\n", "\n");
 
-const matrixText = readText(MATRIX_PATH);
+const matrixText = normalizeLineEndings(readText(MATRIX_PATH));
 const matrix = JSON.parse(matrixText);
 const manifest = readJson("manual-tests/tmdb-discover/fixture-manifest.json");
 const directPlan = readJson("manual-tests/tmdb-discover/direct-tmdb-test-plan.json");
+const completeAuditRelativePath = `manual-tests/tmdb-discover/${manifest.completeAuditFixture.path}`;
+const completeAuditText = normalizeLineEndings(readText(completeAuditRelativePath));
+const completeAudit = JSON.parse(completeAuditText);
 
 const expectedMovieParameters = [
 	"certification", "certification.gte", "certification.lte", "certification_country", "include_adult", "include_video", "language", "page", "primary_release_year", "primary_release_date.gte", "primary_release_date.lte", "region", "release_date.gte", "release_date.lte", "sort_by", "vote_average.gte", "vote_average.lte", "vote_count.gte", "vote_count.lte", "watch_region", "with_cast", "with_companies", "with_crew", "with_genres", "with_keywords", "with_origin_country", "with_original_language", "with_people", "with_release_type", "with_runtime.gte", "with_runtime.lte", "with_watch_monetization_types", "with_watch_providers", "without_companies", "without_genres", "without_keywords", "without_watch_providers", "year",
@@ -41,6 +45,10 @@ const knownFilterFields = new Set([
 	"withGenres", "releaseDateGte", "releaseDateLte", "voteAverageGte", "voteAverageLte", "voteCountGte", "withOriginalLanguage", "withOriginCountry", "withKeywords", "withCompanies", "withNetworks", "year", "watchRegion", "withWatchProviders",
 ]);
 
+const expectedOwnerWindowsFilterFields = [
+	"withGenres", "releaseDateGte", "releaseDateLte", "voteAverageGte", "voteAverageLte", "voteCountGte", "withOriginalLanguage", "withOriginCountry", "withKeywords", "withCompanies", "withNetworks", "year", "withWatchProviders", "watchRegion",
+];
+
 const allowedClassifications = new Set([
 	"confirmed-both-clients",
 	"code-supported-both-manual-pending",
@@ -61,6 +69,31 @@ function sorted(values) {
 
 function allFixtureSources(value) {
 	return value.flatMap((collection) => collection.folders.flatMap((folder) => folder.sources));
+}
+
+function assertComparatorGraph(records, keyFor, label) {
+	const byKey = new Map(records.map((record) => [keyFor(record), record]));
+	assert.equal(byKey.size, records.length, `${label} keys must be unique`);
+	const states = new Map();
+
+	function visit(key, chain = []) {
+		const state = states.get(key);
+		assert.notEqual(state, "visiting", `${label} comparator cycle: ${[...chain, key].join(" -> ")}`);
+		if (state === "visited") return;
+		states.set(key, "visiting");
+
+		const record = byKey.get(key);
+		assert.ok(record.compareTo === null || typeof record.compareTo === "string", `${label} ${key} compareTo`);
+		if (record.compareTo !== null) {
+			assert.ok(byKey.has(record.compareTo), `${label} ${key} missing comparator ${record.compareTo}`);
+			visit(record.compareTo, [...chain, key]);
+		}
+
+		states.set(key, "visited");
+	}
+
+	for (const key of byKey.keys()) visit(key);
+	return byKey;
 }
 
 test("generated compatibility matrix is current and has exact official counts", () => {
@@ -99,6 +132,12 @@ test("every matrix row has a unique key, classification, and resolvable evidence
 			assert.ok(entry[evidenceName].some((reference) => reference.startsWith(clientPrefix)), `${entry.key} lacks model evidence`);
 			for (const reference of entry[evidenceName]) assert.ok(matrix.sourceReferences[reference], `${entry.key} evidence ${reference}`);
 		}
+		assert.ok(Array.isArray(entry.ownerWindowsEditorEvidence), `${entry.key} owner visual evidence`);
+		for (const reference of entry.ownerWindowsEditorEvidence) {
+			assert.ok(matrix.sourceReferences[reference], `${entry.key} owner evidence ${reference}`);
+			assert.ok(entry.sourceReferences.includes(reference), `${entry.key} owner evidence is not a row source`);
+		}
+		assert.equal(entry.ownerWindowsEditorVisible, entry.ownerWindowsEditorEvidence.length > 0, entry.key);
 		if (entry.proposedNuvioJsonField !== null) {
 			assert.ok(entry.proposedNuvioJsonField === "sortBy" || knownFilterFields.has(entry.proposedNuvioJsonField));
 		}
@@ -126,6 +165,33 @@ test("every matrix row has a unique key, classification, and resolvable evidence
 	assert.match(entryByKey.get("movie:parameter:with_keywords").priorManualNuvioEvidence, /Historical unpaired Shark Movies/);
 	assert.equal(matrix.counts.priorRepositoryManualFilterCases, 1);
 	assert.equal(matrix.counts.issue47ControlledManualFilterEffects, 0);
+	assert.equal(matrix.counts.issue47ControlledManualSortEffects, 0);
+
+	const ownerEvidence = matrix.ownerSuppliedVisualEvidence.windowsCustomEditor;
+	assert.equal(ownerEvidence.sourceReference, "owner-windows-custom-editor-screenshots");
+	assert.equal(ownerEvidence.evidenceLevel, "visible-ui-only");
+	assert.equal(ownerEvidence.versionPinned, false);
+	assert.equal(ownerEvidence.behaviorProven, false);
+	assert.deepEqual(ownerEvidence.filterFields, expectedOwnerWindowsFilterFields);
+	assert.deepEqual(ownerEvidence.additionalWindowsOnlyFilterFieldsVisible, []);
+	assert.deepEqual(ownerEvidence.mediaSourceControls, ["Movies", "Series", "Both"]);
+	assert.deepEqual(ownerEvidence.sortChoiceLabels, ["Popular", "Top Rated", "Most Voted", "Recent"]);
+	assert.equal(ownerEvidence.quickChipsAreAdditionalFields, false);
+	assert.equal(ownerEvidence.movieWithNetworksHelper, "For series only.");
+	assert.equal(ownerEvidence.delimiterHelp.withGenres, "comma=AND; pipe=OR");
+	assert.equal(ownerEvidence.delimiterHelp.withWatchProviders, "comma=AND; pipe=OR");
+	assert.deepEqual(ownerEvidence.placeholderOnlyCommaExamples, ["withOriginalLanguage", "withOriginCountry"]);
+	assert.equal(matrix.sourceReferences[ownerEvidence.sourceReference].versionPinned, false);
+
+	const ownerVisibleFields = new Set(matrix.entries
+		.filter((entry) => entry.recordType === "parameter" && entry.ownerWindowsEditorVisible)
+		.map((entry) => entry.actualNuvioTvJsonField));
+	assert.deepEqual(sorted(ownerVisibleFields), sorted(expectedOwnerWindowsFilterFields));
+	assert.equal(matrix.entries.filter((entry) => entry.recordType === "sort-value" && entry.ownerWindowsEditorVisible).length, 8);
+	assert.equal(entryByKey.get("movie:parameter:with_genres").supportsCommaAnd, true);
+	assert.equal(entryByKey.get("movie:parameter:with_watch_providers").supportsPipeOr, true);
+	assert.equal(entryByKey.get("movie:parameter:with_original_language").supportsCommaAnd, false);
+	assert.equal(entryByKey.get("movie:parameter:with_origin_country").supportsPipeOr, false);
 });
 
 test("media-specific official parameters remain endpoint-specific", () => {
@@ -144,9 +210,11 @@ test("media-specific official parameters remain endpoint-specific", () => {
 
 test("fixtures are valid ordered native TMDB DISCOVER collections without external dependencies", () => {
 	let fixtureSourceCount = 0;
+	const componentFixtures = [];
 	for (const fixtureEntry of manifest.fixtures) {
 		const fixturePath = path.join(manualDir, fixtureEntry.path);
 		const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+		componentFixtures.push(fixture);
 		const validation = validateNuvioContract(fixture, { mode: "canonical" });
 		assert.deepEqual(validation.errors, [], fixtureEntry.path);
 
@@ -173,7 +241,63 @@ test("fixtures are valid ordered native TMDB DISCOVER collections without extern
 	}
 	assert.equal(fixtureSourceCount, manifest.fixtureSourceCount);
 	assert.equal(fixtureSourceCount, 29);
-	assert.equal(manifest.fixtures.flatMap((fixture) => fixture.sources).filter((source) => source.priority === "essential").length, manifest.essentialSourceCount);
+
+	const manifestSources = manifest.fixtures.flatMap((fixture) => fixture.sources);
+	assert.equal(manifestSources.filter((source) => source.priority === "essential").length, manifest.essentialSourceCount);
+	assert.equal(manifest.essentialSourceCount, 19);
+	const manifestSourceByTitle = assertComparatorGraph(manifestSources, (source) => source.title, "fixture manifest");
+	for (const source of manifestSources.filter((item) => item.priority === "essential" && item.compareTo !== null)) {
+		assert.equal(manifestSourceByTitle.get(source.compareTo).priority, "essential", `${source.title} depends on optional ${source.compareTo}`);
+	}
+	assert.equal(manifestSourceByTitle.get("S1 Movie UI sort popularity.desc").priority, "essential");
+	const componentByTitle = new Map(manifest.fixtures.flatMap((fixture) => fixture.sources.map((source) => [source.title, fixture.path])));
+	const crossComponentComparisons = manifestSources
+		.filter((source) => source.compareTo !== null && componentByTitle.get(source.title) !== componentByTitle.get(source.compareTo))
+		.map((source) => `${source.title} -> ${source.compareTo}`);
+	assert.ok(crossComponentComparisons.includes("U1 Movie candidate withoutGenres 27 -> M1 Movie baseline"));
+	const manualReadme = readText("manual-tests/tmdb-discover/README.md");
+	assert.match(manualReadme, /component alone only for preservation-only observations/i);
+	assert.match(manualReadme, /00-complete-audit\.json` for every cross-component comparison/i);
+	assert.match(manualReadme, /essential U1/i);
+
+	assert.deepEqual(manifest.completeAuditFixture.orderedComponentPaths, manifest.fixtures.map((fixture) => fixture.path));
+	assert.ok(!manifest.fixtures.some((fixture) => fixture.path === manifest.completeAuditFixture.path));
+	assert.equal(manifest.completeAuditFixture.collectionCount, 4);
+	assert.equal(manifest.completeAuditFixture.sourceCount, manifest.fixtureSourceCount);
+	assert.match(manifest.completeAuditFixture.usage, /Mobile requires the combined fixture whenever compareTo crosses components/i);
+	assert.match(manifest.clientImportBehavior.nuvioTv, /upserts collections by collection ID/i);
+	assert.match(manifest.clientImportBehavior.nuvioMobile, /replaces the current collection list/i);
+
+	const expectedCompleteAudit = componentFixtures.flatMap((fixture) => fixture);
+	assert.deepEqual(completeAudit, expectedCompleteAudit);
+	assert.equal(completeAuditText, `${JSON.stringify(expectedCompleteAudit, null, 2)}\n`);
+	const completeValidation = validateNuvioContract(completeAudit, { mode: "canonical" });
+	assert.deepEqual(completeValidation.errors, [], manifest.completeAuditFixture.path);
+	assert.equal(completeAudit.length, manifest.completeAuditFixture.collectionCount);
+
+	const collectionIds = completeAudit.map((collection) => collection.id);
+	const folderIds = completeAudit.flatMap((collection) => collection.folders.map((folder) => folder.id));
+	assert.equal(new Set(collectionIds).size, collectionIds.length);
+	assert.equal(new Set(folderIds).size, folderIds.length);
+	assert.equal(new Set([...collectionIds, ...folderIds]).size, collectionIds.length + folderIds.length);
+
+	const completeSources = allFixtureSources(completeAudit);
+	assert.equal(completeSources.length, 29);
+	assert.deepEqual(completeSources.map((source) => source.title), manifestSources.map((source) => source.title));
+	for (const collection of completeAudit) {
+		assert.ok(!("backdropImageUrl" in collection));
+		for (const folder of collection.folders) {
+			assert.deepEqual(folder.catalogSources, []);
+			for (const source of folder.sources) {
+				assert.equal(source.provider, "tmdb");
+				assert.equal(source.tmdbSourceType, "DISCOVER");
+				assert.equal("addonId" in source, false);
+				assert.equal("traktListId" in source, false);
+			}
+		}
+	}
+	assert.doesNotMatch(completeAuditText, /https?:\/\//i);
+	assert.doesNotMatch(completeAuditText, /(?:artwork|trakt|addonId|catalogId)/i);
 });
 
 test("results template represents every fixture source exactly once", () => {
@@ -183,21 +307,22 @@ test("results template represents every fixture source exactly once", () => {
 		assert.equal(template.split(title).length - 1, 1, title);
 	}
 	assert.equal(new Set(titles).size, titles.length);
+	assert.match(template, /\| S1 Movie UI sort popularity\.desc \| essential \|/);
 });
 
 test("direct TMDB plan is bounded, deterministic, and covers required research cases", () => {
 	assert.equal(directPlan.plannedRequestCount, directPlan.cases.length);
-	assert.equal(directPlan.plannedRequestCount, 58);
+	assert.equal(directPlan.plannedRequestCount, 60);
 	assert.equal(directPlan.hardRequestCap, 60);
 	assert.ok(directPlan.plannedRequestCount <= directPlan.hardRequestCap);
-	assert.equal(new Set(directPlan.cases.map((item) => item.id)).size, directPlan.cases.length);
+	const directCaseById = assertComparatorGraph(directPlan.cases, (item) => item.id, "direct plan");
 	assert.equal(directPlan.baselines.movie.language, "en-US");
 	assert.equal(directPlan.baselines.tv.language, "en-US");
 	assert.match(directPlan.baselines.movie["primary_release_date.gte"], /^\d{4}-\d{2}-\d{2}$/);
 	assert.match(directPlan.baselines.tv["first_air_date.gte"], /^\d{4}-\d{2}-\d{2}$/);
 
 	const categories = new Set(directPlan.cases.map((item) => item.category));
-	for (const category of ["baseline", "and-or", "range", "exclusion", "people", "certification", "release-type", "status-type", "vote-maximum", "date-field", "client-divergence", "invalid-input", "sort"]) {
+	for (const category of ["baseline", "and-or", "range", "exclusion", "people", "certification", "release-type", "status-type", "vote-maximum", "date-field", "client-divergence", "client-effective-query", "invalid-input", "sort"]) {
 		assert.ok(categories.has(category), category);
 	}
 
@@ -206,6 +331,49 @@ test("direct TMDB plan is bounded, deterministic, and covers required research c
 		.map((item) => `${item.media}:${item.query.sort_by ?? directPlan.baselines[item.media].sort_by}`);
 	const matrixSorts = matrix.entries.filter((item) => item.recordType === "sort-value").map((item) => `${item.media}:${item.officialSortValue}`);
 	assert.deepEqual(sorted(plannedSorts), sorted(matrixSorts));
+	assert.equal(matrix.liveResearch.plannedRequests, 60);
+	assert.equal(matrix.liveResearch.hardRequestCap, 60);
+	assert.equal(matrix.liveResearch.requestsSent, 0);
+
+	const monetizationUnion = "flatrate|free|ads|rent|buy";
+	const providerCases = directPlan.cases.filter((item) => Object.hasOwn(item.query, "with_watch_providers"));
+	assert.equal(providerCases.length, 4);
+	for (const item of providerCases) {
+		assert.ok(typeof item.query.watch_region === "string" && item.query.watch_region.trim().length > 0, `${item.id} watch_region`);
+		assert.equal(item.query.with_watch_monetization_types, monetizationUnion, `${item.id} monetization union`);
+	}
+
+	const providerUs = directCaseById.get("movie-provider-8-us");
+	const providerAu = directCaseById.get("movie-provider-8-au");
+	assert.equal(providerUs.compareTo, null);
+	assert.equal(providerAu.compareTo, providerUs.id);
+	assert.deepEqual(providerUs.omitBaselineParameters, ["primary_release_date.gte", "primary_release_date.lte", "vote_count.gte"]);
+	assert.deepEqual(providerAu.omitBaselineParameters, providerUs.omitBaselineParameters);
+	assert.deepEqual([providerUs.query.watch_region, providerAu.query.watch_region], ["US", "AU"]);
+	assert.equal(providerUs.query.with_watch_providers, "8");
+	assert.equal(providerAu.query.with_watch_providers, "8");
+
+	function effectiveQuery(item) {
+		const query = { ...directPlan.baselines[item.media] };
+		for (const name of item.omitBaselineParameters ?? []) delete query[name];
+		return { ...query, ...item.query };
+	}
+	assert.deepEqual(effectiveQuery(providerUs), {
+		language: "en-US",
+		page: "1",
+		sort_by: "popularity.desc",
+		watch_region: "US",
+		with_watch_monetization_types: monetizationUnion,
+		with_watch_providers: "8",
+	});
+	assert.deepEqual(effectiveQuery(providerAu), {
+		language: "en-US",
+		page: "1",
+		sort_by: "popularity.desc",
+		watch_region: "AU",
+		with_watch_monetization_types: monetizationUnion,
+		with_watch_providers: "8",
+	});
 
 	const registryByParameter = new Map([
 		["with_genres", "genres"],
@@ -256,6 +424,7 @@ test("committed research evidence contains no credential-shaped values", () => {
 		"scripts/lib/tmdb-discover-compatibility.mjs",
 		"tests/tmdb-discover-compatibility.test.mjs",
 		"docs/v2/BUILDER_KNOWLEDGE.md",
+		completeAuditRelativePath,
 		...manifest.fixtures.map((fixture) => `manual-tests/tmdb-discover/${fixture.path}`),
 	];
 	const secretPatterns = [

@@ -48,10 +48,57 @@
       "releaseMateriallyDiffers": false
     }
   },
+  "ownerSuppliedVisualEvidence": {
+    "windowsCustomEditor": {
+      "sourceReference": "owner-windows-custom-editor-screenshots",
+      "evidenceLevel": "visible-ui-only",
+      "versionPinned": false,
+      "behaviorProven": false,
+      "filterFields": [
+        "withGenres",
+        "releaseDateGte",
+        "releaseDateLte",
+        "voteAverageGte",
+        "voteAverageLte",
+        "voteCountGte",
+        "withOriginalLanguage",
+        "withOriginCountry",
+        "withKeywords",
+        "withCompanies",
+        "withNetworks",
+        "year",
+        "withWatchProviders",
+        "watchRegion"
+      ],
+      "additionalWindowsOnlyFilterFieldsVisible": [],
+      "mediaSourceControls": [
+        "Movies",
+        "Series",
+        "Both"
+      ],
+      "sortChoiceLabels": [
+        "Popular",
+        "Top Rated",
+        "Most Voted",
+        "Recent"
+      ],
+      "quickChipsAreAdditionalFields": false,
+      "movieWithNetworksHelper": "For series only.",
+      "delimiterHelp": {
+        "withGenres": "comma=AND; pipe=OR",
+        "withWatchProviders": "comma=AND; pipe=OR"
+      },
+      "placeholderOnlyCommaExamples": [
+        "withOriginalLanguage",
+        "withOriginCountry"
+      ],
+      "placeholderWarning": "Comma-separated placeholders are not treated as official delimiter semantics without TMDB evidence."
+    }
+  },
   "liveResearch": {
     "tokenAvailable": false,
     "requestsSent": 0,
-    "plannedRequests": 58,
+    "plannedRequests": 60,
     "hardRequestCap": 60,
     "status": "pending-local-token-and-owner-device-evidence"
   },
@@ -233,6 +280,13 @@
     "builder-knowledge": {
       "title": "Builder knowledge base and prior Shark Movies manual evidence",
       "path": "docs/v2/BUILDER_KNOWLEDGE.md"
+    },
+    "owner-windows-custom-editor-screenshots": {
+      "title": "Owner-supplied current Nuvio Windows TMDB Sources > Custom editor screenshots",
+      "evidenceType": "owner-supplied-visual-ui-only",
+      "reviewedDate": "2026-07-23",
+      "versionPinned": false,
+      "note": "The exact app version was not captured; this supports visible editor controls and wording, not version-pinned request or runtime behavior."
     }
   },
   "entries": [
@@ -261,6 +315,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -352,6 +408,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -443,6 +501,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -534,6 +594,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -624,6 +686,8 @@
       "mobileTransformationOrDefault": "Not sent; TMDB's documented false default governs. No source comment proves a deliberate client policy.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -714,6 +778,8 @@
       "mobileTransformationOrDefault": "Not sent; TMDB's documented false default governs.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -803,6 +869,8 @@
       "mobileTransformationOrDefault": "Automatic request control; not collection JSON.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -891,6 +959,8 @@
       "mobileTransformationOrDefault": "Automatic request control; not collection JSON.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -977,6 +1047,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1063,6 +1135,10 @@
       "mobileTransformationOrDefault": "Generic releaseDate field is mapped to Movie primary_release_date.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1122,7 +1198,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -1148,6 +1225,10 @@
       "mobileTransformationOrDefault": "Generic releaseDate field is mapped to Movie primary_release_date.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1207,7 +1288,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -1235,6 +1317,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1323,6 +1407,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1411,6 +1497,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1514,6 +1602,8 @@
       "mobileTransformationOrDefault": "Correct-media official strings pass through; exact cross-media descending date alias is normalized.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1599,6 +1689,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1658,7 +1752,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -1684,6 +1779,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1743,7 +1842,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -1769,6 +1869,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1829,7 +1933,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -1855,6 +1960,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1946,6 +2053,10 @@
       "mobileTransformationOrDefault": "Sent only when withWatchProviders is nonblank; missing/blank region defaults to US.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2006,7 +2117,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -2032,6 +2144,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2118,6 +2232,10 @@
       "mobileTransformationOrDefault": "Ordinary DISCOVER forwards the field; a native COMPANY source forces tmdbId and ignores filters.withCompanies.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2177,7 +2295,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -2203,6 +2322,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2289,6 +2410,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2348,7 +2473,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -2374,6 +2500,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2436,7 +2566,8 @@
         "builder-migration",
         "builder-ui",
         "builder-contract-tests",
-        "builder-knowledge"
+        "builder-knowledge",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -2462,6 +2593,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2521,7 +2656,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -2547,6 +2683,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2606,7 +2746,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -2632,6 +2773,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2725,6 +2868,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2813,6 +2958,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2899,6 +3046,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2993,6 +3142,8 @@
       "mobileTransformationOrDefault": "Always flatrate|free|ads|rent|buy; not independently selectable.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3082,6 +3233,10 @@
       "mobileTransformationOrDefault": "Also injects watch_region (default US) and all five monetization types.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -3142,7 +3297,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -3168,6 +3324,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3254,6 +3412,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3340,6 +3500,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3426,6 +3588,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3513,6 +3677,10 @@
       "mobileTransformationOrDefault": "Generic year maps to Movie year, not primary_release_year.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -3573,7 +3741,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -3599,6 +3768,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3685,6 +3856,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3771,6 +3944,10 @@
       "mobileTransformationOrDefault": "Generic year maps to TV first_air_date_year.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -3830,7 +4007,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -3856,6 +4034,10 @@
       "mobileTransformationOrDefault": "Generic releaseDate field is mapped to TV first_air_date.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -3915,7 +4097,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -3941,6 +4124,10 @@
       "mobileTransformationOrDefault": "Generic releaseDate field is mapped to TV first_air_date.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4000,7 +4187,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -4029,6 +4217,8 @@
       "mobileTransformationOrDefault": "Not sent; TMDB's documented false default governs. No source comment proves a deliberate client policy.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4119,6 +4309,8 @@
       "mobileTransformationOrDefault": "Not sent; TMDB's documented false default governs.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4208,6 +4400,8 @@
       "mobileTransformationOrDefault": "Automatic request control; not collection JSON.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4296,6 +4490,8 @@
       "mobileTransformationOrDefault": "Automatic request control; not collection JSON.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4385,6 +4581,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4485,6 +4683,8 @@
       "mobileTransformationOrDefault": "Correct-media official strings pass through; exact cross-media descending date alias is normalized.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4572,6 +4772,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4659,6 +4861,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4718,7 +4924,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -4744,6 +4951,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4803,7 +5014,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -4829,6 +5041,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4889,7 +5105,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -4915,6 +5132,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5006,6 +5225,10 @@
       "mobileTransformationOrDefault": "Sent only when withWatchProviders is nonblank; missing/blank region defaults to US.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5066,7 +5289,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5092,6 +5316,10 @@
       "mobileTransformationOrDefault": "Ordinary DISCOVER forwards the field; a native COMPANY source forces tmdbId and ignores filters.withCompanies.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5151,7 +5379,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5177,6 +5406,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5236,7 +5469,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5262,6 +5496,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5321,7 +5559,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5347,6 +5586,10 @@
       "mobileTransformationOrDefault": "Ordinary TV DISCOVER forwards the field; a native NETWORK source forces tmdbId and ignores filters.withNetworks.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5407,7 +5650,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5433,6 +5677,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5492,7 +5740,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5518,6 +5767,10 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5577,7 +5830,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -5603,6 +5857,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5689,6 +5945,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5782,6 +6040,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5877,6 +6137,8 @@
       "mobileTransformationOrDefault": "Always flatrate|free|ads|rent|buy; not independently selectable.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5966,6 +6228,10 @@
       "mobileTransformationOrDefault": "Also injects watch_region (default US) and all five monetization types.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6026,7 +6292,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -6052,6 +6319,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6138,6 +6407,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6224,6 +6495,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6310,6 +6583,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6405,6 +6680,8 @@
       "mobileTransformationOrDefault": null,
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6494,6 +6771,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6567,6 +6846,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6640,6 +6921,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6713,6 +6996,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6758,7 +7045,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -6786,6 +7074,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6859,6 +7149,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6932,6 +7224,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7005,6 +7299,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7050,7 +7348,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -7078,6 +7377,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7151,6 +7452,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7224,6 +7527,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7297,6 +7602,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7342,7 +7651,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -7370,6 +7680,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7443,6 +7755,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7488,7 +7804,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -7516,6 +7833,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7589,6 +7908,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7634,7 +7957,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -7662,6 +7986,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7735,6 +8061,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7808,6 +8136,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7881,6 +8211,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7954,6 +8286,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8027,6 +8361,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8072,7 +8410,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -8100,6 +8439,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8173,6 +8514,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8218,7 +8563,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     },
     {
@@ -8246,6 +8592,8 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": false,
       "nuvioMobileEditorOffers": false,
+      "ownerWindowsEditorVisible": false,
+      "ownerWindowsEditorEvidence": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8319,6 +8667,10 @@
       "mobileTransformationOrDefault": "No transformation for the correct-media official value.",
       "nuvioTvEditorOffers": true,
       "nuvioMobileEditorOffers": true,
+      "ownerWindowsEditorVisible": true,
+      "ownerWindowsEditorEvidence": [
+        "owner-windows-custom-editor-screenshots"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8364,7 +8716,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-windows-custom-editor-screenshots"
       ]
     }
   ]
