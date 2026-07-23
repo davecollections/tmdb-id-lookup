@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "reviewedDate": "2026-07-23",
+  "hardRequestCap": 60,
+  "plannedRequestCount": 58,
+  "methodology": "One fixed-language, historical baseline per media; one candidate change per case where possible; compare both total_results and ordered first-page IDs; HTTP 200 alone is not effect evidence.",
+  "testDataReferences": {
+    "reviewedDate": "2026-07-23",
+    "note": "Stable test identifiers are labelled here and tied to official TMDB lookup endpoints. Recheck dynamic watch-provider availability before a later live run; no credential is embedded in these URLs.",
+    "genres": [
+      { "id": 12, "label": "Adventure", "officialLookup": "https://api.themoviedb.org/3/genre/movie/list" },
+      { "id": 27, "label": "Horror", "officialLookup": "https://api.themoviedb.org/3/genre/movie/list" },
+      { "id": 28, "label": "Action", "officialLookup": "https://api.themoviedb.org/3/genre/movie/list" }
+    ],
+    "keywords": [
+      { "id": 9951, "label": "alien", "officialLookup": "https://api.themoviedb.org/3/keyword/9951" },
+      { "id": 15097, "label": "shark", "officialLookup": "https://api.themoviedb.org/3/keyword/15097" }
+    ],
+    "companies": [
+      { "id": 2, "label": "Walt Disney Pictures", "officialLookup": "https://api.themoviedb.org/3/company/2" },
+      { "id": 3, "label": "Pixar", "officialLookup": "https://api.themoviedb.org/3/company/3" }
+    ],
+    "watchProviders": [
+      { "id": 8, "label": "Netflix", "officialLookup": "https://api.themoviedb.org/3/watch/providers/movie?watch_region=US" },
+      { "id": 337, "label": "Disney Plus", "officialLookup": "https://api.themoviedb.org/3/watch/providers/movie?watch_region=US" }
+    ],
+    "people": [
+      { "id": 31, "label": "Tom Hanks", "officialLookup": "https://api.themoviedb.org/3/person/31" },
+      { "id": 525, "label": "Christopher Nolan", "officialLookup": "https://api.themoviedb.org/3/person/525" }
+    ],
+    "networks": [
+      { "id": 49, "label": "HBO", "officialLookup": "https://api.themoviedb.org/3/network/49" }
+    ],
+    "certifications": [
+      { "value": "PG-13", "country": "US", "officialLookup": "https://api.themoviedb.org/3/certification/movie/list" }
+    ]
+  },
+  "baselines": {
+    "movie": {
+      "language": "en-US",
+      "page": "1",
+      "primary_release_date.gte": "2000-01-01",
+      "primary_release_date.lte": "2020-12-31",
+      "vote_count.gte": "50",
+      "sort_by": "popularity.desc"
+    },
+    "tv": {
+      "language": "en-US",
+      "page": "1",
+      "first_air_date.gte": "2000-01-01",
+      "first_air_date.lte": "2020-12-31",
+      "vote_count.gte": "50",
+      "sort_by": "popularity.desc"
+    }
+  },
+  "cases": [
+    { "id": "movie-baseline", "media": "movie", "category": "baseline", "query": {}, "compareTo": null },
+    { "id": "tv-baseline", "media": "tv", "category": "baseline", "query": {}, "compareTo": null },
+
+    { "id": "movie-genre-and", "media": "movie", "category": "and-or", "query": { "with_genres": "28,12" }, "compareTo": "movie-baseline" },
+    { "id": "movie-genre-or", "media": "movie", "category": "and-or", "query": { "with_genres": "28|12" }, "compareTo": "movie-baseline" },
+    { "id": "movie-keyword-and", "media": "movie", "category": "and-or", "query": { "with_keywords": "15097,9951" }, "compareTo": "movie-baseline" },
+    { "id": "movie-keyword-or", "media": "movie", "category": "and-or", "query": { "with_keywords": "15097|9951" }, "compareTo": "movie-baseline" },
+    { "id": "movie-company-and", "media": "movie", "category": "and-or", "query": { "with_companies": "2,3" }, "compareTo": "movie-baseline" },
+    { "id": "movie-company-or", "media": "movie", "category": "and-or", "query": { "with_companies": "2|3" }, "compareTo": "movie-baseline" },
+    { "id": "movie-provider-and", "media": "movie", "category": "and-or", "query": { "watch_region": "US", "with_watch_providers": "8,337" }, "compareTo": "movie-baseline" },
+    { "id": "movie-provider-or", "media": "movie", "category": "and-or", "query": { "watch_region": "US", "with_watch_providers": "8|337" }, "compareTo": "movie-baseline" },
+
+    { "id": "movie-runtime-min", "media": "movie", "category": "range", "query": { "with_runtime.gte": "90" }, "compareTo": "movie-baseline" },
+    { "id": "movie-runtime-max", "media": "movie", "category": "range", "query": { "with_runtime.lte": "120" }, "compareTo": "movie-baseline" },
+    { "id": "movie-without-genres", "media": "movie", "category": "exclusion", "query": { "without_genres": "27" }, "compareTo": "movie-baseline" },
+    { "id": "movie-without-companies", "media": "movie", "category": "exclusion", "query": { "without_companies": "2" }, "compareTo": "movie-baseline" },
+    { "id": "movie-without-keywords", "media": "movie", "category": "exclusion", "query": { "without_keywords": "15097" }, "compareTo": "movie-baseline" },
+    { "id": "movie-without-providers", "media": "movie", "category": "exclusion", "query": { "without_watch_providers": "8" }, "compareTo": "movie-baseline" },
+    { "id": "movie-cast", "media": "movie", "category": "people", "query": { "with_cast": "31" }, "compareTo": "movie-baseline" },
+    { "id": "movie-crew", "media": "movie", "category": "people", "query": { "with_crew": "525" }, "compareTo": "movie-baseline" },
+    { "id": "movie-people", "media": "movie", "category": "people", "query": { "with_people": "31|525" }, "compareTo": "movie-baseline" },
+    { "id": "movie-certification", "media": "movie", "category": "certification", "query": { "certification": "PG-13", "certification_country": "US", "region": "US" }, "compareTo": "movie-baseline" },
+    { "id": "movie-release-type-2-3", "media": "movie", "category": "release-type", "query": { "region": "US", "with_release_type": "2|3" }, "compareTo": "movie-baseline" },
+    { "id": "movie-release-type-3-2", "media": "movie", "category": "release-type", "query": { "region": "US", "with_release_type": "3|2" }, "compareTo": "movie-release-type-2-3" },
+    { "id": "tv-status", "media": "tv", "category": "status-type", "query": { "with_status": "0|3|4" }, "compareTo": "tv-baseline" },
+    { "id": "tv-type", "media": "tv", "category": "status-type", "query": { "with_type": "0|2" }, "compareTo": "tv-baseline" },
+    { "id": "movie-vote-average-max", "media": "movie", "category": "vote-maximum", "query": { "vote_average.lte": "6.5" }, "compareTo": "movie-baseline" },
+    { "id": "movie-vote-count-max", "media": "movie", "category": "vote-maximum", "query": { "vote_count.lte": "500" }, "compareTo": "movie-baseline" },
+    { "id": "tv-vote-average-max", "media": "tv", "category": "vote-maximum", "query": { "vote_average.lte": "6.5" }, "compareTo": "tv-baseline" },
+    { "id": "tv-vote-count-max", "media": "tv", "category": "vote-maximum", "query": { "vote_count.lte": "500" }, "compareTo": "tv-baseline" },
+    { "id": "movie-regional-release-date", "media": "movie", "category": "date-field", "omitBaselineParameters": ["primary_release_date.gte", "primary_release_date.lte"], "query": { "region": "US", "release_date.gte": "2000-01-01", "release_date.lte": "2020-12-31" }, "compareTo": "movie-baseline" },
+    { "id": "movie-primary-release-date", "media": "movie", "category": "date-field", "query": { "primary_release_date.gte": "2005-01-01", "primary_release_date.lte": "2015-12-31" }, "compareTo": "movie-baseline" },
+    { "id": "tv-air-date", "media": "tv", "category": "date-field", "omitBaselineParameters": ["first_air_date.gte", "first_air_date.lte"], "query": { "air_date.gte": "2000-01-01", "air_date.lte": "2020-12-31" }, "compareTo": "tv-baseline" },
+    { "id": "tv-first-air-date", "media": "tv", "category": "date-field", "query": { "first_air_date.gte": "2005-01-01", "first_air_date.lte": "2015-12-31" }, "compareTo": "tv-baseline" },
+    { "id": "movie-undocumented-with-networks", "media": "movie", "category": "client-divergence", "query": { "with_networks": "49" }, "compareTo": "movie-baseline" },
+    { "id": "movie-invalid-sort", "media": "movie", "category": "invalid-input", "query": { "sort_by": "definitely_invalid.desc" }, "compareTo": "movie-baseline" },
+
+    { "id": "movie-sort-original-title-asc", "media": "movie", "category": "sort", "query": { "sort_by": "original_title.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-original-title-desc", "media": "movie", "category": "sort", "query": { "sort_by": "original_title.desc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-popularity-asc", "media": "movie", "category": "sort", "query": { "sort_by": "popularity.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-revenue-asc", "media": "movie", "category": "sort", "query": { "sort_by": "revenue.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-revenue-desc", "media": "movie", "category": "sort", "query": { "sort_by": "revenue.desc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-release-asc", "media": "movie", "category": "sort", "query": { "sort_by": "primary_release_date.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-release-desc", "media": "movie", "category": "sort", "query": { "sort_by": "primary_release_date.desc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-title-asc", "media": "movie", "category": "sort", "query": { "sort_by": "title.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-title-desc", "media": "movie", "category": "sort", "query": { "sort_by": "title.desc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-vote-average-asc", "media": "movie", "category": "sort", "query": { "sort_by": "vote_average.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-vote-average-desc", "media": "movie", "category": "sort", "query": { "sort_by": "vote_average.desc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-vote-count-asc", "media": "movie", "category": "sort", "query": { "sort_by": "vote_count.asc" }, "compareTo": "movie-baseline" },
+    { "id": "movie-sort-vote-count-desc", "media": "movie", "category": "sort", "query": { "sort_by": "vote_count.desc" }, "compareTo": "movie-baseline" },
+
+    { "id": "tv-sort-first-air-asc", "media": "tv", "category": "sort", "query": { "sort_by": "first_air_date.asc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-first-air-desc", "media": "tv", "category": "sort", "query": { "sort_by": "first_air_date.desc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-name-asc", "media": "tv", "category": "sort", "query": { "sort_by": "name.asc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-name-desc", "media": "tv", "category": "sort", "query": { "sort_by": "name.desc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-original-name-asc", "media": "tv", "category": "sort", "query": { "sort_by": "original_name.asc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-original-name-desc", "media": "tv", "category": "sort", "query": { "sort_by": "original_name.desc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-popularity-asc", "media": "tv", "category": "sort", "query": { "sort_by": "popularity.asc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-vote-average-asc", "media": "tv", "category": "sort", "query": { "sort_by": "vote_average.asc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-vote-average-desc", "media": "tv", "category": "sort", "query": { "sort_by": "vote_average.desc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-vote-count-asc", "media": "tv", "category": "sort", "query": { "sort_by": "vote_count.asc" }, "compareTo": "tv-baseline" },
+    { "id": "tv-sort-vote-count-desc", "media": "tv", "category": "sort", "query": { "sort_by": "vote_count.desc" }, "compareTo": "tv-baseline" }
+  ]
+}

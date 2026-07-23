@@ -1,0 +1,63 @@
+[
+  {
+    "id": "tmdb-discover-and-or-semantics",
+    "title": "TMDB Discover Audit - AND OR Semantics",
+    "folders": [
+      {
+        "id": "tmdb-discover-and-or-semantics-folder",
+        "title": "Documented comma AND and pipe OR",
+        "sources": [
+          {
+            "title": "A1 Movie genres 28,12 AND",
+            "sortBy": "popularity.desc",
+            "filters": { "withGenres": "28,12" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "A2 Movie genres 28|12 OR",
+            "sortBy": "popularity.desc",
+            "filters": { "withGenres": "28|12" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "A3 Movie keywords 15097,9951 AND",
+            "sortBy": "popularity.desc",
+            "filters": { "withKeywords": "15097,9951" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "A4 Movie keywords 15097|9951 OR",
+            "sortBy": "popularity.desc",
+            "filters": { "withKeywords": "15097|9951" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "A5 Movie providers 8,337 region US AND",
+            "sortBy": "popularity.desc",
+            "filters": { "watchRegion": "US", "withWatchProviders": "8,337" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "A6 Movie providers 8|337 region US OR",
+            "sortBy": "popularity.desc",
+            "filters": { "watchRegion": "US", "withWatchProviders": "8|337" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

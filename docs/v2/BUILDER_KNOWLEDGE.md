@@ -2,7 +2,7 @@
 
 Status: Planning and contract groundwork
 
-Last reviewed: 2026-07-21
+Last reviewed: 2026-07-23
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope.
 
@@ -69,7 +69,7 @@ Future findings must use one of these labels:
 - `watchRegion`
 - `withWatchProviders`
 
-**Strongly inferred:** movie and TV parameter handling differs internally. Each filter combination that the builder exposes must be tested for the relevant media type and client.
+**Confirmed from pinned current Nuvio source code, reviewed 2026-07-23:** both current clients still declare exactly these 14 fields, but request behavior is not uniform. Thirteen map to official Movie parameters and all fourteen map to official TV parameters; Movie `withNetworks` is omitted by NuvioTV and sent as an undocumented query by NuvioMobile. Five fields are media-mapped or conditional, and provider filtering injects a non-selectable all-monetization union. See [`TMDB_DISCOVER_COMPATIBILITY.md`](./TMDB_DISCOVER_COMPATIBILITY.md) for the complete official inventory, pinned client evidence, preservation findings, and manual-test boundary.
 
 ## 5. Nuvio Catalog Addon
 
@@ -358,17 +358,31 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Ordinary v1 company/network lookup-table logos remain TMDB thumbnails. People runtime migration and all v2 artwork consumption remain pending.
 - The existing tomato transparent-covers credit is retained temporarily because the older self-hosted genre artwork commits do not record per-asset provenance. The artwork project should confirm whether any current genre assets derive from that pack before the credit is removed.
 
-## 13. Open questions
+## 13. TMDB Discover compatibility audit — issue #47
+
+**Confirmed from official TMDB documentation/OAS, pinned NuvioTV/NuvioMobile source, and repository tests — issue [#47](https://github.com/davecollections/tmdb-id-lookup/issues/47), 2026-07-23:** the Discover compatibility boundary is now normalized without expanding production schema or UI.
+
+- Official inventories contain 38 Movie and 33 TV parameters, including request controls and `sort_by`; filter/context subsets are 35 and 29.
+- Current Nuvio collection JSON has 14 common filter fields, 0 TV-only fields, and 0 Mobile-only fields. Static request construction maps 13 fields to official Movie parameters and all 14 to official TV parameters.
+- Movie has 22 and TV has 15 official filter/context parameters that are not independently controllable through current JSON. Automatic localization/pagination and hidden provider monetization behavior remain distinct from user fields.
+- Both clients accept raw `sortBy`; all 14 official Movie and 12 official TV values can reach the correct endpoint in code, but only four per media are offered in current client editors. Visible result effects remain manually pending.
+- The earlier unpaired Shark Movies observation remains manual evidence that Movie `withKeywords=15097` produced shark results in a Nuvio client, but its client/version scope is not recorded. Issue #47 adds zero new controlled/current cross-client confirmations and does not upgrade that historical case to both-client proof.
+- NuvioTV alone adds `with_status=0|3|4` and a null-to-current-date upper bound for native NETWORK sources. Mobile alone sends Movie `withNetworks`; NuvioTV omits it.
+- NuvioTV typed persistence drops unknown filter keys. NuvioMobile accepts them during decode but loses the entire unknown nested portion through a shallow `filters` overlay. The builder preserves unknown imported filter keys on unrelated edits, but that does not make them usable or durable in Nuvio.
+- The builder still recognizes the same 14 fields, validates only a plain filter object, preserves raw imported data through its overlay, and exposes no source/filter editing UI. No builder preservation defect was found and no production code changed.
+- Direct TMDB evidence remains pending because no local bearer token was available. The offline plan contains 58 bounded requests under a hard cap of 60; no live request is part of repository checks.
+
+## 14. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
-- Which Discover filters work identically across mobile and TV clients?
+- Which code-supported Discover filters will the owner fixture confirm as visibly equivalent across Mobile and TV?
 - How should existing v1 exporters be consolidated without changing output?
 - Which future controls need explicit property-removal semantics beyond assigning supported empty or null values?
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
 
-## 14. Update rules
+## 15. Update rules
 
 - Update this file when a test becomes confirmed or disproved.
 - Include the evidence level, review/test date, and source.
@@ -404,6 +418,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-21 | Final published typed artwork identity, orientation, SHA-version, review-safety, and missing-key contract | [`davecollections/nuvio-assets` runtime lookup and schema](https://github.com/davecollections/nuvio-assets/tree/main/assets/collection_covers) |
 | 2026-07-21 | Shared pure artwork validation, resolution, loading, in-memory caching, retry, and offline fixture behaviour | [TMDB ID Lookup issue #45](https://github.com/davecollections/tmdb-id-lookup/issues/45) |
 | 2026-07-22 | V1 company/network lazy runtime consumption, automatic curated/TMDB/emoji fallback, async preparation, Copy/Download parity, and focus-GIF removal | [TMDB ID Lookup issue #46](https://github.com/davecollections/tmdb-id-lookup/issues/46) |
+| 2026-07-23 | Official TMDB Discover inventory/OAS, pinned NuvioTV `dev` and `0.7.19-beta`, pinned NuvioMobile `cmp-rewrite` and `0.3.1`, builder preservation audit, normalized compatibility matrix, and bounded manual/direct test plans | [TMDB ID Lookup issue #47](https://github.com/davecollections/tmdb-id-lookup/issues/47) and [`TMDB_DISCOVER_COMPATIBILITY.md`](./TMDB_DISCOVER_COMPATIBILITY.md) |
 
 ## Decision history
 
@@ -423,3 +438,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-21 — Shared artwork runtime foundation:** adopt one pure root-level ES module for typed published artwork validation, loading, and resolution; resolve only explicit company, network, and person maps; version every ready asset URL from its orientation SHA; keep successful caching memory-only per client; and defer v1 export, builder UI, persistent caching, refresh policy, and artwork-request integration to separately reviewed issues.
 - **2026-07-21 — V1 company/network runtime migration:** route classic company and network export artwork through one thin module adapter and the shared runtime; prepare and cache exports asynchronously; accept published text fallbacks; use visible title/emoji for missing or disabled artwork; block and retry runtime failures; remove borrowed focus animations; and leave people plus v2 consumption deferred.
 - **2026-07-22 — V1 automatic artwork refinement:** remove runtime-facing artwork controls and permanent status panels; automatically prefer published curated landscape artwork, then cached TMDB logos with visible titles, then title/emoji; degrade runtime failures into valid fallback exports; keep transient preparation feedback and Copy/Download parity; and leave the shared runtime, people migration, v2 integration, and tomato provenance question unchanged.
+- **2026-07-23 — Discover compatibility boundary:** treat official TMDB acceptance, client deserialization, request construction, hidden transformations, persistence, direct result effects, and visible device effects as separate evidence levels; retain the 14-field production contract unchanged; use the generated row-level matrix as the normalized research source; and defer all UI/schema expansion until bounded owner evidence and a separately approved issue.

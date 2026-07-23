@@ -1,0 +1,71 @@
+[
+  {
+    "id": "tmdb-discover-recognized-baselines",
+    "title": "TMDB Discover Audit - Recognized Baselines",
+    "folders": [
+      {
+        "id": "tmdb-discover-recognized-baselines-folder",
+        "title": "Recognized fields and client divergence",
+        "sources": [
+          {
+            "title": "M1 Movie baseline",
+            "sortBy": "popularity.desc",
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "M2 Movie withGenres 28",
+            "sortBy": "popularity.desc",
+            "filters": { "withGenres": "28" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "T1 TV baseline",
+            "sortBy": "popularity.desc",
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "T2 TV withNetworks 49",
+            "sortBy": "popularity.desc",
+            "filters": { "withNetworks": "49" },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "D1 Movie withNetworks 49 divergence",
+            "sortBy": "popularity.desc",
+            "filters": { "withNetworks": "49" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "W1 Movie providers 8 no region",
+            "sortBy": "popularity.desc",
+            "filters": { "withWatchProviders": "8" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "W2 Movie providers 8 region AU",
+            "sortBy": "popularity.desc",
+            "filters": { "watchRegion": "AU", "withWatchProviders": "8" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]
