@@ -1,0 +1,63 @@
+[
+  {
+    "id": "tmdb-discover-unknown-filter-candidates",
+    "title": "TMDB Discover Audit - Unknown Filter Candidates",
+    "folders": [
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder",
+        "title": "Unsupported candidate field preservation",
+        "sources": [
+          {
+            "title": "U1 Movie candidate withoutGenres 27",
+            "sortBy": "popularity.desc",
+            "filters": { "withoutGenres": "27" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "U2 Movie candidate withRuntimeGte 90",
+            "sortBy": "popularity.desc",
+            "filters": { "withRuntimeGte": 90 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "U3 Movie candidate voteCountLte 500",
+            "sortBy": "popularity.desc",
+            "filters": { "voteCountLte": 500 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "U4 Movie candidate withCast 31",
+            "sortBy": "popularity.desc",
+            "filters": { "withCast": "31" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "U5 TV candidate withStatus 0|3|4",
+            "sortBy": "popularity.desc",
+            "filters": { "withStatus": "0|3|4" },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "U6 TV candidate withType 0|2",
+            "sortBy": "popularity.desc",
+            "filters": { "withType": "0|2" },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

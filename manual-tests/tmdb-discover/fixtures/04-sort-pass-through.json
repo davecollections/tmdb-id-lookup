@@ -1,0 +1,95 @@
+[
+  {
+    "id": "tmdb-discover-sort-pass-through",
+    "title": "TMDB Discover Audit - Sort Pass Through",
+    "folders": [
+      {
+        "id": "tmdb-discover-sort-pass-through-folder",
+        "title": "Visible, raw, alias and invalid sorts",
+        "sources": [
+          {
+            "title": "S1 Movie UI sort popularity.desc",
+            "sortBy": "popularity.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S2 Movie raw sort revenue.desc",
+            "sortBy": "revenue.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S3 Movie raw sort original_title.asc",
+            "sortBy": "original_title.asc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S4 Movie alias first_air_date.desc",
+            "sortBy": "first_air_date.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S4C Movie canonical primary_release_date.desc",
+            "sortBy": "primary_release_date.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S5 TV raw sort name.asc",
+            "sortBy": "name.asc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S6 TV alias primary_release_date.desc",
+            "sortBy": "primary_release_date.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S6C TV canonical first_air_date.desc",
+            "sortBy": "first_air_date.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S7 Movie sort original client divergence",
+            "sortBy": "original",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "S8 Movie invalid sort definitely_invalid.desc",
+            "sortBy": "definitely_invalid.desc",
+            "filters": { "voteCountGte": 50 },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

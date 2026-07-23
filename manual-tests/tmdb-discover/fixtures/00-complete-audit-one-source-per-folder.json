@@ -1,0 +1,518 @@
+[
+  {
+    "id": "tmdb-discover-recognized-baselines",
+    "title": "TMDB Discover Audit - Recognized Baselines",
+    "folders": [
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-m1",
+        "title": "M1 Movie baseline",
+        "sources": [
+          {
+            "title": "M1 Movie baseline",
+            "sortBy": "popularity.desc",
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-m2",
+        "title": "M2 Movie withGenres 28",
+        "sources": [
+          {
+            "title": "M2 Movie withGenres 28",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": "28"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-t1",
+        "title": "T1 TV baseline",
+        "sources": [
+          {
+            "title": "T1 TV baseline",
+            "sortBy": "popularity.desc",
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-t2",
+        "title": "T2 TV withNetworks 49",
+        "sources": [
+          {
+            "title": "T2 TV withNetworks 49",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withNetworks": "49"
+            },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-d1",
+        "title": "D1 Movie withNetworks 49 divergence",
+        "sources": [
+          {
+            "title": "D1 Movie withNetworks 49 divergence",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withNetworks": "49"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-w1",
+        "title": "W1 Movie providers 8 no region",
+        "sources": [
+          {
+            "title": "W1 Movie providers 8 no region",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withWatchProviders": "8"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-recognized-baselines-folder-w2",
+        "title": "W2 Movie providers 8 region AU",
+        "sources": [
+          {
+            "title": "W2 Movie providers 8 region AU",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "watchRegion": "AU",
+              "withWatchProviders": "8"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  },
+  {
+    "id": "tmdb-discover-and-or-semantics",
+    "title": "TMDB Discover Audit - AND OR Semantics",
+    "folders": [
+      {
+        "id": "tmdb-discover-and-or-semantics-folder-a1",
+        "title": "A1 Movie genres 28,12 AND",
+        "sources": [
+          {
+            "title": "A1 Movie genres 28,12 AND",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": "28,12"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-and-or-semantics-folder-a2",
+        "title": "A2 Movie genres 28|12 OR",
+        "sources": [
+          {
+            "title": "A2 Movie genres 28|12 OR",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": "28|12"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-and-or-semantics-folder-a3",
+        "title": "A3 Movie keywords 15097,9951 AND",
+        "sources": [
+          {
+            "title": "A3 Movie keywords 15097,9951 AND",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withKeywords": "15097,9951"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-and-or-semantics-folder-a4",
+        "title": "A4 Movie keywords 15097|9951 OR",
+        "sources": [
+          {
+            "title": "A4 Movie keywords 15097|9951 OR",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withKeywords": "15097|9951"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-and-or-semantics-folder-a5",
+        "title": "A5 Movie providers 8,337 region US AND",
+        "sources": [
+          {
+            "title": "A5 Movie providers 8,337 region US AND",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "watchRegion": "US",
+              "withWatchProviders": "8,337"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-and-or-semantics-folder-a6",
+        "title": "A6 Movie providers 8|337 region US OR",
+        "sources": [
+          {
+            "title": "A6 Movie providers 8|337 region US OR",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "watchRegion": "US",
+              "withWatchProviders": "8|337"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  },
+  {
+    "id": "tmdb-discover-unknown-filter-candidates",
+    "title": "TMDB Discover Audit - Unknown Filter Candidates",
+    "folders": [
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder-u1",
+        "title": "U1 Movie candidate withoutGenres 27",
+        "sources": [
+          {
+            "title": "U1 Movie candidate withoutGenres 27",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withoutGenres": "27"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder-u2",
+        "title": "U2 Movie candidate withRuntimeGte 90",
+        "sources": [
+          {
+            "title": "U2 Movie candidate withRuntimeGte 90",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withRuntimeGte": 90
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder-u3",
+        "title": "U3 Movie candidate voteCountLte 500",
+        "sources": [
+          {
+            "title": "U3 Movie candidate voteCountLte 500",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "voteCountLte": 500
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder-u4",
+        "title": "U4 Movie candidate withCast 31",
+        "sources": [
+          {
+            "title": "U4 Movie candidate withCast 31",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withCast": "31"
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder-u5",
+        "title": "U5 TV candidate withStatus 0|3|4",
+        "sources": [
+          {
+            "title": "U5 TV candidate withStatus 0|3|4",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withStatus": "0|3|4"
+            },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-unknown-filter-candidates-folder-u6",
+        "title": "U6 TV candidate withType 0|2",
+        "sources": [
+          {
+            "title": "U6 TV candidate withType 0|2",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withType": "0|2"
+            },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  },
+  {
+    "id": "tmdb-discover-sort-pass-through",
+    "title": "TMDB Discover Audit - Sort Pass Through",
+    "folders": [
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s1",
+        "title": "S1 Movie UI sort popularity.desc",
+        "sources": [
+          {
+            "title": "S1 Movie UI sort popularity.desc",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s2",
+        "title": "S2 Movie raw sort revenue.desc",
+        "sources": [
+          {
+            "title": "S2 Movie raw sort revenue.desc",
+            "sortBy": "revenue.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s3",
+        "title": "S3 Movie raw sort original_title.asc",
+        "sources": [
+          {
+            "title": "S3 Movie raw sort original_title.asc",
+            "sortBy": "original_title.asc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s4",
+        "title": "S4 Movie alias first_air_date.desc",
+        "sources": [
+          {
+            "title": "S4 Movie alias first_air_date.desc",
+            "sortBy": "first_air_date.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s4c",
+        "title": "S4C Movie canonical primary_release_date.desc",
+        "sources": [
+          {
+            "title": "S4C Movie canonical primary_release_date.desc",
+            "sortBy": "primary_release_date.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s5",
+        "title": "S5 TV raw sort name.asc",
+        "sources": [
+          {
+            "title": "S5 TV raw sort name.asc",
+            "sortBy": "name.asc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s6",
+        "title": "S6 TV alias primary_release_date.desc",
+        "sources": [
+          {
+            "title": "S6 TV alias primary_release_date.desc",
+            "sortBy": "primary_release_date.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s6c",
+        "title": "S6C TV canonical first_air_date.desc",
+        "sources": [
+          {
+            "title": "S6C TV canonical first_air_date.desc",
+            "sortBy": "first_air_date.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s7",
+        "title": "S7 Movie sort original client divergence",
+        "sources": [
+          {
+            "title": "S7 Movie sort original client divergence",
+            "sortBy": "original",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "tmdb-discover-sort-pass-through-folder-s8",
+        "title": "S8 Movie invalid sort definitely_invalid.desc",
+        "sources": [
+          {
+            "title": "S8 Movie invalid sort definitely_invalid.desc",
+            "sortBy": "definitely_invalid.desc",
+            "filters": {
+              "voteCountGte": 50
+            },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

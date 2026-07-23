@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "reviewedDate": "2026-07-23",
+  "fixtureSourceCount": 29,
+  "essentialSourceCount": 19,
+  "completeAuditFixture": {
+    "path": "fixtures/00-complete-audit.json",
+    "orderedComponentPaths": [
+      "fixtures/01-recognized-baselines.json",
+      "fixtures/02-and-or-semantics.json",
+      "fixtures/03-unknown-filter-candidates.json",
+      "fixtures/04-sort-pass-through.json"
+    ],
+    "collectionCount": 4,
+    "sourceCount": 29,
+    "usage": "Import once for a complete NuvioTV or NuvioMobile audit; component fixtures are targeted reruns only, and Mobile requires the combined fixture whenever compareTo crosses components."
+  },
+  "oneSourcePerFolderAuditFixture": {
+    "path": "fixtures/00-complete-audit-one-source-per-folder.json",
+    "generatedFrom": "completeAuditFixture.orderedComponentPaths",
+    "collectionCount": 4,
+    "folderCount": 29,
+    "sourceCount": 29,
+    "usage": "Alternate presentation-only fixture for a client that imports the combined collections but does not expose multiple source tabs. It preserves every collection and source object in order while placing each source in its own folder."
+  },
+  "clientImportBehavior": {
+    "nuvioTv": "Imports and upserts collections by collection ID, so the four audit collections can coexist.",
+    "nuvioMobile": "Replaces the current collection list with the newly imported list, so a complete audit requires one of the two complete fixtures. Use the one-source-per-folder variant only when the client does not expose multiple source tabs."
+  },
+  "fixtures": [
+    {
+      "path": "fixtures/01-recognized-baselines.json",
+      "sources": [
+        { "title": "M1 Movie baseline", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Unfiltered Movie DISCOVER baseline using popularity.desc." },
+        { "title": "M2 Movie withGenres 28", "priority": "essential", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "Both clients deserialize and forward with_genres=28; visible effect needs device evidence." },
+        { "title": "T1 TV baseline", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Unfiltered TV DISCOVER baseline using popularity.desc." },
+        { "title": "T2 TV withNetworks 49", "priority": "essential", "compareTo": "T1 TV baseline", "expectedStaticBehavior": "Both clients deserialize and forward with_networks=49 to TV Discover." },
+        { "title": "D1 Movie withNetworks 49 divergence", "priority": "essential", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "TV omits the field; Mobile sends undocumented with_networks to Movie Discover. Compare each client with M1." },
+        { "title": "W1 Movie providers 8 no region", "priority": "essential", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "Both clients default watch_region=US and inject flatrate|free|ads|rent|buy." },
+        { "title": "W2 Movie providers 8 region AU", "priority": "essential", "compareTo": "W1 Movie providers 8 no region", "expectedStaticBehavior": "Both clients forward watch_region=AU and inject all monetization types." }
+      ]
+    },
+    {
+      "path": "fixtures/02-and-or-semantics.json",
+      "sources": [
+        { "title": "A1 Movie genres 28,12 AND", "priority": "essential", "compareTo": "A2 Movie genres 28|12 OR", "expectedStaticBehavior": "Both clients forward the documented comma-AND string unchanged." },
+        { "title": "A2 Movie genres 28|12 OR", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Both clients forward the documented pipe-OR string unchanged." },
+        { "title": "A3 Movie keywords 15097,9951 AND", "priority": "optional", "compareTo": "A4 Movie keywords 15097|9951 OR", "expectedStaticBehavior": "Both clients forward the documented comma-AND string unchanged." },
+        { "title": "A4 Movie keywords 15097|9951 OR", "priority": "optional", "compareTo": null, "expectedStaticBehavior": "Both clients forward the documented pipe-OR string unchanged." },
+        { "title": "A5 Movie providers 8,337 region US AND", "priority": "optional", "compareTo": "A6 Movie providers 8|337 region US OR", "expectedStaticBehavior": "Both clients forward provider comma-AND, US region, and inject all monetization types." },
+        { "title": "A6 Movie providers 8|337 region US OR", "priority": "optional", "compareTo": null, "expectedStaticBehavior": "Both clients forward provider pipe-OR, US region, and inject all monetization types." }
+      ]
+    },
+    {
+      "path": "fixtures/03-unknown-filter-candidates.json",
+      "sources": [
+        { "title": "U1 Movie candidate withoutGenres 27", "priority": "essential", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "Neither client models or forwards this candidate; TV drops it on typed persistence and Mobile loses it in the nested filters overlay." },
+        { "title": "U2 Movie candidate withRuntimeGte 90", "priority": "optional", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "Neither client models or forwards this candidate; it is not preservation-safe in either client." },
+        { "title": "U3 Movie candidate voteCountLte 500", "priority": "optional", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "Neither client models or forwards this candidate; it is not preservation-safe in either client." },
+        { "title": "U4 Movie candidate withCast 31", "priority": "optional", "compareTo": "M1 Movie baseline", "expectedStaticBehavior": "Neither client models or forwards this candidate; it is not preservation-safe in either client." },
+        { "title": "U5 TV candidate withStatus 0|3|4", "priority": "optional", "compareTo": "T1 TV baseline", "expectedStaticBehavior": "Ordinary DISCOVER JSON cannot set status in either client; NuvioTV only synthesizes this value for native NETWORK sources." },
+        { "title": "U6 TV candidate withType 0|2", "priority": "optional", "compareTo": "T1 TV baseline", "expectedStaticBehavior": "Neither client models or forwards this candidate; it is not preservation-safe in either client." }
+      ]
+    },
+    {
+      "path": "fixtures/04-sort-pass-through.json",
+      "sources": [
+        { "title": "S1 Movie UI sort popularity.desc", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Visible editor sort and baseline for other Movie sort cases." },
+        { "title": "S2 Movie raw sort revenue.desc", "priority": "essential", "compareTo": "S1 Movie UI sort popularity.desc", "expectedStaticBehavior": "Not offered in either editor; both clients preserve the known raw sortBy field and forward it unchanged." },
+        { "title": "S3 Movie raw sort original_title.asc", "priority": "optional", "compareTo": "S1 Movie UI sort popularity.desc", "expectedStaticBehavior": "Not offered in either editor; both clients forward it unchanged." },
+        { "title": "S4 Movie alias first_air_date.desc", "priority": "essential", "compareTo": "S4C Movie canonical primary_release_date.desc", "expectedStaticBehavior": "Both clients normalize this exact descending TV date alias to primary_release_date.desc; compare with S4C." },
+        { "title": "S4C Movie canonical primary_release_date.desc", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Correct-media comparator for S4 using the same filters." },
+        { "title": "S5 TV raw sort name.asc", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Not offered in either editor; both clients forward it unchanged." },
+        { "title": "S6 TV alias primary_release_date.desc", "priority": "essential", "compareTo": "S6C TV canonical first_air_date.desc", "expectedStaticBehavior": "Both clients normalize this exact descending Movie date alias to first_air_date.desc; compare with S6C." },
+        { "title": "S6C TV canonical first_air_date.desc", "priority": "essential", "compareTo": null, "expectedStaticBehavior": "Correct-media comparator for S6 using the same filters." },
+        { "title": "S7 Movie sort original client divergence", "priority": "essential", "compareTo": "S1 Movie UI sort popularity.desc", "expectedStaticBehavior": "TV forwards the unofficial value; Mobile substitutes popularity.desc." },
+        { "title": "S8 Movie invalid sort definitely_invalid.desc", "priority": "essential", "compareTo": "S1 Movie UI sort popularity.desc", "expectedStaticBehavior": "Both clients forward the invalid nonblank value; TMDB rejection versus ignore behavior is pending." }
+      ]
+    }
+  ]
+}

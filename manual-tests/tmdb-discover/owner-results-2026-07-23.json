@@ -1,0 +1,1006 @@
+{
+  "schemaVersion": 1,
+  "evidenceDate": "2026-07-23",
+  "issue": {
+    "number": 47,
+    "url": "https://github.com/davecollections/tmdb-id-lookup/issues/47"
+  },
+  "scope": "Owner-controlled visible-result and import/export observations for the 29-source TMDB Discover audit. Results are client-build-specific and are not direct TMDB request captures.",
+  "screenshots": {
+    "suppliedInOwnerConversation": true,
+    "committed": false,
+    "note": "Screenshots supported the observations but no screenshot files or paths are committed."
+  },
+  "contractCountsChanged": false,
+  "resultSets": {
+    "movie-baseline": [
+      "The Odyssey",
+      "Moana",
+      "Disclosure Day",
+      "Obsession",
+      "Backrooms"
+    ],
+    "movie-action-28": [
+      "The Odyssey",
+      "Supergirl",
+      "The Mandalorian and Grogu",
+      "The Furious",
+      "Spider-Man: Brand New Day"
+    ],
+    "tv-baseline": [
+      "House of the Dragon",
+      "Rote Rosen",
+      "Tagesschau",
+      "Caressing My Hibernating Bear",
+      "Law & Order: Special Victims Unit"
+    ],
+    "tv-network-49": [
+      "House of the Dragon",
+      "Game of Thrones",
+      "Sesame Street",
+      "Westworld",
+      "The Sopranos"
+    ],
+    "provider-8-default-region": [
+      "Desire",
+      "Apex",
+      "Swapped",
+      "23 000 Lives",
+      "Heartstopper Forever"
+    ],
+    "provider-8-au": [
+      "Desire",
+      "Forgive Us All",
+      "Apex",
+      "Swapped",
+      "23 000 Lives"
+    ],
+    "genres-and": [
+      "The Odyssey",
+      "Supergirl",
+      "The Mandalorian and Grogu",
+      "Spider-Man: Brand New Day",
+      "Mortal Kombat II"
+    ],
+    "genres-or": [
+      "The Odyssey",
+      "Moana",
+      "Supergirl",
+      "Minions & Monsters",
+      "Toy Story 5"
+    ],
+    "keywords-and": [
+      "Raging Sharks",
+      "2025 Armageddon",
+      "Roboshark",
+      "Encounters in the Deep"
+    ],
+    "keywords-or": [
+      "Disclosure Day",
+      "Minions & Monsters",
+      "Project Hail Mary",
+      "Deep Water",
+      "Avatar: Fire and Ash"
+    ],
+    "providers-and": [
+      "Spider-Man",
+      "Spider-Man: Homecoming",
+      "Spider-Man 3",
+      "Spider-Man 2",
+      "The Fault in Our Stars"
+    ],
+    "providers-or": [
+      "Desire",
+      "Descendants: Wicked Wonderland",
+      "Avatar: Fire and Ash",
+      "Apex",
+      "The Punisher: One Last Kill"
+    ],
+    "movie-revenue-desc": [
+      "Avatar",
+      "Avengers: Endgame",
+      "Avatar: The Way of Water",
+      "Titanic",
+      "Ne Zha 2"
+    ],
+    "movie-original-title-asc-retained-ios": [
+      "Sr.",
+      "Wuthering Heights",
+      "#1 Cheerleader Camp",
+      "#AnneFrank: Parallel Stories",
+      "#Horror"
+    ],
+    "movie-date-desc": [
+      "Descendants: Wicked Wonderland",
+      "The Odyssey",
+      "Heartstopper Forever",
+      "Moana",
+      "Evil Dead Burn"
+    ],
+    "tv-name-asc": [
+      "$#*! My Dad Says",
+      "'Allo 'Allo!",
+      "'Til Death",
+      "(Un)Well",
+      "Darker than Black"
+    ],
+    "tv-date-desc": [
+      "Lucky",
+      "Little House on the Prairie",
+      "Elle",
+      "I Will Find You",
+      "The Polygamist"
+    ]
+  },
+  "completedRuns": [
+    {
+      "clientId": "nuvio-desktop-windows",
+      "client": "Nuvio Desktop",
+      "version": "0.1.14-alpha",
+      "build": "14",
+      "platform": "Windows",
+      "operatingSystem": "Windows 11 Home 25H2",
+      "operatingSystemBuild": "26200.8875",
+      "testDate": "2026-07-23",
+      "evidenceScope": "version-specific-owner-controlled-alpha-build",
+      "fixturePath": "fixtures/00-complete-audit.json",
+      "sourceCount": 29,
+      "importShape": {
+        "collectionCount": 4,
+        "folderCount": 4,
+        "sourceCount": 29,
+        "presentation": "multiple source tabs were available within each folder"
+      },
+      "exportObservation": {
+        "recognizedFieldsPreserved": true,
+        "collectionFolderAndSourceOrderPreserved": true,
+        "sourceLossObserved": false,
+        "normalizationObserved": [
+          "canonical structure",
+          "default fields",
+          "null values"
+        ],
+        "unknownNestedFilterFields": {
+          "preserved": false,
+          "affectedCodes": [
+            "U1",
+            "U2",
+            "U3",
+            "U4",
+            "U5",
+            "U6"
+          ]
+        },
+        "rawSortValuesPreserved": true,
+        "rawSortCodes": [
+          "S2",
+          "S3",
+          "S4",
+          "S4C",
+          "S5",
+          "S6",
+          "S6C",
+          "S7",
+          "S8"
+        ],
+        "note": "Raw sort values remained in export even when visible loading failed or results matched a fallback-like baseline."
+      },
+      "confidence": "owner-controlled and version-pinned for this alpha build",
+      "limitations": [
+        "An alpha Desktop build is not a final client contract.",
+        "No outbound request was captured, so visible results do not isolate TMDB handling from client behavior.",
+        "Dynamic same-day catalog results can change.",
+        "The earlier Windows Custom-editor screenshots were a separate UI-only evidence set whose exact app version was not captured."
+      ],
+      "observations": [
+        {
+          "code": "M1",
+          "title": "M1 Movie baseline",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": null,
+          "verdict": "baseline-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "M2",
+          "title": "M2 Movie withGenres 28",
+          "visibleResultsRef": "movie-action-28",
+          "compareTo": "M1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Visible titles differed from M1 and were Action results."
+          ]
+        },
+        {
+          "code": "T1",
+          "title": "T1 TV baseline",
+          "visibleResultsRef": "tv-baseline",
+          "compareTo": null,
+          "verdict": "baseline-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "T2",
+          "title": "T2 TV withNetworks 49",
+          "visibleResultsRef": "tv-network-49",
+          "compareTo": "T1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Visible titles differed from T1."
+          ]
+        },
+        {
+          "code": "D1",
+          "title": "D1 Movie withNetworks 49 divergence",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "This supports the pinned NuvioTV omission finding for this Desktop build, but does not prove the retained iOS or current NuvioMobile request path."
+          ]
+        },
+        {
+          "code": "W1",
+          "title": "W1 Movie providers 8 no region",
+          "visibleResultsRef": "provider-8-default-region",
+          "compareTo": "M1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The visible result does not independently prove which hidden default region was used."
+          ]
+        },
+        {
+          "code": "W2",
+          "title": "W2 Movie providers 8 region AU",
+          "visibleResultsRef": "provider-8-au",
+          "compareTo": "W1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "W1 and W2 differed, supporting visible provider/region behavior without isolating the hidden W1 default."
+          ]
+        },
+        {
+          "code": "A1",
+          "title": "A1 Movie genres 28,12 AND",
+          "visibleResultsRef": "genres-and",
+          "compareTo": "A2",
+          "verdict": "paired-delimiter-results-differ",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Comma-AND and pipe-OR produced different visible lists."
+          ]
+        },
+        {
+          "code": "A2",
+          "title": "A2 Movie genres 28|12 OR",
+          "visibleResultsRef": "genres-or",
+          "compareTo": null,
+          "verdict": "paired-comparator-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Compared with A1."
+          ]
+        },
+        {
+          "code": "A3",
+          "title": "A3 Movie keywords 15097,9951 AND",
+          "visibleResultsRef": "keywords-and",
+          "compareTo": "A4",
+          "verdict": "paired-delimiter-results-differ",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Only four visible results were present."
+          ]
+        },
+        {
+          "code": "A4",
+          "title": "A4 Movie keywords 15097|9951 OR",
+          "visibleResultsRef": "keywords-or",
+          "compareTo": null,
+          "verdict": "paired-comparator-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Compared with A3."
+          ]
+        },
+        {
+          "code": "A5",
+          "title": "A5 Movie providers 8,337 region US AND",
+          "visibleResultsRef": "providers-and",
+          "compareTo": "A6",
+          "verdict": "paired-delimiter-results-differ",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Comma-AND and pipe-OR produced different visible lists."
+          ]
+        },
+        {
+          "code": "A6",
+          "title": "A6 Movie providers 8|337 region US OR",
+          "visibleResultsRef": "providers-or",
+          "compareTo": null,
+          "verdict": "paired-comparator-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Compared with A5; catalog results are dynamic and same-day only."
+          ]
+        },
+        {
+          "code": "U1",
+          "title": "U1 Movie candidate withoutGenres 27",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Unknown nested field was removed by Desktop import/export."
+          ]
+        },
+        {
+          "code": "U2",
+          "title": "U2 Movie candidate withRuntimeGte 90",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Unknown nested field was removed by Desktop import/export."
+          ]
+        },
+        {
+          "code": "U3",
+          "title": "U3 Movie candidate voteCountLte 500",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Unknown nested field was removed by Desktop import/export."
+          ]
+        },
+        {
+          "code": "U4",
+          "title": "U4 Movie candidate withCast 31",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Unknown nested field was removed by Desktop import/export."
+          ]
+        },
+        {
+          "code": "U5",
+          "title": "U5 TV candidate withStatus 0|3|4",
+          "visibleResultsRef": "tv-baseline",
+          "compareTo": "T1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Unknown nested field was removed by Desktop import/export."
+          ]
+        },
+        {
+          "code": "U6",
+          "title": "U6 TV candidate withType 0|2",
+          "visibleResultsRef": "tv-baseline",
+          "compareTo": "T1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Unknown nested field was removed by Desktop import/export."
+          ]
+        },
+        {
+          "code": "S1",
+          "title": "S1 Movie UI sort popularity.desc",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": null,
+          "verdict": "sort-baseline-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S2",
+          "title": "S2 Movie raw sort revenue.desc",
+          "visibleResultsRef": "movie-revenue-desc",
+          "compareTo": "S1",
+          "verdict": "visible-sort-order-confirmed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S3",
+          "title": "S3 Movie raw sort original_title.asc",
+          "visibleResultsRef": null,
+          "visibleState": "endless spinner; no content and no error",
+          "compareTo": "S1",
+          "verdict": "desktop-alpha-runtime-failure",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Export retained original_title.asc despite the visible load failure."
+          ]
+        },
+        {
+          "code": "S4",
+          "title": "S4 Movie alias first_air_date.desc",
+          "visibleResultsRef": "movie-date-desc",
+          "compareTo": "S4C",
+          "verdict": "alias-and-canonical-results-match",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Off-media alias case; not an official Movie sort row."
+          ]
+        },
+        {
+          "code": "S4C",
+          "title": "S4C Movie canonical primary_release_date.desc",
+          "visibleResultsRef": "movie-date-desc",
+          "compareTo": null,
+          "verdict": "canonical-sort-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S5",
+          "title": "S5 TV raw sort name.asc",
+          "visibleResultsRef": "tv-name-asc",
+          "compareTo": null,
+          "verdict": "visible-sort-order-confirmed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S6",
+          "title": "S6 TV alias primary_release_date.desc",
+          "visibleResultsRef": "tv-date-desc",
+          "compareTo": "S6C",
+          "verdict": "alias-and-canonical-results-match",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Off-media alias case; not an official TV sort row."
+          ]
+        },
+        {
+          "code": "S6C",
+          "title": "S6C TV canonical first_air_date.desc",
+          "visibleResultsRef": "tv-date-desc",
+          "compareTo": null,
+          "verdict": "canonical-sort-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S7",
+          "title": "S7 Movie sort original client divergence",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "S1",
+          "verdict": "default-like-no-visible-difference",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The visible layer does not isolate where fallback or normalization occurred; original is not an official Discover sort."
+          ]
+        },
+        {
+          "code": "S8",
+          "title": "S8 Movie invalid sort definitely_invalid.desc",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "S1",
+          "verdict": "default-like-no-visible-difference",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The visible layer does not isolate where fallback or normalization occurred; the value is invalid and is not an official Discover sort."
+          ]
+        }
+      ]
+    },
+    {
+      "clientId": "retained-official-nuvio-ios",
+      "client": "Nuvio iOS",
+      "version": "1.2.23",
+      "build": "96",
+      "platform": "iOS",
+      "operatingSystem": "iOS",
+      "operatingSystemBuild": null,
+      "testDate": "2026-07-23",
+      "evidenceScope": "version-specific-historical-retained-official-build",
+      "installationContext": "Previously installed official build retained on the owner's device after distribution was removed. No sideload was used.",
+      "fixturePath": "fixtures/00-complete-audit-one-source-per-folder.json",
+      "sourceCount": 29,
+      "importShape": {
+        "initialCombinedFixture": {
+          "fixturePath": "fixtures/00-complete-audit.json",
+          "collectionCount": 4,
+          "folderCount": 4,
+          "sourceCount": 29,
+          "presentation": "collections imported, but multiple source tabs were not exposed"
+        },
+        "auditedFixture": {
+          "collectionCount": 4,
+          "folderCount": 29,
+          "sourceCount": 29,
+          "presentation": "one source per folder"
+        }
+      },
+      "copyAndExportObservation": {
+        "fixturesChecked": [
+          "fixtures/00-complete-audit.json",
+          "fixtures/00-complete-audit-one-source-per-folder.json"
+        ],
+        "semanticPreservationConfirmed": true,
+        "collectionFolderAndSourceOrderPreserved": true,
+        "sourceOrFolderLossObserved": false,
+        "recognizedFieldsPreserved": true,
+        "unknownNestedFilterFieldsPreserved": true,
+        "unknownNestedFilterCodes": [
+          "U1",
+          "U2",
+          "U3",
+          "U4",
+          "U5",
+          "U6"
+        ],
+        "providerAndRegionFieldsPreserved": true,
+        "rawAliasUnofficialAndInvalidSortsPreserved": true,
+        "copyAcknowledgementVisible": false,
+        "copyVerification": "Pasting the copied JSON proved that Copy produced the preserved semantic output."
+      },
+      "confidence": "owner-controlled and version-pinned for this retained official build",
+      "limitations": [
+        "This frozen retained build is historical evidence only and does not prove current or future NuvioMobile behavior.",
+        "The removed distribution lifecycle is owner-supplied context, not a reproducible installation path.",
+        "No outbound request was captured, so visible results do not prove whether a preserved unknown field was forwarded.",
+        "The 29-folder variant was required because the original four-folder import did not expose multiple source tabs.",
+        "Dynamic same-day catalog results can change."
+      ],
+      "observations": [
+        {
+          "code": "M1",
+          "title": "M1 Movie baseline",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": null,
+          "verdict": "baseline-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "M2",
+          "title": "M2 Movie withGenres 28",
+          "visibleResultsRef": "movie-action-28",
+          "compareTo": "M1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Visible titles differed from M1 and were Action results."
+          ]
+        },
+        {
+          "code": "T1",
+          "title": "T1 TV baseline",
+          "visibleResultsRef": "tv-baseline",
+          "compareTo": null,
+          "verdict": "baseline-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "T2",
+          "title": "T2 TV withNetworks 49",
+          "visibleResultsRef": "tv-network-49",
+          "compareTo": "T1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Visible titles differed from T1."
+          ]
+        },
+        {
+          "code": "D1",
+          "title": "D1 Movie withNetworks 49 divergence",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The retained build does not prove the older request path, and this historical observation must not be upgraded to current NuvioMobile behavior."
+          ]
+        },
+        {
+          "code": "W1",
+          "title": "W1 Movie providers 8 no region",
+          "visibleResultsRef": "provider-8-default-region",
+          "compareTo": "M1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The visible result does not independently prove which hidden default region was used."
+          ]
+        },
+        {
+          "code": "W2",
+          "title": "W2 Movie providers 8 region AU",
+          "visibleResultsRef": "provider-8-au",
+          "compareTo": "W1",
+          "verdict": "visible-effect-confirmed-against-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "W1 and W2 differed, supporting visible provider/region behavior without isolating the hidden W1 default."
+          ]
+        },
+        {
+          "code": "A1",
+          "title": "A1 Movie genres 28,12 AND",
+          "visibleResultsRef": "genres-and",
+          "compareTo": "A2",
+          "verdict": "paired-delimiter-results-differ",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Comma-AND and pipe-OR produced different visible lists."
+          ]
+        },
+        {
+          "code": "A2",
+          "title": "A2 Movie genres 28|12 OR",
+          "visibleResultsRef": "genres-or",
+          "compareTo": null,
+          "verdict": "paired-comparator-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Compared with A1."
+          ]
+        },
+        {
+          "code": "A3",
+          "title": "A3 Movie keywords 15097,9951 AND",
+          "visibleResultsRef": "keywords-and",
+          "compareTo": "A4",
+          "verdict": "paired-delimiter-results-differ",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Only four visible results were present."
+          ]
+        },
+        {
+          "code": "A4",
+          "title": "A4 Movie keywords 15097|9951 OR",
+          "visibleResultsRef": "keywords-or",
+          "compareTo": null,
+          "verdict": "paired-comparator-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Compared with A3."
+          ]
+        },
+        {
+          "code": "A5",
+          "title": "A5 Movie providers 8,337 region US AND",
+          "visibleResultsRef": "providers-and",
+          "compareTo": "A6",
+          "verdict": "paired-delimiter-results-differ",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Comma-AND and pipe-OR produced different visible lists."
+          ]
+        },
+        {
+          "code": "A6",
+          "title": "A6 Movie providers 8|337 region US OR",
+          "visibleResultsRef": "providers-or",
+          "compareTo": null,
+          "verdict": "paired-comparator-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Compared with A5; catalog results are dynamic and same-day only."
+          ]
+        },
+        {
+          "code": "U1",
+          "title": "U1 Movie candidate withoutGenres 27",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Preserved but not visibly applied on retained official iOS 1.2.23 (96)."
+          ]
+        },
+        {
+          "code": "U2",
+          "title": "U2 Movie candidate withRuntimeGte 90",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Preserved but not visibly applied on retained official iOS 1.2.23 (96)."
+          ]
+        },
+        {
+          "code": "U3",
+          "title": "U3 Movie candidate voteCountLte 500",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Preserved but not visibly applied on retained official iOS 1.2.23 (96)."
+          ]
+        },
+        {
+          "code": "U4",
+          "title": "U4 Movie candidate withCast 31",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "M1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Preserved but not visibly applied on retained official iOS 1.2.23 (96)."
+          ]
+        },
+        {
+          "code": "U5",
+          "title": "U5 TV candidate withStatus 0|3|4",
+          "visibleResultsRef": "tv-baseline",
+          "compareTo": "T1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Preserved but not visibly applied on retained official iOS 1.2.23 (96)."
+          ]
+        },
+        {
+          "code": "U6",
+          "title": "U6 TV candidate withType 0|2",
+          "visibleResultsRef": "tv-baseline",
+          "compareTo": "T1",
+          "verdict": "no-visible-difference-from-comparator",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Preserved but not visibly applied on retained official iOS 1.2.23 (96)."
+          ]
+        },
+        {
+          "code": "S1",
+          "title": "S1 Movie UI sort popularity.desc",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": null,
+          "verdict": "sort-baseline-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S2",
+          "title": "S2 Movie raw sort revenue.desc",
+          "visibleResultsRef": "movie-revenue-desc",
+          "compareTo": "S1",
+          "verdict": "visible-sort-order-confirmed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S3",
+          "title": "S3 Movie raw sort original_title.asc",
+          "visibleResultsRef": "movie-original-title-asc-retained-ios",
+          "nextVisibleTitle": "#Iamhere",
+          "compareTo": "S1",
+          "verdict": "visible-sort-order-confirmed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "#Iamhere appeared after the recorded first five.",
+            "This differs from the Desktop alpha endless-spinner result and is client-build-specific."
+          ]
+        },
+        {
+          "code": "S4",
+          "title": "S4 Movie alias first_air_date.desc",
+          "visibleResultsRef": "movie-date-desc",
+          "compareTo": "S4C",
+          "verdict": "alias-and-canonical-results-match",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Off-media alias case; not an official Movie sort row."
+          ]
+        },
+        {
+          "code": "S4C",
+          "title": "S4C Movie canonical primary_release_date.desc",
+          "visibleResultsRef": "movie-date-desc",
+          "compareTo": null,
+          "verdict": "canonical-sort-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S5",
+          "title": "S5 TV raw sort name.asc",
+          "visibleResultsRef": "tv-name-asc",
+          "compareTo": null,
+          "verdict": "visible-sort-order-confirmed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S6",
+          "title": "S6 TV alias primary_release_date.desc",
+          "visibleResultsRef": "tv-date-desc",
+          "compareTo": "S6C",
+          "verdict": "alias-and-canonical-results-match",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "Off-media alias case; not an official TV sort row."
+          ]
+        },
+        {
+          "code": "S6C",
+          "title": "S6C TV canonical first_air_date.desc",
+          "visibleResultsRef": "tv-date-desc",
+          "compareTo": null,
+          "verdict": "canonical-sort-observed",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": []
+        },
+        {
+          "code": "S7",
+          "title": "S7 Movie sort original client divergence",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "S1",
+          "verdict": "default-like-no-visible-difference",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The visible layer does not isolate where fallback or normalization occurred; original is not an official Discover sort."
+          ]
+        },
+        {
+          "code": "S8",
+          "title": "S8 Movie invalid sort definitely_invalid.desc",
+          "visibleResultsRef": "movie-baseline",
+          "compareTo": "S1",
+          "verdict": "default-like-no-visible-difference",
+          "confidence": "version-specific-owner-controlled-visible-observation",
+          "notes": [
+            "The visible layer does not isolate where fallback or normalization occurred; the value is invalid and is not an official Discover sort."
+          ]
+        }
+      ]
+    }
+  ],
+  "pendingRuns": [
+    {
+      "clientId": "nuviotv-device",
+      "client": "NuvioTV",
+      "targetVersion": "0.7.19-beta",
+      "status": "pending",
+      "sourceCountObserved": 0,
+      "sourceCountPlanned": 29,
+      "reason": "A controlled NuvioTV device run was impractical for this audit. Pinned source-code evidence remains separate; a later TV addendum is preferred but does not block completion of the research package."
+    }
+  ],
+  "directTmdbResearch": {
+    "status": "pending",
+    "plannedRequestCount": 60,
+    "hardRequestCap": 60,
+    "liveRequestsSent": 0
+  },
+  "accountManagementProfileExport": {
+    "observed": true,
+    "evidenceScope": "owner-observed-profile-export-pipeline",
+    "attribution": "The responsible layer was not isolated; possible layers include iOS sync, account storage, web normalization, or export serialization.",
+    "fieldRemovals": [
+      {
+        "code": "W1",
+        "removedPaths": [
+          "filters.withWatchProviders"
+        ]
+      },
+      {
+        "code": "W2",
+        "removedPaths": [
+          "filters.watchRegion",
+          "filters.withWatchProviders"
+        ]
+      },
+      {
+        "code": "A5",
+        "removedPaths": [
+          "filters.watchRegion",
+          "filters.withWatchProviders"
+        ]
+      },
+      {
+        "code": "A6",
+        "removedPaths": [
+          "filters.watchRegion",
+          "filters.withWatchProviders"
+        ]
+      },
+      {
+        "code": "U1",
+        "removedPaths": [
+          "filters.withoutGenres"
+        ]
+      },
+      {
+        "code": "U2",
+        "removedPaths": [
+          "filters.withRuntimeGte"
+        ]
+      },
+      {
+        "code": "U3",
+        "removedPaths": [
+          "filters.voteCountLte"
+        ]
+      },
+      {
+        "code": "U4",
+        "removedPaths": [
+          "filters.withCast"
+        ]
+      },
+      {
+        "code": "U5",
+        "removedPaths": [
+          "filters.withStatus"
+        ]
+      },
+      {
+        "code": "U6",
+        "removedPaths": [
+          "filters.withType"
+        ]
+      }
+    ],
+    "sortChanges": [
+      {
+        "code": "S2",
+        "from": "revenue.desc",
+        "to": "popularity.desc"
+      },
+      {
+        "code": "S3",
+        "from": "original_title.asc",
+        "to": "popularity.desc"
+      },
+      {
+        "code": "S5",
+        "from": "name.asc",
+        "to": "first_air_date.desc"
+      },
+      {
+        "code": "S8",
+        "from": "definitely_invalid.desc",
+        "to": "popularity.desc"
+      }
+    ],
+    "sortsRetained": [
+      {
+        "code": "S4",
+        "value": "first_air_date.desc"
+      },
+      {
+        "code": "S4C",
+        "value": "primary_release_date.desc"
+      },
+      {
+        "code": "S6",
+        "value": "primary_release_date.desc"
+      },
+      {
+        "code": "S6C",
+        "value": "first_air_date.desc"
+      },
+      {
+        "code": "S7",
+        "value": "original"
+      }
+    ],
+    "otherNormalization": "Additional structural/default fields were added."
+  }
+}
