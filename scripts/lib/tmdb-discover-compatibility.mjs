@@ -166,6 +166,16 @@ export const SOURCE_REFERENCES = {
 		versionPinned: false,
 		note: "The exact app version was not captured; this supports visible editor controls and wording, not version-pinned request or runtime behavior.",
 	},
+	"owner-results-2026-07-23": {
+		title: "Owner-controlled TMDB Discover client results",
+		paths: [
+			"manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md",
+			"manual-tests/tmdb-discover/owner-results-2026-07-23.json",
+		],
+		evidenceType: "owner-controlled-version-specific-visible-results-and-pipeline-observations",
+		reviewedDate: REVIEWED_DATE,
+		note: "Covers 29/29 sources on Nuvio Desktop 0.1.14-alpha (14) and 29/29 on retained official iOS 1.2.23 (96). The iOS evidence is historical and does not prove current/future NuvioMobile behavior; NuvioTV device and direct TMDB evidence remain pending.",
+	},
 };
 
 const MOVIE_SORTS = [
@@ -223,6 +233,30 @@ const OWNER_WINDOWS_FILTER_FIELDS = [
 ];
 
 const OWNER_WINDOWS_EVIDENCE_REFERENCE = "owner-windows-custom-editor-screenshots";
+const OWNER_RESULTS_EVIDENCE_REFERENCE = "owner-results-2026-07-23";
+
+const OWNER_PARAMETER_RESULT_CASES = {
+	"movie:parameter:vote_count.lte": ["U3"],
+	"movie:parameter:watch_region": ["W2", "A5", "A6"],
+	"movie:parameter:with_cast": ["U4"],
+	"movie:parameter:with_genres": ["M2", "A1", "A2"],
+	"movie:parameter:with_keywords": ["A3", "A4"],
+	"movie:parameter:with_runtime.gte": ["U2"],
+	"movie:parameter:with_watch_providers": ["W1", "W2", "A5", "A6"],
+	"movie:parameter:without_genres": ["U1"],
+	"tv:parameter:with_networks": ["T2"],
+	"tv:parameter:with_status": ["U5"],
+	"tv:parameter:with_type": ["U6"],
+};
+
+const OWNER_SORT_RESULT_CASES = {
+	"movie:sort:original_title.asc": ["S3"],
+	"movie:sort:popularity.desc": ["S1"],
+	"movie:sort:primary_release_date.desc": ["S4C"],
+	"movie:sort:revenue.desc": ["S2"],
+	"tv:sort:first_air_date.desc": ["S6C"],
+	"tv:sort:name.asc": ["S5"],
+};
 
 function parameter(name, kind, officialType, options = {}) {
 	return {
@@ -431,6 +465,8 @@ function parameterRow(media, item) {
 	const mobile = parameterClientDetails(media, item, "mobile");
 	const field = tv.field;
 	const ownerWindowsEditorVisible = field !== null && item.name !== "sort_by";
+	const key = `${media}:parameter:${item.name}`;
+	const ownerControlledResultCases = OWNER_PARAMETER_RESULT_CASES[key] ?? [];
 	const refs = [
 		media === "movie" ? "tmdb-movie" : "tmdb-tv",
 		"tmdb-oas",
@@ -461,10 +497,11 @@ function parameterRow(media, item) {
 		"builder-contract-tests",
 		...(media === "movie" && item.name === "with_keywords" ? ["builder-knowledge"] : []),
 		...(ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : []),
+		...(ownerControlledResultCases.length > 0 ? [OWNER_RESULTS_EVIDENCE_REFERENCE] : []),
 	];
 
 	return {
-		key: `${media}:parameter:${item.name}`,
+		key,
 		recordType: "parameter",
 		kind: item.kind,
 		officialTmdbParameter: item.name,
@@ -488,6 +525,7 @@ function parameterRow(media, item) {
 		nuvioMobileEditorOffers: field !== null && item.name !== "sort_by",
 		ownerWindowsEditorVisible,
 		ownerWindowsEditorEvidence: ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : [],
+		ownerControlledResultCases,
 		builderCurrentlyRecognizes: field !== null,
 		builderCurrentlyEditable: false,
 		builderImportedRepresentation: field === null ? "rawImported-only" : "editable-and-rawImported",
@@ -507,7 +545,9 @@ function parameterRow(media, item) {
 		nuvioTvEvidence: ["nuviotv-model", "nuviotv-resolver", "nuviotv-api", "nuviotv-editor", "nuviotv-import"],
 		nuvioMobileEvidence: ["nuviomobile-model", "nuviomobile-resolver", "nuviomobile-service", "nuviomobile-editor", "nuviomobile-import", "nuviomobile-preserver"],
 		classification: classificationForParameter(media, item, field),
-		confidence: "high-static-contract; runtime-effect-pending",
+		confidence: ownerControlledResultCases.length > 0
+			? "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending"
+			: "high-static-contract; runtime-effect-pending",
 		notes: [
 			item.note,
 			field === null ? "No current Nuvio camelCase JSON field exists; no future field name is invented here." : null,
@@ -523,8 +563,10 @@ function parameterRow(media, item) {
 function sortRow(media, value) {
 	const endpoint = media === "movie" ? "Movie" : "TV";
 	const ownerWindowsEditorVisible = UI_SORTS[media].has(value);
+	const key = `${media}:sort:${value}`;
+	const ownerControlledResultCases = OWNER_SORT_RESULT_CASES[key] ?? [];
 	return {
-		key: `${media}:sort:${value}`,
+		key,
 		recordType: "sort-value",
 		kind: "sort",
 		officialTmdbParameter: "sort_by",
@@ -548,6 +590,7 @@ function sortRow(media, value) {
 		nuvioMobileEditorOffers: ownerWindowsEditorVisible,
 		ownerWindowsEditorVisible,
 		ownerWindowsEditorEvidence: ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : [],
+		ownerControlledResultCases,
 		builderCurrentlyRecognizes: true,
 		builderCurrentlyEditable: false,
 		builderImportedRepresentation: "editable-and-rawImported",
@@ -563,12 +606,14 @@ function sortRow(media, value) {
 		nuvioTvEvidence: ["nuviotv-model", "nuviotv-resolver", "nuviotv-editor", "nuviotv-import"],
 		nuvioMobileEvidence: ["nuviomobile-model", "nuviomobile-resolver", "nuviomobile-editor", "nuviomobile-import", "nuviomobile-preserver"],
 		classification: "sort-pass-through",
-		confidence: "high-static-contract; runtime-effect-pending",
+		confidence: ownerControlledResultCases.length > 0
+			? "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending"
+			: "high-static-contract; runtime-effect-pending",
 		notes: [
 			ownerWindowsEditorVisible ? "Offered in both clients' current Discover editor." : "Raw-JSON-only in both clients' current Discover editor.",
 			"Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence.",
 		],
-		sourceReferences: [media === "movie" ? "tmdb-movie" : "tmdb-tv", "tmdb-oas", "nuviotv-model", "nuviotv-resolver", "nuviotv-editor", "nuviotv-import", "nuviomobile-model", "nuviomobile-resolver", "nuviomobile-editor", "nuviomobile-import", "nuviomobile-preserver", "builder-fields", "builder-domain-model", "builder-overlay", ...(ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : [])],
+		sourceReferences: [media === "movie" ? "tmdb-movie" : "tmdb-tv", "tmdb-oas", "nuviotv-model", "nuviotv-resolver", "nuviotv-editor", "nuviotv-import", "nuviomobile-model", "nuviomobile-resolver", "nuviomobile-editor", "nuviomobile-import", "nuviomobile-preserver", "builder-fields", "builder-domain-model", "builder-overlay", ...(ownerWindowsEditorVisible ? [OWNER_WINDOWS_EVIDENCE_REFERENCE] : []), ...(ownerControlledResultCases.length > 0 ? [OWNER_RESULTS_EVIDENCE_REFERENCE] : [])],
 	};
 }
 
@@ -587,8 +632,8 @@ export function buildCompatibilityMatrix() {
 		reviewedDate: REVIEWED_DATE,
 		generatedBy: "scripts/generate-tmdb-discover-compatibility.mjs",
 		startingOriginMainSha: "33fe0fb70cb11f840215dc7538086b82059fb759",
-		scope: "Official TMDB v3 Discover parameters and sort values compared with current NuvioTV, NuvioMobile, and local builder contracts.",
-		evidenceWarning: "Static code or HTTP 200 is not proof that a filter changes visible results. No direct TMDB or device result-effect evidence was produced during this audit.",
+		scope: "Official TMDB v3 Discover parameters and sort values compared with current pinned NuvioTV, NuvioMobile, local builder contracts, and version-specific owner device observations.",
+		evidenceWarning: "Static code, preservation, HTTP 200, or a visible list alone does not identify the responsible request/runtime layer. Owner-controlled observations cover one Desktop alpha build and one retained historical iOS build; no direct TMDB or NuvioTV device run was produced.",
 		counts: {
 			movieOfficialParameters: MOVIE_PARAMETERS.length,
 			tvOfficialParameters: TV_PARAMETERS.length,
@@ -607,8 +652,6 @@ export function buildCompatibilityMatrix() {
 			tvOfficialFilterContextParametersNotIndependentlyControllable: 15,
 			ordinaryDiscoverJsonFieldsWithConditionalOrMediaMapping: 5,
 			priorRepositoryManualFilterCases: 1,
-			issue47ControlledManualFilterEffects: 0,
-			issue47ControlledManualSortEffects: 0,
 		},
 		clientSnapshots: {
 			nuvioTv: {
@@ -652,17 +695,60 @@ export function buildCompatibilityMatrix() {
 				placeholderWarning: "Comma-separated placeholders are not treated as official delimiter semantics without TMDB evidence.",
 			},
 		},
+		ownerControlledDeviceEvidence: {
+			sourceReference: OWNER_RESULTS_EVIDENCE_REFERENCE,
+			evidenceDate: REVIEWED_DATE,
+			completedRuns: [
+				{
+					client: "Nuvio Desktop",
+					version: "0.1.14-alpha",
+					build: "14",
+					platform: "Windows 11 Home 25H2 build 26200.8875",
+					observedSources: 29,
+					plannedSources: 29,
+					importShape: "4 collections / 4 folders / 29 sources with multiple source tabs",
+					scope: "version-specific alpha-build evidence",
+				},
+				{
+					client: "Retained official Nuvio iOS",
+					version: "1.2.23",
+					build: "96",
+					platform: "iOS",
+					observedSources: 29,
+					plannedSources: 29,
+					importShape: "4 collections / 29 one-source folders / 29 sources",
+					scope: "historical frozen-build evidence; not current/future NuvioMobile proof",
+				},
+			],
+			pendingRuns: [
+				{
+					client: "NuvioTV",
+					targetVersion: "0.7.19-beta",
+					observedSources: 0,
+					plannedSources: 29,
+					status: "pending-impractical-device-run",
+				},
+			],
+			nonOfficialOrOffMediaCases: ["D1", "S4", "S6", "S7", "S8"],
+			accountManagementProfileExportObserved: true,
+			accountManagementPipelineAttribution: "not-isolated",
+			limitations: [
+				"Visible results do not prove the exact outbound query.",
+				"The retained iOS build is historical and does not upgrade pinned current Mobile behavior.",
+				"Off-media aliases, unofficial values, and invalid values are manual cases rather than official matrix rows.",
+			],
+		},
 		liveResearch: {
 			tokenAvailable: false,
 			requestsSent: 0,
 			plannedRequests: 60,
 			hardRequestCap: 60,
-			status: "pending-local-token-and-owner-device-evidence",
+			status: "pending-local-token",
 		},
 		clientDivergences: [
 			{
 				key: "movie-with-networks",
-				description: "Both clients deserialize withNetworks on Movie DISCOVER. NuvioTV omits it; NuvioMobile sends undocumented with_networks to /discover/movie. Runtime handling is pending.",
+				description: "Both pinned current clients deserialize withNetworks on Movie DISCOVER. NuvioTV omits it; NuvioMobile sends undocumented with_networks to /discover/movie. D1 matched the Movie baseline on Desktop alpha and retained iOS, but the historical iOS observation does not prove its request path or current Mobile behavior.",
 			},
 			{
 				key: "network-source-hidden-filters",
@@ -670,7 +756,7 @@ export function buildCompatibilityMatrix() {
 			},
 			{
 				key: "unknown-filter-preservation",
-				description: "NuvioTV typed import drops unknown keys. NuvioMobile accepts unknown keys but its shallow filters overlay loses them on import/persist/export/sync. The local builder preserves them on unrelated edits.",
+				description: "NuvioTV typed import and Desktop alpha import/export drop unknown nested filter keys. Pinned current NuvioMobile source accepts then loses them through its shallow filters overlay, while retained official iOS 1.2.23 (96) preserved all six in Copy/Export without visibly applying them. The local builder preserves them on unrelated edits.",
 			},
 			{
 				key: "original-sort",

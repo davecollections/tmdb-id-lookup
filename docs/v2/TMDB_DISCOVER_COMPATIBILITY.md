@@ -4,9 +4,9 @@ Reviewed: **2026-07-23**
 
 Issue: [#47 — Audit TMDB Discover filter compatibility across Nuvio clients](https://github.com/davecollections/tmdb-id-lookup/issues/47)
 
-Evidence: official TMDB documentation/OpenAPI, pinned public Nuvio source, local builder source/tests, and owner-supplied visual evidence from the current Nuvio Windows Custom editor. No direct TMDB requests or controlled device result-effect tests were made in this audit.
+Evidence: official TMDB documentation/OpenAPI, pinned public Nuvio source, local builder source/tests, owner-supplied Windows editor screenshots, and owner-controlled result/preservation observations on Nuvio Desktop `0.1.14-alpha` (14) and retained official iOS `1.2.23` (96). No direct TMDB requests or NuvioTV device run were made.
 
-The normalized row-level artifact is [`manual-tests/tmdb-discover/compatibility-matrix.json`](../../manual-tests/tmdb-discover/compatibility-matrix.json). It is generated deterministically from [`scripts/lib/tmdb-discover-compatibility.mjs`](../../scripts/lib/tmdb-discover-compatibility.mjs) and keeps official acceptance, JSON deserialization, request mapping, defaults, preservation, and visible-result evidence separate.
+The normalized row-level artifact is [`manual-tests/tmdb-discover/compatibility-matrix.json`](../../manual-tests/tmdb-discover/compatibility-matrix.json). It is generated deterministically from [`scripts/lib/tmdb-discover-compatibility.mjs`](../../scripts/lib/tmdb-discover-compatibility.mjs) and keeps official acceptance, JSON deserialization, request mapping, defaults, preservation, and visible-result evidence separate. Completed device evidence is recorded in [`OWNER_RESULTS_2026-07-23.md`](../../manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md) and normalized in [`owner-results-2026-07-23.json`](../../manual-tests/tmdb-discover/owner-results-2026-07-23.json).
 
 ## Executive answer
 
@@ -20,7 +20,8 @@ Current NuvioTV and NuvioMobile both declare the same **14 camelCase JSON filter
 - **Five** common JSON fields have an ordinary-DISCOVER media mapping or conditional behavior: `releaseDateGte`, `releaseDateLte`, `year`, `watchRegion`, and `withWatchProviders`. Native COMPANY/NETWORK overrides and the separate Movie `withNetworks` divergence are additional source-type behavior, not part of that count.
 - `withWatchProviders` also injects `with_watch_monetization_types=flatrate|free|ads|rent|buy`; this is automatic behavior, not a fifteenth JSON field.
 - Both clients deserialize a raw top-level `sortBy` string. All **14 Movie** and **12 TV** official sort values are code-pass-through-capable when manually authored for the correct endpoint, but each editor offers only **4** per media.
-- New controlled/current cross-client confirmations in this issue: **0 filters and 0 sorts**. A missing local bearer token prevented direct TMDB calls, and device fixtures are awaiting owner review. The knowledge base retains one older, unpaired Shark Movies observation for Movie `withKeywords=15097`; its client/version scope was not recorded, so it is historical evidence rather than current-both-client proof.
+- Owner-controlled fixture coverage is **29/29 sources** on Desktop `0.1.14-alpha` (14) and **29/29** on retained official iOS `1.2.23` (96). These are two build-scoped observations, not a count of generally supported filters: the iOS build is frozen historical evidence, NuvioTV remains 0/29 pending, and direct TMDB remains 0/60.
+- The runs visibly distinguished M2 from M1, T2 from T1, W2 from W1, all three comma/pipe pairs, and several official sorts. They also captured a material S3 divergence, six no-effect unknown candidates with different preservation outcomes, off-media aliases, and fallback-like unofficial/invalid cases. None of those observations identifies the exact outbound query by itself.
 
 “Code-supported” below means a pinned client model accepts the field and the pinned resolver constructs the stated query. It does not mean a device result changed, that TMDB did not silently ignore a query, or that client import/export preserves unknown alternatives.
 
@@ -32,9 +33,9 @@ Current NuvioTV and NuvioMobile both declare the same **14 camelCase JSON filter
 | Nuvio deserialization | The pinned typed model accepts the JSON key and type | Complete by source inspection |
 | Nuvio request mapping | The resolver/API builder emits a query key or documented transformation | Complete by source inspection |
 | Hidden default/transformation | The resolver supplies a value not represented exactly by JSON | Complete by source inspection |
-| Nuvio preservation | Import, persistence, export, or sync retains the field | Complete by source inspection; manual confirmation pending |
+| Nuvio preservation | Import, persistence, export, or sync retains the field | Pinned current source inspected; Desktop alpha and retained iOS manually observed with a version-specific preservation divergence |
 | Direct TMDB effect | A controlled request changes count/ordered IDs as expected | Pending; 0 requests |
-| Visible Nuvio effect | A controlled device fixture changes visible results | 0 new controlled/current cross-client cases; one historical unpaired Movie keyword observation retained |
+| Visible Nuvio effect | A controlled device fixture changes visible results | 29/29 sources observed on Desktop alpha and 29/29 on retained official iOS; NuvioTV 0/29 pending |
 
 HTTP 200 is never classified as proof of effect. The live harness records both `total_results` and ordered first-page IDs for paired review.
 
@@ -78,6 +79,30 @@ The owner supplied screenshots of the current Nuvio Windows **TMDB Sources > Cus
 
 This visual evidence changes no official parameter count, 14-field contract count, client mapping count, or controlled-result-effect count.
 
+### Owner-controlled client results
+
+On 2026-07-23 the owner completed all 29 fixture sources on two specific builds:
+
+- Nuvio Desktop `0.1.14-alpha` (14), Windows 11 Home 25H2 build `26200.8875`: 4 collections, 4 folders, 29 sources, with multiple source tabs.
+- Retained official Nuvio iOS `1.2.23` (96): 4 collections, 29 one-source folders, 29 sources. This was a previously installed official build retained after distribution was removed, with no sideload. It is historical build-specific evidence, not current or future NuvioMobile proof.
+
+The original four-folder fixture imported all 29 sources on iOS but did not expose multiple source tabs. The generated `00-complete-audit-one-source-per-folder.json` variant therefore keeps every collection and source object in the same order while changing only the presentation to one source per folder. It is an alternate fixture, not another 29 observations in the audit total.
+
+Key visible observations were:
+
+- M2 Action differed from M1; T2 network 49 differed from T1.
+- W1 provider 8 and W2 provider 8/AU both differed from their comparators, but the visible list cannot prove the hidden W1 default region.
+- Genre, keyword, and provider comma-AND cases all differed from their pipe-OR comparators on both builds.
+- U1–U6 exactly matched their M1/T1 baselines on both builds. Desktop removed all six unknown nested fields; retained iOS preserved them. The exact retained-build wording is: “Preserved but not visibly applied on retained official iOS 1.2.23 (96).” Preservation is not forwarding proof.
+- S2 `revenue.desc`, S5 `name.asc`, and the two correct-media date comparators produced visibly ordered results on both builds. S3 `original_title.asc` worked on retained iOS but left Desktop alpha on an endless spinner with no content or error; Desktop export still retained the raw sort.
+- Off-media aliases S4/S6 exactly matched their correct-media comparators. Unofficial S7 and invalid S8 both matched the popularity baseline. These remain separate manual cases, not official matrix rows or product-exposure candidates.
+
+Desktop export preserved recognized fields/order, normalized structure/default/null fields, removed U1–U6, and retained raw sorts. Copy/export from retained iOS preserved all candidate/provider/raw/alias/unofficial/invalid values on both the original and alternate fixture without losing a folder or source.
+
+A Nuvio.tv account-management profile export later removed provider/region fields from W1/W2/A5/A6, removed U1–U6, changed S2/S3/S5/S8 to client-default-like sorts, retained S4/S4C/S6/S6C/S7, and added structural/default fields. The responsible layer was not isolated: iOS sync, account storage, web normalization, and export serialization remain possible. This is pipeline evidence, not attribution to one client component.
+
+NuvioTV `0.7.19-beta` device testing remains pending at 0/29 because a practical device run was not available. Pinned NuvioTV source is still the static contract evidence. A later TV addendum is preferred product confirmation but does not block this research package.
+
 ## Exact current Nuvio JSON contract
 
 Both client models declare these 14 filter fields. Every member is optional/nullable, and no camelCase, snake_case, or other filter aliases were found. The owner-supplied Windows screenshots independently show the same visible 14-field editor surface, with no extra Windows-only field. “Editor” refers to current client source creation, not this repository's builder UI.
@@ -105,7 +130,7 @@ NuvioMobile's Kotlin serialization strictly requires the modeled JSON number typ
 
 ## Movie parameter compatibility matrix
 
-Legend: **code** = modeled and forwarded by both clients, visible effect pending; **transform** = conditional, media-mapped, or automatic; **official only** = no current JSON field/request path; **sort** = top-level raw `sortBy`. `AND/OR` is true only when current official prose explicitly documents comma-AND and pipe-OR.
+Legend: **code** = modeled and forwarded by both pinned current clients; **transform** = conditional, media-mapped, or automatic; **official only** = no current JSON field/request path; **sort** = top-level raw `sortBy`. `AND/OR` is true only when current official prose explicitly documents comma-AND and pipe-OR. The machine matrix links version-specific owner cases only to the official parameter rows their fixtures actually exercised; D1 and off-media/unofficial/invalid sorts remain separate manual cases.
 
 | Official parameter | Kind/type | AND/OR | Current Nuvio representation and request behavior | Classification |
 | --- | --- | --- | --- | --- |
@@ -192,20 +217,20 @@ Current official Discover prose does not define the labels behind TV status/type
 
 ## Sort compatibility matrix
 
-Every correct-media official value below is accepted by each client's raw `sortBy` model and forwarded unchanged. “UI” means it is visibly offered for that media; raw-only values require authored/imported JSON. All visible effects remain manually pending.
+Every correct-media official value below is accepted by each pinned current client's raw `sortBy` model and forwarded unchanged. “UI” means it is visibly offered for that media; raw-only values require authored/imported JSON. Owner evidence is attached only to the six official rows actually exercised, and remains scoped to Desktop alpha plus retained historical iOS.
 
 ### Movie sorts
 
 | Official value | TV code | Mobile code | TV UI | Mobile UI | Evidence classification |
 | --- | --- | --- | --- | --- | --- |
-| `original_title.asc` | pass | pass | no | no | sort pass-through; manual pending |
+| `original_title.asc` | pass | pass | no | no | owner S3: retained iOS ordered; Desktop alpha spinner |
 | `original_title.desc` | pass | pass | no | no | sort pass-through; manual pending |
 | `popularity.asc` | pass | pass | no | no | sort pass-through; manual pending |
-| `popularity.desc` | pass | pass | yes | yes | sort pass-through; manual pending |
+| `popularity.desc` | pass | pass | yes | yes | owner S1 baseline on both tested builds |
 | `revenue.asc` | pass | pass | no | no | sort pass-through; manual pending |
-| `revenue.desc` | pass | pass | no | no | sort pass-through; manual pending |
+| `revenue.desc` | pass | pass | no | no | owner S2 visibly ordered on both tested builds |
 | `primary_release_date.asc` | pass | pass | no | no | sort pass-through; manual pending |
-| `primary_release_date.desc` | pass | pass | yes | yes | sort pass-through; manual pending |
+| `primary_release_date.desc` | pass | pass | yes | yes | owner S4C observed on both tested builds |
 | `title.asc` | pass | pass | no | no | sort pass-through; manual pending |
 | `title.desc` | pass | pass | no | no | sort pass-through; manual pending |
 | `vote_average.asc` | pass | pass | no | no | sort pass-through; manual pending |
@@ -218,8 +243,8 @@ Every correct-media official value below is accepted by each client's raw `sortB
 | Official value | TV code | Mobile code | TV UI | Mobile UI | Evidence classification |
 | --- | --- | --- | --- | --- | --- |
 | `first_air_date.asc` | pass | pass | no | no | sort pass-through; manual pending |
-| `first_air_date.desc` | pass | pass | yes | yes | sort pass-through; manual pending |
-| `name.asc` | pass | pass | no | no | sort pass-through; manual pending |
+| `first_air_date.desc` | pass | pass | yes | yes | owner S6C observed on both tested builds |
+| `name.asc` | pass | pass | no | no | owner S5 visibly ordered on both tested builds |
 | `name.desc` | pass | pass | no | no | sort pass-through; manual pending |
 | `original_name.asc` | pass | pass | no | no | sort pass-through; manual pending |
 | `original_name.desc` | pass | pass | no | no | sort pass-through; manual pending |
@@ -236,7 +261,7 @@ Both resolvers normalize only the exact descending cross-media aliases:
 - TV `primary_release_date.desc` becomes `first_air_date.desc`.
 - Cross-media ascending values are not normalized and reach TMDB unchanged.
 
-Arbitrary invalid nonblank strings also reach TMDB. NuvioTV forwards `original` for DISCOVER; NuvioMobile substitutes `popularity.desc`. Missing/blank values resolve effectively to popularity descending, with minor implementation differences for whitespace. Both client UIs can label an unknown imported sort as “Popular” even while the resolver retains and forwards the raw string. Invalid rejection, silent ignore, and substitution by TMDB need direct evidence.
+Arbitrary invalid nonblank strings also reach TMDB in pinned current source. NuvioTV forwards `original` for DISCOVER; NuvioMobile substitutes `popularity.desc`. Missing/blank values resolve effectively to popularity descending, with minor implementation differences for whitespace. Both client UIs can label an unknown imported sort as “Popular” even while the resolver retains and forwards the raw string. Owner S7/S8 matched the popularity baseline on both tested builds, but the visible layer does not attribute that fallback-like result to request construction, TMDB, storage, or UI. Direct evidence remains pending.
 
 ## TV versus Mobile differences
 
@@ -248,9 +273,11 @@ Arbitrary invalid nonblank strings also reach TMDB. NuvioTV forwards `original` 
 | Unknown filter import | Gson ignores unknown keys; typed persistence/export drops them | Decoder accepts unknown keys, then shallow filter overlay loses them during import/persist/export/sync | Neither client is preservation-safe for unsupported nested filter keys |
 | Raw unknown source keys | Typed cycle drops them | Top-level source keys can survive while the source identity key remains stable | Mobile preservation does not extend into `filters` |
 | Language fallback | App TMDB setting | Profile setting, default `en` | Results may differ if client locale settings are not aligned |
-| Manual collection import | Imports/upserts by collection ID, so separately imported audit collections can coexist | Replaces the current collection list with the newly imported list | Use the combined fixture once for a full cross-client audit; component files are rerun-only |
+| Manual collection import | Imports/upserts by collection ID, so separately imported audit collections can coexist | Replaces the current collection list with the newly imported list | Use one complete fixture for an audit; component files are rerun-only |
 
 NuvioTV's browser editor can transiently retain unknown plain-JavaScript fields before save, but saving returns to the typed lossy path. That narrow browser-memory case is not durable preservation.
+
+The retained official iOS `1.2.23` (96) result is a historical exception to the pinned current Mobile preservation expectation: it preserved U1–U6 in Copy/Export without visibly applying them. It does not supersede current source inspection or prove that those fields were sent.
 
 ## Builder preservation and editability
 
@@ -286,11 +313,15 @@ The supplied Kaptain collection patterns (`withoutGenres`, `withRuntimeGte`, com
 
 ## Direct and manual test status
 
-`TMDB_BEARER_TOKEN` was absent when this branch was prepared. Live request count: **0**. The deterministic direct plan now uses its exact **60-request** hard cap, covering fixed historical baselines, documented AND/OR forms, runtime, exclusions, people, certification, release types/order, TV status/type, Movie/TV vote maxima, media-specific dates, Mobile's undocumented Movie `with_networks` query, an invalid sort, and all 26 endpoint-specific official sort values (the two popularity-descending baselines cover that official value). Every direct case with `with_watch_providers` also carries an explicit nonblank `watch_region` and the exact client-injected `with_watch_monetization_types=flatrate|free|ads|rent|buy` union.
+Direct TMDB live request count is **0**. The deterministic direct plan still uses its exact **60-request** hard cap, covering fixed historical baselines, documented AND/OR forms, runtime, exclusions, people, certification, release types/order, TV status/type, Movie/TV vote maxima, media-specific dates, Mobile's undocumented Movie `with_networks` query, an invalid sort, and all 26 endpoint-specific official sort values (the two popularity-descending baselines cover that official value). Every direct case with `with_watch_providers` also carries an explicit nonblank `watch_region` and the exact client-injected `with_watch_monetization_types=flatrate|free|ads|rent|buy` union.
 
 The two added provider cases, `movie-provider-8-us` and `movie-provider-8-au`, omit the historical date and vote-count constraints so their sanitized URLs can match W1/W2's effective provider query shape when the client language is aligned to `en-US` and the source is on page 1 with `popularity.desc`. The AU case compares to the US case; no live result is committed or claimed.
 
-Use [`manual-tests/tmdb-discover/README.md`](../../manual-tests/tmdb-discover/README.md) for exact PowerShell and device instructions. The harness uses Node built-ins, sends the token only as a bearer header, records sanitized URLs/status/count/IDs, refuses overwrite, and is not wired into CI. The complete audit fixture is an exact ordered concatenation of four retained component fixtures: four collections, 29 sources, and 19 essential sources. Import the combined file once for a full TV/Mobile audit. The individual files are targeted reruns only; because Mobile replaces its current list on each import, any cross-component `compareTo` (including essential U1→M1) still requires the combined fixture. Unknown-filter export/sync evidence must be captured while the combined fixture remains installed.
+Use [`manual-tests/tmdb-discover/README.md`](../../manual-tests/tmdb-discover/README.md) for exact PowerShell and future device instructions. The harness uses Node built-ins, sends the token only as a bearer header, records sanitized URLs/status/count/IDs, refuses overwrite, and is not wired into CI.
+
+The primary complete fixture is the exact ordered concatenation of four retained component fixtures: four collections, four folders, 29 sources, and 19 essential sources. The generated alternate has the same collection/source objects and order but 29 one-source folders. The alternate was necessary on retained iOS because the original imported without source tabs. It is recorded separately in the manifest and does not double the audit source count.
+
+The completed owner report covers 29/29 on Desktop alpha and 29/29 on retained iOS. NuvioTV remains 0/29 pending, and direct TMDB remains 0/60. This is sufficient to complete the version-scoped research package, while a later NuvioTV addendum remains the preferred product confirmation.
 
 ## Recommendations
 
@@ -298,15 +329,15 @@ Use [`manual-tests/tmdb-discover/README.md`](../../manual-tests/tmdb-discover/RE
 
 - Preserve the current 14-field wire contract and expose only fields whose media mapping is clearly labelled.
 - Treat Movie `withNetworks` as unavailable until the client divergence and TMDB runtime behavior are resolved.
-- Consider raw official sorts after the owner fixtures confirm visible ordering; keep correct-media values distinct and explain that client editors expose only four.
+- Consider raw official sorts only with their build-scoped evidence and remaining current-client gaps; keep correct-media values distinct and explain that client editors expose only four.
 - Keep comma/pipe ID composition in an advanced control with explicit TMDB-documented AND/OR wording only for parameters whose official docs promise it.
 
 ### Needs manual proof before product exposure
 
-- Visible effect for each currently modeled field, especially network, provider/region, and compound syntax.
-- Raw-only ascending/title/name/revenue sorts and the two descending date aliases.
-- Invalid/cross-media sort handling and Mobile's Movie `with_networks` request.
-- Import/export/sync loss of unknown nested filter candidates on current released clients.
+- Current NuvioTV/current NuvioMobile confirmation for the modeled fields, especially network, provider/region, and compound syntax.
+- Unexercised raw-only official sorts; S2, S3, S5, S4C, and S6C have only the two recorded build-specific observations.
+- Direct attribution for invalid/cross-media sort handling and Mobile's Movie `with_networks` request.
+- Current released-client import/export/sync behavior for unknown nested filter candidates.
 
 ### Requires Nuvio upstream model/resolver support
 
@@ -325,4 +356,4 @@ Use [`manual-tests/tmdb-discover/README.md`](../../manual-tests/tmdb-discover/RE
 
 At source-code contract level, users can place **14 common filter fields** in current Nuvio collection JSON. **13** map to official Movie Discover parameters, while all **14** map to official TV Discover parameters. Five are transformed or conditional, provider filtering adds a non-selectable monetization union, and Movie `withNetworks` diverges between clients. Current raw JSON can also carry all **14 Movie** and **12 TV** official sort values even though only four per media are shown in client editors.
 
-At the stronger current/cross-client “demonstrably changes visible results” level, this issue adds **0 controlled confirmations** until the direct and owner-device tests are completed. The separate historical, unpaired Shark Movies keyword observation remains valid at its narrower evidence level. That distinction is intentional.
+At the visible-device evidence level, this issue records all **29 fixture sources** on Desktop `0.1.14-alpha` (14) and all **29** on retained official iOS `1.2.23` (96), including controlled comparisons, no-effect candidates, preservation checks, aliases, and failure/fallback cases. That is not “29 supported filters”: the result is build-scoped, NuvioTV is still 0/29, the iOS build is historical rather than current Mobile proof, and direct TMDB is 0/60. The official counts, 14-field contract, and static client mapping counts remain unchanged.

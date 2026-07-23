@@ -21,9 +21,13 @@ const matrixText = normalizeLineEndings(readText(MATRIX_PATH));
 const matrix = JSON.parse(matrixText);
 const manifest = readJson("manual-tests/tmdb-discover/fixture-manifest.json");
 const directPlan = readJson("manual-tests/tmdb-discover/direct-tmdb-test-plan.json");
+const ownerResults = readJson("manual-tests/tmdb-discover/owner-results-2026-07-23.json");
 const completeAuditRelativePath = `manual-tests/tmdb-discover/${manifest.completeAuditFixture.path}`;
 const completeAuditText = normalizeLineEndings(readText(completeAuditRelativePath));
 const completeAudit = JSON.parse(completeAuditText);
+const oneSourcePerFolderRelativePath = `manual-tests/tmdb-discover/${manifest.oneSourcePerFolderAuditFixture.path}`;
+const oneSourcePerFolderText = normalizeLineEndings(readText(oneSourcePerFolderRelativePath));
+const oneSourcePerFolderAudit = JSON.parse(oneSourcePerFolderText);
 
 const expectedMovieParameters = [
 	"certification", "certification.gte", "certification.lte", "certification_country", "include_adult", "include_video", "language", "page", "primary_release_year", "primary_release_date.gte", "primary_release_date.lte", "region", "release_date.gte", "release_date.lte", "sort_by", "vote_average.gte", "vote_average.lte", "vote_count.gte", "vote_count.lte", "watch_region", "with_cast", "with_companies", "with_crew", "with_genres", "with_keywords", "with_origin_country", "with_original_language", "with_people", "with_release_type", "with_runtime.gte", "with_runtime.lte", "with_watch_monetization_types", "with_watch_providers", "without_companies", "without_genres", "without_keywords", "without_watch_providers", "year",
@@ -138,6 +142,12 @@ test("every matrix row has a unique key, classification, and resolvable evidence
 			assert.ok(entry.sourceReferences.includes(reference), `${entry.key} owner evidence is not a row source`);
 		}
 		assert.equal(entry.ownerWindowsEditorVisible, entry.ownerWindowsEditorEvidence.length > 0, entry.key);
+		assert.ok(Array.isArray(entry.ownerControlledResultCases), `${entry.key} owner controlled cases`);
+		assert.equal(
+			entry.sourceReferences.includes("owner-results-2026-07-23"),
+			entry.ownerControlledResultCases.length > 0,
+			`${entry.key} owner controlled source`,
+		);
 		if (entry.proposedNuvioJsonField !== null) {
 			assert.ok(entry.proposedNuvioJsonField === "sortBy" || knownFilterFields.has(entry.proposedNuvioJsonField));
 		}
@@ -164,8 +174,8 @@ test("every matrix row has a unique key, classification, and resolvable evidence
 	assert.match(entryByKey.get("tv:parameter:with_networks").mobileTransformationOrDefault, /NETWORK source forces tmdbId/);
 	assert.match(entryByKey.get("movie:parameter:with_keywords").priorManualNuvioEvidence, /Historical unpaired Shark Movies/);
 	assert.equal(matrix.counts.priorRepositoryManualFilterCases, 1);
-	assert.equal(matrix.counts.issue47ControlledManualFilterEffects, 0);
-	assert.equal(matrix.counts.issue47ControlledManualSortEffects, 0);
+	assert.equal("issue47ControlledManualFilterEffects" in matrix.counts, false);
+	assert.equal("issue47ControlledManualSortEffects" in matrix.counts, false);
 
 	const ownerEvidence = matrix.ownerSuppliedVisualEvidence.windowsCustomEditor;
 	assert.equal(ownerEvidence.sourceReference, "owner-windows-custom-editor-screenshots");
@@ -182,6 +192,45 @@ test("every matrix row has a unique key, classification, and resolvable evidence
 	assert.equal(ownerEvidence.delimiterHelp.withWatchProviders, "comma=AND; pipe=OR");
 	assert.deepEqual(ownerEvidence.placeholderOnlyCommaExamples, ["withOriginalLanguage", "withOriginCountry"]);
 	assert.equal(matrix.sourceReferences[ownerEvidence.sourceReference].versionPinned, false);
+
+	const controlledEvidence = matrix.ownerControlledDeviceEvidence;
+	assert.equal(controlledEvidence.sourceReference, "owner-results-2026-07-23");
+	assert.deepEqual(controlledEvidence.completedRuns.map((run) => [run.client, run.observedSources, run.plannedSources]), [
+		["Nuvio Desktop", 29, 29],
+		["Retained official Nuvio iOS", 29, 29],
+	]);
+	assert.deepEqual(controlledEvidence.pendingRuns.map((run) => [run.client, run.observedSources, run.plannedSources]), [
+		["NuvioTV", 0, 29],
+	]);
+	assert.deepEqual(controlledEvidence.nonOfficialOrOffMediaCases, ["D1", "S4", "S6", "S7", "S8"]);
+	assert.match(controlledEvidence.completedRuns[1].scope, /not current\/future NuvioMobile proof/);
+
+	const expectedControlledCases = new Map([
+		["movie:parameter:vote_count.lte", ["U3"]],
+		["movie:parameter:watch_region", ["W2", "A5", "A6"]],
+		["movie:parameter:with_cast", ["U4"]],
+		["movie:parameter:with_genres", ["M2", "A1", "A2"]],
+		["movie:parameter:with_keywords", ["A3", "A4"]],
+		["movie:parameter:with_runtime.gte", ["U2"]],
+		["movie:parameter:with_watch_providers", ["W1", "W2", "A5", "A6"]],
+		["movie:parameter:without_genres", ["U1"]],
+		["tv:parameter:with_networks", ["T2"]],
+		["tv:parameter:with_status", ["U5"]],
+		["tv:parameter:with_type", ["U6"]],
+		["movie:sort:original_title.asc", ["S3"]],
+		["movie:sort:popularity.desc", ["S1"]],
+		["movie:sort:primary_release_date.desc", ["S4C"]],
+		["movie:sort:revenue.desc", ["S2"]],
+		["tv:sort:first_air_date.desc", ["S6C"]],
+		["tv:sort:name.asc", ["S5"]],
+	]);
+	for (const entry of matrix.entries) {
+		assert.deepEqual(entry.ownerControlledResultCases, expectedControlledCases.get(entry.key) ?? [], entry.key);
+	}
+	const officialRowCases = new Set(matrix.entries.flatMap((entry) => entry.ownerControlledResultCases));
+	for (const caseCode of controlledEvidence.nonOfficialOrOffMediaCases) {
+		assert.equal(officialRowCases.has(caseCode), false, `${caseCode} must remain a separate manual case`);
+	}
 
 	const ownerVisibleFields = new Set(matrix.entries
 		.filter((entry) => entry.recordType === "parameter" && entry.ownerWindowsEditorVisible)
@@ -257,7 +306,7 @@ test("fixtures are valid ordered native TMDB DISCOVER collections without extern
 	assert.ok(crossComponentComparisons.includes("U1 Movie candidate withoutGenres 27 -> M1 Movie baseline"));
 	const manualReadme = readText("manual-tests/tmdb-discover/README.md");
 	assert.match(manualReadme, /component alone only for preservation-only observations/i);
-	assert.match(manualReadme, /00-complete-audit\.json` for every cross-component comparison/i);
+	assert.match(manualReadme, /one complete fixture for every cross-component comparison/i);
 	assert.match(manualReadme, /essential U1/i);
 
 	assert.deepEqual(manifest.completeAuditFixture.orderedComponentPaths, manifest.fixtures.map((fixture) => fixture.path));
@@ -266,7 +315,7 @@ test("fixtures are valid ordered native TMDB DISCOVER collections without extern
 	assert.equal(manifest.completeAuditFixture.sourceCount, manifest.fixtureSourceCount);
 	assert.match(manifest.completeAuditFixture.usage, /Mobile requires the combined fixture whenever compareTo crosses components/i);
 	assert.match(manifest.clientImportBehavior.nuvioTv, /upserts collections by collection ID/i);
-	assert.match(manifest.clientImportBehavior.nuvioMobile, /replaces the current collection list/i);
+	assert.match(manifest.clientImportBehavior.nuvioMobile, /one of the two complete fixtures/i);
 
 	const expectedCompleteAudit = componentFixtures.flatMap((fixture) => fixture);
 	assert.deepEqual(completeAudit, expectedCompleteAudit);
@@ -298,6 +347,43 @@ test("fixtures are valid ordered native TMDB DISCOVER collections without extern
 	}
 	assert.doesNotMatch(completeAuditText, /https?:\/\//i);
 	assert.doesNotMatch(completeAuditText, /(?:artwork|trakt|addonId|catalogId)/i);
+
+	assert.equal(manifest.oneSourcePerFolderAuditFixture.generatedFrom, "completeAuditFixture.orderedComponentPaths");
+	assert.equal(manifest.oneSourcePerFolderAuditFixture.collectionCount, 4);
+	assert.equal(manifest.oneSourcePerFolderAuditFixture.folderCount, 29);
+	assert.equal(manifest.oneSourcePerFolderAuditFixture.sourceCount, 29);
+	const sourceCode = (source) => {
+		const match = source.title.match(/^([A-Z]\d+C?)\b/);
+		assert.ok(match, source.title);
+		return match[1].toLowerCase();
+	};
+	const expectedOneSourcePerFolder = completeAudit.map((collection) => ({
+		...collection,
+		folders: collection.folders.flatMap((folder) => folder.sources.map((source) => ({
+			...folder,
+			id: `${folder.id}-${sourceCode(source)}`,
+			title: source.title,
+			sources: [source],
+			catalogSources: [],
+		}))),
+	}));
+	assert.deepEqual(oneSourcePerFolderAudit, expectedOneSourcePerFolder);
+	assert.equal(oneSourcePerFolderText, `${JSON.stringify(expectedOneSourcePerFolder, null, 2)}\n`);
+	assert.equal(oneSourcePerFolderAudit.length, 4);
+	assert.equal(oneSourcePerFolderAudit.flatMap((collection) => collection.folders).length, 29);
+	const alternateSources = allFixtureSources(oneSourcePerFolderAudit);
+	assert.equal(alternateSources.length, 29);
+	assert.deepEqual(alternateSources, completeSources);
+	const alternateFolders = oneSourcePerFolderAudit.flatMap((collection) => collection.folders);
+	assert.ok(alternateFolders.every((folder) => folder.sources.length === 1));
+	assert.ok(alternateFolders.every((folder) => folder.title === folder.sources[0].title));
+	assert.ok(alternateFolders.every((folder) => folder.catalogSources.length === 0));
+	const alternateFolderIds = alternateFolders.map((folder) => folder.id);
+	assert.equal(new Set(alternateFolderIds).size, 29);
+	const alternateValidation = validateNuvioContract(oneSourcePerFolderAudit, { mode: "canonical" });
+	assert.deepEqual(alternateValidation.errors, [], manifest.oneSourcePerFolderAuditFixture.path);
+	assert.doesNotMatch(oneSourcePerFolderText, /https?:\/\//i);
+	assert.doesNotMatch(oneSourcePerFolderText, /(?:artwork|trakt|addonId|catalogId)/i);
 });
 
 test("results template represents every fixture source exactly once", () => {
@@ -307,7 +393,142 @@ test("results template represents every fixture source exactly once", () => {
 		assert.equal(template.split(title).length - 1, 1, title);
 	}
 	assert.equal(new Set(titles).size, titles.length);
-	assert.match(template, /\| S1 Movie UI sort popularity\.desc \| essential \|/);
+	assert.match(template, /### S1 Movie UI sort popularity\.desc/);
+	assert.doesNotMatch(template, /TV import accepted.*Mobile import accepted/i);
+});
+
+test("owner results contain two complete version-scoped runs and exact pipeline evidence", () => {
+	assert.equal(ownerResults.evidenceDate, "2026-07-23");
+	assert.equal(ownerResults.issue.number, 47);
+	assert.equal(ownerResults.contractCountsChanged, false);
+	assert.deepEqual(ownerResults.screenshots, {
+		suppliedInOwnerConversation: true,
+		committed: false,
+		note: "Screenshots supported the observations but no screenshot files or paths are committed.",
+	});
+	assert.equal(ownerResults.completedRuns.length, 2);
+	assert.equal(ownerResults.completedRuns.some((run) => /current.*mobile/i.test(run.evidenceScope)), false);
+
+	const manifestSources = manifest.fixtures.flatMap((fixture) => fixture.sources);
+	const expectedTitles = manifestSources.map((source) => source.title);
+	const titleToCode = new Map(expectedTitles.map((title) => [title, title.match(/^([A-Z]\d+C?)\b/)[1]]));
+	const expectedCodes = expectedTitles.map((title) => titleToCode.get(title));
+	const expectedCompareCodes = new Map(manifestSources.map((source) => [
+		titleToCode.get(source.title),
+		source.compareTo === null ? null : titleToCode.get(source.compareTo),
+	]));
+
+	for (const run of ownerResults.completedRuns) {
+		assert.equal(run.testDate, "2026-07-23");
+		assert.equal(run.sourceCount, 29);
+		assert.equal(run.observations.length, 29);
+		assert.deepEqual(run.observations.map((observation) => observation.code), expectedCodes);
+		assert.deepEqual(run.observations.map((observation) => observation.title), expectedTitles);
+		assert.equal(new Set(run.observations.map((observation) => observation.code)).size, 29);
+		for (const observation of run.observations) {
+			assert.equal(observation.compareTo, expectedCompareCodes.get(observation.code), `${run.clientId} ${observation.code}`);
+			assert.ok(typeof observation.verdict === "string" && observation.verdict.length > 0);
+			assert.ok(typeof observation.confidence === "string" && observation.confidence.length > 0);
+			assert.ok(
+				observation.visibleResultsRef === null || Array.isArray(ownerResults.resultSets[observation.visibleResultsRef]),
+				`${run.clientId} ${observation.code} visible results`,
+			);
+			if (observation.visibleResultsRef === null) assert.ok(typeof observation.visibleState === "string");
+		}
+	}
+
+	const desktop = ownerResults.completedRuns[0];
+	assert.equal(desktop.clientId, "nuvio-desktop-windows");
+	assert.equal(desktop.version, "0.1.14-alpha");
+	assert.equal(desktop.build, "14");
+	assert.equal(desktop.operatingSystem, "Windows 11 Home 25H2");
+	assert.equal(desktop.operatingSystemBuild, "26200.8875");
+	assert.deepEqual([desktop.importShape.collectionCount, desktop.importShape.folderCount, desktop.importShape.sourceCount], [4, 4, 29]);
+	assert.deepEqual(desktop.exportObservation.unknownNestedFilterFields.affectedCodes, ["U1", "U2", "U3", "U4", "U5", "U6"]);
+	assert.equal(desktop.exportObservation.unknownNestedFilterFields.preserved, false);
+	assert.equal(desktop.exportObservation.rawSortValuesPreserved, true);
+
+	const retainedIos = ownerResults.completedRuns[1];
+	assert.equal(retainedIos.clientId, "retained-official-nuvio-ios");
+	assert.equal(retainedIos.version, "1.2.23");
+	assert.equal(retainedIos.build, "96");
+	assert.match(retainedIos.evidenceScope, /historical-retained-official-build/);
+	assert.match(retainedIos.installationContext, /No sideload was used/);
+	assert.ok(retainedIos.limitations.some((limitation) => /does not prove current or future NuvioMobile behavior/.test(limitation)));
+	assert.deepEqual([
+		retainedIos.importShape.auditedFixture.collectionCount,
+		retainedIos.importShape.auditedFixture.folderCount,
+		retainedIos.importShape.auditedFixture.sourceCount,
+	], [4, 29, 29]);
+	assert.equal(retainedIos.copyAndExportObservation.unknownNestedFilterFieldsPreserved, true);
+	assert.equal(retainedIos.copyAndExportObservation.sourceOrFolderLossObserved, false);
+	for (const code of ["U1", "U2", "U3", "U4", "U5", "U6"]) {
+		assert.deepEqual(retainedIos.observations.find((item) => item.code === code).notes, [
+			"Preserved but not visibly applied on retained official iOS 1.2.23 (96).",
+		]);
+	}
+
+	const desktopS3 = desktop.observations.find((item) => item.code === "S3");
+	const iosS3 = retainedIos.observations.find((item) => item.code === "S3");
+	assert.equal(desktopS3.visibleResultsRef, null);
+	assert.equal(desktopS3.visibleState, "endless spinner; no content and no error");
+	assert.equal(desktopS3.verdict, "desktop-alpha-runtime-failure");
+	assert.deepEqual(ownerResults.resultSets[iosS3.visibleResultsRef], [
+		"Sr.",
+		"Wuthering Heights",
+		"#1 Cheerleader Camp",
+		"#AnneFrank: Parallel Stories",
+		"#Horror",
+	]);
+	assert.equal(iosS3.nextVisibleTitle, "#Iamhere");
+	assert.equal(iosS3.verdict, "visible-sort-order-confirmed");
+
+	assert.deepEqual(ownerResults.pendingRuns.map((run) => [run.clientId, run.sourceCountObserved, run.sourceCountPlanned, run.status]), [
+		["nuviotv-device", 0, 29, "pending"],
+	]);
+	assert.deepEqual(ownerResults.directTmdbResearch, {
+		status: "pending",
+		plannedRequestCount: 60,
+		hardRequestCap: 60,
+		liveRequestsSent: 0,
+	});
+
+	assert.equal(ownerResults.accountManagementProfileExport.attribution.startsWith("The responsible layer was not isolated"), true);
+	assert.deepEqual(ownerResults.accountManagementProfileExport.fieldRemovals, [
+		{ code: "W1", removedPaths: ["filters.withWatchProviders"] },
+		{ code: "W2", removedPaths: ["filters.watchRegion", "filters.withWatchProviders"] },
+		{ code: "A5", removedPaths: ["filters.watchRegion", "filters.withWatchProviders"] },
+		{ code: "A6", removedPaths: ["filters.watchRegion", "filters.withWatchProviders"] },
+		{ code: "U1", removedPaths: ["filters.withoutGenres"] },
+		{ code: "U2", removedPaths: ["filters.withRuntimeGte"] },
+		{ code: "U3", removedPaths: ["filters.voteCountLte"] },
+		{ code: "U4", removedPaths: ["filters.withCast"] },
+		{ code: "U5", removedPaths: ["filters.withStatus"] },
+		{ code: "U6", removedPaths: ["filters.withType"] },
+	]);
+	assert.deepEqual(ownerResults.accountManagementProfileExport.sortChanges, [
+		{ code: "S2", from: "revenue.desc", to: "popularity.desc" },
+		{ code: "S3", from: "original_title.asc", to: "popularity.desc" },
+		{ code: "S5", from: "name.asc", to: "first_air_date.desc" },
+		{ code: "S8", from: "definitely_invalid.desc", to: "popularity.desc" },
+	]);
+	assert.deepEqual(ownerResults.accountManagementProfileExport.sortsRetained, [
+		{ code: "S4", value: "first_air_date.desc" },
+		{ code: "S4C", value: "primary_release_date.desc" },
+		{ code: "S6", value: "primary_release_date.desc" },
+		{ code: "S6C", value: "first_air_date.desc" },
+		{ code: "S7", value: "original" },
+	]);
+
+	const ownerEvidenceText = [
+		readText("manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md"),
+		readText("manual-tests/tmdb-discover/owner-results-2026-07-23.json"),
+	].join("\n");
+	assert.doesNotMatch(ownerEvidenceText, /[A-Za-z]:\\|\/Users\/|\/home\//);
+	assert.doesNotMatch(ownerEvidenceText, /"(?:screenshotPath|profileId|accountId|userId|email)"\s*:/i);
+	const committedImageFiles = fs.readdirSync(manualDir, { recursive: true })
+		.filter((entry) => typeof entry === "string" && /\.(?:png|jpe?g|webp|gif)$/i.test(entry));
+	assert.deepEqual(committedImageFiles, []);
 });
 
 test("direct TMDB plan is bounded, deterministic, and covers required research cases", () => {
@@ -419,12 +640,15 @@ test("committed research evidence contains no credential-shaped values", () => {
 		"manual-tests/tmdb-discover/fixture-manifest.json",
 		"manual-tests/tmdb-discover/README.md",
 		"manual-tests/tmdb-discover/RESULTS_TEMPLATE.md",
+		"manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md",
+		"manual-tests/tmdb-discover/owner-results-2026-07-23.json",
 		"scripts/research-tmdb-discover.mjs",
 		"scripts/generate-tmdb-discover-compatibility.mjs",
 		"scripts/lib/tmdb-discover-compatibility.mjs",
 		"tests/tmdb-discover-compatibility.test.mjs",
 		"docs/v2/BUILDER_KNOWLEDGE.md",
 		completeAuditRelativePath,
+		oneSourcePerFolderRelativePath,
 		...manifest.fixtures.map((fixture) => `manual-tests/tmdb-discover/${fixture.path}`),
 	];
 	const secretPatterns = [

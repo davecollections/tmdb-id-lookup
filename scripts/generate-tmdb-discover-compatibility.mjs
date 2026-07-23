@@ -9,6 +9,24 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const completeAuditFixture = manifest.completeAuditFixture.orderedComponentPaths.flatMap((relativePath) => (
 	JSON.parse(fs.readFileSync(path.join(rootDir, "manual-tests", "tmdb-discover", relativePath), "utf8"))
 ));
+
+function sourceCode(source) {
+	const match = source.title.match(/^([A-Z]\d+C?)\b/);
+	if (!match) throw new Error(`Fixture source title has no stable test code: ${source.title}`);
+	return match[1].toLowerCase();
+}
+
+const oneSourcePerFolderAuditFixture = completeAuditFixture.map((collection) => ({
+	...collection,
+	folders: collection.folders.flatMap((folder) => folder.sources.map((source) => ({
+		...folder,
+		id: `${folder.id}-${sourceCode(source)}`,
+		title: source.title,
+		sources: [source],
+		catalogSources: [],
+	}))),
+}));
+
 const outputs = [
 	{
 		relativePath: MATRIX_PATH,
@@ -17,6 +35,10 @@ const outputs = [
 	{
 		relativePath: `manual-tests/tmdb-discover/${manifest.completeAuditFixture.path}`,
 		expected: `${JSON.stringify(completeAuditFixture, null, 2)}\n`,
+	},
+	{
+		relativePath: `manual-tests/tmdb-discover/${manifest.oneSourcePerFolderAuditFixture.path}`,
+		expected: `${JSON.stringify(oneSourcePerFolderAuditFixture, null, 2)}\n`,
 	},
 ];
 const check = process.argv.includes("--check");

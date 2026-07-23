@@ -15,9 +15,17 @@
     "sourceCount": 29,
     "usage": "Import once for a complete NuvioTV or NuvioMobile audit; component fixtures are targeted reruns only, and Mobile requires the combined fixture whenever compareTo crosses components."
   },
+  "oneSourcePerFolderAuditFixture": {
+    "path": "fixtures/00-complete-audit-one-source-per-folder.json",
+    "generatedFrom": "completeAuditFixture.orderedComponentPaths",
+    "collectionCount": 4,
+    "folderCount": 29,
+    "sourceCount": 29,
+    "usage": "Alternate presentation-only fixture for a client that imports the combined collections but does not expose multiple source tabs. It preserves every collection and source object in order while placing each source in its own folder."
+  },
   "clientImportBehavior": {
     "nuvioTv": "Imports and upserts collections by collection ID, so the four audit collections can coexist.",
-    "nuvioMobile": "Replaces the current collection list with the newly imported list, so a complete audit requires the combined fixture."
+    "nuvioMobile": "Replaces the current collection list with the newly imported list, so a complete audit requires one of the two complete fixtures. Use the one-source-per-folder variant only when the client does not expose multiple source tabs."
   },
   "fixtures": [
     {

@@ -3,8 +3,8 @@
   "reviewedDate": "2026-07-23",
   "generatedBy": "scripts/generate-tmdb-discover-compatibility.mjs",
   "startingOriginMainSha": "33fe0fb70cb11f840215dc7538086b82059fb759",
-  "scope": "Official TMDB v3 Discover parameters and sort values compared with current NuvioTV, NuvioMobile, and local builder contracts.",
-  "evidenceWarning": "Static code or HTTP 200 is not proof that a filter changes visible results. No direct TMDB or device result-effect evidence was produced during this audit.",
+  "scope": "Official TMDB v3 Discover parameters and sort values compared with current pinned NuvioTV, NuvioMobile, local builder contracts, and version-specific owner device observations.",
+  "evidenceWarning": "Static code, preservation, HTTP 200, or a visible list alone does not identify the responsible request/runtime layer. Owner-controlled observations cover one Desktop alpha build and one retained historical iOS build; no direct TMDB or NuvioTV device run was produced.",
   "counts": {
     "movieOfficialParameters": 38,
     "tvOfficialParameters": 33,
@@ -22,9 +22,7 @@
     "movieOfficialFilterContextParametersNotIndependentlyControllable": 22,
     "tvOfficialFilterContextParametersNotIndependentlyControllable": 15,
     "ordinaryDiscoverJsonFieldsWithConditionalOrMediaMapping": 5,
-    "priorRepositoryManualFilterCases": 1,
-    "issue47ControlledManualFilterEffects": 0,
-    "issue47ControlledManualSortEffects": 0
+    "priorRepositoryManualFilterCases": 1
   },
   "clientSnapshots": {
     "nuvioTv": {
@@ -95,17 +93,66 @@
       "placeholderWarning": "Comma-separated placeholders are not treated as official delimiter semantics without TMDB evidence."
     }
   },
+  "ownerControlledDeviceEvidence": {
+    "sourceReference": "owner-results-2026-07-23",
+    "evidenceDate": "2026-07-23",
+    "completedRuns": [
+      {
+        "client": "Nuvio Desktop",
+        "version": "0.1.14-alpha",
+        "build": "14",
+        "platform": "Windows 11 Home 25H2 build 26200.8875",
+        "observedSources": 29,
+        "plannedSources": 29,
+        "importShape": "4 collections / 4 folders / 29 sources with multiple source tabs",
+        "scope": "version-specific alpha-build evidence"
+      },
+      {
+        "client": "Retained official Nuvio iOS",
+        "version": "1.2.23",
+        "build": "96",
+        "platform": "iOS",
+        "observedSources": 29,
+        "plannedSources": 29,
+        "importShape": "4 collections / 29 one-source folders / 29 sources",
+        "scope": "historical frozen-build evidence; not current/future NuvioMobile proof"
+      }
+    ],
+    "pendingRuns": [
+      {
+        "client": "NuvioTV",
+        "targetVersion": "0.7.19-beta",
+        "observedSources": 0,
+        "plannedSources": 29,
+        "status": "pending-impractical-device-run"
+      }
+    ],
+    "nonOfficialOrOffMediaCases": [
+      "D1",
+      "S4",
+      "S6",
+      "S7",
+      "S8"
+    ],
+    "accountManagementProfileExportObserved": true,
+    "accountManagementPipelineAttribution": "not-isolated",
+    "limitations": [
+      "Visible results do not prove the exact outbound query.",
+      "The retained iOS build is historical and does not upgrade pinned current Mobile behavior.",
+      "Off-media aliases, unofficial values, and invalid values are manual cases rather than official matrix rows."
+    ]
+  },
   "liveResearch": {
     "tokenAvailable": false,
     "requestsSent": 0,
     "plannedRequests": 60,
     "hardRequestCap": 60,
-    "status": "pending-local-token-and-owner-device-evidence"
+    "status": "pending-local-token"
   },
   "clientDivergences": [
     {
       "key": "movie-with-networks",
-      "description": "Both clients deserialize withNetworks on Movie DISCOVER. NuvioTV omits it; NuvioMobile sends undocumented with_networks to /discover/movie. Runtime handling is pending."
+      "description": "Both pinned current clients deserialize withNetworks on Movie DISCOVER. NuvioTV omits it; NuvioMobile sends undocumented with_networks to /discover/movie. D1 matched the Movie baseline on Desktop alpha and retained iOS, but the historical iOS observation does not prove its request path or current Mobile behavior."
     },
     {
       "key": "network-source-hidden-filters",
@@ -113,7 +160,7 @@
     },
     {
       "key": "unknown-filter-preservation",
-      "description": "NuvioTV typed import drops unknown keys. NuvioMobile accepts unknown keys but its shallow filters overlay loses them on import/persist/export/sync. The local builder preserves them on unrelated edits."
+      "description": "NuvioTV typed import and Desktop alpha import/export drop unknown nested filter keys. Pinned current NuvioMobile source accepts then loses them through its shallow filters overlay, while retained official iOS 1.2.23 (96) preserved all six in Copy/Export without visibly applying them. The local builder preserves them on unrelated edits."
     },
     {
       "key": "original-sort",
@@ -287,6 +334,16 @@
       "reviewedDate": "2026-07-23",
       "versionPinned": false,
       "note": "The exact app version was not captured; this supports visible editor controls and wording, not version-pinned request or runtime behavior."
+    },
+    "owner-results-2026-07-23": {
+      "title": "Owner-controlled TMDB Discover client results",
+      "paths": [
+        "manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md",
+        "manual-tests/tmdb-discover/owner-results-2026-07-23.json"
+      ],
+      "evidenceType": "owner-controlled-version-specific-visible-results-and-pipeline-observations",
+      "reviewedDate": "2026-07-23",
+      "note": "Covers 29/29 sources on Nuvio Desktop 0.1.14-alpha (14) and 29/29 on retained official iOS 1.2.23 (96). The iOS evidence is historical and does not prove current/future NuvioMobile behavior; NuvioTV device and direct TMDB evidence remain pending."
     }
   },
   "entries": [
@@ -317,6 +374,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -410,6 +468,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -503,6 +562,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -596,6 +656,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -688,6 +749,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -780,6 +842,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -871,6 +934,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -961,6 +1025,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1049,6 +1114,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1139,6 +1205,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1229,6 +1296,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1319,6 +1387,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1409,6 +1478,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1499,6 +1569,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1604,6 +1675,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1693,6 +1765,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1783,6 +1856,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1873,6 +1947,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -1962,6 +2037,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "U3"
+      ],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -1990,7 +2068,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "official-tmdb-only",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Official OAS type is float despite count semantics.",
         "No current Nuvio camelCase JSON field exists; no future field name is invented here.",
@@ -2023,7 +2101,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -2057,6 +2136,11 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "W2",
+        "A5",
+        "A6"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2085,7 +2169,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "transformed-or-defaulted",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Recognized imported values round-trip on unrelated edits; deliberately editing or clearing this same recognized field can replace/remove it, without removing other unknown keys.",
         "NuvioTV typed import drops unknown filter keys; NuvioMobile accepts then loses unknown nested filter keys during its shallow preservation merge."
@@ -2118,7 +2202,8 @@
         "builder-migration",
         "builder-ui",
         "builder-contract-tests",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -2146,6 +2231,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "U4"
+      ],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2174,7 +2262,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "official-tmdb-only",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "No current Nuvio camelCase JSON field exists; no future field name is invented here.",
         "Unsupported/unknown raw keys survive unrelated edits, including edits to recognized filters; source replacement or removal loses their raw evidence.",
@@ -2206,7 +2294,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -2236,6 +2325,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2324,6 +2414,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2414,6 +2505,11 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "M2",
+        "A1",
+        "A2"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2442,7 +2538,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "code-supported-both-manual-pending",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Recognized imported values round-trip on unrelated edits; deliberately editing or clearing this same recognized field can replace/remove it, without removing other unknown keys.",
         "NuvioTV typed import drops unknown filter keys; NuvioMobile accepts then loses unknown nested filter keys during its shallow preservation merge."
@@ -2474,7 +2570,8 @@
         "builder-migration",
         "builder-ui",
         "builder-contract-tests",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -2503,6 +2600,10 @@
       "ownerWindowsEditorVisible": true,
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
+      ],
+      "ownerControlledResultCases": [
+        "A3",
+        "A4"
       ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
@@ -2534,7 +2635,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "code-supported-both-manual-pending",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Recognized imported values round-trip on unrelated edits; deliberately editing or clearing this same recognized field can replace/remove it, without removing other unknown keys.",
         "NuvioTV typed import drops unknown filter keys; NuvioMobile accepts then loses unknown nested filter keys during its shallow preservation merge."
@@ -2567,7 +2668,8 @@
         "builder-ui",
         "builder-contract-tests",
         "builder-knowledge",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -2597,6 +2699,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2687,6 +2790,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -2775,6 +2879,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2870,6 +2975,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2960,6 +3066,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "U2"
+      ],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -2988,7 +3097,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "official-tmdb-only",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "No current Nuvio camelCase JSON field exists; no future field name is invented here.",
         "Unsupported/unknown raw keys survive unrelated edits, including edits to recognized filters; source replacement or removal loses their raw evidence.",
@@ -3020,7 +3129,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -3048,6 +3158,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3144,6 +3255,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3237,6 +3349,12 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "W1",
+        "W2",
+        "A5",
+        "A6"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -3265,7 +3383,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "transformed-or-defaulted",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Recognized imported values round-trip on unrelated edits; deliberately editing or clearing this same recognized field can replace/remove it, without removing other unknown keys.",
         "NuvioTV typed import drops unknown filter keys; NuvioMobile accepts then loses unknown nested filter keys during its shallow preservation merge."
@@ -3298,7 +3416,8 @@
         "builder-migration",
         "builder-ui",
         "builder-contract-tests",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -3326,6 +3445,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3414,6 +3534,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "U1"
+      ],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3442,7 +3565,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "official-tmdb-only",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "No current Nuvio camelCase JSON field exists; no future field name is invented here.",
         "Unsupported/unknown raw keys survive unrelated edits, including edits to recognized filters; source replacement or removal loses their raw evidence.",
@@ -3474,7 +3597,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -3502,6 +3626,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3590,6 +3715,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3681,6 +3807,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -3770,6 +3897,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3858,6 +3986,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -3948,6 +4077,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4038,6 +4168,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4128,6 +4259,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4219,6 +4351,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4311,6 +4444,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4402,6 +4536,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4492,6 +4627,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4583,6 +4719,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4685,6 +4822,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4774,6 +4912,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -4865,6 +5004,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -4955,6 +5095,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5045,6 +5186,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5134,6 +5276,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5229,6 +5372,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5320,6 +5464,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5410,6 +5555,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5500,6 +5646,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5590,6 +5737,9 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "T2"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5618,7 +5768,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "code-supported-both-manual-pending",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Official docs do not document comma or pipe composition.",
         "Recognized imported values round-trip on unrelated edits; deliberately editing or clearing this same recognized field can replace/remove it, without removing other unknown keys.",
@@ -5651,7 +5801,8 @@
         "builder-migration",
         "builder-ui",
         "builder-contract-tests",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -5681,6 +5832,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5771,6 +5923,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -5859,6 +6012,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -5947,6 +6101,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6042,6 +6197,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "U5"
+      ],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6070,7 +6228,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "client-divergence",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Current Discover docs do not define the numeric labels.",
         "No current Nuvio camelCase JSON field exists; no future field name is invented here.",
@@ -6103,7 +6261,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -6139,6 +6298,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6232,6 +6392,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6321,6 +6482,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6409,6 +6571,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6497,6 +6660,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6585,6 +6749,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6682,6 +6847,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "U6"
+      ],
       "builderCurrentlyRecognizes": false,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "rawImported-only",
@@ -6710,7 +6878,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "official-tmdb-only",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Current Discover docs do not define the numeric labels.",
         "No current Nuvio camelCase JSON field exists; no future field name is invented here.",
@@ -6743,7 +6911,8 @@
         "builder-validation",
         "builder-migration",
         "builder-ui",
-        "builder-contract-tests"
+        "builder-contract-tests",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -6773,6 +6942,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "S3"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6799,7 +6971,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "sort-pass-through",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Raw-JSON-only in both clients' current Discover editor.",
         "Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence."
@@ -6818,7 +6990,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -6848,6 +7021,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -6923,6 +7097,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7000,6 +7175,9 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "S1"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7026,7 +7204,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "sort-pass-through",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Offered in both clients' current Discover editor.",
         "Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence."
@@ -7046,7 +7224,8 @@
         "builder-fields",
         "builder-domain-model",
         "builder-overlay",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -7076,6 +7255,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7151,6 +7331,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "S2"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7177,7 +7360,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "sort-pass-through",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Raw-JSON-only in both clients' current Discover editor.",
         "Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence."
@@ -7196,7 +7379,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -7226,6 +7410,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7303,6 +7488,9 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "S4C"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7329,7 +7517,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "sort-pass-through",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Offered in both clients' current Discover editor.",
         "Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence."
@@ -7349,7 +7537,8 @@
         "builder-fields",
         "builder-domain-model",
         "builder-overlay",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -7379,6 +7568,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7454,6 +7644,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7529,6 +7720,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7606,6 +7798,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7682,6 +7875,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7759,6 +7953,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7835,6 +8030,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7912,6 +8108,9 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [
+        "S6C"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -7938,7 +8137,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "sort-pass-through",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Offered in both clients' current Discover editor.",
         "Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence."
@@ -7958,7 +8157,8 @@
         "builder-fields",
         "builder-domain-model",
         "builder-overlay",
-        "owner-windows-custom-editor-screenshots"
+        "owner-windows-custom-editor-screenshots",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -7988,6 +8188,9 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [
+        "S5"
+      ],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8014,7 +8217,7 @@
         "nuviomobile-preserver"
       ],
       "classification": "sort-pass-through",
-      "confidence": "high-static-contract; runtime-effect-pending",
+      "confidence": "high-static-contract; version-specific-owner-observation; current-tv-mobile-and-direct-effect-pending",
       "notes": [
         "Raw-JSON-only in both clients' current Discover editor.",
         "Arbitrary nonblank strings also pass through; invalid or cross-media runtime behavior needs direct TMDB evidence."
@@ -8033,7 +8236,8 @@
         "nuviomobile-preserver",
         "builder-fields",
         "builder-domain-model",
-        "builder-overlay"
+        "builder-overlay",
+        "owner-results-2026-07-23"
       ]
     },
     {
@@ -8063,6 +8267,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8138,6 +8343,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8213,6 +8419,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8288,6 +8495,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8365,6 +8573,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8441,6 +8650,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8518,6 +8728,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8594,6 +8805,7 @@
       "nuvioMobileEditorOffers": false,
       "ownerWindowsEditorVisible": false,
       "ownerWindowsEditorEvidence": [],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
@@ -8671,6 +8883,7 @@
       "ownerWindowsEditorEvidence": [
         "owner-windows-custom-editor-screenshots"
       ],
+      "ownerControlledResultCases": [],
       "builderCurrentlyRecognizes": true,
       "builderCurrentlyEditable": false,
       "builderImportedRepresentation": "editable-and-rawImported",
