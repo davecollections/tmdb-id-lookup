@@ -10,12 +10,17 @@ Before v2, builder, Nuvio schema, or export work, read:
 - `docs/v2/BUILDER_KNOWLEDGE.md`
 - the relevant GitHub issue
 
-Repository evidence and confirmed manual tests override old assumptions.
+Before v2 product, UX, startup, template, recipe, Search/Add, presentation, or project-workflow work, also read:
+
+- `docs/v2/BUILDER_PRODUCT_PLAN.md`
+- `docs/v2/PROJECT_WORKFLOW.md`
+
+`BUILDER_PRODUCT_PLAN.md` is the durable product-direction source. `PROJECT_WORKFLOW.md` is the durable Dave/ChatGPT/Codex process. Repository implementation, deterministic tests, and confirmed manual evidence override obsolete plans. Do not silently treat an open product decision as a confirmed requirement.
 
 ## Product boundaries
 
 - v1 is the stable TMDB ID lookup and Nuvio JSON export application at the repository root.
-- v2 is planned as a mobile-first visual Nuvio Collection Builder powered primarily by TMDB.
+- v2 is the active, isolated mobile-first visual Nuvio Collection Builder under `/builder/`, powered primarily by TMDB. It is not yet advertised as a released replacement for v1.
 - Existing lookup and copy-ID workflows remain part of the product.
 - Do not rewrite or remove stable v1 features merely to modernise the code.
 - React/Vite under `/builder/` is the confirmed builder direction; keep domain, parsing, validation, migration, serialization, and ID logic framework-independent.
@@ -24,9 +29,13 @@ Repository evidence and confirmed manual tests override old assumptions.
 ## Git and issue workflow
 
 - Never work directly on `main`.
-- Each meaningful task requires a GitHub issue and a dedicated branch from an updated `main`.
+- Discussion, discovery, comparison, and read-only investigation do not require a GitHub issue.
+- Before making a meaningful repository change, create or approve one focused GitHub issue and one dedicated branch from updated `main`.
+- A substantial investigation may use an issue for durable tracking when helpful, but an issue is not required merely to explore an idea.
+- Use one issue per branch. Inspect unexpected main commits, including legitimate automated maintenance, before synchronising them into task work.
 - Keep work limited to the approved issue; do not include unrelated cleanup.
 - Do not open a pull request unless Dave asks.
+- After Dave authorises it, a pull request is the normal final review gate for meaningful v2 work.
 - Do not merge, close the issue, or delete the branch until Dave explicitly approves after review and testing.
 - Stop and report conflicts, unexpected local changes, or ambiguous scope.
 - Use clear commits and report the final commit hash.
@@ -78,6 +87,7 @@ For future builder work:
 - Follow a modern, dark, sleek direction with restrained TMDB-inspired blue, cyan, and green accents.
 - The visual direction is not warm or cosy.
 - Do not copy reference-site branding, wording, or layouts.
+- For long-running phases, prepare a handover before context loss rather than relying on chat memory.
 
 ## Verification
 
