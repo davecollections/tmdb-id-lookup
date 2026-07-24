@@ -1,0 +1,209 @@
+[
+  {
+    "id": "canonical-native",
+    "title": "Canonical Native Sources",
+    "pinToTop": true,
+    "viewMode": "ROWS",
+    "showAllTab": true,
+    "folders": [
+      {
+        "id": "native-discovery",
+        "title": "Lists and Discover",
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "coverEmoji": "🎬",
+        "focusGifUrl": "",
+        "heroVideoUrl": null,
+        "titleLogoUrl": "https://example.invalid/native-title-logo.png",
+        "coverImageUrl": "https://example.invalid/native-cover.webp",
+        "focusGifEnabled": false,
+        "heroBackdropUrl": "https://example.invalid/native-backdrop.webp",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Movie List",
+            "tmdbSourceType": "LIST",
+            "tmdbId": 1101,
+            "mediaType": "MOVIE"
+          },
+          {
+            "provider": "tmdb",
+            "title": "TV List",
+            "tmdbSourceType": "LIST",
+            "tmdbId": "1102",
+            "mediaType": "TV"
+          },
+          {
+            "provider": "tmdb",
+            "title": "Movie Discover",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": "28",
+              "withKeywords": "15097"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "TV Discover",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withNetworks": "213",
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "native-entities",
+        "title": "Collections and People",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Movie Collection",
+            "tmdbSourceType": "COLLECTION",
+            "tmdbId": 2101,
+            "mediaType": "MOVIE"
+          },
+          {
+            "provider": "tmdb",
+            "title": "Movie Company",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 3101,
+            "mediaType": "MOVIE"
+          },
+          {
+            "provider": "tmdb",
+            "title": "TV Network",
+            "tmdbSourceType": "NETWORK",
+            "tmdbId": 4101,
+            "mediaType": "TV"
+          },
+          {
+            "provider": "tmdb",
+            "title": "Person Movies",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 5101,
+            "mediaType": "MOVIE"
+          },
+          {
+            "provider": "tmdb",
+            "title": "Person TV",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 5101,
+            "mediaType": "TV"
+          },
+          {
+            "provider": "tmdb",
+            "title": "Director Movies",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 6101,
+            "mediaType": "MOVIE"
+          },
+          {
+            "provider": "tmdb",
+            "title": "Director TV",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 6101,
+            "mediaType": "TV"
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  },
+  {
+    "id": "canonical-addons",
+    "title": "Canonical Addon Sources",
+    "pinToTop": false,
+    "viewMode": "TABBED",
+    "showAllTab": false,
+    "folders": [
+      {
+        "id": "addon-catalogs",
+        "title": "Addon Catalogs",
+        "hideTitle": true,
+        "tileShape": "LANDSCAPE",
+        "sources": [
+          {
+            "provider": "addon",
+            "title": "Popular Horror",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "popular-movies",
+            "genre": "Horror"
+          },
+          {
+            "provider": "addon",
+            "title": "Trending Series",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "series",
+            "catalogId": "trending-series"
+          },
+          {
+            "id": "source-family-a",
+            "provider": "addon",
+            "title": "Family Movies A",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "family-movies",
+            "addonName": "Nuvio Catalog Addon",
+            "manifestUrl": "https://example.invalid/catalog-addon/manifest.json",
+            "showInHome": false,
+            "unknownSourceOrder": "first"
+          },
+          {
+            "id": "source-family-b",
+            "provider": "addon",
+            "title": "Family Movies B",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "family-movies",
+            "addonName": "Nuvio Catalog Addon",
+            "manifestUrl": "https://example.invalid/catalog-addon/manifest.json",
+            "showInHome": false,
+            "unknownSourceOrder": "second"
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "popular-movies",
+            "genre": "Horror"
+          },
+          {
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "series",
+            "catalogId": "trending-series"
+          },
+          {
+            "id": "projection-family-a",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "family-movies",
+            "addonName": "Nuvio Catalog Addon",
+            "manifestUrl": "https://example.invalid/catalog-addon/manifest.json",
+            "showInHome": false,
+            "unknownProjectionOrder": "first"
+          },
+          {
+            "id": "projection-family-b",
+            "addonId": "com.nuvio.tmdb.catalogs",
+            "type": "movie",
+            "catalogId": "family-movies",
+            "addonName": "Nuvio Catalog Addon",
+            "manifestUrl": "https://example.invalid/catalog-addon/manifest.json",
+            "showInHome": false,
+            "unknownProjectionOrder": "second"
+          }
+        ]
+      }
+    ]
+  }
+]

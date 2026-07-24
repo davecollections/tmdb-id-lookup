@@ -1,0 +1,180 @@
+[
+  {
+    "id": "preservation-primary",
+    "title": "Imported Mixed Profile",
+    "pinToTop": false,
+    "viewMode": "",
+    "showAllTab": 0,
+    "backdropImageUrl": null,
+    "focusGlowEnabled": false,
+    "unknownCollection": {
+      "owner": "synthetic-community",
+      "nested": {
+        "keep": true
+      }
+    },
+    "unknownCollectionNull": null,
+    "unknownCollectionEmptyString": "",
+    "unknownCollectionEmptyObject": {},
+    "unknownCollectionEmptyArray": [],
+    "unknownCollectionFalse": false,
+    "unknownCollectionZero": 0,
+    "folders": [
+      {
+        "id": "preservation-mixed",
+        "title": "Native Addon Trakt and Community",
+        "hideTitle": false,
+        "tileShape": "LANDSCAPE",
+        "coverEmoji": "",
+        "focusGifUrl": "",
+        "heroVideoUrl": null,
+        "titleLogoUrl": "https://example.invalid/preservation-title-logo.png",
+        "coverImageUrl": "",
+        "focusGifEnabled": false,
+        "heroBackdropUrl": null,
+        "unknownFolder": {
+          "layout": "community-grid"
+        },
+        "unknownFolderNull": null,
+        "unknownFolderEmptyObject": {},
+        "unknownFolderEmptyArray": [],
+        "unknownFolderFalse": false,
+        "unknownFolderZero": 0,
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": null,
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "sortHow": "descending",
+            "filters": {
+              "withGenres": "",
+              "voteAverageGte": 0,
+              "withNetworks": null,
+              "futureFlag": false,
+              "futureZero": 0,
+              "futureNull": null,
+              "futureEmptyObject": {},
+              "futureEmptyArray": []
+            },
+            "unknownSource": {
+              "keep": "discover"
+            }
+          },
+          {
+            "id": "raw-old-addon-source",
+            "provider": "addon",
+            "title": "",
+            "addonId": "example.synthetic.catalogs",
+            "type": "movie",
+            "catalogId": "old-evidence-catalog",
+            "genre": null,
+            "addonName": "Synthetic Catalogs",
+            "manifestUrl": "https://example.invalid/synthetic/manifest.json",
+            "showInHome": false,
+            "sortHow": "client-order",
+            "unknownSourceEvidence": {
+              "removeWithSource": true
+            }
+          },
+          {
+            "provider": "trakt",
+            "title": "Imported Trakt List",
+            "type": "list",
+            "traktListId": "synthetic-list-42",
+            "providerVersion": 7,
+            "rawOnlyOptions": {
+              "preserve": true
+            }
+          },
+          {
+            "provider": "addon",
+            "title": "Retained Addon",
+            "addonId": "example.synthetic.catalogs",
+            "type": "series",
+            "catalogId": "retained-catalog",
+            "genre": "Drama",
+            "unknownSourceEvidence": {
+              "keepWithSource": true
+            }
+          },
+          {
+            "provider": "community",
+            "title": "Community Feed",
+            "type": "curated-feed",
+            "communityProvider": "synthetic",
+            "communityOptions": {
+              "empty": {},
+              "items": []
+            },
+            "unknownBoolean": false
+          }
+        ],
+        "catalogSources": [
+          {
+            "id": "raw-old-addon-projection",
+            "addonId": "example.synthetic.catalogs",
+            "type": "movie",
+            "catalogId": "old-evidence-catalog",
+            "genre": null,
+            "addonName": "Synthetic Catalogs",
+            "manifestUrl": "https://example.invalid/synthetic/manifest.json",
+            "showInHome": false,
+            "unknownProjectionEvidence": {
+              "removeWithSource": true
+            },
+            "unknownProjectionFalse": false,
+            "unknownProjectionZero": 0,
+            "unknownProjectionNull": null
+          },
+          {
+            "addonId": "example.synthetic.catalogs",
+            "type": "series",
+            "catalogId": "retained-catalog",
+            "genre": "Drama",
+            "unknownProjectionEvidence": {
+              "keepWithSource": true
+            }
+          }
+        ]
+      },
+      {
+        "id": "preservation-empty",
+        "title": "Empty Imported Folder",
+        "sources": [],
+        "catalogSources": [],
+        "unknownEmptyFolderState": {
+          "enabled": false,
+          "count": 0,
+          "items": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "preservation-secondary",
+    "title": "Imported Secondary Profile",
+    "folders": [
+      {
+        "id": "preservation-secondary-folder",
+        "title": "Missing Optional Presentation",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Company Movies",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 9001,
+            "mediaType": "MOVIE",
+            "unknownSecondarySource": "preserved"
+          }
+        ],
+        "catalogSources": []
+      }
+    ],
+    "unknownSecondaryCollection": {
+      "missingKnownPresentationKeys": true
+    }
+  }
+]
