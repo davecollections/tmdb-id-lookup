@@ -1,0 +1,789 @@
+{
+  "version": 1,
+  "issue": "https://github.com/davecollections/tmdb-id-lookup/issues/49",
+  "inventory": {
+    "existingUnitContracts": [
+      "tests/builder-domain.test.mjs",
+      "tests/builder-import.test.mjs",
+      "tests/builder-serializer.test.mjs",
+      "tests/builder-migration.test.mjs",
+      "tests/builder-controller.test.mjs",
+      "tests/builder-auto-ids-workspace-flow.test.mjs",
+      "tests/nuvio-contracts.test.mjs"
+    ],
+    "authoritativeManualEvidence": [
+      "manual-tests/nuvio-desktop/addon-projection-migration/README.md",
+      "manual-tests/tmdb-discover/README.md"
+    ],
+    "assertionModes": {
+      "exact-json": "The serialized JSON value must equal the intentional canonical input.",
+      "semantic-equality": "The second import/serialize cycle must equal the first while object property order remains non-contractual.",
+      "targeted": "Only the listed preservation, identity, migration, or invalid boundary is asserted."
+    },
+    "deferredBoundaries": {
+      "sourceArtwork": "No confirmed source-artwork field exists in current repository or client evidence; no source artwork field is created or asserted.",
+      "trakt": "Imported Trakt data is opaque preservation evidence only; creation, recognition, login, API, and networking remain unsupported.",
+      "directMedia": "Direct movie, direct series, season, episode, and custom-item native source types remain unsupported."
+    }
+  },
+  "entries": [
+    {
+      "id": "canonical-native-addon-profile",
+      "category": "canonical",
+      "purpose": "Connect all seven native TMDB types and evidence-backed media combinations with ordered addon compatibility projections.",
+      "input": "v2-compatibility/canonical/native-addon-profile.json",
+      "pipeline": "direct-importer",
+      "sourceTypes": [
+        "LIST",
+        "COLLECTION",
+        "COMPANY",
+        "NETWORK",
+        "DISCOVER",
+        "PERSON",
+        "DIRECTOR",
+        "addon"
+      ],
+      "mediaCombinations": [
+        "LIST:MOVIE",
+        "LIST:TV",
+        "COLLECTION:MOVIE",
+        "COMPANY:MOVIE",
+        "NETWORK:TV",
+        "DISCOVER:MOVIE",
+        "DISCOVER:TV",
+        "PERSON:MOVIE",
+        "PERSON:TV",
+        "DIRECTOR:MOVIE",
+        "DIRECTOR:TV",
+        "addon:movie",
+        "addon:series"
+      ],
+      "expectedCounts": {
+        "collections": 2,
+        "folders": 3,
+        "sources": 15,
+        "projections": 4
+      },
+      "expectedOrder": {
+        "collections": [
+          "canonical-native",
+          "canonical-addons"
+        ],
+        "foldersByCollection": {
+          "canonical-native": [
+            "native-discovery",
+            "native-entities"
+          ],
+          "canonical-addons": [
+            "addon-catalogs"
+          ]
+        },
+        "sourcesByFolder": {
+          "native-discovery": [
+            "tmdb:LIST:1101:MOVIE",
+            "tmdb:LIST:1102:TV",
+            "tmdb:DISCOVER::MOVIE",
+            "tmdb:DISCOVER::TV"
+          ],
+          "native-entities": [
+            "tmdb:COLLECTION:2101:MOVIE",
+            "tmdb:COMPANY:3101:MOVIE",
+            "tmdb:NETWORK:4101:TV",
+            "tmdb:PERSON:5101:MOVIE",
+            "tmdb:PERSON:5101:TV",
+            "tmdb:DIRECTOR:6101:MOVIE",
+            "tmdb:DIRECTOR:6101:TV"
+          ],
+          "addon-catalogs": [
+            "addon:com.nuvio.tmdb.catalogs:movie:popular-movies:Horror",
+            "addon:com.nuvio.tmdb.catalogs:series:trending-series:",
+            "addon:com.nuvio.tmdb.catalogs:movie:family-movies:",
+            "addon:com.nuvio.tmdb.catalogs:movie:family-movies:"
+          ]
+        },
+        "projectionsByFolder": {
+          "native-discovery": [],
+          "native-entities": [],
+          "addon-catalogs": [
+            "addon:com.nuvio.tmdb.catalogs:movie:popular-movies:Horror",
+            "addon:com.nuvio.tmdb.catalogs:series:trending-series:",
+            "addon:com.nuvio.tmdb.catalogs:movie:family-movies:",
+            "addon:com.nuvio.tmdb.catalogs:movie:family-movies:"
+          ]
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [],
+        "serializeErrors": [],
+        "serializeWarnings": [],
+        "validationErrors": []
+      },
+      "assertionMode": "exact-json",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [
+          "collection id/title/presentation",
+          "folder id/title/presentation/artwork",
+          "known native and addon source fields"
+        ],
+        "copiedCanonicalData": [
+          "ordered folders",
+          "ordered authoritative sources",
+          "ordered addon compatibility projections"
+        ],
+        "canonicalizedDefaulted": [],
+        "removed": [],
+        "rawPreservedOnly": [
+          "addon id/addonName/manifestUrl/showInHome metadata",
+          "duplicate projection order sentinels"
+        ]
+      },
+      "coverageTags": [
+        "all-seven-native-types",
+        "evidence-backed-media",
+        "addon-basic",
+        "addon-genre",
+        "addon-multiple",
+        "addon-projection",
+        "projection-order",
+        "addon-metadata",
+        "duplicate-projection-identity",
+        "multiple-collections",
+        "multiple-folders",
+        "presentation",
+        "folder-artwork",
+        "ordering",
+        "round-trip",
+        "discover-reference"
+      ],
+      "evidenceReferences": [
+        "tests/fixtures/nuvio/valid/all-native-tmdb-source-types.json",
+        "manual-tests/tmdb-discover/fixture-manifest.json"
+      ]
+    },
+    {
+      "id": "preservation-comprehensive-profile",
+      "category": "preservation",
+      "purpose": "Preserve a realistic multi-collection native, addon, Trakt, and opaque/community profile through unrelated edits and stable cycles.",
+      "input": "v2-compatibility/preservation/comprehensive-imported-profile.json",
+      "pipeline": "direct-importer",
+      "sourceTypes": [
+        "DISCOVER",
+        "COMPANY",
+        "addon",
+        "opaque-trakt",
+        "opaque-community"
+      ],
+      "mediaCombinations": [
+        "DISCOVER:MOVIE",
+        "COMPANY:MOVIE",
+        "addon:movie",
+        "addon:series",
+        "opaque:trakt",
+        "opaque:community"
+      ],
+      "expectedCounts": {
+        "collections": 2,
+        "folders": 3,
+        "sources": 6,
+        "projections": 2
+      },
+      "expectedOrder": {
+        "collections": [
+          "preservation-primary",
+          "preservation-secondary"
+        ],
+        "foldersByCollection": {
+          "preservation-primary": [
+            "preservation-mixed",
+            "preservation-empty"
+          ],
+          "preservation-secondary": [
+            "preservation-secondary-folder"
+          ]
+        },
+        "sourcesByFolder": {
+          "preservation-mixed": [
+            "tmdb:DISCOVER::MOVIE",
+            "addon:example.synthetic.catalogs:movie:old-evidence-catalog:",
+            "opaque:trakt:list:synthetic-list-42:Imported Trakt List",
+            "addon:example.synthetic.catalogs:series:retained-catalog:Drama",
+            "opaque:community:curated-feed::Community Feed"
+          ],
+          "preservation-empty": [],
+          "preservation-secondary-folder": [
+            "tmdb:COMPANY:9001:MOVIE"
+          ]
+        },
+        "projectionsByFolder": {
+          "preservation-mixed": [
+            "addon:example.synthetic.catalogs:movie:old-evidence-catalog:",
+            "addon:example.synthetic.catalogs:series:retained-catalog:Drama"
+          ],
+          "preservation-empty": [],
+          "preservation-secondary-folder": []
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [
+          "AMBIGUOUS_SOURCE_PRESERVED_OPAQUE",
+          "AMBIGUOUS_SOURCE_PRESERVED_OPAQUE"
+        ],
+        "serializeErrors": [],
+        "serializeWarnings": [
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED"
+        ],
+        "validationErrors": []
+      },
+      "assertionMode": "semantic-equality",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [
+          "known collection presentation",
+          "known folder presentation/artwork",
+          "known Discover filters",
+          "known addon identity"
+        ],
+        "copiedCanonicalData": [
+          "ordered folders",
+          "ordered authoritative sources",
+          "addon projections matching current authoritative addons"
+        ],
+        "canonicalizedDefaulted": [],
+        "removed": [
+          "recognized Discover filter keys omitted from an explicit replacement group",
+          "raw source and projection evidence belonging to a removed source"
+        ],
+        "rawPreservedOnly": [
+          "collection backdropImageUrl/focusGlowEnabled",
+          "source sortHow",
+          "Trakt traktListId/provider fields",
+          "community fields",
+          "unknown collection/folder/source/filter/projection fields"
+        ]
+      },
+      "coverageTags": [
+        "mixed-native-addon-opaque",
+        "imported-trakt",
+        "opaque-community",
+        "addon-projection",
+        "projection-order",
+        "multiple-collections",
+        "multiple-folders",
+        "multiple-sources",
+        "presentation",
+        "folder-artwork",
+        "raw-only-collection-fields",
+        "raw-only-source-fields",
+        "unknown-collection",
+        "unknown-folder",
+        "unknown-source",
+        "unknown-filter",
+        "unknown-projection",
+        "missing-null-empty-false-zero",
+        "editable-over-raw",
+        "discover-filter-replacement",
+        "source-removal",
+        "ordering",
+        "round-trip",
+        "source-artwork-boundary"
+      ],
+      "evidenceReferences": [
+        "tests/fixtures/nuvio/valid/opaque-community-import.json",
+        "manual-tests/tmdb-discover/README.md"
+      ]
+    },
+    {
+      "id": "identity-direct-import-and-controller-repair",
+      "category": "identity",
+      "purpose": "Distinguish direct-import acceptance of problematic Nuvio IDs from deterministic controller repair in traversal order.",
+      "input": "v2-compatibility/identity/problematic-nuvio-ids.json",
+      "pipeline": "builder-controller",
+      "sourceTypes": [],
+      "mediaCombinations": [],
+      "expectedCounts": {
+        "collections": 4,
+        "folders": 3,
+        "sources": 0,
+        "projections": 0
+      },
+      "expectedOrder": {
+        "collections": [
+          "First Collection",
+          "Whitespace Collection ID",
+          "Missing Collection ID",
+          "Boolean Collection ID"
+        ],
+        "foldersByCollection": {
+          "First Collection": [
+            "Duplicate Folder ID",
+            "Non-string Folder ID"
+          ],
+          "Whitespace Collection ID": [],
+          "Missing Collection ID": [
+            "Blank Folder ID"
+          ],
+          "Boolean Collection ID": []
+        },
+        "sourcesByFolder": {
+          "Duplicate Folder ID": [],
+          "Non-string Folder ID": [],
+          "Blank Folder ID": []
+        },
+        "projectionsByFolder": {
+          "Duplicate Folder ID": [],
+          "Non-string Folder ID": [],
+          "Blank Folder ID": []
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [],
+        "serializeErrors": [
+          "FOLDER_ID_REQUIRED",
+          "COLLECTION_ID_REQUIRED",
+          "FOLDER_ID_REQUIRED",
+          "COLLECTION_ID_REQUIRED"
+        ],
+        "serializeWarnings": [],
+        "validationErrors": []
+      },
+      "assertionMode": "targeted",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [
+          "controller-repaired collection/folder IDs"
+        ],
+        "copiedCanonicalData": [
+          "collection/folder titles and traversal order"
+        ],
+        "canonicalizedDefaulted": [
+          "missing, invalid, duplicate, whitespace-padded, and non-string collection/folder IDs repaired by the controller"
+        ],
+        "removed": [],
+        "rawPreservedOnly": [
+          "original imported collection/folder ID evidence"
+        ]
+      },
+      "coverageTags": [
+        "direct-import-ids",
+        "controller-id-repair",
+        "internal-id-uniqueness",
+        "serializer-required-text",
+        "ordering"
+      ],
+      "identityExpectations": {
+        "directCollectionIds": [
+          "same",
+          " padded ",
+          "",
+          false
+        ],
+        "directFolderIds": [
+          "same",
+          7,
+          ""
+        ],
+        "controllerCollectionIds": [
+          "same",
+          "nuvio-3",
+          "nuvio-4",
+          "nuvio-6"
+        ],
+        "controllerFolderIds": [
+          "nuvio-1",
+          "nuvio-2",
+          "nuvio-5"
+        ]
+      },
+      "evidenceReferences": [
+        "tests/builder-import.test.mjs",
+        "tests/builder-auto-ids-workspace-flow.test.mjs"
+      ]
+    },
+    {
+      "id": "invalid-serializer-required-text",
+      "category": "invalid",
+      "purpose": "Record file-backed serializer diagnostics for nonblank collection/folder IDs and titles.",
+      "input": "v2-compatibility/invalid/serializer-required-text.json",
+      "pipeline": "direct-importer",
+      "sourceTypes": [],
+      "mediaCombinations": [],
+      "expectedCounts": {
+        "collections": 1,
+        "folders": 1,
+        "sources": 0,
+        "projections": 0
+      },
+      "expectedOrder": {
+        "collections": [
+          " "
+        ],
+        "foldersByCollection": {
+          " ": [
+            ""
+          ]
+        },
+        "sourcesByFolder": {
+          "": []
+        },
+        "projectionsByFolder": {
+          "": []
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [],
+        "serializeErrors": [
+          "COLLECTION_ID_REQUIRED",
+          "COLLECTION_TITLE_REQUIRED",
+          "FOLDER_ID_REQUIRED",
+          "FOLDER_TITLE_REQUIRED"
+        ],
+        "serializeWarnings": [],
+        "validationErrors": [
+          {
+            "code": "COLLECTION_INVALID",
+            "path": "$[0]"
+          }
+        ]
+      },
+      "assertionMode": "targeted",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [
+          "collection/folder id and title"
+        ],
+        "copiedCanonicalData": [],
+        "canonicalizedDefaulted": [],
+        "removed": [],
+        "rawPreservedOnly": []
+      },
+      "coverageTags": [
+        "serializer-required-text",
+        "invalid"
+      ],
+      "evidenceReferences": [
+        "tests/builder-serializer.test.mjs"
+      ]
+    },
+    {
+      "id": "migration-existing-addon-projection-evidence",
+      "category": "migration",
+      "purpose": "Reuse the supported projection-only addon migration and its Desktop evidence without inventing another legacy format.",
+      "input": "compatibility/legacy-projection-only-input.json",
+      "pipeline": "migration",
+      "sourceTypes": [
+        "addon"
+      ],
+      "mediaCombinations": [
+        "addon:movie",
+        "addon:series",
+        "addon:anime"
+      ],
+      "expectedCounts": {
+        "collections": 1,
+        "folders": 3,
+        "sources": 0,
+        "projections": 3
+      },
+      "expectedOutputCounts": {
+        "collections": 1,
+        "folders": 3,
+        "sources": 3,
+        "projections": 3
+      },
+      "expectedOrder": {
+        "collections": [
+          "compat-legacy-addon"
+        ],
+        "foldersByCollection": {
+          "compat-legacy-addon": [
+            "compat-legacy-movie",
+            "compat-legacy-series",
+            "compat-legacy-anime"
+          ]
+        },
+        "sourcesByFolder": {
+          "compat-legacy-movie": [],
+          "compat-legacy-series": [],
+          "compat-legacy-anime": []
+        },
+        "projectionsByFolder": {
+          "compat-legacy-movie": [
+            "addon:example.sanitised.metadata:movie:movie-catalog:None"
+          ],
+          "compat-legacy-series": [
+            "addon:example.sanitised.metadata:series:series-catalog:Action"
+          ],
+          "compat-legacy-anime": [
+            "addon:example.sanitised.metadata:anime:anime-catalog:None"
+          ]
+        }
+      },
+      "expectedOutputOrder": {
+        "sourcesByFolder": {
+          "compat-legacy-movie": [
+            "addon:example.sanitised.metadata:movie:movie-catalog:"
+          ],
+          "compat-legacy-series": [
+            "addon:example.sanitised.metadata:series:series-catalog:Action"
+          ],
+          "compat-legacy-anime": [
+            "addon:example.sanitised.metadata:anime:anime-catalog:"
+          ]
+        },
+        "projectionsByFolder": {
+          "compat-legacy-movie": [
+            "addon:example.sanitised.metadata:movie:movie-catalog:"
+          ],
+          "compat-legacy-series": [
+            "addon:example.sanitised.metadata:series:series-catalog:Action"
+          ],
+          "compat-legacy-anime": [
+            "addon:example.sanitised.metadata:anime:anime-catalog:"
+          ]
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [
+          "MISSING_SOURCES",
+          "LEGACY_CATALOG_SOURCES_ONLY",
+          "LEGACY_CATALOG_SOURCES_ONLY",
+          "MISSING_SOURCES",
+          "LEGACY_CATALOG_SOURCES_ONLY"
+        ],
+        "serializeErrors": [],
+        "serializeWarnings": [],
+        "validationErrors": []
+      },
+      "assertionMode": "targeted",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [
+          "migrated addon provider/addonId/type/catalogId/genre"
+        ],
+        "copiedCanonicalData": [
+          "folder/projection ordering and raw projection metadata"
+        ],
+        "canonicalizedDefaulted": [
+          "exact genre value None to null"
+        ],
+        "removed": [],
+        "rawPreservedOnly": [
+          "unknown projection metadata and imported presentation"
+        ]
+      },
+      "coverageTags": [
+        "migration",
+        "migration-idempotence",
+        "addon-projection",
+        "projection-order",
+        "migration-reference",
+        "round-trip"
+      ],
+      "evidenceReferences": [
+        "tests/fixtures/nuvio/compatibility/legacy-nuvio-normalised.json",
+        "manual-tests/nuvio-desktop/addon-projection-migration/builder-migrated-input.json",
+        "manual-tests/nuvio-desktop/addon-projection-migration/generation-report.json",
+        "manual-tests/nuvio-desktop/addon-projection-migration/nuvio-desktop-export.json",
+        "manual-tests/nuvio-desktop/addon-projection-migration/round-trip-report.json"
+      ]
+    },
+    {
+      "id": "invalid-unsupported-direct-movie",
+      "category": "invalid",
+      "purpose": "Retain the current validation boundary for a guessed direct native TMDB movie source.",
+      "input": "invalid/unsupported-direct-movie-source.json",
+      "pipeline": "validation-only",
+      "sourceTypes": [
+        "DIRECT_MOVIE"
+      ],
+      "mediaCombinations": [
+        "DIRECT_MOVIE:MOVIE"
+      ],
+      "expectedCounts": {
+        "collections": 1,
+        "folders": 1,
+        "sources": 1,
+        "projections": 0
+      },
+      "expectedOrder": {
+        "collections": [
+          "collection-invalid-direct-movie"
+        ],
+        "foldersByCollection": {
+          "collection-invalid-direct-movie": [
+            "folder-invalid-direct-movie"
+          ]
+        },
+        "sourcesByFolder": {
+          "folder-invalid-direct-movie": [
+            "tmdb:DIRECT_MOVIE:2001:MOVIE"
+          ]
+        },
+        "projectionsByFolder": {
+          "folder-invalid-direct-movie": []
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [],
+        "serializeErrors": [],
+        "serializeWarnings": [],
+        "validationErrors": [
+          {
+            "code": "UNSUPPORTED_TMDB_SOURCE_TYPE",
+            "path": "$[0].folders[0].sources[0]"
+          }
+        ]
+      },
+      "assertionMode": "targeted",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [],
+        "copiedCanonicalData": [],
+        "canonicalizedDefaulted": [],
+        "removed": [],
+        "rawPreservedOnly": [
+          "unsupported source remains importable only as opaque evidence"
+        ]
+      },
+      "coverageTags": [
+        "invalid",
+        "unsupported-direct-media"
+      ],
+      "evidenceReferences": [
+        "tests/nuvio-contracts.test.mjs"
+      ]
+    },
+    {
+      "id": "invalid-native-catalog-projection",
+      "category": "invalid",
+      "purpose": "Retain the current validation boundary that native TMDB sources never belong in catalogSources.",
+      "input": "invalid/native-source-in-catalog-sources.json",
+      "pipeline": "validation-only",
+      "sourceTypes": [
+        "COMPANY"
+      ],
+      "mediaCombinations": [
+        "COMPANY:MOVIE"
+      ],
+      "expectedCounts": {
+        "collections": 1,
+        "folders": 1,
+        "sources": 1,
+        "projections": 1
+      },
+      "expectedOrder": {
+        "collections": [
+          "collection-invalid-native-projection"
+        ],
+        "foldersByCollection": {
+          "collection-invalid-native-projection": [
+            "folder-invalid-native-projection"
+          ]
+        },
+        "sourcesByFolder": {
+          "folder-invalid-native-projection": [
+            "tmdb:COMPANY:1003:MOVIE"
+          ]
+        },
+        "projectionsByFolder": {
+          "folder-invalid-native-projection": [
+            "tmdb:COMPANY:1003:MOVIE"
+          ]
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [],
+        "serializeErrors": [],
+        "serializeWarnings": [],
+        "validationErrors": [
+          {
+            "code": "NATIVE_SOURCE_IN_CATALOG_SOURCES",
+            "path": "$[0].folders[0].catalogSources[0]"
+          }
+        ]
+      },
+      "assertionMode": "targeted",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [],
+        "copiedCanonicalData": [],
+        "canonicalizedDefaulted": [],
+        "removed": [],
+        "rawPreservedOnly": []
+      },
+      "coverageTags": [
+        "invalid",
+        "native-projection-boundary"
+      ],
+      "evidenceReferences": [
+        "tests/nuvio-contracts.test.mjs"
+      ]
+    },
+    {
+      "id": "invalid-addon-projection-without-source",
+      "category": "invalid",
+      "purpose": "Retain the authoritative sources boundary for addon compatibility projections.",
+      "input": "invalid/addon-only-in-catalog-sources.json",
+      "pipeline": "validation-only",
+      "sourceTypes": [
+        "addon"
+      ],
+      "mediaCombinations": [
+        "addon:movie"
+      ],
+      "expectedCounts": {
+        "collections": 1,
+        "folders": 1,
+        "sources": 0,
+        "projections": 1
+      },
+      "expectedOrder": {
+        "collections": [
+          "collection-invalid-addon-only"
+        ],
+        "foldersByCollection": {
+          "collection-invalid-addon-only": [
+            "folder-invalid-addon-only"
+          ]
+        },
+        "sourcesByFolder": {
+          "folder-invalid-addon-only": []
+        },
+        "projectionsByFolder": {
+          "folder-invalid-addon-only": [
+            "addon:com.nuvio.tmdb.catalogs:movie:trending-movies:"
+          ]
+        }
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [],
+        "serializeErrors": [],
+        "serializeWarnings": [],
+        "validationErrors": [
+          {
+            "code": "ADDON_SOURCE_MISSING_FROM_SOURCES",
+            "path": "$[0].folders[0].catalogSources[0]"
+          }
+        ]
+      },
+      "assertionMode": "targeted",
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [],
+        "copiedCanonicalData": [],
+        "canonicalizedDefaulted": [],
+        "removed": [],
+        "rawPreservedOnly": []
+      },
+      "coverageTags": [
+        "invalid",
+        "addon-projection-boundary"
+      ],
+      "evidenceReferences": [
+        "tests/nuvio-contracts.test.mjs"
+      ]
+    }
+  ]
+}

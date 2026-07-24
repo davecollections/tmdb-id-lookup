@@ -16,6 +16,7 @@ runNode(["--test", path.join("tests", "pages-public-paths.test.mjs")]);
 runNode(["--test", path.join("tests", "artwork-runtime.test.mjs")]);
 runNode(["--test", path.join("tests", "cached-nuvio-export.test.mjs")]);
 runNode(["--test", path.join("tests", "nuvio-contracts.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-compatibility-corpus.test.mjs")]);
 runNode(["--test", path.join("tests", "tmdb-discover-compatibility.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-domain.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-import.test.mjs")]);

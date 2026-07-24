@@ -380,7 +380,20 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - A Nuvio.tv account-management profile export removed provider/region and U1–U6 fields, changed S2/S3/S5/S8 sorts, retained S4/S4C/S6/S6C/S7, and added structural/default fields. The responsible layer was not isolated, so this remains pipeline evidence rather than attribution to iOS sync, account storage, web normalization, or export serialization.
 - Direct TMDB evidence remains pending because no local bearer token was available. The offline plan contains exactly 60 bounded requests at its hard cap, including exact US/AU provider-8 effective-query shapes and the required all-monetization union on every provider case; no live request is part of repository checks.
 
-## 14. Open questions
+## 14. V2 collection compatibility regression corpus — issue #49
+
+**Confirmed by repository tests — issue [#49](https://github.com/davecollections/tmdb-id-lookup/issues/49), 2026-07-24:** the builder now has a small, manifest-driven, file-backed compatibility corpus that connects the existing focused import, domain, migration, serialization, validation, ID, and controller contracts without changing production modules.
+
+- Eight manifest entries separate canonical, preservation, identity, migration, and invalid pipelines and record counts, exact traversal/projection order, diagnostics, assertion mode, field policy, coverage tags, and references to existing Discover and migration evidence.
+- The compact canonical profile covers all seven supported native TMDB types across the evidence-backed Movie/TV combinations plus basic, genre, multiple, and duplicate-identity addon projections in two ordered collections, three folders, and fifteen sources.
+- The comprehensive preservation profile combines native, addon, imported Trakt, and opaque/community evidence across two collections, three folders, and six sources. It covers presentation/artwork fields, raw-only collection/source fields, unknown fields at every supported preservation level, missing/null/empty/false/zero distinctions, Discover-filter replacement, and stable second-cycle serialization.
+- File-backed identity cases distinguish permissive direct import from deterministic controller repair of missing, invalid, whitespace-padded, non-string, and duplicate collection/folder IDs. Builder-only internal IDs remain unique and absent from output, while serializer-required ID/title diagnostics stay explicit.
+- A controller removal/insertion case proves stable unaffected-source order, removal of the deleted source and its raw evidence, and no transfer of that evidence to the inserted source or projection.
+- The corpus reuses the issue #37/#38 projection-only addon migration and Desktop artifacts, asserting deterministic promotion order, exact `"None"` to `null` normalization, unknown projection preservation, and migration idempotence. It also reuses the issue #31 invalid fixtures instead of duplicating them.
+- Ten focused tests validate the manifest, fixture coverage, taxonomy, safety, Pages exclusion, exact/semantic/targeted policies, round trips, migration, and validation diagnostics. No production module, dependency, v1 runtime, Worker, route, or deployment policy changed.
+- No confirmed source-artwork field exists in current repository or client evidence. The corpus records that boundary and does not invent one.
+
+## 15. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
@@ -390,7 +403,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
 
-## 15. Update rules
+## 16. Update rules
 
 - Update this file when a test becomes confirmed or disproved.
 - Include the evidence level, review/test date, and source.
@@ -427,6 +440,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-21 | Shared pure artwork validation, resolution, loading, in-memory caching, retry, and offline fixture behaviour | [TMDB ID Lookup issue #45](https://github.com/davecollections/tmdb-id-lookup/issues/45) |
 | 2026-07-22 | V1 company/network lazy runtime consumption, automatic curated/TMDB/emoji fallback, async preparation, Copy/Download parity, and focus-GIF removal | [TMDB ID Lookup issue #46](https://github.com/davecollections/tmdb-id-lookup/issues/46) |
 | 2026-07-23 | Official TMDB Discover inventory/OAS, pinned NuvioTV `dev` and `0.7.19-beta`, pinned NuvioMobile `cmp-rewrite` and `0.3.1`, builder preservation audit, normalized compatibility matrix, bounded manual/direct test plans, and 29/29 owner observations on Desktop alpha plus retained official iOS | [TMDB ID Lookup issue #47](https://github.com/davecollections/tmdb-id-lookup/issues/47), [`TMDB_DISCOVER_COMPATIBILITY.md`](./TMDB_DISCOVER_COMPATIBILITY.md), and [`OWNER_RESULTS_2026-07-23.md`](../../manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md) |
+| 2026-07-24 | Manifest-driven canonical, preservation, identity, migration, and invalid profile corpus connecting current builder compatibility contracts without production changes | [TMDB ID Lookup issue #49](https://github.com/davecollections/tmdb-id-lookup/issues/49) and [`v2-compatibility/README.md`](../../tests/fixtures/nuvio/v2-compatibility/README.md) |
 
 ## Decision history
 
@@ -448,3 +462,4 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-22 — V1 automatic artwork refinement:** remove runtime-facing artwork controls and permanent status panels; automatically prefer published curated landscape artwork, then cached TMDB logos with visible titles, then title/emoji; degrade runtime failures into valid fallback exports; keep transient preparation feedback and Copy/Download parity; and leave the shared runtime, people migration, v2 integration, and tomato provenance question unchanged.
 - **2026-07-23 — Discover compatibility boundary:** treat official TMDB acceptance, client deserialization, request construction, hidden transformations, persistence, direct result effects, and visible device effects as separate evidence levels; retain the 14-field production contract unchanged; use the generated row-level matrix as the normalized research source; and defer all UI/schema expansion until bounded owner evidence and a separately approved issue.
 - **2026-07-23 — Discover owner-evidence checkpoint:** retain the official counts, 14-field contract, and static mappings; record the complete Desktop alpha and retained official iOS runs as build-specific observations; add a deterministic one-source-per-folder presentation without changing source identity or aggregate counts; keep NuvioTV/direct TMDB pending; and attribute account-export changes only to the observed pipeline until its responsible layer is isolated.
+- **2026-07-24 — Profile-level compatibility corpus:** connect existing focused builder contracts through a small manifest-driven fixture taxonomy; use exact equality only for intentional canonical output, semantic cycle stability for preservation profiles, and targeted assertions for identity, removal, migration, and invalid boundaries; reuse the existing Discover and addon-migration artifacts; and retain a strict test-only production boundary.

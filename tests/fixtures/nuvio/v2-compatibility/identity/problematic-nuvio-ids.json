@@ -1,0 +1,41 @@
+[
+  {
+    "id": "same",
+    "title": "First Collection",
+    "folders": [
+      {
+        "id": "same",
+        "title": "Duplicate Folder ID",
+        "sources": [],
+        "catalogSources": []
+      },
+      {
+        "id": 7,
+        "title": "Non-string Folder ID",
+        "sources": [],
+        "catalogSources": []
+      }
+    ]
+  },
+  {
+    "id": " padded ",
+    "title": "Whitespace Collection ID",
+    "folders": []
+  },
+  {
+    "title": "Missing Collection ID",
+    "folders": [
+      {
+        "id": "",
+        "title": "Blank Folder ID",
+        "sources": [],
+        "catalogSources": []
+      }
+    ]
+  },
+  {
+    "id": false,
+    "title": "Boolean Collection ID",
+    "folders": []
+  }
+]
