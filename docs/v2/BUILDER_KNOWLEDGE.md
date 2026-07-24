@@ -1,19 +1,21 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
-Status: Planning and contract groundwork
+Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-07-23
+Last reviewed: 2026-07-25
 
-This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope.
+This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope. See [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) for durable product direction and [`PROJECT_WORKFLOW.md`](./PROJECT_WORKFLOW.md) for the Dave/ChatGPT/Codex process.
 
 ## 1. Product direction
 
 - v1 is working and stable.
 - v2 changes the product from primarily an ID lookup/export utility into the visual **TMDB Collection Builder**, built for Nuvio collections and powered primarily by TMDB.
+- The active React/Vite builder remains isolated under `/builder/`, unlinked, and `noindex, nofollow`; it is not a released replacement for v1.
 - Lookup and copy-ID tools remain available.
 - v2 should be mobile-first, modern, and sleek.
-- No login is required.
+- No login is required for the complete core build-and-export journey. Any future Nuvio connection must remain optional.
 - Playback is outside project scope and should normally remain unmentioned.
+- Startup routes, Dave’s 1-Click Setup, templates/recipes, the Kaptain onboarding comparison, product privacy, branding, and the optional Nuvio connection are maintained in the product plan rather than duplicated here. Exact template contents, final naming, and the connection product contract remain open.
 
 ## 2. Evidence levels
 
@@ -21,6 +23,7 @@ Future findings must use one of these labels:
 
 - **Manually confirmed in Nuvio:** observed in an actual Nuvio client using a recorded input.
 - **Confirmed from current Nuvio source code:** directly supported by the reviewed, pinned Nuvio source revision.
+- **Confirmed by current official Nuvio documentation:** explicitly documented by Nuvio on the cited page and review date; this does not prove undocumented client behaviour.
 - **Confirmed by repository tests:** behaviour or an invariant demonstrated by deterministic repository tests and successful CI.
 - **Confirmed by live deployment:** behaviour directly verified on the deployed production site through recorded HTTP or browser checks.
 - **Strongly inferred:** consistent with available code or behaviour but not directly verified end to end.
@@ -393,7 +396,33 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Ten focused tests validate the manifest, fixture coverage, taxonomy, safety, Pages exclusion, exact/semantic/targeted policies, round trips, migration, and validation diagnostics. No production module, dependency, v1 runtime, Worker, route, or deployment policy changed.
 - No confirmed source-artwork field exists in current repository or client evidence. The corpus records that boundary and does not invent one.
 
-## 15. Open questions
+## 15. Official Nuvio API and integration boundary
+
+**Confirmed by current official Nuvio documentation, reviewed 2026-07-25:** the [Nuvio Public API](https://nuvio.tv/docs) documents Supabase-based email/password authentication, access/refresh tokens, up to six profiles, profile-scoped resources, and collection pull/push operations. A collection push replaces the profile's complete `collections_json` blob; omission removes collections and an empty array clears it. No separate collection import, merge, or targeted-update endpoint was identified on the reviewed page. This confirms an authenticated collection transport, but not a safe merge/update UI, device-pairing contract, or approved Builder credential-storage design.
+
+The official API's small addon-backed collection example is not presented as a complete collection-source schema. It does not override repository tests and manual evidence that `sources` is authoritative and `catalogSources` is an addon compatibility projection/fallback.
+
+Keep three manifest/source concepts separate:
+
+- **Collection sources** are source objects inside Nuvio collection/folder JSON and follow this repository's evidence-backed source rules.
+- **Stremio-style addons** are profile-scoped addon manifest URLs documented by the API's addon sync.
+- **Nuvio integrations/plugins** are supplementary profile-scoped URLs. The separate [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo) documents repository `manifest.json` files that register integration JavaScript for local Hermes execution.
+
+The API documents addon and plugin sync as full-replace operations too. Plugin-repository manifests are not collection sources or Stremio addon manifests, and plugin repositories are not core TMDB Collection Builder scope. The official account page at [nuvio.tv/account/login](https://nuvio.tv/account/login) confirms an account-management surface for synced integrations and collections, but it was not used for authenticated testing. The reviewed public documentation did not establish device-pairing endpoints or behaviour; device pairing remains unverified.
+
+## 16. Roadmap checkpoint
+
+The current dependency-aware sequence is:
+
+1. product/workflow recovery;
+2. collection/folder presentation settings;
+3. mandatory Dave UI/flow review;
+4. review corrections;
+5. source creation and Search/Add.
+
+Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, privacy positioning, branding, and optional Nuvio connection are product-plan topics in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md). They do not change the current technical implementation gate.
+
+## 17. Open questions
 
 - Can a future Nuvio source model support direct individual movies or series?
 - Can multiple direct item references ever be exposed as a folder source?
@@ -402,8 +431,10 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - Which future controls need explicit property-removal semantics beyond assigning supported empty or null values?
 - How should known TMDB list IDs be validated?
 - How should future public TMDB list search slot into the architecture?
+- Can the documented full-replace collection API support a safe product-level Add, Merge, or targeted Update journey, and what backup/conflict protocol would be required?
+- Does Nuvio publish a supported device-pairing or browser-handoff contract suitable for third-party builders?
 
-## 16. Update rules
+## 18. Update rules
 
 - Update this file when a test becomes confirmed or disproved.
 - Include the evidence level, review/test date, and source.
@@ -441,6 +472,8 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 | 2026-07-22 | V1 company/network lazy runtime consumption, automatic curated/TMDB/emoji fallback, async preparation, Copy/Download parity, and focus-GIF removal | [TMDB ID Lookup issue #46](https://github.com/davecollections/tmdb-id-lookup/issues/46) |
 | 2026-07-23 | Official TMDB Discover inventory/OAS, pinned NuvioTV `dev` and `0.7.19-beta`, pinned NuvioMobile `cmp-rewrite` and `0.3.1`, builder preservation audit, normalized compatibility matrix, bounded manual/direct test plans, and 29/29 owner observations on Desktop alpha plus retained official iOS | [TMDB ID Lookup issue #47](https://github.com/davecollections/tmdb-id-lookup/issues/47), [`TMDB_DISCOVER_COMPATIBILITY.md`](./TMDB_DISCOVER_COMPATIBILITY.md), and [`OWNER_RESULTS_2026-07-23.md`](../../manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md) |
 | 2026-07-24 | Manifest-driven canonical, preservation, identity, migration, and invalid profile corpus connecting current builder compatibility contracts without production changes | [TMDB ID Lookup issue #49](https://github.com/davecollections/tmdb-id-lookup/issues/49) and [`v2-compatibility/README.md`](../../tests/fixtures/nuvio/v2-compatibility/README.md) |
+| 2026-07-24 | Full owner-supplied V1 and V2 conversation histories, reviewed to recover explicit product and workflow intent without committing or reproducing the exports | Private owner-supplied research evidence for [issue #51](https://github.com/davecollections/tmdb-id-lookup/issues/51) |
+| 2026-07-25 | Current public authentication, profiles, full-replace collection sync, addon/plugin sync, account-management surface, and integration-repository boundary | [Nuvio Public API](https://nuvio.tv/docs), [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo), and [Nuvio account login](https://nuvio.tv/account/login) |
 
 ## Decision history
 
@@ -463,3 +496,5 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - **2026-07-23 — Discover compatibility boundary:** treat official TMDB acceptance, client deserialization, request construction, hidden transformations, persistence, direct result effects, and visible device effects as separate evidence levels; retain the 14-field production contract unchanged; use the generated row-level matrix as the normalized research source; and defer all UI/schema expansion until bounded owner evidence and a separately approved issue.
 - **2026-07-23 — Discover owner-evidence checkpoint:** retain the official counts, 14-field contract, and static mappings; record the complete Desktop alpha and retained official iOS runs as build-specific observations; add a deterministic one-source-per-folder presentation without changing source identity or aggregate counts; keep NuvioTV/direct TMDB pending; and attribute account-export changes only to the observed pipeline until its responsible layer is isolated.
 - **2026-07-24 — Profile-level compatibility corpus:** connect existing focused builder contracts through a small manifest-driven fixture taxonomy; use exact equality only for intentional canonical output, semantic cycle stability for preservation profiles, and targeted assertions for identity, removal, migration, and invalid boundaries; reuse the existing Discover and addon-migration artifacts; and retain a strict test-only production boundary.
+- **2026-07-24 — Product and workflow history recovery:** review the complete owner-supplied V1 and V2 conversation exports to recover explicit product and process intent; reconcile it through current implementation, tests, manual evidence, and GitHub history; preserve unaccepted proposals as proposals or open decisions; and keep the private exports and conversational material outside the repository.
+- **2026-07-25 — Official Nuvio documentation review:** recognise the documented authenticated, profile-scoped, full-replace collection transport while keeping optional connection design deferred; distinguish collection sources, Stremio-style addon manifests, and Nuvio plugin-repository manifests; keep plugin repositories outside core Builder scope; and leave device pairing, safe merge/update semantics, token handling, and recovery unverified.
