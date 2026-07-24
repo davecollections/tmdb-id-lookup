@@ -71,10 +71,16 @@ The planning chat recommends effort for each task based on scope and risk.
 
 ## 4. Issue and branch workflow
 
+### Discovery before issues
+
+Dave and the ChatGPT planning/review chat may discuss, compare, investigate, and decide whether repository work is justified before an issue or branch exists. Read-only product or repository research does not require either, and no issue is needed when the decision is to take no action. Do not turn every conversation into an issue.
+
+Once Dave approves a durable repository change, its focused issue records the decided scope and enough context to explain why the change is being made. A substantial investigation may use an issue earlier when durable tracking is helpful, but exploratory discussion alone does not require one.
+
 The normal sequence is:
 
-1. Review the backlog, current repository, and relevant evidence.
-2. Define one focused issue.
+1. Discuss, investigate, and decide whether repository work is justified.
+2. Once a durable repository change is approved, define one focused issue.
 3. Update `main`, then create one dedicated branch.
 4. Implement only that issue.
 5. Run repository and issue-specific checks.
@@ -97,7 +103,7 @@ The following remain absolute:
 
 ## 5. Repository preflight
 
-Before a meaningful task:
+Before repository-changing work begins:
 
 ```powershell
 git fetch origin --prune
@@ -109,11 +115,11 @@ git rev-parse HEAD
 git rev-parse origin/main
 ```
 
-Confirm that `main` equals `origin/main` and the worktree is clean. Inspect every unexpected newer commit before continuing. Legitimate automated maintenance may be accepted only after confirming that it does not overlap the issue. Stop for conflicts, unexpected manual changes, unrelated local work, or ambiguous scope.
+This formal Git preflight is not required for ordinary conversation or read-only product research. Before edits begin, confirm that `main` equals `origin/main` and the worktree is clean. Inspect every unexpected newer commit before continuing. Legitimate automated maintenance may be accepted only after confirming that it does not overlap the issue. Stop for conflicts, unexpected manual changes, unrelated local work, or ambiguous scope.
 
 ## 6. Scope control
 
-- Use one issue and one dedicated branch for one bounded outcome.
+- Once repository work starts, use one issue and one dedicated branch for one bounded outcome.
 - Do not begin a second issue on the current branch.
 - Do not work directly on `main`.
 - Do not force-push or rewrite reviewed commits.

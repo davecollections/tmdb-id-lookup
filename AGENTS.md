@@ -29,7 +29,9 @@ Before v2 product, UX, startup, template, recipe, Search/Add, presentation, or p
 ## Git and issue workflow
 
 - Never work directly on `main`.
-- Each meaningful task requires an approved GitHub issue and one dedicated branch from an updated `main`.
+- Discussion, discovery, comparison, and read-only investigation do not require a GitHub issue.
+- Before making a meaningful repository change, create or approve one focused GitHub issue and one dedicated branch from updated `main`.
+- A substantial investigation may use an issue for durable tracking when helpful, but an issue is not required merely to explore an idea.
 - Use one issue per branch. Inspect unexpected main commits, including legitimate automated maintenance, before synchronising them into task work.
 - Keep work limited to the approved issue; do not include unrelated cleanup.
 - Do not open a pull request unless Dave asks.
