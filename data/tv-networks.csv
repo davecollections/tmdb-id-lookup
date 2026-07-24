@@ -4198,7 +4198,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7645,HIDIVE,3,"Houston, Texas",US,,https://www.themoviedb.org/network/7645
 7647,AXN Spain,0,,,,https://www.themoviedb.org/network/7647
 7648,Viu,19,,PK,,https://www.themoviedb.org/network/7648
-7649,Start,0,,,,https://www.themoviedb.org/network/7649
 7651,SLAY TV,1,,,,https://www.themoviedb.org/network/7651
 7652,Liceu+ LIVE,1,,,,https://www.themoviedb.org/network/7652
 7653,L'Auditori Play,1,,,,https://www.themoviedb.org/network/7653
@@ -5495,6 +5494,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9336,GTV-9,1,,,,https://www.themoviedb.org/network/9336
 9337,Luzu TV,1,,,,https://www.themoviedb.org/network/9337
 9338,ICTV2,1,,,,https://www.themoviedb.org/network/9338
-9339,Sigue Play,1,,MX,https://www.sigueplay.com,https://www.themoviedb.org/network/9339
+9339,Sigue Play,1,,MX,,https://www.themoviedb.org/network/9339
 9340,More Than Sports TV,1,,,,https://www.themoviedb.org/network/9340
 9341,Tec TV,1,,,,https://www.themoviedb.org/network/9341
+9342,Zdf,1,,,,https://www.themoviedb.org/network/9342
