@@ -5,6 +5,10 @@ import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
 import { NodeEditor } from "./NodeEditor.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
+import {
+	builderCardScrollBehavior,
+	useBuilderDesktopViewport,
+} from "./responsive-viewport.js";
 import { buildBuilderViewModel } from "./view-model.js";
 import {
 	completeWorkspaceReturn,
@@ -103,11 +107,17 @@ function NodeButton({ node, type, children, onSelect, disabled }) {
 	);
 }
 
-function CollectionList({ collections, actionProps }) {
+function CollectionList({ collections, actionProps, createdCardTarget, createdCardRef }) {
 	return (
 		<ul className="node-list" aria-label="Collections">
 			{collections.map((collection) => (
-				<li key={collection.internalId}>
+				<li
+					key={collection.internalId}
+					ref={createdCardTarget?.nodeType === "collection"
+						&& createdCardTarget.internalId === collection.internalId
+						? createdCardRef
+						: undefined}
+				>
 					<HierarchyCard node={collection} noun="collection" {...actionProps}>
 						<span className="node-title">{collection.title}</span>
 						{collection.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
@@ -122,11 +132,17 @@ function CollectionList({ collections, actionProps }) {
 	);
 }
 
-function FolderList({ folders, actionProps }) {
+function FolderList({ folders, actionProps, createdCardTarget, createdCardRef }) {
 	return (
 		<ul className="node-list" aria-label="Folders">
 			{folders.map((folder) => (
-				<li key={folder.internalId}>
+				<li
+					key={folder.internalId}
+					ref={createdCardTarget?.nodeType === "folder"
+						&& createdCardTarget.internalId === folder.internalId
+						? createdCardRef
+						: undefined}
+				>
 					<HierarchyCard node={folder} noun="folder" {...actionProps}>
 						<span className="node-title">{folder.title}</span>
 						{folder.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
@@ -300,11 +316,14 @@ export function BuilderWorkspace({
 	initialReturnConfirmationOpen = false,
 }) {
 	const view = buildBuilderViewModel(state);
+	const desktopViewport = useBuilderDesktopViewport();
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
 	const [mobileLevelOverride, setMobileLevelOverride] = useState(null);
+	const [createdCardTarget, setCreatedCardTarget] = useState(null);
 	const titleInputRef = useRef(null);
+	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
 	const returnHomeButtonRef = useRef(null);
 	const stayButtonRef = useRef(null);
@@ -345,14 +364,26 @@ export function BuilderWorkspace({
 		returnHomeButtonRef.current?.focus();
 	}, [restoreReturnFocus]);
 
+	useEffect(() => {
+		if (createdCardTarget === null || createdCardRef.current === null) return;
+		createdCardRef.current.scrollIntoView?.({
+			behavior: builderCardScrollBehavior(),
+			block: "nearest",
+		});
+		createdCardRef.current = null;
+		setCreatedCardTarget(null);
+	}, [createdCardTarget]);
+
 	function selectNode(internalId) {
 		if (navigationLocked) return;
+		setCreatedCardTarget(null);
 		setMobileLevelOverride(null);
 		controller.selectNode(internalId);
 	}
 
 	function clearSelection() {
 		if (navigationLocked) return;
+		setCreatedCardTarget(null);
 		setMobileLevelOverride(null);
 		controller.clearSelection();
 	}
@@ -363,6 +394,7 @@ export function BuilderWorkspace({
 		if (!node) return;
 		const draft = createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
+		setCreatedCardTarget(null);
 		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
 		editRestoreFocusRef.current = trigger;
 		setEditorDiagnostics([]);
@@ -396,6 +428,7 @@ export function BuilderWorkspace({
 				setEditorDraft(null);
 				setEditorDiagnostics([]);
 				setReturnDiagnostic(null);
+				setCreatedCardTarget(null);
 				setMobileLevelOverride(null);
 				setReturnConfirmationOpen(false);
 				onReturnHome();
@@ -423,17 +456,31 @@ export function BuilderWorkspace({
 	}
 
 	function createCollection() {
-		if (!navigationLocked) {
-			setMobileLevelOverride(null);
-			createDraftCollection(controller);
-		}
+		if (navigationLocked) return;
+		const result = createDraftCollection(controller, { selectCreated: desktopViewport });
+		if (!result.ok) return;
+
+		setMobileLevelOverride(desktopViewport ? null : "collections");
+		setCreatedCardTarget(desktopViewport ? null : {
+			nodeType: "collection",
+			internalId: result.createdInternalId,
+		});
 	}
 
 	function createFolder() {
-		if (!navigationLocked && view.selectedCollection) {
-			setMobileLevelOverride(null);
-			createDraftFolder(controller, view.selectedCollection.internalId);
-		}
+		if (navigationLocked || !view.selectedCollection) return;
+		const result = createDraftFolder(
+			controller,
+			view.selectedCollection.internalId,
+			{ selectCreated: desktopViewport },
+		);
+		if (!result.ok) return;
+
+		setMobileLevelOverride(desktopViewport ? null : "folders");
+		setCreatedCardTarget(desktopViewport ? null : {
+			nodeType: "folder",
+			internalId: result.createdInternalId,
+		});
 	}
 
 	const hierarchyActionProps = {
@@ -520,6 +567,8 @@ export function BuilderWorkspace({
 								<CollectionList
 									collections={view.collections}
 									actionProps={hierarchyActionProps}
+									createdCardTarget={createdCardTarget}
+									createdCardRef={createdCardRef}
 								/>
 							) : (
 								<EmptyState
@@ -571,6 +620,8 @@ export function BuilderWorkspace({
 								<FolderList
 									folders={view.folders}
 									actionProps={hierarchyActionProps}
+									createdCardTarget={createdCardTarget}
+									createdCardRef={createdCardRef}
 								/>
 							) : (
 								<EmptyState

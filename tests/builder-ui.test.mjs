@@ -9,6 +9,14 @@ import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.j
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
 import { createDraftCollection, createDraftFolder } from "../builder/src/ui/draft-actions.js";
+import { createTargetedNodeEditorDraft } from "../builder/src/ui/hierarchy-actions.js";
+import {
+	builderCardScrollBehavior,
+	BUILDER_DESKTOP_BREAKPOINT_PX,
+	BUILDER_DESKTOP_MEDIA_QUERY,
+	BUILDER_REDUCED_MOTION_MEDIA_QUERY,
+	matchesBuilderDesktopViewport,
+} from "../builder/src/ui/responsive-viewport.js";
 import { buildBuilderViewModel } from "../builder/src/ui/view-model.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -317,8 +325,9 @@ test("repeated source metadata values retain semantic keys without React warning
 	assert.ok(markup.indexOf("Repeated metadata") < markup.indexOf("Second source"));
 });
 
-test("first draft collection uses an automatic identity and becomes selected", () => {
+test("desktop draft collection creation uses unchanged defaults, selects, and advances once", () => {
 	const controller = createController();
+	const beforeRevision = controller.getState().revision;
 	const result = createDraftCollection(controller);
 	const collection = controller.getState().project.collections[0];
 	assert.equal(result.ok, true);
@@ -332,9 +341,58 @@ test("first draft collection uses an automatic identity and becomes selected", (
 		showAllTab: true,
 	});
 	assert.equal(controller.getState().selection.collectionInternalId, collection.internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "folders");
+	assert.equal(controller.getState().revision, beforeRevision + 1);
 	assert.equal(controller.getState().dirty, true);
 	assert.deepEqual(collection.folders, []);
 	assert.equal(controller.serializeProject().value[0].focusGlowEnabled, true);
+});
+
+test("mobile collection creation stays on Collections and supports ordered repetition and later targeting", () => {
+	const controller = createController();
+	const beforeRevision = controller.getState().revision;
+	const created = [
+		createDraftCollection(controller, { selectCreated: false }),
+		createDraftCollection(controller, { selectCreated: false }),
+		createDraftCollection(controller, { selectCreated: false }),
+	];
+	const state = controller.getState();
+
+	assert.equal(created.every((result) => result.ok), true);
+	assert.deepEqual(state.project.collections.map((collection) => collection.editable.title), [
+		"Untitled Collection",
+		"Untitled Collection 2",
+		"Untitled Collection 3",
+	]);
+	assert.deepEqual(state.project.collections.map((collection) => collection.editable.id), [
+		"nuvio-1",
+		"nuvio-2",
+		"nuvio-3",
+	]);
+	assert.equal(state.selection.collectionInternalId, null);
+	assert.equal(buildBuilderViewModel(state).activeMobileLevel, "collections");
+	assert.equal(state.revision, beforeRevision + 3);
+	assert.equal(state.dirty, true);
+	assert.equal(state.project.collections.every((collection) => (
+		collection.folders.length === 0
+		&& collection.editable.pinToTop === false
+		&& collection.editable.focusGlowEnabled === true
+		&& collection.editable.viewMode === "TABBED_GRID"
+		&& collection.editable.showAllTab === true
+	)), true);
+
+	const firstCollection = state.project.collections[0];
+	const beforeSelectionRevision = state.revision;
+	controller.selectNode(firstCollection.internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "folders");
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
+
+	const thirdCollection = state.project.collections[2];
+	const draft = createTargetedNodeEditorDraft(controller, thirdCollection);
+	assert.equal(draft.internalId, thirdCollection.internalId);
+	assert.equal(draft.values.title, "Untitled Collection 3");
+	assert.equal(controller.getState().selection.collectionInternalId, thirdCollection.internalId);
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
 });
 
 test("later draft collections use the smallest free exact draft title", () => {
@@ -350,13 +408,14 @@ test("later draft collections use the smallest free exact draft title", () => {
 	assert.deepEqual(controller.getState().project.collections.slice(0, 2).map((item) => item.editable.id), ["collection-1", "collection-3"]);
 });
 
-test("draft folder titles use the smallest free exact title and no source is created", () => {
+test("desktop draft folder creation uses unchanged defaults, selects, and advances once", () => {
 	const controller = createController();
 	controller.importValue([
 		{ id: "c1", title: "One", folders: [{ id: "folder-1", title: "Untitled Folder", sources: [] }] },
 		{ id: "c2", title: "Two", folders: [] },
 	]);
 	const secondCollection = controller.getState().project.collections[1];
+	const beforeRevision = controller.getState().revision;
 	const result = createDraftFolder(controller, secondCollection.internalId);
 	const created = controller.getState().project.collections[1].folders[0];
 	assert.equal(result.ok, true);
@@ -367,11 +426,61 @@ test("draft folder titles use the smallest free exact title and no source is cre
 		hideTitle: true,
 	});
 	assert.equal(controller.getState().selection.folderInternalId, created.internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "sources");
+	assert.equal(controller.getState().revision, beforeRevision + 1);
 	assert.deepEqual(created.sources, []);
 	const view = buildBuilderViewModel(controller.getState());
 	assert.ok(view.selectedFolder.details.some((entry) => (
 		entry.label === "Folder title shown" && entry.value === "No"
 	)));
+});
+
+test("mobile folder creation stays on Folders, preserves its parent, and supports ordered repetition", () => {
+	const controller = createController();
+	const collectionResult = createDraftCollection(controller);
+	const parent = controller.getState().project.collections[0];
+	assert.equal(controller.getState().selection.collectionInternalId, parent.internalId);
+	const beforeRevision = controller.getState().revision;
+
+	const created = [
+		createDraftFolder(controller, collectionResult.createdInternalId, { selectCreated: false }),
+		createDraftFolder(controller, collectionResult.createdInternalId, { selectCreated: false }),
+		createDraftFolder(controller, collectionResult.createdInternalId, { selectCreated: false }),
+	];
+	const state = controller.getState();
+	const folders = state.project.collections[0].folders;
+
+	assert.equal(created.every((result) => result.ok), true);
+	assert.deepEqual(folders.map((folder) => folder.editable.title), [
+		"Untitled Folder",
+		"Untitled Folder 2",
+		"Untitled Folder 3",
+	]);
+	assert.deepEqual(folders.map((folder) => folder.editable.id), ["nuvio-2", "nuvio-3", "nuvio-4"]);
+	assert.equal(state.selection.collectionInternalId, parent.internalId);
+	assert.equal(state.selection.folderInternalId, null);
+	assert.equal(state.selection.sourceInternalId, null);
+	assert.equal(buildBuilderViewModel(state).activeMobileLevel, "folders");
+	assert.equal(state.revision, beforeRevision + 3);
+	assert.equal(state.dirty, true);
+	assert.equal(folders.every((folder) => (
+		folder.editable.tileShape === "POSTER"
+		&& folder.editable.hideTitle === true
+		&& folder.sources.length === 0
+	)), true);
+
+	const beforeSelectionRevision = state.revision;
+	controller.selectNode(folders[1].internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "sources");
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
+
+	controller.selectNode(parent.internalId);
+	const draft = createTargetedNodeEditorDraft(controller, folders[2]);
+	assert.equal(draft.internalId, folders[2].internalId);
+	assert.equal(draft.values.title, "Untitled Folder 3");
+	assert.equal(controller.getState().selection.collectionInternalId, parent.internalId);
+	assert.equal(controller.getState().selection.folderInternalId, folders[2].internalId);
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
 });
 
 test("failed draft creation retains selection and does not mutate the prior snapshot", () => {
@@ -479,6 +588,7 @@ test("production UI keeps one local SVG and excludes deferred browser and render
 
 test("styles provide mobile protection, touch sizing, focus, desktop panels, and reduced motion", () => {
 	const styles = read("builder/src/styles.css");
+	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(styles, /:root\s*\{[\s\S]*--cyan:/);
 	assert.match(styles, /overflow-x:\s*hidden/);
 	assert.match(styles, /focus-visible/);
@@ -487,4 +597,28 @@ test("styles provide mobile protection, touch sizing, focus, desktop panels, and
 	assert.match(styles, /@media \(min-width: 900px\)/);
 	assert.match(styles, /grid-template-columns:\s*minmax\(235px/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+	assert.equal(BUILDER_DESKTOP_BREAKPOINT_PX, 900);
+	assert.equal(BUILDER_DESKTOP_MEDIA_QUERY, "(min-width: 900px)");
+	assert.ok(styles.includes(`@media ${BUILDER_DESKTOP_MEDIA_QUERY}`));
+	assert.match(workspace, /useBuilderDesktopViewport\(\)/);
+	assert.match(workspace, /selectCreated:\s*desktopViewport/);
+	assert.match(workspace, /desktopViewport \? null : "collections"/);
+	assert.match(workspace, /desktopViewport \? null : "folders"/);
+});
+
+test("responsive helper matches the established breakpoint and respects reduced motion for card scrolling", () => {
+	const queries = [];
+	const mobileMatchMedia = (query) => {
+		queries.push(query);
+		return { matches: false };
+	};
+	const desktopMatchMedia = (query) => ({ matches: query === BUILDER_DESKTOP_MEDIA_QUERY });
+	const reducedMotionMatchMedia = (query) => ({ matches: query === BUILDER_REDUCED_MOTION_MEDIA_QUERY });
+
+	assert.equal(matchesBuilderDesktopViewport(mobileMatchMedia), false);
+	assert.equal(matchesBuilderDesktopViewport(desktopMatchMedia), true);
+	assert.equal(matchesBuilderDesktopViewport(null), true);
+	assert.deepEqual(queries, [BUILDER_DESKTOP_MEDIA_QUERY]);
+	assert.equal(builderCardScrollBehavior(mobileMatchMedia), "smooth");
+	assert.equal(builderCardScrollBehavior(reducedMotionMatchMedia), "auto");
 });

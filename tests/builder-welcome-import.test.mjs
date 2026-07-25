@@ -85,18 +85,36 @@ function renderedIds(markup) {
 	return [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 }
 
-test("production welcome is the default and exposes the corrected brand hierarchy", () => {
+test("production welcome uses collection-focused startup copy and retains literal file-picker terms", () => {
 	const markup = render(createController());
 	for (const text of [
 		"Development preview",
 		"TMDB Collection Builder",
 		"Built for Nuvio collections",
-		"Start a new collection file",
+		"Create, import and organise Nuvio collections using TMDB-powered sources.",
+		"Start a new collection",
+		"Open a clean workspace and build your Nuvio collection.",
+		"Create new collection",
+		"Open an existing collection",
+		"Choose a JSON file or paste its contents to continue.",
+		"Choose a JSON file",
+		"Collection JSON file",
 		"Import selected file",
+		"No file selected",
 		"Import pasted JSON",
 		"processed locally in this browser and is not uploaded",
 	]) {
 		assert.ok(markup.includes(text), text);
+	}
+	for (const oldText of [
+		"Create, import and organise collection files using TMDB-powered sources and Nuvio-compatible structures.",
+		"Begin with a clean collection file",
+		"Open an empty workspace for a new Nuvio collection file.",
+		"Start a new collection file",
+		"Open an existing collection JSON",
+		"Choose a local file or paste its JSON text. Import begins only when you confirm an action.",
+	]) {
+		assert.equal(markup.includes(oldText), false, oldText);
 	}
 	assert.match(markup, /<main[^>]+data-builder-welcome="true"/);
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);

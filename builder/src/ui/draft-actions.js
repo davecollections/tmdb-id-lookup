@@ -7,8 +7,8 @@ function nextAvailableTitle(titles, baseTitle) {
 	return number === 1 ? baseTitle : `${baseTitle} ${number}`;
 }
 
-function selectCreatedNode(controller, creationResult) {
-	if (!creationResult.ok) {
+function completeDraftCreation(controller, creationResult, selectCreated) {
+	if (!creationResult.ok || !selectCreated) {
 		return creationResult;
 	}
 
@@ -19,7 +19,7 @@ function selectCreatedNode(controller, creationResult) {
 	};
 }
 
-export function createDraftCollection(controller) {
+export function createDraftCollection(controller, { selectCreated = true } = {}) {
 	const state = controller.getState();
 	const title = nextAvailableTitle(
 		state.project.collections.map((collection) => collection.editable.title),
@@ -35,10 +35,10 @@ export function createDraftCollection(controller) {
 		},
 	});
 
-	return selectCreatedNode(controller, result);
+	return completeDraftCreation(controller, result, selectCreated);
 }
 
-export function createDraftFolder(controller, collectionInternalId) {
+export function createDraftFolder(controller, collectionInternalId, { selectCreated = true } = {}) {
 	const state = controller.getState();
 	const title = nextAvailableTitle(
 		state.project.collections.flatMap((collection) => (
@@ -54,5 +54,5 @@ export function createDraftFolder(controller, collectionInternalId) {
 		},
 	});
 
-	return selectCreatedNode(controller, result);
+	return completeDraftCreation(controller, result, selectCreated);
 }

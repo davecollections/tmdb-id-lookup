@@ -30,7 +30,7 @@ React imports `createBuilderController` only from the supported `builder/src/app
 
 `useBuilderControllerState` is the only React subscription adapter. It calls `useSyncExternalStore` with `controller.subscribe`, `controller.getState`, and the same `getState` function as the server/static snapshot reader.
 
-The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, and the uncommitted settings draft and diagnostics use local React state.
+The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, responsive viewport and card-scroll targeting, and the uncommitted settings draft and diagnostics use local React state.
 
 ## UI module structure
 
@@ -44,6 +44,7 @@ builder/src/ui/
   node-editor-actions.js      public controller update delegation
   modal-focus.js              dialog entry, containment, Escape, and focus-wrap helpers
   import-actions.js           public-controller-only browser transport helpers
+  responsive-viewport.js      shared 900px viewport hook and reduced-motion scroll helper
   use-builder-controller.js   external-store subscription adapter
   view-model.js               pure safe display derivation
   draft-actions.js            deterministic collection/folder title conveniences
@@ -71,6 +72,8 @@ Below 900px, the shell is a drill-down driven only by controller selection:
 
 `All collections` calls `clearSelection()`. The source-level back control selects the parent collection. Selecting `Show folder details` selects the current folder and clears only source selection. The shell does not add URL routes or browser-history state.
 
+Creation is viewport-aware only at this UI layer. At the established 900px desktop breakpoint and above, creating a collection still selects it and exposes Folders, while creating a folder still selects it and exposes Sources. Below 900px, collection creation leaves the user on Collections without selecting the new card, and folder creation retains the selected parent collection while leaving the user on Folders. Repeated mobile creation therefore needs no back-navigation. Ordinary card selection and Edit continue to target each created node normally.
+
 ## Selection semantics
 
 Collection, folder, and source list entries are real buttons inside ordinary semantic lists. Selection calls `controller.selectNode(internalId)`. React keys use builder-only `internalId`, but internal IDs are not displayed as user content.
@@ -83,7 +86,9 @@ Selected buttons use `aria-pressed`, visible accent treatment, and hidden select
 
 `createDraftFolder(controller, collectionInternalId)` chooses the next unique `Untitled Folder` title, supplies Poster and `hideTitle: true` as the explicit manual defaults, then delegates automatic Nuvio ID creation to the controller. The positive Show folder title switch is therefore off for a newly created blank folder.
 
-Both helpers use only `getState()` and public controller actions. They never derive an internal ID, never alter imported IDs, and select a created node only after creation succeeds. They return the controller's structured result with the successful `createdInternalId`. Collection creation does not create a folder, and folder creation does not create a source.
+Both helpers use only `getState()` and public controller actions. They never derive an internal ID or alter imported IDs. Their UI-only `selectCreated` option defaults to the established desktop behavior and selects only after creation succeeds; mobile callers disable that convenience without changing the controller creation contract. They return the controller's structured result with the successful `createdInternalId`. Collection creation does not create a folder, and folder creation does not create a source.
+
+After successful mobile creation, the new card is scrolled into view when practical. The scroll uses smooth behavior unless `prefers-reduced-motion: reduce` is active, in which case it uses immediate behavior. Scrolling and hierarchy-level suppression are local presentation state and add no project revision.
 
 ## Read-only source and selection display
 
@@ -127,7 +132,7 @@ Migration remains non-interactive. The shell shows a small notice only when prev
 
 ## Responsive and visual direction
 
-The default layout is mobile-first and has been designed for the required 360, 384, 393, 402, and 412px widths. A wider single-panel drill-down remains active at 768px. The three-panel layout starts at 900px and is intended for the required 1024px and 1280px desktop checks.
+The default layout is mobile-first and has been designed for the required 360, 384, 393, 402, and 412px widths. A wider single-panel drill-down remains active at 768px. The three-panel layout starts at 900px and is intended for the required 1024px and 1280px desktop checks. The responsive creation hook uses that same 900px media query rather than adding viewport logic to the controller or domain.
 
 The palette uses deep blue-black page and panel surfaces with restrained cyan and green accents, quiet separators, limited gradients, and compact elevation. It deliberately avoids a marketing hero, warm styling, excessive pills, dense dashboard decoration, external fonts, and copied third-party layouts.
 

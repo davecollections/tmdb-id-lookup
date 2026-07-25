@@ -2,7 +2,7 @@
 
 Status: implemented for issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41)
 
-Last reviewed: 2026-07-12
+Last reviewed: 2026-07-25
 
 ## Purpose and scope
 
@@ -28,13 +28,15 @@ Welcome project actions are mutually exclusive. A synchronous in-flight gate hel
 
 ## Start New Project
 
-Visible wording describes a new collection file rather than a saved or switchable project. `startNewBuilderProject(controller)` still calls the existing internal controller method:
+Visible wording now speaks about creating a Nuvio collection rather than creating a collection file, while avoiding a saved or switchable project model. The create route reads **Start a new collection**, **Open a clean workspace and build your Nuvio collection**, and **Create new collection**. `startNewBuilderProject(controller)` still calls the existing internal controller method:
 
 ```js
 controller.startNewProject({ title: "Untitled project" })
 ```
 
 A successful result clears the controller project to one clean empty project and enters the workspace. It creates no collection or folder. Failure remains on welcome and uses the controller's structured operation diagnostic.
+
+The import route reads **Open an existing collection** and **Choose a JSON file or paste its contents to continue**. Literal file wording remains on the actual file-picker path, including **Choose a JSON file**, **Collection JSON file**, **Import selected file**, and **No file selected**. No import behavior or format changed.
 
 ## Pasted JSON import
 
