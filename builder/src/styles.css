@@ -1583,6 +1583,58 @@ button:disabled {
 	}
 }
 
+@media (max-width: 619px) {
+	.node-editor {
+		--mobile-modal-heading-clearance: 112px;
+		--mobile-modal-action-clearance: calc(78px + env(safe-area-inset-bottom));
+
+		height: 100svh;
+		height: 100dvh;
+		max-height: 100svh;
+		max-height: 100dvh;
+		scroll-padding-block: var(--mobile-modal-heading-clearance) var(--mobile-modal-action-clearance);
+	}
+
+	.node-editor-heading {
+		gap: 7px;
+		padding: 13px 18px 14px;
+		background: rgb(9 29 40);
+		box-shadow: 0 6px 14px rgb(1 9 14 / 26%);
+	}
+
+	.node-editor-heading h2 {
+		margin-top: 2px;
+	}
+
+	.node-editor-heading > p {
+		line-height: 1.4;
+	}
+
+	.node-editor-actions {
+		grid-template-columns: minmax(0, 1.65fr) minmax(88px, 1fr);
+		gap: 10px;
+		padding: 10px 18px max(12px, env(safe-area-inset-bottom));
+		background: rgb(7 24 33);
+		box-shadow: 0 -6px 14px rgb(1 9 14 / 28%);
+	}
+
+	.node-editor-actions .editor-apply,
+	.node-editor-actions .editor-cancel {
+		width: 100%;
+		min-width: 0;
+		min-height: 54px;
+	}
+
+	.node-editor input,
+	.node-editor .editor-field,
+	.node-editor .editor-switch-field,
+	.node-editor .editor-choice-field,
+	.node-editor .editor-diagnostics {
+		scroll-margin-block-start: var(--mobile-modal-heading-clearance);
+		scroll-margin-block-end: var(--mobile-modal-action-clearance);
+	}
+}
+
 @media (min-width: 620px) {
 	.builder-welcome {
 		padding: 22px;

@@ -1923,11 +1923,44 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.editor-switch\s*\{[\s\S]*min-height:\s*64px/);
 	assert.match(styles, /\.shape-preview\.is-poster\s*\{[\s\S]*height:\s*39px/);
 	assert.match(styles, /\.shape-preview\.is-landscape\s*\{[\s\S]*width:\s*42px/);
+	assert.match(styles, /\.editor-apply\s*\{[\s\S]*background:\s*linear-gradient\(135deg,\s*var\(--cyan\),\s*var\(--green\)\)/);
 	assert.match(styles, /button:disabled/);
 	assert.match(styles, /@media \(max-width: 430px\)/);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*\.node-editor\s*\{[\s\S]*height:\s*100svh[\s\S]*height:\s*100dvh/,
+	);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*scroll-padding-block:\s*var\(--mobile-modal-heading-clearance\) var\(--mobile-modal-action-clearance\)/,
+	);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*--mobile-modal-action-clearance:\s*calc\(78px \+ env\(safe-area-inset-bottom\)\)/,
+	);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*\.node-editor-heading\s*\{[\s\S]*gap:\s*7px[\s\S]*padding:\s*13px 18px 14px[\s\S]*background:\s*rgb\(9 29 40\)/,
+	);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*\.node-editor-actions\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1\.65fr\) minmax\(88px,\s*1fr\)[\s\S]*background:\s*rgb\(7 24 33\)/,
+	);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*\.node-editor-actions \.editor-apply,[\s\S]*\.node-editor-actions \.editor-cancel\s*\{[\s\S]*min-height:\s*54px/,
+	);
+	assert.match(
+		styles,
+		/@media \(max-width: 619px\)[\s\S]*scroll-margin-block-start:\s*var\(--mobile-modal-heading-clearance\)[\s\S]*scroll-margin-block-end:\s*var\(--mobile-modal-action-clearance\)/,
+	);
 	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*width:\s*min\(840px,\s*100%\)/);
 	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*max-height:\s*calc\(100dvh - 48px\)/);
 	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*border-radius:\s*18px/);
+	assert.match(
+		styles,
+		/@media \(min-width: 620px\)[\s\S]*\.node-editor-actions\s*\{[\s\S]*grid-template-columns:\s*auto auto[\s\S]*padding:\s*16px 22px 22px/,
+	);
 	assert.match(styles, /@media \(min-width: 760px\)[\s\S]*\.node-editor-form\s*\{[\s\S]*max-width:\s*760px/);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(235px/);
 	assert.match(styles, /focus-visible/);
