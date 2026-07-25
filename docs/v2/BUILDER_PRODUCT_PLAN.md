@@ -222,9 +222,9 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 
 **Confirmed Nuvio behaviour from repository evidence**
 
-- **Rows** presents folder/source groups as streaming-style rows.
-- **Tabs** with Show All disabled presents individual tabs and defaults to the first tab.
-- **Tabs** with Show All enabled adds **All** as the first/default tab.
+- **Rows** presents each source within a folder as a streaming-style row.
+- **Tabs** presents each source within a folder as a tab and defaults to the first source tab.
+- **Tabs** with Show All enabled adds **All** as the first/default tab for each folder containing two or more sources; one-source folders have no visible All tab.
 - These are collection-level settings.
 
 **Confirmed and implemented foundation**
@@ -232,12 +232,12 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 The current owner-reviewed workflow exposes:
 
 - one compact, always-visible Edit action on every collection and folder card, replacing the former Rename/Settings pair and directly targeting unselected cards;
-- one responsive modal for collection title, intentional invisible Nuvio title, Tabs/Rows, conditional Include an All tab, Pin to top, and Enable focus glow;
-- the same modal for folder title, Poster/Landscape, and positive Show folder title wording.
+- one responsive modal for collection title, intentional invisible Nuvio title, source-level Tabs/Rows, conditional Include an All tab, Pin to top, and Enable focus glow;
+- the same modal for folder title, intentional everywhere-hidden Nuvio title, Poster/Landscape, and positive Show folder title on home screen wording.
 
 Manual blank collections default to Tabs with All enabled, Pin off, and focus glow on. Manual blank folders default to Poster with `hideTitle: true`, so the title beneath the card is hidden by default while the actual folder name remains visible. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices. Imported focus-glow booleans display accurately; absent and unusual values remain preserved until deliberate canonical replacement.
 
-U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. The collection setting deliberately emits one U+200E because Nuvio lacks a native collection-title visibility setting, and blank titles never become invisible automatically. The Builder does not expose invisible-folder-name creation: imported repeated U+200E folder names are preservation-only until explicitly replaced with visible text. Invisible folder names remain distinct from native `hideTitle`. The Builder uses a display-only fallback rather than rendering blank cards or headings.
+U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. The collection and folder everywhere-hidden settings deliberately emit one U+200E, and blank titles never become invisible automatically. Imported repeated U+200E titles remain byte-for-byte preservation cases until the user deliberately replaces their intent. A folder's invisible actual title remains distinct from native `hideTitle`, which controls only whether the title is shown beneath the folder card on Nuvio's home screen. The Builder uses a display-only fallback rather than rendering blank cards or headings.
 
 **Confirmed direction**
 

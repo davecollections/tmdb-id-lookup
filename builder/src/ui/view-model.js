@@ -103,7 +103,7 @@ function buildCollection(collection, selectedInternalId) {
 			detail("Sources", sourceCount),
 			detail("Layout", layout),
 			detail("Pinned to top", pinToTop),
-			layout === "Tabs" ? detail("All tab included", showAllTab) : null,
+			layout === "Tabs" ? detail("All source tab enabled", showAllTab) : null,
 			detail("Focus glow enabled", focusGlowEnabled),
 		]),
 	};
@@ -132,7 +132,7 @@ function buildFolder(folder, selectedInternalId) {
 			title.hidden ? detail("Nuvio title", "Invisible") : null,
 			detail("Sources", sourceCount),
 			detail("Tile shape", tileShape),
-			hideTitle === null ? null : detail("Folder title shown", !hideTitle),
+			hideTitle === null ? null : detail("Home-screen title shown", !hideTitle),
 			detail("Artwork", artworkCount === 0 ? "None added" : countLabel(artworkCount, "artwork field")),
 		]),
 	};

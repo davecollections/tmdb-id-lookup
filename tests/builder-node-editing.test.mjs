@@ -160,6 +160,7 @@ test("folder draft retains only stable target identity and editor values", () =>
 	assert.equal(draft.nodeType, "folder");
 	assert.deepEqual(draft.values, {
 		title: "Folder title",
+		hideFolderTitleEverywhere: false,
 		tileShape: "",
 		showFolderTitle: true,
 	});
@@ -755,7 +756,7 @@ test("collection hidden-title toggle emits one U+200E and restores the prior vis
 	assert.deepEqual(buildNodeEditorPatch(draft), {});
 });
 
-test("folder settings reject invisible-name creation and retain native hideTitle presentation", () => {
+test("folder hidden-everywhere intent emits one U+200E, forces home-screen hiding, and restores modal values", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Collection",
@@ -768,12 +769,98 @@ test("folder settings reject invisible-name creation and retain native hideTitle
 		}],
 	}]);
 	const folder = controller.getState().project.collections[0].folders[0];
-	const draft = createNodeEditorDraft(folder);
-	assert.equal(updateNodeEditorField(draft, "hideNuvioTitle", true), draft);
-	assert.deepEqual(buildNodeEditorPatch(draft), {});
+	let draft = createNodeEditorDraft(folder);
+	assert.equal(draft.values.hideFolderTitleEverywhere, false);
 	assert.equal(draft.values.showFolderTitle, true);
-	assert.equal(folder.editable.title, "Folder");
-	assert.equal(folder.editable.hideTitle, false);
+	assert.equal(draft.visibleTitleDraft, "Folder");
+
+	draft = updateNodeEditorField(draft, "hideFolderTitleEverywhere", true);
+	assert.equal(draft.values.hideFolderTitleEverywhere, true);
+	assert.equal(draft.values.title, "");
+	assert.equal(draft.values.showFolderTitle, true);
+	assert.equal(draft.visibleTitleDraft, "Folder");
+	assert.equal(draft.canonicalizeFolderInvisibleTitle, true);
+	assert.deepEqual(buildNodeEditorPatch(draft), {
+		title: NUVIO_INVISIBLE_TITLE,
+		hideTitle: true,
+	});
+	assert.equal(updateNodeEditorField(draft, "showFolderTitle", false), draft);
+
+	draft = updateNodeEditorField(draft, "hideFolderTitleEverywhere", false);
+	assert.equal(draft.values.title, "Folder");
+	assert.equal(draft.values.showFolderTitle, true);
+	assert.equal(draft.canonicalizeFolderInvisibleTitle, false);
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
+});
+
+test("folder hidden-everywhere intent omits an already-true hideTitle patch", () => {
+	const folder = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			hideTitle: true,
+			tileShape: "POSTER",
+			sources: [],
+		}],
+	}]).getState().project.collections[0].folders[0];
+	const hiddenDraft = updateNodeEditorField(
+		createNodeEditorDraft(folder),
+		"hideFolderTitleEverywhere",
+		true,
+	);
+
+	assert.equal(hiddenDraft.values.showFolderTitle, false);
+	assert.deepEqual(buildNodeEditorPatch(hiddenDraft), {
+		title: NUVIO_INVISIBLE_TITLE,
+	});
+
+	const restoredDraft = updateNodeEditorField(
+		hiddenDraft,
+		"hideFolderTitleEverywhere",
+		false,
+	);
+	assert.equal(restoredDraft.values.title, "Folder");
+	assert.equal(restoredDraft.values.showFolderTitle, false);
+	assert.deepEqual(buildNodeEditorPatch(restoredDraft), {});
+});
+
+test("folder hidden-everywhere apply calls the controller once, increments once, and serializes no modal flag", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			hideTitle: false,
+			tileShape: "POSTER",
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	const beforeRevision = controller.getState().revision;
+	const hiddenDraft = updateNodeEditorField(
+		createNodeEditorDraft(folder),
+		"hideFolderTitleEverywhere",
+		true,
+	);
+	let calls = 0;
+	const recordingController = {
+		updateNode(internalId, patch) {
+			calls += 1;
+			return controller.updateNode(internalId, patch);
+		},
+	};
+	const outcome = applyNodeEditorDraft(recordingController, hiddenDraft);
+	const output = controller.serializeProject().value;
+
+	assert.deepEqual(outcome, { ok: true, controllerCalled: true, diagnostics: [] });
+	assert.equal(calls, 1);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(output[0].folders[0].title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(output[0].folders[0].hideTitle, true);
+	assert.equal(JSON.stringify(output).includes("hideFolderTitleEverywhere"), false);
 });
 
 test("repeated imported U+200E titles are recognised and preserved through unrelated edits and a serializer cycle", () => {
@@ -798,10 +885,11 @@ test("repeated imported U+200E titles are recognised and preserved through unrel
 	const folderDraft = createNodeEditorDraft(folder);
 	assert.equal(collectionDraft.values.hideNuvioTitle, true);
 	assert.equal(collectionDraft.values.title, repeated);
-	assert.equal(Object.hasOwn(folderDraft.values, "hideNuvioTitle"), false);
+	assert.equal(folderDraft.values.hideFolderTitleEverywhere, true);
 	assert.equal(folderDraft.values.title, "");
 	assert.equal(folderDraft.original.title.hidden, true);
 	assert.equal(folderDraft.original.title.value, null);
+	assert.equal(folderDraft.canonicalizeFolderInvisibleTitle, false);
 	assert.deepEqual(validateNodeEditorDraft(folderDraft), []);
 	assert.equal(JSON.stringify(folderDraft).includes(repeated), false);
 
@@ -840,6 +928,131 @@ test("disabling an imported invisible title requires a visible replacement", () 
 	draft = updateNodeEditorField(draft, "title", "Visible replacement");
 	assert.deepEqual(validateNodeEditorDraft(draft), []);
 	assert.deepEqual(buildNodeEditorPatch(draft), { title: "Visible replacement" });
+});
+
+test("imported invisible folders preserve repeated titles and every hideTitle presence state through unrelated edits", () => {
+	const hideTitleCases = [
+		{ id: "true", title: NUVIO_INVISIBLE_TITLE, hasValue: true, value: true },
+		{ id: "false", title: NUVIO_INVISIBLE_TITLE.repeat(2), hasValue: true, value: false },
+		{ id: "absent", title: NUVIO_INVISIBLE_TITLE.repeat(3), hasValue: false },
+		{ id: "unsupported", title: NUVIO_INVISIBLE_TITLE.repeat(4), hasValue: true, value: ["RAW_HIDE_TITLE"] },
+	];
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: hideTitleCases.map((entry) => ({
+			id: entry.id,
+			title: entry.title,
+			tileShape: "POSTER",
+			...(entry.hasValue ? { hideTitle: entry.value } : {}),
+			sources: [],
+		})),
+	}]);
+
+	for (const [index, entry] of hideTitleCases.entries()) {
+		const folder = controller.getState().project.collections[0].folders[index];
+		const draft = createNodeEditorDraft(folder);
+		assert.equal(draft.values.hideFolderTitleEverywhere, true);
+		assert.equal(draft.values.title, "");
+		assert.equal(draft.canonicalizeFolderInvisibleTitle, false);
+		assert.equal(JSON.stringify(draft).includes(entry.title), false);
+		assert.deepEqual(
+			buildNodeEditorPatch(updateNodeEditorField(draft, "tileShape", "LANDSCAPE")),
+			{ tileShape: "LANDSCAPE" },
+		);
+		applyNodeEditorDraft(
+			controller,
+			updateNodeEditorField(draft, "tileShape", "LANDSCAPE"),
+		);
+	}
+
+	const output = controller.serializeProject().value[0].folders;
+	for (const [index, entry] of hideTitleCases.entries()) {
+		assert.equal(output[index].title, entry.title);
+		assert.equal(Object.hasOwn(output[index], "hideTitle"), entry.hasValue);
+		if (entry.hasValue) assert.deepEqual(output[index].hideTitle, entry.value);
+	}
+});
+
+test("imported invisible folder can require visible replacement, restore exact hidden preservation, or re-hide canonically", () => {
+	const repeated = NUVIO_INVISIBLE_TITLE.repeat(3);
+	const folder = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: repeated,
+			hideTitle: false,
+			tileShape: "POSTER",
+			sources: [],
+		}],
+	}]).getState().project.collections[0].folders[0];
+	const original = createNodeEditorDraft(folder);
+
+	let visibleDraft = updateNodeEditorField(
+		original,
+		"hideFolderTitleEverywhere",
+		false,
+	);
+	assert.equal(visibleDraft.values.title, "");
+	assert.deepEqual(validateNodeEditorDraft(visibleDraft), [{
+		code: "EDITOR_TITLE_REQUIRED",
+		path: "$ui.editor.title",
+		message: "Enter a folder title before applying changes.",
+	}]);
+
+	const restoredHiddenDraft = updateNodeEditorField(
+		visibleDraft,
+		"hideFolderTitleEverywhere",
+		true,
+	);
+	assert.deepEqual(validateNodeEditorDraft(restoredHiddenDraft), []);
+	assert.deepEqual(buildNodeEditorPatch(restoredHiddenDraft), {});
+	assert.equal(JSON.stringify(restoredHiddenDraft).includes(repeated), false);
+
+	visibleDraft = updateNodeEditorField(visibleDraft, "title", "Visible replacement");
+	assert.deepEqual(validateNodeEditorDraft(visibleDraft), []);
+	assert.deepEqual(buildNodeEditorPatch(visibleDraft), { title: "Visible replacement" });
+
+	const rehiddenDraft = updateNodeEditorField(
+		visibleDraft,
+		"hideFolderTitleEverywhere",
+		true,
+	);
+	assert.equal(rehiddenDraft.values.title, "");
+	assert.equal(rehiddenDraft.visibleTitleDraft, "Visible replacement");
+	assert.equal(rehiddenDraft.canonicalizeFolderInvisibleTitle, true);
+	assert.deepEqual(buildNodeEditorPatch(rehiddenDraft), {
+		title: NUVIO_INVISIBLE_TITLE,
+		hideTitle: true,
+	});
+});
+
+test("mixed visible text plus U+200E stays visible and unsupported alternatives stay invalid", () => {
+	const mixed = `Visible${NUVIO_INVISIBLE_TITLE}`;
+	const folders = [
+		{ id: "mixed", title: mixed },
+		{ id: "zero-width-space", title: "\u200B" },
+		{ id: "word-joiner", title: "\u2060" },
+		{ id: "bom", title: "\uFEFF" },
+	];
+	const project = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: folders.map((folder) => ({ ...folder, sources: [] })),
+	}]).getState().project;
+	const [mixedFolder, ...unsupportedFolders] = project.collections[0].folders;
+	const mixedDraft = createNodeEditorDraft(mixedFolder);
+
+	assert.equal(mixedDraft.values.hideFolderTitleEverywhere, false);
+	assert.equal(mixedDraft.values.title, mixed);
+	assert.deepEqual(validateNodeEditorDraft(mixedDraft), []);
+
+	for (const folder of unsupportedFolders) {
+		const draft = createNodeEditorDraft(folder);
+		assert.equal(draft.values.hideFolderTitleEverywhere, false);
+		assert.equal(validateNodeEditorDraft(draft)[0].code, "EDITOR_TITLE_REQUIRED");
+	}
 });
 
 test("focus glow draft preserves supported absent and unusual imported values", () => {
@@ -1217,7 +1430,13 @@ test("collection settings render exactly one accessible modal with stable marker
 	const controller = importTree();
 	const collection = controller.getState().project.collections[0];
 	controller.selectNode(collection.internalId);
-	const markup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
+	const markup = renderWorkspace(controller, {
+		draft: updateNodeEditorField(
+			createNodeEditorDraft(collection),
+			"viewMode",
+			"TABBED_GRID",
+		),
+	});
 	assert.equal((markup.match(/data-node-editor=/g) ?? []).length, 1);
 	assert.equal((markup.match(/data-settings-modal="true"/g) ?? []).length, 1);
 	assert.equal((markup.match(/role="dialog"/g) ?? []).length, 1);
@@ -1241,13 +1460,25 @@ test("collection settings render exactly one accessible modal with stable marker
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
 	assert.ok(markup.includes("Collection layout"));
+	assert.ok(markup.includes("Choose how each folder displays its sources in Nuvio."));
+	assert.ok(markup.includes("Each source in a folder appears as a tab."));
+	assert.ok(markup.includes("Each source in a folder appears as a streaming-style row."));
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Include an All tab"));
+	assert.ok(markup.includes(
+		"For each folder with two or more sources, adds an All tab that combines its sources.",
+	));
 	assert.ok(markup.includes("Pin to top"));
 	assert.ok(markup.includes("Enable focus glow"));
 	assert.ok(markup.includes("Shows Nuvio’s focus-glow effect for this collection."));
 	assert.ok(markup.includes("Uses an invisible character to hide the collection title in Nuvio."));
 	assert.equal(markup.includes("Uses an invisible title character because"), false);
+	for (const obsolete of [
+		"Choose how this collection groups its folders in Nuvio.",
+		"Each folder appears as a tab.",
+		"Folders appear as streaming-style rows.",
+		"Adds an All tab before the individual folder tabs.",
+	]) assert.equal(markup.includes(obsolete), false, obsolete);
 	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 	assert.equal(markup.includes('data-editor-field="id"'), false);
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
@@ -1272,6 +1503,8 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.match(markup, /role="dialog" aria-modal="true" aria-labelledby="node-editor-folder-title"/);
 	assert.match(markup, /<h2 id="node-editor-folder-title">Folder settings<\/h2>/);
 	for (const marker of [
+		'data-editor-field="hideFolderTitleEverywhere"',
+		'data-editor-control="hideFolderTitleEverywhere"',
 		'data-editor-field="tileShape"',
 		'data-editor-choice="poster"',
 		'data-editor-choice="landscape"',
@@ -1280,13 +1513,25 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	]) assert.ok(markup.includes(marker), marker);
 	assert.equal(markup.includes('data-editor-field="hideNuvioTitle"'), false);
 	assert.equal(markup.includes('data-editor-control="hideNuvioTitle"'), false);
-	assert.equal(markup.includes("Hide folder name in Nuvio"), false);
-	assert.ok(markup.includes("Show folder title"));
+	assert.ok(markup.includes("Hide folder title everywhere in Nuvio"));
+	assert.ok(markup.includes(
+		"Uses an invisible character to hide the folder title on the home screen and when the folder is opened.",
+	));
+	assert.ok(markup.includes("Show folder title on home screen"));
+	assert.ok(markup.includes(
+		"Shows the title beneath the folder card on Nuvio’s home screen.",
+	));
 	assert.ok(markup.includes("Choose the shape of this folder card in Nuvio."));
 	assert.equal(markup.includes("hideTitle"), false);
+	assert.ok(markup.indexOf(">Title</label>") < markup.indexOf("Hide folder title everywhere in Nuvio"));
+	assert.ok(markup.indexOf("Hide folder title everywhere in Nuvio") < markup.indexOf("Tile shape"));
+	assert.ok(markup.indexOf("Tile shape") < markup.indexOf("Show folder title on home screen"));
+	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
+	assert.equal(sourceList.includes("hideFolderTitleEverywhere"), false);
+	assert.equal(sourceList.includes("Hide folder title everywhere in Nuvio"), false);
 });
 
-test("imported invisible folder settings show an empty enabled replacement field without a creation toggle", () => {
+test("imported invisible folder settings keep raw text out of the disabled field and distinguish home-screen hiding", () => {
 	const repeated = NUVIO_INVISIBLE_TITLE.repeat(3);
 	const controller = importTree([{
 		id: "collection",
@@ -1304,15 +1549,23 @@ test("imported invisible folder settings show an empty enabled replacement field
 	const draft = createNodeEditorDraft(folder);
 	const markup = renderWorkspace(controller, { draft });
 	const titleInput = openingTag(markup, 'data-editor-field="title"');
+	const everywhereInput = openingTag(markup, 'data-editor-control="hideFolderTitleEverywhere"');
+	const homeScreenInput = openingTag(markup, 'data-editor-control="showFolderTitle"');
 
 	assert.ok(markup.includes(
-		"This imported folder has an invisible name. Enter a visible title only if you want to replace it.",
+		"The folder title is intentionally invisible everywhere in Nuvio. Turn off the setting below to enter a visible title.",
 	));
 	assert.ok(titleInput.includes('value=""'));
-	assert.equal(titleInput.includes("disabled"), false);
+	assert.ok(titleInput.includes("disabled"));
+	assert.ok(everywhereInput.includes("checked"));
+	assert.equal(everywhereInput.includes("disabled"), false);
+	assert.ok(homeScreenInput.includes("disabled"));
+	assert.equal(homeScreenInput.includes("checked"), false);
+	assert.ok(markup.includes(
+		"Hide folder title everywhere overrides this setting. Its prior preference returns if hiding everywhere is turned off.",
+	));
 	assert.equal(markup.includes('data-editor-field="hideNuvioTitle"'), false);
 	assert.equal(markup.includes('data-editor-control="hideNuvioTitle"'), false);
-	assert.equal(markup.includes("Hide folder name in Nuvio"), false);
 	assert.equal(markup.includes(repeated), false);
 	assert.deepEqual(buildNodeEditorPatch(updateNodeEditorField(draft, "tileShape", "LANDSCAPE")), {
 		tileShape: "LANDSCAPE",

@@ -116,7 +116,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			>
 				<legend>Collection layout</legend>
 				<p className="editor-field-help" id={`${prefix}-layout-help`}>
-					Choose how this collection groups its folders in Nuvio.
+					Choose how each folder displays its sources in Nuvio.
 				</p>
 				<div className="editor-choice-grid">
 					<label className={`editor-choice${tabsSelected ? " is-selected" : ""}`}>
@@ -130,7 +130,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						/>
 						<span>
 							<strong>Tabs</strong>
-							<small>Each folder appears as a tab.</small>
+							<small>Each source in a folder appears as a tab.</small>
 						</span>
 					</label>
 					<label className={`editor-choice${rowsSelected ? " is-selected" : ""}`}>
@@ -144,7 +144,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						/>
 						<span>
 							<strong>Rows</strong>
-							<small>Folders appear as streaming-style rows.</small>
+							<small>Each source in a folder appears as a streaming-style row.</small>
 						</span>
 					</label>
 				</div>
@@ -162,7 +162,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						<strong>Include an All tab</strong>
 						<small id={`${prefix}-all-tab-help`}>
 							{tabsSelected
-								? "Adds an All tab before the individual folder tabs."
+								? "For each folder with two or more sources, adds an All tab that combines its sources."
 								: "Available only with Tabs. The preference stays unchanged while Rows is selected."}
 						</small>
 					</span>
@@ -239,6 +239,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 }
 
 function FolderPresentationFields({ draft, prefix, onChange }) {
+	const hiddenEverywhere = draft.values.hideFolderTitleEverywhere;
 	const posterSelected = isSelected(draft.values.tileShape, "POSTER");
 	const landscapeSelected = isSelected(draft.values.tileShape, "LANDSCAPE");
 	const shapeReplacementPending = draft.touched.tileShape && (posterSelected || landscapeSelected);
@@ -248,6 +249,7 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 	);
 	const titleDescriptionIds = [
 		`${prefix}-show-title-help`,
+		hiddenEverywhere ? `${prefix}-show-title-override` : null,
 		!draft.original.hideTitle.supported && !titleVisibilityReplacementPending
 			? `${prefix}-show-title-status`
 			: null,
@@ -311,14 +313,22 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 			<div className="editor-switch-field" data-editor-field="showFolderTitle">
 				<label className="editor-switch">
 					<span>
-						<strong>Show folder title</strong>
-						<small id={`${prefix}-show-title-help`}>Displays the folder title with its artwork in Nuvio.</small>
+						<strong>Show folder title on home screen</strong>
+						<small id={`${prefix}-show-title-help`}>
+							Shows the title beneath the folder card on Nuvio’s home screen.
+						</small>
+						{hiddenEverywhere ? (
+							<small className="editor-switch-note" id={`${prefix}-show-title-override`}>
+								Hide folder title everywhere overrides this setting. Its prior preference returns if hiding everywhere is turned off.
+							</small>
+						) : null}
 					</span>
 					<input
 						type="checkbox"
 						role="switch"
 						data-editor-control="showFolderTitle"
-						checked={draft.values.showFolderTitle}
+						checked={!hiddenEverywhere && draft.values.showFolderTitle}
+						disabled={hiddenEverywhere}
 						aria-describedby={titleDescriptionIds}
 						onChange={(event) => onChange("showFolderTitle", event.target.checked)}
 					/>
@@ -332,6 +342,30 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 				/>
 			</div>
 		</>
+	);
+}
+
+function InvisibleFolderTitleField({ draft, prefix, onChange }) {
+	return (
+		<div className="editor-switch-field" data-editor-field="hideFolderTitleEverywhere">
+			<label className="editor-switch">
+				<span>
+					<strong>Hide folder title everywhere in Nuvio</strong>
+					<small id={`${prefix}-hidden-title-help`}>
+						Uses an invisible character to hide the folder title on the home screen and when the folder is opened.
+					</small>
+				</span>
+				<input
+					type="checkbox"
+					role="switch"
+					data-editor-control="hideFolderTitleEverywhere"
+					checked={draft.values.hideFolderTitleEverywhere}
+					aria-describedby={`${prefix}-hidden-title-help`}
+					onChange={(event) => onChange("hideFolderTitleEverywhere", event.target.checked)}
+				/>
+				<span className="editor-switch-control" aria-hidden="true" />
+			</label>
+		</div>
 	);
 }
 
@@ -372,15 +406,20 @@ export function NodeEditor({
 	const prefix = `node-editor-${noun}`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
-	const importedInvisibleFolderTitle = (
-		draft.nodeType === "folder"
-		&& draft.original.title.hidden
-		&& !draft.touched.title
-	);
+	const titleHiddenEverywhere = draft.nodeType === "collection"
+		? draft.values.hideNuvioTitle
+		: draft.values.hideFolderTitleEverywhere;
 	const titleReplacementPending = draft.touched.title && (
 		draft.nodeType === "collection" && draft.values.hideNuvioTitle
 			? isValidNuvioTitle(draft.values.title)
 			: isValidVisibleNuvioTitle(draft.values.title)
+	) || (
+		draft.nodeType === "folder"
+		&& draft.values.hideFolderTitleEverywhere
+		&& (
+			draft.original.title.hidden
+			|| draft.canonicalizeFolderInvisibleTitle
+		)
 	);
 
 	useEffect(() => {
@@ -444,20 +483,16 @@ export function NodeEditor({
 							id={`${prefix}-title-input`}
 							name="title"
 							type="text"
-							value={
-								draft.nodeType === "collection" && draft.values.hideNuvioTitle
-									? ""
-									: draft.values.title
-							}
+							value={titleHiddenEverywhere ? "" : draft.values.title}
 							data-editor-field="title"
-							disabled={draft.nodeType === "collection" && draft.values.hideNuvioTitle}
+							disabled={titleHiddenEverywhere}
 							aria-invalid={titleError ? "true" : undefined}
 							aria-describedby={describedBy(titleError)}
 							onChange={(event) => onChange("title", event.target.value)}
 						/>
 						<p className="editor-field-help" id={`${prefix}-title-help`}>
-							{importedInvisibleFolderTitle
-								? "This imported folder has an invisible name. Enter a visible title only if you want to replace it."
+							{draft.nodeType === "folder" && draft.values.hideFolderTitleEverywhere
+								? "The folder title is intentionally invisible everywhere in Nuvio. Turn off the setting below to enter a visible title."
 								: draft.nodeType === "collection" && draft.values.hideNuvioTitle
 								? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
 								: `Displayed as the ${noun} title in Nuvio.`}
@@ -471,7 +506,9 @@ export function NodeEditor({
 
 					{draft.nodeType === "collection" ? (
 						<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
-					) : null}
+					) : (
+						<InvisibleFolderTitleField draft={draft} prefix={prefix} onChange={onChange} />
+					)}
 
 					{draft.nodeType === "collection" ? (
 						<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />

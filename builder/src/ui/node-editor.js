@@ -18,6 +18,7 @@ const collectionEditorFields = new Set([
 ]);
 const folderEditorFields = new Set([
 	"title",
+	"hideFolderTitleEverywhere",
 	"tileShape",
 	"showFolderTitle",
 ]);
@@ -166,6 +167,7 @@ export function createNodeEditorDraft(node) {
 		...baseDraft,
 		values: {
 			...baseDraft.values,
+			hideFolderTitleEverywhere: title.hidden,
 			tileShape: tileShape.supported ? tileShape.value : "",
 			showFolderTitle: hideTitle.supported ? !hideTitle.value : true,
 		},
@@ -176,9 +178,12 @@ export function createNodeEditorDraft(node) {
 		},
 		touched: {
 			...baseDraft.touched,
+			hideFolderTitleEverywhere: false,
 			tileShape: false,
 			showFolderTitle: false,
 		},
+		visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
+		canonicalizeFolderInvisibleTitle: false,
 	};
 }
 
@@ -194,6 +199,7 @@ export function updateNodeEditorField(draft, field, value) {
 	const validBooleanField = (
 		[
 			"hideNuvioTitle",
+			"hideFolderTitleEverywhere",
 			"showAllTab",
 			"pinToTop",
 			"focusGlowEnabled",
@@ -231,6 +237,39 @@ export function updateNodeEditorField(draft, field, value) {
 		};
 	}
 
+	if (field === "hideFolderTitleEverywhere") {
+		const visibleTitleDraft = value
+			? (
+				isValidVisibleNuvioTitle(draft.values.title)
+					? draft.values.title
+					: draft.visibleTitleDraft
+			)
+			: draft.visibleTitleDraft;
+		const canonicalizeFolderInvisibleTitle = value && (
+			!draft.original.title.hidden
+			|| (draft.touched.title && isValidVisibleNuvioTitle(draft.values.title))
+		);
+
+		return {
+			...draft,
+			values: {
+				...draft.values,
+				title: value ? "" : visibleTitleDraft ?? "",
+				hideFolderTitleEverywhere: value,
+			},
+			touched: {
+				...draft.touched,
+				hideFolderTitleEverywhere: true,
+			},
+			visibleTitleDraft,
+			canonicalizeFolderInvisibleTitle,
+		};
+	}
+
+	if (field === "showFolderTitle" && draft.values.hideFolderTitleEverywhere) {
+		return draft;
+	}
+
 	return {
 		...draft,
 		values: {
@@ -251,16 +290,11 @@ export function validateNodeEditorDraft(draft) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
 	const diagnostics = [];
 
-	const preservingImportedInvisibleFolderTitle = (
-		draft.nodeType === "folder"
-		&& draft.original.title.hidden
-		&& !draft.touched.title
-	);
-	const titleIsValid = preservingImportedInvisibleFolderTitle || (
-		draft.nodeType === "collection" && draft.values.hideNuvioTitle
-			? isValidNuvioTitle(draft.values.title)
-			: isValidVisibleNuvioTitle(draft.values.title)
-	);
+	const titleIsValid = draft.nodeType === "collection" && draft.values.hideNuvioTitle
+		? isValidNuvioTitle(draft.values.title)
+		: draft.nodeType === "folder" && draft.values.hideFolderTitleEverywhere
+			? true
+			: isValidVisibleNuvioTitle(draft.values.title);
 	if (!titleIsValid) {
 		diagnostics.push({
 			code: "EDITOR_TITLE_REQUIRED",
@@ -288,14 +322,14 @@ function includeBooleanPatch(patch, draft, field, outputField = field, transform
 
 export function buildNodeEditorPatch(draft) {
 	const patch = {};
-	if (
-		draft.touched.title
-		&& (!draft.original.title.supported || draft.values.title !== draft.original.title.value)
-	) {
-		patch.title = draft.values.title;
-	}
 
 	if (draft.nodeType === "collection") {
+		if (
+			draft.touched.title
+			&& (!draft.original.title.supported || draft.values.title !== draft.original.title.value)
+		) {
+			patch.title = draft.values.title;
+		}
 		if (
 			draft.touched.viewMode
 			&& !supportedChoiceIsUnchanged(draft.original.viewMode, draft.values.viewMode)
@@ -309,18 +343,39 @@ export function buildNodeEditorPatch(draft) {
 	}
 
 	if (
+		draft.values.hideFolderTitleEverywhere
+		&& draft.canonicalizeFolderInvisibleTitle
+	) {
+		patch.title = NUVIO_INVISIBLE_TITLE;
+	} else if (
+		!draft.values.hideFolderTitleEverywhere
+		&& draft.touched.title
+		&& isValidVisibleNuvioTitle(draft.values.title)
+		&& (!draft.original.title.supported || draft.values.title !== draft.original.title.value)
+	) {
+		patch.title = draft.values.title;
+	}
+
+	if (
 		draft.touched.tileShape
 		&& !supportedChoiceIsUnchanged(draft.original.tileShape, draft.values.tileShape)
 	) {
 		patch.tileShape = draft.values.tileShape;
 	}
-	includeBooleanPatch(
-		patch,
-		draft,
-		"showFolderTitle",
-		"hideTitle",
-		(value) => !value,
-	);
+	if (draft.values.hideFolderTitleEverywhere && draft.canonicalizeFolderInvisibleTitle) {
+		const original = draft.original.hideTitle;
+		if (!original.supported || original.value !== true) {
+			patch.hideTitle = true;
+		}
+	} else {
+		includeBooleanPatch(
+			patch,
+			draft,
+			"showFolderTitle",
+			"hideTitle",
+			(value) => !value,
+		);
+	}
 	return patch;
 }
 

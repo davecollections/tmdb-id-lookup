@@ -214,9 +214,9 @@ test("view model presents only supported collection and folder settings with fri
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Layout" && entry.value === "Rows"));
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Pinned to top" && entry.value === "Yes"));
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled" && entry.value === "No"));
-	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All tab included"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All source tab enabled"), false);
 	assert.equal(view.selectedFolder.tileShape, "Landscape");
-	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Folder title shown" && entry.value === "Yes"));
+	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Home-screen title shown" && entry.value === "Yes"));
 
 	controller.selectNode(unsupported.folders[0].internalId);
 	view = buildBuilderViewModel(controller.getState());
@@ -225,7 +225,7 @@ test("view model presents only supported collection and folder settings with fri
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Layout"), false);
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled"), false);
 	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Tile shape"), false);
-	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder title shown"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Home-screen title shown"), false);
 });
 
 test("view model uses explicit source categories and safe human-readable summaries", () => {
@@ -431,7 +431,7 @@ test("desktop draft folder creation uses unchanged defaults, selects, and advanc
 	assert.deepEqual(created.sources, []);
 	const view = buildBuilderViewModel(controller.getState());
 	assert.ok(view.selectedFolder.details.some((entry) => (
-		entry.label === "Folder title shown" && entry.value === "No"
+		entry.label === "Home-screen title shown" && entry.value === "No"
 	)));
 });
 
