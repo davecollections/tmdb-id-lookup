@@ -13,6 +13,49 @@ export function focusFirstDialogControl(dialog) {
 	return firstControl;
 }
 
+export function initializeTitleInput(input, {
+	targetId,
+	initializedTargetId = null,
+	selectText = false,
+} = {}) {
+	if (!targetId || targetId === initializedTargetId) {
+		return {
+			initializedTargetId,
+			initialized: false,
+			focused: false,
+			selected: false,
+		};
+	}
+
+	let focused = false;
+	let selected = false;
+	if (input && !input.disabled) {
+		if (typeof input.focus === "function") {
+			try {
+				input.focus();
+				focused = true;
+			} catch {
+				// A missing or unavailable focus API must not prevent the modal opening.
+			}
+		}
+		if (selectText && typeof input.select === "function") {
+			try {
+				input.select();
+				selected = true;
+			} catch {
+				// Selection is progressive enhancement for supported input implementations.
+			}
+		}
+	}
+
+	return {
+		initializedTargetId: targetId,
+		initialized: true,
+		focused,
+		selected,
+	};
+}
+
 export function handleDialogKeyDown(event, dialog, onCancel) {
 	if (event.key === "Escape") {
 		event.preventDefault();

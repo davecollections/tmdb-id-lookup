@@ -6,6 +6,7 @@ import {
 import {
 	focusFirstDialogControl,
 	handleDialogKeyDown,
+	initializeTitleInput,
 } from "./modal-focus.js";
 
 function TitleStatus({ original, replacementPending, statusId }) {
@@ -201,19 +202,18 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			<div className="editor-switch-field" data-editor-field="showAllTab">
 				<label className="editor-switch">
 					<span>
-						<strong>Include an All tab</strong>
+						<strong>Include an All tab when using Tabs</strong>
 						<small id={`${prefix}-all-tab-help`}>
 							{tabsSelected
 								? "For each folder with two or more sources, adds an All tab that combines its sources."
-								: "Available only with Tabs. The preference stays unchanged while Rows is selected."}
+								: "Rows do not show tabs. This preference will be used if the collection is later changed to Tabs."}
 						</small>
 					</span>
 					<input
 						type="checkbox"
 						role="switch"
 						data-editor-control="showAllTab"
-						checked={tabsSelected && draft.values.showAllTab}
-						disabled={!tabsSelected}
+						checked={draft.values.showAllTab}
 						aria-describedby={allTabDescriptionIds}
 						onChange={(event) => onChange("showAllTab", event.target.checked)}
 					/>
@@ -231,7 +231,9 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 				<label className="editor-switch">
 					<span>
 						<strong>Pin to top</strong>
-						<small id={`${prefix}-pin-help`}>Keeps this collection above ordinary collection ordering in Nuvio.</small>
+						<small id={`${prefix}-pin-help`}>
+							Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list.
+						</small>
 					</span>
 					<input
 						type="checkbox"
@@ -465,6 +467,7 @@ export function NodeEditor({
 	const prefix = `node-editor-${noun}`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
+	const initializedTitleTargetRef = useRef(null);
 	const titleHiddenEverywhere = draft.nodeType === "collection"
 		? draft.values.hideNuvioTitle
 		: draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
@@ -482,12 +485,18 @@ export function NodeEditor({
 	);
 
 	useEffect(() => {
-		if (titleInputRef.current && !titleInputRef.current.disabled) {
-			titleInputRef.current.focus();
-		} else {
+		const outcome = initializeTitleInput(titleInputRef.current, {
+			targetId: draft.internalId,
+			initializedTargetId: initializedTitleTargetRef.current,
+			selectText: draft.original.title.supported
+				&& isValidVisibleNuvioTitle(draft.values.title)
+				&& !titleHiddenEverywhere,
+		});
+		initializedTitleTargetRef.current = outcome.initializedTargetId;
+		if (outcome.initialized && !outcome.focused) {
 			focusFirstDialogControl(dialogRef.current);
 		}
-	}, [draft.internalId, titleInputRef]);
+	}, [draft.internalId, titleHiddenEverywhere, titleInputRef, draft.original.title.supported, draft.values.title]);
 
 	useEffect(() => {
 		document.body.classList.add("settings-modal-open");

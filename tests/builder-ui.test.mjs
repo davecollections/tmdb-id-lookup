@@ -214,9 +214,13 @@ test("view model presents only supported collection and folder settings with fri
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Layout" && entry.value === "Rows"));
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Pinned to top" && entry.value === "Yes"));
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled" && entry.value === "No"));
-	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All source tab enabled"), false);
+	assert.ok(view.selectedCollection.details.some((entry) => (
+		entry.label === "All tab when using Tabs" && entry.value === "Yes"
+	)));
 	assert.equal(view.selectedFolder.tileShape, "Landscape");
-	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Home-screen title shown" && entry.value === "Yes"));
+	assert.ok(view.selectedFolder.details.some((entry) => (
+		entry.label === "Folder title visibility" && entry.value === "Show everywhere"
+	)));
 
 	controller.selectNode(unsupported.folders[0].internalId);
 	view = buildBuilderViewModel(controller.getState());
@@ -224,8 +228,95 @@ test("view model presents only supported collection and folder settings with fri
 	assert.equal(JSON.stringify(view).includes("RAW_HIDE"), false);
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Layout"), false);
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All tab when using Tabs"), false);
 	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Tile shape"), false);
-	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Home-screen title shown"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder title visibility"), false);
+	assert.equal(JSON.stringify(view).includes("Home-screen title shown"), false);
+	assert.equal(JSON.stringify(view).includes("All source tab enabled"), false);
+});
+
+test("collection and folder summaries use saved preference and final visibility outcomes", () => {
+	const invisible = "\u200E\u200E";
+	const controller = createController();
+	controller.importValue([
+		{
+			id: "rows-yes",
+			title: "Rows yes",
+			viewMode: "ROWS",
+			showAllTab: true,
+			folders: [{
+				id: "show-everywhere",
+				title: "Visible title",
+				hideTitle: false,
+				sources: [],
+			}],
+		},
+		{
+			id: "tabs-no",
+			title: "Tabs no",
+			viewMode: "TABBED_GRID",
+			showAllTab: false,
+			folders: [{
+				id: "hide-home",
+				title: "Mixed\u200E title",
+				hideTitle: true,
+				sources: [],
+			}],
+		},
+		{
+			id: "absent-all",
+			title: "Absent All",
+			folders: [{
+				id: "hide-everywhere",
+				title: invisible,
+				hideTitle: false,
+				sources: [],
+			}],
+		},
+		{
+			id: "unusual-all",
+			title: "Unusual All",
+			showAllTab: "RAW_ALL",
+			folders: [{
+				id: "absent-hide",
+				title: "Visible without preference",
+				sources: [],
+			}],
+		},
+		{
+			id: "unusual-hide",
+			title: "Unusual hide",
+			folders: [{
+				id: "unusual-hide-folder",
+				title: "Visible with unusual preference",
+				hideTitle: { raw: true },
+				sources: [],
+			}],
+		},
+	]);
+	const collections = controller.getState().project.collections;
+
+	const cases = [
+		[0, "Yes", "Show everywhere"],
+		[1, "No", "Hide on home screen only"],
+		[2, null, "Hide everywhere"],
+		[3, null, null],
+		[4, null, null],
+	];
+	for (const [index, allTab, visibility] of cases) {
+		controller.selectNode(collections[index].folders[0].internalId);
+		const view = buildBuilderViewModel(controller.getState());
+		const allDetail = view.selectedCollection.details.find((entry) => (
+			entry.label === "All tab when using Tabs"
+		));
+		const visibilityDetail = view.selectedFolder.details.find((entry) => (
+			entry.label === "Folder title visibility"
+		));
+		assert.equal(allDetail?.value ?? null, allTab);
+		assert.equal(visibilityDetail?.value ?? null, visibility);
+		assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Home-screen title shown"), false);
+		assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Nuvio title"), false);
+	}
 });
 
 test("view model uses explicit source categories and safe human-readable summaries", () => {
@@ -431,7 +522,7 @@ test("desktop draft folder creation uses unchanged defaults, selects, and advanc
 	assert.deepEqual(created.sources, []);
 	const view = buildBuilderViewModel(controller.getState());
 	assert.ok(view.selectedFolder.details.some((entry) => (
-		entry.label === "Home-screen title shown" && entry.value === "No"
+		entry.label === "Folder title visibility" && entry.value === "Hide on home screen only"
 	)));
 });
 

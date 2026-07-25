@@ -23,6 +23,7 @@ import { serializeNuvioProject } from "../builder/src/serialize/index.js";
 import {
 	focusFirstDialogControl,
 	handleDialogKeyDown,
+	initializeTitleInput,
 } from "../builder/src/ui/modal-focus.js";
 import { createTargetedNodeEditorDraft } from "../builder/src/ui/hierarchy-actions.js";
 import { applyNodeEditorDraft } from "../builder/src/ui/node-editor-actions.js";
@@ -292,6 +293,14 @@ test("collection presentation updates accept only canonical supported values", (
 
 	let draft = updateNodeEditorField(original, "viewMode", "ROWS");
 	assert.equal(draft.values.showAllTab, true);
+	assert.deepEqual(buildNodeEditorPatch(draft), { viewMode: "ROWS" });
+	draft = updateNodeEditorField(draft, "showAllTab", false);
+	assert.equal(draft.values.showAllTab, false);
+	assert.deepEqual(buildNodeEditorPatch(draft), {
+		viewMode: "ROWS",
+		showAllTab: false,
+	});
+	draft = updateNodeEditorField(draft, "showAllTab", true);
 	assert.deepEqual(buildNodeEditorPatch(draft), { viewMode: "ROWS" });
 	draft = updateNodeEditorField(draft, "viewMode", "TABBED_GRID");
 	assert.equal(draft.values.showAllTab, true);
@@ -593,6 +602,38 @@ test("collection presentation apply commits one minimal patch and one revision",
 		showAllTab: true,
 		pinToTop: true,
 	});
+});
+
+test("Builder exports keep collection-list order within pinned and unpinned groups", () => {
+	const controller = importTree([
+		{ id: "pinned-one", title: "Pinned one", pinToTop: true, folders: [] },
+		{ id: "pinned-two", title: "Pinned two", pinToTop: true, folders: [] },
+		{ id: "ordinary-one", title: "Ordinary one", pinToTop: false, folders: [] },
+		{ id: "ordinary-two", title: "Ordinary two", pinToTop: false, folders: [] },
+	]);
+	const projectOrder = controller.getState().project.collections.map((collection) => collection.editable.id);
+	const output = serializeNuvioProject(controller.getState().project).value;
+
+	assert.deepEqual(projectOrder, [
+		"pinned-one",
+		"pinned-two",
+		"ordinary-one",
+		"ordinary-two",
+	]);
+	assert.deepEqual(output.map((collection) => collection.id), projectOrder);
+	assert.deepEqual(
+		output.filter((collection) => collection.pinToTop === true).map((collection) => collection.id),
+		["pinned-one", "pinned-two"],
+	);
+	assert.deepEqual(
+		output.filter((collection) => collection.pinToTop === false).map((collection) => collection.id),
+		["ordinary-one", "ordinary-two"],
+	);
+	for (const collection of output) {
+		for (const unsupportedOrderingField of ["pinOrder", "pinRank", "pinnedAt"]) {
+			assert.equal(Object.hasOwn(collection, unsupportedOrderingField), false);
+		}
+	}
 });
 
 test("folder presentation apply commits canonical shape and visibility value once", () => {
@@ -1358,6 +1399,92 @@ test("dialog focus helper enters, contains, wraps, and safely cancels focus", ()
 	assert.deepEqual(emptyFocusLog, ["dialog"]);
 });
 
+test("initial title focus selects a visible title once per target and degrades safely", () => {
+	const calls = [];
+	const input = {
+		value: "Visible title",
+		disabled: false,
+		selectionStart: null,
+		selectionEnd: null,
+		focus() { calls.push("focus"); },
+		select() {
+			calls.push("select");
+			this.selectionStart = 0;
+			this.selectionEnd = this.value.length;
+		},
+	};
+
+	let outcome = initializeTitleInput(input, {
+		targetId: "collection-1",
+		selectText: true,
+	});
+	assert.deepEqual(outcome, {
+		initializedTargetId: "collection-1",
+		initialized: true,
+		focused: true,
+		selected: true,
+	});
+	assert.deepEqual(calls, ["focus", "select"]);
+	assert.equal(input.selectionStart, 0);
+	assert.equal(input.selectionEnd, input.value.length);
+
+	outcome = initializeTitleInput(input, {
+		targetId: "collection-1",
+		initializedTargetId: outcome.initializedTargetId,
+		selectText: true,
+	});
+	assert.equal(outcome.initialized, false);
+	assert.deepEqual(calls, ["focus", "select"]);
+
+	outcome = initializeTitleInput(input, {
+		targetId: "folder-1",
+		initializedTargetId: outcome.initializedTargetId,
+		selectText: false,
+	});
+	assert.equal(outcome.focused, true);
+	assert.equal(outcome.selected, false);
+	assert.deepEqual(calls, ["focus", "select", "focus"]);
+
+	const withoutSelectionApi = {
+		disabled: false,
+		focus() { calls.push("fallback-focus"); },
+	};
+	outcome = initializeTitleInput(withoutSelectionApi, {
+		targetId: "collection-2",
+		initializedTargetId: outcome.initializedTargetId,
+		selectText: true,
+	});
+	assert.equal(outcome.focused, true);
+	assert.equal(outcome.selected, false);
+
+	const disabled = {
+		disabled: true,
+		focus() { calls.push("disabled-focus"); },
+		select() { calls.push("disabled-select"); },
+	};
+	outcome = initializeTitleInput(disabled, {
+		targetId: "folder-2",
+		initializedTargetId: outcome.initializedTargetId,
+		selectText: true,
+	});
+	assert.equal(outcome.initialized, true);
+	assert.equal(outcome.focused, false);
+	assert.equal(outcome.selected, false);
+	assert.equal(calls.includes("disabled-focus"), false);
+	assert.equal(calls.includes("disabled-select"), false);
+
+	const unavailable = {
+		disabled: false,
+		focus() { throw new Error("focus unavailable"); },
+		select() { throw new Error("selection unavailable"); },
+	};
+	assert.doesNotThrow(() => initializeTitleInput(unavailable, {
+		targetId: "collection-3",
+		initializedTargetId: outcome.initializedTargetId,
+		selectText: true,
+	}));
+});
+
 test("Builder fallbacks and accessible labels prevent blank hidden-title cards and summaries", () => {
 	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
 	const controller = importTree([{
@@ -1377,7 +1504,10 @@ test("Builder fallbacks and accessible labels prevent blank hidden-title cards a
 	assert.equal(view.selectedCollection.accessibleName, "Collection with hidden Nuvio title");
 	assert.equal(view.selectedFolder.title, "Hidden title");
 	assert.equal(view.selectedFolder.accessibleName, "Folder with hidden Nuvio title");
-	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Nuvio title" && entry.value === "Invisible"));
+	assert.ok(view.selectedFolder.details.some((entry) => (
+		entry.label === "Folder title visibility" && entry.value === "Hide everywhere"
+	)));
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Nuvio title"), false);
 
 	const markup = renderWorkspace(controller);
 	assert.ok(markup.includes("Hidden title"));
@@ -1389,7 +1519,7 @@ test("Builder fallbacks and accessible labels prevent blank hidden-title cards a
 	assert.equal(markup.includes(repeated), false);
 });
 
-test("modal restores exact Edit focus, initially focuses Title, and retains safe dismissal behavior", () => {
+test("modal restores exact Edit focus, initializes Title once, and retains safe dismissal behavior", () => {
 	const workspaceSource = fs.readFileSync(
 		path.join(rootDir, "builder", "src", "ui", "BuilderWorkspace.jsx"),
 		"utf8",
@@ -1400,7 +1530,10 @@ test("modal restores exact Edit focus, initially focuses Title, and retains safe
 	);
 	assert.match(workspaceSource, /editRestoreFocusRef\.current = trigger/);
 	assert.equal((workspaceSource.match(/target\.focus\?\.\(\)/g) ?? []).length, 1);
-	assert.match(editorSource, /titleInputRef\.current && !titleInputRef\.current\.disabled[\s\S]*titleInputRef\.current\.focus\(\)/);
+	assert.match(editorSource, /initializeTitleInput\(titleInputRef\.current/);
+	assert.match(editorSource, /draft\.original\.title\.supported[\s\S]*isValidVisibleNuvioTitle\(draft\.values\.title\)[\s\S]*!titleHiddenEverywhere/);
+	assert.match(editorSource, /initializedTitleTargetRef\.current = outcome\.initializedTargetId/);
+	assert.doesNotMatch(workspaceSource, /\.select\(\)/);
 	assert.match(editorSource, /handleDialogKeyDown\(event, dialogRef\.current, onCancel\)/);
 	assert.match(editorSource, /document\.body\.classList\.add\("settings-modal-open"\)/);
 	assert.match(editorSource, /document\.body\.classList\.remove\("settings-modal-open"\)/);
@@ -1534,11 +1667,14 @@ test("collection settings render exactly one accessible modal with stable marker
 		assert.doesNotMatch(choiceMarkup, /<(?:img|svg|video|canvas)\b/);
 	}
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
-	assert.ok(markup.includes("Include an All tab"));
+	assert.ok(markup.includes("Include an All tab when using Tabs"));
 	assert.ok(markup.includes(
 		"For each folder with two or more sources, adds an All tab that combines its sources.",
 	));
 	assert.ok(markup.includes("Pin to top"));
+	assert.ok(markup.includes(
+		"Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list.",
+	));
 	assert.ok(markup.includes("Enable focus glow"));
 	assert.ok(markup.includes("Shows Nuvio’s focus-glow effect for this collection."));
 	assert.ok(markup.includes("Uses an invisible character to hide the collection title in Nuvio."));
@@ -1677,7 +1813,7 @@ test("unusual imported values show calm replacement guidance without raw values"
 	assert.ok(markup.includes("cannot be shown safely"));
 });
 
-test("Rows disables the All-tab switch without changing its retained preference", () => {
+test("Rows keeps the saved All-tab preference enabled, editable, and independent from layout", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Rows collection",
@@ -1692,11 +1828,27 @@ test("Rows disables the All-tab switch without changing its retained preference"
 	const markup = renderWorkspace(controller, { draft });
 
 	assert.ok(openingTag(markup, 'data-editor-choice="rows"').includes("checked"));
-	assert.ok(openingTag(markup, 'data-editor-control="showAllTab"').includes("disabled"));
-	assert.equal(openingTag(markup, 'data-editor-control="showAllTab"').includes("checked"), false);
-	assert.ok(markup.includes("The preference stays unchanged while Rows is selected."));
+	assert.equal(openingTag(markup, 'data-editor-control="showAllTab"').includes("disabled"), false);
+	assert.ok(openingTag(markup, 'data-editor-control="showAllTab"').includes("checked"));
+	assert.ok(markup.includes("Include an All tab when using Tabs"));
+	assert.ok(markup.includes(
+		"Rows do not show tabs. This preference will be used if the collection is later changed to Tabs.",
+	));
 	assert.equal(draft.values.showAllTab, true);
 	assert.deepEqual(buildNodeEditorPatch(draft), {});
+
+	const disabledPreference = updateNodeEditorField(draft, "showAllTab", false);
+	const disabledMarkup = renderWorkspace(controller, { draft: disabledPreference });
+	assert.equal(openingTag(disabledMarkup, 'data-editor-control="showAllTab"').includes("disabled"), false);
+	assert.equal(openingTag(disabledMarkup, 'data-editor-control="showAllTab"').includes("checked"), false);
+	assert.deepEqual(buildNodeEditorPatch(disabledPreference), { showAllTab: false });
+
+	const tabsDraft = updateNodeEditorField(disabledPreference, "viewMode", "TABBED_GRID");
+	assert.equal(tabsDraft.values.showAllTab, false);
+	assert.deepEqual(buildNodeEditorPatch(tabsDraft), {
+		viewMode: "TABBED_GRID",
+		showAllTab: false,
+	});
 });
 
 test("Follow Layout and Square render bounded replacement guidance and no normal option", () => {

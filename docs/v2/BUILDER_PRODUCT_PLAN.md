@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-07-26
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -232,7 +232,7 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 The current owner-reviewed workflow exposes:
 
 - one compact, always-visible Edit action on every collection and folder card, replacing the former Rename/Settings pair and directly targeting unselected cards;
-- one responsive modal for collection title, intentional invisible Nuvio title, source-level Tabs/Rows, conditional Include an All tab, Pin to top, and Enable focus glow;
+- one responsive modal for collection title, intentional invisible Nuvio title, source-level Tabs/Rows, the saved Include an All tab when using Tabs preference, Pin to top, and Enable focus glow;
 - the same modal for folder title, one three-outcome Folder title visibility radio-card group, and Poster/Landscape.
 
 Manual blank collections default to Tabs with All enabled, Pin off, and focus glow on. Manual blank folders default to Poster with `hideTitle: true`, so the title beneath the card is hidden by default while the actual folder name remains visible. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices. Imported focus-glow booleans display accurately; absent and unusual values remain preserved until deliberate canonical replacement.

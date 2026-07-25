@@ -103,7 +103,7 @@ function buildCollection(collection, selectedInternalId) {
 			detail("Sources", sourceCount),
 			detail("Layout", layout),
 			detail("Pinned to top", pinToTop),
-			layout === "Tabs" ? detail("All source tab enabled", showAllTab) : null,
+			detail("All tab when using Tabs", showAllTab),
 			detail("Focus glow enabled", focusGlowEnabled),
 		]),
 	};
@@ -118,6 +118,14 @@ function buildFolder(folder, selectedInternalId) {
 		LANDSCAPE: "Landscape",
 	});
 	const hideTitle = supportedBoolean(folder.editable.hideTitle);
+	const hasVisibleTitle = isValidVisibleNuvioTitle(folder.editable.title);
+	const titleVisibility = title.hidden
+		? "Hide everywhere"
+		: hasVisibleTitle && hideTitle === true
+			? "Hide on home screen only"
+			: hasVisibleTitle && hideTitle === false
+				? "Show everywhere"
+				: null;
 	return {
 		internalId: folder.internalId,
 		title: title.text,
@@ -129,10 +137,9 @@ function buildFolder(folder, selectedInternalId) {
 		selected: folder.internalId === selectedInternalId,
 		details: compactDetails([
 			detail("Title", title.text),
-			title.hidden ? detail("Nuvio title", "Invisible") : null,
+			detail("Folder title visibility", titleVisibility),
 			detail("Sources", sourceCount),
 			detail("Tile shape", tileShape),
-			hideTitle === null ? null : detail("Home-screen title shown", !hideTitle),
 			detail("Artwork", artworkCount === 0 ? "None added" : countLabel(artworkCount, "artwork field")),
 		]),
 	};

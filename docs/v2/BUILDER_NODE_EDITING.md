@@ -2,13 +2,13 @@
 
 Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), and owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53)
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-07-26
 
 ## Scope and sequencing
 
 One responsive settings modal now manages collection/folder titles and the contained presentation fields approved in issue #53. Every collection and folder card owns one compact, always-visible Edit action; the former Rename/Settings pair, quick-rename form, and large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
 
-Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab, Pin to top, and Enable focus glow. Folder settings are title, one Folder title visibility radio-card group, and Poster/Landscape tile shape, in that order. The three visibility choices present the complete outcome instead of exposing two interacting switches:
+Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab when using Tabs, Pin to top, and Enable focus glow. Folder settings are title, one Folder title visibility radio-card group, and Poster/Landscape tile shape, in that order. The three visibility choices present the complete outcome instead of exposing two interacting switches:
 
 - Show everywhere keeps a valid visible title and maps to `hideTitle: false`.
 - Hide on home screen only keeps a valid visible title and maps to `hideTitle: true`.
@@ -93,7 +93,9 @@ The Builder displays `Hidden title` plus a restrained `Invisible in Nuvio` badge
 
 ## Collection presentation behavior
 
-The How sources appear inside folders field offers Tabs (`TABBED_GRID`) and Rows (`ROWS`). Each folder remains a separate folder; these settings describe how that folder displays its sources after it is opened. Tabs switches between one source view at a time and may add an All tab that combines sources, while Rows displays every source as a separate stacked content row. Each radio card includes a compact CSS-only, `aria-hidden` preview beneath the authoritative title and helper text. Tabs enables Include an All tab; for each folder with two or more sources, that setting adds an All tab combining the folder's sources. A one-source folder has no visible All tab. Rows has no All tab and disables the switch without changing its draft value, so returning to Tabs restores the previous preference. The stored `viewMode` and `showAllTab` meanings are unchanged. Pin to top and Enable focus glow are independent boolean switches.
+The How sources appear inside folders field offers Tabs (`TABBED_GRID`) and Rows (`ROWS`). Each folder remains a separate folder; these settings describe how that folder displays its sources after it is opened. Tabs switches between one source view at a time and may add an All tab that combines sources, while Rows displays every source as a separate stacked content row. Each radio card includes a compact CSS-only, `aria-hidden` preview beneath the authoritative title and helper text. Include an All tab when using Tabs remains editable in either layout: for each folder with two or more sources, it adds an All tab combining the folder's sources when Tabs is active; a one-source folder has no visible All tab. Rows does not display tabs, but the saved boolean remains visible and editable as the preference to use if the collection is later changed to Tabs. Switching between Tabs and Rows never changes that preference. The stored `viewMode` and `showAllTab` meanings are unchanged.
+
+Pin to top and Enable focus glow are independent boolean switches. Pinned collections form the group shown before unpinned collections. Builder JSON does not store a separate interactive pin sequence, rank, timestamp, or other pin metadata: pinned collections retain their relative order from the collection array, as do unpinned collections. Collection/folder/source reordering remains a later milestone; Nuvio interactions that pin items in a different sequence cannot be represented by the current Builder schema.
 
 `focusGlowEnabled` is a recognised collection-level Nuvio boolean. Supported imported `true` and `false` values display accurately. An absent value stays absent, and an unusual non-boolean value stays preserved, until the user deliberately uses the switch. The modal never stringifies unusual imported values. A deliberate replacement emits only canonical `true` or `false`; summaries show Focus glow enabled only for supported booleans.
 
@@ -103,7 +105,7 @@ Imported `FOLLOW_LAYOUT` is preservation-only. It is not offered as a normal cho
 
 The tile choices are Poster (`POSTER`) and Landscape (`LANDSCAPE`), displayed with simple CSS aspect-ratio previews. Square is not a normal choice.
 
-Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
+Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. Folder summaries use the same single outcome: an intentional U+200E-only title is Hide everywhere regardless of `hideTitle`; a visible title with supported `hideTitle: true` is Hide on home screen only; and a visible title with supported `hideTitle: false` is Show everywhere. Absent or unusual `hideTitle` values stay omitted from the summary until deliberately replaced. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
 
 ## Manual creation defaults
 
@@ -161,7 +163,7 @@ Controller and serializer tests prove that title and presentation editing preser
 
 Every collection and folder card owns one visible text Edit button beside its selectable button inside a non-interactive wrapper. Clicking Edit on an unselected card selects and targets that exact node immediately, then opens the settings modal. Selection alone neither marks the project dirty nor advances revision, and Apply or Cancel retains the target selection. Panel headers retain only their panel title, count, and relevant creation action, and source cards gain no Edit action.
 
-The ordinary rename path is the modal Title field. Initial focus enters that Title field when enabled; an intentionally invisible title instead places focus on the first available setting because Title is disabled until a visible outcome is chosen. Closing the modal restores focus to the exact Edit button that opened it.
+The ordinary rename path is the modal Title field. Initial focus enters that Title field when enabled. A supported, non-empty visible title is fully selected once when Edit opens so typing immediately replaces it; rerenders, other field changes, and validation refocus do not select it again. Empty, unsupported, intentionally invisible, or disabled titles are never selected. An intentionally invisible title instead places focus on the first available setting because Title is disabled until a visible outcome is chosen. Closing the modal restores focus to the exact Edit button that opened it.
 
 ## Accessibility and responsive behavior
 
