@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
-import { NodeEditor } from "./NodeEditor.jsx";
 import {
-	createNodeEditorDraft,
-	updateNodeEditorField,
-} from "./node-editor.js";
+	createTargetedNodeEditorDraft,
+	createTargetedQuickRenameDraft,
+} from "./hierarchy-actions.js";
+import { NodeEditor } from "./NodeEditor.jsx";
+import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
 	applyQuickRenameDraft,
-	createQuickRenameDraft,
 	updateQuickRenameTitle,
 } from "./quick-rename.js";
 import { buildBuilderViewModel } from "./view-model.js";
@@ -51,26 +51,29 @@ function EmptyState({ title, children, action = null }) {
 function QuickRenameForm({
 	draft,
 	diagnostics,
-	context,
+	node,
 	inputRef,
 	onChange,
 	onSubmit,
 	onCancel,
 }) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
-	const prefix = `${context}-${noun}-quick-rename`;
+	const prefix = `card-${noun}-quick-rename`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.rename.title") ?? null;
+	const formLabel = node.titleHidden
+		? `Rename ${noun} with hidden Nuvio title`
+		: `Rename ${noun} ${node.title}`;
 
 	useEffect(() => {
 		inputRef.current?.focus();
-	}, [draft.internalId, context, inputRef]);
+	}, [draft.internalId, inputRef]);
 
 	return (
 		<form
 			className="quick-rename-form"
 			data-quick-rename={noun}
-			data-action-context={context}
-			aria-label={`Rename selected ${noun}`}
+			data-action-context="card"
+			aria-label={formLabel}
 			onSubmit={onSubmit}
 			onKeyDown={(event) => {
 				if (event.key === "Escape") {
@@ -109,82 +112,101 @@ function QuickRenameForm({
 	);
 }
 
-function SelectedEntityActions({
+function RenameIcon() {
+	return (
+		<svg viewBox="0 0 24 24" aria-hidden="true">
+			<path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Z" />
+			<path d="m13.5 7 3.5 3.5" />
+		</svg>
+	);
+}
+
+function SettingsIcon() {
+	return (
+		<svg viewBox="0 0 24 24" aria-hidden="true">
+			<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" />
+		</svg>
+	);
+}
+
+function HierarchyCard({
 	node,
 	noun,
-	context,
+	children,
 	renameDraft,
 	renameDiagnostics,
 	renameInputRef,
 	navigationLocked,
+	onSelect,
 	onOpenRename,
 	onRenameChange,
 	onRenameSubmit,
 	onCancelRename,
 	onOpenSettings,
 }) {
-	if (!node) return null;
-	const capitalizedNoun = noun[0].toUpperCase() + noun.slice(1);
 	const renameActive = (
 		renameDraft?.internalId === node.internalId
 		&& renameDraft?.nodeType === noun
-		&& renameDraft?.context === context
 	);
 	const renameLabel = node.titleHidden
 		? `Rename ${noun} with hidden Nuvio title`
-		: `Rename ${noun}`;
+		: `Rename ${noun} ${node.title}`;
 	const settingsLabel = node.titleHidden
 		? `Open settings for ${noun} with hidden Nuvio title`
-		: `${capitalizedNoun} settings`;
+		: `Open settings for ${noun} ${node.title}`;
 
 	return (
-		<section
-			className={`selected-entity-actions${context === "mobile" ? " mobile-only" : ""}`}
-			data-entity-actions={noun}
-			data-action-context={context}
-			aria-label={`${capitalizedNoun} actions`}
+		<div
+			className={`hierarchy-card${node.selected ? " is-selected" : ""}`}
+			data-hierarchy-card={noun}
 		>
-			<div className="selected-entity-heading">
-				<p className="selected-entity-label">Selected {noun}</p>
-				<p className="selected-entity-title" aria-label={node.accessibleName}>{node.title}</p>
-				{node.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
-			</div>
-			<div className="selected-entity-buttons">
-				<button
-					className="entity-action"
-					type="button"
-					data-action={`rename-${noun}`}
-					data-action-context={context}
-					aria-label={renameLabel}
+			<div className="hierarchy-card-row">
+				<NodeButton
+					node={node}
+					type={noun}
+					onSelect={onSelect}
 					disabled={navigationLocked}
-					onClick={(event) => onOpenRename(event.currentTarget, context)}
 				>
-					Rename
-				</button>
-				<button
-					className="entity-action"
-					type="button"
-					data-action={`settings-${noun}`}
-					data-action-context={context}
-					aria-label={settingsLabel}
-					disabled={navigationLocked}
-					onClick={(event) => onOpenSettings(event.currentTarget)}
-				>
-					Settings
-				</button>
+					{children}
+				</NodeButton>
+				<div className="hierarchy-card-actions" data-card-actions={noun}>
+					<button
+						className="card-action"
+						type="button"
+						data-action={`rename-${noun}`}
+						aria-label={renameLabel}
+						title="Rename"
+						disabled={navigationLocked}
+						onClick={(event) => onOpenRename(node.internalId, event.currentTarget)}
+					>
+						<RenameIcon />
+					</button>
+					<button
+						className="card-action"
+						type="button"
+						data-action={`settings-${noun}`}
+						aria-label={settingsLabel}
+						aria-haspopup="dialog"
+						title="Settings"
+						disabled={navigationLocked}
+						onClick={(event) => onOpenSettings(node.internalId, event.currentTarget)}
+					>
+						<SettingsIcon />
+					</button>
+				</div>
 			</div>
 			{renameActive ? (
 				<QuickRenameForm
 					draft={renameDraft}
 					diagnostics={renameDiagnostics}
-					context={context}
+					node={node}
 					inputRef={renameInputRef}
 					onChange={onRenameChange}
 					onSubmit={onRenameSubmit}
 					onCancel={onCancelRename}
 				/>
 			) : null}
-		</section>
+		</div>
 	);
 }
 
@@ -206,38 +228,38 @@ function NodeButton({ node, type, children, onSelect, disabled }) {
 	);
 }
 
-function CollectionList({ collections, onSelect, disabled }) {
+function CollectionList({ collections, actionProps }) {
 	return (
 		<ul className="node-list" aria-label="Collections">
 			{collections.map((collection) => (
 				<li key={collection.internalId}>
-					<NodeButton node={collection} type="collection" onSelect={onSelect} disabled={disabled}>
+					<HierarchyCard node={collection} noun="collection" {...actionProps}>
 						<span className="node-title">{collection.title}</span>
 						{collection.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 						<span className="node-meta">
 							<span>{collection.folderCountLabel}</span>
 							<span>{collection.sourceCountLabel}</span>
 						</span>
-					</NodeButton>
+					</HierarchyCard>
 				</li>
 			))}
 		</ul>
 	);
 }
 
-function FolderList({ folders, onSelect, disabled }) {
+function FolderList({ folders, actionProps }) {
 	return (
 		<ul className="node-list" aria-label="Folders">
 			{folders.map((folder) => (
 				<li key={folder.internalId}>
-					<NodeButton node={folder} type="folder" onSelect={onSelect} disabled={disabled}>
+					<HierarchyCard node={folder} noun="folder" {...actionProps}>
 						<span className="node-title">{folder.title}</span>
 						{folder.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 						<span className="node-meta">
 							<span>{folder.sourceCountLabel}</span>
 							{folder.tileShape !== null ? <span>{folder.tileShape}</span> : null}
 						</span>
-					</NodeButton>
+					</HierarchyCard>
 				</li>
 			))}
 		</ul>
@@ -410,6 +432,7 @@ export function BuilderWorkspace({
 	const [renameDraft, setRenameDraft] = useState(initialRenameDraft);
 	const [renameDiagnostics, setRenameDiagnostics] = useState(initialRenameDiagnostics);
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
+	const [mobileLevelOverride, setMobileLevelOverride] = useState(null);
 	const titleInputRef = useRef(null);
 	const renameInputRef = useRef(null);
 	const settingsRestoreFocusRef = useRef(null);
@@ -422,12 +445,6 @@ export function BuilderWorkspace({
 	}
 	const [returnConfirmationOpen, setReturnConfirmationOpen] = useState(initialReturnConfirmationOpen);
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
-	const selectedCollectionNode = view.selectedCollection
-		? state.project.collections.find((entry) => entry.internalId === view.selectedCollection.internalId) ?? null
-		: null;
-	const selectedFolderNode = selectedCollectionNode && view.selectedFolder
-		? selectedCollectionNode.folders.find((entry) => entry.internalId === view.selectedFolder.internalId) ?? null
-		: null;
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
 	const renameTarget = renameDraft ? findEditableNode(state.project, renameDraft.internalId) : null;
@@ -435,6 +452,7 @@ export function BuilderWorkspace({
 	const editorLocked = visibleEditorDraft !== null;
 	const renameLocked = visibleRenameDraft !== null;
 	const navigationLocked = editorLocked || renameLocked || returnConfirmationOpen;
+	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
 
 	useEffect(() => {
 		if (editorDraft && !visibleEditorDraft) {
@@ -477,13 +495,24 @@ export function BuilderWorkspace({
 	}, [restoreReturnFocus]);
 
 	function selectNode(internalId) {
-		if (!navigationLocked) controller.selectNode(internalId);
+		if (navigationLocked) return;
+		setMobileLevelOverride(null);
+		controller.selectNode(internalId);
 	}
 
-	function openEditor(node, trigger) {
+	function clearSelection() {
 		if (navigationLocked) return;
-		const draft = createNodeEditorDraft(node);
+		setMobileLevelOverride(null);
+		controller.clearSelection();
+	}
+
+	function openEditor(internalId, trigger) {
+		if (navigationLocked) return;
+		const node = findEditableNode(state.project, internalId);
+		if (!node) return;
+		const draft = createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
+		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
 		settingsRestoreFocusRef.current = trigger;
 		setEditorDiagnostics([]);
 		setEditorDraft(draft);
@@ -495,13 +524,16 @@ export function BuilderWorkspace({
 		setEditorDraft(null);
 	}
 
-	function openRename(node, trigger, context) {
+	function openRename(internalId, trigger) {
 		if (navigationLocked) return;
-		const draft = createQuickRenameDraft(node);
+		const node = findEditableNode(state.project, internalId);
+		if (!node) return;
+		const draft = createTargetedQuickRenameDraft(controller, node);
 		if (!draft) return;
+		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
 		renameRestoreFocusRef.current = trigger;
 		setRenameDiagnostics([]);
-		setRenameDraft({ ...draft, context });
+		setRenameDraft(draft);
 	}
 
 	function closeRename() {
@@ -546,6 +578,7 @@ export function BuilderWorkspace({
 				setRenameDraft(null);
 				setRenameDiagnostics([]);
 				setReturnDiagnostic(null);
+				setMobileLevelOverride(null);
 				setReturnConfirmationOpen(false);
 				onReturnHome();
 			},
@@ -572,37 +605,34 @@ export function BuilderWorkspace({
 	}
 
 	function createCollection() {
-		if (!navigationLocked) createDraftCollection(controller);
+		if (!navigationLocked) {
+			setMobileLevelOverride(null);
+			createDraftCollection(controller);
+		}
 	}
 
 	function createFolder() {
 		if (!navigationLocked && view.selectedCollection) {
+			setMobileLevelOverride(null);
 			createDraftFolder(controller, view.selectedCollection.internalId);
 		}
 	}
 
-	function entityActions(node, targetNode, noun, context) {
-		if (!node || !targetNode) return null;
-		return (
-			<SelectedEntityActions
-				node={node}
-				noun={noun}
-				context={context}
-				renameDraft={visibleRenameDraft}
-				renameDiagnostics={renameDiagnostics}
-				renameInputRef={renameInputRef}
-				navigationLocked={navigationLocked}
-				onOpenRename={(trigger, actionContext) => openRename(targetNode, trigger, actionContext)}
-				onRenameChange={(value) => {
-					setRenameDraft((current) => updateQuickRenameTitle(current, value));
-					setRenameDiagnostics([]);
-				}}
-				onRenameSubmit={handleRenameSubmit}
-				onCancelRename={closeRename}
-				onOpenSettings={(trigger) => openEditor(targetNode, trigger)}
-			/>
-		);
-	}
+	const hierarchyActionProps = {
+		renameDraft: visibleRenameDraft,
+		renameDiagnostics,
+		renameInputRef,
+		navigationLocked,
+		onSelect: selectNode,
+		onOpenRename: openRename,
+		onRenameChange: (value) => {
+			setRenameDraft((current) => updateQuickRenameTitle(current, value));
+			setRenameDiagnostics([]);
+		},
+		onRenameSubmit: handleRenameSubmit,
+		onCancelRename: closeRename,
+		onOpenSettings: openEditor,
+	};
 
 	return (
 		<main
@@ -659,7 +689,7 @@ export function BuilderWorkspace({
 					importWarnings={state.diagnostics.import.warnings}
 				/>
 
-				<div className="workspace" data-mobile-level={view.activeMobileLevel}>
+				<div className="workspace" data-mobile-level={activeMobileLevel}>
 					<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
 						<PanelHeader
 							id="collections-title"
@@ -679,14 +709,11 @@ export function BuilderWorkspace({
 							)}
 						/>
 						<div className="panel-body">
-							{entityActions(
-								view.selectedCollection,
-								selectedCollectionNode,
-								"collection",
-								"desktop",
-							)}
 							{view.collections.length > 0 ? (
-								<CollectionList collections={view.collections} onSelect={selectNode} disabled={navigationLocked} />
+								<CollectionList
+									collections={view.collections}
+									actionProps={hierarchyActionProps}
+								/>
 							) : (
 								<EmptyState
 									title="Start your first collection"
@@ -707,7 +734,7 @@ export function BuilderWorkspace({
 							className="back-control mobile-only"
 							type="button"
 							disabled={navigationLocked}
-							onClick={() => { if (!navigationLocked) controller.clearSelection(); }}
+							onClick={clearSelection}
 						>
 							<span aria-hidden="true">←</span>
 							All collections
@@ -731,22 +758,13 @@ export function BuilderWorkspace({
 							) : null}
 						/>
 						<div className="panel-body">
-							{entityActions(
-								view.selectedCollection,
-								selectedCollectionNode,
-								"collection",
-								"mobile",
-							)}
-							{entityActions(
-								view.selectedFolder,
-								selectedFolderNode,
-								"folder",
-								"desktop",
-							)}
 							{!view.selectedCollection ? (
 								<p className="neutral-state">Select a collection to view its folders.</p>
 							) : view.folders.length > 0 ? (
-								<FolderList folders={view.folders} onSelect={selectNode} disabled={navigationLocked} />
+								<FolderList
+									folders={view.folders}
+									actionProps={hierarchyActionProps}
+								/>
 							) : (
 								<EmptyState
 									title="No folders yet"
@@ -790,12 +808,6 @@ export function BuilderWorkspace({
 							count={view.sources.length}
 						/>
 						<div className="panel-body sources-body">
-							{entityActions(
-								view.selectedFolder,
-								selectedFolderNode,
-								"folder",
-								"mobile",
-							)}
 							{!view.selectedFolder ? (
 								<p className="neutral-state">Select a folder to view its sources.</p>
 							) : view.sources.length > 0 ? (

@@ -17,7 +17,6 @@ const collectionEditorFields = new Set([
 ]);
 const folderEditorFields = new Set([
 	"title",
-	"hideNuvioTitle",
 	"tileShape",
 	"showFolderTitle",
 ]);
@@ -97,19 +96,20 @@ export function createNodeEditorDraft(node) {
 	}
 
 	const title = originalTextField(node, "title");
-	const draft = {
+	const baseDraft = {
 		internalId: node.internalId,
 		nodeType: node.nodeType,
 		values: {
-			title: title.supported ? title.value : "",
-			hideNuvioTitle: title.hidden,
+			title: title.supported && !title.hidden ? title.value : "",
 		},
-		original: { title },
+		original: {
+			title: node.nodeType === "folder" && title.hidden
+				? { ...title, value: null }
+				: title,
+		},
 		touched: {
 			title: false,
-			hideNuvioTitle: false,
 		},
-		visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 	};
 
 	if (node.nodeType === "collection") {
@@ -123,25 +123,29 @@ export function createNodeEditorDraft(node) {
 		const pinToTop = originalBooleanField(node, "pinToTop");
 
 		return {
-			...draft,
+			...baseDraft,
 			values: {
-				...draft.values,
+				...baseDraft.values,
+				title: title.supported ? title.value : "",
+				hideNuvioTitle: title.hidden,
 				viewMode: viewMode.supported ? viewMode.value : "",
 				showAllTab: showAllTab.supported ? showAllTab.value : true,
 				pinToTop: pinToTop.supported ? pinToTop.value : false,
 			},
 			original: {
-				...draft.original,
+				...baseDraft.original,
 				viewMode,
 				showAllTab,
 				pinToTop,
 			},
 			touched: {
-				...draft.touched,
+				...baseDraft.touched,
+				hideNuvioTitle: false,
 				viewMode: false,
 				showAllTab: false,
 				pinToTop: false,
 			},
+			visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 		};
 	}
 
@@ -154,19 +158,19 @@ export function createNodeEditorDraft(node) {
 	const hideTitle = originalBooleanField(node, "hideTitle");
 
 	return {
-		...draft,
+		...baseDraft,
 		values: {
-			...draft.values,
+			...baseDraft.values,
 			tileShape: tileShape.supported ? tileShape.value : "",
 			showFolderTitle: hideTitle.supported ? !hideTitle.value : true,
 		},
 		original: {
-			...draft.original,
+			...baseDraft.original,
 			tileShape,
 			hideTitle,
 		},
 		touched: {
-			...draft.touched,
+			...baseDraft.touched,
 			tileShape: false,
 			showFolderTitle: false,
 		},
@@ -236,9 +240,16 @@ export function validateNodeEditorDraft(draft) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
 	const diagnostics = [];
 
-	const titleIsValid = draft.values.hideNuvioTitle
-		? isValidNuvioTitle(draft.values.title)
-		: isValidVisibleNuvioTitle(draft.values.title);
+	const preservingImportedInvisibleFolderTitle = (
+		draft.nodeType === "folder"
+		&& draft.original.title.hidden
+		&& !draft.touched.title
+	);
+	const titleIsValid = preservingImportedInvisibleFolderTitle || (
+		draft.nodeType === "collection" && draft.values.hideNuvioTitle
+			? isValidNuvioTitle(draft.values.title)
+			: isValidVisibleNuvioTitle(draft.values.title)
+	);
 	if (!titleIsValid) {
 		diagnostics.push({
 			code: "EDITOR_TITLE_REQUIRED",

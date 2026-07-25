@@ -140,7 +140,8 @@ State does not contain output JSON, exported values, external resources, callbac
 
 - `revision` starts at `0`.
 - `getState()` returns the same object identity until public state changes.
-- One committed public-state change creates one new top-level object and increments `revision` once.
+- One committed project or diagnostic state change creates one new top-level object and increments `revision` once.
+- A successful selection or clear-selection change creates and notifies a new snapshot but does not increment `revision` or change `dirty`.
 - True no-ops retain the existing snapshot and revision.
 - The complete state, project, raw evidence, selection, preview, and diagnostics are deeply frozen.
 - Previous snapshots never change after later actions.

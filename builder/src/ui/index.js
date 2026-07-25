@@ -2,6 +2,10 @@ export { BuilderApp } from "./BuilderApp.jsx";
 export { NodeEditor } from "./NodeEditor.jsx";
 export { applyNodeEditorDraft } from "./node-editor-actions.js";
 export {
+	createTargetedNodeEditorDraft,
+	createTargetedQuickRenameDraft,
+} from "./hierarchy-actions.js";
+export {
 	buildNodeEditorPatch,
 	createNodeEditorDraft,
 	hasNodeEditorChanges,

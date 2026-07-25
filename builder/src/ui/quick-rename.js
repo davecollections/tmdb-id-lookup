@@ -33,7 +33,7 @@ export function createQuickRenameDraft(node) {
 		nodeType: node.nodeType,
 		value: supported && !hidden ? title : "",
 		original: {
-			value: supported ? title : null,
+			value: supported && !hidden ? title : null,
 			supported,
 			hidden,
 		},

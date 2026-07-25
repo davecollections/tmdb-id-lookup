@@ -166,7 +166,7 @@ test("listener iteration is stable while listeners subscribe and unsubscribe", (
 	assert.deepEqual(calls, ["first", "second", "first", "third"]);
 });
 
-test("previous snapshots remain unchanged after later project and selection commits", () => {
+test("previous snapshots remain unchanged and selection commits do not advance project revision", () => {
 	const controller = createBuilderController({ idFactory: countingIdFactory() });
 	const initial = controller.getState();
 	const created = controller.createCollection({ editable: { id: "c", title: "C" } });
@@ -179,10 +179,11 @@ test("previous snapshots remain unchanged after later project and selection comm
 	assert.equal(afterCreate.revision, 1);
 	assert.equal(afterCreate.dirty, true);
 	assert.deepEqual(afterCreate.selection, initial.selection);
-	assert.equal(afterSelection.revision, 2);
+	assert.equal(afterSelection.revision, 1);
 	assert.equal(afterSelection.dirty, true);
 	assert.equal(afterSelection.project, afterCreate.project);
 	assert.equal(afterSelection.migrationPreview, afterCreate.migrationPreview);
+	assert.notEqual(afterSelection, afterCreate);
 });
 
 test("dirty new-project replacement is guarded without consuming an ID", () => {

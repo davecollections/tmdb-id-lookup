@@ -231,13 +231,13 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 
 The current owner-reviewed workflow exposes:
 
-- entity-owned quick Rename and Settings actions;
+- compact Rename and Settings actions on every collection and folder card, replacing the large selected-entity blocks and directly targeting unselected cards;
 - one responsive modal for collection title, intentional invisible Nuvio title, Tabs/Rows, conditional Include an All tab, and Pin to top;
-- the same modal for folder title, intentional invisible Nuvio name, Poster/Landscape, and positive Show folder title wording.
+- the same modal for folder title, Poster/Landscape, and positive Show folder title wording.
 
 Manual blank collections default to Tabs with All enabled and Pin off. Manual blank folders default to Poster with `hideTitle: true`, so the title beneath the card is hidden by default while the actual folder name remains visible. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices.
 
-U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. Invisible collection titles address the lack of a native collection-title visibility setting. Invisible folder names change the actual title and remain distinct from native `hideTitle`. Imported repeated U+200E values are preserved while untouched, deliberate hiding emits one U+200E, and blank titles never become invisible automatically. The Builder uses a display-only fallback rather than rendering blank cards or headings.
+U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. The collection setting deliberately emits one U+200E because Nuvio lacks a native collection-title visibility setting, and blank titles never become invisible automatically. The Builder does not expose invisible-folder-name creation: imported repeated U+200E folder names are preservation-only until explicitly replaced with visible text. Invisible folder names remain distinct from native `hideTitle`. The Builder uses a display-only fallback rather than rendering blank cards or headings.
 
 **Confirmed direction**
 
@@ -384,13 +384,14 @@ Trakt integration remains outside current project scope; a possible future colou
 1. Product-plan and workflow recovery — complete.
 2. Collection/folder presentation settings — implemented on issue #53's branch pending review.
 3. First mandatory Dave UI and flow review — complete.
-4. Resolve the review findings — implemented on the issue branch, pending mandatory second review.
-5. Source creation and Search/Add.
-6. Advanced Discover creation.
-7. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.
-8. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
-9. Review/export usability.
-10. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
+4. Resolve the review findings, including direct per-card hierarchy actions — implemented on the issue branch, pending owner review.
+5. Collection/folder/source reordering in a separate focused issue.
+6. Source creation and Search/Add.
+7. Advanced Discover creation.
+8. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.
+9. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
+10. Review/export usability.
+11. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
 
 This is a dependency map, not a rigid release schedule. Each step requires its own approved issue and may be refined by stronger evidence.
 

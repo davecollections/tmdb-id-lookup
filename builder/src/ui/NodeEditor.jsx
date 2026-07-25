@@ -299,19 +299,15 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 	);
 }
 
-function InvisibleTitleField({ draft, noun, prefix, onChange }) {
-	const isFolder = noun === "folder";
-	const label = isFolder ? "Hide folder name in Nuvio" : "Hide collection title in Nuvio";
-	const help = isFolder
-		? "Replaces the actual folder name with an invisible character. This is different from hiding the title beneath the folder card."
-		: "Uses an invisible title character because Nuvio does not currently provide a collection-title visibility setting.";
-
+function InvisibleCollectionTitleField({ draft, prefix, onChange }) {
 	return (
 		<div className="editor-switch-field" data-editor-field="hideNuvioTitle">
 			<label className="editor-switch">
 				<span>
-					<strong>{label}</strong>
-					<small id={`${prefix}-hidden-title-help`}>{help}</small>
+					<strong>Hide collection title in Nuvio</strong>
+					<small id={`${prefix}-hidden-title-help`}>
+						Uses an invisible title character because Nuvio does not currently provide a collection-title visibility setting.
+					</small>
 				</span>
 				<input
 					type="checkbox"
@@ -340,8 +336,13 @@ export function NodeEditor({
 	const prefix = `node-editor-${noun}`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
+	const importedInvisibleFolderTitle = (
+		draft.nodeType === "folder"
+		&& draft.original.title.hidden
+		&& !draft.touched.title
+	);
 	const titleReplacementPending = draft.touched.title && (
-		draft.values.hideNuvioTitle
+		draft.nodeType === "collection" && draft.values.hideNuvioTitle
 			? isValidNuvioTitle(draft.values.title)
 			: isValidVisibleNuvioTitle(draft.values.title)
 	);
@@ -403,15 +404,21 @@ export function NodeEditor({
 							id={`${prefix}-title-input`}
 							name="title"
 							type="text"
-							value={draft.values.hideNuvioTitle ? "" : draft.values.title}
+							value={
+								draft.nodeType === "collection" && draft.values.hideNuvioTitle
+									? ""
+									: draft.values.title
+							}
 							data-editor-field="title"
-							disabled={draft.values.hideNuvioTitle}
+							disabled={draft.nodeType === "collection" && draft.values.hideNuvioTitle}
 							aria-invalid={titleError ? "true" : undefined}
 							aria-describedby={describedBy(titleError)}
 							onChange={(event) => onChange("title", event.target.value)}
 						/>
 						<p className="editor-field-help" id={`${prefix}-title-help`}>
-							{draft.values.hideNuvioTitle
+							{importedInvisibleFolderTitle
+								? "This imported folder has an invisible name. Enter a visible title only if you want to replace it."
+								: draft.nodeType === "collection" && draft.values.hideNuvioTitle
 								? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
 								: `Displayed as the ${noun} title in Nuvio.`}
 						</p>
@@ -422,7 +429,9 @@ export function NodeEditor({
 						/>
 					</div>
 
-					<InvisibleTitleField draft={draft} noun={noun} prefix={prefix} onChange={onChange} />
+					{draft.nodeType === "collection" ? (
+						<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
+					) : null}
 
 					{draft.nodeType === "collection" ? (
 						<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />

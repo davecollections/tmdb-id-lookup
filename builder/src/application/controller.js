@@ -89,7 +89,7 @@ export function createBuilderController(options = {}) {
 		};
 	}
 
-	function commitPatch(patch) {
+	function commitPatch(patch, { incrementRevision = true } = {}) {
 		const changed = Object.entries(patch).some(([key, value]) => !jsonValuesEqual(state[key], value));
 		if (!changed) {
 			return false;
@@ -98,7 +98,7 @@ export function createBuilderController(options = {}) {
 		state = deepFreeze({
 			...state,
 			...patch,
-			revision: state.revision + 1,
+			revision: incrementRevision ? state.revision + 1 : state.revision,
 		});
 
 		for (const listener of [...listeners]) {
@@ -134,9 +134,9 @@ export function createBuilderController(options = {}) {
 		return actionResult(false, state.diagnostics[scope].errors, state.diagnostics[scope].warnings, extra);
 	}
 
-	function clearSuccessfulOperationDiagnostics(patch = {}) {
+	function clearSuccessfulOperationDiagnostics(patch = {}, commitOptions = {}) {
 		const diagnostics = replaceDiagnosticScope(state.diagnostics, "operation", [], []);
-		commitPatch({ ...patch, diagnostics });
+		commitPatch({ ...patch, diagnostics }, commitOptions);
 	}
 
 	function startNewProject(actionOptions = {}) {
@@ -283,12 +283,15 @@ export function createBuilderController(options = {}) {
 
 		clearSuccessfulOperationDiagnostics({
 			selection: selectionForLocation(resolution.location),
-		});
+		}, { incrementRevision: false });
 		return actionResult(true);
 	}
 
 	function clearSelection() {
-		clearSuccessfulOperationDiagnostics({ selection: createEmptySelection() });
+		clearSuccessfulOperationDiagnostics(
+			{ selection: createEmptySelection() },
+			{ incrementRevision: false },
+		);
 		return actionResult(true);
 	}
 
