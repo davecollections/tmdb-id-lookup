@@ -939,13 +939,37 @@ test("dialog focus helper enters, contains, wraps, and safely cancels focus", ()
 		shiftKey,
 		preventDefault() { prevented += 1; },
 	});
+	assert.equal(
+		handleDialogKeyDown(event("Tab", dialog), dialog, () => {}),
+		"wrapped-from-dialog-forward",
+	);
+	assert.equal(
+		handleDialogKeyDown(event("Tab", dialog, true), dialog, () => {}),
+		"wrapped-from-dialog-backward",
+	);
 	assert.equal(handleDialogKeyDown(event("Tab", controls[2]), dialog, () => {}), "wrapped-forward");
 	assert.equal(handleDialogKeyDown(event("Tab", controls[0], true), dialog, () => {}), "wrapped-backward");
 	assert.equal(handleDialogKeyDown(event("Tab", controls[1]), dialog, () => {}), "contained");
 	assert.equal(handleDialogKeyDown(event("Escape", controls[1]), dialog, () => { cancelled += 1; }), "cancel");
-	assert.deepEqual(focusLog, ["first", "first", "last"]);
-	assert.equal(prevented, 3);
+	assert.deepEqual(focusLog, ["first", "first", "last", "first", "last"]);
+	assert.equal(prevented, 5);
 	assert.equal(cancelled, 1);
+
+	let emptyPrevented = 0;
+	const emptyFocusLog = [];
+	const emptyDialog = {
+		querySelector() { return null; },
+		querySelectorAll() { return []; },
+		focus() { emptyFocusLog.push("dialog"); },
+	};
+	assert.equal(handleDialogKeyDown({
+		key: "Tab",
+		target: emptyDialog,
+		shiftKey: true,
+		preventDefault() { emptyPrevented += 1; },
+	}, emptyDialog, () => {}), "contained");
+	assert.equal(emptyPrevented, 1);
+	assert.deepEqual(emptyFocusLog, ["dialog"]);
 });
 
 test("Builder fallbacks and accessible labels prevent blank hidden-title cards and summaries", () => {
@@ -1194,14 +1218,117 @@ test("Follow Layout and Square render bounded replacement guidance and no normal
 	const collection = controller.getState().project.collections[0];
 	const folder = collection.folders[0];
 	controller.selectNode(collection.internalId);
-	const collectionMarkup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
+	const collectionDraft = createNodeEditorDraft(collection);
+	const collectionMarkup = renderWorkspace(controller, { draft: collectionDraft });
 	assert.ok(collectionMarkup.includes("This imported Follow Layout setting is being preserved."));
 	assert.equal(collectionMarkup.includes('value="FOLLOW_LAYOUT"'), false);
+	const replacedCollectionDraft = updateNodeEditorField(
+		collectionDraft,
+		"viewMode",
+		"TABBED_GRID",
+	);
+	const replacedCollectionMarkup = renderWorkspace(controller, { draft: replacedCollectionDraft });
+	assert.equal(
+		replacedCollectionMarkup.includes("This imported Follow Layout setting is being preserved."),
+		false,
+	);
+	assert.equal(
+		replacedCollectionMarkup.includes("Choose Tabs or Rows only if you want to replace it."),
+		false,
+	);
+	assert.deepEqual(buildNodeEditorPatch(replacedCollectionDraft), { viewMode: "TABBED_GRID" });
 
 	controller.selectNode(folder.internalId);
-	const folderMarkup = renderWorkspace(controller, { draft: createNodeEditorDraft(folder) });
+	const folderDraft = createNodeEditorDraft(folder);
+	const folderMarkup = renderWorkspace(controller, { draft: folderDraft });
 	assert.ok(folderMarkup.includes("This imported Square shape is being preserved."));
 	assert.equal(folderMarkup.includes('value="SQUARE"'), false);
+	const replacedFolderDraft = updateNodeEditorField(folderDraft, "tileShape", "LANDSCAPE");
+	const replacedFolderMarkup = renderWorkspace(controller, { draft: replacedFolderDraft });
+	assert.equal(
+		replacedFolderMarkup.includes("This imported Square shape is being preserved."),
+		false,
+	);
+	assert.deepEqual(buildNodeEditorPatch(replacedFolderDraft), { tileShape: "LANDSCAPE" });
+});
+
+test("boolean preservation and absence guidance clears after a pending replacement", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Imported collection",
+		viewMode: "TABBED_GRID",
+		showAllTab: ["RAW_ALL_TAB"],
+		folders: [{
+			id: "folder",
+			title: "Imported folder",
+			tileShape: "POSTER",
+			sources: [],
+		}],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+	controller.selectNode(collection.internalId);
+
+	const collectionDraft = createNodeEditorDraft(collection);
+	const collectionMarkup = renderWorkspace(controller, { draft: collectionDraft });
+	assert.ok(collectionMarkup.includes(
+		"The imported All tab preference cannot be shown safely and will be preserved unless you use this switch.",
+	));
+	assert.equal(collectionMarkup.includes("RAW_ALL_TAB"), false);
+	const replacedCollectionDraft = updateNodeEditorField(
+		collectionDraft,
+		"showAllTab",
+		false,
+	);
+	const replacedCollectionMarkup = renderWorkspace(controller, { draft: replacedCollectionDraft });
+	assert.equal(
+		replacedCollectionMarkup.includes("will be preserved unless you use this switch"),
+		false,
+	);
+	assert.deepEqual(buildNodeEditorPatch(replacedCollectionDraft), { showAllTab: false });
+
+	controller.selectNode(folder.internalId);
+	const folderDraft = createNodeEditorDraft(folder);
+	const folderMarkup = renderWorkspace(controller, { draft: folderDraft });
+	assert.ok(folderMarkup.includes(
+		"No imported folder title preference is set. It will stay absent unless you use this switch.",
+	));
+	const replacedFolderDraft = updateNodeEditorField(
+		folderDraft,
+		"showFolderTitle",
+		false,
+	);
+	const replacedFolderMarkup = renderWorkspace(controller, { draft: replacedFolderDraft });
+	assert.equal(replacedFolderMarkup.includes("will stay absent unless you use this switch"), false);
+	assert.deepEqual(buildNodeEditorPatch(replacedFolderDraft), { hideTitle: true });
+});
+
+test("unsupported title guidance clears for visible and intentional invisible replacements", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: { secret: "RAW_TITLE" },
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+
+	const draft = createNodeEditorDraft(collection);
+	const untouchedMarkup = renderWorkspace(controller, { draft });
+	assert.ok(untouchedMarkup.includes(
+		"The imported value is not text. Enter a valid text replacement before applying.",
+	));
+	assert.equal(untouchedMarkup.includes("RAW_TITLE"), false);
+
+	const visibleDraft = updateNodeEditorField(draft, "title", "Visible replacement");
+	const visibleMarkup = renderWorkspace(controller, { draft: visibleDraft });
+	assert.equal(visibleMarkup.includes("Enter a valid text replacement before applying."), false);
+	assert.deepEqual(buildNodeEditorPatch(visibleDraft), { title: "Visible replacement" });
+
+	const invisibleDraft = updateNodeEditorField(draft, "hideNuvioTitle", true);
+	const invisibleMarkup = renderWorkspace(controller, { draft: invisibleDraft });
+	assert.equal(invisibleMarkup.includes("Enter a valid text replacement before applying."), false);
+	assert.equal(invisibleMarkup.includes("RAW_TITLE"), false);
+	assert.deepEqual(buildNodeEditorPatch(invisibleDraft), { title: NUVIO_INVISIBLE_TITLE });
 });
 
 test("settings modal makes the workspace inert and disables every background action", () => {

@@ -1,11 +1,15 @@
 import { useEffect, useRef } from "react";
 import {
+	isValidNuvioTitle,
+	isValidVisibleNuvioTitle,
+} from "../nuvio/titles.js";
+import {
 	focusFirstDialogControl,
 	handleDialogKeyDown,
 } from "./modal-focus.js";
 
-function TitleStatus({ original, statusId }) {
-	if (original.supported) {
+function TitleStatus({ original, replacementPending, statusId }) {
+	if (original.supported || replacementPending) {
 		return null;
 	}
 
@@ -18,8 +22,8 @@ function TitleStatus({ original, statusId }) {
 	);
 }
 
-function ChoiceStatus({ original, kind, statusId }) {
-	if (original.supported) {
+function ChoiceStatus({ original, kind, replacementPending, statusId }) {
+	if (original.supported || replacementPending) {
 		return null;
 	}
 
@@ -46,8 +50,8 @@ function ChoiceStatus({ original, kind, statusId }) {
 	);
 }
 
-function BooleanStatus({ original, label, statusId }) {
-	if (original.supported) {
+function BooleanStatus({ original, label, replacementPending, statusId }) {
+	if (original.supported || replacementPending) {
 		return null;
 	}
 
@@ -67,13 +71,26 @@ function isSelected(value, canonicalValue) {
 function CollectionPresentationFields({ draft, prefix, onChange }) {
 	const tabsSelected = isSelected(draft.values.viewMode, "TABBED_GRID");
 	const rowsSelected = isSelected(draft.values.viewMode, "ROWS");
+	const layoutReplacementPending = draft.touched.viewMode && (tabsSelected || rowsSelected);
+	const allTabReplacementPending = (
+		draft.touched.showAllTab
+		&& typeof draft.values.showAllTab === "boolean"
+	);
+	const pinReplacementPending = (
+		draft.touched.pinToTop
+		&& typeof draft.values.pinToTop === "boolean"
+	);
 	const allTabDescriptionIds = [
 		`${prefix}-all-tab-help`,
-		!draft.original.showAllTab.supported ? `${prefix}-all-tab-status` : null,
+		!draft.original.showAllTab.supported && !allTabReplacementPending
+			? `${prefix}-all-tab-status`
+			: null,
 	].filter(Boolean).join(" ");
 	const pinDescriptionIds = [
 		`${prefix}-pin-help`,
-		!draft.original.pinToTop.supported ? `${prefix}-pin-status` : null,
+		!draft.original.pinToTop.supported && !pinReplacementPending
+			? `${prefix}-pin-status`
+			: null,
 	].filter(Boolean).join(" ");
 
 	return (
@@ -81,7 +98,11 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			<fieldset
 				className="editor-field editor-choice-field"
 				data-editor-field="viewMode"
-				aria-describedby={`${prefix}-layout-help${draft.original.viewMode.supported ? "" : ` ${prefix}-layout-status`}`}
+				aria-describedby={`${prefix}-layout-help${
+					draft.original.viewMode.supported || layoutReplacementPending
+						? ""
+						: ` ${prefix}-layout-status`
+				}`}
 			>
 				<legend>Collection layout</legend>
 				<p className="editor-field-help" id={`${prefix}-layout-help`}>
@@ -117,7 +138,12 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						</span>
 					</label>
 				</div>
-				<ChoiceStatus original={draft.original.viewMode} kind="layout" statusId={`${prefix}-layout-status`} />
+				<ChoiceStatus
+					original={draft.original.viewMode}
+					kind="layout"
+					replacementPending={layoutReplacementPending}
+					statusId={`${prefix}-layout-status`}
+				/>
 			</fieldset>
 
 			<div className="editor-switch-field" data-editor-field="showAllTab">
@@ -144,6 +170,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 				<BooleanStatus
 					original={draft.original.showAllTab}
 					label="All tab"
+					replacementPending={allTabReplacementPending}
 					statusId={`${prefix}-all-tab-status`}
 				/>
 			</div>
@@ -167,6 +194,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 				<BooleanStatus
 					original={draft.original.pinToTop}
 					label="pin to top"
+					replacementPending={pinReplacementPending}
 					statusId={`${prefix}-pin-status`}
 				/>
 			</div>
@@ -177,9 +205,16 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 function FolderPresentationFields({ draft, prefix, onChange }) {
 	const posterSelected = isSelected(draft.values.tileShape, "POSTER");
 	const landscapeSelected = isSelected(draft.values.tileShape, "LANDSCAPE");
+	const shapeReplacementPending = draft.touched.tileShape && (posterSelected || landscapeSelected);
+	const titleVisibilityReplacementPending = (
+		draft.touched.showFolderTitle
+		&& typeof draft.values.showFolderTitle === "boolean"
+	);
 	const titleDescriptionIds = [
 		`${prefix}-show-title-help`,
-		!draft.original.hideTitle.supported ? `${prefix}-show-title-status` : null,
+		!draft.original.hideTitle.supported && !titleVisibilityReplacementPending
+			? `${prefix}-show-title-status`
+			: null,
 	].filter(Boolean).join(" ");
 
 	return (
@@ -187,7 +222,11 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 			<fieldset
 				className="editor-field editor-choice-field"
 				data-editor-field="tileShape"
-				aria-describedby={`${prefix}-shape-help${draft.original.tileShape.supported ? "" : ` ${prefix}-shape-status`}`}
+				aria-describedby={`${prefix}-shape-help${
+					draft.original.tileShape.supported || shapeReplacementPending
+						? ""
+						: ` ${prefix}-shape-status`
+				}`}
 			>
 				<legend>Tile shape</legend>
 				<p className="editor-field-help" id={`${prefix}-shape-help`}>
@@ -225,7 +264,12 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 						</span>
 					</label>
 				</div>
-				<ChoiceStatus original={draft.original.tileShape} kind="shape" statusId={`${prefix}-shape-status`} />
+				<ChoiceStatus
+					original={draft.original.tileShape}
+					kind="shape"
+					replacementPending={shapeReplacementPending}
+					statusId={`${prefix}-shape-status`}
+				/>
 			</fieldset>
 
 			<div className="editor-switch-field" data-editor-field="showFolderTitle">
@@ -247,6 +291,7 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 				<BooleanStatus
 					original={draft.original.hideTitle}
 					label="folder title"
+					replacementPending={titleVisibilityReplacementPending}
 					statusId={`${prefix}-show-title-status`}
 				/>
 			</div>
@@ -295,6 +340,11 @@ export function NodeEditor({
 	const prefix = `node-editor-${noun}`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
+	const titleReplacementPending = draft.touched.title && (
+		draft.values.hideNuvioTitle
+			? isValidNuvioTitle(draft.values.title)
+			: isValidVisibleNuvioTitle(draft.values.title)
+	);
 
 	useEffect(() => {
 		focusFirstDialogControl(dialogRef.current);
@@ -307,7 +357,9 @@ export function NodeEditor({
 
 	function describedBy(diagnostic) {
 		const ids = [`${prefix}-title-help`];
-		if (!draft.original.title.supported) ids.push(`${prefix}-title-status`);
+		if (!draft.original.title.supported && !titleReplacementPending) {
+			ids.push(`${prefix}-title-status`);
+		}
 		if (diagnostic) ids.push(`${prefix}-title-error`);
 		return ids.join(" ");
 	}
@@ -363,7 +415,11 @@ export function NodeEditor({
 								? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
 								: `Displayed as the ${noun} title in Nuvio.`}
 						</p>
-						<TitleStatus original={draft.original.title} statusId={`${prefix}-title-status`} />
+						<TitleStatus
+							original={draft.original.title}
+							replacementPending={titleReplacementPending}
+							statusId={`${prefix}-title-status`}
+						/>
 					</div>
 
 					<InvisibleTitleField draft={draft} noun={noun} prefix={prefix} onChange={onChange} />

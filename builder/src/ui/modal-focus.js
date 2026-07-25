@@ -33,6 +33,14 @@ export function handleDialogKeyDown(event, dialog, onCancel) {
 
 	const first = controls[0];
 	const last = controls.at(-1);
+	if (event.target === dialog) {
+		event.preventDefault();
+		const target = event.shiftKey ? last : first;
+		target.focus();
+		return event.shiftKey
+			? "wrapped-from-dialog-backward"
+			: "wrapped-from-dialog-forward";
+	}
 	if (event.shiftKey && event.target === first) {
 		event.preventDefault();
 		last.focus();
