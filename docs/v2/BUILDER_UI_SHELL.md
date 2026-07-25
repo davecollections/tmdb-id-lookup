@@ -1,14 +1,14 @@
 # Builder UI Shell and Hierarchy Navigator
 
-Status: implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40)
+Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, and presentation milestones through issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53)
 
-Last reviewed: 2026-07-12
+Last reviewed: 2026-07-25
 
 ## Purpose and scope
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The workspace displays ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden and narrows the inline editor to titles, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, presentation editing, deletion, reordering, export, persistence, and migration application remain deferred.
+The workspace displays ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) extends the same inline editor from title-only editing to contained collection/folder presentation settings, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, deletion, reordering, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -30,7 +30,7 @@ React imports `createBuilderController` only from the supported `builder/src/app
 
 `useBuilderControllerState` is the only React subscription adapter. It calls `useSyncExternalStore` with `controller.subscribe`, `controller.getState`, and the same `getState` function as the server/static snapshot reader.
 
-The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, and the title-only uncommitted node-editor draft/diagnostics use local React state.
+The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, and the title/presentation uncommitted node-editor draft/diagnostics use local React state.
 
 ## UI module structure
 
@@ -40,7 +40,7 @@ builder/src/ui/
   BuilderWelcome.jsx          welcome, file selection, pasted text and diagnostics
   BuilderWorkspace.jsx        semantic hierarchy workspace rendering
   NodeEditor.jsx              single inline collection/folder editor form
-  node-editor.js              pure draft, validation, and patch helpers
+  node-editor.js              pure title/presentation draft, validation, and minimal-patch helpers
   node-editor-actions.js      public controller update delegation
   import-actions.js           public-controller-only browser transport helpers
   use-builder-controller.js   external-store subscription adapter
@@ -78,9 +78,9 @@ Selected buttons use `aria-pressed`, visible accent treatment, and hidden select
 
 ## Draft creation
 
-`createDraftCollection(controller)` scans current editable collection IDs and chooses the smallest free positive `collection-N` value. Its titles are `Untitled Collection`, then `Untitled Collection 2`, and so on.
+`createDraftCollection(controller)` chooses the next unique `Untitled Collection` title, supplies the explicit manual defaults Tabs, All enabled, and Pin off, then delegates automatic Nuvio ID creation to the controller.
 
-`createDraftFolder(controller, collectionInternalId)` scans editable folder IDs across the complete project and chooses the smallest free positive `folder-N` value. Its titles follow the matching `Untitled Folder` pattern.
+`createDraftFolder(controller, collectionInternalId)` chooses the next unique `Untitled Folder` title, supplies Poster and Show folder title as the explicit manual defaults, then delegates automatic Nuvio ID creation to the controller.
 
 Both helpers use only `getState()` and public controller actions. They never derive an internal ID, never alter imported IDs, and select a created node only after creation succeeds. They return the controller's structured result with the successful `createdInternalId`. Collection creation does not create a folder, and folder creation does not create a source.
 
@@ -88,15 +88,15 @@ Both helpers use only `getState()` and public controller actions. They never der
 
 Native TMDB sources prefer an editable title, then the TMDB source type, then `TMDB source`. Addon sources prefer an editable title, catalog ID, addon ID, then `Addon source`. Opaque sources use an editable title when available and otherwise `Preserved source`.
 
-The selected-node summary includes only relevant known editable fields. Collection summaries include known identity, counts, pinning, and view mode. Folder summaries include known identity, count, tile shape, hide-title state, and an artwork-presence count. Source summaries include the explicit category and relevant known provider, TMDB, media, addon, catalog, and genre values. Opaque sources receive a calm `Preserved imported source` note.
+The selected-node summary includes only relevant known editable fields. Collection summaries use friendly supported labels for Tabs/Rows, Pinned to top, and All tab included. Folder summaries use Poster/Landscape and positive Folder title shown wording plus an artwork-presence count. Unsupported presentation values are not exposed. Source summaries include the explicit category and relevant known provider, TMDB, media, addon, catalog, and genre values. Opaque sources receive a calm `Preserved imported source` note.
 
 The UI never renders full raw JSON, arbitrary unknown/community fields, serializer output, migration projections, exception objects, stack traces, or builder internal IDs.
 
-## Essential collection and folder editing
+## Collection and folder editing
 
-Selected collections expose `Edit collection` in the folders context, and selected folders expose `Edit folder` in the sources context. One inline editor appears between notices and the hierarchy. It edits only Nuvio-facing `id` and `title`, keeps builder `internalId` hidden and stable, validates both values as required text, and creates a minimal changed-field patch for `controller.updateNode`.
+Selected collections expose `Edit collection` in the folders context, and selected folders expose `Edit folder` in the sources context. One inline editor appears between notices and the hierarchy. It edits title plus the approved collection/folder presentation settings, keeps Nuvio IDs and builder `internalId` hidden and stable, validates title as required text, and creates a minimal changed-field patch for `controller.updateNode`.
 
-Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While the editor is open, hierarchy selection, creation, edit triggers, mobile parent navigation, and folder-summary navigation are natively disabled; Apply and Cancel remain available. Imported absent/non-string values are never displayed or stringified and require an explicit valid text replacement.
+Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While the editor is open, hierarchy selection, creation, edit triggers, mobile parent navigation, and folder-summary navigation are natively disabled; Apply and Cancel remain available. Imported absent, unsupported, Follow Layout, Square, and unusual presentation values remain untouched until deliberate canonical replacement.
 
 ## Diagnostics and migration status
 
@@ -108,6 +108,7 @@ Migration remains non-interactive. The shell shows a small notice only when prev
 
 - one page-level `h1` and logical panel/detail headings;
 - ordinary semantic lists with real selection buttons;
+- semantic presentation fieldsets with native radio buttons and labelled switches;
 - a real anchor for the v1 backlink;
 - `aria-pressed` plus visible and screen-reader selected state;
 - approximately 46–48px minimum action targets and larger hierarchy rows;
@@ -139,7 +140,9 @@ Deployment and focused source tests use a small stable surface:
 - `data-import-control="file|pasted-json"`
 - `data-node-type="collection|folder|source"`
 - `data-node-editor="collection|folder"`
-- `data-editor-field="title"`
+- `data-editor-field="title|viewMode|showAllTab|pinToTop|tileShape|showFolderTitle"`
+- `data-editor-choice="tabs|rows|poster|landscape"`
+- `data-editor-control="showAllTab|pinToTop|showFolderTitle"`
 - `data-return-confirmation="true"`
 - `data-action="stay-in-workspace|discard-and-return|create-collection-empty|create-folder-empty"`
 - `data-editor-lock="true"` while editing
@@ -150,8 +153,8 @@ The Pages deployment workflow, workflow triggers, permissions, deployment enviro
 
 ## Deliberate exclusions
 
-The current essential-editing milestone does not add project-title or presentation editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, network import, TMDB search, addon loading, artwork tools, accounts, authentication, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
+The current presentation milestone does not add project-title editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, network import, TMDB search, addon loading, artwork tools, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
 
-## Next likely UI milestone
+## Next mandatory gate
 
-The next separately approved issue can define presentation-settings editing, source creation, or export as one contained workflow. Presentation controls must first decide supported values, defaults, clearing, and property-removal semantics; source work must not broaden supported Nuvio assumptions without new evidence.
+Independent branch review and Dave's mandatory UI/flow review must assess the edit affordances, wording, Tabs/Rows and All-tab behavior, Poster/Landscape selection, unusual-value guidance, mobile drill-down, desktop three-panel layout, accessibility, and visual polish. Review corrections must be resolved before source creation receives a separate approved issue.

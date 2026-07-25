@@ -227,11 +227,32 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 - **Tabs** with Show All enabled adds **All** as the first/default tab.
 - These are collection-level settings.
 
+**Confirmed and implemented foundation**
+
+The existing responsive inline editor now exposes:
+
+- collection title, Tabs/Rows, conditional Include an All tab, and Pin to top;
+- folder title, Poster/Landscape, and positive Show folder title wording.
+
+Manual blank collections default to Tabs with All enabled and Pin off. Manual blank folders default to Poster with the title shown. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices.
+
 **Confirmed direction**
 
 The TV / phone / both Quick Setup answer may select safer initial presentation defaults. Defaults must stay editable and be based on current client evidence rather than assumptions. Exact per-device defaults remain open.
 
-Presentation settings are the next planned implementation area after this documentation recovery.
+Future Search/Add, template, and recipe defaults must begin from this planning matrix unless a later focused issue deliberately changes it:
+
+| Source or creation type | Default tile shape |
+| --- | --- |
+| Manually created blank folder | Poster |
+| Company | Landscape |
+| Network | Poster |
+| Actor / person / director | Poster |
+| TMDB movie collection / franchise | Poster |
+| Genre | Landscape |
+| Decade / general Discover | Poster unless a later recipe deliberately specifies otherwise |
+
+Only the manual blank-folder row is implemented. The remaining rows do not authorise source creation, entity-aware generation, templates, recipes, or automatic artwork.
 
 ## 12. TMDB Discover experience
 
@@ -355,9 +376,9 @@ Trakt integration remains outside current project scope; a possible future colou
 
 **Confirmed current dependency-aware direction**
 
-1. Product-plan and workflow recovery — this issue.
-2. Collection/folder presentation settings.
-3. Mandatory Dave UI and flow review.
+1. Product-plan and workflow recovery — complete.
+2. Collection/folder presentation settings — implemented on issue #53's branch pending review.
+3. Mandatory Dave UI and flow review — current gate.
 4. Resolve the review findings.
 5. Source creation and Search/Add.
 6. Advanced Discover creation.

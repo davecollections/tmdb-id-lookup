@@ -97,7 +97,12 @@ test("collection draft retains only stable target identity and editor values", (
 	const draft = createNodeEditorDraft(collection);
 	assert.equal(draft.internalId, collection.internalId);
 	assert.equal(draft.nodeType, "collection");
-	assert.deepEqual(draft.values, { title: "Collection title" });
+	assert.deepEqual(draft.values, {
+		title: "Collection title",
+		viewMode: "",
+		showAllTab: true,
+		pinToTop: false,
+	});
 	assert.equal(JSON.stringify(draft).includes("collection-id"), false);
 });
 
@@ -106,7 +111,11 @@ test("folder draft retains only stable target identity and editor values", () =>
 	const draft = createNodeEditorDraft(folder);
 	assert.equal(draft.internalId, folder.internalId);
 	assert.equal(draft.nodeType, "folder");
-	assert.deepEqual(draft.values, { title: "Folder title" });
+	assert.deepEqual(draft.values, {
+		title: "Folder title",
+		tileShape: "",
+		showFolderTitle: true,
+	});
 	assert.equal(JSON.stringify(draft).includes("folder-id"), false);
 });
 
@@ -119,22 +128,27 @@ test("project and source targets are rejected", () => {
 test("title strings are copied exactly without trimming while IDs stay absent", () => {
 	const controller = importTree([{ id: "  id  ", title: "  title  ", folders: [] }]);
 	const draft = createNodeEditorDraft(controller.getState().project.collections[0]);
-	assert.deepEqual(draft.values, { title: "  title  " });
+	assert.equal(draft.values.title, "  title  ");
 	assert.equal(Object.hasOwn(draft.values, "id"), false);
 });
 
 test("absent imported values become empty unsupported form strings", () => {
 	const collection = importTree([{ folders: [] }]).getState().project.collections[0];
 	const draft = createNodeEditorDraft(collection);
-	assert.deepEqual(draft.values, { title: "" });
-	assert.deepEqual(draft.original, { title: null, hasTitle: false, titleSupported: false });
+	assert.equal(draft.values.title, "");
+	assert.deepEqual(draft.original.title, {
+		value: null,
+		hasField: false,
+		supported: false,
+		status: "absent",
+	});
 });
 
 test("non-string imported values are never stringified", () => {
 	const collection = importTree([{ id: { sentinel: "RAW_ID" }, title: ["RAW_TITLE"], folders: [] }])
 		.getState().project.collections[0];
 	const draft = createNodeEditorDraft(collection);
-	assert.deepEqual(draft.values, { title: "" });
+	assert.equal(draft.values.title, "");
 	assert.equal(JSON.stringify(draft).includes("RAW_ID"), false);
 	assert.equal(JSON.stringify(draft).includes("RAW_TITLE"), false);
 });
@@ -158,8 +172,11 @@ test("updating ID is ignored because ID is not an editor field", () => {
 test("updating title changes only title form state and touched state", () => {
 	const original = createNodeEditorDraft(importTree().getState().project.collections[0]);
 	const next = updateNodeEditorField(original, "title", "New title");
-	assert.deepEqual(next.values, { title: "New title" });
-	assert.deepEqual(next.touched, { title: true });
+	assert.equal(next.values.title, "New title");
+	assert.equal(next.touched.title, true);
+	assert.equal(next.touched.viewMode, false);
+	assert.equal(next.touched.showAllTab, false);
+	assert.equal(next.touched.pinToTop, false);
 });
 
 test("field updates are immutable and retain original comparison data", () => {
@@ -175,6 +192,149 @@ test("unsupported field updates are ignored without mutation", () => {
 	const original = createNodeEditorDraft(importTree().getState().project.collections[0]);
 	assert.equal(updateNodeEditorField(original, "presentation", "ROWS"), original);
 	assert.equal(updateNodeEditorField(original, "id", "replacement"), original);
+});
+
+test("supported presentation values retain imported casing while untouched", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		viewMode: "rows",
+		showAllTab: false,
+		pinToTop: true,
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "landscape",
+			hideTitle: false,
+			sources: [],
+		}],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+	const collectionDraft = createNodeEditorDraft(collection);
+	const folderDraft = createNodeEditorDraft(folder);
+
+	assert.equal(collectionDraft.values.viewMode, "rows");
+	assert.equal(collectionDraft.original.viewMode.value, "rows");
+	assert.equal(folderDraft.values.tileShape, "landscape");
+	assert.equal(folderDraft.original.tileShape.value, "landscape");
+	assert.deepEqual(buildNodeEditorPatch(collectionDraft), {});
+	assert.deepEqual(buildNodeEditorPatch(folderDraft), {});
+});
+
+test("collection presentation updates accept only canonical supported values", () => {
+	const collection = importTree([{
+		id: "collection",
+		title: "Collection",
+		viewMode: "TABBED_GRID",
+		showAllTab: true,
+		pinToTop: false,
+		folders: [],
+	}]).getState().project.collections[0];
+	const original = createNodeEditorDraft(collection);
+
+	assert.equal(updateNodeEditorField(original, "viewMode", "FOLLOW_LAYOUT"), original);
+	assert.equal(updateNodeEditorField(original, "viewMode", "rows"), original);
+
+	let draft = updateNodeEditorField(original, "viewMode", "ROWS");
+	assert.equal(draft.values.showAllTab, true);
+	assert.deepEqual(buildNodeEditorPatch(draft), { viewMode: "ROWS" });
+	draft = updateNodeEditorField(draft, "viewMode", "TABBED_GRID");
+	assert.equal(draft.values.showAllTab, true);
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
+
+	draft = updateNodeEditorField(draft, "showAllTab", false);
+	draft = updateNodeEditorField(draft, "pinToTop", true);
+	assert.deepEqual(buildNodeEditorPatch(draft), {
+		showAllTab: false,
+		pinToTop: true,
+	});
+});
+
+test("folder presentation updates map positive title wording to inverse hideTitle", () => {
+	const folder = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "POSTER",
+			hideTitle: false,
+			sources: [],
+		}],
+	}]).getState().project.collections[0].folders[0];
+	let draft = createNodeEditorDraft(folder);
+	draft = updateNodeEditorField(draft, "tileShape", "LANDSCAPE");
+	draft = updateNodeEditorField(draft, "showFolderTitle", false);
+	assert.deepEqual(buildNodeEditorPatch(draft), {
+		tileShape: "LANDSCAPE",
+		hideTitle: true,
+	});
+
+	draft = updateNodeEditorField(draft, "tileShape", "POSTER");
+	draft = updateNodeEditorField(draft, "showFolderTitle", true);
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
+});
+
+test("Follow Layout and Square are preservation-only until deliberate replacement", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		viewMode: "FOLLOW_LAYOUT",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "SQUARE",
+			sources: [],
+		}],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+	const collectionDraft = createNodeEditorDraft(collection);
+	const folderDraft = createNodeEditorDraft(folder);
+
+	assert.equal(collectionDraft.values.viewMode, "");
+	assert.equal(collectionDraft.original.viewMode.status, "preserved");
+	assert.equal(folderDraft.values.tileShape, "");
+	assert.equal(folderDraft.original.tileShape.status, "preserved");
+	assert.equal(JSON.stringify(collectionDraft).includes("FOLLOW_LAYOUT"), false);
+	assert.equal(JSON.stringify(folderDraft).includes("SQUARE"), false);
+	assert.deepEqual(buildNodeEditorPatch(changedDraft(collection, { title: "Renamed" })), { title: "Renamed" });
+	assert.deepEqual(
+		buildNodeEditorPatch(updateNodeEditorField(collectionDraft, "viewMode", "ROWS")),
+		{ viewMode: "ROWS" },
+	);
+	assert.deepEqual(
+		buildNodeEditorPatch(updateNodeEditorField(folderDraft, "tileShape", "LANDSCAPE")),
+		{ tileShape: "LANDSCAPE" },
+	);
+});
+
+test("absent unsupported and unusual presentation values stay out of unrelated patches", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		viewMode: { rawLayout: "PRIVATE_LAYOUT" },
+		showAllTab: ["PRIVATE_ALL"],
+		pinToTop: 1,
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: { rawShape: "PRIVATE_SHAPE" },
+			hideTitle: ["PRIVATE_TITLE"],
+			sources: [],
+		}],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+	const collectionDraft = changedDraft(collection, { title: "Edited collection" });
+	const folderDraft = changedDraft(folder, { title: "Edited folder" });
+
+	assert.deepEqual(buildNodeEditorPatch(collectionDraft), { title: "Edited collection" });
+	assert.deepEqual(buildNodeEditorPatch(folderDraft), { title: "Edited folder" });
+	for (const sentinel of ["PRIVATE_LAYOUT", "PRIVATE_ALL", "PRIVATE_SHAPE", "PRIVATE_TITLE"]) {
+		assert.equal(JSON.stringify({ collectionDraft, folderDraft }).includes(sentinel), false);
+	}
 });
 
 test("valid collection and folder drafts pass validation", () => {
@@ -293,6 +453,63 @@ test("folder apply delegates through updateNode and retains selection", () => {
 	assert.equal(controller.getState().selection.folderInternalId, folder.internalId);
 });
 
+test("collection presentation apply commits one minimal patch and one revision", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		viewMode: "TABBED_GRID",
+		showAllTab: true,
+		pinToTop: false,
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+	const beforeRevision = controller.getState().revision;
+	let draft = createNodeEditorDraft(collection);
+	draft = updateNodeEditorField(draft, "viewMode", "ROWS");
+	draft = updateNodeEditorField(draft, "pinToTop", true);
+	const outcome = applyNodeEditorDraft(controller, draft);
+
+	assert.equal(outcome.ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(controller.getState().dirty, true);
+	assert.equal(controller.getState().selection.collectionInternalId, collection.internalId);
+	assert.deepEqual(controller.getState().project.collections[0].editable, {
+		id: "collection",
+		title: "Collection",
+		viewMode: "ROWS",
+		showAllTab: true,
+		pinToTop: true,
+	});
+});
+
+test("folder presentation apply commits canonical shape and inverse title value once", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "POSTER",
+			hideTitle: false,
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	controller.selectNode(folder.internalId);
+	const beforeRevision = controller.getState().revision;
+	let draft = createNodeEditorDraft(folder);
+	draft = updateNodeEditorField(draft, "tileShape", "LANDSCAPE");
+	draft = updateNodeEditorField(draft, "showFolderTitle", false);
+	const outcome = applyNodeEditorDraft(controller, draft);
+
+	assert.equal(outcome.ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(controller.getState().selection.folderInternalId, folder.internalId);
+	assert.equal(controller.getState().project.collections[0].folders[0].editable.tileShape, "LANDSCAPE");
+	assert.equal(controller.getState().project.collections[0].folders[0].editable.hideTitle, true);
+});
+
 test("invalid apply never calls the controller", () => {
 	let calls = 0;
 	const controller = { updateNode() { calls += 1; return { ok: true }; } };
@@ -393,22 +610,53 @@ test("opaque community edits preserve raw snapshots, unknown fields, children, a
 	assert.equal(output.folders[0].sources[0].unknownBoolean, true);
 });
 
-test("mixed source edits preserve source categories, order, projections, and migration state", () => {
+test("mixed presentation edits preserve source order, projections, artwork, and serializer cycle stability", () => {
 	const controller = importTree(loadFixture("valid/mixed-native-and-addon.json"));
 	const collection = controller.getState().project.collections[0];
 	const folder = collection.folders[0];
 	const beforePreview = structuredClone(controller.getState().migrationPreview);
 	const beforeSources = structuredClone(folder.sources);
 	const beforeCatalogSources = structuredClone(folder.rawImported.catalogSources);
-	applyNodeEditorDraft(controller, changedDraft(folder, { title: "Edited Mixed Folder" }));
+	const beforeArtwork = {
+		coverEmoji: folder.editable.coverEmoji,
+		focusGifUrl: folder.editable.focusGifUrl,
+		heroVideoUrl: folder.editable.heroVideoUrl,
+		titleLogoUrl: folder.editable.titleLogoUrl,
+		coverImageUrl: folder.editable.coverImageUrl,
+		focusGifEnabled: folder.editable.focusGifEnabled,
+		heroBackdropUrl: folder.editable.heroBackdropUrl,
+	};
+	let collectionDraft = createNodeEditorDraft(collection);
+	collectionDraft = updateNodeEditorField(collectionDraft, "viewMode", "TABBED_GRID");
+	collectionDraft = updateNodeEditorField(collectionDraft, "showAllTab", false);
+	collectionDraft = updateNodeEditorField(collectionDraft, "pinToTop", true);
+	applyNodeEditorDraft(controller, collectionDraft);
+
+	let folderDraft = createNodeEditorDraft(controller.getState().project.collections[0].folders[0]);
+	folderDraft = updateNodeEditorField(folderDraft, "title", "Edited Mixed Folder");
+	folderDraft = updateNodeEditorField(folderDraft, "tileShape", "POSTER");
+	folderDraft = updateNodeEditorField(folderDraft, "showFolderTitle", false);
+	applyNodeEditorDraft(controller, folderDraft);
 	const currentFolder = controller.getState().project.collections[0].folders[0];
 	assert.deepEqual(currentFolder.sources, beforeSources);
 	assert.deepEqual(currentFolder.rawImported.catalogSources, beforeCatalogSources);
+	for (const [field, value] of Object.entries(beforeArtwork)) {
+		assert.equal(currentFolder.editable[field], value, field);
+	}
 	assert.deepEqual(controller.getState().migrationPreview, beforePreview);
-	const output = serializeNuvioProject(controller.getState().project).value[0].folders[0];
-	assert.deepEqual(output.sources.map((source) => source.provider), ["tmdb", "addon"]);
-	assert.deepEqual(output.catalogSources.map((source) => source.catalogId), ["trending-series"]);
+	const output = serializeNuvioProject(controller.getState().project).value;
+	assert.equal(output[0].viewMode, "TABBED_GRID");
+	assert.equal(output[0].showAllTab, false);
+	assert.equal(output[0].pinToTop, true);
+	assert.equal(output[0].folders[0].tileShape, "POSTER");
+	assert.equal(output[0].folders[0].hideTitle, true);
+	assert.deepEqual(output[0].folders[0].sources.map((source) => source.provider), ["tmdb", "addon"]);
+	assert.deepEqual(output[0].folders[0].catalogSources.map((source) => source.catalogId), ["trending-series"]);
 	assert.equal(JSON.stringify(output).includes("internalId"), false);
+
+	const cycledController = createController();
+	assert.equal(cycledController.importValue(output).ok, true);
+	assert.deepEqual(serializeNuvioProject(cycledController.getState().project).value, output);
 });
 
 test("workspace initially has no editor and exposes collection edit only in collection context", () => {
@@ -440,11 +688,21 @@ test("collection editor renders exactly one labelled form with stable markers an
 	for (const marker of [
 		'data-node-editor="collection"',
 		'data-editor-field="title"',
+		'data-editor-field="viewMode"',
+		'data-editor-choice="tabs"',
+		'data-editor-choice="rows"',
+		'data-editor-field="showAllTab"',
+		'data-editor-control="showAllTab"',
+		'data-editor-field="pinToTop"',
+		'data-editor-control="pinToTop"',
 		'data-action="apply-node-edit"',
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
 	assert.ok(markup.includes("Edit collection"));
+	assert.ok(markup.includes("Collection layout"));
+	assert.ok(markup.includes("Include an All tab"));
+	assert.ok(markup.includes("Pin to top"));
 	assert.equal(markup.includes('data-editor-field="id"'), false);
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
 });
@@ -463,16 +721,83 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);
 	assert.equal((markup.match(/class="editor-diagnostics" role="alert"/g) ?? []).length, 1);
 	assert.ok(markup.includes("Folder settings"));
+	for (const marker of [
+		'data-editor-field="tileShape"',
+		'data-editor-choice="poster"',
+		'data-editor-choice="landscape"',
+		'data-editor-field="showFolderTitle"',
+		'data-editor-control="showFolderTitle"',
+	]) assert.ok(markup.includes(marker), marker);
+	assert.ok(markup.includes("Show folder title"));
+	assert.equal(markup.includes("hideTitle"), false);
 });
 
 test("unusual imported values show calm replacement guidance without raw values", () => {
-	const controller = importTree([{ id: { secret: "RAW_OBJECT" }, title: false, folders: [] }]);
+	const controller = importTree([{
+		id: { secret: "RAW_OBJECT" },
+		title: false,
+		viewMode: { secret: "RAW_LAYOUT" },
+		showAllTab: ["RAW_ALL"],
+		pinToTop: 7,
+		folders: [],
+	}]);
 	const collection = controller.getState().project.collections[0];
 	controller.selectNode(collection.internalId);
 	const markup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
 	assert.equal((markup.match(/The imported value is not text/g) ?? []).length, 1);
 	assert.equal(markup.includes("RAW_OBJECT"), false);
+	assert.equal(markup.includes("RAW_LAYOUT"), false);
+	assert.equal(markup.includes("RAW_ALL"), false);
 	assert.equal(markup.includes('value="false"'), false);
+	assert.ok(markup.includes("will be preserved until you choose Tabs or Rows"));
+	assert.ok(markup.includes("cannot be shown safely"));
+});
+
+test("Rows disables the All-tab switch without changing its retained preference", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Rows collection",
+		viewMode: "ROWS",
+		showAllTab: true,
+		pinToTop: false,
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+	const draft = createNodeEditorDraft(collection);
+	const markup = renderWorkspace(controller, { draft });
+
+	assert.ok(openingTag(markup, 'data-editor-choice="rows"').includes("checked"));
+	assert.ok(openingTag(markup, 'data-editor-control="showAllTab"').includes("disabled"));
+	assert.equal(openingTag(markup, 'data-editor-control="showAllTab"').includes("checked"), false);
+	assert.ok(markup.includes("The preference stays unchanged while Rows is selected."));
+	assert.equal(draft.values.showAllTab, true);
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
+});
+
+test("Follow Layout and Square render bounded replacement guidance and no normal option", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Imported collection",
+		viewMode: "FOLLOW_LAYOUT",
+		folders: [{
+			id: "folder",
+			title: "Imported folder",
+			tileShape: "SQUARE",
+			sources: [],
+		}],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+	controller.selectNode(collection.internalId);
+	const collectionMarkup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
+	assert.ok(collectionMarkup.includes("This imported Follow Layout setting is being preserved."));
+	assert.equal(collectionMarkup.includes('value="FOLLOW_LAYOUT"'), false);
+
+	controller.selectNode(folder.internalId);
+	const folderMarkup = renderWorkspace(controller, { draft: createNodeEditorDraft(folder) });
+	assert.ok(folderMarkup.includes("This imported Square shape is being preserved."));
+	assert.equal(folderMarkup.includes('value="SQUARE"'), false);
 });
 
 test("editor-active workspace disables every hierarchy and mobile navigation button", () => {
@@ -507,12 +832,21 @@ test("Apply and Cancel remain enabled while hierarchy controls are locked", () =
 test("styles keep the editor responsive, focused, touch-sized, and visibly disabled", () => {
 	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*max-width:\s*900px/);
-	assert.match(styles, /\.editor-field input\s*\{[\s\S]*min-height:\s*48px/);
+	assert.match(styles, /\.editor-field input\[type="text"\]\s*\{[\s\S]*min-height:\s*48px/);
+	assert.match(styles, /\.editor-choice\s*\{[\s\S]*min-height:\s*72px/);
+	assert.match(styles, /\.editor-switch\s*\{[\s\S]*min-height:\s*64px/);
+	assert.match(styles, /\.shape-preview\.is-poster\s*\{[\s\S]*height:\s*39px/);
+	assert.match(styles, /\.shape-preview\.is-landscape\s*\{[\s\S]*width:\s*42px/);
 	assert.match(styles, /button:disabled/);
 	assert.match(styles, /@media \(max-width: 430px\)/);
 	assert.match(styles, /@media \(min-width: 620px\)/);
 	assert.match(styles, /@media \(min-width: 760px\)/);
+	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(235px/);
 	assert.match(styles, /focus-visible/);
+	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+	for (const mobileWidth of [360, 384, 393, 402, 412]) {
+		assert.ok(mobileWidth <= 430, `${mobileWidth}px remains inside the tested narrow-layout boundary`);
+	}
 });
 
 test("UI scope contains no deferred editor, persistence, routing, export, delete, or reorder actions", () => {

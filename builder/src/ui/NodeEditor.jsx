@@ -1,19 +1,252 @@
 import { useEffect } from "react";
 
-function FieldStatus({ draft, statusId }) {
-	const hasField = draft.original.hasTitle;
-	const supported = draft.original.titleSupported;
-
-	if (supported) {
+function TitleStatus({ original, statusId }) {
+	if (original.supported) {
 		return null;
 	}
 
 	return (
 		<p className="editor-field-status" id={statusId}>
-			{hasField
+			{original.hasField
 				? "The imported value is not text. Enter a valid text replacement before applying."
 				: "The imported value is absent. Enter a valid text replacement before applying."}
 		</p>
+	);
+}
+
+function ChoiceStatus({ original, kind, statusId }) {
+	if (original.supported) {
+		return null;
+	}
+
+	const isLayout = kind === "layout";
+	let message;
+	if (original.status === "preserved") {
+		message = isLayout
+			? "This imported Follow Layout setting is being preserved. Choose Tabs or Rows only if you want to replace it."
+			: "This imported Square shape is being preserved. Choose Poster or Landscape only if you want to replace it.";
+	} else if (original.status === "absent") {
+		message = isLayout
+			? "No imported layout choice is set. Choose Tabs or Rows only if you want to add one."
+			: "No imported tile shape is set. Choose Poster or Landscape only if you want to add one.";
+	} else {
+		message = isLayout
+			? "The imported layout is not offered here and will be preserved until you choose Tabs or Rows."
+			: "The imported tile shape is not offered here and will be preserved until you choose Poster or Landscape.";
+	}
+
+	return (
+		<p className="editor-field-status" id={statusId}>
+			{message}
+		</p>
+	);
+}
+
+function BooleanStatus({ original, label, statusId }) {
+	if (original.supported) {
+		return null;
+	}
+
+	return (
+		<p className="editor-field-status" id={statusId}>
+			{original.status === "absent"
+				? `No imported ${label} preference is set. It will stay absent unless you use this switch.`
+				: `The imported ${label} preference cannot be shown safely and will be preserved unless you use this switch.`}
+		</p>
+	);
+}
+
+function isSelected(value, canonicalValue) {
+	return typeof value === "string" && value.toUpperCase() === canonicalValue;
+}
+
+function CollectionPresentationFields({ draft, prefix, onChange }) {
+	const tabsSelected = isSelected(draft.values.viewMode, "TABBED_GRID");
+	const rowsSelected = isSelected(draft.values.viewMode, "ROWS");
+	const allTabDescriptionIds = [
+		`${prefix}-all-tab-help`,
+		!draft.original.showAllTab.supported ? `${prefix}-all-tab-status` : null,
+	].filter(Boolean).join(" ");
+	const pinDescriptionIds = [
+		`${prefix}-pin-help`,
+		!draft.original.pinToTop.supported ? `${prefix}-pin-status` : null,
+	].filter(Boolean).join(" ");
+
+	return (
+		<>
+			<fieldset
+				className="editor-field editor-choice-field"
+				data-editor-field="viewMode"
+				aria-describedby={`${prefix}-layout-help${draft.original.viewMode.supported ? "" : ` ${prefix}-layout-status`}`}
+			>
+				<legend>Collection layout</legend>
+				<p className="editor-field-help" id={`${prefix}-layout-help`}>
+					Choose how this collection groups its folders in Nuvio.
+				</p>
+				<div className="editor-choice-grid">
+					<label className={`editor-choice${tabsSelected ? " is-selected" : ""}`}>
+						<input
+							type="radio"
+							name={`${prefix}-layout`}
+							value="TABBED_GRID"
+							data-editor-choice="tabs"
+							checked={tabsSelected}
+							onChange={() => onChange("viewMode", "TABBED_GRID")}
+						/>
+						<span>
+							<strong>Tabs</strong>
+							<small>Each folder appears as a tab.</small>
+						</span>
+					</label>
+					<label className={`editor-choice${rowsSelected ? " is-selected" : ""}`}>
+						<input
+							type="radio"
+							name={`${prefix}-layout`}
+							value="ROWS"
+							data-editor-choice="rows"
+							checked={rowsSelected}
+							onChange={() => onChange("viewMode", "ROWS")}
+						/>
+						<span>
+							<strong>Rows</strong>
+							<small>Folders appear as streaming-style rows.</small>
+						</span>
+					</label>
+				</div>
+				<ChoiceStatus original={draft.original.viewMode} kind="layout" statusId={`${prefix}-layout-status`} />
+			</fieldset>
+
+			<div className="editor-switch-field" data-editor-field="showAllTab">
+				<label className="editor-switch">
+					<span>
+						<strong>Include an All tab</strong>
+						<small id={`${prefix}-all-tab-help`}>
+							{tabsSelected
+								? "Adds an All tab before the individual folder tabs."
+								: "Available only with Tabs. The preference stays unchanged while Rows is selected."}
+						</small>
+					</span>
+					<input
+						type="checkbox"
+						role="switch"
+						data-editor-control="showAllTab"
+						checked={tabsSelected && draft.values.showAllTab}
+						disabled={!tabsSelected}
+						aria-describedby={allTabDescriptionIds}
+						onChange={(event) => onChange("showAllTab", event.target.checked)}
+					/>
+					<span className="editor-switch-control" aria-hidden="true" />
+				</label>
+				<BooleanStatus
+					original={draft.original.showAllTab}
+					label="All tab"
+					statusId={`${prefix}-all-tab-status`}
+				/>
+			</div>
+
+			<div className="editor-switch-field" data-editor-field="pinToTop">
+				<label className="editor-switch">
+					<span>
+						<strong>Pin to top</strong>
+						<small id={`${prefix}-pin-help`}>Keeps this collection above ordinary collection ordering in Nuvio.</small>
+					</span>
+					<input
+						type="checkbox"
+						role="switch"
+						data-editor-control="pinToTop"
+						checked={draft.values.pinToTop}
+						aria-describedby={pinDescriptionIds}
+						onChange={(event) => onChange("pinToTop", event.target.checked)}
+					/>
+					<span className="editor-switch-control" aria-hidden="true" />
+				</label>
+				<BooleanStatus
+					original={draft.original.pinToTop}
+					label="pin to top"
+					statusId={`${prefix}-pin-status`}
+				/>
+			</div>
+		</>
+	);
+}
+
+function FolderPresentationFields({ draft, prefix, onChange }) {
+	const posterSelected = isSelected(draft.values.tileShape, "POSTER");
+	const landscapeSelected = isSelected(draft.values.tileShape, "LANDSCAPE");
+	const titleDescriptionIds = [
+		`${prefix}-show-title-help`,
+		!draft.original.hideTitle.supported ? `${prefix}-show-title-status` : null,
+	].filter(Boolean).join(" ");
+
+	return (
+		<>
+			<fieldset
+				className="editor-field editor-choice-field"
+				data-editor-field="tileShape"
+				aria-describedby={`${prefix}-shape-help${draft.original.tileShape.supported ? "" : ` ${prefix}-shape-status`}`}
+			>
+				<legend>Tile shape</legend>
+				<p className="editor-field-help" id={`${prefix}-shape-help`}>
+					Choose the folder artwork proportions used in Nuvio.
+				</p>
+				<div className="editor-choice-grid">
+					<label className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}>
+						<input
+							type="radio"
+							name={`${prefix}-shape`}
+							value="POSTER"
+							data-editor-choice="poster"
+							checked={posterSelected}
+							onChange={() => onChange("tileShape", "POSTER")}
+						/>
+						<span className="shape-preview is-poster" aria-hidden="true" />
+						<span>
+							<strong>Poster</strong>
+							<small>Tall artwork for poster-style folders.</small>
+						</span>
+					</label>
+					<label className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}>
+						<input
+							type="radio"
+							name={`${prefix}-shape`}
+							value="LANDSCAPE"
+							data-editor-choice="landscape"
+							checked={landscapeSelected}
+							onChange={() => onChange("tileShape", "LANDSCAPE")}
+						/>
+						<span className="shape-preview is-landscape" aria-hidden="true" />
+						<span>
+							<strong>Landscape</strong>
+							<small>Wide artwork for horizontal folders.</small>
+						</span>
+					</label>
+				</div>
+				<ChoiceStatus original={draft.original.tileShape} kind="shape" statusId={`${prefix}-shape-status`} />
+			</fieldset>
+
+			<div className="editor-switch-field" data-editor-field="showFolderTitle">
+				<label className="editor-switch">
+					<span>
+						<strong>Show folder title</strong>
+						<small id={`${prefix}-show-title-help`}>Displays the folder title with its artwork in Nuvio.</small>
+					</span>
+					<input
+						type="checkbox"
+						role="switch"
+						data-editor-control="showFolderTitle"
+						checked={draft.values.showFolderTitle}
+						aria-describedby={titleDescriptionIds}
+						onChange={(event) => onChange("showFolderTitle", event.target.checked)}
+					/>
+					<span className="editor-switch-control" aria-hidden="true" />
+				</label>
+				<BooleanStatus
+					original={draft.original.hideTitle}
+					label="folder title"
+					statusId={`${prefix}-show-title-status`}
+				/>
+			</div>
+		</>
 	);
 }
 
@@ -37,7 +270,7 @@ export function NodeEditor({
 
 	function describedBy(diagnostic) {
 		const ids = [`${prefix}-title-help`];
-		if (!draft.original.titleSupported) ids.push(`${prefix}-title-status`);
+		if (!draft.original.title.supported) ids.push(`${prefix}-title-status`);
 		if (diagnostic) ids.push(`${prefix}-title-error`);
 		return ids.join(" ");
 	}
@@ -49,7 +282,7 @@ export function NodeEditor({
 				<p className="panel-kicker">{context}</p>
 				<h2 id={`${prefix}-title`}>{heading}</h2>
 			</div>
-			<p>Update the title shown for this {noun}.</p>
+			<p>Update the title and presentation for this {noun}.</p>
 		</div>
 
 		<p className="editor-lock-note">
@@ -73,8 +306,14 @@ export function NodeEditor({
 				<p className="editor-field-help" id={`${prefix}-title-help`}>
 					Displayed as the {noun} title in Nuvio.
 				</p>
-				<FieldStatus draft={draft} statusId={`${prefix}-title-status`} />
+				<TitleStatus original={draft.original.title} statusId={`${prefix}-title-status`} />
 			</div>
+
+			{draft.nodeType === "collection" ? (
+				<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+			) : (
+				<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+			)}
 
 			<div className="editor-diagnostics" role="alert" aria-atomic="true">
 				{diagnostics.length > 0 ? (

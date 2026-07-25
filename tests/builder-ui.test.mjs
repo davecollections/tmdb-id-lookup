@@ -169,6 +169,53 @@ test("view model resolves hierarchy, preserves order, counts children, and falls
 	assert.equal(view.activeMobileLevel, "sources");
 });
 
+test("view model presents only supported collection and folder settings with friendly labels", () => {
+	const controller = createController();
+	controller.importValue([{
+		id: "collection",
+		title: "Collection",
+		pinToTop: true,
+		viewMode: "rows",
+		showAllTab: true,
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "landscape",
+			hideTitle: false,
+			sources: [],
+		}],
+	}, {
+		id: "unsupported",
+		title: "Unsupported",
+		pinToTop: "RAW_PIN",
+		viewMode: "FOLLOW_LAYOUT",
+		showAllTab: { raw: true },
+		folders: [{
+			id: "unsupported-folder",
+			title: "Unsupported folder",
+			tileShape: "SQUARE",
+			hideTitle: "RAW_HIDE",
+			sources: [],
+		}],
+	}]);
+	const [collection, unsupported] = controller.getState().project.collections;
+	controller.selectNode(collection.folders[0].internalId);
+	let view = buildBuilderViewModel(controller.getState());
+	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Layout" && entry.value === "Rows"));
+	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Pinned to top" && entry.value === "Yes"));
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All tab included"), false);
+	assert.equal(view.selectedFolder.tileShape, "Landscape");
+	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Folder title shown" && entry.value === "Yes"));
+
+	controller.selectNode(unsupported.folders[0].internalId);
+	view = buildBuilderViewModel(controller.getState());
+	assert.equal(JSON.stringify(view).includes("RAW_PIN"), false);
+	assert.equal(JSON.stringify(view).includes("RAW_HIDE"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Layout"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Tile shape"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder title shown"), false);
+});
+
 test("view model uses explicit source categories and safe human-readable summaries", () => {
 	const controller = createController();
 	controller.importValue([{ id: "c", title: "C", folders: [{ id: "f", title: "F", sources: [
@@ -272,7 +319,13 @@ test("first draft collection uses an automatic identity and becomes selected", (
 	const collection = controller.getState().project.collections[0];
 	assert.equal(result.ok, true);
 	assert.equal(result.createdInternalId, collection.internalId);
-	assert.deepEqual(collection.editable, { id: "nuvio-1", title: "Untitled Collection" });
+	assert.deepEqual(collection.editable, {
+		id: "nuvio-1",
+		title: "Untitled Collection",
+		pinToTop: false,
+		viewMode: "TABBED_GRID",
+		showAllTab: true,
+	});
 	assert.equal(controller.getState().selection.collectionInternalId, collection.internalId);
 	assert.equal(controller.getState().dirty, true);
 	assert.deepEqual(collection.folders, []);
@@ -301,7 +354,12 @@ test("draft folder titles use the smallest free exact title and no source is cre
 	const result = createDraftFolder(controller, secondCollection.internalId);
 	const created = controller.getState().project.collections[1].folders[0];
 	assert.equal(result.ok, true);
-	assert.deepEqual(created.editable, { id: "nuvio-1", title: "Untitled Folder 2" });
+	assert.deepEqual(created.editable, {
+		id: "nuvio-1",
+		title: "Untitled Folder 2",
+		tileShape: "POSTER",
+		hideTitle: false,
+	});
 	assert.equal(controller.getState().selection.folderInternalId, created.internalId);
 	assert.deepEqual(created.sources, []);
 });

@@ -43,9 +43,24 @@ function compactDetails(details) {
 	return details.filter(Boolean);
 }
 
+function friendlyChoice(value, labels) {
+	if (typeof value !== "string") return null;
+	return labels[value.toUpperCase()] ?? null;
+}
+
+function supportedBoolean(value) {
+	return typeof value === "boolean" ? value : null;
+}
+
 function buildCollection(collection, selectedInternalId) {
 	const folderCount = collection.folders.length;
 	const sourceCount = collection.folders.reduce((total, folder) => total + folder.sources.length, 0);
+	const layout = friendlyChoice(collection.editable.viewMode, {
+		TABBED_GRID: "Tabs",
+		ROWS: "Rows",
+	});
+	const pinToTop = supportedBoolean(collection.editable.pinToTop);
+	const showAllTab = supportedBoolean(collection.editable.showAllTab);
 	return {
 		internalId: collection.internalId,
 		title: nonBlankText(collection.editable.title) ?? "Untitled collection",
@@ -58,8 +73,9 @@ function buildCollection(collection, selectedInternalId) {
 			detail("Title", nonBlankText(collection.editable.title) ?? "Untitled collection"),
 			detail("Folders", folderCount),
 			detail("Sources", sourceCount),
-			Object.hasOwn(collection.editable, "pinToTop") ? detail("Pinned to top", presentValue(collection.editable.pinToTop)) : null,
-			Object.hasOwn(collection.editable, "viewMode") ? detail("View mode", presentValue(collection.editable.viewMode)) : null,
+			detail("Layout", layout),
+			detail("Pinned to top", pinToTop),
+			layout === "Tabs" ? detail("All tab included", showAllTab) : null,
 		]),
 	};
 }
@@ -67,18 +83,23 @@ function buildCollection(collection, selectedInternalId) {
 function buildFolder(folder, selectedInternalId) {
 	const sourceCount = folder.sources.length;
 	const artworkCount = folderArtworkFields.filter((field) => presentValue(folder.editable[field]) !== null).length;
+	const tileShape = friendlyChoice(folder.editable.tileShape, {
+		POSTER: "Poster",
+		LANDSCAPE: "Landscape",
+	});
+	const hideTitle = supportedBoolean(folder.editable.hideTitle);
 	return {
 		internalId: folder.internalId,
 		title: nonBlankText(folder.editable.title) ?? "Untitled folder",
 		sourceCount,
 		sourceCountLabel: countLabel(sourceCount, "source"),
-		tileShape: presentValue(folder.editable.tileShape),
+		tileShape,
 		selected: folder.internalId === selectedInternalId,
 		details: compactDetails([
 			detail("Title", nonBlankText(folder.editable.title) ?? "Untitled folder"),
 			detail("Sources", sourceCount),
-			detail("Tile shape", presentValue(folder.editable.tileShape)),
-			Object.hasOwn(folder.editable, "hideTitle") ? detail("Title hidden", presentValue(folder.editable.hideTitle)) : null,
+			detail("Tile shape", tileShape),
+			hideTitle === null ? null : detail("Folder title shown", !hideTitle),
 			detail("Artwork", artworkCount === 0 ? "None added" : countLabel(artworkCount, "artwork field")),
 		]),
 	};

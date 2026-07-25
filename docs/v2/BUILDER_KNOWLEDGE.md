@@ -335,6 +335,19 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 
 - Twenty-seven focused automatic-ID/workspace-flow test functions bring the Node suite from the existing 272-function baseline to 299 test functions.
 
+### Collection and folder presentation settings — issue #53
+
+**Confirmed by repository tests — issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), 2026-07-25:** the existing responsive inline editor now supports the recognised collection and folder presentation fields without changing controller, importer, serializer, or known-field contracts.
+
+- Manual blank collections explicitly receive `pinToTop: false`, `viewMode: "TABBED_GRID"`, and `showAllTab: true`. Manual blank folders explicitly receive `tileShape: "POSTER"` and `hideTitle: false`; automatic Nuvio IDs and unique draft titles remain unchanged.
+- Collection editing offers Tabs and Rows, retains the All-tab preference while Rows disables the control, and exposes Pin to top. Folder editing offers Poster and Landscape plus positive Show folder title wording mapped to inverse `hideTitle`.
+- Imported `FOLLOW_LAYOUT` and `SQUARE` remain preservation-only. Supported imported choice casing remains unchanged while untouched. Absent, unsupported, and unusual JSON-compatible values are not copied or rendered and survive unrelated edits.
+- Draft construction, touched tracking, validation, and minimal patch generation remain UI-only helpers. Actual changes still commit once through `controller.updateNode(internalId, patch)`, while opening, cancel, no-op apply, and touched-then-reverted values remain controller-free.
+- Friendly summaries expose only supported Tabs/Rows, Poster/Landscape, pinning, All-tab, and folder-title state. Raw unsupported values, Nuvio IDs, builder IDs, raw snapshots, and serializer output remain hidden.
+- Preservation tests cover raw evidence, unknown/community fields, identity, children, source order/category, compatibility projections, artwork fields, second-cycle serialization stability, and absence of builder wrappers.
+- Source-specific Search/Add, template, and recipe defaults are recorded in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) but remain unimplemented.
+- The mandatory next gate is independent branch review and Dave's UI/flow review. Source creation must not begin before review findings are resolved.
+
 ## 12. Shared artwork runtime foundation — issue #45
 
 **Confirmed from the final `davecollections/nuvio-assets` publication handover and current published schema, and confirmed by repository tests — issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45), 2026-07-21:** a pure shared runtime lookup client now establishes one future artwork resolution contract for v1 and the builder without changing either consumer yet. The focused contract and API documentation is in [`ARTWORK_RUNTIME.md`](./ARTWORK_RUNTIME.md).
@@ -414,9 +427,9 @@ The API documents addon and plugin sync as full-replace operations too. Plugin-r
 
 The current dependency-aware sequence is:
 
-1. product/workflow recovery;
-2. collection/folder presentation settings;
-3. mandatory Dave UI/flow review;
+1. product/workflow recovery — complete;
+2. collection/folder presentation settings — complete on the issue branch pending review;
+3. mandatory Dave UI/flow review — current gate;
 4. review corrections;
 5. source creation and Search/Add.
 
@@ -474,6 +487,7 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 | 2026-07-24 | Manifest-driven canonical, preservation, identity, migration, and invalid profile corpus connecting current builder compatibility contracts without production changes | [TMDB ID Lookup issue #49](https://github.com/davecollections/tmdb-id-lookup/issues/49) and [`v2-compatibility/README.md`](../../tests/fixtures/nuvio/v2-compatibility/README.md) |
 | 2026-07-24 | Full owner-supplied V1 and V2 conversation histories, reviewed to recover explicit product and workflow intent without committing or reproducing the exports | Private owner-supplied research evidence for [issue #51](https://github.com/davecollections/tmdb-id-lookup/issues/51) |
 | 2026-07-25 | Current public authentication, profiles, full-replace collection sync, addon/plugin sync, account-management surface, and integration-repository boundary | [Nuvio Public API](https://nuvio.tv/docs), [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo), and [Nuvio account login](https://nuvio.tv/account/login) |
+| 2026-07-25 | Collection/folder presentation defaults and responsive inline controls, touched-only canonical patches, Follow Layout/Square preservation, friendly summaries, accessibility, and serializer-cycle preservation | [TMDB ID Lookup issue #53](https://github.com/davecollections/tmdb-id-lookup/issues/53) |
 
 ## Decision history
 
@@ -498,3 +512,4 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 - **2026-07-24 — Profile-level compatibility corpus:** connect existing focused builder contracts through a small manifest-driven fixture taxonomy; use exact equality only for intentional canonical output, semantic cycle stability for preservation profiles, and targeted assertions for identity, removal, migration, and invalid boundaries; reuse the existing Discover and addon-migration artifacts; and retain a strict test-only production boundary.
 - **2026-07-24 — Product and workflow history recovery:** review the complete owner-supplied V1 and V2 conversation exports to recover explicit product and process intent; reconcile it through current implementation, tests, manual evidence, and GitHub history; preserve unaccepted proposals as proposals or open decisions; and keep the private exports and conversational material outside the repository.
 - **2026-07-25 — Official Nuvio documentation review:** recognise the documented authenticated, profile-scoped, full-replace collection transport while keeping optional connection design deferred; distinguish collection sources, Stremio-style addon manifests, and Nuvio plugin-repository manifests; keep plugin repositories outside core Builder scope; and leave device pairing, safe merge/update semantics, token handling, and recovery unverified.
+- **2026-07-25 — Collection and folder presentation settings:** extend the same UI-only inline draft and Apply/Cancel lifecycle with Tabs/Rows, retained conditional All-tab preference, Pin to top, Poster/Landscape, and positive Show folder title controls; explicitly default manually created blank nodes; preserve Follow Layout, Square, absent, unsupported, unusual, and original-casing values until deliberate replacement; emit only canonical touched fields through `updateNode`; and make independent branch review plus Dave's UI/flow review the mandatory gate before source creation.

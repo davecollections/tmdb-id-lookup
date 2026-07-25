@@ -26,7 +26,12 @@ export function createDraftCollection(controller) {
 		"Untitled Collection",
 	);
 	const result = controller.createCollection({
-		editable: { title },
+		editable: {
+			title,
+			pinToTop: false,
+			viewMode: "TABBED_GRID",
+			showAllTab: true,
+		},
 	});
 
 	return selectCreatedNode(controller, result);
@@ -41,7 +46,11 @@ export function createDraftFolder(controller, collectionInternalId) {
 		"Untitled Folder",
 	);
 	const result = controller.createFolder(collectionInternalId, {
-		editable: { title },
+		editable: {
+			title,
+			tileShape: "POSTER",
+			hideTitle: false,
+		},
 	});
 
 	return selectCreatedNode(controller, result);
