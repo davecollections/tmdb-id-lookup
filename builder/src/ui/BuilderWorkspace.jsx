@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
+import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
 import { NodeEditor } from "./NodeEditor.jsx";
-import {
-	createNodeEditorDraft,
-	updateNodeEditorField,
-} from "./node-editor.js";
+import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
+import {
+	builderCardScrollBehavior,
+	useBuilderDesktopViewport,
+} from "./responsive-viewport.js";
 import { buildBuilderViewModel } from "./view-model.js";
 import {
 	completeWorkspaceReturn,
@@ -20,7 +22,7 @@ function PanelHeader({ id, title, count, action }) {
 		: `${count} ${title.toLowerCase()}`;
 
 	return (
-		<div className="panel-header">
+		<header className="panel-header" data-panel-header={title.toLowerCase()}>
 			<div>
 				<p className="panel-kicker">Project hierarchy</p>
 				<h2 id={id}>{title}</h2>
@@ -29,7 +31,7 @@ function PanelHeader({ id, title, count, action }) {
 				<span className="panel-count" aria-label={countLabel}>{count}</span>
 				{action}
 			</div>
-		</div>
+		</header>
 	);
 }
 
@@ -43,6 +45,50 @@ function EmptyState({ title, children, action = null }) {
 	);
 }
 
+function HierarchyCard({
+	node,
+	noun,
+	children,
+	navigationLocked,
+	onSelect,
+	onOpenEditor,
+}) {
+	const editLabel = node.titleHidden
+		? `Edit ${noun} with hidden Nuvio title`
+		: `Edit ${noun} ${node.title}`;
+
+	return (
+		<div
+			className={`hierarchy-card${node.selected ? " is-selected" : ""}`}
+			data-hierarchy-card={noun}
+		>
+			<div className="hierarchy-card-row">
+				<NodeButton
+					node={node}
+					type={noun}
+					onSelect={onSelect}
+					disabled={navigationLocked}
+				>
+					{children}
+				</NodeButton>
+				<div className="hierarchy-card-actions" data-card-actions={noun}>
+					<button
+						className="card-action"
+						type="button"
+						data-action={`edit-${noun}`}
+						aria-label={editLabel}
+						disabled={navigationLocked}
+						aria-haspopup="dialog"
+						onClick={(event) => onOpenEditor(node.internalId, event.currentTarget)}
+					>
+						Edit
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 function NodeButton({ node, type, children, onSelect, disabled }) {
 	return (
 		<button
@@ -50,6 +96,7 @@ function NodeButton({ node, type, children, onSelect, disabled }) {
 			type="button"
 			data-node-type={type}
 			aria-pressed={node.selected}
+			aria-label={node.titleHidden ? node.accessibleName : undefined}
 			disabled={disabled}
 			onClick={() => onSelect(node.internalId)}
 		>
@@ -60,36 +107,50 @@ function NodeButton({ node, type, children, onSelect, disabled }) {
 	);
 }
 
-function CollectionList({ collections, onSelect, disabled }) {
+function CollectionList({ collections, actionProps, createdCardTarget, createdCardRef }) {
 	return (
 		<ul className="node-list" aria-label="Collections">
 			{collections.map((collection) => (
-				<li key={collection.internalId}>
-					<NodeButton node={collection} type="collection" onSelect={onSelect} disabled={disabled}>
+				<li
+					key={collection.internalId}
+					ref={createdCardTarget?.nodeType === "collection"
+						&& createdCardTarget.internalId === collection.internalId
+						? createdCardRef
+						: undefined}
+				>
+					<HierarchyCard node={collection} noun="collection" {...actionProps}>
 						<span className="node-title">{collection.title}</span>
+						{collection.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 						<span className="node-meta">
 							<span>{collection.folderCountLabel}</span>
 							<span>{collection.sourceCountLabel}</span>
 						</span>
-					</NodeButton>
+					</HierarchyCard>
 				</li>
 			))}
 		</ul>
 	);
 }
 
-function FolderList({ folders, onSelect, disabled }) {
+function FolderList({ folders, actionProps, createdCardTarget, createdCardRef }) {
 	return (
 		<ul className="node-list" aria-label="Folders">
 			{folders.map((folder) => (
-				<li key={folder.internalId}>
-					<NodeButton node={folder} type="folder" onSelect={onSelect} disabled={disabled}>
+				<li
+					key={folder.internalId}
+					ref={createdCardTarget?.nodeType === "folder"
+						&& createdCardTarget.internalId === folder.internalId
+						? createdCardRef
+						: undefined}
+				>
+					<HierarchyCard node={folder} noun="folder" {...actionProps}>
 						<span className="node-title">{folder.title}</span>
+						{folder.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 						<span className="node-meta">
 							<span>{folder.sourceCountLabel}</span>
 							{folder.tileShape !== null ? <span>{folder.tileShape}</span> : null}
 						</span>
-					</NodeButton>
+					</HierarchyCard>
 				</li>
 			))}
 		</ul>
@@ -152,7 +213,8 @@ function SelectionSummary({
 			<div className="summary-heading">
 				<div>
 					<p className="summary-label">Selection details</p>
-					<h3 id={headingId}>{node.title}</h3>
+					<h3 id={headingId} aria-label={node.accessibleName}>{node.title}</h3>
+					{node.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 				</div>
 				{selectedSource && selectedFolder ? (
 					<button className="quiet-button" type="button" disabled={navigationLocked} onClick={onShowFolderDetails}>
@@ -254,13 +316,15 @@ export function BuilderWorkspace({
 	initialReturnConfirmationOpen = false,
 }) {
 	const view = buildBuilderViewModel(state);
+	const desktopViewport = useBuilderDesktopViewport();
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
-	const collectionEditButtonRef = useRef(null);
-	const folderEditButtonRef = useRef(null);
+	const [mobileLevelOverride, setMobileLevelOverride] = useState(null);
+	const [createdCardTarget, setCreatedCardTarget] = useState(null);
 	const titleInputRef = useRef(null);
-	const restoreFocusRef = useRef(null);
+	const createdCardRef = useRef(null);
+	const editRestoreFocusRef = useRef(null);
 	const returnHomeButtonRef = useRef(null);
 	const stayButtonRef = useRef(null);
 	const returnGateRef = useRef(null);
@@ -269,32 +333,25 @@ export function BuilderWorkspace({
 	}
 	const [returnConfirmationOpen, setReturnConfirmationOpen] = useState(initialReturnConfirmationOpen);
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
-	const selectedCollectionNode = view.selectedCollection
-		? state.project.collections.find((entry) => entry.internalId === view.selectedCollection.internalId) ?? null
-		: null;
-	const selectedFolderNode = selectedCollectionNode && view.selectedFolder
-		? selectedCollectionNode.folders.find((entry) => entry.internalId === view.selectedFolder.internalId) ?? null
-		: null;
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
 	const editorLocked = visibleEditorDraft !== null;
 	const navigationLocked = editorLocked || returnConfirmationOpen;
+	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
 
 	useEffect(() => {
 		if (editorDraft && !visibleEditorDraft) {
 			setEditorDraft(null);
 			setEditorDiagnostics([]);
-			restoreFocusRef.current = null;
+			editRestoreFocusRef.current = null;
 		}
 	}, [editorDraft, visibleEditorDraft]);
 
 	useEffect(() => {
-		if (editorDraft !== null || restoreFocusRef.current === null) return;
-		const target = restoreFocusRef.current === "folder"
-			? folderEditButtonRef.current
-			: collectionEditButtonRef.current;
-		restoreFocusRef.current = null;
-		target?.focus();
+		if (editorDraft !== null || editRestoreFocusRef.current === null) return;
+		const target = editRestoreFocusRef.current;
+		editRestoreFocusRef.current = null;
+		target.focus?.();
 	}, [editorDraft]);
 
 	useEffect(() => {
@@ -307,21 +364,45 @@ export function BuilderWorkspace({
 		returnHomeButtonRef.current?.focus();
 	}, [restoreReturnFocus]);
 
+	useEffect(() => {
+		if (createdCardTarget === null || createdCardRef.current === null) return;
+		createdCardRef.current.scrollIntoView?.({
+			behavior: builderCardScrollBehavior(),
+			block: "nearest",
+		});
+		createdCardRef.current = null;
+		setCreatedCardTarget(null);
+	}, [createdCardTarget]);
+
 	function selectNode(internalId) {
-		if (!navigationLocked) controller.selectNode(internalId);
+		if (navigationLocked) return;
+		setCreatedCardTarget(null);
+		setMobileLevelOverride(null);
+		controller.selectNode(internalId);
 	}
 
-	function openEditor(node) {
+	function clearSelection() {
 		if (navigationLocked) return;
-		const draft = createNodeEditorDraft(node);
+		setCreatedCardTarget(null);
+		setMobileLevelOverride(null);
+		controller.clearSelection();
+	}
+
+	function openEditor(internalId, trigger) {
+		if (navigationLocked) return;
+		const node = findEditableNode(state.project, internalId);
+		if (!node) return;
+		const draft = createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
+		setCreatedCardTarget(null);
+		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
+		editRestoreFocusRef.current = trigger;
 		setEditorDiagnostics([]);
 		setEditorDraft(draft);
 	}
 
 	function closeEditor() {
 		if (!visibleEditorDraft) return;
-		restoreFocusRef.current = visibleEditorDraft.nodeType;
 		setEditorDiagnostics([]);
 		setEditorDraft(null);
 	}
@@ -347,6 +428,8 @@ export function BuilderWorkspace({
 				setEditorDraft(null);
 				setEditorDiagnostics([]);
 				setReturnDiagnostic(null);
+				setCreatedCardTarget(null);
+				setMobileLevelOverride(null);
 				setReturnConfirmationOpen(false);
 				onReturnHome();
 			},
@@ -373,140 +456,151 @@ export function BuilderWorkspace({
 	}
 
 	function createCollection() {
-		if (!navigationLocked) createDraftCollection(controller);
+		if (navigationLocked) return;
+		const result = createDraftCollection(controller, { selectCreated: desktopViewport });
+		if (!result.ok) return;
+
+		setMobileLevelOverride(desktopViewport ? null : "collections");
+		setCreatedCardTarget(desktopViewport ? null : {
+			nodeType: "collection",
+			internalId: result.createdInternalId,
+		});
 	}
 
 	function createFolder() {
-		if (!navigationLocked && view.selectedCollection) {
-			createDraftFolder(controller, view.selectedCollection.internalId);
-		}
+		if (navigationLocked || !view.selectedCollection) return;
+		const result = createDraftFolder(
+			controller,
+			view.selectedCollection.internalId,
+			{ selectCreated: desktopViewport },
+		);
+		if (!result.ok) return;
+
+		setMobileLevelOverride(desktopViewport ? null : "folders");
+		setCreatedCardTarget(desktopViewport ? null : {
+			nodeType: "folder",
+			internalId: result.createdInternalId,
+		});
 	}
+
+	const hierarchyActionProps = {
+		navigationLocked,
+		onSelect: selectNode,
+		onOpenEditor: openEditor,
+	};
 
 	return (
 		<main
 			className="builder-shell"
 			data-builder-shell="true"
 			data-editor-lock={editorLocked ? "true" : undefined}
+			data-settings-open={editorLocked ? "true" : undefined}
 		>
-			<header className="app-header">
-				<div className="brand-lockup">
-					<img className="builder-mark" src={builderMark} alt="" width="56" height="56" />
-					<div>
-						<p className="preview-label">Development preview</p>
-						<h1>TMDB Collection Builder</h1>
-						<p className="workspace-subtitle">Built for Nuvio collections</p>
+			<div
+				className="workspace-underlay"
+				data-workspace-underlay="true"
+				inert={editorLocked || undefined}
+				aria-hidden={editorLocked ? "true" : undefined}
+			>
+				<header className="app-header">
+					<div className="brand-lockup">
+						<img className="builder-mark" src={builderMark} alt="" width="56" height="56" />
+						<div>
+							<p className="preview-label">Development preview</p>
+							<h1>TMDB Collection Builder</h1>
+							<p className="workspace-subtitle">Built for Nuvio collections</p>
+						</div>
 					</div>
-				</div>
-				<div className="workspace-header-actions">
-					<button
-						ref={returnHomeButtonRef}
-						className="builder-home-action"
-						type="button"
-						data-action="return-builder-home"
-						disabled={navigationLocked}
-						onClick={handleReturnHome}
-					>
-						Back to builder home
-					</button>
-					<a className="root-link" data-root-link="true" href="../">
-						<span aria-hidden="true">←</span>
-						Back to TMDB ID Lookup
-					</a>
-				</div>
-			</header>
+					<div className="workspace-header-actions">
+						<button
+							ref={returnHomeButtonRef}
+							className="builder-home-action"
+							type="button"
+							data-action="return-builder-home"
+							disabled={navigationLocked}
+							onClick={handleReturnHome}
+						>
+							Back to builder home
+						</button>
+						<a className="root-link" data-root-link="true" href="../">
+							<span aria-hidden="true">←</span>
+							Back to TMDB ID Lookup
+						</a>
+					</div>
+				</header>
 
-			{returnConfirmationOpen ? (
-				<ReturnConfirmation
-					stayButtonRef={stayButtonRef}
-					onStay={stayInWorkspace}
-					onDiscard={resetAndReturnHome}
-				/>
-			) : null}
-
-			<InlineNotices
-				diagnostic={view.operationDiagnostic ?? returnDiagnostic}
-				migrationNotice={view.migrationNotice}
-				importWarnings={state.diagnostics.import.warnings}
-			/>
-
-			{visibleEditorDraft ? (
-				<NodeEditor
-					draft={visibleEditorDraft}
-					diagnostics={editorDiagnostics}
-					titleInputRef={titleInputRef}
-					onChange={(field, value) => {
-						setEditorDraft((current) => updateNodeEditorField(current, field, value));
-						setEditorDiagnostics((current) => current.filter((entry) => entry.path !== `$ui.editor.${field}`));
-					}}
-					onSubmit={handleEditorSubmit}
-					onCancel={closeEditor}
-				/>
-			) : null}
-
-			<div className="workspace" data-mobile-level={view.activeMobileLevel}>
-				<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
-					<PanelHeader
-						id="collections-title"
-						title="Collections"
-						count={view.collections.length}
-						action={(
-							<button
-								className="primary-action"
-								type="button"
-								data-action="create-collection"
-								disabled={navigationLocked}
-								onClick={createCollection}
-							>
-								<span aria-hidden="true">+</span>
-								New collection
-							</button>
-						)}
+				{returnConfirmationOpen ? (
+					<ReturnConfirmation
+						stayButtonRef={stayButtonRef}
+						onStay={stayInWorkspace}
+						onDiscard={resetAndReturnHome}
 					/>
-					<div className="panel-body">
-						{view.collections.length > 0 ? (
-							<CollectionList collections={view.collections} onSelect={selectNode} disabled={navigationLocked} />
-						) : (
-							<EmptyState
-								title="Start your first collection"
-								action={(
-									<button className="empty-state-action" type="button" data-action="create-collection-empty" disabled={navigationLocked} onClick={createCollection} aria-label="Create first collection">
-										<span aria-hidden="true">+</span>
-									</button>
-								)}
-							>
-								Create a draft collection to begin organising folders and sources.
-							</EmptyState>
-						)}
-					</div>
-				</section>
+				) : null}
 
-				<section className="workspace-panel folders-panel" data-panel="folders" aria-labelledby="folders-title">
-					<button
-						className="back-control mobile-only"
-						type="button"
-						disabled={navigationLocked}
-						onClick={() => { if (!navigationLocked) controller.clearSelection(); }}
-					>
-						<span aria-hidden="true">←</span>
-						All collections
-					</button>
-					{view.selectedCollection ? <p className="mobile-context mobile-only">{view.selectedCollection.title}</p> : null}
-					<PanelHeader
-						id="folders-title"
-						title="Folders"
-						count={view.folders.length}
-						action={view.selectedCollection ? (
-							<>
+				<InlineNotices
+					diagnostic={view.operationDiagnostic ?? returnDiagnostic}
+					migrationNotice={view.migrationNotice}
+					importWarnings={state.diagnostics.import.warnings}
+				/>
+
+				<div className="workspace" data-mobile-level={activeMobileLevel}>
+					<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
+						<PanelHeader
+							id="collections-title"
+							title="Collections"
+							count={view.collections.length}
+							action={(
 								<button
-									ref={collectionEditButtonRef}
-									className="secondary-action"
+									className="primary-action"
 									type="button"
-									data-action="edit-collection"
+									data-action="create-collection"
 									disabled={navigationLocked}
-									onClick={() => openEditor(selectedCollectionNode)}
+									onClick={createCollection}
 								>
-									Edit collection
+									<span aria-hidden="true">+</span>
+									New collection
 								</button>
+							)}
+						/>
+						<div className="panel-body">
+							{view.collections.length > 0 ? (
+								<CollectionList
+									collections={view.collections}
+									actionProps={hierarchyActionProps}
+									createdCardTarget={createdCardTarget}
+									createdCardRef={createdCardRef}
+								/>
+							) : (
+								<EmptyState
+									title="Start your first collection"
+									action={(
+										<button className="empty-state-action" type="button" data-action="create-collection-empty" disabled={navigationLocked} onClick={createCollection} aria-label="Create first collection">
+											<span aria-hidden="true">+</span>
+										</button>
+									)}
+								>
+									Create a draft collection to begin organising folders and sources.
+								</EmptyState>
+							)}
+						</div>
+					</section>
+
+					<section className="workspace-panel folders-panel" data-panel="folders" aria-labelledby="folders-title">
+						<button
+							className="back-control mobile-only"
+							type="button"
+							disabled={navigationLocked}
+							onClick={clearSelection}
+						>
+							<span aria-hidden="true">←</span>
+							All collections
+						</button>
+						{view.selectedCollection ? <p className="mobile-context mobile-only" aria-label={view.selectedCollection.accessibleName}>{view.selectedCollection.title}</p> : null}
+						<PanelHeader
+							id="folders-title"
+							title="Folders"
+							count={view.folders.length}
+							action={view.selectedCollection ? (
 								<button
 									className="primary-action"
 									type="button"
@@ -517,87 +611,97 @@ export function BuilderWorkspace({
 									<span aria-hidden="true">+</span>
 									New folder
 								</button>
-							</>
-						) : null}
-					/>
-					<div className="panel-body">
-						{!view.selectedCollection ? (
-							<p className="neutral-state">Select a collection to view its folders.</p>
-						) : view.folders.length > 0 ? (
-							<FolderList folders={view.folders} onSelect={selectNode} disabled={navigationLocked} />
-						) : (
-							<EmptyState
-								title="No folders yet"
-								action={(
-									<button className="empty-state-action" type="button" data-action="create-folder-empty" disabled={navigationLocked} onClick={createFolder} aria-label="Create first folder">
-										<span aria-hidden="true">+</span>
-									</button>
-								)}
-							>
-								Add a draft folder inside {view.selectedCollection.title}.
-							</EmptyState>
-						)}
-						{view.selectedCollection && !view.selectedFolder ? (
-							<div className="mobile-summary mobile-only">
-								<SelectionSummary
-									node={view.selectedCollection}
-									headingId="mobile-selection-summary-title"
-									navigationLocked={navigationLocked}
+							) : null}
+						/>
+						<div className="panel-body">
+							{!view.selectedCollection ? (
+								<p className="neutral-state">Select a collection to view its folders.</p>
+							) : view.folders.length > 0 ? (
+								<FolderList
+									folders={view.folders}
+									actionProps={hierarchyActionProps}
+									createdCardTarget={createdCardTarget}
+									createdCardRef={createdCardRef}
 								/>
-							</div>
-						) : null}
-					</div>
-				</section>
+							) : (
+								<EmptyState
+									title="No folders yet"
+									action={(
+										<button className="empty-state-action" type="button" data-action="create-folder-empty" disabled={navigationLocked} onClick={createFolder} aria-label="Create first folder">
+											<span aria-hidden="true">+</span>
+										</button>
+									)}
+								>
+									Add a draft folder inside {view.selectedCollection.title}.
+								</EmptyState>
+							)}
+							{view.selectedCollection && !view.selectedFolder ? (
+								<div className="mobile-summary mobile-only">
+									<SelectionSummary
+										node={view.selectedCollection}
+										headingId="mobile-selection-summary-title"
+										navigationLocked={navigationLocked}
+									/>
+								</div>
+							) : null}
+						</div>
+					</section>
 
-				<section className="workspace-panel sources-panel" data-panel="sources" aria-labelledby="sources-title">
-					{view.selectedCollection ? (
-						<button
-							className="back-control mobile-only"
-							type="button"
-							disabled={navigationLocked}
-							onClick={() => selectNode(view.selectedCollection.internalId)}
-						>
-							<span aria-hidden="true">←</span>
-							{view.selectedCollection.title}
-						</button>
-					) : null}
-					{view.selectedFolder ? <p className="mobile-context mobile-only">{view.selectedFolder.title}</p> : null}
-					<PanelHeader
-						id="sources-title"
-						title="Sources"
-						count={view.sources.length}
-						action={view.selectedFolder ? (
+					<section className="workspace-panel sources-panel" data-panel="sources" aria-labelledby="sources-title">
+						{view.selectedCollection ? (
 							<button
-								ref={folderEditButtonRef}
-								className="secondary-action"
+								className="back-control mobile-only"
 								type="button"
-								data-action="edit-folder"
 								disabled={navigationLocked}
-								onClick={() => openEditor(selectedFolderNode)}
+								onClick={() => selectNode(view.selectedCollection.internalId)}
 							>
-								Edit folder
+								<span aria-hidden="true">←</span>
+								{view.selectedCollection.title}
 							</button>
 						) : null}
-					/>
-					<div className="panel-body sources-body">
-						{!view.selectedFolder ? (
-							<p className="neutral-state">Select a folder to view its sources.</p>
-						) : view.sources.length > 0 ? (
-							<SourceList sources={view.sources} onSelect={selectNode} disabled={navigationLocked} />
-						) : (
-							<EmptyState title="No sources in this folder yet.">Source creation will arrive in a later builder step.</EmptyState>
-						)}
-						<SelectionSummary
-							node={view.selectedNode}
-							headingId="selection-summary-title"
-							selectedSource={view.selectedSource}
-							selectedFolder={view.selectedFolder}
-							navigationLocked={navigationLocked}
-							onShowFolderDetails={() => selectNode(view.selectedFolder.internalId)}
+						{view.selectedFolder ? <p className="mobile-context mobile-only" aria-label={view.selectedFolder.accessibleName}>{view.selectedFolder.title}</p> : null}
+						<PanelHeader
+							id="sources-title"
+							title="Sources"
+							count={view.sources.length}
 						/>
-					</div>
-				</section>
+						<div className="panel-body sources-body">
+							{!view.selectedFolder ? (
+								<p className="neutral-state">Select a folder to view its sources.</p>
+							) : view.sources.length > 0 ? (
+								<SourceList sources={view.sources} onSelect={selectNode} disabled={navigationLocked} />
+							) : (
+								<EmptyState title="No sources in this folder yet.">Source creation will arrive in a later builder step.</EmptyState>
+							)}
+							<SelectionSummary
+								node={view.selectedNode}
+								headingId="selection-summary-title"
+								selectedSource={view.selectedSource}
+								selectedFolder={view.selectedFolder}
+								navigationLocked={navigationLocked}
+								onShowFolderDetails={() => selectNode(view.selectedFolder.internalId)}
+							/>
+						</div>
+					</section>
+				</div>
 			</div>
+
+			{visibleEditorDraft ? (
+				<NodeEditor
+					draft={visibleEditorDraft}
+					diagnostics={editorDiagnostics}
+					titleInputRef={titleInputRef}
+					onChange={(field, value) => {
+						setEditorDraft((current) => updateNodeEditorField(current, field, value));
+						setEditorDiagnostics((current) => current.filter((entry) => (
+							entry.path !== `$ui.editor.${field}`
+							&& !(field === "hideNuvioTitle" && entry.path === "$ui.editor.title")
+						)));
+					}}
+					onSubmit={handleEditorSubmit}
+					onCancel={closeEditor}
+				/>
+			) : null}
 		</main>
 	);
 }

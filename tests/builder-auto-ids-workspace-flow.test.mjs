@@ -359,10 +359,22 @@ test("confirmation contract has stable markers locking and no route or browser c
 	for (const forbidden of ["window.confirm", "history.", "location.", "react-router"]) assert.equal(source.includes(forbidden), false);
 });
 
-test("welcome uses collection-file wording and workspace hides project status language", () => {
+test("welcome uses collection-focused wording while retaining literal file-picker language", () => {
 	const controller = makeController();
 	const welcome = renderToStaticMarkup(createElement(BuilderWelcome, { controller, state: controller.getState(), onEnterWorkspace() {} }));
-	assert.ok(welcome.includes("Start a new collection file"));
+	for (const text of [
+		"Create, import and organise Nuvio collections using TMDB-powered sources.",
+		"Start a new collection",
+		"Create new collection",
+		"Open an existing collection",
+		"Choose a JSON file or paste its contents to continue.",
+		"Choose a JSON file",
+		"Collection JSON file",
+		"Import selected file",
+		"No file selected",
+	]) {
+		assert.ok(welcome.includes(text), text);
+	}
 	const workspace = renderWorkspace(controller);
 	for (const hidden of ["Current project", "Untitled project", "Unsaved changes", "Clean draft"]) assert.equal(workspace.includes(hidden), false);
 });

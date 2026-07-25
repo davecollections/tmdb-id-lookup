@@ -113,15 +113,15 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 					<p className="brand-subtitle">Built for Nuvio collections</p>
 				</div>
 				<p className="welcome-description">
-					Create, import and organise collection files using TMDB-powered sources and Nuvio-compatible structures.
+					Create, import and organise Nuvio collections using TMDB-powered sources.
 				</p>
 			</header>
 
 			<section className="welcome-start" aria-labelledby="start-project-title">
 				<div>
 					<p className="panel-kicker">Create</p>
-					<h2 id="start-project-title">Begin with a clean collection file</h2>
-					<p>Open an empty workspace for a new Nuvio collection file.</p>
+					<h2 id="start-project-title">Start a new collection</h2>
+					<p>Open a clean workspace and build your Nuvio collection.</p>
 				</div>
 				<button
 					className="welcome-primary-action"
@@ -130,7 +130,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 					onClick={handleStartNewProject}
 					disabled={isBusy}
 				>
-					Start a new collection file
+					Create new collection
 				</button>
 			</section>
 
@@ -142,8 +142,8 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 			<section className="welcome-import" aria-labelledby="import-title">
 				<div className="welcome-section-heading">
 					<p className="panel-kicker">Import</p>
-					<h2 id="import-title">Open an existing collection JSON</h2>
-					<p>Choose a local file or paste its JSON text. Import begins only when you confirm an action.</p>
+					<h2 id="import-title">Open an existing collection</h2>
+					<p>Choose a JSON file or paste its contents to continue.</p>
 				</div>
 
 				<div className="import-grid">

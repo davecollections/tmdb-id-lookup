@@ -7,8 +7,8 @@ function nextAvailableTitle(titles, baseTitle) {
 	return number === 1 ? baseTitle : `${baseTitle} ${number}`;
 }
 
-function selectCreatedNode(controller, creationResult) {
-	if (!creationResult.ok) {
+function completeDraftCreation(controller, creationResult, selectCreated) {
+	if (!creationResult.ok || !selectCreated) {
 		return creationResult;
 	}
 
@@ -19,20 +19,26 @@ function selectCreatedNode(controller, creationResult) {
 	};
 }
 
-export function createDraftCollection(controller) {
+export function createDraftCollection(controller, { selectCreated = true } = {}) {
 	const state = controller.getState();
 	const title = nextAvailableTitle(
 		state.project.collections.map((collection) => collection.editable.title),
 		"Untitled Collection",
 	);
 	const result = controller.createCollection({
-		editable: { title },
+		editable: {
+			title,
+			pinToTop: false,
+			focusGlowEnabled: true,
+			viewMode: "TABBED_GRID",
+			showAllTab: true,
+		},
 	});
 
-	return selectCreatedNode(controller, result);
+	return completeDraftCreation(controller, result, selectCreated);
 }
 
-export function createDraftFolder(controller, collectionInternalId) {
+export function createDraftFolder(controller, collectionInternalId, { selectCreated = true } = {}) {
 	const state = controller.getState();
 	const title = nextAvailableTitle(
 		state.project.collections.flatMap((collection) => (
@@ -41,8 +47,12 @@ export function createDraftFolder(controller, collectionInternalId) {
 		"Untitled Folder",
 	);
 	const result = controller.createFolder(collectionInternalId, {
-		editable: { title },
+		editable: {
+			title,
+			tileShape: "POSTER",
+			hideTitle: true,
+		},
 	});
 
-	return selectCreatedNode(controller, result);
+	return completeDraftCreation(controller, result, selectCreated);
 }

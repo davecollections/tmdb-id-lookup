@@ -2,6 +2,7 @@ export const COLLECTION_EDITABLE_FIELDS = Object.freeze([
 	"id",
 	"title",
 	"pinToTop",
+	"focusGlowEnabled",
 	"viewMode",
 	"showAllTab",
 ]);

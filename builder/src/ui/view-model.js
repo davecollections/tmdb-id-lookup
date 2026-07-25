@@ -1,3 +1,8 @@
+import {
+	isInvisibleNuvioTitle,
+	isValidVisibleNuvioTitle,
+} from "../nuvio/titles.js";
+
 const folderArtworkFields = Object.freeze([
 	"coverEmoji",
 	"focusGifUrl",
@@ -43,23 +48,63 @@ function compactDetails(details) {
 	return details.filter(Boolean);
 }
 
+function friendlyChoice(value, labels) {
+	if (typeof value !== "string") return null;
+	return labels[value.toUpperCase()] ?? null;
+}
+
+function nodeTitle(value, noun) {
+	if (isInvisibleNuvioTitle(value)) {
+		const capitalizedNoun = noun[0].toUpperCase() + noun.slice(1);
+		return {
+			text: "Hidden title",
+			hidden: true,
+			accessibleName: `${capitalizedNoun} with hidden Nuvio title`,
+		};
+	}
+
+	const text = isValidVisibleNuvioTitle(value) ? value.trim() : `Untitled ${noun}`;
+	return {
+		text,
+		hidden: false,
+		accessibleName: text,
+	};
+}
+
+function supportedBoolean(value) {
+	return typeof value === "boolean" ? value : null;
+}
+
 function buildCollection(collection, selectedInternalId) {
 	const folderCount = collection.folders.length;
 	const sourceCount = collection.folders.reduce((total, folder) => total + folder.sources.length, 0);
+	const title = nodeTitle(collection.editable.title, "collection");
+	const layout = friendlyChoice(collection.editable.viewMode, {
+		TABBED_GRID: "Tabs",
+		ROWS: "Rows",
+	});
+	const pinToTop = supportedBoolean(collection.editable.pinToTop);
+	const showAllTab = supportedBoolean(collection.editable.showAllTab);
+	const focusGlowEnabled = supportedBoolean(collection.editable.focusGlowEnabled);
 	return {
 		internalId: collection.internalId,
-		title: nonBlankText(collection.editable.title) ?? "Untitled collection",
+		title: title.text,
+		titleHidden: title.hidden,
+		accessibleName: title.accessibleName,
 		folderCount,
 		sourceCount,
 		folderCountLabel: countLabel(folderCount, "folder"),
 		sourceCountLabel: countLabel(sourceCount, "source"),
 		selected: collection.internalId === selectedInternalId,
 		details: compactDetails([
-			detail("Title", nonBlankText(collection.editable.title) ?? "Untitled collection"),
+			detail("Title", title.text),
+			title.hidden ? detail("Nuvio title", "Invisible") : null,
 			detail("Folders", folderCount),
 			detail("Sources", sourceCount),
-			Object.hasOwn(collection.editable, "pinToTop") ? detail("Pinned to top", presentValue(collection.editable.pinToTop)) : null,
-			Object.hasOwn(collection.editable, "viewMode") ? detail("View mode", presentValue(collection.editable.viewMode)) : null,
+			detail("Layout", layout),
+			detail("Pinned to top", pinToTop),
+			detail("All tab when using Tabs", showAllTab),
+			detail("Focus glow enabled", focusGlowEnabled),
 		]),
 	};
 }
@@ -67,18 +112,34 @@ function buildCollection(collection, selectedInternalId) {
 function buildFolder(folder, selectedInternalId) {
 	const sourceCount = folder.sources.length;
 	const artworkCount = folderArtworkFields.filter((field) => presentValue(folder.editable[field]) !== null).length;
+	const title = nodeTitle(folder.editable.title, "folder");
+	const tileShape = friendlyChoice(folder.editable.tileShape, {
+		POSTER: "Poster",
+		LANDSCAPE: "Landscape",
+	});
+	const hideTitle = supportedBoolean(folder.editable.hideTitle);
+	const hasVisibleTitle = isValidVisibleNuvioTitle(folder.editable.title);
+	const titleVisibility = title.hidden
+		? "Hide everywhere"
+		: hasVisibleTitle && hideTitle === true
+			? "Hide on home screen only"
+			: hasVisibleTitle && hideTitle === false
+				? "Show everywhere"
+				: null;
 	return {
 		internalId: folder.internalId,
-		title: nonBlankText(folder.editable.title) ?? "Untitled folder",
+		title: title.text,
+		titleHidden: title.hidden,
+		accessibleName: title.accessibleName,
 		sourceCount,
 		sourceCountLabel: countLabel(sourceCount, "source"),
-		tileShape: presentValue(folder.editable.tileShape),
+		tileShape,
 		selected: folder.internalId === selectedInternalId,
 		details: compactDetails([
-			detail("Title", nonBlankText(folder.editable.title) ?? "Untitled folder"),
+			detail("Title", title.text),
+			detail("Folder title visibility", titleVisibility),
 			detail("Sources", sourceCount),
-			detail("Tile shape", presentValue(folder.editable.tileShape)),
-			Object.hasOwn(folder.editable, "hideTitle") ? detail("Title hidden", presentValue(folder.editable.hideTitle)) : null,
+			detail("Tile shape", tileShape),
 			detail("Artwork", artworkCount === 0 ? "None added" : countLabel(artworkCount, "artwork field")),
 		]),
 	};

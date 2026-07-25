@@ -2,7 +2,7 @@
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-07-26
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope. See [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) for durable product direction and [`PROJECT_WORKFLOW.md`](./PROJECT_WORKFLOW.md) for the Dave/ChatGPT/Codex process.
 
@@ -274,7 +274,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 **Confirmed by repository tests — issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39), 2026-07-11:** the application/controller layer under `builder/src/application/` now coordinates the existing production modules without moving their rules into UI state.
 
 - `createBuilderController` owns one current project plus deeply frozen, stable-identity snapshots containing revision, hierarchical selection, dirty state, migration preview, and four diagnostic scopes.
-- One snapshot commit increments revision once and notifies a stable listener snapshot once. True no-ops retain the previous snapshot identity, and previous snapshots remain unchanged.
+- Project and diagnostic snapshot commits increment revision once and notify a stable listener snapshot once. Successful selection-only commits create and notify a frozen snapshot without incrementing revision or dirty state. True no-ops retain the previous snapshot identity, and previous snapshots remain unchanged.
 - New-project and import replacement are blocked while dirty until the caller explicitly supplies `discardChanges: true`; a blocked replacement does not consume the configured production ID factory.
 - Import delegates to the production text/parser entry points, remains atomic and preservation-first, clears selection on success, stores importer diagnostics, and never applies migration automatically.
 - Migration preview invokes the production migration with deterministic disposable IDs that avoid all current internal IDs and never consume the controller's real factory. It exposes only unavailable, available, or blocked status, potential counts, and preview errors.
@@ -334,6 +334,28 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 **Confirmed by repository tests — issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), 2026-07-12:** collection/folder Nuvio IDs are securely generated, hidden, preserved when usable, and silently repaired when missing, invalid, or duplicated. Controller import remains clean and preservation-first, title editing is UI-only and title-only, visible project/dirty status is removed, workspace return is guarded by inline discard confirmation, and collection/folder empty-state creation controls are functional. Presentation settings must be completed next, followed by a mandatory owner UI/flow review before source creation.
 
 - Twenty-seven focused automatic-ID/workspace-flow test functions bring the Node suite from the existing 272-function baseline to 299 test functions.
+
+### Collection and folder presentation settings — issue #53
+
+**Confirmed by repository tests — issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), 2026-07-25:** owner visual review superseded the original inline-editor direction. The corrected workflow now uses one compact Edit action on every collection and folder card plus one responsive collection/folder settings modal. Selection-only snapshots no longer advance project revision. The shared collection known-field contract now includes the evidence-backed `focusGlowEnabled` boolean; folder and source inventories remain unchanged.
+
+- Manual blank collections explicitly receive `pinToTop: false`, `focusGlowEnabled: true`, `viewMode: "TABBED_GRID"`, and `showAllTab: true`. Manual blank folders explicitly receive `tileShape: "POSTER"` and `hideTitle: true`; automatic Nuvio IDs and unique draft titles remain unchanged.
+- Every collection and folder card owns one always-visible Edit text button beside its selectable button inside a non-interactive wrapper. The former Rename/Settings pair, quick-rename form, and large selected-entity blocks are absent; panel headers contain no misplaced edit actions, and source cards gain none.
+- At the shared 900px UI breakpoint, desktop draft creation retains its original select-and-advance behavior. Mobile collection creation stays on Collections without selecting the new card; mobile folder creation keeps the parent collection selected and stays on Folders. Repeated mobile creation preserves insertion order, IDs, defaults, one revision per creation, and the absence of source creation. New cards scroll into view with reduced-motion awareness where supported.
+- Edit directly selects and targets its exact card without a preliminary click, project mutation, dirty change, or revision increment. It opens the modal with initial Title focus; Apply and Cancel retain selection and restore the exact Edit trigger.
+- The modal is a single accessible DOM instance with bounded desktop scrolling, full/near-full-screen mobile presentation, contained focus, safe Escape cancellation, non-discarding backdrop clicks, exact trigger focus restoration, body-scroll control, and an inert/dimmed workspace with a non-blur fallback.
+- Collection editing offers source-level Tabs and Rows: each folder presents each source as a tab or streaming-style row. For a folder with two or more sources, Tabs plus Include an All tab when using Tabs adds an All tab combining those sources; a one-source folder has no visible All tab. Rows shows no tabs, but the saved All-tab preference remains visible and editable for a later switch to Tabs. Pin to top forms the group shown before unpinned collections; Builder exports retain each group's relative collection-list order and store no separate interactive pin sequence. Enable focus glow and deliberate replacement of the collection title with exactly one U+200E LEFT-TO-RIGHT MARK remain independent.
+- Folder editing places one Folder title visibility radio-card group immediately below Title, followed by Poster/Landscape. Show everywhere maps a valid visible title to `hideTitle: false`; Hide on home screen only maps a valid visible title to `hideTitle: true`; Hide everywhere maps the title to exactly one U+200E and maps `hideTitle: true`. The former two interacting switches are absent.
+- Imported titles containing only repeated U+200E are recognised and preserved exactly while untouched. An imported invisible folder opens with an empty disabled Title field and Hide everywhere selected; its raw title is absent from draft/DOM state. Unrelated edits preserve the exact title and every supported, absent, or unusual `hideTitle` presence state. Either visible choice requires valid visible text; returning to Hide everywhere without a replacement restores exact preservation, while re-hiding after a deliberate replacement emits canonical one-character U+200E and `hideTitle: true` only when needed. A visible-mode → Hide everywhere → original visible-mode cycle is a clean no-op, and no modal-only visibility field enters serialization. Empty/whitespace titles never become invisible automatically; U+200B and other format-only alternatives are not recognised. Builder cards, actions, and summaries use `Hidden title` / `Invisible in Nuvio` display-only fallbacks and meaningful accessible names, none of which enter Nuvio JSON.
+- Imported `focusGlowEnabled: true|false` values display accurately. Absent and unusual values remain absent/preserved through unrelated edits and are never stringified. Deliberate switch use emits one canonical boolean; summaries show Focus glow enabled only for supported values.
+- Imported `FOLLOW_LAYOUT` and `SQUARE` remain preservation-only. Supported imported choice casing remains unchanged while untouched. Absent, unsupported, and unusual JSON-compatible values are not copied or rendered and survive unrelated edits.
+- Draft construction, touched tracking, validation, and minimal patch generation remain UI-only helpers. Actual changes still commit once through `controller.updateNode(internalId, patch)`, while opening, cancel, no-op apply, and touched-then-reverted values remain controller-free.
+- Preservation tests cover raw evidence, unknown/community fields, identity, children, source order/category, compatibility projections, artwork fields, repeated invisible titles, second-cycle serialization stability, and absence of builder-only flags/fallbacks.
+- Artwork, focus GIF, cover, logo, backdrop, hero, source creation, and screenshot-evidenced expanded Nuvio controls remain deferred. Future focus-GIF support defaults off unless deliberately enabled.
+- Source-specific Search/Add, template, and recipe defaults are recorded in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) but remain unimplemented.
+- Collection/folder/source reordering is desired as a separate focused milestone and is recommended before Search/Add; issue #53 contains no reordering implementation.
+- Bulk presentation settings are desired but deferred to a separate focused issue; issue #53 contains no bulk implementation.
+- The mandatory next gate is independent review plus Dave's focused UI/flow review. No pull request, reordering implementation, or source creation begins within this issue.
 
 ## 12. Shared artwork runtime foundation — issue #45
 
@@ -414,11 +436,12 @@ The API documents addon and plugin sync as full-replace operations too. Plugin-r
 
 The current dependency-aware sequence is:
 
-1. product/workflow recovery;
-2. collection/folder presentation settings;
-3. mandatory Dave UI/flow review;
-4. review corrections;
-5. source creation and Search/Add.
+1. product/workflow recovery — complete;
+2. collection/folder presentation settings and owner-review corrections — complete on the issue branch;
+3. focused Dave UI/flow review and independent follow-up review — current gate;
+4. bulk presentation settings remain desired but deferred to a separate focused issue;
+5. collection/folder/source reordering in a separate focused issue;
+6. source creation and Search/Add.
 
 Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, privacy positioning, branding, and optional Nuvio connection are product-plan topics in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md). They do not change the current technical implementation gate.
 
@@ -474,6 +497,7 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 | 2026-07-24 | Manifest-driven canonical, preservation, identity, migration, and invalid profile corpus connecting current builder compatibility contracts without production changes | [TMDB ID Lookup issue #49](https://github.com/davecollections/tmdb-id-lookup/issues/49) and [`v2-compatibility/README.md`](../../tests/fixtures/nuvio/v2-compatibility/README.md) |
 | 2026-07-24 | Full owner-supplied V1 and V2 conversation histories, reviewed to recover explicit product and workflow intent without committing or reproducing the exports | Private owner-supplied research evidence for [issue #51](https://github.com/davecollections/tmdb-id-lookup/issues/51) |
 | 2026-07-25 | Current public authentication, profiles, full-replace collection sync, addon/plugin sync, account-management surface, and integration-repository boundary | [Nuvio Public API](https://nuvio.tv/docs), [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo), and [Nuvio account login](https://nuvio.tv/account/login) |
+| 2026-07-25 | Collection/folder presentation defaults, direct per-card Edit actions, responsive inert-background modal, collection/folder U+200E creation, three-outcome folder title visibility, imported hidden-title preservation, home-screen-only `hideTitle` scope, collection `focusGlowEnabled`, touched-only canonical patches, Follow Layout/Square preservation, accessible fallbacks, and serializer-cycle preservation | [TMDB ID Lookup issue #53](https://github.com/davecollections/tmdb-id-lookup/issues/53) |
 
 ## Decision history
 
@@ -498,3 +522,4 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 - **2026-07-24 — Profile-level compatibility corpus:** connect existing focused builder contracts through a small manifest-driven fixture taxonomy; use exact equality only for intentional canonical output, semantic cycle stability for preservation profiles, and targeted assertions for identity, removal, migration, and invalid boundaries; reuse the existing Discover and addon-migration artifacts; and retain a strict test-only production boundary.
 - **2026-07-24 — Product and workflow history recovery:** review the complete owner-supplied V1 and V2 conversation exports to recover explicit product and process intent; reconcile it through current implementation, tests, manual evidence, and GitHub history; preserve unaccepted proposals as proposals or open decisions; and keep the private exports and conversational material outside the repository.
 - **2026-07-25 — Official Nuvio documentation review:** recognise the documented authenticated, profile-scoped, full-replace collection transport while keeping optional connection design deferred; distinguish collection sources, Stremio-style addon manifests, and Nuvio plugin-repository manifests; keep plugin repositories outside core Builder scope; and leave device pairing, safe merge/update semantics, token handling, and recovery unverified.
+- **2026-07-25 — Collection and folder presentation settings:** after owner visual review superseded the original inline-editor direction, place one compact Edit action on every collection and folder card and remove the Rename/Settings pair, quick rename, and large selected-entity blocks; directly target unselected cards without dirtying or advancing revision; use one responsive, focus-contained modal over an inert workspace; describe Tabs/Rows as each folder's source presentation and limit the visible All tab to tabbed folders with two or more sources; allow deliberate U+200E creation for both collection titles and folder titles while preserving imported repeated values; combine the folder's title and native home-screen-only `hideTitle` behavior into Show everywhere, Hide on home screen only, and Hide everywhere outcomes with restoration and minimal-patch guarantees; default manual folders to `hideTitle: true`; retain conditional All-tab preference, Pin to top, Poster/Landscape, Follow Layout/Square preservation, and touched-only `updateNode` patches; recognise collection-level `focusGlowEnabled` with a true manual default and preservation-first imported behavior; retain desktop creation drill-down while mobile collection/folder creation stays at its current hierarchy level through the shared 900px UI breakpoint; simplify startup wording around collections without changing import contracts; defer artwork/focus-GIF controls, bulk settings, and reordering; recommend a separate reordering milestone before Search/Add; and require focused owner review before PR consideration.

@@ -9,6 +9,14 @@ import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.j
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
 import { createDraftCollection, createDraftFolder } from "../builder/src/ui/draft-actions.js";
+import { createTargetedNodeEditorDraft } from "../builder/src/ui/hierarchy-actions.js";
+import {
+	builderCardScrollBehavior,
+	BUILDER_DESKTOP_BREAKPOINT_PX,
+	BUILDER_DESKTOP_MEDIA_QUERY,
+	BUILDER_REDUCED_MOTION_MEDIA_QUERY,
+	matchesBuilderDesktopViewport,
+} from "../builder/src/ui/responsive-viewport.js";
 import { buildBuilderViewModel } from "../builder/src/ui/view-model.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -169,6 +177,148 @@ test("view model resolves hierarchy, preserves order, counts children, and falls
 	assert.equal(view.activeMobileLevel, "sources");
 });
 
+test("view model presents only supported collection and folder settings with friendly labels", () => {
+	const controller = createController();
+	controller.importValue([{
+		id: "collection",
+		title: "Collection",
+		pinToTop: true,
+		focusGlowEnabled: false,
+		viewMode: "rows",
+		showAllTab: true,
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "landscape",
+			hideTitle: false,
+			sources: [],
+		}],
+	}, {
+		id: "unsupported",
+		title: "Unsupported",
+		pinToTop: "RAW_PIN",
+		focusGlowEnabled: { raw: true },
+		viewMode: "FOLLOW_LAYOUT",
+		showAllTab: { raw: true },
+		folders: [{
+			id: "unsupported-folder",
+			title: "Unsupported folder",
+			tileShape: "SQUARE",
+			hideTitle: "RAW_HIDE",
+			sources: [],
+		}],
+	}]);
+	const [collection, unsupported] = controller.getState().project.collections;
+	controller.selectNode(collection.folders[0].internalId);
+	let view = buildBuilderViewModel(controller.getState());
+	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Layout" && entry.value === "Rows"));
+	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Pinned to top" && entry.value === "Yes"));
+	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled" && entry.value === "No"));
+	assert.ok(view.selectedCollection.details.some((entry) => (
+		entry.label === "All tab when using Tabs" && entry.value === "Yes"
+	)));
+	assert.equal(view.selectedFolder.tileShape, "Landscape");
+	assert.ok(view.selectedFolder.details.some((entry) => (
+		entry.label === "Folder title visibility" && entry.value === "Show everywhere"
+	)));
+
+	controller.selectNode(unsupported.folders[0].internalId);
+	view = buildBuilderViewModel(controller.getState());
+	assert.equal(JSON.stringify(view).includes("RAW_PIN"), false);
+	assert.equal(JSON.stringify(view).includes("RAW_HIDE"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Layout"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All tab when using Tabs"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Tile shape"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder title visibility"), false);
+	assert.equal(JSON.stringify(view).includes("Home-screen title shown"), false);
+	assert.equal(JSON.stringify(view).includes("All source tab enabled"), false);
+});
+
+test("collection and folder summaries use saved preference and final visibility outcomes", () => {
+	const invisible = "\u200E\u200E";
+	const controller = createController();
+	controller.importValue([
+		{
+			id: "rows-yes",
+			title: "Rows yes",
+			viewMode: "ROWS",
+			showAllTab: true,
+			folders: [{
+				id: "show-everywhere",
+				title: "Visible title",
+				hideTitle: false,
+				sources: [],
+			}],
+		},
+		{
+			id: "tabs-no",
+			title: "Tabs no",
+			viewMode: "TABBED_GRID",
+			showAllTab: false,
+			folders: [{
+				id: "hide-home",
+				title: "Mixed\u200E title",
+				hideTitle: true,
+				sources: [],
+			}],
+		},
+		{
+			id: "absent-all",
+			title: "Absent All",
+			folders: [{
+				id: "hide-everywhere",
+				title: invisible,
+				hideTitle: false,
+				sources: [],
+			}],
+		},
+		{
+			id: "unusual-all",
+			title: "Unusual All",
+			showAllTab: "RAW_ALL",
+			folders: [{
+				id: "absent-hide",
+				title: "Visible without preference",
+				sources: [],
+			}],
+		},
+		{
+			id: "unusual-hide",
+			title: "Unusual hide",
+			folders: [{
+				id: "unusual-hide-folder",
+				title: "Visible with unusual preference",
+				hideTitle: { raw: true },
+				sources: [],
+			}],
+		},
+	]);
+	const collections = controller.getState().project.collections;
+
+	const cases = [
+		[0, "Yes", "Show everywhere"],
+		[1, "No", "Hide on home screen only"],
+		[2, null, "Hide everywhere"],
+		[3, null, null],
+		[4, null, null],
+	];
+	for (const [index, allTab, visibility] of cases) {
+		controller.selectNode(collections[index].folders[0].internalId);
+		const view = buildBuilderViewModel(controller.getState());
+		const allDetail = view.selectedCollection.details.find((entry) => (
+			entry.label === "All tab when using Tabs"
+		));
+		const visibilityDetail = view.selectedFolder.details.find((entry) => (
+			entry.label === "Folder title visibility"
+		));
+		assert.equal(allDetail?.value ?? null, allTab);
+		assert.equal(visibilityDetail?.value ?? null, visibility);
+		assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Home-screen title shown"), false);
+		assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Nuvio title"), false);
+	}
+});
+
 test("view model uses explicit source categories and safe human-readable summaries", () => {
 	const controller = createController();
 	controller.importValue([{ id: "c", title: "C", folders: [{ id: "f", title: "F", sources: [
@@ -203,8 +353,8 @@ test("selection summaries use unique stable heading IDs with valid associations"
 		"mobile-selection-summary-title",
 		"selection-summary-title",
 	]);
-	assert.match(collectionMarkup, /<h3 id="mobile-selection-summary-title">Collection<\/h3>/);
-	assert.match(collectionMarkup, /<h3 id="selection-summary-title">Collection<\/h3>/);
+	assert.match(collectionMarkup, /<h3 id="mobile-selection-summary-title" aria-label="Collection">Collection<\/h3>/);
+	assert.match(collectionMarkup, /<h3 id="selection-summary-title" aria-label="Collection">Collection<\/h3>/);
 
 	controller.selectNode(collection.folders[0].sources[0].internalId);
 	const sourceMarkup = render(controller);
@@ -266,16 +416,74 @@ test("repeated source metadata values retain semantic keys without React warning
 	assert.ok(markup.indexOf("Repeated metadata") < markup.indexOf("Second source"));
 });
 
-test("first draft collection uses an automatic identity and becomes selected", () => {
+test("desktop draft collection creation uses unchanged defaults, selects, and advances once", () => {
 	const controller = createController();
+	const beforeRevision = controller.getState().revision;
 	const result = createDraftCollection(controller);
 	const collection = controller.getState().project.collections[0];
 	assert.equal(result.ok, true);
 	assert.equal(result.createdInternalId, collection.internalId);
-	assert.deepEqual(collection.editable, { id: "nuvio-1", title: "Untitled Collection" });
+	assert.deepEqual(collection.editable, {
+		id: "nuvio-1",
+		title: "Untitled Collection",
+		pinToTop: false,
+		focusGlowEnabled: true,
+		viewMode: "TABBED_GRID",
+		showAllTab: true,
+	});
 	assert.equal(controller.getState().selection.collectionInternalId, collection.internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "folders");
+	assert.equal(controller.getState().revision, beforeRevision + 1);
 	assert.equal(controller.getState().dirty, true);
 	assert.deepEqual(collection.folders, []);
+	assert.equal(controller.serializeProject().value[0].focusGlowEnabled, true);
+});
+
+test("mobile collection creation stays on Collections and supports ordered repetition and later targeting", () => {
+	const controller = createController();
+	const beforeRevision = controller.getState().revision;
+	const created = [
+		createDraftCollection(controller, { selectCreated: false }),
+		createDraftCollection(controller, { selectCreated: false }),
+		createDraftCollection(controller, { selectCreated: false }),
+	];
+	const state = controller.getState();
+
+	assert.equal(created.every((result) => result.ok), true);
+	assert.deepEqual(state.project.collections.map((collection) => collection.editable.title), [
+		"Untitled Collection",
+		"Untitled Collection 2",
+		"Untitled Collection 3",
+	]);
+	assert.deepEqual(state.project.collections.map((collection) => collection.editable.id), [
+		"nuvio-1",
+		"nuvio-2",
+		"nuvio-3",
+	]);
+	assert.equal(state.selection.collectionInternalId, null);
+	assert.equal(buildBuilderViewModel(state).activeMobileLevel, "collections");
+	assert.equal(state.revision, beforeRevision + 3);
+	assert.equal(state.dirty, true);
+	assert.equal(state.project.collections.every((collection) => (
+		collection.folders.length === 0
+		&& collection.editable.pinToTop === false
+		&& collection.editable.focusGlowEnabled === true
+		&& collection.editable.viewMode === "TABBED_GRID"
+		&& collection.editable.showAllTab === true
+	)), true);
+
+	const firstCollection = state.project.collections[0];
+	const beforeSelectionRevision = state.revision;
+	controller.selectNode(firstCollection.internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "folders");
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
+
+	const thirdCollection = state.project.collections[2];
+	const draft = createTargetedNodeEditorDraft(controller, thirdCollection);
+	assert.equal(draft.internalId, thirdCollection.internalId);
+	assert.equal(draft.values.title, "Untitled Collection 3");
+	assert.equal(controller.getState().selection.collectionInternalId, thirdCollection.internalId);
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
 });
 
 test("later draft collections use the smallest free exact draft title", () => {
@@ -291,19 +499,79 @@ test("later draft collections use the smallest free exact draft title", () => {
 	assert.deepEqual(controller.getState().project.collections.slice(0, 2).map((item) => item.editable.id), ["collection-1", "collection-3"]);
 });
 
-test("draft folder titles use the smallest free exact title and no source is created", () => {
+test("desktop draft folder creation uses unchanged defaults, selects, and advances once", () => {
 	const controller = createController();
 	controller.importValue([
 		{ id: "c1", title: "One", folders: [{ id: "folder-1", title: "Untitled Folder", sources: [] }] },
 		{ id: "c2", title: "Two", folders: [] },
 	]);
 	const secondCollection = controller.getState().project.collections[1];
+	const beforeRevision = controller.getState().revision;
 	const result = createDraftFolder(controller, secondCollection.internalId);
 	const created = controller.getState().project.collections[1].folders[0];
 	assert.equal(result.ok, true);
-	assert.deepEqual(created.editable, { id: "nuvio-1", title: "Untitled Folder 2" });
+	assert.deepEqual(created.editable, {
+		id: "nuvio-1",
+		title: "Untitled Folder 2",
+		tileShape: "POSTER",
+		hideTitle: true,
+	});
 	assert.equal(controller.getState().selection.folderInternalId, created.internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "sources");
+	assert.equal(controller.getState().revision, beforeRevision + 1);
 	assert.deepEqual(created.sources, []);
+	const view = buildBuilderViewModel(controller.getState());
+	assert.ok(view.selectedFolder.details.some((entry) => (
+		entry.label === "Folder title visibility" && entry.value === "Hide on home screen only"
+	)));
+});
+
+test("mobile folder creation stays on Folders, preserves its parent, and supports ordered repetition", () => {
+	const controller = createController();
+	const collectionResult = createDraftCollection(controller);
+	const parent = controller.getState().project.collections[0];
+	assert.equal(controller.getState().selection.collectionInternalId, parent.internalId);
+	const beforeRevision = controller.getState().revision;
+
+	const created = [
+		createDraftFolder(controller, collectionResult.createdInternalId, { selectCreated: false }),
+		createDraftFolder(controller, collectionResult.createdInternalId, { selectCreated: false }),
+		createDraftFolder(controller, collectionResult.createdInternalId, { selectCreated: false }),
+	];
+	const state = controller.getState();
+	const folders = state.project.collections[0].folders;
+
+	assert.equal(created.every((result) => result.ok), true);
+	assert.deepEqual(folders.map((folder) => folder.editable.title), [
+		"Untitled Folder",
+		"Untitled Folder 2",
+		"Untitled Folder 3",
+	]);
+	assert.deepEqual(folders.map((folder) => folder.editable.id), ["nuvio-2", "nuvio-3", "nuvio-4"]);
+	assert.equal(state.selection.collectionInternalId, parent.internalId);
+	assert.equal(state.selection.folderInternalId, null);
+	assert.equal(state.selection.sourceInternalId, null);
+	assert.equal(buildBuilderViewModel(state).activeMobileLevel, "folders");
+	assert.equal(state.revision, beforeRevision + 3);
+	assert.equal(state.dirty, true);
+	assert.equal(folders.every((folder) => (
+		folder.editable.tileShape === "POSTER"
+		&& folder.editable.hideTitle === true
+		&& folder.sources.length === 0
+	)), true);
+
+	const beforeSelectionRevision = state.revision;
+	controller.selectNode(folders[1].internalId);
+	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "sources");
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
+
+	controller.selectNode(parent.internalId);
+	const draft = createTargetedNodeEditorDraft(controller, folders[2]);
+	assert.equal(draft.internalId, folders[2].internalId);
+	assert.equal(draft.values.title, "Untitled Folder 3");
+	assert.equal(controller.getState().selection.collectionInternalId, parent.internalId);
+	assert.equal(controller.getState().selection.folderInternalId, folders[2].internalId);
+	assert.equal(controller.getState().revision, beforeSelectionRevision);
 });
 
 test("failed draft creation retains selection and does not mutate the prior snapshot", () => {
@@ -411,6 +679,7 @@ test("production UI keeps one local SVG and excludes deferred browser and render
 
 test("styles provide mobile protection, touch sizing, focus, desktop panels, and reduced motion", () => {
 	const styles = read("builder/src/styles.css");
+	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(styles, /:root\s*\{[\s\S]*--cyan:/);
 	assert.match(styles, /overflow-x:\s*hidden/);
 	assert.match(styles, /focus-visible/);
@@ -419,4 +688,28 @@ test("styles provide mobile protection, touch sizing, focus, desktop panels, and
 	assert.match(styles, /@media \(min-width: 900px\)/);
 	assert.match(styles, /grid-template-columns:\s*minmax\(235px/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+	assert.equal(BUILDER_DESKTOP_BREAKPOINT_PX, 900);
+	assert.equal(BUILDER_DESKTOP_MEDIA_QUERY, "(min-width: 900px)");
+	assert.ok(styles.includes(`@media ${BUILDER_DESKTOP_MEDIA_QUERY}`));
+	assert.match(workspace, /useBuilderDesktopViewport\(\)/);
+	assert.match(workspace, /selectCreated:\s*desktopViewport/);
+	assert.match(workspace, /desktopViewport \? null : "collections"/);
+	assert.match(workspace, /desktopViewport \? null : "folders"/);
+});
+
+test("responsive helper matches the established breakpoint and respects reduced motion for card scrolling", () => {
+	const queries = [];
+	const mobileMatchMedia = (query) => {
+		queries.push(query);
+		return { matches: false };
+	};
+	const desktopMatchMedia = (query) => ({ matches: query === BUILDER_DESKTOP_MEDIA_QUERY });
+	const reducedMotionMatchMedia = (query) => ({ matches: query === BUILDER_REDUCED_MOTION_MEDIA_QUERY });
+
+	assert.equal(matchesBuilderDesktopViewport(mobileMatchMedia), false);
+	assert.equal(matchesBuilderDesktopViewport(desktopMatchMedia), true);
+	assert.equal(matchesBuilderDesktopViewport(null), true);
+	assert.deepEqual(queries, [BUILDER_DESKTOP_MEDIA_QUERY]);
+	assert.equal(builderCardScrollBehavior(mobileMatchMedia), "smooth");
+	assert.equal(builderCardScrollBehavior(reducedMotionMatchMedia), "auto");
 });
