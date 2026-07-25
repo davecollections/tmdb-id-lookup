@@ -114,6 +114,7 @@ Collection editable fields:
 - `id`
 - `title`
 - `pinToTop`
+- `focusGlowEnabled`
 - `viewMode`
 - `showAllTab`
 

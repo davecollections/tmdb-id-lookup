@@ -236,6 +236,7 @@ test("copies only recognised collection fields into editable", () => {
 		id: "collection",
 		title: "Title",
 		pinToTop: true,
+		focusGlowEnabled: false,
 		viewMode: "ROWS",
 		showAllTab: false,
 		unknownCollection: { keep: true },
@@ -247,10 +248,31 @@ test("copies only recognised collection fields into editable", () => {
 		id: "collection",
 		title: "Title",
 		pinToTop: true,
+		focusGlowEnabled: false,
 		viewMode: "ROWS",
 		showAllTab: false,
 	});
 	assert.deepEqual(result.project.collections[0].rawImported.unknownCollection, { keep: true });
+});
+
+test("preserves supported, absent, and unusual collection focus glow values exactly", () => {
+	const values = [true, false, { private: "object" }, ["array"], "string", 7];
+	const input = values.map((focusGlowEnabled, index) => ({
+		id: `collection-${index}`,
+		title: `Collection ${index}`,
+		focusGlowEnabled,
+		folders: [],
+	}));
+	input.push({ id: "absent", title: "Absent", folders: [] });
+	const result = importNuvioCollections(input, { idFactory: countingIdFactory() });
+
+	for (const [index, value] of values.entries()) {
+		assert.deepEqual(result.project.collections[index].editable.focusGlowEnabled, value);
+		assert.deepEqual(result.project.collections[index].rawImported.focusGlowEnabled, value);
+	}
+	const absent = result.project.collections.at(-1);
+	assert.equal(Object.hasOwn(absent.editable, "focusGlowEnabled"), false);
+	assert.equal(Object.hasOwn(absent.rawImported, "focusGlowEnabled"), false);
 });
 
 test("copies only recognised folder presentation fields into editable", () => {

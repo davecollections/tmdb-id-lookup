@@ -1038,9 +1038,7 @@ button:disabled {
 	border-radius: 999px;
 }
 
-.card-action,
-.quick-rename-apply,
-.quick-rename-cancel {
+.card-action {
 	min-height: 46px;
 	padding: 9px 11px;
 	font: inherit;
@@ -1048,70 +1046,9 @@ button:disabled {
 	font-weight: 800;
 	border-radius: 10px;
 	cursor: pointer;
-}
-
-.card-action,
-.quick-rename-cancel {
 	color: var(--cyan-bright);
 	background: rgb(1 180 228 / 7%);
 	border: 1px solid rgb(1 180 228 / 24%);
-}
-
-.quick-rename-form {
-	display: grid;
-	gap: 7px;
-	padding: 10px 12px 12px;
-	background: rgb(1 180 228 / 5%);
-	border: 1px solid rgb(1 180 228 / 18%);
-	border-radius: 0 0 12px 12px;
-}
-
-.quick-rename-form > label {
-	font-size: 0.76rem;
-	font-weight: 800;
-}
-
-.quick-rename-row {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: 8px;
-}
-
-.quick-rename-row input {
-	width: 100%;
-	min-width: 0;
-	min-height: 46px;
-	padding: 10px 11px;
-	color: var(--text);
-	font: inherit;
-	background: rgb(5 17 25 / 90%);
-	border: 1px solid var(--border-strong);
-	border-radius: 10px;
-}
-
-.quick-rename-row input[aria-invalid="true"] {
-	border-color: var(--coral);
-}
-
-.quick-rename-apply {
-	color: #031119;
-	background: linear-gradient(135deg, var(--cyan), var(--green));
-	border: 0;
-}
-
-.quick-rename-help,
-.quick-rename-error {
-	margin: 0;
-	font-size: 0.7rem;
-	line-height: 1.45;
-}
-
-.quick-rename-help {
-	color: var(--muted);
-}
-
-.quick-rename-error {
-	color: #ffe7e4;
 }
 
 .node-list,
@@ -1152,23 +1089,13 @@ button:disabled {
 }
 
 .card-action {
-	display: inline-grid;
-	width: 46px;
-	min-width: 46px;
+	display: inline-flex;
+	min-width: 58px;
 	min-height: 46px;
-	place-items: center;
+	align-items: center;
+	justify-content: center;
 	align-self: stretch;
-	padding: 0;
-}
-
-.card-action svg {
-	width: 20px;
-	height: 20px;
-	fill: none;
-	stroke: currentColor;
-	stroke-linecap: round;
-	stroke-linejoin: round;
-	stroke-width: 1.8;
+	padding: 0 13px;
 }
 
 .node-button,
@@ -1705,20 +1632,6 @@ button:disabled {
 	}
 }
 
-@media (hover: hover) and (min-width: 900px) {
-	.hierarchy-card-actions {
-		pointer-events: none;
-		opacity: 0;
-	}
-
-	.hierarchy-card.is-selected .hierarchy-card-actions,
-	.hierarchy-card:hover .hierarchy-card-actions,
-	.hierarchy-card:focus-within .hierarchy-card-actions {
-		pointer-events: auto;
-		opacity: 1;
-	}
-}
-
 @media (hover: hover) {
 	.welcome-primary-action:hover,
 	.import-action:hover {
@@ -1731,8 +1644,7 @@ button:disabled {
 	.quiet-button:hover,
 	.secondary-action:hover,
 	.editor-cancel:hover,
-	.card-action:hover,
-	.quick-rename-cancel:hover {
+	.card-action:hover {
 		color: #fff;
 		border-color: var(--border-strong);
 	}
@@ -1765,9 +1677,7 @@ button:disabled {
 	.editor-apply,
 	.editor-cancel,
 	.card-action,
-	.hierarchy-card-actions,
-	.quick-rename-apply,
-	.quick-rename-cancel {
+	.hierarchy-card-actions {
 		transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, filter 150ms ease, transform 150ms ease;
 	}
 

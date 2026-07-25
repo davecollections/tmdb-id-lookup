@@ -1,10 +1,7 @@
 export { BuilderApp } from "./BuilderApp.jsx";
 export { NodeEditor } from "./NodeEditor.jsx";
 export { applyNodeEditorDraft } from "./node-editor-actions.js";
-export {
-	createTargetedNodeEditorDraft,
-	createTargetedQuickRenameDraft,
-} from "./hierarchy-actions.js";
+export { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
 export {
 	buildNodeEditorPatch,
 	createNodeEditorDraft,
@@ -15,13 +12,6 @@ export {
 export { BuilderWelcome } from "./BuilderWelcome.jsx";
 export { BuilderWorkspace } from "./BuilderWorkspace.jsx";
 export { createDraftCollection, createDraftFolder } from "./draft-actions.js";
-export {
-	applyQuickRenameDraft,
-	buildQuickRenamePatch,
-	createQuickRenameDraft,
-	updateQuickRenameTitle,
-	validateQuickRenameDraft,
-} from "./quick-rename.js";
 export {
 	importJsonFile,
 	importPastedJson,

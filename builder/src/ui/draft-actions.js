@@ -29,6 +29,7 @@ export function createDraftCollection(controller) {
 		editable: {
 			title,
 			pinToTop: false,
+			focusGlowEnabled: true,
 			viewMode: "TABBED_GRID",
 			showAllTab: true,
 		},

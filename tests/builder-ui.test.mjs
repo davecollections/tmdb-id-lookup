@@ -175,6 +175,7 @@ test("view model presents only supported collection and folder settings with fri
 		id: "collection",
 		title: "Collection",
 		pinToTop: true,
+		focusGlowEnabled: false,
 		viewMode: "rows",
 		showAllTab: true,
 		folders: [{
@@ -188,6 +189,7 @@ test("view model presents only supported collection and folder settings with fri
 		id: "unsupported",
 		title: "Unsupported",
 		pinToTop: "RAW_PIN",
+		focusGlowEnabled: { raw: true },
 		viewMode: "FOLLOW_LAYOUT",
 		showAllTab: { raw: true },
 		folders: [{
@@ -203,6 +205,7 @@ test("view model presents only supported collection and folder settings with fri
 	let view = buildBuilderViewModel(controller.getState());
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Layout" && entry.value === "Rows"));
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Pinned to top" && entry.value === "Yes"));
+	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled" && entry.value === "No"));
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All tab included"), false);
 	assert.equal(view.selectedFolder.tileShape, "Landscape");
 	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Folder title shown" && entry.value === "Yes"));
@@ -212,6 +215,7 @@ test("view model presents only supported collection and folder settings with fri
 	assert.equal(JSON.stringify(view).includes("RAW_PIN"), false);
 	assert.equal(JSON.stringify(view).includes("RAW_HIDE"), false);
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Layout"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled"), false);
 	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Tile shape"), false);
 	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder title shown"), false);
 });
@@ -323,12 +327,14 @@ test("first draft collection uses an automatic identity and becomes selected", (
 		id: "nuvio-1",
 		title: "Untitled Collection",
 		pinToTop: false,
+		focusGlowEnabled: true,
 		viewMode: "TABBED_GRID",
 		showAllTab: true,
 	});
 	assert.equal(controller.getState().selection.collectionInternalId, collection.internalId);
 	assert.equal(controller.getState().dirty, true);
 	assert.deepEqual(collection.folders, []);
+	assert.equal(controller.serializeProject().value[0].focusGlowEnabled, true);
 });
 
 test("later draft collections use the smallest free exact draft title", () => {

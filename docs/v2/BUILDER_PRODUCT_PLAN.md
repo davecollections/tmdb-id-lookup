@@ -231,11 +231,11 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 
 The current owner-reviewed workflow exposes:
 
-- compact Rename and Settings actions on every collection and folder card, replacing the large selected-entity blocks and directly targeting unselected cards;
-- one responsive modal for collection title, intentional invisible Nuvio title, Tabs/Rows, conditional Include an All tab, and Pin to top;
+- one compact, always-visible Edit action on every collection and folder card, replacing the former Rename/Settings pair and directly targeting unselected cards;
+- one responsive modal for collection title, intentional invisible Nuvio title, Tabs/Rows, conditional Include an All tab, Pin to top, and Enable focus glow;
 - the same modal for folder title, Poster/Landscape, and positive Show folder title wording.
 
-Manual blank collections default to Tabs with All enabled and Pin off. Manual blank folders default to Poster with `hideTitle: true`, so the title beneath the card is hidden by default while the actual folder name remains visible. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices.
+Manual blank collections default to Tabs with All enabled, Pin off, and focus glow on. Manual blank folders default to Poster with `hideTitle: true`, so the title beneath the card is hidden by default while the actual folder name remains visible. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices. Imported focus-glow booleans display accurately; absent and unusual values remain preserved until deliberate canonical replacement.
 
 U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. The collection setting deliberately emits one U+200E because Nuvio lacks a native collection-title visibility setting, and blank titles never become invisible automatically. The Builder does not expose invisible-folder-name creation: imported repeated U+200E folder names are preservation-only until explicitly replaced with visible text. Invisible folder names remain distinct from native `hideTitle`. The Builder uses a display-only fallback rather than rendering blank cards or headings.
 
@@ -294,7 +294,7 @@ The separate `nuvio-assets` project owns artwork production, replacement, review
 
 This plan does not add or alter artwork behaviour.
 
-Owner-supplied current Nuvio editor screenshots evidence backdrop, focus glow, cover, focus GIF, logo, hero, and related controls, but issue #53 keeps them deferred. Future focus-GIF support defaults off unless deliberately enabled.
+Owner-supplied current Nuvio evidence confirms collection-level `focusGlowEnabled`, now included in issue #53. Backdrop, cover, focus GIF, logo, hero, and related artwork controls remain deferred. Future focus-GIF support defaults off unless deliberately enabled.
 
 ## 14. Import and editing
 
@@ -385,13 +385,14 @@ Trakt integration remains outside current project scope; a possible future colou
 2. Collection/folder presentation settings — implemented on issue #53's branch pending review.
 3. First mandatory Dave UI and flow review — complete.
 4. Resolve the review findings, including direct per-card hierarchy actions — implemented on the issue branch, pending owner review.
-5. Collection/folder/source reordering in a separate focused issue.
-6. Source creation and Search/Add.
-7. Advanced Discover creation.
-8. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.
-9. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
-10. Review/export usability.
-11. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
+5. Bulk presentation settings remain desired but deferred to a separate focused issue.
+6. Collection/folder/source reordering in a separate focused issue.
+7. Source creation and Search/Add.
+8. Advanced Discover creation.
+9. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.
+10. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
+11. Review/export usability.
+12. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
 
 This is a dependency map, not a rigid release schedule. Each step requires its own approved issue and may be refined by stronger evidence.
 

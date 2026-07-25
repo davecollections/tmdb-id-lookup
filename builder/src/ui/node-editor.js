@@ -14,6 +14,7 @@ const collectionEditorFields = new Set([
 	"viewMode",
 	"showAllTab",
 	"pinToTop",
+	"focusGlowEnabled",
 ]);
 const folderEditorFields = new Set([
 	"title",
@@ -121,6 +122,7 @@ export function createNodeEditorDraft(node) {
 		);
 		const showAllTab = originalBooleanField(node, "showAllTab");
 		const pinToTop = originalBooleanField(node, "pinToTop");
+		const focusGlowEnabled = originalBooleanField(node, "focusGlowEnabled");
 
 		return {
 			...baseDraft,
@@ -131,12 +133,14 @@ export function createNodeEditorDraft(node) {
 				viewMode: viewMode.supported ? viewMode.value : "",
 				showAllTab: showAllTab.supported ? showAllTab.value : true,
 				pinToTop: pinToTop.supported ? pinToTop.value : false,
+				focusGlowEnabled: focusGlowEnabled.supported ? focusGlowEnabled.value : true,
 			},
 			original: {
 				...baseDraft.original,
 				viewMode,
 				showAllTab,
 				pinToTop,
+				focusGlowEnabled,
 			},
 			touched: {
 				...baseDraft.touched,
@@ -144,6 +148,7 @@ export function createNodeEditorDraft(node) {
 				viewMode: false,
 				showAllTab: false,
 				pinToTop: false,
+				focusGlowEnabled: false,
 			},
 			visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 		};
@@ -187,7 +192,13 @@ export function updateNodeEditorField(draft, field, value) {
 		|| (field === "tileShape" && folderShapeValues.has(value))
 	);
 	const validBooleanField = (
-		["hideNuvioTitle", "showAllTab", "pinToTop", "showFolderTitle"].includes(field)
+		[
+			"hideNuvioTitle",
+			"showAllTab",
+			"pinToTop",
+			"focusGlowEnabled",
+			"showFolderTitle",
+		].includes(field)
 		&& typeof value === "boolean"
 	);
 
@@ -293,6 +304,7 @@ export function buildNodeEditorPatch(draft) {
 		}
 		includeBooleanPatch(patch, draft, "showAllTab");
 		includeBooleanPatch(patch, draft, "pinToTop");
+		includeBooleanPatch(patch, draft, "focusGlowEnabled");
 		return patch;
 	}
 

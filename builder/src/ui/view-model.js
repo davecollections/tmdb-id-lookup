@@ -85,6 +85,7 @@ function buildCollection(collection, selectedInternalId) {
 	});
 	const pinToTop = supportedBoolean(collection.editable.pinToTop);
 	const showAllTab = supportedBoolean(collection.editable.showAllTab);
+	const focusGlowEnabled = supportedBoolean(collection.editable.focusGlowEnabled);
 	return {
 		internalId: collection.internalId,
 		title: title.text,
@@ -103,6 +104,7 @@ function buildCollection(collection, selectedInternalId) {
 			detail("Layout", layout),
 			detail("Pinned to top", pinToTop),
 			layout === "Tabs" ? detail("All tab included", showAllTab) : null,
+			detail("Focus glow enabled", focusGlowEnabled),
 		]),
 	};
 }

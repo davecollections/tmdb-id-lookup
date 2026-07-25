@@ -80,6 +80,10 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 		draft.touched.pinToTop
 		&& typeof draft.values.pinToTop === "boolean"
 	);
+	const focusGlowReplacementPending = (
+		draft.touched.focusGlowEnabled
+		&& typeof draft.values.focusGlowEnabled === "boolean"
+	);
 	const allTabDescriptionIds = [
 		`${prefix}-all-tab-help`,
 		!draft.original.showAllTab.supported && !allTabReplacementPending
@@ -90,6 +94,12 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 		`${prefix}-pin-help`,
 		!draft.original.pinToTop.supported && !pinReplacementPending
 			? `${prefix}-pin-status`
+			: null,
+	].filter(Boolean).join(" ");
+	const focusGlowDescriptionIds = [
+		`${prefix}-focus-glow-help`,
+		!draft.original.focusGlowEnabled.supported && !focusGlowReplacementPending
+			? `${prefix}-focus-glow-status`
 			: null,
 	].filter(Boolean).join(" ");
 
@@ -196,6 +206,32 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 					label="pin to top"
 					replacementPending={pinReplacementPending}
 					statusId={`${prefix}-pin-status`}
+				/>
+			</div>
+
+			<div className="editor-switch-field" data-editor-field="focusGlowEnabled">
+				<label className="editor-switch">
+					<span>
+						<strong>Enable focus glow</strong>
+						<small id={`${prefix}-focus-glow-help`}>
+							Shows Nuvio’s focus-glow effect for this collection.
+						</small>
+					</span>
+					<input
+						type="checkbox"
+						role="switch"
+						data-editor-control="focusGlowEnabled"
+						checked={draft.values.focusGlowEnabled}
+						aria-describedby={focusGlowDescriptionIds}
+						onChange={(event) => onChange("focusGlowEnabled", event.target.checked)}
+					/>
+					<span className="editor-switch-control" aria-hidden="true" />
+				</label>
+				<BooleanStatus
+					original={draft.original.focusGlowEnabled}
+					label="focus glow"
+					replacementPending={focusGlowReplacementPending}
+					statusId={`${prefix}-focus-glow-status`}
 				/>
 			</div>
 		</>
@@ -306,7 +342,7 @@ function InvisibleCollectionTitleField({ draft, prefix, onChange }) {
 				<span>
 					<strong>Hide collection title in Nuvio</strong>
 					<small id={`${prefix}-hidden-title-help`}>
-						Uses an invisible title character because Nuvio does not currently provide a collection-title visibility setting.
+						Uses an invisible character to hide the collection title in Nuvio.
 					</small>
 				</span>
 				<input
@@ -348,8 +384,12 @@ export function NodeEditor({
 	);
 
 	useEffect(() => {
-		focusFirstDialogControl(dialogRef.current);
-	}, [draft.internalId]);
+		if (titleInputRef.current && !titleInputRef.current.disabled) {
+			titleInputRef.current.focus();
+		} else {
+			focusFirstDialogControl(dialogRef.current);
+		}
+	}, [draft.internalId, titleInputRef]);
 
 	useEffect(() => {
 		document.body.classList.add("settings-modal-open");

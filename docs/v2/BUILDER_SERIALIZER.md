@@ -62,7 +62,7 @@ New nodes without `rawImported` produce only supported recognised fields that ar
 - folders: `id`, `title`, `sources`, and `catalogSources`;
 - sources: their present recognised fields and category-required identity.
 
-The serializer does not invent explicit-null envelopes, blank presentation fields, display defaults, backdrop or glow defaults, language settings, or v1 exporter defaults. Unknown editable properties are not exported automatically.
+The serializer does not invent explicit-null envelopes, blank presentation fields, language settings, or v1 exporter defaults. It emits `focusGlowEnabled` only when the recognised collection editable state owns that field; manual new-collection creation now deliberately supplies `true`, while imported absence stays absent. Unknown editable properties are not exported automatically.
 
 ## Imported overlay and structural replacement
 

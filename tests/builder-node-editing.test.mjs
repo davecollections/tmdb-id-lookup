@@ -14,15 +14,17 @@ import {
 	isValidVisibleNuvioTitle,
 	NUVIO_INVISIBLE_TITLE,
 } from "../builder/src/nuvio/titles.js";
+import {
+	COLLECTION_EDITABLE_FIELDS,
+	FOLDER_EDITABLE_FIELDS,
+	SOURCE_EDITABLE_FIELDS,
+} from "../builder/src/nuvio/known-fields.js";
 import { serializeNuvioProject } from "../builder/src/serialize/index.js";
 import {
 	focusFirstDialogControl,
 	handleDialogKeyDown,
 } from "../builder/src/ui/modal-focus.js";
-import {
-	createTargetedNodeEditorDraft,
-	createTargetedQuickRenameDraft,
-} from "../builder/src/ui/hierarchy-actions.js";
+import { createTargetedNodeEditorDraft } from "../builder/src/ui/hierarchy-actions.js";
 import { applyNodeEditorDraft } from "../builder/src/ui/node-editor-actions.js";
 import {
 	buildNodeEditorPatch,
@@ -31,13 +33,6 @@ import {
 	updateNodeEditorField,
 	validateNodeEditorDraft,
 } from "../builder/src/ui/node-editor.js";
-import {
-	applyQuickRenameDraft,
-	buildQuickRenamePatch,
-	createQuickRenameDraft,
-	updateQuickRenameTitle,
-	validateQuickRenameDraft,
-} from "../builder/src/ui/quick-rename.js";
 import { buildBuilderViewModel } from "../builder/src/ui/view-model.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -103,8 +98,6 @@ function renderWorkspace(controller, options = {}) {
 		state: controller.getState(),
 		initialEditorDraft: options.draft ?? null,
 		initialEditorDiagnostics: options.diagnostics ?? [],
-		initialRenameDraft: options.renameDraft ?? null,
-		initialRenameDiagnostics: options.renameDiagnostics ?? [],
 	}));
 }
 
@@ -134,6 +127,16 @@ function workspacePanelMarkup(markup, marker) {
 	return markup.slice(start, next === -1 ? markup.length : next);
 }
 
+test("focus glow is recognised only as a collection editable field", () => {
+	assert.ok(COLLECTION_EDITABLE_FIELDS.includes("focusGlowEnabled"));
+	assert.equal(FOLDER_EDITABLE_FIELDS.includes("focusGlowEnabled"), false);
+	assert.equal(SOURCE_EDITABLE_FIELDS.includes("focusGlowEnabled"), false);
+	assert.equal(
+		COLLECTION_EDITABLE_FIELDS.filter((field) => field === "focusGlowEnabled").length,
+		1,
+	);
+});
+
 test("collection draft retains only stable target identity and editor values", () => {
 	const collection = importTree().getState().project.collections[0];
 	const draft = createNodeEditorDraft(collection);
@@ -145,6 +148,7 @@ test("collection draft retains only stable target identity and editor values", (
 		viewMode: "",
 		showAllTab: true,
 		pinToTop: false,
+		focusGlowEnabled: true,
 	});
 	assert.equal(JSON.stringify(draft).includes("collection-id"), false);
 });
@@ -222,6 +226,7 @@ test("updating title changes only title form state and touched state", () => {
 	assert.equal(next.touched.viewMode, false);
 	assert.equal(next.touched.showAllTab, false);
 	assert.equal(next.touched.pinToTop, false);
+	assert.equal(next.touched.focusGlowEnabled, false);
 });
 
 test("field updates are immutable and retain original comparison data", () => {
@@ -246,6 +251,7 @@ test("supported presentation values retain imported casing while untouched", () 
 		viewMode: "rows",
 		showAllTab: false,
 		pinToTop: true,
+		focusGlowEnabled: false,
 		folders: [{
 			id: "folder",
 			title: "Folder",
@@ -261,6 +267,8 @@ test("supported presentation values retain imported casing while untouched", () 
 
 	assert.equal(collectionDraft.values.viewMode, "rows");
 	assert.equal(collectionDraft.original.viewMode.value, "rows");
+	assert.equal(collectionDraft.values.focusGlowEnabled, false);
+	assert.equal(collectionDraft.original.focusGlowEnabled.value, false);
 	assert.equal(folderDraft.values.tileShape, "landscape");
 	assert.equal(folderDraft.original.tileShape.value, "landscape");
 	assert.deepEqual(buildNodeEditorPatch(collectionDraft), {});
@@ -274,6 +282,7 @@ test("collection presentation updates accept only canonical supported values", (
 		viewMode: "TABBED_GRID",
 		showAllTab: true,
 		pinToTop: false,
+		focusGlowEnabled: true,
 		folders: [],
 	}]).getState().project.collections[0];
 	const original = createNodeEditorDraft(collection);
@@ -290,9 +299,11 @@ test("collection presentation updates accept only canonical supported values", (
 
 	draft = updateNodeEditorField(draft, "showAllTab", false);
 	draft = updateNodeEditorField(draft, "pinToTop", true);
+	draft = updateNodeEditorField(draft, "focusGlowEnabled", false);
 	assert.deepEqual(buildNodeEditorPatch(draft), {
 		showAllTab: false,
 		pinToTop: true,
+		focusGlowEnabled: false,
 	});
 });
 
@@ -362,6 +373,7 @@ test("absent unsupported and unusual presentation values stay out of unrelated p
 		viewMode: { rawLayout: "PRIVATE_LAYOUT" },
 		showAllTab: ["PRIVATE_ALL"],
 		pinToTop: 1,
+		focusGlowEnabled: { private: "PRIVATE_GLOW" },
 		folders: [{
 			id: "folder",
 			title: "Folder",
@@ -377,7 +389,13 @@ test("absent unsupported and unusual presentation values stay out of unrelated p
 
 	assert.deepEqual(buildNodeEditorPatch(collectionDraft), { title: "Edited collection" });
 	assert.deepEqual(buildNodeEditorPatch(folderDraft), { title: "Edited folder" });
-	for (const sentinel of ["PRIVATE_LAYOUT", "PRIVATE_ALL", "PRIVATE_SHAPE", "PRIVATE_TITLE"]) {
+	for (const sentinel of [
+		"PRIVATE_LAYOUT",
+		"PRIVATE_ALL",
+		"PRIVATE_GLOW",
+		"PRIVATE_SHAPE",
+		"PRIVATE_TITLE",
+	]) {
 		assert.equal(JSON.stringify({ collectionDraft, folderDraft }).includes(sentinel), false);
 	}
 });
@@ -824,106 +842,115 @@ test("disabling an imported invisible title requires a visible replacement", () 
 	assert.deepEqual(buildNodeEditorPatch(draft), { title: "Visible replacement" });
 });
 
-test("quick rename drafts safely initialise visible, hidden, and unusual imported titles", () => {
-	const visible = importTree().getState().project.collections[0];
-	const visibleDraft = createQuickRenameDraft(visible);
-	assert.equal(visibleDraft.value, "Collection title");
-	assert.equal(visibleDraft.original.hidden, false);
-	assert.deepEqual(buildQuickRenamePatch(visibleDraft), {});
+test("focus glow draft preserves supported absent and unusual imported values", () => {
+	const controller = importTree([
+		{ id: "enabled", title: "Enabled", focusGlowEnabled: true, folders: [] },
+		{ id: "disabled", title: "Disabled", focusGlowEnabled: false, folders: [] },
+		{ id: "absent", title: "Absent", folders: [] },
+		{
+			id: "unusual",
+			title: "Unusual",
+			focusGlowEnabled: { private: "RAW_FOCUS_GLOW" },
+			unknownCollection: { keep: true },
+			folders: [],
+		},
+	]);
+	const [enabled, disabled, absent, unusual] = controller.getState().project.collections;
+	const enabledDraft = createNodeEditorDraft(enabled);
+	const disabledDraft = createNodeEditorDraft(disabled);
+	const absentDraft = createNodeEditorDraft(absent);
+	const unusualDraft = createNodeEditorDraft(unusual);
 
-	const hidden = importTree([{
-		id: "hidden",
-		title: NUVIO_INVISIBLE_TITLE.repeat(2),
-		folders: [],
-	}]).getState().project.collections[0];
-	const hiddenDraft = createQuickRenameDraft(hidden);
-	assert.equal(hiddenDraft.value, "");
-	assert.equal(hiddenDraft.original.hidden, true);
-	assert.equal(hiddenDraft.original.value, null);
-	assert.equal(JSON.stringify(hiddenDraft).includes(NUVIO_INVISIBLE_TITLE), false);
+	assert.equal(enabledDraft.values.focusGlowEnabled, true);
+	assert.equal(disabledDraft.values.focusGlowEnabled, false);
+	assert.equal(absentDraft.original.focusGlowEnabled.status, "absent");
+	assert.equal(unusualDraft.original.focusGlowEnabled.status, "unsupported");
+	assert.equal(JSON.stringify(unusualDraft).includes("RAW_FOCUS_GLOW"), false);
+	assert.deepEqual(buildNodeEditorPatch(absentDraft), {});
+	assert.deepEqual(buildNodeEditorPatch(changedDraft(unusual, { title: "Edited unusual" })), {
+		title: "Edited unusual",
+	});
+	controller.selectNode(enabled.internalId);
+	assert.ok(openingTag(
+		renderWorkspace(controller, { draft: enabledDraft }),
+		'data-editor-control="focusGlowEnabled"',
+	).includes("checked"));
+	controller.selectNode(disabled.internalId);
+	assert.equal(openingTag(
+		renderWorkspace(controller, { draft: disabledDraft }),
+		'data-editor-control="focusGlowEnabled"',
+	).includes("checked"), false);
 
-	const unusual = importTree([{
-		id: "private-id",
-		title: { private: "RAW_IMPORTED_TITLE" },
-		folders: [],
-	}]).getState().project.collections[0];
-	const unusualDraft = createQuickRenameDraft(unusual);
-	assert.equal(unusualDraft.value, "");
-	assert.equal(unusualDraft.original.supported, false);
-	assert.equal(JSON.stringify(unusualDraft).includes("RAW_IMPORTED_TITLE"), false);
-	assert.equal(JSON.stringify(unusualDraft).includes("private-id"), false);
+	const serialized = serializeNuvioProject(controller.getState().project).value;
+	assert.equal(serialized[2].focusGlowEnabled, undefined);
+	assert.deepEqual(serialized[3].focusGlowEnabled, { private: "RAW_FOCUS_GLOW" });
+	assert.deepEqual(serialized[3].unknownCollection, { keep: true });
 });
 
-test("quick rename accepts visible text only and never treats blank or another format character as hidden", () => {
-	const collection = importTree().getState().project.collections[0];
-	for (const invalidTitle of ["", "   ", NUVIO_INVISIBLE_TITLE, "\u200B", "\u2060", "\uFEFF"]) {
-		const draft = updateQuickRenameTitle(createQuickRenameDraft(collection), invalidTitle);
-		assert.equal(validateQuickRenameDraft(draft)[0].code, "RENAME_VISIBLE_TITLE_REQUIRED");
+test("focus glow deliberate replacements are canonical minimal patches and one edit is one revision", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		focusGlowEnabled: false,
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	let draft = createNodeEditorDraft(collection);
+	draft = updateNodeEditorField(draft, "focusGlowEnabled", true);
+	assert.deepEqual(buildNodeEditorPatch(draft), { focusGlowEnabled: true });
+
+	const beforeRevision = controller.getState().revision;
+	const result = applyNodeEditorDraft(controller, draft);
+	assert.equal(result.ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(controller.getState().project.collections[0].editable.focusGlowEnabled, true);
+
+	const current = controller.getState().project.collections[0];
+	const reverted = updateNodeEditorField(
+		createNodeEditorDraft(current),
+		"focusGlowEnabled",
+		true,
+	);
+	assert.deepEqual(buildNodeEditorPatch(reverted), {});
+
+	const disabledReplacement = updateNodeEditorField(
+		createNodeEditorDraft(importTree([{
+			id: "unusual",
+			title: "Unusual",
+			focusGlowEnabled: "RAW",
+			folders: [],
+		}]).getState().project.collections[0]),
+		"focusGlowEnabled",
+		false,
+	);
+	assert.deepEqual(buildNodeEditorPatch(disabledReplacement), { focusGlowEnabled: false });
+});
+
+test("collection summaries show focus glow only for supported booleans", () => {
+	const controller = importTree([
+		{ id: "enabled", title: "Enabled", focusGlowEnabled: true, folders: [] },
+		{ id: "disabled", title: "Disabled", focusGlowEnabled: false, folders: [] },
+		{ id: "absent", title: "Absent", folders: [] },
+		{ id: "unsupported", title: "Unsupported", focusGlowEnabled: "RAW", folders: [] },
+	]);
+	const collections = controller.getState().project.collections;
+
+	for (const [index, expected] of [[0, "Yes"], [1, "No"]]) {
+		controller.selectNode(collections[index].internalId);
+		const details = buildBuilderViewModel(controller.getState()).selectedCollection.details;
+		assert.ok(details.some((entry) => (
+			entry.label === "Focus glow enabled" && entry.value === expected
+		)));
 	}
 
-	const mixed = updateQuickRenameTitle(
-		createQuickRenameDraft(collection),
-		`Visible${NUVIO_INVISIBLE_TITLE}`,
-	);
-	assert.deepEqual(validateQuickRenameDraft(mixed), []);
-	assert.deepEqual(buildQuickRenamePatch(mixed), {
-		title: `Visible${NUVIO_INVISIBLE_TITLE}`,
-	});
+	for (const index of [2, 3]) {
+		controller.selectNode(collections[index].internalId);
+		const details = buildBuilderViewModel(controller.getState()).selectedCollection.details;
+		assert.equal(details.some((entry) => entry.label === "Focus glow enabled"), false);
+	}
 });
 
-test("successful quick rename creates one title-only controller revision and retains selection", () => {
-	const controller = importTree();
-	const folder = controller.getState().project.collections[0].folders[0];
-	controller.selectNode(folder.internalId);
-	const beforeRevision = controller.getState().revision;
-	const draft = updateQuickRenameTitle(createQuickRenameDraft(folder), "Renamed folder");
-	const result = applyQuickRenameDraft(controller, draft);
-
-	assert.deepEqual(result, { ok: true, controllerCalled: true, diagnostics: [] });
-	assert.equal(controller.getState().revision, beforeRevision + 1);
-	assert.equal(controller.getState().selection.folderInternalId, folder.internalId);
-	assert.equal(controller.getState().project.collections[0].folders[0].editable.title, "Renamed folder");
-	assert.deepEqual(buildQuickRenamePatch(draft), { title: "Renamed folder" });
-});
-
-test("quick rename cancel and unchanged apply create no revision", () => {
-	const controller = importTree();
-	const collection = controller.getState().project.collections[0];
-	controller.selectNode(collection.internalId);
-	const before = controller.getState();
-	const cancelledDraft = updateQuickRenameTitle(createQuickRenameDraft(collection), "Discard me");
-	assert.deepEqual(buildQuickRenamePatch(cancelledDraft), { title: "Discard me" });
-	assert.equal(controller.getState(), before);
-
-	const noOp = applyQuickRenameDraft(
-		controller,
-		updateQuickRenameTitle(createQuickRenameDraft(collection), "Collection title"),
-	);
-	assert.deepEqual(noOp, { ok: true, controllerCalled: false, diagnostics: [] });
-	assert.equal(controller.getState(), before);
-});
-
-test("quick rename replaces an invisible title only after visible input and cancellation retains it", () => {
-	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
-	const controller = importTree([{ id: "hidden", title: repeated, folders: [] }]);
-	const collection = controller.getState().project.collections[0];
-	const initialDraft = createQuickRenameDraft(collection);
-	const invalid = applyQuickRenameDraft(controller, initialDraft);
-	assert.equal(invalid.ok, false);
-	assert.equal(invalid.controllerCalled, false);
-	assert.equal(controller.getState().project.collections[0].editable.title, repeated);
-
-	const beforeCancel = controller.getState();
-	updateQuickRenameTitle(initialDraft, "Cancelled replacement");
-	assert.equal(controller.getState(), beforeCancel);
-	assert.equal(controller.getState().project.collections[0].editable.title, repeated);
-
-	const replacement = updateQuickRenameTitle(initialDraft, "Visible again");
-	assert.equal(applyQuickRenameDraft(controller, replacement).ok, true);
-	assert.equal(controller.getState().project.collections[0].editable.title, "Visible again");
-});
-
-test("collection card actions directly target an unselected collection without a selection revision", () => {
+test("collection Edit directly targets an unselected collection without a selection revision", () => {
 	const controller = importTree([
 		{
 			id: "first",
@@ -946,26 +973,13 @@ test("collection card actions directly target an unselected collection without a
 	controller.selectNode(second.internalId);
 	const beforeTarget = controller.getState();
 
-	let renameDraft = createTargetedQuickRenameDraft(controller, first);
-	assert.equal(renameDraft.internalId, first.internalId);
+	let editorDraft = createTargetedNodeEditorDraft(controller, first);
+	assert.equal(editorDraft.internalId, first.internalId);
 	assert.equal(controller.getState().selection.collectionInternalId, first.internalId);
 	assert.equal(controller.getState().project, beforeTarget.project);
 	assert.equal(controller.getState().dirty, false);
 	assert.equal(controller.getState().revision, beforeTarget.revision);
 
-	renameDraft = updateQuickRenameTitle(renameDraft, "First renamed");
-	assert.equal(applyQuickRenameDraft(controller, renameDraft).ok, true);
-	[first, second] = controller.getState().project.collections;
-	assert.equal(first.editable.title, "First renamed");
-	assert.equal(second.editable.title, "Second collection");
-	assert.equal(controller.getState().selection.collectionInternalId, first.internalId);
-
-	controller.selectNode(second.internalId);
-	const beforeSettingsTarget = controller.getState();
-	let editorDraft = createTargetedNodeEditorDraft(controller, first);
-	assert.equal(editorDraft.internalId, first.internalId);
-	assert.equal(controller.getState().revision, beforeSettingsTarget.revision);
-	assert.equal(controller.getState().selection.collectionInternalId, first.internalId);
 	editorDraft = updateNodeEditorField(editorDraft, "pinToTop", true);
 	assert.equal(applyNodeEditorDraft(controller, editorDraft).ok, true);
 	[first, second] = controller.getState().project.collections;
@@ -974,7 +988,7 @@ test("collection card actions directly target an unselected collection without a
 	assert.equal(controller.getState().selection.collectionInternalId, first.internalId);
 });
 
-test("folder card actions directly target an unselected folder and Cancel retains its selection", () => {
+test("folder Edit directly targets an unselected folder and Cancel retains its selection", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Collection",
@@ -1000,25 +1014,16 @@ test("folder card actions directly target an unselected folder and Cancel retain
 	controller.selectNode(second.internalId);
 	const beforeTarget = controller.getState();
 
-	const cancelledDraft = createTargetedQuickRenameDraft(controller, first);
+	const cancelledDraft = createTargetedNodeEditorDraft(controller, first);
 	assert.equal(cancelledDraft.internalId, first.internalId);
 	assert.equal(controller.getState().selection.folderInternalId, first.internalId);
 	assert.equal(controller.getState().dirty, false);
 	assert.equal(controller.getState().revision, beforeTarget.revision);
 
 	controller.selectNode(second.internalId);
-	let renameDraft = createTargetedQuickRenameDraft(controller, first);
-	renameDraft = updateQuickRenameTitle(renameDraft, "First folder renamed");
-	assert.equal(applyQuickRenameDraft(controller, renameDraft).ok, true);
-	[first, second] = controller.getState().project.collections[0].folders;
-	assert.equal(first.editable.title, "First folder renamed");
-	assert.equal(second.editable.title, "Second folder");
-	assert.equal(controller.getState().selection.folderInternalId, first.internalId);
-
-	controller.selectNode(second.internalId);
-	const beforeSettingsTarget = controller.getState();
+	const beforeEditTarget = controller.getState();
 	let editorDraft = createTargetedNodeEditorDraft(controller, first);
-	assert.equal(controller.getState().revision, beforeSettingsTarget.revision);
+	assert.equal(controller.getState().revision, beforeEditTarget.revision);
 	editorDraft = updateNodeEditorField(editorDraft, "tileShape", "LANDSCAPE");
 	assert.equal(applyNodeEditorDraft(controller, editorDraft).ok, true);
 	[first, second] = controller.getState().project.collections[0].folders;
@@ -1108,39 +1113,12 @@ test("Builder fallbacks and accessible labels prevent blank hidden-title cards a
 	assert.ok(markup.includes("Invisible in Nuvio"));
 	assert.ok(markup.includes('aria-label="Collection with hidden Nuvio title"'));
 	assert.ok(markup.includes('aria-label="Folder with hidden Nuvio title"'));
-	assert.ok(markup.includes('aria-label="Rename collection with hidden Nuvio title"'));
-	assert.ok(markup.includes('aria-label="Rename folder with hidden Nuvio title"'));
-	assert.ok(markup.includes('aria-label="Open settings for collection with hidden Nuvio title"'));
-	assert.ok(markup.includes('aria-label="Open settings for folder with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Edit collection with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Edit folder with hidden Nuvio title"'));
 	assert.equal(markup.includes(repeated), false);
 });
 
-test("quick rename renders only for its targeted entity and hides imported invisible content", () => {
-	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
-	const controller = importTree([{
-		id: "hidden",
-		title: repeated,
-		folders: [],
-	}]);
-	const collection = controller.getState().project.collections[0];
-	controller.selectNode(collection.internalId);
-	const renameDraft = createQuickRenameDraft(collection);
-	const markup = renderWorkspace(controller, { renameDraft });
-	assert.equal((markup.match(/data-quick-rename=/g) ?? []).length, 1);
-	assert.ok(markup.includes('data-quick-rename="collection"'));
-	assert.equal(markup.includes('data-quick-rename="folder"'), false);
-	assert.ok(markup.includes('aria-label="Rename collection with hidden Nuvio title"'));
-	assert.ok(markup.includes('data-action-context="card"'));
-	assert.ok(markup.includes('data-action="apply-collection-rename"'));
-	assert.ok(markup.includes('data-action="cancel-collection-rename"'));
-	assert.ok(markup.includes('value=""'));
-	assert.ok(markup.includes("Enter a visible title to replace the hidden Nuvio title."));
-	assert.equal(markup.includes(repeated), false);
-	assert.equal(markup.includes("data-settings-modal="), false);
-	assert.equal(markup.includes("hidden-collection"), false);
-});
-
-test("modal and rename source retain exact trigger focus, safe backdrop, body lock, and no blur dependency", () => {
+test("modal restores exact Edit focus, initially focuses Title, and retains safe dismissal behavior", () => {
 	const workspaceSource = fs.readFileSync(
 		path.join(rootDir, "builder", "src", "ui", "BuilderWorkspace.jsx"),
 		"utf8",
@@ -1149,12 +1127,9 @@ test("modal and rename source retain exact trigger focus, safe backdrop, body lo
 		path.join(rootDir, "builder", "src", "ui", "NodeEditor.jsx"),
 		"utf8",
 	);
-	assert.match(workspaceSource, /settingsRestoreFocusRef\.current = trigger/);
-	assert.match(workspaceSource, /renameRestoreFocusRef\.current = trigger/);
-	assert.equal((workspaceSource.match(/target\.focus\?\.\(\)/g) ?? []).length, 2);
-	assert.match(workspaceSource, /event\.key === "Escape"[\s\S]*onCancel\(\)/);
-	assert.match(workspaceSource, /event\.key === "Enter" && event\.target === inputRef\.current[\s\S]*onSubmit\(event\)/);
-	assert.doesNotMatch(workspaceSource, /onBlur=/);
+	assert.match(workspaceSource, /editRestoreFocusRef\.current = trigger/);
+	assert.equal((workspaceSource.match(/target\.focus\?\.\(\)/g) ?? []).length, 1);
+	assert.match(editorSource, /titleInputRef\.current && !titleInputRef\.current\.disabled[\s\S]*titleInputRef\.current\.focus\(\)/);
 	assert.match(editorSource, /handleDialogKeyDown\(event, dialogRef\.current, onCancel\)/);
 	assert.match(editorSource, /document\.body\.classList\.add\("settings-modal-open"\)/);
 	assert.match(editorSource, /document\.body\.classList\.remove\("settings-modal-open"\)/);
@@ -1162,7 +1137,7 @@ test("modal and rename source retain exact trigger focus, safe backdrop, body lo
 	assert.doesNotMatch(editorSource, /event\.target === event\.currentTarget[\s\S]{0,180}onCancel/);
 });
 
-test("every collection and folder card owns compact actions without large selected-entity blocks", () => {
+test("every collection and folder card owns exactly one Edit action", () => {
 	const controller = importTree([
 		{
 			id: "first",
@@ -1191,15 +1166,14 @@ test("every collection and folder card owns compact actions without large select
 	assert.equal(markup.includes("data-node-editor="), false);
 	assert.equal(markup.includes("data-settings-modal="), false);
 	assert.equal((markup.match(/data-hierarchy-card="collection"/g) ?? []).length, 2);
-	assert.equal((markup.match(/data-action="rename-collection"/g) ?? []).length, 2);
-	assert.equal((markup.match(/data-action="settings-collection"/g) ?? []).length, 2);
+	assert.equal((markup.match(/data-action="edit-collection"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-hierarchy-card="folder"/g) ?? []).length, 1);
-	assert.equal((markup.match(/data-action="rename-folder"/g) ?? []).length, 1);
-	assert.equal((markup.match(/data-action="settings-folder"/g) ?? []).length, 1);
-	assert.ok(markup.includes('aria-label="Rename collection First collection"'));
-	assert.ok(markup.includes('aria-label="Open settings for collection First collection"'));
-	assert.ok(markup.includes('aria-label="Rename folder First folder"'));
-	assert.ok(markup.includes('aria-label="Open settings for folder First folder"'));
+	assert.equal((markup.match(/data-action="edit-folder"/g) ?? []).length, 1);
+	assert.equal(markup.includes('data-action="rename-'), false);
+	assert.equal(markup.includes('data-action="settings-'), false);
+	assert.equal(markup.includes("data-quick-rename="), false);
+	assert.ok(markup.includes('aria-label="Edit collection First collection"'));
+	assert.ok(markup.includes('aria-label="Edit folder First folder"'));
 	assert.equal(markup.includes("selected-entity-actions"), false);
 	assert.equal(markup.includes("Selected collection"), false);
 	assert.equal(markup.includes("Selected folder"), false);
@@ -1207,14 +1181,11 @@ test("every collection and folder card owns compact actions without large select
 
 	const foldersHeader = markedElement(markup, 'data-panel-header="folders"', "header");
 	assert.ok(foldersHeader.includes('data-action="create-folder"'));
-	assert.equal(foldersHeader.includes("settings-collection"), false);
-	assert.equal(foldersHeader.includes("rename-collection"), false);
+	assert.equal(foldersHeader.includes("edit-collection"), false);
 	const sourcesHeader = markedElement(markup, 'data-panel-header="sources"', "header");
-	assert.equal(sourcesHeader.includes("settings-folder"), false);
-	assert.equal(sourcesHeader.includes("rename-folder"), false);
+	assert.equal(sourcesHeader.includes("edit-folder"), false);
 	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
-	assert.equal(sourceList.includes('data-action="rename-'), false);
-	assert.equal(sourceList.includes('data-action="settings-'), false);
+	assert.equal(sourceList.includes('data-action="edit-'), false);
 });
 
 test("card selection and action buttons are valid sibling controls with unique IDs", () => {
@@ -1229,8 +1200,7 @@ test("card selection and action buttons are valid sibling controls with unique I
 		.map((match) => match[0]);
 	assert.equal(selectionButtons.length, 2);
 	for (const button of selectionButtons) {
-		assert.equal(button.includes('data-action="rename-'), false);
-		assert.equal(button.includes('data-action="settings-'), false);
+		assert.equal(button.includes('data-action="edit-'), false);
 		assert.equal((button.match(/<button/g) ?? []).length, 1);
 	}
 	assert.match(
@@ -1264,6 +1234,8 @@ test("collection settings render exactly one accessible modal with stable marker
 		'data-editor-control="showAllTab"',
 		'data-editor-field="pinToTop"',
 		'data-editor-control="pinToTop"',
+		'data-editor-field="focusGlowEnabled"',
+		'data-editor-control="focusGlowEnabled"',
 		'data-action="apply-node-edit"',
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
@@ -1272,6 +1244,10 @@ test("collection settings render exactly one accessible modal with stable marker
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Include an All tab"));
 	assert.ok(markup.includes("Pin to top"));
+	assert.ok(markup.includes("Enable focus glow"));
+	assert.ok(markup.includes("Shows Nuvio’s focus-glow effect for this collection."));
+	assert.ok(markup.includes("Uses an invisible character to hide the collection title in Nuvio."));
+	assert.equal(markup.includes("Uses an invisible title character because"), false);
 	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 	assert.equal(markup.includes('data-editor-field="id"'), false);
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
@@ -1350,6 +1326,7 @@ test("unusual imported values show calm replacement guidance without raw values"
 		viewMode: { secret: "RAW_LAYOUT" },
 		showAllTab: ["RAW_ALL"],
 		pinToTop: 7,
+		focusGlowEnabled: { secret: "RAW_GLOW" },
 		folders: [],
 	}]);
 	const collection = controller.getState().project.collections[0];
@@ -1359,6 +1336,7 @@ test("unusual imported values show calm replacement guidance without raw values"
 	assert.equal(markup.includes("RAW_OBJECT"), false);
 	assert.equal(markup.includes("RAW_LAYOUT"), false);
 	assert.equal(markup.includes("RAW_ALL"), false);
+	assert.equal(markup.includes("RAW_GLOW"), false);
 	assert.equal(markup.includes('value="false"'), false);
 	assert.ok(markup.includes("will be preserved until you choose Tabs or Rows"));
 	assert.ok(markup.includes("cannot be shown safely"));
@@ -1441,6 +1419,7 @@ test("boolean preservation and absence guidance clears after a pending replaceme
 		title: "Imported collection",
 		viewMode: "TABBED_GRID",
 		showAllTab: ["RAW_ALL_TAB"],
+		focusGlowEnabled: { secret: "RAW_FOCUS_GLOW" },
 		folders: [{
 			id: "folder",
 			title: "Imported folder",
@@ -1458,6 +1437,10 @@ test("boolean preservation and absence guidance clears after a pending replaceme
 		"The imported All tab preference cannot be shown safely and will be preserved unless you use this switch.",
 	));
 	assert.equal(collectionMarkup.includes("RAW_ALL_TAB"), false);
+	assert.ok(collectionMarkup.includes(
+		"The imported focus glow preference cannot be shown safely and will be preserved unless you use this switch.",
+	));
+	assert.equal(collectionMarkup.includes("RAW_FOCUS_GLOW"), false);
 	const replacedCollectionDraft = updateNodeEditorField(
 		collectionDraft,
 		"showAllTab",
@@ -1465,10 +1448,24 @@ test("boolean preservation and absence guidance clears after a pending replaceme
 	);
 	const replacedCollectionMarkup = renderWorkspace(controller, { draft: replacedCollectionDraft });
 	assert.equal(
-		replacedCollectionMarkup.includes("will be preserved unless you use this switch"),
+		replacedCollectionMarkup.includes(
+			"The imported All tab preference cannot be shown safely and will be preserved unless you use this switch.",
+		),
 		false,
 	);
 	assert.deepEqual(buildNodeEditorPatch(replacedCollectionDraft), { showAllTab: false });
+
+	const replacedFocusGlowDraft = updateNodeEditorField(
+		collectionDraft,
+		"focusGlowEnabled",
+		false,
+	);
+	const replacedFocusGlowMarkup = renderWorkspace(controller, { draft: replacedFocusGlowDraft });
+	assert.equal(
+		replacedFocusGlowMarkup.includes("The imported focus glow preference cannot be shown safely"),
+		false,
+	);
+	assert.deepEqual(buildNodeEditorPatch(replacedFocusGlowDraft), { focusGlowEnabled: false });
 
 	controller.selectNode(folder.internalId);
 	const folderDraft = createNodeEditorDraft(folder);
@@ -1527,10 +1524,8 @@ test("settings modal makes the workspace inert and disables every background act
 		'data-node-type="source"',
 		'data-action="create-collection"',
 		'data-action="create-folder"',
-		'data-action="rename-collection"',
-		'data-action="settings-collection"',
-		'data-action="rename-folder"',
-		'data-action="settings-folder"',
+		'data-action="edit-collection"',
+		'data-action="edit-folder"',
 	]) assert.ok(openingTag(markup, marker).includes("disabled"), marker);
 	assert.equal((markup.match(/<button class="back-control mobile-only"[^>]*disabled/g) ?? []).length, 2);
 	assert.ok(openingTag(markup, ">Show folder details<").includes("disabled"), "Show folder details");
@@ -1550,18 +1545,11 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
 	assert.match(styles, /\.hierarchy-card-row\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
 	assert.match(styles, /\.hierarchy-card[\s\S]*min-width:\s*0/);
-	assert.match(styles, /\.card-action\s*\{[\s\S]*width:\s*46px/);
-	assert.match(styles, /\.card-action\s*\{[\s\S]*min-width:\s*46px/);
+	assert.match(styles, /\.card-action\s*\{[\s\S]*min-width:\s*58px/);
 	assert.match(styles, /\.card-action\s*\{[\s\S]*min-height:\s*46px/);
-	assert.match(
-		styles,
-		/@media \(hover: hover\) and \(min-width: 900px\)[\s\S]*\.hierarchy-card-actions\s*\{[\s\S]*opacity:\s*0/,
-	);
-	assert.match(
-		styles,
-		/\.hierarchy-card\.is-selected \.hierarchy-card-actions,[\s\S]*\.hierarchy-card:hover \.hierarchy-card-actions,[\s\S]*\.hierarchy-card:focus-within \.hierarchy-card-actions[\s\S]*opacity:\s*1/,
-	);
+	assert.doesNotMatch(styles, /\.hierarchy-card-actions\s*\{[\s\S]{0,180}opacity:\s*0/);
 	assert.doesNotMatch(styles, /@media \(max-width: 430px\)[\s\S]*\.hierarchy-card-actions\s*\{[\s\S]*display:\s*none/);
+	assert.doesNotMatch(styles, /quick-rename/);
 	assert.match(styles, /body\s*\{[\s\S]*overflow-x:\s*hidden/);
 	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*position:\s*fixed/);
 	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*background:\s*rgb\(0 8 13 \/ 88%\)/);

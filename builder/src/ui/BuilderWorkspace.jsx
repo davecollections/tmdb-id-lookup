@@ -1,17 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
-import {
-	createTargetedNodeEditorDraft,
-	createTargetedQuickRenameDraft,
-} from "./hierarchy-actions.js";
+import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
 import { NodeEditor } from "./NodeEditor.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
-import {
-	applyQuickRenameDraft,
-	updateQuickRenameTitle,
-} from "./quick-rename.js";
 import { buildBuilderViewModel } from "./view-model.js";
 import {
 	completeWorkspaceReturn,
@@ -48,112 +41,17 @@ function EmptyState({ title, children, action = null }) {
 	);
 }
 
-function QuickRenameForm({
-	draft,
-	diagnostics,
-	node,
-	inputRef,
-	onChange,
-	onSubmit,
-	onCancel,
-}) {
-	const noun = draft.nodeType === "folder" ? "folder" : "collection";
-	const prefix = `card-${noun}-quick-rename`;
-	const titleError = diagnostics.find((entry) => entry.path === "$ui.rename.title") ?? null;
-	const formLabel = node.titleHidden
-		? `Rename ${noun} with hidden Nuvio title`
-		: `Rename ${noun} ${node.title}`;
-
-	useEffect(() => {
-		inputRef.current?.focus();
-	}, [draft.internalId, inputRef]);
-
-	return (
-		<form
-			className="quick-rename-form"
-			data-quick-rename={noun}
-			data-action-context="card"
-			aria-label={formLabel}
-			onSubmit={onSubmit}
-			onKeyDown={(event) => {
-				if (event.key === "Escape") {
-					event.preventDefault();
-					onCancel();
-				} else if (event.key === "Enter" && event.target === inputRef.current) {
-					event.preventDefault();
-					onSubmit(event);
-				}
-			}}
-			noValidate
-		>
-			<label htmlFor={`${prefix}-input`}>{noun === "folder" ? "Folder title" : "Collection title"}</label>
-			<div className="quick-rename-row">
-				<input
-					ref={inputRef}
-					id={`${prefix}-input`}
-					type="text"
-					value={draft.value}
-					aria-invalid={titleError ? "true" : undefined}
-					aria-describedby={`${prefix}-help${titleError ? ` ${prefix}-error` : ""}`}
-					onChange={(event) => onChange(event.target.value)}
-				/>
-				<button className="quick-rename-apply" type="submit" data-action={`apply-${noun}-rename`}>Apply</button>
-				<button className="quick-rename-cancel" type="button" data-action={`cancel-${noun}-rename`} onClick={onCancel}>Cancel</button>
-			</div>
-			<p className="quick-rename-help" id={`${prefix}-help`}>
-				{draft.original.hidden
-					? "Enter a visible title to replace the hidden Nuvio title."
-					: !draft.original.supported
-						? "The imported title is not text. Enter a visible replacement."
-						: "Press Enter or Apply to save. Escape or Cancel keeps the current title."}
-			</p>
-			{titleError ? <p className="quick-rename-error" id={`${prefix}-error`} role="alert">{titleError.message}</p> : null}
-		</form>
-	);
-}
-
-function RenameIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Z" />
-			<path d="m13.5 7 3.5 3.5" />
-		</svg>
-	);
-}
-
-function SettingsIcon() {
-	return (
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" />
-		</svg>
-	);
-}
-
 function HierarchyCard({
 	node,
 	noun,
 	children,
-	renameDraft,
-	renameDiagnostics,
-	renameInputRef,
 	navigationLocked,
 	onSelect,
-	onOpenRename,
-	onRenameChange,
-	onRenameSubmit,
-	onCancelRename,
-	onOpenSettings,
+	onOpenEditor,
 }) {
-	const renameActive = (
-		renameDraft?.internalId === node.internalId
-		&& renameDraft?.nodeType === noun
-	);
-	const renameLabel = node.titleHidden
-		? `Rename ${noun} with hidden Nuvio title`
-		: `Rename ${noun} ${node.title}`;
-	const settingsLabel = node.titleHidden
-		? `Open settings for ${noun} with hidden Nuvio title`
-		: `Open settings for ${noun} ${node.title}`;
+	const editLabel = node.titleHidden
+		? `Edit ${noun} with hidden Nuvio title`
+		: `Edit ${noun} ${node.title}`;
 
 	return (
 		<div
@@ -173,39 +71,16 @@ function HierarchyCard({
 					<button
 						className="card-action"
 						type="button"
-						data-action={`rename-${noun}`}
-						aria-label={renameLabel}
-						title="Rename"
+						data-action={`edit-${noun}`}
+						aria-label={editLabel}
 						disabled={navigationLocked}
-						onClick={(event) => onOpenRename(node.internalId, event.currentTarget)}
-					>
-						<RenameIcon />
-					</button>
-					<button
-						className="card-action"
-						type="button"
-						data-action={`settings-${noun}`}
-						aria-label={settingsLabel}
 						aria-haspopup="dialog"
-						title="Settings"
-						disabled={navigationLocked}
-						onClick={(event) => onOpenSettings(node.internalId, event.currentTarget)}
+						onClick={(event) => onOpenEditor(node.internalId, event.currentTarget)}
 					>
-						<SettingsIcon />
+						Edit
 					</button>
 				</div>
 			</div>
-			{renameActive ? (
-				<QuickRenameForm
-					draft={renameDraft}
-					diagnostics={renameDiagnostics}
-					node={node}
-					inputRef={renameInputRef}
-					onChange={onRenameChange}
-					onSubmit={onRenameSubmit}
-					onCancel={onCancelRename}
-				/>
-			) : null}
 		</div>
 	);
 }
@@ -422,21 +297,15 @@ export function BuilderWorkspace({
 	onReturnHome = () => {},
 	initialEditorDraft = null,
 	initialEditorDiagnostics = [],
-	initialRenameDraft = null,
-	initialRenameDiagnostics = [],
 	initialReturnConfirmationOpen = false,
 }) {
 	const view = buildBuilderViewModel(state);
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
-	const [renameDraft, setRenameDraft] = useState(initialRenameDraft);
-	const [renameDiagnostics, setRenameDiagnostics] = useState(initialRenameDiagnostics);
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
 	const [mobileLevelOverride, setMobileLevelOverride] = useState(null);
 	const titleInputRef = useRef(null);
-	const renameInputRef = useRef(null);
-	const settingsRestoreFocusRef = useRef(null);
-	const renameRestoreFocusRef = useRef(null);
+	const editRestoreFocusRef = useRef(null);
 	const returnHomeButtonRef = useRef(null);
 	const stayButtonRef = useRef(null);
 	const returnGateRef = useRef(null);
@@ -447,42 +316,24 @@ export function BuilderWorkspace({
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
-	const renameTarget = renameDraft ? findEditableNode(state.project, renameDraft.internalId) : null;
-	const visibleRenameDraft = renameTarget?.nodeType === renameDraft?.nodeType ? renameDraft : null;
 	const editorLocked = visibleEditorDraft !== null;
-	const renameLocked = visibleRenameDraft !== null;
-	const navigationLocked = editorLocked || renameLocked || returnConfirmationOpen;
+	const navigationLocked = editorLocked || returnConfirmationOpen;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
 
 	useEffect(() => {
 		if (editorDraft && !visibleEditorDraft) {
 			setEditorDraft(null);
 			setEditorDiagnostics([]);
-			settingsRestoreFocusRef.current = null;
+			editRestoreFocusRef.current = null;
 		}
 	}, [editorDraft, visibleEditorDraft]);
 
 	useEffect(() => {
-		if (editorDraft !== null || settingsRestoreFocusRef.current === null) return;
-		const target = settingsRestoreFocusRef.current;
-		settingsRestoreFocusRef.current = null;
+		if (editorDraft !== null || editRestoreFocusRef.current === null) return;
+		const target = editRestoreFocusRef.current;
+		editRestoreFocusRef.current = null;
 		target.focus?.();
 	}, [editorDraft]);
-
-	useEffect(() => {
-		if (renameDraft && !visibleRenameDraft) {
-			setRenameDraft(null);
-			setRenameDiagnostics([]);
-			renameRestoreFocusRef.current = null;
-		}
-	}, [renameDraft, visibleRenameDraft]);
-
-	useEffect(() => {
-		if (renameDraft !== null || renameRestoreFocusRef.current === null) return;
-		const target = renameRestoreFocusRef.current;
-		renameRestoreFocusRef.current = null;
-		target.focus?.();
-	}, [renameDraft]);
 
 	useEffect(() => {
 		if (returnConfirmationOpen) stayButtonRef.current?.focus();
@@ -513,7 +364,7 @@ export function BuilderWorkspace({
 		const draft = createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
 		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
-		settingsRestoreFocusRef.current = trigger;
+		editRestoreFocusRef.current = trigger;
 		setEditorDiagnostics([]);
 		setEditorDraft(draft);
 	}
@@ -522,24 +373,6 @@ export function BuilderWorkspace({
 		if (!visibleEditorDraft) return;
 		setEditorDiagnostics([]);
 		setEditorDraft(null);
-	}
-
-	function openRename(internalId, trigger) {
-		if (navigationLocked) return;
-		const node = findEditableNode(state.project, internalId);
-		if (!node) return;
-		const draft = createTargetedQuickRenameDraft(controller, node);
-		if (!draft) return;
-		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
-		renameRestoreFocusRef.current = trigger;
-		setRenameDiagnostics([]);
-		setRenameDraft(draft);
-	}
-
-	function closeRename() {
-		if (!visibleRenameDraft) return;
-		setRenameDiagnostics([]);
-		setRenameDraft(null);
 	}
 
 	function handleEditorSubmit(event) {
@@ -555,19 +388,6 @@ export function BuilderWorkspace({
 		if (result.ok) closeEditor();
 	}
 
-	function handleRenameSubmit(event) {
-		event.preventDefault();
-		if (!visibleRenameDraft) return;
-
-		const result = applyQuickRenameDraft(controller, visibleRenameDraft);
-		if (result.diagnostics.length > 0) {
-			setRenameDiagnostics(result.diagnostics);
-			queueMicrotask(() => renameInputRef.current?.focus());
-			return;
-		}
-		if (result.ok) closeRename();
-	}
-
 	function resetAndReturnHome() {
 		const result = completeWorkspaceReturn({
 			controller,
@@ -575,8 +395,6 @@ export function BuilderWorkspace({
 			onSuccess: () => {
 				setEditorDraft(null);
 				setEditorDiagnostics([]);
-				setRenameDraft(null);
-				setRenameDiagnostics([]);
 				setReturnDiagnostic(null);
 				setMobileLevelOverride(null);
 				setReturnConfirmationOpen(false);
@@ -619,19 +437,9 @@ export function BuilderWorkspace({
 	}
 
 	const hierarchyActionProps = {
-		renameDraft: visibleRenameDraft,
-		renameDiagnostics,
-		renameInputRef,
 		navigationLocked,
 		onSelect: selectNode,
-		onOpenRename: openRename,
-		onRenameChange: (value) => {
-			setRenameDraft((current) => updateQuickRenameTitle(current, value));
-			setRenameDiagnostics([]);
-		},
-		onRenameSubmit: handleRenameSubmit,
-		onCancelRename: closeRename,
-		onOpenSettings: openEditor,
+		onOpenEditor: openEditor,
 	};
 
 	return (
@@ -639,7 +447,6 @@ export function BuilderWorkspace({
 			className="builder-shell"
 			data-builder-shell="true"
 			data-editor-lock={editorLocked ? "true" : undefined}
-			data-rename-lock={renameLocked ? "true" : undefined}
 			data-settings-open={editorLocked ? "true" : undefined}
 		>
 			<div

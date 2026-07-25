@@ -6,9 +6,9 @@ Last reviewed: 2026-07-25
 
 ## Scope and sequencing
 
-One responsive settings modal now manages collection/folder titles and the contained presentation fields approved in issue #53. Every collection and folder card owns compact Rename and Settings actions; the former large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
+One responsive settings modal now manages collection/folder titles and the contained presentation fields approved in issue #53. Every collection and folder card owns one compact, always-visible Edit action; the former Rename/Settings pair, quick-rename form, and large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
 
-Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab, and Pin to top. Folder settings are title, Poster/Landscape tile shape, and positively worded Show folder title. The Builder does not expose invisible-folder-name creation; imported invisible folder names are recognised and preserved until the user enters a visible replacement. Native `hideTitle` remains the separate control for the title beneath a folder card. Project titles, artwork, sources, export, deletion, reordering, persistence, and migration actions remain outside this workflow.
+Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab, Pin to top, and Enable focus glow. Folder settings are title, Poster/Landscape tile shape, and positively worded Show folder title. The Builder does not expose invisible-folder-name creation; imported invisible folder names are recognised and preserved until the user enters a visible replacement. Native `hideTitle` remains the separate control for the title beneath a folder card. Project titles, artwork, sources, export, deletion, reordering, bulk settings, persistence, and migration actions remain outside this workflow.
 
 ## Internal identity and Nuvio-facing identity
 
@@ -27,7 +27,7 @@ Every builder node retains its stable builder-only `internalId`. The editor neve
 
 Supported imported strings retain their original casing in the draft. Unsupported values are represented only by bounded status flags; objects, arrays, numbers, booleans in string-choice fields, and unsupported raw strings are not copied into UI state. The draft does not copy the complete node, project, child arrays, source data, raw imported snapshots, controller snapshots, callbacks, promises, DOM nodes, or exceptions. The subscribed controller state remains the sole source of committed project data.
 
-`NodeEditor.jsx` renders one responsive modal form. `BuilderWorkspace.jsx` owns the current settings draft, quick-rename draft, and local validation diagnostics. `hierarchy-actions.js` targets and selects the exact card node before creating either draft. `quick-rename.js` keeps rename rules small and testable. `node-editor-actions.js` and `quick-rename.js` delegate a non-empty patch through the existing public `controller.updateNode(internalId, patch)` method. Selection snapshots notify subscribers without advancing the project revision or dirty state; the domain, importer, migration, serializer, and known-field contracts remain unchanged.
+`NodeEditor.jsx` renders one responsive modal form. `BuilderWorkspace.jsx` owns the current settings draft and local validation diagnostics. `hierarchy-actions.js` targets and selects the exact card node before creating the draft. `node-editor-actions.js` delegates a non-empty patch through the existing public `controller.updateNode(internalId, patch)` method. Selection snapshots notify subscribers without advancing the project revision or dirty state. The importer and serializer share the expanded collection field inventory from `known-fields.js`; folder/source inventories and other domain contracts remain unchanged.
 
 ## Imported unusual values and touched preservation
 
@@ -52,7 +52,7 @@ Validation never rewrites submitted values. Empty, ordinary whitespace-only, and
 
 Messages use collection or folder wording. One local `role="alert"` region presents errors, each invalid field references its own error and helper text, and the first invalid field receives focus.
 
-Patch generation returns only deliberately changed supported values. Collection patches may contain `title`, `viewMode`, `showAllTab`, and `pinToTop`; folder patches may contain `title`, `tileShape`, and inverse-mapped `hideTitle`. It never includes a Nuvio ID, internal identity, node type, raw data, children, sources, artwork, or unknown fields. An empty patch is a clean no-op.
+Patch generation returns only deliberately changed supported values. Collection patches may contain `title`, `viewMode`, `showAllTab`, `pinToTop`, and `focusGlowEnabled`; folder patches may contain `title`, `tileShape`, and inverse-mapped `hideTitle`. It never includes a Nuvio ID, internal identity, node type, raw data, children, sources, artwork, or unknown fields. An empty patch is a clean no-op.
 
 Canonical new or replacement values are:
 
@@ -61,6 +61,7 @@ viewMode: TABBED_GRID | ROWS
 tileShape: POSTER | LANDSCAPE
 pinToTop: boolean
 showAllTab: boolean
+focusGlowEnabled: boolean
 hideTitle: boolean
 ```
 
@@ -68,7 +69,7 @@ No property-deletion or property-removal semantics were introduced.
 
 ## Intentional invisible Nuvio titles
 
-The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK:
+The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK. The collection switch explains this neutrally: “Uses an invisible character to hide the collection title in Nuvio.”
 
 ```js
 const NUVIO_INVISIBLE_TITLE = "\u200E";
@@ -84,7 +85,9 @@ The Builder displays `Hidden title` plus a restrained `Invisible in Nuvio` badge
 
 ## Collection presentation behavior
 
-The layout choices are Tabs (`TABBED_GRID`) and Rows (`ROWS`). Tabs enables the Include an All tab switch. Rows disables that switch without changing its draft value, so returning to Tabs restores the previous preference. Pin to top is an independent boolean switch.
+The layout choices are Tabs (`TABBED_GRID`) and Rows (`ROWS`). Tabs enables the Include an All tab switch. Rows disables that switch without changing its draft value, so returning to Tabs restores the previous preference. Pin to top and Enable focus glow are independent boolean switches.
+
+`focusGlowEnabled` is a recognised collection-level Nuvio boolean. Supported imported `true` and `false` values display accurately. An absent value stays absent, and an unusual non-boolean value stays preserved, until the user deliberately uses the switch. The modal never stringifies unusual imported values. A deliberate replacement emits only canonical `true` or `false`; summaries show Focus glow enabled only for supported booleans.
 
 Imported `FOLLOW_LAYOUT` is preservation-only. It is not offered as a normal choice, remains untouched when the editor opens or another field changes, and is replaced only when the user deliberately chooses Tabs or Rows.
 
@@ -94,7 +97,7 @@ The tile choices are Poster (`POSTER`) and Landscape (`LANDSCAPE`), displayed wi
 
 Show folder title is positive UI wording mapped to Nuvio's inverse `hideTitle` field. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
 
-Folder settings do not offer invisible-name creation. Repeated U+200E folder names remain a preservation-only import case and can be replaced through the ordinary title field or quick Rename.
+Folder settings do not offer invisible-name creation. Repeated U+200E folder names remain a preservation-only import case and can be replaced through the ordinary Title field in the Edit modal.
 
 ## Manual creation defaults
 
@@ -103,6 +106,7 @@ The UI draft-creation helpers explicitly create blank collections with:
 ```json
 {
   "pinToTop": false,
+  "focusGlowEnabled": true,
   "viewMode": "TABBED_GRID",
   "showAllTab": true
 }
@@ -126,20 +130,20 @@ The positive Show folder title switch is therefore off for a new manually create
 3. Build the minimal patch.
 4. Close without a controller call when the patch is empty.
 5. Otherwise call `controller.updateNode` once.
-6. On success, close the modal, retain selection, and restore focus to the exact Settings trigger that opened it.
+6. On success, close the modal, retain selection, and restore focus to the exact Edit trigger that opened it.
 7. On controller failure, retain form values and allow existing structured operation diagnostics to render.
 
 The controller owns mutation, dirty state, the single revision increment, selection retention, frozen snapshots, operation diagnostics, and migration-preview recomputation.
 
 ## Cancel lifecycle
 
-Cancel and Escape discard only the UI draft and local field diagnostics. They make no controller call and do not change revision, dirty state, selection, hierarchy, import warnings, migration notices, or unrelated controller diagnostics. Focus returns to the exact Settings trigger.
+Cancel and Escape discard only the UI draft and local field diagnostics. They make no controller call and do not change revision, dirty state, selection, hierarchy, import warnings, migration notices, or unrelated controller diagnostics. Focus returns to the exact Edit trigger.
 
 Refreshing or leaving the page discards this uncommitted UI-only draft, just as refresh currently resets the non-persisted builder session. The workflow does not intercept browser navigation or add `beforeunload` handling.
 
 ## Navigation lock and defensive targeting
 
-While the modal is open, the visible workspace underlay is `inert`, hidden from the accessibility tree, and protected by handler guards and native disabled states. Its hierarchy, creation actions, Rename/Settings actions, mobile navigation, folder-summary navigation, and root link cannot receive pointer or keyboard interaction. Apply and Cancel stay enabled. The old hierarchy-paused message is removed.
+While the modal is open, the visible workspace underlay is `inert`, hidden from the accessibility tree, and protected by handler guards and native disabled states. Its hierarchy, creation actions, Edit actions, mobile navigation, folder-summary navigation, and root link cannot receive pointer or keyboard interaction. Apply and Cancel stay enabled. The old hierarchy-paused message is removed.
 
 Handlers also check the lock so queued or synthetic hierarchy actions cannot change selection. If a later controller snapshot no longer contains the target internal ID and node type, the editor closes without guessing another node or applying to an ID/title match.
 
@@ -147,17 +151,17 @@ Handlers also check the lock so queued or synthetic hierarchy actions cannot cha
 
 Controller and serializer tests prove that title and presentation editing preserve Nuvio and internal identity, node type, raw snapshots, community/unknown collection and folder fields, child arrays, source arrays and order, explicit source categories, source raw snapshots, imported `catalogSources` evidence, compatibility projection behavior, folder artwork fields, and migration eligibility. Serialization overlays only edited values, remains stable across a second import/serialize cycle, and emits no builder wrappers.
 
-## Quick inline rename
+## Per-card Edit action
 
-Every collection and folder card owns sibling Rename and Settings buttons beside its selectable button inside a non-interactive wrapper. Clicking either action on an unselected card selects and targets that exact node immediately; selection alone neither marks the project dirty nor advances revision, and Apply or Cancel retains the target selection. Panel headers retain only their panel title, count, and relevant creation action, and source cards gain no edit actions.
+Every collection and folder card owns one visible text Edit button beside its selectable button inside a non-interactive wrapper. Clicking Edit on an unselected card selects and targets that exact node immediately, then opens the settings modal. Selection alone neither marks the project dirty nor advances revision, and Apply or Cancel retains the target selection. Panel headers retain only their panel title, count, and relevant creation action, and source cards gain no Edit action.
 
-Rename opens one targeted inline title form within the exact card wrapper without opening settings. Only one form exists. Existing visible text appears unchanged; imported invisible titles and unusual non-string titles use an empty input plus bounded replacement guidance. Enter or Apply commits one title-only controller patch. Escape or Cancel discards it. Blur never saves. Blank, whitespace-only, invisible-only, and other format-only replacements are invalid. Successful rename creates one controller revision, retains selection, and restores focus to the exact card Rename trigger; cancel, unchanged Apply, and touched-then-reverted input create no revision.
+The ordinary rename path is the modal Title field. Initial focus enters that Title field when enabled. Imported invisible collection titles retain their deliberate switch behavior, and imported invisible folder titles remain replaceable through the enabled ordinary Title field. Closing the modal restores focus to the exact Edit button that opened it.
 
 ## Accessibility and responsive behavior
 
 The modal keeps the single page-level `h1` and adds a logical `h2`, `role="dialog"`, `aria-modal="true"`, and a collection/folder-specific accessible name. Title labels use `htmlFor`; presentation choices use semantic fieldsets, legends, native radio buttons, and native checkboxes with `role="switch"`. Focus enters the dialog, Tab/Shift+Tab remain contained, Escape safely cancels, and backdrop clicks never discard the draft. Referenced descriptions are unique, Cancel is `type="button"`, Enter may submit the form, disabled state is visible without relying only on colour, focus outlines remain strong, and controls meet the mobile tap-target boundary.
 
-The form is one DOM instance at all widths. It is full or near-full-screen at narrow widths and centred with a sensible maximum width, bounded height, and internal scrolling on desktop. Heading and actions remain reachable, body scrolling is locked while open, the backdrop has a dark non-blur fallback, and supported browsers add restrained blur. Card actions are always visible on touch layouts with 46px targets; the selectable card column can shrink without horizontal overflow or obscuring its title/metadata. On hover-capable desktop layouts the selected card, hover, and keyboard focus-within reveal the actions, while the buttons remain in the keyboard order. The narrow-layout CSS boundary covers the required 360, 384, 393, 402, and 412px widths. The targeted hierarchy level remains visible through Apply or Cancel, while the desktop workspace remains three panels. Reduced-motion behavior remains unchanged.
+The form is one DOM instance at all widths. It is full or near-full-screen at narrow widths and centred with a sensible maximum width, bounded height, and internal scrolling on desktop. Heading and actions remain reachable, body scrolling is locked while open, the backdrop has a dark non-blur fallback, and supported browsers add restrained blur. Edit actions are always visible on touch, keyboard, and desktop layouts with 46px targets; the selectable card column can shrink without horizontal overflow or obscuring its title/metadata. The narrow-layout CSS boundary covers the required 360, 384, 393, 402, and 412px widths. The targeted hierarchy level remains visible through Apply or Cancel, while the desktop workspace remains three panels. Reduced-motion behavior remains unchanged.
 
 ## Stable DOM markers
 
@@ -166,13 +170,12 @@ The form is one DOM instance at all widths. It is full or near-full-screen at na
 - `data-settings-modal-backdrop="true"`
 - `data-workspace-underlay="true"`
 - `data-editor-field="title"`
-- `data-editor-field="hideNuvioTitle|viewMode|showAllTab|pinToTop|tileShape|showFolderTitle"` (`hideNuvioTitle` is collection-only)
+- `data-editor-field="hideNuvioTitle|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape|showFolderTitle"` (`hideNuvioTitle` and `focusGlowEnabled` are collection-only)
 - `data-editor-choice="tabs|rows|poster|landscape"`
-- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|showFolderTitle"`
+- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|focusGlowEnabled|showFolderTitle"`
 - `data-hierarchy-card="collection|folder"`
 - `data-card-actions="collection|folder"`
-- `data-action="rename-collection|rename-folder|settings-collection|settings-folder"`
-- `data-quick-rename="collection|folder"`
+- `data-action="edit-collection|edit-folder"`
 - `data-action="apply-node-edit|cancel-node-edit"`
 - `data-editor-lock="true"` while editing
 
@@ -180,6 +183,6 @@ Labels, semantics, and native disabled state remain the primary test surface.
 
 ## Deliberate exclusions and later work
 
-This issue does not add project-title editing; emoji, artwork, focus glow, focus GIF, video, title-logo, backdrop, hero, or cover controls; source creation/editing/deletion; hierarchy deletion or reordering; drag-and-drop; export/download/copy JSON; persistence/autosave/undo; migration controls; TMDB or addon networking; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Collection/folder/source reordering is a desired separate focused milestone and should be completed before Search/Add. Future focus-GIF support defaults off unless deliberately enabled.
+This issue does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source creation/editing/deletion; hierarchy deletion or reordering; bulk settings; drag-and-drop; export/download/copy JSON; persistence/autosave/undo; migration controls; TMDB or addon networking; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Collection/folder/source reordering is a desired separate focused milestone and should be completed before Search/Add. Bulk presentation settings are also desired but remain a separate focused issue. Future focus-GIF support defaults off unless deliberately enabled.
 
 The next gate is Dave's focused UI/flow review and independent review of this follow-up commit. No pull request, reordering implementation, or source-creation work begins within issue #53.

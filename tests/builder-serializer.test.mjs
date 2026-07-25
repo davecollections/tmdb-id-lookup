@@ -173,12 +173,19 @@ test("emits compact required structure for new collection and folder nodes", () 
 
 test("exports present recognised optionals but ignores unknown editable fields", () => {
 	const project = newProject({
-		collectionEditable: { id: "c", title: "C", pinToTop: false, future: "ignored" },
+		collectionEditable: {
+			id: "c",
+			title: "C",
+			pinToTop: false,
+			focusGlowEnabled: true,
+			future: "ignored",
+		},
 		folderEditable: { id: "f", title: "F", hideTitle: true, future: "ignored" },
 		sourceSpecs: [nativeSpec({ title: "Known", unknownEditable: "ignored" })],
 	});
 	const result = serializeNuvioProject(project);
 	assert.equal(result.value[0].pinToTop, false);
+	assert.equal(result.value[0].focusGlowEnabled, true);
 	assert.equal(result.value[0].future, undefined);
 	assert.equal(onlyFolder(result).hideTitle, true);
 	assert.equal(onlyFolder(result).future, undefined);
@@ -275,7 +282,7 @@ test("preserves unknown collection, folder, and source fields through known edit
 
 test("treats explicit false, zero, null, empty string, and empty object as overlay values", () => {
 	const project = importValue([{
-		id: "c", title: "C", pinToTop: true, viewMode: "ROWS", showAllTab: true, folders: [{
+		id: "c", title: "C", pinToTop: true, focusGlowEnabled: true, viewMode: "ROWS", showAllTab: true, folders: [{
 			id: "f", title: "F", hideTitle: true, sources: [{
 				provider: "tmdb", tmdbSourceType: "DISCOVER", mediaType: "MOVIE", title: "Old", tmdbId: 7,
 				filters: { withGenres: "28" },
@@ -286,6 +293,7 @@ test("treats explicit false, zero, null, empty string, and empty object as overl
 	const folder = collection.folders[0];
 	const source = folder.sources[0];
 	collection.editable.pinToTop = false;
+	collection.editable.focusGlowEnabled = false;
 	collection.editable.showAllTab = 0;
 	collection.editable.viewMode = "";
 	folder.editable.hideTitle = false;
@@ -294,6 +302,7 @@ test("treats explicit false, zero, null, empty string, and empty object as overl
 	source.editable.filters = {};
 	const value = serializeNuvioProject(project).value;
 	assert.equal(value[0].pinToTop, false);
+	assert.equal(value[0].focusGlowEnabled, false);
 	assert.equal(value[0].showAllTab, 0);
 	assert.equal(value[0].viewMode, "");
 	assert.equal(value[0].folders[0].hideTitle, false);
@@ -304,11 +313,15 @@ test("treats explicit false, zero, null, empty string, and empty object as overl
 
 test("preserves imported known values when their editable keys are absent", () => {
 	const project = importFixture("valid/nuvio-catalog-addon.json");
+	project.collections[0].rawImported.focusGlowEnabled = { preserved: true };
+	project.collections[0].editable.focusGlowEnabled = { preserved: true };
 	delete project.collections[0].editable.title;
+	delete project.collections[0].editable.focusGlowEnabled;
 	delete project.collections[0].folders[0].editable.tileShape;
 	delete project.collections[0].folders[0].sources[0].editable.genre;
 	const value = serializeNuvioProject(project).value;
 	assert.equal(value[0].title, "Addon Horror");
+	assert.deepEqual(value[0].focusGlowEnabled, { preserved: true });
 	assert.equal(value[0].folders[0].tileShape, "POSTER");
 	assert.equal(value[0].folders[0].sources[0].genre, "Horror");
 });
