@@ -84,7 +84,7 @@ Selected buttons use `aria-pressed`, visible accent treatment, and hidden select
 
 `createDraftCollection(controller)` chooses the next unique `Untitled Collection` title, supplies the explicit manual defaults Tabs, All enabled, Pin off, and focus glow on, then delegates automatic Nuvio ID creation to the controller.
 
-`createDraftFolder(controller, collectionInternalId)` chooses the next unique `Untitled Folder` title, supplies Poster and `hideTitle: true` as the explicit manual defaults, then delegates automatic Nuvio ID creation to the controller. The positive Show folder title on home screen switch is therefore off for a newly created blank folder; the actual folder title remains visible unless the separate everywhere-hidden intent is enabled.
+`createDraftFolder(controller, collectionInternalId)` chooses the next unique `Untitled Folder` title, supplies Poster and `hideTitle: true` as the explicit manual defaults, then delegates automatic Nuvio ID creation to the controller. Hide on home screen only is therefore selected for a newly created blank folder; the actual folder title remains visible when the folder is opened.
 
 Both helpers use only `getState()` and public controller actions. They never derive an internal ID or alter imported IDs. Their UI-only `selectCreated` option defaults to the established desktop behavior and selects only after creation succeeds; mobile callers disable that convenience without changing the controller creation contract. They return the controller's structured result with the successful `createdInternalId`. Collection creation does not create a folder, and folder creation does not create a source.
 
@@ -102,11 +102,11 @@ The UI never renders full raw JSON, arbitrary unknown/community fields, serializ
 
 Every collection and folder card has one compact, always-visible Edit text button beside its selectable card body. The two buttons are siblings inside a non-interactive wrapper. Edit directly selects and targets its exact collection or folder, including when another node was selected, without advancing project revision or dirty state. Folders and Sources headers contain no actions for their parent entity; panel headers own only title, count, and their relevant creation action. Source cards have no Edit action.
 
-Edit opens one modal dialog shared by collections and folders. The ordinary rename path is its initially focused Title field when Title is enabled. It edits title plus the approved presentation fields, including explicit U+200E collection/folder title hiding and collection-level `focusGlowEnabled`. The folder setting Hide folder title everywhere in Nuvio is separate from Show folder title on home screen, the positive inverse mapping for native `hideTitle`; everywhere-hidden intent temporarily overrides the latter while preserving its prior modal preference. The modal keeps Nuvio IDs and builder `internalId` hidden and stable, validates title intent, and creates a minimal changed-field patch for `controller.updateNode`.
+Edit opens one modal dialog shared by collections and folders. The ordinary rename path is its initially focused Title field when Title is enabled. It edits title plus the approved presentation fields, including explicit U+200E collection/folder title hiding and collection-level `focusGlowEnabled`. Immediately below a folder's Title field, one Folder title visibility radio-card group offers Show everywhere (visible title plus `hideTitle: false`), Hide on home screen only (visible title plus `hideTitle: true`), and Hide everywhere (exactly one U+200E plus `hideTitle: true`), followed by Tile shape. The modal keeps Nuvio IDs and builder `internalId` hidden and stable, validates title intent, and creates a minimal changed-field patch for `controller.updateNode`.
 
 Collection layout wording is source-level: each folder remains separate, while Tabs presents each source as a tab and Rows presents each source as a streaming-style row after that folder is opened. With Tabs and Include an All tab enabled, folders containing two or more sources gain an All tab combining their sources; one-source folders do not show it. Rows shows no All tab but retains the preference for a later return to Tabs.
 
-Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions. Focus enters the Title field, remains contained in the dialog, and returns to the exact Edit trigger; Escape safely cancels, backdrop clicks do not discard, and body scrolling is locked. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, focus-glow, and unusual presentation values remain untouched until deliberate canonical replacement.
+Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions. Focus enters the Title field, remains contained in the dialog, and returns to the exact Edit trigger; Escape safely cancels, backdrop clicks do not discard, and body scrolling is locked. Hide everywhere blanks and disables Title while retaining valid visible text only in modal state; returning to the original visible choice is a no-op. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, focus-glow, and unusual presentation values remain untouched until deliberate canonical replacement.
 
 ## Diagnostics and migration status
 
@@ -157,9 +157,9 @@ Deployment and focused source tests use a small stable surface:
 - `data-settings-modal="true"`
 - `data-settings-modal-backdrop="true"`
 - `data-workspace-underlay="true"`
-- `data-editor-field="title|hideNuvioTitle|hideFolderTitleEverywhere|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape|showFolderTitle"`
-- `data-editor-choice="tabs|rows|poster|landscape"`
-- `data-editor-control="hideNuvioTitle|hideFolderTitleEverywhere|showAllTab|pinToTop|focusGlowEnabled|showFolderTitle"`
+- `data-editor-field="title|hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape"`
+- `data-editor-choice="tabs|rows|show-everywhere|hide-home-screen|hide-everywhere|poster|landscape"`
+- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|focusGlowEnabled"`
 - `data-return-confirmation="true"`
 - `data-action="stay-in-workspace|discard-and-return|create-collection-empty|create-folder-empty"`
 - `data-editor-lock="true"` while editing

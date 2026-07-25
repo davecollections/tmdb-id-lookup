@@ -8,6 +8,11 @@ import {
 const editableNodeTypes = new Set(["collection", "folder"]);
 const collectionLayoutValues = new Set(["TABBED_GRID", "ROWS"]);
 const folderShapeValues = new Set(["POSTER", "LANDSCAPE"]);
+const folderTitleVisibilityValues = new Set([
+	"SHOW_EVERYWHERE",
+	"HIDE_HOME_SCREEN",
+	"HIDE_EVERYWHERE",
+]);
 const collectionEditorFields = new Set([
 	"title",
 	"hideNuvioTitle",
@@ -18,9 +23,8 @@ const collectionEditorFields = new Set([
 ]);
 const folderEditorFields = new Set([
 	"title",
-	"hideFolderTitleEverywhere",
+	"folderTitleVisibility",
 	"tileShape",
-	"showFolderTitle",
 ]);
 
 function isPlainObject(value) {
@@ -167,9 +171,14 @@ export function createNodeEditorDraft(node) {
 		...baseDraft,
 		values: {
 			...baseDraft.values,
-			hideFolderTitleEverywhere: title.hidden,
+			folderTitleVisibility: title.hidden
+				? "HIDE_EVERYWHERE"
+				: hideTitle.supported
+					? hideTitle.value
+						? "HIDE_HOME_SCREEN"
+						: "SHOW_EVERYWHERE"
+					: "",
 			tileShape: tileShape.supported ? tileShape.value : "",
-			showFolderTitle: hideTitle.supported ? !hideTitle.value : true,
 		},
 		original: {
 			...baseDraft.original,
@@ -178,9 +187,8 @@ export function createNodeEditorDraft(node) {
 		},
 		touched: {
 			...baseDraft.touched,
-			hideFolderTitleEverywhere: false,
+			folderTitleVisibility: false,
 			tileShape: false,
-			showFolderTitle: false,
 		},
 		visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 		canonicalizeFolderInvisibleTitle: false,
@@ -195,15 +203,14 @@ export function updateNodeEditorField(draft, field, value) {
 	const validChoiceField = (
 		(field === "viewMode" && collectionLayoutValues.has(value))
 		|| (field === "tileShape" && folderShapeValues.has(value))
+		|| (field === "folderTitleVisibility" && folderTitleVisibilityValues.has(value))
 	);
 	const validBooleanField = (
 		[
 			"hideNuvioTitle",
-			"hideFolderTitleEverywhere",
 			"showAllTab",
 			"pinToTop",
 			"focusGlowEnabled",
-			"showFolderTitle",
 		].includes(field)
 		&& typeof value === "boolean"
 	);
@@ -237,15 +244,16 @@ export function updateNodeEditorField(draft, field, value) {
 		};
 	}
 
-	if (field === "hideFolderTitleEverywhere") {
-		const visibleTitleDraft = value
+	if (field === "folderTitleVisibility") {
+		const hidingEverywhere = value === "HIDE_EVERYWHERE";
+		const visibleTitleDraft = hidingEverywhere
 			? (
 				isValidVisibleNuvioTitle(draft.values.title)
 					? draft.values.title
 					: draft.visibleTitleDraft
 			)
 			: draft.visibleTitleDraft;
-		const canonicalizeFolderInvisibleTitle = value && (
+		const canonicalizeFolderInvisibleTitle = hidingEverywhere && (
 			!draft.original.title.hidden
 			|| (draft.touched.title && isValidVisibleNuvioTitle(draft.values.title))
 		);
@@ -254,20 +262,16 @@ export function updateNodeEditorField(draft, field, value) {
 			...draft,
 			values: {
 				...draft.values,
-				title: value ? "" : visibleTitleDraft ?? "",
-				hideFolderTitleEverywhere: value,
+				title: hidingEverywhere ? "" : visibleTitleDraft ?? "",
+				folderTitleVisibility: value,
 			},
 			touched: {
 				...draft.touched,
-				hideFolderTitleEverywhere: true,
+				folderTitleVisibility: true,
 			},
 			visibleTitleDraft,
 			canonicalizeFolderInvisibleTitle,
 		};
-	}
-
-	if (field === "showFolderTitle" && draft.values.hideFolderTitleEverywhere) {
-		return draft;
 	}
 
 	return {
@@ -292,7 +296,7 @@ export function validateNodeEditorDraft(draft) {
 
 	const titleIsValid = draft.nodeType === "collection" && draft.values.hideNuvioTitle
 		? isValidNuvioTitle(draft.values.title)
-		: draft.nodeType === "folder" && draft.values.hideFolderTitleEverywhere
+		: draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
 			? true
 			: isValidVisibleNuvioTitle(draft.values.title);
 	if (!titleIsValid) {
@@ -343,12 +347,12 @@ export function buildNodeEditorPatch(draft) {
 	}
 
 	if (
-		draft.values.hideFolderTitleEverywhere
+		draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
 		&& draft.canonicalizeFolderInvisibleTitle
 	) {
 		patch.title = NUVIO_INVISIBLE_TITLE;
 	} else if (
-		!draft.values.hideFolderTitleEverywhere
+		draft.values.folderTitleVisibility !== "HIDE_EVERYWHERE"
 		&& draft.touched.title
 		&& isValidVisibleNuvioTitle(draft.values.title)
 		&& (!draft.original.title.supported || draft.values.title !== draft.original.title.value)
@@ -362,19 +366,23 @@ export function buildNodeEditorPatch(draft) {
 	) {
 		patch.tileShape = draft.values.tileShape;
 	}
-	if (draft.values.hideFolderTitleEverywhere && draft.canonicalizeFolderInvisibleTitle) {
+	if (
+		draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
+		&& draft.canonicalizeFolderInvisibleTitle
+	) {
 		const original = draft.original.hideTitle;
 		if (!original.supported || original.value !== true) {
 			patch.hideTitle = true;
 		}
-	} else {
-		includeBooleanPatch(
-			patch,
-			draft,
-			"showFolderTitle",
-			"hideTitle",
-			(value) => !value,
-		);
+	} else if (
+		draft.values.folderTitleVisibility !== "HIDE_EVERYWHERE"
+		&& draft.touched.folderTitleVisibility
+	) {
+		const nextHideTitle = draft.values.folderTitleVisibility === "HIDE_HOME_SCREEN";
+		const original = draft.original.hideTitle;
+		if (!original.supported || original.value !== nextHideTitle) {
+			patch.hideTitle = nextHideTitle;
+		}
 	}
 	return patch;
 }

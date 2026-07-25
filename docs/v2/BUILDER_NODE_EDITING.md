@@ -8,7 +8,13 @@ Last reviewed: 2026-07-25
 
 One responsive settings modal now manages collection/folder titles and the contained presentation fields approved in issue #53. Every collection and folder card owns one compact, always-visible Edit action; the former Rename/Settings pair, quick-rename form, and large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
 
-Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab, Pin to top, and Enable focus glow. Folder settings are title, Hide folder title everywhere in Nuvio, Poster/Landscape tile shape, and positively worded Show folder title on home screen. The first folder switch maps the actual title to the confirmed invisible Nuvio character; the home-screen switch remains the separate positive UI mapping for native inverse `hideTitle`. Project titles, artwork, sources, export, deletion, reordering, bulk settings, persistence, and migration actions remain outside this workflow.
+Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab, Pin to top, and Enable focus glow. Folder settings are title, one Folder title visibility radio-card group, and Poster/Landscape tile shape, in that order. The three visibility choices present the complete outcome instead of exposing two interacting switches:
+
+- Show everywhere keeps a valid visible title and maps to `hideTitle: false`.
+- Hide on home screen only keeps a valid visible title and maps to `hideTitle: true`.
+- Hide everywhere maps the title to exactly one U+200E and maps to `hideTitle: true`.
+
+Project titles, artwork, sources, export, deletion, reordering, bulk settings, persistence, and migration actions remain outside this workflow.
 
 ## Internal identity and Nuvio-facing identity
 
@@ -20,9 +26,8 @@ Every builder node retains its stable builder-only `internalId`. The editor neve
 
 - the target internal ID and `collection` or `folder` node type;
 - the title and the presentation values relevant to that node type;
-- the collection and folder invisible-title toggles plus any prior visible title retained only for the current modal draft;
+- the collection invisible-title toggle, the folder visibility choice, and any prior visible title retained only for the current modal draft;
 - preservation status for an imported invisible folder title, without copying its U+200E content into UI state, and a bounded flag for deliberate canonical replacement;
-- the folder's prior native home-screen-title preference while its everywhere-hidden intent temporarily overrides that control;
 - bounded original-value presence, support, and preservation status;
 - touched flags for each visible field.
 
@@ -47,7 +52,7 @@ Touched state also prevents a touched-then-reverted supported value from enterin
 
 ## Validation and minimal patches
 
-Validation never rewrites submitted values. Empty, ordinary whitespace-only, and unsupported format-character-only values are invalid. The deliberate collection and folder hiding controls use exactly one U+200E character; imported titles made only of repeated U+200E remain valid preservation cases. Missing or invalid values return all current field errors with exactly `code`, `path`, and `message`:
+Validation never rewrites submitted values. Empty, ordinary whitespace-only, and unsupported format-character-only values are invalid. The deliberate collection control and folder Hide everywhere choice use exactly one U+200E character; imported titles made only of repeated U+200E remain valid preservation cases. Missing or invalid values return all current field errors with exactly `code`, `path`, and `message`:
 
 - `EDITOR_TITLE_REQUIRED` at `$ui.editor.title`.
 
@@ -70,7 +75,7 @@ No property-deletion or property-removal semantics were introduced.
 
 ## Intentional invisible Nuvio titles
 
-The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK. The collection switch explains this neutrally: “Uses an invisible character to hide the collection title in Nuvio.” The folder switch says, “Uses an invisible character to hide the folder title on the home screen and when the folder is opened.”
+The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK. The collection switch explains this neutrally: “Uses an invisible character to hide the collection title in Nuvio.” The folder Hide everywhere choice says, “Uses an invisible character to hide the folder title on the home screen and when the folder is opened.”
 
 ```js
 const NUVIO_INVISIBLE_TITLE = "\u200E";
@@ -78,11 +83,11 @@ const NUVIO_INVISIBLE_TITLE = "\u200E";
 
 Empty text and ordinary whitespace are never converted to U+200E. U+200B, U+2060, U+FEFF, and other format-only alternatives are not recognised as the supported invisible title. Visible text mixed with U+200E remains visible text.
 
-Opening an imported title made only of repeated U+200E recognises it as hidden and preserves the exact repeated value while untouched. A deliberate collection or folder hide action emits exactly one U+200E. Toggling a visible title back on before Apply restores the prior visible value held only in the current modal draft. An imported invisible collection or folder requires a visible replacement when its hiding switch is disabled.
+Opening an imported title made only of repeated U+200E recognises it as hidden and preserves the exact repeated value while untouched. A deliberate collection hide action or folder Hide everywhere choice emits exactly one U+200E. Returning to a visible folder choice before Apply restores the prior visible value held only in the current modal draft. An imported invisible collection or folder requires a visible replacement when a visible outcome is chosen.
 
-An invisible folder opens with an empty, disabled title input and the Hide folder title everywhere in Nuvio switch enabled. The raw repeated value is absent from the draft and DOM. Unrelated Poster/Landscape edits omit the title patch and therefore preserve the exact imported value. Turning the switch off enables Title and requires a valid visible replacement; turning it back on without a replacement restores exact preservation, while deliberately entering a replacement and re-enabling it emits canonical one-character U+200E.
+An invisible folder opens with an empty, disabled title input and Hide everywhere selected. The raw repeated value is absent from the draft and DOM. Unrelated Poster/Landscape edits omit the title patch and therefore preserve the exact imported value. Choosing either visible outcome enables Title and requires a valid visible replacement; returning to Hide everywhere without a replacement restores exact preservation, while deliberately entering a replacement and then choosing Hide everywhere emits canonical one-character U+200E.
 
-Everywhere-hidden intent also makes the effective home-screen-title control off and unavailable while preserving its prior draft preference. Enabling the title again restores that prior preference. A deliberate everywhere-hide operation adds `hideTitle: true` only when needed; imported invisible folders preserve the exact presence and value of `hideTitle` through unrelated edits. The modal-only intent and canonicalization flags never enter project data or serialized JSON.
+A visible-mode → Hide everywhere → original visible-mode cycle is a clean no-op when nothing else changes. A deliberate Hide everywhere operation adds `hideTitle: true` only when needed; imported invisible folders preserve the exact presence and value of `hideTitle` through unrelated edits. Imported absent or unusual `hideTitle` values remain preserved until a visibility choice is deliberately made. The modal-only visibility enum, retained title, and canonicalization flags never enter project data or serialized JSON.
 
 The Builder displays `Hidden title` plus a restrained `Invisible in Nuvio` badge instead of a blank card or summary. Those fallback words never enter project data or serialized JSON.
 
@@ -98,9 +103,7 @@ Imported `FOLLOW_LAYOUT` is preservation-only. It is not offered as a normal cho
 
 The tile choices are Poster (`POSTER`) and Landscape (`LANDSCAPE`), displayed with simple CSS aspect-ratio previews. Square is not a normal choice.
 
-Show folder title on home screen is positive UI wording mapped to Nuvio's inverse `hideTitle` field. It controls the title beneath the folder card on Nuvio's home screen and is distinct from replacing the actual folder title with U+200E. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
-
-Hide folder title everywhere in Nuvio provides deliberate invisible-title creation. It overrides the home-screen switch while enabled, but retains that switch's prior preference for restoration.
+Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
 
 ## Manual creation defaults
 
@@ -124,7 +127,7 @@ They explicitly create blank folders with:
 }
 ```
 
-The positive Show folder title on home screen switch is therefore off for a new manually created blank folder. The folder's actual title remains visible until Hide folder title everywhere in Nuvio is deliberately enabled. These defaults apply to manual blank creation only. Future Search/Add, template, and recipe generation must choose its own approved defaults.
+Hide on home screen only is therefore selected for a new manually created blank folder. Its actual title remains visible when the folder is opened. These defaults apply to manual blank creation only. Future Search/Add, template, and recipe generation must choose its own approved defaults.
 
 ## Apply lifecycle
 
@@ -158,7 +161,7 @@ Controller and serializer tests prove that title and presentation editing preser
 
 Every collection and folder card owns one visible text Edit button beside its selectable button inside a non-interactive wrapper. Clicking Edit on an unselected card selects and targets that exact node immediately, then opens the settings modal. Selection alone neither marks the project dirty nor advances revision, and Apply or Cancel retains the target selection. Panel headers retain only their panel title, count, and relevant creation action, and source cards gain no Edit action.
 
-The ordinary rename path is the modal Title field. Initial focus enters that Title field when enabled; an intentionally invisible title instead places focus on the first available switch because Title is disabled until hiding is turned off. Closing the modal restores focus to the exact Edit button that opened it.
+The ordinary rename path is the modal Title field. Initial focus enters that Title field when enabled; an intentionally invisible title instead places focus on the first available setting because Title is disabled until a visible outcome is chosen. Closing the modal restores focus to the exact Edit button that opened it.
 
 ## Accessibility and responsive behavior
 
@@ -173,9 +176,9 @@ The form is one DOM instance at all widths. It is full or near-full-screen at na
 - `data-settings-modal-backdrop="true"`
 - `data-workspace-underlay="true"`
 - `data-editor-field="title"`
-- `data-editor-field="hideNuvioTitle|hideFolderTitleEverywhere|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape|showFolderTitle"` (`hideNuvioTitle` and `focusGlowEnabled` are collection-only; `hideFolderTitleEverywhere` is folder-only)
-- `data-editor-choice="tabs|rows|poster|landscape"`
-- `data-editor-control="hideNuvioTitle|hideFolderTitleEverywhere|showAllTab|pinToTop|focusGlowEnabled|showFolderTitle"`
+- `data-editor-field="hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape"` (`hideNuvioTitle` and `focusGlowEnabled` are collection-only; `folderTitleVisibility` is folder-only)
+- `data-editor-choice="tabs|rows|show-everywhere|hide-home-screen|hide-everywhere|poster|landscape"`
+- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|focusGlowEnabled"`
 - `data-hierarchy-card="collection|folder"`
 - `data-card-actions="collection|folder"`
 - `data-action="edit-collection|edit-folder"`

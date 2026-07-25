@@ -239,133 +239,150 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 }
 
 function FolderPresentationFields({ draft, prefix, onChange }) {
-	const hiddenEverywhere = draft.values.hideFolderTitleEverywhere;
 	const posterSelected = isSelected(draft.values.tileShape, "POSTER");
 	const landscapeSelected = isSelected(draft.values.tileShape, "LANDSCAPE");
 	const shapeReplacementPending = draft.touched.tileShape && (posterSelected || landscapeSelected);
-	const titleVisibilityReplacementPending = (
-		draft.touched.showFolderTitle
-		&& typeof draft.values.showFolderTitle === "boolean"
-	);
-	const titleDescriptionIds = [
-		`${prefix}-show-title-help`,
-		hiddenEverywhere ? `${prefix}-show-title-override` : null,
-		!draft.original.hideTitle.supported && !titleVisibilityReplacementPending
-			? `${prefix}-show-title-status`
-			: null,
-	].filter(Boolean).join(" ");
 
 	return (
-		<>
-			<fieldset
-				className="editor-field editor-choice-field"
-				data-editor-field="tileShape"
-				aria-describedby={`${prefix}-shape-help${
-					draft.original.tileShape.supported || shapeReplacementPending
-						? ""
-						: ` ${prefix}-shape-status`
-				}`}
-			>
-				<legend>Tile shape</legend>
-				<p className="editor-field-help" id={`${prefix}-shape-help`}>
-					Choose the shape of this folder card in Nuvio.
-				</p>
-				<div className="editor-choice-grid">
-					<label className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}>
-						<input
-							type="radio"
-							name={`${prefix}-shape`}
-							value="POSTER"
-							data-editor-choice="poster"
-							checked={posterSelected}
-							onChange={() => onChange("tileShape", "POSTER")}
-						/>
-						<span className="shape-preview is-poster" aria-hidden="true" />
-						<span>
-							<strong>Poster</strong>
-							<small>Tall artwork for poster-style folders.</small>
-						</span>
-					</label>
-					<label className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}>
-						<input
-							type="radio"
-							name={`${prefix}-shape`}
-							value="LANDSCAPE"
-							data-editor-choice="landscape"
-							checked={landscapeSelected}
-							onChange={() => onChange("tileShape", "LANDSCAPE")}
-						/>
-						<span className="shape-preview is-landscape" aria-hidden="true" />
-						<span>
-							<strong>Landscape</strong>
-							<small>Wide artwork for horizontal folders.</small>
-						</span>
-					</label>
-				</div>
-				<ChoiceStatus
-					original={draft.original.tileShape}
-					kind="shape"
-					replacementPending={shapeReplacementPending}
-					statusId={`${prefix}-shape-status`}
-				/>
-			</fieldset>
-
-			<div className="editor-switch-field" data-editor-field="showFolderTitle">
-				<label className="editor-switch">
-					<span>
-						<strong>Show folder title on home screen</strong>
-						<small id={`${prefix}-show-title-help`}>
-							Shows the title beneath the folder card on Nuvio’s home screen.
-						</small>
-						{hiddenEverywhere ? (
-							<small className="editor-switch-note" id={`${prefix}-show-title-override`}>
-								Hide folder title everywhere overrides this setting. Its prior preference returns if hiding everywhere is turned off.
-							</small>
-						) : null}
-					</span>
+		<fieldset
+			className="editor-field editor-choice-field"
+			data-editor-field="tileShape"
+			aria-describedby={`${prefix}-shape-help${
+				draft.original.tileShape.supported || shapeReplacementPending
+					? ""
+					: ` ${prefix}-shape-status`
+			}`}
+		>
+			<legend>Tile shape</legend>
+			<p className="editor-field-help" id={`${prefix}-shape-help`}>
+				Choose the shape of this folder card in Nuvio.
+			</p>
+			<div className="editor-choice-grid">
+				<label className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}>
 					<input
-						type="checkbox"
-						role="switch"
-						data-editor-control="showFolderTitle"
-						checked={!hiddenEverywhere && draft.values.showFolderTitle}
-						disabled={hiddenEverywhere}
-						aria-describedby={titleDescriptionIds}
-						onChange={(event) => onChange("showFolderTitle", event.target.checked)}
+						type="radio"
+						name={`${prefix}-shape`}
+						value="POSTER"
+						data-editor-choice="poster"
+						checked={posterSelected}
+						onChange={() => onChange("tileShape", "POSTER")}
 					/>
-					<span className="editor-switch-control" aria-hidden="true" />
+					<span className="shape-preview is-poster" aria-hidden="true" />
+					<span>
+						<strong>Poster</strong>
+						<small>Tall artwork for poster-style folders.</small>
+					</span>
 				</label>
-				<BooleanStatus
-					original={draft.original.hideTitle}
-					label="folder title"
-					replacementPending={titleVisibilityReplacementPending}
-					statusId={`${prefix}-show-title-status`}
-				/>
+				<label className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}>
+					<input
+						type="radio"
+						name={`${prefix}-shape`}
+						value="LANDSCAPE"
+						data-editor-choice="landscape"
+						checked={landscapeSelected}
+						onChange={() => onChange("tileShape", "LANDSCAPE")}
+					/>
+					<span className="shape-preview is-landscape" aria-hidden="true" />
+					<span>
+						<strong>Landscape</strong>
+						<small>Wide artwork for horizontal folders.</small>
+					</span>
+				</label>
 			</div>
-		</>
+			<ChoiceStatus
+				original={draft.original.tileShape}
+				kind="shape"
+				replacementPending={shapeReplacementPending}
+				statusId={`${prefix}-shape-status`}
+			/>
+		</fieldset>
 	);
 }
 
-function InvisibleFolderTitleField({ draft, prefix, onChange }) {
+function FolderVisibilityStatus({ original, replacementPending, statusId }) {
+	if (original.supported || replacementPending) {
+		return null;
+	}
+
 	return (
-		<div className="editor-switch-field" data-editor-field="hideFolderTitleEverywhere">
-			<label className="editor-switch">
-				<span>
-					<strong>Hide folder title everywhere in Nuvio</strong>
-					<small id={`${prefix}-hidden-title-help`}>
-						Uses an invisible character to hide the folder title on the home screen and when the folder is opened.
-					</small>
-				</span>
-				<input
-					type="checkbox"
-					role="switch"
-					data-editor-control="hideFolderTitleEverywhere"
-					checked={draft.values.hideFolderTitleEverywhere}
-					aria-describedby={`${prefix}-hidden-title-help`}
-					onChange={(event) => onChange("hideFolderTitleEverywhere", event.target.checked)}
-				/>
-				<span className="editor-switch-control" aria-hidden="true" />
-			</label>
-		</div>
+		<p className="editor-field-status" id={statusId}>
+			{original.status === "absent"
+				? "No imported home-screen title preference is set. It will stay absent until you choose a visibility option."
+				: "The imported home-screen title preference cannot be shown safely and will be preserved until you choose a visibility option."}
+		</p>
+	);
+}
+
+function FolderTitleVisibilityField({ draft, prefix, onChange }) {
+	const showEverywhere = draft.values.folderTitleVisibility === "SHOW_EVERYWHERE";
+	const hideHomeScreen = draft.values.folderTitleVisibility === "HIDE_HOME_SCREEN";
+	const hideEverywhere = draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
+	const replacementPending = draft.touched.folderTitleVisibility && (
+		!hideEverywhere || draft.canonicalizeFolderInvisibleTitle
+	);
+	const statusId = `${prefix}-title-visibility-status`;
+
+	return (
+		<fieldset
+			className="editor-field editor-choice-field"
+			data-editor-field="folderTitleVisibility"
+			aria-describedby={
+				draft.original.hideTitle.supported || replacementPending
+					? undefined
+					: statusId
+			}
+		>
+			<legend>Folder title visibility</legend>
+			<div className="editor-choice-grid editor-visibility-choice-grid">
+				<label className={`editor-choice${showEverywhere ? " is-selected" : ""}`}>
+					<input
+						type="radio"
+						name={`${prefix}-title-visibility`}
+						value="SHOW_EVERYWHERE"
+						data-editor-choice="show-everywhere"
+						checked={showEverywhere}
+						onChange={() => onChange("folderTitleVisibility", "SHOW_EVERYWHERE")}
+					/>
+					<span>
+						<strong>Show everywhere</strong>
+						<small>Shows the folder title beneath its home-screen card and when the folder is opened.</small>
+					</span>
+				</label>
+				<label className={`editor-choice${hideHomeScreen ? " is-selected" : ""}`}>
+					<input
+						type="radio"
+						name={`${prefix}-title-visibility`}
+						value="HIDE_HOME_SCREEN"
+						data-editor-choice="hide-home-screen"
+						checked={hideHomeScreen}
+						onChange={() => onChange("folderTitleVisibility", "HIDE_HOME_SCREEN")}
+					/>
+					<span>
+						<strong>Hide on home screen only</strong>
+						<small>Hides the title beneath the folder card, but still shows it when the folder is opened.</small>
+					</span>
+				</label>
+				<label className={`editor-choice${hideEverywhere ? " is-selected" : ""}`}>
+					<input
+						type="radio"
+						name={`${prefix}-title-visibility`}
+						value="HIDE_EVERYWHERE"
+						data-editor-choice="hide-everywhere"
+						checked={hideEverywhere}
+						onChange={() => onChange("folderTitleVisibility", "HIDE_EVERYWHERE")}
+					/>
+					<span>
+						<strong>Hide everywhere</strong>
+						<small>Uses an invisible character to hide the folder title on the home screen and when the folder is opened.</small>
+					</span>
+				</label>
+			</div>
+			<FolderVisibilityStatus
+				original={draft.original.hideTitle}
+				replacementPending={replacementPending}
+				statusId={statusId}
+			/>
+		</fieldset>
 	);
 }
 
@@ -408,14 +425,14 @@ export function NodeEditor({
 	const dialogRef = useRef(null);
 	const titleHiddenEverywhere = draft.nodeType === "collection"
 		? draft.values.hideNuvioTitle
-		: draft.values.hideFolderTitleEverywhere;
+		: draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
 	const titleReplacementPending = draft.touched.title && (
 		draft.nodeType === "collection" && draft.values.hideNuvioTitle
 			? isValidNuvioTitle(draft.values.title)
 			: isValidVisibleNuvioTitle(draft.values.title)
 	) || (
 		draft.nodeType === "folder"
-		&& draft.values.hideFolderTitleEverywhere
+		&& draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
 		&& (
 			draft.original.title.hidden
 			|| draft.canonicalizeFolderInvisibleTitle
@@ -491,8 +508,8 @@ export function NodeEditor({
 							onChange={(event) => onChange("title", event.target.value)}
 						/>
 						<p className="editor-field-help" id={`${prefix}-title-help`}>
-							{draft.nodeType === "folder" && draft.values.hideFolderTitleEverywhere
-								? "The folder title is intentionally invisible everywhere in Nuvio. Turn off the setting below to enter a visible title."
+							{draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
+								? "The folder title is intentionally invisible everywhere in Nuvio. Choose a visible option below to enter a visible title."
 								: draft.nodeType === "collection" && draft.values.hideNuvioTitle
 								? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
 								: `Displayed as the ${noun} title in Nuvio.`}
@@ -507,7 +524,7 @@ export function NodeEditor({
 					{draft.nodeType === "collection" ? (
 						<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
 					) : (
-						<InvisibleFolderTitleField draft={draft} prefix={prefix} onChange={onChange} />
+						<FolderTitleVisibilityField draft={draft} prefix={prefix} onChange={onChange} />
 					)}
 
 					{draft.nodeType === "collection" ? (

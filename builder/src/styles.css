@@ -728,6 +728,10 @@ body.settings-modal-open {
 	gap: 9px;
 }
 
+.editor-choice-grid.editor-visibility-choice-grid {
+	grid-template-columns: minmax(0, 1fr);
+}
+
 .editor-choice {
 	display: grid;
 	min-width: 0;
