@@ -1895,6 +1895,12 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*height:\s*100dvh/);
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*max-height:\s*100dvh/);
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*overflow-y:\s*auto/);
+	assert.match(styles, /\.node-editor\s*\{[\s\S]*scrollbar-color:\s*rgb\(70 118 136\) rgb\(4 16 23\)/);
+	assert.match(styles, /\.node-editor\s*\{[\s\S]*scrollbar-width:\s*auto/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar\s*\{[\s\S]*width:\s*12px/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar-track\s*\{[\s\S]*background:\s*rgb\(4 16 23\)/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb\s*\{[\s\S]*border-radius:\s*999px/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb:hover\s*\{[\s\S]*background:\s*rgb\(62 146 174\)/);
 	assert.match(styles, /body\.settings-modal-open\s*\{[\s\S]*overflow:\s*hidden/);
 	assert.match(styles, /\.workspace-underlay\[aria-hidden="true"\]\s*\{[\s\S]*pointer-events:\s*none/);
 	assert.match(styles, /\.editor-field input\[type="text"\]\s*\{[\s\S]*min-height:\s*48px/);
@@ -1903,9 +1909,13 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*overflow:\s*hidden/);
 	assert.match(styles, /\.source-layout-preview-tab-bar\s*\{[\s\S]*display:\s*flex/);
+	assert.match(styles, /\.source-layout-preview-tab-bar > span\s*\{[\s\S]*font-size:\s*0\.56rem/);
+	assert.match(styles, /\.source-layout-preview-tab-bar > span\s*\{[\s\S]*font-weight:\s*750/);
 	assert.match(styles, /\.source-layout-preview-poster-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5,\s*15px\)/);
 	assert.match(styles, /\.source-layout-preview-rows\s*\{[\s\S]*gap:\s*7px/);
-	assert.match(styles, /\.source-layout-preview-row\s*\{[\s\S]*grid-template-columns:\s*42px minmax\(0,\s*1fr\)/);
+	assert.match(styles, /\.source-layout-preview-row\s*\{[\s\S]*grid-template-columns:\s*48px minmax\(0,\s*1fr\)/);
+	assert.match(styles, /\.source-layout-preview-row-label\s*\{[\s\S]*font-size:\s*0\.56rem/);
+	assert.match(styles, /\.source-layout-preview-row-label\s*\{[\s\S]*font-weight:\s*750/);
 	assert.match(
 		styles,
 		/\.editor-choice-grid\.editor-visibility-choice-grid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/,
@@ -1915,9 +1925,10 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.shape-preview\.is-landscape\s*\{[\s\S]*width:\s*42px/);
 	assert.match(styles, /button:disabled/);
 	assert.match(styles, /@media \(max-width: 430px\)/);
+	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*width:\s*min\(840px,\s*100%\)/);
 	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*max-height:\s*calc\(100dvh - 48px\)/);
 	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*border-radius:\s*18px/);
-	assert.match(styles, /@media \(min-width: 760px\)/);
+	assert.match(styles, /@media \(min-width: 760px\)[\s\S]*\.node-editor-form\s*\{[\s\S]*max-width:\s*760px/);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(235px/);
 	assert.match(styles, /focus-visible/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);

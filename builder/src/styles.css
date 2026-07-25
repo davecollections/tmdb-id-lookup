@@ -621,10 +621,30 @@ body.settings-modal-open {
 	padding: 18px;
 	overflow-y: auto;
 	overscroll-behavior: contain;
+	scrollbar-color: rgb(70 118 136) rgb(4 16 23);
+	scrollbar-width: auto;
 	background: linear-gradient(145deg, rgb(13 38 52 / 98%), rgb(7 24 33 / 98%));
 	border: 1px solid var(--border-strong);
 	border-radius: 0;
 	box-shadow: var(--shadow);
+}
+
+.node-editor::-webkit-scrollbar {
+	width: 12px;
+}
+
+.node-editor::-webkit-scrollbar-track {
+	background: rgb(4 16 23);
+}
+
+.node-editor::-webkit-scrollbar-thumb {
+	background: rgb(70 118 136);
+	border: 2px solid rgb(4 16 23);
+	border-radius: 999px;
+}
+
+.node-editor::-webkit-scrollbar-thumb:hover {
+	background: rgb(62 146 174);
 }
 
 .node-editor:focus {
@@ -825,8 +845,8 @@ body.settings-modal-open {
 	min-width: 0;
 	padding: 3px 5px;
 	overflow: hidden;
-	font-size: 0.5rem;
-	font-weight: 700;
+	font-size: 0.56rem;
+	font-weight: 750;
 	line-height: 1;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -868,7 +888,7 @@ body.settings-modal-open {
 .source-layout-preview-row {
 	display: grid;
 	min-width: 0;
-	grid-template-columns: 42px minmax(0, 1fr);
+	grid-template-columns: 48px minmax(0, 1fr);
 	align-items: end;
 	gap: 7px;
 }
@@ -881,8 +901,8 @@ body.settings-modal-open {
 .source-layout-preview-row-label {
 	padding-bottom: 2px;
 	overflow: hidden;
-	font-size: 0.5rem;
-	font-weight: 700;
+	font-size: 0.56rem;
+	font-weight: 750;
 	line-height: 1;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -1591,7 +1611,7 @@ button:disabled {
 	}
 
 	.node-editor {
-		width: min(780px, 100%);
+		width: min(840px, 100%);
 		height: auto;
 		max-height: calc(100dvh - 48px);
 		padding: 22px;
@@ -1666,7 +1686,7 @@ button:disabled {
 	}
 
 	.node-editor-form {
-		max-width: 700px;
+		max-width: 760px;
 	}
 }
 
