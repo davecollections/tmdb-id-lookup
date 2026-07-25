@@ -114,12 +114,12 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						: ` ${prefix}-layout-status`
 				}`}
 			>
-				<legend>Collection layout</legend>
+				<legend>How sources appear inside folders</legend>
 				<p className="editor-field-help" id={`${prefix}-layout-help`}>
 					Choose how each folder displays its sources in Nuvio.
 				</p>
 				<div className="editor-choice-grid">
-					<label className={`editor-choice${tabsSelected ? " is-selected" : ""}`}>
+					<label className={`editor-choice editor-layout-choice${tabsSelected ? " is-selected" : ""}`}>
 						<input
 							type="radio"
 							name={`${prefix}-layout`}
@@ -128,12 +128,30 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 							checked={tabsSelected}
 							onChange={() => onChange("viewMode", "TABBED_GRID")}
 						/>
-						<span>
+						<span className="editor-layout-choice-content">
 							<strong>Tabs</strong>
-							<small>Each source in a folder appears as a tab.</small>
+							<small>Switch between sources using tabs. An optional All tab combines them.</small>
+							<span
+								className="source-layout-preview source-layout-preview-tabs"
+								data-layout-preview="tabs"
+								aria-hidden="true"
+							>
+								<span className="source-layout-preview-tab-bar">
+									<span className="is-selected">All</span>
+									<span>Source 1</span>
+									<span>Source 2</span>
+								</span>
+								<span className="source-layout-preview-poster-grid">
+									<span />
+									<span />
+									<span />
+									<span />
+									<span />
+								</span>
+							</span>
 						</span>
 					</label>
-					<label className={`editor-choice${rowsSelected ? " is-selected" : ""}`}>
+					<label className={`editor-choice editor-layout-choice${rowsSelected ? " is-selected" : ""}`}>
 						<input
 							type="radio"
 							name={`${prefix}-layout`}
@@ -142,9 +160,33 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 							checked={rowsSelected}
 							onChange={() => onChange("viewMode", "ROWS")}
 						/>
-						<span>
+						<span className="editor-layout-choice-content">
 							<strong>Rows</strong>
-							<small>Each source in a folder appears as a streaming-style row.</small>
+							<small>Show each source as its own horizontal content row.</small>
+							<span
+								className="source-layout-preview source-layout-preview-rows"
+								data-layout-preview="rows"
+								aria-hidden="true"
+							>
+								<span className="source-layout-preview-row">
+									<span className="source-layout-preview-row-label">Source 1</span>
+									<span className="source-layout-preview-poster-strip">
+										<span />
+										<span />
+										<span />
+										<span />
+									</span>
+								</span>
+								<span className="source-layout-preview-row">
+									<span className="source-layout-preview-row-label">Source 2</span>
+									<span className="source-layout-preview-poster-strip">
+										<span />
+										<span />
+										<span />
+										<span />
+									</span>
+								</span>
+							</span>
 						</span>
 					</label>
 				</div>

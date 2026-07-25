@@ -1517,10 +1517,22 @@ test("collection settings render exactly one accessible modal with stable marker
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
-	assert.ok(markup.includes("Collection layout"));
+	assert.equal((markup.match(/<legend>How sources appear inside folders<\/legend>/g) ?? []).length, 1);
 	assert.ok(markup.includes("Choose how each folder displays its sources in Nuvio."));
-	assert.ok(markup.includes("Each source in a folder appears as a tab."));
-	assert.ok(markup.includes("Each source in a folder appears as a streaming-style row."));
+	assert.ok(markup.includes(
+		"Switch between sources using tabs. An optional All tab combines them.",
+	));
+	assert.ok(markup.includes("Show each source as its own horizontal content row."));
+	assert.equal((markup.match(/data-layout-preview="tabs"/g) ?? []).length, 1);
+	assert.equal((markup.match(/data-layout-preview="rows"/g) ?? []).length, 1);
+	assert.ok(openingTag(markup, 'data-layout-preview="tabs"').includes('aria-hidden="true"'));
+	assert.ok(openingTag(markup, 'data-layout-preview="rows"').includes('aria-hidden="true"'));
+	for (const choice of ["tabs", "rows"]) {
+		const choiceMarkup = markedElement(markup, `data-editor-choice="${choice}"`, "label");
+		assert.equal((choiceMarkup.match(/<input/g) ?? []).length, 1);
+		assert.doesNotMatch(choiceMarkup, /<(?:a|button|select|textarea)\b/);
+		assert.doesNotMatch(choiceMarkup, /<(?:img|svg|video|canvas)\b/);
+	}
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Include an All tab"));
 	assert.ok(markup.includes(
@@ -1887,6 +1899,13 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.workspace-underlay\[aria-hidden="true"\]\s*\{[\s\S]*pointer-events:\s*none/);
 	assert.match(styles, /\.editor-field input\[type="text"\]\s*\{[\s\S]*min-height:\s*48px/);
 	assert.match(styles, /\.editor-choice\s*\{[\s\S]*min-height:\s*72px/);
+	assert.match(styles, /\.editor-layout-choice\s*\{[\s\S]*min-height:\s*184px/);
+	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*min-width:\s*0/);
+	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*overflow:\s*hidden/);
+	assert.match(styles, /\.source-layout-preview-tab-bar\s*\{[\s\S]*display:\s*flex/);
+	assert.match(styles, /\.source-layout-preview-poster-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5,\s*15px\)/);
+	assert.match(styles, /\.source-layout-preview-rows\s*\{[\s\S]*gap:\s*7px/);
+	assert.match(styles, /\.source-layout-preview-row\s*\{[\s\S]*grid-template-columns:\s*42px minmax\(0,\s*1fr\)/);
 	assert.match(
 		styles,
 		/\.editor-choice-grid\.editor-visibility-choice-grid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/,
