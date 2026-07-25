@@ -12,6 +12,13 @@ export { BuilderWelcome } from "./BuilderWelcome.jsx";
 export { BuilderWorkspace } from "./BuilderWorkspace.jsx";
 export { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 export {
+	applyQuickRenameDraft,
+	buildQuickRenamePatch,
+	createQuickRenameDraft,
+	updateQuickRenameTitle,
+	validateQuickRenameDraft,
+} from "./quick-rename.js";
+export {
 	importJsonFile,
 	importPastedJson,
 	MAX_IMPORT_FILE_BYTES,

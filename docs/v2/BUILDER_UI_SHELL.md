@@ -8,7 +8,7 @@ Last reviewed: 2026-07-25
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The workspace displays ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) extends the same inline editor from title-only editing to contained collection/folder presentation settings, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, deletion, reordering, export, persistence, and migration application remain deferred.
+The workspace displays ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) now uses entity-owned Rename/Settings actions, quick inline rename, and one responsive settings modal for contained presentation fields, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, deletion, reordering, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -30,7 +30,7 @@ React imports `createBuilderController` only from the supported `builder/src/app
 
 `useBuilderControllerState` is the only React subscription adapter. It calls `useSyncExternalStore` with `controller.subscribe`, `controller.getState`, and the same `getState` function as the server/static snapshot reader.
 
-The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, and the title/presentation uncommitted node-editor draft/diagnostics use local React state.
+The project, revision, hierarchical selection, dirty flag, migration preview, and diagnostics remain controller-owned. React does not mirror the project into `useState`, copy the project into component-local state, or mutate a frozen snapshot. Only welcome/workspace presentation, browser import transport values, return confirmation, and the uncommitted settings/quick-rename drafts and diagnostics use local React state.
 
 ## UI module structure
 
@@ -39,9 +39,11 @@ builder/src/ui/
   BuilderApp.jsx              subscribed welcome/workspace presentation boundary
   BuilderWelcome.jsx          welcome, file selection, pasted text and diagnostics
   BuilderWorkspace.jsx        semantic hierarchy workspace rendering
-  NodeEditor.jsx              single inline collection/folder editor form
+  NodeEditor.jsx              single responsive collection/folder settings modal
   node-editor.js              pure title/presentation draft, validation, and minimal-patch helpers
   node-editor-actions.js      public controller update delegation
+  quick-rename.js             pure targeted title-only rename helpers and delegation
+  modal-focus.js              dialog entry, containment, Escape, and focus-wrap helpers
   import-actions.js           public-controller-only browser transport helpers
   use-builder-controller.js   external-store subscription adapter
   view-model.js               pure safe display derivation
@@ -80,7 +82,7 @@ Selected buttons use `aria-pressed`, visible accent treatment, and hidden select
 
 `createDraftCollection(controller)` chooses the next unique `Untitled Collection` title, supplies the explicit manual defaults Tabs, All enabled, and Pin off, then delegates automatic Nuvio ID creation to the controller.
 
-`createDraftFolder(controller, collectionInternalId)` chooses the next unique `Untitled Folder` title, supplies Poster and Show folder title as the explicit manual defaults, then delegates automatic Nuvio ID creation to the controller.
+`createDraftFolder(controller, collectionInternalId)` chooses the next unique `Untitled Folder` title, supplies Poster and `hideTitle: true` as the explicit manual defaults, then delegates automatic Nuvio ID creation to the controller. The positive Show folder title switch is therefore off for a newly created blank folder.
 
 Both helpers use only `getState()` and public controller actions. They never derive an internal ID, never alter imported IDs, and select a created node only after creation succeeds. They return the controller's structured result with the successful `createdInternalId`. Collection creation does not create a folder, and folder creation does not create a source.
 
@@ -88,27 +90,33 @@ Both helpers use only `getState()` and public controller actions. They never der
 
 Native TMDB sources prefer an editable title, then the TMDB source type, then `TMDB source`. Addon sources prefer an editable title, catalog ID, addon ID, then `Addon source`. Opaque sources use an editable title when available and otherwise `Preserved source`.
 
-The selected-node summary includes only relevant known editable fields. Collection summaries use friendly supported labels for Tabs/Rows, Pinned to top, and All tab included. Folder summaries use Poster/Landscape and positive Folder title shown wording plus an artwork-presence count. Unsupported presentation values are not exposed. Source summaries include the explicit category and relevant known provider, TMDB, media, addon, catalog, and genre values. Opaque sources receive a calm `Preserved imported source` note.
+The selected-node summary includes only relevant known editable fields. Collection summaries use friendly supported labels for Tabs/Rows, Pinned to top, and All tab included. Folder summaries use Poster/Landscape and positive Show folder title wording plus an artwork-presence count. Titles made only of the confirmed U+200E character display `Hidden title` with an `Invisible in Nuvio` badge and meaningful accessible names instead of producing blank cards or headings. Unsupported presentation values are not exposed. Source summaries include the explicit category and relevant known provider, TMDB, media, addon, catalog, and genre values. Opaque sources receive a calm `Preserved imported source` note.
 
 The UI never renders full raw JSON, arbitrary unknown/community fields, serializer output, migration projections, exception objects, stack traces, or builder internal IDs.
 
 ## Collection and folder editing
 
-Selected collections expose `Edit collection` in the folders context, and selected folders expose `Edit folder` in the sources context. One inline editor appears between notices and the hierarchy. It edits title plus the approved collection/folder presentation settings, keeps Nuvio IDs and builder `internalId` hidden and stable, validates title as required text, and creates a minimal changed-field patch for `controller.updateNode`.
+Selected collection actions live in the Collections panel and selected folder actions live in the Folders panel. Each compact strip shows the selected title with Rename and Settings. Mobile drill-down provides the same entity context in the active panel. Folders and Sources headers no longer contain actions for their parent entity; panel headers own only title, count, and their relevant creation action.
 
-Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While the editor is open, hierarchy selection, creation, edit triggers, mobile parent navigation, and folder-summary navigation are natively disabled; Apply and Cancel remain available. Imported absent, unsupported, Follow Layout, Square, and unusual presentation values remain untouched until deliberate canonical replacement.
+Rename enters one targeted inline title form without opening settings. Enter/Apply commits one title-only patch, Escape/Cancel discards it, and blur never saves. Hidden titles start with an empty replacement input and explicit guidance. Blank, whitespace-only, invisible-only, and format-only replacements remain invalid.
+
+Settings opens one modal dialog shared by collections and folders. It edits title plus the approved presentation fields, including explicit U+200E collection-title and folder-name hiding. It keeps Nuvio IDs and builder `internalId` hidden and stable, validates title intent, and creates a minimal changed-field patch for `controller.updateNode`.
+
+Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions. Focus enters and remains contained in the dialog; Escape safely cancels, backdrop clicks do not discard, body scrolling is locked, and focus returns to the exact Settings trigger. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, and unusual presentation values remain untouched until deliberate canonical replacement.
 
 ## Diagnostics and migration status
 
-The first current operation error appears in one inline `role="alert"` area with its stable message and optional code. Successful-import warnings appear separately in a collapsed, bounded native details element. The workspace does not render raw imported JSON, historical diagnostic dumps, or modal dialogs.
+The first current operation error appears in one inline `role="alert"` area with its stable message and optional code. Successful-import warnings appear separately in a collapsed, bounded native details element. The workspace does not render raw imported JSON or historical diagnostic dumps.
 
-Migration remains non-interactive. The shell shows a small notice only when preview status is `available` or `blocked`. There is no migration action, automatic migration, or raw migration diagnostic display.
+Migration remains non-interactive. The shell shows a small notice only when preview status is `available` or `blocked`. There is no migration action, automatic migration, or raw migration diagnostic display. The settings modal contains only bounded known fields and local diagnostics.
 
 ## Accessibility
 
 - one page-level `h1` and logical panel/detail headings;
 - ordinary semantic lists with real selection buttons;
 - semantic presentation fieldsets with native radio buttons and labelled switches;
+- one named modal dialog with contained focus, safe Escape cancellation, inert background, and exact trigger focus restoration;
+- entity-owned Rename and Settings actions with hidden-title-specific accessible labels;
 - a real anchor for the v1 backlink;
 - `aria-pressed` plus visible and screen-reader selected state;
 - approximately 46–48px minimum action targets and larger hierarchy rows;
@@ -135,14 +143,22 @@ Deployment and focused source tests use a small stable surface:
 - `data-builder-shell="true"`
 - `data-root-link="true"`
 - `data-panel="collections|folders|sources"`
+- `data-panel-header="collections|folders|sources"`
 - `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder|return-builder-home"`
-- `data-action="edit-collection|edit-folder|apply-node-edit|cancel-node-edit"`
+- `data-action="rename-collection|rename-folder|settings-collection|settings-folder"`
+- `data-action="apply-collection-rename|cancel-collection-rename|apply-folder-rename|cancel-folder-rename"`
+- `data-action="apply-node-edit|cancel-node-edit"`
 - `data-import-control="file|pasted-json"`
 - `data-node-type="collection|folder|source"`
 - `data-node-editor="collection|folder"`
-- `data-editor-field="title|viewMode|showAllTab|pinToTop|tileShape|showFolderTitle"`
+- `data-settings-modal="true"`
+- `data-settings-modal-backdrop="true"`
+- `data-workspace-underlay="true"`
+- `data-entity-actions="collection|folder"`
+- `data-quick-rename="collection|folder"`
+- `data-editor-field="title|hideNuvioTitle|viewMode|showAllTab|pinToTop|tileShape|showFolderTitle"`
 - `data-editor-choice="tabs|rows|poster|landscape"`
-- `data-editor-control="showAllTab|pinToTop|showFolderTitle"`
+- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|showFolderTitle"`
 - `data-return-confirmation="true"`
 - `data-action="stay-in-workspace|discard-and-return|create-collection-empty|create-folder-empty"`
 - `data-editor-lock="true"` while editing
@@ -153,8 +169,8 @@ The Pages deployment workflow, workflow triggers, permissions, deployment enviro
 
 ## Deliberate exclusions
 
-The current presentation milestone does not add project-title editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, reordering, drag-and-drop, context menus, dialogs, undo/redo, network import, TMDB search, addon loading, artwork tools, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies.
+The current presentation milestone does not add project-title editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, reordering, drag-and-drop, context menus, undo/redo, network import, TMDB search, addon loading, artwork, focus glow/GIF, cover, logo, backdrop, or hero controls, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies. Future focus-GIF support defaults off unless deliberately enabled.
 
 ## Next mandatory gate
 
-Independent branch review and Dave's mandatory UI/flow review must assess the edit affordances, wording, Tabs/Rows and All-tab behavior, Poster/Landscape selection, unusual-value guidance, mobile drill-down, desktop three-panel layout, accessibility, and visual polish. Review corrections must be resolved before source creation receives a separate approved issue.
+Dave's mandatory second UI/flow review and independent follow-up review must assess action placement, quick rename, settings-modal behavior, U+200E hiding, Tabs/Rows and All-tab behavior, Poster/Landscape selection, unusual-value guidance, mobile drill-down, desktop three-panel layout, accessibility, and visual polish. No pull request or source creation begins before that gate.

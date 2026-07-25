@@ -49,7 +49,7 @@ export function createDraftFolder(controller, collectionInternalId) {
 		editable: {
 			title,
 			tileShape: "POSTER",
-			hideTitle: false,
+			hideTitle: true,
 		},
 	});
 

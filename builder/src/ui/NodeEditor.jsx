@@ -1,4 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import {
+	focusFirstDialogControl,
+	handleDialogKeyDown,
+} from "./modal-focus.js";
 
 function TitleStatus({ original, statusId }) {
 	if (original.supported) {
@@ -187,7 +191,7 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 			>
 				<legend>Tile shape</legend>
 				<p className="editor-field-help" id={`${prefix}-shape-help`}>
-					Choose the folder artwork proportions used in Nuvio.
+					Choose the shape of this folder card in Nuvio.
 				</p>
 				<div className="editor-choice-grid">
 					<label className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}>
@@ -250,6 +254,34 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 	);
 }
 
+function InvisibleTitleField({ draft, noun, prefix, onChange }) {
+	const isFolder = noun === "folder";
+	const label = isFolder ? "Hide folder name in Nuvio" : "Hide collection title in Nuvio";
+	const help = isFolder
+		? "Replaces the actual folder name with an invisible character. This is different from hiding the title beneath the folder card."
+		: "Uses an invisible title character because Nuvio does not currently provide a collection-title visibility setting.";
+
+	return (
+		<div className="editor-switch-field" data-editor-field="hideNuvioTitle">
+			<label className="editor-switch">
+				<span>
+					<strong>{label}</strong>
+					<small id={`${prefix}-hidden-title-help`}>{help}</small>
+				</span>
+				<input
+					type="checkbox"
+					role="switch"
+					data-editor-control="hideNuvioTitle"
+					checked={draft.values.hideNuvioTitle}
+					aria-describedby={`${prefix}-hidden-title-help`}
+					onChange={(event) => onChange("hideNuvioTitle", event.target.checked)}
+				/>
+				<span className="editor-switch-control" aria-hidden="true" />
+			</label>
+		</div>
+	);
+}
+
 export function NodeEditor({
 	draft,
 	diagnostics,
@@ -259,14 +291,19 @@ export function NodeEditor({
 	onCancel,
 }) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
-	const heading = `Edit ${noun}`;
 	const context = noun === "folder" ? "Folder settings" : "Collection settings";
 	const prefix = `node-editor-${noun}`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
+	const dialogRef = useRef(null);
 
 	useEffect(() => {
-		titleInputRef.current?.focus();
-	}, [draft.internalId, titleInputRef]);
+		focusFirstDialogControl(dialogRef.current);
+	}, [draft.internalId]);
+
+	useEffect(() => {
+		document.body.classList.add("settings-modal-open");
+		return () => document.body.classList.remove("settings-modal-open");
+	}, []);
 
 	function describedBy(diagnostic) {
 		const ids = [`${prefix}-title-help`];
@@ -276,65 +313,88 @@ export function NodeEditor({
 	}
 
 	return (
-		<section className="node-editor" data-node-editor={noun} aria-labelledby={`${prefix}-title`}>
-		<div className="node-editor-heading">
-			<div>
-				<p className="panel-kicker">{context}</p>
-				<h2 id={`${prefix}-title`}>{heading}</h2>
-			</div>
-			<p>Update the title and presentation for this {noun}.</p>
+		<div
+			className="settings-modal-backdrop"
+			data-settings-modal-backdrop="true"
+			data-backdrop-dismiss="false"
+			onMouseDown={(event) => {
+				if (event.target === event.currentTarget) {
+					event.preventDefault();
+					dialogRef.current?.focus();
+				}
+			}}
+		>
+			<section
+				ref={dialogRef}
+				className="node-editor"
+				data-node-editor={noun}
+				data-settings-modal="true"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={`${prefix}-title`}
+				tabIndex={-1}
+				onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, onCancel)}
+			>
+				<div className="node-editor-heading">
+					<div>
+						<p className="panel-kicker">Presentation settings</p>
+						<h2 id={`${prefix}-title`}>{context}</h2>
+					</div>
+					<p>Update the title and presentation for this {noun}.</p>
+				</div>
+
+				<form className="node-editor-form" onSubmit={onSubmit} noValidate>
+					<div className="editor-field">
+						<label htmlFor={`${prefix}-title-input`}>Title</label>
+						<input
+							ref={titleInputRef}
+							id={`${prefix}-title-input`}
+							name="title"
+							type="text"
+							value={draft.values.hideNuvioTitle ? "" : draft.values.title}
+							data-editor-field="title"
+							disabled={draft.values.hideNuvioTitle}
+							aria-invalid={titleError ? "true" : undefined}
+							aria-describedby={describedBy(titleError)}
+							onChange={(event) => onChange("title", event.target.value)}
+						/>
+						<p className="editor-field-help" id={`${prefix}-title-help`}>
+							{draft.values.hideNuvioTitle
+								? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
+								: `Displayed as the ${noun} title in Nuvio.`}
+						</p>
+						<TitleStatus original={draft.original.title} statusId={`${prefix}-title-status`} />
+					</div>
+
+					<InvisibleTitleField draft={draft} noun={noun} prefix={prefix} onChange={onChange} />
+
+					{draft.nodeType === "collection" ? (
+						<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+					) : (
+						<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+					)}
+
+					<div className="editor-diagnostics" role="alert" aria-atomic="true">
+						{diagnostics.length > 0 ? (
+							<ul>
+								{diagnostics.map((entry) => (
+									<li
+										key={entry.code}
+										id={`${prefix}-title-error`}
+									>
+										{entry.message}
+									</li>
+								))}
+							</ul>
+						) : null}
+					</div>
+
+					<div className="node-editor-actions">
+						<button className="editor-apply" type="submit" data-action="apply-node-edit">Apply</button>
+						<button className="editor-cancel" type="button" data-action="cancel-node-edit" onClick={onCancel}>Cancel</button>
+					</div>
+				</form>
+			</section>
 		</div>
-
-		<p className="editor-lock-note">
-			Hierarchy navigation is paused until you apply or cancel this edit.
-		</p>
-
-		<form className="node-editor-form" onSubmit={onSubmit} noValidate>
-			<div className="editor-field">
-				<label htmlFor={`${prefix}-title-input`}>Title</label>
-				<input
-					ref={titleInputRef}
-					id={`${prefix}-title-input`}
-					name="title"
-					type="text"
-					value={draft.values.title}
-					data-editor-field="title"
-					aria-invalid={titleError ? "true" : undefined}
-					aria-describedby={describedBy(titleError)}
-					onChange={(event) => onChange("title", event.target.value)}
-				/>
-				<p className="editor-field-help" id={`${prefix}-title-help`}>
-					Displayed as the {noun} title in Nuvio.
-				</p>
-				<TitleStatus original={draft.original.title} statusId={`${prefix}-title-status`} />
-			</div>
-
-			{draft.nodeType === "collection" ? (
-				<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-			) : (
-				<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-			)}
-
-			<div className="editor-diagnostics" role="alert" aria-atomic="true">
-				{diagnostics.length > 0 ? (
-					<ul>
-						{diagnostics.map((entry) => (
-							<li
-								key={entry.code}
-								id={`${prefix}-title-error`}
-							>
-								{entry.message}
-							</li>
-						))}
-					</ul>
-				) : null}
-			</div>
-
-			<div className="node-editor-actions">
-				<button className="editor-apply" type="submit" data-action="apply-node-edit">Apply changes</button>
-				<button className="editor-cancel" type="button" data-action="cancel-node-edit" onClick={onCancel}>Cancel</button>
-			</div>
-		</form>
-	</section>
 	);
 }

@@ -1,8 +1,26 @@
+import {
+	isInvisibleNuvioTitle,
+	isValidNuvioTitle,
+	isValidVisibleNuvioTitle,
+	NUVIO_INVISIBLE_TITLE,
+} from "../nuvio/titles.js";
+
 const editableNodeTypes = new Set(["collection", "folder"]);
 const collectionLayoutValues = new Set(["TABBED_GRID", "ROWS"]);
 const folderShapeValues = new Set(["POSTER", "LANDSCAPE"]);
-const collectionEditorFields = new Set(["title", "viewMode", "showAllTab", "pinToTop"]);
-const folderEditorFields = new Set(["title", "tileShape", "showFolderTitle"]);
+const collectionEditorFields = new Set([
+	"title",
+	"hideNuvioTitle",
+	"viewMode",
+	"showAllTab",
+	"pinToTop",
+]);
+const folderEditorFields = new Set([
+	"title",
+	"hideNuvioTitle",
+	"tileShape",
+	"showFolderTitle",
+]);
 
 function isPlainObject(value) {
 	if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -33,6 +51,7 @@ function originalTextField(node, field) {
 		value: supported ? currentValue : null,
 		hasField,
 		supported,
+		hidden: supported && isInvisibleNuvioTitle(currentValue),
 		status: supported ? "supported" : hasField ? "unsupported" : "absent",
 	};
 }
@@ -83,11 +102,14 @@ export function createNodeEditorDraft(node) {
 		nodeType: node.nodeType,
 		values: {
 			title: title.supported ? title.value : "",
+			hideNuvioTitle: title.hidden,
 		},
 		original: { title },
 		touched: {
 			title: false,
+			hideNuvioTitle: false,
 		},
+		visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 	};
 
 	if (node.nodeType === "collection") {
@@ -161,12 +183,37 @@ export function updateNodeEditorField(draft, field, value) {
 		|| (field === "tileShape" && folderShapeValues.has(value))
 	);
 	const validBooleanField = (
-		["showAllTab", "pinToTop", "showFolderTitle"].includes(field)
+		["hideNuvioTitle", "showAllTab", "pinToTop", "showFolderTitle"].includes(field)
 		&& typeof value === "boolean"
 	);
 
 	if (!allowedFields.has(field) || (!validStringField && !validChoiceField && !validBooleanField)) {
 		return draft;
+	}
+
+	if (field === "hideNuvioTitle") {
+		const visibleTitleDraft = value
+			? (
+				isValidVisibleNuvioTitle(draft.values.title)
+					? draft.values.title
+					: draft.visibleTitleDraft
+			)
+			: draft.visibleTitleDraft;
+
+		return {
+			...draft,
+			values: {
+				...draft.values,
+				title: value ? NUVIO_INVISIBLE_TITLE : visibleTitleDraft ?? "",
+				hideNuvioTitle: value,
+			},
+			touched: {
+				...draft.touched,
+				title: true,
+				hideNuvioTitle: true,
+			},
+			visibleTitleDraft,
+		};
 	}
 
 	return {
@@ -179,6 +226,9 @@ export function updateNodeEditorField(draft, field, value) {
 			...draft.touched,
 			[field]: true,
 		},
+		...(field === "title" && isValidVisibleNuvioTitle(value)
+			? { visibleTitleDraft: value }
+			: {}),
 	};
 }
 
@@ -186,7 +236,10 @@ export function validateNodeEditorDraft(draft) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
 	const diagnostics = [];
 
-	if (typeof draft.values.title !== "string" || draft.values.title.trim().length === 0) {
+	const titleIsValid = draft.values.hideNuvioTitle
+		? isValidNuvioTitle(draft.values.title)
+		: isValidVisibleNuvioTitle(draft.values.title);
+	if (!titleIsValid) {
 		diagnostics.push({
 			code: "EDITOR_TITLE_REQUIRED",
 			path: "$ui.editor.title",

@@ -1,3 +1,8 @@
+import {
+	isInvisibleNuvioTitle,
+	isValidVisibleNuvioTitle,
+} from "../nuvio/titles.js";
+
 const folderArtworkFields = Object.freeze([
 	"coverEmoji",
 	"focusGifUrl",
@@ -48,6 +53,24 @@ function friendlyChoice(value, labels) {
 	return labels[value.toUpperCase()] ?? null;
 }
 
+function nodeTitle(value, noun) {
+	if (isInvisibleNuvioTitle(value)) {
+		const capitalizedNoun = noun[0].toUpperCase() + noun.slice(1);
+		return {
+			text: "Hidden title",
+			hidden: true,
+			accessibleName: `${capitalizedNoun} with hidden Nuvio title`,
+		};
+	}
+
+	const text = isValidVisibleNuvioTitle(value) ? value.trim() : `Untitled ${noun}`;
+	return {
+		text,
+		hidden: false,
+		accessibleName: text,
+	};
+}
+
 function supportedBoolean(value) {
 	return typeof value === "boolean" ? value : null;
 }
@@ -55,6 +78,7 @@ function supportedBoolean(value) {
 function buildCollection(collection, selectedInternalId) {
 	const folderCount = collection.folders.length;
 	const sourceCount = collection.folders.reduce((total, folder) => total + folder.sources.length, 0);
+	const title = nodeTitle(collection.editable.title, "collection");
 	const layout = friendlyChoice(collection.editable.viewMode, {
 		TABBED_GRID: "Tabs",
 		ROWS: "Rows",
@@ -63,14 +87,17 @@ function buildCollection(collection, selectedInternalId) {
 	const showAllTab = supportedBoolean(collection.editable.showAllTab);
 	return {
 		internalId: collection.internalId,
-		title: nonBlankText(collection.editable.title) ?? "Untitled collection",
+		title: title.text,
+		titleHidden: title.hidden,
+		accessibleName: title.accessibleName,
 		folderCount,
 		sourceCount,
 		folderCountLabel: countLabel(folderCount, "folder"),
 		sourceCountLabel: countLabel(sourceCount, "source"),
 		selected: collection.internalId === selectedInternalId,
 		details: compactDetails([
-			detail("Title", nonBlankText(collection.editable.title) ?? "Untitled collection"),
+			detail("Title", title.text),
+			title.hidden ? detail("Nuvio title", "Invisible") : null,
 			detail("Folders", folderCount),
 			detail("Sources", sourceCount),
 			detail("Layout", layout),
@@ -83,6 +110,7 @@ function buildCollection(collection, selectedInternalId) {
 function buildFolder(folder, selectedInternalId) {
 	const sourceCount = folder.sources.length;
 	const artworkCount = folderArtworkFields.filter((field) => presentValue(folder.editable[field]) !== null).length;
+	const title = nodeTitle(folder.editable.title, "folder");
 	const tileShape = friendlyChoice(folder.editable.tileShape, {
 		POSTER: "Poster",
 		LANDSCAPE: "Landscape",
@@ -90,13 +118,16 @@ function buildFolder(folder, selectedInternalId) {
 	const hideTitle = supportedBoolean(folder.editable.hideTitle);
 	return {
 		internalId: folder.internalId,
-		title: nonBlankText(folder.editable.title) ?? "Untitled folder",
+		title: title.text,
+		titleHidden: title.hidden,
+		accessibleName: title.accessibleName,
 		sourceCount,
 		sourceCountLabel: countLabel(sourceCount, "source"),
 		tileShape,
 		selected: folder.internalId === selectedInternalId,
 		details: compactDetails([
-			detail("Title", nonBlankText(folder.editable.title) ?? "Untitled folder"),
+			detail("Title", title.text),
+			title.hidden ? detail("Nuvio title", "Invisible") : null,
 			detail("Sources", sourceCount),
 			detail("Tile shape", tileShape),
 			hideTitle === null ? null : detail("Folder title shown", !hideTitle),

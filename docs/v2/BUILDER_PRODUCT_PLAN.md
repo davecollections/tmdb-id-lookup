@@ -229,12 +229,15 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 
 **Confirmed and implemented foundation**
 
-The existing responsive inline editor now exposes:
+The current owner-reviewed workflow exposes:
 
-- collection title, Tabs/Rows, conditional Include an All tab, and Pin to top;
-- folder title, Poster/Landscape, and positive Show folder title wording.
+- entity-owned quick Rename and Settings actions;
+- one responsive modal for collection title, intentional invisible Nuvio title, Tabs/Rows, conditional Include an All tab, and Pin to top;
+- the same modal for folder title, intentional invisible Nuvio name, Poster/Landscape, and positive Show folder title wording.
 
-Manual blank collections default to Tabs with All enabled and Pin off. Manual blank folders default to Poster with the title shown. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices.
+Manual blank collections default to Tabs with All enabled and Pin off. Manual blank folders default to Poster with `hideTitle: true`, so the title beneath the card is hidden by default while the actual folder name remains visible. Imported Follow Layout and Square values are preserved while untouched but are not offered as normal new choices.
+
+U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. Invisible collection titles address the lack of a native collection-title visibility setting. Invisible folder names change the actual title and remain distinct from native `hideTitle`. Imported repeated U+200E values are preserved while untouched, deliberate hiding emits one U+200E, and blank titles never become invisible automatically. The Builder uses a display-only fallback rather than rendering blank cards or headings.
 
 **Confirmed direction**
 
@@ -290,6 +293,8 @@ Imported or custom nonblank artwork must be preserved unless the user changes it
 The separate `nuvio-assets` project owns artwork production, replacement, review, publication, runtime schema, and asset-contract decisions. TMDB ID Lookup consumes its published runtime. Questions owned by that project must be taken there instead of guessed in V2.
 
 This plan does not add or alter artwork behaviour.
+
+Owner-supplied current Nuvio editor screenshots evidence backdrop, focus glow, cover, focus GIF, logo, hero, and related controls, but issue #53 keeps them deferred. Future focus-GIF support defaults off unless deliberately enabled.
 
 ## 14. Import and editing
 
@@ -378,8 +383,8 @@ Trakt integration remains outside current project scope; a possible future colou
 
 1. Product-plan and workflow recovery — complete.
 2. Collection/folder presentation settings — implemented on issue #53's branch pending review.
-3. Mandatory Dave UI and flow review — current gate.
-4. Resolve the review findings.
+3. First mandatory Dave UI and flow review — complete.
+4. Resolve the review findings — implemented on the issue branch, pending mandatory second review.
 5. Source creation and Search/Add.
 6. Advanced Discover creation.
 7. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.

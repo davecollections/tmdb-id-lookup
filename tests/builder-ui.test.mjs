@@ -250,8 +250,8 @@ test("selection summaries use unique stable heading IDs with valid associations"
 		"mobile-selection-summary-title",
 		"selection-summary-title",
 	]);
-	assert.match(collectionMarkup, /<h3 id="mobile-selection-summary-title">Collection<\/h3>/);
-	assert.match(collectionMarkup, /<h3 id="selection-summary-title">Collection<\/h3>/);
+	assert.match(collectionMarkup, /<h3 id="mobile-selection-summary-title" aria-label="Collection">Collection<\/h3>/);
+	assert.match(collectionMarkup, /<h3 id="selection-summary-title" aria-label="Collection">Collection<\/h3>/);
 
 	controller.selectNode(collection.folders[0].sources[0].internalId);
 	const sourceMarkup = render(controller);
@@ -358,10 +358,14 @@ test("draft folder titles use the smallest free exact title and no source is cre
 		id: "nuvio-1",
 		title: "Untitled Folder 2",
 		tileShape: "POSTER",
-		hideTitle: false,
+		hideTitle: true,
 	});
 	assert.equal(controller.getState().selection.folderInternalId, created.internalId);
 	assert.deepEqual(created.sources, []);
+	const view = buildBuilderViewModel(controller.getState());
+	assert.ok(view.selectedFolder.details.some((entry) => (
+		entry.label === "Folder title shown" && entry.value === "No"
+	)));
 });
 
 test("failed draft creation retains selection and does not mutate the prior snapshot", () => {

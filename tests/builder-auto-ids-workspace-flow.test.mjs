@@ -355,7 +355,7 @@ test("source empty state is neutral without an interactive plus", () => {
 
 test("confirmation contract has stable markers locking and no route or browser confirmation", () => {
 	const source = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "BuilderWorkspace.jsx"), "utf8");
-	for (const marker of ["data-return-confirmation", "stay-in-workspace", "discard-and-return", "return-builder-home", "editorLocked || returnConfirmationOpen"]) assert.ok(source.includes(marker));
+	for (const marker of ["data-return-confirmation", "stay-in-workspace", "discard-and-return", "return-builder-home", "editorLocked || renameLocked || returnConfirmationOpen"]) assert.ok(source.includes(marker));
 	for (const forbidden of ["window.confirm", "history.", "location.", "react-router"]) assert.equal(source.includes(forbidden), false);
 });
 

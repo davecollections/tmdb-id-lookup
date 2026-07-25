@@ -8,7 +8,17 @@ import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
+import {
+	isInvisibleNuvioTitle,
+	isValidNuvioTitle,
+	isValidVisibleNuvioTitle,
+	NUVIO_INVISIBLE_TITLE,
+} from "../builder/src/nuvio/titles.js";
 import { serializeNuvioProject } from "../builder/src/serialize/index.js";
+import {
+	focusFirstDialogControl,
+	handleDialogKeyDown,
+} from "../builder/src/ui/modal-focus.js";
 import { applyNodeEditorDraft } from "../builder/src/ui/node-editor-actions.js";
 import {
 	buildNodeEditorPatch,
@@ -17,6 +27,14 @@ import {
 	updateNodeEditorField,
 	validateNodeEditorDraft,
 } from "../builder/src/ui/node-editor.js";
+import {
+	applyQuickRenameDraft,
+	buildQuickRenamePatch,
+	createQuickRenameDraft,
+	updateQuickRenameTitle,
+	validateQuickRenameDraft,
+} from "../builder/src/ui/quick-rename.js";
+import { buildBuilderViewModel } from "../builder/src/ui/view-model.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureRoot = path.join(rootDir, "tests", "fixtures", "nuvio");
@@ -81,6 +99,8 @@ function renderWorkspace(controller, options = {}) {
 		state: controller.getState(),
 		initialEditorDraft: options.draft ?? null,
 		initialEditorDiagnostics: options.diagnostics ?? [],
+		initialRenameDraft: options.renameDraft ?? null,
+		initialRenameDiagnostics: options.renameDiagnostics ?? [],
 	}));
 }
 
@@ -92,6 +112,24 @@ function openingTag(markup, marker) {
 	return markup.slice(start, end + 1);
 }
 
+function markedElement(markup, marker, tagName) {
+	const markerIndex = markup.indexOf(marker);
+	assert.notEqual(markerIndex, -1, marker);
+	const start = markup.lastIndexOf(`<${tagName}`, markerIndex);
+	const end = markup.indexOf(`</${tagName}>`, markerIndex);
+	assert.notEqual(start, -1, `${marker} opening ${tagName}`);
+	assert.notEqual(end, -1, `${marker} closing ${tagName}`);
+	return markup.slice(start, end + tagName.length + 3);
+}
+
+function workspacePanelMarkup(markup, marker) {
+	const markerIndex = markup.indexOf(marker);
+	assert.notEqual(markerIndex, -1, marker);
+	const start = markup.lastIndexOf('<section class="workspace-panel', markerIndex);
+	const next = markup.indexOf('<section class="workspace-panel', markerIndex + marker.length);
+	return markup.slice(start, next === -1 ? markup.length : next);
+}
+
 test("collection draft retains only stable target identity and editor values", () => {
 	const collection = importTree().getState().project.collections[0];
 	const draft = createNodeEditorDraft(collection);
@@ -99,6 +137,7 @@ test("collection draft retains only stable target identity and editor values", (
 	assert.equal(draft.nodeType, "collection");
 	assert.deepEqual(draft.values, {
 		title: "Collection title",
+		hideNuvioTitle: false,
 		viewMode: "",
 		showAllTab: true,
 		pinToTop: false,
@@ -113,6 +152,7 @@ test("folder draft retains only stable target identity and editor values", () =>
 	assert.equal(draft.nodeType, "folder");
 	assert.deepEqual(draft.values, {
 		title: "Folder title",
+		hideNuvioTitle: false,
 		tileShape: "",
 		showFolderTitle: true,
 	});
@@ -140,6 +180,7 @@ test("absent imported values become empty unsupported form strings", () => {
 		value: null,
 		hasField: false,
 		supported: false,
+		hidden: false,
 		status: "absent",
 	});
 });
@@ -174,6 +215,7 @@ test("updating title changes only title form state and touched state", () => {
 	const next = updateNodeEditorField(original, "title", "New title");
 	assert.equal(next.values.title, "New title");
 	assert.equal(next.touched.title, true);
+	assert.equal(next.touched.hideNuvioTitle, false);
 	assert.equal(next.touched.viewMode, false);
 	assert.equal(next.touched.showAllTab, false);
 	assert.equal(next.touched.pinToTop, false);
@@ -659,35 +701,388 @@ test("mixed presentation edits preserve source order, projections, artwork, and 
 	assert.deepEqual(serializeNuvioProject(cycledController.getState().project).value, output);
 });
 
-test("workspace initially has no editor and exposes collection edit only in collection context", () => {
+test("the supported intentional invisible title is exactly U+200E", () => {
+	assert.equal(NUVIO_INVISIBLE_TITLE, "\u200E");
+	assert.equal([...NUVIO_INVISIBLE_TITLE].length, 1);
+	assert.equal(NUVIO_INVISIBLE_TITLE.codePointAt(0), 0x200e);
+	assert.equal(isInvisibleNuvioTitle(""), false);
+	assert.equal(isInvisibleNuvioTitle(NUVIO_INVISIBLE_TITLE), true);
+	assert.equal(isInvisibleNuvioTitle(NUVIO_INVISIBLE_TITLE.repeat(3)), true);
+	for (const unsupported of ["\u200B", "\u2060", "\uFEFF", " ", "\t"]) {
+		assert.equal(isInvisibleNuvioTitle(unsupported), false, JSON.stringify(unsupported));
+		assert.equal(isValidNuvioTitle(unsupported), false, JSON.stringify(unsupported));
+	}
+	assert.equal(isInvisibleNuvioTitle(`Visible${NUVIO_INVISIBLE_TITLE}`), false);
+	assert.equal(isValidVisibleNuvioTitle(`Visible${NUVIO_INVISIBLE_TITLE}`), true);
+});
+
+test("collection hidden-title toggle emits one U+200E and restores the prior visible modal draft", () => {
+	const collection = importTree().getState().project.collections[0];
+	let draft = createNodeEditorDraft(collection);
+	assert.equal(draft.values.hideNuvioTitle, false);
+	assert.equal(draft.visibleTitleDraft, "Collection title");
+
+	draft = updateNodeEditorField(draft, "hideNuvioTitle", true);
+	assert.equal(draft.values.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(draft.values.hideNuvioTitle, true);
+	assert.equal(draft.visibleTitleDraft, "Collection title");
+	assert.deepEqual(buildNodeEditorPatch(draft), { title: NUVIO_INVISIBLE_TITLE });
+
+	draft = updateNodeEditorField(draft, "hideNuvioTitle", false);
+	assert.equal(draft.values.title, "Collection title");
+	assert.equal(draft.values.hideNuvioTitle, false);
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
+});
+
+test("folder invisible name remains separate from native hideTitle presentation", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			hideTitle: false,
+			tileShape: "POSTER",
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	let draft = createNodeEditorDraft(folder);
+	draft = updateNodeEditorField(draft, "hideNuvioTitle", true);
+	assert.deepEqual(buildNodeEditorPatch(draft), { title: NUVIO_INVISIBLE_TITLE });
+	assert.equal(draft.values.showFolderTitle, true);
+	applyNodeEditorDraft(controller, draft);
+	const current = controller.getState().project.collections[0].folders[0];
+	assert.equal(current.editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(current.editable.hideTitle, false);
+});
+
+test("repeated imported U+200E titles are recognised and preserved through unrelated edits and a serializer cycle", () => {
+	const repeated = NUVIO_INVISIBLE_TITLE.repeat(3);
+	const controller = importTree([{
+		id: "collection",
+		title: repeated,
+		pinToTop: false,
+		viewMode: "TABBED_GRID",
+		showAllTab: true,
+		folders: [{
+			id: "folder",
+			title: repeated,
+			tileShape: "POSTER",
+			hideTitle: false,
+			sources: [],
+		}],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+	const collectionDraft = createNodeEditorDraft(collection);
+	const folderDraft = createNodeEditorDraft(folder);
+	assert.equal(collectionDraft.values.hideNuvioTitle, true);
+	assert.equal(folderDraft.values.hideNuvioTitle, true);
+	assert.equal(collectionDraft.values.title, repeated);
+	assert.equal(folderDraft.values.title, repeated);
+
+	applyNodeEditorDraft(
+		controller,
+		updateNodeEditorField(collectionDraft, "pinToTop", true),
+	);
+	applyNodeEditorDraft(
+		controller,
+		updateNodeEditorField(folderDraft, "tileShape", "LANDSCAPE"),
+	);
+	const output = serializeNuvioProject(controller.getState().project).value;
+	assert.equal(output[0].title, repeated);
+	assert.equal(output[0].folders[0].title, repeated);
+	assert.equal(JSON.stringify(output).includes("hideNuvioTitle"), false);
+	assert.equal(JSON.stringify(output).includes("Hidden title"), false);
+
+	const cycledController = createController();
+	assert.equal(cycledController.importValue(output).ok, true);
+	assert.deepEqual(serializeNuvioProject(cycledController.getState().project).value, output);
+});
+
+test("disabling an imported invisible title requires a visible replacement", () => {
+	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
+	const collection = importTree([{ id: "hidden", title: repeated, folders: [] }])
+		.getState().project.collections[0];
+	let draft = createNodeEditorDraft(collection);
+	draft = updateNodeEditorField(draft, "hideNuvioTitle", false);
+	assert.equal(draft.values.title, "");
+	assert.deepEqual(validateNodeEditorDraft(draft), [{
+		code: "EDITOR_TITLE_REQUIRED",
+		path: "$ui.editor.title",
+		message: "Enter a collection title before applying changes.",
+	}]);
+
+	draft = updateNodeEditorField(draft, "title", "Visible replacement");
+	assert.deepEqual(validateNodeEditorDraft(draft), []);
+	assert.deepEqual(buildNodeEditorPatch(draft), { title: "Visible replacement" });
+});
+
+test("quick rename drafts safely initialise visible, hidden, and unusual imported titles", () => {
+	const visible = importTree().getState().project.collections[0];
+	const visibleDraft = createQuickRenameDraft(visible);
+	assert.equal(visibleDraft.value, "Collection title");
+	assert.equal(visibleDraft.original.hidden, false);
+	assert.deepEqual(buildQuickRenamePatch(visibleDraft), {});
+
+	const hidden = importTree([{
+		id: "hidden",
+		title: NUVIO_INVISIBLE_TITLE.repeat(2),
+		folders: [],
+	}]).getState().project.collections[0];
+	const hiddenDraft = createQuickRenameDraft(hidden);
+	assert.equal(hiddenDraft.value, "");
+	assert.equal(hiddenDraft.original.hidden, true);
+	assert.equal(JSON.stringify(hiddenDraft).includes("hidden"), true);
+
+	const unusual = importTree([{
+		id: "private-id",
+		title: { private: "RAW_IMPORTED_TITLE" },
+		folders: [],
+	}]).getState().project.collections[0];
+	const unusualDraft = createQuickRenameDraft(unusual);
+	assert.equal(unusualDraft.value, "");
+	assert.equal(unusualDraft.original.supported, false);
+	assert.equal(JSON.stringify(unusualDraft).includes("RAW_IMPORTED_TITLE"), false);
+	assert.equal(JSON.stringify(unusualDraft).includes("private-id"), false);
+});
+
+test("quick rename accepts visible text only and never treats blank or another format character as hidden", () => {
+	const collection = importTree().getState().project.collections[0];
+	for (const invalidTitle of ["", "   ", NUVIO_INVISIBLE_TITLE, "\u200B", "\u2060", "\uFEFF"]) {
+		const draft = updateQuickRenameTitle(createQuickRenameDraft(collection), invalidTitle);
+		assert.equal(validateQuickRenameDraft(draft)[0].code, "RENAME_VISIBLE_TITLE_REQUIRED");
+	}
+
+	const mixed = updateQuickRenameTitle(
+		createQuickRenameDraft(collection),
+		`Visible${NUVIO_INVISIBLE_TITLE}`,
+	);
+	assert.deepEqual(validateQuickRenameDraft(mixed), []);
+	assert.deepEqual(buildQuickRenamePatch(mixed), {
+		title: `Visible${NUVIO_INVISIBLE_TITLE}`,
+	});
+});
+
+test("successful quick rename creates one title-only controller revision and retains selection", () => {
+	const controller = importTree();
+	const folder = controller.getState().project.collections[0].folders[0];
+	controller.selectNode(folder.internalId);
+	const beforeRevision = controller.getState().revision;
+	const draft = updateQuickRenameTitle(createQuickRenameDraft(folder), "Renamed folder");
+	const result = applyQuickRenameDraft(controller, draft);
+
+	assert.deepEqual(result, { ok: true, controllerCalled: true, diagnostics: [] });
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(controller.getState().selection.folderInternalId, folder.internalId);
+	assert.equal(controller.getState().project.collections[0].folders[0].editable.title, "Renamed folder");
+	assert.deepEqual(buildQuickRenamePatch(draft), { title: "Renamed folder" });
+});
+
+test("quick rename cancel and unchanged apply create no revision", () => {
+	const controller = importTree();
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+	const before = controller.getState();
+	const cancelledDraft = updateQuickRenameTitle(createQuickRenameDraft(collection), "Discard me");
+	assert.deepEqual(buildQuickRenamePatch(cancelledDraft), { title: "Discard me" });
+	assert.equal(controller.getState(), before);
+
+	const noOp = applyQuickRenameDraft(
+		controller,
+		updateQuickRenameTitle(createQuickRenameDraft(collection), "Collection title"),
+	);
+	assert.deepEqual(noOp, { ok: true, controllerCalled: false, diagnostics: [] });
+	assert.equal(controller.getState(), before);
+});
+
+test("quick rename replaces an invisible title only after visible input and cancellation retains it", () => {
+	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
+	const controller = importTree([{ id: "hidden", title: repeated, folders: [] }]);
+	const collection = controller.getState().project.collections[0];
+	const initialDraft = createQuickRenameDraft(collection);
+	const invalid = applyQuickRenameDraft(controller, initialDraft);
+	assert.equal(invalid.ok, false);
+	assert.equal(invalid.controllerCalled, false);
+	assert.equal(controller.getState().project.collections[0].editable.title, repeated);
+
+	const beforeCancel = controller.getState();
+	updateQuickRenameTitle(initialDraft, "Cancelled replacement");
+	assert.equal(controller.getState(), beforeCancel);
+	assert.equal(controller.getState().project.collections[0].editable.title, repeated);
+
+	const replacement = updateQuickRenameTitle(initialDraft, "Visible again");
+	assert.equal(applyQuickRenameDraft(controller, replacement).ok, true);
+	assert.equal(controller.getState().project.collections[0].editable.title, "Visible again");
+});
+
+test("dialog focus helper enters, contains, wraps, and safely cancels focus", () => {
+	const focusLog = [];
+	const controls = ["first", "middle", "last"].map((name) => ({
+		name,
+		focus() { focusLog.push(name); },
+	}));
+	const dialog = {
+		querySelector() { return controls[0]; },
+		querySelectorAll() { return controls; },
+		focus() { focusLog.push("dialog"); },
+	};
+	assert.equal(focusFirstDialogControl(dialog), controls[0]);
+	assert.deepEqual(focusLog, ["first"]);
+
+	let prevented = 0;
+	let cancelled = 0;
+	const event = (key, target, shiftKey = false) => ({
+		key,
+		target,
+		shiftKey,
+		preventDefault() { prevented += 1; },
+	});
+	assert.equal(handleDialogKeyDown(event("Tab", controls[2]), dialog, () => {}), "wrapped-forward");
+	assert.equal(handleDialogKeyDown(event("Tab", controls[0], true), dialog, () => {}), "wrapped-backward");
+	assert.equal(handleDialogKeyDown(event("Tab", controls[1]), dialog, () => {}), "contained");
+	assert.equal(handleDialogKeyDown(event("Escape", controls[1]), dialog, () => { cancelled += 1; }), "cancel");
+	assert.deepEqual(focusLog, ["first", "first", "last"]);
+	assert.equal(prevented, 3);
+	assert.equal(cancelled, 1);
+});
+
+test("Builder fallbacks and accessible labels prevent blank hidden-title cards and summaries", () => {
+	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
+	const controller = importTree([{
+		id: "hidden-collection",
+		title: repeated,
+		folders: [{
+			id: "hidden-folder",
+			title: repeated,
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	controller.selectNode(folder.internalId);
+	const view = buildBuilderViewModel(controller.getState());
+	assert.equal(view.selectedCollection.title, "Hidden title");
+	assert.equal(view.selectedCollection.titleHidden, true);
+	assert.equal(view.selectedCollection.accessibleName, "Collection with hidden Nuvio title");
+	assert.equal(view.selectedFolder.title, "Hidden title");
+	assert.equal(view.selectedFolder.accessibleName, "Folder with hidden Nuvio title");
+	assert.ok(view.selectedFolder.details.some((entry) => entry.label === "Nuvio title" && entry.value === "Invisible"));
+
+	const markup = renderWorkspace(controller);
+	assert.ok(markup.includes("Hidden title"));
+	assert.ok(markup.includes("Invisible in Nuvio"));
+	assert.ok(markup.includes('aria-label="Collection with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Folder with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Rename collection with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Rename folder with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Open settings for collection with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Open settings for folder with hidden Nuvio title"'));
+	assert.equal(markup.includes(repeated), false);
+});
+
+test("quick rename renders only for its targeted entity and hides imported invisible content", () => {
+	const repeated = NUVIO_INVISIBLE_TITLE.repeat(2);
+	const controller = importTree([{
+		id: "hidden",
+		title: repeated,
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+	const renameDraft = {
+		...createQuickRenameDraft(collection),
+		context: "desktop",
+	};
+	const markup = renderWorkspace(controller, { renameDraft });
+	assert.equal((markup.match(/data-quick-rename=/g) ?? []).length, 1);
+	assert.ok(markup.includes('data-quick-rename="collection"'));
+	assert.equal(markup.includes('data-quick-rename="folder"'), false);
+	assert.ok(markup.includes('aria-label="Rename selected collection"'));
+	assert.ok(markup.includes('data-action="apply-collection-rename"'));
+	assert.ok(markup.includes('data-action="cancel-collection-rename"'));
+	assert.ok(markup.includes('value=""'));
+	assert.ok(markup.includes("Enter a visible title to replace the hidden Nuvio title."));
+	assert.equal(markup.includes(repeated), false);
+	assert.equal(markup.includes("data-settings-modal="), false);
+	assert.equal(markup.includes("hidden-collection"), false);
+});
+
+test("modal and rename source retain exact trigger focus, safe backdrop, body lock, and no blur dependency", () => {
+	const workspaceSource = fs.readFileSync(
+		path.join(rootDir, "builder", "src", "ui", "BuilderWorkspace.jsx"),
+		"utf8",
+	);
+	const editorSource = fs.readFileSync(
+		path.join(rootDir, "builder", "src", "ui", "NodeEditor.jsx"),
+		"utf8",
+	);
+	assert.match(workspaceSource, /settingsRestoreFocusRef\.current = trigger/);
+	assert.match(workspaceSource, /renameRestoreFocusRef\.current = trigger/);
+	assert.equal((workspaceSource.match(/target\.focus\?\.\(\)/g) ?? []).length, 2);
+	assert.match(workspaceSource, /event\.key === "Escape"[\s\S]*onCancel\(\)/);
+	assert.match(workspaceSource, /event\.key === "Enter" && event\.target === inputRef\.current[\s\S]*onSubmit\(event\)/);
+	assert.doesNotMatch(workspaceSource, /onBlur=/);
+	assert.match(editorSource, /handleDialogKeyDown\(event, dialogRef\.current, onCancel\)/);
+	assert.match(editorSource, /document\.body\.classList\.add\("settings-modal-open"\)/);
+	assert.match(editorSource, /document\.body\.classList\.remove\("settings-modal-open"\)/);
+	assert.match(editorSource, /event\.target === event\.currentTarget[\s\S]*dialogRef\.current\?\.focus\(\)/);
+	assert.doesNotMatch(editorSource, /event\.target === event\.currentTarget[\s\S]{0,180}onCancel/);
+});
+
+test("workspace initially has no modal and exposes collection-owned rename and settings actions", () => {
 	const controller = importTree();
 	const collection = controller.getState().project.collections[0];
 	controller.selectNode(collection.internalId);
 	const markup = renderWorkspace(controller);
 	assert.equal(markup.includes("data-node-editor="), false);
-	assert.ok(markup.includes('data-action="edit-collection"'));
-	assert.equal(markup.includes('data-action="edit-folder"'), false);
+	assert.equal(markup.includes("data-settings-modal="), false);
+	assert.ok(markup.includes('data-action="rename-collection"'));
+	assert.ok(markup.includes('data-action="settings-collection"'));
+	assert.equal(markup.includes('data-action="rename-folder"'), false);
+	assert.equal(markup.includes('data-action="settings-folder"'), false);
 	assert.equal(markup.includes("Edit source"), false);
+
+	const collectionsPanel = workspacePanelMarkup(markup, 'data-panel="collections"');
+	assert.ok(collectionsPanel.includes('data-action-context="desktop"'));
+	assert.ok(collectionsPanel.includes('aria-label="Rename collection"'));
+	assert.ok(collectionsPanel.includes('aria-label="Collection settings"'));
+	const foldersHeader = markedElement(markup, 'data-panel-header="folders"', "header");
+	assert.ok(foldersHeader.includes('data-action="create-folder"'));
+	assert.equal(foldersHeader.includes("settings-collection"), false);
+	assert.equal(foldersHeader.includes("rename-collection"), false);
 });
 
-test("folder context exposes a folder edit action and no source editor action", () => {
+test("folder context exposes folder-owned rename and settings actions outside the Sources header", () => {
 	const controller = importTree();
 	const folder = controller.getState().project.collections[0].folders[0];
 	controller.selectNode(folder.internalId);
 	const markup = renderWorkspace(controller);
-	assert.ok(markup.includes('data-action="edit-folder"'));
+	assert.ok(markup.includes('data-action="rename-folder"'));
+	assert.ok(markup.includes('data-action="settings-folder"'));
 	assert.equal(markup.includes('data-action="edit-source"'), false);
+	const foldersPanel = workspacePanelMarkup(markup, 'data-panel="folders"');
+	assert.ok(foldersPanel.includes('data-entity-actions="folder"'));
+	assert.ok(foldersPanel.includes('data-action-context="desktop"'));
+	const sourcesHeader = markedElement(markup, 'data-panel-header="sources"', "header");
+	assert.equal(sourcesHeader.includes("settings-folder"), false);
+	assert.equal(sourcesHeader.includes("rename-folder"), false);
 });
 
-test("collection editor renders exactly one labelled form with stable markers and actions", () => {
+test("collection settings render exactly one accessible modal with stable markers and actions", () => {
 	const controller = importTree();
 	const collection = controller.getState().project.collections[0];
 	controller.selectNode(collection.internalId);
 	const markup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
 	assert.equal((markup.match(/data-node-editor=/g) ?? []).length, 1);
+	assert.equal((markup.match(/data-settings-modal="true"/g) ?? []).length, 1);
+	assert.equal((markup.match(/role="dialog"/g) ?? []).length, 1);
 	for (const marker of [
 		'data-node-editor="collection"',
+		'aria-modal="true"',
 		'data-editor-field="title"',
+		'data-editor-field="hideNuvioTitle"',
+		'data-editor-control="hideNuvioTitle"',
 		'data-editor-field="viewMode"',
 		'data-editor-choice="tabs"',
 		'data-editor-choice="rows"',
@@ -699,12 +1094,15 @@ test("collection editor renders exactly one labelled form with stable markers an
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
-	assert.ok(markup.includes("Edit collection"));
 	assert.ok(markup.includes("Collection layout"));
+	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Include an All tab"));
 	assert.ok(markup.includes("Pin to top"));
+	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 	assert.equal(markup.includes('data-editor-field="id"'), false);
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
+	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes("inert"));
+	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes('aria-hidden="true"'));
 });
 
 test("folder editor keeps unique IDs, valid descriptions, one h1, and one local alert", () => {
@@ -721,14 +1119,20 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);
 	assert.equal((markup.match(/class="editor-diagnostics" role="alert"/g) ?? []).length, 1);
 	assert.ok(markup.includes("Folder settings"));
+	assert.match(markup, /role="dialog" aria-modal="true" aria-labelledby="node-editor-folder-title"/);
+	assert.match(markup, /<h2 id="node-editor-folder-title">Folder settings<\/h2>/);
 	for (const marker of [
+		'data-editor-field="hideNuvioTitle"',
+		'data-editor-control="hideNuvioTitle"',
 		'data-editor-field="tileShape"',
 		'data-editor-choice="poster"',
 		'data-editor-choice="landscape"',
 		'data-editor-field="showFolderTitle"',
 		'data-editor-control="showFolderTitle"',
 	]) assert.ok(markup.includes(marker), marker);
+	assert.ok(markup.includes("Hide folder name in Nuvio"));
 	assert.ok(markup.includes("Show folder title"));
+	assert.ok(markup.includes("Choose the shape of this folder card in Nuvio."));
 	assert.equal(markup.includes("hideTitle"), false);
 });
 
@@ -800,24 +1204,27 @@ test("Follow Layout and Square render bounded replacement guidance and no normal
 	assert.equal(folderMarkup.includes('value="SQUARE"'), false);
 });
 
-test("editor-active workspace disables every hierarchy and mobile navigation button", () => {
+test("settings modal makes the workspace inert and disables every background action", () => {
 	const controller = importTree();
 	const folder = controller.getState().project.collections[0].folders[0];
 	controller.selectNode(folder.sources[0].internalId);
 	const markup = renderWorkspace(controller, { draft: createNodeEditorDraft(folder) });
 	assert.ok(markup.includes('data-editor-lock="true"'));
+	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes("inert"));
 	for (const marker of [
 		'data-node-type="collection"',
 		'data-node-type="folder"',
 		'data-node-type="source"',
 		'data-action="create-collection"',
 		'data-action="create-folder"',
-		'data-action="edit-collection"',
-		'data-action="edit-folder"',
+		'data-action="rename-collection"',
+		'data-action="settings-collection"',
+		'data-action="rename-folder"',
+		'data-action="settings-folder"',
 	]) assert.ok(openingTag(markup, marker).includes("disabled"), marker);
 	assert.equal((markup.match(/<button class="back-control mobile-only"[^>]*disabled/g) ?? []).length, 2);
 	assert.ok(openingTag(markup, ">Show folder details<").includes("disabled"), "Show folder details");
-	assert.ok(markup.includes("Hierarchy navigation is paused"));
+	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 });
 
 test("Apply and Cancel remain enabled while hierarchy controls are locked", () => {
@@ -829,9 +1236,16 @@ test("Apply and Cancel remain enabled while hierarchy controls are locked", () =
 	assert.equal(openingTag(markup, 'data-action="cancel-node-edit"').includes("disabled"), false);
 });
 
-test("styles keep the editor responsive, focused, touch-sized, and visibly disabled", () => {
+test("styles keep the modal responsive, bounded, scrollable, focused, and motion-safe", () => {
 	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
-	assert.match(styles, /\.node-editor\s*\{[\s\S]*max-width:\s*900px/);
+	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*position:\s*fixed/);
+	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*background:\s*rgb\(0 8 13 \/ 88%\)/);
+	assert.match(styles, /@supports \(\(-webkit-backdrop-filter:[\s\S]*backdrop-filter:\s*blur\(8px\)/);
+	assert.match(styles, /\.node-editor\s*\{[\s\S]*height:\s*100dvh/);
+	assert.match(styles, /\.node-editor\s*\{[\s\S]*max-height:\s*100dvh/);
+	assert.match(styles, /\.node-editor\s*\{[\s\S]*overflow-y:\s*auto/);
+	assert.match(styles, /body\.settings-modal-open\s*\{[\s\S]*overflow:\s*hidden/);
+	assert.match(styles, /\.workspace-underlay\[aria-hidden="true"\]\s*\{[\s\S]*pointer-events:\s*none/);
 	assert.match(styles, /\.editor-field input\[type="text"\]\s*\{[\s\S]*min-height:\s*48px/);
 	assert.match(styles, /\.editor-choice\s*\{[\s\S]*min-height:\s*72px/);
 	assert.match(styles, /\.editor-switch\s*\{[\s\S]*min-height:\s*64px/);
@@ -839,7 +1253,8 @@ test("styles keep the editor responsive, focused, touch-sized, and visibly disab
 	assert.match(styles, /\.shape-preview\.is-landscape\s*\{[\s\S]*width:\s*42px/);
 	assert.match(styles, /button:disabled/);
 	assert.match(styles, /@media \(max-width: 430px\)/);
-	assert.match(styles, /@media \(min-width: 620px\)/);
+	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*max-height:\s*calc\(100dvh - 48px\)/);
+	assert.match(styles, /@media \(min-width: 620px\)[\s\S]*border-radius:\s*18px/);
 	assert.match(styles, /@media \(min-width: 760px\)/);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(235px/);
 	assert.match(styles, /focus-visible/);
