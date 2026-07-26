@@ -1,28 +1,28 @@
 # Shared artwork runtime lookup
 
-Status: shared foundation implemented; v1 company/network integration implemented
+Status: shared foundation and strict resolver v1/v2 compatibility implemented; live runtime remains v1
 
-Last reviewed: 2026-07-21
+Last reviewed: 2026-07-26
 
 ## Evidence and scope
 
-This contract is based on the final `davecollections/nuvio-assets` publication handover and the current published files:
+This contract is based on the final `davecollections/nuvio-assets` schema-v1 publication handover, the current published files, and the separately reviewed assets-side schema-v2 network-poster contract:
 
 - [runtime lookup](https://github.com/davecollections/nuvio-assets/blob/main/assets/collection_covers/runtime-lookup.json)
 - [runtime lookup schema](https://github.com/davecollections/nuvio-assets/blob/main/schemas/artwork-runtime-lookup.schema.json)
 
 The shared consumer implementation is [`js/artwork-runtime.mjs`](../../js/artwork-runtime.mjs). It deliberately validates only the application-facing safety and resolution contract rather than duplicating the complete publication schema. Publication generation, counts, fingerprints, source-manifest metadata, and review workflows remain owned by `nuvio-assets`.
 
-Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) adds the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. V1 people exports and the v2 builder still do not consume the runtime.
+Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) adds strict consumer compatibility for schema versions 1 and 2 without publishing runtime v2. V1 people exports and the v2 builder still do not consume the runtime.
 
 ## Published location
 
 - Default base URL: `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/`
 - Runtime lookup path: `assets/collection_covers/runtime-lookup.json`
 - Publication schema path: `schemas/artwork-runtime-lookup.schema.json`
-- Required runtime state: `schemaVersion: 1` and `status: "published"`
+- Current live runtime state: `schemaVersion: 1` and `status: "published"`
 
-The base URL and lookup path are configurable when creating a client so tests, mirrors, a future CDN, or a future proxy can use the same resolver rules. The application does not embed the current runtime fingerprint, file SHA, entity counts, or representative IDs as runtime rules.
+The shared resolver accepts exactly numeric `schemaVersion` values `1` and `2`; missing, malformed, coerced, decimal, and unsupported values fail with `INVALID_SCHEMA_VERSION`. The base URL and lookup path are configurable when creating a client so tests, mirrors, a future CDN, or a future proxy can use the same resolver rules. The application does not embed the current runtime fingerprint, file SHA, entity counts, or representative IDs as runtime rules.
 
 ## Typed identity contract
 
@@ -40,13 +40,26 @@ An absent key means there is no currently published automatic-use artwork for th
 
 ## Orientation and URL contract
 
-| Entity | Landscape | Poster |
-| --- | --- | --- |
-| Company | 1200×675 WebP | unsupported |
-| Network | 1200×675 WebP | unsupported |
-| Person | 1200×675 WebP | 1000×1500 WebP |
+| Entity | Orientation | Schema v1 | Schema v2 |
+| --- | --- | --- | --- |
+| Company | Landscape | supported | supported |
+| Company | Poster | unsupported | unsupported |
+| Network | Landscape | supported | supported |
+| Network | Poster | unsupported | supported and required |
+| Person | Landscape | supported | supported |
+| Person | Poster | supported | supported |
 
-The resolver uses only the requested orientation. It does not crop, stretch, or substitute another orientation. Company and network poster requests return `unsupported-orientation` even when landscape artwork exists.
+The resolver uses only the requested orientation. It does not crop, stretch, or substitute another orientation. Company poster requests return `unsupported-orientation` under both versions, and network poster requests do so under v1. A valid v2 network poster request resolves through the existing `ready` result shape.
+
+Valid consumer paths are exact:
+
+```text
+assets/collection_covers/companies/{id}.webp
+assets/collection_covers/networks/{id}.webp
+assets/collection_covers/networks/poster/{id}.webp
+assets/collection_covers/people/landscape/{id}.webp
+assets/collection_covers/people/poster/{id}.webp
+```
 
 Every orientation supplies a repository-relative `path` and lowercase 64-character SHA-256. The full asset URL is the path resolved beneath the configured base URL with this cache version appended:
 
@@ -64,13 +77,14 @@ Automatic resolution accepts only a globally published lookup and entries that:
 - have `status: "published"`;
 - have `reviewRequired: false`;
 - have a non-empty canonical name and a boolean `fallbackUsed` value;
-- contain every orientation required for their type;
-- contain safe repository-relative paths and valid lowercase SHA-256 values;
+- contain every orientation required for their schema version and type;
+- contain no forbidden company Poster data or schema-v1 Network Poster data;
+- contain the exact entity/ID/orientation path and a valid lowercase SHA-256 for every required orientation;
 - use one or two unique `actor` and/or `director` categories for people.
 
 `fallbackUsed: true` is not a failure or a request for client-side substitution. It means the publication pipeline used its reviewed fallback process and still approved the record for automatic public use. The ready result propagates the flag for future display or diagnostics.
 
-Malformed lookup data throws `ArtworkRuntimeError` with a stable `code`. Loader, HTTP, JSON, contract, and unsafe-review failures therefore remain distinguishable from the legitimate `missing` and `unsupported-orientation` states.
+Malformed lookup data throws `ArtworkRuntimeError` with a stable `code`. Missing required orientation data fails with `INVALID_ORIENTATION_DATA`; forbidden orientation data fails with `UNSUPPORTED_ORIENTATION_DATA`; exact path mismatches fail with `INVALID_PATH`. Loader, HTTP, JSON, contract, and unsafe-review failures therefore remain distinguishable from the legitimate `missing` and `unsupported-orientation` states.
 
 ## Public API
 
@@ -117,13 +131,13 @@ The pure resolver accepts `lookup`, `entityType`, numeric `tmdbId`, `orientation
 - caches only a successful validated lookup in memory for that client’s lifetime;
 - clears a failed in-flight load so a later call can retry.
 
-Its async `resolve()` method loads once and applies the same typed resolver. Tests inject deterministic fetch implementations and synthetic fixtures; repository tests never request the live runtime.
+Its async `resolve()` method loads once and applies the same typed resolver. Tests inject deterministic fetch implementations and explicit synthetic v1/test-only v2 fixtures; repository tests never request the live runtime.
 
 There is no localStorage, IndexedDB, Cache API, or service-worker persistence. Persistent caching, refresh intervals, explicit refresh controls, and multi-tab behaviour remain separate product decisions for a later integration issue.
 
 ## V1 company and network integration
 
-The classic v1 page loads [`js/artwork-runtime-v1.mjs`](../../js/artwork-runtime-v1.mjs) as a module. The adapter creates one shared client per page and exposes only batch landscape resolution for explicit `company` or `network` requests. Loading the adapter does not call `load()` or fetch the runtime; the request begins only when a company or network export modal prepares an export.
+The classic v1 page loads [`js/artwork-runtime-v1.mjs`](../../js/artwork-runtime-v1.mjs) as a module. The adapter creates one shared client per page and exposes only batch landscape resolution for explicit `company` or `network` requests. It retains that interface when the shared lookup is schema v1 or schema v2 and never exposes Network Poster. Loading the adapter does not call `load()` or fetch the runtime; the request begins only when a company or network export modal prepares an export.
 
 The classic export code automatically chooses published curated artwork, then the selected cached entity's TMDB `logo_path`, then a visible title plus 🎬/📺. A `ready` result wins, including `fallbackUsed: true`, and uses the exact SHA-versioned runtime URL with its title hidden. A missing or unexpected non-ready result uses the established `w500` TMDB logo helper without another API request; because a logo is not necessarily a landscape cover, the title remains visible. When neither image exists, the cover URL stays empty and the title/emoji fallback is used. The shared runtime itself still does not construct or know about TMDB fallback URLs.
 
@@ -142,4 +156,4 @@ The `.mjs` location under `js/` is intentional:
 - v1 uses a thin `type="module"` adapter without duplicating resolution rules;
 - a later builder issue can import the pure module through Vite.
 
-Issue #46 changes only v1 company/network export artwork preparation and related UI/documentation. People exports, builder output and UI, Worker routes, ordinary lookup thumbnails, and other export families remain unchanged.
+Issue #55 changes only the shared resolver, focused compatibility tests, and this contract documentation. The external v1 adapter interface, cached exporter production code, live runtime path and bytes, people exports, builder output and UI, Worker routes, ordinary lookup thumbnails, and other export families remain unchanged. Publishing schema v2 remains a separate assets-side review, push, merge, and atomic publication task.
