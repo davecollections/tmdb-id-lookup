@@ -1,28 +1,43 @@
 # Shared artwork runtime lookup
 
-Status: shared foundation and strict resolver v1/v2 compatibility implemented; live runtime remains v1
+Status: shared foundation and strict resolver v1/v2 compatibility implemented; live runtime is schemaVersion 2
 
 Last reviewed: 2026-07-26
 
 ## Evidence and scope
 
-This contract is based on the final `davecollections/nuvio-assets` schema-v1 publication handover, the current published files, and the separately reviewed assets-side schema-v2 network-poster contract:
+This contract is based on the final `davecollections/nuvio-assets` schema-v1 publication handover, the current published files, the separately reviewed schema-v2 network-poster contract, and the completed [assets PR #3 publication](https://github.com/davecollections/nuvio-assets/pull/3):
 
 - [runtime lookup](https://github.com/davecollections/nuvio-assets/blob/main/assets/collection_covers/runtime-lookup.json)
 - [runtime lookup schema](https://github.com/davecollections/nuvio-assets/blob/main/schemas/artwork-runtime-lookup.schema.json)
 
 The shared consumer implementation is [`js/artwork-runtime.mjs`](../../js/artwork-runtime.mjs). It deliberately validates only the application-facing safety and resolution contract rather than duplicating the complete publication schema. Publication generation, counts, fingerprints, source-manifest metadata, and review workflows remain owned by `nuvio-assets`.
 
-Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) adds strict consumer compatibility for schema versions 1 and 2 without publishing runtime v2. V1 people exports and the v2 builder still do not consume the runtime.
+Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) added strict consumer compatibility for schema versions 1 and 2 but did not itself publish runtime v2. Assets PR #3 later completed that publication. V1 people exports and the v2 builder still do not consume the runtime.
 
 ## Published location
 
 - Default base URL: `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/`
 - Runtime lookup path: `assets/collection_covers/runtime-lookup.json`
 - Publication schema path: `schemas/artwork-runtime-lookup.schema.json`
-- Current live runtime state: `schemaVersion: 1` and `status: "published"`
+- Current live runtime state: `schemaVersion: 2` and `status: "published"`
 
-The shared resolver accepts exactly numeric `schemaVersion` values `1` and `2`; missing, malformed, coerced, decimal, and unsupported values fail with `INVALID_SCHEMA_VERSION`. The base URL and lookup path are configurable when creating a client so tests, mirrors, a future CDN, or a future proxy can use the same resolver rules. The application does not embed the current runtime fingerprint, file SHA, entity counts, or representative IDs as runtime rules.
+### Live runtime-v2 publication baseline
+
+| Evidence | Published value |
+| --- | --- |
+| Assets pull request | [#3 — Publish Network Poster artwork and runtime v2](https://github.com/davecollections/nuvio-assets/pull/3) |
+| Publication commit | [`815c0d5ada61c88a8f681cd12edaa8932ea320e4`](https://github.com/davecollections/nuvio-assets/commit/815c0d5ada61c88a8f681cd12edaa8932ea320e4) |
+| Merge commit | [`d34560a06469ce13af6fe1a3a5b299ffb3748560`](https://github.com/davecollections/nuvio-assets/commit/d34560a06469ce13af6fe1a3a5b299ffb3748560) |
+| Release | `studio-network-posters-v2-2026-07-26` at `2026-07-26T03:19:39.353Z` |
+| Entities | 1,820 companies; 572 networks; 817 people; 3,209 total |
+| Assets | 3,209 Landscape; 1,389 Poster; 4,598 total |
+| Runtime | SHA-256 `3b04e76eec24922c59404712a46245ff9fd8da1c7c1f508c19f6f69d4884f4af`; fingerprint `900b25771f70365218754af18588ed1212e7669903027795d613eb427c143c58` |
+| Studio/network manifest | SHA-256 `9c214428194d24653892177919f60d3e070b6f5d9491aac4bd70045bae5c7079`; fingerprint `b1460d79e4ecc73a836676c85a1294bd424af4d58c69014e352073b830d4098c` |
+
+These values are recorded publication evidence, not hardcoded resolver rules. The application continues to validate the consumer contract rather than embedding the current release ID, hashes, fingerprints, counts, or representative IDs.
+
+The shared resolver accepts exactly numeric `schemaVersion` values `1` and `2`; missing, malformed, coerced, decimal, and unsupported values fail with `INVALID_SCHEMA_VERSION`. The base URL and lookup path are configurable when creating a client so tests, mirrors, a future CDN, or a future proxy can use the same resolver rules.
 
 ## Typed identity contract
 
@@ -50,6 +65,8 @@ An absent key means there is no currently published automatic-use artwork for th
 | Person | Poster | supported | supported |
 
 The resolver uses only the requested orientation. It does not crop, stretch, or substitute another orientation. Company poster requests return `unsupported-orientation` under both versions, and network poster requests do so under v1. A valid v2 network poster request resolves through the existing `ready` result shape.
+
+Network Poster is now publicly live under runtime v2. The classic v1 bridge remains Company/Network Landscape-only, and Builder Network Poster consumption and UI remain unimplemented.
 
 Valid consumer paths are exact:
 
@@ -116,7 +133,7 @@ The pure resolver accepts `lookup`, `entityType`, numeric `tmdbId`, `orientation
 
 ```js
 { status: "missing", entityType: "company", tmdbId: 123, orientation: "landscape" }
-{ status: "unsupported-orientation", entityType: "network", tmdbId: 123, orientation: "poster" }
+{ status: "unsupported-orientation", entityType: "company", tmdbId: 123, orientation: "poster" }
 ```
 
 `categories` is included for ready person results. Missing and unsupported results intentionally contain no path or URL.
@@ -156,4 +173,4 @@ The `.mjs` location under `js/` is intentional:
 - v1 uses a thin `type="module"` adapter without duplicating resolution rules;
 - a later builder issue can import the pure module through Vite.
 
-Issue #55 changes only the shared resolver, focused compatibility tests, and this contract documentation. The external v1 adapter interface, cached exporter production code, live runtime path and bytes, people exports, builder output and UI, Worker routes, ordinary lookup thumbnails, and other export families remain unchanged. Publishing schema v2 remains a separate assets-side review, push, merge, and atomic publication task.
+Issue #55 changed only the shared resolver, focused compatibility tests, and its contract documentation; it did not publish runtime v2. Assets PR #3 subsequently completed the separately reviewed, pushed, merged, and atomic assets-side publication without a TMDB production-code change. The external v1 adapter interface and cached exporter remain Landscape-only, while people exports, Builder artwork consumption and UI, Worker routes, ordinary lookup thumbnails, and other export families remain unchanged.
