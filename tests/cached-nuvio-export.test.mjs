@@ -11,6 +11,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const exporterSource = fs.readFileSync(path.join(rootDir, "js", "cached-nuvio-export.js"), "utf8");
 const COMPANY_SHA = "a".repeat(64);
 const NETWORK_SHA = "b".repeat(64);
+const NETWORK_POSTER_SHA = "e".repeat(64);
 
 function companyEntry(id, { fallbackUsed = false, name = `Company ${id}` } = {}) {
 	return {
@@ -26,7 +27,7 @@ function companyEntry(id, { fallbackUsed = false, name = `Company ${id}` } = {})
 	};
 }
 
-function networkEntry(id, { fallbackUsed = false, name = `Network ${id}` } = {}) {
+function v1NetworkEntry(id, { fallbackUsed = false, name = `Network ${id}` } = {}) {
 	return {
 		id,
 		name,
@@ -40,7 +41,17 @@ function networkEntry(id, { fallbackUsed = false, name = `Network ${id}` } = {})
 	};
 }
 
-function createLookup() {
+function v2NetworkEntry(id, options = {}) {
+	return {
+		...v1NetworkEntry(id, options),
+		poster: {
+			path: `assets/collection_covers/networks/poster/${id}.webp`,
+			sha256: NETWORK_POSTER_SHA,
+		},
+	};
+}
+
+function createV1Lookup() {
 	return {
 		schemaVersion: 1,
 		status: "published",
@@ -49,10 +60,21 @@ function createLookup() {
 			"11": companyEntry(11, { fallbackUsed: true, name: "Runtime Fallback Name" }),
 		},
 		networks: {
-			"20": networkEntry(20, { name: "Alpha Network" }),
-			"21": networkEntry(21, { fallbackUsed: true, name: "Runtime Network Fallback" }),
+			"20": v1NetworkEntry(20, { name: "Alpha Network" }),
+			"21": v1NetworkEntry(21, { fallbackUsed: true, name: "Runtime Network Fallback" }),
 		},
 		people: {},
+	};
+}
+
+function createV2Lookup() {
+	return {
+		...createV1Lookup(),
+		schemaVersion: 2,
+		networks: {
+			"20": v2NetworkEntry(20, { name: "Alpha Network" }),
+			"21": v2NetworkEntry(21, { fallbackUsed: true, name: "Runtime Network Fallback" }),
+		},
 	};
 }
 
@@ -289,7 +311,7 @@ test("v1 adapter stays lazy and resolves explicit company/network landscape batc
 	let fetchCount = 0;
 	const bridge = createBridge(async () => {
 		fetchCount += 1;
-		return responseFor(createLookup());
+		return responseFor(createV1Lookup());
 	});
 
 	assert.equal(fetchCount, 0);
@@ -313,13 +335,64 @@ test("v1 adapter stays lazy and resolves explicit company/network landscape batc
 	assert.equal(networks[1].fallbackUsed, true);
 	assert.equal(networks[2].status, "missing");
 	await assert.rejects(() => bridge.resolveLandscapeBatch({ entityType: "person", tmdbIds: [30] }), TypeError);
+	await assert.rejects(() => bridge.resolveLandscapeBatch({ entityType: "company", tmdbIds: "10" }), TypeError);
+});
+
+test("v1 adapter interface remains landscape-only against a test-only schema-v2 lookup", async () => {
+	let fetchCount = 0;
+	const bridge = createBridge(async () => {
+		fetchCount += 1;
+		return responseFor(createV2Lookup());
+	});
+
+	assert.deepEqual(Object.keys(bridge), ["resolveLandscapeBatch"]);
+	const [network] = await bridge.resolveLandscapeBatch({ entityType: "network", tmdbIds: [20] });
+
+	assert.equal(fetchCount, 1);
+	assert.equal(network.status, "ready");
+	assert.equal(network.entityType, "network");
+	assert.equal(network.orientation, "landscape");
+	assert.equal(network.relativePath, "assets/collection_covers/networks/20.webp");
+	assert.equal(network.sha256, NETWORK_SHA);
+	assert.equal(network.assetUrl.includes("/networks/poster/"), false);
+	await assert.rejects(() => bridge.resolveLandscapeBatch({ entityType: "person", tmdbIds: [30] }), TypeError);
+});
+
+test("schema-v1 and test-only schema-v2 cached network exports remain byte-identical and landscape-only", async () => {
+	const network = { id: 20, name: "Alpha Network", logo_path: "/must-not-win-network.png" };
+	const v1Harness = createExporterHarness({
+		bridge: createBridge(async () => responseFor(createV1Lookup())),
+		networks: [network],
+	});
+	const v2Harness = createExporterHarness({
+		bridge: createBridge(async () => responseFor(createV2Lookup())),
+		networks: [network],
+	});
+
+	const [v1Payload, v2Payload] = await Promise.all([
+		v1Harness.context.getNetworkNuvioExportPayload(),
+		v2Harness.context.getNetworkNuvioExportPayload(),
+	]);
+	const v2Collection = JSON.parse(v2Payload.json)[0];
+	const v2Folder = v2Collection.folders[0];
+
+	assert.equal(v2Payload.json, v1Payload.json);
+	assert.equal(v2Folder.tileShape, "LANDSCAPE");
+	assert.match(v2Folder.coverImageUrl, /assets\/collection_covers\/networks\/20\.webp\?v=b{12}$/);
+	assert.equal(v2Folder.coverImageUrl.includes("/networks/poster/"), false);
+	assert.equal(v2Folder.coverImageUrl.includes("must-not-win"), false);
+	assert.equal(v2Collection.backdropImageUrl, "https://example.test/network-backdrop.jpg");
+	assert.equal(v2Folder.focusGifUrl, "");
+	assert.equal(v2Folder.heroVideoUrl, "");
+	assert.equal(v2Folder.titleLogoUrl, "");
+	assert.equal(v2Folder.heroBackdropUrl, "");
 });
 
 test("company and network exports prefer curated artwork then cached TMDB logos then title/emoji", async () => {
 	let fetchCount = 0;
 	const bridge = createBridge(async () => {
 		fetchCount += 1;
-		return responseFor(createLookup());
+		return responseFor(createV1Lookup());
 	});
 	const harness = createExporterHarness({
 		bridge,
@@ -471,7 +544,7 @@ test("concurrent preparation shares output and unchanged Copy/Download reuse IDs
 	const bridge = createBridge(async () => {
 		fetchCount += 1;
 		await fetchGate;
-		return responseFor(createLookup());
+		return responseFor(createV1Lookup());
 	});
 	const harness = createExporterHarness({
 		bridge,
@@ -544,7 +617,7 @@ test("cached export button feedback survives action refreshes and resets determi
 	const copyGate = new Promise((resolve) => {
 		releaseCopy = resolve;
 	});
-	const bridge = createBridge(async () => responseFor(createLookup()));
+	const bridge = createBridge(async () => responseFor(createV1Lookup()));
 	const harness = createExporterHarness({
 		bridge,
 		companies: [{ id: 10, name: "Alpha Studio" }],

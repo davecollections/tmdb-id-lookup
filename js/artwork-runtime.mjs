@@ -24,13 +24,31 @@ const ENTITY_MAP_NAMES = Object.freeze({
 	[ARTWORK_ENTITY_TYPES.PERSON]: "people",
 });
 
-const REQUIRED_ORIENTATIONS = Object.freeze({
-	[ARTWORK_ENTITY_TYPES.COMPANY]: Object.freeze([ARTWORK_ORIENTATIONS.LANDSCAPE]),
-	[ARTWORK_ENTITY_TYPES.NETWORK]: Object.freeze([ARTWORK_ORIENTATIONS.LANDSCAPE]),
-	[ARTWORK_ENTITY_TYPES.PERSON]: Object.freeze([
-		ARTWORK_ORIENTATIONS.LANDSCAPE,
-		ARTWORK_ORIENTATIONS.POSTER,
-	]),
+const SUPPORTED_RUNTIME_SCHEMA_VERSIONS = Object.freeze([1, 2]);
+const RUNTIME_SCHEMA_CONTRACTS = Object.freeze({
+	1: Object.freeze({
+		orientations: Object.freeze({
+			[ARTWORK_ENTITY_TYPES.COMPANY]: Object.freeze([ARTWORK_ORIENTATIONS.LANDSCAPE]),
+			[ARTWORK_ENTITY_TYPES.NETWORK]: Object.freeze([ARTWORK_ORIENTATIONS.LANDSCAPE]),
+			[ARTWORK_ENTITY_TYPES.PERSON]: Object.freeze([
+				ARTWORK_ORIENTATIONS.LANDSCAPE,
+				ARTWORK_ORIENTATIONS.POSTER,
+			]),
+		}),
+	}),
+	2: Object.freeze({
+		orientations: Object.freeze({
+			[ARTWORK_ENTITY_TYPES.COMPANY]: Object.freeze([ARTWORK_ORIENTATIONS.LANDSCAPE]),
+			[ARTWORK_ENTITY_TYPES.NETWORK]: Object.freeze([
+				ARTWORK_ORIENTATIONS.LANDSCAPE,
+				ARTWORK_ORIENTATIONS.POSTER,
+			]),
+			[ARTWORK_ENTITY_TYPES.PERSON]: Object.freeze([
+				ARTWORK_ORIENTATIONS.LANDSCAPE,
+				ARTWORK_ORIENTATIONS.POSTER,
+			]),
+		}),
+	}),
 });
 
 const VALID_PERSON_CATEGORIES = new Set(["actor", "director"]);
@@ -73,6 +91,14 @@ function assertPositiveTmdbId(tmdbId) {
 	if (!Number.isSafeInteger(tmdbId) || tmdbId <= 0) {
 		invalid("INVALID_TMDB_ID", "TMDB ID must be a positive safe integer.");
 	}
+}
+
+function runtimeSchemaContract(schemaVersion) {
+	if (!SUPPORTED_RUNTIME_SCHEMA_VERSIONS.includes(schemaVersion)) {
+		invalid("INVALID_SCHEMA_VERSION", "Artwork runtime lookup schemaVersion must be numeric 1 or 2.");
+	}
+
+	return RUNTIME_SCHEMA_CONTRACTS[schemaVersion];
 }
 
 function assertSha256(value, context) {
@@ -137,16 +163,40 @@ function assertCategories(categories, context, required) {
 	}
 }
 
-function validateOrientationArtwork(artwork, context) {
+function expectedArtworkPath(schemaVersion, entityType, id, orientation) {
+	const supportedOrientations = RUNTIME_SCHEMA_CONTRACTS[schemaVersion].orientations[entityType];
+
+	if (!supportedOrientations.includes(orientation)) {
+		return null;
+	}
+
+	if (entityType === ARTWORK_ENTITY_TYPES.COMPANY) {
+		return `assets/collection_covers/companies/${id}.webp`;
+	}
+
+	if (entityType === ARTWORK_ENTITY_TYPES.NETWORK) {
+		return orientation === ARTWORK_ORIENTATIONS.POSTER
+			? `assets/collection_covers/networks/poster/${id}.webp`
+			: `assets/collection_covers/networks/${id}.webp`;
+	}
+
+	return `assets/collection_covers/people/${orientation}/${id}.webp`;
+}
+
+function validateOrientationArtwork(artwork, context, expectedPath) {
 	if (!isObjectRecord(artwork)) {
 		invalid("INVALID_ORIENTATION_DATA", `${context} must be an object.`);
 	}
 
 	assertRepositoryRelativePath(artwork.path, `${context}.path`);
 	assertSha256(artwork.sha256, `${context}.sha256`);
+
+	if (artwork.path !== expectedPath) {
+		invalid("INVALID_PATH", `${context}.path must be ${expectedPath}.`);
+	}
 }
 
-function validateEntry(entry, entityType, key) {
+function validateEntry(entry, entityType, key, schemaVersion) {
 	const context = `${ENTITY_MAP_NAMES[entityType]}.${key}`;
 
 	if (!isObjectRecord(entry)) {
@@ -175,8 +225,23 @@ function validateEntry(entry, entityType, key) {
 
 	assertCategories(entry.categories, `${context}.categories`, entityType === ARTWORK_ENTITY_TYPES.PERSON);
 
-	for (const orientation of REQUIRED_ORIENTATIONS[entityType]) {
-		validateOrientationArtwork(entry[orientation], `${context}.${orientation}`);
+	const requiredOrientations = RUNTIME_SCHEMA_CONTRACTS[schemaVersion].orientations[entityType];
+
+	for (const orientation of requiredOrientations) {
+		validateOrientationArtwork(
+			entry[orientation],
+			`${context}.${orientation}`,
+			expectedArtworkPath(schemaVersion, entityType, entry.id, orientation),
+		);
+	}
+
+	for (const orientation of Object.values(ARTWORK_ORIENTATIONS)) {
+		if (!requiredOrientations.includes(orientation) && entry[orientation] !== undefined) {
+			invalid(
+				"UNSUPPORTED_ORIENTATION_DATA",
+				`${context}.${orientation} is unsupported in artwork runtime schema v${schemaVersion}.`,
+			);
+		}
 	}
 }
 
@@ -217,6 +282,7 @@ function resolveValidatedArtwork({ lookup, entityType, tmdbId, orientation, base
 	assertEntityType(entityType);
 	assertPositiveTmdbId(tmdbId);
 	assertOrientation(orientation);
+	const schemaContract = RUNTIME_SCHEMA_CONTRACTS[lookup.schemaVersion];
 
 	const baseResult = {
 		status: null,
@@ -225,7 +291,7 @@ function resolveValidatedArtwork({ lookup, entityType, tmdbId, orientation, base
 		orientation,
 	};
 
-	if (!REQUIRED_ORIENTATIONS[entityType].includes(orientation)) {
+	if (!schemaContract.orientations[entityType].includes(orientation)) {
 		return {
 			...baseResult,
 			status: ARTWORK_RESULT_STATUSES.UNSUPPORTED_ORIENTATION,
@@ -243,7 +309,7 @@ function resolveValidatedArtwork({ lookup, entityType, tmdbId, orientation, base
 		};
 	}
 
-	validateEntry(entry, entityType, key);
+	validateEntry(entry, entityType, key, lookup.schemaVersion);
 	const artwork = entry[orientation];
 	const result = {
 		...baseResult,
@@ -267,9 +333,7 @@ export function validateArtworkRuntimeLookup(lookup) {
 		invalid("INVALID_LOOKUP", "Artwork runtime lookup root must be an object.");
 	}
 
-	if (lookup.schemaVersion !== 1) {
-		invalid("INVALID_SCHEMA_VERSION", "Artwork runtime lookup schemaVersion must be 1.");
-	}
+	runtimeSchemaContract(lookup.schemaVersion);
 
 	if (lookup.status !== "published") {
 		invalid("INVALID_LOOKUP_STATUS", "Artwork runtime lookup status must be published.");
@@ -287,7 +351,7 @@ export function validateArtworkRuntimeLookup(lookup) {
 				invalid("INVALID_MAP_KEY", `Artwork runtime lookup ${mapName} key must be a positive numeric ID: ${key}`);
 			}
 
-			validateEntry(entityMap[key], entityType, key);
+			validateEntry(entityMap[key], entityType, key, lookup.schemaVersion);
 		}
 	}
 
