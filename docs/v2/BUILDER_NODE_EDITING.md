@@ -1,6 +1,6 @@
 # Builder Collection and Folder Editing
 
-Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), and owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53)
+Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), and hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59)
 
 Last reviewed: 2026-07-26
 
@@ -14,7 +14,7 @@ Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout,
 - Hide on home screen only keeps a valid visible title and maps to `hideTitle: true`.
 - Hide everywhere maps the title to exactly one U+200E and maps to `hideTitle: true`.
 
-Project titles, artwork, sources, export, deletion, reordering, bulk settings, persistence, and migration actions remain outside this workflow.
+Project titles, artwork, source editing, export, deletion, bulk settings, persistence, and migration actions remain outside this modal workflow. Issue #59 provides collection, folder, and source movement directly on hierarchy cards without adding movement fields to the editor.
 
 ## Internal identity and Nuvio-facing identity
 
@@ -89,13 +89,13 @@ An invisible folder opens with an empty, disabled title input and Hide everywher
 
 A visible-mode → Hide everywhere → original visible-mode cycle is a clean no-op when nothing else changes. A deliberate Hide everywhere operation adds `hideTitle: true` only when needed; imported invisible folders preserve the exact presence and value of `hideTitle` through unrelated edits. Imported absent or unusual `hideTitle` values remain preserved until a visibility choice is deliberately made. The modal-only visibility enum, retained title, and canonicalization flags never enter project data or serialized JSON.
 
-The Builder displays `Hidden title` plus a restrained `Invisible in Nuvio` badge instead of a blank card or summary. Those fallback words never enter project data or serialized JSON.
+The Builder displays `Hidden title` plus a restrained `Invisible in Nuvio` badge instead of a blank card or movement label. Those fallback words never enter project data or serialized JSON.
 
 ## Collection presentation behavior
 
 The How sources appear inside folders field offers Tabs (`TABBED_GRID`) and Rows (`ROWS`). Each folder remains a separate folder; these settings describe how that folder displays its sources after it is opened. Tabs switches between one source view at a time and may add an All tab that combines sources, while Rows displays every source as a separate stacked content row. Each radio card includes a compact CSS-only, `aria-hidden` preview beneath the authoritative title and helper text. Include an All tab when using Tabs remains editable in either layout: for each folder with two or more sources, it adds an All tab combining the folder's sources when Tabs is active; a one-source folder has no visible All tab. Rows does not display tabs, but the saved boolean remains visible and editable as the preference to use if the collection is later changed to Tabs. Switching between Tabs and Rows never changes that preference. The stored `viewMode` and `showAllTab` meanings are unchanged.
 
-Pin to top and Enable focus glow are independent boolean switches. Pinned collections form the group shown before unpinned collections. Builder JSON does not store a separate interactive pin sequence, rank, timestamp, or other pin metadata: pinned collections retain their relative order from the collection array, as do unpinned collections. Collection/folder/source reordering remains a later milestone; Nuvio interactions that pin items in a different sequence cannot be represented by the current Builder schema.
+Pin to top and Enable focus glow are independent boolean switches. Pinned collections form the group shown before ordinary collections. Builder JSON does not store a separate interactive pin sequence, rank, timestamp, or other pin metadata: pinned collections retain their relative order from the collection array, as do ordinary collections, including imported absent, false, and unusual preserved pin values. Issue #59 movement stays inside the current pin group, maps the adjacent visible sibling back to its authoritative raw-array index, and never changes `pinToTop`.
 
 `focusGlowEnabled` is a recognised collection-level Nuvio boolean. Supported imported `true` and `false` values display accurately. An absent value stays absent, and an unusual non-boolean value stays preserved, until the user deliberately uses the switch. The modal never stringifies unusual imported values. A deliberate replacement emits only canonical `true` or `false`; summaries show Focus glow enabled only for supported booleans.
 
@@ -105,7 +105,7 @@ Imported `FOLLOW_LAYOUT` is preservation-only. It is not offered as a normal cho
 
 The tile choices are Poster (`POSTER`) and Landscape (`LANDSCAPE`), displayed with simple CSS aspect-ratio previews. Square is not a normal choice.
 
-Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. Folder summaries use the same single outcome: an intentional U+200E-only title is Hide everywhere regardless of `hideTitle`; a visible title with supported `hideTitle: true` is Hide on home screen only; and a visible title with supported `hideTitle: false` is Show everywhere. Absent or unusual `hideTitle` values stay omitted from the summary until deliberately replaced. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
+Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. An intentional U+200E-only title maps to Hide everywhere regardless of `hideTitle`; a visible title with supported `hideTitle: true` maps to Hide on home screen only; and a visible title with supported `hideTitle: false` maps to Show everywhere. Absent or unusual `hideTitle` values remain untouched until deliberately replaced. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
 
 ## Manual creation defaults
 
@@ -151,7 +151,7 @@ Refreshing or leaving the page discards this uncommitted UI-only draft, just as 
 
 ## Navigation lock and defensive targeting
 
-While the modal is open, the visible workspace underlay is `inert`, hidden from the accessibility tree, and protected by handler guards and native disabled states. Its hierarchy, creation actions, Edit actions, mobile navigation, folder-summary navigation, and root link cannot receive pointer or keyboard interaction. Apply and Cancel stay enabled. The old hierarchy-paused message is removed.
+While the modal is open, the visible workspace underlay is `inert`, hidden from the accessibility tree, and protected by handler guards and native disabled states. Its hierarchy, creation actions, Edit actions, reorder handles, mobile navigation, and root link cannot receive pointer or keyboard interaction. Apply and Cancel stay enabled. The old hierarchy-paused message is removed.
 
 Handlers also check the lock so queued or synthetic hierarchy actions cannot change selection. If a later controller snapshot no longer contains the target internal ID and node type, the editor closes without guessing another node or applying to an ID/title match.
 
@@ -191,6 +191,6 @@ Labels, semantics, and native disabled state remain the primary test surface.
 
 ## Deliberate exclusions and later work
 
-This issue does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source creation/editing/deletion; hierarchy deletion or reordering; bulk settings; drag-and-drop; export/download/copy JSON; persistence/autosave/undo; migration controls; TMDB or addon networking; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Collection/folder/source reordering is a desired separate focused milestone and should be completed before Search/Add. Bulk presentation settings are also desired but remain a separate focused issue. Future focus-GIF support defaults off unless deliberately enabled.
+The editing workflow does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source creation/editing/deletion; hierarchy deletion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; TMDB or addon networking; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #59 adds bounded pointer/touch dragging and keyboard movement separately through one compact hierarchy-card handle, without bulk movement or editing-form fields. Bulk presentation settings remain a separate focused issue. Future focus-GIF support defaults off unless deliberately enabled.
 
-The next gate is Dave's focused UI/flow review and independent review of this follow-up commit. No pull request, reordering implementation, or source-creation work begins within issue #53.
+The next gate is Dave's focused issue #59 hierarchy-movement review, followed by the separately approved Nuvio client evidence run. No pull request, client-test package, or source-creation work begins before that review.

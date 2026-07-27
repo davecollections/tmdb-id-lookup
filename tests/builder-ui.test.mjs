@@ -54,19 +54,6 @@ function render(controller) {
 	return renderToStaticMarkup(createElement(BuilderApp, { controller, initialScreen: "workspace" }));
 }
 
-function assertUniqueSelectionSummaryHeadings(markup) {
-	const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
-	assert.equal(ids.length, new Set(ids).size, `Rendered IDs must be unique: ${ids.join(", ")}`);
-
-	const summaryTargets = [
-		...markup.matchAll(/<section class="selection-summary" aria-labelledby="([^"]+)"/g),
-	].map((match) => match[1]);
-	for (const target of summaryTargets) {
-		assert.equal(ids.filter((id) => id === target).length, 1, `${target} must reference one unique heading`);
-	}
-	return summaryTargets;
-}
-
 function loadFixture(relativePath) {
 	return JSON.parse(fs.readFileSync(path.join(fixtureRoot, relativePath), "utf8"));
 }
@@ -338,7 +325,7 @@ test("view model uses explicit source categories and safe human-readable summari
 	assert.equal(JSON.stringify(view).includes("RAW_SENTINEL"), false);
 });
 
-test("selection summaries use unique stable heading IDs with valid associations", () => {
+test("workspace omits the deferred Selection details summary at every hierarchy level", () => {
 	const controller = createController();
 	controller.importValue([{ id: "collection", title: "Collection", folders: [{
 		id: "folder", title: "Folder", sources: [{
@@ -349,17 +336,14 @@ test("selection summaries use unique stable heading IDs with valid associations"
 	controller.selectNode(collection.internalId);
 
 	const collectionMarkup = render(controller);
-	assert.deepEqual(assertUniqueSelectionSummaryHeadings(collectionMarkup), [
-		"mobile-selection-summary-title",
-		"selection-summary-title",
-	]);
-	assert.match(collectionMarkup, /<h3 id="mobile-selection-summary-title" aria-label="Collection">Collection<\/h3>/);
-	assert.match(collectionMarkup, /<h3 id="selection-summary-title" aria-label="Collection">Collection<\/h3>/);
+	assert.equal(collectionMarkup.includes("Selection details"), false);
+	assert.equal(collectionMarkup.includes("selection-summary"), false);
 
 	controller.selectNode(collection.folders[0].sources[0].internalId);
 	const sourceMarkup = render(controller);
-	assert.deepEqual(assertUniqueSelectionSummaryHeadings(sourceMarkup), ["selection-summary-title"]);
-	assert.match(sourceMarkup, /<h3 id="selection-summary-title">Source<\/h3>/);
+	assert.equal(sourceMarkup.includes("Selection details"), false);
+	assert.equal(sourceMarkup.includes("selection-summary"), false);
+	assert.equal(sourceMarkup.includes("Show folder details"), false);
 });
 
 test("repeated source metadata values retain semantic keys without React warnings", () => {
@@ -609,7 +593,6 @@ test("injected hierarchy renders every level in order with selected state and kn
 	assert.ok(markup.indexOf("Addon second") < markup.indexOf("Preserved third"));
 	assert.match(markup, /data-node-type="source"[^>]+aria-pressed="true"/);
 	assert.ok(markup.includes("3 sources"));
-	assert.ok(markup.includes("Addon ID"));
 	assert.ok(markup.includes("example.addon"));
 	assert.equal(markup.includes("DO_NOT_RENDER"), false);
 	assert.equal(markup.includes("builder-only-"), false);

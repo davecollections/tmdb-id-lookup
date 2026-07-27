@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "repository": "davecollections/tmdb-id-lookup",
+  "branch": "issue-59-builder-reordering",
+  "sourceCommit": "326efe0bf78ee095f1d9efd5420b18d509d5c14f",
+  "commitTree": "81eb624c485211eaa8aed7c84f7b579ebea6f14b",
+  "generationDate": "2026-07-27T07:48:52.087Z",
+  "evidenceStatus": "automated-package-preparation-complete-owner-client-testing-pending",
+  "productionModulesUsed": [
+    "builder/src/import/index.js#importNuvioCollections",
+    "builder/src/application/index.js#createBuilderController",
+    "builder/src/application/controller.js#moveNode",
+    "builder/src/application/controller.js#stringifyProject",
+    "builder/src/ui/hierarchy-reordering.js#buildSiblingMovements",
+    "builder/src/serialize/index.js#stringifyNuvioProject",
+    "tests/helpers/nuvio-contract-validator.mjs#validateNuvioContract"
+  ],
+  "hashes": {
+    "seedProfileSha256": "a829b4b125d90e299f5d714f0b781bb72b583ee8412f1c894777d20f86485a33",
+    "finalInputSha256": "64b980782f72aa742359b57dbfe9eac9e1baa5f2ee6c284de3a4dcf86d1d4c0c",
+    "expectedOrderSha256": "969e731453745c61670de13a41844968502aab05247a949360cebb67ce5d77dd"
+  },
+  "counts": {
+    "collections": 4,
+    "folders": 6,
+    "sources": 8,
+    "catalogSources": 8
+  },
+  "seedOrders": {
+    "rawCollectionOrder": [
+      "Issue 59 B - Regular second",
+      "Issue 59 A - Pinned second",
+      "Issue 59 D - Regular first",
+      "Issue 59 C - Pinned first"
+    ],
+    "visibleCollectionOrder": [
+      "Issue 59 A - Pinned second",
+      "Issue 59 C - Pinned first",
+      "Issue 59 B - Regular second",
+      "Issue 59 D - Regular first"
+    ],
+    "folderOrderWithinRegularD": [
+      "Issue 59 Folder B - third",
+      "Issue 59 Folder A - second",
+      "Issue 59 Folder C - first"
+    ],
+    "sourceOrderWithinFolderC": [
+      "Issue 59 Source B - third",
+      "Issue 59 Source A - second",
+      "Issue 59 Source C - first"
+    ]
+  },
+  "moveOperations": [
+    {
+      "sequence": 1,
+      "nodeType": "collection",
+      "publicId": "issue-59-collection-c",
+      "visibleTitle": "Issue 59 C - Pinned first",
+      "reorderGroup": "pinned",
+      "fromRawIndex": 3,
+      "targetRawIndex": 1,
+      "rawIndexAfter": 1,
+      "fromVisiblePosition": 2,
+      "targetVisiblePosition": 1,
+      "fromGroupPosition": 2,
+      "targetGroupPosition": 1,
+      "revisionBefore": 1,
+      "revisionAfter": 2,
+      "revisionDelta": 1
+    },
+    {
+      "sequence": 2,
+      "nodeType": "collection",
+      "publicId": "issue-59-collection-d",
+      "visibleTitle": "Issue 59 D - Regular first",
+      "reorderGroup": "ordinary",
+      "fromRawIndex": 3,
+      "targetRawIndex": 0,
+      "rawIndexAfter": 0,
+      "fromVisiblePosition": 4,
+      "targetVisiblePosition": 3,
+      "fromGroupPosition": 2,
+      "targetGroupPosition": 1,
+      "revisionBefore": 2,
+      "revisionAfter": 3,
+      "revisionDelta": 1
+    },
+    {
+      "sequence": 3,
+      "nodeType": "folder",
+      "publicId": "issue-59-folder-c",
+      "visibleTitle": "Issue 59 Folder C - first",
+      "reorderGroup": "siblings",
+      "fromRawIndex": 2,
+      "targetRawIndex": 0,
+      "rawIndexAfter": 0,
+      "fromVisiblePosition": 3,
+      "targetVisiblePosition": 1,
+      "fromGroupPosition": 3,
+      "targetGroupPosition": 1,
+      "revisionBefore": 3,
+      "revisionAfter": 4,
+      "revisionDelta": 1
+    },
+    {
+      "sequence": 4,
+      "nodeType": "folder",
+      "publicId": "issue-59-folder-a",
+      "visibleTitle": "Issue 59 Folder A - second",
+      "reorderGroup": "siblings",
+      "fromRawIndex": 2,
+      "targetRawIndex": 1,
+      "rawIndexAfter": 1,
+      "fromVisiblePosition": 3,
+      "targetVisiblePosition": 2,
+      "fromGroupPosition": 3,
+      "targetGroupPosition": 2,
+      "revisionBefore": 4,
+      "revisionAfter": 5,
+      "revisionDelta": 1
+    },
+    {
+      "sequence": 5,
+      "nodeType": "source",
+      "publicId": "issue-59-source-c",
+      "visibleTitle": "Issue 59 Source C - first",
+      "reorderGroup": "siblings",
+      "fromRawIndex": 2,
+      "targetRawIndex": 0,
+      "rawIndexAfter": 0,
+      "fromVisiblePosition": 3,
+      "targetVisiblePosition": 1,
+      "fromGroupPosition": 3,
+      "targetGroupPosition": 1,
+      "revisionBefore": 5,
+      "revisionAfter": 6,
+      "revisionDelta": 1
+    },
+    {
+      "sequence": 6,
+      "nodeType": "source",
+      "publicId": "issue-59-source-a",
+      "visibleTitle": "Issue 59 Source A - second",
+      "reorderGroup": "siblings",
+      "fromRawIndex": 2,
+      "targetRawIndex": 1,
+      "rawIndexAfter": 1,
+      "fromVisiblePosition": 3,
+      "targetVisiblePosition": 2,
+      "fromGroupPosition": 3,
+      "targetGroupPosition": 2,
+      "revisionBefore": 6,
+      "revisionAfter": 7,
+      "revisionDelta": 1
+    }
+  ],
+  "revisionEvidence": {
+    "afterControllerConstruction": 0,
+    "afterImport": 1,
+    "afterChangedMoves": 7,
+    "changedMoveCount": 6,
+    "allMoveRevisionDeltas": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "noNoOpOrInvalidMovesUsed": true
+  },
+  "finalOrders": {
+    "visibleCollectionOrder": [
+      {
+        "visiblePosition": 1,
+        "id": "issue-59-collection-c",
+        "title": "Issue 59 C - Pinned first",
+        "pinToTop": true
+      },
+      {
+        "visiblePosition": 2,
+        "id": "issue-59-collection-a",
+        "title": "Issue 59 A - Pinned second",
+        "pinToTop": true
+      },
+      {
+        "visiblePosition": 3,
+        "id": "issue-59-collection-d",
+        "title": "Issue 59 D - Regular first",
+        "pinToTop": false
+      },
+      {
+        "visiblePosition": 4,
+        "id": "issue-59-collection-b",
+        "title": "Issue 59 B - Regular second",
+        "pinToTop": false
+      }
+    ],
+    "rawSerializedCollectionOrder": [
+      {
+        "id": "issue-59-collection-d",
+        "title": "Issue 59 D - Regular first",
+        "pinToTop": false
+      },
+      {
+        "id": "issue-59-collection-b",
+        "title": "Issue 59 B - Regular second",
+        "pinToTop": false
+      },
+      {
+        "id": "issue-59-collection-c",
+        "title": "Issue 59 C - Pinned first",
+        "pinToTop": true
+      },
+      {
+        "id": "issue-59-collection-a",
+        "title": "Issue 59 A - Pinned second",
+        "pinToTop": true
+      }
+    ],
+    "folderOrderWithinRegularD": [
+      {
+        "position": 1,
+        "id": "issue-59-folder-c",
+        "title": "Issue 59 Folder C - first",
+        "parentCollectionId": "issue-59-collection-d"
+      },
+      {
+        "position": 2,
+        "id": "issue-59-folder-a",
+        "title": "Issue 59 Folder A - second",
+        "parentCollectionId": "issue-59-collection-d"
+      },
+      {
+        "position": 3,
+        "id": "issue-59-folder-b",
+        "title": "Issue 59 Folder B - third",
+        "parentCollectionId": "issue-59-collection-d"
+      }
+    ],
+    "sourceOrderWithinFolderC": [
+      {
+        "position": 1,
+        "title": "Issue 59 Source C - first",
+        "parentCollectionId": "issue-59-collection-d",
+        "parentFolderId": "issue-59-folder-c",
+        "stableIdentifier": "example.sanitised.issue59.ordering|movie|issue-59-source-c|",
+        "identity": {
+          "addonId": "example.sanitised.issue59.ordering",
+          "type": "movie",
+          "catalogId": "issue-59-source-c",
+          "genre": null
+        }
+      },
+      {
+        "position": 2,
+        "title": "Issue 59 Source A - second",
+        "parentCollectionId": "issue-59-collection-d",
+        "parentFolderId": "issue-59-folder-c",
+        "stableIdentifier": "example.sanitised.issue59.ordering|series|issue-59-source-a|",
+        "identity": {
+          "addonId": "example.sanitised.issue59.ordering",
+          "type": "series",
+          "catalogId": "issue-59-source-a",
+          "genre": null
+        }
+      },
+      {
+        "position": 3,
+        "title": "Issue 59 Source B - third",
+        "parentCollectionId": "issue-59-collection-d",
+        "parentFolderId": "issue-59-folder-c",
+        "stableIdentifier": "example.sanitised.issue59.ordering|anime|issue-59-source-b|",
+        "identity": {
+          "addonId": "example.sanitised.issue59.ordering",
+          "type": "anime",
+          "catalogId": "issue-59-source-b",
+          "genre": null
+        }
+      }
+    ]
+  },
+  "pinPreservation": {
+    "unchanged": true,
+    "values": {
+      "issue-59-collection-d": false,
+      "issue-59-collection-b": false,
+      "issue-59-collection-c": true,
+      "issue-59-collection-a": true
+    }
+  },
+  "identityPreservation": {
+    "builderInternalIdsStableAcrossMoves": true,
+    "collectionAndFolderNuvioIdsStableAcrossMoves": true,
+    "sourceIdentitiesStableAcrossMoves": true,
+    "projectionsAlignedWithSources": true
+  },
+  "preservationChecks": {
+    "unknownCollectionFolderSourceAndProjectionSentinelsPreserved": true,
+    "parentsUnchanged": true,
+    "noBuilderMovementMetadataSerialized": true
+  },
+  "validationResult": {
+    "standaloneSeedImport": true,
+    "controllerSeedImport": true,
+    "canonicalBuilderOutput": true,
+    "errors": [],
+    "networkRequired": false
+  },
+  "secondCycleResult": {
+    "importSucceeded": true,
+    "serializationSucceeded": true,
+    "semanticEqual": true,
+    "jsonTextEqual": true,
+    "sha256Equal": true,
+    "canonicalValidation": true
+  },
+  "sourceOrderClientVerifiability": {
+    "directVisibility": "Client-dependent; record only when source titles or stable identities are visibly ordered.",
+    "exportVerification": "Immediate exported JSON is the strongest evidence where export is available.",
+    "contentAttribution": "Accept only when displayed result/content order is unambiguously attributable to the three sources.",
+    "unresolvedRule": "Mark unresolved when the client exposes neither source order nor export."
+  },
+  "sanitisationChecks": {
+    "syntheticPublicSafeDataOnly": true,
+    "privateAddonUrlsPresent": false,
+    "accountInformationPresent": false,
+    "apiKeysOrTokensPresent": false,
+    "localOrLanAddressesPresent": false,
+    "privateArtworkPresent": false,
+    "absoluteMachinePathsPresent": false,
+    "existingOwnerCollectionsPresent": false,
+    "livePrivateServiceRequired": false
+  },
+  "packageFileInventory": [
+    {
+      "file": "issue-59-nuvio-order-test.json",
+      "sizeBytes": 8545,
+      "sha256": "64b980782f72aa742359b57dbfe9eac9e1baa5f2ee6c284de3a4dcf86d1d4c0c"
+    },
+    {
+      "file": "seed-profile.json",
+      "sizeBytes": 8545,
+      "sha256": "a829b4b125d90e299f5d714f0b781bb72b583ee8412f1c894777d20f86485a33"
+    },
+    {
+      "file": "expected-order.json",
+      "sizeBytes": 5938,
+      "sha256": "969e731453745c61670de13a41844968502aab05247a949360cebb67ce5d77dd"
+    },
+    {
+      "file": "README.md",
+      "sizeBytes": 2910,
+      "sha256": "8287d3676a7f73922b163a1243e0f272439d0d71882ea70d255304f3eab3d404"
+    },
+    {
+      "file": "evidence-template.md",
+      "sizeBytes": 2106,
+      "sha256": "97c6d8455a7fae75d221e7063d609ec9973b7d2775060a0833fc1e6c12cfb66d"
+    },
+    {
+      "file": "RETURN-FILES.md",
+      "sizeBytes": 593,
+      "sha256": "ab66ebaa04610911a0ba166ddac333f740bf0c523f028987d6911aa5ebc60406"
+    },
+    {
+      "file": "generation-report.json",
+      "sizeBytes": null,
+      "sha256": null,
+      "note": "Computed after report serialization to avoid a self-referential hash."
+    }
+  ]
+}

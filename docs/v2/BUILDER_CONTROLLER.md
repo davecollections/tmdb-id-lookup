@@ -140,8 +140,9 @@ State does not contain output JSON, exported values, external resources, callbac
 
 - `revision` starts at `0`.
 - `getState()` returns the same object identity until public state changes.
-- One committed project or diagnostic state change creates one new top-level object and increments `revision` once.
+- One committed project edit or ordinary diagnostic state change creates one new top-level object and increments `revision` once.
 - A successful selection or clear-selection change creates and notifies a new snapshot but does not increment `revision` or change `dirty`.
+- An invalid move index may commit an operation diagnostic without advancing project revision. A same-index move may clear stale operation diagnostics without advancing revision.
 - True no-ops retain the existing snapshot and revision.
 - The complete state, project, raw evidence, selection, preview, and diagnostics are deeply frozen.
 - Previous snapshots never change after later actions.
@@ -270,7 +271,7 @@ Collection/folder creation preserves a supplied usable unique Nuvio ID or genera
 
 `updateNode` delegates to `updateEditableValues` and supports project, collection, folder, and source nodes. It changes only editable values. Identity, type, category, raw evidence, and children remain intact. A structurally equal patch is a no-op.
 
-`moveNode` delegates to the domain sibling move. It cannot move the project root or move across parents. A move to the current index is a no-op.
+`moveNode` delegates to the domain sibling move. It cannot move the project root or move across parents. A valid changed move advances revision exactly once. A move to the current index does not advance revision, and an invalid or out-of-range target reports its existing structured operation diagnostic without advancing revision. The UI resolves either one keyboard-adjacent sibling or one completed pointer-drop destination and makes exactly one controller move call for a changed movement; hover and cancelled drag state remain UI-only. Collection pin-group boundaries remain a presentation constraint rather than a controller or domain ordering rule.
 
 `removeNode` delegates to domain removal, cannot remove the project root, retains sibling order, and reconciles selection as described above.
 

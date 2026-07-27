@@ -1609,11 +1609,11 @@ test("card selection and action buttons are valid sibling controls with unique I
 	}
 	assert.match(
 		markup,
-		/data-node-type="collection"[\s\S]*?<\/button><div class="hierarchy-card-actions" data-card-actions="collection">/,
+		/data-card-layout="collection"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="collection"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="collection"[\s\S]*?<\/button><\/div><button class="card-action card-edit-action"/,
 	);
 	assert.match(
 		markup,
-		/data-node-type="folder"[\s\S]*?<\/button><div class="hierarchy-card-actions" data-card-actions="folder">/,
+		/data-card-layout="folder"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="folder"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="folder"[\s\S]*?<\/button><\/div><button class="card-action card-edit-action"/,
 	);
 });
 
@@ -2018,7 +2018,7 @@ test("settings modal makes the workspace inert and disables every background act
 		'data-action="edit-folder"',
 	]) assert.ok(openingTag(markup, marker).includes("disabled"), marker);
 	assert.equal((markup.match(/<button class="back-control mobile-only"[^>]*disabled/g) ?? []).length, 2);
-	assert.ok(openingTag(markup, ">Show folder details<").includes("disabled"), "Show folder details");
+	assert.equal(markup.includes("Show folder details"), false);
 	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 });
 
@@ -2034,11 +2034,13 @@ test("Apply and Cancel remain enabled while hierarchy controls are locked", () =
 test("styles keep card actions touch-safe and responsive while the modal stays bounded and motion-safe", () => {
 	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
 	assert.match(styles, /\.hierarchy-card-row\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
+	assert.match(styles, /\.hierarchy-card-main\s*\{[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\)/);
 	assert.match(styles, /\.hierarchy-card[\s\S]*min-width:\s*0/);
-	assert.match(styles, /\.card-action\s*\{[\s\S]*min-width:\s*58px/);
+	assert.match(styles, /\.card-action\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.card-action\s*\{[\s\S]*min-height:\s*46px/);
-	assert.doesNotMatch(styles, /\.hierarchy-card-actions\s*\{[\s\S]{0,180}opacity:\s*0/);
-	assert.doesNotMatch(styles, /@media \(max-width: 430px\)[\s\S]*\.hierarchy-card-actions\s*\{[\s\S]*display:\s*none/);
+	assert.match(styles, /\.reorder-handle\s*\{[\s\S]*width:\s*46px[\s\S]*height:\s*46px/);
+	assert.match(styles, /\.card-edit-action\s*\{[\s\S]*width:\s*auto/);
+	assert.doesNotMatch(styles, /\.hierarchy-card-actions|\.card-move-action/);
 	assert.doesNotMatch(styles, /quick-rename/);
 	assert.match(styles, /body\s*\{[\s\S]*overflow-x:\s*hidden/);
 	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*position:\s*fixed/);
@@ -2122,7 +2124,7 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	}
 });
 
-test("UI scope contains no deferred editor, persistence, routing, export, delete, or reorder actions", () => {
+test("UI scope contains no deferred source editor, persistence, routing, export, or delete actions", () => {
 	const uiFiles = fs.readdirSync(path.join(rootDir, "builder", "src", "ui"))
 		.filter((name) => /\.(?:js|jsx)$/.test(name))
 		.map((name) => fs.readFileSync(path.join(rootDir, "builder", "src", "ui", name), "utf8"))
@@ -2130,7 +2132,6 @@ test("UI scope contains no deferred editor, persistence, routing, export, delete
 	for (const marker of [
 		'data-action="edit-source"',
 		'data-action="delete-',
-		'data-action="reorder-',
 		'data-action="export-',
 		"localStorage",
 		"indexedDB",

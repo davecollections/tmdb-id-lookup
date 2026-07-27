@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-27
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -239,6 +239,8 @@ Manual blank collections default to Tabs with All enabled, Pin off, and focus gl
 
 U+200E LEFT-TO-RIGHT MARK is the confirmed intentional invisible Nuvio title character. The collection setting and folder Hide everywhere choice deliberately emit one U+200E, and blank titles never become invisible automatically. The folder group presents three complete outcomes: Show everywhere uses a visible title with `hideTitle: false`; Hide on home screen only uses a visible title with `hideTitle: true`; Hide everywhere uses one U+200E with `hideTitle: true`. Imported repeated U+200E titles remain byte-for-byte preservation cases until the user deliberately replaces their intent. The Builder uses a display-only fallback rather than rendering blank cards or headings.
 
+Issue #59 adds a restrained ordering foundation directly to existing hierarchy cards: each collection, folder, and source has one compact six-dot handle contained inside its visual card for pointer/touch dragging and keyboard-accessible one-position movement. Collections and folders keep compact independent Edit actions beside the main card; sources do not gain editing. During pointer movement, the complete associated row follows the pointer above panel clipping, a matching placeholder shows its proposed position, and surrounding siblings visually make space without changing project data; insertion lines remain secondary feedback and reduced-motion mode removes nonessential sliding. Pinned collections remain a stable displayed group before ordinary collections, movement stays inside the current pin group, and moving never changes `pinToTop`. Folders remain within their collection and sources remain within their folder and category-bearing source objects; stable internal IDs retain selection and card identity. A completed pointer drop or successful keyboard arrow movement performs one authoritative move, while hover, cancellation, invalid boundaries, and same-position drops remain data no-ops. Bulk movement and new ordering metadata remain absent. The redundant Selection details panel is removed so the source hierarchy uses the available workspace width; detailed review remains part of the later Create JSON journey.
+
 **Confirmed direction**
 
 The TV / phone / both Quick Setup answer may select safer initial presentation defaults. Defaults must stay editable and be based on current client evidence rather than assumptions. Exact per-device defaults remain open.
@@ -384,9 +386,9 @@ Trakt integration remains outside current project scope; a possible future colou
 1. Product-plan and workflow recovery — complete.
 2. Collection/folder presentation settings — implemented on issue #53's branch pending review.
 3. First mandatory Dave UI and flow review — complete.
-4. Resolve the review findings, including direct per-card hierarchy actions — implemented on the issue branch, pending owner review.
+4. Resolve the review findings, including direct per-card hierarchy actions — implemented on the issue branch; owner local UI/browser review complete.
 5. Bulk presentation settings remain desired but deferred to a separate focused issue.
-6. Collection/folder/source reordering in a separate focused issue.
+6. Collection/folder/source reordering — implemented and pushed at issue #59 commit `326efe0bf78ee095f1d9efd5420b18d509d5c14f`; owner local review and the bounded Desktop/web/mobile/TV ordering evidence gate are complete. The evidence is under [`manual-tests/nuvio-clients/issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/). No PR exists and PR creation remains pending Dave's separate approval.
 7. Source creation and Search/Add.
 8. Advanced Discover creation.
 9. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.

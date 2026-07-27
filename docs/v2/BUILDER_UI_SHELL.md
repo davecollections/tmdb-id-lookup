@@ -1,14 +1,14 @@
 # Builder UI Shell and Hierarchy Navigator
 
-Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, and presentation milestones through issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53)
+Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, presentation, and hierarchy-reordering milestones through issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59)
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-27
 
 ## Purpose and scope
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The workspace displays ordered collections, the selected collection's ordered folders, the selected folder's ordered sources, and a read-only summary of the selected node. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) now uses one entity-owned Edit action and one responsive settings modal for titles and contained presentation fields, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, deletion, reordering, bulk settings, export, persistence, and migration application remain deferred.
+The workspace displays ordered collections, the selected collection's ordered folders, and the selected folder's ordered sources. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) uses one entity-owned Edit action and one responsive settings modal for titles and contained presentation fields, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59) adds compact pointer/touch and keyboard reordering to every existing collection, folder, and source card and removes the deferred Selection details summary. Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, deletion, bulk settings, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -45,6 +45,7 @@ builder/src/ui/
   modal-focus.js              dialog entry, containment, Escape, and focus-wrap helpers
   import-actions.js           public-controller-only browser transport helpers
   responsive-viewport.js      shared 900px viewport hook and reduced-motion scroll helper
+  hierarchy-reordering.js     visible sibling mapping, labels, and controller delegation
   use-builder-controller.js   external-store subscription adapter
   view-model.js               pure safe display derivation
   draft-actions.js            deterministic collection/folder title conveniences
@@ -60,9 +61,9 @@ The workspace has three conceptual panels:
 
 1. Collections
 2. Folders
-3. Sources and selection details
+3. Sources
 
-At 900px and wider, all three panels remain visible. Collections and folders use compact list panels, while the final panel has more space for source rows and the current read-only summary. At 1240px and wider, source rows and selection details can use a balanced split inside the third panel.
+At 900px and wider, all three panels remain visible. Collections and folders use compact list panels, while the final panel gives the source cards the available width. The former Selection details split and its mobile duplicate are absent at every breakpoint.
 
 Below 900px, the shell is a drill-down driven only by controller selection:
 
@@ -80,6 +81,16 @@ Collection, folder, and source list entries are real buttons inside ordinary sem
 
 Selected buttons use `aria-pressed`, visible accent treatment, and hidden selected text so selection is not communicated by colour alone. The source list preserves the exact authoritative source order and labels each row from the source's explicit `native-tmdb`, `addon`, or `opaque` category.
 
+Every collection and folder uses one compact horizontal row containing a main visual card and one compact Edit action. Inside that main card, a 46px touch target containing an 18px six-dot grip precedes the flexible selectable title/details/chevron body by 12px. Sources use the same internally contained grip and flexible identity body without an Edit action. The grip alone begins dragging, the card body remains the navigation target, and Edit remains outside the main card and independent of both. Single-item handles stay internally aligned but disabled. Long titles use the existing safe display fallbacks and a bounded two-line treatment so controls remain inside the viewport.
+
+Folder and source visible order is their authoritative array order. Collections display the stable `pinToTop: true` group before the stable ordinary group; absent, false, and unusual preserved pin values remain in the ordinary group. Each view item retains both its group-relative movement position and its overall zero-based visible-list position. Pointer destinations clamp to the current sibling/pin group, so crossing the pin boundary never suggests or changes pin state. The pure movement helper maps either the adjacent keyboard destination or final pointer destination back to the authoritative raw-array index before calling `controller.moveNode(internalId, targetIndex)` once, while successful pointer announcements use the overall one-based visible-list position. This covers interleaved imported collection arrays where visible and raw neighbours differ without adding ordering metadata, exposing raw indexes, or adding a second movement implementation. Stable internal IDs preserve selection and keyed card identity.
+
+Pointer Events start only from the handle and use a 6px vertical threshold. Before creating a pointer session, the handle must successfully establish Pointer Capture and confirm it where the API supports confirmation. Capture failure declines that gesture without creating an overlay, changing data, or disabling later keyboard operation; no handle-local drag is allowed to continue without reliable move/up/cancel delivery. Crossing the threshold creates a fixed-position, pointer-inert clone of the complete measured hierarchy row—including Edit where present—above panel clipping. It retains the original pointer-grab offset and exact row width/height while following vertical movement. The source row becomes a same-sized provisional placeholder that moves to the proposed position, and crossed siblings shift into the opened space with a restrained 150ms FLIP-style transform. A full-row insertion line remains secondary emphasis rather than the only feedback.
+
+Hover geometry and provisional transforms never call the controller. A changed pointer-up settles the overlay toward the measured placeholder and then performs one authoritative move. Same-position drop settles back without a move. While the pointer session exists—including its 150ms settle—selection/mobile back, Edit, creation, workspace return, root navigation, another reorder start, and keyboard-mode entry are ignored. The active handle is not disabled during capture. Escape remains able to cancel an active non-settling gesture; pointer cancellation, lost capture, or Escape removes the fixed overlay, placeholder, sibling transforms, and body grabbing state without changing data or revision. Completion or cancellation clears the session before normal interaction resumes. Under reduced motion, the overlay and placeholder remain complete while sibling and settle transitions are effectively removed. Auto-scroll applies a bounded vertical window step near the viewport edges and target calculation uses document-space measurements so scrolling does not corrupt the destination; normal page scrolling remains available everywhere outside the handle because `touch-action: none` is scoped to the handle only.
+
+The same focusable handle supports keyboard reordering without permanent arrow controls. Enter or Space starts or ends keyboard mode, Arrow Up and Arrow Down each perform at most one valid adjacent movement, and Escape exits. A hidden instruction is associated with every handle, the live region announces successful movement, and focus returns to the moved item's handle.
+
 ## Draft creation
 
 `createDraftCollection(controller)` chooses the next unique `Untitled Collection` title, supplies the explicit manual defaults Tabs, All enabled, Pin off, and focus glow on, then delegates automatic Nuvio ID creation to the controller.
@@ -90,11 +101,11 @@ Both helpers use only `getState()` and public controller actions. They never der
 
 After successful mobile creation, the new card is scrolled into view when practical. The scroll uses smooth behavior unless `prefers-reduced-motion: reduce` is active, in which case it uses immediate behavior. Scrolling and hierarchy-level suppression are local presentation state and add no project revision.
 
-## Read-only source and selection display
+## Read-only source display
 
-Native TMDB sources prefer an editable title, then the TMDB source type, then `TMDB source`. Addon sources prefer an editable title, catalog ID, addon ID, then `Addon source`. Opaque sources use an editable title when available and otherwise `Preserved source`.
+Native TMDB sources prefer an editable title, then the TMDB source type, then `TMDB source`. Addon sources prefer an editable title, catalog ID, addon ID, then `Addon source`. Opaque sources use an editable title when available and otherwise `Preserved source`. Source cards retain the known identity metadata needed to distinguish them without exposing raw imported objects.
 
-The selected-node summary includes only relevant known editable fields. Collection summaries use friendly supported labels for Tabs/Rows, Pinned to top, All tab when using Tabs, and Focus glow enabled. The saved All-tab preference and focus glow appear only for supported boolean values; absent, unsupported, and unusual raw values receive no fallback display. Folder summaries use Poster/Landscape, one Folder title visibility outcome, and an artwork-presence count. A visible title with supported `hideTitle: false` is Show everywhere, a visible title with supported `hideTitle: true` is Hide on home screen only, and a U+200E-only title is Hide everywhere regardless of `hideTitle`; visible titles with absent or unusual `hideTitle` omit the outcome. Titles made only of the confirmed U+200E character display `Hidden title` with an `Invisible in Nuvio` badge and meaningful accessible names instead of producing blank cards or headings. Unsupported presentation values are not exposed. Source summaries include the explicit category and relevant known provider, TMDB, media, addon, catalog, and genre values. Opaque sources receive a calm `Preserved imported source` note.
+Titles made only of the confirmed U+200E character display `Hidden title` with an `Invisible in Nuvio` badge and meaningful selection, Edit, and movement names instead of producing blank cards or labels. Unusual source-title values fall back to the existing source identity labels rather than being stringified. The hierarchy no longer renders a selected-node detail panel; detailed review remains deferred to the future Create JSON/review workflow.
 
 The UI never renders full raw JSON, arbitrary unknown/community fields, serializer output, migration projections, exception objects, stack traces, or builder internal IDs.
 
@@ -106,7 +117,7 @@ Edit opens one modal dialog shared by collections and folders. The ordinary rena
 
 The How sources appear inside folders field is source-level: each folder remains separate, while Tabs switches between source views and Rows presents every source as its own stacked content row after that folder is opened. Compact CSS-only decorative previews show a selected All/Source tab bar with one poster grid for Tabs and two labelled poster rows without a tab bar for Rows. The title and helper text remain authoritative. With Tabs and Include an All tab when using Tabs enabled, folders containing two or more sources gain an All tab combining their sources; one-source folders do not show it. Rows shows no tabs, but the same enabled switch remains editable as the saved preference for a later return to Tabs.
 
-Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions. Focus enters the Title field, remains contained in the dialog, and returns to the exact Edit trigger; Escape safely cancels, backdrop clicks do not discard, and body scrolling is locked. Hide everywhere blanks and disables Title while retaining valid visible text only in modal state; returning to the original visible choice is a no-op. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, focus-glow, and unusual presentation values remain untouched until deliberate canonical replacement.
+Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions, including movement. Focus enters the Title field, remains contained in the dialog, and returns to the exact Edit trigger; Escape safely cancels, backdrop clicks do not discard, and body scrolling is locked. Hide everywhere blanks and disables Title while retaining valid visible text only in modal state; returning to the original visible choice is a no-op. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, focus-glow, and unusual presentation values remain untouched until deliberate canonical replacement.
 
 ## Diagnostics and migration status
 
@@ -121,6 +132,10 @@ Migration remains non-interactive. The shell shows a small notice only when prev
 - semantic presentation fieldsets with native radio buttons and labelled switches;
 - one named modal dialog with contained focus, safe Escape cancellation, inert background, and exact trigger focus restoration;
 - one always-visible entity-owned Edit action with hidden-title-specific accessible labels;
+- entity-specific `Reorder …` labels plus a hidden keyboard instruction;
+- one aligned disabled handle when the current sibling or pin group has no valid movement;
+- focus retained on the moved card's handle;
+- one visually hidden polite status region for concise successful movement announcements;
 - a real anchor for the v1 backlink;
 - `aria-pressed` plus visible and screen-reader selected state;
 - approximately 46–48px minimum action targets and larger hierarchy rows;
@@ -150,6 +165,13 @@ Deployment and focused source tests use a small stable surface:
 - `data-panel-header="collections|folders|sources"`
 - `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder|return-builder-home"`
 - `data-action="edit-collection|edit-folder"`
+- `data-action="reorder-collection|reorder-folder|reorder-source"`
+- `data-hierarchy-card="source"`
+- `data-card-layout="collection|folder|source"`
+- `data-reorder-main-card="collection|folder|source"`
+- `data-reorder-drag-overlay="true"`
+- `data-drag-placeholder="true"`
+- `data-movement-status="true"`
 - `data-action="apply-node-edit|cancel-node-edit"`
 - `data-import-control="file|pasted-json"`
 - `data-node-type="collection|folder|source"`
@@ -170,8 +192,8 @@ The Pages deployment workflow, workflow triggers, permissions, deployment enviro
 
 ## Deliberate exclusions
 
-The current presentation milestone does not add project-title editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, reordering, bulk settings, drag-and-drop, context menus, undo/redo, network import, TMDB search, addon loading, artwork, focus GIF, cover, logo, backdrop, or hero controls, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies. Future focus-GIF support defaults off unless deliberately enabled.
+The current hierarchy milestone does not add project-title editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, deletion, bulk movement, context menus, undo/redo, network import, TMDB search, addon loading, artwork, focus GIF, cover, logo, backdrop, or hero controls, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies. Future focus-GIF support defaults off unless deliberately enabled.
 
 ## Next mandatory gate
 
-Dave's mandatory final UI/flow review must assess Edit placement, direct unselected targeting, settings-modal behavior, U+200E hiding, focus glow, Tabs/Rows and All-tab behavior, Poster/Landscape selection, unusual-value guidance, mobile drill-down, desktop three-panel layout, accessibility, and visual polish. Bulk presentation settings remain deferred to a focused issue. Reordering remains a separate focused milestone before Search/Add. No pull request or source creation begins before the current review gate.
+Issue #59's implementation is committed and pushed at `326efe0bf78ee095f1d9efd5420b18d509d5c14f`. Dave's local UI/flow review and the bounded Nuvio Desktop, web, mobile, and TV ordering evidence gate are complete; the deterministic repository evidence is under [`manual-tests/nuvio-clients/issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/). This evidence-only follow-up changes no Builder UI/controller code or production behavior. No pull request exists, and PR creation still requires Dave's separate approval. Search/Add is the recommended next focused product issue after issue #59 is reviewed and integrated; source creation has not begun here.

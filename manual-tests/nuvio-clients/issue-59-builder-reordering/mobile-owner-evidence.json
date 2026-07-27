@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "testDate": "2026-07-27",
+  "evidenceStatus": "passed-owner-visual-and-export-text-raw-artifact-unavailable",
+  "client": {
+    "product": "Nuvio mobile",
+    "version": null,
+    "build": null,
+    "operatingSystem": null,
+    "device": null
+  },
+  "evidenceMethods": [
+    "owner visual review",
+    "owner-supplied exported JSON text review"
+  ],
+  "rawArtifact": {
+    "available": false,
+    "filename": null,
+    "sizeBytes": null,
+    "sha256": null,
+    "reason": "No exact raw mobile export file was found in the owner-specified local locations. The structured observations below transcribe the reviewed owner-supplied export text without claiming exact bytes."
+  },
+  "observations": {
+    "profileVisible": true,
+    "visibleCollectionOrder": [
+      "issue-59-collection-c",
+      "issue-59-collection-a",
+      "issue-59-collection-d",
+      "issue-59-collection-b"
+    ],
+    "rawCollectionOrder": [
+      "issue-59-collection-d",
+      "issue-59-collection-b",
+      "issue-59-collection-c",
+      "issue-59-collection-a"
+    ],
+    "pinValues": {
+      "issue-59-collection-d": false,
+      "issue-59-collection-b": false,
+      "issue-59-collection-c": true,
+      "issue-59-collection-a": true
+    },
+    "folderOrderWithinRegularD": [
+      "issue-59-folder-c",
+      "issue-59-folder-a",
+      "issue-59-folder-b"
+    ],
+    "sourceOrderWithinFolderC": [
+      "issue-59-source-c",
+      "issue-59-source-a",
+      "issue-59-source-b"
+    ],
+    "projectionOrderWithinFolderC": [
+      "issue-59-source-c",
+      "issue-59-source-a",
+      "issue-59-source-b"
+    ],
+    "collectionAndFolderIdsPreserved": true,
+    "parentRelationshipsPreserved": true,
+    "collectionSentinelsPreserved": true,
+    "folderSentinelsPreserved": true,
+    "sourceSentinelsPreserved": true,
+    "projectionSentinelsPreserved": true,
+    "sourceGenreNullPreserved": true,
+    "explicitNullAndDefaultArtworkSourcePropertiesAdded": true,
+    "folderFocusGifEnabled": true,
+    "meaningfulHierarchyOrOrderLossObserved": false
+  },
+  "limitations": [
+    "The exact raw mobile export bytes are unavailable, so no mobile export hash is recorded or implied.",
+    "The client version, build, operating system, and device were not captured.",
+    "The synthetic addon may be unavailable; that does not affect this ordering result."
+  ]
+}

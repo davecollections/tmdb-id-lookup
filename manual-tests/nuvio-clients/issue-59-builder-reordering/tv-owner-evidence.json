@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "testDate": "2026-07-27",
+  "evidenceStatus": "passed-owner-visual-and-synced-verified-web-profile",
+  "client": {
+    "product": "Nuvio TV",
+    "version": null,
+    "build": null,
+    "operatingSystem": null,
+    "device": null
+  },
+  "evidenceMethods": [
+    "owner visual review",
+    "synced profile backed by the verified nuvio.tv/web export"
+  ],
+  "rawArtifact": {
+    "available": false,
+    "filename": null,
+    "sizeBytes": null,
+    "sha256": null,
+    "reason": "Nuvio TV did not provide an independent export for this check."
+  },
+  "observations": {
+    "syncedProfileVisible": true,
+    "visibleCollectionOrder": [
+      "issue-59-collection-c",
+      "issue-59-collection-a",
+      "issue-59-collection-d",
+      "issue-59-collection-b"
+    ],
+    "pinGroupsVisible": true,
+    "folderOrderWithinRegularD": [
+      "issue-59-folder-c",
+      "issue-59-folder-a",
+      "issue-59-folder-b"
+    ],
+    "sourceOrderWithinFolderCFromSyncedWebExport": [
+      "issue-59-source-c",
+      "issue-59-source-a",
+      "issue-59-source-b"
+    ],
+    "projectionOrderWithinFolderCFromSyncedWebExport": [
+      "issue-59-source-c",
+      "issue-59-source-a",
+      "issue-59-source-b"
+    ],
+    "independentTvSourceArrayExportAvailable": false,
+    "meaningfulHierarchyOrOrderLossObserved": false
+  },
+  "limitations": [
+    "TV collection and folder order are owner visual evidence.",
+    "Source-array and projection-array proof comes from the exact synced nuvio.tv/web export, not an independent TV export.",
+    "The client version, build, operating system, and device were not captured.",
+    "The synthetic addon may be unavailable; that does not affect this ordering result."
+  ]
+}
