@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-27
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -388,7 +388,7 @@ Trakt integration remains outside current project scope; a possible future colou
 3. First mandatory Dave UI and flow review — complete.
 4. Resolve the review findings, including direct per-card hierarchy actions — implemented on the issue branch; owner local UI/browser review complete.
 5. Bulk presentation settings remain desired but deferred to a separate focused issue.
-6. Collection/folder/source reordering — implemented on issue #59's working branch; owner local UI/browser review complete, independent code-review corrections pending, and later same-issue Nuvio client evidence still required.
+6. Collection/folder/source reordering — implemented and pushed at issue #59 commit `326efe0bf78ee095f1d9efd5420b18d509d5c14f`; owner local review and the bounded Desktop/web/mobile/TV ordering evidence gate are complete. The evidence is under [`manual-tests/nuvio-clients/issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/). No PR exists and PR creation remains pending Dave's separate approval.
 7. Source creation and Search/Add.
 8. Advanced Discover creation.
 9. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.

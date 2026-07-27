@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "evidenceStatus": "awaiting-owner-client-testing",
+  "expectedCounts": {
+    "collections": 4,
+    "folders": 6,
+    "sources": 8,
+    "catalogSources": 8
+  },
+  "seedOrders": {
+    "rawCollectionOrder": [
+      "Issue 59 B - Regular second",
+      "Issue 59 A - Pinned second",
+      "Issue 59 D - Regular first",
+      "Issue 59 C - Pinned first"
+    ],
+    "visibleCollectionOrder": [
+      "Issue 59 A - Pinned second",
+      "Issue 59 C - Pinned first",
+      "Issue 59 B - Regular second",
+      "Issue 59 D - Regular first"
+    ],
+    "folderOrderWithinRegularD": [
+      "Issue 59 Folder B - third",
+      "Issue 59 Folder A - second",
+      "Issue 59 Folder C - first"
+    ],
+    "sourceOrderWithinFolderC": [
+      "Issue 59 Source B - third",
+      "Issue 59 Source A - second",
+      "Issue 59 Source C - first"
+    ]
+  },
+  "finalOrders": {
+    "visibleCollectionOrder": [
+      {
+        "visiblePosition": 1,
+        "id": "issue-59-collection-c",
+        "title": "Issue 59 C - Pinned first",
+        "pinToTop": true
+      },
+      {
+        "visiblePosition": 2,
+        "id": "issue-59-collection-a",
+        "title": "Issue 59 A - Pinned second",
+        "pinToTop": true
+      },
+      {
+        "visiblePosition": 3,
+        "id": "issue-59-collection-d",
+        "title": "Issue 59 D - Regular first",
+        "pinToTop": false
+      },
+      {
+        "visiblePosition": 4,
+        "id": "issue-59-collection-b",
+        "title": "Issue 59 B - Regular second",
+        "pinToTop": false
+      }
+    ],
+    "rawSerializedCollectionOrder": [
+      {
+        "id": "issue-59-collection-d",
+        "title": "Issue 59 D - Regular first",
+        "pinToTop": false
+      },
+      {
+        "id": "issue-59-collection-b",
+        "title": "Issue 59 B - Regular second",
+        "pinToTop": false
+      },
+      {
+        "id": "issue-59-collection-c",
+        "title": "Issue 59 C - Pinned first",
+        "pinToTop": true
+      },
+      {
+        "id": "issue-59-collection-a",
+        "title": "Issue 59 A - Pinned second",
+        "pinToTop": true
+      }
+    ],
+    "folderOrderWithinRegularD": [
+      {
+        "position": 1,
+        "id": "issue-59-folder-c",
+        "title": "Issue 59 Folder C - first",
+        "parentCollectionId": "issue-59-collection-d"
+      },
+      {
+        "position": 2,
+        "id": "issue-59-folder-a",
+        "title": "Issue 59 Folder A - second",
+        "parentCollectionId": "issue-59-collection-d"
+      },
+      {
+        "position": 3,
+        "id": "issue-59-folder-b",
+        "title": "Issue 59 Folder B - third",
+        "parentCollectionId": "issue-59-collection-d"
+      }
+    ],
+    "sourceOrderWithinFolderC": [
+      {
+        "position": 1,
+        "title": "Issue 59 Source C - first",
+        "parentCollectionId": "issue-59-collection-d",
+        "parentFolderId": "issue-59-folder-c",
+        "stableIdentifier": "example.sanitised.issue59.ordering|movie|issue-59-source-c|",
+        "identity": {
+          "addonId": "example.sanitised.issue59.ordering",
+          "type": "movie",
+          "catalogId": "issue-59-source-c",
+          "genre": null
+        }
+      },
+      {
+        "position": 2,
+        "title": "Issue 59 Source A - second",
+        "parentCollectionId": "issue-59-collection-d",
+        "parentFolderId": "issue-59-folder-c",
+        "stableIdentifier": "example.sanitised.issue59.ordering|series|issue-59-source-a|",
+        "identity": {
+          "addonId": "example.sanitised.issue59.ordering",
+          "type": "series",
+          "catalogId": "issue-59-source-a",
+          "genre": null
+        }
+      },
+      {
+        "position": 3,
+        "title": "Issue 59 Source B - third",
+        "parentCollectionId": "issue-59-collection-d",
+        "parentFolderId": "issue-59-folder-c",
+        "stableIdentifier": "example.sanitised.issue59.ordering|anime|issue-59-source-b|",
+        "identity": {
+          "addonId": "example.sanitised.issue59.ordering",
+          "type": "anime",
+          "catalogId": "issue-59-source-b",
+          "genre": null
+        }
+      }
+    ]
+  },
+  "parentRelationships": {
+    "collections": {
+      "issue-59-collection-d": [
+        "issue-59-folder-c",
+        "issue-59-folder-a",
+        "issue-59-folder-b"
+      ],
+      "issue-59-collection-b": [
+        "issue-59-folder-b-marker"
+      ],
+      "issue-59-collection-c": [
+        "issue-59-folder-c-marker"
+      ],
+      "issue-59-collection-a": [
+        "issue-59-folder-a-marker"
+      ]
+    },
+    "folders": {
+      "issue-59-folder-c": [
+        "example.sanitised.issue59.ordering|movie|issue-59-source-c|",
+        "example.sanitised.issue59.ordering|series|issue-59-source-a|",
+        "example.sanitised.issue59.ordering|anime|issue-59-source-b|"
+      ],
+      "issue-59-folder-a": [
+        "example.sanitised.issue59.ordering|series|issue-59-folder-a-marker|"
+      ],
+      "issue-59-folder-b": [
+        "example.sanitised.issue59.ordering|movie|issue-59-folder-b-marker|"
+      ],
+      "issue-59-folder-b-marker": [
+        "example.sanitised.issue59.ordering|movie|issue-59-marker-b|"
+      ],
+      "issue-59-folder-c-marker": [
+        "example.sanitised.issue59.ordering|movie|issue-59-marker-c|"
+      ],
+      "issue-59-folder-a-marker": [
+        "example.sanitised.issue59.ordering|movie|issue-59-marker-a|"
+      ]
+    }
+  },
+  "pinGroups": {
+    "pinned": [
+      "Issue 59 C - Pinned first",
+      "Issue 59 A - Pinned second"
+    ],
+    "ordinary": [
+      "Issue 59 D - Regular first",
+      "Issue 59 B - Regular second"
+    ]
+  },
+  "sourceIdentityContract": {
+    "addonId": "example.sanitised.issue59.ordering",
+    "fields": [
+      "addonId",
+      "type",
+      "catalogId",
+      "genre"
+    ],
+    "notes": "Titles may be visible in client tabs or rows; exported source-array identity is authoritative when direct source order is not visible."
+  }
+}

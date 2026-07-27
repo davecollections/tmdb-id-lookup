@@ -1,0 +1,236 @@
+[
+  {
+    "id": "issue-59-collection-d",
+    "title": "Issue 59 D - Regular first",
+    "folders": [
+      {
+        "id": "issue-59-folder-c",
+        "title": "Issue 59 Folder C - first",
+        "sources": [
+          {
+            "type": "movie",
+            "genre": "",
+            "title": "Issue 59 Source C - first",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-source-c",
+            "issue59SourceSentinel": {
+              "preserve": "source-c"
+            }
+          },
+          {
+            "type": "series",
+            "genre": "",
+            "title": "Issue 59 Source A - second",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-source-a",
+            "issue59SourceSentinel": {
+              "preserve": "source-a"
+            }
+          },
+          {
+            "type": "anime",
+            "genre": "",
+            "title": "Issue 59 Source B - third",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-source-b",
+            "issue59SourceSentinel": {
+              "preserve": "source-b"
+            }
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "catalogSources": [
+          {
+            "type": "movie",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-source-c"
+          },
+          {
+            "type": "series",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-source-a"
+          },
+          {
+            "type": "anime",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-source-b"
+          }
+        ],
+        "focusGifEnabled": false
+      },
+      {
+        "id": "issue-59-folder-a",
+        "title": "Issue 59 Folder A - second",
+        "sources": [
+          {
+            "type": "series",
+            "genre": "",
+            "title": "Issue 59 Folder A marker source",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-folder-a-marker",
+            "issue59SourceSentinel": {
+              "preserve": "folder-a-source"
+            }
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "catalogSources": [
+          {
+            "type": "series",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-folder-a-marker"
+          }
+        ],
+        "focusGifEnabled": false
+      },
+      {
+        "id": "issue-59-folder-b",
+        "title": "Issue 59 Folder B - third",
+        "sources": [
+          {
+            "type": "movie",
+            "genre": "",
+            "title": "Issue 59 Folder B marker source",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-folder-b-marker",
+            "issue59SourceSentinel": {
+              "preserve": "folder-b-source"
+            }
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "catalogSources": [
+          {
+            "type": "movie",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-folder-b-marker"
+          }
+        ],
+        "focusGifEnabled": false
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "focusGlowEnabled": false
+  },
+  {
+    "id": "issue-59-collection-b",
+    "title": "Issue 59 B - Regular second",
+    "folders": [
+      {
+        "id": "issue-59-folder-b-marker",
+        "title": "Issue 59 B marker folder",
+        "sources": [
+          {
+            "type": "movie",
+            "genre": "",
+            "title": "Issue 59 B marker source",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-marker-b",
+            "issue59SourceSentinel": {
+              "preserve": "source-b-marker"
+            }
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "catalogSources": [
+          {
+            "type": "movie",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-marker-b"
+          }
+        ],
+        "focusGifEnabled": false
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "focusGlowEnabled": false
+  },
+  {
+    "id": "issue-59-collection-c",
+    "title": "Issue 59 C - Pinned first",
+    "folders": [
+      {
+        "id": "issue-59-folder-c-marker",
+        "title": "Issue 59 C marker folder",
+        "sources": [
+          {
+            "type": "movie",
+            "genre": "",
+            "title": "Issue 59 C marker source",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-marker-c",
+            "issue59SourceSentinel": {
+              "preserve": "source-c-marker"
+            }
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "catalogSources": [
+          {
+            "type": "movie",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-marker-c"
+          }
+        ],
+        "focusGifEnabled": false
+      }
+    ],
+    "pinToTop": true,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "focusGlowEnabled": false
+  },
+  {
+    "id": "issue-59-collection-a",
+    "title": "Issue 59 A - Pinned second",
+    "folders": [
+      {
+        "id": "issue-59-folder-a-marker",
+        "title": "Issue 59 A marker folder",
+        "sources": [
+          {
+            "type": "movie",
+            "genre": "",
+            "title": "Issue 59 A marker source",
+            "addonId": "example.sanitised.issue59.ordering",
+            "provider": "addon",
+            "catalogId": "issue-59-marker-a",
+            "issue59SourceSentinel": {
+              "preserve": "source-a-marker"
+            }
+          }
+        ],
+        "hideTitle": false,
+        "tileShape": "POSTER",
+        "catalogSources": [
+          {
+            "type": "movie",
+            "addonId": "example.sanitised.issue59.ordering",
+            "catalogId": "issue-59-marker-a"
+          }
+        ],
+        "focusGifEnabled": false
+      }
+    ],
+    "pinToTop": true,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "focusGlowEnabled": false
+  }
+]

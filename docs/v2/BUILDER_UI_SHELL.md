@@ -2,7 +2,7 @@
 
 Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, presentation, and hierarchy-reordering milestones through issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59)
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-27
 
 ## Purpose and scope
 
@@ -196,4 +196,4 @@ The current hierarchy milestone does not add project-title editing, source creat
 
 ## Next mandatory gate
 
-Dave's mandatory issue #59 local UI/flow review is complete for mouse/touch drag presentation, pinned and ordinary hierarchy density, hidden and long titles, responsive card-action fit, Selection details removal, and visual restraint. The corrected pointer lifecycle, interaction gate, keyboard behavior, focus retention, and visible-list announcements remain subject to the current code-review gate. Nuvio Desktop, web, mobile, and TV order evidence remains a later same-issue gate. No commit, pull request, client-test package, or source creation begins before that gate.
+Issue #59's implementation is committed and pushed at `326efe0bf78ee095f1d9efd5420b18d509d5c14f`. Dave's local UI/flow review and the bounded Nuvio Desktop, web, mobile, and TV ordering evidence gate are complete; the deterministic repository evidence is under [`manual-tests/nuvio-clients/issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/). This evidence-only follow-up changes no Builder UI/controller code or production behavior. No pull request exists, and PR creation still requires Dave's separate approval. Search/Add is the recommended next focused product issue after issue #59 is reviewed and integrated; source creation has not begun here.

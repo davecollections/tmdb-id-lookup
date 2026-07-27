@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "evidenceDate": "2026-07-27",
+  "checker": "scripts/check-builder-reordering-client-evidence.mjs",
+  "sourceCommit": "326efe0bf78ee095f1d9efd5420b18d509d5c14f",
+  "evidenceStatus": "client-ordering-gate-complete",
+  "networkRequired": false,
+  "artifactInventory": [
+    {
+      "file": "builder-reordered-input.json",
+      "sizeBytes": 8545,
+      "sha256": "64b980782f72aa742359b57dbfe9eac9e1baa5f2ee6c284de3a4dcf86d1d4c0c"
+    },
+    {
+      "file": "completed-evidence.md",
+      "sizeBytes": 4553,
+      "sha256": "b9a0fd121bc928d6a7553aeef10d4f72e836185a5f0d91996294d75d34f6d9e9"
+    },
+    {
+      "file": "expected-order.json",
+      "sizeBytes": 5938,
+      "sha256": "969e731453745c61670de13a41844968502aab05247a949360cebb67ce5d77dd"
+    },
+    {
+      "file": "generation-report.json",
+      "sizeBytes": 11398,
+      "sha256": "ad65c837da393decf494e078d27e1dc45812c9c686af5e8fa744017ec97706e1"
+    },
+    {
+      "file": "mobile-owner-evidence.json",
+      "sizeBytes": 2372,
+      "sha256": "9ac7a166a2a9895aa9999f7120b1f26b3d611dee913ce1cc57313e8b46f4860c"
+    },
+    {
+      "file": "nuvio-desktop-export.json",
+      "sizeBytes": 7157,
+      "sha256": "da1c093936c3034bdfd06db20673c264919d3f166cd16be79b7e26d1b1f2ea7b"
+    },
+    {
+      "file": "nuviotv-web-export.json",
+      "sizeBytes": 6674,
+      "sha256": "3c9f2f107f23b582ed2e17b60012e9c973086f7b891b5a29e833a59c68c946c9"
+    },
+    {
+      "file": "README.md",
+      "sizeBytes": 4110,
+      "sha256": "00ce54fd9b954a576a10f8eb54b80f2cd9f531914f025214f7ea2604396c7a8b"
+    },
+    {
+      "file": "seed-profile.json",
+      "sizeBytes": 8545,
+      "sha256": "a829b4b125d90e299f5d714f0b781bb72b583ee8412f1c894777d20f86485a33"
+    },
+    {
+      "file": "tv-owner-evidence.json",
+      "sizeBytes": 1737,
+      "sha256": "93a5badf7bbad7d8d496fe66232ec1e9abf09dd202db0940e5b72528bea578c2"
+    }
+  ],
+  "reportHashNote": "verification-report.json is excluded from its own inventory and hash calculation.",
+  "expectedContract": {
+    "counts": {
+      "collections": 4,
+      "folders": 6,
+      "sources": 8,
+      "catalogSources": 8
+    },
+    "rawCollectionOrder": [
+      "issue-59-collection-d",
+      "issue-59-collection-b",
+      "issue-59-collection-c",
+      "issue-59-collection-a"
+    ],
+    "visibleCollectionOrder": [
+      "issue-59-collection-c",
+      "issue-59-collection-a",
+      "issue-59-collection-d",
+      "issue-59-collection-b"
+    ],
+    "pinValues": {
+      "issue-59-collection-d": false,
+      "issue-59-collection-b": false,
+      "issue-59-collection-c": true,
+      "issue-59-collection-a": true
+    },
+    "folderOrderWithinRegularD": [
+      "issue-59-folder-c",
+      "issue-59-folder-a",
+      "issue-59-folder-b"
+    ],
+    "sourceAndProjectionOrderWithinFolderC": [
+      "issue-59-source-c",
+      "issue-59-source-a",
+      "issue-59-source-b"
+    ]
+  },
+  "builderEvidence": {
+    "status": "passed",
+    "reproduction": {
+      "seedImport": "passed",
+      "moveOperationsReplayed": 6,
+      "finalRevision": 7,
+      "exactFinalValue": true,
+      "exactFinalText": true
+    },
+    "secondCycle": {
+      "import": "passed",
+      "serialization": "passed",
+      "semanticEquality": true,
+      "deterministicTextEquality": true
+    },
+    "canonicalValidation": true,
+    "sentinelsPreserved": true,
+    "parentRelationshipsPreserved": true
+  },
+  "clients": {
+    "desktop": {
+      "status": "passed",
+      "evidenceMethod": "owner visual plus exact raw export",
+      "client": {
+        "product": "Nuvio Desktop",
+        "version": "0.1.11-alpha",
+        "build": "11",
+        "basedOnNuvio": "0.2.19",
+        "operatingSystem": "Windows 11"
+      },
+      "rawExport": {
+        "file": "nuvio-desktop-export.json",
+        "sizeBytes": 7157,
+        "sha256": "da1c093936c3034bdfd06db20673c264919d3f166cd16be79b7e26d1b1f2ea7b"
+      },
+      "orderAndHierarchyPreserved": true,
+      "allSentinelLevelsPreserved": true,
+      "normalizationFromBuilderInput": {
+        "additions": 102,
+        "removals": 0,
+        "changedValues": 0,
+        "arrayLengthChanges": 0,
+        "orderChanges": 0
+      },
+      "addonNotFoundAcceptable": true
+    },
+    "web": {
+      "status": "passed-with-normalization",
+      "evidenceMethod": "owner visual plus exact raw export",
+      "client": {
+        "product": "nuvio.tv/web",
+        "version": null,
+        "build": null,
+        "browser": null
+      },
+      "rawExport": {
+        "file": "nuviotv-web-export.json",
+        "sizeBytes": 6674,
+        "sha256": "3c9f2f107f23b582ed2e17b60012e9c973086f7b891b5a29e833a59c68c946c9"
+      },
+      "orderAndHierarchyPreserved": true,
+      "sourceSentinelsPreserved": true,
+      "collectionFolderAndProjectionSentinelsDropped": true,
+      "normalizationFromDesktopExport": {
+        "additions": 4,
+        "removals": 130,
+        "changedValues": 14,
+        "arrayLengthChanges": 0,
+        "orderChanges": 0
+      },
+      "knownNormalization": {
+        "sourceGenreNullToEmptyString": true,
+        "optionalNullPropertiesOmitted": true,
+        "folderFocusGifEnabledTrueToFalse": true,
+        "collectionFocusGlowEnabledFalseAdded": true
+      }
+    },
+    "mobile": {
+      "status": "passed-with-raw-artifact-limitation",
+      "evidenceMethod": "owner visual plus owner-supplied exported JSON text",
+      "rawArtifactAvailable": false,
+      "rawArtifactSha256": null,
+      "orderHierarchyParentsIdsAndSentinelsPreserved": true,
+      "versionBuildOsDevice": null
+    },
+    "tv": {
+      "status": "passed-with-no-independent-export",
+      "evidenceMethod": "owner visual plus synced profile backed by exact web export",
+      "independentExportAvailable": false,
+      "sourceArrayProof": "nuviotv-web-export.json",
+      "versionBuildOsDevice": null
+    }
+  },
+  "privacyScan": {
+    "status": "passed",
+    "filesScanned": 10,
+    "findings": []
+  },
+  "pagesBoundary": {
+    "status": "repository-only-evidence",
+    "expectedInPagesArtifact": false
+  },
+  "gate": {
+    "nuvioClientOrderingEvidence": "complete",
+    "pullRequest": "pending-owner-approval"
+  }
+}

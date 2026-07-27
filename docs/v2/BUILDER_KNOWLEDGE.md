@@ -2,7 +2,7 @@
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-27
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope. See [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) for durable product direction and [`PROJECT_WORKFLOW.md`](./PROJECT_WORKFLOW.md) for the Dave/ChatGPT/Codex process.
 
@@ -359,7 +359,7 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 
 ### Accessible hierarchy reordering — issue #59
 
-**Confirmed by repository tests and completed owner local browser/visual review — issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), 2026-07-26; Nuvio client evidence pending:** the existing collection, folder, and source hierarchy cards now provide one compact six-dot handle for pointer/touch dragging and keyboard-accessible movement without permanent arrow controls, ordering metadata, or a second domain mutation path.
+**Confirmed by repository tests, completed owner local browser/visual review, and bounded Nuvio client evidence — issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), implementation commit `326efe0bf78ee095f1d9efd5420b18d509d5c14f`, 2026-07-27:** the existing collection, folder, and source hierarchy cards now provide one compact six-dot handle for pointer/touch dragging and keyboard-accessible movement without permanent arrow controls, ordering metadata, or a second domain mutation path.
 
 - Folder and source visible siblings use their authoritative array order. Collections display the stable `pinToTop: true` group before the stable ordinary group; absent, false, and unusual preserved pin values remain ordinary.
 - Collection movement is bounded inside the current visible pin group and never changes `pinToTop`. The UI retains both group-relative movement positions and overall visible-list positions, maps the adjacent visible collection back to that sibling's raw-array index, and announces the completed overall position. This covers interleaved imported arrays where visual and raw neighbors differ without exposing raw indexes.
@@ -370,7 +370,22 @@ All four issue #38 evidence JSON files, including the untouched owner export, ar
 - A valid changed move advances project revision exactly once. Same-index and cancelled pointer actions do not advance revision, and invalid or out-of-range controller targets retain structured diagnostics without advancing project revision.
 - The former desktop and mobile Selection details summaries are removed. Source cards remain read-only hierarchy entries with one reorder handle and no Edit action.
 - Preservation tests cover collection/folder/source identity and selection, pin values, folder artwork, unknown/community fields, opaque sources, native/addon categories, authoritative source order, addon compatibility projections, second-cycle serialization stability, and the absence of Builder-only movement metadata.
-- Search/Add, source editing/creation, deletion, bulk movement, artwork-runtime consumption, client-test packages, v1, Worker, dependencies, Pages allowlists, and `nuvio-assets` remain unchanged. Dave's local visual/browser review is complete; Nuvio Desktop, web, mobile, and TV ordering evidence remains a later same-issue gate after the code-review corrections are approved.
+- Search/Add, source editing/creation, deletion, bulk movement, artwork-runtime consumption, v1, Worker, dependencies, Pages allowlists, and `nuvio-assets` remain unchanged.
+
+#### Nuvio client ordering evidence — 2026-07-27
+
+The deterministic evidence bundle is recorded under [`manual-tests/nuvio-clients/issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/). The checker replays the six production controller moves from the preserved seed, verifies revision 7, exact final serialization, second-cycle stability, hierarchy/pin/parent/source/projection order, exact raw hashes, normalization, and privacy fully offline.
+
+| Client | Result | Evidence method |
+| --- | --- | --- |
+| Nuvio Desktop `0.1.11-alpha` build `11`, based on `0.2.19`, Windows 11 | Passed | Owner visual review plus exact raw export |
+| nuvio.tv/web, build/browser unknown | Passed with normalization | Owner visual review plus exact raw export |
+| Nuvio mobile, version/OS/device unknown | Passed with raw-artifact limitation | Owner visual review plus owner-supplied exported JSON text |
+| Nuvio TV, version/device unknown | Passed with no independent export | Owner visual review plus synced profile backed by the verified web export |
+
+Desktop retained raw D/B/C/A, visible C/A/D/B, pin groups, D folders C/A/B, C/A/B source and projection arrays, parents, IDs, and all sentinel levels; its raw export contains exactly 102 approved default/null additions and no removals, changed values, array-length changes, or order changes. Web retained the same hierarchy and order while normalizing source `genre` from `null` to `""`, omitting optional nulls, changing folder `focusGifEnabled` from Desktop's `true` to `false`, adding collection `focusGlowEnabled: false`, retaining source sentinels, and dropping collection/folder/projection sentinels. Mobile retained the required hierarchy, parents, IDs, pins, sentinels, and `genre: null` in the reviewed export text, but no exact raw mobile file was available and no hash is claimed. TV supplied no independent export; its C/A/B source-array proof is explicitly the synced exact web export.
+
+The issue #59 client-ordering gate is complete. No pull request exists; PR creation still requires Dave's separate approval. Search/Add remains the recommended next focused product issue after issue #59 is reviewed and integrated, and it has not begun here.
 
 ## 12. Shared artwork runtime foundation — issue #45
 
@@ -481,7 +496,7 @@ The current dependency-aware sequence is:
 2. collection/folder presentation settings and owner-review corrections — complete on the issue branch;
 3. focused Dave UI/flow review and independent follow-up review — complete for issue #53;
 4. bulk presentation settings remain desired but deferred to a separate focused issue;
-5. collection/folder/source reordering — implemented on issue #59's working branch; Dave's local UI/code review is the current gate, with Nuvio client evidence later in the same issue;
+5. collection/folder/source reordering — implemented and pushed at `326efe0bf78ee095f1d9efd5420b18d509d5c14f`; owner local review and the bounded Desktop/web/mobile/TV evidence gate are complete, while PR creation remains separately unapproved;
 6. source creation and Search/Add.
 
 Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, privacy positioning, branding, and optional Nuvio connection are product-plan topics in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md). They do not change the current technical implementation gate.
@@ -541,7 +556,7 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 | 2026-07-25 | Collection/folder presentation defaults, direct per-card Edit actions, responsive inert-background modal, collection/folder U+200E creation, three-outcome folder title visibility, imported hidden-title preservation, home-screen-only `hideTitle` scope, collection `focusGlowEnabled`, touched-only canonical patches, Follow Layout/Square preservation, accessible fallbacks, and serializer-cycle preservation | [TMDB ID Lookup issue #53](https://github.com/davecollections/tmdb-id-lookup/issues/53) |
 | 2026-07-26 | Strict numeric artwork runtime schema-v1/v2 dispatch, exact entity/ID/orientation paths, v2 Network Poster requirements, unchanged v1 adapter interface, and cached-export parity against test-only v2 fixtures | [TMDB ID Lookup issue #55](https://github.com/davecollections/tmdb-id-lookup/issues/55) and the separately reviewed `nuvio-assets` commits `366bb3e` / `f627428` |
 | 2026-07-26 | Completed public artwork runtime-v2 publication, all 572 Network Landscape/Poster records, release hashes and counts, and live shared-resolver/v1-bridge verification | [`nuvio-assets` PR #3](https://github.com/davecollections/nuvio-assets/pull/3) and [TMDB ID Lookup issue #57](https://github.com/davecollections/tmdb-id-lookup/issues/57) |
-| 2026-07-26 | Compact pointer/touch and keyboard collection/folder/source reordering, stable pin-group display and raw-index mapping, focus/live-region behavior, Selection details removal, controller no-op revision semantics, and preservation-first serialization coverage | [TMDB ID Lookup issue #59](https://github.com/davecollections/tmdb-id-lookup/issues/59) |
+| 2026-07-27 | Compact pointer/touch and keyboard collection/folder/source reordering plus bounded Desktop/web/mobile/TV ordering evidence, exact Desktop/web exports, explicit mobile raw-artifact and TV no-export limitations, deterministic normalization checks, and completed same-issue client gate | [TMDB ID Lookup issue #59](https://github.com/davecollections/tmdb-id-lookup/issues/59) and [`issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/) |
 
 ## Decision history
 
@@ -570,3 +585,4 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 - **2026-07-26 — Strict artwork runtime v1/v2 compatibility:** accept exactly numeric shared runtime schemas 1 and 2; preserve v1 results and URL versioning; require exact entity, ID, and orientation paths; reject forbidden Company Poster and v1 Network Poster data; require both Network orientations in v2; keep the classic adapter and cached exporter Landscape-only; and leave the live schema-v1 runtime, Builder controls, assets, and publication process unchanged.
 - **2026-07-26 — Live artwork runtime v2 publication:** adopt the completed assets PR #3 publication as the current public baseline; record its release identity, counts, hashes and fingerprints as evidence rather than consumer rules; keep Company Poster unsupported and the external v1 bridge Landscape-only; and leave Builder Network Poster consumption, UI and source creation for a separate issue.
 - **2026-07-26 — Accessible hierarchy reordering:** add one compact six-dot handle to existing collection, folder, and source rows for pointer/touch dragging plus Enter/Space and Arrow-key reordering; keep pinned and ordinary collections as stable visible groups and map final visible destinations back to authoritative raw-array indices; preserve parent/category boundaries, stable internal identity, selection, raw/unknown/artwork/projection evidence, and serialized order; retain exactly one revision for a changed drop or keyboard move and none for hover, cancellation, invalid boundaries, or same-position movement; keep focus on the moved handle and announce successful moves politely; remove the redundant Selection details surfaces; and defer Nuvio client evidence, bulk movement, Search/Add, artwork-runtime consumption, client packages, PR, and release work until the required review gates.
+- **2026-07-27 — Reordering client-evidence checkpoint:** accept the bounded Desktop and web visual-plus-exact-export results, the mobile visual-plus-export-text result with no raw artifact or hash, and the TV visual-plus-synced-web result with no independent export; constrain observed normalization without treating sentinel loss as order loss; mark the issue #59 client gate complete; and retain the separate owner approval requirement before creating a PR or beginning Search/Add.
