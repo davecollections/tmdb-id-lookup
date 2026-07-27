@@ -2,6 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
+import {
+	crossedDragThreshold,
+	dragOverlayTop,
+	establishPointerCapture,
+	insertionIndicatorForDestination,
+	moveSiblingNode,
+	moveSiblingNodeToPosition,
+	movementAnnouncement,
+	movementPositionAnnouncement,
+	pointerDestinationForY,
+	pointerSessionLocksInteraction,
+	provisionalDragLayout,
+	reorderAutoScrollDelta,
+	reorderHandleLabel,
+	visiblePositionForGroupDestination,
+} from "./hierarchy-reordering.js";
 import { NodeEditor } from "./NodeEditor.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
@@ -45,45 +61,187 @@ function EmptyState({ title, children, action = null }) {
 	);
 }
 
+function GripIcon() {
+	return (
+		<svg className="reorder-grip-icon" viewBox="0 0 18 18" aria-hidden="true">
+			<circle cx="5" cy="4" r="1.5" />
+			<circle cx="13" cy="4" r="1.5" />
+			<circle cx="5" cy="9" r="1.5" />
+			<circle cx="13" cy="9" r="1.5" />
+			<circle cx="5" cy="14" r="1.5" />
+			<circle cx="13" cy="14" r="1.5" />
+		</svg>
+	);
+}
+
+const DRAG_SETTLE_DURATION_MS = 150;
+
+function setDragOverlayTop(overlay, top) {
+	overlay?.style.setProperty("--reorder-overlay-y", `${top}px`);
+}
+
+function createHierarchyDragOverlay(card, rect, pointerY, grabOffsetY) {
+	const overlay = card.cloneNode(true);
+	const left = Math.max(0, Math.min(rect.left, window.innerWidth - rect.width));
+	overlay.classList.remove(
+		"is-drag-placeholder",
+		"is-provisionally-displaced",
+	);
+	overlay.classList.add("hierarchy-drag-overlay");
+	overlay.removeAttribute("data-drag-placeholder");
+	overlay.removeAttribute("data-drop-position");
+	overlay.setAttribute("data-reorder-drag-overlay", "true");
+	overlay.setAttribute("aria-hidden", "true");
+	overlay.setAttribute("role", "presentation");
+	overlay.inert = true;
+	overlay.style.removeProperty("--reorder-shift-y");
+	overlay.style.left = `${left}px`;
+	overlay.style.width = `${rect.width}px`;
+	overlay.style.height = `${rect.height}px`;
+	for (const button of overlay.querySelectorAll("button")) {
+		button.tabIndex = -1;
+	}
+	setDragOverlayTop(overlay, dragOverlayTop(pointerY, grabOffsetY));
+	document.body.append(overlay);
+	document.body.classList.add("hierarchy-pointer-dragging");
+	return overlay;
+}
+
+function removeHierarchyDragOverlay(session) {
+	if (session?.settleAnimationFrame) {
+		window.cancelAnimationFrame(session.settleAnimationFrame);
+	}
+	if (session?.settleTimer) {
+		window.clearTimeout(session.settleTimer);
+	}
+	session?.overlay?.remove();
+	document.body.classList.remove("hierarchy-pointer-dragging");
+}
+
+function settleHierarchyDragOverlay(session, targetTop, onComplete) {
+	const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+	session.overlay?.classList.add("is-settling");
+	if (reducedMotion) {
+		setDragOverlayTop(session.overlay, targetTop);
+		queueMicrotask(onComplete);
+		return;
+	}
+
+	session.settleAnimationFrame = window.requestAnimationFrame(() => {
+		setDragOverlayTop(session.overlay, targetTop);
+		session.settleTimer = window.setTimeout(onComplete, DRAG_SETTLE_DURATION_MS);
+	});
+}
+
+function ReorderHandle({
+	node,
+	noun,
+	navigationLocked,
+	keyboardReorderInternalId,
+	onPointerDown,
+	onPointerMove,
+	onPointerUp,
+	onPointerCancel,
+	onLostPointerCapture,
+	onKeyDown,
+	onClick,
+	registerReorderHandle,
+}) {
+	const disabled = navigationLocked || node.reorderGroupSize <= 1;
+	const keyboardActive = keyboardReorderInternalId === node.internalId;
+
+	return (
+		<button
+			ref={(element) => registerReorderHandle(node.internalId, element)}
+			className="reorder-handle"
+			type="button"
+			data-action={`reorder-${noun}`}
+			data-keyboard-reordering={keyboardActive ? "true" : undefined}
+			aria-label={reorderHandleLabel(noun, node.accessibleName)}
+			aria-describedby="reorder-instructions"
+			aria-keyshortcuts="Enter Space ArrowUp ArrowDown Escape"
+			aria-pressed={keyboardActive}
+			disabled={disabled}
+			onPointerDown={(event) => onPointerDown(event, node, noun)}
+			onPointerMove={onPointerMove}
+			onPointerUp={onPointerUp}
+			onPointerCancel={onPointerCancel}
+			onLostPointerCapture={onLostPointerCapture}
+			onKeyDown={(event) => onKeyDown(event, node, noun)}
+			onClick={(event) => onClick(event, node, noun)}
+		>
+			<GripIcon />
+		</button>
+	);
+}
+
 function HierarchyCard({
 	node,
 	noun,
+	siblings,
 	children,
 	navigationLocked,
 	onSelect,
 	onOpenEditor,
+	dragState,
+	keyboardReorderInternalId,
+	registerHierarchyCard,
+	...reorderHandlers
 }) {
 	const editLabel = node.titleHidden
 		? `Edit ${noun} with hidden Nuvio title`
 		: `Edit ${noun} ${node.title}`;
+	const dropPosition = dragState?.indicatorInternalId === node.internalId
+		? dragState.indicatorEdge
+		: undefined;
+	const placeholder = dragState?.internalId === node.internalId;
+	const shiftY = dragState?.displacements?.[node.internalId] ?? 0;
+	const displaced = !placeholder && shiftY !== 0;
 
 	return (
 		<div
-			className={`hierarchy-card${node.selected ? " is-selected" : ""}`}
+			ref={(element) => registerHierarchyCard(node.internalId, element)}
+			className={`hierarchy-card${node.selected ? " is-selected" : ""}${placeholder ? " is-drag-placeholder" : ""}${displaced ? " is-provisionally-displaced" : ""}`}
 			data-hierarchy-card={noun}
+			data-drop-position={dropPosition}
+			data-drag-placeholder={placeholder ? "true" : undefined}
+			style={{ "--reorder-shift-y": `${shiftY}px` }}
 		>
-			<div className="hierarchy-card-row">
-				<NodeButton
-					node={node}
-					type={noun}
-					onSelect={onSelect}
-					disabled={navigationLocked}
+			<div className="hierarchy-card-row" data-card-layout={noun}>
+				<div
+					className={`hierarchy-card-main${node.selected ? " is-selected" : ""}`}
+					data-reorder-main-card={noun}
 				>
-					{children}
-				</NodeButton>
-				<div className="hierarchy-card-actions" data-card-actions={noun}>
-					<button
-						className="card-action"
-						type="button"
-						data-action={`edit-${noun}`}
-						aria-label={editLabel}
+					<ReorderHandle
+						node={node}
+						noun={noun}
+						navigationLocked={navigationLocked}
+						keyboardReorderInternalId={keyboardReorderInternalId}
+						{...reorderHandlers}
+						onPointerDown={(event, handleNode, handleNoun) => (
+							reorderHandlers.onPointerDown(event, handleNode, handleNoun, siblings)
+						)}
+					/>
+					<NodeButton
+						node={node}
+						type={noun}
+						onSelect={onSelect}
 						disabled={navigationLocked}
-						aria-haspopup="dialog"
-						onClick={(event) => onOpenEditor(node.internalId, event.currentTarget)}
 					>
-						Edit
-					</button>
+						{children}
+					</NodeButton>
 				</div>
+				<button
+					className="card-action card-edit-action"
+					type="button"
+					data-action={`edit-${noun}`}
+					aria-label={editLabel}
+					disabled={navigationLocked}
+					aria-haspopup="dialog"
+					onClick={(event) => onOpenEditor(node.internalId, event.currentTarget)}
+				>
+					Edit
+				</button>
 			</div>
 		</div>
 	);
@@ -118,7 +276,7 @@ function CollectionList({ collections, actionProps, createdCardTarget, createdCa
 						? createdCardRef
 						: undefined}
 				>
-					<HierarchyCard node={collection} noun="collection" {...actionProps}>
+					<HierarchyCard node={collection} noun="collection" siblings={collections} {...actionProps}>
 						<span className="node-title">{collection.title}</span>
 						{collection.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 						<span className="node-meta">
@@ -143,7 +301,7 @@ function FolderList({ folders, actionProps, createdCardTarget, createdCardRef })
 						? createdCardRef
 						: undefined}
 				>
-					<HierarchyCard node={folder} noun="folder" {...actionProps}>
+					<HierarchyCard node={folder} noun="folder" siblings={folders} {...actionProps}>
 						<span className="node-title">{folder.title}</span>
 						{folder.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 						<span className="node-meta">
@@ -157,83 +315,77 @@ function FolderList({ folders, actionProps, createdCardTarget, createdCardRef })
 	);
 }
 
-function SourceList({ sources, onSelect, disabled }) {
+function SourceList({ sources, actionProps }) {
 	return (
 		<ul className="source-list" aria-label="Sources">
 			{sources.map((source, index) => (
 				<li key={source.internalId}>
-					<button
-						className={`source-button${source.selected ? " is-selected" : ""}`}
-						type="button"
-						data-node-type="source"
-						data-source-category={source.category}
-						aria-pressed={source.selected}
-						disabled={disabled}
-						onClick={() => onSelect(source.internalId)}
+					<div
+						ref={(element) => actionProps.registerHierarchyCard(source.internalId, element)}
+						className={`hierarchy-card source-card${source.selected ? " is-selected" : ""}${actionProps.dragState?.internalId === source.internalId ? " is-drag-placeholder" : ""}${actionProps.dragState?.internalId !== source.internalId && (actionProps.dragState?.displacements?.[source.internalId] ?? 0) !== 0 ? " is-provisionally-displaced" : ""}`}
+						data-hierarchy-card="source"
+						data-drop-position={actionProps.dragState?.indicatorInternalId === source.internalId
+							? actionProps.dragState.indicatorEdge
+							: undefined}
+						data-drag-placeholder={actionProps.dragState?.internalId === source.internalId
+							? "true"
+							: undefined}
+						style={{
+							"--reorder-shift-y": `${actionProps.dragState?.displacements?.[source.internalId] ?? 0}px`,
+						}}
 					>
-						<span className="source-order" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-						<span className="source-content">
-							<span className="source-heading">
-								<span className="node-title">{source.title}</span>
-								<span className="source-category">{source.categoryLabel}</span>
-							</span>
-							{source.metadata.length > 0 ? (
-								<span className="node-meta">
-									{source.metadata.map((entry) => <span key={entry.key}>{entry.value}</span>)}
-								</span>
-							) : null}
-						</span>
-						{source.selected ? <span className="visually-hidden">Selected</span> : null}
-					</button>
+						<div className="hierarchy-card-row" data-card-layout="source">
+							<div
+								className={`hierarchy-card-main${source.selected ? " is-selected" : ""}`}
+								data-reorder-main-card="source"
+							>
+								<ReorderHandle
+									node={source}
+									noun="source"
+									navigationLocked={actionProps.navigationLocked}
+									keyboardReorderInternalId={actionProps.keyboardReorderInternalId}
+									onPointerDown={(event, handleNode, handleNoun) => (
+										actionProps.onPointerDown(event, handleNode, handleNoun, sources)
+									)}
+									onPointerMove={actionProps.onPointerMove}
+									onPointerUp={actionProps.onPointerUp}
+									onPointerCancel={actionProps.onPointerCancel}
+									onLostPointerCapture={actionProps.onLostPointerCapture}
+									onKeyDown={actionProps.onKeyDown}
+									onClick={actionProps.onClick}
+									registerReorderHandle={actionProps.registerReorderHandle}
+								/>
+								<button
+									className={`source-button${source.selected ? " is-selected" : ""}`}
+									type="button"
+									data-node-type="source"
+									data-source-category={source.category}
+									aria-pressed={source.selected}
+									aria-label={source.titleHidden ? source.accessibleName : undefined}
+									disabled={actionProps.navigationLocked}
+									onClick={() => actionProps.onSelect(source.internalId)}
+								>
+									<span className="source-order" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+									<span className="source-content">
+										<span className="source-heading">
+											<span className="node-title">{source.title}</span>
+											<span className="source-category">{source.categoryLabel}</span>
+										</span>
+										{source.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
+										{source.metadata.length > 0 ? (
+											<span className="node-meta">
+												{source.metadata.map((entry) => <span key={entry.key}>{entry.value}</span>)}
+											</span>
+										) : null}
+									</span>
+									{source.selected ? <span className="visually-hidden">Selected</span> : null}
+								</button>
+							</div>
+						</div>
+					</div>
 				</li>
 			))}
 		</ul>
-	);
-}
-
-function SelectionSummary({
-	node,
-	headingId = "selection-summary-title",
-	selectedSource,
-	selectedFolder,
-	onShowFolderDetails,
-	navigationLocked = false,
-}) {
-	if (!node) {
-		return (
-			<div className="selection-summary selection-summary-empty">
-				<p className="summary-label">Selection details</p>
-				<p>Select a collection, folder, or source to see its known details.</p>
-			</div>
-		);
-	}
-
-	return (
-		<section className="selection-summary" aria-labelledby={headingId}>
-			<div className="summary-heading">
-				<div>
-					<p className="summary-label">Selection details</p>
-					<h3 id={headingId} aria-label={node.accessibleName}>{node.title}</h3>
-					{node.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
-				</div>
-				{selectedSource && selectedFolder ? (
-					<button className="quiet-button" type="button" disabled={navigationLocked} onClick={onShowFolderDetails}>
-						Show folder details
-					</button>
-				) : null}
-			</div>
-			{node.note ? <p className="preserved-note">{node.note}</p> : null}
-			{node.details.length > 0 ? (
-				<dl className="detail-grid">
-					{node.details.map((entry) => (
-						<div key={entry.label}>
-							<dt>{entry.label}</dt>
-							<dd>{entry.value}</dd>
-						</div>
-					))}
-				</dl>
-			) : <p className="summary-empty-copy">No known editable details are available.</p>}
-		</section>
 	);
 }
 
@@ -322,9 +474,18 @@ export function BuilderWorkspace({
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
 	const [mobileLevelOverride, setMobileLevelOverride] = useState(null);
 	const [createdCardTarget, setCreatedCardTarget] = useState(null);
+	const [moveFocusTarget, setMoveFocusTarget] = useState(null);
+	const [dragState, setDragState] = useState(null);
+	const [keyboardReorderInternalId, setKeyboardReorderInternalId] = useState(null);
+	const [movementStatusText, setMovementStatusText] = useState("");
+	const [pendingMovementAnnouncement, setPendingMovementAnnouncement] = useState(null);
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
+	const reorderHandleRefs = useRef(new Map());
+	const hierarchyCardRefs = useRef(new Map());
+	const dragSessionRef = useRef(null);
+	const movementSequenceRef = useRef(0);
 	const returnHomeButtonRef = useRef(null);
 	const stayButtonRef = useRef(null);
 	const returnGateRef = useRef(null);
@@ -374,26 +535,68 @@ export function BuilderWorkspace({
 		setCreatedCardTarget(null);
 	}, [createdCardTarget]);
 
+	useEffect(() => {
+		if (moveFocusTarget === null) return;
+		const target = reorderHandleRefs.current.get(moveFocusTarget.internalId);
+		target?.focus();
+		setMoveFocusTarget(null);
+	}, [moveFocusTarget, state.revision]);
+
+	useEffect(() => {
+		if (pendingMovementAnnouncement === null) return;
+		setMovementStatusText(pendingMovementAnnouncement.message);
+		setPendingMovementAnnouncement(null);
+	}, [pendingMovementAnnouncement]);
+
+	useEffect(() => () => {
+		const session = dragSessionRef.current;
+		dragSessionRef.current = null;
+		removeHierarchyDragOverlay(session);
+	}, []);
+
+	function registerReorderHandle(internalId, element) {
+		if (element === null) {
+			reorderHandleRefs.current.delete(internalId);
+			return;
+		}
+		reorderHandleRefs.current.set(internalId, element);
+	}
+
+	function registerHierarchyCard(internalId, element) {
+		if (element === null) {
+			hierarchyCardRefs.current.delete(internalId);
+			return;
+		}
+		hierarchyCardRefs.current.set(internalId, element);
+	}
+
+	function pointerInteractionLocked() {
+		return pointerSessionLocksInteraction(dragSessionRef.current);
+	}
+
 	function selectNode(internalId) {
-		if (navigationLocked) return;
+		if (navigationLocked || pointerInteractionLocked()) return;
+		setKeyboardReorderInternalId(null);
 		setCreatedCardTarget(null);
 		setMobileLevelOverride(null);
 		controller.selectNode(internalId);
 	}
 
 	function clearSelection() {
-		if (navigationLocked) return;
+		if (navigationLocked || pointerInteractionLocked()) return;
+		setKeyboardReorderInternalId(null);
 		setCreatedCardTarget(null);
 		setMobileLevelOverride(null);
 		controller.clearSelection();
 	}
 
 	function openEditor(internalId, trigger) {
-		if (navigationLocked) return;
+		if (navigationLocked || pointerInteractionLocked()) return;
 		const node = findEditableNode(state.project, internalId);
 		if (!node) return;
 		const draft = createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
+		setKeyboardReorderInternalId(null);
 		setCreatedCardTarget(null);
 		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
 		editRestoreFocusRef.current = trigger;
@@ -441,7 +644,11 @@ export function BuilderWorkspace({
 	}
 
 	function handleReturnHome() {
-		if (navigationLocked || returnGateRef.current.isActive()) return;
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| returnGateRef.current.isActive()
+		) return;
 		requestWorkspaceReturn({
 			state,
 			onConfirm: () => setReturnConfirmationOpen(true),
@@ -456,7 +663,7 @@ export function BuilderWorkspace({
 	}
 
 	function createCollection() {
-		if (navigationLocked) return;
+		if (navigationLocked || pointerInteractionLocked()) return;
 		const result = createDraftCollection(controller, { selectCreated: desktopViewport });
 		if (!result.ok) return;
 
@@ -468,7 +675,11 @@ export function BuilderWorkspace({
 	}
 
 	function createFolder() {
-		if (navigationLocked || !view.selectedCollection) return;
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| !view.selectedCollection
+		) return;
 		const result = createDraftFolder(
 			controller,
 			view.selectedCollection.internalId,
@@ -483,10 +694,348 @@ export function BuilderWorkspace({
 		});
 	}
 
+	function handleRootNavigation(event) {
+		if (!pointerInteractionLocked()) return;
+		event.preventDefault();
+		event.stopPropagation();
+	}
+
+	function announceMovement(message) {
+		setMovementStatusText("");
+		movementSequenceRef.current += 1;
+		setPendingMovementAnnouncement({
+			id: movementSequenceRef.current,
+			message,
+		});
+	}
+
+	function completeMovement(node, message) {
+		setMoveFocusTarget({ internalId: node.internalId });
+		announceMovement(message);
+	}
+
+	function moveNodeWithKeyboard(node, noun, direction) {
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| keyboardReorderInternalId !== node.internalId
+		) return;
+		const result = moveSiblingNode(controller, node, direction);
+		if (!result.moved) return;
+
+		completeMovement(
+			node,
+			movementAnnouncement(noun, node.accessibleName, direction),
+		);
+	}
+
+	function toggleKeyboardReorder(node, noun) {
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| node.reorderGroupSize <= 1
+		) return;
+		const nextInternalId = keyboardReorderInternalId === node.internalId
+			? null
+			: node.internalId;
+		setKeyboardReorderInternalId(nextInternalId);
+		setMovementStatusText(nextInternalId === null
+			? `Stopped reordering ${noun} “${node.accessibleName}”`
+			: `Reordering ${noun} “${node.accessibleName}”. Use Arrow Up and Arrow Down to move it.`);
+	}
+
+	function releasePointerCapture(session) {
+		if (!session?.handle?.hasPointerCapture?.(session.pointerId)) return;
+		try {
+			session.handle.releasePointerCapture(session.pointerId);
+		} catch {
+			// Teardown is already guarded against capture-loss re-entry.
+		}
+	}
+
+	function cancelPointerReorder({ restoreFocus = true } = {}) {
+		const session = dragSessionRef.current;
+		if (!session) return;
+		dragSessionRef.current = null;
+		session.releasing = true;
+		setDragState(null);
+		releasePointerCapture(session);
+		removeHierarchyDragOverlay(session);
+		if (restoreFocus) session?.handle?.focus?.();
+	}
+
+	function beginPointerReorder(event, node, noun, siblings) {
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| node.reorderGroupSize <= 1
+			|| event.isPrimary === false
+			|| (event.pointerType === "mouse" && event.button !== 0)
+		) {
+			return;
+		}
+
+		event.stopPropagation();
+		event.currentTarget.focus();
+		const card = hierarchyCardRefs.current.get(node.internalId);
+		const rect = card?.getBoundingClientRect?.();
+		if (!card || !rect) return;
+		if (!establishPointerCapture(event.currentTarget, event.pointerId)) return;
+
+		setKeyboardReorderInternalId(null);
+		dragSessionRef.current = {
+			pointerId: event.pointerId,
+			startY: event.clientY,
+			destinationPosition: node.reorderGroupPosition,
+			dragging: false,
+			node,
+			noun,
+			groupItems: siblings.filter((item) => (
+				item.reorderGroup === node.reorderGroup
+			)),
+			handle: event.currentTarget,
+			card,
+			originRect: {
+				top: rect.top,
+				left: rect.left,
+				width: rect.width,
+				height: rect.height,
+			},
+			grabOffsetY: event.clientY - rect.top,
+			bounds: null,
+			layout: null,
+			overlay: null,
+			releasing: false,
+			settling: false,
+		};
+	}
+
+	function activatePointerReorder(session, event) {
+		const documentScrollY = window.scrollY;
+		const bounds = session.groupItems.map((item) => {
+			const card = hierarchyCardRefs.current.get(item.internalId);
+			const rect = card?.getBoundingClientRect?.();
+			return rect ? {
+				internalId: item.internalId,
+				position: item.reorderGroupPosition,
+				top: rect.top + documentScrollY,
+				bottom: rect.bottom + documentScrollY,
+			} : null;
+		}).filter(Boolean);
+		const activeBounds = bounds.find((entry) => (
+			entry.internalId === session.node.internalId
+		));
+		if (!activeBounds) return false;
+
+		session.dragging = true;
+		session.bounds = bounds;
+		session.originDocumentTop = activeBounds.top;
+		session.layout = provisionalDragLayout(
+			bounds,
+			session.node.internalId,
+			session.destinationPosition,
+		);
+		session.overlay = createHierarchyDragOverlay(
+			session.card,
+			session.originRect,
+			event.clientY,
+			session.grabOffsetY,
+		);
+		setDragState({
+			internalId: session.node.internalId,
+			indicatorInternalId: null,
+			indicatorEdge: null,
+			displacements: session.layout?.displacements ?? {},
+		});
+		return true;
+	}
+
+	function updatePointerReorder(event) {
+		const session = dragSessionRef.current;
+		if (
+			!session
+			|| session.settling
+			|| session.pointerId !== event.pointerId
+		) return;
+		if (!session.dragging) {
+			if (!crossedDragThreshold(session.startY, event.clientY)) return;
+			if (!activatePointerReorder(session, event)) {
+				cancelPointerReorder();
+				return;
+			}
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		setDragOverlayTop(
+			session.overlay,
+			dragOverlayTop(event.clientY, session.grabOffsetY),
+		);
+
+		const scrollDelta = reorderAutoScrollDelta(event.clientY, window.innerHeight);
+		if (scrollDelta !== 0) {
+			window.scrollBy({ top: scrollDelta, left: 0, behavior: "auto" });
+		}
+
+		const destinationPosition = pointerDestinationForY(
+			session.bounds,
+			event.clientY + window.scrollY,
+		);
+		if (destinationPosition === null) return;
+
+		session.destinationPosition = destinationPosition;
+		session.layout = provisionalDragLayout(
+			session.bounds,
+			session.node.internalId,
+			destinationPosition,
+		);
+		const indicator = insertionIndicatorForDestination(
+			session.groupItems,
+			session.node.internalId,
+			destinationPosition,
+		);
+		setDragState({
+			internalId: session.node.internalId,
+			indicatorInternalId: indicator?.internalId ?? null,
+			indicatorEdge: indicator?.edge ?? null,
+			displacements: session.layout?.displacements ?? {},
+		});
+	}
+
+	function completePointerReorder(event) {
+		const session = dragSessionRef.current;
+		if (
+			!session
+			|| session.settling
+			|| session.pointerId !== event.pointerId
+		) return;
+
+		session.releasing = true;
+		releasePointerCapture(session);
+		if (!session.dragging) {
+			dragSessionRef.current = null;
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+		session.settling = true;
+		const targetTop = (
+			session.originDocumentTop
+			+ (session.layout?.placeholderShiftY ?? 0)
+			- window.scrollY
+		);
+		settleHierarchyDragOverlay(session, targetTop, () => {
+			if (dragSessionRef.current !== session) return;
+			dragSessionRef.current = null;
+			setDragState(null);
+			removeHierarchyDragOverlay(session);
+
+			const visibleDestinationPosition = visiblePositionForGroupDestination(
+				session.groupItems,
+				session.destinationPosition,
+			);
+			const result = moveSiblingNodeToPosition(
+				controller,
+				session.node,
+				session.destinationPosition,
+			);
+			if (!result.moved) {
+				session.handle.focus?.();
+				return;
+			}
+
+			completeMovement(
+				session.node,
+				movementPositionAnnouncement(
+					session.noun,
+					session.node.accessibleName,
+					(visibleDestinationPosition ?? session.destinationPosition) + 1,
+				),
+			);
+		});
+	}
+
+	function cancelPointerEvent(event) {
+		const session = dragSessionRef.current;
+		if (
+			!session
+			|| session.releasing
+			|| session.pointerId !== event.pointerId
+		) return;
+		event.stopPropagation();
+		cancelPointerReorder();
+	}
+
+	function handleLostPointerCapture(event) {
+		const session = dragSessionRef.current;
+		if (
+			!session
+			|| session.releasing
+			|| session.pointerId !== event.pointerId
+		) return;
+		cancelPointerReorder();
+	}
+
+	function handleReorderKeyDown(event, node, noun) {
+		const pointerSession = dragSessionRef.current;
+		if (pointerSession !== null) {
+			if (
+				event.key === "Escape"
+				&& pointerSession.node.internalId === node.internalId
+				&& !pointerSession.settling
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				cancelPointerReorder();
+			}
+			return;
+		}
+		if (event.key === "Enter" || event.key === " ") {
+			event.preventDefault();
+			event.stopPropagation();
+			toggleKeyboardReorder(node, noun);
+			return;
+		}
+		if (event.key === "Escape" && keyboardReorderInternalId === node.internalId) {
+			event.preventDefault();
+			event.stopPropagation();
+			toggleKeyboardReorder(node, noun);
+			return;
+		}
+		if (keyboardReorderInternalId !== node.internalId) return;
+		if (event.key === "ArrowUp") {
+			event.preventDefault();
+			event.stopPropagation();
+			moveNodeWithKeyboard(node, noun, "up");
+		} else if (event.key === "ArrowDown") {
+			event.preventDefault();
+			event.stopPropagation();
+			moveNodeWithKeyboard(node, noun, "down");
+		}
+	}
+
+	function handleReorderClick(event, node, noun) {
+		event.stopPropagation();
+		if (pointerInteractionLocked()) return;
+		if (event.detail === 0) toggleKeyboardReorder(node, noun);
+	}
+
 	const hierarchyActionProps = {
 		navigationLocked,
 		onSelect: selectNode,
 		onOpenEditor: openEditor,
+		dragState,
+		keyboardReorderInternalId,
+		onPointerDown: beginPointerReorder,
+		onPointerMove: updatePointerReorder,
+		onPointerUp: completePointerReorder,
+		onPointerCancel: cancelPointerEvent,
+		onLostPointerCapture: handleLostPointerCapture,
+		onKeyDown: handleReorderKeyDown,
+		onClick: handleReorderClick,
+		registerReorderHandle,
+		registerHierarchyCard,
 	};
 
 	return (
@@ -522,7 +1071,12 @@ export function BuilderWorkspace({
 						>
 							Back to builder home
 						</button>
-						<a className="root-link" data-root-link="true" href="../">
+						<a
+							className="root-link"
+							data-root-link="true"
+							href="../"
+							onClick={handleRootNavigation}
+						>
 							<span aria-hidden="true">←</span>
 							Back to TMDB ID Lookup
 						</a>
@@ -542,6 +1096,22 @@ export function BuilderWorkspace({
 					migrationNotice={view.migrationNotice}
 					importWarnings={state.diagnostics.import.warnings}
 				/>
+				<p
+					id="reorder-instructions"
+					className="visually-hidden"
+				>
+					Press Enter or Space on a reorder handle to start keyboard reordering.
+					Use Arrow Up and Arrow Down to move the item, then press Enter, Space, or Escape to finish.
+				</p>
+				<p
+					className="visually-hidden"
+					data-movement-status="true"
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+				>
+					{movementStatusText}
+				</p>
 
 				<div className="workspace" data-mobile-level={activeMobileLevel}>
 					<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
@@ -635,15 +1205,6 @@ export function BuilderWorkspace({
 									Add a draft folder inside {view.selectedCollection.title}.
 								</EmptyState>
 							)}
-							{view.selectedCollection && !view.selectedFolder ? (
-								<div className="mobile-summary mobile-only">
-									<SelectionSummary
-										node={view.selectedCollection}
-										headingId="mobile-selection-summary-title"
-										navigationLocked={navigationLocked}
-									/>
-								</div>
-							) : null}
 						</div>
 					</section>
 
@@ -669,18 +1230,10 @@ export function BuilderWorkspace({
 							{!view.selectedFolder ? (
 								<p className="neutral-state">Select a folder to view its sources.</p>
 							) : view.sources.length > 0 ? (
-								<SourceList sources={view.sources} onSelect={selectNode} disabled={navigationLocked} />
+								<SourceList sources={view.sources} actionProps={hierarchyActionProps} />
 							) : (
 								<EmptyState title="No sources in this folder yet.">Source creation will arrive in a later builder step.</EmptyState>
 							)}
-							<SelectionSummary
-								node={view.selectedNode}
-								headingId="selection-summary-title"
-								selectedSource={view.selectedSource}
-								selectedFolder={view.selectedFolder}
-								navigationLocked={navigationLocked}
-								onShowFolderDetails={() => selectNode(view.selectedFolder.internalId)}
-							/>
 						</div>
 					</section>
 				</div>

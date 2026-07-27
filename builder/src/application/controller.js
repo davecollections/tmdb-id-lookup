@@ -121,10 +121,10 @@ export function createBuilderController(options = {}) {
 		};
 	}
 
-	function failWithControllerDiagnostic(scope, code, path, message, extra = {}) {
+	function failWithControllerDiagnostic(scope, code, path, message, extra = {}, commitOptions = {}) {
 		const error = controllerDiagnostic(code, path, message);
 		const diagnostics = replaceDiagnosticScope(state.diagnostics, scope, [error], []);
-		commitPatch({ diagnostics });
+		commitPatch({ diagnostics }, commitOptions);
 		return actionResult(false, state.diagnostics[scope].errors, state.diagnostics[scope].warnings, extra);
 	}
 
@@ -506,10 +506,12 @@ export function createBuilderController(options = {}) {
 				CONTROLLER_DIAGNOSTIC_CODES.INVALID_INSERTION_INDEX,
 				path,
 				"The target index must identify an existing sibling position.",
+				{},
+				{ incrementRevision: false },
 			);
 		}
 		if (location.index === targetIndex) {
-			clearSuccessfulOperationDiagnostics();
+			clearSuccessfulOperationDiagnostics({}, { incrementRevision: false });
 			return actionResult(true);
 		}
 

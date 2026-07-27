@@ -2,6 +2,7 @@ import {
 	isInvisibleNuvioTitle,
 	isValidVisibleNuvioTitle,
 } from "../nuvio/titles.js";
+import { buildSiblingMovements } from "./hierarchy-reordering.js";
 
 const folderArtworkFields = Object.freeze([
 	"coverEmoji",
@@ -146,19 +147,33 @@ function buildFolder(folder, selectedInternalId) {
 }
 
 function sourceTitle(source) {
+	if (isInvisibleNuvioTitle(source.editable.title)) {
+		return nodeTitle(source.editable.title, "source");
+	}
+
 	const title = nonBlankText(source.editable.title);
 	if (title) {
-		return title;
+		return {
+			text: title,
+			hidden: false,
+			accessibleName: title,
+		};
 	}
+	let text;
 	if (source.category === "native-tmdb") {
-		return nonBlankText(source.editable.tmdbSourceType) ?? "TMDB source";
-	}
-	if (source.category === "addon") {
-		return nonBlankText(source.editable.catalogId)
+		text = nonBlankText(source.editable.tmdbSourceType) ?? "TMDB source";
+	} else if (source.category === "addon") {
+		text = nonBlankText(source.editable.catalogId)
 			?? nonBlankText(source.editable.addonId)
 			?? "Addon source";
+	} else {
+		text = "Preserved source";
 	}
-	return "Preserved source";
+	return {
+		text,
+		hidden: false,
+		accessibleName: text,
+	};
 }
 
 function sourceCategoryLabel(category) {
@@ -192,9 +207,12 @@ function sourceMetadata(source) {
 
 function buildSource(source, selectedInternalId) {
 	const editable = source.editable;
+	const title = sourceTitle(source);
 	return {
 		internalId: source.internalId,
-		title: sourceTitle(source),
+		title: title.text,
+		titleHidden: title.hidden,
+		accessibleName: title.accessibleName,
 		category: source.category,
 		categoryLabel: sourceCategoryLabel(source.category),
 		metadata: sourceMetadata(source),
@@ -215,6 +233,20 @@ function buildSource(source, selectedInternalId) {
 	};
 }
 
+function withMovement(entry, viewNode) {
+	return {
+		...viewNode,
+		reorderGroup: entry.reorderGroup,
+		reorderGroupPosition: entry.reorderGroupPosition,
+		reorderGroupSize: entry.reorderGroupSize,
+		reorderVisiblePosition: entry.reorderVisiblePosition,
+		reorderVisibleSize: entry.reorderVisibleSize,
+		reorderTargetIndexes: entry.reorderTargetIndexes,
+		moveUpTargetIndex: entry.moveUpTargetIndex,
+		moveDownTargetIndex: entry.moveDownTargetIndex,
+	};
+}
+
 function migrationNotice(preview) {
 	if (preview.status === "available") {
 		return "This imported project has legacy addon sources that can be migrated in a later step.";
@@ -226,22 +258,32 @@ function migrationNotice(preview) {
 }
 
 export function buildBuilderViewModel(state) {
-	const collections = state.project.collections.map((collection) => (
-		buildCollection(collection, state.selection.collectionInternalId)
+	const collections = buildSiblingMovements(
+		state.project.collections,
+		{ groupPinnedCollections: true },
+	).map((entry) => withMovement(
+		entry,
+		buildCollection(entry.node, state.selection.collectionInternalId),
 	));
 	const selectedCollection = collections.find((collection) => collection.selected) ?? null;
 	const selectedCollectionNode = selectedCollection
 		? state.project.collections.find((collection) => collection.internalId === selectedCollection.internalId)
 		: null;
 	const folders = selectedCollectionNode
-		? selectedCollectionNode.folders.map((folder) => buildFolder(folder, state.selection.folderInternalId))
+		? buildSiblingMovements(selectedCollectionNode.folders).map((entry) => withMovement(
+			entry,
+			buildFolder(entry.node, state.selection.folderInternalId),
+		))
 		: [];
 	const selectedFolder = folders.find((folder) => folder.selected) ?? null;
 	const selectedFolderNode = selectedCollectionNode && selectedFolder
 		? selectedCollectionNode.folders.find((folder) => folder.internalId === selectedFolder.internalId)
 		: null;
 	const sources = selectedFolderNode
-		? selectedFolderNode.sources.map((source) => buildSource(source, state.selection.sourceInternalId))
+		? buildSiblingMovements(selectedFolderNode.sources).map((entry) => withMovement(
+			entry,
+			buildSource(entry.node, state.selection.sourceInternalId),
+		))
 		: [];
 	const selectedSource = sources.find((source) => source.selected) ?? null;
 	const selectedNode = selectedSource ?? selectedFolder ?? selectedCollection;
