@@ -14,6 +14,19 @@ import { isPagesPublicFilePath } from "../scripts/pages-public-paths.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const checkerPath = path.join("scripts", "check-builder-reordering-client-evidence.mjs");
+const evidenceAttributePolicy = new Map([
+	["README.md", { text: "set", eol: "lf" }],
+	["builder-reordered-input.json", { text: "set", eol: "lf" }],
+	["completed-evidence.md", { text: "set", eol: "lf" }],
+	["expected-order.json", { text: "set", eol: "lf" }],
+	["generation-report.json", { text: "set", eol: "lf" }],
+	["mobile-owner-evidence.json", { text: "set", eol: "lf" }],
+	["nuvio-desktop-export.json", { text: "unset" }],
+	["nuviotv-web-export.json", { text: "unset" }],
+	["seed-profile.json", { text: "set", eol: "lf" }],
+	["tv-owner-evidence.json", { text: "set", eol: "lf" }],
+	["verification-report.json", { text: "set", eol: "lf" }],
+]);
 
 function sha256(bytes) {
 	return createHash("sha256").update(bytes).digest("hex");
@@ -95,6 +108,36 @@ test("issue #59 client evidence remains outside the Pages public-path contract",
 			isPagesPublicFilePath(`manual-tests/nuvio-clients/issue-59-builder-reordering/${fileName}`),
 			false,
 			`${fileName} must remain repository-only evidence.`,
+		);
+	}
+});
+
+test("issue #59 client evidence has deterministic effective Git attributes", () => {
+	const evidencePaths = [...evidenceAttributePolicy.keys()].map((fileName) => (
+		path.relative(rootDir, path.join(evidenceDirectory, fileName)).split(path.sep).join("/")
+	));
+	const output = execFileSync(
+		"git",
+		["check-attr", "-z", "text", "eol", "--", ...evidencePaths],
+		{ cwd: rootDir, encoding: "utf8" },
+	);
+	const fields = output.split("\0");
+	assert.equal(fields.pop(), "");
+	assert.equal(fields.length % 3, 0);
+
+	const attributesByFile = new Map();
+	for (let index = 0; index < fields.length; index += 3) {
+		const fileName = path.basename(fields[index]);
+		const attributes = attributesByFile.get(fileName) ?? {};
+		attributes[fields[index + 1]] = fields[index + 2];
+		attributesByFile.set(fileName, attributes);
+	}
+
+	for (const [fileName, expected] of evidenceAttributePolicy) {
+		assert.deepEqual(
+			attributesByFile.get(fileName),
+			expected.text === "unset" ? { text: "unset", eol: "lf" } : expected,
+			`${fileName} has unexpected effective Git attributes.`,
 		);
 	}
 });
