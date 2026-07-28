@@ -4963,7 +4963,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8727,Boomerang,2,,BR,,https://www.themoviedb.org/network/8727
 8728,Thurder TV,0,,,,https://www.themoviedb.org/network/8728
 8730,Vee,3,"Baghdad, Iraq",CN,,https://www.themoviedb.org/network/8730
-8731,ITV (GB),5,,,,https://www.themoviedb.org/network/8731
 8733,TV პირველი,3,"აბუსერიძე ტბელის 13, თბილისი",GE,,https://www.themoviedb.org/network/8733
 8734,Disney Channel (US),0,,,,https://www.themoviedb.org/network/8734
 8735,Delasol,1,,US,,https://www.themoviedb.org/network/8735
@@ -5499,3 +5498,8 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9345,USA Network,7,,CA,,https://www.themoviedb.org/network/9345
 9346,Vitaphone Corporation,1,,,,https://www.themoviedb.org/network/9346
 9347,Church of Jesus Christ of Latter-Day Saints,1,,,,https://www.themoviedb.org/network/9347
+9348,Playlet,1,Hong Kong,HK,https://playlet.com/,https://www.themoviedb.org/network/9348
+9349,Kalos TV,2,Hong Kong,HK,https://www.kalostv.com/,https://www.themoviedb.org/network/9349
+9350,Kyle Sandilands Live,1,,AU,http://kslive.com.au,https://www.themoviedb.org/network/9350
+9351,ITN MAX,0,"Gampaha, Western Province",LK,https://itnmax.lk,https://www.themoviedb.org/network/9351
+9352,DreameShort,1,Singapore,SG,https://www.dreameshort.com/en,https://www.themoviedb.org/network/9352
