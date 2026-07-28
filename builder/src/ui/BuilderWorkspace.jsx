@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
+import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
+import {
+	buildDeletionImpact,
+	createDeletionSubmissionGate,
+	executeDeletion,
+} from "./hierarchy-deletion.js";
 import {
 	crossedDragThreshold,
 	dragOverlayTop,
@@ -18,6 +24,8 @@ import {
 	reorderHandleLabel,
 	visiblePositionForGroupDestination,
 } from "./hierarchy-reordering.js";
+import { HierarchyActionsMenu } from "./HierarchyActionsMenu.jsx";
+import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NodeEditor } from "./NodeEditor.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
@@ -74,6 +82,35 @@ function GripIcon() {
 	);
 }
 
+function PencilIcon() {
+	return (
+		<svg className="quick-rename-icon" viewBox="0 0 20 20" aria-hidden="true">
+			<path d="m13.9 2.8 3.3 3.3-9.4 9.4-4.2.9.9-4.2 9.4-9.4Zm-8 10.1-.3 1.5 1.5-.3 7.9-8-1.2-1.2-7.9 8Z" />
+		</svg>
+	);
+}
+
+function HierarchyAddAction({
+	noun,
+	disabled,
+	onClick,
+	registerAction,
+}) {
+	return (
+		<button
+			ref={registerAction}
+			className="hierarchy-add-action"
+			type="button"
+			data-action={`create-${noun}-after-list`}
+			disabled={disabled}
+			onClick={onClick}
+		>
+			<span aria-hidden="true">+</span>
+			Add another {noun}
+		</button>
+	);
+}
+
 const DRAG_SETTLE_DURATION_MS = 150;
 
 function setDragOverlayTop(overlay, top) {
@@ -94,6 +131,9 @@ function createHierarchyDragOverlay(card, rect, pointerY, grabOffsetY) {
 	overlay.setAttribute("aria-hidden", "true");
 	overlay.setAttribute("role", "presentation");
 	overlay.inert = true;
+	for (const menu of overlay.querySelectorAll(".hierarchy-actions-menu")) {
+		menu.remove();
+	}
 	overlay.style.removeProperty("--reorder-shift-y");
 	overlay.style.left = `${left}px`;
 	overlay.style.width = `${rect.width}px`;
@@ -183,14 +223,19 @@ function HierarchyCard({
 	navigationLocked,
 	onSelect,
 	onOpenEditor,
+	onRequestDelete,
 	dragState,
 	keyboardReorderInternalId,
 	registerHierarchyCard,
+	registerPrimaryControl,
+	actionsMenuInternalId,
+	actionsDisabled,
+	onOpenActionsMenu,
+	onCloseActionsMenu,
+	registerActionsTrigger,
 	...reorderHandlers
 }) {
-	const editLabel = node.titleHidden
-		? `Edit ${noun} with hidden Nuvio title`
-		: `Edit ${noun} ${node.title}`;
+	const actionsOpen = actionsMenuInternalId === node.internalId;
 	const dropPosition = dragState?.indicatorInternalId === node.internalId
 		? dragState.indicatorEdge
 		: undefined;
@@ -201,7 +246,7 @@ function HierarchyCard({
 	return (
 		<div
 			ref={(element) => registerHierarchyCard(node.internalId, element)}
-			className={`hierarchy-card${node.selected ? " is-selected" : ""}${placeholder ? " is-drag-placeholder" : ""}${displaced ? " is-provisionally-displaced" : ""}`}
+			className={`hierarchy-card${node.selected ? " is-selected" : ""}${placeholder ? " is-drag-placeholder" : ""}${displaced ? " is-provisionally-displaced" : ""}${actionsOpen ? " is-menu-open" : ""}`}
 			data-hierarchy-card={noun}
 			data-drop-position={dropPosition}
 			data-drag-placeholder={placeholder ? "true" : undefined}
@@ -227,29 +272,38 @@ function HierarchyCard({
 						type={noun}
 						onSelect={onSelect}
 						disabled={navigationLocked}
+						registerPrimaryControl={registerPrimaryControl}
 					>
 						{children}
 					</NodeButton>
+					<HierarchyActionsMenu
+						node={node}
+						noun={noun}
+						open={actionsOpen}
+						disabled={actionsDisabled}
+						onOpen={onOpenActionsMenu}
+						onClose={onCloseActionsMenu}
+						onEdit={onOpenEditor}
+						onDelete={onRequestDelete}
+						registerTrigger={registerActionsTrigger}
+					/>
 				</div>
-				<button
-					className="card-action card-edit-action"
-					type="button"
-					data-action={`edit-${noun}`}
-					aria-label={editLabel}
-					disabled={navigationLocked}
-					aria-haspopup="dialog"
-					onClick={(event) => onOpenEditor(node.internalId, event.currentTarget)}
-				>
-					Edit
-				</button>
 			</div>
 		</div>
 	);
 }
 
-function NodeButton({ node, type, children, onSelect, disabled }) {
+function NodeButton({
+	node,
+	type,
+	children,
+	onSelect,
+	disabled,
+	registerPrimaryControl,
+}) {
 	return (
 		<button
+			ref={(element) => registerPrimaryControl(node.internalId, element)}
 			className={`node-button${node.selected ? " is-selected" : ""}`}
 			type="button"
 			data-node-type={type}
@@ -322,7 +376,7 @@ function SourceList({ sources, actionProps }) {
 				<li key={source.internalId}>
 					<div
 						ref={(element) => actionProps.registerHierarchyCard(source.internalId, element)}
-						className={`hierarchy-card source-card${source.selected ? " is-selected" : ""}${actionProps.dragState?.internalId === source.internalId ? " is-drag-placeholder" : ""}${actionProps.dragState?.internalId !== source.internalId && (actionProps.dragState?.displacements?.[source.internalId] ?? 0) !== 0 ? " is-provisionally-displaced" : ""}`}
+						className={`hierarchy-card source-card${source.selected ? " is-selected" : ""}${actionProps.dragState?.internalId === source.internalId ? " is-drag-placeholder" : ""}${actionProps.dragState?.internalId !== source.internalId && (actionProps.dragState?.displacements?.[source.internalId] ?? 0) !== 0 ? " is-provisionally-displaced" : ""}${actionProps.actionsMenuInternalId === source.internalId ? " is-menu-open" : ""}`}
 						data-hierarchy-card="source"
 						data-drop-position={actionProps.dragState?.indicatorInternalId === source.internalId
 							? actionProps.dragState.indicatorEdge
@@ -356,6 +410,7 @@ function SourceList({ sources, actionProps }) {
 									registerReorderHandle={actionProps.registerReorderHandle}
 								/>
 								<button
+									ref={(element) => actionProps.registerPrimaryControl(source.internalId, element)}
 									className={`source-button${source.selected ? " is-selected" : ""}`}
 									type="button"
 									data-node-type="source"
@@ -380,6 +435,16 @@ function SourceList({ sources, actionProps }) {
 									</span>
 									{source.selected ? <span className="visually-hidden">Selected</span> : null}
 								</button>
+								<HierarchyActionsMenu
+									node={source}
+									noun="source"
+									open={actionProps.actionsMenuInternalId === source.internalId}
+									disabled={actionProps.actionsDisabled}
+									onOpen={actionProps.onOpenActionsMenu}
+									onClose={actionProps.onCloseActionsMenu}
+									onDelete={actionProps.onRequestDelete}
+									registerTrigger={actionProps.registerActionsTrigger}
+								/>
 							</div>
 						</div>
 					</div>
@@ -464,12 +529,15 @@ export function BuilderWorkspace({
 	state,
 	onReturnHome = () => {},
 	initialEditorDraft = null,
+	initialEditorMode = "settings",
 	initialEditorDiagnostics = [],
 	initialReturnConfirmationOpen = false,
+	initialDeleteConfirmation = null,
 }) {
 	const view = buildBuilderViewModel(state);
 	const desktopViewport = useBuilderDesktopViewport();
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
+	const [editorMode, setEditorMode] = useState(initialEditorMode);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
 	const [mobileLevelOverride, setMobileLevelOverride] = useState(null);
@@ -479,15 +547,32 @@ export function BuilderWorkspace({
 	const [keyboardReorderInternalId, setKeyboardReorderInternalId] = useState(null);
 	const [movementStatusText, setMovementStatusText] = useState("");
 	const [pendingMovementAnnouncement, setPendingMovementAnnouncement] = useState(null);
+	const [deleteConfirmation, setDeleteConfirmation] = useState(initialDeleteConfirmation);
+	const [deleteStatusText, setDeleteStatusText] = useState("");
+	const [pendingDeleteFocus, setPendingDeleteFocus] = useState(null);
+	const [restoreDeleteTriggerFocus, setRestoreDeleteTriggerFocus] = useState(false);
+	const [actionsMenuInternalId, setActionsMenuInternalId] = useState(null);
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
 	const reorderHandleRefs = useRef(new Map());
 	const hierarchyCardRefs = useRef(new Map());
+	const primaryControlRefs = useRef(new Map());
+	const actionsTriggerRefs = useRef(new Map());
 	const dragSessionRef = useRef(null);
 	const movementSequenceRef = useRef(0);
 	const returnHomeButtonRef = useRef(null);
 	const stayButtonRef = useRef(null);
+	const deleteTriggerRef = useRef(null);
+	const collectionBottomAddRef = useRef(null);
+	const folderBottomAddRef = useRef(null);
+	const collectionEmptyAddRef = useRef(null);
+	const folderEmptyAddRef = useRef(null);
+	const sourceBackControlRef = useRef(null);
+	const deleteGateRef = useRef(null);
+	if (deleteGateRef.current === null) {
+		deleteGateRef.current = createDeletionSubmissionGate();
+	}
 	const returnGateRef = useRef(null);
 	if (returnGateRef.current === null) {
 		returnGateRef.current = createWorkspaceReturnGate();
@@ -497,16 +582,43 @@ export function BuilderWorkspace({
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
 	const editorLocked = visibleEditorDraft !== null;
-	const navigationLocked = editorLocked || returnConfirmationOpen;
+	const deleteLocked = deleteConfirmation !== null;
+	const modalLocked = editorLocked || deleteLocked;
+	const navigationLocked = modalLocked || returnConfirmationOpen;
+	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
 
 	useEffect(() => {
 		if (editorDraft && !visibleEditorDraft) {
 			setEditorDraft(null);
+			setEditorMode("settings");
 			setEditorDiagnostics([]);
 			editRestoreFocusRef.current = null;
 		}
 	}, [editorDraft, visibleEditorDraft]);
+
+	useEffect(() => {
+		if (
+			actionsMenuInternalId !== null
+			&& buildDeletionImpact(state, actionsMenuInternalId) === null
+		) {
+			setActionsMenuInternalId(null);
+		}
+	}, [actionsMenuInternalId, state]);
+
+	useEffect(() => {
+		if (!modalLocked || actionsMenuInternalId === null) return;
+		setActionsMenuInternalId(null);
+	}, [actionsMenuInternalId, modalLocked]);
+
+	useEffect(() => {
+		if (actionsMenuInternalId === null) return;
+		setActionsMenuInternalId(null);
+	}, [
+		state.selection.collectionInternalId,
+		state.selection.folderInternalId,
+		state.selection.sourceInternalId,
+	]);
 
 	useEffect(() => {
 		if (editorDraft !== null || editRestoreFocusRef.current === null) return;
@@ -524,6 +636,14 @@ export function BuilderWorkspace({
 		setRestoreReturnFocus(false);
 		returnHomeButtonRef.current?.focus();
 	}, [restoreReturnFocus]);
+
+	useEffect(() => {
+		if (!restoreDeleteTriggerFocus) return;
+		setRestoreDeleteTriggerFocus(false);
+		const trigger = deleteTriggerRef.current;
+		deleteTriggerRef.current = null;
+		trigger?.focus?.();
+	}, [restoreDeleteTriggerFocus]);
 
 	useEffect(() => {
 		if (createdCardTarget === null || createdCardRef.current === null) return;
@@ -548,6 +668,33 @@ export function BuilderWorkspace({
 		setPendingMovementAnnouncement(null);
 	}, [pendingMovementAnnouncement]);
 
+	useEffect(() => {
+		if (pendingDeleteFocus === null) return;
+		let target = null;
+		if (pendingDeleteFocus.kind === "node") {
+			target = primaryControlRefs.current.get(pendingDeleteFocus.internalId) ?? null;
+			if (!target && pendingDeleteFocus.nodeType === "collection") {
+				target = collectionBottomAddRef.current ?? collectionEmptyAddRef.current;
+			} else if (!target && pendingDeleteFocus.nodeType === "folder") {
+				target = folderBottomAddRef.current ?? folderEmptyAddRef.current;
+			} else if (!target && pendingDeleteFocus.nodeType === "source") {
+				target = desktopViewport
+					? primaryControlRefs.current.get(pendingDeleteFocus.parentInternalId)
+					: sourceBackControlRef.current;
+			}
+		} else if (pendingDeleteFocus.action === "create-collection-empty") {
+			target = collectionEmptyAddRef.current ?? collectionBottomAddRef.current;
+		} else if (pendingDeleteFocus.action === "create-folder-empty") {
+			target = folderEmptyAddRef.current ?? folderBottomAddRef.current;
+		} else if (pendingDeleteFocus.action === "source-parent") {
+			target = desktopViewport
+				? primaryControlRefs.current.get(pendingDeleteFocus.parentInternalId)
+				: sourceBackControlRef.current;
+		}
+		target?.focus?.();
+		setPendingDeleteFocus(null);
+	}, [desktopViewport, pendingDeleteFocus, state.revision]);
+
 	useEffect(() => () => {
 		const session = dragSessionRef.current;
 		dragSessionRef.current = null;
@@ -570,12 +717,28 @@ export function BuilderWorkspace({
 		hierarchyCardRefs.current.set(internalId, element);
 	}
 
+	function registerPrimaryControl(internalId, element) {
+		if (element === null) {
+			primaryControlRefs.current.delete(internalId);
+			return;
+		}
+		primaryControlRefs.current.set(internalId, element);
+	}
+
+	function registerActionsTrigger(internalId, element) {
+		if (element === null) {
+			actionsTriggerRefs.current.delete(internalId);
+			return;
+		}
+		actionsTriggerRefs.current.set(internalId, element);
+	}
+
 	function pointerInteractionLocked() {
 		return pointerSessionLocksInteraction(dragSessionRef.current);
 	}
 
 	function selectNode(internalId) {
-		if (navigationLocked || pointerInteractionLocked()) return;
+		if (hierarchyInteractionLocked || pointerInteractionLocked()) return;
 		setKeyboardReorderInternalId(null);
 		setCreatedCardTarget(null);
 		setMobileLevelOverride(null);
@@ -583,23 +746,42 @@ export function BuilderWorkspace({
 	}
 
 	function clearSelection() {
-		if (navigationLocked || pointerInteractionLocked()) return;
+		if (hierarchyInteractionLocked || pointerInteractionLocked()) return;
 		setKeyboardReorderInternalId(null);
 		setCreatedCardTarget(null);
 		setMobileLevelOverride(null);
 		controller.clearSelection();
 	}
 
-	function openEditor(internalId, trigger) {
+	function closeActionsMenu({ restoreFocus = false } = {}) {
+		const internalId = actionsMenuInternalId;
+		setActionsMenuInternalId(null);
+		if (!restoreFocus || internalId === null) return;
+		queueMicrotask(() => {
+			focusElementWithoutScroll(actionsTriggerRefs.current.get(internalId));
+		});
+	}
+
+	function openActionsMenu(internalId) {
+		if (navigationLocked || pointerInteractionLocked()) return;
+		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(internalId);
+	}
+
+	function openEditor(internalId, trigger, mode = "settings") {
 		if (navigationLocked || pointerInteractionLocked()) return;
 		const node = findEditableNode(state.project, internalId);
 		if (!node) return;
 		const draft = createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
 		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(null);
 		setCreatedCardTarget(null);
-		setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
+		if (mode !== "rename") {
+			setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
+		}
 		editRestoreFocusRef.current = trigger;
+		setEditorMode(mode);
 		setEditorDiagnostics([]);
 		setEditorDraft(draft);
 	}
@@ -608,6 +790,7 @@ export function BuilderWorkspace({
 		if (!visibleEditorDraft) return;
 		setEditorDiagnostics([]);
 		setEditorDraft(null);
+		setEditorMode("settings");
 	}
 
 	function handleEditorSubmit(event) {
@@ -629,7 +812,9 @@ export function BuilderWorkspace({
 			gate: returnGateRef.current,
 			onSuccess: () => {
 				setEditorDraft(null);
+				setEditorMode("settings");
 				setEditorDiagnostics([]);
+				setActionsMenuInternalId(null);
 				setReturnDiagnostic(null);
 				setCreatedCardTarget(null);
 				setMobileLevelOverride(null);
@@ -645,7 +830,7 @@ export function BuilderWorkspace({
 
 	function handleReturnHome() {
 		if (
-			navigationLocked
+			hierarchyInteractionLocked
 			|| pointerInteractionLocked()
 			|| returnGateRef.current.isActive()
 		) return;
@@ -663,7 +848,7 @@ export function BuilderWorkspace({
 	}
 
 	function createCollection() {
-		if (navigationLocked || pointerInteractionLocked()) return;
+		if (hierarchyInteractionLocked || pointerInteractionLocked()) return;
 		const result = createDraftCollection(controller, { selectCreated: desktopViewport });
 		if (!result.ok) return;
 
@@ -676,7 +861,7 @@ export function BuilderWorkspace({
 
 	function createFolder() {
 		if (
-			navigationLocked
+			hierarchyInteractionLocked
 			|| pointerInteractionLocked()
 			|| !view.selectedCollection
 		) return;
@@ -694,8 +879,56 @@ export function BuilderWorkspace({
 		});
 	}
 
+	function completeDeletion(impact) {
+		const outcome = executeDeletion(controller, impact, deleteGateRef.current);
+		if (!outcome.started) return;
+		setDeleteConfirmation(null);
+
+		if (!outcome.ok) {
+			setRestoreDeleteTriggerFocus(true);
+			return;
+		}
+
+		deleteTriggerRef.current = null;
+		if (impact.recovery.selectionAffected) {
+			setMobileLevelOverride(impact.recovery.mobileLevel);
+		}
+		setCreatedCardTarget(null);
+		setPendingDeleteFocus({
+			...impact.recovery.focus,
+			parentInternalId: impact.recovery.parentInternalId,
+		});
+		setDeleteStatusText("");
+		queueMicrotask(() => {
+			setDeleteStatusText(`Deleted ${impact.nodeType} “${impact.displayName}”.`);
+		});
+	}
+
+	function requestDeletion(internalId, trigger) {
+		if (navigationLocked || pointerInteractionLocked()) return;
+		const impact = buildDeletionImpact(state, internalId);
+		if (!impact) return;
+
+		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(null);
+		setCreatedCardTarget(null);
+		deleteTriggerRef.current = trigger;
+		deleteGateRef.current.reset();
+		if (impact.confirmationRequired) {
+			setDeleteConfirmation(impact);
+			return;
+		}
+		completeDeletion(impact);
+	}
+
+	function cancelDeletion() {
+		if (!deleteConfirmation) return;
+		setDeleteConfirmation(null);
+		setRestoreDeleteTriggerFocus(true);
+	}
+
 	function handleRootNavigation(event) {
-		if (!pointerInteractionLocked()) return;
+		if (!hierarchyInteractionLocked && !pointerInteractionLocked()) return;
 		event.preventDefault();
 		event.stopPropagation();
 	}
@@ -716,7 +949,7 @@ export function BuilderWorkspace({
 
 	function moveNodeWithKeyboard(node, noun, direction) {
 		if (
-			navigationLocked
+			hierarchyInteractionLocked
 			|| pointerInteractionLocked()
 			|| keyboardReorderInternalId !== node.internalId
 		) return;
@@ -731,7 +964,7 @@ export function BuilderWorkspace({
 
 	function toggleKeyboardReorder(node, noun) {
 		if (
-			navigationLocked
+			hierarchyInteractionLocked
 			|| pointerInteractionLocked()
 			|| node.reorderGroupSize <= 1
 		) return;
@@ -766,7 +999,7 @@ export function BuilderWorkspace({
 
 	function beginPointerReorder(event, node, noun, siblings) {
 		if (
-			navigationLocked
+			hierarchyInteractionLocked
 			|| pointerInteractionLocked()
 			|| node.reorderGroupSize <= 1
 			|| event.isPrimary === false
@@ -1022,9 +1255,14 @@ export function BuilderWorkspace({
 	}
 
 	const hierarchyActionProps = {
-		navigationLocked,
+		navigationLocked: hierarchyInteractionLocked,
+		actionsDisabled: navigationLocked,
+		actionsMenuInternalId,
+		onOpenActionsMenu: openActionsMenu,
+		onCloseActionsMenu: closeActionsMenu,
 		onSelect: selectNode,
 		onOpenEditor: openEditor,
+		onRequestDelete: requestDeletion,
 		dragState,
 		keyboardReorderInternalId,
 		onPointerDown: beginPointerReorder,
@@ -1036,6 +1274,8 @@ export function BuilderWorkspace({
 		onClick: handleReorderClick,
 		registerReorderHandle,
 		registerHierarchyCard,
+		registerPrimaryControl,
+		registerActionsTrigger,
 	};
 
 	return (
@@ -1044,12 +1284,13 @@ export function BuilderWorkspace({
 			data-builder-shell="true"
 			data-editor-lock={editorLocked ? "true" : undefined}
 			data-settings-open={editorLocked ? "true" : undefined}
+			data-delete-open={deleteLocked ? "true" : undefined}
 		>
 			<div
 				className="workspace-underlay"
 				data-workspace-underlay="true"
-				inert={editorLocked || undefined}
-				aria-hidden={editorLocked ? "true" : undefined}
+				inert={modalLocked || undefined}
+				aria-hidden={modalLocked ? "true" : undefined}
 			>
 				<header className="app-header">
 					<div className="brand-lockup">
@@ -1066,7 +1307,7 @@ export function BuilderWorkspace({
 							className="builder-home-action"
 							type="button"
 							data-action="return-builder-home"
-							disabled={navigationLocked}
+							disabled={hierarchyInteractionLocked}
 							onClick={handleReturnHome}
 						>
 							Back to builder home
@@ -1112,6 +1353,15 @@ export function BuilderWorkspace({
 				>
 					{movementStatusText}
 				</p>
+				<p
+					className="visually-hidden"
+					data-deletion-status="true"
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+				>
+					{deleteStatusText}
+				</p>
 
 				<div className="workspace" data-mobile-level={activeMobileLevel}>
 					<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
@@ -1124,7 +1374,7 @@ export function BuilderWorkspace({
 									className="primary-action"
 									type="button"
 									data-action="create-collection"
-									disabled={navigationLocked}
+									disabled={hierarchyInteractionLocked}
 									onClick={createCollection}
 								>
 									<span aria-hidden="true">+</span>
@@ -1134,17 +1384,25 @@ export function BuilderWorkspace({
 						/>
 						<div className="panel-body">
 							{view.collections.length > 0 ? (
-								<CollectionList
-									collections={view.collections}
-									actionProps={hierarchyActionProps}
-									createdCardTarget={createdCardTarget}
-									createdCardRef={createdCardRef}
-								/>
+								<>
+									<CollectionList
+										collections={view.collections}
+										actionProps={hierarchyActionProps}
+										createdCardTarget={createdCardTarget}
+										createdCardRef={createdCardRef}
+									/>
+									<HierarchyAddAction
+										noun="collection"
+										disabled={hierarchyInteractionLocked}
+										onClick={createCollection}
+										registerAction={collectionBottomAddRef}
+									/>
+								</>
 							) : (
 								<EmptyState
 									title="Start your first collection"
 									action={(
-										<button className="empty-state-action" type="button" data-action="create-collection-empty" disabled={navigationLocked} onClick={createCollection} aria-label="Create first collection">
+										<button ref={collectionEmptyAddRef} className="empty-state-action" type="button" data-action="create-collection-empty" disabled={hierarchyInteractionLocked} onClick={createCollection} aria-label="Create first collection">
 											<span aria-hidden="true">+</span>
 										</button>
 									)}
@@ -1159,13 +1417,34 @@ export function BuilderWorkspace({
 						<button
 							className="back-control mobile-only"
 							type="button"
-							disabled={navigationLocked}
+							disabled={hierarchyInteractionLocked}
 							onClick={clearSelection}
 						>
 							<span aria-hidden="true">←</span>
 							All collections
 						</button>
-						{view.selectedCollection ? <p className="mobile-context mobile-only" aria-label={view.selectedCollection.accessibleName}>{view.selectedCollection.title}</p> : null}
+						{view.selectedCollection ? (
+							<div className="mobile-context-row mobile-only">
+								<p className="mobile-context" aria-label={view.selectedCollection.accessibleName}>
+									{view.selectedCollection.title}
+								</p>
+								<button
+									className="quick-rename-action"
+									type="button"
+									data-quick-rename="collection"
+									aria-label={`Rename collection “${view.selectedCollection.accessibleName}”`}
+									aria-haspopup="dialog"
+									disabled={hierarchyInteractionLocked}
+									onClick={(event) => openEditor(
+										view.selectedCollection.internalId,
+										event.currentTarget,
+										"rename",
+									)}
+								>
+									<PencilIcon />
+								</button>
+							</div>
+						) : null}
 						<PanelHeader
 							id="folders-title"
 							title="Folders"
@@ -1175,7 +1454,7 @@ export function BuilderWorkspace({
 									className="primary-action"
 									type="button"
 									data-action="create-folder"
-									disabled={navigationLocked}
+									disabled={hierarchyInteractionLocked}
 									onClick={createFolder}
 								>
 									<span aria-hidden="true">+</span>
@@ -1187,17 +1466,25 @@ export function BuilderWorkspace({
 							{!view.selectedCollection ? (
 								<p className="neutral-state">Select a collection to view its folders.</p>
 							) : view.folders.length > 0 ? (
-								<FolderList
-									folders={view.folders}
-									actionProps={hierarchyActionProps}
-									createdCardTarget={createdCardTarget}
-									createdCardRef={createdCardRef}
-								/>
+								<>
+									<FolderList
+										folders={view.folders}
+										actionProps={hierarchyActionProps}
+										createdCardTarget={createdCardTarget}
+										createdCardRef={createdCardRef}
+									/>
+									<HierarchyAddAction
+										noun="folder"
+										disabled={hierarchyInteractionLocked}
+										onClick={createFolder}
+										registerAction={folderBottomAddRef}
+									/>
+								</>
 							) : (
 								<EmptyState
 									title="No folders yet"
 									action={(
-										<button className="empty-state-action" type="button" data-action="create-folder-empty" disabled={navigationLocked} onClick={createFolder} aria-label="Create first folder">
+										<button ref={folderEmptyAddRef} className="empty-state-action" type="button" data-action="create-folder-empty" disabled={hierarchyInteractionLocked} onClick={createFolder} aria-label="Create first folder">
 											<span aria-hidden="true">+</span>
 										</button>
 									)}
@@ -1211,16 +1498,38 @@ export function BuilderWorkspace({
 					<section className="workspace-panel sources-panel" data-panel="sources" aria-labelledby="sources-title">
 						{view.selectedCollection ? (
 							<button
+								ref={sourceBackControlRef}
 								className="back-control mobile-only"
 								type="button"
-								disabled={navigationLocked}
+								disabled={hierarchyInteractionLocked}
 								onClick={() => selectNode(view.selectedCollection.internalId)}
 							>
 								<span aria-hidden="true">←</span>
 								{view.selectedCollection.title}
 							</button>
 						) : null}
-						{view.selectedFolder ? <p className="mobile-context mobile-only" aria-label={view.selectedFolder.accessibleName}>{view.selectedFolder.title}</p> : null}
+						{view.selectedFolder ? (
+							<div className="mobile-context-row mobile-only">
+								<p className="mobile-context" aria-label={view.selectedFolder.accessibleName}>
+									{view.selectedFolder.title}
+								</p>
+								<button
+									className="quick-rename-action"
+									type="button"
+									data-quick-rename="folder"
+									aria-label={`Rename folder “${view.selectedFolder.accessibleName}”`}
+									aria-haspopup="dialog"
+									disabled={hierarchyInteractionLocked}
+									onClick={(event) => openEditor(
+										view.selectedFolder.internalId,
+										event.currentTarget,
+										"rename",
+									)}
+								>
+									<PencilIcon />
+								</button>
+							</div>
+						) : null}
 						<PanelHeader
 							id="sources-title"
 							title="Sources"
@@ -1244,6 +1553,7 @@ export function BuilderWorkspace({
 					draft={visibleEditorDraft}
 					diagnostics={editorDiagnostics}
 					titleInputRef={titleInputRef}
+					mode={editorMode}
 					onChange={(field, value) => {
 						setEditorDraft((current) => updateNodeEditorField(current, field, value));
 						setEditorDiagnostics((current) => current.filter((entry) => (
@@ -1253,6 +1563,13 @@ export function BuilderWorkspace({
 					}}
 					onSubmit={handleEditorSubmit}
 					onCancel={closeEditor}
+				/>
+			) : null}
+			{deleteConfirmation ? (
+				<DeleteConfirmation
+					impact={deleteConfirmation}
+					onCancel={cancelDeletion}
+					onConfirm={() => completeDeletion(deleteConfirmation)}
 				/>
 			) : null}
 		</main>

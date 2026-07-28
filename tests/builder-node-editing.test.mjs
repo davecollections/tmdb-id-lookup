@@ -98,6 +98,7 @@ function renderWorkspace(controller, options = {}) {
 		controller,
 		state: controller.getState(),
 		initialEditorDraft: options.draft ?? null,
+		initialEditorMode: options.mode ?? "settings",
 		initialEditorDiagnostics: options.diagnostics ?? [],
 	}));
 }
@@ -1514,8 +1515,10 @@ test("Builder fallbacks and accessible labels prevent blank hidden-title cards a
 	assert.ok(markup.includes("Invisible in Nuvio"));
 	assert.ok(markup.includes('aria-label="Collection with hidden Nuvio title"'));
 	assert.ok(markup.includes('aria-label="Folder with hidden Nuvio title"'));
-	assert.ok(markup.includes('aria-label="Edit collection with hidden Nuvio title"'));
-	assert.ok(markup.includes('aria-label="Edit folder with hidden Nuvio title"'));
+	assert.ok(markup.includes('aria-label="Actions for collection “Collection with hidden Nuvio title”"'));
+	assert.ok(markup.includes('aria-label="Actions for folder “Folder with hidden Nuvio title”"'));
+	assert.ok(markup.includes('aria-label="Rename collection “Collection with hidden Nuvio title”"'));
+	assert.ok(markup.includes('aria-label="Rename folder “Folder with hidden Nuvio title”"'));
 	assert.equal(markup.includes(repeated), false);
 });
 
@@ -1529,6 +1532,7 @@ test("modal restores exact Edit focus, initializes Title once, and retains safe 
 		"utf8",
 	);
 	assert.match(workspaceSource, /editRestoreFocusRef\.current = trigger/);
+	assert.match(workspaceSource, /if \(mode !== "rename"\) \{[\s\S]*setMobileLevelOverride/);
 	assert.equal((workspaceSource.match(/target\.focus\?\.\(\)/g) ?? []).length, 1);
 	assert.match(editorSource, /initializeTitleInput\(titleInputRef\.current/);
 	assert.match(editorSource, /draft\.original\.title\.supported[\s\S]*isValidVisibleNuvioTitle\(draft\.values\.title\)[\s\S]*!titleHiddenEverywhere/);
@@ -1541,7 +1545,7 @@ test("modal restores exact Edit focus, initializes Title once, and retains safe 
 	assert.doesNotMatch(editorSource, /event\.target === event\.currentTarget[\s\S]{0,180}onCancel/);
 });
 
-test("every collection and folder card owns exactly one Edit action", () => {
+test("every card owns one in-card actions menu and mobile contexts own quick rename", () => {
 	const controller = importTree([
 		{
 			id: "first",
@@ -1573,11 +1577,15 @@ test("every collection and folder card owns exactly one Edit action", () => {
 	assert.equal((markup.match(/data-action="edit-collection"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-hierarchy-card="folder"/g) ?? []).length, 1);
 	assert.equal((markup.match(/data-action="edit-folder"/g) ?? []).length, 1);
-	assert.equal(markup.includes('data-action="rename-'), false);
-	assert.equal(markup.includes('data-action="settings-'), false);
-	assert.equal(markup.includes("data-quick-rename="), false);
-	assert.ok(markup.includes('aria-label="Edit collection First collection"'));
-	assert.ok(markup.includes('aria-label="Edit folder First folder"'));
+	assert.equal((markup.match(/data-hierarchy-actions="collection"/g) ?? []).length, 2);
+	assert.equal((markup.match(/data-hierarchy-actions="folder"/g) ?? []).length, 1);
+	assert.equal((markup.match(/data-hierarchy-actions="source"/g) ?? []).length, 1);
+	assert.equal((markup.match(/data-quick-rename="collection"/g) ?? []).length, 1);
+	assert.equal((markup.match(/data-quick-rename="folder"/g) ?? []).length, 1);
+	assert.ok(markup.includes('aria-label="Actions for collection “First collection”"'));
+	assert.ok(markup.includes('aria-label="Actions for folder “First folder”"'));
+	assert.ok(markup.includes('aria-label="Rename collection “First collection”"'));
+	assert.ok(markup.includes('aria-label="Rename folder “First folder”"'));
 	assert.equal(markup.includes("selected-entity-actions"), false);
 	assert.equal(markup.includes("Selected collection"), false);
 	assert.equal(markup.includes("Selected folder"), false);
@@ -1590,6 +1598,7 @@ test("every collection and folder card owns exactly one Edit action", () => {
 	assert.equal(sourcesHeader.includes("edit-folder"), false);
 	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
 	assert.equal(sourceList.includes('data-action="edit-'), false);
+	assert.ok(sourceList.includes('data-action="delete-source"'));
 });
 
 test("card selection and action buttons are valid sibling controls with unique IDs", () => {
@@ -1609,12 +1618,73 @@ test("card selection and action buttons are valid sibling controls with unique I
 	}
 	assert.match(
 		markup,
-		/data-card-layout="collection"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="collection"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="collection"[\s\S]*?<\/button><\/div><button class="card-action card-edit-action"/,
+		/data-card-layout="collection"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="collection"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="collection"[\s\S]*?<\/button><div class="hierarchy-actions"/,
 	);
 	assert.match(
 		markup,
-		/data-card-layout="folder"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="folder"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="folder"[\s\S]*?<\/button><\/div><button class="card-action card-edit-action"/,
+		/data-card-layout="folder"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="folder"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="folder"[\s\S]*?<\/button><div class="hierarchy-actions"/,
 	);
+});
+
+test("quick rename renders only title, invisibility, diagnostics, and actions", () => {
+	const controller = importTree();
+	const collection = controller.getState().project.collections[0];
+	const folder = collection.folders[0];
+
+	let markup = renderWorkspace(controller, {
+		draft: createNodeEditorDraft(collection),
+		mode: "rename",
+	});
+	assert.ok(markup.includes('data-editor-mode="rename"'));
+	assert.ok(markup.includes(">Rename collection</h2>"));
+	assert.ok(markup.includes("Hide collection title in Nuvio"));
+	assert.equal(markup.includes("How sources appear inside folders"), false);
+	assert.equal(markup.includes("Include an All tab"), false);
+	assert.equal(markup.includes("Pin to top"), false);
+	assert.equal(markup.includes("Enable focus glow"), false);
+	assert.ok(markup.includes('data-action="apply-node-edit"'));
+	assert.ok(markup.includes('data-action="cancel-node-edit"'));
+
+	markup = renderWorkspace(controller, {
+		draft: createNodeEditorDraft(folder),
+		mode: "rename",
+	});
+	assert.ok(markup.includes(">Rename folder</h2>"));
+	assert.ok(markup.includes("Hide folder title everywhere in Nuvio"));
+	assert.equal(markup.includes("Folder title visibility"), false);
+	assert.equal(markup.includes("Tile shape"), false);
+	assert.equal((markup.match(/data-editor-field="title"/g) ?? []).length, 1);
+	assert.equal((markup.match(/data-editor-control="hideFolderTitleEverywhere"/g) ?? []).length, 1);
+});
+
+test("folder quick-rename invisibility cycle restores the original home-screen visibility", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Visible when opened",
+			hideTitle: true,
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	const original = createNodeEditorDraft(folder);
+	assert.equal(original.values.folderTitleVisibility, "HIDE_HOME_SCREEN");
+	assert.equal(original.renameVisibleFolderTitleVisibility, "HIDE_HOME_SCREEN");
+
+	const hidden = updateNodeEditorField(
+		original,
+		"folderTitleVisibility",
+		"HIDE_EVERYWHERE",
+	);
+	const restored = updateNodeEditorField(
+		hidden,
+		"folderTitleVisibility",
+		hidden.renameVisibleFolderTitleVisibility,
+	);
+	assert.equal(restored.values.folderTitleVisibility, "HIDE_HOME_SCREEN");
+	assert.deepEqual(buildNodeEditorPatch(restored), {});
 });
 
 test("collection settings render exactly one accessible modal with stable markers and actions", () => {
@@ -2033,15 +2103,13 @@ test("Apply and Cancel remain enabled while hierarchy controls are locked", () =
 
 test("styles keep card actions touch-safe and responsive while the modal stays bounded and motion-safe", () => {
 	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
-	assert.match(styles, /\.hierarchy-card-row\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
-	assert.match(styles, /\.hierarchy-card-main\s*\{[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\)/);
+	assert.match(styles, /\.hierarchy-card-row\s*\{[\s\S]*display:\s*block/);
+	assert.match(styles, /\.hierarchy-card-main\s*\{[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\) 46px/);
 	assert.match(styles, /\.hierarchy-card[\s\S]*min-width:\s*0/);
-	assert.match(styles, /\.card-action\s*\{[\s\S]*min-width:\s*0/);
-	assert.match(styles, /\.card-action\s*\{[\s\S]*min-height:\s*46px/);
 	assert.match(styles, /\.reorder-handle\s*\{[\s\S]*width:\s*46px[\s\S]*height:\s*46px/);
-	assert.match(styles, /\.card-edit-action\s*\{[\s\S]*width:\s*auto/);
-	assert.doesNotMatch(styles, /\.hierarchy-card-actions|\.card-move-action/);
-	assert.doesNotMatch(styles, /quick-rename/);
+	assert.match(styles, /\.hierarchy-actions-trigger\s*\{[\s\S]*width:\s*46px[\s\S]*height:\s*46px/);
+	assert.match(styles, /\.quick-rename-action\s*\{[\s\S]*width:\s*44px[\s\S]*height:\s*44px/);
+	assert.doesNotMatch(styles, /\.card-edit-action|\.card-delete-action|\.card-move-action/);
 	assert.match(styles, /body\s*\{[\s\S]*overflow-x:\s*hidden/);
 	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*position:\s*fixed/);
 	assert.match(styles, /\.settings-modal-backdrop\s*\{[\s\S]*background:\s*rgb\(0 8 13 \/ 88%\)/);
@@ -2116,7 +2184,7 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 		/@media \(min-width: 620px\)[\s\S]*\.node-editor-actions\s*\{[\s\S]*grid-template-columns:\s*auto auto[\s\S]*padding:\s*16px 22px 22px/,
 	);
 	assert.match(styles, /@media \(min-width: 760px\)[\s\S]*\.node-editor-form\s*\{[\s\S]*max-width:\s*760px/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(235px/);
+	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(265px/);
 	assert.match(styles, /focus-visible/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 	for (const mobileWidth of [360, 384, 393, 402, 412]) {
@@ -2124,14 +2192,14 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	}
 });
 
-test("UI scope contains no deferred source editor, persistence, routing, export, or delete actions", () => {
+test("UI scope contains no deferred source editor, source creation, persistence, routing, or export actions", () => {
 	const uiFiles = fs.readdirSync(path.join(rootDir, "builder", "src", "ui"))
 		.filter((name) => /\.(?:js|jsx)$/.test(name))
 		.map((name) => fs.readFileSync(path.join(rootDir, "builder", "src", "ui", name), "utf8"))
 		.join("\n");
 	for (const marker of [
 		'data-action="edit-source"',
-		'data-action="delete-',
+		'data-action="create-source',
 		'data-action="export-',
 		"localStorage",
 		"indexedDB",

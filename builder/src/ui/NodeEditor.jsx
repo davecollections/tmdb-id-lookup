@@ -454,16 +454,53 @@ function InvisibleCollectionTitleField({ draft, prefix, onChange }) {
 	);
 }
 
+function RenameFolderInvisibleTitleField({ draft, prefix, onChange }) {
+	const hiddenEverywhere = draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
+
+	return (
+		<div className="editor-switch-field" data-editor-field="folderTitleVisibility">
+			<label className="editor-switch">
+				<span>
+					<strong>Hide folder title everywhere in Nuvio</strong>
+					<small id={`${prefix}-hidden-title-help`}>
+						Uses an invisible character to hide the folder title on the home screen and when the folder is opened.
+					</small>
+				</span>
+				<input
+					type="checkbox"
+					role="switch"
+					data-editor-control="hideFolderTitleEverywhere"
+					checked={hiddenEverywhere}
+					aria-describedby={`${prefix}-hidden-title-help`}
+					onChange={(event) => onChange(
+						"folderTitleVisibility",
+						event.target.checked
+							? "HIDE_EVERYWHERE"
+							: draft.renameVisibleFolderTitleVisibility,
+					)}
+				/>
+				<span className="editor-switch-control" aria-hidden="true" />
+			</label>
+		</div>
+	);
+}
+
 export function NodeEditor({
 	draft,
 	diagnostics,
 	titleInputRef,
+	mode = "settings",
 	onChange,
 	onSubmit,
 	onCancel,
 }) {
 	const noun = draft.nodeType === "folder" ? "folder" : "collection";
-	const context = noun === "folder" ? "Folder settings" : "Collection settings";
+	const renameOnly = mode === "rename";
+	const context = renameOnly
+		? `Rename ${noun}`
+		: noun === "folder"
+			? "Folder settings"
+			: "Collection settings";
 	const prefix = `node-editor-${noun}`;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
@@ -526,8 +563,9 @@ export function NodeEditor({
 		>
 			<section
 				ref={dialogRef}
-				className="node-editor"
+				className={`node-editor${renameOnly ? " is-rename-editor" : ""}`}
 				data-node-editor={noun}
+				data-editor-mode={renameOnly ? "rename" : "settings"}
 				data-settings-modal="true"
 				role="dialog"
 				aria-modal="true"
@@ -537,10 +575,12 @@ export function NodeEditor({
 			>
 				<div className="node-editor-heading">
 					<div>
-						<p className="panel-kicker">Presentation settings</p>
+						<p className="panel-kicker">{renameOnly ? "Quick rename" : "Presentation settings"}</p>
 						<h2 id={`${prefix}-title`}>{context}</h2>
 					</div>
-					<p>Update the title and presentation for this {noun}.</p>
+					<p>{renameOnly
+						? `Update the title visibility for this ${noun}.`
+						: `Update the title and presentation for this ${noun}.`}</p>
 				</div>
 
 				<form className="node-editor-form" onSubmit={onSubmit} noValidate>
@@ -574,15 +614,19 @@ export function NodeEditor({
 
 					{draft.nodeType === "collection" ? (
 						<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
+					) : renameOnly ? (
+						<RenameFolderInvisibleTitleField draft={draft} prefix={prefix} onChange={onChange} />
 					) : (
 						<FolderTitleVisibilityField draft={draft} prefix={prefix} onChange={onChange} />
 					)}
 
-					{draft.nodeType === "collection" ? (
-						<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-					) : (
-						<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-					)}
+					{!renameOnly ? (
+						draft.nodeType === "collection" ? (
+							<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+						) : (
+							<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+						)
+					) : null}
 
 					<div className="editor-diagnostics" role="alert" aria-atomic="true">
 						{diagnostics.length > 0 ? (
