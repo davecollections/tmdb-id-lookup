@@ -166,6 +166,9 @@ export function createNodeEditorDraft(node) {
 		"SQUARE",
 	);
 	const hideTitle = originalBooleanField(node, "hideTitle");
+	const renameVisibleFolderTitleVisibility = hideTitle.supported && hideTitle.value
+		? "HIDE_HOME_SCREEN"
+		: "SHOW_EVERYWHERE";
 
 	return {
 		...baseDraft,
@@ -192,6 +195,7 @@ export function createNodeEditorDraft(node) {
 		},
 		visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 		canonicalizeFolderInvisibleTitle: false,
+		renameVisibleFolderTitleVisibility,
 	};
 }
 

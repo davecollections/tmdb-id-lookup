@@ -495,6 +495,63 @@ h1 {
 	border: 1px solid rgb(255 142 134 / 36%);
 }
 
+.delete-confirmation {
+	display: grid;
+	width: min(100%, 520px);
+	align-self: center;
+	gap: 22px;
+	padding: 22px;
+	background: linear-gradient(145deg, rgb(34 29 34 / 98%), rgb(11 25 33 / 98%));
+	border: 1px solid rgb(255 142 134 / 38%);
+	border-radius: 18px;
+	box-shadow: var(--shadow);
+}
+
+.delete-confirmation:focus {
+	outline: none;
+}
+
+.delete-confirmation-heading {
+	display: grid;
+	gap: 8px;
+}
+
+.delete-confirmation-heading h2,
+.delete-confirmation-heading p {
+	margin: 0;
+}
+
+.delete-confirmation-heading h2 {
+	font-size: 1.25rem;
+	letter-spacing: -0.02em;
+	overflow-wrap: anywhere;
+}
+
+.delete-confirmation-heading h2 + p {
+	color: #c9b7b5;
+	font-size: 0.9rem;
+	line-height: 1.55;
+}
+
+.delete-confirmation-actions {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.delete-confirmation-actions button {
+	min-width: 0;
+	min-height: 48px;
+	padding: 10px 14px;
+	font-weight: 800;
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+.delete-confirm-action {
+	color: #fff0ee;
+}
+
 .inline-alert,
 .migration-notice {
 	margin: 0;
@@ -1179,17 +1236,27 @@ button:disabled {
 	border-radius: 999px;
 }
 
-.card-action {
+.hierarchy-add-action {
+	display: inline-flex;
+	width: 100%;
 	min-height: 46px;
-	padding: 9px 11px;
-	font: inherit;
-	font-size: 0.75rem;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 9px 12px;
+	color: #b7dbe9;
+	font-size: 0.78rem;
 	font-weight: 800;
-	border-radius: 10px;
+	background: rgb(1 180 228 / 4%);
+	border: 1px dashed rgb(98 225 255 / 25%);
+	border-radius: 11px;
 	cursor: pointer;
+}
+
+.hierarchy-add-action > span {
 	color: var(--cyan-bright);
-	background: rgb(1 180 228 / 7%);
-	border: 1px solid rgb(1 180 228 / 24%);
+	font-size: 1rem;
+	line-height: 1;
 }
 
 .node-list,
@@ -1219,23 +1286,16 @@ button:disabled {
 }
 
 .hierarchy-card-row {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 5px;
-}
-
-.hierarchy-card-row[data-card-layout="source"] {
-	grid-template-columns: minmax(0, 1fr);
+	display: block;
 }
 
 .hierarchy-card-main {
 	position: relative;
 	display: grid;
-	overflow: hidden;
-	grid-template-columns: 46px minmax(0, 1fr);
+	overflow: visible;
+	grid-template-columns: 46px minmax(0, 1fr) 46px;
 	align-items: stretch;
-	gap: 12px;
+	gap: 8px;
 	background: rgb(16 45 61 / 65%);
 	border: 1px solid transparent;
 	border-radius: 12px;
@@ -1259,16 +1319,6 @@ button:disabled {
 
 .hierarchy-card-main.is-selected::before {
 	background: linear-gradient(var(--cyan), var(--green));
-}
-
-.card-action {
-	display: inline-flex;
-	min-width: 0;
-	min-height: 46px;
-	align-items: center;
-	justify-content: center;
-	align-self: center;
-	padding: 0 10px;
 }
 
 .reorder-handle {
@@ -1314,11 +1364,101 @@ button:disabled {
 	background: transparent;
 }
 
-.card-edit-action {
-	width: auto;
-	color: var(--cyan-bright);
+.hierarchy-actions {
+	position: relative;
+	display: grid;
+	width: 46px;
+	min-width: 46px;
+	align-items: center;
+}
+
+.hierarchy-actions-trigger {
+	display: inline-grid;
+	width: 46px;
+	height: 46px;
+	min-width: 46px;
+	min-height: 46px;
+	place-items: center;
+	padding: 0;
+	color: var(--quiet);
 	background: transparent;
-	border-color: transparent;
+	border: 0;
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+.hierarchy-actions-icon {
+	display: block;
+	width: 20px;
+	height: 20px;
+	fill: currentColor;
+}
+
+.hierarchy-actions-trigger[aria-expanded="true"] {
+	color: var(--cyan-bright);
+	background: rgb(1 180 228 / 11%);
+}
+
+.hierarchy-actions-menu {
+	position: fixed;
+	/* Menus sit over page content while remaining below the z-index 1000 modal layer. */
+	z-index: 900;
+	display: grid;
+	width: 156px;
+	gap: 4px;
+	padding: 6px;
+	background: rgb(7 25 35 / 98%);
+	border: 1px solid rgb(98 225 255 / 34%);
+	border-radius: 11px;
+	box-shadow: 0 16px 32px rgb(0 7 12 / 62%);
+}
+
+.hierarchy-actions-menu[hidden] {
+	display: none;
+}
+
+.hierarchy-actions-menu button {
+	min-height: 42px;
+	padding: 9px 11px;
+	color: var(--text);
+	font-size: 0.78rem;
+	font-weight: 780;
+	text-align: left;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.hierarchy-actions-menu button:focus-visible {
+	color: #fff;
+	background: rgb(1 180 228 / 12%);
+	border-color: rgb(98 225 255 / 44%);
+	outline: 0;
+}
+
+.hierarchy-actions-menu .hierarchy-menu-delete {
+	color: #f0b2ad;
+}
+
+.hierarchy-actions-menu .hierarchy-menu-delete:focus-visible,
+.delete-confirm-action:focus-visible {
+	color: #fff;
+	background: rgb(255 142 134 / 14%);
+	border-color: rgb(255 142 134 / 48%);
+}
+
+.hierarchy-add-action:active:not(:disabled),
+.empty-state-action:active:not(:disabled) {
+	background: rgb(1 180 228 / 13%);
+	border-color: rgb(98 225 255 / 48%);
+}
+
+.hierarchy-actions-menu .hierarchy-menu-delete:active:not(:disabled),
+.delete-confirm-action:active:not(:disabled) {
+	color: #fff;
+	background: rgb(255 142 134 / 22%);
+	border-color: rgb(255 142 134 / 58%);
 }
 
 .hierarchy-card.is-drag-placeholder,
@@ -1540,6 +1680,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	background: rgb(1 180 228 / 8%);
 	border: 1px solid rgb(1 180 228 / 22%);
 	border-radius: 12px;
+	cursor: pointer;
 }
 
 .empty-state p {
@@ -1577,11 +1718,46 @@ body.hierarchy-pointer-dragging .builder-shell {
 	border: 1px solid var(--border);
 }
 
+.mobile-context-row {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin: 10px 14px 0;
+	padding: 0 0 0 1px;
+}
+
 .mobile-context {
-	margin: 14px 15px 0;
+	min-width: 0;
+	margin: 0;
+	overflow: hidden;
 	color: var(--muted);
 	font-size: 0.76rem;
 	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.quick-rename-action {
+	display: inline-grid;
+	width: 44px;
+	height: 44px;
+	min-width: 44px;
+	min-height: 44px;
+	place-items: center;
+	padding: 0;
+	color: var(--cyan-bright);
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 22%);
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+.quick-rename-icon {
+	width: 18px;
+	height: 18px;
+	fill: currentColor;
 }
 
 @media (max-width: 430px) {
@@ -1620,9 +1796,26 @@ body.hierarchy-pointer-dragging .builder-shell {
 		align-items: flex-start;
 		flex-direction: column;
 	}
+
+	.hierarchy-card-main {
+		gap: 4px;
+	}
 }
 
 @media (max-width: 619px) {
+	.delete-modal-backdrop {
+		align-items: end;
+		padding: 12px;
+	}
+
+	.delete-confirmation {
+		width: 100%;
+		max-height: calc(100dvh - 24px);
+		padding: 20px;
+		overflow-y: auto;
+		border-radius: 17px;
+	}
+
 	.node-editor {
 		--mobile-modal-heading-clearance: 112px;
 		--mobile-modal-action-clearance: calc(78px + env(safe-area-inset-bottom));
@@ -1801,8 +1994,14 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 
 	.workspace {
-		grid-template-columns: minmax(235px, 0.8fr) minmax(235px, 0.8fr) minmax(350px, 1.35fr);
+		grid-template-columns: minmax(265px, 0.8fr) minmax(265px, 0.8fr) minmax(270px, 1.35fr);
 		gap: 0;
+	}
+
+	.panel-header,
+	.panel-body {
+		padding-right: 12px;
+		padding-left: 12px;
 	}
 
 	.workspace[data-mobile-level] .workspace-panel {
@@ -1830,9 +2029,47 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 }
 
+@media (min-width: 900px) and (max-width: 1023px) {
+	.app-header {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.workspace-header-actions {
+		justify-content: start;
+	}
+}
+
+@media (min-width: 900px) and (max-width: 1239px) {
+	.panel-header .primary-action {
+		width: 46px;
+		padding: 0;
+		font-size: 0;
+	}
+
+	.hierarchy-card-main {
+		gap: 4px;
+	}
+
+	.node-button,
+	.source-button {
+		gap: 4px;
+		padding-right: 4px;
+	}
+
+	.node-title {
+		font-size: 0.9rem;
+	}
+}
+
 @media (min-width: 1240px) {
 	.app-header {
 		padding: 22px 26px;
+	}
+
+	.panel-header,
+	.panel-body {
+		padding-right: 20px;
+		padding-left: 20px;
 	}
 
 	.workspace {
@@ -1852,14 +2089,39 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.back-control:hover,
 	.secondary-action:hover,
 	.editor-cancel:hover,
-	.card-action:hover {
+	.quick-rename-action:hover:not(:disabled) {
 		color: #fff;
 		border-color: var(--border-strong);
+	}
+
+	.hierarchy-add-action:hover:not(:disabled) {
+		color: #effbff;
+		background: rgb(1 180 228 / 8%);
+		border-color: rgb(98 225 255 / 42%);
+	}
+
+	.empty-state-action:hover:not(:disabled) {
+		color: #fff;
+		background: rgb(1 180 228 / 13%);
+		border-color: rgb(98 225 255 / 44%);
+	}
+
+	.hierarchy-actions-menu .hierarchy-menu-delete:hover:not(:disabled),
+	.delete-confirm-action:hover:not(:disabled) {
+		color: #fff;
+		background: rgb(255 142 134 / 16%);
+		border-color: rgb(255 142 134 / 48%);
 	}
 
 	.reorder-handle:hover:not(:disabled) {
 		color: var(--cyan-bright);
 		background: rgb(1 180 228 / 8%);
+	}
+
+	.hierarchy-actions-trigger:hover:not(:disabled),
+	.hierarchy-actions-menu button:hover:not(:disabled) {
+		color: #fff;
+		background: rgb(1 180 228 / 10%);
 	}
 
 	.primary-action:hover {
@@ -1887,7 +2149,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.back-control,
 	.editor-apply,
 	.editor-cancel,
-	.card-action,
+	.hierarchy-actions-trigger,
+	.hierarchy-actions-menu button,
+	.quick-rename-action,
+	.hierarchy-add-action,
+	.empty-state-action,
 	.reorder-handle,
 	.hierarchy-card-main {
 		transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, filter 150ms ease, transform 150ms ease;

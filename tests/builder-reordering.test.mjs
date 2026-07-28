@@ -723,14 +723,15 @@ test("every rendered collection, folder, and source card has one accessible stab
 	assert.equal((markup.match(/data-reorder-main-card="collection"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-reorder-main-card="folder"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-reorder-main-card="source"/g) ?? []).length, 3);
-	assert.equal((markup.match(/<circle /g) ?? []).length, 42);
+	assert.equal((markup.match(/class="reorder-grip-icon"/g) ?? []).length, 7);
+	assert.equal((markup.match(/data-hierarchy-menu-trigger="true"/g) ?? []).length, 7);
 	assert.match(
 		markup,
-		/data-reorder-main-card="collection"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?<\/button><\/div><button class="card-action card-edit-action"/,
+		/data-reorder-main-card="collection"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?<\/button><div class="hierarchy-actions"/,
 	);
 	assert.match(
 		markup,
-		/data-card-layout="source"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="source"><button class="reorder-handle"[\s\S]*?<\/button><button class="source-button[\s\S]*?<\/button><\/div><\/div>/,
+		/data-card-layout="source"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="source"><button class="reorder-handle"[\s\S]*?<\/button><button class="source-button[\s\S]*?<\/button><div class="hierarchy-actions"/,
 	);
 
 	for (const label of [
@@ -809,9 +810,9 @@ test("in-card grip, full-row overlay, placeholder lifecycle, and keyboard mode r
 	assert.match(styles, /\.reorder-handle\s*\{[\s\S]*touch-action:\s*none/);
 	assert.match(styles, /\.reorder-grip-icon\s*\{[\s\S]*width:\s*18px/);
 	assert.match(styles, /\.reorder-grip-icon\s*\{[\s\S]*height:\s*18px/);
-	assert.match(styles, /\.card-action\s*\{[\s\S]*min-height:\s*46px/);
-	assert.match(styles, /\.hierarchy-card-row\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
-	assert.match(styles, /\.hierarchy-card-main\s*\{[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\)[\s\S]*gap:\s*12px/);
+	assert.match(styles, /\.hierarchy-actions-trigger\s*\{[\s\S]*min-height:\s*46px/);
+	assert.match(styles, /\.hierarchy-card-row\s*\{[\s\S]*display:\s*block/);
+	assert.match(styles, /\.hierarchy-card-main\s*\{[\s\S]*grid-template-columns:\s*46px minmax\(0, 1fr\) 46px[\s\S]*gap:\s*8px/);
 	assert.match(styles, /\.hierarchy-drag-overlay\s*\{[\s\S]*position:\s*fixed[\s\S]*z-index:\s*2000[\s\S]*pointer-events:\s*none/);
 	assert.match(styles, /\.hierarchy-card\.is-drag-placeholder::after/);
 	assert.match(styles, /\.hierarchy-card\.is-provisionally-displaced/);
@@ -821,7 +822,7 @@ test("in-card grip, full-row overlay, placeholder lifecycle, and keyboard mode r
 	assert.match(styles, /@media \(max-width: 430px\)/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 	assert.match(styles, /transition-duration:\s*0\.01ms !important/);
-	assert.doesNotMatch(styles, /\.card-move-action|\.hierarchy-card-actions/);
+	assert.doesNotMatch(styles, /\.card-move-action|\.card-edit-action|\.card-delete-action/);
 	assert.doesNotMatch(workspace, /data-action=\{`move-|↑|↓/);
 	assert.doesNotMatch(styles, /\.selection-summary|\.mobile-summary|\.detail-grid/);
 });
