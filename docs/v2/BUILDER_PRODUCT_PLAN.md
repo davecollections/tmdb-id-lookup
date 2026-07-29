@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-07-28
+Last reviewed: 2026-07-29
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -189,6 +189,12 @@ Likely destination concepts are:
 
 Exact action labels remain open. A visible plus symbol must perform the creation action a user reasonably expects.
 
+**Implemented first slice on issue #65's branch, with owner desktop/final physical-iPhone acceptance and successful current Nuvio Desktop import/runtime/round-trip evidence:** Add Source appears only for a selected existing folder and exposes one Movie franchise · TMDB mode. It uses explicit full-screen Search and Review stages on phones, an isolated opaque mobile surface/coverage guard, responsive uncropped posters or stable placeholders, bounded result context, pagination only when needed, contained movie titles on demand, exact adult/text safety filtering, one canonical native `COLLECTION` source, and an identity-bound selected-folder duplicate override. It does not implement destination branching, bulk selection, automatic collection/folder creation, or any other listed source type.
+
+**Retained future considerations:** post-creation source editing should support title correction and preservation-safe imported-field editing. Quick Add/multi-add may keep Search open for several independent results with clear Added/duplicate states; atomic behavior applies only where a future operation commits several sources together. Bulk collection lookup may use bounded one-name-per-line input, controlled concurrency, ambiguous/unmatched handling, duplicate review, and multi-source insertion. Optional spelling or singular/plural suggestions must be transparent and must not blindly append or remove `s`.
+
+Future collection sort controls must remain evidence-based. For current Nuvio Desktop `COLLECTION` resolution, `original` means TMDB-provided/API order rather than chronological or website order; `primary_release_date.desc` is owner-observed newest-first; `primary_release_date.asc` is currently unsupported and falls back to TMDB order. Oldest-first must not be exposed until supported and verified.
+
 ## 9. Search-result information
 
 **Confirmed direction**
@@ -258,7 +264,7 @@ Future Search/Add, template, and recipe defaults must begin from this planning m
 | Genre | Landscape |
 | Decade / general Discover | Poster unless a later recipe deliberately specifies otherwise |
 
-Only the manual blank-folder row is implemented. The remaining rows do not authorise source creation, entity-aware generation, templates, recipes, or automatic artwork.
+Only the manual blank-folder row is implemented as a folder-creation default. Issue #65 implements the TMDB movie-collection source recipe inside an already selected folder; it does not implement the franchise row's automatic folder creation, tile-shape choice, artwork, templates, or recipes. The remaining rows do not authorise source creation or entity-aware generation.
 
 ## 12. TMDB Discover experience
 
@@ -390,8 +396,8 @@ Trakt integration remains outside current project scope; a possible future colou
 4. Resolve the review findings, including direct per-card hierarchy actions — implemented on the issue branch; owner local UI/browser review complete.
 5. Bulk presentation settings remain desired but deferred to a separate focused issue.
 6. Collection/folder/source reordering — integrated through issue #59 / PR #60; owner local review and the bounded Desktop/web/mobile/TV ordering evidence gate are complete. The evidence is under [`manual-tests/nuvio-clients/issue-59-builder-reordering/`](../../manual-tests/nuvio-clients/issue-59-builder-reordering/), with Windows line-ending verification integrated through issue #61 / PR #62.
-7. Persistent collection/folder creation actions and safe collection/folder/source deletion — implemented on issue #63's dedicated branch pending final owner handset review. Collection/folder/source actions live in one in-card overflow pattern whose body-portalled menu measures its full height against the current Visual Viewport, flips upward or clamps within a 10px margin, and focuses without automatic page scroll. Mobile selected collection/folder contexts provide preservation-safe quick rename, empty collection/folder deletion is immediate, and every source deletion plus populated/import-bearing collection/folder deletion is confirmed. Selection, mobile level, focus, raw preservation, addon projection removal, and deterministic cycles remain explicit contracts. Source Add is intentionally absent.
-8. Source creation and Search/Add.
+7. Persistent collection/folder creation actions and safe collection/folder/source deletion — integrated through issue #63 / PR #64. Collection/folder/source actions live in one in-card overflow pattern whose body-portalled menu measures its full height against the current Visual Viewport, flips upward or clamps within a 10px margin, and focuses without automatic page scroll. Mobile selected collection/folder contexts provide preservation-safe quick rename, empty collection/folder deletion is immediate, and every source deletion plus populated/import-bearing collection/folder deletion is confirmed. Selection, mobile level, focus, raw preservation, addon projection removal, and deterministic cycles remain explicit contracts.
+8. First source creation and Search/Add slice — TMDB movie franchises are implemented on issue #65's dedicated branch; owner UI acceptance and the required current Nuvio Desktop import/runtime/round-trip gate are complete. A second client is desirable but non-blocking unless conflicting behavior appears. Future source types, automatic hierarchy, source editing, multi-add, bulk lookup, suggestions, and sort controls remain separate focused work.
 9. Advanced Discover creation.
 10. Deliberate V2 artwork-runtime integration at the appropriate typed-source stage.
 11. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
@@ -412,7 +418,7 @@ This is a dependency map, not a rigid release schedule. Each step requires its o
 | Region/provider questions | Regional relevance and provider-filter semantics need product and compatibility decisions. |
 | Exact TV / phone / both defaults | Must follow current client evidence and owner UI review. |
 | Startup-screen visual layout | The four routes are decided; their presentation is not. |
-| Exact Search/Add action wording | Destination concepts are known, but button labels and branching need UX work. |
+| Future Search/Add destination and action wording | Issue #65 fixes the selected-folder Movie franchise labels only; new-collection, new-folder, bulk, and later-mode branching still need UX work. |
 | Direct Nuvio connection flow | Transport exists, but full replacement, authentication, safe updates, and recovery need design and verification. |
 | Saved Builder project format | Not needed for the current local JSON flow; revisit only when persistence needs justify it. |
 | Removal of `noindex` | Requires explicit release-readiness approval. |

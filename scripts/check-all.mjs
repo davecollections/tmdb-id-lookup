@@ -31,6 +31,9 @@ runNode(["--test", path.join("tests", "builder-hierarchy-menu-placement.test.mjs
 runNode(["--test", path.join("tests", "builder-hierarchy-deletion.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-node-editing.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-auto-ids-workspace-flow.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-add-source-foundation.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-add-source-ui.test.mjs")]);
+runNode([path.join("scripts", "check-builder-add-source-fixture.mjs")]);
 runNode([path.join("scripts", "generate-migration-round-trip.mjs"), "--check"]);
 runNode([path.join("scripts", "check-migration-round-trip-export.mjs")]);
 

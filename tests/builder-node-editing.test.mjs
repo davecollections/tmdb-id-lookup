@@ -2192,7 +2192,7 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	}
 });
 
-test("UI scope contains no deferred source editor, source creation, persistence, routing, or export actions", () => {
+test("UI scope contains no source editor, generic source creation, persistence, routing, or export actions", () => {
 	const uiFiles = fs.readdirSync(path.join(rootDir, "builder", "src", "ui"))
 		.filter((name) => /\.(?:js|jsx)$/.test(name))
 		.map((name) => fs.readFileSync(path.join(rootDir, "builder", "src", "ui", name), "utf8"))

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import { isPagesPublicFilePath, normalizePagesPublicPath, pagesPublicPathContract } from "./pages-public-paths.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -44,6 +45,7 @@ const issue38EvidenceFiles = [
 	"manual-tests/nuvio-desktop/addon-projection-migration/round-trip-report.json",
 ];
 const issue38OwnerExportSha256 = "6390428217959af42572038fdd818def5fc9136a98285b6e879504826a0aa7bc";
+const configuredTmdbProxyOrigin = extractTmdbProxyBaseUrl(fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8"));
 const failures = [];
 
 function listFiles(directory) {
@@ -212,6 +214,19 @@ if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
 
 	if (!builderJavaScript.includes("data-node-editor")) {
 		failures.push("The generated builder JavaScript does not contain the node editor marker.");
+	}
+
+	if (!builderJavaScript.includes(configuredTmdbProxyOrigin)) {
+		failures.push("The generated builder JavaScript does not contain the configured TMDB proxy origin.");
+	}
+
+	if (builderJavaScript.includes("TMDB_BEARER_TOKEN")) {
+		failures.push("The generated builder JavaScript contains a TMDB bearer-token identifier.");
+	}
+
+	const repositoryPaths = [rootDir, rootDir.replaceAll("\\", "/")];
+	if (repositoryPaths.some((repositoryPath) => builderJavaScript.includes(repositoryPath))) {
+		failures.push("The generated builder JavaScript contains a local repository path.");
 	}
 
 	for (const marker of ["data-action", "return-builder-home", "create-collection-empty", "create-folder-empty"]) {

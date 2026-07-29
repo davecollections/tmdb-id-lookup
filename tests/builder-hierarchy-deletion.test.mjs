@@ -537,7 +537,7 @@ test("collection and folder deletion remove exactly one subtree", () => {
 	assert.deepEqual(controller.serializeProject().value[0].folders, [keepChildBefore]);
 });
 
-test("populated lists keep top actions, append bottom Add rows, and expose no source Add action", () => {
+test("populated lists keep top actions, append bottom Add rows, and expose source Add for the selected folder", () => {
 	const controller = createController();
 	const project = importHierarchy(controller, [{
 		id: "collection",
@@ -561,6 +561,8 @@ test("populated lists keep top actions, append bottom Add rows, and expose no so
 		"create-folder",
 		"create-collection-after-list",
 		"create-folder-after-list",
+		"add-source",
+		"add-source-after-list",
 	]) {
 		assert.equal((markup.match(new RegExp(`data-action="${action}"`, "g")) ?? []).length, 1, action);
 	}
@@ -568,8 +570,9 @@ test("populated lists keep top actions, append bottom Add rows, and expose no so
 	assert.ok(markup.includes("New folder"));
 	assert.ok(markup.includes("Add another collection"));
 	assert.ok(markup.includes("Add another folder"));
-	assert.equal(markup.includes("create-source-after-list"), false);
-	assert.equal(markup.includes("Add another source"), false);
+	assert.ok(markup.includes("Add source"));
+	assert.ok(markup.includes("Add another source"));
+	assert.equal(markup.includes("add-source-empty"), false);
 
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(workspace, /noun="collection"[\s\S]*onClick=\{createCollection\}/);
@@ -594,7 +597,9 @@ test("empty lists retain large Add actions and omit populated-list actions", () 
 	assert.ok(markup.includes('data-action="create-folder-empty"'));
 	assert.ok(markup.includes('data-action="create-collection-after-list"'));
 	assert.equal(markup.includes("create-folder-after-list"), false);
-	assert.equal(markup.includes("create-source"), false);
+	assert.equal(markup.includes('data-action="add-source"'), false);
+	assert.equal(markup.includes('data-action="add-source-empty"'), false);
+	assert.equal(markup.includes("add-source-after-list"), false);
 });
 
 test("every row has one in-card accessible actions menu with the required items", () => {
