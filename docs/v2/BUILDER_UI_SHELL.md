@@ -1,8 +1,8 @@
 # Builder UI Shell and Hierarchy Navigator
 
-Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, presentation, hierarchy-reordering, safe deletion, and the first Add Source mode through issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65)
+Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, presentation, hierarchy-reordering, safe deletion, the first Add Source mode through issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65), and settings polish through issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69)
 
-Last reviewed: 2026-07-29
+Last reviewed: 2026-07-30
 
 ## Purpose and scope
 
@@ -142,11 +142,11 @@ Every collection and folder card exposes Edit as the first item in its in-card o
 
 Below 900px, the selected collection context above Folders and the selected folder context above Sources each include one 44px pencil action named from the same safe fallback. It opens the same NodeEditor in rename-only mode: Title, collection `Hide collection title in Nuvio` or folder `Hide folder title everywhere in Nuvio`, diagnostics, Apply, and Cancel. It omits layout, pin, focus glow, shape, and full visibility radio cards. Turning the folder switch off restores the draft's original supported `SHOW_EVERYWHERE` or `HIDE_HOME_SCREEN` state. The pencil is hidden at desktop widths and locked with menus, modals, return confirmation, and pointer reordering.
 
-Edit opens one modal dialog shared by collections and folders. The ordinary rename path is its initially focused Title field when Title is enabled; supported non-empty visible text is selected once on opening so immediate typing replaces it, without later rerenders or validation refocus selecting it again. It edits title plus the approved presentation fields, including explicit U+200E collection/folder title hiding and collection-level `focusGlowEnabled`. Immediately below a folder's Title field, one Folder title visibility radio-card group offers Show everywhere (visible title plus `hideTitle: false`), Hide on home screen only (visible title plus `hideTitle: true`), and Hide everywhere (exactly one U+200E plus `hideTitle: true`), followed by Tile shape. The modal keeps Nuvio IDs and builder `internalId` hidden and stable, validates title intent, and creates a minimal changed-field patch for `controller.updateNode`.
+Edit opens one modal dialog shared by collections and folders. The ordinary rename path is its initially focused Title field when Title is enabled; supported non-empty visible text is selected once on opening so immediate typing replaces it, without later rerenders or validation refocus selecting it again. It edits title plus the approved visible presentation fields, including explicit U+200E collection/folder title hiding. Collection-level `focusGlowEnabled` remains recognised, defaults to true for manual blank collections, and preserves imported missing/true/false/unusual values, but issue #69 removes its user-facing control. Folder settings place Title in **Basic details**, then place one compact Folder title visibility radio group and Tile shape visual cards in **Display**. The visibility options remain Show everywhere (visible title plus `hideTitle: false`), Hide on home screen only (visible title plus `hideTitle: true`), and Hide everywhere (exactly one U+200E plus `hideTitle: true`). The modal keeps Nuvio IDs and builder `internalId` hidden and stable, validates title intent, and creates a minimal changed-field patch for `controller.updateNode`.
 
-The How sources appear inside folders field is source-level: each folder remains separate, while Tabs switches between source views and Rows presents every source as its own stacked content row after that folder is opened. Compact CSS-only decorative previews show a selected All/Source tab bar with one poster grid for Tabs and two labelled poster rows without a tab bar for Rows. The title and helper text remain authoritative. With Tabs and Include an All tab when using Tabs enabled, folders containing two or more sources gain an All tab combining their sources; one-source folders do not show it. Rows shows no tabs, but the same enabled switch remains editable as the saved preference for a later return to Tabs.
+The **How sources appear in this collection** field is source-level: each folder remains separate, while **Tabs (recommended)** switches between source views and Rows presents every source as its own stacked content row after that folder is opened. Compact CSS-only decorative previews show a selected All/Source tab bar with one poster grid for Tabs and two labelled poster rows without a tab bar for Rows. The title and helper text remain authoritative. With Tabs and Include an All tab when using Tabs enabled, folders containing two or more sources gain an All tab combining their sources; one-source folders do not show it. Rows shows no tabs, but the same enabled switch remains editable as the saved preference for a later return to Tabs. The visible label does not change the stored `TABBED_GRID` value.
 
-Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions, including movement. Focus enters the Title field, remains contained in the dialog, and returns to the exact Edit trigger; Escape safely cancels, backdrop clicks do not discard, and body scrolling is locked. Hide everywhere blanks and disables Title while retaining valid visible text only in modal state; returning to the original visible choice is a no-op. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, focus-glow, and unusual presentation values remain untouched until deliberate canonical replacement.
+Opening and cancelling are UI-only. Applying an unchanged form is also a controller-free no-op. Actual edits retain selection and rely on the controller for the dirty flag and one revision increment. While settings are open, the workspace underlay is visibly dimmed, conditionally blurred, `inert`, and inaccessible to pointer and keyboard actions, including movement. Focus enters the Title field, remains contained in the dialog, and returns to the exact Edit trigger; Escape safely cancels, backdrop clicks do not discard, and body scrolling is locked. Hide everywhere blanks and disables Title while retaining valid visible text only in modal state; returning to the original visible choice is a no-op. Imported absent, unsupported, Follow Layout, Square, repeated U+200E, focus-glow, and unusual presentation values remain untouched by unrelated edits. The reusable Folder section composition is ready for another semantic group, but no Artwork heading, placeholder, control, preview, media picker, or schema field is present.
 
 ## Diagnostics and migration status
 
@@ -158,7 +158,7 @@ Migration remains non-interactive. The shell shows a small notice only when prev
 
 - one page-level `h1` and logical panel/detail headings;
 - ordinary semantic lists with real selection buttons;
-- semantic presentation fieldsets with native radio buttons and labelled switches;
+- semantic presentation fieldsets with native radio buttons and labelled switches, including a compact named Folder visibility group and checked visual tile-shape cards;
 - named modal dialogs with contained focus, safe Escape cancellation, inert background, and exact trigger focus restoration;
 - one shared staged Add Source dialog with labelled search, keyboard result buttons, poster alternatives, Back state/focus restoration, review/title validation, an identity-bound duplicate override, a synchronous repeat-submit gate, and polite successful-creation status;
 - one safe-name in-card overflow trigger on every hierarchy row;
@@ -229,9 +229,9 @@ Deployment and focused source tests use a small stable surface:
 - `data-source-mode="tmdb-movie-franchise"`
 - `data-source-creation-status="true"`
 - `data-workspace-underlay="true"`
-- `data-editor-field="title|hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape"`
+- `data-editor-field="title|hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|tileShape"`
 - `data-editor-choice="tabs|rows|show-everywhere|hide-home-screen|hide-everywhere|poster|landscape"`
-- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|focusGlowEnabled"`
+- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop"`
 - `data-return-confirmation="true"`
 - `data-action="stay-in-workspace|discard-and-return|create-collection-empty|create-folder-empty"`
 - `data-editor-lock="true"` while editing

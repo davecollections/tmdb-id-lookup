@@ -81,10 +81,6 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 		draft.touched.pinToTop
 		&& typeof draft.values.pinToTop === "boolean"
 	);
-	const focusGlowReplacementPending = (
-		draft.touched.focusGlowEnabled
-		&& typeof draft.values.focusGlowEnabled === "boolean"
-	);
 	const allTabDescriptionIds = [
 		`${prefix}-all-tab-help`,
 		!draft.original.showAllTab.supported && !allTabReplacementPending
@@ -95,12 +91,6 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 		`${prefix}-pin-help`,
 		!draft.original.pinToTop.supported && !pinReplacementPending
 			? `${prefix}-pin-status`
-			: null,
-	].filter(Boolean).join(" ");
-	const focusGlowDescriptionIds = [
-		`${prefix}-focus-glow-help`,
-		!draft.original.focusGlowEnabled.supported && !focusGlowReplacementPending
-			? `${prefix}-focus-glow-status`
 			: null,
 	].filter(Boolean).join(" ");
 
@@ -115,9 +105,9 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						: ` ${prefix}-layout-status`
 				}`}
 			>
-				<legend>How sources appear inside folders</legend>
+				<legend>How sources appear in this collection</legend>
 				<p className="editor-field-help" id={`${prefix}-layout-help`}>
-					Choose how each folder displays its sources in Nuvio.
+					Choose how each folder in this collection displays its sources in Nuvio.
 				</p>
 				<div className="editor-choice-grid">
 					<label className={`editor-choice editor-layout-choice${tabsSelected ? " is-selected" : ""}`}>
@@ -130,7 +120,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 							onChange={() => onChange("viewMode", "TABBED_GRID")}
 						/>
 						<span className="editor-layout-choice-content">
-							<strong>Tabs</strong>
+							<strong>Tabs (recommended)</strong>
 							<small>Switch between sources using tabs. An optional All tab combines them.</small>
 							<span
 								className="source-layout-preview source-layout-preview-tabs"
@@ -252,32 +242,6 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 					statusId={`${prefix}-pin-status`}
 				/>
 			</div>
-
-			<div className="editor-switch-field" data-editor-field="focusGlowEnabled">
-				<label className="editor-switch">
-					<span>
-						<strong>Enable focus glow</strong>
-						<small id={`${prefix}-focus-glow-help`}>
-							Shows Nuvio’s focus-glow effect for this collection.
-						</small>
-					</span>
-					<input
-						type="checkbox"
-						role="switch"
-						data-editor-control="focusGlowEnabled"
-						checked={draft.values.focusGlowEnabled}
-						aria-describedby={focusGlowDescriptionIds}
-						onChange={(event) => onChange("focusGlowEnabled", event.target.checked)}
-					/>
-					<span className="editor-switch-control" aria-hidden="true" />
-				</label>
-				<BooleanStatus
-					original={draft.original.focusGlowEnabled}
-					label="focus glow"
-					replacementPending={focusGlowReplacementPending}
-					statusId={`${prefix}-focus-glow-status`}
-				/>
-			</div>
 		</>
 	);
 }
@@ -301,9 +265,21 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 			<p className="editor-field-help" id={`${prefix}-shape-help`}>
 				Choose the shape of this folder card in Nuvio.
 			</p>
-			<div className="editor-choice-grid">
-				<label className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}>
+			<div
+				className="editor-choice-grid editor-shape-choice-grid"
+				data-control-presentation="visual-cards"
+			>
+				<label
+					className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}
+					htmlFor={`${prefix}-poster-shape`}
+					onClick={(event) => {
+						if (event.target.closest("input")) return;
+						onChange("tileShape", "POSTER");
+					}}
+				>
 					<input
+						className="visually-hidden"
+						id={`${prefix}-poster-shape`}
 						type="radio"
 						name={`${prefix}-shape`}
 						value="POSTER"
@@ -316,9 +292,19 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 						<strong>Poster</strong>
 						<small>Tall artwork for poster-style folders.</small>
 					</span>
+					<span className="editor-choice-check" aria-hidden="true">{posterSelected ? "✓" : ""}</span>
 				</label>
-				<label className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}>
+				<label
+					className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}
+					htmlFor={`${prefix}-landscape-shape`}
+					onClick={(event) => {
+						if (event.target.closest("input")) return;
+						onChange("tileShape", "LANDSCAPE");
+					}}
+				>
 					<input
+						className="visually-hidden"
+						id={`${prefix}-landscape-shape`}
 						type="radio"
 						name={`${prefix}-shape`}
 						value="LANDSCAPE"
@@ -331,6 +317,7 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 						<strong>Landscape</strong>
 						<small>Wide artwork for horizontal folders.</small>
 					</span>
+					<span className="editor-choice-check" aria-hidden="true">{landscapeSelected ? "✓" : ""}</span>
 				</label>
 			</div>
 			<ChoiceStatus
@@ -368,7 +355,7 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 
 	return (
 		<fieldset
-			className="editor-field editor-choice-field"
+			className="editor-field editor-choice-field editor-compact-radio-field"
 			data-editor-field="folderTitleVisibility"
 			aria-describedby={
 				draft.original.hideTitle.supported || replacementPending
@@ -377,8 +364,11 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 			}
 		>
 			<legend>Folder title visibility</legend>
-			<div className="editor-choice-grid editor-visibility-choice-grid">
-				<label className={`editor-choice${showEverywhere ? " is-selected" : ""}`}>
+			<div
+				className="editor-compact-radio-grid"
+				data-control-presentation="compact-radios"
+			>
+				<label className={`editor-compact-radio${showEverywhere ? " is-selected" : ""}`}>
 					<input
 						type="radio"
 						name={`${prefix}-title-visibility`}
@@ -389,10 +379,10 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 					/>
 					<span>
 						<strong>Show everywhere</strong>
-						<small>Shows the folder title beneath its home-screen card and when the folder is opened.</small>
+						<small>Home screen and open folder</small>
 					</span>
 				</label>
-				<label className={`editor-choice${hideHomeScreen ? " is-selected" : ""}`}>
+				<label className={`editor-compact-radio${hideHomeScreen ? " is-selected" : ""}`}>
 					<input
 						type="radio"
 						name={`${prefix}-title-visibility`}
@@ -403,10 +393,10 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 					/>
 					<span>
 						<strong>Hide on home screen only</strong>
-						<small>Hides the title beneath the folder card, but still shows it when the folder is opened.</small>
+						<small>Still shown inside the folder</small>
 					</span>
 				</label>
-				<label className={`editor-choice${hideEverywhere ? " is-selected" : ""}`}>
+				<label className={`editor-compact-radio${hideEverywhere ? " is-selected" : ""}`}>
 					<input
 						type="radio"
 						name={`${prefix}-title-visibility`}
@@ -417,7 +407,7 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 					/>
 					<span>
 						<strong>Hide everywhere</strong>
-						<small>Uses an invisible character to hide the folder title on the home screen and when the folder is opened.</small>
+						<small>Uses an invisible title</small>
 					</span>
 				</label>
 			</div>
@@ -427,6 +417,23 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 				statusId={statusId}
 			/>
 		</fieldset>
+	);
+}
+
+function SettingsSection({ prefix, slug, title, children }) {
+	const headingId = `${prefix}-${slug}-heading`;
+
+	return (
+		<section
+			className="editor-settings-section"
+			data-settings-section={slug}
+			aria-labelledby={headingId}
+		>
+			<h3 id={headingId}>{title}</h3>
+			<div className="editor-settings-section-content">
+				{children}
+			</div>
+		</section>
 	);
 }
 
@@ -549,6 +556,36 @@ export function NodeEditor({
 		return ids.join(" ");
 	}
 
+	const titleField = (
+		<div className="editor-field">
+			<label htmlFor={`${prefix}-title-input`}>Title</label>
+			<input
+				ref={titleInputRef}
+				id={`${prefix}-title-input`}
+				name="title"
+				type="text"
+				value={titleHiddenEverywhere ? "" : draft.values.title}
+				data-editor-field="title"
+				disabled={titleHiddenEverywhere}
+				aria-invalid={titleError ? "true" : undefined}
+				aria-describedby={describedBy(titleError)}
+				onChange={(event) => onChange("title", event.target.value)}
+			/>
+			<p className="editor-field-help" id={`${prefix}-title-help`}>
+				{draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
+					? "The folder title is intentionally invisible everywhere in Nuvio. Choose a visible option below to enter a visible title."
+					: draft.nodeType === "collection" && draft.values.hideNuvioTitle
+					? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
+					: `Displayed as the ${noun} title in Nuvio.`}
+			</p>
+			<TitleStatus
+				original={draft.original.title}
+				replacementPending={titleReplacementPending}
+				statusId={`${prefix}-title-status`}
+			/>
+		</div>
+	);
+
 	return (
 		<div
 			className="settings-modal-backdrop"
@@ -584,49 +621,32 @@ export function NodeEditor({
 				</div>
 
 				<form className="node-editor-form" onSubmit={onSubmit} noValidate>
-					<div className="editor-field">
-						<label htmlFor={`${prefix}-title-input`}>Title</label>
-						<input
-							ref={titleInputRef}
-							id={`${prefix}-title-input`}
-							name="title"
-							type="text"
-							value={titleHiddenEverywhere ? "" : draft.values.title}
-							data-editor-field="title"
-							disabled={titleHiddenEverywhere}
-							aria-invalid={titleError ? "true" : undefined}
-							aria-describedby={describedBy(titleError)}
-							onChange={(event) => onChange("title", event.target.value)}
-						/>
-						<p className="editor-field-help" id={`${prefix}-title-help`}>
-							{draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
-								? "The folder title is intentionally invisible everywhere in Nuvio. Choose a visible option below to enter a visible title."
-								: draft.nodeType === "collection" && draft.values.hideNuvioTitle
-								? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
-								: `Displayed as the ${noun} title in Nuvio.`}
-						</p>
-						<TitleStatus
-							original={draft.original.title}
-							replacementPending={titleReplacementPending}
-							statusId={`${prefix}-title-status`}
-						/>
-					</div>
-
-					{draft.nodeType === "collection" ? (
-						<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
-					) : renameOnly ? (
-						<RenameFolderInvisibleTitleField draft={draft} prefix={prefix} onChange={onChange} />
-					) : (
-						<FolderTitleVisibilityField draft={draft} prefix={prefix} onChange={onChange} />
-					)}
-
-					{!renameOnly ? (
-						draft.nodeType === "collection" ? (
+					{renameOnly ? (
+						<>
+							{titleField}
+							{draft.nodeType === "collection" ? (
+								<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
+							) : (
+								<RenameFolderInvisibleTitleField draft={draft} prefix={prefix} onChange={onChange} />
+							)}
+						</>
+					) : draft.nodeType === "collection" ? (
+						<>
+							{titleField}
+							<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
 							<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-						) : (
-							<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-						)
-					) : null}
+						</>
+					) : (
+						<>
+							<SettingsSection prefix={prefix} slug="basic-details" title="Basic details">
+								{titleField}
+							</SettingsSection>
+							<SettingsSection prefix={prefix} slug="display" title="Display">
+								<FolderTitleVisibilityField draft={draft} prefix={prefix} onChange={onChange} />
+								<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+							</SettingsSection>
+						</>
+					)}
 
 					<div className="editor-diagnostics" role="alert" aria-atomic="true">
 						{diagnostics.length > 0 ? (

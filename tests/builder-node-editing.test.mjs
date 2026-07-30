@@ -1155,7 +1155,7 @@ test("mixed visible text plus U+200E stays visible and unsupported alternatives 
 	}
 });
 
-test("focus glow draft preserves supported absent and unusual imported values", () => {
+test("hidden focus glow compatibility preserves supported absent and unusual imported values", () => {
 	const controller = importTree([
 		{ id: "enabled", title: "Enabled", focusGlowEnabled: true, folders: [] },
 		{ id: "disabled", title: "Disabled", focusGlowEnabled: false, folders: [] },
@@ -1183,18 +1183,34 @@ test("focus glow draft preserves supported absent and unusual imported values", 
 	assert.deepEqual(buildNodeEditorPatch(changedDraft(unusual, { title: "Edited unusual" })), {
 		title: "Edited unusual",
 	});
-	controller.selectNode(enabled.internalId);
-	assert.ok(openingTag(
-		renderWorkspace(controller, { draft: enabledDraft }),
-		'data-editor-control="focusGlowEnabled"',
-	).includes("checked"));
-	controller.selectNode(disabled.internalId);
-	assert.equal(openingTag(
-		renderWorkspace(controller, { draft: disabledDraft }),
-		'data-editor-control="focusGlowEnabled"',
-	).includes("checked"), false);
+	for (const [collection, draft] of [
+		[enabled, enabledDraft],
+		[disabled, disabledDraft],
+		[absent, absentDraft],
+		[unusual, unusualDraft],
+	]) {
+		controller.selectNode(collection.internalId);
+		const markup = renderWorkspace(controller, { draft });
+		assert.equal(markup.includes('data-editor-field="focusGlowEnabled"'), false);
+		assert.equal(markup.includes('data-editor-control="focusGlowEnabled"'), false);
+		assert.equal(markup.includes("Enable focus glow"), false);
+	}
+
+	const beforeRevision = controller.getState().revision;
+	for (const collection of [enabled, disabled, absent, unusual]) {
+		const draft = updateNodeEditorField(
+			createNodeEditorDraft(collection),
+			"viewMode",
+			"ROWS",
+		);
+		assert.deepEqual(buildNodeEditorPatch(draft), { viewMode: "ROWS" });
+		assert.equal(applyNodeEditorDraft(controller, draft).ok, true);
+	}
+	assert.equal(controller.getState().revision, beforeRevision + 4);
 
 	const serialized = serializeNuvioProject(controller.getState().project).value;
+	assert.equal(serialized[0].focusGlowEnabled, true);
+	assert.equal(serialized[1].focusGlowEnabled, false);
 	assert.equal(serialized[2].focusGlowEnabled, undefined);
 	assert.deepEqual(serialized[3].focusGlowEnabled, { private: "RAW_FOCUS_GLOW" });
 	assert.deepEqual(serialized[3].unknownCollection, { keep: true });
@@ -1638,7 +1654,7 @@ test("quick rename renders only title, invisibility, diagnostics, and actions", 
 	assert.ok(markup.includes('data-editor-mode="rename"'));
 	assert.ok(markup.includes(">Rename collection</h2>"));
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
-	assert.equal(markup.includes("How sources appear inside folders"), false);
+	assert.equal(markup.includes("How sources appear in this collection"), false);
 	assert.equal(markup.includes("Include an All tab"), false);
 	assert.equal(markup.includes("Pin to top"), false);
 	assert.equal(markup.includes("Enable focus glow"), false);
@@ -1714,14 +1730,14 @@ test("collection settings render exactly one accessible modal with stable marker
 		'data-editor-control="showAllTab"',
 		'data-editor-field="pinToTop"',
 		'data-editor-control="pinToTop"',
-		'data-editor-field="focusGlowEnabled"',
-		'data-editor-control="focusGlowEnabled"',
 		'data-action="apply-node-edit"',
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
-	assert.equal((markup.match(/<legend>How sources appear inside folders<\/legend>/g) ?? []).length, 1);
-	assert.ok(markup.includes("Choose how each folder displays its sources in Nuvio."));
+	assert.equal((markup.match(/<legend>How sources appear in this collection<\/legend>/g) ?? []).length, 1);
+	assert.ok(markup.includes("Choose how each folder in this collection displays its sources in Nuvio."));
+	assert.ok(markup.includes("<strong>Tabs (recommended)</strong>"));
+	assert.ok(openingTag(markup, 'data-editor-choice="tabs"').includes('value="TABBED_GRID"'));
 	assert.ok(markup.includes(
 		"Switch between sources using tabs. An optional All tab combines them.",
 	));
@@ -1745,8 +1761,9 @@ test("collection settings render exactly one accessible modal with stable marker
 	assert.ok(markup.includes(
 		"Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list.",
 	));
-	assert.ok(markup.includes("Enable focus glow"));
-	assert.ok(markup.includes("Shows Nuvio’s focus-glow effect for this collection."));
+	assert.equal(markup.includes('data-editor-field="focusGlowEnabled"'), false);
+	assert.equal(markup.includes('data-editor-control="focusGlowEnabled"'), false);
+	assert.equal(markup.includes("Enable focus glow"), false);
 	assert.ok(markup.includes("Uses an invisible character to hide the collection title in Nuvio."));
 	assert.equal(markup.includes("Uses an invisible title character because"), false);
 	for (const obsolete of [
@@ -1757,6 +1774,8 @@ test("collection settings render exactly one accessible modal with stable marker
 	]) assert.equal(markup.includes(obsolete), false, obsolete);
 	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 	assert.equal(markup.includes('data-editor-field="id"'), false);
+	assert.equal(markup.includes('data-settings-section="artwork"'), false);
+	assert.equal(markup.includes(">Artwork<"), false);
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
 	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes("inert"));
 	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes('aria-hidden="true"'));
@@ -1766,8 +1785,11 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	const controller = importTree();
 	const folder = controller.getState().project.collections[0].folders[0];
 	controller.selectNode(folder.internalId);
-	const diagnostics = validateNodeEditorDraft(changedDraft(folder, { title: "" }));
-	const markup = renderWorkspace(controller, { draft: changedDraft(folder, { title: "" }), diagnostics });
+	let draft = changedDraft(folder, { title: "" });
+	draft = updateNodeEditorField(draft, "folderTitleVisibility", "HIDE_HOME_SCREEN");
+	draft = updateNodeEditorField(draft, "tileShape", "POSTER");
+	const diagnostics = validateNodeEditorDraft(draft);
+	const markup = renderWorkspace(controller, { draft, diagnostics });
 	const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 	assert.equal(ids.length, new Set(ids).size);
 	for (const match of markup.matchAll(/aria-describedby="([^"]+)"/g)) {
@@ -1787,30 +1809,63 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 		'data-editor-choice="poster"',
 		'data-editor-choice="landscape"',
 	]) assert.ok(markup.includes(marker), marker);
+	const basicDetails = markedElement(markup, 'data-settings-section="basic-details"', "section");
+	const display = markedElement(markup, 'data-settings-section="display"', "section");
+	assert.ok(basicDetails.includes("<h3 id=\"node-editor-folder-basic-details-heading\">Basic details</h3>"));
+	assert.ok(basicDetails.includes(">Title</label>"));
+	assert.equal(basicDetails.includes("Folder title visibility"), false);
+	assert.equal(basicDetails.includes("Tile shape"), false);
+	assert.ok(display.includes("<h3 id=\"node-editor-folder-display-heading\">Display</h3>"));
+	assert.ok(display.includes("Folder title visibility"));
+	assert.ok(display.includes("Tile shape"));
+	assert.ok(markup.indexOf('data-settings-section="basic-details"') < markup.indexOf('data-settings-section="display"'));
 	assert.equal(markup.includes('data-editor-field="hideNuvioTitle"'), false);
 	assert.equal(markup.includes('data-editor-control="hideNuvioTitle"'), false);
 	assert.equal((markup.match(/<legend>Folder title visibility<\/legend>/g) ?? []).length, 1);
 	assert.equal((markup.match(/name="node-editor-folder-title-visibility"/g) ?? []).length, 3);
+	assert.equal((markup.match(/data-control-presentation="compact-radios"/g) ?? []).length, 1);
+	assert.ok(openingTag(markup, 'data-editor-choice="hide-home-screen"').includes("checked"));
 	assert.ok(markup.includes("Show everywhere"));
-	assert.ok(markup.includes(
-		"Shows the folder title beneath its home-screen card and when the folder is opened.",
-	));
+	assert.ok(markup.includes("Home screen and open folder"));
 	assert.ok(markup.includes("Hide on home screen only"));
-	assert.ok(markup.includes(
-		"Hides the title beneath the folder card, but still shows it when the folder is opened.",
-	));
+	assert.ok(markup.includes("Still shown inside the folder"));
 	assert.ok(markup.includes("Hide everywhere"));
-	assert.ok(markup.includes(
-		"Uses an invisible character to hide the folder title on the home screen and when the folder is opened.",
-	));
+	assert.ok(markup.includes("Uses an invisible title"));
 	assert.equal(markup.includes("Hide folder title everywhere in Nuvio"), false);
 	assert.equal(markup.includes("Show folder title on home screen"), false);
 	assert.equal(markup.includes('data-editor-control="hideFolderTitleEverywhere"'), false);
 	assert.equal(markup.includes('data-editor-control="showFolderTitle"'), false);
 	assert.ok(markup.includes("Choose the shape of this folder card in Nuvio."));
+	assert.equal((markup.match(/data-control-presentation="visual-cards"/g) ?? []).length, 1);
+	const shapeFieldset = markedElement(markup, 'data-editor-field="tileShape"', "fieldset");
+	assert.equal((shapeFieldset.match(/<legend>Tile shape<\/legend>/g) ?? []).length, 1);
+	assert.equal((shapeFieldset.match(/name="node-editor-folder-shape"/g) ?? []).length, 2);
+	assert.equal((shapeFieldset.match(/type="radio"/g) ?? []).length, 2);
+	assert.equal((shapeFieldset.match(/class="visually-hidden"/g) ?? []).length, 2);
+	assert.ok(shapeFieldset.includes('for="node-editor-folder-poster-shape"'));
+	assert.ok(shapeFieldset.includes('id="node-editor-folder-poster-shape"'));
+	assert.ok(shapeFieldset.includes('for="node-editor-folder-landscape-shape"'));
+	assert.ok(shapeFieldset.includes('id="node-editor-folder-landscape-shape"'));
+	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes('value="POSTER"'));
+	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes('class="visually-hidden"'));
+	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes("checked"));
+	assert.ok(openingTag(markup, 'data-editor-choice="landscape"').includes('value="LANDSCAPE"'));
+	assert.ok(openingTag(markup, 'data-editor-choice="landscape"').includes('class="visually-hidden"'));
+	assert.ok(markedElement(markup, 'data-editor-choice="poster"', "label").includes("✓"));
+	assert.equal(markedElement(markup, 'data-editor-choice="landscape"', "label").includes("✓"), false);
+	assert.equal(shapeFieldset.includes("editor-shape-radio-circle"), false);
+	const visibilityFieldset = markedElement(
+		markup,
+		'data-editor-field="folderTitleVisibility"',
+		"fieldset",
+	);
+	assert.equal((visibilityFieldset.match(/type="radio"/g) ?? []).length, 3);
+	assert.equal(visibilityFieldset.includes('class="visually-hidden"'), false);
 	assert.equal(markup.includes("hideTitle"), false);
 	assert.ok(markup.indexOf(">Title</label>") < markup.indexOf("Folder title visibility"));
 	assert.ok(markup.indexOf("Folder title visibility") < markup.indexOf("Tile shape"));
+	assert.equal(markup.includes('data-settings-section="artwork"'), false);
+	assert.equal(markup.includes(">Artwork<"), false);
 	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
 	assert.equal(sourceList.includes("folderTitleVisibility"), false);
 	assert.equal(sourceList.includes("Folder title visibility"), false);
@@ -1970,7 +2025,7 @@ test("Follow Layout and Square render bounded replacement guidance and no normal
 	assert.deepEqual(buildNodeEditorPatch(replacedFolderDraft), { tileShape: "LANDSCAPE" });
 });
 
-test("boolean preservation and absence guidance clears after a pending replacement", () => {
+test("visible boolean guidance clears after replacement while hidden focus glow stays preserved", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Imported collection",
@@ -1994,9 +2049,8 @@ test("boolean preservation and absence guidance clears after a pending replaceme
 		"The imported All tab preference cannot be shown safely and will be preserved unless you use this switch.",
 	));
 	assert.equal(collectionMarkup.includes("RAW_ALL_TAB"), false);
-	assert.ok(collectionMarkup.includes(
-		"The imported focus glow preference cannot be shown safely and will be preserved unless you use this switch.",
-	));
+	assert.equal(collectionMarkup.includes("The imported focus glow preference"), false);
+	assert.equal(collectionMarkup.includes('data-editor-control="focusGlowEnabled"'), false);
 	assert.equal(collectionMarkup.includes("RAW_FOCUS_GLOW"), false);
 	const replacedCollectionDraft = updateNodeEditorField(
 		collectionDraft,
@@ -2018,10 +2072,7 @@ test("boolean preservation and absence guidance clears after a pending replaceme
 		false,
 	);
 	const replacedFocusGlowMarkup = renderWorkspace(controller, { draft: replacedFocusGlowDraft });
-	assert.equal(
-		replacedFocusGlowMarkup.includes("The imported focus glow preference cannot be shown safely"),
-		false,
-	);
+	assert.equal(replacedFocusGlowMarkup.includes('data-editor-control="focusGlowEnabled"'), false);
 	assert.deepEqual(buildNodeEditorPatch(replacedFocusGlowDraft), { focusGlowEnabled: false });
 
 	controller.selectNode(folder.internalId);
@@ -2126,7 +2177,14 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /body\.settings-modal-open\s*\{[\s\S]*overflow:\s*hidden/);
 	assert.match(styles, /\.workspace-underlay\[aria-hidden="true"\]\s*\{[\s\S]*pointer-events:\s*none/);
 	assert.match(styles, /\.editor-field input\[type="text"\]\s*\{[\s\S]*min-height:\s*48px/);
+	assert.match(styles, /\.editor-settings-section\s*\{[\s\S]*min-width:\s*0[\s\S]*border-radius:\s*14px/);
 	assert.match(styles, /\.editor-choice\s*\{[\s\S]*min-height:\s*72px/);
+	assert.match(
+		styles,
+		/\.editor-choice input:not\(\.visually-hidden\)\s*\{[\s\S]*width:\s*20px[\s\S]*height:\s*20px/,
+	);
+	assert.match(styles, /\.editor-compact-radio\s*\{[\s\S]*min-height:\s*54px/);
+	assert.match(styles, /\.editor-compact-radio input\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/);
 	assert.match(styles, /\.editor-layout-choice\s*\{[\s\S]*min-height:\s*184px/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*overflow:\s*hidden/);
@@ -2138,10 +2196,18 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.source-layout-preview-row\s*\{[\s\S]*grid-template-columns:\s*48px minmax\(0,\s*1fr\)/);
 	assert.match(styles, /\.source-layout-preview-row-label\s*\{[\s\S]*font-size:\s*0\.56rem/);
 	assert.match(styles, /\.source-layout-preview-row-label\s*\{[\s\S]*font-weight:\s*750/);
+	assert.match(styles, /\.editor-shape-choice-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
 	assert.match(
 		styles,
-		/\.editor-choice-grid\.editor-visibility-choice-grid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/,
+		/\.editor-shape-choice:has\(> input:focus-visible\)\s*\{[\s\S]*outline:\s*3px solid var\(--cyan-bright\)[\s\S]*outline-offset:\s*3px/,
 	);
+	assert.match(styles, /\.editor-choice-check\s*\{[\s\S]*position:\s*absolute/);
+	const visuallyHiddenRule = styles.match(/\.visually-hidden\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+	assert.match(visuallyHiddenRule, /position:\s*absolute/);
+	assert.match(visuallyHiddenRule, /width:\s*1px/);
+	assert.match(visuallyHiddenRule, /height:\s*1px/);
+	assert.match(visuallyHiddenRule, /clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
+	assert.doesNotMatch(visuallyHiddenRule, /display:\s*none|visibility:\s*hidden/);
 	assert.match(styles, /\.editor-switch\s*\{[\s\S]*min-height:\s*64px/);
 	assert.match(styles, /\.shape-preview\.is-poster\s*\{[\s\S]*height:\s*39px/);
 	assert.match(styles, /\.shape-preview\.is-landscape\s*\{[\s\S]*width:\s*42px/);
@@ -2182,6 +2248,10 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(
 		styles,
 		/@media \(min-width: 620px\)[\s\S]*\.node-editor-actions\s*\{[\s\S]*grid-template-columns:\s*auto auto[\s\S]*padding:\s*16px 22px 22px/,
+	);
+	assert.match(
+		styles,
+		/@media \(min-width: 620px\)[\s\S]*\.editor-compact-radio-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/,
 	);
 	assert.match(styles, /@media \(min-width: 760px\)[\s\S]*\.node-editor-form\s*\{[\s\S]*max-width:\s*760px/);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(265px/);
