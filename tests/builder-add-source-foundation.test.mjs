@@ -6,11 +6,11 @@ import { fileURLToPath } from "node:url";
 
 import { createBuilderController } from "../builder/src/application/index.js";
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
+import builderViteConfig from "../builder/vite.config.js";
+import { parseCanonicalHttpsOrigin } from "../builder/worker-origin.js";
 import {
 	buildTmdbPosterUrl,
 	buildMovieFranchiseSourceDraft,
-	collectionMatchesWholeWordQuery,
-	containsClearlyExplicitSexualText,
 	createAsyncRequestCoordinator,
 	createMovieFranchiseSource,
 	createSourceSubmissionGate,
@@ -21,7 +21,6 @@ import {
 	normalizeTmdbCollectionSearchResponse,
 	normalizeTmdbPosterPath,
 	parseTmdbCollectionInput,
-	TMDB_COLLECTION_UNAVAILABLE_MESSAGE,
 	TMDB_PROXY_BASE_URL,
 	validateMovieFranchiseSourceDraft,
 } from "../builder/src/source-add/index.js";
@@ -30,8 +29,36 @@ import { validateNuvioContract } from "./helpers/nuvio-contract-validator.mjs";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const v1Config = fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8");
 const configuredWorkerBaseUrl = extractTmdbProxyBaseUrl(v1Config);
+const canonicalWorkerBaseUrls = [
+	"https://worker.example",
+	"https://worker.example/",
+];
+const noncanonicalWorkerBaseUrls = [
+	"https://worker.example/a/..",
+	"https://worker.example/%2e%2e",
+	"https://worker.example//..",
+	"https://worker.example?",
+	"https://worker.example#",
+	"https://worker.example/?",
+	"https://worker.example/#",
+	"https://worker.example:443",
+	"https://worker.example:444",
+	"https://user@worker.example",
+	"https://user:pass@worker.example",
+	"https://worker.example/path",
+	"https://worker.example/?value=1",
+	"https://worker.example/#value",
+	"http://worker.example",
+	"https://worker.example/./",
+	"https://worker.example/a/../",
+	"https://worker.example/%2E%2E",
+];
 
 assert.ok(configuredWorkerBaseUrl, "The stable v1 Worker endpoint must be configured.");
+
+function workerConfig(value) {
+	return `const TMDB_PROXY_BASE_URL = "${value}";`;
+}
 
 function countingIdFactory(prefix = "internal") {
 	let count = 0;
@@ -86,6 +113,31 @@ function validDetails(id = 123, name = "Example Collection") {
 			{
 				id: 2,
 				title: "Second Movie",
+				release_date: "",
+				adult: false,
+			},
+		],
+	};
+}
+
+function matureDetails(id = 1024723) {
+	return {
+		id,
+		name: "Sex Collection",
+		overview: "A collection with mature wording.",
+		poster_path: "/mature-poster.jpg",
+		adult: true,
+		parts: [
+			{
+				id: 1,
+				title: "Sex, Shame & Tears",
+				release_date: "1999-06-18",
+				adult: true,
+			},
+			{
+				id: 2,
+				title: "The Substitute",
+				original_title: "The Sex Substitute",
 				release_date: "",
 				adult: false,
 			},
@@ -186,6 +238,16 @@ test("strict input parser rejects non-HTTPS, lookalike hosts, wrong entities, qu
 	}
 });
 
+test("strict input parser rejects normalized noncanonical paths and explicit default HTTPS ports", () => {
+	for (const value of [
+		"https://www.themoviedb.org/collection/not-an-id/../123",
+		"https://www.themoviedb.org/collection/not-an-id/%2e%2e/123",
+		"https://www.themoviedb.org:443/collection/123",
+	]) {
+		assert.equal(parseTmdbCollectionInput(value).kind, "invalid", value);
+	}
+});
+
 test("title search starts only after two trimmed characters and retains the trimmed query", () => {
 	assert.deepEqual(parseTmdbCollectionInput(""), {
 		kind: "empty",
@@ -277,95 +339,46 @@ test("exact detail normalization validates identity and derives movie count", ()
 	assert.equal(normalizeTmdbCollectionDetailsResponse({ id: 123, name: "" }, 123), null);
 });
 
-test("content safety uses exact words and whole-word query relevance", () => {
-	assert.equal(
-		containsClearlyExplicitSexualText("A Bondage Collection", "Description"),
-		true,
-	);
-	assert.equal(
-		containsClearlyExplicitSexualText("A Pornographic Collection", "Description"),
-		true,
-	);
-	assert.equal(
-		containsClearlyExplicitSexualText("Hardcore sex collection", "Description"),
-		true,
-	);
-	assert.equal(
-		containsClearlyExplicitSexualText("Bond Collection", "A spy anthology"),
-		false,
-	);
-	assert.equal(
-		containsClearlyExplicitSexualText("The Adult Filmmaker Collection", "A documentary"),
-		false,
-		"phrase checks must not turn filmmaker into the whole word film",
-	);
-	assert.equal(
-		collectionMatchesWholeWordQuery({ name: "James Bond Collection" }, "bond"),
-		true,
-	);
-	assert.equal(
-		collectionMatchesWholeWordQuery({ name: "Bondage Collection" }, "bond"),
-		false,
-	);
-	assert.equal(
-		collectionMatchesWholeWordQuery({ name: "Harry Potter Collection" }, "harry potter"),
-		true,
-	);
-});
-
-test("search normalization filters adult, malformed-adult, explicit, and incidental substring results before UI data exists", () => {
+test("search classification excludes only explicit adult true and preserves mature wording and provider order", () => {
 	const normalized = normalizeTmdbCollectionSearchResponse({
 		page: 1,
 		total_pages: 1,
-		total_results: 6,
+		total_results: 5,
 		results: [
-			{ id: 1, name: "James Bond Collection", overview: "Spy films", adult: false, poster_path: "/bond.jpg" },
-			{ id: 2, name: "Bondage Collection", overview: "Explicit", adult: false, poster_path: "/blocked.jpg" },
-			{ id: 3, name: "Bond Archive", overview: "Adult", adult: true, poster_path: "/adult.jpg" },
-			{ id: 4, name: "Bond Stories", overview: "Malformed", adult: "false", poster_path: "/malformed.jpg" },
-			{ id: 5, name: "Bond Retrospective", overview: "No flag", poster_path: "/safe.jpg" },
-			{ id: 6, name: "Unrelated Collection", overview: "Safe", adult: false, poster_path: "/other.jpg" },
+			{ id: 1, name: "Sex Collection", overview: "Mature wording with porn and bondage", poster_path: "/one.jpg" },
+			{ id: 2, name: "Sex and the City Collection", overview: "Provider result", adult: false, poster_path: "/two.jpg" },
+			{ id: 3, name: "Blocked only by TMDB", overview: "Provider result", adult: true, poster_path: "/adult.jpg" },
+			{ id: 4, name: "Sex, Shame & Tears Collection", overview: "Provider result", adult: "true", poster_path: "/four.jpg" },
+			{ id: 5, name: "The Sex Substitute Collection", overview: "Provider result", adult: null, poster_path: "/five.jpg" },
 		],
-	}, "bond");
+	});
 
 	assert.deepEqual(
 		normalized.results.map((result) => result.name),
-		["James Bond Collection", "Bond Retrospective"],
+		[
+			"Sex Collection",
+			"Sex and the City Collection",
+			"Sex, Shame & Tears Collection",
+			"The Sex Substitute Collection",
+		],
 	);
-	assert.equal(JSON.stringify(normalized).includes("blocked.jpg"), false);
-	assert.equal(JSON.stringify(normalized).includes("Explicit"), false);
+	assert.equal(JSON.stringify(normalized).includes("adult.jpg"), false);
+	assert.equal(normalized.results[0].overview, "Mature wording with porn and bondage");
 });
 
-test("details reject an adult or malformed-adult contained title and never expose collection metadata", () => {
-	for (const adult of [true, "false", 0, null]) {
-		const details = validDetails();
-		details.parts[1].adult = adult;
-		assert.equal(
-			normalizeTmdbCollectionDetailsResponse(details, details.id),
-			null,
-			`adult=${String(adult)}`,
-		);
-	}
-
-	const explicit = validDetails();
-	explicit.name = "Bondage Collection";
-	explicit.poster_path = "/must-not-render.jpg";
-	assert.equal(normalizeTmdbCollectionDetailsResponse(explicit, explicit.id), null);
-});
-
-test("details reject malformed collection adult flags while accepting an omitted provider flag", () => {
-	for (const adult of [true, "false", 0, null]) {
-		const details = validDetails();
-		details.adult = adult;
-		assert.equal(
-			normalizeTmdbCollectionDetailsResponse(details, details.id),
-			null,
-			`adult=${String(adult)}`,
-		);
-	}
-	const omitted = validDetails();
-	delete omitted.adult;
-	assert.equal(normalizeTmdbCollectionDetailsResponse(omitted, omitted.id).id, omitted.id);
+test("details accept mature wording and contained adult flags without collection-level inference", () => {
+	const normalized = normalizeTmdbCollectionDetailsResponse(matureDetails(), 1024723);
+	assert.deepEqual(normalized, {
+		id: 1024723,
+		name: "Sex Collection",
+		overview: "A collection with mature wording.",
+		posterPath: "/mature-poster.jpg",
+		movieCount: 2,
+		containedTitles: [
+			{ title: "Sex, Shame & Tears", releaseYear: 1999 },
+			{ title: "The Substitute", releaseYear: null },
+		],
+	});
 });
 
 test("details preserve contained-title order with title and year fallbacks", () => {
@@ -429,17 +442,104 @@ test("provider adapter uses only the current Worker collection routes, explicit 
 	assert.equal(calls.every(({ options }) => options.method === "GET"), true);
 });
 
+test("provider preserves partial typeahead results without local title admission filtering", async () => {
+	const expectedNames = new Map([
+		["simpson", "The Simpsons Collection"],
+		["harry pott", "Harry Potter Collection"],
+		["transfor", "Transformers Collection"],
+		["planet ape", "Planet of the Apes Collection"],
+		["mission impos", "Mission: Impossible Collection"],
+		["amelie", "Le Fabuleux Destin d’Amélie Poulain Collection"],
+		["simp", "A Simple Favor Collection"],
+	]);
+	const seenQueries = [];
+	const provider = createProvider({
+		fetchImpl: async (url) => {
+			const query = new URL(url).searchParams.get("query");
+			seenQueries.push(query);
+			return jsonResponse({
+				page: 1,
+				total_pages: 1,
+				total_results: 1,
+				results: [{
+					id: seenQueries.length,
+					name: expectedNames.get(query),
+					overview: "Returned by the provider.",
+				}],
+			});
+		},
+	});
+
+	for (const [query, expectedName] of expectedNames) {
+		const result = await provider.searchCollections(query);
+		assert.equal(result.ok, true, query);
+		assert.deepEqual(
+			result.data.results.map((entry) => entry.name),
+			[expectedName],
+			query,
+		);
+	}
+	assert.deepEqual(seenQueries, [...expectedNames.keys()]);
+});
+
+test("exact numeric ID and canonical URL use the same mature-details acceptance policy", async () => {
+	for (const input of [
+		"1024723",
+		"https://www.themoviedb.org/collection/1024723-sex-collection",
+	]) {
+		const parsed = parseTmdbCollectionInput(input);
+		assert.equal(parsed.kind, "exact", input);
+		const provider = createProvider({
+			fetchImpl: async () => jsonResponse(matureDetails(parsed.id)),
+		});
+		const result = await provider.getCollection(parsed.id);
+		assert.equal(result.ok, true, input);
+		assert.equal(result.data.name, "Sex Collection", input);
+		assert.equal(result.data.containedTitles[0].title, "Sex, Shame & Tears", input);
+	}
+});
+
+test("shared Worker-origin helper accepts only canonical HTTPS origins", () => {
+	for (const [value, expectedOrigin] of [
+		["https://worker.example", "https://worker.example"],
+		["https://worker.example/", "https://worker.example"],
+		["  https://worker.example", "https://worker.example"],
+		["https://worker.example/  ", "https://worker.example"],
+		[configuredWorkerBaseUrl, configuredWorkerBaseUrl],
+	]) {
+		const parsed = parseCanonicalHttpsOrigin(value);
+		assert.equal(parsed?.origin, expectedOrigin, value);
+		assert.equal(parsed?.href, `${expectedOrigin}/`, value);
+	}
+
+	for (const baseUrl of noncanonicalWorkerBaseUrls) {
+		assert.equal(parseCanonicalHttpsOrigin(baseUrl), null, baseUrl);
+	}
+});
+
 test("build configuration extracts exactly one validated HTTPS Worker origin", () => {
 	assert.equal(extractTmdbProxyBaseUrl(v1Config), configuredWorkerBaseUrl);
+	for (const baseUrl of canonicalWorkerBaseUrls) {
+		assert.equal(
+			extractTmdbProxyBaseUrl(workerConfig(baseUrl)),
+			"https://worker.example",
+			baseUrl,
+		);
+	}
+	for (const baseUrl of noncanonicalWorkerBaseUrls) {
+		assert.throws(
+			() => extractTmdbProxyBaseUrl(workerConfig(baseUrl)),
+			/The root v1 TMDB_PROXY_BASE_URL must be an HTTPS origin/,
+			baseUrl,
+		);
+	}
 	for (const [source, message] of [
 		["", "found 0"],
 		[
 			`${v1Config}\nconst TMDB_PROXY_BASE_URL = "https://duplicate.example";`,
 			"found 2",
 		],
-		['const TMDB_PROXY_BASE_URL = "http://worker.example";', "HTTPS origin"],
-		['const TMDB_PROXY_BASE_URL = "https://worker.example/path";', "HTTPS origin"],
-		['const TMDB_PROXY_BASE_URL = "not a URL";', "absolute HTTPS URL"],
+		[workerConfig("not a URL"), "absolute HTTPS URL"],
 	]) {
 		assert.throws(
 			() => extractTmdbProxyBaseUrl(source),
@@ -456,16 +556,36 @@ test("build configuration extracts exactly one validated HTTPS Worker origin", (
 	assert.equal(viteConfig.includes("new Function"), false);
 	assert.equal(viteConfig.includes(configuredWorkerBaseUrl), false);
 	assert.equal(providerSource.includes(configuredWorkerBaseUrl), false);
+	assert.equal(
+		viteConfig.includes("const tmdbProxyBaseUrl = extractTmdbProxyBaseUrl(rootV1Config);"),
+		true,
+	);
+	assert.equal(
+		viteConfig.includes("__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl)"),
+		true,
+	);
+	assert.equal(
+		builderViteConfig.define.__TMDB_PROXY_BASE_URL__,
+		JSON.stringify(configuredWorkerBaseUrl),
+	);
 	assert.equal(TMDB_PROXY_BASE_URL, null);
 });
 
-test("provider rejects malformed or non-HTTPS base URLs before constructing any route", () => {
+test("provider accepts canonical Worker origins and rejects every noncanonical form", () => {
 	for (const baseUrl of [
-		"http://worker.example",
-		"https://user:pass@worker.example",
-		"https://worker.example:444",
-		"https://worker.example/path",
-		"https://worker.example?query=1",
+		...canonicalWorkerBaseUrls,
+		configuredWorkerBaseUrl,
+	]) {
+		assert.doesNotThrow(
+			() => createTmdbCollectionProvider({
+				baseUrl,
+				fetchImpl: async () => jsonResponse({}),
+			}),
+			baseUrl,
+		);
+	}
+	for (const baseUrl of [
+		...noncanonicalWorkerBaseUrls,
 		"not a URL",
 	]) {
 		assert.throws(
@@ -527,25 +647,25 @@ test("provider adapter returns sanitized rate-limit, provider, malformed, and ne
 	assert.equal(network.error.message.includes("private network details"), false);
 });
 
-test("exact validation returns a neutral unavailable error for unsafe details and does not cache it", async () => {
+test("malformed details return a sanitized retryable provider-response error and are not cached", async () => {
 	let calls = 0;
-	const unsafeDetails = validDetails();
-	unsafeDetails.parts[0].adult = true;
-	unsafeDetails.name = "Private unsafe provider title";
+	const malformedDetails = validDetails();
+	malformedDetails.parts = null;
+	malformedDetails.name = "Private malformed provider title";
 	const provider = createProvider({
 		fetchImpl: async () => {
 			calls += 1;
-			return jsonResponse(unsafeDetails);
+			return jsonResponse(malformedDetails);
 		},
 	});
 
 	for (let attempt = 0; attempt < 2; attempt += 1) {
-		const result = await provider.getCollection(unsafeDetails.id);
+		const result = await provider.getCollection(malformedDetails.id);
 		assert.equal(result.ok, false);
 		assert.equal(result.error.kind, "invalid-response");
-		assert.equal(result.error.message, TMDB_COLLECTION_UNAVAILABLE_MESSAGE);
-		assert.equal(result.error.retryable, false);
-		assert.equal(JSON.stringify(result).includes(unsafeDetails.name), false);
+		assert.equal(result.error.message, "TMDB returned an unexpected response. Try again.");
+		assert.equal(result.error.retryable, true);
+		assert.equal(JSON.stringify(result).includes(malformedDetails.name), false);
 	}
 	assert.equal(calls, 2);
 });

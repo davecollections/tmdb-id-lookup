@@ -2,7 +2,7 @@
 
 Status: owner desktop, final physical-iPhone, and current Nuvio Desktop acceptance complete on issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65)'s dedicated branch
 
-Last reviewed: 2026-07-29
+Last reviewed: 2026-07-30
 
 ## Scope
 
@@ -23,9 +23,8 @@ Framework-independent code lives under `builder/src/source-add/`:
 ```text
 source-modes.js               visible provider-neutral mode metadata
 tmdb-collection-input.js      strict exact-input classification and title-search eligibility
-collection-content-safety.js  explicit adult/text safety rules and whole-word relevance
 tmdb-image.js                 validated UI-only TMDB poster URL construction
-tmdb-collection-provider.js   Worker requests, safe normalization, errors, timeout, and cache
+tmdb-collection-provider.js   Worker requests, bounded normalization, errors, timeout, and cache
 async-request-state.js        replaceable request generations and stale-result suppression
 movie-franchise-source.js     draft recipe, semantic validation, identity, duplicate check, and insertion service
 index.js                      public exports
@@ -38,16 +37,18 @@ searchCollections(query, { page, signal })
 getCollection(id, { signal })
 ```
 
-It does not know TMDB payload field names and does not call `fetch` directly. Vite reads exactly one anchored `TMDB_PROXY_BASE_URL` declaration from the existing stable root `js/config.js` at build/dev startup, validates it as an HTTPS origin without credentials, port, path, query, or fragment, and injects it into the adapter. This is data extraction only: it does not evaluate or import the classic v1 script, and the Builder source contains no second endpoint literal or v1 DOM globals.
+It does not know TMDB payload field names and does not call `fetch` directly. Vite reads exactly one anchored `TMDB_PROXY_BASE_URL` declaration from the existing stable root `js/config.js` at build/dev startup. After trimming, build-time and runtime validation accept only the parsed HTTPS origin or that exact origin plus one trailing slash; credentials, explicit ports, paths, queries, fragments, empty query/fragment markers, dot-segment or encoded-path normalization, doubled separators, and other raw aliases are rejected. Vite injects the canonical origin into the adapter. This is data extraction only: it does not evaluate or import the classic v1 script, and the Builder source contains no second endpoint literal or v1 DOM globals.
 
 The adapter uses only:
 
 - `/3/search/collection`;
 - `/3/collection/{id}`.
 
-Every search explicitly sends `include_adult=false`, including in its cache identity. The adapter then independently rejects collection results unless `adult` is absent or exactly `false`, rejects adult or malformed detail responses and any detail response containing an adult or malformed movie part, and applies a deliberately narrow normalized whole-word guard before exposing text or poster data. The explicit blocked words are `bondage`, `porn`, `pornographic`, `pornography`, `pornstar`, `pornstars`, and `sexploitation`; blocked phrases are `adult film`, `adult films`, `hardcore porn`, and `hardcore sex`. Substring matches do not count, so a query for `bond` can match a James Bond collection but not `Bondage`. Unsafe or ambiguous collection details receive only `This collection is not available in the Builder.` and are not cached.
+Every search explicitly sends `include_adult=false`, including in its cache identity. Search normalization excludes a result only when that result object explicitly reports boolean `adult: true`; a missing flag remains eligible. The Builder otherwise preserves TMDB's returned result set and order. It does not hard-admit results through local whole-word, prefix, singular/plural, accent, spelling, or mature-word matching.
 
-Safe responses are reduced to collection ID, name, bounded overview text, a validated relative poster path, pagination, movie count, and ordered contained movie titles with optional release years before reaching React. The UI constructs only `w185` search and `w342` review URLs beneath the already-approved `https://image.tmdb.org` origin; poster URLs and contained-title data remain presentation-only and never enter the source draft or serialized Nuvio JSON. Only successful normalized responses enter a 40-entry, five-minute in-memory cache. Errors are sanitized and never cached. Each request has an `AbortController`, a 12-second timeout covering response parsing, and monotonic request-generation protection.
+Collection details are accepted when they contain a valid positive collection ID, a usable name, and a structurally valid contained-parts array. Collection names, overviews, contained `title`/`original_title` wording, collection-level adult flags, and contained-part adult flags do not independently block Review or exact ID/URL lookup. The Builder relies on TMDB's collection results and is not an age-classification service; it does not guarantee that every returned collection or contained title is appropriate for every age and implements no age gate or custom word or image classifier.
+
+Normalized responses are reduced to collection ID, name, bounded overview text, a validated relative poster path, pagination, movie count, and ordered contained movie titles with optional release years before reaching React. The UI constructs only `w185` search and `w342` review URLs beneath the already-approved `https://image.tmdb.org` origin; poster URLs and contained-title data remain presentation-only and never enter the source draft or serialized Nuvio JSON. Only successful normalized responses enter a 40-entry, five-minute in-memory cache. Errors are sanitized and never cached. Each request has an `AbortController`, a 12-second timeout covering response parsing, and monotonic request-generation protection.
 
 ## Canonical source contract
 
@@ -94,7 +95,7 @@ Add Source appears only with a selected folder:
 
 Every entry calls one session and renders one body-portalled semantic dialog with explicit stages:
 
-1. **Search** contains the query, status, result list, posters or stable placeholders, bounded overview, and pagination only when more than one page exists. It has no empty fixed action bar.
+1. **Search** contains the query, status, result list, posters or stable placeholders, bounded overview, and pagination only when more than one page exists. Activating a result keeps Search visible, marks and disables only that result while details load, and transitions only after successful normalized details. A failure preserves query, results, page, and the identity-bound selection-time scroll position while placing a persistent focused/scrolled alert before the results with a retry when appropriate. A same-result retry retains that original position for Review → Back restoration, while a different result, query, page, or dialog session discards it. It has no empty fixed action bar.
 2. **Review** contains Back and Close, the official title, TMDB ID, movie count, editable Nuvio title, the fixed recipe, a poster or placeholder, and a collapsed ordered contained-title list. It has exactly one footer action: Add source, Add anyway after a duplicate warning, or a disabled adding state.
 
 Back returns to Search without another request and restores the query, results, page, selected result, scroll position, and practical result focus. Below 900px an isolated portal root paints an opaque layout-viewport guard behind a second opaque task surface sized to the current Visual Viewport. The guard is present on the initial render, and a pre-paint layout effect establishes the body lock, current geometry, listeners, and focus before the surface is visibly usable. This keeps the Builder and its gradients/decorative layers behind a deterministic higher stacking context while keyboard and browser-chrome geometry is moving. At 900px and above the existing intentional desktop backdrop contains a centered bounded dialog. Search and Review share one internal scroll owner. Safe-area padding and viewport geometry account for all four insets plus `visualViewport.offsetTop`, `offsetLeft`, `width`, and `height`, and update on Visual Viewport resize/scroll as a virtual keyboard opens, closes, or pans.
@@ -105,8 +106,8 @@ The document-body scroll lock snapshots and restores the exact prior style attri
 
 ## Deterministic evidence
 
-- `tests/builder-add-source-foundation.test.mjs` has 34 behavioral tests covering strict parsing, robust build configuration, bounded adapter normalization, exact adult/text filtering, whole-word relevance, contained titles, poster safety, timeout/abort/cache/stale behavior, exact draft validation, identity-bound duplicate handling, synchronous submission gating, controller insertion, canonical serialization, addon projections, cycles, reorder, Delete, and Worker route presence.
-- `tests/builder-add-source-ui.test.mjs` has 17 behavioral tests covering staged Search/Review rendering, omitted one-page pagination, poster fallbacks, one review action, duplicate/loading states, Back-state restoration, exact body-lock restoration, initial/fallback/changed Visual Viewport geometry and listener cleanup, opaque top-level stacking, responsive uncropped poster sizing, safe-area styling, entry visibility, mobile count placement, and excluded UI boundaries.
+- `tests/builder-add-source-foundation.test.mjs` has 35 behavioral tests covering strict parsing, robust build configuration, bounded adapter normalization, TMDB-backed result classification, mature-wording/details admission, provider-ordered partial typeahead, contained titles, poster safety, timeout/abort/cache/stale behavior, exact draft validation, identity-bound duplicate handling, synchronous submission gating, controller insertion, canonical serialization, addon projections, cycles, reorder, Delete, and Worker route presence.
+- `tests/builder-add-source-ui.test.mjs` has 20 focused UI and contract tests covering staged Search/Review rendering, one details-loading live announcement, selected-result loading/deduplication/retry, identity-bound selection-time scroll restoration, nearby persistent selection errors, query/error reset, omitted one-page pagination, poster fallbacks, one review action, duplicate/loading states, Back-state restoration and result visibility, exact body-lock restoration, initial/fallback/changed Visual Viewport geometry and listener cleanup, opaque top-level stacking, responsive uncropped poster sizing, safe-area styling, entry visibility, mobile count placement, and excluded UI boundaries.
 - `scripts/check-builder-add-source-fixture.mjs` regenerates or verifies the sanitized review profile at [`manual-tests/nuvio-clients/issue-65-builder-add-source/`](../../manual-tests/nuvio-clients/issue-65-builder-add-source/).
 
 Dave's final physical-iPhone review confirmed the opaque task surface, initial opening, Search/Review transitions, keyboard and Safari address-bar changes, portrait/landscape safe areas, poster layout, contained-title expansion, fixed action, source creation, duplicate handling, and usable mobile interaction. No device model, OS version, or browser build was supplied or inferred.

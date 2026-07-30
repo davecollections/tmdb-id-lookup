@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-07-29
+Last reviewed: 2026-07-30
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -189,7 +189,7 @@ Likely destination concepts are:
 
 Exact action labels remain open. A visible plus symbol must perform the creation action a user reasonably expects.
 
-**Implemented first slice on issue #65's branch, with owner desktop/final physical-iPhone acceptance and successful current Nuvio Desktop import/runtime/round-trip evidence:** Add Source appears only for a selected existing folder and exposes one Movie franchise · TMDB mode. It uses explicit full-screen Search and Review stages on phones, an isolated opaque mobile surface/coverage guard, responsive uncropped posters or stable placeholders, bounded result context, pagination only when needed, contained movie titles on demand, exact adult/text safety filtering, one canonical native `COLLECTION` source, and an identity-bound selected-folder duplicate override. It does not implement destination branching, bulk selection, automatic collection/folder creation, or any other listed source type.
+**Implemented first slice on issue #65's branch, with owner desktop/final physical-iPhone acceptance and successful current Nuvio Desktop import/runtime/round-trip evidence:** Add Source appears only for a selected existing folder and exposes one Movie franchise · TMDB mode. It uses explicit full-screen Search and Review stages on phones, an isolated opaque mobile surface/coverage guard, responsive uncropped posters or stable placeholders, bounded result context, pagination only when needed, contained movie titles on demand, TMDB-backed `include_adult=false` search plus exclusion only for result objects explicitly marked `adult: true`, one canonical native `COLLECTION` source, and an identity-bound selected-folder duplicate override. It does not infer collection age suitability from wording or contained-part flags, provide an age guarantee or age gate, or implement destination branching, bulk selection, automatic collection/folder creation, or any other listed source type.
 
 **Retained future considerations:** post-creation source editing should support title correction and preservation-safe imported-field editing. Quick Add/multi-add may keep Search open for several independent results with clear Added/duplicate states; atomic behavior applies only where a future operation commits several sources together. Bulk collection lookup may use bounded one-name-per-line input, controlled concurrency, ambiguous/unmatched handling, duplicate review, and multi-source insertion. Optional spelling or singular/plural suggestions must be transparent and must not blindly append or remove `s`.
 

@@ -1,9 +1,5 @@
+import { parseCanonicalHttpsOrigin } from "../../worker-origin.js";
 import { isPositiveSafeTmdbId } from "./tmdb-collection-input.js";
-import {
-	adultFlagIsSafe,
-	collectionMatchesWholeWordQuery,
-	collectionTextIsSafe,
-} from "./collection-content-safety.js";
 import { normalizeTmdbPosterPath } from "./tmdb-image.js";
 
 // Vite injects this from the stable root lookup's current js/config.js value.
@@ -15,7 +11,6 @@ export const TMDB_PROXY_BASE_URL = typeof __TMDB_PROXY_BASE_URL__ === "string"
 export const TMDB_COLLECTION_CACHE_TTL_MS = 5 * 60 * 1000;
 export const TMDB_COLLECTION_CACHE_MAX_ENTRIES = 40;
 export const TMDB_COLLECTION_REQUEST_TIMEOUT_MS = 12_000;
-export const TMDB_COLLECTION_UNAVAILABLE_MESSAGE = "This collection is not available in the Builder.";
 const TMDB_COLLECTION_OVERVIEW_MAX_LENGTH = 600;
 
 function plainObject(value) {
@@ -71,7 +66,7 @@ function normalizeContainedTitles(parts) {
 	if (!Array.isArray(parts)) return null;
 	const titles = [];
 	for (const part of parts) {
-		if (!plainObject(part) || !adultFlagIsSafe(part)) return null;
+		if (!plainObject(part)) return null;
 		titles.push({
 			title: normalizedText(part.title)
 				|| normalizedText(part.original_title)
@@ -86,11 +81,10 @@ function normalizeCollection(value, { includeContainedTitles = false } = {}) {
 	if (
 		!plainObject(value)
 		|| !isPositiveSafeTmdbId(value.id)
-		|| !adultFlagIsSafe(value)
 	) return null;
 	const name = normalizedText(value.name);
 	const overview = normalizedText(value.overview);
-	if (!name || !collectionTextIsSafe({ name, overview })) return null;
+	if (!name) return null;
 
 	const collection = {
 		id: value.id,
@@ -111,7 +105,7 @@ function normalizeCollection(value, { includeContainedTitles = false } = {}) {
 	};
 }
 
-export function normalizeTmdbCollectionSearchResponse(value, query = "") {
+export function normalizeTmdbCollectionSearchResponse(value) {
 	if (!plainObject(value) || !Array.isArray(value.results)) return null;
 	const page = validPositiveInteger(value.page, 1);
 	const totalPages = Math.max(
@@ -119,11 +113,9 @@ export function normalizeTmdbCollectionSearchResponse(value, query = "") {
 		validPositiveInteger(value.total_pages, page),
 	);
 	const results = value.results
+		.filter((entry) => !plainObject(entry) || entry.adult !== true)
 		.map((entry) => normalizeCollection(entry))
-		.filter((entry) => (
-			entry !== null
-			&& collectionMatchesWholeWordQuery(entry, query)
-		));
+		.filter((entry) => entry !== null);
 	return {
 		results,
 		page,
@@ -200,19 +192,11 @@ function configuredBaseUrl(value) {
 	}
 	let url;
 	try {
-		url = new URL(value);
+		url = parseCanonicalHttpsOrigin(value);
 	} catch {
 		throw new TypeError("The TMDB Worker base URL must be an absolute HTTPS origin.");
 	}
-	if (
-		url.protocol !== "https:"
-		|| url.username !== ""
-		|| url.password !== ""
-		|| url.port !== ""
-		|| url.pathname !== "/"
-		|| url.search !== ""
-		|| url.hash !== ""
-	) {
+	if (url === null) {
 		throw new TypeError("The TMDB Worker base URL must be an absolute HTTPS origin.");
 	}
 	return url;
@@ -254,7 +238,6 @@ export function createTmdbCollectionProvider({
 		cacheKey,
 		normalize,
 		notFoundMessage,
-		invalidResponseMessage,
 	}) {
 		const cached = cache.get(cacheKey);
 		if (cached !== null) {
@@ -381,8 +364,7 @@ export function createTmdbCollectionProvider({
 		if (data === null) {
 			return providerError(
 				"invalid-response",
-				invalidResponseMessage ?? "TMDB returned an unexpected response. Try again.",
-				{ retryable: invalidResponseMessage === undefined },
+				"TMDB returned an unexpected response. Try again.",
 			);
 		}
 
@@ -414,7 +396,7 @@ export function createTmdbCollectionProvider({
 		return request("/3/search/collection", requestParameters, {
 			signal,
 			cacheKey: `search:${trimmedQuery.toLocaleLowerCase("en")}:${page}:include_adult=false`,
-			normalize: (value) => normalizeTmdbCollectionSearchResponse(value, trimmedQuery),
+			normalize: normalizeTmdbCollectionSearchResponse,
 		});
 	}
 
@@ -430,8 +412,7 @@ export function createTmdbCollectionProvider({
 			signal,
 			cacheKey: `details:${id}`,
 			normalize: (value) => normalizeTmdbCollectionDetailsResponse(value, id),
-			notFoundMessage: "No TMDB movie franchise matches that collection ID.",
-			invalidResponseMessage: TMDB_COLLECTION_UNAVAILABLE_MESSAGE,
+			notFoundMessage: "This TMDB movie franchise could not be found or accessed.",
 		});
 	}
 

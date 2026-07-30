@@ -1420,6 +1420,17 @@ body.settings-modal-open {
 	box-shadow: inset 3px 0 0 var(--green);
 }
 
+.add-source-result.is-loading,
+.add-source-result[aria-busy="true"] {
+	cursor: wait;
+}
+
+.add-source-result-loading {
+	color: var(--cyan-bright);
+	font-size: 0.72rem;
+	font-weight: 800;
+}
+
 .add-source-result-heading {
 	display: flex;
 	min-width: 0;

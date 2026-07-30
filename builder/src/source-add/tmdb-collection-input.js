@@ -29,6 +29,17 @@ function looksLikeUrl(value) {
 	);
 }
 
+function originalUrlSyntax(value) {
+	const match = value.match(
+		/^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)(\/[^?#]*)?/i,
+	);
+	if (!match) return null;
+	return {
+		authority: match[1],
+		pathname: match[2] ?? "/",
+	};
+}
+
 function parseCollectionUrl(value) {
 	let url;
 	try {
@@ -39,6 +50,7 @@ function parseCollectionUrl(value) {
 			"Enter a complete supported TMDB collection URL.",
 		);
 	}
+	const originalSyntax = originalUrlSyntax(value);
 
 	if (url.protocol !== "https:") {
 		return invalid(
@@ -48,6 +60,7 @@ function parseCollectionUrl(value) {
 	}
 	if (
 		!supportedHosts.has(url.hostname.toLowerCase())
+		|| originalSyntax?.authority.toLocaleLowerCase("en") !== url.host.toLocaleLowerCase("en")
 		|| url.port !== ""
 		|| url.username !== ""
 		|| url.password !== ""
@@ -55,6 +68,13 @@ function parseCollectionUrl(value) {
 		return invalid(
 			"UNSUPPORTED_TMDB_COLLECTION_HOST",
 			"Use a collection URL from themoviedb.org.",
+		);
+	}
+
+	if (originalSyntax.pathname !== url.pathname) {
+		return invalid(
+			"UNSUPPORTED_TMDB_COLLECTION_PATH",
+			"Use a canonical TMDB collection path without dot segments or path normalization.",
 		);
 	}
 

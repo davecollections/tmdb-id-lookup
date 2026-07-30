@@ -1,3 +1,5 @@
+import { parseCanonicalHttpsOrigin } from "./worker-origin.js";
+
 const workerDeclarationPattern = /^\s*const\s+TMDB_PROXY_BASE_URL\s*=\s*"([^"\r\n]+)"\s*;\s*$/gm;
 
 export function extractTmdbProxyBaseUrl(source) {
@@ -14,20 +16,12 @@ export function extractTmdbProxyBaseUrl(source) {
 
 	let parsed;
 	try {
-		parsed = new URL(matches[0][1]);
+		parsed = parseCanonicalHttpsOrigin(matches[0][1]);
 	} catch {
 		throw new Error("The root v1 TMDB_PROXY_BASE_URL must be an absolute HTTPS URL.");
 	}
 
-	if (
-		parsed.protocol !== "https:"
-		|| parsed.username !== ""
-		|| parsed.password !== ""
-		|| parsed.port !== ""
-		|| parsed.pathname !== "/"
-		|| parsed.search !== ""
-		|| parsed.hash !== ""
-	) {
+	if (parsed === null) {
 		throw new Error(
 			"The root v1 TMDB_PROXY_BASE_URL must be an HTTPS origin without credentials, port, path, query, or fragment.",
 		);

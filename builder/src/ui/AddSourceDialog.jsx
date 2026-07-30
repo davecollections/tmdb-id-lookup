@@ -22,9 +22,11 @@ import {
 } from "./add-source-modal-lifecycle.js";
 import {
 	ADD_SOURCE_STEPS,
+	captureAddSourceSelectionScroll,
 	completeAddSourceSearchRestore,
 	createAddSourceNavigationState,
 	enterAddSourceReview,
+	restoreAddSourceSearchView,
 	returnAddSourceToSearch,
 } from "./add-source-navigation-state.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
@@ -41,6 +43,66 @@ function requestStateMessage(state, loadingMessage = "Searching TMDB…") {
 	if (state.status === "loading") return loadingMessage;
 	if (state.status === "error") return state.error?.message ?? "TMDB could not complete this request.";
 	return null;
+}
+
+export function requestSelectedCollectionDetails({
+	coordinator,
+	provider,
+	result,
+}) {
+	const currentState = coordinator.getState();
+	if (
+		currentState.status === "loading"
+		&& currentState.context?.id === result.id
+	) {
+		return {
+			accepted: false,
+			repeated: true,
+			requestId: currentState.requestId,
+			result: null,
+			state: currentState,
+		};
+	}
+	return coordinator.run(
+		({ signal }) => provider.getCollection(result.id, { signal }),
+		{ id: result.id },
+	);
+}
+
+export function beginSelectedCollectionDetailsRequest({
+	coordinator,
+	provider,
+	result,
+	navigationState,
+	searchScrollTop,
+}) {
+	const request = requestSelectedCollectionDetails({
+		coordinator,
+		provider,
+		result,
+	});
+	if (request.repeated) {
+		return Object.freeze({
+			navigationState,
+			repeated: true,
+			request,
+		});
+	}
+	return Object.freeze({
+		navigationState: captureAddSourceSelectionScroll(
+			navigationState,
+			result.id,
+			searchScrollTop,
+		),
+		repeated: false,
+		request,
+	});
+}
+
+export function selectedCollectionDetailsFromOutcome(outcome) {
+	return outcome?.accepted === true && outcome.result?.ok === true
+		? outcome.result.data
+		: null;
 }
 
 function safeOverview(value) {
@@ -85,14 +147,17 @@ function ResultButton({
 	result,
 	selected,
 	disabled,
+	loading,
 	onSelect,
 }) {
 	return (
 		<button
-			className={`add-source-result${selected ? " is-selected" : ""}`}
+			className={`add-source-result${selected ? " is-selected" : ""}${loading ? " is-loading" : ""}`}
 			type="button"
 			data-tmdb-collection-result={result.id}
 			aria-pressed={selected}
+			aria-busy={loading || undefined}
+			data-selection-loading={loading ? "true" : undefined}
 			disabled={disabled}
 			onClick={() => onSelect(result)}
 		>
@@ -107,7 +172,9 @@ function ResultButton({
 					<strong>{result.name}</strong>
 					<span>TMDB {result.id}</span>
 				</span>
-				{safeOverview(result.overview) ? (
+				{loading ? (
+					<span className="add-source-result-loading">Loading details…</span>
+				) : safeOverview(result.overview) ? (
 					<span className="add-source-result-overview">{safeOverview(result.overview)}</span>
 				) : (
 					<span className="add-source-result-overview is-muted">Overview unavailable</span>
@@ -195,6 +262,7 @@ export function AddSourceSearchStep({
 	selectionState,
 	selectionCandidate,
 	selectionMessage,
+	selectionErrorRef,
 	onInputChange,
 	onRetryLookup,
 	onSelectResult,
@@ -253,7 +321,12 @@ export function AddSourceSearchStep({
 			</div>
 
 			{lookupState.status === "error" ? (
-				<div className="add-source-request-state" data-request-state={lookupState.error?.kind}>
+				<div
+					className="add-source-request-state"
+					data-request-state={lookupState.error?.kind}
+					data-lookup-error="true"
+					role="alert"
+				>
 					<p>{lookupState.error?.message}</p>
 					{lookupState.error?.retryable ? (
 						<button type="button" onClick={onRetryLookup}>Retry</button>
@@ -273,9 +346,33 @@ export function AddSourceSearchStep({
 						result={validatedExactResult}
 						selected
 						disabled={false}
+						loading={false}
 						onSelect={onSelectResult}
 					/>
 				</section>
+			) : null}
+
+			{selectionState.status === "loading" && selectionCandidate ? (
+				<p className="add-source-selection-status" role="status">
+					Loading details for “{selectionCandidate.name}”…
+				</p>
+			) : null}
+			{selectionState.status === "error" ? (
+				<div
+					ref={selectionErrorRef}
+					className="add-source-request-state"
+					data-request-state={selectionState.error?.kind}
+					data-selection-error="true"
+					role="alert"
+					tabIndex={-1}
+				>
+					<p>{selectionMessage}</p>
+					{selectionState.error?.retryable && selectionCandidate ? (
+						<button type="button" onClick={() => onRetrySelection(selectionCandidate)}>
+							Retry selection
+						</button>
+					) : null}
+				</div>
 			) : null}
 
 			{searchData ? (
@@ -295,8 +392,18 @@ export function AddSourceSearchStep({
 								<ResultButton
 									key={result.id}
 									result={result}
-									selected={selectedResult?.id === result.id}
-									disabled={selectionState.status === "loading"}
+									selected={
+										selectedResult?.id === result.id
+										|| selectionCandidate?.id === result.id
+									}
+									loading={
+										selectionState.status === "loading"
+										&& selectionCandidate?.id === result.id
+									}
+									disabled={
+										selectionState.status === "loading"
+										&& selectionCandidate?.id === result.id
+									}
 									onSelect={onSelectResult}
 								/>
 							))}
@@ -325,19 +432,6 @@ export function AddSourceSearchStep({
 				</section>
 			) : null}
 
-			{selectionState.status === "loading" ? (
-				<p className="add-source-selection-status" role="status">Validating the selected TMDB collection…</p>
-			) : null}
-			{selectionState.status === "error" ? (
-				<div className="add-source-request-state" data-request-state={selectionState.error?.kind}>
-					<p>{selectionMessage}</p>
-					{selectionState.error?.retryable && selectionCandidate ? (
-						<button type="button" onClick={() => onRetrySelection(selectionCandidate)}>
-							Retry selection
-						</button>
-					) : null}
-				</div>
-			) : null}
 		</>
 	);
 }
@@ -466,6 +560,7 @@ export function AddSourceDialog({
 	const scrollRef = useRef(null);
 	const inputRef = useRef(null);
 	const titleInputRef = useRef(null);
+	const selectionErrorRef = useRef(null);
 	const lookupCoordinatorRef = useRef(null);
 	const selectionCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
@@ -583,15 +678,36 @@ export function AddSourceDialog({
 			step !== ADD_SOURCE_STEPS.SEARCH
 			|| navigationState.restoreSearchFocusId === null
 		) return;
-		if (scrollRef.current) {
-			scrollRef.current.scrollTop = navigationState.searchScrollTop;
-		}
 		const resultButton = dialogRef.current?.querySelector?.(
 			`[data-tmdb-collection-result="${navigationState.restoreSearchFocusId}"]`,
 		);
-		focusElementWithoutScroll(resultButton ?? inputRef.current);
+		restoreAddSourceSearchView({
+			scrollElement: scrollRef.current,
+			resultElement: resultButton,
+			fallbackElement: inputRef.current,
+			searchScrollTop: navigationState.searchScrollTop,
+			focusWithoutScroll: focusElementWithoutScroll,
+		});
 		setNavigationState(completeAddSourceSearchRestore);
 	}, [navigationState, step]);
+
+	useEffect(() => {
+		if (
+			step !== ADD_SOURCE_STEPS.SEARCH
+			|| selectionState.status !== "error"
+		) return undefined;
+		let active = true;
+		queueMicrotask(() => {
+			if (!active) return;
+			selectionErrorRef.current?.scrollIntoView?.({
+				block: "nearest",
+			});
+			focusElementWithoutScroll(selectionErrorRef.current);
+		});
+		return () => {
+			active = false;
+		};
+	}, [selectionState.requestId, selectionState.status, step]);
 
 	function clearApprovalAndDiagnostics() {
 		setDuplicate(null);
@@ -636,17 +752,25 @@ export function AddSourceDialog({
 			return;
 		}
 
+		const selection = beginSelectedCollectionDetailsRequest({
+			coordinator: selectionCoordinatorRef.current,
+			provider,
+			result,
+			navigationState,
+			searchScrollTop: scrollRef.current?.scrollTop ?? 0,
+		});
+		if (selection.repeated) return;
+
+		setNavigationState(selection.navigationState);
 		setSelectionCandidate(result);
 		setSelectedResult(null);
 		setTitle("");
 		setTitlesExpanded(false);
 		clearApprovalAndDiagnostics();
-		const outcome = await selectionCoordinatorRef.current.run(
-			({ signal }) => provider.getCollection(result.id, { signal }),
-			{ id: result.id },
-		);
-		if (!outcome.accepted || outcome.result?.ok !== true) return;
-		showReview(outcome.result.data);
+		const outcome = await selection.request;
+		const details = selectedCollectionDetailsFromOutcome(outcome);
+		if (details === null) return;
+		showReview(details);
 	}
 
 	function returnToSearch() {
@@ -804,6 +928,7 @@ export function AddSourceDialog({
 									selectionState={selectionState}
 									selectionCandidate={selectionCandidate}
 									selectionMessage={selectionMessage}
+									selectionErrorRef={selectionErrorRef}
 									onInputChange={handleInputChange}
 									onRetryLookup={() => setRetryGeneration((value) => value + 1)}
 									onSelectResult={validateSearchResult}

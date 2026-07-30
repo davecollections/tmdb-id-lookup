@@ -8,6 +8,7 @@ import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
+import { createAsyncRequestCoordinator } from "../builder/src/source-add/index.js";
 import {
 	lockAddSourceDocumentBody,
 	observeAddSourceViewport,
@@ -15,9 +16,11 @@ import {
 } from "../builder/src/ui/add-source-modal-lifecycle.js";
 import {
 	ADD_SOURCE_STEPS,
+	captureAddSourceSelectionScroll,
 	completeAddSourceSearchRestore,
 	createAddSourceNavigationState,
 	enterAddSourceReview,
+	restoreAddSourceSearchView,
 	returnAddSourceToSearch,
 } from "../builder/src/ui/add-source-navigation-state.js";
 
@@ -33,6 +36,8 @@ const {
 	AddSourcePrimaryAction,
 	AddSourceReviewStep,
 	AddSourceSearchStep,
+	beginSelectedCollectionDetailsRequest,
+	selectedCollectionDetailsFromOutcome,
 } = await vite.ssrLoadModule("/src/ui/AddSourceDialog.jsx");
 after(() => vite.close());
 
@@ -129,10 +134,27 @@ function openingTag(markup, marker) {
 	return markup.slice(markup.lastIndexOf("<", index), markup.indexOf(">", index) + 1);
 }
 
+function populatedLiveStatusTexts(markup) {
+	return [...markup.matchAll(
+		/<([a-z][\w-]*)\b[^>]*\brole="status"[^>]*>([\s\S]*?)<\/\1>/gi,
+	)]
+		.map((match) => match[2].replace(/<[^>]*>/g, "").trim())
+		.filter(Boolean);
+}
+
 function renderSearchStep({
 	totalPages = 1,
 	page = 1,
 	results = [detailsResult({ movieCount: null, containedTitles: null })],
+	selectionState = {
+		status: "idle",
+		requestId: 0,
+		context: null,
+		data: null,
+		error: null,
+	},
+	selectionCandidate = null,
+	selectionMessage = null,
 } = {}) {
 	const data = {
 		results,
@@ -159,15 +181,10 @@ function renderSearchStep({
 		lookupMessage: null,
 		searchData: data,
 		selectedResult: null,
-		selectionState: {
-			status: "idle",
-			requestId: 0,
-			context: null,
-			data: null,
-			error: null,
-		},
-		selectionCandidate: null,
-		selectionMessage: null,
+		selectionState,
+		selectionCandidate,
+		selectionMessage,
+		selectionErrorRef: null,
 		onInputChange() {},
 		onRetryLookup() {},
 		onSelectResult() {},
@@ -269,6 +286,238 @@ test("multi-page Search renders compact labelled navigation with correct boundar
 	assert.ok(openingTag(markup, "Next page").includes("disabled"));
 });
 
+test("selected-result loading uses one live status and persistent errors stay before preserved Search results", () => {
+	const candidate = detailsResult({ movieCount: null, containedTitles: null });
+	const otherResult = detailsResult({
+		id: candidate.id + 1,
+		name: "Another Collection",
+		movieCount: null,
+		containedTitles: null,
+	});
+	const loadingMarkup = renderSearchStep({
+		results: [candidate, otherResult],
+		selectionCandidate: candidate,
+		selectionState: {
+			status: "loading",
+			requestId: 1,
+			context: { id: candidate.id },
+			data: null,
+			error: null,
+		},
+	});
+	const loadingResult = openingTag(loadingMarkup, `data-tmdb-collection-result="${candidate.id}"`);
+	assert.ok(loadingResult.includes("is-loading"));
+	assert.ok(loadingResult.includes('aria-busy="true"'));
+	assert.ok(loadingResult.includes('data-selection-loading="true"'));
+	assert.ok(loadingResult.includes("disabled"));
+	assert.equal(
+		openingTag(
+			loadingMarkup,
+			`data-tmdb-collection-result="${otherResult.id}"`,
+		).includes("disabled"),
+		false,
+	);
+	assert.ok(loadingMarkup.includes("Loading details…"));
+	assert.ok(loadingMarkup.includes("Example Collection"));
+	assert.ok(loadingMarkup.includes("Another Collection"));
+	assert.equal(
+		openingTag(loadingMarkup, 'class="add-source-result-loading"').includes('role="status"'),
+		false,
+	);
+	assert.deepEqual(
+		populatedLiveStatusTexts(loadingMarkup),
+		["Loading details for “Example Collection”…"],
+	);
+	assert.equal(loadingMarkup.includes("Fixed source recipe"), false);
+
+	const successMarkup = renderSearchStep({
+		selectionCandidate: candidate,
+		selectionState: {
+			status: "success",
+			requestId: 2,
+			context: { id: candidate.id },
+			data: candidate,
+			error: null,
+		},
+	});
+	assert.equal(successMarkup.includes("Loading details"), false);
+	assert.deepEqual(populatedLiveStatusTexts(successMarkup), []);
+
+	const cancelledMarkup = renderSearchStep();
+	assert.equal(cancelledMarkup.includes("Loading details"), false);
+	assert.deepEqual(populatedLiveStatusTexts(cancelledMarkup), []);
+
+	const retryMarkup = renderSearchStep({
+		selectionCandidate: candidate,
+		selectionState: {
+			status: "loading",
+			requestId: 3,
+			context: { id: candidate.id },
+			data: null,
+			error: null,
+		},
+	});
+	assert.deepEqual(
+		populatedLiveStatusTexts(retryMarkup),
+		["Loading details for “Example Collection”…"],
+	);
+
+	const errorMessage = "TMDB could not be reached. Check your connection and try again.";
+	const errorMarkup = renderSearchStep({
+		page: 2,
+		totalPages: 3,
+		selectionCandidate: candidate,
+		selectionMessage: errorMessage,
+		selectionState: {
+			status: "error",
+			requestId: 2,
+			context: { id: candidate.id },
+			data: null,
+			error: {
+				kind: "network",
+				message: errorMessage,
+				retryable: true,
+			},
+		},
+	});
+	const errorTag = openingTag(errorMarkup, 'data-selection-error="true"');
+	assert.ok(errorTag.includes('role="alert"'));
+	assert.ok(errorTag.includes('tabindex="-1"'));
+	assert.ok(errorMarkup.includes(errorMessage));
+	assert.ok(errorMarkup.includes("Retry selection"));
+	assert.ok(errorMarkup.includes('value="example"'));
+	assert.ok(errorMarkup.includes("Example Collection"));
+	assert.ok(errorMarkup.includes("Page 2 of 3"));
+	assert.equal(errorMarkup.includes("Loading details"), false);
+	assert.deepEqual(populatedLiveStatusTexts(errorMarkup), []);
+	assert.ok(
+		errorMarkup.indexOf('data-selection-error="true"')
+		< errorMarkup.indexOf('class="add-source-results"'),
+	);
+	assert.equal(errorMarkup.includes("Fixed source recipe"), false);
+});
+
+test("details selection suppresses repeated activation, keeps failures in Search, and permits retry to Review", async () => {
+	let calls = 0;
+	let settleFirst;
+	let nextResult = null;
+	const states = [];
+	const provider = {
+		getCollection() {
+			calls += 1;
+			if (calls === 1) {
+				return new Promise((resolve) => {
+					settleFirst = resolve;
+				});
+			}
+			return Promise.resolve(nextResult);
+		},
+	};
+	const coordinator = createAsyncRequestCoordinator({
+		onStateChange: (state) => states.push(state),
+	});
+	const candidate = detailsResult({ movieCount: null, containedTitles: null });
+	let navigation = createAddSourceNavigationState();
+	let liveScrollTop = 428;
+
+	const firstSelection = beginSelectedCollectionDetailsRequest({
+		coordinator,
+		provider,
+		result: candidate,
+		navigationState: navigation,
+		searchScrollTop: liveScrollTop,
+	});
+	navigation = firstSelection.navigationState;
+	const first = firstSelection.request;
+	assert.equal(coordinator.getState().status, "loading");
+	assert.deepEqual(coordinator.getState().context, { id: candidate.id });
+	assert.equal(navigation.selectionScrollId, candidate.id);
+	assert.equal(navigation.selectionScrollTop, 428);
+
+	const repeated = beginSelectedCollectionDetailsRequest({
+		coordinator,
+		provider,
+		result: candidate,
+		navigationState: navigation,
+		searchScrollTop: 900,
+	});
+	assert.equal(repeated.repeated, true);
+	assert.equal(repeated.request.accepted, false);
+	assert.strictEqual(repeated.navigationState, navigation);
+	assert.equal(calls, 1);
+
+	settleFirst({
+		ok: false,
+		error: {
+			kind: "network",
+			message: "TMDB could not be reached. Check your connection and try again.",
+			retryable: true,
+		},
+	});
+	const failure = await first;
+	assert.equal(selectedCollectionDetailsFromOutcome(failure), null);
+	assert.equal(coordinator.getState().status, "error");
+	assert.equal(navigation.step, ADD_SOURCE_STEPS.SEARCH);
+	liveScrollTop = 64;
+
+	nextResult = {
+		ok: true,
+		data: detailsResult({ name: "Sex Collection" }),
+	};
+	const retrySelection = beginSelectedCollectionDetailsRequest({
+		coordinator,
+		provider,
+		result: candidate,
+		navigationState: navigation,
+		searchScrollTop: liveScrollTop,
+	});
+	navigation = retrySelection.navigationState;
+	assert.equal(navigation.selectionScrollTop, 428);
+	const retry = await retrySelection.request;
+	const acceptedDetails = selectedCollectionDetailsFromOutcome(retry);
+	assert.equal(acceptedDetails.name, "Sex Collection");
+	navigation = enterAddSourceReview(navigation, acceptedDetails.id, liveScrollTop);
+	assert.equal(navigation.step, ADD_SOURCE_STEPS.REVIEW);
+	assert.equal(navigation.searchScrollTop, 428);
+	assert.equal(calls, 2);
+	assert.deepEqual(
+		states.map((state) => state.status),
+		["loading", "error", "loading", "success"],
+	);
+
+	navigation = returnAddSourceToSearch(navigation);
+	const scrollElement = {
+		scrollTop: liveScrollTop,
+		getBoundingClientRect() {
+			return { top: 0, bottom: 400 };
+		},
+	};
+	let scrolledIntoView = false;
+	const resultElement = {
+		getBoundingClientRect() {
+			return scrollElement.scrollTop === 428
+				? { top: 220, bottom: 340 }
+				: { top: 520, bottom: 640 };
+		},
+		scrollIntoView() {
+			scrolledIntoView = true;
+		},
+	};
+	const focused = [];
+	const restored = restoreAddSourceSearchView({
+		scrollElement,
+		resultElement,
+		fallbackElement: null,
+		searchScrollTop: navigation.searchScrollTop,
+		focusWithoutScroll: (element) => focused.push(element),
+	});
+	assert.equal(scrollElement.scrollTop, 428);
+	assert.deepEqual(focused, [resultElement]);
+	assert.equal(restored.resultVisible, true);
+	assert.equal(restored.visibilityAdjusted, false);
+	assert.equal(scrolledIntoView, false);
+});
+
 test("Review renders poster, canonical recipe, editable title, and accessible contained-title expansion", () => {
 	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
 		selectedResult: detailsResult(),
@@ -338,19 +587,108 @@ test("primary action states are visually and semantically distinct", () => {
 test("Search and Review navigation preserves selected result, scroll position, and focus target", () => {
 	const initial = createAddSourceNavigationState();
 	assert.equal(initial.step, ADD_SOURCE_STEPS.SEARCH);
-	const review = enterAddSourceReview(initial, 123, 428.5);
+	assert.equal(initial.selectionScrollId, null);
+	assert.equal(initial.selectionScrollTop, null);
+
+	const captured = captureAddSourceSelectionScroll(initial, 123, 428.5);
+	const sameResultRetry = captureAddSourceSelectionScroll(captured, 123, 900);
+	assert.strictEqual(sameResultRetry, captured);
+	const review = enterAddSourceReview(sameResultRetry, 123, 900);
 	assert.deepEqual(review, {
 		step: ADD_SOURCE_STEPS.REVIEW,
 		selectedId: 123,
 		searchScrollTop: 428.5,
 		restoreSearchFocusId: null,
+		selectionScrollId: null,
+		selectionScrollTop: null,
 	});
 	const search = returnAddSourceToSearch(review);
 	assert.equal(search.step, ADD_SOURCE_STEPS.SEARCH);
 	assert.equal(search.searchScrollTop, 428.5);
 	assert.equal(search.restoreSearchFocusId, 123);
 	assert.equal(completeAddSourceSearchRestore(search).restoreSearchFocusId, null);
+	const otherResult = captureAddSourceSelectionScroll(search, 456, 712);
+	assert.equal(otherResult.selectionScrollId, 456);
+	assert.equal(otherResult.selectionScrollTop, 712);
+	const queryReset = createAddSourceNavigationState();
+	const pageReset = createAddSourceNavigationState();
+	const nextDialogSession = createAddSourceNavigationState();
+	for (const reset of [queryReset, pageReset, nextDialogSession]) {
+		assert.equal(reset.selectionScrollId, null);
+		assert.equal(reset.selectionScrollTop, null);
+	}
+	assert.equal(enterAddSourceReview(initial, 123, 75).searchScrollTop, 75);
 	assert.throws(() => enterAddSourceReview(initial, 0), /positive safe TMDB collection ID/);
+	assert.throws(
+		() => captureAddSourceSelectionScroll(initial, 0, 100),
+		/positive safe TMDB collection ID/,
+	);
+
+	let adjusted = false;
+	const scrollElement = {
+		scrollTop: 0,
+		getBoundingClientRect() {
+			return { top: 0, bottom: 300 };
+		},
+	};
+	const resultElement = {
+		getBoundingClientRect() {
+			return adjusted
+				? { top: 180, bottom: 260 }
+				: { top: 340, bottom: 420 };
+		},
+		scrollIntoView(options) {
+			assert.deepEqual(options, { block: "nearest", inline: "nearest" });
+			adjusted = true;
+		},
+	};
+	const restore = restoreAddSourceSearchView({
+		scrollElement,
+		resultElement,
+		fallbackElement: null,
+		searchScrollTop: 428.5,
+		focusWithoutScroll() {},
+	});
+	assert.equal(scrollElement.scrollTop, 428.5);
+	assert.equal(restore.visibilityAdjusted, true);
+	assert.equal(restore.resultVisible, true);
+});
+
+test("query and page changes clear stale selection state and failed details are focused within Search", () => {
+	const dialog = read("builder/src/ui/AddSourceDialog.jsx");
+	const inputChange = dialog.slice(
+		dialog.indexOf("function handleInputChange"),
+		dialog.indexOf("function showReview"),
+	);
+	for (const reset of [
+		"setPage(1)",
+		"setNavigationState(createAddSourceNavigationState())",
+		"setSelectedResult(null)",
+		"setSelectionCandidate(null)",
+		"setSelectionState(INITIAL_ASYNC_REQUEST_STATE)",
+		"selectionCoordinatorRef.current.cancel",
+	]) {
+		assert.ok(inputChange.includes(reset), reset);
+	}
+	const pageChange = dialog.slice(
+		dialog.indexOf("function changePage"),
+		dialog.indexOf("async function submit"),
+	);
+	assert.ok(pageChange.includes("setNavigationState(createAddSourceNavigationState())"));
+	assert.ok(pageChange.includes("setSelectionCandidate(null)"));
+	assert.ok(pageChange.includes("setSelectionState(INITIAL_ASYNC_REQUEST_STATE)"));
+
+	const selectionFlow = dialog.slice(
+		dialog.indexOf("async function validateSearchResult"),
+		dialog.indexOf("function returnToSearch"),
+	);
+	assert.ok(
+		selectionFlow.indexOf("await selection.request")
+		< selectionFlow.indexOf("showReview(details)"),
+	);
+	assert.match(selectionFlow, /if \(details === null\) return;\s*showReview\(details\)/);
+	assert.match(dialog, /selectionErrorRef\.current\?\.scrollIntoView\?\./);
+	assert.match(dialog, /focusElementWithoutScroll\(selectionErrorRef\.current\)/);
 });
 
 test("Visual Viewport geometry updates for keyboard and browser-chrome changes and cleans up listeners", () => {
@@ -540,6 +878,7 @@ test("responsive CSS provides an opaque full Visual Viewport task surface and sa
 	assert.equal(/\.add-source-review-poster\s*\{[^}]*object-fit:\s*cover/s.test(styles), false);
 	assert.match(styles, /\.add-source-recipe dl > div\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.add-source-recipe dd\s*\{[\s\S]*overflow-wrap:\s*anywhere/);
+	assert.match(styles, /\.add-source-result-loading\s*\{[\s\S]*color:\s*var\(--cyan-bright\)/);
 	assert.match(dialogSource, /usePrePaintLayoutEffect\(\(\) => \{[\s\S]*lockAddSourceDocumentBody\(\)[\s\S]*observeAddSourceViewport/);
 	for (const inset of ["top", "right", "bottom", "left"]) {
 		assert.ok(styles.includes(`safe-area-inset-${inset}`), inset);

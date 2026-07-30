@@ -3,13 +3,6 @@ export {
 	INITIAL_ASYNC_REQUEST_STATE,
 } from "./async-request-state.js";
 export {
-	adultFlagIsSafe,
-	collectionMatchesWholeWordQuery,
-	collectionTextIsSafe,
-	containsClearlyExplicitSexualText,
-	normalizedWords,
-} from "./collection-content-safety.js";
-export {
 	buildMovieFranchiseSourceDraft,
 	createSourceSubmissionGate,
 	createMovieFranchiseSource,
@@ -33,7 +26,6 @@ export {
 	TMDB_COLLECTION_CACHE_MAX_ENTRIES,
 	TMDB_COLLECTION_CACHE_TTL_MS,
 	TMDB_COLLECTION_REQUEST_TIMEOUT_MS,
-	TMDB_COLLECTION_UNAVAILABLE_MESSAGE,
 	TMDB_PROXY_BASE_URL,
 } from "./tmdb-collection-provider.js";
 export {
