@@ -5492,14 +5492,15 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9339,Sigue Play,1,,MX,,https://www.themoviedb.org/network/9339
 9340,More Than Sports TV,1,,,,https://www.themoviedb.org/network/9340
 9341,Tec TV,1,,,,https://www.themoviedb.org/network/9341
-9342,Zdf,1,,,,https://www.themoviedb.org/network/9342
 9343,JioHotstar,1,,,,https://www.themoviedb.org/network/9343
 9344,All Reality,3,,US,,https://www.themoviedb.org/network/9344
 9345,USA Network,7,,CA,,https://www.themoviedb.org/network/9345
 9346,Vitaphone Corporation,1,,,,https://www.themoviedb.org/network/9346
-9347,Church of Jesus Christ of Latter-Day Saints,1,,,,https://www.themoviedb.org/network/9347
-9348,Playlet,1,Hong Kong,HK,https://playlet.com/,https://www.themoviedb.org/network/9348
-9349,Kalos TV,2,Hong Kong,HK,https://www.kalostv.com/,https://www.themoviedb.org/network/9349
-9350,Kyle Sandilands Live,1,,AU,http://kslive.com.au,https://www.themoviedb.org/network/9350
-9351,ITN MAX,0,"Gampaha, Western Province",LK,https://itnmax.lk,https://www.themoviedb.org/network/9351
-9352,DreameShort,1,Singapore,SG,https://www.dreameshort.com/en,https://www.themoviedb.org/network/9352
+9348,Playlet,1,Hong Kong,HK,,https://www.themoviedb.org/network/9348
+9349,Kalos TV,2,Hong Kong,HK,,https://www.themoviedb.org/network/9349
+9350,Kyle Sandilands Live,1,,AU,,https://www.themoviedb.org/network/9350
+9351,ITN MAX,0,"Gampaha, Western Province",LK,,https://www.themoviedb.org/network/9351
+9352,DreameShort,1,Singapore,SG,,https://www.themoviedb.org/network/9352
+9353,Dorian,1,United States,US,https://home.dorian.live/,https://www.themoviedb.org/network/9353
+9354,CBS,0,,,,https://www.themoviedb.org/network/9354
+9355,DramaShorts,2,"Limassol, Cyprus",CY,https://dramashorts.io/,https://www.themoviedb.org/network/9355
