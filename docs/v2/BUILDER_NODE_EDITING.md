@@ -1,14 +1,16 @@
 # Builder Collection and Folder Editing
 
-Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), and hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59)
+Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), and settings presentation polished in issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69)
 
-Last reviewed: 2026-07-26
+Last reviewed: 2026-07-30
 
 ## Scope and sequencing
 
 One responsive settings modal now manages collection/folder titles and the contained presentation fields approved in issue #53. Every collection and folder card owns one compact, always-visible Edit action; the former Rename/Settings pair, quick-rename form, and large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
 
-Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab when using Tabs, Pin to top, and Enable focus glow. Folder settings are title, one Folder title visibility radio-card group, and Poster/Landscape tile shape, in that order. The three visibility choices present the complete outcome instead of exposing two interacting switches:
+Visible Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab when using Tabs, and Pin to top. The source-presentation field uses the heading **How sources appear in this collection**, the helper **Choose how each folder in this collection displays its sources in Nuvio.**, and the visible label **Tabs (recommended)** for the unchanged `TABBED_GRID` value. `focusGlowEnabled` remains a recognised collection compatibility field but is no longer rendered as a user-facing setting.
+
+Folder settings use two compact semantic groups. **Basic details** contains Title. **Display** contains one compact native-radio Folder title visibility group followed by Poster/Landscape visual selection cards. The three visibility choices present the complete outcome instead of exposing two interacting switches:
 
 - Show everywhere keeps a valid visible title and maps to `hideTitle: false`.
 - Hide on home screen only keeps a valid visible title and maps to `hideTitle: true`.
@@ -58,7 +60,7 @@ Validation never rewrites submitted values. Empty, ordinary whitespace-only, and
 
 Messages use collection or folder wording. One local `role="alert"` region presents errors, each invalid field references its own error and helper text, and the first invalid field receives focus.
 
-Patch generation returns only deliberately changed supported values. Collection patches may contain `title`, `viewMode`, `showAllTab`, `pinToTop`, and `focusGlowEnabled`; folder patches may contain `title`, `tileShape`, and inverse-mapped `hideTitle`. It never includes a Nuvio ID, internal identity, node type, raw data, children, sources, artwork, or unknown fields. An empty patch is a clean no-op.
+Patch generation returns only deliberately changed supported values. Visible Collection settings can produce `title`, `viewMode`, `showAllTab`, and `pinToTop`; the compatibility helper continues to recognise `focusGlowEnabled`, but the settings UI cannot touch it because the control is absent. Folder patches may contain `title`, `tileShape`, and inverse-mapped `hideTitle`. Patches never include a Nuvio ID, internal identity, node type, raw data, children, sources, artwork, or unknown fields. An empty patch is a clean no-op.
 
 Canonical new or replacement values are:
 
@@ -75,7 +77,7 @@ No property-deletion or property-removal semantics were introduced.
 
 ## Intentional invisible Nuvio titles
 
-The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK. The collection switch explains this neutrally: “Uses an invisible character to hide the collection title in Nuvio.” The folder Hide everywhere choice says, “Uses an invisible character to hide the folder title on the home screen and when the folder is opened.”
+The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK. The collection switch explains this neutrally: “Uses an invisible character to hide the collection title in Nuvio.” The folder Hide everywhere choice says, “Uses an invisible title.”
 
 ```js
 const NUVIO_INVISIBLE_TITLE = "\u200E";
@@ -93,19 +95,21 @@ The Builder displays `Hidden title` plus a restrained `Invisible in Nuvio` badge
 
 ## Collection presentation behavior
 
-The How sources appear inside folders field offers Tabs (`TABBED_GRID`) and Rows (`ROWS`). Each folder remains a separate folder; these settings describe how that folder displays its sources after it is opened. Tabs switches between one source view at a time and may add an All tab that combines sources, while Rows displays every source as a separate stacked content row. Each radio card includes a compact CSS-only, `aria-hidden` preview beneath the authoritative title and helper text. Include an All tab when using Tabs remains editable in either layout: for each folder with two or more sources, it adds an All tab combining the folder's sources when Tabs is active; a one-source folder has no visible All tab. Rows does not display tabs, but the saved boolean remains visible and editable as the preference to use if the collection is later changed to Tabs. Switching between Tabs and Rows never changes that preference. The stored `viewMode` and `showAllTab` meanings are unchanged.
+The **How sources appear in this collection** field offers **Tabs (recommended)** (`TABBED_GRID`) and Rows (`ROWS`). Each folder remains a separate folder; these settings describe how that folder displays its sources after it is opened. Tabs switches between one source view at a time and may add an All tab that combines sources, while Rows displays every source as a separate stacked content row. Each radio card includes a compact CSS-only, `aria-hidden` preview beneath the authoritative title and helper text. Include an All tab when using Tabs remains editable in either layout: for each folder with two or more sources, it adds an All tab combining the folder's sources when Tabs is active; a one-source folder has no visible All tab. Rows does not display tabs, but the saved boolean remains visible and editable as the preference to use if the collection is later changed to Tabs. Switching between Tabs and Rows never changes that preference. The stored `viewMode` and `showAllTab` meanings are unchanged.
 
-Pin to top and Enable focus glow are independent boolean switches. Pinned collections form the group shown before ordinary collections. Builder JSON does not store a separate interactive pin sequence, rank, timestamp, or other pin metadata: pinned collections retain their relative order from the collection array, as do ordinary collections, including imported absent, false, and unusual preserved pin values. Issue #59 movement stays inside the current pin group, maps the adjacent visible sibling back to its authoritative raw-array index, and never changes `pinToTop`.
+Pin to top remains an independent boolean switch. Pinned collections form the group shown before ordinary collections. Builder JSON does not store a separate interactive pin sequence, rank, timestamp, or other pin metadata: pinned collections retain their relative order from the collection array, as do ordinary collections, including imported absent, false, and unusual preserved pin values. Issue #59 movement stays inside the current pin group, maps the adjacent visible sibling back to its authoritative raw-array index, and never changes `pinToTop`.
 
-`focusGlowEnabled` is a recognised collection-level Nuvio boolean. Supported imported `true` and `false` values display accurately. An absent value stays absent, and an unusual non-boolean value stays preserved, until the user deliberately uses the switch. The modal never stringifies unusual imported values. A deliberate replacement emits only canonical `true` or `false`; summaries show Focus glow enabled only for supported booleans.
+`focusGlowEnabled` is still a recognised collection-level Nuvio boolean, but issue #69 removes its visible settings control. Manual blank collections continue to own explicit `true`. Imported explicit `true` and `false` remain unchanged, imported absence stays absent, and unusual non-boolean values remain raw-preserved. Opening or cancelling settings makes no controller call; applying another setting omits `focusGlowEnabled` from the touched-only patch. Serialization therefore overlays an owned value or preserves the raw imported value exactly as before. No migration or document-wide rewrite is performed.
 
 Imported `FOLLOW_LAYOUT` is preservation-only. It is not offered as a normal choice, remains untouched when the editor opens or another field changes, and is replaced only when the user deliberately chooses Tabs or Rows.
 
 ## Folder presentation behavior
 
-The tile choices are Poster (`POSTER`) and Landscape (`LANDSCAPE`), displayed with simple CSS aspect-ratio previews. Square is not a normal choice.
+The reusable settings-section composition places Title under **Basic details** and title visibility plus tile shape under **Display**. This is the narrow architectural seam for a future semantic group; no Artwork heading, placeholder, disabled control, preview pane, media picker, or artwork field is added.
 
-Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. An intentional U+200E-only title maps to Hide everywhere regardless of `hideTitle`; a visible title with supported `hideTitle: true` maps to Hide on home screen only; and a visible title with supported `hideTitle: false` maps to Show everywhere. Absent or unusual `hideTitle` values remain untouched until deliberately replaced. Imported `SQUARE` is preservation-only and is replaced only when the user deliberately chooses Poster or Landscape.
+Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. The fieldset retains its accessible name and native radio keyboard behavior, while the compact presentation uses shorter supporting text and an explicit checked control instead of tall radio cards. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. An intentional U+200E-only title maps to Hide everywhere regardless of `hideTitle`; a visible title with supported `hideTitle: true` maps to Hide on home screen only; and a visible title with supported `hideTitle: false` maps to Show everywhere. Absent or unusual `hideTitle` values remain untouched until deliberately replaced.
+
+The tile choices are Poster (`POSTER`) and Landscape (`LANDSCAPE`), displayed as two compact visual selection cards with CSS-only aspect-ratio previews, native checked state, a visible selected check, and the existing focus ring. Square is not a normal choice and remains preservation-only until the user deliberately chooses Poster or Landscape.
 
 ## Manual creation defaults
 
@@ -167,7 +171,7 @@ The ordinary rename path is the modal Title field. Initial focus enters that Tit
 
 ## Accessibility and responsive behavior
 
-The modal keeps the single page-level `h1` and adds a logical `h2`, `role="dialog"`, `aria-modal="true"`, and a collection/folder-specific accessible name. Title labels use `htmlFor`; presentation choices use semantic fieldsets, legends, native radio buttons, and native checkboxes with `role="switch"`. Focus enters the dialog, Tab/Shift+Tab remain contained, Escape safely cancels, and backdrop clicks never discard the draft. Referenced descriptions are unique, Cancel is `type="button"`, Enter may submit the form, disabled state is visible without relying only on colour, focus outlines remain strong, and controls meet the mobile tap-target boundary.
+The modal keeps the single page-level `h1` and adds a logical `h2`; Folder semantic groups add subordinate `h3` headings. It retains `role="dialog"`, `aria-modal="true"`, and a collection/folder-specific accessible name. Title labels use `htmlFor`; presentation choices use semantic fieldsets, legends, native radio buttons, and native checkboxes with `role="switch"`. The Folder visibility group is compact without changing native arrow-key radio behavior. Tile-shape cards expose their labels and checked state through their native radios, and selected styling includes both the radio/check mark and colour treatment. Focus enters the dialog, Tab/Shift+Tab remain contained, Escape safely cancels, and backdrop clicks never discard the draft. Referenced descriptions are unique, Cancel is `type="button"`, Enter may submit the form, disabled state is visible without relying only on colour, focus outlines remain strong, and controls meet the mobile tap-target boundary.
 
 The form is one DOM instance at all widths. It is full or near-full-screen at narrow widths and centred with a sensible maximum width, bounded height, and internal scrolling on desktop. Heading and actions remain reachable, body scrolling is locked while open, the backdrop has a dark non-blur fallback, and supported browsers add restrained blur. Edit actions are always visible on touch, keyboard, and desktop layouts with 46px targets; the selectable card column can shrink without horizontal overflow or obscuring its title/metadata. The narrow-layout CSS boundary covers the required 360, 384, 393, 402, and 412px widths. The targeted hierarchy level remains visible through Apply or Cancel, while the desktop workspace remains three panels. Reduced-motion behavior remains unchanged.
 
@@ -178,9 +182,11 @@ The form is one DOM instance at all widths. It is full or near-full-screen at na
 - `data-settings-modal-backdrop="true"`
 - `data-workspace-underlay="true"`
 - `data-editor-field="title"`
-- `data-editor-field="hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape"` (`hideNuvioTitle` and `focusGlowEnabled` are collection-only; `folderTitleVisibility` is folder-only)
+- `data-settings-section="basic-details|display"` (full Folder settings only)
+- `data-editor-field="hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|tileShape"` (`hideNuvioTitle` is collection-only; `folderTitleVisibility` is folder-only)
 - `data-editor-choice="tabs|rows|show-everywhere|hide-home-screen|hide-everywhere|poster|landscape"`
-- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop|focusGlowEnabled"`
+- `data-editor-control="hideNuvioTitle|showAllTab|pinToTop"`
+- `data-control-presentation="compact-radios|visual-cards"`
 - `data-hierarchy-card="collection|folder"`
 - `data-card-actions="collection|folder"`
 - `data-action="edit-collection|edit-folder"`
@@ -191,6 +197,6 @@ Labels, semantics, and native disabled state remain the primary test surface.
 
 ## Deliberate exclusions and later work
 
-The editing workflow does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source creation/editing/deletion; hierarchy deletion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; TMDB or addon networking; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #59 adds bounded pointer/touch dragging and keyboard movement separately through one compact hierarchy-card handle, without bulk movement or editing-form fields. Bulk presentation settings remain a separate focused issue. Future focus-GIF support defaults off unless deliberately enabled.
+The editing workflow does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source editing; Add Source expansion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; additional TMDB or addon providers; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #59 adds bounded pointer/touch dragging and keyboard movement separately through one compact hierarchy-card handle, without bulk movement or editing-form fields. Bulk presentation settings remain a separate focused issue. Artwork remains future work, and future focus-GIF support defaults off unless deliberately enabled.
 
-The next gate is Dave's focused issue #59 hierarchy-movement review, followed by the separately approved Nuvio client evidence run. No pull request, client-test package, or source-creation work begins before that review.
+Issue #69 stops with an unstaged patch for one focused independent review and subsequent owner UI/flow review. No pull request is opened without separate approval.
