@@ -342,13 +342,16 @@ test("collection and folder empty states expose real creation buttons", () => {
 	assert.ok(renderWorkspace(controller).includes('data-action="create-folder-empty"'));
 });
 
-test("source empty state is neutral without an interactive plus", () => {
+test("source empty state exposes the approved selected-folder Add Source actions", () => {
 	const controller = makeController();
 	const collection = controller.createCollection({ editable: { title: "C" } });
 	const folder = controller.createFolder(collection.createdInternalId, { editable: { title: "F" } });
 	controller.selectNode(folder.createdInternalId);
 	const markup = renderWorkspace(controller);
-	assert.ok(markup.includes("No sources in this folder yet."));
+	assert.ok(markup.includes("No sources in this folder yet"));
+	assert.ok(markup.includes('data-action="add-source"'));
+	assert.ok(markup.includes('data-action="add-source-empty"'));
+	assert.ok(markup.includes("Add first source"));
 	assert.equal(markup.includes("empty-state-mark"), false);
 	assert.equal(markup.includes('data-action="create-source'), false);
 });

@@ -1,14 +1,14 @@
 # Builder UI Shell and Hierarchy Navigator
 
-Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, presentation, hierarchy-reordering, persistent creation, and safe deletion milestones through issue [#63](https://github.com/davecollections/tmdb-id-lookup/issues/63)
+Status: shell implemented for issue [#40](https://github.com/davecollections/tmdb-id-lookup/issues/40), with welcome/import, editing, automatic-ID, presentation, hierarchy-reordering, safe deletion, and the first Add Source mode through issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65)
 
-Last reviewed: 2026-07-28
+Last reviewed: 2026-07-29
 
 ## Purpose and scope
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
-The workspace displays ordered collections, the selected collection's ordered folders, and the selected folder's ordered sources. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) uses one entity-owned Edit action and one responsive settings modal for titles and contained presentation fields, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59) adds compact pointer/touch and keyboard reordering to every existing collection, folder, and source card and removes the deferred Selection details summary. Issue [#63](https://github.com/davecollections/tmdb-id-lookup/issues/63) adds persistent bottom Add actions for populated collection/folder lists plus safe collection, folder, and source deletion. Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source creation/editing, bulk settings, export, persistence, and migration application remain deferred.
+The workspace displays ordered collections, the selected collection's ordered folders, and the selected folder's ordered sources. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) uses one entity-owned Edit action and one responsive settings modal for titles and contained presentation fields, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59) adds compact pointer/touch and keyboard reordering to every existing collection, folder, and source card and removes the deferred Selection details summary. Issue [#63](https://github.com/davecollections/tmdb-id-lookup/issues/63) adds persistent bottom Add actions for populated collection/folder lists plus safe collection, folder, and source deletion. Issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65) adds the first Search/Add flow for one native TMDB movie-franchise source, documented in [BUILDER_SOURCE_ADD.md](./BUILDER_SOURCE_ADD.md). Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Source editing, additional source modes, bulk settings, export, persistence, and migration application remain deferred.
 
 The v1 TMDB ID Lookup remains unchanged at the site root. The builder keeps its relative backlink, remains unlinked from v1, and retains `noindex, nofollow` while it is a development preview.
 
@@ -39,6 +39,9 @@ builder/src/ui/
   BuilderApp.jsx              subscribed welcome/workspace presentation boundary
   BuilderWelcome.jsx          welcome, file selection, pasted text and diagnostics
   BuilderWorkspace.jsx        semantic hierarchy workspace rendering
+  AddSourceDialog.jsx         shared responsive TMDB movie-franchise Search/Add modal
+  add-source-modal-lifecycle.js exact Visual Viewport geometry and reversible body lock
+  add-source-navigation-state.js pure Search/Review return-state preservation
   HierarchyActionsMenu.jsx    reusable in-card Edit/Delete overflow menu
   DeleteConfirmation.jsx      focused hierarchy deletion dialog
   NodeEditor.jsx              single responsive collection/folder settings modal
@@ -105,7 +108,9 @@ Both helpers use only `getState()` and public controller actions. They never der
 
 After successful mobile creation, the new card is scrolled into view when practical. The scroll uses smooth behavior unless `prefers-reduced-motion: reduce` is active, in which case it uses immediate behavior. Scrolling and hierarchy-level suppression are local presentation state and add no project revision.
 
-The existing panel-header `New collection` and `New folder` controls remain. An otherwise distinct real button appears below the final populated collection or folder card as `+ Add another collection` or `+ Add another folder`. These buttons use the exact existing creation handlers, defaults, automatic naming, viewport-aware selection, and card scrolling. They are not list items, cards, reorder siblings, or drag targets. Empty panels retain their larger first-item Add control. Sources have no Add action until Search/Add and source creation are implemented.
+The existing panel-header `New collection` and `New folder` controls remain. An otherwise distinct real button appears below the final populated collection or folder card as `+ Add another collection` or `+ Add another folder`. These buttons use the exact existing creation handlers, defaults, automatic naming, viewport-aware selection, and card scrolling. They are not list items, cards, reorder siblings, or drag targets. Empty panels retain their larger first-item Add control.
+
+When a folder is selected, Sources exposes `Add source` in the header, `Add first source` in the empty state, or `+ Add another source` after a populated list. On mobile, the count is part of the `Sources · N` heading so Add source retains room; desktop retains the separate count badge. No disabled or ambiguous Add action appears without a selected folder. All three entry points open the same responsive issue #65 flow; its only visible mode is Movie franchise · TMDB. Search and Review are explicit stages, Back restores Search state, only Review has a single action footer, and safe poster/contained-title context remains UI-only. The fixed recipe, duplicate policy, request boundary, safety rules, and review requirements are in [BUILDER_SOURCE_ADD.md](./BUILDER_SOURCE_ADD.md).
 
 ## Safe hierarchy deletion
 
@@ -121,7 +126,7 @@ Successful deletion calls only `controller.removeNode(internalId)` for project m
 
 Mobile stays at the deleted level when a sibling survives and returns to the appropriate parent/empty level only when none does. Focus goes to the nearest surviving sibling's primary card control, then the relevant populated/empty Add action, or the parent/back control for a final source. A separate polite live region announces the successful entity deletion. Serializer output is rebuilt from the surviving hierarchy: deleting an addon source removes its matching compatibility projection, unrelated projections retain values/order, unknown/community evidence outside the removed subtree is preserved, and no deletion metadata enters Nuvio JSON.
 
-Creation, menus, quick rename, and deletion share the existing navigation/pointer gate. They are disabled or ignored while settings, delete confirmation, return confirmation, another menu, or a pointer reorder session—including its 150ms settle—exists. Opening a menu or delete confirmation exits keyboard reorder mode.
+Creation, menus, quick rename, deletion, and Add Source share the existing navigation/pointer gate. They are disabled or ignored while settings, Add Source, delete confirmation, return confirmation, another menu, or a pointer reorder session—including its 150ms settle—exists. Opening Add Source closes the active menu and exits keyboard reorder mode.
 
 ## Read-only source display
 
@@ -154,7 +159,8 @@ Migration remains non-interactive. The shell shows a small notice only when prev
 - one page-level `h1` and logical panel/detail headings;
 - ordinary semantic lists with real selection buttons;
 - semantic presentation fieldsets with native radio buttons and labelled switches;
-- one named modal dialog with contained focus, safe Escape cancellation, inert background, and exact trigger focus restoration;
+- named modal dialogs with contained focus, safe Escape cancellation, inert background, and exact trigger focus restoration;
+- one shared staged Add Source dialog with labelled search, keyboard result buttons, poster alternatives, Back state/focus restoration, review/title validation, an identity-bound duplicate override, a synchronous repeat-submit gate, and polite successful-creation status;
 - one safe-name in-card overflow trigger on every hierarchy row;
 - one Edit/Delete menu for collections/folders and Delete-only menu for sources;
 - one mobile-only safe-name selected-context rename pencil for collections/folders;
@@ -177,7 +183,7 @@ Migration remains non-interactive. The shell shows a small notice only when prev
 
 ## Responsive and visual direction
 
-The default layout is mobile-first and has been designed for the required 360, 384, 393, 402, and 412px widths. A wider single-panel drill-down remains active at 768px. The three-panel layout starts at 900px and is intended for the required 1024px and 1280px desktop checks. The responsive creation hook uses that same 900px media query rather than adding viewport logic to the controller or domain.
+The default layout is mobile-first and has been designed for the required 360, 384, 393, 402, and 412px widths. A wider single-panel drill-down remains active at 768px. The three-panel layout starts at 900px and is intended for the required 1024px and 1280px desktop checks. Below 900px, Add Source uses an isolated top-level portal with an opaque layout-viewport guard plus an opaque four-safe-edge task surface sized to the Visual Viewport; critical body lock, geometry, listeners, and focus are established in a pre-paint layout effect. It tracks Visual Viewport offsets and dimensions through keyboard resize/scroll changes and restores the exact prior body style, class, and scroll state when closed. The mobile poster has a responsive 180–220px maximum, can shrink further in short keyboard-height layouts, moves beside the editable content when short landscape width permits, preserves aspect ratio, and is not cropped. From 900px, Add Source retains the intentional centered bounded desktop dialog. The responsive creation hook uses that same 900px media query rather than adding viewport logic to the controller or domain.
 
 The palette uses deep blue-black page and panel surfaces with restrained cyan and green accents, quiet separators, limited gradients, and compact elevation. It deliberately avoids a marketing hero, warm styling, excessive pills, dense dashboard decoration, external fonts, and copied third-party layouts.
 
@@ -196,6 +202,9 @@ Deployment and focused source tests use a small stable surface:
 - `data-action="open-collection-actions|open-folder-actions|open-source-actions"`
 - `data-action="delete-collection|delete-folder|delete-source"`
 - `data-action="create-collection-after-list|create-folder-after-list"`
+- `data-action="add-source|add-source-empty|add-source-after-list"`
+- `data-action="apply-add-source|add-source-anyway|cancel-add-source"`
+- `data-action="back-to-source-search|toggle-contained-titles"`
 - `data-action="reorder-collection|reorder-folder|reorder-source"`
 - `data-hierarchy-card="source"`
 - `data-card-layout="collection|folder|source"`
@@ -214,6 +223,11 @@ Deployment and focused source tests use a small stable surface:
 - `data-settings-modal-backdrop="true"`
 - `data-delete-confirmation="collection|folder|source"`
 - `data-delete-modal-backdrop="true"`
+- `data-add-source-modal="true"`
+- `data-add-source-modal-backdrop="true"`
+- `data-add-source-step="search|review"`
+- `data-source-mode="tmdb-movie-franchise"`
+- `data-source-creation-status="true"`
 - `data-workspace-underlay="true"`
 - `data-editor-field="title|hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|focusGlowEnabled|tileShape"`
 - `data-editor-choice="tabs|rows|show-everywhere|hide-home-screen|hide-everywhere|poster|landscape"`
@@ -222,6 +236,7 @@ Deployment and focused source tests use a small stable surface:
 - `data-action="stay-in-workspace|discard-and-return|create-collection-empty|create-folder-empty"`
 - `data-editor-lock="true"` while editing
 - `data-delete-open="true"` while confirming destructive deletion
+- `data-add-source-open="true"` while Search/Add is open
 
 Accessible text, semantic roles, and button state remain the primary testing surface.
 
@@ -229,8 +244,8 @@ The Pages deployment workflow, workflow triggers, permissions, deployment enviro
 
 ## Deliberate exclusions
 
-The current hierarchy milestone does not add project-title editing, source creation/editing, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, bulk deletion/movement, multi-select, reparenting, undo/redo, network import, TMDB search, addon loading, artwork, focus GIF, cover, logo, backdrop, hero, or Network Poster controls, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies. The only context menu is the bounded issue #63 hierarchy overflow menu. Future focus-GIF support defaults off unless deliberately enabled.
+The current workspace does not add project-title editing, post-creation source editing, source modes beyond TMDB movie franchises, export, save/download, copy JSON, persistence, storage, routing, browser history, migration actions, bulk deletion/movement, multi-select, reparenting, undo/redo, network import, addon loading, artwork, focus GIF, cover, logo, backdrop, hero, or Network Poster controls, accounts, authentication, templates, recipes, language support, Ultra MAX, AIO Metadata, Trakt, v1 runtime changes, Worker changes, Pages allowlist changes, Pages deployment workflow changes, or dependencies. The only context menu is the bounded issue #63 hierarchy overflow menu. Future focus-GIF support defaults off unless deliberately enabled.
 
 ## Next mandatory gate
 
-Issue #63's persistent hierarchy Add and safe deletion implementation is on its dedicated branch pending owner desktop/mobile review. No separate Nuvio client test is required because deterministic removal, projection rebuilding, canonical validation, and second-cycle stability are covered by repository tests. Search/Add and source creation remain the next mandatory focused product issue and have not begun here.
+Issue #65's first Add Source mode has completed Dave's desktop and final physical-iPhone acceptance, including mobile layer isolation, viewport transitions, safe areas, poster sizing, contained-title expansion, source creation, and duplicate handling. The unchanged production-generated `COLLECTION` fixture also passed current Nuvio Desktop import/runtime resolution and immediate round-trip review; a second client is desirable but non-blocking unless conflicting behavior appears. No future source mode, source editing, multi-add, bulk lookup, search suggestion, or source-sort control is approved or exposed by this milestone.

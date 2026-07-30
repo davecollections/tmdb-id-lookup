@@ -1,0 +1,30 @@
+[
+  {
+    "id": "issue-65-nuvio-1",
+    "title": "Issue 65 TMDB Franchise Review",
+    "pinToTop": false,
+    "focusGlowEnabled": true,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "folders": [
+      {
+        "id": "issue-65-nuvio-2",
+        "title": "Movie Franchises",
+        "hideTitle": true,
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Harry Potter Collection",
+            "tmdbSourceType": "COLLECTION",
+            "tmdbId": 1241,
+            "mediaType": "MOVIE",
+            "sortBy": "original",
+            "filters": {}
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
+import {
+	createMovieFranchiseSource,
+	createTmdbCollectionProvider,
+} from "../source-add/index.js";
+import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
@@ -40,7 +45,13 @@ import {
 	requestWorkspaceReturn,
 } from "./workspace-return-actions.js";
 
-function PanelHeader({ id, title, count, action }) {
+function PanelHeader({
+	id,
+	title,
+	count,
+	action,
+	mobileInlineCount = false,
+}) {
 	const countLabel = count === 1 && title.endsWith("s")
 		? `${count} ${title.slice(0, -1).toLowerCase()}`
 		: `${count} ${title.toLowerCase()}`;
@@ -49,10 +60,20 @@ function PanelHeader({ id, title, count, action }) {
 		<header className="panel-header" data-panel-header={title.toLowerCase()}>
 			<div>
 				<p className="panel-kicker">Project hierarchy</p>
-				<h2 id={id}>{title}</h2>
+				<h2 id={id}>
+					{title}
+					{mobileInlineCount ? (
+						<span className="panel-title-inline-count mobile-only"> · {count}</span>
+					) : null}
+				</h2>
 			</div>
 			<div className="panel-header-actions">
-				<span className="panel-count" aria-label={countLabel}>{count}</span>
+				<span
+					className={`panel-count${mobileInlineCount ? " panel-count-desktop-only" : ""}`}
+					aria-label={countLabel}
+				>
+					{count}
+				</span>
 				{action}
 			</div>
 		</header>
@@ -95,13 +116,14 @@ function HierarchyAddAction({
 	disabled,
 	onClick,
 	registerAction,
+	actionName = `create-${noun}-after-list`,
 }) {
 	return (
 		<button
 			ref={registerAction}
 			className="hierarchy-add-action"
 			type="button"
-			data-action={`create-${noun}-after-list`}
+			data-action={actionName}
 			disabled={disabled}
 			onClick={onClick}
 		>
@@ -533,6 +555,8 @@ export function BuilderWorkspace({
 	initialEditorDiagnostics = [],
 	initialReturnConfirmationOpen = false,
 	initialDeleteConfirmation = null,
+	initialAddSourceOpen = false,
+	sourceProvider = null,
 }) {
 	const view = buildBuilderViewModel(state);
 	const desktopViewport = useBuilderDesktopViewport();
@@ -552,6 +576,14 @@ export function BuilderWorkspace({
 	const [pendingDeleteFocus, setPendingDeleteFocus] = useState(null);
 	const [restoreDeleteTriggerFocus, setRestoreDeleteTriggerFocus] = useState(false);
 	const [actionsMenuInternalId, setActionsMenuInternalId] = useState(null);
+	const [addSourceSession, setAddSourceSession] = useState(() => (
+		initialAddSourceOpen && state.selection.folderInternalId
+			? { folderInternalId: state.selection.folderInternalId }
+			: null
+	));
+	const [restoreAddSourceTriggerFocus, setRestoreAddSourceTriggerFocus] = useState(false);
+	const [pendingCreatedSourceFocus, setPendingCreatedSourceFocus] = useState(null);
+	const [sourceCreationStatusText, setSourceCreationStatusText] = useState("");
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
@@ -570,6 +602,11 @@ export function BuilderWorkspace({
 	const folderEmptyAddRef = useRef(null);
 	const sourceBackControlRef = useRef(null);
 	const deleteGateRef = useRef(null);
+	const addSourceRestoreFocusRef = useRef(null);
+	const sourceProviderRef = useRef(null);
+	if (sourceProviderRef.current === null) {
+		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
+	}
 	if (deleteGateRef.current === null) {
 		deleteGateRef.current = createDeletionSubmissionGate();
 	}
@@ -581,9 +618,16 @@ export function BuilderWorkspace({
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
+	const addSourceFolder = addSourceSession
+		? findEditableNode(state.project, addSourceSession.folderInternalId)
+		: null;
+	const visibleAddSourceSession = addSourceFolder?.nodeType === "folder"
+		? addSourceSession
+		: null;
 	const editorLocked = visibleEditorDraft !== null;
 	const deleteLocked = deleteConfirmation !== null;
-	const modalLocked = editorLocked || deleteLocked;
+	const addSourceLocked = visibleAddSourceSession !== null;
+	const modalLocked = editorLocked || deleteLocked || addSourceLocked;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -596,6 +640,13 @@ export function BuilderWorkspace({
 			editRestoreFocusRef.current = null;
 		}
 	}, [editorDraft, visibleEditorDraft]);
+
+	useEffect(() => {
+		if (addSourceSession === null || visibleAddSourceSession !== null) return;
+		setAddSourceSession(null);
+		setSourceCreationStatusText("The source was not added because the selected folder is no longer available.");
+		setRestoreAddSourceTriggerFocus(true);
+	}, [addSourceSession, visibleAddSourceSession]);
 
 	useEffect(() => {
 		if (
@@ -646,6 +697,14 @@ export function BuilderWorkspace({
 	}, [restoreDeleteTriggerFocus]);
 
 	useEffect(() => {
+		if (!restoreAddSourceTriggerFocus) return;
+		setRestoreAddSourceTriggerFocus(false);
+		const trigger = addSourceRestoreFocusRef.current;
+		addSourceRestoreFocusRef.current = null;
+		focusElementWithoutScroll(trigger);
+	}, [restoreAddSourceTriggerFocus]);
+
+	useEffect(() => {
 		if (createdCardTarget === null || createdCardRef.current === null) return;
 		createdCardRef.current.scrollIntoView?.({
 			behavior: builderCardScrollBehavior(),
@@ -694,6 +753,17 @@ export function BuilderWorkspace({
 		target?.focus?.();
 		setPendingDeleteFocus(null);
 	}, [desktopViewport, pendingDeleteFocus, state.revision]);
+
+	useEffect(() => {
+		if (pendingCreatedSourceFocus === null) return;
+		const target = primaryControlRefs.current.get(pendingCreatedSourceFocus);
+		target?.scrollIntoView?.({
+			behavior: builderCardScrollBehavior(),
+			block: "nearest",
+		});
+		focusElementWithoutScroll(target);
+		setPendingCreatedSourceFocus(null);
+	}, [pendingCreatedSourceFocus, state.revision]);
 
 	useEffect(() => () => {
 		const session = dragSessionRef.current;
@@ -877,6 +947,71 @@ export function BuilderWorkspace({
 			nodeType: "folder",
 			internalId: result.createdInternalId,
 		});
+	}
+
+	function openAddSource(trigger) {
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| !view.selectedFolder
+		) return;
+		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(null);
+		setCreatedCardTarget(null);
+		setSourceCreationStatusText("");
+		addSourceRestoreFocusRef.current = trigger;
+		setAddSourceSession({
+			folderInternalId: view.selectedFolder.internalId,
+		});
+	}
+
+	function cancelAddSource() {
+		if (!visibleAddSourceSession) return;
+		setAddSourceSession(null);
+		setRestoreAddSourceTriggerFocus(true);
+	}
+
+	function applyAddSource(draft, { duplicateApprovalIdentity = null } = {}) {
+		if (!visibleAddSourceSession) {
+			return {
+				ok: false,
+				errors: [{
+					code: "SOURCE_CREATION_FOLDER_UNAVAILABLE",
+					path: "$sourceCreation.folder",
+					message: "The selected folder is no longer available.",
+				}],
+			};
+		}
+
+		const result = createMovieFranchiseSource(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			draft,
+			duplicateApprovalIdentity,
+			interactionLocked: (
+				editorLocked
+				|| deleteLocked
+				|| returnConfirmationOpen
+				|| actionsMenuInternalId !== null
+				|| pointerInteractionLocked()
+			),
+		});
+		if (!result.ok) {
+			if (result.errors?.[0]?.code === "SOURCE_CREATION_FOLDER_UNAVAILABLE") {
+				setAddSourceSession(null);
+				setRestoreAddSourceTriggerFocus(true);
+				setSourceCreationStatusText("The source was not added because the selected folder is no longer available.");
+			}
+			return result;
+		}
+
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setPendingCreatedSourceFocus(result.createdInternalId);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => {
+			setSourceCreationStatusText(`Added source “${draft.editable.title}”.`);
+		});
+		return result;
 	}
 
 	function completeDeletion(impact) {
@@ -1285,6 +1420,7 @@ export function BuilderWorkspace({
 			data-editor-lock={editorLocked ? "true" : undefined}
 			data-settings-open={editorLocked ? "true" : undefined}
 			data-delete-open={deleteLocked ? "true" : undefined}
+			data-add-source-open={addSourceLocked ? "true" : undefined}
 		>
 			<div
 				className="workspace-underlay"
@@ -1361,6 +1497,15 @@ export function BuilderWorkspace({
 					aria-atomic="true"
 				>
 					{deleteStatusText}
+				</p>
+				<p
+					className="visually-hidden"
+					data-source-creation-status="true"
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+				>
+					{sourceCreationStatusText}
 				</p>
 
 				<div className="workspace" data-mobile-level={activeMobileLevel}>
@@ -1534,14 +1679,51 @@ export function BuilderWorkspace({
 							id="sources-title"
 							title="Sources"
 							count={view.sources.length}
+							mobileInlineCount
+							action={view.selectedFolder ? (
+								<button
+									className="primary-action"
+									type="button"
+									data-action="add-source"
+									disabled={hierarchyInteractionLocked}
+									onClick={(event) => openAddSource(event.currentTarget)}
+								>
+									<span aria-hidden="true">+</span>
+									Add source
+								</button>
+							) : null}
 						/>
 						<div className="panel-body sources-body">
 							{!view.selectedFolder ? (
 								<p className="neutral-state">Select a folder to view its sources.</p>
 							) : view.sources.length > 0 ? (
-								<SourceList sources={view.sources} actionProps={hierarchyActionProps} />
+								<>
+									<SourceList sources={view.sources} actionProps={hierarchyActionProps} />
+									<HierarchyAddAction
+										noun="source"
+										actionName="add-source-after-list"
+										disabled={hierarchyInteractionLocked}
+										onClick={(event) => openAddSource(event.currentTarget)}
+									/>
+								</>
 							) : (
-								<EmptyState title="No sources in this folder yet.">Source creation will arrive in a later builder step.</EmptyState>
+								<EmptyState
+									title="No sources in this folder yet"
+									action={(
+										<button
+											className="empty-state-source-action"
+											type="button"
+											data-action="add-source-empty"
+											disabled={hierarchyInteractionLocked}
+											onClick={(event) => openAddSource(event.currentTarget)}
+										>
+											<span aria-hidden="true">+</span>
+											Add first source
+										</button>
+									)}
+								>
+									Add an official TMDB movie franchise to begin.
+								</EmptyState>
 							)}
 						</div>
 					</section>
@@ -1570,6 +1752,14 @@ export function BuilderWorkspace({
 					impact={deleteConfirmation}
 					onCancel={cancelDeletion}
 					onConfirm={() => completeDeletion(deleteConfirmation)}
+				/>
+			) : null}
+			{visibleAddSourceSession ? (
+				<AddSourceDialog
+					provider={sourceProviderRef.current}
+					folderName={view.selectedFolder?.title ?? "selected folder"}
+					onCancel={cancelAddSource}
+					onApply={applyAddSource}
 				/>
 			) : null}
 		</main>

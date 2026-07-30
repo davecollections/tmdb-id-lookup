@@ -1,0 +1,59 @@
+[
+  {
+    "id": "issue-65-nuvio-1",
+    "title": "Issue 65 TMDB Franchise Review",
+    "folders": [
+      {
+        "id": "issue-65-nuvio-2",
+        "title": "Movie Franchises",
+        "sources": [
+          {
+            "type": null,
+            "genre": null,
+            "title": "Harry Potter Collection",
+            "sortBy": "original",
+            "tmdbId": 1241,
+            "addonId": null,
+            "filters": {
+              "withGenres": null,
+              "releaseDateGte": null,
+              "releaseDateLte": null,
+              "voteAverageGte": null,
+              "voteAverageLte": null,
+              "voteCountGte": null,
+              "withOriginalLanguage": null,
+              "withOriginCountry": null,
+              "withKeywords": null,
+              "withCompanies": null,
+              "withNetworks": null,
+              "year": null,
+              "watchRegion": null,
+              "withWatchProviders": null
+            },
+            "sortHow": null,
+            "provider": "tmdb",
+            "catalogId": null,
+            "mediaType": "MOVIE",
+            "traktListId": null,
+            "tmdbSourceType": "COLLECTION"
+          }
+        ],
+        "hideTitle": true,
+        "tileShape": "POSTER",
+        "coverEmoji": null,
+        "focusGifUrl": null,
+        "heroVideoUrl": null,
+        "titleLogoUrl": null,
+        "coverImageUrl": null,
+        "catalogSources": [],
+        "focusGifEnabled": true,
+        "heroBackdropUrl": null
+      }
+    ],
+    "pinToTop": false,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "backdropImageUrl": null,
+    "focusGlowEnabled": true
+  }
+]
