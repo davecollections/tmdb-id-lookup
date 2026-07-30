@@ -5,3 +5,5 @@ manual-tests/nuvio-clients/issue-59-builder-reordering/*.md text eol=lf
 manual-tests/nuvio-clients/issue-59-builder-reordering/*.json text eol=lf
 manual-tests/nuvio-clients/issue-59-builder-reordering/nuvio-desktop-export.json -text
 manual-tests/nuvio-clients/issue-59-builder-reordering/nuviotv-web-export.json -text
+
+manual-tests/nuvio-clients/issue-65-builder-add-source/builder-generated-tmdb-collection.json text eol=lf
