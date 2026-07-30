@@ -3,6 +3,25 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const controlledTestExitCode = process.env.TMDB_ID_LOOKUP_CHECK_TEST_EXIT_CODE;
+
+if (
+	process.env.TMDB_ID_LOOKUP_CHECK_TEST_MODE === "1" &&
+	controlledTestExitCode !== undefined
+) {
+	const parsedExitCode = Number(controlledTestExitCode);
+	if (
+		!Number.isInteger(parsedExitCode) ||
+		parsedExitCode < 0 ||
+		parsedExitCode > 255 ||
+		String(parsedExitCode) !== controlledTestExitCode
+	) {
+		throw new Error("TMDB_ID_LOOKUP_CHECK_TEST_EXIT_CODE must be a canonical integer from 0 through 255.");
+	}
+
+	console.log(`Controlled check-all test exit: ${parsedExitCode}.`);
+	process.exit(parsedExitCode);
+}
 
 function runNode(args) {
 	execFileSync(process.execPath, args, {
@@ -33,6 +52,7 @@ runNode(["--test", path.join("tests", "builder-node-editing.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-auto-ids-workspace-flow.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-add-source-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-add-source-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "windows-validation.test.mjs")]);
 runNode([path.join("scripts", "check-builder-add-source-fixture.mjs")]);
 runNode([path.join("scripts", "generate-migration-round-trip.mjs"), "--check"]);
 runNode([path.join("scripts", "check-migration-round-trip-export.mjs")]);
