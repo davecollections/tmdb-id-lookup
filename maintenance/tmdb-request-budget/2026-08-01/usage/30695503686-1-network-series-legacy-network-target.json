@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "reservation_id": "30695503686-1-network-series",
+  "reservation_sha256": "8598c95ef88b649113cd730dadb0dad0b640d6a4b57981a8e6244f0bc903fcc3",
+  "utc_date": "2026-08-01",
+  "planned_month": "2026-08",
+  "workflow": "Monthly TMDB Network Refresh",
+  "run_id": "30695503686",
+  "run_attempt": "1",
+  "job": "load-legacy-network-export",
+  "allocation_key": "target_export",
+  "request_class": "target-export",
+  "target_dimension": "network",
+  "allowance": 7,
+  "attempts_used": 1,
+  "unused_allowance": 6,
+  "first_attempt_at": "2026-08-01T10:21:55.270Z",
+  "last_attempt_at": "2026-08-01T10:21:55.270Z",
+  "by_host": {
+    "api.themoviedb.org": 0,
+    "files.tmdb.org": 1
+  },
+  "by_status_or_outcome": {
+    "200": 1
+  },
+  "retries": 0,
+  "legacy_only": true,
+  "month": "2026-08"
+}
