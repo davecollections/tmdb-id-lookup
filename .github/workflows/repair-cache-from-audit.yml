@@ -1,61 +1,290 @@
 name: Repair Cache From Audit
 
 on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      max_company_ids:
+        required: true
+        type: string
+      max_network_ids:
+        required: true
+        type: string
   workflow_dispatch:
-
-concurrency:
-  group: repair-cache-from-audit
-  cancel-in-progress: false
+    inputs:
+      mode:
+        description: Safe operation mode
+        required: true
+        default: plan
+        type: choice
+        options: [plan, collect, retry, validate, publish]
+      max_company_ids:
+        description: Maximum Company add/remove changes
+        required: true
+        default: "200"
+      max_network_ids:
+        description: Maximum Network add/remove changes
+        required: true
+        default: "200"
 
 jobs:
-  repair:
+  plan-repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-
     permissions:
-      contents: write
-
+      contents: read
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      max_company_ids: ${{ steps.plan.outputs.max_company_ids }}
+      max_network_ids: ${{ steps.plan.outputs.max_network_ids }}
+      allocations: ${{ steps.plan.outputs.allocations }}
+      requires_requests: ${{ steps.plan.outputs.requires_requests }}
+      request_bindings: ${{ steps.plan.outputs.request_bindings }}
+      company_allowance: ${{ steps.plan.outputs.company_allowance }}
+      network_allowance: ${{ steps.plan.outputs.network_allowance }}
+      planned_month: ${{ steps.plan.outputs.planned_month }}
+      planned_utc_date: ${{ steps.plan.outputs.planned_utc_date }}
+      typed_counts_active: ${{ steps.plan.outputs.typed_counts_active }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Repair company cache from audit
+      - id: plan
         env:
-          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-          REQUEST_DELAY_MS: 120
-        run: node scripts/repair-company-cache-from-audit.mjs
-
-      - name: Repair TV network cache from audit
-        env:
-          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-          REQUEST_DELAY_MS: 120
-        run: node scripts/repair-tv-network-cache-from-audit.mjs
-
-      - name: Commit repaired caches
+          MODE: ${{ inputs.mode || github.event.inputs.mode || 'plan' }}
+          MAX_COMPANY_IDS: ${{ inputs.max_company_ids || github.event.inputs.max_company_ids || '200' }}
+          MAX_NETWORK_IDS: ${{ inputs.max_network_ids || github.event.inputs.max_network_ids || '200' }}
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add \
-            data/companies.min.json \
-            data/companies.csv \
-            data/company-cache-repair-meta.json \
-            data/tv-networks.min.json \
-            data/tv-networks.csv \
-            data/tv-network-cache-repair-meta.json
-
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
+          if ! [[ "$MAX_COMPANY_IDS" =~ ^[0-9]+$ ]] || (( MAX_COMPANY_IDS > 200 )); then
+            echo "max_company_ids must be 0 through 200" >&2
+            exit 1
           fi
+          if ! [[ "$MAX_NETWORK_IDS" =~ ^[0-9]+$ ]] || (( MAX_NETWORK_IDS > 200 )); then
+            echo "max_network_ids must be 0 through 200" >&2
+            exit 1
+          fi
+          if [[ "$MODE" =~ ^(collect|retry)$ ]]; then
+            REQUIRES_REQUESTS=true
+          else
+            REQUIRES_REQUESTS=false
+          fi
+          COMPANY_ALLOWANCE=$((MAX_COMPANY_IDS * 10))
+          NETWORK_ALLOWANCE=$((MAX_NETWORK_IDS * 10))
+          PLANNED_UTC_DATE=$(node -e "process.stdout.write(new Date().toISOString().slice(0,10))")
+          PLANNED_MONTH=${PLANNED_UTC_DATE:0:7}
+          TYPED_COUNTS_ACTIVE=$(node --input-type=module -e "import { TYPED_COUNT_AUTOMATIC_ACTIVATION_MONTH, compareUtcMonths } from './scripts/lib/entity-title-counts.mjs'; process.stdout.write(String(compareUtcMonths('$PLANNED_MONTH', TYPED_COUNT_AUTOMATIC_ACTIVATION_MONTH) >= 0))")
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "max_company_ids=$MAX_COMPANY_IDS" >> "$GITHUB_OUTPUT"
+          echo "max_network_ids=$MAX_NETWORK_IDS" >> "$GITHUB_OUTPUT"
+          echo "allocations={\"company_repair\":$COMPANY_ALLOWANCE,\"network_repair\":$NETWORK_ALLOWANCE}" >> "$GITHUB_OUTPUT"
+          echo "request_bindings={\"company_repair\":{\"request_class\":\"company-repair\",\"target_dimension\":\"company-movie\",\"approved_allowance\":$COMPANY_ALLOWANCE},\"network_repair\":{\"request_class\":\"network-repair\",\"target_dimension\":\"network-series\",\"approved_allowance\":$NETWORK_ALLOWANCE}}" >> "$GITHUB_OUTPUT"
+          echo "company_allowance=$COMPANY_ALLOWANCE" >> "$GITHUB_OUTPUT"
+          echo "network_allowance=$NETWORK_ALLOWANCE" >> "$GITHUB_OUTPUT"
+          echo "planned_month=$PLANNED_MONTH" >> "$GITHUB_OUTPUT"
+          echo "planned_utc_date=$PLANNED_UTC_DATE" >> "$GITHUB_OUTPUT"
+          echo "typed_counts_active=$TYPED_COUNTS_ACTIVE" >> "$GITHUB_OUTPUT"
+          echo "requires_requests=$REQUIRES_REQUESTS" >> "$GITHUB_OUTPUT"
 
-          git commit -m "Repair TMDB caches from audit"
+  reserve-repair-requests:
+    if: needs.plan-repair.outputs.requires_requests == 'true'
+    needs: plan-repair
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-request-budget
+      cancel-in-progress: false
+    outputs:
+      reservation_id: ${{ steps.reserve.outputs.reservation_id }}
+      reservation_path: ${{ steps.reserve.outputs.reservation_path }}
+      reservation_sha256: ${{ steps.reserve.outputs.reservation_sha256 }}
+      utc_date: ${{ steps.reserve.outputs.utc_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: reserve
+        env:
+          RESERVATION_BUCKET: repair
+          RESERVATION_JOB: cache-repair
+          RESERVATION_PLANNED_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
+          RESERVATION_PLANNED_UTC_DATE: ${{ needs.plan-repair.outputs.planned_utc_date }}
+          REQUEST_ALLOCATIONS_JSON: ${{ needs.plan-repair.outputs.allocations }}
+          REQUEST_BINDINGS_JSON: ${{ needs.plan-repair.outputs.request_bindings }}
+        run: node scripts/reserve-tmdb-request-budget.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Reserve TMDB cache repair requests
+          paths: ${{ steps.reserve.outputs.reservation_path }}
 
-          git pull --rebase origin main
+  validate-targets:
+    needs:
+      - plan-repair
+      - reserve-repair-requests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: tmdb-count-targets
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Validate current frozen targets
+        env:
+          COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
+        run: |
+          node scripts/validate-entity-count-repair-targets.mjs
 
-          git push
+  repair-company:
+    needs:
+      - plan-repair
+      - reserve-repair-requests
+      - validate-targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-company-movie
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: repair
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          MODE: ${{ needs.plan-repair.outputs.mode }}
+          COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
+          MAX_REPAIR_IDS: ${{ needs.plan-repair.outputs.max_company_ids }}
+          REQUEST_DELAY_MS: 120
+          TMDB_RESERVATION_ID: ${{ needs.reserve-repair-requests.outputs.reservation_id }}
+          TMDB_RESERVATION_PATH: ${{ needs.reserve-repair-requests.outputs.reservation_path }}
+          TMDB_RESERVATION_SHA256: ${{ needs.reserve-repair-requests.outputs.reservation_sha256 }}
+          TMDB_RESERVATION_UTC_DATE: ${{ needs.reserve-repair-requests.outputs.utc_date }}
+          TMDB_ALLOCATION_KEY: company_repair
+          TMDB_REQUEST_CLASS: company-repair
+          TMDB_TARGET_DIMENSION: company-movie
+          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan-repair.outputs.company_allowance }}
+        run: node scripts/repair-company-cache-from-audit.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Repair authoritative TMDB Company cache and counts
+          paths: |
+            data/companies.min.json
+            data/companies.csv
+            data/company-cache-repair-meta.json
+            maintenance/entity-title-counts
+            maintenance/tmdb-request-budget/${{ needs.reserve-repair-requests.outputs.utc_date }}/usage
+
+  repair-network:
+    needs:
+      - plan-repair
+      - reserve-repair-requests
+      - validate-targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-network-series
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: repair
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+          MODE: ${{ needs.plan-repair.outputs.mode }}
+          COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
+          MAX_REPAIR_IDS: ${{ needs.plan-repair.outputs.max_network_ids }}
+          REQUEST_DELAY_MS: 120
+          TMDB_RESERVATION_ID: ${{ needs.reserve-repair-requests.outputs.reservation_id }}
+          TMDB_RESERVATION_PATH: ${{ needs.reserve-repair-requests.outputs.reservation_path }}
+          TMDB_RESERVATION_SHA256: ${{ needs.reserve-repair-requests.outputs.reservation_sha256 }}
+          TMDB_RESERVATION_UTC_DATE: ${{ needs.reserve-repair-requests.outputs.utc_date }}
+          TMDB_ALLOCATION_KEY: network_repair
+          TMDB_REQUEST_CLASS: network-repair
+          TMDB_TARGET_DIMENSION: network-series
+          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan-repair.outputs.network_allowance }}
+        run: node scripts/repair-tv-network-cache-from-audit.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Repair authoritative TMDB Network cache and counts
+          paths: |
+            data/tv-networks.min.json
+            data/tv-networks.csv
+            data/tv-network-cache-repair-meta.json
+            maintenance/entity-title-counts
+            maintenance/tmdb-request-budget/${{ needs.reserve-repair-requests.outputs.utc_date }}/usage
+
+  validate-publication:
+    if: always() && needs.plan-repair.outputs.mode == 'validate'
+    needs: plan-repair
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: tmdb-count-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - env:
+          COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
+          VALIDATION_ONLY: "true"
+        run: node scripts/publish-entity-title-counts.mjs
+
+  publish:
+    if: >-
+      always() &&
+      needs.plan-repair.outputs.mode != 'validate' &&
+      (
+        (needs.repair-company.result == 'success' && needs.repair-network.result == 'success') ||
+        needs.plan-repair.outputs.mode == 'publish'
+      )
+    needs:
+      - plan-repair
+      - repair-company
+      - repair-network
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - env:
+          COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
+          VALIDATION_ONLY: "false"
+        run: node scripts/publish-entity-title-counts.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Publish complete Builder entity title counts
+          paths: |
+            data/entity-title-counts.min.json
+            data/entity-title-counts-completion.json

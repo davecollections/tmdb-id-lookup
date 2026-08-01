@@ -4,44 +4,113 @@ on:
   workflow_dispatch:
     inputs:
       dataset:
-        description: "Dataset to audit"
+        description: Dataset to audit
         required: true
-        default: "all"
+        default: all
         type: choice
         options:
           - all
           - companies
           - networks
-
   schedule:
     - cron: "15 8 * * *"
 
-concurrency:
-  group: tmdb-export-audit
-  cancel-in-progress: false
-
 jobs:
-  audit:
+  plan-audit:
     runs-on: ubuntu-latest
+    outputs:
+      dataset: ${{ steps.plan.outputs.dataset }}
+      allocations: ${{ steps.plan.outputs.allocations }}
+      request_bindings: ${{ steps.plan.outputs.request_bindings }}
+      allowance: ${{ steps.plan.outputs.allowance }}
+      planned_month: ${{ steps.plan.outputs.planned_month }}
+      planned_utc_date: ${{ steps.plan.outputs.planned_utc_date }}
+    steps:
+      - id: plan
+        env:
+          DATASET: ${{ github.event.inputs.dataset || 'all' }}
+        run: |
+          if [[ "$DATASET" == "all" ]]; then
+            ALLOWANCE=14
+          else
+            ALLOWANCE=7
+          fi
+          PLANNED_UTC_DATE=$(node -e "process.stdout.write(new Date().toISOString().slice(0,10))")
+          PLANNED_MONTH=${PLANNED_UTC_DATE:0:7}
+          ALLOCATIONS="{\"audit_export\":$ALLOWANCE}"
+          BINDINGS="{\"audit_export\":{\"request_class\":\"audit-export\",\"target_dimension\":\"$DATASET\",\"approved_allowance\":$ALLOWANCE}}"
+          echo "dataset=$DATASET" >> "$GITHUB_OUTPUT"
+          echo "allocations=$ALLOCATIONS" >> "$GITHUB_OUTPUT"
+          echo "request_bindings=$BINDINGS" >> "$GITHUB_OUTPUT"
+          echo "allowance=$ALLOWANCE" >> "$GITHUB_OUTPUT"
+          echo "planned_month=$PLANNED_MONTH" >> "$GITHUB_OUTPUT"
+          echo "planned_utc_date=$PLANNED_UTC_DATE" >> "$GITHUB_OUTPUT"
 
+  reserve-export-requests:
+    needs: plan-audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-request-budget
+      cancel-in-progress: false
+    outputs:
+      reservation_id: ${{ steps.reserve.outputs.reservation_id }}
+      reservation_path: ${{ steps.reserve.outputs.reservation_path }}
+      reservation_sha256: ${{ steps.reserve.outputs.reservation_sha256 }}
+      utc_date: ${{ steps.reserve.outputs.utc_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: reserve
+        env:
+          RESERVATION_BUCKET: audit
+          RESERVATION_JOB: audit-export
+          RESERVATION_PLANNED_MONTH: ${{ needs.plan-audit.outputs.planned_month }}
+          RESERVATION_PLANNED_UTC_DATE: ${{ needs.plan-audit.outputs.planned_utc_date }}
+          REQUEST_ALLOCATIONS_JSON: ${{ needs.plan-audit.outputs.allocations }}
+          REQUEST_BINDINGS_JSON: ${{ needs.plan-audit.outputs.request_bindings }}
+        run: node scripts/reserve-tmdb-request-budget.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Reserve TMDB export audit requests
+          paths: ${{ steps.reserve.outputs.reservation_path }}
+
+  audit-and-initialize-targets:
+    needs:
+      - plan-audit
+      - reserve-export-requests
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
-
+    concurrency:
+      group: tmdb-count-targets
+      cancel-in-progress: false
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Run TMDB export coverage audit
         env:
-          DATASET: ${{ github.event.inputs.dataset || 'all' }}
+          DATASET: ${{ needs.plan-audit.outputs.dataset }}
+          COUNT_MONTH: ${{ needs.plan-audit.outputs.planned_month }}
+          TMDB_RESERVATION_ID: ${{ needs.reserve-export-requests.outputs.reservation_id }}
+          TMDB_RESERVATION_PATH: ${{ needs.reserve-export-requests.outputs.reservation_path }}
+          TMDB_RESERVATION_SHA256: ${{ needs.reserve-export-requests.outputs.reservation_sha256 }}
+          TMDB_RESERVATION_UTC_DATE: ${{ needs.reserve-export-requests.outputs.utc_date }}
+          TMDB_ALLOCATION_KEY: audit_export
+          TMDB_REQUEST_CLASS: audit-export
+          TMDB_TARGET_DIMENSION: ${{ needs.plan-audit.outputs.dataset }}
+          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan-audit.outputs.allowance }}
         run: node scripts/audit-tmdb-export-coverage.mjs
-
       - name: Report audit issues
         uses: actions/github-script@v7
         with:
@@ -113,26 +182,14 @@ jobs:
             lines.push('The daily capped repair workflow will attempt to repair datasets with 200 or fewer requested add/remove changes. Larger repair sets should be reviewed and repaired manually.');
 
             await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: issue.number,
-              body: lines.join('\n'),
+              owner, repo, issue_number: issue.number, body: lines.join('\n'),
             });
-
-      - name: Commit updated audit data
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add data/company-id-audit.json data/tv-network-id-audit.json data/id-audit-summary.json
-
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          git commit -m "Update TMDB export coverage audit"
-
-          git pull --rebase origin main
-
-          git push
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Update TMDB export coverage audit
+          paths: |
+            data/company-id-audit.json
+            data/tv-network-id-audit.json
+            data/id-audit-summary.json
+            maintenance/entity-title-counts
+            maintenance/tmdb-request-budget/${{ needs.reserve-export-requests.outputs.utc_date }}/usage

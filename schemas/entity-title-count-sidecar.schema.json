@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://davecollections.github.io/tmdb-id-lookup/schemas/entity-title-count-sidecar.schema.json",
+  "title": "Compact Builder entity title counts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "p", "m", "ct", "nt", "o", "r", "x", "c", "n"],
+  "properties": {
+    "v": { "const": 1 },
+    "p": { "const": "1.0.0" },
+    "m": { "type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" },
+    "ct": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nt": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "o": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "oneOf": [
+          {
+            "type": "array",
+            "prefixItems": [
+              { "type": "string", "format": "date-time" },
+              { "const": "k" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          },
+          {
+            "type": "array",
+            "prefixItems": [
+              { "type": "string", "format": "date-time" },
+              { "const": "u" },
+              {
+                "enum": [
+                  "entity_not_found_confirmed",
+                  "entity_removed_and_not_found"
+                ]
+              }
+            ],
+            "minItems": 3,
+            "maxItems": 3
+          }
+        ]
+      }
+    },
+    "r": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cm", "cs", "ns"],
+      "properties": {
+        "cm": { "$ref": "#/$defs/ranges" },
+        "cs": { "$ref": "#/$defs/ranges" },
+        "ns": { "$ref": "#/$defs/ranges" }
+      }
+    },
+    "x": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cm", "cs", "ns"],
+      "properties": {
+        "cm": { "$ref": "#/$defs/overrides" },
+        "cs": { "$ref": "#/$defs/overrides" },
+        "ns": { "$ref": "#/$defs/overrides" }
+      }
+    },
+    "c": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[1-9][0-9]*$" },
+      "additionalProperties": {
+        "type": "array",
+        "prefixItems": [
+          { "$ref": "#/$defs/count" },
+          { "$ref": "#/$defs/count" }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "n": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[1-9][0-9]*$" },
+      "additionalProperties": { "$ref": "#/$defs/count" }
+    }
+  },
+  "$defs": {
+    "count": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "ranges": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+          { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+          { "type": "integer", "minimum": 0, "maximum": 511 }
+        ],
+        "minItems": 3,
+        "maxItems": 3
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[1-9][0-9]*$" },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 511
+      }
+    }
+  }
+}
