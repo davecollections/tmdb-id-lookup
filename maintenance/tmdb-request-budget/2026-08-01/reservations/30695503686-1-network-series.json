@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "reservation_id": "30695503686-1-network-series",
+  "utc_date": "2026-08-01",
+  "workflow": "Monthly TMDB Network Refresh",
+  "run_id": "30695503686",
+  "run_attempt": "1",
+  "job": "network-series",
+  "planned_month": "2026-08",
+  "planned_utc_date": "2026-08-01",
+  "bucket": "general",
+  "allocations": {
+    "collection": 15000,
+    "target_export": 7
+  },
+  "bindings": {
+    "collection": {
+      "request_class": "network-series",
+      "target_dimension": "network-series",
+      "approved_allowance": 15000
+    },
+    "target_export": {
+      "request_class": "target-export",
+      "target_dimension": "network",
+      "approved_allowance": 7
+    }
+  },
+  "total_allowance": 15007,
+  "projected_daily_total": 19057,
+  "preferred_daily_limit": 90000,
+  "absolute_daily_limit": 100000,
+  "fixed_genre_commitment": 36,
+  "protected_audit_commitment": 14,
+  "protected_repair_commitment": 4000,
+  "preferred_override_used": false,
+  "override_reason": null,
+  "created_at": "2026-08-01T10:21:27.174Z"
+}
