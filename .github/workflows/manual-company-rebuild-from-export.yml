@@ -3,59 +3,36 @@ name: Manual Company Rebuild From Export
 on:
   workflow_dispatch:
     inputs:
-      offset:
-        description: "Starting export offset"
+      mode:
+        description: Safe operation mode
+        required: true
+        default: plan
+        type: choice
+        options: [plan, collect, sample, retry, validate, publish]
+      slice_index:
+        description: Zero-based slice
         required: true
         default: "0"
-
-      limit:
-        description: "Number of export IDs to process"
+      sample_ids:
+        description: Comma-separated Company IDs; required for sample mode
+        required: false
+      max_requests:
+        description: Maximum Company API attempts
         required: true
         default: "1000"
-
-concurrency:
-  group: manual-company-rebuild
-  cancel-in-progress: false
+      requested_month:
+        description: UTC month (blank means current)
+        required: false
 
 jobs:
-  rebuild:
-    runs-on: ubuntu-latest
-    timeout-minutes: 360
-
+  company:
     permissions:
       contents: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Run manual company rebuild batch
-        env:
-          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-          OFFSET: ${{ github.event.inputs.offset }}
-          LIMIT: ${{ github.event.inputs.limit }}
-          REQUEST_DELAY_MS: 120
-        run: node scripts/manual-company-rebuild-from-export.mjs
-
-      - name: Commit rebuilt company data
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add data/companies.min.json data/companies.csv data/scan-meta.json data/production-company-export.json
-
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          git commit -m "Manual rebuild TMDB company cache from export"
-
-          git pull --rebase origin main
-
-          git push
+    uses: ./.github/workflows/monthly-company-refresh.yml
+    with:
+      mode: ${{ inputs.mode }}
+      slice_index: ${{ inputs.slice_index }}
+      sample_ids: ${{ inputs.sample_ids }}
+      max_requests: ${{ inputs.max_requests }}
+      requested_month: ${{ inputs.requested_month }}
+    secrets: inherit

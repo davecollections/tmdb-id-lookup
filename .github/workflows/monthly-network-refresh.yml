@@ -1,78 +1,241 @@
 name: Monthly TMDB Network Refresh
 
 on:
+  workflow_call:
+    inputs:
+      mode: { required: true, type: string }
+      slice_index: { required: true, type: string }
+      sample_ids: { required: false, type: string, default: "" }
+      max_requests: { required: true, type: string }
+      requested_month: { required: false, type: string, default: "" }
+    secrets:
+      TMDB_BEARER_TOKEN: { required: true }
   workflow_dispatch:
-
+    inputs:
+      mode:
+        description: Safe operation mode
+        required: true
+        default: plan
+        type: choice
+        options: [plan, collect, sample, retry, network-bootstrap, validate, publish]
+      slice_index:
+        description: Zero-based slice override
+        required: true
+        default: "0"
+      sample_ids:
+        description: Comma-separated Network IDs; required for sample mode
+        required: false
+      max_requests:
+        description: Maximum Network API attempts
+        required: true
+        default: "15000"
+      requested_month:
+        description: UTC month (blank means current; cannot backdate collection)
+        required: false
   schedule:
     - cron: "45 8 1,2 * *"
 
-concurrency:
-  group: monthly-network-refresh
-  cancel-in-progress: false
-
 jobs:
-  refresh:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
-
     permissions:
-      contents: write
-
+      contents: read
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      scheduled: ${{ steps.plan.outputs.scheduled }}
+      planned_month: ${{ steps.plan.outputs.planned_month }}
+      planned_utc_date: ${{ steps.plan.outputs.planned_utc_date }}
+      slice_index: ${{ steps.plan.outputs.slice_index }}
+      sample_ids: ${{ steps.plan.outputs.sample_ids }}
+      allocations: ${{ steps.plan.outputs.allocations }}
+      request_bindings: ${{ steps.plan.outputs.request_bindings }}
+      collection_allowance: ${{ steps.plan.outputs.collection_allowance }}
+      target_export_allowance: ${{ steps.plan.outputs.target_export_allowance }}
+      requires_requests: ${{ steps.plan.outputs.requires_requests }}
+      allow_target_create: ${{ steps.plan.outputs.allow_target_create }}
+      allow_finalize: ${{ steps.plan.outputs.allow_finalize }}
+      typed_progress_enabled: ${{ steps.plan.outputs.typed_progress_enabled }}
+      legacy_only: ${{ steps.plan.outputs.legacy_only }}
+      skip: ${{ steps.plan.outputs.skip }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - id: plan
+        env:
+          COUNT_RUN_KIND: network-series
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode || 'plan' }}
+          INPUT_SLICE: ${{ inputs.slice_index || github.event.inputs.slice_index || '0' }}
+          INPUT_SAMPLE_IDS: ${{ inputs.sample_ids || github.event.inputs.sample_ids || '' }}
+          INPUT_MAX_REQUESTS: ${{ inputs.max_requests || github.event.inputs.max_requests || '15000' }}
+          INPUT_MONTH: ${{ inputs.requested_month || github.event.inputs.requested_month || '' }}
+        run: node scripts/plan-entity-count-run.mjs
 
-      - name: Calculate network refresh slice
-        id: slice
-        run: |
-          DAY=$(date -u +%-d)
+  reserve-requests:
+    if: needs.plan.outputs.requires_requests == 'true'
+    needs: plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-request-budget
+      cancel-in-progress: false
+    outputs:
+      reservation_id: ${{ steps.reserve.outputs.reservation_id }}
+      reservation_path: ${{ steps.reserve.outputs.reservation_path }}
+      reservation_sha256: ${{ steps.reserve.outputs.reservation_sha256 }}
+      utc_date: ${{ steps.reserve.outputs.utc_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - id: reserve
+        env:
+          RESERVATION_JOB: network-series
+          RESERVATION_PLANNED_MONTH: ${{ needs.plan.outputs.planned_month }}
+          RESERVATION_PLANNED_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
+          REQUEST_ALLOCATIONS_JSON: ${{ needs.plan.outputs.allocations }}
+          REQUEST_BINDINGS_JSON: ${{ needs.plan.outputs.request_bindings }}
+        run: node scripts/reserve-tmdb-request-budget.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Reserve monthly Network TMDB requests
+          paths: ${{ steps.reserve.outputs.reservation_path }}
 
-          if [ "$DAY" = "1" ]; then
-            SLICE_INDEX=0
-          else
-            SLICE_INDEX=1
-          fi
+  ensure-network-target:
+    needs: [plan, reserve-requests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-targets
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Initialize authoritative Network target
+        if: needs.plan.outputs.allow_target_create == 'true'
+        env:
+          DATASET: networks
+          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
+          ALLOW_TARGET_CREATE: ${{ needs.plan.outputs.allow_target_create }}
+          TMDB_RESERVATION_ID: ${{ needs.reserve-requests.outputs.reservation_id }}
+          TMDB_RESERVATION_PATH: ${{ needs.reserve-requests.outputs.reservation_path }}
+          TMDB_RESERVATION_SHA256: ${{ needs.reserve-requests.outputs.reservation_sha256 }}
+          TMDB_RESERVATION_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
+          TMDB_ALLOCATION_KEY: target_export
+          TMDB_REQUEST_CLASS: target-export
+          TMDB_TARGET_DIMENSION: network
+          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan.outputs.target_export_allowance }}
+        run: node scripts/initialize-entity-count-targets.mjs
+      - name: Validate existing Network target without initialization
+        if: needs.plan.outputs.allow_target_create != 'true'
+        env:
+          DATASET: networks
+          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
+          ALLOW_MISSING_TARGET: ${{ needs.plan.outputs.legacy_only }}
+        run: node scripts/validate-entity-count-target.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Initialize or validate monthly Network count target
+          paths: |
+            maintenance/entity-title-counts
+            maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage
 
-          TOTAL_SLICES=2
-          TOTAL_IDS=12000
-          SLICE_SIZE=$(((TOTAL_IDS + TOTAL_SLICES - 1) / TOTAL_SLICES))
-          OFFSET=$((SLICE_INDEX * SLICE_SIZE))
-
-          echo "slice_index=$SLICE_INDEX" >> $GITHUB_OUTPUT
-          echo "slice_size=$SLICE_SIZE" >> $GITHUB_OUTPUT
-          echo "offset=$OFFSET" >> $GITHUB_OUTPUT
-
-      - name: Run monthly network refresh slice
+  collect-network-series:
+    needs: [plan, reserve-requests, ensure-network-target]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-network-series
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Collect authoritative Network Series counts
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-          OFFSET: ${{ steps.slice.outputs.offset }}
-          LIMIT: ${{ steps.slice.outputs.slice_size }}
+          MODE: ${{ needs.plan.outputs.mode }}
+          LEGACY_ONLY: ${{ needs.plan.outputs.legacy_only }}
+          TYPED_PROGRESS_ENABLED: ${{ needs.plan.outputs.typed_progress_enabled }}
+          SCHEDULED_RUN: ${{ needs.plan.outputs.scheduled }}
+          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
+          SLICE_INDEX: ${{ needs.plan.outputs.slice_index }}
+          TOTAL_SLICES: 2
+          SAMPLE_IDS: ${{ needs.plan.outputs.sample_ids }}
+          RETRY_UNRESOLVED: ${{ needs.plan.outputs.mode == 'retry' || needs.plan.outputs.scheduled == 'true' }}
           REQUEST_DELAY_MS: 120
+          TMDB_RESERVATION_ID: ${{ needs.reserve-requests.outputs.reservation_id }}
+          TMDB_RESERVATION_PATH: ${{ needs.reserve-requests.outputs.reservation_path }}
+          TMDB_RESERVATION_SHA256: ${{ needs.reserve-requests.outputs.reservation_sha256 }}
+          TMDB_RESERVATION_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
+          TMDB_ALLOCATION_KEY: collection
+          TMDB_REQUEST_CLASS: network-series
+          TMDB_TARGET_DIMENSION: network-series
+          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
+          TMDB_COLLECTION_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
+          TMDB_TARGET_EXPORT_ALLOWANCE: ${{ needs.plan.outputs.target_export_allowance }}
         run: node scripts/fetch-tv-network-details-from-export.mjs
-
-      - name: Commit refreshed network cache
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add \
-            data/tv-networks.min.json \
-            data/tv-networks.csv \
-            data/tv-network-scan-meta.json \
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Record authoritative TMDB Network Series collection
+          paths: |
+            data/tv-networks.min.json
+            data/tv-networks.csv
+            data/tv-network-scan-meta.json
             data/tv-network-export.json
+            maintenance/entity-title-counts
+            maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage
 
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
+  validate-publication:
+    if: always() && needs.plan.outputs.allow_finalize == 'true' && needs.plan.outputs.mode == 'validate'
+    needs: plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: tmdb-count-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - env:
+          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
+          VALIDATION_ONLY: "true"
+        run: node scripts/publish-entity-title-counts.mjs
 
-          git commit -m "Monthly TMDB network refresh slice"
-
-          git pull --rebase origin main
-
-          git push
+  publish:
+    if: always() && needs.plan.outputs.allow_finalize == 'true' && needs.plan.outputs.mode != 'validate' && (needs.collect-network-series.result == 'success' || needs.plan.outputs.mode == 'publish')
+    needs: [plan, collect-network-series]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - env:
+          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
+          VALIDATION_ONLY: "false"
+        run: node scripts/publish-entity-title-counts.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Publish complete Builder entity title counts
+          paths: |
+            data/entity-title-counts.min.json
+            data/entity-title-counts-completion.json

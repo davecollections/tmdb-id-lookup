@@ -1,0 +1,56 @@
+name: Commit maintenance state
+description: Commit only declared maintenance paths and safely update main
+
+inputs:
+  message:
+    description: Commit message
+    required: true
+  paths:
+    description: Newline-delimited repository paths to stage
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Commit and push declared paths
+      shell: bash
+      env:
+        COMMIT_MESSAGE: ${{ inputs.message }}
+        COMMIT_PATHS: ${{ inputs.paths }}
+      run: |
+        set -euo pipefail
+
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        while IFS= read -r path; do
+          if [[ -n "$path" ]]; then
+            if [[ -e "$path" ]] || git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+              git add -A -- "$path"
+            fi
+          fi
+        done <<< "$COMMIT_PATHS"
+
+        if git diff --cached --quiet; then
+          echo "No declared maintenance changes to commit."
+          exit 0
+        fi
+
+        git commit -m "$COMMIT_MESSAGE"
+
+        for attempt in 1 2 3; do
+          if ! git pull --rebase origin main; then
+            git rebase --abort || true
+            echo "Unable to rebase declared maintenance changes safely."
+            exit 1
+          fi
+
+          if git push origin HEAD:main; then
+            exit 0
+          fi
+
+          echo "Push attempt $attempt was not fast-forward; retrying."
+        done
+
+        echo "Unable to push declared maintenance changes after three attempts."
+        exit 1

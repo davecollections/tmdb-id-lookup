@@ -1,13 +1,46 @@
-import fs from "fs/promises";
-import zlib from "zlib";
-import { promisify } from "util";
-
-const gunzip = promisify(zlib.gunzip);
+import fs from "node:fs/promises";
+import path from "node:path";
+import { collectWithDeferredRetries } from "./lib/entity-count-collection.mjs";
+import {
+	loadDimensionState,
+	loadTargetSnapshot,
+	readJsonFile,
+	writeProgressDocument,
+} from "./lib/entity-count-progress.mjs";
+import {
+	COUNT_DIMENSIONS,
+	COUNT_PARSER_SEMANTIC_VERSION,
+	COUNT_STATUSES,
+	partitionTargetIds,
+	parseStrictSampleIds,
+	utcMonth,
+} from "./lib/entity-title-counts.mjs";
+import { assertRunPlanStillCurrent } from "./lib/entity-count-run-plan.mjs";
+import {
+	buildSnapshotFromExport,
+	fetchTmdbExportIds,
+	TMDB_EXPORT_DATASETS,
+} from "./lib/tmdb-export-targets.mjs";
+import { createTmdbRequestClient } from "./lib/tmdb-maintenance-request.mjs";
 
 const TOKEN = process.env.TMDB_BEARER_TOKEN;
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
+const MODE = process.env.MODE || "collect";
+const IS_SAMPLE = MODE === "sample";
+const LEGACY_ONLY = process.env.LEGACY_ONLY === "true";
+const TYPED_PROGRESS_ENABLED = process.env.TYPED_PROGRESS_ENABLED !== "false";
+const MONTH = process.env.COUNT_MONTH || utcMonth();
+const SLICE_INDEX =
+	process.env.SLICE_INDEX === undefined ? null : Number(process.env.SLICE_INDEX);
+const TOTAL_SLICES =
+	process.env.TOTAL_SLICES === undefined ? null : Number(process.env.TOTAL_SLICES);
 const OFFSET = Number(process.env.OFFSET || 0);
 const LIMIT = process.env.LIMIT ? Number(process.env.LIMIT) : null;
+const RETRY_UNRESOLVED = process.env.RETRY_UNRESOLVED === "true";
+const RUN_ID = `${
+	process.env.GITHUB_RUN_ID || `local-${Date.now()}`
+}-${process.env.GITHUB_RUN_ATTEMPT || "1"}-network-series`;
+const OBSERVED_AT = new Date().toISOString();
 
 const DATA_DIR = "data";
 const MIN_JSON_PATH = `${DATA_DIR}/tv-networks.min.json`;
@@ -15,309 +48,317 @@ const CSV_PATH = `${DATA_DIR}/tv-networks.csv`;
 const META_PATH = `${DATA_DIR}/tv-network-scan-meta.json`;
 const EXPORT_PATH = `${DATA_DIR}/tv-network-export.json`;
 
-if (!TOKEN) {
-  throw new Error("Missing TMDB_BEARER_TOKEN");
-}
-
-async function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function readJson(path, fallback) {
-  try {
-    const raw = await fs.readFile(path, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-
-async function tmdbFetch(url, options = {}) {
-  const maxAttempts = 5;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      const res = await fetch(url, {
-        ...options,
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          accept: "application/json",
-          ...(options.headers || {})
-        }
-      });
-
-      if (res.status === 401 || res.status === 403) {
-        throw new Error(`TMDB auth/permission error HTTP ${res.status}. Check TMDB_BEARER_TOKEN.`);
-      }
-
-      if (res.status === 429) {
-        const retryAfter = Number(res.headers.get("retry-after") || 5);
-        console.log(`Rate limited. Waiting ${retryAfter}s before retry ${attempt}/${maxAttempts}...`);
-        await sleep(retryAfter * 1000);
-        continue;
-      }
-
-      if (res.status >= 500) {
-        const waitMs = attempt * 2000;
-        console.log(`TMDB server error ${res.status}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`);
-        await sleep(waitMs);
-        continue;
-      }
-
-      return res;
-    } catch (error) {
-      if (error.message.includes("auth/permission")) {
-        throw error;
-      }
-
-      const waitMs = attempt * 2000;
-      console.log(`Network/request error: ${error.message}. Waiting ${waitMs / 1000}s before retry ${attempt}/${maxAttempts}...`);
-      await sleep(waitMs);
-    }
-  }
-
-  throw new Error(`TMDB request failed after ${maxAttempts} attempts: ${url}`);
-}
-
-function formatExportDate(date) {
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  const yyyy = date.getUTCFullYear();
-
-  return `${mm}_${dd}_${yyyy}`;
-}
-
-function getRecentExportUrls(daysBack = 7) {
-  const urls = [];
-
-  for (let i = 0; i < daysBack; i++) {
-    const date = new Date();
-    date.setUTCDate(date.getUTCDate() - i);
-
-    const formattedDate = formatExportDate(date);
-
-    urls.push({
-      date: formattedDate,
-      url: `https://files.tmdb.org/p/exports/tv_network_ids_${formattedDate}.json.gz`
-    });
-  }
-
-  return urls;
-}
-
-async function fetchExport() {
-  const candidates = getRecentExportUrls(7);
-
-  for (const candidate of candidates) {
-    console.log(`Trying export: ${candidate.url}`);
-
-    const res = await fetch(candidate.url);
-
-    if (!res.ok) {
-      console.log(`Export not available: ${candidate.date} HTTP ${res.status}`);
-      continue;
-    }
-
-    const buffer = Buffer.from(await res.arrayBuffer());
-    const unzipped = await gunzip(buffer);
-    const lines = unzipped.toString("utf8").trim().split("\n");
-
-    const networks = lines
-      .filter(Boolean)
-      .map(line => JSON.parse(line))
-      .sort((a, b) => Number(a.id) - Number(b.id));
-
-    console.log(`Loaded ${networks.length.toLocaleString()} TV network IDs from export ${candidate.date}`);
-
-    return {
-      export_date: candidate.date,
-      networks
-    };
-  }
-
-  throw new Error("Could not find a recent TMDB TV network export.");
-}
-
-async function fetchNetworkDetails(id) {
-  const res = await tmdbFetch(`https://api.themoviedb.org/3/network/${id}`);
-
-  if (res.status === 404) {
-    return null;
-  }
-
-  if (!res.ok) {
-    throw new Error(`Network details failed for ${id}: HTTP ${res.status}`);
-  }
-
-  return res.json();
-}
-
-async function fetchTvCount(id) {
-  const res = await tmdbFetch(`https://api.themoviedb.org/3/discover/tv?with_networks=${id}`);
-
-  if (!res.ok) {
-    throw new Error(`TV count failed for ${id}: HTTP ${res.status}`);
-  }
-
-  const data = await res.json();
-  return data.total_results || 0;
-}
-
-function normaliseNetwork(data, tvCount) {
-  return {
-    id: data.id,
-    name: data.name || "",
-    headquarters: data.headquarters || "",
-    homepage: data.homepage || "",
-    logo_path: data.logo_path || "",
-    origin_country: data.origin_country || "",
-    titles_count: tvCount,
-    tmdb_url: `https://www.themoviedb.org/network/${data.id}`
-  };
-}
-
-function expandCompactNetwork(network) {
-  return {
-    id: network.i,
-    name: network.n || "",
-    origin_country: network.c || "",
-    headquarters: network.h || "",
-    logo_path: network.l || "",
-    titles_count: network.t || 0,
-    homepage: "",
-    tmdb_url: `https://www.themoviedb.org/network/${network.i}`
-  };
-}
-
 function csvEscape(value) {
-  const text = String(value ?? "");
-
-  if (/[",\n\r]/.test(text)) {
-    return `"${text.replaceAll('"', '""')}"`;
-  }
-
-  return text;
+	const text = String(value ?? "");
+	return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 function toCsv(networks) {
-  const headers = ["id", "name", "titles_count", "headquarters", "origin_country", "homepage", "tmdb_url"];
-
-  const rows = networks.map(network => headers.map(header => csvEscape(network[header])).join(","));
-
-  return [headers.join(","), ...rows].join("\n") + "\n";
+	const headers = [
+		"id",
+		"name",
+		"titles_count",
+		"headquarters",
+		"origin_country",
+		"homepage",
+		"tmdb_url",
+	];
+	const rows = networks.map((network) =>
+		headers.map((header) => csvEscape(network[header])).join(","),
+	);
+	return `${[headers.join(","), ...rows].join("\n")}\n`;
 }
 
 function compactNetwork(network) {
-  const compact = {
-    i: network.id,
-    n: network.name
-  };
-
-  if (network.origin_country) compact.c = network.origin_country;
-  if (network.headquarters) compact.h = network.headquarters;
-  if (network.logo_path) compact.l = network.logo_path;
-  if (network.titles_count) compact.t = network.titles_count;
-
-  return compact;
+	const compact = { i: network.id, n: network.name };
+	if (network.origin_country) compact.c = network.origin_country;
+	if (network.headquarters) compact.h = network.headquarters;
+	if (network.logo_path) compact.l = network.logo_path;
+	if (network.titles_count) compact.t = network.titles_count;
+	return compact;
 }
 
-function toMinJson(networks) {
-  return JSON.stringify(networks.map(compactNetwork));
+function expandCompactNetwork(network) {
+	return {
+		id: network.i,
+		name: network.n || "",
+		origin_country: network.c || "",
+		headquarters: network.h || "",
+		logo_path: network.l || "",
+		titles_count: network.t || 0,
+		homepage: "",
+		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
+	};
 }
 
-await fs.mkdir(DATA_DIR, { recursive: true });
-
-const existingCompact = await readJson(MIN_JSON_PATH, []);
-const networkMap = new Map();
-
-for (const network of existingCompact) {
-  if (network?.i) {
-    const expandedNetwork = expandCompactNetwork(network);
-    networkMap.set(Number(expandedNetwork.id), expandedNetwork);
-  }
+function normalizeNetwork(data, seriesCount) {
+	return {
+		id: data.id,
+		name: data.name || "",
+		headquarters: data.headquarters || "",
+		homepage: data.homepage || "",
+		logo_path: data.logo_path || "",
+		origin_country: data.origin_country || "",
+		titles_count: seriesCount,
+		tmdb_url: `https://www.themoviedb.org/network/${data.id}`,
+	};
 }
 
-const exportData = await fetchExport();
-const ids = exportData.networks.map(network => Number(network.id)).filter(Boolean);
-const lowestId = ids.length ? Math.min(...ids) : null;
-const highestId = ids.length ? Math.max(...ids) : null;
-const selectedNetworks = LIMIT ? exportData.networks.slice(OFFSET, OFFSET + LIMIT) : exportData.networks.slice(OFFSET);
+const usagePath =
+	process.env.TMDB_USAGE_PATH ||
+	path.join(
+		"maintenance",
+		"tmdb-request-budget",
+		process.env.TMDB_RESERVATION_UTC_DATE || new Date().toISOString().slice(0, 10),
+		"usage",
+		`${process.env.TMDB_RESERVATION_ID}-network-series.json`,
+	);
+let client = null;
+let target = LEGACY_ONLY
+	? null
+	: await loadTargetSnapshot({ month: MONTH, entityType: "network" });
+if (!target) {
+	if (!LEGACY_ONLY) {
+		throw new Error(`Missing frozen Network target for ${MONTH}. Run target initialization first.`);
+	}
+	assertRunPlanStillCurrent(
+		{
+			kind: COUNT_DIMENSIONS.NETWORK_SERIES,
+			planned_month: MONTH,
+			planned_utc_date: process.env.TMDB_RESERVATION_UTC_DATE,
+			scheduled: process.env.SCHEDULED_RUN === "true",
+		},
+		{ kind: COUNT_DIMENSIONS.NETWORK_SERIES },
+	);
+	const targetUsagePath = path.join(
+		"maintenance",
+		"tmdb-request-budget",
+		process.env.TMDB_RESERVATION_UTC_DATE,
+		"usage",
+		`${process.env.TMDB_RESERVATION_ID}-legacy-network-target.json`,
+	);
+	const targetClient = await createTmdbRequestClient({
+		receiptPath: process.env.TMDB_RESERVATION_PATH,
+		reservationId: process.env.TMDB_RESERVATION_ID,
+		reservationSha256: process.env.TMDB_RESERVATION_SHA256,
+		allocationKey: "target_export",
+		usagePath: targetUsagePath,
+		job: "load-legacy-network-export",
+		requestClass: "target-export",
+		targetDimension: "network",
+		approvedAllowance: Number(process.env.TMDB_TARGET_EXPORT_ALLOWANCE),
+	});
+	const exportData = await fetchTmdbExportIds({
+		requestClient: targetClient,
+		exportPrefix: TMDB_EXPORT_DATASETS.networks.exportPrefix,
+	});
+	target = buildSnapshotFromExport({
+		entityType: "network",
+		exportData,
+		month: MONTH,
+	});
+	await targetClient.writeUsage({ legacy_only: true, month: MONTH });
+}
 
-const stats = {
-  mode: LIMIT ? "tmdb_export_sliced_enrichment" : "tmdb_daily_export_full_enrichment",
-  export_date: exportData.export_date,
-  export_total_ids: exportData.networks.length,
-  offset: OFFSET,
-  limit: LIMIT,
-  actual_limit: selectedNetworks.length,
-  lowest_id: lowestId,
-  highest_id: highestId,
-  checked: 0,
-  found: 0,
-  missing: 0,
-  started_at: new Date().toISOString()
+const state = TYPED_PROGRESS_ENABLED
+	? await loadDimensionState({
+			month: MONTH,
+			dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
+			targetFingerprint: target.target_fingerprint,
+			targetIds: target.ids,
+		})
+	: {
+			parserSemanticVersion: COUNT_PARSER_SEMANTIC_VERSION,
+			resultsById: new Map(),
+		};
+const sampleIds = IS_SAMPLE ? parseStrictSampleIds(process.env.SAMPLE_IDS || "") : null;
+if (!IS_SAMPLE && process.env.SAMPLE_IDS) {
+	throw new Error("SAMPLE_IDS is accepted only in sample mode.");
+}
+let selection;
+
+if (sampleIds) {
+	const targetSet = new Set(target.ids);
+	for (const id of sampleIds) {
+		if (!targetSet.has(id)) throw new Error(`Sample Network ${id} is not in the frozen target.`);
+	}
+	selection = { ids: sampleIds, start: null, end: null };
+} else if (SLICE_INDEX !== null || TOTAL_SLICES !== null) {
+	if (SLICE_INDEX === null || TOTAL_SLICES === null) {
+		throw new Error("SLICE_INDEX and TOTAL_SLICES must be supplied together.");
+	}
+	selection = partitionTargetIds(target.ids, SLICE_INDEX, TOTAL_SLICES);
+} else {
+	if (!Number.isSafeInteger(OFFSET) || OFFSET < 0 || (LIMIT !== null && (!Number.isSafeInteger(LIMIT) || LIMIT <= 0))) {
+		throw new Error("OFFSET/LIMIT must be safe nonnegative/positive integers.");
+	}
+	selection = {
+		ids: LIMIT === null ? target.ids.slice(OFFSET) : target.ids.slice(OFFSET, OFFSET + LIMIT),
+		start: OFFSET,
+		end: LIMIT === null ? target.ids.length : Math.min(target.ids.length, OFFSET + LIMIT),
+	};
+}
+
+const olderUnresolvedIds =
+	!LEGACY_ONLY && RETRY_UNRESOLVED && selection.start !== null
+		? target.ids
+				.slice(0, selection.start)
+				.filter((id) => !state.resultsById.get(id) || state.resultsById.get(id).status === COUNT_STATUSES.FAILED)
+		: [];
+const planned = {
+	mode: MODE,
+	month: MONTH,
+	target_fingerprint: target.target_fingerprint,
+	target_total_ids: target.total_ids,
+	slice_index: SLICE_INDEX,
+	total_slices: TOTAL_SLICES,
+	current_ids: selection.ids.length,
+	older_unresolved_ids: olderUnresolvedIds.length,
+	base_current_requests: selection.ids.length * 2,
+	max_reserved_requests: Number(process.env.TMDB_COLLECTION_ALLOWANCE || 0),
+	legacy_only: LEGACY_ONLY,
+	typed_progress_enabled: TYPED_PROGRESS_ENABLED,
 };
 
-await fs.writeFile(
-  EXPORT_PATH,
-  JSON.stringify(
-    {
-      export_date: exportData.export_date,
-      total_ids: exportData.networks.length,
-      last_offset: OFFSET,
-      last_limit: LIMIT,
-      lowest_id: lowestId,
-      highest_id: highestId,
-      updated_at: new Date().toISOString()
-    },
-    null,
-    2
-  )
+console.log(JSON.stringify({ network_series_plan: planned }, null, 2));
+if (["plan", "validate"].includes(MODE)) process.exit(0);
+assertRunPlanStillCurrent(
+	{
+		kind: COUNT_DIMENSIONS.NETWORK_SERIES,
+		planned_month: MONTH,
+		planned_utc_date: process.env.TMDB_RESERVATION_UTC_DATE,
+		scheduled: process.env.SCHEDULED_RUN === "true",
+	},
+	{ kind: COUNT_DIMENSIONS.NETWORK_SERIES },
 );
+if (!TOKEN) throw new Error("Missing TMDB_BEARER_TOKEN");
 
-console.log(
-  `Enriching ${selectedNetworks.length.toLocaleString()} of ${exportData.networks.length.toLocaleString()} TV networks from export ${exportData.export_date} at offset ${OFFSET.toLocaleString()}.`
+client ||= await createTmdbRequestClient({
+	token: TOKEN,
+	receiptPath: process.env.TMDB_RESERVATION_PATH,
+	reservationId: process.env.TMDB_RESERVATION_ID,
+	reservationSha256: process.env.TMDB_RESERVATION_SHA256,
+	allocationKey: process.env.TMDB_ALLOCATION_KEY || "collection",
+	usagePath,
+	job: "collect-network-series",
+});
+const existingCompact = await readJsonFile(MIN_JSON_PATH, []);
+const networkMap = new Map(
+	existingCompact
+		.filter((network) => network?.i)
+		.map((network) => [Number(network.i), expandCompactNetwork(network)]),
 );
+const detailsById = new Map();
+const results = await collectWithDeferredRetries({
+	currentIds: selection.ids,
+	olderUnresolvedIds,
+	dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
+	client,
+	observedAt: OBSERVED_AT,
+	priorResults: state.resultsById,
+	detailsUrl: (id) => `https://api.themoviedb.org/3/network/${id}`,
+	countUrl: (id) => `https://api.themoviedb.org/3/discover/tv?with_networks=${id}`,
+	requestDelayMs: REQUEST_DELAY_MS,
+	onDetails: async (id, details) => detailsById.set(id, details),
+	onTerminal: async (id, result) => {
+		if ([COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(result.status)) {
+			const details = detailsById.get(id);
+			if (!details) throw new Error(`Missing successful Network details for ${id}.`);
+			networkMap.set(id, normalizeNetwork(details, result.count));
+		}
+	},
+});
 
-for (const exportNetwork of selectedNetworks) {
-  const id = Number(exportNetwork.id);
-  stats.checked += 1;
-
-  try {
-    const details = await fetchNetworkDetails(id);
-
-    if (!details) {
-      stats.missing += 1;
-      console.log(`${id}: no network record`);
-      await sleep(REQUEST_DELAY_MS);
-      continue;
-    }
-
-    const tvCount = await fetchTvCount(id);
-    const network = normaliseNetwork(details, tvCount);
-
-    networkMap.set(network.id, network);
-
-    stats.found += 1;
-    console.log(`${id}: ${network.name} (${tvCount.toLocaleString()} TV titles)`);
-
-    await sleep(REQUEST_DELAY_MS);
-  } catch (error) {
-    stats.missing += 1;
-    console.log(`${id}: error ${error.message}`);
-  }
+const usage = client.usageSummary();
+await client.writeUsage({
+	month: MONTH,
+	dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
+	target_fingerprint: target.target_fingerprint,
+});
+if (results.length && !IS_SAMPLE && TYPED_PROGRESS_ENABLED) {
+	await writeProgressDocument({
+		month: MONTH,
+		dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
+		targetFingerprint: target.target_fingerprint,
+		runId: RUN_ID,
+		observedAt: OBSERVED_AT,
+		results,
+		sliceIndex: sampleIds ? null : SLICE_INDEX,
+		totalSlices: sampleIds ? null : TOTAL_SLICES,
+		requestUsage: {
+			attempts_used: usage.attempts_used,
+			reservation_id: usage.reservation_id,
+		},
+	});
 }
 
-const networks = Array
-  .from(networkMap.values())
-  .sort((a, b) => Number(a.id) - Number(b.id));
-
-await fs.writeFile(MIN_JSON_PATH, toMinJson(networks));
+const networks = [...networkMap.values()].sort((left, right) => left.id - right.id);
+const selectedIdSet = new Set(selection.ids);
+const legacyCurrentResults = results.filter((result) => selectedIdSet.has(result.id));
+if (IS_SAMPLE) {
+	console.log("Sample mode completed without writing progress or legacy Network caches.");
+	process.exit(0);
+}
+const ids = target.ids;
+const legacySlicedMode = LIMIT !== null || SLICE_INDEX !== null;
+await fs.writeFile(MIN_JSON_PATH, JSON.stringify(networks.map(compactNetwork)));
 await fs.writeFile(CSV_PATH, toCsv(networks));
-
-stats.total_cached = networks.length;
-stats.finished_at = new Date().toISOString();
-
-await fs.writeFile(META_PATH, JSON.stringify({ last_scan: stats }, null, 2));
+await fs.writeFile(
+	EXPORT_PATH,
+	`${JSON.stringify(
+		{
+			export_date: target.export_date,
+			total_ids: target.total_ids,
+			target_fingerprint: target.target_fingerprint,
+			last_offset: selection.start,
+			last_limit: selection.ids.length,
+			lowest_id: ids[0] || null,
+			highest_id: ids.at(-1) || null,
+			updated_at: new Date().toISOString(),
+		},
+		null,
+		2,
+	)}\n`,
+);
+await fs.writeFile(
+	META_PATH,
+	`${JSON.stringify(
+		{
+			last_scan: {
+				mode: legacySlicedMode ? "tmdb_export_sliced_enrichment" : "tmdb_daily_export_full_enrichment",
+				export_date: target.export_date,
+				export_total_ids: target.total_ids,
+				offset: selection.start ?? OFFSET,
+				limit: legacySlicedMode ? selection.ids.length : null,
+				actual_limit: selection.ids.length,
+				lowest_id: ids[0] || null,
+				highest_id: ids.at(-1) || null,
+				checked: legacyCurrentResults.length,
+				found: legacyCurrentResults.filter(
+					(result) =>
+						[COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(result.status),
+				).length,
+				missing: legacyCurrentResults.filter(
+					(result) => ![COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(result.status),
+				).length,
+				total_cached: networks.length,
+				...planned,
+				mode: legacySlicedMode ? "tmdb_export_sliced_enrichment" : "tmdb_daily_export_full_enrichment",
+				results: {
+					positive: results.filter((result) => result.status === COUNT_STATUSES.POSITIVE).length,
+					zero: results.filter((result) => result.status === COUNT_STATUSES.ZERO).length,
+					failed: results.filter((result) => result.status === COUNT_STATUSES.FAILED).length,
+					unavailable: results.filter((result) => result.status === COUNT_STATUSES.UNAVAILABLE)
+						.length,
+				},
+				requests: usage,
+				started_at: OBSERVED_AT,
+				finished_at: new Date().toISOString(),
+			},
+		},
+		null,
+		2,
+	)}\n`,
+);
 
 console.log(`Saved ${networks.length.toLocaleString()} total cached TV networks.`);

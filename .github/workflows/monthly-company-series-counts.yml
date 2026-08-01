@@ -1,15 +1,6 @@
-name: Monthly TMDB Company Refresh
+name: Monthly TMDB Company Series Counts
 
 on:
-  workflow_call:
-    inputs:
-      mode: { required: true, type: string }
-      slice_index: { required: true, type: string }
-      sample_ids: { required: false, type: string, default: "" }
-      max_requests: { required: true, type: string }
-      requested_month: { required: false, type: string, default: "" }
-    secrets:
-      TMDB_BEARER_TOKEN: { required: true }
   workflow_dispatch:
     inputs:
       mode:
@@ -26,14 +17,14 @@ on:
         description: Comma-separated Company IDs; required for sample mode
         required: false
       max_requests:
-        description: Maximum Company API attempts
+        description: Maximum Company Series API attempts
         required: true
-        default: "55000"
+        default: "70000"
       requested_month:
         description: UTC month (blank means current; cannot backdate collection)
         required: false
   schedule:
-    - cron: "0 9 1-14 * *"
+    - cron: "0 9 15-28 * *"
 
 jobs:
   plan:
@@ -60,17 +51,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+        with: { node-version: 22 }
       - id: plan
         env:
-          COUNT_RUN_KIND: company-movie
+          COUNT_RUN_KIND: company-series
           EVENT_NAME: ${{ github.event_name }}
-          INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode || 'plan' }}
-          INPUT_SLICE: ${{ inputs.slice_index || github.event.inputs.slice_index || '0' }}
-          INPUT_SAMPLE_IDS: ${{ inputs.sample_ids || github.event.inputs.sample_ids || '' }}
-          INPUT_MAX_REQUESTS: ${{ inputs.max_requests || github.event.inputs.max_requests || '55000' }}
-          INPUT_MONTH: ${{ inputs.requested_month || github.event.inputs.requested_month || '' }}
+          INPUT_MODE: ${{ github.event.inputs.mode || 'plan' }}
+          INPUT_SLICE: ${{ github.event.inputs.slice_index || '0' }}
+          INPUT_SAMPLE_IDS: ${{ github.event.inputs.sample_ids || '' }}
+          INPUT_MAX_REQUESTS: ${{ github.event.inputs.max_requests || '70000' }}
+          INPUT_MONTH: ${{ github.event.inputs.requested_month || '' }}
         run: node scripts/plan-entity-count-run.mjs
 
   reserve-requests:
@@ -89,14 +79,12 @@ jobs:
       utc_date: ${{ steps.reserve.outputs.utc_date }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
+        with: { ref: main }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+        with: { node-version: 22 }
       - id: reserve
         env:
-          RESERVATION_JOB: company-movie
+          RESERVATION_JOB: company-series
           RESERVATION_PLANNED_MONTH: ${{ needs.plan.outputs.planned_month }}
           RESERVATION_PLANNED_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
           REQUEST_ALLOCATIONS_JSON: ${{ needs.plan.outputs.allocations }}
@@ -104,75 +92,45 @@ jobs:
         run: node scripts/reserve-tmdb-request-budget.mjs
       - uses: ./.github/actions/commit-maintenance-state
         with:
-          message: Reserve monthly Company TMDB requests
+          message: Reserve monthly Company Series TMDB requests
           paths: ${{ steps.reserve.outputs.reservation_path }}
 
-  ensure-company-target:
+  validate-company-target:
     needs: [plan, reserve-requests]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     concurrency:
       group: tmdb-count-targets
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
+        with: { ref: main }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Initialize authoritative Company target
-        if: needs.plan.outputs.allow_target_create == 'true'
-        env:
+        with: { node-version: 22 }
+      - env:
           DATASET: companies
           COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
-          ALLOW_TARGET_CREATE: ${{ needs.plan.outputs.allow_target_create }}
-          TMDB_RESERVATION_ID: ${{ needs.reserve-requests.outputs.reservation_id }}
-          TMDB_RESERVATION_PATH: ${{ needs.reserve-requests.outputs.reservation_path }}
-          TMDB_RESERVATION_SHA256: ${{ needs.reserve-requests.outputs.reservation_sha256 }}
-          TMDB_RESERVATION_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
-          TMDB_ALLOCATION_KEY: target_export
-          TMDB_REQUEST_CLASS: target-export
-          TMDB_TARGET_DIMENSION: company
-          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan.outputs.target_export_allowance }}
-        run: node scripts/initialize-entity-count-targets.mjs
-      - name: Validate existing Company target without initialization
-        if: needs.plan.outputs.allow_target_create != 'true'
-        env:
-          DATASET: companies
-          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
-          ALLOW_MISSING_TARGET: ${{ needs.plan.outputs.legacy_only }}
         run: node scripts/validate-entity-count-target.mjs
-      - uses: ./.github/actions/commit-maintenance-state
-        with:
-          message: Initialize or validate monthly Company count target
-          paths: |
-            maintenance/entity-title-counts
-            maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage
 
-  collect-company-movie:
-    needs: [plan, reserve-requests, ensure-company-target]
+  collect-company-series:
+    needs: [plan, reserve-requests, validate-company-target]
     runs-on: ubuntu-latest
     timeout-minutes: 360
     permissions:
       contents: write
     concurrency:
-      group: tmdb-count-company-movie
+      group: tmdb-count-company-series
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
+        with: { ref: main }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Collect authoritative Company Movie counts
+        with: { node-version: 22 }
+      - name: Collect Company Series counts
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
           MODE: ${{ needs.plan.outputs.mode }}
-          LEGACY_ONLY: ${{ needs.plan.outputs.legacy_only }}
-          TYPED_PROGRESS_ENABLED: ${{ needs.plan.outputs.typed_progress_enabled }}
           SCHEDULED_RUN: ${{ needs.plan.outputs.scheduled }}
           COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
           SLICE_INDEX: ${{ needs.plan.outputs.slice_index }}
@@ -185,20 +143,15 @@ jobs:
           TMDB_RESERVATION_SHA256: ${{ needs.reserve-requests.outputs.reservation_sha256 }}
           TMDB_RESERVATION_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
           TMDB_ALLOCATION_KEY: collection
-          TMDB_REQUEST_CLASS: company-movie
-          TMDB_TARGET_DIMENSION: company-movie
+          TMDB_REQUEST_CLASS: company-series
+          TMDB_TARGET_DIMENSION: company-series
           TMDB_APPROVED_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
           TMDB_COLLECTION_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
-          TMDB_TARGET_EXPORT_ALLOWANCE: ${{ needs.plan.outputs.target_export_allowance }}
-        run: node scripts/manual-company-rebuild-from-export.mjs
+        run: node scripts/collect-company-series-counts.mjs
       - uses: ./.github/actions/commit-maintenance-state
         with:
-          message: Record authoritative TMDB Company Movie collection
+          message: Record monthly TMDB Company Series collection
           paths: |
-            data/companies.min.json
-            data/companies.csv
-            data/scan-meta.json
-            data/production-company-export.json
             maintenance/entity-title-counts
             maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage
 
@@ -213,19 +166,17 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
+        with: { ref: main }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+        with: { node-version: 22 }
       - env:
           COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
           VALIDATION_ONLY: "true"
         run: node scripts/publish-entity-title-counts.mjs
 
   publish:
-    if: always() && needs.plan.outputs.allow_finalize == 'true' && needs.plan.outputs.mode != 'validate' && (needs.collect-company-movie.result == 'success' || needs.plan.outputs.mode == 'publish')
-    needs: [plan, collect-company-movie]
+    if: always() && needs.plan.outputs.allow_finalize == 'true' && needs.plan.outputs.mode != 'validate' && (needs.collect-company-series.result == 'success' || needs.plan.outputs.mode == 'publish')
+    needs: [plan, collect-company-series]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -234,11 +185,9 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
+        with: { ref: main }
       - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+        with: { node-version: 22 }
       - env:
           COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
           VALIDATION_ONLY: "false"
