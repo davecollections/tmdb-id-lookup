@@ -46,8 +46,16 @@ async function read(relativePath) {
 	return fs.readFile(path.join(root, relativePath), "utf8");
 }
 
-function sha256(value) {
-	return crypto.createHash("sha256").update(value).digest("hex").toUpperCase();
+function canonicalizeTextLineEndings(value) {
+	return value.replace(/\r\n?/g, "\n");
+}
+
+function sha256CanonicalText(value) {
+	return crypto
+		.createHash("sha256")
+		.update(canonicalizeTextLineEndings(value))
+		.digest("hex")
+		.toUpperCase();
 }
 
 function jobBlocks(yaml) {
@@ -354,17 +362,32 @@ test("adapted collectors route TMDB HTTP through the reservation-aware client", 
 	}
 });
 
-test("stable genre collector and workflow remain byte-for-byte unchanged", async () => {
+test("text immutability hashing canonicalizes only line-ending representation", () => {
+	const lf = "alpha\n  beta \ngamma\n";
+	const crlf = "alpha\r\n  beta \r\ngamma\r\n";
+	const cr = "alpha\r  beta \rgamma\r";
+	const stableDigest = sha256CanonicalText(lf);
+
+	assert.equal(sha256CanonicalText(lf), stableDigest);
+	assert.equal(sha256CanonicalText(crlf), stableDigest);
+	assert.equal(sha256CanonicalText(cr), stableDigest);
+	assert.notEqual(sha256CanonicalText("Alpha\n  beta \ngamma\n"), stableDigest);
+	assert.notEqual(sha256CanonicalText("alpha\n beta \ngamma\n"), stableDigest);
+	assert.notEqual(sha256CanonicalText("alpha\n  beta\ngamma\n"), stableDigest);
+	assert.notEqual(sha256CanonicalText("alpha\n  beta \ngamma\n\n"), stableDigest);
+});
+
+test("stable genre collector and workflow match their canonical text hashes", async () => {
 	const workflow = await read(".github/workflows/update-genre-counts.yml");
 	const collector = await read("scripts/update-genre-counts.js");
 
 	assert.equal(
-		sha256(workflow),
-		"EDB9EF1DD0ED6C8CCDBAF165CB2203403368931AB7027FE6215AB9F7662131B4",
+		sha256CanonicalText(workflow),
+		"4E3AECDBD9E7AB7682B4B412BE9A0592D72A97184BAB40606ADB1D70350A094F",
 	);
 	assert.equal(
-		sha256(collector),
-		"33FFC5C4A08BF073BF414F26C0F637A1F3827EFCAA3209AF392BF3047E4AFA88",
+		sha256CanonicalText(collector),
+		"D594522FA63FA0B513207995F4AD9AA476CBE2FB76090FFC2674858028E5BDFF",
 	);
 	assert.match(workflow, /cron: "30 7 \* \* \*"/);
 });
