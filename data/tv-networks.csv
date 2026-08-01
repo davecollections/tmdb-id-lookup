@@ -5505,5 +5505,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9356,الرابعة,0,,,,https://www.themoviedb.org/network/9356
 9357,Nippon Animation,1,,,,https://www.themoviedb.org/network/9357
 9358,Мир сериала,1,,,,https://www.themoviedb.org/network/9358
-9359,Vasantham TV,0,"Colombo, Western Province",LK,https://vasantham.lk,https://www.themoviedb.org/network/9359
-9360,TV Supreme,0,"Colombo, Western Province",LK,https://tvsupreme.lk,https://www.themoviedb.org/network/9360
+9359,Vasantham TV,0,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9359
+9360,TV Supreme,0,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9360
+9361,GoodShort,1,Singapore,SG,https://www.goodshort.com/,https://www.themoviedb.org/network/9361

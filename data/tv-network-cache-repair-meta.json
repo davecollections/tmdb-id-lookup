@@ -1,25 +1,91 @@
 {
   "last_repair": {
-    "source_audit_date": "2026-07-31T10:49:34.375Z",
+    "operation": "network_cache_repair",
+    "mode": "collect",
+    "status": "completed",
+    "reason": null,
+    "source_audit_date": "2026-08-01T10:08:12.707Z",
+    "audit_freshness": {
+      "audited_at": "2026-08-01T10:08:12.707Z",
+      "age_hours": 0.014088055555555555,
+      "max_age_hours": 36
+    },
+    "month": "2026-08",
+    "typed_counts_active": false,
+    "target_fingerprint": null,
+    "parser_semantic_version": null,
+    "binding_error": null,
     "max_repair_ids": 200,
+    "cap": {
+      "maximum": 200,
+      "requested": 1,
+      "exceeded": false
+    },
+    "requested_repair_count": 1,
     "missing_requested": [
-      9357,
-      9358,
-      9359,
-      9360
+      9361
     ],
+    "missing_requested_count": 1,
+    "missing_outside_frozen_target": [],
     "extra_requested": [],
-    "added": [
-      9357,
-      9358,
-      9359,
-      9360
+    "extra_requested_count": 0,
+    "processed_missing": [
+      9361
     ],
+    "processed_missing_count": 1,
+    "processed_repair_count": 1,
+    "added": [
+      9361
+    ],
+    "added_count": 1,
     "removed": [],
+    "removed_count": 0,
     "not_found": [],
+    "not_found_count": 0,
     "failed": [],
-    "started_at": "2026-07-31T10:50:26.350Z",
-    "total_cached": 5508,
-    "finished_at": "2026-07-31T10:50:27.799Z"
+    "failed_count": 0,
+    "unavailable": [],
+    "unavailable_count": 0,
+    "typed_count_reused": [],
+    "typed_progress_written": [
+      9361
+    ],
+    "request_plan": {
+      "details_requests": 1,
+      "discover_requests": 1,
+      "typed_count_reuse": 0,
+      "base_requests": 2
+    },
+    "requests": {
+      "schema_version": 2,
+      "reservation_id": "30695123064-1-cache-repair",
+      "reservation_sha256": "8f270bd427f95a7d6490423d6a6ac71df93d996179cf36405feffdaaac67dacc",
+      "utc_date": "2026-08-01",
+      "planned_month": "2026-08",
+      "workflow": "Daily Capped Repair Cache From Audit",
+      "run_id": "30695123064",
+      "run_attempt": "1",
+      "job": "repair-network",
+      "allocation_key": "network_repair",
+      "request_class": "network-repair",
+      "target_dimension": "network-series",
+      "allowance": 2000,
+      "attempts_used": 2,
+      "unused_allowance": 1998,
+      "first_attempt_at": "2026-08-01T10:09:03.440Z",
+      "last_attempt_at": "2026-08-01T10:09:03.642Z",
+      "by_host": {
+        "api.themoviedb.org": 2,
+        "files.tmdb.org": 0
+      },
+      "by_status_or_outcome": {
+        "200": 2
+      },
+      "retries": 0
+    },
+    "total_cached": 5509,
+    "skipped": false,
+    "started_at": "2026-08-01T10:09:03.422Z",
+    "finished_at": "2026-08-01T10:09:03.890Z"
   }
 }
