@@ -15,12 +15,16 @@ import {
 	createMovieFranchiseSource,
 	createSourceSubmissionGate,
 	createTmdbCollectionProvider,
+	createTmdbLocalPreviewFetch,
+	createTmdbPersonProvider,
 	findMovieFranchiseDuplicate,
 	movieFranchiseDuplicateIdentity,
 	normalizeTmdbCollectionDetailsResponse,
 	normalizeTmdbCollectionSearchResponse,
 	normalizeTmdbPosterPath,
 	parseTmdbCollectionInput,
+	shouldUseTmdbLocalPreviewProxy,
+	TMDB_LOCAL_PREVIEW_PROXY_PREFIX,
 	TMDB_PROXY_BASE_URL,
 	validateMovieFranchiseSourceDraft,
 } from "../builder/src/source-add/index.js";
@@ -569,6 +573,63 @@ test("build configuration extracts exactly one validated HTTPS Worker origin", (
 		JSON.stringify(configuredWorkerBaseUrl),
 	);
 	assert.equal(TMDB_PROXY_BASE_URL, null);
+});
+
+test("same-network HTTP origins use the local preview proxy only for private IPv4 hosts", () => {
+	for (const origin of [
+		"http://10.0.0.8:4173",
+		"http://172.16.0.8:4173",
+		"http://172.31.255.8:4173",
+		"http://192.168.20.34:4173",
+	]) {
+		assert.equal(shouldUseTmdbLocalPreviewProxy(new URL(origin)), true, origin);
+	}
+	for (const origin of [
+		"https://192.168.20.34:4173",
+		"http://172.32.0.8:4173",
+		"http://127.0.0.1:4173",
+		"http://localhost:4173",
+		"http://example.test",
+	]) {
+		assert.equal(shouldUseTmdbLocalPreviewProxy(new URL(origin)), false, origin);
+	}
+});
+
+test("local preview fetch rewrites only configured Worker requests through the same origin", async () => {
+	const calls = [];
+	const localFetch = createTmdbLocalPreviewFetch({
+		fetchImpl: async (url, options) => {
+			calls.push({ url: String(url), options });
+			return jsonResponse({});
+		},
+		location: new URL("http://192.168.20.34:4173"),
+		workerBaseUrl: "https://worker.example",
+	});
+	const options = { method: "GET" };
+	await localFetch("https://worker.example/3/search/person?query=Tom&page=1", options);
+	await localFetch("https://other.example/asset.json", options);
+
+	assert.equal(
+		calls[0].url,
+		`http://192.168.20.34:4173${TMDB_LOCAL_PREVIEW_PROXY_PREFIX}/3/search/person?query=Tom&page=1`,
+	);
+	assert.equal(calls[1].url, "https://other.example/asset.json");
+	assert.equal(calls.every((call) => call.options === options), true);
+});
+
+test("default TMDB providers pass the canonical Worker origin into the local preview wrapper", () => {
+	assert.doesNotThrow(() => createTmdbCollectionProvider({ baseUrl: configuredWorkerBaseUrl }));
+	assert.doesNotThrow(() => createTmdbPersonProvider({ baseUrl: configuredWorkerBaseUrl }));
+});
+
+test("Vite development and preview servers forward the reserved TMDB path to the existing Worker", () => {
+	for (const mode of ["server", "preview"]) {
+		const proxy = builderViteConfig[mode].proxy[TMDB_LOCAL_PREVIEW_PROXY_PREFIX];
+		assert.equal(proxy.target, configuredWorkerBaseUrl);
+		assert.equal(proxy.changeOrigin, true);
+		assert.equal(proxy.headers.Origin, "http://127.0.0.1:4173");
+		assert.equal(proxy.rewrite(`${TMDB_LOCAL_PREVIEW_PROXY_PREFIX}/3/search/person?query=Tom`), "/3/search/person?query=Tom");
+	}
 });
 
 test("provider accepts canonical Worker origins and rejects every noncanonical form", () => {

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
+import { createSecureBrowserId } from "../builder/src/application/browser-id-factory.js";
 import { createBuilderController } from "../builder/src/application/index.js";
 import {
 	createUniqueNuvioId, defaultNuvioIdFactory, isUsableNuvioId,
@@ -49,6 +50,21 @@ test("default factory delegates to crypto.randomUUID and has no weak fallback", 
 	} finally {
 		descriptor ? Object.defineProperty(globalThis, "crypto", descriptor) : delete globalThis.crypto;
 	}
+});
+
+test("browser factory uses secure UUID APIs on local and LAN origins", () => {
+	assert.equal(createSecureBrowserId({ randomUUID: () => "secure-uuid" }), "secure-uuid");
+
+	const values = Array.from({ length: 16 }, (_, index) => index);
+	const fallback = createSecureBrowserId({
+		getRandomValues(bytes) {
+			bytes.set(values);
+			return bytes;
+		},
+	});
+	assert.equal(fallback, "00010203-0405-4607-8809-0a0b0c0d0e0f");
+	assert.match(fallback, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+	assert.throws(() => createSecureBrowserId({}), /secure browser ID API/);
 });
 
 test("usability accepts exact non-empty strings without requiring UUID syntax", () => {

@@ -1,5 +1,11 @@
 export { BuilderApp } from "./BuilderApp.jsx";
 export { AddSourceDialog } from "./AddSourceDialog.jsx";
+export {
+	PeopleConfigurationCard,
+	PeopleSearchStep,
+	PeopleSourceFlow,
+} from "./PeopleSourceFlow.jsx";
+export { SourceModeDialog } from "./SourceModeDialog.jsx";
 export { NodeEditor } from "./NodeEditor.jsx";
 export { applyNodeEditorDraft } from "./node-editor-actions.js";
 export { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";

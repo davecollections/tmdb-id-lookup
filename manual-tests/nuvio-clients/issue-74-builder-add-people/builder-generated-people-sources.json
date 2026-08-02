@@ -1,0 +1,64 @@
+[
+  {
+    "id": "issue-74-nuvio-1",
+    "title": "Issue 74 People Review",
+    "folders": [
+      {
+        "id": "issue-74-nuvio-2",
+        "title": "Tom Hanks",
+        "hideTitle": true,
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/poster/31.webp?v=38f6b5d3b64c",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Movie Credits",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "Series Credits",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "issue-74-nuvio-3",
+        "title": "Steven Spielberg",
+        "hideTitle": true,
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/poster/488.webp?v=79cfdd4be842",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Directed Movies",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "Directed Series",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

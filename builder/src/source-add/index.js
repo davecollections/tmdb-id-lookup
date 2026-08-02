@@ -14,6 +14,8 @@ export {
 	AVAILABLE_SOURCE_MODES,
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
+	PEOPLE_SOURCE_MODE,
+	PEOPLE_SOURCE_MODE_ID,
 } from "./source-modes.js";
 export {
 	isPositiveSafeTmdbId,
@@ -29,7 +31,79 @@ export {
 	TMDB_PROXY_BASE_URL,
 } from "./tmdb-collection-provider.js";
 export {
+	createTmdbLocalPreviewFetch,
+	shouldUseTmdbLocalPreviewProxy,
+	TMDB_LOCAL_PREVIEW_PROXY_PREFIX,
+} from "./tmdb-local-preview-proxy.js";
+export {
 	buildTmdbPosterUrl,
 	normalizeTmdbPosterPath,
 	TMDB_IMAGE_ORIGIN,
 } from "./tmdb-image.js";
+export {
+	calculatePersonCreditCounts,
+	isPersonCreditCountSet,
+	normalizePersonCombinedCredits,
+	PERSON_CREDIT_COUNT_KEYS,
+} from "./person-credits.js";
+export {
+	beginPersonCountCheck,
+	completePersonCountCheck,
+	failPersonCountCheck,
+	INITIAL_PERSON_COUNT_STATE,
+	markPersonCountsStale,
+	personCountDisplayState,
+	PERSON_COUNT_STALE_MS,
+} from "./person-count-state.js";
+export {
+	buildPromotedPeopleFolderEditable,
+	hasDeliberateFolderArtwork,
+	hasCustomHttpsFolderArtwork,
+	isPromotablePeopleFolder,
+	peoplePromotionTileShape,
+	personArtworkOrientation,
+	requestPersonRuntimeArtwork,
+	resolvePersonFolderArtwork,
+} from "./person-folder-artwork.js";
+export {
+	buildPeopleSourceDrafts,
+	createPeopleConfiguration,
+	createPeopleFolderBatch,
+	createPeopleSourceBundle,
+	defaultPeopleSourceCombinations,
+	inspectPeopleSourceDuplicates,
+	PEOPLE_MEDIA,
+	PEOPLE_ROLES,
+	PEOPLE_SOURCE_COMBINATIONS,
+	peopleDuplicateOverrideIdentity,
+	peopleSourceTitle,
+	peopleSourceIdentity,
+	updatePeopleConfiguration,
+	validatePeopleCombinationSelection,
+	validatePeopleRoleMediaSelection,
+	validatePeopleSourceDraft,
+	validatePeopleSourceDrafts,
+} from "./person-source.js";
+export {
+	addSelectedPerson,
+	createPeopleSelectionState,
+	PEOPLE_SELECTION_LIMIT,
+	removeSelectedPerson,
+	selectedPeople,
+	toggleSelectedPerson,
+} from "./people-selection-state.js";
+export {
+	isPositiveSafePersonId,
+	parseTmdbPersonInput,
+} from "./tmdb-person-input.js";
+export {
+	buildTmdbProfileUrl,
+	createTmdbPersonProvider,
+	normalizeTmdbPersonDetailsResponse,
+	normalizeTmdbPersonSearchResponse,
+	normalizeTmdbProfilePath,
+	TMDB_PERSON_CACHE_MAX_ENTRIES,
+	TMDB_PERSON_CACHE_TTL_MS,
+	TMDB_PERSON_PROXY_BASE_URL,
+	TMDB_PERSON_REQUEST_TIMEOUT_MS,
+} from "./tmdb-person-provider.js";

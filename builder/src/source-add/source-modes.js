@@ -8,6 +8,17 @@ export const MOVIE_FRANCHISE_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const PEOPLE_SOURCE_MODE_ID = "tmdb-people";
+
+export const PEOPLE_SOURCE_MODE = Object.freeze({
+	id: PEOPLE_SOURCE_MODE_ID,
+	label: "People",
+	providerLabel: "TMDB",
+	description: "Add acting and directing Movie or Series sources for one person.",
+	category: "native-tmdb",
+});
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
+	PEOPLE_SOURCE_MODE,
 ]);

@@ -109,11 +109,14 @@ test("controller configuration and listener arguments fail with stable TypeError
 test("the controller exposes only the documented public method surface", () => {
 	const controller = createBuilderController({ idFactory: () => "project" });
 	assert.deepEqual(Object.keys(controller).sort(), [
+		"addSourcesToFolder",
 		"applyLegacyAddonProjectionMigration",
 		"clearDiagnostics",
 		"clearSelection",
 		"createCollection",
 		"createFolder",
+		"createFolderWithSources",
+		"createFoldersWithSources",
 		"createSource",
 		"getState",
 		"importJsonText",

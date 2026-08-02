@@ -329,6 +329,273 @@ export function createBuilderController(options = {}) {
 		});
 	}
 
+	function createFolderWithSources(collectionInternalId, actionOptions = {}) {
+		const path = "$controller.createFolderWithSources";
+		const optionsValidation = validateSourceBundleOptions(actionOptions, {
+			path,
+			requireFolder: true,
+		});
+		if (!optionsValidation.ok) {
+			return failWithControllerDiagnostic(
+				"operation",
+				optionsValidation.error.code,
+				optionsValidation.error.path,
+				optionsValidation.error.message,
+			);
+		}
+		const resolution = resolveTarget(collectionInternalId, path);
+		if (resolution.error) {
+			return failWithControllerDiagnostic(
+				"operation",
+				resolution.error.code,
+				resolution.error.path,
+				resolution.error.message,
+			);
+		}
+		if (resolution.location.node.nodeType !== NODE_TYPES.COLLECTION) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
+				path,
+				"The parent for this operation must be a collection node.",
+			);
+		}
+
+		let folder;
+		let sources;
+		let project;
+		try {
+			const folderEditable = prepareNewNodeEditable(
+				state.project,
+				optionsValidation.folderEditable,
+				nuvioIdFactory,
+			);
+			folder = createFolder({ idFactory, editable: folderEditable });
+			sources = optionsValidation.sources.map((sourceOptions) => createSource({
+				idFactory,
+				category: sourceOptions.category,
+				editable: sourceOptions.editable,
+			}));
+			folder = { ...folder, sources };
+			project = insertChild(state.project, collectionInternalId, folder);
+		} catch (error) {
+			if (error instanceof NuvioIdGenerationError) {
+				return failWithControllerDiagnostic(
+					"operation",
+					CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+					"$controller.nuvioIds",
+					"A unique Nuvio collection or folder ID could not be generated.",
+				);
+			}
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
+				path,
+				"The folder and source bundle could not be created from the supplied values.",
+			);
+		}
+		if (!checkInternalIdUniqueness(project).unique) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+				path,
+				"The configured internal ID factory produced a project-wide collision.",
+			);
+		}
+
+		commitProjectEdit(project);
+		return actionResult(true, [], [], {
+			createdFolderInternalId: folder.internalId,
+			createdSourceInternalIds: sources.map((source) => source.internalId),
+			updatedFolderInternalId: folder.internalId,
+		});
+	}
+
+	function addSourcesToFolder(folderInternalId, actionOptions = {}) {
+		const path = "$controller.addSourcesToFolder";
+		const optionsValidation = validateSourceBundleOptions(actionOptions, {
+			path,
+			requireFolder: false,
+			allowFolder: true,
+		});
+		if (!optionsValidation.ok) {
+			return failWithControllerDiagnostic(
+				"operation",
+				optionsValidation.error.code,
+				optionsValidation.error.path,
+				optionsValidation.error.message,
+			);
+		}
+		const resolution = resolveTarget(folderInternalId, path);
+		if (resolution.error) {
+			return failWithControllerDiagnostic(
+				"operation",
+				resolution.error.code,
+				resolution.error.path,
+				resolution.error.message,
+			);
+		}
+		if (resolution.location.node.nodeType !== NODE_TYPES.FOLDER) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
+				path,
+				"The parent for this operation must be a folder node.",
+			);
+		}
+
+		let sources;
+		let project = state.project;
+		try {
+			if (optionsValidation.folderEditable !== null) {
+				project = updateEditableValues(project, folderInternalId, optionsValidation.folderEditable);
+			}
+			sources = optionsValidation.sources.map((sourceOptions) => createSource({
+				idFactory,
+				category: sourceOptions.category,
+				editable: sourceOptions.editable,
+			}));
+			for (const source of sources) {
+				project = insertChild(project, folderInternalId, source);
+			}
+		} catch {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
+				path,
+				"The folder update and source bundle could not be created from the supplied values.",
+			);
+		}
+		if (!checkInternalIdUniqueness(project).unique) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+				path,
+				"The configured internal ID factory produced a project-wide collision.",
+			);
+		}
+
+		commitProjectEdit(project);
+		return actionResult(true, [], [], {
+			createdSourceInternalIds: sources.map((source) => source.internalId),
+			updatedFolderInternalId: folderInternalId,
+		});
+	}
+
+	function createFoldersWithSources(collectionInternalId, actionOptions = {}) {
+		const path = "$controller.createFoldersWithSources";
+		if (
+			!isPlainObject(actionOptions)
+			|| Object.keys(actionOptions).some((key) => key !== "bundles")
+			|| !Array.isArray(actionOptions.bundles)
+			|| actionOptions.bundles.length < 1
+			|| actionOptions.bundles.length > 20
+		) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				`${path}.bundles`,
+				"Folder-source batches must contain between one and 20 bundles.",
+			);
+		}
+		const validatedBundles = [];
+		for (let index = 0; index < actionOptions.bundles.length; index += 1) {
+			if (!Object.hasOwn(actionOptions.bundles, index)) {
+				return failWithControllerDiagnostic(
+					"operation",
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.bundles`,
+					"Folder-source batch arrays must not contain missing entries.",
+				);
+			}
+			const validation = validateSourceBundleOptions(actionOptions.bundles[index], {
+				path: `${path}.bundles[${index}]`,
+				requireFolder: true,
+			});
+			if (!validation.ok) {
+				return failWithControllerDiagnostic(
+					"operation",
+					validation.error.code,
+					validation.error.path,
+					validation.error.message,
+				);
+			}
+			validatedBundles.push(validation);
+		}
+
+		const resolution = resolveTarget(collectionInternalId, path);
+		if (resolution.error) {
+			return failWithControllerDiagnostic(
+				"operation",
+				resolution.error.code,
+				resolution.error.path,
+				resolution.error.message,
+			);
+		}
+		if (resolution.location.node.nodeType !== NODE_TYPES.COLLECTION) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
+				path,
+				"The parent for this operation must be a collection node.",
+			);
+		}
+
+		let project = state.project;
+		const folders = [];
+		const sourceGroups = [];
+		try {
+			for (const bundle of validatedBundles) {
+				const folderEditable = prepareNewNodeEditable(
+					project,
+					bundle.folderEditable,
+					nuvioIdFactory,
+				);
+				const sources = bundle.sources.map((sourceOptions) => createSource({
+					idFactory,
+					category: sourceOptions.category,
+					editable: sourceOptions.editable,
+				}));
+				const folder = {
+					...createFolder({ idFactory, editable: folderEditable }),
+					sources,
+				};
+				project = insertChild(project, collectionInternalId, folder);
+				folders.push(folder);
+				sourceGroups.push(sources);
+			}
+		} catch (error) {
+			if (error instanceof NuvioIdGenerationError) {
+				return failWithControllerDiagnostic(
+					"operation",
+					CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+					"$controller.nuvioIds",
+					"Unique Nuvio folder IDs could not be generated for the complete batch.",
+				);
+			}
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
+				path,
+				"The complete folder and source batch could not be created from the supplied values.",
+			);
+		}
+		if (!checkInternalIdUniqueness(project).unique) {
+			return failWithControllerDiagnostic(
+				"operation",
+				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+				path,
+				"The configured internal ID factory produced a project-wide collision.",
+			);
+		}
+
+		commitProjectEdit(project);
+		return actionResult(true, [], [], {
+			createdFolderInternalIds: folders.map((folder) => folder.internalId),
+			createdSourceInternalIds: sourceGroups.flatMap((sources) => sources.map((source) => source.internalId)),
+		});
+	}
+
 	function createNode({
 		options: actionOptions,
 		path,
@@ -710,6 +977,9 @@ export function createBuilderController(options = {}) {
 		createCollection: createCollectionNode,
 		createFolder: createFolderNode,
 		createSource: createSourceNode,
+		createFolderWithSources,
+		addSourcesToFolder,
+		createFoldersWithSources,
 		updateNode,
 		moveNode,
 		removeNode,
@@ -718,6 +988,107 @@ export function createBuilderController(options = {}) {
 		stringifyProject,
 		clearDiagnostics,
 	});
+}
+
+function validateSourceBundleOptions(options, { path, requireFolder, allowFolder = requireFolder }) {
+	const allowedTopLevel = allowFolder ? new Set(["folder", "sources"]) : new Set(["sources"]);
+	if (!isPlainObject(options) || Object.keys(options).some((key) => !allowedTopLevel.has(key))) {
+		return {
+			ok: false,
+			error: controllerDiagnostic(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				path,
+				"Source-bundle options must contain only the supported folder and sources properties.",
+			),
+		};
+	}
+
+	let folderEditable = null;
+	if (requireFolder || options.folder !== undefined) {
+		if (
+			!isPlainObject(options.folder)
+			|| Object.keys(options.folder).some((key) => key !== "editable")
+			|| !isPlainObject(options.folder.editable)
+		) {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.folder`,
+					"The source bundle folder must contain one plain editable object.",
+				),
+			};
+		}
+		try {
+			folderEditable = cloneJsonValue(options.folder.editable, "folder editable");
+		} catch {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.folder.editable`,
+					"The source bundle folder editable value must be JSON-compatible.",
+				),
+			};
+		}
+	}
+
+	if (!Array.isArray(options.sources) || options.sources.length < 1 || options.sources.length > 4) {
+		return {
+			ok: false,
+			error: controllerDiagnostic(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				`${path}.sources`,
+				"A source bundle must contain one to four source options.",
+			),
+		};
+	}
+	const sources = [];
+	for (let index = 0; index < options.sources.length; index += 1) {
+		if (!Object.hasOwn(options.sources, index)) {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.sources`,
+					"Source bundle arrays must not contain missing entries.",
+				),
+			};
+		}
+		const source = options.sources[index];
+		if (
+			!isPlainObject(source)
+			|| Object.keys(source).some((key) => !new Set(["category", "editable"]).has(key))
+			|| !sourceCategories.has(source.category)
+			|| !isPlainObject(source.editable)
+		) {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.sources[${index}]`,
+					"Each bundled source must contain a supported category and one plain editable object.",
+				),
+			};
+		}
+		try {
+			sources.push({
+				category: source.category,
+				editable: cloneJsonValue(source.editable, "source editable"),
+			});
+		} catch {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.sources[${index}].editable`,
+					"Bundled source editable values must be JSON-compatible.",
+				),
+			};
+		}
+	}
+
+	return { ok: true, folderEditable, sources };
 }
 
 function validateControllerOptions(options) {
