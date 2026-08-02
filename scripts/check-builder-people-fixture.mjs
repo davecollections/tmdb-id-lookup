@@ -10,6 +10,7 @@ import {
 	resolvePersonFolderArtwork,
 } from "../builder/src/source-add/index.js";
 import { validateNuvioContract } from "../tests/helpers/nuvio-contract-validator.mjs";
+import { normalizeTextLineEndings } from "./lib/text-comparison.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const evidenceDirectory = path.join(rootDir, "manual-tests", "nuvio-clients", "issue-74-builder-add-people");
@@ -115,8 +116,8 @@ if (writeMode) {
 	console.log("Generated the sanitized issue #74 People review fixture through production Builder APIs.");
 } else {
 	assert.equal(
-		fs.readFileSync(fixturePath, "utf8"),
-		fixtureText,
+		normalizeTextLineEndings(fs.readFileSync(fixturePath, "utf8")),
+		normalizeTextLineEndings(fixtureText),
 		"The issue #74 People review fixture is stale. Run this script with --write.",
 	);
 	console.log("Sanitized issue #74 People review fixture matches production Builder output.");
