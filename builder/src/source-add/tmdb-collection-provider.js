@@ -1,6 +1,7 @@
 import { parseCanonicalHttpsOrigin } from "../../worker-origin.js";
 import { isPositiveSafeTmdbId } from "./tmdb-collection-input.js";
 import { normalizeTmdbPosterPath } from "./tmdb-image.js";
+import { createTmdbLocalPreviewFetch } from "./tmdb-local-preview-proxy.js";
 
 // Vite injects this from the stable root lookup's current js/config.js value.
 // The typeof guard keeps the pure adapter importable in direct Node tests,
@@ -203,14 +204,14 @@ function configuredBaseUrl(value) {
 }
 
 export function createTmdbCollectionProvider({
-	fetchImpl = globalThis.fetch,
+	fetchImpl,
 	baseUrl = TMDB_PROXY_BASE_URL,
 	timeoutMs = TMDB_COLLECTION_REQUEST_TIMEOUT_MS,
 	cacheTtlMs = TMDB_COLLECTION_CACHE_TTL_MS,
 	cacheMaxEntries = TMDB_COLLECTION_CACHE_MAX_ENTRIES,
 	now = Date.now,
 } = {}) {
-	if (typeof fetchImpl !== "function") {
+	if (fetchImpl !== undefined && typeof fetchImpl !== "function") {
 		throw new TypeError("A fetch implementation is required.");
 	}
 	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
@@ -227,6 +228,9 @@ export function createTmdbCollectionProvider({
 	}
 
 	const workerBaseUrl = configuredBaseUrl(baseUrl);
+	const requestFetch = fetchImpl === undefined
+		? createTmdbLocalPreviewFetch({ workerBaseUrl: workerBaseUrl.origin })
+		: fetchImpl;
 	const cache = createBoundedResponseCache({
 		ttlMs: cacheTtlMs,
 		maxEntries: cacheMaxEntries,
@@ -263,7 +267,7 @@ export function createTmdbCollectionProvider({
 
 		let response;
 		try {
-			response = await fetchImpl(url.toString(), {
+			response = await requestFetch(url.toString(), {
 				method: "GET",
 				headers: { Accept: "application/json" },
 				signal: controller.signal,

@@ -1,0 +1,35 @@
+{
+  "page": 1,
+  "total_pages": 1,
+  "total_results": 3,
+  "results": [
+    {
+      "id": 101,
+      "name": "Alex Smith",
+      "known_for_department": "Acting",
+      "profile_path": "/alex-actor.jpg",
+      "known_for": [
+        { "media_type": "movie", "title": "First Film", "release_date": "2019-04-12" },
+        { "media_type": "tv", "name": "First Series", "first_air_date": "2021-09-03" },
+        { "media_type": "movie", "original_title": "Original Third", "release_date": "" },
+        { "media_type": "movie", "title": "Ignored Fourth", "release_date": "2024-01-01" }
+      ]
+    },
+    {
+      "id": 202,
+      "name": "Alex Smith",
+      "known_for_department": "Directing",
+      "profile_path": null,
+      "known_for": [
+        { "media_type": "movie", "title": "Different Film", "release_date": "1998-01-02" }
+      ]
+    },
+    {
+      "id": 303,
+      "name": "Jordan Lee",
+      "known_for_department": "Writing",
+      "profile_path": "/jordan.jpg",
+      "known_for": []
+    }
+  ]
+}

@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
+import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
+	createPeopleFolderBatch,
+	createPeopleSourceBundle,
 	createMovieFranchiseSource,
 	createTmdbCollectionProvider,
+	createTmdbPersonProvider,
+	MOVIE_FRANCHISE_SOURCE_MODE_ID,
+	PEOPLE_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
@@ -32,6 +38,7 @@ import {
 import { HierarchyActionsMenu } from "./HierarchyActionsMenu.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NodeEditor } from "./NodeEditor.jsx";
+import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
@@ -39,6 +46,7 @@ import {
 	useBuilderDesktopViewport,
 } from "./responsive-viewport.js";
 import { buildBuilderViewModel } from "./view-model.js";
+import { SourceModeDialog } from "./SourceModeDialog.jsx";
 import {
 	completeWorkspaceReturn,
 	createWorkspaceReturnGate,
@@ -557,6 +565,8 @@ export function BuilderWorkspace({
 	initialDeleteConfirmation = null,
 	initialAddSourceOpen = false,
 	sourceProvider = null,
+	peopleProvider = null,
+	artworkClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
 	const desktopViewport = useBuilderDesktopViewport();
@@ -578,11 +588,17 @@ export function BuilderWorkspace({
 	const [actionsMenuInternalId, setActionsMenuInternalId] = useState(null);
 	const [addSourceSession, setAddSourceSession] = useState(() => (
 		initialAddSourceOpen && state.selection.folderInternalId
-			? { folderInternalId: state.selection.folderInternalId }
+			? {
+				context: "folder",
+				collectionInternalId: state.selection.collectionInternalId,
+				folderInternalId: state.selection.folderInternalId,
+				modeId: MOVIE_FRANCHISE_SOURCE_MODE_ID,
+			}
 			: null
 	));
 	const [restoreAddSourceTriggerFocus, setRestoreAddSourceTriggerFocus] = useState(false);
 	const [pendingCreatedSourceFocus, setPendingCreatedSourceFocus] = useState(null);
+	const [pendingPeopleFolderFocus, setPendingPeopleFolderFocus] = useState(null);
 	const [sourceCreationStatusText, setSourceCreationStatusText] = useState("");
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
@@ -607,6 +623,14 @@ export function BuilderWorkspace({
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
 	}
+	const peopleProviderRef = useRef(null);
+	if (peopleProviderRef.current === null) {
+		peopleProviderRef.current = peopleProvider ?? createTmdbPersonProvider();
+	}
+	const artworkClientRef = useRef(null);
+	if (artworkClientRef.current === null) {
+		artworkClientRef.current = artworkClient ?? createArtworkRuntimeClient();
+	}
 	if (deleteGateRef.current === null) {
 		deleteGateRef.current = createDeletionSubmissionGate();
 	}
@@ -618,10 +642,18 @@ export function BuilderWorkspace({
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
-	const addSourceFolder = addSourceSession
+	const addSourceFolder = addSourceSession?.context === "folder"
 		? findEditableNode(state.project, addSourceSession.folderInternalId)
 		: null;
-	const visibleAddSourceSession = addSourceFolder?.nodeType === "folder"
+	const addSourceCollection = addSourceSession
+		? state.project.collections.find((collection) => collection.internalId === addSourceSession.collectionInternalId) ?? null
+		: null;
+	const addSourceFolderAvailable = addSourceSession?.context !== "folder" || (
+		addSourceFolder?.nodeType === "folder"
+		&& addSourceCollection?.folders.some((folder) => folder.internalId === addSourceFolder.internalId)
+	);
+	const visibleAddSourceSession = addSourceCollection?.nodeType === "collection"
+		&& addSourceFolderAvailable
 		? addSourceSession
 		: null;
 	const editorLocked = visibleEditorDraft !== null;
@@ -764,6 +796,17 @@ export function BuilderWorkspace({
 		focusElementWithoutScroll(target);
 		setPendingCreatedSourceFocus(null);
 	}, [pendingCreatedSourceFocus, state.revision]);
+
+	useEffect(() => {
+		if (pendingPeopleFolderFocus === null) return;
+		const target = primaryControlRefs.current.get(pendingPeopleFolderFocus);
+		target?.scrollIntoView?.({
+			behavior: builderCardScrollBehavior(),
+			block: "nearest",
+		});
+		focusElementWithoutScroll(target);
+		setPendingPeopleFolderFocus(null);
+	}, [pendingPeopleFolderFocus, state.revision]);
 
 	useEffect(() => () => {
 		const session = dragSessionRef.current;
@@ -961,8 +1004,38 @@ export function BuilderWorkspace({
 		setSourceCreationStatusText("");
 		addSourceRestoreFocusRef.current = trigger;
 		setAddSourceSession({
+			context: "folder",
+			collectionInternalId: view.selectedCollection.internalId,
 			folderInternalId: view.selectedFolder.internalId,
+			modeId: null,
 		});
+	}
+
+	function openAddPeople(trigger) {
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| !view.selectedCollection
+		) return;
+		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(null);
+		setCreatedCardTarget(null);
+		setSourceCreationStatusText("");
+		addSourceRestoreFocusRef.current = trigger;
+		setAddSourceSession({
+			context: "collection",
+			collectionInternalId: view.selectedCollection.internalId,
+			modeId: PEOPLE_SOURCE_MODE_ID,
+		});
+	}
+
+	function chooseSourceMode(modeId) {
+		if (
+			!visibleAddSourceSession
+			|| visibleAddSourceSession.context !== "folder"
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID].includes(modeId)
+		) return;
+		setAddSourceSession((current) => current ? { ...current, modeId } : current);
 	}
 
 	function cancelAddSource() {
@@ -1010,6 +1083,62 @@ export function BuilderWorkspace({
 		setSourceCreationStatusText("");
 		queueMicrotask(() => {
 			setSourceCreationStatusText(`Added source “${draft.editable.title}”.`);
+		});
+		return result;
+	}
+
+	function applyPeopleSources(bundle) {
+		if (!visibleAddSourceSession) {
+			return {
+				ok: false,
+				errors: [{
+					code: "PEOPLE_FOLDER_UNAVAILABLE",
+					path: "$people.destination",
+					message: "The selected collection is no longer available.",
+				}],
+			};
+		}
+		const interactionLocked = (
+				editorLocked
+				|| deleteLocked
+				|| returnConfirmationOpen
+				|| actionsMenuInternalId !== null
+				|| pointerInteractionLocked()
+			);
+		const result = bundle.context === "collection"
+			? createPeopleFolderBatch(controller, {
+				collectionInternalId: visibleAddSourceSession.collectionInternalId,
+				people: bundle.people,
+				interactionLocked,
+			})
+			: createPeopleSourceBundle(controller, {
+				destination: {
+					kind: "existing-folder",
+					folderInternalId: visibleAddSourceSession.folderInternalId,
+				},
+				person: bundle.person,
+				drafts: bundle.drafts,
+				artwork: bundle.artwork,
+				duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+				interactionLocked,
+			});
+		if (!result.ok) return result;
+
+		const focusFolderInternalId = bundle.context === "collection"
+			? result.createdFolderInternalIds[0]
+			: result.updatedFolderInternalId;
+		controller.selectNode(focusFolderInternalId);
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setMobileLevelOverride("folders");
+		setPendingPeopleFolderFocus(focusFolderInternalId);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => {
+			setSourceCreationStatusText(bundle.context === "collection"
+				? `Added ${result.addedFolderCount} People folder${result.addedFolderCount === 1 ? "" : "s"} with ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"}.`
+				: result.promotedFolder
+					? `Created “${bundle.person.name}” with ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"}.`
+					: `Added ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.person.name}”.`);
 		});
 		return result;
 	}
@@ -1595,16 +1724,28 @@ export function BuilderWorkspace({
 							title="Folders"
 							count={view.folders.length}
 							action={view.selectedCollection ? (
-								<button
-									className="primary-action"
-									type="button"
-									data-action="create-folder"
-									disabled={hierarchyInteractionLocked}
-									onClick={createFolder}
-								>
-									<span aria-hidden="true">+</span>
-									New folder
-								</button>
+								<>
+									<button
+										className="secondary-action"
+										type="button"
+										data-action="add-people"
+										disabled={hierarchyInteractionLocked}
+										onClick={(event) => openAddPeople(event.currentTarget)}
+									>
+										<span aria-hidden="true">+</span>
+										Add people
+									</button>
+									<button
+										className="primary-action"
+										type="button"
+										data-action="create-folder"
+										disabled={hierarchyInteractionLocked}
+										onClick={createFolder}
+									>
+										<span aria-hidden="true">+</span>
+										New folder
+									</button>
+								</>
 							) : null}
 						/>
 						<div className="panel-body">
@@ -1722,7 +1863,7 @@ export function BuilderWorkspace({
 										</button>
 									)}
 								>
-									Add an official TMDB movie franchise to begin.
+									Add a TMDB movie franchise or People source to begin.
 								</EmptyState>
 							)}
 						</div>
@@ -1755,12 +1896,31 @@ export function BuilderWorkspace({
 				/>
 			) : null}
 			{visibleAddSourceSession ? (
-				<AddSourceDialog
-					provider={sourceProviderRef.current}
-					folderName={view.selectedFolder?.title ?? "selected folder"}
-					onCancel={cancelAddSource}
-					onApply={applyAddSource}
-				/>
+				visibleAddSourceSession.modeId === null ? (
+					<SourceModeDialog
+						folderName={addSourceFolder?.editable?.title ?? "selected folder"}
+						onCancel={cancelAddSource}
+						onSelectMode={chooseSourceMode}
+					/>
+				) : visibleAddSourceSession.modeId === PEOPLE_SOURCE_MODE_ID ? (
+					<PeopleSourceFlow
+						context={visibleAddSourceSession.context}
+						provider={peopleProviderRef.current}
+						artworkClient={artworkClientRef.current}
+						project={state.project}
+						collection={addSourceCollection}
+						folder={addSourceFolder}
+						onCancel={cancelAddSource}
+						onApply={applyPeopleSources}
+					/>
+				) : (
+					<AddSourceDialog
+						provider={sourceProviderRef.current}
+						folderName={addSourceFolder?.editable?.title ?? "selected folder"}
+						onCancel={cancelAddSource}
+						onApply={applyAddSource}
+					/>
+				)
 			) : null}
 		</main>
 	);

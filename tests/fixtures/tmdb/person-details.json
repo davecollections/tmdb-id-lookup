@@ -1,0 +1,24 @@
+{
+  "id": 31,
+  "name": "Tom Hanks",
+  "known_for_department": "Acting",
+  "profile_path": "/tom-hanks.jpg",
+  "combined_credits": {
+    "cast": [
+      { "id": 1, "media_type": "movie", "character": "One" },
+      { "id": 1, "media_type": "movie", "character": "Duplicate role" },
+      { "id": 2, "media_type": "tv", "episode_count": 2 },
+      { "id": 2, "media_type": "tv", "episode_count": 1 },
+      { "id": 3, "media_type": "person" },
+      { "id": 0, "media_type": "movie" }
+    ],
+    "crew": [
+      { "id": 4, "media_type": "movie", "job": "Director" },
+      { "id": 4, "media_type": "movie", "job": "director" },
+      { "id": 5, "media_type": "tv", "job": "DIRECTOR" },
+      { "id": 5, "media_type": "tv", "job": "Producer" },
+      { "id": 6, "media_type": "movie", "job": "Writer" },
+      { "id": 7, "media_type": "tv", "job": "Executive Producer" }
+    ]
+  }
+}
