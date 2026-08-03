@@ -1,0 +1,189 @@
+[
+  {
+    "id": "issue-78-collection",
+    "title": "Issue 78 Source Editing Review",
+    "pinToTop": false,
+    "focusGlowEnabled": true,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "backdropImageUrl": "https://example.invalid/issue-78-collection-backdrop.jpg",
+    "issue78CollectionSentinel": {
+      "keep": true,
+      "nested": [null, false, 0, ""]
+    },
+    "folders": [
+      {
+        "id": "issue-78-folder",
+        "title": "Preservation Lab",
+        "hideTitle": false,
+        "tileShape": "LANDSCAPE",
+        "coverEmoji": "🧪",
+        "focusGifUrl": "https://example.invalid/issue-78-focus.gif",
+        "heroVideoUrl": "https://example.invalid/issue-78-hero.mp4",
+        "titleLogoUrl": "https://example.invalid/issue-78-logo.png",
+        "coverImageUrl": "https://example.invalid/issue-78-cover.jpg",
+        "focusGifEnabled": false,
+        "heroBackdropUrl": "https://example.invalid/issue-78-folder-backdrop.jpg",
+        "issue78FolderSentinel": {
+          "keep": "folder",
+          "flags": [true, false]
+        },
+        "sources": [
+          {
+            "id": "issue-78-source-before",
+            "provider": "tmdb",
+            "title": "Before · Shark Movies",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withKeywords": "15097",
+              "withGenres": null,
+              "issue78UnknownDiscoverFilter": "keep-before"
+            },
+            "issue78SourceSentinel": {
+              "position": "before"
+            }
+          },
+          {
+            "id": "issue-78-source-collection-edit",
+            "type": null,
+            "genre": null,
+            "title": "Preserve this franchise label",
+            "sortBy": "original",
+            "tmdbId": "1241",
+            "addonId": null,
+            "filters": {
+              "withGenres": null,
+              "releaseDateGte": null,
+              "releaseDateLte": null,
+              "voteAverageGte": null,
+              "voteAverageLte": null,
+              "voteCountGte": null,
+              "withOriginalLanguage": null,
+              "withOriginCountry": null,
+              "withKeywords": null,
+              "withCompanies": null,
+              "withNetworks": null,
+              "year": null,
+              "watchRegion": null,
+              "withWatchProviders": null,
+              "issue78UnknownCollectionFilter": {
+                "keep": true
+              }
+            },
+            "sortHow": null,
+            "provider": "TMDB",
+            "catalogId": null,
+            "mediaType": "movie",
+            "traktListId": null,
+            "tmdbSourceType": "collection",
+            "issue78SourceSentinel": {
+              "editableTarget": "collection",
+              "keepNull": null,
+              "keepZero": 0
+            }
+          },
+          {
+            "id": "issue-78-source-addon-between",
+            "provider": "addon",
+            "title": "Between · Addon source",
+            "addonId": "com.example.issue78",
+            "type": "movie",
+            "catalogId": "issue-78-catalog",
+            "genre": null,
+            "sortBy": null,
+            "filters": {},
+            "issue78SourceSentinel": {
+              "position": "between"
+            }
+          },
+          {
+            "id": "issue-78-source-people-edit",
+            "type": null,
+            "genre": null,
+            "title": "Movie Credits",
+            "sortBy": "popularity.desc",
+            "tmdbId": 488,
+            "addonId": null,
+            "filters": {
+              "withGenres": null,
+              "withKeywords": null,
+              "issue78UnknownPeopleFilter": ["keep", null]
+            },
+            "sortHow": null,
+            "provider": "tmdb",
+            "catalogId": null,
+            "mediaType": "MOVIE",
+            "traktListId": null,
+            "tmdbSourceType": "PERSON",
+            "issue78SourceSentinel": {
+              "editableTarget": "people",
+              "keepFalse": false
+            }
+          },
+          {
+            "id": "issue-78-source-list-after",
+            "provider": "tmdb",
+            "title": "After · Preserved List",
+            "tmdbSourceType": "LIST",
+            "tmdbId": "999",
+            "mediaType": "MOVIE",
+            "sortBy": null,
+            "filters": {},
+            "issue78SourceSentinel": {
+              "position": "after"
+            }
+          },
+          {
+            "id": "issue-78-source-people-custom",
+            "provider": "tmdb",
+            "title": "Preserve this custom People label",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": null,
+              "issue78UnknownCustomPeopleFilter": {
+                "keep": "custom-people"
+              }
+            },
+            "issue78SourceSentinel": {
+              "editableTarget": "people-custom",
+              "keep": true
+            }
+          },
+          {
+            "id": "issue-78-source-people-duplicate",
+            "provider": "TMDB",
+            "title": "Pre-existing duplicate identity",
+            "tmdbSourceType": "person",
+            "tmdbId": "488",
+            "mediaType": "movie",
+            "sortBy": "popularity.desc",
+            "filters": {},
+            "issue78SourceSentinel": {
+              "duplicate": true
+            }
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "com.example.issue78",
+            "type": "movie",
+            "catalogId": "issue-78-catalog",
+            "genre": null,
+            "addonName": "Issue 78 synthetic addon",
+            "manifestUrl": "https://example.invalid/manifest.json",
+            "showInHome": false,
+            "issue78ProjectionSentinel": {
+              "keep": "projection"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

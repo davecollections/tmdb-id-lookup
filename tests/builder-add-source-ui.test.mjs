@@ -39,6 +39,7 @@ const {
 	beginSelectedCollectionDetailsRequest,
 	selectedCollectionDetailsFromOutcome,
 } = await vite.ssrLoadModule("/src/ui/AddSourceDialog.jsx");
+const { TmdbEntityLink } = await vite.ssrLoadModule("/src/ui/TmdbEntityLink.jsx");
 after(() => vite.close());
 
 function countingIdFactory(prefix = "builder") {
@@ -535,8 +536,16 @@ test("Review renders poster, canonical recipe, editable title, and accessible co
 	assert.ok(markup.includes('alt="Collection poster artwork"'));
 	assert.ok(markup.includes("2 titles in this collection"));
 	assert.ok(markup.includes('value="Edited source title"'));
+	assert.ok(markup.includes("Source name"));
+	assert.ok(markup.includes("This is the name shown in Nuvio. You can customise it."));
+	assert.equal(markup.includes("Nuvio source title"), false);
 	assert.ok(markup.includes('data-source-recipe="tmdb-collection"'));
 	assert.ok(markup.includes("TMDB-provided order"));
+	assert.ok(markup.includes('href="https://www.themoviedb.org/collection/123"'));
+	assert.ok(markup.includes('target="_blank"'));
+	assert.ok(markup.includes('rel="noopener noreferrer"'));
+	assert.ok(markup.includes('aria-label="Open Example Collection on TMDB (collection 123)"'));
+	assert.ok(markup.includes('class="tmdb-entity-link-indicator" aria-hidden="true">↗</span>'));
 	assert.equal(markup.includes("Original order"), false);
 	assert.ok(markup.includes('aria-expanded="true"'));
 	assert.ok(markup.includes('aria-controls="add-source-contained-titles"'));
@@ -544,6 +553,61 @@ test("Review renders poster, canonical recipe, editable title, and accessible co
 	assert.ok(markup.includes("2001"));
 	assert.ok(markup.includes("Second Movie"));
 	assert.ok(markup.includes("Year unavailable"));
+	for (const control of ["add-source-title-input", "add-source-contained-titles"]) {
+		assert.ok(markup.includes(control), control);
+	}
+});
+
+test("Review identifies the canonical Collection name as auto-managed until customised", () => {
+	const selectedResult = detailsResult();
+	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
+		selectedResult,
+		title: selectedResult.name,
+		titleInputRef: null,
+		titleError: null,
+		titlesExpanded: false,
+		duplicate: null,
+		applyDiagnostic: null,
+		onTitleChange() {},
+		onToggleTitles() {},
+	}));
+	assert.ok(markup.includes("Source name"));
+	assert.ok(markup.includes("This name updates automatically until you customise it."));
+	assert.equal(markup.includes("Nuvio source title"), false);
+});
+
+test("TMDB review links fail closed for malformed, missing, or unsupported identities", () => {
+	for (const props of [
+		{ entityType: "collection", tmdbId: "123", entityName: "Raw input" },
+		{ entityType: "person", tmdbId: 0, entityName: "Missing person" },
+		{ entityType: "discover", tmdbId: 123, entityName: "Discover recipe" },
+		{ entityType: "watch-provider", tmdbId: 8, entityName: "Provider" },
+		{ entityType: "builder", tmdbId: 123, entityName: "Internal ID" },
+	]) {
+		const markup = renderToStaticMarkup(createElement(TmdbEntityLink, props));
+		assert.equal(markup.includes("<a"), false, JSON.stringify(props));
+	}
+});
+
+test("long Collection review titles wrap above a secondary mobile TMDB link", () => {
+	const longName = "A Very Long Official TMDB Movie Collection Name That Must Wrap Naturally Instead Of Being Truncated";
+	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
+		selectedResult: detailsResult({ name: longName }),
+		title: longName,
+		titleInputRef: null,
+		titleError: null,
+		titlesExpanded: false,
+		duplicate: null,
+		applyDiagnostic: null,
+		onTitleChange() {},
+		onToggleTitles() {},
+	}));
+	const styles = read("builder/src/styles.css");
+	assert.ok(markup.includes(longName));
+	assert.ok(markup.includes('href="https://www.themoviedb.org/collection/123"'));
+	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.add-source-review \.add-source-section-heading\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.add-source-review \.tmdb-entity-link\s*\{[\s\S]*justify-self:\s*start/);
+	assert.doesNotMatch(styles.match(/\.add-source-review \.add-source-section-heading\s*\{[^}]*\}/)?.[0] ?? "", /text-overflow|white-space:\s*nowrap/);
 });
 
 test("Review uses a stable no-poster placeholder without emitting an image URL", () => {
@@ -884,6 +948,9 @@ test("responsive CSS provides an opaque full Visual Viewport task surface and sa
 		assert.ok(styles.includes(`safe-area-inset-${inset}`), inset);
 	}
 	assert.match(styles, /\.add-source-actions \.editor-apply:disabled\s*\{[\s\S]*background:\s*rgb\(34 58 69\)/);
+	assert.match(styles, /\.tmdb-entity-link\s*\{[\s\S]*min-height:\s*44px[\s\S]*text-decoration:\s*none/);
+	assert.match(styles, /\.tmdb-entity-link:hover\s*\{[\s\S]*border-color:/);
+	assert.match(styles, /\.tmdb-entity-link:focus-visible\s*\{[\s\S]*outline:/);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*width:\s*min\(920px,\s*100%\)/);
 });
 

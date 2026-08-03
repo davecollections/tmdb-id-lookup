@@ -31,6 +31,7 @@ import {
 } from "./add-source-navigation-state.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
+import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 
 export const ADD_SOURCE_SEARCH_DEBOUNCE_MS = 300;
 export { ADD_SOURCE_STEPS };
@@ -447,6 +448,7 @@ export function AddSourceReviewStep({
 	onTitleChange,
 	onToggleTitles,
 }) {
+	const nameIsAutoManaged = title === selectedResult.name;
 	return (
 		<section className="add-source-review" aria-labelledby="add-source-review-title">
 			{duplicate ? (
@@ -476,13 +478,17 @@ export function AddSourceReviewStep({
 							<p className="panel-kicker">Official TMDB collection</p>
 							<h3 id="add-source-review-title">{selectedResult.name}</h3>
 						</div>
-						<span>TMDB {selectedResult.id}</span>
+						<TmdbEntityLink
+							entityType="collection"
+							tmdbId={selectedResult.id}
+							entityName={selectedResult.name}
+						/>
 					</div>
 					<p className="add-source-review-count">
 						{selectedResult.movieCount} title{selectedResult.movieCount === 1 ? "" : "s"} in this collection
 					</p>
 					<div className="editor-field">
-						<label htmlFor="add-source-title-input">Nuvio source title</label>
+						<label htmlFor="add-source-title-input">Source name</label>
 						<input
 							ref={titleInputRef}
 							id="add-source-title-input"
@@ -494,7 +500,9 @@ export function AddSourceReviewStep({
 							onChange={onTitleChange}
 						/>
 						<p className="editor-field-help" id="add-source-title-help">
-							The official title is used initially. Change only the title shown by Nuvio.
+							{nameIsAutoManaged
+								? "This name updates automatically until you customise it."
+								: "This is the name shown in Nuvio. You can customise it."}
 						</p>
 						<p className="editor-field-error" id="add-source-title-error" role={titleError ? "alert" : undefined}>
 							{titleError?.message ?? ""}

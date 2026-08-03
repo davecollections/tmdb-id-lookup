@@ -2,6 +2,7 @@ import {
 	isInvisibleNuvioTitle,
 	isValidVisibleNuvioTitle,
 } from "../nuvio/titles.js";
+import { canEditSource } from "../source-edit/index.js";
 import { buildSiblingMovements } from "./hierarchy-reordering.js";
 
 const folderArtworkFields = Object.freeze([
@@ -215,6 +216,7 @@ function buildSource(source, selectedInternalId) {
 		accessibleName: title.accessibleName,
 		category: source.category,
 		categoryLabel: sourceCategoryLabel(source.category),
+		editSupported: canEditSource(source),
 		metadata: sourceMetadata(source),
 		selected: source.internalId === selectedInternalId,
 		details: compactDetails([

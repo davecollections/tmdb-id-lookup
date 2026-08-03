@@ -10,6 +10,7 @@ import builderViteConfig from "../builder/vite.config.js";
 import { parseCanonicalHttpsOrigin } from "../builder/worker-origin.js";
 import {
 	buildTmdbPosterUrl,
+	buildTmdbEntityPageUrl,
 	buildMovieFranchiseSourceDraft,
 	createAsyncRequestCoordinator,
 	createMovieFranchiseSource,
@@ -59,6 +60,17 @@ const noncanonicalWorkerBaseUrls = [
 ];
 
 assert.ok(configuredWorkerBaseUrl, "The stable v1 Worker endpoint must be configured.");
+
+test("canonical TMDB review URLs require an allowlisted resolved entity and positive numeric ID", () => {
+	assert.equal(buildTmdbEntityPageUrl("collection", 720879), "https://www.themoviedb.org/collection/720879");
+	assert.equal(buildTmdbEntityPageUrl("person", 31), "https://www.themoviedb.org/person/31");
+	for (const entityType of ["discover", "watch-provider", "builder", "COLLECTION", "movie", null]) {
+		assert.equal(buildTmdbEntityPageUrl(entityType, 31), null, String(entityType));
+	}
+	for (const id of [null, undefined, "31", 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, Number.NaN]) {
+		assert.equal(buildTmdbEntityPageUrl("person", id), null, String(id));
+	}
+});
 
 function workerConfig(value) {
 	return `const TMDB_PROXY_BASE_URL = "${value}";`;
@@ -921,6 +933,9 @@ test("source semantic validation rejects empty titles, unsafe IDs, changed const
 		const result = validateMovieFranchiseSourceDraft(draft);
 		assert.equal(result.ok, false, code);
 		assert.equal(result.errors.some((entry) => entry.code === code), true, code);
+		if (code === "SOURCE_TITLE_REQUIRED") {
+			assert.equal(result.errors[0].message, "Enter a name for this source before saving.");
+		}
 	}
 
 	const extra = canonicalDraft();

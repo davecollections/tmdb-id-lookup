@@ -38,6 +38,7 @@ import {
 import { restoreAddSourceSearchView } from "./add-source-navigation-state.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
+import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import {
 	completePeopleSearchRestore,
 	createPeopleSourceNavigationState,
@@ -299,7 +300,13 @@ export function PeopleConfigurationCard({
 				{showArtwork
 					? <AppliedArtworkPreview person={person} artworkState={artworkState} onRetry={onRetryArtwork} />
 					: <PersonProfile person={person} className="people-selected-profile" loading="eager" />}
-				<div><h3>{person.name}</h3><p>Known for {person.knownForDepartment || "an unavailable department"} · TMDB {person.id}</p></div>
+				<div className="people-configuration-heading">
+					<h3>{person.name}</h3>
+					<div className="people-configuration-meta">
+						<span>Known for {person.knownForDepartment || "an unavailable department"}</span>
+						<TmdbEntityLink entityType="person" tmdbId={person.id} entityName={person.name} />
+					</div>
+				</div>
 				{onRemove ? <button type="button" className="people-remove-person" aria-label={`Remove ${person.name}`} onClick={onRemove}>Remove</button> : null}
 			</header>
 			{detail?.status === "error" ? (

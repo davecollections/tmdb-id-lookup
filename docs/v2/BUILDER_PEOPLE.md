@@ -4,7 +4,7 @@ Status: the final owner-review refinements are implemented on issue #74's dedica
 
 Issue: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74)
 
-Last reviewed: 2026-08-02
+Last reviewed: 2026-08-03
 
 This document records the focused People contract. [`BUILDER_KNOWLEDGE.md`](./BUILDER_KNOWLEDGE.md) remains the broader evidence record, and [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) remains the durable product-direction source.
 
@@ -128,7 +128,7 @@ Missing curated records discovered in bounded owner QA are recorded in [`ASSET_G
 
 ## Submission, modal, and accessibility
 
-People has Search and Configure stages only. Configuration contains the selected people, combination controls, count status, duplicate context, applicable final artwork, and the final result summary. Final actions state the mutation, for example `Create Tom Hanks · 2 sources`, `Add Tom Hanks · 2 sources`, or `Add 4 folders · 7 sources`.
+People has Search and Configure stages only. Configuration contains the selected people, combination controls, count status, duplicate context, applicable final artwork, and the final result summary. Each configured person's validated positive numeric ID links to `https://www.themoviedb.org/person/<id>` in a new tab with `noopener noreferrer`, a visible external indicator, meaningful accessible naming, and mobile-safe wrapping. Search-result cards keep their ID as plain metadata, and unsupported or malformed entity data never becomes a link. Final actions state the mutation, for example `Create Tom Hanks · 2 sources`, `Add Tom Hanks · 2 sources`, or `Add 4 folders · 7 sources`.
 
 The source-mode chooser and short/empty People Search use content-based height. Results and bulk configuration expand only toward the existing maximum. The dialog retains one scroll owner, body lock, focus containment, safe areas, Visual Viewport keyboard handling, Escape/Close behavior, trigger restoration, status/alert regions, and reduced-motion support.
 
@@ -149,5 +149,5 @@ On 2026-08-02, Dave imported the regenerated final fixture into current Nuvio De
 
 - Only Acting and Directing are supported. Writer, creator, producer, and generic crew/all-credit sources are not generated.
 - Count data is configuration-time context, not exported data or a persistent service.
-- The flow does not create a collection, edit existing sources, expose sort controls, implement Basic Discover, or implement generic collection-level multi-add. Future work is tracked conceptually as `Add generic multi-item folder creation to the V2 Builder` and `Add editing for native Builder sources`; neither is issue #74 scope.
+- Issue #74's creation flow does not create a collection, edit existing sources, expose sort controls, implement Basic Discover, or implement generic collection-level multi-add. Issue #78 later adds an editor for one existing physical People source: the person ID remains fixed; the user may change among the same four Acting/Directing and Movie/Series combinations; approved default titles auto-follow until typing makes them custom; **Use default title** restores syncing; and only the stable-v1 Popular/Recent/Top-rated sort inventory is editable. Opening remains immediate from stored data while the shared successful person-details cache or one bounded non-blocking combined-credit request supplies all four issue #74 counts. Failure/Retry never blocks Save, no artwork request occurs, and logical person-folder/bundle editing remains future work.
 - V1 People behavior, Company/Network workflows and typed counts, Worker routes, dependencies, lockfiles, Pages allowlists, production data, and `nuvio-assets` remain unchanged.
