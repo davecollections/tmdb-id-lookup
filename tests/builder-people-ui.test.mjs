@@ -282,10 +282,36 @@ test("configuration exposes four direct combinations with inline counts and zero
 	assert.ok(markup.includes("No titles found"));
 	assert.ok(markup.includes("4 titles"));
 	assert.ok(markup.includes("Refresh title counts"));
+	assert.ok(markup.includes('href="https://www.themoviedb.org/person/31"'));
+	assert.ok(markup.includes('target="_blank"'));
+	assert.ok(markup.includes('rel="noopener noreferrer"'));
+	assert.ok(markup.includes('aria-label="Open Tom Hanks on TMDB (person 31)"'));
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 4);
 	assert.equal(markup.includes("Folder artwork"), false);
 	assert.ok(markup.includes('data-profile-state="ready"'));
 	assert.equal(markup.includes("Curated artwork"), false);
+});
+
+test("long People review names and their TMDB link wrap without removing configuration controls", () => {
+	const selected = person({
+		name: "A Deliberately Very Long Canonical Person Name That Must Wrap Naturally On A Narrow Phone",
+	});
+	const markup = renderToStaticMarkup(createElement(PeopleConfigurationCard, {
+		personResult: selected,
+		detail: { status: "ready", person: selected },
+		configuration: createPeopleConfiguration(selected),
+		artworkState: null,
+		showArtwork: false,
+		onToggle() {}, onRefresh() {}, onRetry() {}, onRetryArtwork() {}, onRemove: null,
+	}));
+	const styles = read("builder/src/styles.css");
+	assert.ok(markup.includes(selected.name));
+	assert.ok(markup.includes('href="https://www.themoviedb.org/person/31"'));
+	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 4);
+	assert.ok(markup.includes("Refresh title counts"));
+	assert.match(styles, /\.people-configuration-meta\s*\{[\s\S]*flex-wrap:\s*wrap/);
+	assert.match(styles, /\.people-configuration-meta > span:first-child\s*\{[\s\S]*overflow-wrap:\s*anywhere/);
+	assert.match(styles, /\.tmdb-entity-link\s*\{[\s\S]*min-height:\s*44px/);
 });
 
 test("new-folder configuration shows only the final applied artwork representation", () => {

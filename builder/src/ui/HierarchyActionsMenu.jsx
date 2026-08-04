@@ -64,6 +64,7 @@ export function HierarchyActionsMenu({
 	onOpen,
 	onClose,
 	onEdit = null,
+	editLabel = "Edit",
 	onDelete,
 	registerTrigger,
 }) {
@@ -180,7 +181,7 @@ export function HierarchyActionsMenu({
 					disabled={disabled || !open}
 					onClick={() => runAction(onEdit)}
 				>
-					Edit
+					{editLabel}
 				</button>
 			) : null}
 			<button

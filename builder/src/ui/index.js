@@ -1,5 +1,7 @@
 export { BuilderApp } from "./BuilderApp.jsx";
 export { AddSourceDialog } from "./AddSourceDialog.jsx";
+export { MovieCollectionPicker } from "./MovieCollectionPicker.jsx";
+export { SourceEditorDialog } from "./SourceEditorDialog.jsx";
 export {
 	PeopleConfigurationCard,
 	PeopleSearchStep,

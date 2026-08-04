@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-08-01
+Last reviewed: 2026-08-02
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -193,7 +193,9 @@ Exact action labels remain open. A visible plus symbol must perform the creation
 
 **Implemented unified People slice on issue #74's branch, with final owner Nuvio Desktop visual/import/export acceptance:** the mode chooser offers selected-folder `Add person` alongside Movie franchise, while Folders exposes collection-level `Add people`. Folder quick add configures direct Acting Movies/Series and Directed Movies/Series choices. An empty Builder-generated Untitled default is atomically promoted into a canonical-name, final-artwork person folder; every other destination preserves its presentation and receives sources only. Collection add retains up to 20 exact-ID selections across search/page/Back, independently resolves one final artwork representation, and creates one canonical-name folder per person in one revision. Automatic defaults use department plus positive distinct counts once; manual choices persist. Generated source titles match stable v1 role/media wording so Nuvio tabs remain distinct. The regenerated fixture imported successfully: both curated Posters rendered, all four distinct tabs and their Acting/Directing catalogues worked, and the immediate export preserved the exact SHA-versioned artwork URLs, `hideTitle: true`, IDs, grouping, source order, and native `catalogSources: []`. The client version/build remains unknown. The slice does not create collections, edit sources, expose other crew roles or sort controls, or implement generic multi-add.
 
-**Retained future considerations:** `Add editing for native Builder sources` should cover post-creation option changes and preservation-safe imported-field editing. `Add generic multi-item folder creation to the V2 Builder` should place the current People batch behind a generic launcher and later admit Movie franchises and compatible entity types. Quick Add/multi-add may keep Search open for several independent results with clear Added/duplicate states; atomic behavior applies only where a future operation commits several sources together. Bulk collection lookup may use bounded one-name-per-line input, controlled concurrency, ambiguous/unmatched handling, duplicate review, and multi-source insertion. Optional spelling or singular/plural suggestions must be transparent and must not blindly append or remove `s`.
+**Implemented first native source-editing slice plus owner-approved Round 2 refinements on issue #78's branch, with deterministic checks, bounded local desktop/mobile browser QA, and owner desktop/physical-iPhone acceptance passing; current-client acceptance remains pending:** supported Movie Collection and People source cards expose `Edit source` before Delete. One physical source is edited in place through a registry-backed adapter and one minimal controller update. Selecting another Movie Collection immediately applies its canonical TMDB name to the draft while retaining custom/reset/Cancel behavior; provider/type/media/sort/filters stay fixed. People keeps the person ID fixed, allows the same four Acting/Directing and Movie/Series identities, auto-manages only approved default titles until manual customization, reuses one shared bounded non-blocking combined-credit count result, and exposes only stable-v1 Popular/Recent/Top-rated sort values while preserving untouched imports. Desktop/tablet editors now use natural content height capped by the viewport while the reviewed mobile shell remains full-height with one scroll owner and sticky actions. Add Source Collection Review and People Configure expose only validated canonical TMDB collection/person ID links, with external/new-tab semantics and mobile-safe wrapping; unsupported IDs remain plain or absent. Prominent focused duplicate/stale/validation alerts, difference-only title/sort patches, same-folder duplicate rejection, stale-session refusal, exact source focus recovery, and imported raw/unknown/order preservation are required. Unsupported native, Discover, addon, and opaque sources remain Delete-only. Logical bundle editing, person replacement, Collection sort/filter controls, and additional adapters remain separate work.
+
+**Retained future considerations:** `Add generic multi-item folder creation to the V2 Builder` should place the current People batch behind a generic launcher and later admit Movie franchises and compatible entity types. Quick Add/multi-add may keep Search open for several independent results with clear Added/duplicate states; atomic behavior applies only where a future operation commits several sources together. Bulk collection lookup may use bounded one-name-per-line input, controlled concurrency, ambiguous/unmatched handling, duplicate review, and multi-source insertion. Optional spelling or singular/plural suggestions must be transparent and must not blindly append or remove `s`.
 
 Future collection sort controls must remain evidence-based. For current Nuvio Desktop `COLLECTION` resolution, `original` means TMDB-provided/API order rather than chronological or website order; `primary_release_date.desc` is owner-observed newest-first; `primary_release_date.asc` is currently unsupported and falls back to TMDB order. Oldest-first must not be exposed until supported and verified.
 
@@ -315,6 +317,7 @@ Owner-supplied current Nuvio evidence confirms collection-level `focusGlowEnable
 - The preservation-first importer and serializer are core product advantages.
 - Unknown and community fields survive unrelated edits.
 - Opaque sources remain preservable, movable, and removable without being guessed into known source types.
+- Supported native Movie Collection and People sources can be edited as one exact physical source with touched-only titles, bounded identity choices, duplicate rejection, stale-session protection, and minimal patches; unsupported sources remain preservation-only.
 - Imported artwork and presentation values remain protected unless changed by the user.
 - Import and export should be understandable without requiring raw-JSON editing.
 
@@ -402,11 +405,12 @@ Trakt integration remains outside current project scope; a possible future colou
 8. First source creation and Search/Add slice — TMDB movie franchises are implemented on issue #65's dedicated branch; owner UI acceptance and the required current Nuvio Desktop import/runtime/round-trip gate are complete. A second client is desirable but non-blocking unless conflicting behavior appears. Future source types, automatic hierarchy, source editing, multi-add, bulk lookup, suggestions, and sort controls remain separate focused work.
 9. Collection and Folder settings polish — issue #69 updates wording and compact grouping while preserving the issue #53 schema and export contract; independent and owner UI/flow review remain the next gates.
 10. Unified People Search/Add — issue #74 implements selected-folder quick add with untouched-default promotion, preservation-only existing folders, collection selection of up to 20 people, direct source combinations and one-time defaults, atomic single-folder/multi-folder batches, independently keyed final artwork, and stable v1 source tab titles. The first Desktop source-contract run passed, and the regenerated distinct-title/curated-artwork fixture subsequently passed owner visual/import/immediate-export validation; the client version/build remains unknown.
-11. Advanced Discover creation.
-12. Further deliberate V2 artwork-runtime integration at appropriate typed-source stages.
-13. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
-14. Review/export usability.
-15. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
+11. First native source editing — issue #78 implements preservation-safe physical Movie Collection and People editors through a reusable adapter seam. Deterministic checks, the sanitized fixture package, and owner desktop/physical-iPhone review are complete; current-client import/edit/export evidence remains the mandatory gate before integration.
+12. Advanced Discover creation.
+13. Further deliberate V2 artwork-runtime integration at appropriate typed-source stages.
+14. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
+15. Review/export usability.
+16. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
 
 This is a dependency map, not a rigid release schedule. Each step requires its own approved issue and may be refined by stronger evidence.
 

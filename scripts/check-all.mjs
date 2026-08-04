@@ -57,10 +57,14 @@ runNode(["--test", path.join("tests", "builder-add-source-foundation.test.mjs")]
 runNode(["--test", path.join("tests", "builder-add-source-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-source-edit-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-source-edit-mounted.test.mjs")]);
 runNode(["--test", path.join("tests", "fixture-line-endings.test.mjs")]);
 runNode(["--test", path.join("tests", "windows-validation.test.mjs")]);
 runNode([path.join("scripts", "check-builder-add-source-fixture.mjs")]);
 runNode([path.join("scripts", "check-builder-people-fixture.mjs")]);
+runNode([path.join("scripts", "check-builder-source-edit-fixture.mjs")]);
 runNode([path.join("scripts", "generate-migration-round-trip.mjs"), "--check"]);
 runNode([path.join("scripts", "check-migration-round-trip-export.mjs")]);
 

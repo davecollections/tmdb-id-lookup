@@ -90,7 +90,7 @@ export function validateMovieFranchiseSourceDraft(draft) {
 		errors.push(diagnostic(
 			"SOURCE_TITLE_REQUIRED",
 			"$sourceDraft.editable.title",
-			"The source title must contain non-whitespace text and must be trimmed.",
+			"Enter a name for this source before saving.",
 		));
 	}
 	if (!isPositiveSafeTmdbId(editable.tmdbId)) {

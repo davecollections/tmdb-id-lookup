@@ -10,6 +10,10 @@ import {
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE_ID,
 } from "../source-add/index.js";
+import {
+	createSourceEditSession,
+	saveSourceEdit,
+} from "../source-edit/index.js";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
@@ -47,6 +51,7 @@ import {
 } from "./responsive-viewport.js";
 import { buildBuilderViewModel } from "./view-model.js";
 import { SourceModeDialog } from "./SourceModeDialog.jsx";
+import { SourceEditorDialog } from "./SourceEditorDialog.jsx";
 import {
 	completeWorkspaceReturn,
 	createWorkspaceReturnGate,
@@ -306,7 +311,7 @@ function HierarchyCard({
 					>
 						{children}
 					</NodeButton>
-					<HierarchyActionsMenu
+				<HierarchyActionsMenu
 						node={node}
 						noun={noun}
 						open={actionsOpen}
@@ -472,6 +477,8 @@ function SourceList({ sources, actionProps }) {
 									disabled={actionProps.actionsDisabled}
 									onOpen={actionProps.onOpenActionsMenu}
 									onClose={actionProps.onCloseActionsMenu}
+									onEdit={source.editSupported ? actionProps.onOpenSourceEditor : null}
+									editLabel="Edit source"
 									onDelete={actionProps.onRequestDelete}
 									registerTrigger={actionProps.registerActionsTrigger}
 								/>
@@ -564,6 +571,7 @@ export function BuilderWorkspace({
 	initialReturnConfirmationOpen = false,
 	initialDeleteConfirmation = null,
 	initialAddSourceOpen = false,
+	initialSourceEdit = null,
 	sourceProvider = null,
 	peopleProvider = null,
 	artworkClient = null,
@@ -600,6 +608,11 @@ export function BuilderWorkspace({
 	const [pendingCreatedSourceFocus, setPendingCreatedSourceFocus] = useState(null);
 	const [pendingPeopleFolderFocus, setPendingPeopleFolderFocus] = useState(null);
 	const [sourceCreationStatusText, setSourceCreationStatusText] = useState("");
+	const [sourceEdit, setSourceEdit] = useState(initialSourceEdit);
+	const [restoreSourceEditTriggerFocus, setRestoreSourceEditTriggerFocus] = useState(false);
+	const [pendingEditedSourceFocus, setPendingEditedSourceFocus] = useState(null);
+	const [pendingSourceEditFallback, setPendingSourceEditFallback] = useState(null);
+	const [sourceEditStatusText, setSourceEditStatusText] = useState("");
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
@@ -619,6 +632,7 @@ export function BuilderWorkspace({
 	const sourceBackControlRef = useRef(null);
 	const deleteGateRef = useRef(null);
 	const addSourceRestoreFocusRef = useRef(null);
+	const sourceEditRestoreFocusRef = useRef(null);
 	const sourceProviderRef = useRef(null);
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
@@ -659,7 +673,8 @@ export function BuilderWorkspace({
 	const editorLocked = visibleEditorDraft !== null;
 	const deleteLocked = deleteConfirmation !== null;
 	const addSourceLocked = visibleAddSourceSession !== null;
-	const modalLocked = editorLocked || deleteLocked || addSourceLocked;
+	const sourceEditLocked = sourceEdit !== null;
+	const modalLocked = editorLocked || deleteLocked || addSourceLocked || sourceEditLocked;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -737,6 +752,14 @@ export function BuilderWorkspace({
 	}, [restoreAddSourceTriggerFocus]);
 
 	useEffect(() => {
+		if (!restoreSourceEditTriggerFocus) return;
+		setRestoreSourceEditTriggerFocus(false);
+		const trigger = sourceEditRestoreFocusRef.current;
+		sourceEditRestoreFocusRef.current = null;
+		focusElementWithoutScroll(trigger);
+	}, [restoreSourceEditTriggerFocus]);
+
+	useEffect(() => {
 		if (createdCardTarget === null || createdCardRef.current === null) return;
 		createdCardRef.current.scrollIntoView?.({
 			behavior: builderCardScrollBehavior(),
@@ -796,6 +819,27 @@ export function BuilderWorkspace({
 		focusElementWithoutScroll(target);
 		setPendingCreatedSourceFocus(null);
 	}, [pendingCreatedSourceFocus, state.revision]);
+
+	useEffect(() => {
+		if (pendingEditedSourceFocus === null) return;
+		const target = primaryControlRefs.current.get(pendingEditedSourceFocus);
+		target?.scrollIntoView?.({
+			behavior: builderCardScrollBehavior(),
+			block: "nearest",
+		});
+		focusElementWithoutScroll(target);
+		setPendingEditedSourceFocus(null);
+	}, [pendingEditedSourceFocus, state.revision]);
+
+	useEffect(() => {
+		if (pendingSourceEditFallback === null) return;
+		const target = primaryControlRefs.current.get(pendingSourceEditFallback.folderInternalId)
+			?? primaryControlRefs.current.get(pendingSourceEditFallback.collectionInternalId)
+			?? sourceBackControlRef.current
+			?? returnHomeButtonRef.current;
+		focusElementWithoutScroll(target);
+		setPendingSourceEditFallback(null);
+	}, [pendingSourceEditFallback, state.revision]);
 
 	useEffect(() => {
 		if (pendingPeopleFolderFocus === null) return;
@@ -897,6 +941,60 @@ export function BuilderWorkspace({
 		setEditorMode(mode);
 		setEditorDiagnostics([]);
 		setEditorDraft(draft);
+	}
+
+	function openSourceEditor(internalId, trigger) {
+		if (navigationLocked || pointerInteractionLocked()) return;
+		const result = createSourceEditSession(state.project, internalId);
+		if (!result.ok) return;
+		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(null);
+		setCreatedCardTarget(null);
+		setSourceEditStatusText("");
+		sourceEditRestoreFocusRef.current = trigger;
+		setSourceEdit({ session: result.session, draft: result.draft });
+	}
+
+	function cancelSourceEdit() {
+		if (sourceEdit === null) return;
+		setSourceEdit(null);
+		setRestoreSourceEditTriggerFocus(true);
+	}
+
+	function applySourceEdit(draft) {
+		if (sourceEdit === null) {
+			return {
+				ok: false,
+				errors: [{
+					code: "SOURCE_EDIT_SESSION_UNAVAILABLE",
+					path: "$sourceEdit",
+					message: "This source editor is no longer available. Changes were not saved.",
+				}],
+			};
+		}
+		const result = saveSourceEdit(controller, sourceEdit.session, draft);
+		if (!result.ok) {
+			setSourceEditStatusText("");
+			queueMicrotask(() => setSourceEditStatusText("Source changes were not saved."));
+			if (result.closeRequired) {
+				const { collectionInternalId, folderInternalId } = sourceEdit.session;
+				sourceEditRestoreFocusRef.current = null;
+				setSourceEdit(null);
+				setPendingSourceEditFallback({ collectionInternalId, folderInternalId });
+			}
+			return result;
+		}
+
+		sourceEditRestoreFocusRef.current = null;
+		setSourceEdit(null);
+		setPendingEditedSourceFocus(result.updatedInternalId);
+		setSourceEditStatusText("");
+		queueMicrotask(() => {
+			setSourceEditStatusText(result.changed
+				? "Source changes saved."
+				: "Source unchanged; no update was needed.");
+		});
+		return result;
 	}
 
 	function closeEditor() {
@@ -1526,6 +1624,7 @@ export function BuilderWorkspace({
 		onCloseActionsMenu: closeActionsMenu,
 		onSelect: selectNode,
 		onOpenEditor: openEditor,
+		onOpenSourceEditor: openSourceEditor,
 		onRequestDelete: requestDeletion,
 		dragState,
 		keyboardReorderInternalId,
@@ -1550,6 +1649,7 @@ export function BuilderWorkspace({
 			data-settings-open={editorLocked ? "true" : undefined}
 			data-delete-open={deleteLocked ? "true" : undefined}
 			data-add-source-open={addSourceLocked ? "true" : undefined}
+			data-source-edit-open={sourceEditLocked ? "true" : undefined}
 		>
 			<div
 				className="workspace-underlay"
@@ -1635,6 +1735,15 @@ export function BuilderWorkspace({
 					aria-atomic="true"
 				>
 					{sourceCreationStatusText}
+				</p>
+				<p
+					className="visually-hidden"
+					data-source-edit-status="true"
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+				>
+					{sourceEditStatusText}
 				</p>
 
 				<div className="workspace" data-mobile-level={activeMobileLevel}>
@@ -1921,6 +2030,16 @@ export function BuilderWorkspace({
 						onApply={applyAddSource}
 					/>
 				)
+			) : null}
+			{sourceEdit ? (
+			<SourceEditorDialog
+					provider={sourceProviderRef.current}
+					peopleProvider={peopleProviderRef.current}
+					session={sourceEdit.session}
+					initialDraft={sourceEdit.draft}
+					onCancel={cancelSourceEdit}
+					onSave={applySourceEdit}
+				/>
 			) : null}
 		</main>
 	);

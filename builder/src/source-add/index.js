@@ -21,6 +21,7 @@ export {
 	isPositiveSafeTmdbId,
 	parseTmdbCollectionInput,
 } from "./tmdb-collection-input.js";
+export { buildTmdbEntityPageUrl } from "./tmdb-entity-url.js";
 export {
 	createTmdbCollectionProvider,
 	normalizeTmdbCollectionDetailsResponse,
