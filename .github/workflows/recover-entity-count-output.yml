@@ -1,0 +1,206 @@
+name: Recover Typed Entity Count Output
+
+on:
+  workflow_dispatch:
+    inputs:
+      workload:
+        description: Completed typed writer job to recover
+        required: true
+        type: choice
+        options:
+          - company-movie
+          - company-series
+          - network-series
+          - company-repair
+          - network-repair
+      run_id:
+        description: Originating GitHub Actions run ID
+        required: true
+        type: string
+      run_attempt:
+        description: Originating run attempt
+        required: true
+        default: "1"
+        type: string
+      publish_after_recovery:
+        description: Run the existing zero-request publication after recovery
+        required: true
+        default: true
+        type: boolean
+
+permissions: {}
+
+jobs:
+  recover-company-movie:
+    if: inputs.workload == 'company-movie'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: tmdb-count-company-movie
+      cancel-in-progress: false
+    outputs:
+      planned_month: ${{ steps.recovery.outputs.planned-month }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 22 }
+      - id: recovery
+        uses: ./.github/actions/recover-entity-count-output
+        with:
+          workload: company-movie
+          run-id: ${{ inputs.run_id }}
+          run-attempt: ${{ inputs.run_attempt }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Recover exact TMDB Company Movie writer output
+
+  recover-company-series:
+    if: inputs.workload == 'company-series'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: tmdb-count-company-series
+      cancel-in-progress: false
+    outputs:
+      planned_month: ${{ steps.recovery.outputs.planned-month }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 22 }
+      - id: recovery
+        uses: ./.github/actions/recover-entity-count-output
+        with:
+          workload: company-series
+          run-id: ${{ inputs.run_id }}
+          run-attempt: ${{ inputs.run_attempt }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Recover exact TMDB Company Series writer output
+
+  recover-network-series:
+    if: inputs.workload == 'network-series'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: tmdb-count-network-series
+      cancel-in-progress: false
+    outputs:
+      planned_month: ${{ steps.recovery.outputs.planned-month }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 22 }
+      - id: recovery
+        uses: ./.github/actions/recover-entity-count-output
+        with:
+          workload: network-series
+          run-id: ${{ inputs.run_id }}
+          run-attempt: ${{ inputs.run_attempt }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Recover exact TMDB Network Series writer output
+
+  recover-company-repair:
+    if: inputs.workload == 'company-repair'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: tmdb-count-company-movie
+      cancel-in-progress: false
+    outputs:
+      planned_month: ${{ steps.recovery.outputs.planned-month }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 22 }
+      - id: recovery
+        uses: ./.github/actions/recover-entity-count-output
+        with:
+          workload: company-repair
+          run-id: ${{ inputs.run_id }}
+          run-attempt: ${{ inputs.run_attempt }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Recover exact typed TMDB Company repair output
+
+  recover-network-repair:
+    if: inputs.workload == 'network-repair'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: tmdb-count-network-series
+      cancel-in-progress: false
+    outputs:
+      planned_month: ${{ steps.recovery.outputs.planned-month }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 22 }
+      - id: recovery
+        uses: ./.github/actions/recover-entity-count-output
+        with:
+          workload: network-repair
+          run-id: ${{ inputs.run_id }}
+          run-attempt: ${{ inputs.run_attempt }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Recover exact typed TMDB Network repair output
+
+  publish:
+    if: >-
+      always() && !cancelled() && inputs.publish_after_recovery == true &&
+      (
+        needs.recover-company-movie.result == 'success' ||
+        needs.recover-company-series.result == 'success' ||
+        needs.recover-network-series.result == 'success' ||
+        needs.recover-company-repair.result == 'success' ||
+        needs.recover-network-repair.result == 'success'
+      )
+    needs:
+      - recover-company-movie
+      - recover-company-series
+      - recover-network-series
+      - recover-company-repair
+      - recover-network-repair
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-count-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { ref: main }
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 22 }
+      - name: Run existing zero-request publication from latest main
+        env:
+          COUNT_MONTH: ${{ needs.recover-company-movie.outputs.planned_month || needs.recover-company-series.outputs.planned_month || needs.recover-network-series.outputs.planned_month || needs.recover-company-repair.outputs.planned_month || needs.recover-network-repair.outputs.planned_month }}
+          VALIDATION_ONLY: "false"
+        run: node scripts/publish-entity-title-counts.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Publish complete Builder entity title counts after recovery
+          paths: |
+            data/entity-title-counts.min.json
+            data/entity-title-counts-completion.json

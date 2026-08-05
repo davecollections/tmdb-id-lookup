@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://davecollections.github.io/tmdb-id-lookup/schemas/tmdb-request-usage.schema.json",
+  "title": "TMDB request usage receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "reservation_id",
+    "reservation_sha256",
+    "utc_date",
+    "planned_month",
+    "workflow",
+    "run_id",
+    "run_attempt",
+    "job",
+    "allocation_key",
+    "request_class",
+    "target_dimension",
+    "allowance",
+    "attempts_used",
+    "unused_allowance",
+    "first_attempt_at",
+    "last_attempt_at",
+    "by_host",
+    "by_status_or_outcome",
+    "retries",
+    "month",
+    "dimension",
+    "target_fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "reservation_id": { "type": "string", "minLength": 1 },
+    "reservation_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "utc_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "planned_month": { "type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" },
+    "workflow": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "run_attempt": { "type": "string", "minLength": 1 },
+    "job": { "type": "string", "minLength": 1 },
+    "allocation_key": { "type": "string", "minLength": 1 },
+    "request_class": { "type": "string", "minLength": 1 },
+    "target_dimension": { "enum": ["company-movie", "company-series", "network-series"] },
+    "allowance": { "type": "integer", "minimum": 0, "maximum": 100000 },
+    "attempts_used": { "type": "integer", "minimum": 0, "maximum": 100000 },
+    "unused_allowance": { "type": "integer", "minimum": 0, "maximum": 100000 },
+    "first_attempt_at": { "type": ["string", "null"], "format": "date-time" },
+    "last_attempt_at": { "type": ["string", "null"], "format": "date-time" },
+    "by_host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api.themoviedb.org", "files.tmdb.org"],
+      "properties": {
+        "api.themoviedb.org": { "type": "integer", "minimum": 0 },
+        "files.tmdb.org": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "by_status_or_outcome": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "retries": { "type": "integer", "minimum": 0 },
+    "month": { "type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" },
+    "dimension": { "enum": ["company-movie", "company-series", "network-series"] },
+    "target_fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

@@ -1,0 +1,33 @@
+name: Commit recovered entity count output
+description: Reconcile and push one exact recovery package without rebasing
+
+inputs:
+  artifact-root:
+    description: Downloaded recovery artifact directory outside the checkout
+    required: true
+  provenance-path:
+    description: GitHub API-derived provenance record
+    required: true
+  commit-message:
+    description: Exact recovery commit message
+    required: true
+
+outputs:
+  planned-month:
+    value: ${{ steps.commit.outputs.planned_month }}
+  changed:
+    value: ${{ steps.commit.outputs.changed }}
+  legacy-decision:
+    value: ${{ steps.commit.outputs.legacy_decision }}
+
+runs:
+  using: composite
+  steps:
+    - id: commit
+      name: Compare-and-swap exact recovered bytes
+      shell: bash
+      env:
+        RECOVERY_ARTIFACT_ROOT: ${{ inputs.artifact-root }}
+        RECOVERY_PROVENANCE_PATH: ${{ inputs.provenance-path }}
+        RECOVERY_COMMIT_MESSAGE: ${{ inputs.commit-message }}
+      run: node scripts/commit-recovered-entity-count-output.mjs

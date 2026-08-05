@@ -124,10 +124,13 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main }
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Collect Company Series counts
+      - id: collect
+        name: Collect Company Series counts
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
           MODE: ${{ needs.plan.outputs.mode }}
@@ -148,9 +151,23 @@ jobs:
           TMDB_APPROVED_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
           TMDB_COLLECTION_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
         run: node scripts/collect-company-series-counts.mjs
+      - id: recovery-package
+        name: Persist completed typed Company Series output before push
+        if: >-
+          needs.plan.outputs.typed_progress_enabled == 'true' &&
+          needs.plan.outputs.mode == 'collect' &&
+          steps.collect.outputs.recovery_progress_path != ''
+        uses: ./.github/actions/package-entity-count-recovery
+        with:
+          workload: company-series
+          progress-path: ${{ steps.collect.outputs.recovery_progress_path }}
+          usage-path: ${{ steps.collect.outputs.recovery_usage_path }}
+          reservation-path: ${{ needs.reserve-requests.outputs.reservation_path }}
+          output-root: ${{ runner.temp }}/entity-count-recovery
       - uses: ./.github/actions/commit-maintenance-state
         with:
           message: Record monthly TMDB Company Series collection
+          integrity-manifest: ${{ steps.recovery-package.outputs.manifest-path }}
           paths: |
             maintenance/entity-title-counts
             maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage

@@ -1,0 +1,71 @@
+name: Recover typed count writer output
+description: Download, validate, restore, and commit one immutable typed count recovery artifact
+
+inputs:
+  workload:
+    description: Static typed writer workload identifier
+    required: true
+  run-id:
+    description: Originating GitHub Actions run ID
+    required: true
+  run-attempt:
+    description: Originating GitHub Actions run attempt
+    required: true
+  github-token:
+    description: Token with actions read and contents write permissions
+    required: true
+  commit-message:
+    description: Exact recovery commit message
+    required: true
+
+outputs:
+  planned-month:
+    description: Recovered typed month for zero-request publication
+    value: ${{ steps.recover.outputs.planned_month }}
+  changed:
+    description: Whether recovery restored any missing bytes
+    value: ${{ steps.recover.outputs.changed }}
+  legacy-decision:
+    description: Restore, preserve-newer, already-applied, or not-applicable
+    value: ${{ steps.recover.outputs.legacy_decision }}
+
+runs:
+  using: composite
+  steps:
+    - id: provenance
+      name: Resolve source run and exact artifact through GitHub API
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        RECOVERY_WORKLOAD: ${{ inputs.workload }}
+        RECOVERY_RUN_ID: ${{ inputs.run-id }}
+        RECOVERY_RUN_ATTEMPT: ${{ inputs.run-attempt }}
+        RECOVERY_PROVENANCE_ROOT: ${{ runner.temp }}/entity-count-recovery-provenance/${{ inputs.workload }}
+      run: node scripts/resolve-entity-count-recovery-provenance.mjs
+
+    - name: Download the exact originating artifact
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        artifact-ids: ${{ steps.provenance.outputs.artifact_id }}
+        path: ${{ runner.temp }}/entity-count-recovery-download/${{ inputs.workload }}
+        merge-multiple: true
+        github-token: ${{ inputs.github-token }}
+        repository: ${{ github.repository }}
+        run-id: ${{ inputs.run-id }}
+
+    - id: authenticated-provenance
+      name: Authenticate writer base commit through GitHub API
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        RECOVERY_ARTIFACT_ROOT: ${{ runner.temp }}/entity-count-recovery-download/${{ inputs.workload }}
+        RECOVERY_PROVENANCE_PATH: ${{ steps.provenance.outputs.provenance_path }}
+      run: node scripts/authenticate-entity-count-recovery-base.mjs
+
+    - id: recover
+      name: Reconcile and commit exact output without TMDB or history rewriting
+      uses: ./.github/actions/commit-recovered-entity-count-output
+      with:
+        artifact-root: ${{ runner.temp }}/entity-count-recovery-download/${{ inputs.workload }}
+        provenance-path: ${{ steps.authenticated-provenance.outputs.provenance_path }}
+        commit-message: ${{ inputs.commit-message }}

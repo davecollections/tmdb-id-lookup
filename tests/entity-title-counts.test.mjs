@@ -918,6 +918,43 @@ test("reservation planning rejects preferred and absolute over-allocation", () =
 	);
 });
 
+test("exact 90000 preferred ceiling passes without override and 90001 requires it", () => {
+	const exact = buildTestReceipt({
+		reservationId: "preferred-exact",
+		allocations: { collection: 85_950 },
+	});
+	assert.equal(exact.receipt.projected_daily_total, 90_000);
+	assert.equal(exact.receipt.preferred_override_used, false);
+	assert.throws(
+		() => buildTestReceipt({ reservationId: "preferred-over", allocations: { collection: 85_951 } }),
+		/preferred 90000/,
+	);
+});
+
+test("exact 100000 hard ceiling passes only with preferred override and 100001 always fails", () => {
+	assert.throws(
+		() => buildTestReceipt({ reservationId: "absolute-no-override", allocations: { collection: 95_950 } }),
+		/preferred 90000/,
+	);
+	const exact = buildTestReceipt({
+		reservationId: "absolute-exact",
+		allocations: { collection: 95_950 },
+		allowPreferredOverride: true,
+		overrideReason: "exact hard-limit boundary test",
+	});
+	assert.equal(exact.receipt.projected_daily_total, 100_000);
+	assert.equal(exact.receipt.preferred_override_used, true);
+	assert.throws(
+		() => buildTestReceipt({
+			reservationId: "absolute-over",
+			allocations: { collection: 95_951 },
+			allowPreferredOverride: true,
+			overrideReason: "must still fail",
+		}),
+		/absolute 100000/,
+	);
+});
+
 test("reservation creation refuses an expired or internally inconsistent plan", () => {
 	assert.throws(
 		() => buildTestReceipt({ plannedUtcDate: "2026-08-14" }),
@@ -1424,8 +1461,12 @@ test("publisher coalesces contiguous target positions and preserves dimension un
 	});
 
 	assert.equal(first.complete, true);
+	assert.deepEqual(first.sidecar.c["2"], [12, 0]);
+	assert.deepEqual(first.sidecar.c["7"], [0, 3]);
 	assert.equal(first.sidecar.c["11"][1], null);
 	assert.equal(first.sidecar.c["7"][0], 0);
+	assert.equal(first.sidecar.n["3"], 5);
+	assert.equal(first.sidecar.n["8"], 0);
 	assert.ok(first.sidecar.r.cm.some(([firstId, lastId]) => firstId === 2 && lastId === 19));
 	assert.equal(first.sidecarJson, second.sidecarJson);
 	assert.ok(first.completion.sidecar.raw_bytes < 5 * 1024 * 1024);
