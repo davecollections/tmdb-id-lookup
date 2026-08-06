@@ -1,10 +1,11 @@
+import crypto from "node:crypto";
 import zlib from "node:zlib";
 import { promisify } from "node:util";
 import {
-	buildTargetSnapshot,
-	canonicalizeTargetIds,
+	CATALOGUE_PARSER_SEMANTIC_VERSION,
+	CATALOGUE_SCHEMA_VERSION,
 	utcMonth,
-} from "./entity-title-counts.mjs";
+} from "./tmdb-catalogue-counts.mjs";
 
 const gunzip = promisify(zlib.gunzip);
 
@@ -18,6 +19,27 @@ export const TMDB_EXPORT_DATASETS = Object.freeze({
 		exportPrefix: "tv_network_ids",
 	},
 });
+
+export function canonicalizeExportIds(ids) {
+	if (!Array.isArray(ids)) throw new TypeError("Export IDs must be an array.");
+	const normalized = ids.map(Number);
+	if (normalized.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+		throw new TypeError("Export IDs must be positive safe integers.");
+	}
+	if (new Set(normalized).size !== normalized.length) {
+		throw new TypeError("Export IDs must be unique.");
+	}
+	const unique = [...new Set(normalized)].sort((left, right) => left - right);
+	if (!unique.length) throw new TypeError("TMDB export must contain at least one entity ID.");
+	return unique;
+}
+
+export function fingerprintExportIds(ids) {
+	return `sha256:${crypto
+		.createHash("sha256")
+		.update(canonicalizeExportIds(ids).join("\n"))
+		.digest("hex")}`;
+}
 
 export function formatTmdbExportDate(date) {
 	const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -48,7 +70,7 @@ export function parseTmdbExportIds(buffer) {
 	if (!lines.length) {
 		throw new TypeError("TMDB export must contain at least one entity ID.");
 	}
-	return canonicalizeTargetIds(lines.map((line) => Number(JSON.parse(line).id)));
+	return canonicalizeExportIds(lines.map((line) => Number(JSON.parse(line).id)));
 }
 
 export async function fetchTmdbExportIds({
@@ -91,11 +113,22 @@ export function buildSnapshotFromExport({
 	month = utcMonth(),
 	createdAt = new Date().toISOString(),
 }) {
-	return buildTargetSnapshot({
-		entityType,
+	if (!["company", "network"].includes(entityType)) {
+		throw new TypeError("Export entity type must be company or network.");
+	}
+	if (!/^\d{2}_\d{2}_\d{4}$/.test(exportData?.exportDate || "")) {
+		throw new TypeError("Export date must use MM_DD_YYYY.");
+	}
+	const ids = canonicalizeExportIds(exportData.ids);
+	return {
+		schema_version: CATALOGUE_SCHEMA_VERSION,
+		parser_semantic_version: CATALOGUE_PARSER_SEMANTIC_VERSION,
+		entity_type: entityType,
 		month,
-		exportDate: exportData.exportDate,
-		ids: exportData.ids,
-		createdAt,
-	});
+		export_date: exportData.exportDate,
+		total_ids: ids.length,
+		target_fingerprint: fingerprintExportIds(ids),
+		created_at: new Date(createdAt).toISOString(),
+		ids,
+	};
 }

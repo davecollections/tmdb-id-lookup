@@ -4,18 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Safe operation mode
+        description: Safe catalogue operation mode
         required: true
         default: plan
         type: choice
-        options: [plan, collect, sample, retry, network-bootstrap, validate, publish]
+        options: [plan, collect, validate]
       slice_index:
         description: Zero-based Network slice
         required: true
         default: "0"
-      sample_ids:
-        description: Comma-separated Network IDs; required for sample mode
-        required: false
       max_requests:
         description: Maximum Network API attempts
         required: true
@@ -32,7 +29,6 @@ jobs:
     with:
       mode: ${{ inputs.mode }}
       slice_index: ${{ inputs.slice_index }}
-      sample_ids: ${{ inputs.sample_ids }}
       max_requests: ${{ inputs.max_requests }}
       requested_month: ${{ inputs.requested_month }}
     secrets: inherit

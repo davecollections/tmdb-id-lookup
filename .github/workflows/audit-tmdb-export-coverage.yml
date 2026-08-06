@@ -80,7 +80,7 @@ jobs:
           message: Reserve TMDB export audit requests
           paths: ${{ steps.reserve.outputs.reservation_path }}
 
-  audit-and-initialize-targets:
+  audit-catalogues:
     needs:
       - plan-audit
       - reserve-export-requests
@@ -89,7 +89,7 @@ jobs:
       contents: write
       issues: write
     concurrency:
-      group: tmdb-count-targets
+      group: tmdb-catalogue-audit
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -191,5 +191,4 @@ jobs:
             data/company-id-audit.json
             data/tv-network-id-audit.json
             data/id-audit-summary.json
-            maintenance/entity-title-counts
             maintenance/tmdb-request-budget/${{ needs.reserve-export-requests.outputs.utc_date }}/usage

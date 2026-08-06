@@ -5,7 +5,6 @@ on:
     inputs:
       mode: { required: true, type: string }
       slice_index: { required: true, type: string }
-      sample_ids: { required: false, type: string, default: "" }
       max_requests: { required: true, type: string }
       requested_month: { required: false, type: string, default: "" }
     secrets:
@@ -13,24 +12,21 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Safe operation mode
+        description: Safe catalogue operation mode
         required: true
         default: plan
         type: choice
-        options: [plan, collect, sample, retry, validate, publish]
+        options: [plan, collect, validate]
       slice_index:
         description: Zero-based slice override
         required: true
         default: "0"
-      sample_ids:
-        description: Comma-separated Company IDs; required for sample mode
-        required: false
       max_requests:
         description: Maximum Company API attempts
         required: true
         default: "55000"
       requested_month:
-        description: UTC month (blank means current; cannot backdate collection)
+        description: UTC month (blank means current; collection cannot be backdated)
         required: false
   schedule:
     - cron: "0 9 1-14 * *"
@@ -46,16 +42,11 @@ jobs:
       planned_month: ${{ steps.plan.outputs.planned_month }}
       planned_utc_date: ${{ steps.plan.outputs.planned_utc_date }}
       slice_index: ${{ steps.plan.outputs.slice_index }}
-      sample_ids: ${{ steps.plan.outputs.sample_ids }}
       allocations: ${{ steps.plan.outputs.allocations }}
       request_bindings: ${{ steps.plan.outputs.request_bindings }}
       collection_allowance: ${{ steps.plan.outputs.collection_allowance }}
       target_export_allowance: ${{ steps.plan.outputs.target_export_allowance }}
       requires_requests: ${{ steps.plan.outputs.requires_requests }}
-      allow_target_create: ${{ steps.plan.outputs.allow_target_create }}
-      allow_finalize: ${{ steps.plan.outputs.allow_finalize }}
-      typed_progress_enabled: ${{ steps.plan.outputs.typed_progress_enabled }}
-      legacy_only: ${{ steps.plan.outputs.legacy_only }}
       skip: ${{ steps.plan.outputs.skip }}
     steps:
       - uses: actions/checkout@v4
@@ -64,17 +55,16 @@ jobs:
           node-version: 22
       - id: plan
         env:
-          COUNT_RUN_KIND: company-movie
+          CATALOGUE_RUN_KIND: company-movie
           EVENT_NAME: ${{ github.event_name }}
           INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode || 'plan' }}
           INPUT_SLICE: ${{ inputs.slice_index || github.event.inputs.slice_index || '0' }}
-          INPUT_SAMPLE_IDS: ${{ inputs.sample_ids || github.event.inputs.sample_ids || '' }}
           INPUT_MAX_REQUESTS: ${{ inputs.max_requests || github.event.inputs.max_requests || '55000' }}
           INPUT_MONTH: ${{ inputs.requested_month || github.event.inputs.requested_month || '' }}
-        run: node scripts/plan-entity-count-run.mjs
+        run: node scripts/plan-tmdb-catalogue-run.mjs
 
   reserve-requests:
-    if: needs.plan.outputs.requires_requests == 'true'
+    if: needs.plan.outputs.requires_requests == 'true' && needs.plan.outputs.skip != 'true'
     needs: plan
     runs-on: ubuntu-latest
     permissions:
@@ -107,58 +97,15 @@ jobs:
           message: Reserve monthly Company TMDB requests
           paths: ${{ steps.reserve.outputs.reservation_path }}
 
-  ensure-company-target:
+  refresh-company-catalogue:
+    if: needs.plan.outputs.requires_requests == 'true' && needs.plan.outputs.skip != 'true'
     needs: [plan, reserve-requests]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: tmdb-count-targets
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Initialize authoritative Company target
-        if: needs.plan.outputs.allow_target_create == 'true'
-        env:
-          DATASET: companies
-          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
-          ALLOW_TARGET_CREATE: ${{ needs.plan.outputs.allow_target_create }}
-          TMDB_RESERVATION_ID: ${{ needs.reserve-requests.outputs.reservation_id }}
-          TMDB_RESERVATION_PATH: ${{ needs.reserve-requests.outputs.reservation_path }}
-          TMDB_RESERVATION_SHA256: ${{ needs.reserve-requests.outputs.reservation_sha256 }}
-          TMDB_RESERVATION_UTC_DATE: ${{ needs.plan.outputs.planned_utc_date }}
-          TMDB_ALLOCATION_KEY: target_export
-          TMDB_REQUEST_CLASS: target-export
-          TMDB_TARGET_DIMENSION: company
-          TMDB_APPROVED_ALLOWANCE: ${{ needs.plan.outputs.target_export_allowance }}
-        run: node scripts/initialize-entity-count-targets.mjs
-      - name: Validate existing Company target without initialization
-        if: needs.plan.outputs.allow_target_create != 'true'
-        env:
-          DATASET: companies
-          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
-          ALLOW_MISSING_TARGET: ${{ needs.plan.outputs.legacy_only }}
-        run: node scripts/validate-entity-count-target.mjs
-      - uses: ./.github/actions/commit-maintenance-state
-        with:
-          message: Initialize or validate monthly Company count target
-          paths: |
-            maintenance/entity-title-counts
-            maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage
-
-  collect-company-movie:
-    needs: [plan, reserve-requests, ensure-company-target]
     runs-on: ubuntu-latest
     timeout-minutes: 360
     permissions:
       contents: write
     concurrency:
-      group: tmdb-count-company-movie
+      group: tmdb-catalogue-company
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -168,19 +115,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - id: collect
-        name: Collect authoritative Company Movie counts
+      - name: Refresh Company catalogue and legacy Movie totals
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
           MODE: ${{ needs.plan.outputs.mode }}
-          LEGACY_ONLY: ${{ needs.plan.outputs.legacy_only }}
-          TYPED_PROGRESS_ENABLED: ${{ needs.plan.outputs.typed_progress_enabled }}
           SCHEDULED_RUN: ${{ needs.plan.outputs.scheduled }}
           COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
           SLICE_INDEX: ${{ needs.plan.outputs.slice_index }}
           TOTAL_SLICES: 14
-          SAMPLE_IDS: ${{ needs.plan.outputs.sample_ids }}
-          RETRY_UNRESOLVED: ${{ needs.plan.outputs.mode == 'retry' || needs.plan.outputs.scheduled == 'true' }}
           REQUEST_DELAY_MS: 120
           TMDB_RESERVATION_ID: ${{ needs.reserve-requests.outputs.reservation_id }}
           TMDB_RESERVATION_PATH: ${{ needs.reserve-requests.outputs.reservation_path }}
@@ -193,75 +135,31 @@ jobs:
           TMDB_COLLECTION_ALLOWANCE: ${{ needs.plan.outputs.collection_allowance }}
           TMDB_TARGET_EXPORT_ALLOWANCE: ${{ needs.plan.outputs.target_export_allowance }}
         run: node scripts/manual-company-rebuild-from-export.mjs
-      - id: recovery-package
-        name: Persist completed typed Company Movie output before push
-        if: >-
-          needs.plan.outputs.typed_progress_enabled == 'true' &&
-          needs.plan.outputs.mode == 'collect' &&
-          steps.collect.outputs.recovery_progress_path != ''
-        uses: ./.github/actions/package-entity-count-recovery
-        with:
-          workload: company-movie
-          progress-path: ${{ steps.collect.outputs.recovery_progress_path }}
-          usage-path: ${{ steps.collect.outputs.recovery_usage_path }}
-          reservation-path: ${{ needs.reserve-requests.outputs.reservation_path }}
-          output-root: ${{ runner.temp }}/entity-count-recovery
       - uses: ./.github/actions/commit-maintenance-state
         with:
-          message: Record authoritative TMDB Company Movie collection
-          integrity-manifest: ${{ steps.recovery-package.outputs.manifest-path }}
+          message: Refresh TMDB Company catalogue and legacy totals
           paths: |
             data/companies.min.json
             data/companies.csv
             data/scan-meta.json
             data/production-company-export.json
-            maintenance/entity-title-counts
             maintenance/tmdb-request-budget/${{ needs.reserve-requests.outputs.utc_date }}/usage
 
-  validate-publication:
-    if: always() && needs.plan.outputs.allow_finalize == 'true' && needs.plan.outputs.mode == 'validate'
+  validate-company-catalogue:
+    if: needs.plan.outputs.mode == 'validate' && needs.plan.outputs.skip != 'true'
     needs: plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    concurrency:
-      group: tmdb-count-publication
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - env:
+      - name: Validate Company catalogue configuration without requests
+        env:
+          MODE: validate
           COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
-          VALIDATION_ONLY: "true"
-        run: node scripts/publish-entity-title-counts.mjs
-
-  publish:
-    if: always() && needs.plan.outputs.allow_finalize == 'true' && needs.plan.outputs.mode != 'validate' && (needs.collect-company-movie.result == 'success' || needs.plan.outputs.mode == 'publish')
-    needs: [plan, collect-company-movie]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: tmdb-count-publication
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - env:
-          COUNT_MONTH: ${{ needs.plan.outputs.planned_month }}
-          VALIDATION_ONLY: "false"
-        run: node scripts/publish-entity-title-counts.mjs
-      - uses: ./.github/actions/commit-maintenance-state
-        with:
-          message: Publish complete Builder entity title counts
-          paths: |
-            data/entity-title-counts.min.json
-            data/entity-title-counts-completion.json
+          SLICE_INDEX: ${{ needs.plan.outputs.slice_index }}
+          TOTAL_SLICES: 14
+        run: node scripts/manual-company-rebuild-from-export.mjs
