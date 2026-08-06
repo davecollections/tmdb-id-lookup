@@ -210,8 +210,6 @@ V2 must include visible TMDB attribution UI before its `noindex` state is remove
 
 Company names, logos, posters, and trademarks remain the property of their respective owners.
 
-The existing credit for [tomato's transparent covers pack](https://www.reddit.com/r/Nuvio/comments/1sk3ks6/transparent_covers_pack/) is retained while the provenance of older self-hosted genre artwork is confirmed in the artwork project.
-
 Project maintained by [Dave Collections](https://github.com/davecollections).
 
 ## Built Something With This Project?

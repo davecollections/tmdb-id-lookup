@@ -610,30 +610,16 @@ th.sortable:hover {
 	text-align: left;
 }
 
-.footer-line {
-	align-items: center;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px 8px;
-	justify-content: center;
-	margin: 0;
-}
-
 .footer-meta {
 	color: #6f7a89;
 	font-size: 11px;
 	margin: 8px 0 0;
 }
 
-.footer-credits {
-	margin-top: 8px;
-}
-
 .footer-links {
 	margin-top: 10px;
 }
 
-.footer-credits a,
 .footer-links a {
 	color: #9ec5ff;
 }

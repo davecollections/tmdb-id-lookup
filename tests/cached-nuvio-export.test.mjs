@@ -751,6 +751,4 @@ test("production markup keeps simplified automatic artwork UI and no borrowed fo
 	assert.match(exporterSource, /focusGifUrl: ""/);
 	assert.match(exporterSource, /focusGifEnabled: false/);
 	assert.match(exporterSource, /focusGlowEnabled: true/);
-	assert.match(readme, /tomato's transparent covers pack/);
-	assert.match(readme, /provenance of older self-hosted genre artwork/i);
 });
