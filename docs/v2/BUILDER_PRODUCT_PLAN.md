@@ -55,6 +55,7 @@ Progressive disclosure should let a beginner reach a useful result while preserv
 - No account, personal TMDB API key, or personal information is required to complete the core build-and-export journey.
 - Core importing and editing remain local-first in the browser.
 - **Copy JSON** and **Download JSON** are complete supported paths, not fallback-only features.
+- Before the Builder's `noindex` state is removed or V2 is released or promoted for public use, its visible UI must identify TMDB use with an official TMDB logo and prominently display: **“This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.”** The TMDB mark must remain less prominent than the application identity.
 
 **Confirmed direction**
 
@@ -388,6 +389,7 @@ The third concept is documented in the [Nuvio Integration Development Guide](htt
 - Product colourways may distinguish Nuvio and possible future tools.
 - The product title should remain ordinary UI text rather than being permanently embedded in a logo.
 - Final logo design is deferred and must not delay functional Builder work.
+- TMDB attribution is a separate mandatory release requirement, not the Builder's primary branding. Its official mark must not become more prominent than the application identity.
 
 Trakt integration remains outside current project scope; a possible future colourway is not approval to begin Trakt work.
 

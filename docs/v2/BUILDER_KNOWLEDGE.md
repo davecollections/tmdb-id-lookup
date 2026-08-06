@@ -11,6 +11,7 @@ This is a living record of confirmed v2/Nuvio findings, current decisions, unsup
 - v1 is working and stable.
 - v2 changes the product from primarily an ID lookup/export utility into the visual **TMDB Collection Builder**, built for Nuvio collections and powered primarily by TMDB.
 - The active React/Vite builder remains isolated under `/builder/`, unlinked, and `noindex, nofollow`; it is not a released replacement for v1.
+- **Confirmed owner requirement — issue [#85](https://github.com/davecollections/tmdb-id-lookup/issues/85):** before that `noindex` state is removed or V2 is released or promoted for public use, the Builder shell must include visible TMDB attribution using an official TMDB logo, with the TMDB mark less prominent than the application identity, and the exact notice: **“This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.”** Issue #85 documents the V2 requirement only and does not implement Builder attribution UI.
 - Lookup and copy-ID tools remain available.
 - v2 should be mobile-first, modern, and sleek.
 - No login is required for the complete core build-and-export journey. Any future Nuvio connection must remain optional.
@@ -670,6 +671,8 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 | 2026-08-02 | Registry-backed physical Movie Collection and People source editing; automatic/default/custom title intent; bounded People count/cache reuse; evidenced People sort editing; bounded identity changes; prominent duplicate/stale/validation alerts; exact-target/stale-state and same-folder duplicate guards; one-shot minimal controller updates; raw/unknown/order/projection preservation; responsive accessible modal; and a sanitized pending client-evidence package | [TMDB ID Lookup issue #78](https://github.com/davecollections/tmdb-id-lookup/issues/78), [`BUILDER_SOURCE_EDITING.md`](./BUILDER_SOURCE_EDITING.md), and [`issue-78-source-editing/`](../../manual-tests/nuvio-clients/issue-78-source-editing/) |
 
 ## Decision history
+
+- **2026-08-06 — TMDB attribution release gate:** make V1 attribution compliant with the official TMDB mark and exact notice; record the same visible attribution as mandatory V2 shell work before `noindex` removal, release, or public promotion; and keep V2 UI implementation outside issue #85.
 
 - **2026-07-10 — Planning checkpoint:** treat `sources` as authoritative, use `catalogSources` only as the addon compatibility projection/fallback, preserve unknown imported data, and gate the isolated React/Vite candidate behind contract and deployment proof.
 - **2026-07-10 — Contract baseline:** add evidence-classified fixtures and stable invariant checks before any builder framework, production parser, serializer, or exporter work.
