@@ -1,10 +1,10 @@
 # Builder People Search/Add
 
-Status: the final owner-review refinements are implemented on issue #74's dedicated branch. Both the first Nuvio Desktop source-contract run and Dave's 2026-08-02 regenerated-artwork visual/import/export acceptance passed.
+Status: merged through issue #74 / PR #75. Both the first Nuvio Desktop source-contract run and Dave's 2026-08-02 regenerated-artwork visual/import/export acceptance passed.
 
 Issue: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74)
 
-Last reviewed: 2026-08-03
+Last reviewed: 2026-08-06
 
 This document records the focused People contract. [`BUILDER_KNOWLEDGE.md`](./BUILDER_KNOWLEDGE.md) remains the broader evidence record, and [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) remains the durable product-direction source.
 

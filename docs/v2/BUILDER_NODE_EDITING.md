@@ -1,8 +1,8 @@
 # Builder Collection and Folder Editing
 
-Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), and settings presentation polished in issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69)
+Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), and settings presentation polish merged through issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69) / PR [#70](https://github.com/davecollections/tmdb-id-lookup/pull/70)
 
-Last reviewed: 2026-07-30
+Last reviewed: 2026-08-06
 
 ## Scope and sequencing
 
@@ -199,4 +199,4 @@ Labels, semantics, and native disabled state remain the primary test surface.
 
 The editing workflow does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source editing; Add Source expansion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; additional TMDB or addon providers; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #59 adds bounded pointer/touch dragging and keyboard movement separately through one compact hierarchy-card handle, without bulk movement or editing-form fields. Bulk presentation settings remain a separate focused issue. Artwork remains future work, and future focus-GIF support defaults off unless deliberately enabled.
 
-Issue #69 stops with an unstaged patch for one focused independent review and subsequent owner UI/flow review. No pull request is opened without separate approval.
+Issue #69's focused validation and owner UI/flow review completed before the settings polish merged through PR #70.

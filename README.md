@@ -196,7 +196,7 @@ The app uses a Cloudflare Worker proxy for live TMDB API calls. Local static tes
 
 If local lookup requests fail while the live site works, check the Worker origin allowlist before changing frontend code. The top lookup currently needs the Worker to allow TMDB movie paths `/3/search/movie` and `/3/movie/{movie_id}` as well as the existing collection, person, and TV paths.
 
-The tracked Worker source is in `cloudflare-worker/tmdb-proxy.js`. Its TMDB credential and narrow People generator credential stay in Cloudflare as separate `TMDB_BEARER_TOKEN` and `NUVIO_PEOPLE_SERVICE_TOKEN` secrets. Secret values must never be committed to Git. Browser access remains CORS-controlled; origin-free service access is limited to the exact `/3/person/{id}` pathname and is documented in `cloudflare-worker/README.md`.
+The tracked Worker source is in `cloudflare-worker/tmdb-proxy.js`. Issue [#81](https://github.com/davecollections/tmdb-id-lookup/issues/81) / PR [#82](https://github.com/davecollections/tmdb-id-lookup/pull/82) synchronized that canonical source with the already deployed narrow People service-token behavior. Its TMDB credential and narrow People generator credential stay in Cloudflare as separate `TMDB_BEARER_TOKEN` and `NUVIO_PEOPLE_SERVICE_TOKEN` secrets. Secret values must never be committed to Git. Browser access remains CORS-controlled; origin-free service access is limited to the exact `/3/person/{id}` pathname and is documented in `cloudflare-worker/README.md`.
 
 ## TMDB Attribution
 

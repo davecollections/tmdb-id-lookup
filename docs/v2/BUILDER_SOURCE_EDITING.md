@@ -1,8 +1,8 @@
 # Native Source Editing
 
-Status: implemented for issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) on its dedicated branch; deterministic checks, bounded local browser QA, and the owner's Round 2 desktop/physical-iPhone review pass, while current-client evidence remains pending.
+Status: merged through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); deterministic checks, bounded local browser QA, and the owner's Round 2 desktop/physical-iPhone review are complete. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and was not an unfinished merge gate.
 
-Last reviewed: 2026-08-03
+Last reviewed: 2026-08-06
 
 ## Scope
 
@@ -79,7 +79,7 @@ Duplicate, validation, and stale/conflict diagnostics use the Builder's prominen
 
 Bounded local browser QA on 2026-08-02 covered desktop plus 360px, 393px, and 412px modal geometry, source-menu exposure, Collection title/no-op/Save/picker/Back, People role-media/default title, duplicate rejection, Cancel/Escape/backdrop safety, validation focus, trigger/source focus recovery, body locking/restoration, Visual Viewport resize, horizontal overflow, and console warnings/errors. It made no TMDB lookup request. Dave subsequently completed the Round 2 desktop and physical-iPhone review and confirmed the mobile flow passed; no device model, OS version, or browser build was supplied or inferred. The final owner-requested closeout keeps desktop/tablet editors at natural height and adds canonical TMDB entity links to the separate Add Source review/configuration surfaces.
 
-The manual package defines a Movie Collection identity/title change, a default-title People role/media/sort change with editor counts, a separate custom-title preservation People change, and a no-op import/export round trip. No Nuvio Desktop, web, mobile, or TV result is claimed until Dave runs the fixture and records the exact client/version evidence.
+The manual package defines a Movie Collection identity/title change, a default-title People role/media/sort change with editor counts, a separate custom-title preservation People change, and a no-op import/export round trip. Repository validation and owner desktop/physical-phone review are complete. Because V2 does not yet expose export, a complete current-client V2 edit/export round trip is deliberately deferred until export exists; no Nuvio Desktop, web, mobile, or TV result is claimed for that round trip, and the deferral is not a blocker or unfinished pre-merge gate.
 
 ## Deliberate exclusions
 
