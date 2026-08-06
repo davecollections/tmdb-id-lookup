@@ -6,7 +6,7 @@ import {
 	sha256Json,
 	utcDate,
 	validateReservationReceipt,
-} from "./lib/entity-count-budget.mjs";
+} from "./lib/tmdb-request-budget.mjs";
 
 const ROOT = process.env.TMDB_BUDGET_ROOT || path.join("maintenance", "tmdb-request-budget");
 const now = new Date();

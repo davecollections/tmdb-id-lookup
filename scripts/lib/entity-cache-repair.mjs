@@ -1,17 +1,18 @@
 import {
-	COUNT_STATUSES,
-	UNAVAILABLE_REASONS,
+	CATALOGUE_COUNT_STATUSES,
+	CATALOGUE_PARSER_SEMANTIC_VERSION,
+	CATALOGUE_SCHEMA_VERSION,
 	parseTmdbTotalResults,
-	shouldConfirmUnavailable,
 	statusForKnownCount,
 	truncateToUtcSecond,
-} from "./entity-title-counts.mjs";
+	validateAuditFreshness,
+} from "./tmdb-catalogue-counts.mjs";
 
 function failedResult({ id, dimension, observedAt, error, attempts = [], code }) {
 	return {
 		id,
 		dimension,
-		status: COUNT_STATUSES.FAILED,
+		status: CATALOGUE_COUNT_STATUSES.FAILED,
 		count: null,
 		observed_at: truncateToUtcSecond(observedAt),
 		error_code: code || error?.code || "request_failed",
@@ -36,55 +37,39 @@ async function readJsonResponse(response, label) {
 	}
 }
 
-function unavailableAfter404({ id, dimension, observedAt, priorResult, attempts }) {
-	const currentObservedAt = truncateToUtcSecond(observedAt);
-	if (priorResult?.status === COUNT_STATUSES.UNAVAILABLE) {
-		const evidence = [
-			...(priorResult.evidence || []),
-			{ kind: "details_404", observed_at: currentObservedAt },
-		].filter(
-			(entry, index, entries) =>
-				entries.findIndex(
-					(candidate) =>
-						candidate.kind === entry.kind && candidate.observed_at === entry.observed_at,
-				) === index,
-		);
-		return {
-			id,
-			dimension,
-			status: COUNT_STATUSES.UNAVAILABLE,
-			count: null,
-			observed_at: currentObservedAt,
-			unavailable_reason: priorResult.unavailable_reason,
-			evidence,
-			attempts,
-		};
+export function validateRepairAudit({
+	audit,
+	expectedDataset,
+	expectedMonth,
+	now = new Date(),
+	maxAgeHours = 36,
+}) {
+	if (!audit || typeof audit !== "object" || Array.isArray(audit)) {
+		throw new TypeError("Repair audit must be an object.");
 	}
-	if (shouldConfirmUnavailable({ priorResult, currentObservedAt })) {
-		return {
-			id,
-			dimension,
-			status: COUNT_STATUSES.UNAVAILABLE,
-			count: null,
-			observed_at: currentObservedAt,
-			unavailable_reason: UNAVAILABLE_REASONS.ENTITY_NOT_FOUND_CONFIRMED,
-			evidence: [
-				{ kind: "details_404", observed_at: priorResult.observed_at },
-				{ kind: "details_404", observed_at: currentObservedAt },
-			],
-			attempts,
-		};
+	if (audit.schema_version !== CATALOGUE_SCHEMA_VERSION) {
+		throw new TypeError(`Unsupported repair audit schema version: ${audit.schema_version}`);
+	}
+	if (audit.parser_semantic_version !== CATALOGUE_PARSER_SEMANTIC_VERSION) {
+		throw new TypeError(
+			`Unsupported repair audit parser semantic version: ${audit.parser_semantic_version}`,
+		);
+	}
+	if (audit.dataset !== expectedDataset) {
+		throw new TypeError(`Expected ${expectedDataset} audit, received ${audit.dataset}.`);
+	}
+	const exportMonth = audit.export_month ?? audit.export_target_month;
+	if (exportMonth !== expectedMonth) {
+		throw new TypeError(`Repair audit month ${exportMonth} does not match ${expectedMonth}.`);
+	}
+	const fingerprint = audit.export_fingerprint ?? audit.export_target_fingerprint;
+	if (typeof fingerprint !== "string" || !/^sha256:[a-f0-9]{64}$/.test(fingerprint)) {
+		throw new TypeError("Repair audit export fingerprint is invalid.");
 	}
 	return {
-		...failedResult({
-			id,
-			dimension,
-			observedAt,
-			attempts,
-			code: "details_404_unconfirmed",
-			error: new Error("Entity details returned HTTP 404 without corroborating evidence."),
-		}),
-		evidence: [{ kind: "details_404", observed_at: currentObservedAt }],
+		...validateAuditFreshness({ auditedAt: audit.audited_at, now, maxAgeHours }),
+		export_month: exportMonth,
+		export_fingerprint: fingerprint,
 	};
 }
 
@@ -93,8 +78,6 @@ export async function repairMissingLegacyRows({
 	dimension,
 	client,
 	observedAt,
-	priorResults = new Map(),
-	targetIds = null,
 	detailsUrl,
 	countUrl,
 	normalizeRow,
@@ -104,70 +87,62 @@ export async function repairMissingLegacyRows({
 	if (!Array.isArray(ids) || typeof normalizeRow !== "function") {
 		throw new TypeError("Repair IDs and normalizeRow are required.");
 	}
-	const targetSet = targetIds ? new Set(targetIds) : null;
 	const outcomes = [];
 	let allocationStopped = false;
-
 	for (const id of ids) {
-		const priorResult = priorResults.get(id) || null;
 		const attempts = [];
-		let details;
-		let progressResult = null;
 		let row = null;
-		let countSource = null;
+		let result = null;
 		let detailsStatus = null;
 		try {
 			const detailsRequest = await client.request(detailsUrl(id), { maxAttempts: 5 });
 			attempts.push(...detailsRequest.attempts);
 			detailsStatus = detailsRequest.response.status;
 			if (detailsStatus === 404) {
-				progressResult = unavailableAfter404({
+				result = failedResult({
 					id,
 					dimension,
 					observedAt,
-					priorResult,
 					attempts,
+					code: "details_404_unconfirmed",
+					error: new Error(
+						"Entity details returned HTTP 404 without corroborating evidence.",
+					),
 				});
+			} else if (!detailsRequest.response.ok) {
+				throw Object.assign(
+					new Error(`Entity details failed with HTTP ${detailsStatus}.`),
+					{ code: `details_http_${detailsStatus}` },
+				);
 			} else {
-				if (!detailsRequest.response.ok) {
+				const details = await readJsonResponse(detailsRequest.response, "Entity details");
+				const countRequest = await client.request(countUrl(id), { maxAttempts: 5 });
+				attempts.push(...countRequest.attempts);
+				if (!countRequest.response.ok) {
 					throw Object.assign(
-						new Error(`Entity details failed with HTTP ${detailsStatus}.`),
-						{ code: `details_http_${detailsStatus}` },
+						new Error(`Discover count failed with HTTP ${countRequest.response.status}.`),
+						{ code: `count_http_${countRequest.response.status}` },
 					);
 				}
-				details = await readJsonResponse(detailsRequest.response, "Entity details");
-				if ([COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(priorResult?.status)) {
-					row = normalizeRow(details, priorResult.count);
-					countSource = "typed_progress";
-				} else {
-					const countRequest = await client.request(countUrl(id), { maxAttempts: 5 });
-					attempts.push(...countRequest.attempts);
-					if (!countRequest.response.ok) {
-						throw Object.assign(
-							new Error(`Discover count failed with HTTP ${countRequest.response.status}.`),
-							{ code: `count_http_${countRequest.response.status}` },
-						);
-					}
-					const payload = await readJsonResponse(countRequest.response, "Discover count");
-					const count = parseTmdbTotalResults(payload);
-					progressResult = {
-						id,
-						dimension,
-						status: statusForKnownCount(count),
-						count,
-						observed_at: truncateToUtcSecond(observedAt),
-						attempts,
-					};
-					row = normalizeRow(details, count);
-					countSource = "discover";
-				}
+				const count = parseTmdbTotalResults(
+					await readJsonResponse(countRequest.response, "Discover count"),
+				);
+				result = {
+					id,
+					dimension,
+					status: statusForKnownCount(count),
+					count,
+					observed_at: truncateToUtcSecond(observedAt),
+					attempts,
+				};
+				row = normalizeRow(details, count);
 			}
 		} catch (error) {
 			if (error?.stopCollection) {
 				allocationStopped = true;
 				break;
 			}
-			progressResult = failedResult({
+			result = failedResult({
 				id,
 				dimension,
 				observedAt,
@@ -178,21 +153,37 @@ export async function repairMissingLegacyRows({
 				],
 			});
 		}
-
 		outcomes.push({
 			id,
 			cache_restored: Boolean(row),
 			row,
-			count_source: countSource,
-			typed_count_reused: countSource === "typed_progress",
+			count_source: row ? "discover" : null,
 			details_status: detailsStatus,
-			progress_result:
-				progressResult && (!targetSet || targetSet.has(id)) ? progressResult : null,
+			result,
 		});
 		if (requestDelayMs > 0) await sleep(requestDelayMs);
 	}
-
 	return { outcomes, allocationStopped };
+}
+
+export function hasRepairPartialFailure({ repair, requestedMissingCount }) {
+	if (
+		!repair ||
+		!Array.isArray(repair.outcomes) ||
+		!Number.isSafeInteger(requestedMissingCount) ||
+		requestedMissingCount < 0
+	) {
+		throw new TypeError("Repair result and requested missing count are required.");
+	}
+	return (
+		Boolean(repair.allocationStopped) ||
+		repair.outcomes.length !== requestedMissingCount ||
+		repair.outcomes.some(
+			(outcome) =>
+				outcome.details_status !== 404 &&
+				outcome.result?.status === CATALOGUE_COUNT_STATUSES.FAILED,
+		)
+	);
 }
 
 export function buildRepairMetadata({
@@ -201,12 +192,9 @@ export function buildRepairMetadata({
 	month,
 	audit,
 	auditFreshness = null,
-	target = null,
-	typedCountsActive,
 	maxRepairIds,
 	missingIds,
 	extraIds,
-	outsideTargetMissingIds = [],
 	startedAt,
 	finishedAt,
 	status,
@@ -225,19 +213,10 @@ export function buildRepairMetadata({
 	const failed = outcomes
 		.filter(
 			(outcome) =>
-				outcome.progress_result?.status === COUNT_STATUSES.FAILED &&
-				outcome.progress_result.error_code !== "details_404_unconfirmed",
+				outcome.details_status !== 404 &&
+				outcome.result?.status === CATALOGUE_COUNT_STATUSES.FAILED,
 		)
-		.map((outcome) => ({ id: outcome.id, error: outcome.progress_result.error }));
-	const unavailable = outcomes
-		.filter((outcome) => outcome.progress_result?.status === COUNT_STATUSES.UNAVAILABLE)
-		.map((outcome) => outcome.id);
-	const typedProgressWritten = outcomes
-		.filter((outcome) => outcome.progress_result)
-		.map((outcome) => outcome.id);
-	const typedCountReused = outcomes
-		.filter((outcome) => outcome.typed_count_reused)
-		.map((outcome) => outcome.id);
+		.map((outcome) => ({ id: outcome.id, error: outcome.result.error }));
 	const requestedRepairCount = missingIds.length + extraIds.length;
 	return {
 		operation: `${entityType}_cache_repair`,
@@ -247,9 +226,9 @@ export function buildRepairMetadata({
 		source_audit_date: audit?.audited_at || "",
 		audit_freshness: auditFreshness,
 		month,
-		typed_counts_active: Boolean(typedCountsActive),
-		target_fingerprint: target?.target_fingerprint || null,
-		parser_semantic_version: target?.parser_semantic_version || null,
+		export_fingerprint:
+			audit?.export_fingerprint ?? audit?.export_target_fingerprint ?? null,
+		parser_semantic_version: audit?.parser_semantic_version ?? null,
 		binding_error: bindingError,
 		max_repair_ids: maxRepairIds,
 		cap: {
@@ -260,7 +239,6 @@ export function buildRepairMetadata({
 		requested_repair_count: requestedRepairCount,
 		missing_requested: missingIds,
 		missing_requested_count: missingIds.length,
-		missing_outside_frozen_target: outsideTargetMissingIds,
 		extra_requested: extraIds,
 		extra_requested_count: extraIds.length,
 		processed_missing: outcomes.map((outcome) => outcome.id),
@@ -274,10 +252,6 @@ export function buildRepairMetadata({
 		not_found_count: notFound.length,
 		failed,
 		failed_count: failed.length,
-		unavailable,
-		unavailable_count: unavailable.length,
-		typed_count_reused: typedCountReused,
-		typed_progress_written: typedProgressWritten,
 		request_plan: requestPlan,
 		requests: usage,
 		total_cached: totalCached,

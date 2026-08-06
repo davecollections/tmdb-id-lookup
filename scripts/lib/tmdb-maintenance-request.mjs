@@ -5,7 +5,7 @@ import {
 	sha256Json,
 	utcDate,
 	validateReservationReceipt,
-} from "./entity-count-budget.mjs";
+} from "./tmdb-request-budget.mjs";
 
 const ALLOWED_TMDB_HOSTS = new Set(["api.themoviedb.org", "files.tmdb.org"]);
 export const MAX_RETRY_AFTER_SECONDS = 60;

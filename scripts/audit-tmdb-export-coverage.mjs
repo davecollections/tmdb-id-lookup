@@ -1,17 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
-	loadTargetSnapshot,
-	readJsonFile,
-	writeFrozenTargetSnapshot,
-} from "./lib/entity-count-progress.mjs";
-import {
-	COUNT_SCHEMA_VERSION,
-	COUNT_PARSER_SEMANTIC_VERSION,
-	TYPED_COUNT_AUTOMATIC_ACTIVATION_MONTH,
-	compareUtcMonths,
+	CATALOGUE_PARSER_SEMANTIC_VERSION,
+	CATALOGUE_SCHEMA_VERSION,
 	utcMonth,
-} from "./lib/entity-title-counts.mjs";
+} from "./lib/tmdb-catalogue-counts.mjs";
 import {
 	buildSnapshotFromExport,
 	fetchTmdbExportIds,
@@ -22,8 +15,6 @@ import { createTmdbRequestClient } from "./lib/tmdb-maintenance-request.mjs";
 const DATA_DIR = "data";
 const requestedDataset = process.env.DATASET || "all";
 const month = process.env.COUNT_MONTH || utcMonth();
-const typedCountsActive =
-	compareUtcMonths(month, TYPED_COUNT_AUTOMATIC_ACTIVATION_MONTH) >= 0;
 const reservationId = process.env.TMDB_RESERVATION_ID;
 const usagePath =
 	process.env.TMDB_USAGE_PATH ||
@@ -50,11 +41,17 @@ const DATASETS = {
 	},
 };
 
-function extractCachedIds(cacheData) {
-	if (!Array.isArray(cacheData)) {
-		return [];
+async function readJsonFile(filePath, fallback) {
+	try {
+		return JSON.parse(await fs.readFile(filePath, "utf8"));
+	} catch (error) {
+		if (error?.code === "ENOENT") return fallback;
+		throw error;
 	}
+}
 
+function extractCachedIds(cacheData) {
+	if (!Array.isArray(cacheData)) return [];
 	return cacheData
 		.map((item) => Number(item.i ?? item.id))
 		.filter((id) => Number.isSafeInteger(id) && id > 0)
@@ -68,12 +65,10 @@ function difference(leftIds, rightSet) {
 function duplicateIds(ids) {
 	const seen = new Set();
 	const duplicates = new Set();
-
 	for (const id of ids) {
 		if (seen.has(id)) duplicates.add(id);
 		seen.add(id);
 	}
-
 	return [...duplicates].sort((left, right) => left - right);
 }
 
@@ -89,7 +84,7 @@ const client = await createTmdbRequestClient({
 	reservationSha256: process.env.TMDB_RESERVATION_SHA256,
 	allocationKey: process.env.TMDB_ALLOCATION_KEY || "audit_export",
 	usagePath,
-	job: "audit-and-initialize-targets",
+	job: "audit-catalogues",
 });
 
 async function auditDataset(key, config) {
@@ -103,15 +98,6 @@ async function auditDataset(key, config) {
 		exportData,
 		month,
 	});
-	const existingTarget = await loadTargetSnapshot({
-		month,
-		entityType: config.entityType,
-	});
-	const targetResult = existingTarget
-		? { created: false, snapshot: existingTarget }
-		: typedCountsActive
-			? await writeFrozenTargetSnapshot({ snapshot: exportSnapshot })
-			: { created: false, snapshot: exportSnapshot };
 	const cacheData = await readJsonFile(config.cachePath, []);
 	const cachedIds = extractCachedIds(cacheData);
 	const exportSet = new Set(exportData.ids);
@@ -125,23 +111,17 @@ async function auditDataset(key, config) {
 		: 0;
 	const exportRange = idRange(exportData.ids);
 	const cachedRange = idRange(cachedIds);
-
 	const audit = {
-		schema_version: COUNT_SCHEMA_VERSION,
-		parser_semantic_version: COUNT_PARSER_SEMANTIC_VERSION,
+		schema_version: CATALOGUE_SCHEMA_VERSION,
+		parser_semantic_version: CATALOGUE_PARSER_SEMANTIC_VERSION,
 		dataset: key,
 		label: config.label,
 		export_date: exportData.exportDate,
 		export_total_ids: exportData.ids.length,
-		export_target_month: month,
-		export_target_fingerprint: targetResult.snapshot.target_fingerprint,
-		export_target_schema_version: targetResult.snapshot.schema_version,
-		export_target_parser_semantic_version:
-			targetResult.snapshot.parser_semantic_version,
-		export_target_created: targetResult.created,
+		export_month: month,
 		export_fingerprint: exportSnapshot.target_fingerprint,
-		export_matches_frozen_target:
-			exportSnapshot.target_fingerprint === targetResult.snapshot.target_fingerprint,
+		export_schema_version: exportSnapshot.schema_version,
+		export_parser_semantic_version: exportSnapshot.parser_semantic_version,
 		cached_total_ids: cachedIds.length,
 		cached_unique_ids: cachedSet.size,
 		matched_count: matchedCount,
@@ -158,42 +138,35 @@ async function auditDataset(key, config) {
 		duplicate_cached_ids: duplicateCachedIds,
 		audited_at: new Date().toISOString(),
 	};
-
 	await fs.writeFile(config.auditPath, `${JSON.stringify(audit, null, 2)}\n`);
 	console.log(`Export IDs        : ${audit.export_total_ids.toLocaleString()}`);
 	console.log(`Cached IDs        : ${audit.cached_total_ids.toLocaleString()}`);
 	console.log(`Coverage          : ${audit.coverage_percent}%`);
-	console.log(`Target fingerprint: ${audit.export_target_fingerprint}`);
+	console.log(`Export fingerprint: ${audit.export_fingerprint}`);
 	console.log(`Saved audit       : ${config.auditPath}`);
 	return audit;
 }
 
 await fs.mkdir(DATA_DIR, { recursive: true });
-
 const datasetKeys = requestedDataset === "all" ? Object.keys(DATASETS) : [requestedDataset];
 const audits = [];
-
 for (const key of datasetKeys) {
 	const config = DATASETS[key];
-	if (!config) {
-		throw new Error(`Unknown DATASET: ${key}. Use all, companies, or networks.`);
-	}
+	if (!config) throw new Error(`Unknown DATASET: ${key}. Use all, companies, or networks.`);
 	audits.push(await auditDataset(key, config));
 }
 
 const summary = {
-	schema_version: COUNT_SCHEMA_VERSION,
-	parser_semantic_version: COUNT_PARSER_SEMANTIC_VERSION,
+	schema_version: CATALOGUE_SCHEMA_VERSION,
+	parser_semantic_version: CATALOGUE_PARSER_SEMANTIC_VERSION,
 	audited_at: new Date().toISOString(),
 	datasets: audits.map((audit) => ({
 		dataset: audit.dataset,
 		label: audit.label,
 		export_date: audit.export_date,
 		export_total_ids: audit.export_total_ids,
-		export_target_month: audit.export_target_month,
-		export_target_fingerprint: audit.export_target_fingerprint,
+		export_month: audit.export_month,
 		export_fingerprint: audit.export_fingerprint,
-		export_matches_frozen_target: audit.export_matches_frozen_target,
 		cached_total_ids: audit.cached_total_ids,
 		cached_unique_ids: audit.cached_unique_ids,
 		matched_count: audit.matched_count,
@@ -203,15 +176,11 @@ const summary = {
 		duplicate_cached_ids_count: audit.duplicate_cached_ids_count,
 	})),
 };
-
-await fs.writeFile(
-	`${DATA_DIR}/id-audit-summary.json`,
-	`${JSON.stringify(summary, null, 2)}\n`,
-);
+await fs.writeFile(`${DATA_DIR}/id-audit-summary.json`, `${JSON.stringify(summary, null, 2)}\n`);
 await client.writeUsage({
 	datasets: datasetKeys,
 	targets: Object.fromEntries(
-		audits.map((audit) => [audit.dataset, audit.export_target_fingerprint]),
+		audits.map((audit) => [audit.dataset, audit.export_fingerprint]),
 	),
 });
 

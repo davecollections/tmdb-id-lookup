@@ -214,7 +214,9 @@ For companies and networks, useful fields may include:
 - title count;
 - logo or approved artwork preview when available.
 
-Title counts should reuse the existing V1 cache and maintenance tooling where appropriate instead of creating unnecessary live requests. People is the focused exception: only after a person is selected for configuration, its details request appends combined credits and derives distinct cast/director Movie/Series counts locally; it creates no sidecar, background scan, per-result credit request, or request solely to recreate `known_for` display rows. People result state retains TMDB's valid `known_for` order; desktop may render the first three while mobile renders only the first with natural wrapping and no empty placeholder. Result detail must remain proportionate to the choice being made.
+The ordinary cached Company and Network catalogues remain the Search/Add discovery source, including their legacy V1 title totals. They are not a globally pre-cached typed-count product contract. After a user selects an exact Company or Network for configuration, V2 should fetch fresh media-specific counts on demand. Those counts are informational and non-blocking: an unavailable count must never prevent source creation, and no global scan, sidecar, or background count publication is required.
+
+People remains a focused selected-entity flow: only after a person is selected for configuration, its details request appends combined credits and derives distinct cast/director Movie/Series counts locally; it creates no sidecar, background scan, per-result credit request, or request solely to recreate `known_for` display rows. People result state retains TMDB's valid `known_for` order; desktop may render the first three while mobile renders only the first with natural wrapping and no empty placeholder. Result detail must remain proportionate to the choice being made.
 
 ## 10. Automatic hierarchy and hidden IDs
 
@@ -408,11 +410,13 @@ Trakt integration remains outside current project scope; a possible future colou
 9. Collection and Folder settings polish — integrated through issue #69 / PR #70 after repository and owner UI/flow review, with the issue #53 schema and export contract preserved.
 10. Unified People Search/Add — integrated through issue #74 / PR #75 with selected-folder quick add, untouched-default promotion, preservation-only existing folders, collection selection of up to 20 people, direct source combinations and one-time defaults, atomic single-folder/multi-folder batches, independently keyed final artwork, and stable v1 source tab titles. The first Desktop source-contract run passed, and the regenerated distinct-title/curated-artwork fixture subsequently passed owner visual/import/immediate-export validation; the client version/build remains unknown.
 11. First native source editing — integrated through issue #78 / PR #79 with preservation-safe physical Movie Collection and People editors through a reusable adapter seam. Deterministic checks, the sanitized fixture package, and owner desktop/physical-iPhone review are complete. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and is not an unfinished integration gate.
-12. Advanced Discover creation.
-13. Further deliberate V2 artwork-runtime integration at appropriate typed-source stages.
-14. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
-15. Review/export usability.
-16. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
+12. Company source creation, with fresh post-selection counts that are informational and non-blocking.
+13. Network source creation, with the same on-demand count boundary.
+14. Advanced Discover creation.
+15. Broader deliberate V2 UI/UX and artwork-runtime integration at appropriate source stages.
+16. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
+17. Review/export usability.
+18. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
 
 This is a dependency map, not a rigid release schedule. Each step requires its own approved issue and may be refined by stronger evidence.
 

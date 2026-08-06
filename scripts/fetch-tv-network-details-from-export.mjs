@@ -1,21 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { collectWithDeferredRetries } from "./lib/entity-count-collection.mjs";
+import { collectCatalogueSlice } from "./lib/tmdb-catalogue-collection.mjs";
 import {
-	loadDimensionState,
-	loadTargetSnapshot,
-	readJsonFile,
-	writeProgressDocument,
-} from "./lib/entity-count-progress.mjs";
-import {
-	COUNT_DIMENSIONS,
-	COUNT_PARSER_SEMANTIC_VERSION,
-	COUNT_STATUSES,
-	partitionTargetIds,
-	parseStrictSampleIds,
+	CATALOGUE_COUNT_STATUSES,
+	CATALOGUE_DIMENSIONS,
+	partitionCatalogueIds,
 	utcMonth,
-} from "./lib/entity-title-counts.mjs";
-import { assertRunPlanStillCurrent } from "./lib/entity-count-run-plan.mjs";
+} from "./lib/tmdb-catalogue-counts.mjs";
+import { assertCatalogueRunPlanStillCurrent } from "./lib/tmdb-catalogue-run-plan.mjs";
 import {
 	buildSnapshotFromExport,
 	fetchTmdbExportIds,
@@ -26,20 +18,9 @@ import { createTmdbRequestClient } from "./lib/tmdb-maintenance-request.mjs";
 const TOKEN = process.env.TMDB_BEARER_TOKEN;
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
 const MODE = process.env.MODE || "collect";
-const IS_SAMPLE = MODE === "sample";
-const LEGACY_ONLY = process.env.LEGACY_ONLY === "true";
-const TYPED_PROGRESS_ENABLED = process.env.TYPED_PROGRESS_ENABLED !== "false";
 const MONTH = process.env.COUNT_MONTH || utcMonth();
-const SLICE_INDEX =
-	process.env.SLICE_INDEX === undefined ? null : Number(process.env.SLICE_INDEX);
-const TOTAL_SLICES =
-	process.env.TOTAL_SLICES === undefined ? null : Number(process.env.TOTAL_SLICES);
-const OFFSET = Number(process.env.OFFSET || 0);
-const LIMIT = process.env.LIMIT ? Number(process.env.LIMIT) : null;
-const RETRY_UNRESOLVED = process.env.RETRY_UNRESOLVED === "true";
-const RUN_ID = `${
-	process.env.GITHUB_RUN_ID || `local-${Date.now()}`
-}-${process.env.GITHUB_RUN_ATTEMPT || "1"}-network-series`;
+const SLICE_INDEX = Number(process.env.SLICE_INDEX ?? 0);
+const TOTAL_SLICES = Number(process.env.TOTAL_SLICES ?? 2);
 const OBSERVED_AT = new Date().toISOString();
 
 const DATA_DIR = "data";
@@ -47,6 +28,15 @@ const MIN_JSON_PATH = `${DATA_DIR}/tv-networks.min.json`;
 const CSV_PATH = `${DATA_DIR}/tv-networks.csv`;
 const META_PATH = `${DATA_DIR}/tv-network-scan-meta.json`;
 const EXPORT_PATH = `${DATA_DIR}/tv-network-export.json`;
+
+async function readJsonFile(filePath, fallback) {
+	try {
+		return JSON.parse(await fs.readFile(filePath, "utf8"));
+	} catch (error) {
+		if (error?.code === "ENOENT") return fallback;
+		throw error;
+	}
+}
 
 function csvEscape(value) {
 	const text = String(value ?? "");
@@ -104,136 +94,106 @@ function normalizeNetwork(data, seriesCount) {
 	};
 }
 
+if (!["collect", "plan", "validate"].includes(MODE)) {
+	throw new TypeError(`Unsupported Network catalogue mode: ${MODE}`);
+}
+if (
+	!Number.isSafeInteger(SLICE_INDEX) ||
+	!Number.isSafeInteger(TOTAL_SLICES) ||
+	TOTAL_SLICES <= 0 ||
+	SLICE_INDEX < 0 ||
+	SLICE_INDEX >= TOTAL_SLICES
+) {
+	throw new TypeError("SLICE_INDEX and TOTAL_SLICES must identify one valid partition.");
+}
+if (MODE !== "collect") {
+	console.log(
+		JSON.stringify(
+			{
+				network_catalogue_validation: {
+					mode: MODE,
+					month: MONTH,
+					slice_index: SLICE_INDEX,
+					total_slices: TOTAL_SLICES,
+				},
+			},
+			null,
+			2,
+		),
+	);
+	process.exit(0);
+}
+
+assertCatalogueRunPlanStillCurrent(
+	{
+		kind: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
+		planned_month: MONTH,
+		planned_utc_date: process.env.TMDB_RESERVATION_UTC_DATE,
+		scheduled: process.env.SCHEDULED_RUN === "true",
+	},
+	{ kind: CATALOGUE_DIMENSIONS.NETWORK_SERIES },
+);
+if (!TOKEN) throw new Error("Missing TMDB_BEARER_TOKEN");
+
+const budgetDate =
+	process.env.TMDB_RESERVATION_UTC_DATE || new Date().toISOString().slice(0, 10);
+const exportUsagePath = path.join(
+	"maintenance",
+	"tmdb-request-budget",
+	budgetDate,
+	"usage",
+	`${process.env.TMDB_RESERVATION_ID}-network-export.json`,
+);
+const exportClient = await createTmdbRequestClient({
+	receiptPath: process.env.TMDB_RESERVATION_PATH,
+	reservationId: process.env.TMDB_RESERVATION_ID,
+	reservationSha256: process.env.TMDB_RESERVATION_SHA256,
+	allocationKey: "target_export",
+	usagePath: exportUsagePath,
+	job: "load-network-export",
+	requestClass: "target-export",
+	targetDimension: "network",
+	approvedAllowance: Number(process.env.TMDB_TARGET_EXPORT_ALLOWANCE),
+});
+const exportData = await fetchTmdbExportIds({
+	requestClient: exportClient,
+	exportPrefix: TMDB_EXPORT_DATASETS.networks.exportPrefix,
+});
+const snapshot = buildSnapshotFromExport({
+	entityType: "network",
+	exportData,
+	month: MONTH,
+});
+await exportClient.writeUsage({
+	month: MONTH,
+	datasets: ["networks"],
+	targets: { networks: snapshot.target_fingerprint },
+});
+
+const selection = partitionCatalogueIds(snapshot.ids, SLICE_INDEX, TOTAL_SLICES);
+const planned = {
+	mode: MODE,
+	month: MONTH,
+	export_fingerprint: snapshot.target_fingerprint,
+	export_total_ids: snapshot.total_ids,
+	slice_index: SLICE_INDEX,
+	total_slices: TOTAL_SLICES,
+	current_ids: selection.ids.length,
+	base_current_requests: selection.ids.length * 2,
+	max_reserved_requests: Number(process.env.TMDB_COLLECTION_ALLOWANCE || 0),
+};
+console.log(JSON.stringify({ network_catalogue_plan: planned }, null, 2));
+
 const usagePath =
 	process.env.TMDB_USAGE_PATH ||
 	path.join(
 		"maintenance",
 		"tmdb-request-budget",
-		process.env.TMDB_RESERVATION_UTC_DATE || new Date().toISOString().slice(0, 10),
+		budgetDate,
 		"usage",
 		`${process.env.TMDB_RESERVATION_ID}-network-series.json`,
 	);
-let client = null;
-let target = LEGACY_ONLY
-	? null
-	: await loadTargetSnapshot({ month: MONTH, entityType: "network" });
-if (!target) {
-	if (!LEGACY_ONLY) {
-		throw new Error(`Missing frozen Network target for ${MONTH}. Run target initialization first.`);
-	}
-	assertRunPlanStillCurrent(
-		{
-			kind: COUNT_DIMENSIONS.NETWORK_SERIES,
-			planned_month: MONTH,
-			planned_utc_date: process.env.TMDB_RESERVATION_UTC_DATE,
-			scheduled: process.env.SCHEDULED_RUN === "true",
-		},
-		{ kind: COUNT_DIMENSIONS.NETWORK_SERIES },
-	);
-	const targetUsagePath = path.join(
-		"maintenance",
-		"tmdb-request-budget",
-		process.env.TMDB_RESERVATION_UTC_DATE,
-		"usage",
-		`${process.env.TMDB_RESERVATION_ID}-legacy-network-target.json`,
-	);
-	const targetClient = await createTmdbRequestClient({
-		receiptPath: process.env.TMDB_RESERVATION_PATH,
-		reservationId: process.env.TMDB_RESERVATION_ID,
-		reservationSha256: process.env.TMDB_RESERVATION_SHA256,
-		allocationKey: "target_export",
-		usagePath: targetUsagePath,
-		job: "load-legacy-network-export",
-		requestClass: "target-export",
-		targetDimension: "network",
-		approvedAllowance: Number(process.env.TMDB_TARGET_EXPORT_ALLOWANCE),
-	});
-	const exportData = await fetchTmdbExportIds({
-		requestClient: targetClient,
-		exportPrefix: TMDB_EXPORT_DATASETS.networks.exportPrefix,
-	});
-	target = buildSnapshotFromExport({
-		entityType: "network",
-		exportData,
-		month: MONTH,
-	});
-	await targetClient.writeUsage({ legacy_only: true, month: MONTH });
-}
-
-const state = TYPED_PROGRESS_ENABLED
-	? await loadDimensionState({
-			month: MONTH,
-			dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
-			targetFingerprint: target.target_fingerprint,
-			targetIds: target.ids,
-		})
-	: {
-			parserSemanticVersion: COUNT_PARSER_SEMANTIC_VERSION,
-			resultsById: new Map(),
-		};
-const sampleIds = IS_SAMPLE ? parseStrictSampleIds(process.env.SAMPLE_IDS || "") : null;
-if (!IS_SAMPLE && process.env.SAMPLE_IDS) {
-	throw new Error("SAMPLE_IDS is accepted only in sample mode.");
-}
-let selection;
-
-if (sampleIds) {
-	const targetSet = new Set(target.ids);
-	for (const id of sampleIds) {
-		if (!targetSet.has(id)) throw new Error(`Sample Network ${id} is not in the frozen target.`);
-	}
-	selection = { ids: sampleIds, start: null, end: null };
-} else if (SLICE_INDEX !== null || TOTAL_SLICES !== null) {
-	if (SLICE_INDEX === null || TOTAL_SLICES === null) {
-		throw new Error("SLICE_INDEX and TOTAL_SLICES must be supplied together.");
-	}
-	selection = partitionTargetIds(target.ids, SLICE_INDEX, TOTAL_SLICES);
-} else {
-	if (!Number.isSafeInteger(OFFSET) || OFFSET < 0 || (LIMIT !== null && (!Number.isSafeInteger(LIMIT) || LIMIT <= 0))) {
-		throw new Error("OFFSET/LIMIT must be safe nonnegative/positive integers.");
-	}
-	selection = {
-		ids: LIMIT === null ? target.ids.slice(OFFSET) : target.ids.slice(OFFSET, OFFSET + LIMIT),
-		start: OFFSET,
-		end: LIMIT === null ? target.ids.length : Math.min(target.ids.length, OFFSET + LIMIT),
-	};
-}
-
-const olderUnresolvedIds =
-	!LEGACY_ONLY && RETRY_UNRESOLVED && selection.start !== null
-		? target.ids
-				.slice(0, selection.start)
-				.filter((id) => !state.resultsById.get(id) || state.resultsById.get(id).status === COUNT_STATUSES.FAILED)
-		: [];
-const planned = {
-	mode: MODE,
-	month: MONTH,
-	target_fingerprint: target.target_fingerprint,
-	target_total_ids: target.total_ids,
-	slice_index: SLICE_INDEX,
-	total_slices: TOTAL_SLICES,
-	current_ids: selection.ids.length,
-	older_unresolved_ids: olderUnresolvedIds.length,
-	base_current_requests: selection.ids.length * 2,
-	max_reserved_requests: Number(process.env.TMDB_COLLECTION_ALLOWANCE || 0),
-	legacy_only: LEGACY_ONLY,
-	typed_progress_enabled: TYPED_PROGRESS_ENABLED,
-};
-
-console.log(JSON.stringify({ network_series_plan: planned }, null, 2));
-if (["plan", "validate"].includes(MODE)) process.exit(0);
-assertRunPlanStillCurrent(
-	{
-		kind: COUNT_DIMENSIONS.NETWORK_SERIES,
-		planned_month: MONTH,
-		planned_utc_date: process.env.TMDB_RESERVATION_UTC_DATE,
-		scheduled: process.env.SCHEDULED_RUN === "true",
-	},
-	{ kind: COUNT_DIMENSIONS.NETWORK_SERIES },
-);
-if (!TOKEN) throw new Error("Missing TMDB_BEARER_TOKEN");
-
-client ||= await createTmdbRequestClient({
+const client = await createTmdbRequestClient({
 	token: TOKEN,
 	receiptPath: process.env.TMDB_RESERVATION_PATH,
 	reservationId: process.env.TMDB_RESERVATION_ID,
@@ -249,19 +209,21 @@ const networkMap = new Map(
 		.map((network) => [Number(network.i), expandCompactNetwork(network)]),
 );
 const detailsById = new Map();
-const results = await collectWithDeferredRetries({
-	currentIds: selection.ids,
-	olderUnresolvedIds,
-	dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
+const results = await collectCatalogueSlice({
+	ids: selection.ids,
+	dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
 	client,
 	observedAt: OBSERVED_AT,
-	priorResults: state.resultsById,
 	detailsUrl: (id) => `https://api.themoviedb.org/3/network/${id}`,
 	countUrl: (id) => `https://api.themoviedb.org/3/discover/tv?with_networks=${id}`,
 	requestDelayMs: REQUEST_DELAY_MS,
 	onDetails: async (id, details) => detailsById.set(id, details),
 	onTerminal: async (id, result) => {
-		if ([COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(result.status)) {
+		if (
+			[CATALOGUE_COUNT_STATUSES.POSITIVE, CATALOGUE_COUNT_STATUSES.ZERO].includes(
+				result.status,
+			)
+		) {
 			const details = detailsById.get(id);
 			if (!details) throw new Error(`Missing successful Network details for ${id}.`);
 			networkMap.set(id, normalizeNetwork(details, result.count));
@@ -272,57 +234,23 @@ const results = await collectWithDeferredRetries({
 const usage = client.usageSummary();
 await client.writeUsage({
 	month: MONTH,
-	dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
-	target_fingerprint: target.target_fingerprint,
+	dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
+	target_fingerprint: snapshot.target_fingerprint,
 });
-let recoveryProgressPath = "";
-if (results.length && !IS_SAMPLE && TYPED_PROGRESS_ENABLED) {
-	const writtenProgress = await writeProgressDocument({
-		month: MONTH,
-		dimension: COUNT_DIMENSIONS.NETWORK_SERIES,
-		targetFingerprint: target.target_fingerprint,
-		runId: RUN_ID,
-		observedAt: OBSERVED_AT,
-		results,
-		sliceIndex: sampleIds ? null : SLICE_INDEX,
-		totalSlices: sampleIds ? null : TOTAL_SLICES,
-		requestUsage: {
-			attempts_used: usage.attempts_used,
-			reservation_id: usage.reservation_id,
-		},
-	});
-	recoveryProgressPath = writtenProgress.path.replaceAll("\\", "/");
-}
-
-if (process.env.GITHUB_OUTPUT) {
-	await fs.appendFile(
-		process.env.GITHUB_OUTPUT,
-		`recovery_progress_path=${recoveryProgressPath}\nrecovery_usage_path=${usagePath.replaceAll("\\", "/")}\n`,
-	);
-}
-
 const networks = [...networkMap.values()].sort((left, right) => left.id - right.id);
-const selectedIdSet = new Set(selection.ids);
-const legacyCurrentResults = results.filter((result) => selectedIdSet.has(result.id));
-if (IS_SAMPLE) {
-	console.log("Sample mode completed without writing progress or legacy Network caches.");
-	process.exit(0);
-}
-const ids = target.ids;
-const legacySlicedMode = LIMIT !== null || SLICE_INDEX !== null;
 await fs.writeFile(MIN_JSON_PATH, JSON.stringify(networks.map(compactNetwork)));
 await fs.writeFile(CSV_PATH, toCsv(networks));
 await fs.writeFile(
 	EXPORT_PATH,
 	`${JSON.stringify(
 		{
-			export_date: target.export_date,
-			total_ids: target.total_ids,
-			target_fingerprint: target.target_fingerprint,
+			export_date: snapshot.export_date,
+			total_ids: snapshot.total_ids,
+			target_fingerprint: snapshot.target_fingerprint,
 			last_offset: selection.start,
 			last_limit: selection.ids.length,
-			lowest_id: ids[0] || null,
-			highest_id: ids.at(-1) || null,
+			lowest_id: snapshot.ids[0] || null,
+			highest_id: snapshot.ids.at(-1) || null,
 			updated_at: new Date().toISOString(),
 		},
 		null,
@@ -334,31 +262,40 @@ await fs.writeFile(
 	`${JSON.stringify(
 		{
 			last_scan: {
-				mode: legacySlicedMode ? "tmdb_export_sliced_enrichment" : "tmdb_daily_export_full_enrichment",
-				export_date: target.export_date,
-				export_total_ids: target.total_ids,
-				offset: selection.start ?? OFFSET,
-				limit: legacySlicedMode ? selection.ids.length : null,
+				mode: "tmdb_export_sliced_enrichment",
+				export_date: snapshot.export_date,
+				export_total_ids: snapshot.total_ids,
+				offset: selection.start,
+				limit: selection.ids.length,
 				actual_limit: selection.ids.length,
-				lowest_id: ids[0] || null,
-				highest_id: ids.at(-1) || null,
-				checked: legacyCurrentResults.length,
-				found: legacyCurrentResults.filter(
-					(result) =>
-						[COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(result.status),
+				lowest_id: snapshot.ids[0] || null,
+				highest_id: snapshot.ids.at(-1) || null,
+				checked: results.length,
+				found: results.filter((result) =>
+					[CATALOGUE_COUNT_STATUSES.POSITIVE, CATALOGUE_COUNT_STATUSES.ZERO].includes(
+						result.status,
+					),
 				).length,
-				missing: legacyCurrentResults.filter(
-					(result) => ![COUNT_STATUSES.POSITIVE, COUNT_STATUSES.ZERO].includes(result.status),
+				missing: results.filter(
+					(result) =>
+						![CATALOGUE_COUNT_STATUSES.POSITIVE, CATALOGUE_COUNT_STATUSES.ZERO].includes(
+							result.status,
+						),
 				).length,
 				total_cached: networks.length,
 				...planned,
-				mode: legacySlicedMode ? "tmdb_export_sliced_enrichment" : "tmdb_daily_export_full_enrichment",
+				mode: "tmdb_export_sliced_enrichment",
 				results: {
-					positive: results.filter((result) => result.status === COUNT_STATUSES.POSITIVE).length,
-					zero: results.filter((result) => result.status === COUNT_STATUSES.ZERO).length,
-					failed: results.filter((result) => result.status === COUNT_STATUSES.FAILED).length,
-					unavailable: results.filter((result) => result.status === COUNT_STATUSES.UNAVAILABLE)
-						.length,
+					positive: results.filter(
+						(result) => result.status === CATALOGUE_COUNT_STATUSES.POSITIVE,
+					).length,
+					zero: results.filter(
+						(result) => result.status === CATALOGUE_COUNT_STATUSES.ZERO,
+					).length,
+					failed: results.filter(
+						(result) => result.status === CATALOGUE_COUNT_STATUSES.FAILED,
+					).length,
+					unavailable: 0,
 				},
 				requests: usage,
 				started_at: OBSERVED_AT,
