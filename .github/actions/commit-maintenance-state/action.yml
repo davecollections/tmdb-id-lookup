@@ -8,6 +8,10 @@ inputs:
   paths:
     description: Newline-delimited repository paths to stage
     required: true
+  integrity-manifest:
+    description: Optional recovery manifest whose protected bytes must match the final commit
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -17,11 +21,21 @@ runs:
       env:
         COMMIT_MESSAGE: ${{ inputs.message }}
         COMMIT_PATHS: ${{ inputs.paths }}
+        RECOVERY_INTEGRITY_MANIFEST: ${{ inputs.integrity-manifest }}
       run: |
         set -euo pipefail
 
+        verify_integrity() {
+          local source="$1"
+          if [[ -n "$RECOVERY_INTEGRITY_MANIFEST" ]]; then
+            RECOVERY_INTEGRITY_SOURCE="$source" node scripts/verify-entity-count-recovery-integrity.mjs
+          fi
+        }
+
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
+
+        verify_integrity worktree
 
         while IFS= read -r path; do
           if [[ -n "$path" ]]; then
@@ -31,12 +45,16 @@ runs:
           fi
         done <<< "$COMMIT_PATHS"
 
+        verify_integrity index
+
         if git diff --cached --quiet; then
+          verify_integrity tree
           echo "No declared maintenance changes to commit."
           exit 0
         fi
 
         git commit -m "$COMMIT_MESSAGE"
+        verify_integrity tree
 
         for attempt in 1 2 3; do
           if ! git pull --rebase origin main; then
@@ -44,6 +62,8 @@ runs:
             echo "Unable to rebase declared maintenance changes safely."
             exit 1
           fi
+
+          verify_integrity tree
 
           if git push origin HEAD:main; then
             exit 0

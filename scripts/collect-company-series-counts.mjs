@@ -145,8 +145,9 @@ await client.writeUsage({
 	dimension: COUNT_DIMENSIONS.COMPANY_SERIES,
 	target_fingerprint: target.target_fingerprint,
 });
+let recoveryProgressPath = "";
 if (results.length && !IS_SAMPLE) {
-	await writeProgressDocument({
+	const writtenProgress = await writeProgressDocument({
 		month: MONTH,
 		dimension: COUNT_DIMENSIONS.COMPANY_SERIES,
 		targetFingerprint: target.target_fingerprint,
@@ -160,6 +161,13 @@ if (results.length && !IS_SAMPLE) {
 			reservation_id: usage.reservation_id,
 		},
 	});
+	recoveryProgressPath = writtenProgress.path.replaceAll("\\", "/");
+}
+if (process.env.GITHUB_OUTPUT) {
+	await fs.appendFile(
+		process.env.GITHUB_OUTPUT,
+		`recovery_progress_path=${recoveryProgressPath}\nrecovery_usage_path=${usagePath.replaceAll("\\", "/")}\n`,
+	);
 }
 
 console.log(

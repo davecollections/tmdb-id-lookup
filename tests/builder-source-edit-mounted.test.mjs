@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -9,32 +10,15 @@ import { fileURLToPath } from "node:url";
 
 import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
+import {
+	cleanupMountedBrowser,
+	connectDevTools,
+	createBrowserProcessTree,
+	runWithLifecycleCleanup,
+} from "./helpers/mounted-browser-lifecycle.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builderModules = path.join(rootDir, "builder", "node_modules");
-const viteCacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "builder-source-edit-vite-"));
-const vite = await createServer({
-	root: rootDir,
-	cacheDir: viteCacheDir,
-	configFile: false,
-	appType: "spa",
-	logLevel: "silent",
-	plugins: [react()],
-	resolve: {
-		alias: [
-			{ find: /^react$/, replacement: path.join(builderModules, "react", "index.js") },
-			{ find: /^react\/jsx-runtime$/, replacement: path.join(builderModules, "react", "jsx-runtime.js") },
-			{ find: /^react-dom$/, replacement: path.join(builderModules, "react-dom", "index.js") },
-			{ find: /^react-dom\/client$/, replacement: path.join(builderModules, "react-dom", "client.js") },
-		],
-	},
-	server: { host: "127.0.0.1", port: 0 },
-});
-await vite.listen();
-after(async () => {
-	await vite.close();
-	fs.rmSync(viteCacheDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-});
 
 function chromeExecutable() {
 	const candidates = [
@@ -77,63 +61,91 @@ async function waitForJson(url, timeoutMs = 10000) {
 	throw new Error(`Chrome DevTools did not become available: ${lastError?.message ?? "timeout"}`);
 }
 
-async function connectCdp(url) {
-	const socket = new WebSocket(url);
-	await new Promise((resolve, reject) => {
-		socket.addEventListener("open", resolve, { once: true });
-		socket.addEventListener("error", () => reject(new Error("Chrome DevTools WebSocket failed.")), { once: true });
-	});
-	let nextId = 0;
-	const pending = new Map();
-	socket.addEventListener("message", (event) => {
-		const message = JSON.parse(event.data);
-		if (!message.id || !pending.has(message.id)) return;
-		const { resolve, reject } = pending.get(message.id);
-		pending.delete(message.id);
-		if (message.error) reject(new Error(message.error.message));
-		else resolve(message.result);
-	});
-	return {
-		close: () => socket.close(),
-		command(method, params = {}) {
-			const id = ++nextId;
-			return new Promise((resolve, reject) => {
-				pending.set(id, { resolve, reject });
-				socket.send(JSON.stringify({ id, method, params }));
-			});
-		},
-	};
-}
-
 async function runMountedPage() {
-	const debugPort = await availablePort();
-	const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "builder-source-edit-mounted-"));
-	const chrome = spawn(chromeExecutable(), [
-		"--headless=new",
-		"--disable-background-networking",
-		"--disable-component-update",
-		"--disable-gpu",
-		"--no-first-run",
-		"--no-sandbox",
-		`--remote-debugging-port=${debugPort}`,
-		`--user-data-dir=${profileDir}`,
-		"about:blank",
-	], { stdio: "ignore" });
-	let cdp = null;
-	try {
+	const resources = {
+		browserExecutable: null,
+		browserProcess: null,
+		browserConnection: null,
+		pageConnection: null,
+		processTree: null,
+		profileDir: null,
+		vite: null,
+		viteCacheDir: null,
+	};
+	const startedAt = Date.now();
+	const execution = await runWithLifecycleCleanup(async () => {
+		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-vite-"));
+		resources.vite = await createServer({
+			root: rootDir,
+			cacheDir: resources.viteCacheDir,
+			configFile: false,
+			appType: "spa",
+			logLevel: "silent",
+			plugins: [react()],
+			resolve: {
+				alias: [
+					{ find: /^react$/, replacement: path.join(builderModules, "react", "index.js") },
+					{ find: /^react\/jsx-runtime$/, replacement: path.join(builderModules, "react", "jsx-runtime.js") },
+					{ find: /^react-dom$/, replacement: path.join(builderModules, "react-dom", "index.js") },
+					{ find: /^react-dom\/client$/, replacement: path.join(builderModules, "react-dom", "client.js") },
+				],
+			},
+			server: { host: "127.0.0.1", port: 0 },
+		});
+		await resources.vite.listen();
+
+		const debugPort = await availablePort();
+		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-mounted-"));
+		resources.browserExecutable = chromeExecutable();
+		resources.browserProcess = spawn(resources.browserExecutable, [
+			"--headless=new",
+			"--disable-background-networking",
+			"--disable-component-update",
+			"--disable-gpu",
+			"--no-first-run",
+			"--no-sandbox",
+			`--remote-debugging-port=${debugPort}`,
+			`--user-data-dir=${resources.profileDir}`,
+			"about:blank",
+		], {
+			detached: process.platform !== "win32",
+			stdio: "ignore",
+			windowsHide: true,
+		});
+		await new Promise((resolve, reject) => {
+			const cleanup = () => {
+				resources.browserProcess.removeListener("spawn", onSpawn);
+				resources.browserProcess.removeListener("error", onError);
+			};
+			const onSpawn = () => {
+				cleanup();
+				resolve();
+			};
+			const onError = (error) => {
+				cleanup();
+				reject(error);
+			};
+			resources.browserProcess.once("spawn", onSpawn);
+			resources.browserProcess.once("error", onError);
+		});
+		resources.processTree = createBrowserProcessTree({ rootPid: resources.browserProcess.pid });
+
+		const version = await waitForJson(`http://127.0.0.1:${debugPort}/json/version`);
+		if (!version?.webSocketDebuggerUrl) throw new Error("Chrome browser target is unavailable.");
+		resources.browserConnection = await connectDevTools(version.webSocketDebuggerUrl);
 		const targets = await waitForJson(`http://127.0.0.1:${debugPort}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		cdp = await connectCdp(target.webSocketDebuggerUrl);
-		await cdp.command("Page.enable");
-		await cdp.command("Runtime.enable");
-		const address = vite.httpServer.address();
-		await cdp.command("Page.navigate", {
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl);
+		await resources.pageConnection.command("Page.enable");
+		await resources.pageConnection.command("Runtime.enable");
+		const address = resources.vite.httpServer.address();
+		await resources.pageConnection.command("Page.navigate", {
 			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html`,
 		});
 		const deadline = Date.now() + 15000;
 		while (Date.now() < deadline) {
-			const evaluated = await cdp.command("Runtime.evaluate", {
+			const evaluated = await resources.pageConnection.command("Runtime.evaluate", {
 				expression: "window.__builderSourceEditMounted ?? null",
 				returnByValue: true,
 			});
@@ -143,21 +155,40 @@ async function runMountedPage() {
 			await new Promise((resolve) => setTimeout(resolve, 50));
 		}
 		throw new Error("Mounted source-edit regressions timed out.");
-	} finally {
-		cdp?.close();
-		const chromeExited = chrome.exitCode !== null
-			? Promise.resolve()
-			: new Promise((resolve) => chrome.once("exit", resolve));
-		chrome.kill();
-		await Promise.race([
-			chromeExited,
-			new Promise((resolve) => setTimeout(resolve, 2000)),
-		]);
-		fs.rmSync(profileDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+	}, () => cleanupMountedBrowser(resources));
+
+	if (execution.cleanupReport.browser.fallback === "succeeded") {
+		console.warn(
+			`Mounted browser required process-tree fallback after graceful shutdown failed: ${execution.cleanupReport.browser.gracefulError?.message ?? "unknown error"}`,
+		);
 	}
+	if (process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
+		console.log(`MOUNTED_BROWSER_DIAGNOSTICS ${JSON.stringify({
+			browserExecutable: execution.cleanupReport.browserExecutable,
+			rootPid: execution.cleanupReport.rootPid,
+			graceful: execution.cleanupReport.browser.graceful,
+			fallback: execution.cleanupReport.browser.fallback,
+			remainingPids: execution.cleanupReport.browser.remainingPids,
+			profileRetries: execution.cleanupReport.profile.retries,
+			viteCacheRetries: execution.cleanupReport.viteCache.retries,
+			durationMs: Date.now() - startedAt,
+		})}`);
+	}
+	return execution.value;
 }
 
-const mountedResults = await runMountedPage();
+let mountedResults;
+let mountedCleanupFailure = null;
+try {
+	mountedResults = await runMountedPage();
+} catch (error) {
+	if (!error?.operationCompleted) throw error;
+	mountedResults = error.operationValue;
+	mountedCleanupFailure = error;
+}
+after(() => {
+	if (mountedCleanupFailure) throw mountedCleanupFailure;
+});
 
 function assertRequiredNameFailure(result) {
 	assert.equal(result.activeElementIsInput, true);

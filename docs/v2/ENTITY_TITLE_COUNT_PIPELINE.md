@@ -121,6 +121,12 @@ initial attempts, retries, fallback export dates, audit, repair, and collection.
 - Protected audit commitment: 14.
 - Protected repair commitment: 4,000.
 
+The boundaries are inclusive: exactly 90,000 is accepted without override;
+90,001 requires the existing documented preferred-limit override; exactly
+100,000 is accepted only with that override and its required reason; 100,001 is
+always rejected. Reservations remain planned capacity, while usage attempts are
+the separately recorded requests actually made. Recovery creates neither.
+
 Normal planned maximums are:
 
 | Work | Collection/API allowance | Export allowance | Maximum reserved |
@@ -154,18 +160,34 @@ auditable records; no automatic deletion is part of this issue. TMDB traffic
 outside this repository remains an operational limitation the ledger cannot
 observe.
 
-## Terminal push failure and deferred recovery
+## Terminal push failure and durable recovery
 
-After collection, each writer uses the shared bounded commit/push action. If all
-push attempts fail, the job fails visibly, does not repeat collection in that
-job, and does not release or reuse its consumed request reservation. Operator
-intervention or a later separately reserved rerun may therefore be required.
+After a typed `collect`-mode writer completes and validates positive-consumption
+output, issue #73 packages its exact usage receipt, typed progress file, and
+fixed writer-owned legacy cohort in a canonical hash-bound schema-v1 package. One immutable Actions
+artifact is uploaded with requested 90-day retention before the first output
+commit/push attempt. Artifact upload failure prevents that push.
 
-Durable commit-only recovery for runner-local output is deliberately deferred to
-a separate issue. It must be implemented, security-reviewed, and validated
-before the first automatic September typed-production run. That follow-up is not
-required for staging or merging issue #71, and this issue contains no recovery
-artifact packaging, upload, download, or restore path.
+If all bounded push attempts fail or the runner is interrupted after upload, the
+manual commit-only recovery workflow resolves the failed/cancelled allowlisted
+source run and exact live artifact ID through GitHub's API, validates it against
+its committed reservation and latest `main`, and
+restores missing exact bytes without a TMDB secret or request. Identical state is
+an idempotent no-op, conflicting immutable state fails before writes, and a
+complete validated strictly newer legacy cohort is preserved. Successful
+recovery uses a dedicated no-rebase remote-main compare-and-swap push and, by
+default, invokes the existing zero-request publisher from latest `main` under
+its normal concurrency and last-known-good safeguards. Normal writers retain
+the existing maintenance commit action with an optional protected-byte guard;
+no collector, reservation, schedule, allowance, partition, or publication path
+is replaced.
+
+Sample/retry modes, zero-consumption output, August legacy-only runs,
+reservation-only work, target initialization, audit-only jobs, and
+publication-only jobs are not recovery-ready. Reservations remain consumed and
+are never released or reused.
+See [`ENTITY_COUNT_RECOVERY.md`](./ENTITY_COUNT_RECOVERY.md) for the artifact,
+operator, validation, expiry, abandonment, and activation-gate contract.
 
 ## Frozen targets and typed progress
 

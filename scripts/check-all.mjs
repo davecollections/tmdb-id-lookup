@@ -40,6 +40,10 @@ runNode(["--test", path.join("tests", "builder-reordering-client-evidence.test.m
 runNode(["--test", path.join("tests", "tmdb-discover-compatibility.test.mjs")]);
 runNode(["--test", path.join("tests", "entity-title-counts.test.mjs")]);
 runNode(["--test", path.join("tests", "entity-title-count-workflows.test.mjs")]);
+runNode(["--test", path.join("tests", "entity-count-recovery.test.mjs")]);
+runNode(["--test", path.join("tests", "entity-count-recovery-provenance.test.mjs")]);
+runNode(["--test", path.join("tests", "entity-count-recovery-git.test.mjs")]);
+runNode(["--test", path.join("tests", "entity-count-recovery-drill.test.mjs")]);
 runNode(["--test", path.join("tests", "entity-title-count-sidecar-stress.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-domain.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-import.test.mjs")]);
@@ -59,6 +63,7 @@ runNode(["--test", path.join("tests", "builder-people-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "mounted-browser-lifecycle.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-mounted.test.mjs")]);
 runNode(["--test", path.join("tests", "fixture-line-endings.test.mjs")]);
 runNode(["--test", path.join("tests", "windows-validation.test.mjs")]);

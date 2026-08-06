@@ -1,0 +1,51 @@
+name: Entity Count Recovery Fixture Consumer
+
+on:
+  workflow_run:
+    workflows: [Entity Count Recovery Fixture Producer]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover-fixture-artifact:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - id: provenance
+        name: Resolve exact producer artifact and retention metadata
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRILL_SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          DRILL_SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node scripts/entity-count-recovery-drill.mjs resolve
+      - name: Download exact cross-run fixture artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ steps.provenance.outputs.artifact_id }}
+          path: ${{ runner.temp }}/entity-count-recovery-drill-download
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Verify exact recovery, repeat no-op, corruption, traversal, and Linux symlink rejection
+        env:
+          DRILL_ARTIFACT_ROOT: ${{ runner.temp }}/entity-count-recovery-drill-download
+          NODE_OPTIONS: --import=./tests/helpers/entity-count-recovery-network-guard.mjs
+        run: node scripts/entity-count-recovery-drill.mjs verify
+      - name: Exercise temporary Git compare-and-swap and cohort gates
+        env:
+          NODE_OPTIONS: --import=./tests/helpers/entity-count-recovery-network-guard.mjs
+        run: >-
+          node --test
+          tests/entity-count-recovery-git.test.mjs
+          tests/entity-count-recovery.test.mjs
+          tests/entity-count-recovery-provenance.test.mjs

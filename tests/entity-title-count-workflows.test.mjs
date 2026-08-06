@@ -22,6 +22,9 @@ const workflowFiles = [
 	".github/workflows/repair-cache-from-audit.yml",
 	".github/workflows/update-tv-network-details-from-export.yml",
 	".github/workflows/monthly-company-series-counts.yml",
+	".github/workflows/recover-entity-count-output.yml",
+	".github/workflows/entity-count-recovery-drill-producer.yml",
+	".github/workflows/entity-count-recovery-drill.yml",
 ];
 
 const adaptedRequestScripts = [
@@ -36,6 +39,8 @@ const adaptedRequestScripts = [
 
 const schemaFiles = [
 	"schemas/tmdb-request-reservation.schema.json",
+	"schemas/tmdb-request-usage.schema.json",
+	"schemas/entity-count-recovery-manifest.schema.json",
 	"schemas/entity-title-count-target.schema.json",
 	"schemas/entity-title-count-progress.schema.json",
 	"schemas/entity-title-count-sidecar.schema.json",
@@ -138,7 +143,7 @@ test("reusable plan and validation jobs explicitly downgrade caller tokens to re
 	}
 });
 
-test("collectors use bounded commit/push without recovery or repeated collection wiring", async () => {
+test("typed writers persist recovery output before bounded commit/push without repeated collection", async () => {
 	for (const [workflowFile, collectorScripts] of [
 		[".github/workflows/monthly-company-refresh.yml", ["manual-company-rebuild-from-export.mjs"]],
 		[".github/workflows/monthly-network-refresh.yml", ["fetch-tv-network-details-from-export.mjs"]],
@@ -150,7 +155,23 @@ test("collectors use bounded commit/push without recovery or repeated collection
 	]) {
 		const source = await read(workflowFile);
 		assert.match(source, /uses: \.\/\.github\/actions\/commit-maintenance-state/);
-		assert.doesNotMatch(source, /package-maintenance-recovery|upload-artifact|download-artifact|commit-only recovery/i);
+		assert.match(source, /uses: \.\/\.github\/actions\/package-entity-count-recovery/);
+		const packageIndexes = [];
+		let packageCursor = 0;
+		while (true) {
+			const packageIndex = source.indexOf("uses: ./.github/actions/package-entity-count-recovery", packageCursor);
+			if (packageIndex < 0) break;
+			packageIndexes.push(packageIndex);
+			packageCursor = packageIndex + 1;
+		}
+		assert.equal(packageIndexes.length, collectorScripts.length, `${workflowFile} package count`);
+		for (const packageIndex of packageIndexes) {
+			assert.match(
+				source.slice(Math.max(0, packageIndex - 350), packageIndex),
+				/outputs\.mode == 'collect'/,
+				`${workflowFile} recovery packages only collect-mode output`,
+			);
+		}
 		for (const collectorScript of collectorScripts) {
 			assert.equal(
 				source.split(collectorScript).length - 1,
@@ -158,17 +179,100 @@ test("collectors use bounded commit/push without recovery or repeated collection
 				`${workflowFile} must invoke ${collectorScript} exactly once`,
 			);
 		}
+		const packageIndex = source.indexOf("uses: ./.github/actions/package-entity-count-recovery");
+		const outputCommitIndex = source.indexOf(
+			"uses: ./.github/actions/commit-maintenance-state",
+			packageIndex,
+		);
+		assert.ok(packageIndex >= 0 && outputCommitIndex > packageIndex, workflowFile);
+		assert.match(source.slice(packageIndex, outputCommitIndex + 500), /integrity-manifest: \$\{\{ steps\.recovery-package\.outputs\.manifest-path \}\}/);
 	}
 	const commitAction = await read(".github/actions/commit-maintenance-state/action.yml");
 	assert.match(commitAction, /for attempt in 1 2 3/);
-	for (const removedPath of [
-		".github/actions/package-maintenance-recovery/action.yml",
+	assert.match(commitAction, /integrity-manifest:/);
+	assert.match(commitAction, /verify_integrity worktree/);
+	assert.match(commitAction, /verify_integrity index/);
+	assert.match(commitAction, /verify_integrity tree/);
+	for (const requiredPath of [
+		".github/actions/package-entity-count-recovery/action.yml",
+		".github/actions/recover-entity-count-output/action.yml",
+		".github/actions/commit-recovered-entity-count-output/action.yml",
 		".github/workflows/recover-entity-count-output.yml",
-		"scripts/lib/maintenance-recovery.mjs",
-		"scripts/package-maintenance-recovery.mjs",
-		"scripts/recover-maintenance-output.mjs",
+		".github/workflows/entity-count-recovery-drill-producer.yml",
+		".github/workflows/entity-count-recovery-drill.yml",
+		"scripts/lib/entity-count-recovery.mjs",
+		"scripts/lib/entity-count-recovery-git.mjs",
+		"scripts/lib/entity-count-recovery-provenance.mjs",
+		"scripts/package-entity-count-recovery.mjs",
+		"scripts/recover-entity-count-output.mjs",
 	]) {
-		await assert.rejects(fs.access(path.join(root, removedPath)), { code: "ENOENT" });
+		await fs.access(path.join(root, requiredPath));
+	}
+});
+
+test("recovery uses API-derived artifact ID and a dedicated no-rebase commit path", async () => {
+	const action = await read(".github/actions/recover-entity-count-output/action.yml");
+	const commit = await read(".github/actions/commit-recovered-entity-count-output/action.yml");
+	assert.match(action, /resolve-entity-count-recovery-provenance\.mjs/);
+	assert.match(action, /artifact-ids: \$\{\{ steps\.provenance\.outputs\.artifact_id \}\}/);
+	assert.match(action, /merge-multiple: true/);
+	assert.match(action, /commit-recovered-entity-count-output/);
+	assert.match(commit, /commit-recovered-entity-count-output\.mjs/);
+	assert.doesNotMatch(`${action}\n${commit}`, /commit-maintenance-state|pull --rebase|git rebase/);
+});
+
+test("production recovery adds zero reservations and zero TMDB attempts", async () => {
+	const combined = (await Promise.all([
+		".github/workflows/recover-entity-count-output.yml",
+		".github/actions/recover-entity-count-output/action.yml",
+		".github/actions/commit-recovered-entity-count-output/action.yml",
+		"scripts/commit-recovered-entity-count-output.mjs",
+		"scripts/resolve-entity-count-recovery-provenance.mjs",
+	].map(read))).join("\n");
+	assert.doesNotMatch(combined, /TMDB_BEARER_TOKEN|createTmdbRequestClient|reserve-tmdb-request-budget|TMDB_APPROVED_ALLOWANCE|api\.themoviedb\.org|files\.tmdb\.org/);
+});
+
+test("fixture hosted drill is cross-run, read-only, production-isolated, and zero-request", async () => {
+	const producer = await read(".github/workflows/entity-count-recovery-drill-producer.yml");
+	const consumer = await read(".github/workflows/entity-count-recovery-drill.yml");
+	const script = await read("scripts/entity-count-recovery-drill.mjs");
+	const guard = await read("tests/helpers/entity-count-recovery-network-guard.mjs");
+	assert.match(producer, /workflow_dispatch:/);
+	assert.match(producer, /retention-days: 90/);
+	assert.match(producer, /Simulate interruption after durable upload and before commit/);
+	assert.match(consumer, /workflow_run:/);
+	assert.match(consumer, /artifact-ids:/);
+	assert.match(consumer, /actions: read/);
+	assert.doesNotMatch(`${producer}\n${consumer}`, /contents: write|TMDB_BEARER_TOKEN|secrets\.TMDB/);
+	assert.doesNotMatch(`${producer}\n${consumer}`, /commit-maintenance-state|commit-recovered-entity-count-output/);
+	assert.match(script, /fixture-output\/output\.json/);
+	assert.match(script, /TMDB\/network requests are forbidden/);
+	assert.match(script, /artifact\.workflow_run\?\.id/);
+	assert.match(script, /actual_retention_days/);
+	assert.match(script, /repository_policy_capped/);
+	assert.equal(consumer.split("NODE_OPTIONS: --import=./tests/helpers/entity-count-recovery-network-guard.mjs").length - 1, 2);
+	assert.match(script, /tmdbRequestAttempts/);
+	assert.match(guard, /TMDB maintenance request client import is forbidden/);
+	assert.match(guard, /api\.themoviedb\.org.*files\.tmdb\.org/s);
+	assert.doesNotMatch(script, /data\/companies|min\.json|data\/tv-networks/);
+});
+
+test("all issue 73 external Actions references are immutable full SHAs", async () => {
+	for (const relativePath of [
+		".github/actions/package-entity-count-recovery/action.yml",
+		".github/actions/recover-entity-count-output/action.yml",
+		".github/workflows/recover-entity-count-output.yml",
+		".github/workflows/entity-count-recovery-drill-producer.yml",
+		".github/workflows/entity-count-recovery-drill.yml",
+	]) {
+		const source = await read(relativePath);
+		const external = [...source.matchAll(/^\s*-?\s*uses:\s+(actions\/[^@\s]+)@([^\s#]+)(?:\s+#\s+(.+))?$/gm)];
+		assert.ok(external.length > 0, `${relativePath} has no checked external action references`);
+		for (const [, action, reference, release] of external) {
+			assert.match(reference, /^[a-f0-9]{40}$/, `${relativePath} ${action}`);
+			assert.match(release || "", /^v\d+\.\d+\.\d+$/, `${relativePath} ${action} release comment`);
+		}
+		assert.doesNotMatch(source, /^\s*-?\s*uses:\s+actions\/[^@\s]+@(?:v\d+|main|master|[a-f0-9]{1,39})(?:\s|$)/gm);
 	}
 });
 
