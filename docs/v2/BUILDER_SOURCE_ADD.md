@@ -1,8 +1,8 @@
 # Builder Add Source: TMDB Movie Franchises
 
-Status: owner desktop, final physical-iPhone, and current Nuvio Desktop acceptance complete on issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65)'s dedicated branch
+Status: merged through issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65) / PR [#66](https://github.com/davecollections/tmdb-id-lookup/pull/66), with owner desktop, final physical-iPhone, and current Nuvio Desktop acceptance complete
 
-Last reviewed: 2026-08-02
+Last reviewed: 2026-08-06
 
 ## Scope
 
@@ -132,4 +132,4 @@ Issue #14 remains the public-list lookup boundary. Issue #24 remains the direct 
 
 ## Completion gate
 
-The issue #65 owner UI and required current Nuvio Desktop evidence gates are complete. A second current Nuvio client remains desirable but non-blocking unless it later exposes conflicting behavior. Commit and pull-request actions remain separate owner-authorized workflow gates.
+The issue #65 owner UI and required current Nuvio Desktop evidence gates are complete, and PR #66 is merged. A second current Nuvio client remains desirable but non-blocking unless it later exposes conflicting behavior.

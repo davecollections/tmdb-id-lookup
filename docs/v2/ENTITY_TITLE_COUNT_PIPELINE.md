@@ -1,8 +1,8 @@
 # Typed Entity Title Count Pipeline
 
-Status: Issue #71 implementation contract
+Status: Issue #71 implementation contract with durable recovery merged through issue #73 / PR #80
 
-Last reviewed: 2026-08-01
+Last reviewed: 2026-08-06
 
 This pipeline builds strict monthly Company Movie, Company Series, and Network
 Series counts without changing Builder source code. It reuses the existing
@@ -188,6 +188,13 @@ publication-only jobs are not recovery-ready. Reservations remain consumed and
 are never released or reused.
 See [`ENTITY_COUNT_RECOVERY.md`](./ENTITY_COUNT_RECOVERY.md) for the artifact,
 operator, validation, expiry, abandonment, and activation-gate contract.
+
+After PR #80 merged, the hosted fixture producer and automatic consumer drill
+passed without production-state writes or TMDB/network requests. The retained
+artifact expires on 2026-11-04, issue #73 is closed, and the September recovery-
+readiness gates are complete. The bounded Company Movie/Series live smoke under
+issue #84 and the read-only Network comparison remain separate future work;
+neither is evidence from the recovery drill.
 
 ## Frozen targets and typed progress
 

@@ -1,8 +1,8 @@
 # Typed Entity Count Recovery
 
-Status: Issue #73 implementation and operator contract
+Status: merged through issue #73 / PR #80; hosted producer/consumer recovery drill and September readiness gates complete
 
-Last reviewed: 2026-08-05
+Last reviewed: 2026-08-06
 
 This recovery path protects a completed, validated typed writer job when its
 maintenance-state commit cannot be pushed. It restores the exact writer output
@@ -211,17 +211,14 @@ and publication steps.
 
 ## Fixture-only hosted drill
 
-The manually dispatched fixture producer uploads a real 90-day artifact and
-then intentionally fails after upload. A separate `workflow_run` consumer
-resolves that artifact through the API, records its actual expiry metadata,
-downloads it cross-run by artifact ID, and uses only temporary repositories and
-the hardcoded `fixture-output/output.json` path. It has no contents-write
-permission, TMDB secret, production recovery mode, or production-path
-allowlist. The Linux gate covers real symlink rejection; local Windows tests
-skip only that privilege-dependent assertion. During the hosted recovery and
-temporary-Git execution steps, a preload guard fails immediately on any TMDB
-host request or TMDB maintenance-client import. All external Actions added by
-issue #73 are pinned to full reviewed commit SHAs.
+After PR #80 merged, the manually dispatched fixture producer and automatic
+`workflow_run` consumer passed. The consumer resolved and downloaded the real
+cross-run artifact by API-derived artifact ID and exercised exact recovery,
+repeat no-op, Linux symlink rejection, corrupt/traversal and hybrid-output
+rejection, safe remote-advance handling, and legacy-cohort safeguards. The
+preload guard recorded zero TMDB/network requests, and the drill wrote no
+production data. The retained artifact expires on 2026-11-04. All external
+Actions added by issue #73 remain pinned to full reviewed commit SHAs.
 
 ## Expiry and safe abandonment
 
@@ -230,6 +227,9 @@ may cap the actual retention period, so the API-reported expiry is authoritative
 and is recorded by the hosted drill. Artifacts may also become unavailable if
 the artifact, run, or repository is deleted. Expiry never releases or reuses the
 original request reservation.
+
+For the completed post-merge drill, the API recorded artifact `8954448669` as
+retained through `2026-11-04T03:11:53Z`.
 
 If recovery data is absent, expired, corrupt, conflicting, or cannot pass every
 gate:
@@ -260,11 +260,10 @@ Before the first automatic September 2026 typed production run:
   production-state writes;
 - Dave must review this runbook.
 
-If these gates are incomplete before September 1 UTC, automatic typed
-activation requires a separately reviewed operational decision. Issue #73 does
-not change schedule cron expressions, activation month, allowances, or
-partitions, and existing monthly legacy refresh behavior should continue unless
-Dave separately approves a temporary operational change.
+The post-merge hosted producer/consumer drill completed these September
+recovery-readiness gates, and issue #73 is closed. Issue #73 did not change
+schedule cron expressions, activation month, allowances, or partitions; later
+production activation or observation remains separately reviewed.
 
 ## Product boundary
 
@@ -273,6 +272,7 @@ count plus its separate Movie and Series counts. Network Series collection and
 recovery retain their current semantics; this issue makes no decision about
 whether a Network total and typed Network Series count are redundant. Stable
 v1, downstream fields and interpretation, production schemas/data, schedules,
-activation, allowances, and partitions remain unchanged. A bounded live
-Company smoke test and the separate read-only Network comparison are later,
-owner-approved work and are not part of this correction.
+activation, allowances, and partitions remain unchanged. The bounded Company
+Movie/Series live smoke under issue #84 has not run, and the read-only Network
+comparison remains separate future work. Neither is part of the completed
+issue #73 recovery drill.
