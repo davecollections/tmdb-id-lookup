@@ -198,9 +198,15 @@ If local lookup requests fail while the live site works, check the Worker origin
 
 The tracked Worker source is in `cloudflare-worker/tmdb-proxy.js`. Its TMDB credential and narrow People generator credential stay in Cloudflare as separate `TMDB_BEARER_TOKEN` and `NUVIO_PEOPLE_SERVICE_TOKEN` secrets. Secret values must never be committed to Git. Browser access remains CORS-controlled; origin-free service access is limited to the exact `/3/person/{id}` pathname and is documented in `cloudflare-worker/README.md`.
 
-## Notes
+## TMDB Attribution
 
-This project uses the TMDB API but is not endorsed or certified by TMDB.
+The V1 site displays the official TMDB logo with this required notice:
+
+> This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.
+
+V2 must include visible TMDB attribution UI before its `noindex` state is removed or it is released or promoted for public use. That UI must use an official TMDB logo, keep the TMDB mark less prominent than the application identity, and display the same notice exactly.
+
+## Notes
 
 Company names, logos, posters, and trademarks remain the property of their respective owners.
 

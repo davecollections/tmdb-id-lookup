@@ -576,6 +576,40 @@ th.sortable:hover {
 	text-align: center;
 }
 
+.tmdb-attribution {
+	align-items: center;
+	background: #111823;
+	border: 1px solid #2a3748;
+	border-radius: 10px;
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+	margin: 0 auto 12px;
+	padding: 12px 14px;
+}
+
+.tmdb-attribution-logo-link {
+	flex: 0 0 auto;
+	line-height: 0;
+}
+
+.tmdb-attribution-logo {
+	display: block;
+	height: auto;
+	width: 42px;
+}
+
+.tmdb-attribution-notice {
+	color: #c8d0da;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1.5;
+	margin: 0;
+	max-width: 640px;
+	min-width: 0;
+	text-align: left;
+}
+
 .footer-line {
 	align-items: center;
 	display: flex;
