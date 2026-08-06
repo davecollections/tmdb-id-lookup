@@ -611,6 +611,7 @@ export async function createEntityCountRecoveryPackage({
 	reservationPath,
 	baseCommit,
 	repository,
+	writerCheckoutTrust,
 	workflow,
 	workflowFile,
 	event,
@@ -637,6 +638,8 @@ export async function createEntityCountRecoveryPackage({
 	const writerCheckout = resolveEntityCountRecoveryWriterCheckout({
 		repositoryRoot,
 		expectedRepository: repository,
+		expectedOrigin: writerCheckoutTrust?.expectedOrigin,
+		requireGitHubOrigin: writerCheckoutTrust?.requireGitHubOrigin,
 		headSha,
 		claimedBaseCommit: baseCommit,
 	});

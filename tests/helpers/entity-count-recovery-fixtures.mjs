@@ -143,6 +143,10 @@ export async function createRecoveryGitFixture(context) {
 		usagePath,
 		reservationPath,
 		repository,
+		writerCheckoutTrust: {
+			expectedOrigin: bare,
+			requireGitHubOrigin: false,
+		},
 		workflow: usage.workflow,
 		workflowFile: ".github/workflows/monthly-company-series-counts.yml",
 		event: "workflow_dispatch",

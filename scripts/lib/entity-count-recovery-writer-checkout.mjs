@@ -44,9 +44,32 @@ function githubRepositoryFromRemote(value) {
 	}
 }
 
+function localRepositoryFromRemote(repositoryRoot, value) {
+	const remote = String(value || "").trim();
+	if (!remote || /^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(remote) || /^git@/i.test(remote)) return null;
+	return path.normalize(path.resolve(repositoryRoot, remote));
+}
+
+function originsMatch(repositoryRoot, actualOrigin, expectedOrigin) {
+	const actualRepository = githubRepositoryFromRemote(actualOrigin);
+	const expectedRepository = githubRepositoryFromRemote(expectedOrigin);
+	if (actualRepository || expectedRepository) {
+		return Boolean(
+			actualRepository &&
+			expectedRepository &&
+			actualRepository.toLowerCase() === expectedRepository.toLowerCase()
+		);
+	}
+	const actualLocal = localRepositoryFromRemote(repositoryRoot, actualOrigin);
+	const expectedLocal = localRepositoryFromRemote(repositoryRoot, expectedOrigin);
+	return Boolean(actualLocal && expectedLocal && actualLocal === expectedLocal);
+}
+
 export function resolveEntityCountRecoveryWriterCheckout({
 	repositoryRoot,
 	expectedRepository,
+	expectedOrigin,
+	requireGitHubOrigin,
 	headSha,
 	claimedBaseCommit,
 }) {
@@ -58,6 +81,19 @@ export function resolveEntityCountRecoveryWriterCheckout({
 	}
 	if (!/^[^/]+\/[^/]+$/.test(expectedRepository || "")) {
 		throw checkoutError("Expected recovery repository identity is invalid.", "writer_checkout_repository");
+	}
+	if (typeof expectedOrigin !== "string" || !expectedOrigin.trim() || typeof requireGitHubOrigin !== "boolean") {
+		throw checkoutError("Writer checkout trust context is invalid.", "writer_checkout_context");
+	}
+	const expectedOriginRepository = githubRepositoryFromRemote(expectedOrigin);
+	if (requireGitHubOrigin && !expectedOriginRepository) {
+		throw checkoutError("Required writer origin is not a trusted GitHub repository.", "writer_checkout_context");
+	}
+	if (
+		expectedOriginRepository &&
+		expectedOriginRepository.toLowerCase() !== expectedRepository.toLowerCase()
+	) {
+		throw checkoutError("Trusted writer origin does not match the expected repository.", "writer_checkout_repository");
 	}
 	if (claimedBaseCommit !== undefined && !COMMIT_PATTERN.test(claimedBaseCommit || "")) {
 		throw checkoutError("Claimed recovery base commit SHA is invalid.", "base_commit");
@@ -71,12 +107,16 @@ export function resolveEntityCountRecoveryWriterCheckout({
 		throw checkoutError("Recovery repository root is not the Git checkout root.", "writer_checkout_root");
 	}
 	const origin = git(repositoryRoot, ["remote", "get-url", "origin"], { allowFailure: true });
-	const originRepository = origin.status === 0 ? githubRepositoryFromRemote(origin.stdout) : null;
+	const originValue = origin.status === 0 ? origin.stdout.trim() : "";
+	const originRepository = githubRepositoryFromRemote(originValue);
+	if (requireGitHubOrigin && !originRepository) {
+		throw checkoutError("Writer checkout has no trusted GitHub repository origin.", "writer_checkout_repository");
+	}
+	if (!originsMatch(repositoryRoot, originValue, expectedOrigin)) {
+		throw checkoutError("Writer checkout origin does not match the trusted origin.", "writer_checkout_repository");
+	}
 	if (originRepository && originRepository.toLowerCase() !== expectedRepository.toLowerCase()) {
 		throw checkoutError("Writer checkout origin does not match the expected repository.", "writer_checkout_repository");
-	}
-	if (process.env.GITHUB_ACTIONS === "true" && !originRepository) {
-		throw checkoutError("Actions writer checkout has no trusted GitHub repository origin.", "writer_checkout_repository");
 	}
 
 	const baseCommit = git(repositoryRoot, ["rev-parse", "--verify", "HEAD"]).stdout.trim();

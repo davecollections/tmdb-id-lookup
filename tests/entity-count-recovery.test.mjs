@@ -26,6 +26,10 @@ import {
 
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REPOSITORY = "davecollections/tmdb-id-lookup";
+const WRITER_CHECKOUT_TRUST = Object.freeze({
+	expectedOrigin: `https://github.com/${REPOSITORY}.git`,
+	requireGitHubOrigin: true,
+});
 
 function runGit(cwd, args, { allowFailure = false, binary = false } = {}) {
 	const result = spawnSync("git", args, { cwd, encoding: binary ? null : "utf8", maxBuffer: 64 * 1024 * 1024 });
@@ -374,6 +378,7 @@ async function createFixture(context, { workload = "company-series", attemptsUse
 		usagePath,
 		reservationPath,
 		repository: REPOSITORY,
+		writerCheckoutTrust: WRITER_CHECKOUT_TRUST,
 		workflow: config.workflow,
 		workflowFile: workflowFileFor(workload),
 		event: "workflow_dispatch",
@@ -621,6 +626,7 @@ test("packaging rejects a caller base claim that differs from the actual writer 
 			reservationPath: fixture.reservationPath,
 			baseCommit: "b".repeat(40),
 			repository: REPOSITORY,
+			writerCheckoutTrust: WRITER_CHECKOUT_TRUST,
 			workflow: fixture.config.workflow,
 			workflowFile: fixture.packaged.manifest.workflow_file,
 			event: fixture.packaged.manifest.event,
@@ -658,6 +664,7 @@ test("package creation rejects an output root inside the checkout before writing
 			usagePath: fixture.usagePath,
 			reservationPath: fixture.reservationPath,
 			repository: REPOSITORY,
+			writerCheckoutTrust: WRITER_CHECKOUT_TRUST,
 			workflow: fixture.config.workflow,
 			workflowFile: workflowFileFor("company-series"),
 			event: "workflow_dispatch",

@@ -23,6 +23,7 @@ const workload = process.env.RECOVERY_WORKLOAD;
 const progressPath = process.env.RECOVERY_PROGRESS_PATH;
 const usagePath = process.env.RECOVERY_USAGE_PATH;
 const reservationPath = process.env.RECOVERY_RESERVATION_PATH;
+const repository = process.env.GITHUB_REPOSITORY;
 
 function workflowFileFromRef(value) {
 	const match = String(value || "").match(/^[^/]+\/[^/]+\/(\.github\/workflows\/[A-Za-z0-9._-]+\.ya?ml)@/);
@@ -39,7 +40,11 @@ const result = await createEntityCountRecoveryPackage({
 	progressPath,
 	usagePath,
 	reservationPath,
-	repository: process.env.GITHUB_REPOSITORY,
+	repository,
+	writerCheckoutTrust: {
+		expectedOrigin: `https://github.com/${repository}.git`,
+		requireGitHubOrigin: true,
+	},
 	workflow: process.env.GITHUB_WORKFLOW,
 	workflowFile: workflowFileFromRef(process.env.GITHUB_WORKFLOW_REF),
 	event: process.env.GITHUB_EVENT_NAME,

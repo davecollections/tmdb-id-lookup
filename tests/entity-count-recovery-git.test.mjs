@@ -29,6 +29,13 @@ function assertNoTmdbRuntimeRequests() {
 	assert.deepEqual(recoveryNetworkGuardState.fetchAttempts, []);
 }
 
+function fixtureWriterCheckoutTrust(fixture) {
+	return {
+		expectedOrigin: fixture.bare,
+		requireGitHubOrigin: false,
+	};
+}
+
 async function rewriteArtifactManifest(fixture, mutate) {
 	const manifestPath = path.join(fixture.packaged.artifactRoot, "manifest.json");
 	const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
@@ -64,6 +71,63 @@ test("runtime recovery guard rejects the TMDB request client before production c
 		/TMDB maintenance request client import is forbidden/,
 	);
 	assertNoTmdbRuntimeRequests();
+});
+
+test("writer checkout trust is explicit under ambient GitHub Actions", async (context) => {
+	const previousGitHubActions = process.env.GITHUB_ACTIONS;
+	process.env.GITHUB_ACTIONS = "true";
+	try {
+		const fixture = await createRecoveryGitFixture(context);
+		const local = resolveEntityCountRecoveryWriterCheckout({
+			repositoryRoot: fixture.seed,
+			expectedRepository: fixture.provenance.repository,
+			...fixtureWriterCheckoutTrust(fixture),
+			headSha: fixture.ancestorCommit,
+		});
+		assert.equal(local.baseCommit, fixture.targetCommit);
+		assert.throws(
+			() => resolveEntityCountRecoveryWriterCheckout({
+				repositoryRoot: fixture.seed,
+				expectedRepository: fixture.provenance.repository,
+				expectedOrigin: `https://github.com/${fixture.provenance.repository}.git`,
+				requireGitHubOrigin: true,
+				headSha: fixture.ancestorCommit,
+			}),
+			(error) => error?.code === "writer_checkout_repository",
+		);
+		assert.throws(
+			() => resolveEntityCountRecoveryWriterCheckout({
+				repositoryRoot: fixture.seed,
+				expectedRepository: fixture.provenance.repository,
+				headSha: fixture.ancestorCommit,
+			}),
+			(error) => error?.code === "writer_checkout_context",
+		);
+		runGit(fixture.seed, ["remote", "set-url", "origin", `https://github.com/${fixture.provenance.repository}.git`]);
+		const github = resolveEntityCountRecoveryWriterCheckout({
+			repositoryRoot: fixture.seed,
+			expectedRepository: fixture.provenance.repository,
+			expectedOrigin: `https://github.com/${fixture.provenance.repository}.git`,
+			requireGitHubOrigin: true,
+			headSha: fixture.ancestorCommit,
+		});
+		assert.equal(github.baseCommit, fixture.targetCommit);
+	} finally {
+		if (previousGitHubActions === undefined) delete process.env.GITHUB_ACTIONS;
+		else process.env.GITHUB_ACTIONS = previousGitHubActions;
+	}
+	assertNoTmdbRuntimeRequests();
+});
+
+test("production packaging requires canonical GitHub origin trust without environment bypasses", async () => {
+	const entrypoint = await fs.readFile(path.join(sourceRoot, "scripts/package-entity-count-recovery.mjs"), "utf8");
+	const resolver = await fs.readFile(
+		path.join(sourceRoot, "scripts/lib/entity-count-recovery-writer-checkout.mjs"),
+		"utf8",
+	);
+	assert.match(entrypoint, /expectedOrigin:\s*`https:\/\/github\.com\/\$\{repository\}\.git`/);
+	assert.match(entrypoint, /requireGitHubOrigin:\s*true/);
+	assert.doesNotMatch(resolver, /process\.env\.(?:CI|GITHUB_ACTIONS|NODE_ENV)/);
 });
 
 test("unchanged remote receives one exact recovery commit and repeat recovery is a no-op", async (context) => {
@@ -120,6 +184,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		const resolved = resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: fixture.seed,
 			expectedRepository: fixture.provenance.repository,
+			...fixtureWriterCheckoutTrust(fixture),
 			headSha: fixture.ancestorCommit,
 		});
 		assert.equal(resolved.baseCommit, fixture[key], key);
@@ -132,6 +197,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		() => resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: behind.seed,
 			expectedRepository: behind.provenance.repository,
+			...fixtureWriterCheckoutTrust(behind),
 			headSha: behind.targetCommit,
 		}),
 		(error) => error?.code === "base_commit_ancestry",
@@ -146,6 +212,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		() => resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: sibling.seed,
 			expectedRepository: sibling.provenance.repository,
+			...fixtureWriterCheckoutTrust(sibling),
 			headSha: sibling.ancestorCommit,
 		}),
 		(error) => error?.code === "writer_checkout_ref",
@@ -160,6 +227,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		() => resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: unrelated.seed,
 			expectedRepository: unrelated.provenance.repository,
+			...fixtureWriterCheckoutTrust(unrelated),
 			headSha: unrelated.ancestorCommit,
 		}),
 		(error) => error?.code === "base_commit_ancestry",
@@ -170,6 +238,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		() => resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: missing.seed,
 			expectedRepository: missing.provenance.repository,
+			...fixtureWriterCheckoutTrust(missing),
 			headSha: "d".repeat(40),
 		}),
 		(error) => error?.code === "head_commit_missing",
@@ -178,6 +247,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		() => resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: missing.seed,
 			expectedRepository: missing.provenance.repository,
+			...fixtureWriterCheckoutTrust(missing),
 			headSha: missing.ancestorCommit,
 			claimedBaseCommit: missing.reservationCommit,
 		}),
@@ -189,6 +259,7 @@ test("writer checkout accepts A, B, and C descendants and rejects unsafe commit 
 		() => resolveEntityCountRecoveryWriterCheckout({
 			repositoryRoot: wrongRepository.seed,
 			expectedRepository: wrongRepository.provenance.repository,
+			...fixtureWriterCheckoutTrust(wrongRepository),
 			headSha: wrongRepository.ancestorCommit,
 		}),
 		(error) => error?.code === "writer_checkout_repository",
