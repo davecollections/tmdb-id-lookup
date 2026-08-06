@@ -21,6 +21,8 @@ const ALLOWED_PATHS = [
   /^\/3\/search\/keyword$/,
 ];
 
+const PEOPLE_SERVICE_PATH = /^\/3\/person\/\d+$/;
+
 function isAllowedOrigin(origin) {
   if (!origin) {
     return false;
@@ -65,6 +67,15 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") || "";
 
+    const suppliedServiceToken =
+      request.headers.get("X-Nuvio-Service-Token") || "";
+
+    const hasPeopleServiceAccess =
+      PEOPLE_SERVICE_PATH.test(url.pathname) &&
+      typeof env.NUVIO_PEOPLE_SERVICE_TOKEN === "string" &&
+      env.NUVIO_PEOPLE_SERVICE_TOKEN.length >= 32 &&
+      suppliedServiceToken === env.NUVIO_PEOPLE_SERVICE_TOKEN;
+
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -78,7 +89,7 @@ export default {
       });
     }
 
-    if (!isAllowedOrigin(origin)) {
+    if (!isAllowedOrigin(origin) && !hasPeopleServiceAccess) {
       return textResponse("Origin not allowed", 403, origin);
     }
 
