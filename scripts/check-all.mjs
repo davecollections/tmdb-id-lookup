@@ -63,6 +63,7 @@ runNode(["--test", path.join("tests", "builder-people-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "mounted-browser-lifecycle.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-mounted.test.mjs")]);
 runNode(["--test", path.join("tests", "fixture-line-endings.test.mjs")]);
 runNode(["--test", path.join("tests", "windows-validation.test.mjs")]);
