@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "reservation_id": "31167271164-1-company-movie",
+  "utc_date": "2026-08-07",
+  "workflow": "Monthly TMDB Company Refresh",
+  "run_id": "31167271164",
+  "run_attempt": "1",
+  "job": "company-movie",
+  "planned_month": "2026-08",
+  "planned_utc_date": "2026-08-07",
+  "bucket": "general",
+  "allocations": {
+    "collection": 55000,
+    "target_export": 7
+  },
+  "bindings": {
+    "collection": {
+      "request_class": "company-movie",
+      "target_dimension": "company-movie",
+      "approved_allowance": 55000
+    },
+    "target_export": {
+      "request_class": "target-export",
+      "target_dimension": "company",
+      "approved_allowance": 7
+    }
+  },
+  "total_allowance": 55007,
+  "projected_daily_total": 59057,
+  "preferred_daily_limit": 90000,
+  "absolute_daily_limit": 100000,
+  "fixed_genre_commitment": 36,
+  "protected_audit_commitment": 14,
+  "protected_repair_commitment": 4000,
+  "preferred_override_used": false,
+  "override_reason": null,
+  "created_at": "2026-08-07T09:46:18.071Z"
+}
