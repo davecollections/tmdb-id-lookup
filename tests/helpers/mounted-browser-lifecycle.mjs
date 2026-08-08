@@ -280,6 +280,10 @@ function descendantPids(rootPid, records) {
 	return [...owned].filter((pid) => live.has(pid)).sort((left, right) => left - right);
 }
 
+function uniqueSortedPids(pids) {
+	return [...new Set(pids)].sort((left, right) => left - right);
+}
+
 export function createBrowserProcessTree({
 	rootPid,
 	platform = process.platform,
@@ -307,18 +311,23 @@ export function createBrowserProcessTree({
 		const current = await records();
 		capturedPids = isWindows
 			? descendantPids(rootPid, current)
-			: current.filter(({ groupId }) => groupId === rootPid).map(({ pid }) => pid).sort((a, b) => a - b);
+			: uniqueSortedPids([
+				...descendantPids(rootPid, current),
+				...current.filter(({ groupId }) => groupId === rootPid).map(({ pid }) => pid),
+			]);
 		if (!capturedPids.includes(rootPid) && isAlive(rootPid, processKill)) capturedPids.unshift(rootPid);
-		return [...new Set(capturedPids)];
+		capturedPids = uniqueSortedPids(capturedPids);
+		return [...capturedPids];
 	}
 
 	async function remainingPids(ownedPids = capturedPids) {
 		if (isWindows) return ownedPids.filter((pid) => isAlive(pid, processKill));
 		try {
-			return (await records())
-				.filter(({ groupId }) => groupId === rootPid)
-				.map(({ pid }) => pid)
-				.sort((a, b) => a - b);
+			const current = await records();
+			return uniqueSortedPids([
+				...ownedPids.filter((pid) => isAlive(pid, processKill)),
+				...current.filter(({ groupId }) => groupId === rootPid).map(({ pid }) => pid),
+			]);
 		} catch (error) {
 			return isAlive(-rootPid, processKill) ? [...ownedPids] : [];
 		}
@@ -349,18 +358,26 @@ export function createBrowserProcessTree({
 			return;
 		}
 
-		try {
-			processKill(-rootPid, "SIGTERM");
-		} catch (error) {
-			if (error?.code !== "ESRCH") throw error;
-		}
+		const signalOwned = (signalName) => {
+			try {
+				processKill(-rootPid, signalName);
+			} catch (error) {
+				if (error?.code !== "ESRCH") throw error;
+			}
+			for (const pid of ownedPids) {
+				if (!isAlive(pid, processKill)) continue;
+				try {
+					processKill(pid, signalName);
+				} catch (error) {
+					if (error?.code !== "ESRCH") throw error;
+				}
+			}
+		};
+
+		signalOwned("SIGTERM");
 		await delay(100, signal);
 		if ((await remainingPids(ownedPids)).length === 0) return;
-		try {
-			processKill(-rootPid, "SIGKILL");
-		} catch (error) {
-			if (error?.code !== "ESRCH") throw error;
-		}
+		signalOwned("SIGKILL");
 	}
 
 	return { capture, remainingPids, terminate, waitForExit };
