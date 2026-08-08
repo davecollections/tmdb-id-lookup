@@ -2,7 +2,7 @@
 
 Status: implemented on the review branch for issue [#98](https://github.com/davecollections/tmdb-id-lookup/issues/98)
 
-Last reviewed: 2026-08-08
+Last reviewed: 2026-08-09
 
 ## Scope
 
@@ -16,7 +16,7 @@ The first Network slice adds one native TMDB Network Series source to an existin
 6. review same-folder and elsewhere duplicate evidence; and
 7. insert exactly one native `NETWORK` / `TV` source through the existing atomic controller path.
 
-The issue does not create collections or folders, add Network artwork to sources, change the catalogue refresh pipeline, regenerate checked-in data, implement Network multi-select, add another source family, or deploy the Worker.
+The issue does not create collections or folders, add Network artwork to sources, change the catalogue refresh pipeline, regenerate checked-in data, implement Network multi-select, or add another source family. Worker deployment remained a separate explicitly authorized acceptance action.
 
 ## Catalogue discovery
 
@@ -36,9 +36,11 @@ Selection starts one structured request:
 GET /3/discover/tv?with_networks={positive integer}
 ```
 
-The request times out after approximately 12 seconds, supports caller abort, and rejects stale completions when the selection or modal changes. Only successful non-negative safe-integer `total_results` values enter the five-minute, 40-entry bounded in-memory cache. Positive and zero values render as `Series Count: N`; malformed, failed, or timed-out responses render the quiet `Count unavailable` state. Count state is informational, has no Retry or Refresh control, and never blocks Add or Save.
+The request times out after approximately 12 seconds, supports caller abort, and rejects stale completions when the selection or modal changes. Only successful non-negative safe-integer `total_results` values enter the five-minute, 40-entry bounded in-memory cache. Positive and zero values render as `Series Count: N`; a ready zero also shows a quiet amber explanation that TMDB currently returns no series and that Add remains available. Source Edit uses the same concise zero explanation without Add wording. Malformed, failed, or timed-out responses render the quiet `Count unavailable` state. Count state is informational, has no Retry or Refresh control, and never blocks Add or Save.
 
-The tracked Worker source now permits TV Discover with exactly one of `with_companies` or `with_networks`. Movie Discover remains Company-only. Missing, mixed, duplicate, zero, signed, fractional, unsafe, malformed, and extra query parameters fail before upstream fetch. Host, CORS, authentication, caching, API-key stripping, and sanitized-error behavior remain unchanged. This branch changes code only: it does not deploy the Worker, so live Network counts remain unavailable until an explicitly authorized operator deploys the reviewed Worker source.
+The tracked Worker source permits TV Discover with exactly one of `with_companies` or `with_networks`. Movie Discover remains Company-only. Missing, mixed, duplicate, zero, signed, fractional, unsafe, malformed, and extra query parameters fail before upstream fetch. Host, CORS, authentication, caching, API-key stripping, and sanitized-error behavior remain unchanged.
+
+On 2026-08-09, the reviewed source was manually deployed to the existing `tmdb-id-lookup-proxy` Worker at the configured production endpoint. Bounded live acceptance returned ABC Network 2 → **1,616**, SBS Australia 223 → **255**, HBO 49 → **377**, and Nine Network 66 → **354**. Existing Company 3 routes remained successful at **136 Movies** and **15 Series**. Representative malformed and mixed Network routes returned HTTP 403, no API-key or bearer leakage was observed, and a production-built Builder with mock counts disabled matched the direct Worker results.
 
 ## Source contract and sorts
 
@@ -83,4 +85,4 @@ The editor hydrates available cached presentation by exact Network ID, shows the
 
 Deterministic coverage lives in `tests/builder-network-foundation.test.mjs`, `tests/builder-network-ui.test.mjs`, the shared Source Edit suites, Worker tests, and the normal Builder/compatibility checks. It covers legacy-`t` exclusion, search/ranking/paging, sparse rows, count success/zero/failure/cache/abort boundaries, all sorts, exact source output, projection exclusion, duplicate override binding, atomic insertion, physical editing, and mobile responsive contracts at 360, 384, 393, 402, and 412 pixels plus desktop.
 
-No Nuvio client import/runtime/export result is claimed by this issue. The existing repository and current-client evidence supports native `NETWORK` / `TV` resolution, while this focused implementation is stopped at a green draft PR for review. Worker deployment, production count verification, and any later client acceptance remain separate explicit actions.
+No Nuvio client import/runtime/export result is claimed by this issue. The existing repository and current-client evidence supports native `NETWORK` / `TV` resolution. Worker deployment and production count verification are complete; the focused implementation remains on a green draft PR pending final owner physical-phone review and later explicit PR review/merge approval.

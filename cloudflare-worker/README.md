@@ -115,8 +115,8 @@ same canonical rule. Mixed, duplicate, and additional query parameters fail
 closed. Other Discover filters and broad `/3/discover/*` forwarding remain
 disallowed.
 
-The tracked Network route was added for Builder issue #98. Merging it does not
-deploy the Worker; live Network counts require a separate explicitly authorized
-manual deployment and verification.
+The tracked Network route was added for Builder issue #98. It was manually
+deployed to the existing `tmdb-id-lookup-proxy` Worker and live validated on
+2026-08-09 after separate explicit authorization.
 
 If a frontend feature adds a new TMDB endpoint, update `ALLOWED_PATHS` here and redeploy the Worker.

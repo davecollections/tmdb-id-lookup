@@ -33,6 +33,7 @@ import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
+import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import {
 	completeStudioSearchRestore,
 	createStudioSourceNavigationState,
@@ -236,6 +237,12 @@ export function StudioConfigureStep({
 									</small>
 								</span>
 								<em>{count.text}</em>
+								<TmdbKnownZeroNotice
+									count={counts[option.countKey]}
+									entity="studio"
+									media={option.mediaType === "MOVIE" ? "movies" : "series"}
+									canStillAdd
+								/>
 							</label>
 						);
 					})}

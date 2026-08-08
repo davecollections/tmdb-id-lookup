@@ -146,10 +146,17 @@ test("Network Configure presents fixed Series identity, live count, TMDB link, a
 });
 
 test("Network count zero and failure remain informative and never block Add", () => {
-	assert.ok(renderConfigure({ count: { status: "ready", count: 0 } }).includes("Series Count: 0"));
-	assert.ok(renderConfigure({ count: { status: "checking", count: null } }).includes("Checking Series Count…"));
+	const notice = "TMDB currently returns no series for this network. You can still add it.";
+	assert.equal(renderConfigure().includes(notice), false);
+	const zero = renderConfigure({ count: { status: "ready", count: 0 } });
+	assert.ok(zero.includes("Series Count: 0"));
+	assert.ok(zero.includes(notice));
+	const checking = renderConfigure({ count: { status: "checking", count: null } });
+	assert.ok(checking.includes("Checking Series Count…"));
+	assert.equal(checking.includes(notice), false);
 	const unavailable = renderConfigure({ count: { status: "unavailable", count: null } });
 	assert.ok(unavailable.includes("Count unavailable"));
+	assert.equal(unavailable.includes(notice), false);
 	assert.equal(unavailable.includes("Retry"), false);
 	const actions = renderToStaticMarkup(createElement(NetworkConfigureActions, { duplicate: false, onAddAnyway() {} }));
 	assert.ok(actions.includes(">Add source</button>"));
@@ -204,6 +211,20 @@ test("Network Source Edit renders fixed linked identity, count, and editable sem
 	assert.equal(markup.includes('type="checkbox"'), false);
 	assert.ok(markup.indexOf("Open ABC on TMDB") < markup.indexOf("Source name"));
 	assert.ok(markup.indexOf("Source name") < markup.indexOf("Sort Series by"));
+	const zeroNotice = "TMDB currently returns no series for this network.";
+	const zero = renderToStaticMarkup(createElement(NetworkEditorFields, {
+		draft: { sortBy: "popularity.desc", originalSortBy: "popularity.desc", sortOptionId: "popular" },
+		network: network(), countState: { status: "ready", count: 0 }, onSortChange() {},
+	}));
+	assert.ok(zero.includes("Series Count: 0"));
+	assert.ok(zero.includes(zeroNotice));
+	for (const countState of [{ status: "ready", count: 42 }, { status: "unavailable", count: null }]) {
+		const stateMarkup = renderToStaticMarkup(createElement(NetworkEditorFields, {
+			draft: { sortBy: "popularity.desc", originalSortBy: "popularity.desc", sortOptionId: "popular" },
+			network: network(), countState, onSortChange() {},
+		}));
+		assert.equal(stateMarkup.includes(zeroNotice), false);
+	}
 	const dialog = read("builder/src/ui/SourceEditorDialog.jsx");
 	assert.match(dialog, /session\.adapterId === NETWORK_SOURCE_EDITOR_ID[\s\S]*<NetworkEditorFields/);
 	assert.match(dialog, /networkCountProvider\?\.getNetworkCount/);

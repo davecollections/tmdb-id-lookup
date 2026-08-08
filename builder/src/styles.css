@@ -4602,6 +4602,20 @@ body.hierarchy-pointer-dragging .builder-shell {
 	color: var(--quiet);
 }
 
+.tmdb-known-zero-notice {
+	display: block;
+	grid-column: 1 / -1;
+	margin: 0;
+	padding: 8px 9px;
+	color: #fff0ca;
+	font-size: 0.66rem;
+	font-weight: 720;
+	line-height: 1.45;
+	background: rgb(255 185 107 / 8%);
+	border: 1px solid rgb(255 185 107 / 24%);
+	border-radius: 9px;
+}
+
 .source-mode-dialog,
 .people-source-dialog[data-dialog-compact="true"],
 .people-source-dialog[data-people-context="folder"][data-add-source-step="configure"],

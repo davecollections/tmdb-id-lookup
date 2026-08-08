@@ -54,6 +54,7 @@ import { NetworkSortChoices } from "./NetworkSortChoices.jsx";
 import { StudioLogo } from "./StudioSourceFlow.jsx";
 import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
+import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import {
 	focusSourceEditAlert,
 	sourceEditErrorPresentation,
@@ -252,6 +253,7 @@ export function StudioEditorFields({
 			<div className="studio-edit-source-card" data-count-state={count.state}>
 				<span><strong>{mediaLabel}</strong><small>COMPANY · {mediaType}</small></span>
 				<em>{count.text}</em>
+				<TmdbKnownZeroNotice count={countDimension} entity="studio" media={mediaType === "TV" ? "series" : "movies"} />
 			</div>
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<StudioSortChoices selectedId={selectedSortId} name="studio-edit-sort" firstInputRef={sortRef} onChange={(optionId) => onSortChange(studioSortValue(optionId, mediaType), optionId)} />
@@ -280,6 +282,7 @@ export function NetworkEditorFields({ draft, network, countState, sortRef, title
 			<div className="studio-edit-source-card network-series-card" data-count-state={count.state}>
 				<span><strong>Series</strong><small>One Network Series source</small></span>
 				<em>{count.text}</em>
+				<TmdbKnownZeroNotice count={countState} entity="network" media="series" />
 			</div>
 			{titleField}
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}

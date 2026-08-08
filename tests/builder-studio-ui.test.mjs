@@ -311,6 +311,8 @@ test("Franchise, People, and Studio searches use one native in-field search clea
 });
 
 test("automatic counts stay informational with quiet unavailable states and no repair controls", () => {
+	const movieNotice = "TMDB currently returns no movies for this studio. You can still add it.";
+	const seriesNotice = "TMDB currently returns no series for this studio. You can still add it.";
 	const partial = renderConfigure({
 		counts: {
 			movie: { status: "ready", count: 0 },
@@ -318,11 +320,29 @@ test("automatic counts stay informational with quiet unavailable states and no r
 		},
 	});
 	assert.ok(partial.includes("0 movies"));
+	assert.ok(partial.includes(movieNotice));
 	assert.ok(partial.includes("Count unavailable"));
+	assert.equal(partial.includes(seriesNotice), false);
 	assert.equal(partial.includes("Retry Series count"), false);
 	assert.equal(partial.includes("Retry Movie count"), false);
 	assert.equal(partial.includes("Refresh title count"), false);
 	assert.equal(partial.includes("disabled=\"\" checked=\"\""), false);
+	const seriesZero = renderConfigure({
+		counts: {
+			movie: { status: "ready", count: 42 },
+			series: { status: "ready", count: 0 },
+		},
+	});
+	assert.ok(seriesZero.includes(seriesNotice));
+	assert.equal(seriesZero.includes(movieNotice), false);
+	const positive = renderConfigure();
+	assert.equal(positive.includes(movieNotice), false);
+	assert.equal(positive.includes(seriesNotice), false);
+	const actions = renderToStaticMarkup(createElement(StudioConfigureActions, {
+		hasDestinationDuplicates: false, primaryCount: 1, configuredCount: 1, onAddAll() {},
+	}));
+	assert.ok(actions.includes(">Add 1 source</button>"));
+	assert.equal(actions.includes("disabled"), false);
 	const source = read("builder/src/ui/StudioSourceFlow.jsx");
 	assert.equal(source.includes("studio-count-retries"), false);
 	assert.equal(source.includes("onRetryCount"), false);

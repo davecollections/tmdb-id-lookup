@@ -31,6 +31,7 @@ import {
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
+import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 
 export const NETWORK_SEARCH_DEBOUNCE_MS = 250;
 export { NETWORK_SOURCE_STEPS };
@@ -152,6 +153,7 @@ export function NetworkConfigureStep({ network, count, duplicateReview, applyDia
 			<div className="studio-edit-source-card network-series-card" data-count-state={countDisplay.state}>
 				<span><strong>Series</strong><small>One Network Series source</small></span>
 				<em>{countDisplay.text}</em>
+				<TmdbKnownZeroNotice count={count} entity="network" media="series" canStillAdd />
 			</div>
 			{duplicate ? <p className="studio-duplicate-note network-duplicate-note" role="status" data-network-duplicate-warning="true">Series already exists in this folder.</p> : null}
 			<NetworkSortChoices selectedId={sortOptionId} name="network-configure-sort" onChange={onSortChange} />
