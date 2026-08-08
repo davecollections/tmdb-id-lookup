@@ -10,6 +10,7 @@ import {
 } from "../builder/src/source-add/index.js";
 import {
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
+	NETWORK_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_EDITOR_ID,
 	STUDIO_SOURCE_EDITOR_ID,
 	canEditSource,
@@ -126,7 +127,7 @@ function sessionFor(controller, sourceIndex = 0) {
 	return { ...opened, source };
 }
 
-test("registry discovers complete Movie Collection, People, and Studio Movie/Series sources", () => {
+test("registry discovers complete Movie Collection, People, Studio, and Network sources", () => {
 	const controller = createController();
 	const folder = importFolder(controller, [
 		collectionSource({ provider: "TMDB", tmdbSourceType: "collection", tmdbId: "0100", mediaType: "movie" }),
@@ -146,7 +147,8 @@ test("registry discovers complete Movie Collection, People, and Studio Movie/Ser
 	assert.equal(sourceEditorFor(folder.sources[2]).id, PEOPLE_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[5]).id, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[6]).id, STUDIO_SOURCE_EDITOR_ID);
-	for (const index of [3, 4, 7, 8, 9, 10]) assert.equal(canEditSource(folder.sources[index]), false);
+	assert.equal(sourceEditorFor(folder.sources[7]).id, NETWORK_SOURCE_EDITOR_ID);
+	for (const index of [3, 4, 8, 9, 10]) assert.equal(canEditSource(folder.sources[index]), false);
 });
 
 test("opening binds exact physical source context and never uses duplicate titles as a locator", () => {

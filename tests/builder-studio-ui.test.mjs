@@ -113,7 +113,7 @@ test("Add Source picker exposes Studios with the approved user-facing wording", 
 	assert.ok(markup.includes("<strong>Studios</strong>"));
 	assert.ok(markup.includes("Add Movie or Series sources for one studio."));
 	assert.equal(markup.includes("Studios &amp; Companies"), false);
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 3);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 4);
 });
 
 test("Studio result cards explicitly distinguish positive, zero, and unknown Movie Count values", () => {
@@ -178,7 +178,7 @@ test("Studio Configure presents independent counts and compact semantic sort cho
 
 test("Studio search keeps Best Match hidden and exposes only Builder-style overrides and zero toggle", () => {
 	const markup = renderSearch([studio()]);
-	const source = read("builder/src/ui/StudioSourceFlow.jsx");
+	const source = read("builder/src/ui/TmdbEntityLogo.jsx");
 	const catalogue = read("builder/src/source-add/studio-catalogue.js");
 	assert.ok(markup.includes("Search by studio name, location or TMDB ID."));
 	assert.ok(markup.includes("Studio results"));
@@ -250,7 +250,7 @@ test("wide, square, tall, and transparent-padded Studio logos share contained fr
 	})));
 	const missing = renderToStaticMarkup(createElement(StudioLogo, { studio: studio({ name: "Blue Ant Studios", logoPath: null }), context: "configure" }));
 	const styles = read("builder/src/styles.css");
-	const source = read("builder/src/ui/StudioSourceFlow.jsx");
+	const source = read("builder/src/ui/TmdbEntityLogo.jsx");
 	for (const valid of logoCases) {
 		assert.ok(valid.includes("studio-logo-tile studio-logo-tile--result"));
 		assert.ok(valid.includes("studio-logo-image"));

@@ -130,6 +130,10 @@ export function updatePeopleSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }
 
+export function updateNetworkSourceSort(draft, sortBy, sortOptionId = null) {
+	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
+}
+
 export function updateStudioSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }

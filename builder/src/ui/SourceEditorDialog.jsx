@@ -6,14 +6,20 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+	formatNetworkLocation,
 	formatStudioLocation,
+	networkSortOptionId,
+	networkSortValue,
+	parseNetworkSearchInput,
 	parseStudioSearchInput,
 	PEOPLE_SOURCE_COMBINATIONS,
 	studioSortOptionId,
 	studioSortValue,
 } from "../source-add/index.js";
 import {
+	checkingNetworkEditCount,
 	checkingStudioEditCounts,
+	createNetworkEditCountSession,
 	createStudioEditCountSession,
 	INITIAL_STUDIO_EDIT_COUNT_STATE,
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
@@ -23,10 +29,13 @@ import {
 	choosePeopleSourceCombination,
 	createPeopleEditCountSession,
 	INITIAL_PEOPLE_EDIT_COUNT_STATE,
+	INITIAL_NETWORK_EDIT_COUNT_STATE,
+	NETWORK_SOURCE_EDITOR_ID,
 	peopleEditCountLabel,
 	peopleSortOptions,
 	sourceEditorById,
 	updatePeopleSourceSort,
+	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
@@ -40,6 +49,8 @@ import {
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { MovieCollectionPicker } from "./MovieCollectionPicker.jsx";
+import { NetworkLogo } from "./NetworkSourceFlow.jsx";
+import { NetworkSortChoices } from "./NetworkSortChoices.jsx";
 import { StudioLogo } from "./StudioSourceFlow.jsx";
 import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
@@ -248,6 +259,35 @@ export function StudioEditorFields({
 	);
 }
 
+export function NetworkEditorFields({ draft, network, countState, sortRef, titleField = null, onSortChange }) {
+	const selectedSortId = draft.sortOptionId ?? networkSortOptionId(draft.sortBy);
+	const count = countState?.status === "ready"
+		? { text: `Series Count: ${countState.count.toLocaleString("en")}`, state: countState.count === 0 ? "zero" : "ready" }
+		: countState?.status === "unavailable"
+			? { text: "Count unavailable", state: "unavailable" }
+			: { text: "Checking Series Count…", state: "checking" };
+	return (
+		<section className="source-edit-options studio-source-edit-options network-source-edit-options" aria-labelledby="source-edit-options-title">
+			<div className="studio-configure-identity tmdb-review-identity network-configure-identity">
+				<NetworkLogo network={network} size="w185" context="configure" loading="eager" />
+				<div className="tmdb-review-identity-copy">
+					<p className="panel-kicker">Network Series source</p>
+					<h3 id="source-edit-options-title">{network.name}</h3>
+					{formatNetworkLocation(network) ? <p>{formatNetworkLocation(network)}</p> : null}
+				</div>
+				<TmdbEntityLink entityType="network" tmdbId={network.id} entityName={network.name} />
+			</div>
+			<div className="studio-edit-source-card network-series-card" data-count-state={count.state}>
+				<span><strong>Series</strong><small>One Network Series source</small></span>
+				<em>{count.text}</em>
+			</div>
+			{titleField}
+			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
+			<NetworkSortChoices selectedId={selectedSortId} name="network-edit-sort" firstInputRef={sortRef} onChange={(optionId) => onSortChange(networkSortValue(optionId), optionId)} />
+		</section>
+	);
+}
+
 export function SourceEditErrorPanel({ result, alertRef = null }) {
 	const presentation = sourceEditErrorPresentation(result);
 	return (
@@ -287,11 +327,14 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 export function SourceEditorDialog({
 	provider,
 	peopleProvider,
+	networkCatalogueProvider,
+	networkCountProvider,
 	studioCatalogueProvider,
 	studioCountProvider,
 	session,
 	initialDraft,
 	initialPeopleCountState = null,
+	initialNetworkCountState = null,
 	initialStudioCountState = null,
 	onCancel,
 	onSave,
@@ -310,6 +353,18 @@ export function SourceEditorDialog({
 			? checkingStudioEditCounts()
 			: INITIAL_STUDIO_EDIT_COUNT_STATE)
 	));
+	const [networkCountState, setNetworkCountState] = useState(() => (
+		initialNetworkCountState ?? (session.adapterId === NETWORK_SOURCE_EDITOR_ID
+			? checkingNetworkEditCount()
+			: INITIAL_NETWORK_EDIT_COUNT_STATE)
+	));
+	const [networkIdentity, setNetworkIdentity] = useState(() => Object.freeze({
+		id: initialDraft.tmdbId,
+		name: initialDraft.networkName ?? session.openingTitle,
+		country: "",
+		headquarters: "",
+		logoPath: null,
+	}));
 	const [studioIdentity, setStudioIdentity] = useState(() => Object.freeze({
 		id: initialDraft.tmdbId,
 		name: initialDraft.studioName ?? session.openingTitle,
@@ -329,12 +384,15 @@ export function SourceEditorDialog({
 	const combinationRef = useRef(null);
 	const chooseButtonRef = useRef(null);
 	const studioSortRef = useRef(null);
+	const networkSortRef = useRef(null);
 	const pickerInputRef = useRef(null);
 	const diagnosticRef = useRef(null);
 	const peopleCountSessionRef = useRef(null);
 	const studioCountSessionRef = useRef(null);
+	const networkCountSessionRef = useRef(null);
 	const peopleCountGenerationRef = useRef(0);
 	const studioCountGenerationRef = useRef(0);
+	const networkCountGenerationRef = useRef(0);
 	const pendingFailureFocusRef = useRef(false);
 	if (
 		session.adapterId === PEOPLE_SOURCE_EDITOR_ID
@@ -345,6 +403,13 @@ export function SourceEditorDialog({
 			provider: peopleProvider,
 			personId: initialDraft.tmdbId,
 		});
+	}
+	if (
+		session.adapterId === NETWORK_SOURCE_EDITOR_ID
+		&& networkCountSessionRef.current === null
+		&& typeof networkCountProvider?.getNetworkCount === "function"
+	) {
+		networkCountSessionRef.current = createNetworkEditCountSession({ provider: networkCountProvider, networkId: initialDraft.tmdbId });
 	}
 	if (
 		session.adapterId === STUDIO_SOURCE_EDITOR_ID
@@ -363,7 +428,7 @@ export function SourceEditorDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(titleInputRef.current ?? studioSortRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
@@ -386,6 +451,16 @@ export function SourceEditorDialog({
 	}, []);
 
 	useEffect(() => {
+		if (session.adapterId !== NETWORK_SOURCE_EDITOR_ID || typeof networkCatalogueProvider?.searchNetworks !== "function") return undefined;
+		let active = true;
+		networkCatalogueProvider.searchNetworks(parseNetworkSearchInput(String(initialDraft.tmdbId))).then((result) => {
+			const network = result?.ok ? result.data?.results?.[0] : null;
+			if (active && network?.id === initialDraft.tmdbId) setNetworkIdentity(network);
+		});
+		return () => { active = false; };
+	}, [initialDraft.tmdbId, networkCatalogueProvider, session.adapterId]);
+
+	useEffect(() => {
 		if (
 			session.adapterId !== STUDIO_SOURCE_EDITOR_ID
 			|| typeof studioCatalogueProvider?.searchStudios !== "function"
@@ -397,6 +472,21 @@ export function SourceEditorDialog({
 		});
 		return () => { active = false; };
 	}, [initialDraft.tmdbId, session.adapterId, studioCatalogueProvider]);
+
+	useEffect(() => {
+		const countSession = networkCountSessionRef.current;
+		if (countSession === null || initialNetworkCountState !== null) return undefined;
+		let active = true;
+		const generation = ++networkCountGenerationRef.current;
+		countSession.load().then((state) => {
+			if (active && generation === networkCountGenerationRef.current && state !== null) setNetworkCountState(state);
+		});
+		return () => {
+			active = false;
+			networkCountGenerationRef.current += 1;
+			countSession.cancel();
+		};
+	}, []);
 
 	useEffect(() => {
 		const countSession = studioCountSessionRef.current;
@@ -416,7 +506,7 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const invalidField = firstMountedInvalidField(failure, { sort: studioSortRef, title: titleInputRef });
+		const invalidField = firstMountedInvalidField(failure, { sort: networkSortRef.current ? networkSortRef : studioSortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
 			focusElementWithoutScroll(invalidField);
@@ -511,6 +601,8 @@ export function SourceEditorDialog({
 								? "Choose a replacement TMDB movie franchise."
 								: session.adapterId === STUDIO_SOURCE_EDITOR_ID
 									? "Update this Studio source name and title order."
+									: session.adapterId === NETWORK_SOURCE_EDITOR_ID
+										? "Update this Network Series source name and title order."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
@@ -533,17 +625,21 @@ export function SourceEditorDialog({
 									{failure ? (
 										<SourceEditErrorPanel result={failure} alertRef={diagnosticRef} />
 									) : null}
-									{session.adapterId !== STUDIO_SOURCE_EDITOR_ID ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
-									<SourceTitleField
+									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
+									{session.adapterId !== NETWORK_SOURCE_EDITOR_ID ? <SourceTitleField
 											draft={draft}
 											titleInputRef={titleInputRef}
 											error={titleError}
-											helperText={session.adapterId === STUDIO_SOURCE_EDITOR_ID ? "Changes how this source appears in Nuvio, not which Studio it represents." : null}
-											onChange={(title) => {
+											helperText={session.adapterId === STUDIO_SOURCE_EDITOR_ID
+												? "Changes how this source appears in Nuvio, not which Studio it represents."
+												: session.adapterId === NETWORK_SOURCE_EDITOR_ID
+													? "Changes how this source appears in Nuvio, not which Network it represents."
+													: null}
+												onChange={(title) => {
 												setDraft((current) => updateSourceEditTitle(current, title));
 												clearFieldDiagnostic("title");
 											}}
-										/>
+										/> : null}
 									{session.adapterId === PEOPLE_SOURCE_EDITOR_ID ? (
 										<PeopleEditorFields
 											draft={draft}
@@ -560,6 +656,27 @@ export function SourceEditorDialog({
 											onRetryCounts={retryPeopleCounts}
 											onSortChange={(sortBy, sortOptionId) => {
 												setDraft((current) => updatePeopleSourceSort(current, sortBy, sortOptionId));
+												clearFieldDiagnostic("sort");
+											}}
+										/>
+									) : session.adapterId === NETWORK_SOURCE_EDITOR_ID ? (
+										<NetworkEditorFields
+											draft={draft}
+											network={networkIdentity}
+											countState={networkCountState}
+											sortRef={networkSortRef}
+											titleField={<SourceTitleField
+												draft={draft}
+												titleInputRef={titleInputRef}
+												error={titleError}
+												helperText="Changes how this source appears in Nuvio, not which Network it represents."
+												onChange={(title) => {
+													setDraft((current) => updateSourceEditTitle(current, title));
+													clearFieldDiagnostic("title");
+												}}
+											/>}
+											onSortChange={(sortBy, optionId) => {
+												setDraft((current) => updateNetworkSourceSort(current, sortBy, optionId));
 												clearFieldDiagnostic("sort");
 											}}
 										/>

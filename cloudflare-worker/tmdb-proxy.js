@@ -26,6 +26,10 @@ const COMPANY_DISCOVER_PATHS = new Set([
   "/3/discover/movie",
   "/3/discover/tv",
 ]);
+const TV_DISCOVER_PARAMETERS = new Set([
+  "with_companies",
+  "with_networks",
+]);
 
 function isCanonicalPositiveSafeInteger(value) {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
@@ -46,9 +50,12 @@ function isAllowedTmdbRequest(url) {
   }
 
   const entries = [...url.searchParams.entries()];
+  const allowedParameter = url.pathname === "/3/discover/tv"
+    ? TV_DISCOVER_PARAMETERS.has(entries[0]?.[0])
+    : entries[0]?.[0] === "with_companies";
   return (
     entries.length === 1 &&
-    entries[0][0] === "with_companies" &&
+    allowedParameter &&
     isCanonicalPositiveSafeInteger(entries[0][1])
   );
 }

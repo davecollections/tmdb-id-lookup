@@ -5,13 +5,17 @@ import {
 	createPeopleFolderBatch,
 	createPeopleSourceBundle,
 	createMovieFranchiseSource,
+	createNetworkCatalogueProvider,
+	createNetworkSource,
 	createStudioCatalogueProvider,
 	createStudioSourceBundle,
 	createTmdbCollectionProvider,
 	createTmdbPersonProvider,
+	createTmdbNetworkCountProvider,
 	createTmdbStudioCountProvider,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE_ID,
+	NETWORK_SOURCE_MODE_ID,
 	STUDIO_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import {
@@ -46,6 +50,7 @@ import {
 import { HierarchyActionsMenu } from "./HierarchyActionsMenu.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NodeEditor } from "./NodeEditor.jsx";
+import { NetworkSourceFlow } from "./NetworkSourceFlow.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
@@ -602,6 +607,8 @@ export function BuilderWorkspace({
 	initialSourceEdit = null,
 	sourceProvider = null,
 	peopleProvider = null,
+	networkCatalogueProvider = null,
+	networkCountProvider = null,
 	studioCatalogueProvider = null,
 	studioCountProvider = null,
 	artworkClient = null,
@@ -670,6 +677,14 @@ export function BuilderWorkspace({
 	const peopleProviderRef = useRef(null);
 	if (peopleProviderRef.current === null) {
 		peopleProviderRef.current = peopleProvider ?? createTmdbPersonProvider();
+	}
+	const networkCatalogueProviderRef = useRef(null);
+	if (networkCatalogueProviderRef.current === null) {
+		networkCatalogueProviderRef.current = networkCatalogueProvider ?? createNetworkCatalogueProvider();
+	}
+	const networkCountProviderRef = useRef(null);
+	if (networkCountProviderRef.current === null) {
+		networkCountProviderRef.current = networkCountProvider ?? createTmdbNetworkCountProvider();
 	}
 	const studioCatalogueProviderRef = useRef(null);
 	if (studioCatalogueProviderRef.current === null) {
@@ -1170,7 +1185,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID].includes(modeId)
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -1321,6 +1336,39 @@ export function BuilderWorkspace({
 		queueMicrotask(() => {
 			setSourceCreationStatusText(`Added ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.studio.name}”.`);
 		});
+		return result;
+	}
+
+	function applyNetworkSource(bundle) {
+		if (!visibleAddSourceSession || visibleAddSourceSession.context !== "folder") {
+			return {
+				ok: false,
+				errors: [{
+					code: "NETWORK_FOLDER_UNAVAILABLE",
+					path: "$network.destination",
+					message: "The selected destination folder is no longer available.",
+				}],
+			};
+		}
+		const result = createNetworkSource(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			network: bundle.network,
+			draft: bundle.draft,
+			duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+			interactionLocked: (
+				editorLocked
+					|| deleteLocked
+					|| returnConfirmationOpen
+					|| actionsMenuInternalId !== null
+					|| pointerInteractionLocked()
+			),
+		});
+		if (!result.ok) return result;
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => setSourceCreationStatusText(`Added Network Series source for “${bundle.network.name}”.`));
 		return result;
 	}
 
@@ -2117,6 +2165,16 @@ export function BuilderWorkspace({
 						onBack={returnToSourceModePicker}
 						onCancel={cancelAddSource}
 						onApply={applyStudioSources}
+						/>
+				) : visibleAddSourceSession.modeId === NETWORK_SOURCE_MODE_ID ? (
+					<NetworkSourceFlow
+						catalogueProvider={networkCatalogueProviderRef.current}
+						countProvider={networkCountProviderRef.current}
+						project={state.project}
+						folder={addSourceFolder}
+						onBack={returnToSourceModePicker}
+						onCancel={cancelAddSource}
+						onApply={applyNetworkSource}
 					/>
 				) : (
 					<AddSourceDialog
@@ -2129,9 +2187,11 @@ export function BuilderWorkspace({
 				)
 			) : null}
 			{sourceEdit ? (
-			<SourceEditorDialog
+				<SourceEditorDialog
 					provider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
+					networkCatalogueProvider={networkCatalogueProviderRef.current}
+					networkCountProvider={networkCountProviderRef.current}
 					studioCatalogueProvider={studioCatalogueProviderRef.current}
 					studioCountProvider={studioCountProviderRef.current}
 					session={sourceEdit.session}
