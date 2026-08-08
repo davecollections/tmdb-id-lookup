@@ -18,6 +18,7 @@ export function shouldUseTmdbLocalPreviewProxy(location = globalThis.location) {
 
 export function createTmdbLocalPreviewFetch({
 	fetchImpl = globalThis.fetch,
+	forceProxy = false,
 	location = globalThis.location,
 	workerBaseUrl,
 } = {}) {
@@ -34,7 +35,9 @@ export function createTmdbLocalPreviewFetch({
 		throw new TypeError("A canonical HTTPS TMDB Worker origin is required.");
 	}
 
-	const proxyOrigin = shouldUseTmdbLocalPreviewProxy(location) ? location.origin : null;
+	const proxyOrigin = (forceProxy && location?.protocol === "http:") || shouldUseTmdbLocalPreviewProxy(location)
+		? location.origin
+		: null;
 	return (input, init) => {
 		const requestUrl = new URL(input instanceof Request ? input.url : input);
 		if (proxyOrigin !== null && requestUrl.origin === workerOrigin) {

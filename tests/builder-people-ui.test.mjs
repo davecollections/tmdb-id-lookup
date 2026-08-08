@@ -96,11 +96,12 @@ function renderSearch({ context = "folder", results = [person()], selection = cr
 	}));
 }
 
-test("source chooser retains Movie franchise and People as native buttons", () => {
+test("source chooser retains Movie franchise and People while adding Studios", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "People", onCancel() {}, onSelectMode() {} }));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-movie-franchise"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-people"'));
-	assert.equal((markup.match(/<button/g) ?? []).length, 3);
+	assert.ok(markup.includes('data-source-mode-option="tmdb-studios"'));
+	assert.equal((markup.match(/<button/g) ?? []).length, 4);
 });
 
 test("folder Search preserves TMDB order, disambiguates identities, and uses friendly profile states", () => {
@@ -286,6 +287,8 @@ test("configuration exposes four direct combinations with inline counts and zero
 	assert.ok(markup.includes('target="_blank"'));
 	assert.ok(markup.includes('rel="noopener noreferrer"'));
 	assert.ok(markup.includes('aria-label="Open Tom Hanks on TMDB (person 31)"'));
+	assert.ok(markup.includes('class="tmdb-review-identity"'));
+	assert.ok(markup.includes('class="tmdb-review-identity-actions"'));
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 4);
 	assert.equal(markup.includes("Folder artwork"), false);
 	assert.ok(markup.includes('data-profile-state="ready"'));

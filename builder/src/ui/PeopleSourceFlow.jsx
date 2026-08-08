@@ -296,18 +296,20 @@ export function PeopleConfigurationCard({
 	const loading = detail?.status === "loading";
 	return (
 		<article className="people-configuration-card" data-person-id={person.id}>
-			<header>
+			<header className="tmdb-review-identity">
 				{showArtwork
 					? <AppliedArtworkPreview person={person} artworkState={artworkState} onRetry={onRetryArtwork} />
 					: <PersonProfile person={person} className="people-selected-profile" loading="eager" />}
-				<div className="people-configuration-heading">
+				<div className="people-configuration-heading tmdb-review-identity-copy">
 					<h3>{person.name}</h3>
 					<div className="people-configuration-meta">
 						<span>Known for {person.knownForDepartment || "an unavailable department"}</span>
-						<TmdbEntityLink entityType="person" tmdbId={person.id} entityName={person.name} />
 					</div>
 				</div>
-				{onRemove ? <button type="button" className="people-remove-person" aria-label={`Remove ${person.name}`} onClick={onRemove}>Remove</button> : null}
+				<div className="tmdb-review-identity-actions">
+					<TmdbEntityLink entityType="person" tmdbId={person.id} entityName={person.name} />
+					{onRemove ? <button type="button" className="people-remove-person" aria-label={`Remove ${person.name}`} onClick={onRemove}>Remove</button> : null}
+				</div>
 			</header>
 			{detail?.status === "error" ? (
 				<div className="add-source-request-state" role="alert"><p>{errorMessage(detail.error, `Could not load ${person.name}.`)}</p><div><button type="button" onClick={onRetry}>Retry</button>{onRemove ? <button type="button" onClick={onRemove}>Remove</button> : null}</div></div>
@@ -328,6 +330,7 @@ export function PeopleSourceFlow({
 	project,
 	collection,
 	folder = null,
+	onBack,
 	onCancel,
 	onApply,
 }) {
@@ -596,7 +599,11 @@ export function PeopleSourceFlow({
 				<section ref={dialogRef} className="add-source-dialog people-source-dialog" data-dialog-compact={step === PEOPLE_SOURCE_STEPS.SEARCH ? "true" : undefined} data-add-source-modal="true" data-add-source-step={step} data-people-context={context} data-source-mode={PEOPLE_SOURCE_MODE.id} role="dialog" aria-modal="true" aria-labelledby="people-source-title" aria-describedby="people-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, () => !isApplying && onCancel())}>
 					<header className="add-source-heading">
 						<div className="add-source-heading-row">
-							{step === PEOPLE_SOURCE_STEPS.CONFIGURE ? <button className="add-source-header-action" type="button" disabled={isApplying} onClick={() => setNavigation(returnPeopleToSearch)}><span aria-hidden="true">←</span>Back</button> : <span className="add-source-header-spacer" aria-hidden="true" />}
+							{step === PEOPLE_SOURCE_STEPS.CONFIGURE
+								? <button className="add-source-header-action" type="button" disabled={isApplying} onClick={() => setNavigation(returnPeopleToSearch)}><span aria-hidden="true">←</span>Back</button>
+								: context === "folder"
+									? <button className="add-source-header-action" type="button" data-action="back-to-source-types" onClick={onBack}><span aria-hidden="true">←</span>Back</button>
+									: <span className="add-source-header-spacer" aria-hidden="true" />}
 							<div><h2 id="people-source-title">{context === "folder" ? "Add person" : "Add people"}</h2><p>{context === "folder" ? folder?.editable?.title || "Selected folder" : collection?.editable?.title || "Selected collection"}</p></div>
 							<button className="add-source-header-action add-source-close-action" type="button" aria-label={context === "folder" ? "Close Add person" : "Close Add people"} disabled={isApplying} onClick={onCancel}>Close</button>
 						</div>

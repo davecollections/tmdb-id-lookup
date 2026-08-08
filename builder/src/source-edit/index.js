@@ -12,6 +12,11 @@ export {
 	peopleSourceEditor,
 } from "./people-editor.js";
 export {
+	STUDIO_SOURCE_EDITOR_ID,
+	studioEditSortValue,
+	studioSourceEditor,
+} from "./studio-editor.js";
+export {
 	SOURCE_EDITORS,
 	canEditSource,
 	sourceEditorById,
@@ -23,6 +28,7 @@ export {
 	createSourceEditSession,
 	saveSourceEdit,
 	updatePeopleSourceSort,
+	updateStudioSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
@@ -32,3 +38,9 @@ export {
 	INITIAL_PEOPLE_EDIT_COUNT_STATE,
 	peopleEditCountLabel,
 } from "./people-edit-counts.js";
+export {
+	checkingStudioEditCounts,
+	createStudioEditCountSession,
+	INITIAL_STUDIO_EDIT_COUNT_STATE,
+	unavailableStudioEditCounts,
+} from "./studio-edit-counts.js";

@@ -170,7 +170,7 @@ Search/Add should cover, within the confirmed compatibility contract:
 
 - Actor;
 - Director;
-- Company or Studio;
+- Studio (internally TMDB/Nuvio `COMPANY`);
 - Network;
 - Franchise or TMDB Collection;
 - Genre;
@@ -196,7 +196,11 @@ Exact action labels remain open. A visible plus symbol must perform the creation
 
 **Implemented and merged through issue #78 / PR #79, with deterministic checks, bounded local desktop/mobile browser QA, and owner desktop/physical-iPhone acceptance passing:** supported Movie Collection and People source cards expose `Edit source` before Delete. One physical source is edited in place through a registry-backed adapter and one minimal controller update. Selecting another Movie Collection immediately applies its canonical TMDB name to the draft while retaining custom/reset/Cancel behavior; provider/type/media/sort/filters stay fixed. People keeps the person ID fixed, allows the same four Acting/Directing and Movie/Series identities, auto-manages only approved default titles until manual customization, reuses one shared bounded non-blocking combined-credit count result, and exposes only stable-v1 Popular/Recent/Top-rated sort values while preserving untouched imports. Desktop/tablet editors now use natural content height capped by the viewport while the reviewed mobile shell remains full-height with one scroll owner and sticky actions. Add Source Collection Review and People Configure expose only validated canonical TMDB collection/person ID links, with external/new-tab semantics and mobile-safe wrapping; unsupported IDs remain plain or absent. Prominent focused duplicate/stale/validation alerts, difference-only title/sort patches, same-folder duplicate rejection, stale-session refusal, exact source focus recovery, and imported raw/unknown/order preservation are required. Unsupported native, Discover, addon, and opaque sources remain Delete-only. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export; it is not an unfinished merge gate. Logical bundle editing, person replacement, Collection sort/filter controls, and additional adapters remain separate work.
 
+**Implemented on the issue #92 review branch:** the selected-folder mode picker adds **Studios**, backed internally by TMDB/Nuvio `COMPANY`, and every child Search screen can return to that picker without closing the modal. Studio Search adapts V1's Company name/ID/parent/country/headquarters discovery to a mobile-first relevance model with compact locations, deliberate country-code matching, hidden Best Match plus A–Z/Most movies overrides, automatic paged Browse when empty, Hide 0 movies, contained real logos, restrained missing-logo text, and safe upper-right TMDB Company links. Franchise, People, and Studio retain ordinary `type="search"` fields with no adjacent clear control. Catalogue browsing makes no live count requests and shows a valid legacy total only as `Movie Count: XXX`. Selecting a Studio requests current Movie and Series totals in parallel through two narrowly allowlisted Worker routes; all count states remain informational and non-blocking, load automatically, and expose neither Retry nor Refresh. Retained resolver, sort, fixture, construction, duplicate, serialization, and edit evidence covers native `COMPANY/MOVIE` and `COMPANY/TV`, so both may be created together in Movie-then-Series order with concise user-facing **Movies**/**Series** labels and compact semantic no-icon sort pills mapped to correct media values. Same-folder duplicates use one compact outcome sentence; normal Add remains visually dominant and commits only missing identities, while a quieter exact configured-set **Add all anyway** override remains explicit. Each physical source supports independent display-name and sort editing while identity/media stay locked. Desktop primary cards also support safe double-click into their existing editor while explicit menu Edit remains the touch/discoverable route. See [`BUILDER_STUDIOS.md`](./BUILDER_STUDIOS.md).
+
 **Retained future considerations:** `Add generic multi-item folder creation to the V2 Builder` should place the current People batch behind a generic launcher and later admit Movie franchises and compatible entity types. Quick Add/multi-add may keep Search open for several independent results with clear Added/duplicate states; atomic behavior applies only where a future operation commits several sources together. Bulk collection lookup may use bounded one-name-per-line input, controlled concurrency, ambiguous/unmatched handling, duplicate review, and multi-source insertion. Optional spelling or singular/plural suggestions must be transparent and must not blindly append or remove `s`.
+
+**Confirmed future creation direction, not implemented by issue #92:** a later `New collection` flow should let the user choose a content/source type—such as People, Studios, Networks, Franchise, or Streaming—then use the matching picker and automatically create the necessary collection, folder, and source structure. It must retain explicit **Start blank** / **Manual** routes. `New folder` should offer the analogous source-led shortcut inside an existing collection. Compatible pickers should support multi-select with sensible shared defaults and progressive **Advanced** per-item exceptions instead of forcing repetitive one-at-a-time configuration. A separate Builder UI/interaction-foundation issue must establish the common patterns before these creation flows are migrated.
 
 Future collection sort controls must remain evidence-based. For current Nuvio Desktop `COLLECTION` resolution, `original` means TMDB-provided/API order rather than chronological or website order; `primary_release_date.desc` is owner-observed newest-first; `primary_release_date.asc` is currently unsupported and falls back to TMDB order. Oldest-first must not be exposed until supported and verified.
 
@@ -206,15 +210,17 @@ Future collection sort controls must remain evidence-based. For current Nuvio De
 
 Results must contain enough context to distinguish similar entities without reproducing every column from the V1 lookup tables.
 
-For companies and networks, useful fields may include:
+For Studios and Networks, useful fields may include:
 
 - name;
 - TMDB ID where it assists identification;
 - entity type;
+- parent entity;
+- compact country/location context;
 - title count;
 - logo or approved artwork preview when available.
 
-The ordinary cached Company and Network catalogues remain the Search/Add discovery source, including their legacy V1 title totals. They are not a globally pre-cached typed-count product contract. After a user selects an exact Company or Network for configuration, V2 should fetch fresh media-specific counts on demand. Those counts are informational and non-blocking: an unavailable count must never prevent source creation, and no global scan, sidecar, or background count publication is required.
+The ordinary cached Company and Network catalogues remain the Search/Add discovery source, including their legacy V1 title totals. They are not a globally pre-cached typed-count product contract. Studio cards expose the valid Company total only as `Movie Count: XXX` and make no current-count request while searching or browsing. Studio discovery ranks exact ID/name, name prefix/contains, parent, and country/location in that order, using legacy count only within a relevance tier; A–Z/Most movies overrides and Hide 0 movies remain explicit choices, while empty search automatically enters paged Browse. After a Studio is selected, V2 fetches fresh Movie and Series counts on demand; future Networks should use the same post-selection boundary. Those counts are informational and non-blocking: an unavailable count must never prevent supported source creation, and no global scan, sidecar, or background count publication is required.
 
 People remains a focused selected-entity flow: only after a person is selected for configuration, its details request appends combined credits and derives distinct cast/director Movie/Series counts locally; it creates no sidecar, background scan, per-result credit request, or request solely to recreate `known_for` display rows. People result state retains TMDB's valid `known_for` order; desktop may render the first three while mobile renders only the first with natural wrapping and no empty placeholder. Result detail must remain proportionate to the choice being made.
 
@@ -264,7 +270,7 @@ Future Search/Add, template, and recipe defaults must begin from this planning m
 | Source or creation type | Default tile shape |
 | --- | --- |
 | Manually created blank folder | Poster |
-| Company | Landscape |
+| Studio (`COMPANY`) | Landscape |
 | Network | Poster |
 | Actor / person / director | Poster |
 | TMDB movie collection / franchise | Poster |
@@ -410,13 +416,14 @@ Trakt integration remains outside current project scope; a possible future colou
 9. Collection and Folder settings polish — integrated through issue #69 / PR #70 after repository and owner UI/flow review, with the issue #53 schema and export contract preserved.
 10. Unified People Search/Add — integrated through issue #74 / PR #75 with selected-folder quick add, untouched-default promotion, preservation-only existing folders, collection selection of up to 20 people, direct source combinations and one-time defaults, atomic single-folder/multi-folder batches, independently keyed final artwork, and stable v1 source tab titles. The first Desktop source-contract run passed, and the regenerated distinct-title/curated-artwork fixture subsequently passed owner visual/import/immediate-export validation; the client version/build remains unknown.
 11. First native source editing — integrated through issue #78 / PR #79 with preservation-safe physical Movie Collection and People editors through a reusable adapter seam. Deterministic checks, the sanitized fixture package, and owner desktop/physical-iPhone review are complete. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and is not an unfinished integration gate.
-12. Company source creation, with fresh post-selection counts that are informational and non-blocking.
+12. Studio Movie/Series source creation and physical-source editing — implemented on issue #92's review branch with V1-informed Company metadata discovery, hidden relevance plus automatic browse/sort/filter controls, contained logos and shared TMDB identity links, automatic quiet informational post-selection counts, retained media-specific Movie/TV sort mappings, and preservation-safe display-name/sort updates.
 13. Network source creation, with the same on-demand count boundary.
-14. Advanced Discover creation.
-15. Broader deliberate V2 UI/UX and artwork-runtime integration at appropriate source stages.
-16. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
-17. Review/export usability.
-18. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
+14. Genre source creation.
+15. Advanced Discover creation.
+16. Broader deliberate V2 UI/UX and artwork-runtime integration at appropriate source stages.
+17. Quick Setup, templates, and recipe engine after underlying creation flows are reliable.
+18. Review/export usability.
+19. Optional Nuvio connection only after its product, authentication, security, and replacement contract is verified.
 
 This is a dependency map, not a rigid release schedule. Each step requires its own approved issue and may be refined by stronger evidence.
 

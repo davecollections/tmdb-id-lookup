@@ -2,6 +2,7 @@ import { isPositiveSafeTmdbId } from "./tmdb-collection-input.js";
 
 const TMDB_WEB_ORIGIN = "https://www.themoviedb.org";
 const REVIEW_ENTITY_ROUTES = Object.freeze({
+	company: "company",
 	collection: "collection",
 	person: "person",
 });

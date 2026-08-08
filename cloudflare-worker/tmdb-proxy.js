@@ -22,6 +22,36 @@ const ALLOWED_PATHS = [
 ];
 
 const PEOPLE_SERVICE_PATH = /^\/3\/person\/\d+$/;
+const COMPANY_DISCOVER_PATHS = new Set([
+  "/3/discover/movie",
+  "/3/discover/tv",
+]);
+
+function isCanonicalPositiveSafeInteger(value) {
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
+    return false;
+  }
+
+  const number = Number(value);
+  return Number.isSafeInteger(number) && String(number) === value;
+}
+
+function isAllowedTmdbRequest(url) {
+  if (ALLOWED_PATHS.some((pattern) => pattern.test(url.pathname))) {
+    return true;
+  }
+
+  if (!COMPANY_DISCOVER_PATHS.has(url.pathname)) {
+    return false;
+  }
+
+  const entries = [...url.searchParams.entries()];
+  return (
+    entries.length === 1 &&
+    entries[0][0] === "with_companies" &&
+    isCanonicalPositiveSafeInteger(entries[0][1])
+  );
+}
 
 function isAllowedOrigin(origin) {
   if (!origin) {
@@ -97,7 +127,7 @@ export default {
       return textResponse("TMDB token not configured", 500, origin);
     }
 
-    if (!ALLOWED_PATHS.some((pattern) => pattern.test(url.pathname))) {
+    if (!isAllowedTmdbRequest(url)) {
       return textResponse("TMDB path not allowed", 403, origin);
     }
 

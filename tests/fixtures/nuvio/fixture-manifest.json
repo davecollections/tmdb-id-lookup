@@ -7,7 +7,7 @@
       "file": "valid/all-native-tmdb-source-types.json",
       "classification": "canonical-builder-output",
       "evidenceLevel": "Confirmed from current Nuvio source code",
-      "provenance": "Native source envelopes are represented by current v1 exporters and the NuvioMobile CollectionSource model at 4e17faa. Values are deterministic test sentinels, not live TMDB lookups.",
+      "provenance": "Native source envelopes are represented by current v1 exporters and the NuvioMobile CollectionSource model at 4e17faa. Retained current-client resolver evidence records native COMPANY tmdbId overriding with_companies for either media endpoint, and current TV sort pass-through maps Recent to first_air_date.desc. Values are deterministic test sentinels, not live TMDB lookups.",
       "expected": { "valid": true, "errorCodes": [] },
       "coverage": {
         "nativeTypes": ["LIST", "COLLECTION", "COMPANY", "NETWORK", "DISCOVER", "PERSON", "DIRECTOR"],
@@ -20,7 +20,7 @@
         "sourcesByFolder": {
           "folder-list": ["tmdb:LIST:1001:MOVIE"],
           "folder-collection": ["tmdb:COLLECTION:1002:MOVIE"],
-          "folder-company": ["tmdb:COMPANY:1003:MOVIE"],
+          "folder-company": ["tmdb:COMPANY:1003:MOVIE", "tmdb:COMPANY:1003:TV"],
           "folder-network": ["tmdb:NETWORK:1004:TV"],
           "folder-discover": ["tmdb:DISCOVER::MOVIE"],
           "folder-person": ["tmdb:PERSON:1005:MOVIE"],

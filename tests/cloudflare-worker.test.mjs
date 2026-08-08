@@ -126,6 +126,70 @@ test("valid origin-free People service requests forward append_to_response and s
 	});
 });
 
+test("Studio count routes forward only canonical Company filters to the fixed TMDB host", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie?with_companies=3",
+			"/3/discover/tv?with_companies=9007199254740991",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 200, pathname);
+		}
+
+		assert.equal(calls.length, 2);
+		assert.deepEqual(calls.map(([url]) => url.toString()), [
+			"https://api.themoviedb.org/3/discover/movie?with_companies=3",
+			"https://api.themoviedb.org/3/discover/tv?with_companies=9007199254740991",
+		]);
+		for (const [url, init] of calls) {
+			assert.equal(url.origin, "https://api.themoviedb.org");
+			assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
+		}
+	});
+});
+
+test("Studio count routes reject missing, duplicate, malformed, fractional, negative, and extra filters", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie",
+			"/3/discover/movie?with_companies=3&with_companies=4",
+			"/3/discover/movie?with_companies=abc",
+			"/3/discover/movie?with_companies=-3",
+			"/3/discover/movie?with_companies=3.5",
+			"/3/discover/movie?with_companies=0",
+			"/3/discover/movie?with_companies=03",
+			"/3/discover/movie?with_companies=9007199254740992",
+			"/3/discover/movie?with_companies=3&page=1",
+			"/3/discover/tv?with_companies=3&api_key=browser-secret",
+			"/3/discover/tv?with_networks=3",
+			"/3/discover/tv?with_genres=18",
+			"/3/discover/person?with_companies=3",
+			"/3/discover/movie/3?with_companies=3",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("Studio count route failures stay sanitized and never expose request details", async () => {
+	const originalConsoleError = console.error;
+	console.error = () => {};
+	try {
+		await withMockFetch(async (calls) => {
+			const response = await fetchWorker("/3/discover/movie?with_companies=3", { origin: allowedOrigin });
+			assert.equal(response.status, 502);
+			assert.equal(await response.text(), "TMDB request failed");
+			assert.equal(response.headers.get("Cache-Control"), "no-store");
+			assert.equal(calls.length, 1);
+		}, async () => { throw new Error("private upstream detail"); });
+	} finally {
+		console.error = originalConsoleError;
+	}
+});
+
 test("missing, incorrect, short, and empty configured service tokens fail closed", async () => {
 	await withMockFetch(async (calls) => {
 		const cases = [

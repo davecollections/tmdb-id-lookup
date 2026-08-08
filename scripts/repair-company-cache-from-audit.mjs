@@ -72,7 +72,7 @@ function compactCompany(company) {
 	if (company.origin_country) compact.c = company.origin_country;
 	if (company.headquarters) compact.h = company.headquarters;
 	if (company.logo_path) compact.l = company.logo_path;
-	if (company.titles_count) compact.t = company.titles_count;
+	if (Number.isSafeInteger(company.titles_count) && company.titles_count >= 0) compact.t = company.titles_count;
 	return compact;
 }
 

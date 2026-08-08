@@ -41,7 +41,8 @@
         "id": "folder-company",
         "title": "Company Source",
         "sources": [
-          { "title": "Company Source", "sortBy": "popularity.desc", "tmdbId": 1003, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "COMPANY" }
+          { "title": "Company Movies", "sortBy": "primary_release_date.desc", "tmdbId": 1003, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "COMPANY" },
+          { "title": "Company Series", "sortBy": "first_air_date.desc", "tmdbId": 1003, "filters": {}, "provider": "tmdb", "mediaType": "TV", "tmdbSourceType": "COMPANY" }
         ],
         "hideTitle": false,
         "tileShape": "LANDSCAPE",

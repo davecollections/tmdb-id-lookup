@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { createBuilderController } from "../builder/src/application/index.js";
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
-import builderViteConfig from "../builder/vite.config.js";
+import builderViteConfigFactory from "../builder/vite.config.js";
 import { parseCanonicalHttpsOrigin } from "../builder/worker-origin.js";
 import {
 	buildTmdbPosterUrl,
@@ -32,6 +32,7 @@ import {
 import { validateNuvioContract } from "./helpers/nuvio-contract-validator.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const builderViteConfig = builderViteConfigFactory({ command: "build", mode: "test" });
 const v1Config = fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8");
 const configuredWorkerBaseUrl = extractTmdbProxyBaseUrl(v1Config);
 const canonicalWorkerBaseUrls = [
@@ -63,6 +64,7 @@ assert.ok(configuredWorkerBaseUrl, "The stable v1 Worker endpoint must be config
 
 test("canonical TMDB review URLs require an allowlisted resolved entity and positive numeric ID", () => {
 	assert.equal(buildTmdbEntityPageUrl("collection", 720879), "https://www.themoviedb.org/collection/720879");
+	assert.equal(buildTmdbEntityPageUrl("company", 3), "https://www.themoviedb.org/company/3");
 	assert.equal(buildTmdbEntityPageUrl("person", 31), "https://www.themoviedb.org/person/31");
 	for (const entityType of ["discover", "watch-provider", "builder", "COLLECTION", "movie", null]) {
 		assert.equal(buildTmdbEntityPageUrl(entityType, 31), null, String(entityType));
@@ -627,6 +629,36 @@ test("local preview fetch rewrites only configured Worker requests through the s
 	);
 	assert.equal(calls[1].url, "https://other.example/asset.json");
 	assert.equal(calls.every((call) => call.options === options), true);
+});
+
+test("explicit Studio mock mode can force localhost through the reserved preview path", async () => {
+	const calls = [];
+	const localFetch = createTmdbLocalPreviewFetch({
+		fetchImpl: async (url) => {
+			calls.push(String(url));
+			return jsonResponse({ total_results: 42 });
+		},
+		forceProxy: true,
+		location: new URL("http://127.0.0.1:4173"),
+		workerBaseUrl: "https://worker.example",
+	});
+	await localFetch("https://worker.example/3/discover/movie?with_companies=3");
+	assert.equal(calls[0], `http://127.0.0.1:4173${TMDB_LOCAL_PREVIEW_PROXY_PREFIX}/3/discover/movie?with_companies=3`);
+	assert.equal(builderViteConfig.define.__TMDB_STUDIO_MOCK_COUNTS__, "false");
+});
+
+test("Studio count mocking is compile-time disabled for every build command", () => {
+	const previous = process.env.TMDB_STUDIO_MOCK_COUNTS;
+	process.env.TMDB_STUDIO_MOCK_COUNTS = "1";
+	try {
+		const serveConfig = builderViteConfigFactory({ command: "serve", mode: "development" });
+		const buildConfig = builderViteConfigFactory({ command: "build", mode: "production" });
+		assert.equal(serveConfig.define.__TMDB_STUDIO_MOCK_COUNTS__, "true");
+		assert.equal(buildConfig.define.__TMDB_STUDIO_MOCK_COUNTS__, "false");
+	} finally {
+		if (previous === undefined) delete process.env.TMDB_STUDIO_MOCK_COUNTS;
+		else process.env.TMDB_STUDIO_MOCK_COUNTS = previous;
+	}
 });
 
 test("default TMDB providers pass the canonical Worker origin into the local preview wrapper", () => {

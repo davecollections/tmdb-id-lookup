@@ -6,20 +6,24 @@ import {
 	calculatePersonCreditCounts,
 	createTmdbPersonProvider,
 	PEOPLE_SOURCE_COMBINATIONS,
+	STUDIO_MOVIE_SORT_OPTIONS,
 } from "../builder/src/source-add/index.js";
 import {
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_EDITOR_ID,
+	STUDIO_SOURCE_EDITOR_ID,
 	canEditSource,
 	chooseMovieCollection,
 	choosePeopleSourceCombination,
 	createPeopleEditCountSession,
+	createStudioEditCountSession,
 	createSourceEditSession,
 	peopleEditCountLabel,
 	peopleSortOptions,
 	saveSourceEdit,
 	sourceEditorFor,
 	updatePeopleSourceSort,
+	updateStudioSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
@@ -57,6 +61,19 @@ function peopleSource(overrides = {}) {
 		title: "Movie Credits",
 		tmdbSourceType: "PERSON",
 		tmdbId: 31,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: {},
+		...overrides,
+	};
+}
+
+function studioSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Pixar",
+		tmdbSourceType: "COMPANY",
+		tmdbId: 3,
 		mediaType: "MOVIE",
 		sortBy: "popularity.desc",
 		filters: {},
@@ -109,7 +126,7 @@ function sessionFor(controller, sourceIndex = 0) {
 	return { ...opened, source };
 }
 
-test("registry discovers only complete native Movie Collection and People sources", () => {
+test("registry discovers complete Movie Collection, People, and Studio Movie/Series sources", () => {
 	const controller = createController();
 	const folder = importFolder(controller, [
 		collectionSource({ provider: "TMDB", tmdbSourceType: "collection", tmdbId: "0100", mediaType: "movie" }),
@@ -118,6 +135,7 @@ test("registry discovers only complete native Movie Collection and People source
 		{ provider: "tmdb", title: "People-like Discover", tmdbSourceType: "DISCOVER", tmdbId: 31, mediaType: "MOVIE", filters: { withPeople: "31" } },
 		{ provider: "tmdb", title: "List", tmdbSourceType: "LIST", tmdbId: 1, mediaType: "MOVIE" },
 		{ provider: "tmdb", title: "Company", tmdbSourceType: "COMPANY", tmdbId: 2, mediaType: "MOVIE" },
+		{ provider: "tmdb", title: "Company Series", tmdbSourceType: "COMPANY", tmdbId: 2, mediaType: "TV" },
 		{ provider: "tmdb", title: "Network", tmdbSourceType: "NETWORK", tmdbId: 3, mediaType: "TV" },
 		{ provider: "addon", title: "Addon", addonId: "a", type: "movie", catalogId: "c" },
 		{ provider: "community", title: "Opaque", unknown: true },
@@ -126,7 +144,9 @@ test("registry discovers only complete native Movie Collection and People source
 	assert.equal(sourceEditorFor(folder.sources[0]).id, MOVIE_COLLECTION_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[1]).id, PEOPLE_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[2]).id, PEOPLE_SOURCE_EDITOR_ID);
-	for (const source of folder.sources.slice(3)) assert.equal(canEditSource(source), false);
+	assert.equal(sourceEditorFor(folder.sources[5]).id, STUDIO_SOURCE_EDITOR_ID);
+	assert.equal(sourceEditorFor(folder.sources[6]).id, STUDIO_SOURCE_EDITOR_ID);
+	for (const index of [3, 4, 7, 8, 9, 10]) assert.equal(canEditSource(folder.sources[index]), false);
 });
 
 test("opening binds exact physical source context and never uses duplicate titles as a locator", () => {
@@ -358,6 +378,137 @@ test("People sort inventory is limited to the stable v1 values for each media ty
 		category: "native-tmdb",
 		editable: peopleSource(),
 	}).ownedFields, ["title", "tmdbSourceType", "mediaType", "sortBy"]);
+});
+
+test("Studio editor locks COMPANY identity/media while exposing title and correct Movie sort values", () => {
+	assert.deepEqual(STUDIO_MOVIE_SORT_OPTIONS, [
+		{ id: "popular", label: "Popular", value: "popularity.desc" },
+		{ id: "recent", label: "Recent", value: "primary_release_date.desc" },
+		{ id: "top-rated", label: "Top rated", value: "vote_average.desc" },
+		{ id: "most-votes", label: "Most voted", value: "vote_count.desc" },
+	]);
+	const controller = createController();
+	importFolder(controller, [studioSource({ sortBy: "vote_average.desc" })]);
+	const opened = sessionFor(controller);
+	assert.equal(opened.session.adapterId, STUDIO_SOURCE_EDITOR_ID);
+	assert.equal(opened.session.originalIdentity, "tmdb|COMPANY|3|MOVIE");
+	assert.deepEqual(opened.draft, {
+		title: "Pixar",
+		titleTouched: false,
+		studioName: "Pixar",
+		tmdbId: 3,
+		mediaType: "MOVIE",
+		sortBy: "vote_average.desc",
+		originalSortBy: "vote_average.desc",
+		sortOptionId: "top-rated",
+		sortTouched: false,
+	});
+	assert.deepEqual(sourceEditorFor(opened.source).ownedFields, ["title", "sortBy"]);
+});
+
+test("Studio Edit saves one title/sort patch and round-trips without changing identity or inserting", () => {
+	const controller = createController();
+	importFolder(controller, [studioSource({ unknownSource: { keep: true } })]);
+	const opened = sessionFor(controller);
+	const beforeCount = controller.getState().project.collections[0].folders[0].sources.length;
+	let draft = updateSourceEditTitle(opened.draft, "Pixar Movies");
+	draft = updateStudioSourceSort(draft, "primary_release_date.desc", "recent");
+	const saved = saveSourceEdit(
+		controller,
+		opened.session,
+		draft,
+	);
+	assert.equal(saved.ok, true);
+	assert.deepEqual(saved.patch, { title: "Pixar Movies", sortBy: "primary_release_date.desc" });
+	assert.equal(controller.getState().project.collections[0].folders[0].sources.length, beforeCount);
+	const first = serialize(controller);
+	assert.equal(first.value[0].folders[0].sources[0].sortBy, "primary_release_date.desc");
+	assert.equal(first.value[0].folders[0].sources[0].title, "Pixar Movies");
+	assert.deepEqual({
+		tmdbId: first.value[0].folders[0].sources[0].tmdbId,
+		tmdbSourceType: first.value[0].folders[0].sources[0].tmdbSourceType,
+		mediaType: first.value[0].folders[0].sources[0].mediaType,
+		filters: first.value[0].folders[0].sources[0].filters,
+	}, { tmdbId: 3, tmdbSourceType: "COMPANY", mediaType: "MOVIE", filters: {} });
+	assert.deepEqual(first.value[0].folders[0].sources[0].unknownSource, { keep: true });
+	const cycled = createController();
+	assert.equal(cycled.importValue(first.value).ok, true);
+	assert.deepEqual(serialize(cycled).value, first.value);
+});
+
+test("Studio Series Edit uses COMPANY/TV identity and maps Recent without changing media", () => {
+	const controller = createController();
+	importFolder(controller, [studioSource({ title: "Pixar Series", mediaType: "TV", sortBy: "popularity.desc" })]);
+	const opened = sessionFor(controller);
+	assert.equal(opened.session.originalIdentity, "tmdb|COMPANY|3|TV");
+	assert.equal(opened.draft.mediaType, "TV");
+	const changed = updateStudioSourceSort(opened.draft, "first_air_date.desc", "recent");
+	const saved = saveSourceEdit(controller, opened.session, changed);
+	assert.equal(saved.ok, true);
+	assert.deepEqual(saved.patch, { sortBy: "first_air_date.desc" });
+	assert.equal(serialize(controller).value[0].folders[0].sources[0].mediaType, "TV");
+});
+
+test("Studio Edit cancel/no-save is non-mutating and unsupported touched sorts fail closed", () => {
+	const controller = createController();
+	importFolder(controller, [studioSource({ sortBy: "owner.imported.sort" })]);
+	const opened = sessionFor(controller);
+	const before = serialize(controller);
+	assert.equal(serialize(controller).json, before.json);
+	const failed = saveSourceEdit(
+		controller,
+		opened.session,
+		updateStudioSourceSort(opened.draft, "invented.desc"),
+	);
+	assert.equal(failed.ok, false);
+	assert.equal(failed.validationFailed, true);
+	assert.equal(failed.errors[0].code, "SOURCE_EDIT_STUDIO_SORT_UNSUPPORTED");
+	assert.equal(serialize(controller).json, before.json);
+});
+
+test("Studio duplicate review ignores self but rejects another conflicting physical source", () => {
+	const single = createController();
+	importFolder(single, [studioSource()]);
+	let opened = sessionFor(single);
+	assert.equal(saveSourceEdit(single, opened.session, updateStudioSourceSort(opened.draft, "vote_count.desc")).ok, true);
+
+	const duplicated = createController();
+	importFolder(duplicated, [studioSource(), studioSource({ title: "Imported duplicate" })]);
+	opened = sessionFor(duplicated, 0);
+	const before = serialize(duplicated);
+	const rejected = saveSourceEdit(
+		duplicated,
+		opened.session,
+		updateStudioSourceSort(opened.draft, "vote_count.desc"),
+	);
+	assert.equal(rejected.ok, false);
+	assert.equal(rejected.duplicateRejected, true);
+	assert.equal(rejected.duplicate.internalId, duplicated.getState().project.collections[0].folders[0].sources[1].internalId);
+	assert.equal(serialize(duplicated).json, before.json);
+});
+
+test("Studio Edit count session loads automatically without exposing a manual dimension retry", async () => {
+	const calls = [];
+	const session = createStudioEditCountSession({
+		studioId: 3,
+		provider: {
+			async getStudioCounts(studioId, options) {
+				calls.push({ kind: "all", studioId, bypassCache: options.bypassCache, signal: options.signal });
+				return {
+					ok: true,
+					data: {
+						movie: { status: "ready", count: 42 },
+						series: { status: "ready", count: 17 },
+					},
+				};
+			},
+		},
+	});
+	assert.equal((await session.load()).movie.count, 42);
+	assert.equal(typeof session.loadDimension, "undefined");
+	assert.deepEqual(calls.map((entry) => [entry.kind, entry.studioId, entry.bypassCache]), [["all", 3, false]]);
+	session.cancel();
+	assert.equal(calls[0].signal.aborted, true);
 });
 
 test("People sort prepopulation and sort-only Save retain exact serialized values", () => {

@@ -5,10 +5,20 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { PEOPLE_SOURCE_COMBINATIONS } from "../source-add/index.js";
 import {
+	formatStudioLocation,
+	parseStudioSearchInput,
+	PEOPLE_SOURCE_COMBINATIONS,
+	studioSortOptionId,
+	studioSortValue,
+} from "../source-add/index.js";
+import {
+	checkingStudioEditCounts,
+	createStudioEditCountSession,
+	INITIAL_STUDIO_EDIT_COUNT_STATE,
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_EDITOR_ID,
+	STUDIO_SOURCE_EDITOR_ID,
 	chooseMovieCollection,
 	choosePeopleSourceCombination,
 	createPeopleEditCountSession,
@@ -17,6 +27,7 @@ import {
 	peopleSortOptions,
 	sourceEditorById,
 	updatePeopleSourceSort,
+	updateStudioSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
@@ -29,6 +40,9 @@ import {
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { MovieCollectionPicker } from "./MovieCollectionPicker.jsx";
+import { StudioLogo } from "./StudioSourceFlow.jsx";
+import { StudioSortChoices } from "./StudioSortChoices.jsx";
+import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import {
 	focusSourceEditAlert,
 	sourceEditErrorPresentation,
@@ -37,6 +51,7 @@ import {
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const editableFieldByDiagnosticPath = Object.freeze({
+	"$sourceEdit.sortBy": "sort",
 	"$sourceEdit.title": "title",
 });
 
@@ -80,7 +95,7 @@ function SourceIdentity({ adapter, draft }) {
 	);
 }
 
-function SourceTitleField({ draft, titleInputRef, error, onChange }) {
+function SourceTitleField({ draft, titleInputRef, error, onChange, helperText = null }) {
 	const nameIsAutoManaged = draft.titleMode === "auto"
 		|| (draft.selectedCollectionName !== null && draft.title === draft.selectedCollectionName);
 	return (
@@ -97,9 +112,9 @@ function SourceTitleField({ draft, titleInputRef, error, onChange }) {
 				onChange={(event) => onChange(event.target.value)}
 			/>
 			<p className="editor-field-help" id="source-edit-title-help">
-				{nameIsAutoManaged
+				{helperText ?? (nameIsAutoManaged
 					? "This name updates automatically until you customise it."
-					: "This is the name shown in Nuvio. You can customise it."}
+					: "This is the name shown in Nuvio. You can customise it.")}
 			</p>
 			<p className="editor-field-error" id="source-edit-title-error">
 				{error?.message ?? ""}
@@ -187,6 +202,52 @@ export function PeopleEditorFields({
 	);
 }
 
+function studioCountText(count, mediaType) {
+	if (count?.status === "ready") {
+		const noun = mediaType === "TV" ? "series" : `movie${count.count === 1 ? "" : "s"}`;
+		return {
+			text: `${count.count.toLocaleString("en")} ${noun}`,
+			state: count.count === 0 ? "zero" : "ready",
+		};
+	}
+	if (count?.status === "unavailable") return { text: "Count unavailable", state: "unavailable" };
+	return { text: "Checking…", state: "checking" };
+}
+
+export function StudioEditorFields({
+	draft,
+	studio,
+	countState,
+	sortRef,
+	onSortChange,
+}) {
+	const mediaType = draft.mediaType;
+	const countKey = mediaType === "TV" ? "series" : "movie";
+	const countDimension = countState[countKey];
+	const count = studioCountText(countDimension, mediaType);
+	const selectedSortId = draft.sortOptionId ?? studioSortOptionId(draft.sortBy, mediaType);
+	const mediaLabel = mediaType === "TV" ? "Series" : "Movies";
+	return (
+		<section className="source-edit-options studio-source-edit-options" aria-labelledby="source-edit-options-title">
+			<div className="studio-configure-identity tmdb-review-identity">
+				<StudioLogo studio={studio} size="w185" context="configure" loading="eager" />
+				<div className="tmdb-review-identity-copy">
+					<p className="panel-kicker">{mediaLabel} source</p>
+					<h3 id="source-edit-options-title">{studio.name}</h3>
+					{formatStudioLocation(studio) ? <p>{formatStudioLocation(studio)}</p> : null}
+				</div>
+				<TmdbEntityLink entityType="company" tmdbId={studio.id} entityName={studio.name} />
+			</div>
+			<div className="studio-edit-source-card" data-count-state={count.state}>
+				<span><strong>{mediaLabel}</strong><small>COMPANY · {mediaType}</small></span>
+				<em>{count.text}</em>
+			</div>
+			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
+			<StudioSortChoices selectedId={selectedSortId} name="studio-edit-sort" firstInputRef={sortRef} onChange={(optionId) => onSortChange(studioSortValue(optionId, mediaType), optionId)} />
+		</section>
+	);
+}
+
 export function SourceEditErrorPanel({ result, alertRef = null }) {
 	const presentation = sourceEditErrorPresentation(result);
 	return (
@@ -226,9 +287,12 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 export function SourceEditorDialog({
 	provider,
 	peopleProvider,
+	studioCatalogueProvider,
+	studioCountProvider,
 	session,
 	initialDraft,
 	initialPeopleCountState = null,
+	initialStudioCountState = null,
 	onCancel,
 	onSave,
 }) {
@@ -241,6 +305,20 @@ export function SourceEditorDialog({
 			? Object.freeze({ ...INITIAL_PEOPLE_EDIT_COUNT_STATE, status: "checking" })
 			: INITIAL_PEOPLE_EDIT_COUNT_STATE)
 	));
+	const [studioCountState, setStudioCountState] = useState(() => (
+		initialStudioCountState ?? (session.adapterId === STUDIO_SOURCE_EDITOR_ID
+			? checkingStudioEditCounts()
+			: INITIAL_STUDIO_EDIT_COUNT_STATE)
+	));
+	const [studioIdentity, setStudioIdentity] = useState(() => Object.freeze({
+		id: initialDraft.tmdbId,
+		name: initialDraft.studioName ?? session.openingTitle,
+		parentCompany: "",
+		country: "",
+		headquarters: "",
+		logoPath: null,
+		movieCount: null,
+	}));
 	const [submitting, setSubmitting] = useState(false);
 	const [viewportStyle, setViewportStyle] = useState(() => (
 		typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window)
@@ -250,10 +328,13 @@ export function SourceEditorDialog({
 	const titleInputRef = useRef(null);
 	const combinationRef = useRef(null);
 	const chooseButtonRef = useRef(null);
+	const studioSortRef = useRef(null);
 	const pickerInputRef = useRef(null);
 	const diagnosticRef = useRef(null);
 	const peopleCountSessionRef = useRef(null);
+	const studioCountSessionRef = useRef(null);
 	const peopleCountGenerationRef = useRef(0);
+	const studioCountGenerationRef = useRef(0);
 	const pendingFailureFocusRef = useRef(false);
 	if (
 		session.adapterId === PEOPLE_SOURCE_EDITOR_ID
@@ -265,6 +346,16 @@ export function SourceEditorDialog({
 			personId: initialDraft.tmdbId,
 		});
 	}
+	if (
+		session.adapterId === STUDIO_SOURCE_EDITOR_ID
+		&& studioCountSessionRef.current === null
+		&& typeof studioCountProvider?.getStudioCounts === "function"
+	) {
+		studioCountSessionRef.current = createStudioEditCountSession({
+			provider: studioCountProvider,
+			studioId: initialDraft.tmdbId,
+		});
+	}
 
 	const diagnostics = failure?.errors ?? [];
 	const titleError = diagnostics.find((entry) => diagnosticField(entry.path) === "title") ?? null;
@@ -272,7 +363,7 @@ export function SourceEditorDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(titleInputRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(titleInputRef.current ?? studioSortRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
@@ -295,9 +386,37 @@ export function SourceEditorDialog({
 	}, []);
 
 	useEffect(() => {
+		if (
+			session.adapterId !== STUDIO_SOURCE_EDITOR_ID
+			|| typeof studioCatalogueProvider?.searchStudios !== "function"
+		) return undefined;
+		let active = true;
+		studioCatalogueProvider.searchStudios(parseStudioSearchInput(String(initialDraft.tmdbId))).then((result) => {
+			const studio = result?.ok ? result.data?.results?.[0] : null;
+			if (active && studio?.id === initialDraft.tmdbId) setStudioIdentity(studio);
+		});
+		return () => { active = false; };
+	}, [initialDraft.tmdbId, session.adapterId, studioCatalogueProvider]);
+
+	useEffect(() => {
+		const countSession = studioCountSessionRef.current;
+		if (countSession === null || initialStudioCountState !== null) return undefined;
+		let active = true;
+		const generation = ++studioCountGenerationRef.current;
+		countSession.load().then((state) => {
+			if (active && generation === studioCountGenerationRef.current && state !== null) setStudioCountState(state);
+		});
+		return () => {
+			active = false;
+			studioCountGenerationRef.current += 1;
+			countSession.cancel();
+		};
+	}, []);
+
+	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const invalidField = firstMountedInvalidField(failure, { title: titleInputRef });
+		const invalidField = firstMountedInvalidField(failure, { sort: studioSortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
 			focusElementWithoutScroll(invalidField);
@@ -388,7 +507,11 @@ export function SourceEditorDialog({
 							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Edit source" onClick={cancel}>Close</button>
 						</div>
 						<p id="source-edit-description" className="add-source-heading-description">
-							{stage === "picker" ? "Choose a replacement TMDB movie franchise." : "Change only the supported fields for this physical source."}
+							{stage === "picker"
+								? "Choose a replacement TMDB movie franchise."
+								: session.adapterId === STUDIO_SOURCE_EDITOR_ID
+									? "Update this Studio source name and title order."
+									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
 
@@ -410,16 +533,17 @@ export function SourceEditorDialog({
 									{failure ? (
 										<SourceEditErrorPanel result={failure} alertRef={diagnosticRef} />
 									) : null}
-									<SourceIdentity adapter={adapter} draft={draft} />
+									{session.adapterId !== STUDIO_SOURCE_EDITOR_ID ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
 									<SourceTitleField
-										draft={draft}
-										titleInputRef={titleInputRef}
-										error={titleError}
-										onChange={(title) => {
-											setDraft((current) => updateSourceEditTitle(current, title));
-											clearFieldDiagnostic("title");
-										}}
-									/>
+											draft={draft}
+											titleInputRef={titleInputRef}
+											error={titleError}
+											helperText={session.adapterId === STUDIO_SOURCE_EDITOR_ID ? "Changes how this source appears in Nuvio, not which Studio it represents." : null}
+											onChange={(title) => {
+												setDraft((current) => updateSourceEditTitle(current, title));
+												clearFieldDiagnostic("title");
+											}}
+										/>
 									{session.adapterId === PEOPLE_SOURCE_EDITOR_ID ? (
 										<PeopleEditorFields
 											draft={draft}
@@ -436,6 +560,17 @@ export function SourceEditorDialog({
 											onRetryCounts={retryPeopleCounts}
 											onSortChange={(sortBy, sortOptionId) => {
 												setDraft((current) => updatePeopleSourceSort(current, sortBy, sortOptionId));
+												clearFieldDiagnostic("sort");
+											}}
+										/>
+									) : session.adapterId === STUDIO_SOURCE_EDITOR_ID ? (
+										<StudioEditorFields
+											draft={draft}
+											studio={studioIdentity}
+											countState={studioCountState}
+											sortRef={studioSortRef}
+											onSortChange={(sortBy, sortOptionId) => {
+												setDraft((current) => updateStudioSourceSort(current, sortBy, sortOptionId));
 												clearFieldDiagnostic("sort");
 											}}
 										/>

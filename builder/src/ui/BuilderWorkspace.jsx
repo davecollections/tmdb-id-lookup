@@ -5,10 +5,14 @@ import {
 	createPeopleFolderBatch,
 	createPeopleSourceBundle,
 	createMovieFranchiseSource,
+	createStudioCatalogueProvider,
+	createStudioSourceBundle,
 	createTmdbCollectionProvider,
 	createTmdbPersonProvider,
+	createTmdbStudioCountProvider,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE_ID,
+	STUDIO_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import {
 	createSourceEditSession,
@@ -43,6 +47,7 @@ import { HierarchyActionsMenu } from "./HierarchyActionsMenu.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NodeEditor } from "./NodeEditor.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
+import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
@@ -258,6 +263,7 @@ function HierarchyCard({
 	navigationLocked,
 	onSelect,
 	onOpenEditor,
+	enableDoubleClickEdit,
 	onRequestDelete,
 	dragState,
 	keyboardReorderInternalId,
@@ -308,6 +314,8 @@ function HierarchyCard({
 						onSelect={onSelect}
 						disabled={navigationLocked}
 						registerPrimaryControl={registerPrimaryControl}
+						enableDoubleClickEdit={enableDoubleClickEdit}
+						onDoubleClickEdit={onOpenEditor}
 					>
 						{children}
 					</NodeButton>
@@ -335,6 +343,8 @@ function NodeButton({
 	onSelect,
 	disabled,
 	registerPrimaryControl,
+	enableDoubleClickEdit = false,
+	onDoubleClickEdit = null,
 }) {
 	return (
 		<button
@@ -346,12 +356,25 @@ function NodeButton({
 			aria-label={node.titleHidden ? node.accessibleName : undefined}
 			disabled={disabled}
 			onClick={() => onSelect(node.internalId)}
+			onDoubleClick={(event) => {
+				if (!enableDoubleClickEdit || !shouldOpenHierarchyEditorFromDoubleClick(event)) return;
+				event.preventDefault();
+				onDoubleClickEdit?.(node.internalId, event.currentTarget);
+			}}
 		>
 			<span className="node-button-content">{children}</span>
 			<span className="node-chevron" aria-hidden="true">›</span>
 			{node.selected ? <span className="visually-hidden">Selected</span> : null}
 		</button>
 	);
+}
+
+const nestedInteractiveSelector = "button, a, input, select, textarea, [role='button'], [role='link'], [contenteditable='true']";
+
+export function shouldOpenHierarchyEditorFromDoubleClick(event) {
+	if (!event || event.detail < 2 || !event.currentTarget || !event.target) return false;
+	const interactiveTarget = event.target.closest?.(nestedInteractiveSelector) ?? null;
+	return interactiveTarget === null || interactiveTarget === event.currentTarget;
 }
 
 function CollectionList({ collections, actionProps, createdCardTarget, createdCardRef }) {
@@ -454,6 +477,11 @@ function SourceList({ sources, actionProps }) {
 									aria-label={source.titleHidden ? source.accessibleName : undefined}
 									disabled={actionProps.navigationLocked}
 									onClick={() => actionProps.onSelect(source.internalId)}
+									onDoubleClick={(event) => {
+										if (!actionProps.enableDoubleClickEdit || !source.editSupported || !shouldOpenHierarchyEditorFromDoubleClick(event)) return;
+										event.preventDefault();
+										actionProps.onOpenSourceEditor(source.internalId, event.currentTarget);
+									}}
 								>
 									<span className="source-order" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
 									<span className="source-content">
@@ -574,6 +602,8 @@ export function BuilderWorkspace({
 	initialSourceEdit = null,
 	sourceProvider = null,
 	peopleProvider = null,
+	studioCatalogueProvider = null,
+	studioCountProvider = null,
 	artworkClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
@@ -640,6 +670,14 @@ export function BuilderWorkspace({
 	const peopleProviderRef = useRef(null);
 	if (peopleProviderRef.current === null) {
 		peopleProviderRef.current = peopleProvider ?? createTmdbPersonProvider();
+	}
+	const studioCatalogueProviderRef = useRef(null);
+	if (studioCatalogueProviderRef.current === null) {
+		studioCatalogueProviderRef.current = studioCatalogueProvider ?? createStudioCatalogueProvider();
+	}
+	const studioCountProviderRef = useRef(null);
+	if (studioCountProviderRef.current === null) {
+		studioCountProviderRef.current = studioCountProvider ?? createTmdbStudioCountProvider();
 	}
 	const artworkClientRef = useRef(null);
 	if (artworkClientRef.current === null) {
@@ -1106,6 +1144,7 @@ export function BuilderWorkspace({
 			collectionInternalId: view.selectedCollection.internalId,
 			folderInternalId: view.selectedFolder.internalId,
 			modeId: null,
+			returnFocusModeId: null,
 		});
 	}
 
@@ -1131,9 +1170,18 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID].includes(modeId)
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID].includes(modeId)
 		) return;
-		setAddSourceSession((current) => current ? { ...current, modeId } : current);
+		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
+	}
+
+	function returnToSourceModePicker() {
+		if (!visibleAddSourceSession || visibleAddSourceSession.context !== "folder") return;
+		setAddSourceSession((current) => current ? {
+			...current,
+			returnFocusModeId: current.modeId,
+			modeId: null,
+		} : current);
 	}
 
 	function cancelAddSource() {
@@ -1237,6 +1285,41 @@ export function BuilderWorkspace({
 				: result.promotedFolder
 					? `Created “${bundle.person.name}” with ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"}.`
 					: `Added ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.person.name}”.`);
+		});
+		return result;
+	}
+
+	function applyStudioSources(bundle) {
+		if (!visibleAddSourceSession || visibleAddSourceSession.context !== "folder") {
+			return {
+				ok: false,
+				errors: [{
+					code: "STUDIO_FOLDER_UNAVAILABLE",
+					path: "$studio.destination",
+					message: "The selected destination folder is no longer available.",
+				}],
+			};
+		}
+		const result = createStudioSourceBundle(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			studio: bundle.studio,
+			drafts: bundle.drafts,
+			duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+			interactionLocked: (
+				editorLocked
+				|| deleteLocked
+				|| returnConfirmationOpen
+				|| actionsMenuInternalId !== null
+				|| pointerInteractionLocked()
+			),
+		});
+		if (!result.ok) return result;
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => {
+			setSourceCreationStatusText(`Added ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.studio.name}”.`);
 		});
 		return result;
 	}
@@ -1617,6 +1700,7 @@ export function BuilderWorkspace({
 	}
 
 	const hierarchyActionProps = {
+		enableDoubleClickEdit: desktopViewport,
 		navigationLocked: hierarchyInteractionLocked,
 		actionsDisabled: navigationLocked,
 		actionsMenuInternalId,
@@ -2008,6 +2092,7 @@ export function BuilderWorkspace({
 				visibleAddSourceSession.modeId === null ? (
 					<SourceModeDialog
 						folderName={addSourceFolder?.editable?.title ?? "selected folder"}
+						initialFocusModeId={visibleAddSourceSession.returnFocusModeId}
 						onCancel={cancelAddSource}
 						onSelectMode={chooseSourceMode}
 					/>
@@ -2019,13 +2104,25 @@ export function BuilderWorkspace({
 						project={state.project}
 						collection={addSourceCollection}
 						folder={addSourceFolder}
+						onBack={returnToSourceModePicker}
 						onCancel={cancelAddSource}
 						onApply={applyPeopleSources}
+					/>
+				) : visibleAddSourceSession.modeId === STUDIO_SOURCE_MODE_ID ? (
+					<StudioSourceFlow
+						catalogueProvider={studioCatalogueProviderRef.current}
+						countProvider={studioCountProviderRef.current}
+						project={state.project}
+						folder={addSourceFolder}
+						onBack={returnToSourceModePicker}
+						onCancel={cancelAddSource}
+						onApply={applyStudioSources}
 					/>
 				) : (
 					<AddSourceDialog
 						provider={sourceProviderRef.current}
 						folderName={addSourceFolder?.editable?.title ?? "selected folder"}
+						onBack={returnToSourceModePicker}
 						onCancel={cancelAddSource}
 						onApply={applyAddSource}
 					/>
@@ -2035,6 +2132,8 @@ export function BuilderWorkspace({
 			<SourceEditorDialog
 					provider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
+					studioCatalogueProvider={studioCatalogueProviderRef.current}
+					studioCountProvider={studioCountProviderRef.current}
 					session={sourceEdit.session}
 					initialDraft={sourceEdit.draft}
 					onCancel={cancelSourceEdit}

@@ -545,6 +545,7 @@ export function AddSourcePrimaryAction({
 export function AddSourceDialog({
 	provider,
 	folderName,
+	onBack,
 	onCancel,
 	onApply,
 }) {
@@ -894,7 +895,17 @@ export function AddSourceDialog({
 									<span aria-hidden="true">←</span>
 									Back
 								</button>
-							) : <span className="add-source-header-spacer" aria-hidden="true" />}
+							) : (
+								<button
+									className="add-source-header-action"
+									type="button"
+									data-action="back-to-source-types"
+									onClick={onBack}
+								>
+									<span aria-hidden="true">←</span>
+									Back
+								</button>
+							)}
 							<div>
 								<h2 id="add-source-title">Add source</h2>
 								<p>Adding to {folderName}</p>

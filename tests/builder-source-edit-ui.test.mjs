@@ -36,6 +36,7 @@ const {
 	PeopleEditorFields,
 	SourceEditErrorPanel,
 	SourceEditorDialog,
+	StudioEditorFields,
 } = await vite.ssrLoadModule("/src/ui/SourceEditorDialog.jsx");
 const { MovieCollectionPicker } = await vite.ssrLoadModule("/src/ui/MovieCollectionPicker.jsx");
 after(() => vite.close());
@@ -91,6 +92,34 @@ function fakePeopleProvider(calls = [], result = null) {
 	});
 }
 
+function fakeStudioCatalogueProvider(calls = []) {
+	return Object.freeze({
+		async searchStudios(input, options) {
+			calls.push(["studio", input, options]);
+			return { ok: true, data: { results: [], page: 1, totalPages: 1, totalResults: 0 } };
+		},
+	});
+}
+
+function fakeStudioCountProvider(calls = []) {
+	return Object.freeze({
+		async getStudioCounts(id, options) {
+			calls.push(["counts", id, options]);
+			return {
+				ok: true,
+				data: {
+					movie: { status: "ready", count: 42 },
+					series: { status: "ready", count: 17 },
+				},
+			};
+		},
+		async getStudioCount(id, countKey, options) {
+			calls.push(["count", id, countKey, options]);
+			return { ok: true, data: { status: "ready", count: countKey === "movie" ? 42 : 17 } };
+		},
+	});
+}
+
 function importSources(controller, sources) {
 	const imported = controller.importValue([{
 		id: "collection",
@@ -135,6 +164,19 @@ function peopleSource(overrides = {}) {
 	};
 }
 
+function studioSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Pixar",
+		tmdbSourceType: "COMPANY",
+		tmdbId: 3,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: {},
+		...overrides,
+	};
+}
+
 function read(relativePath) {
 	return fs.readFileSync(path.join(rootDir, relativePath), "utf8");
 }
@@ -158,11 +200,11 @@ function openEdit(controller, source) {
 
 test("supported source menus show Edit source immediately before Delete", () => {
 	const controller = createController();
-	importSources(controller, [collectionSource(), peopleSource()]);
+	importSources(controller, [collectionSource(), peopleSource(), studioSource()]);
 	const markup = renderWorkspace(controller);
-	assert.equal((markup.match(/data-action="edit-source"/g) ?? []).length, 2);
-	assert.equal((markup.match(/>Edit source<\/button>/g) ?? []).length, 2);
-	assert.equal((markup.match(/data-action="delete-source"/g) ?? []).length, 2);
+	assert.equal((markup.match(/data-action="edit-source"/g) ?? []).length, 3);
+	assert.equal((markup.match(/>Edit source<\/button>/g) ?? []).length, 3);
+	assert.equal((markup.match(/data-action="delete-source"/g) ?? []).length, 3);
 	for (const menu of markup.match(/<div[^>]+data-actions-menu="source"[\s\S]*?<\/div>/g) ?? []) {
 		assert.ok(menu.indexOf('data-action="edit-source"') < menu.indexOf('data-action="delete-source"'));
 	}
@@ -239,6 +281,85 @@ test("People editor opens immediately with four non-blocking counts, title reset
 	for (const forbidden of ["profile image", "combined credits", "artwork"]) {
 		assert.equal(markup.toLowerCase().includes(forbidden), false, forbidden);
 	}
+});
+
+test("Studio editor opens the fixed Studio identity with count, TMDB link, sort, Save, and Cancel", () => {
+	const controller = createController();
+	const folder = importSources(controller, [studioSource({ sortBy: "vote_average.desc" })]);
+	const edit = openEdit(controller, folder.sources[0]);
+	const catalogueCalls = [];
+	const countCalls = [];
+	const markup = renderToStaticMarkup(createElement(SourceEditorDialog, {
+		provider: fakeProvider(),
+		peopleProvider: fakePeopleProvider(),
+		studioCatalogueProvider: fakeStudioCatalogueProvider(catalogueCalls),
+		studioCountProvider: fakeStudioCountProvider(countCalls),
+		session: edit.session,
+		initialDraft: edit.draft,
+		initialStudioCountState: {
+			movie: { status: "ready", count: 42 },
+			series: { status: "ready", count: 17 },
+		},
+		onCancel() {},
+		onSave() { return { ok: true }; },
+	}));
+	assert.equal(catalogueCalls.length, 0);
+	assert.equal(countCalls.length, 0);
+	assert.ok(markup.includes('data-source-edit-adapter="studio"'));
+	assert.ok(markup.includes("Update this Studio source name and title order."));
+	assert.ok(markup.includes("Movies source"));
+	assert.ok(markup.includes("Pixar"));
+	assert.ok(markup.includes('href="https://www.themoviedb.org/company/3"'));
+	assert.ok(markup.includes("42 movies"));
+	assert.ok(markup.includes("Sort titles by"));
+	assert.ok(markup.includes('data-selected="true"'));
+	assert.ok(markup.includes('value="top-rated"'));
+	for (const label of ["Popular", "Recent", "Top rated", "Most voted"]) assert.ok(markup.includes(label), label);
+	assert.ok(markup.includes("Highest-rated titles first."));
+	for (const hiddenDescription of ["Popular titles first.", "Recently released titles first.", "Titles with the most votes first."]) assert.equal(markup.includes(hiddenDescription), false, hiddenDescription);
+	assert.equal(markup.includes("Refresh title count"), false);
+	assert.equal(markup.includes(">Retry"), false);
+	assert.ok(markup.includes('data-action="save-source-edit"'));
+	assert.ok(markup.includes('data-action="cancel-source-edit"'));
+	assert.ok(markup.includes("Source name"));
+	assert.ok(markup.includes("Changes how this source appears in Nuvio, not which Studio it represents."));
+	assert.equal(markup.includes("<select"), false);
+});
+
+test("Studio editor preserves an unusual imported sort until a supported option is chosen", () => {
+	const controller = createController();
+	const folder = importSources(controller, [studioSource({ sortBy: "Owner.MixedCase" })]);
+	const edit = openEdit(controller, folder.sources[0]);
+	const markup = renderToStaticMarkup(createElement(StudioEditorFields, {
+		draft: edit.draft,
+		studio: { id: 3, name: "Pixar", logoPath: null, country: "US", headquarters: "Emeryville, California" },
+		countState: { movie: { status: "unavailable", count: null, error: { retryable: true } }, series: { status: "unavailable", count: null, error: { retryable: true } } },
+		onSortChange() {},
+	}));
+	assert.ok(markup.includes("Current imported sort is preserved until you choose a supported sort: Owner.MixedCase"));
+	assert.equal(markup.includes("checked=\"\""), false);
+	assert.ok(markup.includes("Count unavailable"));
+	assert.equal(markup.includes("Retry Movie count"), false);
+	assert.equal(markup.includes("Retry Series count"), false);
+	assert.equal(markup.includes("Refresh title count"), false);
+});
+
+test("Studio Series editor keeps COMPANY/TV visible and preselects the media-correct Recent card", () => {
+	const controller = createController();
+	const folder = importSources(controller, [studioSource({ title: "Pixar Series", mediaType: "TV", sortBy: "first_air_date.desc" })]);
+	const edit = openEdit(controller, folder.sources[0]);
+	const markup = renderToStaticMarkup(createElement(StudioEditorFields, {
+		draft: edit.draft,
+		studio: { id: 3, name: "Pixar", logoPath: null, country: "US", headquarters: "Emeryville, California" },
+		countState: { movie: { status: "ready", count: 42 }, series: { status: "ready", count: 17 } },
+		onSortChange() {},
+	}));
+	assert.ok(markup.includes("Series source"));
+	assert.ok(markup.includes("COMPANY · TV"));
+	assert.ok(markup.includes("17 series"));
+	assert.ok(markup.includes('data-selected="true"'));
+	assert.ok(markup.includes('value="recent"'));
+	assert.equal(markup.includes("primary_release_date.desc"), false);
 });
 
 test("desktop source editors size to content and scroll only when the viewport maximum is exceeded", () => {
