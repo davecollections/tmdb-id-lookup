@@ -11,7 +11,7 @@ import { handleDialogKeyDown } from "./modal-focus.js";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function SourceModeDialog({ folderName, onCancel, onSelectMode }) {
+export function SourceModeDialog({ folderName, initialFocusModeId = null, onCancel, onSelectMode }) {
 	const dialogRef = useRef(null);
 	const firstModeRef = useRef(null);
 	const [viewportStyle, setViewportStyle] = useState(() => (
@@ -21,12 +21,15 @@ export function SourceModeDialog({ folderName, onCancel, onSelectMode }) {
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(firstModeRef.current ?? dialogRef.current);
+		const returningMode = initialFocusModeId
+			? dialogRef.current?.querySelector?.(`[data-source-mode-option="${initialFocusModeId}"]`)
+			: null;
+		focusElementWithoutScroll(returningMode ?? firstModeRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
 		};
-	}, []);
+	}, [initialFocusModeId]);
 
 	const content = (
 		<div className="add-source-portal" data-add-source-portal="true" data-mobile-surface="opaque">

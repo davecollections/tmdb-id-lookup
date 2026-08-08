@@ -318,7 +318,7 @@ test("Company collector preserves the exact ordinary catalogue contract for mock
 	assert.deepEqual(
 		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "companies.min.json"), "utf8")),
 		[
-			{ i: 1, n: "Company One", p: "Parent One", c: "AU", h: "Sydney", l: "/company-1.png" },
+			{ i: 1, n: "Company One", p: "Parent One", c: "AU", h: "Sydney", l: "/company-1.png", t: 0 },
 			{ i: 2, n: "Company, Two", c: "US", h: "Los Angeles", l: "/company-2.png", t: 12 },
 			{ i: 3, n: "Preserved company", c: "GB", h: "Old HQ", l: "/old-3.png", t: 4 },
 			{ i: 9, n: "Unlisted company", t: 2 },

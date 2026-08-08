@@ -11,6 +11,7 @@ import {
 	TRANSIENT_REMOVE_CODES,
 	abortableDelay,
 	cleanupMountedBrowser,
+	createBrowserProcessTree,
 	removeDirectoryWithRetry,
 	runWithLifecycleCleanup,
 	shutdownBrowser,
@@ -88,6 +89,62 @@ function trackedTimers() {
 		},
 	};
 }
+
+test("POSIX cleanup captures and signals owned descendants when the detached group is unavailable", async () => {
+	const processRecords = new Map([
+		[101, { parentPid: 1, groupId: 202 }],
+		[102, { parentPid: 101, groupId: 202 }],
+		[999, { parentPid: 1, groupId: 999 }],
+	]);
+	const alive = new Set(processRecords.keys());
+	const signals = [];
+	const missingProcess = () => {
+		const error = new Error("Process not found");
+		error.code = "ESRCH";
+		return error;
+	};
+	const processKill = (pid, signalName) => {
+		if (signalName === 0) {
+			if (alive.has(pid)) return;
+			throw missingProcess();
+		}
+		signals.push([pid, signalName]);
+		if (pid < 0) throw missingProcess();
+		if (!alive.delete(pid)) throw missingProcess();
+	};
+	const fsApi = {
+		async readdir() {
+			return [...alive].map((pid) => ({
+				isDirectory: () => true,
+				name: String(pid),
+			}));
+		},
+		async readFile(target) {
+			const pid = Number(target.split("/").at(-2));
+			const record = processRecords.get(pid);
+			return `${pid} (test-browser) S ${record.parentPid} ${record.groupId} ${record.groupId}`;
+		},
+	};
+	const processTree = createBrowserProcessTree({
+		rootPid: 101,
+		platform: "linux",
+		processKill,
+		fsApi,
+		delay: async () => {},
+	});
+
+	const ownedPids = await processTree.capture();
+	assert.deepEqual(ownedPids, [101, 102]);
+	await processTree.terminate(ownedPids, new AbortController().signal);
+
+	assert.deepEqual(signals, [
+		[-101, "SIGTERM"],
+		[101, "SIGTERM"],
+		[102, "SIGTERM"],
+	]);
+	assert.equal(signals.some(([pid]) => Math.abs(pid) === 999), false);
+	assert.deepEqual(await processTree.remainingPids(ownedPids), []);
+});
 
 test("Browser.close and whole-tree completion precede Vite, profile, and cache cleanup", async () => {
 	const events = [];

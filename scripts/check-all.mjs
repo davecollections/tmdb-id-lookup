@@ -60,6 +60,9 @@ runNode(["--test", path.join("tests", "builder-add-source-foundation.test.mjs")]
 runNode(["--test", path.join("tests", "builder-add-source-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-studio-foundation.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-studio-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "v1-company-search-compatibility.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "mounted-browser-lifecycle.test.mjs")]);

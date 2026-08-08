@@ -18,7 +18,18 @@ export const PEOPLE_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const STUDIO_SOURCE_MODE_ID = "tmdb-studios";
+
+export const STUDIO_SOURCE_MODE = Object.freeze({
+	id: STUDIO_SOURCE_MODE_ID,
+	label: "Studios",
+	providerLabel: "TMDB",
+	description: "Add Movie or Series sources for one studio.",
+	category: "native-tmdb",
+});
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	PEOPLE_SOURCE_MODE,
+	STUDIO_SOURCE_MODE,
 ]);

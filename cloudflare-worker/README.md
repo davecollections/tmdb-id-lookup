@@ -102,5 +102,12 @@ The Worker only proxies the TMDB paths the frontend needs:
 * Movie search, details, and keywords
 * TV search, details, and keywords
 * Keyword search
+* Exact Studio Movie and Series count requests using only
+  `/3/discover/movie?with_companies={positive integer}` and
+  `/3/discover/tv?with_companies={positive integer}`
+
+The two Studio count paths fail closed unless `with_companies` appears exactly
+once with a canonical positive safe integer and no additional query parameter.
+Other Discover filters and broad `/3/discover/*` forwarding remain disallowed.
 
 If a frontend feature adds a new TMDB endpoint, update `ALLOWED_PATHS` here and redeploy the Worker.

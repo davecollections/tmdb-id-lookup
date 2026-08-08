@@ -130,6 +130,10 @@ export function updatePeopleSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }
 
+export function updateStudioSourceSort(draft, sortBy, sortOptionId = null) {
+	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
+}
+
 export function chooseMovieCollection(draft, collection) {
 	const tmdbId = canonicalPositiveId(collection?.id);
 	if (tmdbId === null || typeof collection?.name !== "string" || collection.name.trim().length === 0) {
@@ -153,7 +157,10 @@ export function useSelectedMovieCollectionName(draft) {
 
 function duplicateFor(folder, adapter, draft, session) {
 	const proposedIdentity = adapter.draftIdentity({ draft, session });
-	if (proposedIdentity === null || proposedIdentity === session.originalIdentity) return null;
+	if (
+		proposedIdentity === null
+		|| (proposedIdentity === session.originalIdentity && adapter.checkCurrentIdentityDuplicates !== true)
+	) return null;
 	for (const source of folder.sources) {
 		if (source.internalId === session.sourceInternalId) continue;
 		if (adapter.identity(source.editable) !== proposedIdentity) continue;

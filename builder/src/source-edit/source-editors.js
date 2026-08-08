@@ -1,9 +1,11 @@
 import { movieCollectionSourceEditor } from "./movie-collection-editor.js";
 import { peopleSourceEditor } from "./people-editor.js";
+import { studioSourceEditor } from "./studio-editor.js";
 
 export const SOURCE_EDITORS = Object.freeze([
 	movieCollectionSourceEditor,
 	peopleSourceEditor,
+	studioSourceEditor,
 ]);
 
 export function sourceEditorFor(source) {

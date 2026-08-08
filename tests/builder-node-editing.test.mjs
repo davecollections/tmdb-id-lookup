@@ -44,7 +44,10 @@ const vite = await createServer({
 	logLevel: "silent",
 	server: { middlewareMode: true },
 });
-const { BuilderWorkspace } = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
+const {
+	BuilderWorkspace,
+	shouldOpenHierarchyEditorFromDoubleClick,
+} = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
 after(() => vite.close());
 
 function countingIdFactory(prefix = "internal") {
@@ -1640,6 +1643,33 @@ test("card selection and action buttons are valid sibling controls with unique I
 		markup,
 		/data-card-layout="folder"><div class="hierarchy-card-main[^"]*" data-reorder-main-card="folder"><button class="reorder-handle"[\s\S]*?<\/button><button class="node-button[\s\S]*?data-node-type="folder"[\s\S]*?<\/button><div class="hierarchy-actions"/,
 	);
+});
+
+test("desktop double-click edit accepts the primary card only and suppresses single or nested interactive events", () => {
+	const primary = {};
+	const nestedButton = {};
+	assert.equal(shouldOpenHierarchyEditorFromDoubleClick({
+		detail: 1,
+		currentTarget: primary,
+		target: { closest() { return primary; } },
+	}), false);
+	assert.equal(shouldOpenHierarchyEditorFromDoubleClick({
+		detail: 2,
+		currentTarget: primary,
+		target: { closest() { return primary; } },
+	}), true);
+	assert.equal(shouldOpenHierarchyEditorFromDoubleClick({
+		detail: 2,
+		currentTarget: primary,
+		target: { closest() { return nestedButton; } },
+	}), false);
+
+	const source = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "BuilderWorkspace.jsx"), "utf8");
+	assert.match(source, /enableDoubleClickEdit:\s*desktopViewport/);
+	assert.match(source, /onDoubleClickEdit\?\.\(node\.internalId, event\.currentTarget\)/);
+	assert.match(source, /source\.editSupported[\s\S]*onOpenSourceEditor\(source\.internalId, event\.currentTarget\)/);
+	assert.match(source, /onEdit=\{onOpenEditor\}/);
+	assert.match(source, /onEdit=\{source\.editSupported \? actionProps\.onOpenSourceEditor : null\}/);
 });
 
 test("quick rename renders only title, invisibility, diagnostics, and actions", () => {
