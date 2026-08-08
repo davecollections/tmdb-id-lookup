@@ -153,7 +153,7 @@ Each Nuvio export modal includes a help button with current import steps for Nuv
 
 Cached company, TV network, and genre data is maintained automatically from TMDB data and API responses.
 
-The project runs daily checks for TMDB export changes, repairs small cache differences automatically, and refreshes genre title counts. Production company and TV network caches also run scheduled full-refresh passes at the start of each month so the local lookup data stays aligned with TMDB's exported ID lists.
+The project runs daily checks for TMDB export changes, repairs small cache differences automatically, and refreshes genre title counts weekly. Production company and TV network caches also run scheduled full-refresh passes at the start of each month so the local lookup data stays aligned with TMDB's exported ID lists.
 
 The site is deployed with GitHub Pages.
 
@@ -172,6 +172,8 @@ TMDB API requests from the live lookup tools go through the Cloudflare Worker pr
 Run `scripts\check.cmd` before pushing changes on Windows. This runs the shared validation sequence for frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, unsafe rendering patterns, and deterministic Nuvio contract fixtures.
 
 On any platform, the equivalent command is `node scripts/check-all.mjs`. To run only the Nuvio contract suite, use `node --test tests/nuvio-contracts.test.mjs`.
+
+Browser-owning test conventions and focused lifecycle checks are documented in [docs/TESTING.md](docs/TESTING.md).
 
 ## TMDB Collection Builder
 

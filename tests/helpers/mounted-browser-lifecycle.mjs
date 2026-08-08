@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from "node:child_process";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { promisify } from "node:util";
 
 const execFile = promisify(execFileCallback);
@@ -13,6 +14,9 @@ export const TRANSIENT_REMOVE_CODES = Object.freeze([
 ]);
 
 export const DEFAULT_REMOVE_RETRY_DELAYS_MS = Object.freeze([25, 50, 100, 200]);
+export const DEFAULT_DEVTOOLS_STARTUP_MS = 10000;
+export const DEFAULT_DEVTOOLS_CONNECTION_MS = 5000;
+export const DEFAULT_DEVTOOLS_COMMAND_MS = 5000;
 export const DEFAULT_GRACEFUL_SHUTDOWN_MS = 5000;
 export const DEFAULT_FALLBACK_SHUTDOWN_MS = 3000;
 
@@ -29,6 +33,19 @@ function abortError() {
 
 function throwIfAborted(signal) {
 	if (signal?.aborted) throw abortError();
+}
+
+function browserProcessStatus(browserProcess) {
+	return [
+		`rootPid=${browserProcess?.pid ?? "unknown"}`,
+		`exitCode=${browserProcess?.exitCode ?? "running"}`,
+		`signalCode=${browserProcess?.signalCode ?? "none"}`,
+	].join(", ");
+}
+
+function browserProcessExited(browserProcess) {
+	return Boolean(browserProcess) &&
+		(browserProcess.exitCode !== null || browserProcess.signalCode !== null);
 }
 
 export function abortableDelay(
@@ -113,19 +130,109 @@ export async function withDeadline(
 	}
 }
 
+export async function waitForDevToolsEndpoint({
+	profileDir,
+	browserProcess,
+	timeoutMs = DEFAULT_DEVTOOLS_STARTUP_MS,
+	pollIntervalMs = 50,
+	fsApi = fs,
+	delay = abortableDelay,
+	now = Date.now,
+} = {}) {
+	if (!profileDir) throw new TypeError("A Chrome profile directory is required.");
+	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+		throw new TypeError("A positive Chrome DevTools startup timeout is required.");
+	}
+	if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0) {
+		throw new TypeError("A positive Chrome DevTools polling interval is required.");
+	}
+
+	const activePortPath = path.join(profileDir, "DevToolsActivePort");
+	const deadlineAt = now() + timeoutMs;
+	let lastProblem = "DevToolsActivePort has not been created";
+
+	while (now() < deadlineAt) {
+		if (browserProcessExited(browserProcess)) {
+			throw new Error(
+				`Chrome exited before publishing its DevTools endpoint (${browserProcessStatus(browserProcess)}).`,
+			);
+		}
+
+		try {
+			const contents = await fsApi.readFile(activePortPath, "utf8");
+			const [portText = "", browserPath = ""] = contents.split(/\r?\n/u).map((line) => line.trim());
+			const port = Number(portText);
+			if (
+				Number.isInteger(port) &&
+				port >= 1 &&
+				port <= 65535 &&
+				browserPath.startsWith("/devtools/browser/")
+			) {
+				return {
+					port,
+					browserPath,
+					browserWebSocketUrl: `ws://127.0.0.1:${port}${browserPath}`,
+				};
+			}
+			lastProblem = "DevToolsActivePort was incomplete or invalid";
+		} catch (error) {
+			lastProblem = error?.code === "ENOENT"
+				? "DevToolsActivePort has not been created"
+				: `DevToolsActivePort could not be read: ${asError(error).message}`;
+		}
+
+		const remainingMs = deadlineAt - now();
+		if (remainingMs > 0) await delay(Math.min(pollIntervalMs, remainingMs));
+	}
+
+	if (browserProcessExited(browserProcess)) {
+		throw new Error(
+			`Chrome exited before publishing its DevTools endpoint (${browserProcessStatus(browserProcess)}).`,
+		);
+	}
+	throw new Error(
+		`Chrome did not publish a valid DevTools endpoint within ${timeoutMs} ms ` +
+		`(${browserProcessStatus(browserProcess)}; lastState=${lastProblem}).`,
+	);
+}
+
 export async function connectDevTools(
 	url,
-	{ WebSocketImpl = globalThis.WebSocket } = {},
+	{
+		WebSocketImpl = globalThis.WebSocket,
+		timeoutMs = DEFAULT_DEVTOOLS_CONNECTION_MS,
+		commandTimeoutMs = DEFAULT_DEVTOOLS_COMMAND_MS,
+		signal,
+		setTimeoutFn = setTimeout,
+		clearTimeoutFn = clearTimeout,
+	} = {},
 ) {
 	if (typeof WebSocketImpl !== "function") {
 		throw new Error("A WebSocket implementation is required for Chrome DevTools.");
 	}
+	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+		throw new TypeError("A positive Chrome DevTools connection timeout is required.");
+	}
+	if (!Number.isFinite(commandTimeoutMs) || commandTimeoutMs <= 0) {
+		throw new TypeError("A positive Chrome DevTools command timeout is required.");
+	}
+	throwIfAborted(signal);
 
 	const socket = new WebSocketImpl(url);
 	await new Promise((resolve, reject) => {
+		let timer = null;
 		const cleanup = () => {
+			if (timer !== null) clearTimeoutFn(timer);
 			socket.removeEventListener("open", onOpen);
 			socket.removeEventListener("error", onError);
+			signal?.removeEventListener("abort", onAbort);
+		};
+		const closeOpeningSocket = () => {
+			try {
+				if (typeof socket.close === "function" && socket.readyState < 2) socket.close();
+			} catch {
+				// The opening error remains the useful failure.
+			}
 		};
 		const onOpen = () => {
 			cleanup();
@@ -133,10 +240,23 @@ export async function connectDevTools(
 		};
 		const onError = () => {
 			cleanup();
+			closeOpeningSocket();
 			reject(new Error("Chrome DevTools WebSocket failed to open."));
+		};
+		const onAbort = () => {
+			cleanup();
+			closeOpeningSocket();
+			reject(abortError());
 		};
 		socket.addEventListener("open", onOpen, { once: true });
 		socket.addEventListener("error", onError, { once: true });
+		signal?.addEventListener("abort", onAbort, { once: true });
+		timer = setTimeoutFn(() => {
+			timer = null;
+			cleanup();
+			closeOpeningSocket();
+			reject(new Error(`Chrome DevTools WebSocket did not open within ${timeoutMs} ms.`));
+		}, timeoutMs);
 	});
 
 	let nextId = 0;
@@ -145,9 +265,17 @@ export async function connectDevTools(
 	let resolveClosed;
 	const closedPromise = new Promise((resolve) => { resolveClosed = resolve; });
 
+	const settlePending = (id, outcome, value) => {
+		const operation = pending.get(id);
+		if (!operation) return;
+		pending.delete(id);
+		clearTimeoutFn(operation.timer);
+		operation[outcome](value);
+	};
 	const rejectPending = (message) => {
-		for (const { reject } of pending.values()) reject(new Error(message));
-		pending.clear();
+		for (const id of [...pending.keys()]) {
+			settlePending(id, "reject", new Error(message));
+		}
 	};
 
 	socket.addEventListener("message", (event) => {
@@ -159,10 +287,8 @@ export async function connectDevTools(
 			return;
 		}
 		if (!message.id || !pending.has(message.id)) return;
-		const operation = pending.get(message.id);
-		pending.delete(message.id);
-		if (message.error) operation.reject(new Error(message.error.message));
-		else operation.resolve(message.result);
+		if (message.error) settlePending(message.id, "reject", new Error(message.error.message));
+		else settlePending(message.id, "resolve", message.result);
 	});
 
 	socket.addEventListener("close", (event) => {
@@ -183,12 +309,19 @@ export async function connectDevTools(
 			}
 			const id = ++nextId;
 			return new Promise((resolve, reject) => {
-				pending.set(id, { resolve, reject });
+				const operation = { resolve, reject, timer: null };
+				pending.set(id, operation);
+				operation.timer = setTimeoutFn(() => {
+					settlePending(
+						id,
+						"reject",
+						new Error(`Chrome DevTools command ${method} exceeded ${commandTimeoutMs} ms.`),
+					);
+				}, commandTimeoutMs);
 				try {
 					socket.send(JSON.stringify({ id, method, params }));
 				} catch (error) {
-					pending.delete(id);
-					reject(error);
+					settlePending(id, "reject", error);
 				}
 			});
 		},
@@ -455,13 +588,24 @@ export async function shutdownBrowser({
 	try {
 		await deadline(async (signal) => {
 			ownedPids = await processTree.capture(signal);
-			const rootExited = waitForChildExit(browserProcess, signal);
-			const treeExited = processTree.waitForExit(ownedPids, signal);
-			if (!browserConnection) throw new Error("Browser-level Chrome DevTools connection is unavailable.");
-			const socketClosed = abortablePromise(browserConnection.closed, signal);
-			const closeRequested = browserConnection.command("Browser.close").catch((error) => {
-				if (!browserConnection.isClosed?.()) throw error;
-			});
+			if ((await processTree.remainingPids(ownedPids)).length === 0) return;
+			if (!browserConnection) {
+				throw new Error("Browser-level Chrome DevTools connection is unavailable.");
+			}
+			const connectionAlreadyClosed = browserConnection.isClosed?.() === true;
+			const rootExited = Promise.resolve()
+				.then(() => waitForChildExit(browserProcess, signal));
+			const treeExited = Promise.resolve()
+				.then(() => processTree.waitForExit(ownedPids, signal));
+			const socketClosed = Promise.resolve()
+				.then(() => abortablePromise(browserConnection.closed, signal));
+			const closeRequested = connectionAlreadyClosed
+				? Promise.resolve()
+				: Promise.resolve()
+					.then(() => browserConnection.command("Browser.close"))
+					.catch((error) => {
+						if (!browserConnection.isClosed?.()) throw error;
+					});
 			await Promise.all([closeRequested, socketClosed, rootExited, treeExited]);
 		}, gracefulTimeoutMs, {
 			label: "Graceful mounted browser shutdown",
@@ -480,12 +624,10 @@ export async function shutdownBrowser({
 	try {
 		await deadline(async (signal) => {
 			await processTree.terminate(ownedPids, signal);
-			const waits = [
-				waitForChildExit(browserProcess, signal),
-				processTree.waitForExit(ownedPids, signal),
-			];
-			if (browserConnection) waits.push(abortablePromise(browserConnection.closed, signal));
-			await Promise.all(waits);
+			await Promise.all([
+				Promise.resolve().then(() => waitForChildExit(browserProcess, signal)),
+				Promise.resolve().then(() => processTree.waitForExit(ownedPids, signal)),
+			]);
 		}, fallbackTimeoutMs, {
 			label: "Mounted browser process-tree fallback",
 			...deadlineOptions,
@@ -588,7 +730,9 @@ export class MountedBrowserCleanupError extends AggregateError {
 	}
 }
 
-export async function cleanupMountedBrowser(resources, {
+const cleanupOperations = new WeakMap();
+
+async function cleanupMountedBrowserOnce(resources, {
 	shutdownBrowserFn = shutdownBrowser,
 	removeDirectoryFn = removeDirectoryWithRetry,
 	directoryEntriesFn = directoryEntries,
@@ -620,6 +764,8 @@ export async function cleanupMountedBrowser(resources, {
 				...shutdownOptions,
 			});
 			browserOwnershipEnded = true;
+			resources.browserProcess = null;
+			resources.processTree = null;
 		} catch (error) {
 			errors.push(asError(error));
 			report.browser.graceful = "failed";
@@ -629,15 +775,17 @@ export async function cleanupMountedBrowser(resources, {
 		}
 	}
 
-	for (const connection of [resources.pageConnection, resources.browserConnection]) {
-		const closeError = closeConnection(connection);
+	for (const key of ["pageConnection", "browserConnection"]) {
+		const closeError = closeConnection(resources[key]);
 		if (closeError) errors.push(closeError);
+		else resources[key] = null;
 	}
 
 	if (!viteOwnershipEnded) {
 		try {
 			await resources.vite.close();
 			viteOwnershipEnded = true;
+			resources.vite = null;
 		} catch (error) {
 			errors.push(asError(error));
 		}
@@ -646,11 +794,13 @@ export async function cleanupMountedBrowser(resources, {
 	if (browserOwnershipEnded && viteOwnershipEnded) {
 		try {
 			report.profile = await removeDirectoryFn(resources.profileDir, removeOptions);
+			resources.profileDir = null;
 		} catch (error) {
 			errors.push(asError(error));
 		}
 		try {
 			report.viteCache = await removeDirectoryFn(resources.viteCacheDir, removeOptions);
+			resources.viteCacheDir = null;
 		} catch (error) {
 			errors.push(asError(error));
 		}
@@ -674,6 +824,21 @@ export async function cleanupMountedBrowser(resources, {
 	}
 
 	return report;
+}
+
+export function cleanupMountedBrowser(resources, options = {}) {
+	if (!resources || typeof resources !== "object") {
+		return Promise.reject(new TypeError("Mounted browser resources are required."));
+	}
+	const activeCleanup = cleanupOperations.get(resources);
+	if (activeCleanup) return activeCleanup;
+
+	const cleanup = cleanupMountedBrowserOnce(resources, options).catch((error) => {
+		cleanupOperations.delete(resources);
+		throw error;
+	});
+	cleanupOperations.set(resources, cleanup);
+	return cleanup;
 }
 
 export class MountedLifecycleError extends AggregateError {
