@@ -241,16 +241,26 @@ test("Studio Browse all reuses paged catalogue ordering without treating missing
 	}).results.map((entry) => entry.id), [3]);
 });
 
-test("Company ID 10 remains a deterministic known-zero Studio catalogue regression", () => {
+test("checked-in Company catalogue retains an explicit known-zero Studio sanity check", () => {
 	const compactRows = JSON.parse(fs.readFileSync(path.join(rootDir, "data/companies.min.json"), "utf8"));
-	const rawCompany = compactRows.find((entry) => entry.i === 10);
-	assert.deepEqual(rawCompany, { i: 10, n: "Highlight" });
-	assert.equal(compactRows.some((entry) => entry.t === 0), false);
-	const catalogue = normalizeStudioCatalogue(compactRows, { legacyImplicitZeroCounts: true });
-	const visible = searchStudioCatalogue(catalogue, parseStudioSearchInput("10"));
+	const rawCompany = compactRows.find((entry) => (
+		entry !== null
+		&& typeof entry === "object"
+		&& !Array.isArray(entry)
+		&& Number.isSafeInteger(entry.i)
+		&& entry.i > 0
+		&& typeof entry.n === "string"
+		&& entry.n.trim()
+		&& Object.hasOwn(entry, "t")
+		&& entry.t === 0
+	));
+	assert.ok(rawCompany, "Expected the current Company catalogue to contain an explicit known-zero row.");
+	const catalogue = normalizeStudioCatalogue(compactRows);
+	const search = parseStudioSearchInput(String(rawCompany.i));
+	const visible = searchStudioCatalogue(catalogue, search);
 	assert.equal(visible.totalResults, 1);
 	assert.equal(visible.results[0].movieCount, 0);
-	const hidden = searchStudioCatalogue(catalogue, parseStudioSearchInput("10"), { hideZero: true });
+	const hidden = searchStudioCatalogue(catalogue, search, { hideZero: true });
 	assert.equal(hidden.totalResults, 0);
 	assert.equal(hidden.results.length, 0);
 });
@@ -281,7 +291,7 @@ test("Studio catalogue provider caches only a successfully parsed catalogue and 
 	assert.equal(calls.some((url) => String(url).includes("/discover/")), false);
 });
 
-test("Studio catalogue provider migrates legacy implicit zeroes while new-contract omissions stay unknown", async () => {
+test("Studio catalogue provider preserves legacy implicit zeroes while current explicit counts distinguish known and unknown values", async () => {
 	const legacyProvider = createStudioCatalogueProvider({
 		fetchImpl: async () => jsonResponse([
 			{ i: 3, n: "Pixar", t: 136 },
@@ -295,12 +305,18 @@ test("Studio catalogue provider migrates legacy implicit zeroes while new-contra
 		fetchImpl: async () => jsonResponse([
 			{ i: 10, n: "Known Zero", t: 0 },
 			{ i: 11, n: "Unknown Count" },
+			{ i: 12, n: "Known Positive", t: 136 },
+			{ i: 13, n: "Malformed Count", t: "0" },
 		]),
 	});
 	const knownZero = await newContractProvider.searchStudios("10");
 	const unknown = await newContractProvider.searchStudios("11");
+	const knownPositive = await newContractProvider.searchStudios("12");
+	const malformed = await newContractProvider.searchStudios("13");
 	assert.equal(knownZero.data.results[0].movieCount, 0);
 	assert.equal(unknown.data.results[0].movieCount, null);
+	assert.equal(knownPositive.data.results[0].movieCount, 136);
+	assert.equal(malformed.data.results[0].movieCount, null);
 	const filteredUnknown = await newContractProvider.searchStudios("11", { hideZero: true });
 	assert.equal(filteredUnknown.data.totalResults, 1);
 });
