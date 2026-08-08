@@ -138,6 +138,23 @@ test("typed Network Best Match covers exact name, prefix, contains, country alia
 	assert.equal(names("US").includes("Us TV"), false);
 });
 
+test("canonical numeric Network search ranks exact ID before exact and partial numeric names without duplicates", () => {
+	const catalogue = normalizeNetworkCatalogue([
+		{ i: 10, n: "10 Digital" },
+		{ i: 38, n: "10" },
+		{ i: 39, n: "101 Network" },
+		{ i: 40, n: "Channel 10" },
+	]);
+	const results = searchNetworkCatalogue(catalogue, parseNetworkSearchInput("10")).results;
+	assert.deepEqual(results.map((entry) => [entry.id, entry.name]), [
+		[10, "10 Digital"],
+		[38, "10"],
+		[39, "101 Network"],
+		[40, "Channel 10"],
+	]);
+	assert.equal(new Set(results.map((entry) => entry.id)).size, results.length);
+});
+
 test("legacy t never changes Network browse or relevance ordering", () => {
 	const first = normalizeNetworkCatalogue([
 		{ i: 1, n: "Alpha", t: 1 },

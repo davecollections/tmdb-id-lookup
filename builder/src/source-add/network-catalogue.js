@@ -129,8 +129,11 @@ export function searchNetworkCatalogue(catalogue, parsedInput, {
 
 	let rankedMatches;
 	if (parsedInput?.kind === "exact") {
-		const exact = catalogue.byId.get(parsedInput.id);
-		rankedMatches = exact ? [{ network: exact, tier: 0 }] : [];
+		const query = normalizeTmdbEntitySearchText(String(parsedInput.id));
+		rankedMatches = catalogue.networks.flatMap((network) => {
+			const tier = network.id === parsedInput.id ? 0 : matchNetwork(network, query, null);
+			return tier === null ? [] : [{ network, tier }];
+		});
 	} else if (parsedInput?.kind === "search" && parsedInput.eligible) {
 		const query = normalizeTmdbEntitySearchText(parsedInput.query);
 		const possibleCountryCode = parsedInput.query.trim().toUpperCase();
