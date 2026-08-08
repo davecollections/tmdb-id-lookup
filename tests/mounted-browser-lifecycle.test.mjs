@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { execFile as execFileCallback } from "node:child_process";
 import { EventEmitter } from "node:events";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import {
 	BrowserShutdownError,
@@ -11,11 +14,17 @@ import {
 	TRANSIENT_REMOVE_CODES,
 	abortableDelay,
 	cleanupMountedBrowser,
+	connectDevTools,
 	createBrowserProcessTree,
 	removeDirectoryWithRetry,
 	runWithLifecycleCleanup,
 	shutdownBrowser,
+	waitForChildExit,
+	waitForDevToolsEndpoint,
+	withDeadline,
 } from "./helpers/mounted-browser-lifecycle.mjs";
+
+const execFile = promisify(execFileCallback);
 
 function deferred() {
 	let resolve;
@@ -66,7 +75,7 @@ function fakeShutdown({ events = [], ownedPids = [101, 102], autoFinish = true }
 	};
 	const processTree = {
 		capture: async () => [...ownedPids],
-		remainingPids: async () => [],
+		remainingPids: async () => child.exitCode === null ? [...ownedPids] : [],
 		terminate: async () => { throw new Error("Fallback should not run."); },
 		waitForExit: () => treeExited.promise,
 	};
@@ -89,6 +98,146 @@ function trackedTimers() {
 		},
 	};
 }
+
+test("DevToolsActivePort readiness tolerates absent and partial writes before returning Chrome's endpoint", async () => {
+	const child = fakeChild(321);
+	const reads = [
+		missingError(),
+		"45123\n",
+		"45123\n/devtools/browser/test-browser\n",
+	];
+	let elapsedMs = 0;
+	const endpoint = await waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+		timeoutMs: 100,
+		pollIntervalMs: 10,
+		fsApi: {
+			readFile: async () => {
+				const value = reads.shift();
+				if (value instanceof Error) throw value;
+				return value;
+			},
+		},
+		delay: async (delayMs) => { elapsedMs += delayMs; },
+		now: () => elapsedMs,
+	});
+
+	assert.deepEqual(endpoint, {
+		port: 45123,
+		browserPath: "/devtools/browser/test-browser",
+		browserWebSocketUrl: "ws://127.0.0.1:45123/devtools/browser/test-browser",
+	});
+	assert.equal(elapsedMs, 20);
+});
+
+test("DevTools readiness reports Chrome exit state instead of an opaque fetch error", async () => {
+	const child = fakeChild(654);
+	child.exitCode = 23;
+	await assert.rejects(waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+	}), /Chrome exited before publishing.*rootPid=654, exitCode=23, signalCode=none/u);
+});
+
+test("DevTools readiness timeout retains its lifecycle diagnostic", async () => {
+	const child = fakeChild(987);
+	let elapsedMs = 0;
+	await assert.rejects(waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+		timeoutMs: 40,
+		pollIntervalMs: 10,
+		fsApi: { readFile: async () => { throw missingError(); } },
+		delay: async (delayMs) => { elapsedMs += delayMs; },
+		now: () => elapsedMs,
+	}), /within 40 ms.*rootPid=987.*DevToolsActivePort has not been created/u);
+	assert.equal(elapsedMs, 40);
+});
+
+test("a DevTools WebSocket that never opens is closed at its bounded connection timeout", async () => {
+	let socket;
+	class NeverOpeningSocket extends EventTarget {
+		constructor() {
+			super();
+			this.readyState = 0;
+			this.wasClosed = false;
+			socket = this;
+		}
+		close() {
+			this.readyState = 3;
+			this.wasClosed = true;
+		}
+	}
+
+	await assert.rejects(connectDevTools("ws://127.0.0.1:1/devtools/browser/test", {
+		WebSocketImpl: NeverOpeningSocket,
+		timeoutMs: 25,
+		setTimeoutFn: (callback) => {
+			queueMicrotask(callback);
+			return 1;
+		},
+		clearTimeoutFn: () => {},
+	}), /did not open within 25 ms/u);
+	assert.equal(socket.wasClosed, true);
+});
+
+test("a DevTools command that never answers rejects within its own bound", async () => {
+	class SilentSocket extends EventTarget {
+		constructor() {
+			super();
+			this.readyState = 0;
+			queueMicrotask(() => {
+				this.readyState = 1;
+				this.dispatchEvent(new Event("open"));
+			});
+		}
+		send() {}
+		close() {
+			this.readyState = 3;
+			this.dispatchEvent(new Event("close"));
+		}
+	}
+
+	const connection = await connectDevTools("ws://127.0.0.1:1/devtools/browser/test", {
+		WebSocketImpl: SilentSocket,
+		timeoutMs: 100,
+		commandTimeoutMs: 5,
+	});
+	await assert.rejects(
+		connection.command("Runtime.evaluate"),
+		/command Runtime\.evaluate exceeded 5 ms/u,
+	);
+	connection.close();
+});
+
+test("deadline cancellation reports ShutdownDeadlineError rather than a late AbortError", async () => {
+	const child = fakeChild(741);
+	await assert.rejects(
+		withDeadline((signal) => waitForChildExit(child, signal), 5, { label: "Boundary probe" }),
+		(error) => {
+			assert.equal(error instanceof ShutdownDeadlineError, true);
+			assert.equal(error.code, "MOUNTED_BROWSER_SHUTDOWN_TIMEOUT");
+			assert.match(error.message, /Boundary probe exceeded/u);
+			return true;
+		},
+	);
+	assert.equal(child.listenerCount("exit"), 0);
+	assert.equal(child.listenerCount("error"), 0);
+});
+
+test("missing browser connection cleanup emits no unhandled rejection under strict Node handling", async () => {
+	const fixture = fileURLToPath(new URL(
+		"./fixtures/mounted-browser-missing-connection.mjs",
+		import.meta.url,
+	));
+	const { stdout, stderr } = await execFile(process.execPath, [
+		"--unhandled-rejections=strict",
+		fixture,
+	], { windowsHide: true });
+	assert.match(stdout, /MISSING_CONNECTION_CLEANUP_OK/u);
+	assert.doesNotMatch(stderr, /AbortError|ABORT_ERR/u);
+});
 
 test("POSIX cleanup captures and signals owned descendants when the detached group is unavailable", async () => {
 	const processRecords = new Map([
@@ -216,6 +365,134 @@ test("graceful shutdown waits for browser WebSocket closure", async () => {
 	assert.deepEqual(events, ["Browser.close"]);
 });
 
+test("graceful shutdown waits for both root and descendant completion in either exit order", async (t) => {
+	for (const order of ["root-first", "descendant-first"]) {
+		await t.test(order, async () => {
+			const child = fakeChild(101);
+			const socketClosed = deferred();
+			const treeExited = deferred();
+			let treeComplete = false;
+			let settled = false;
+			const connection = {
+				closed: socketClosed.promise,
+				isClosed: () => false,
+				command: async () => {},
+			};
+			const processTree = {
+				capture: async () => [101, 102],
+				remainingPids: async () => [
+					...(child.exitCode === null ? [101] : []),
+					...(!treeComplete ? [102] : []),
+				],
+				terminate: async () => { throw new Error("Fallback should not run."); },
+				waitForExit: () => treeExited.promise,
+			};
+
+			const shuttingDown = shutdownBrowser({
+				browserProcess: child,
+				browserConnection: connection,
+				processTree,
+			}).then(() => { settled = true; });
+			socketClosed.resolve();
+			await new Promise((resolve) => setImmediate(resolve));
+
+			if (order === "root-first") {
+				child.finish();
+			} else {
+				treeComplete = true;
+				treeExited.resolve();
+			}
+			await new Promise((resolve) => setImmediate(resolve));
+			assert.equal(settled, false);
+
+			if (order === "root-first") {
+				treeComplete = true;
+				treeExited.resolve();
+			} else {
+				child.finish();
+			}
+			await shuttingDown;
+			assert.equal(settled, true);
+		});
+	}
+});
+
+test("an already-exited browser with no remaining owned process needs no DevTools connection", async () => {
+	const child = fakeChild(101);
+	child.exitCode = 0;
+	const result = await shutdownBrowser({
+		browserProcess: child,
+		browserConnection: null,
+		processTree: {
+			capture: async () => [],
+			remainingPids: async () => [],
+			terminate: async () => { throw new Error("Fallback should not run."); },
+			waitForExit: async () => {},
+		},
+	});
+	assert.equal(result.graceful, "succeeded");
+	assert.equal(result.fallback, "not-used");
+});
+
+test("an already-closed DevTools connection allows natural browser and descendant exit", async () => {
+	const child = fakeChild(101);
+	const treeExited = deferred();
+	let commandCalls = 0;
+	let treeComplete = false;
+	const shuttingDown = shutdownBrowser({
+		browserProcess: child,
+		browserConnection: {
+			closed: Promise.resolve(),
+			isClosed: () => true,
+			command: () => { commandCalls += 1; },
+		},
+		processTree: {
+			capture: async () => [101, 102],
+			remainingPids: async () => [
+				...(child.exitCode === null ? [101] : []),
+				...(!treeComplete ? [102] : []),
+			],
+			terminate: async () => { throw new Error("Fallback should not run."); },
+			waitForExit: () => treeExited.promise,
+		},
+	});
+	queueMicrotask(() => {
+		child.finish();
+		treeComplete = true;
+		treeExited.resolve();
+	});
+	const result = await shuttingDown;
+	assert.equal(result.graceful, "succeeded");
+	assert.equal(result.fallback, "not-used");
+	assert.equal(commandCalls, 0);
+});
+
+test("a synchronous Browser.close failure is observed before bounded fallback", async () => {
+	const child = fakeChild(101);
+	const closed = deferred();
+	const treeExited = deferred();
+	const result = await shutdownBrowser({
+		browserProcess: child,
+		browserConnection: {
+			closed: closed.promise,
+			isClosed: () => false,
+			command: () => { throw new Error("Browser.close failed synchronously"); },
+		},
+		processTree: {
+			capture: async () => [101],
+			remainingPids: async () => child.exitCode === null ? [101] : [],
+			terminate: async () => {
+				child.finish();
+				treeExited.resolve();
+			},
+			waitForExit: () => treeExited.promise,
+		},
+	});
+	assert.equal(result.graceful, "failed");
+	assert.match(result.gracefulError.message, /failed synchronously/u);
+	assert.equal(result.fallback, "succeeded");
+});
+
 function timeoutThenRun() {
 	let invocation = 0;
 	return async (task, timeoutMs) => {
@@ -244,7 +521,7 @@ test("graceful timeout invokes bounded fallback for only captured test-owned PID
 	};
 	const processTree = {
 		capture: async () => [101, 102],
-		remainingPids: async () => [],
+		remainingPids: async () => child.exitCode === null ? [101, 102] : [],
 		terminate: async (pids) => {
 			terminationTargets.push(...pids);
 			child.finish();
@@ -386,6 +663,36 @@ test("successful lifecycle cleanup confirms both profile and Vite cache absence"
 	assert.deepEqual([...present], []);
 	assert.equal(report.profile.attempts, 1);
 	assert.equal(report.viteCache.attempts, 1);
+});
+
+test("concurrent and repeated cleanup calls share one idempotent ownership transition", async () => {
+	const events = [];
+	const resources = {
+		pageConnection: { close: () => events.push("page-close") },
+		profileDir: "profile",
+		vite: { close: async () => { events.push("vite-close"); } },
+		viteCacheDir: "cache",
+	};
+	const options = {
+		removeDirectoryFn: async (target) => {
+			events.push(`remove:${target}`);
+			return { attempts: 1, retries: 0, totalDelayMs: 0 };
+		},
+	};
+
+	const first = cleanupMountedBrowser(resources, options);
+	const concurrent = cleanupMountedBrowser(resources, options);
+	assert.equal(concurrent, first);
+	const report = await first;
+	const repeated = cleanupMountedBrowser(resources, options);
+	assert.equal(repeated, first);
+	assert.equal(await repeated, report);
+	assert.deepEqual(events, [
+		"page-close",
+		"vite-close",
+		"remove:profile",
+		"remove:cache",
+	]);
 });
 
 test("a primary fixture error remains primary when cleanup also fails", async () => {

@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
-import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import test, { after } from "node:test";
+import test, { before } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
@@ -15,6 +14,7 @@ import {
 	connectDevTools,
 	createBrowserProcessTree,
 	runWithLifecycleCleanup,
+	waitForDevToolsEndpoint,
 } from "./helpers/mounted-browser-lifecycle.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,28 +35,24 @@ function chromeExecutable() {
 	return executable;
 }
 
-async function availablePort() {
-	const server = net.createServer();
-	await new Promise((resolve, reject) => {
-		server.once("error", reject);
-		server.listen(0, "127.0.0.1", resolve);
-	});
-	const { port } = server.address();
-	await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
-	return port;
-}
-
 async function waitForJson(url, timeoutMs = 10000) {
 	const deadline = Date.now() + timeoutMs;
 	let lastError = null;
 	while (Date.now() < deadline) {
 		try {
-			const response = await fetch(url);
+			const remainingMs = Math.max(1, deadline - Date.now());
+			const response = await fetch(url, {
+				signal: AbortSignal.timeout(Math.min(1000, remainingMs)),
+			});
 			if (response.ok) return response.json();
+			lastError = new Error(`HTTP ${response.status}`);
 		} catch (error) {
 			lastError = error;
 		}
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		const remainingMs = deadline - Date.now();
+		if (remainingMs > 0) {
+			await new Promise((resolve) => setTimeout(resolve, Math.min(50, remainingMs)));
+		}
 	}
 	throw new Error(`Chrome DevTools did not become available: ${lastError?.message ?? "timeout"}`);
 }
@@ -66,6 +62,7 @@ async function runMountedPage() {
 		browserExecutable: null,
 		browserProcess: null,
 		browserConnection: null,
+		debugPort: null,
 		pageConnection: null,
 		processTree: null,
 		profileDir: null,
@@ -94,7 +91,6 @@ async function runMountedPage() {
 		});
 		await resources.vite.listen();
 
-		const debugPort = await availablePort();
 		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-mounted-"));
 		resources.browserExecutable = chromeExecutable();
 		resources.browserProcess = spawn(resources.browserExecutable, [
@@ -104,7 +100,8 @@ async function runMountedPage() {
 			"--disable-gpu",
 			"--no-first-run",
 			"--no-sandbox",
-			`--remote-debugging-port=${debugPort}`,
+			"--remote-debugging-address=127.0.0.1",
+			"--remote-debugging-port=0",
 			`--user-data-dir=${resources.profileDir}`,
 			"about:blank",
 		], {
@@ -130,10 +127,13 @@ async function runMountedPage() {
 		});
 		resources.processTree = createBrowserProcessTree({ rootPid: resources.browserProcess.pid });
 
-		const version = await waitForJson(`http://127.0.0.1:${debugPort}/json/version`);
-		if (!version?.webSocketDebuggerUrl) throw new Error("Chrome browser target is unavailable.");
-		resources.browserConnection = await connectDevTools(version.webSocketDebuggerUrl);
-		const targets = await waitForJson(`http://127.0.0.1:${debugPort}/json/list`);
+		const endpoint = await waitForDevToolsEndpoint({
+			profileDir: resources.profileDir,
+			browserProcess: resources.browserProcess,
+		});
+		resources.debugPort = endpoint.port;
+		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl);
+		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
 		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl);
@@ -165,6 +165,7 @@ async function runMountedPage() {
 	if (process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
 		console.log(`MOUNTED_BROWSER_DIAGNOSTICS ${JSON.stringify({
 			browserExecutable: execution.cleanupReport.browserExecutable,
+			debugPort: resources.debugPort,
 			rootPid: execution.cleanupReport.rootPid,
 			graceful: execution.cleanupReport.browser.graceful,
 			fallback: execution.cleanupReport.browser.fallback,
@@ -178,16 +179,8 @@ async function runMountedPage() {
 }
 
 let mountedResults;
-let mountedCleanupFailure = null;
-try {
+before(async () => {
 	mountedResults = await runMountedPage();
-} catch (error) {
-	if (!error?.operationCompleted) throw error;
-	mountedResults = error.operationValue;
-	mountedCleanupFailure = error;
-}
-after(() => {
-	if (mountedCleanupFailure) throw mountedCleanupFailure;
 });
 
 function assertRequiredNameFailure(result) {
