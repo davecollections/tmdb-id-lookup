@@ -1,3 +1,13 @@
+import {
+	buildTmdbLogoUrl,
+	canonicalTmdbCountryCode as canonicalCountryCode,
+	formatTmdbEntityLocation,
+	normalizeTmdbEntitySearchText as normalizedSearchText,
+	normalizeTmdbEntityText as normalizedText,
+	normalizeTmdbLogoPath,
+	tmdbCountrySearchText,
+} from "./tmdb-entity-catalogue.js";
+
 export const STUDIO_SEARCH_PAGE_SIZE = 20;
 export const STUDIO_CATALOGUE_PATH = "../data/companies.min.json";
 export const STUDIO_SEARCH_SORTS = Object.freeze({
@@ -7,78 +17,20 @@ export const STUDIO_SEARCH_SORTS = Object.freeze({
 });
 export const DEFAULT_STUDIO_SEARCH_SORT = STUDIO_SEARCH_SORTS.BEST_MATCH;
 
-const safeLogoPathPattern = /^\/[A-Za-z0-9._-]+$/;
 const decimalIdPattern = /^\d+$/;
 const numericLikePattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
-const TMDB_IMAGE_ORIGIN = "https://image.tmdb.org";
-const supportedLogoSizes = new Set(["w92", "w185"]);
 const supportedSearchSorts = new Set(Object.values(STUDIO_SEARCH_SORTS));
-const countryDisplayNames = typeof Intl !== "undefined" && Intl.DisplayNames
-	? new Intl.DisplayNames(["en"], { type: "region" })
-	: null;
-const countrySearchAliases = Object.freeze({
-	AU: Object.freeze(["australia"]),
-	GB: Object.freeze(["united kingdom", "uk", "great britain", "britain", "england"]),
-	JP: Object.freeze(["japan"]),
-	KR: Object.freeze(["south korea", "korea"]),
-	US: Object.freeze(["united states", "usa", "america"]),
-});
-const streetSegmentPattern = /(?:^\d|\b(?:apartment|apt|avenue|ave|boulevard|blvd|building|drive|dr|floor|highway|hwy|lane|ln|p\.?\s*o\.?\s*box|road|rd|rue|suite|street|st|unit)\b)/i;
-const postalPattern = /\b(?:[A-Z]\d[A-Z][ -]?\d[A-Z]\d|[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}|[A-Z]-?\d{3,6}|\d{4,6}(?:-\d{4})?)\b/gi;
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function normalizedText(value) {
-	return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizedSearchText(value) {
-	return normalizedText(value)
-		.normalize("NFKD")
-		.replace(/\p{Diacritic}/gu, "")
-		.toLocaleLowerCase("en")
-		.replace(/\s+/g, " ");
-}
-
-function canonicalCountryCode(value) {
-	const code = normalizedText(value).toUpperCase();
-	return /^[A-Z]{2}$/.test(code) ? code : "";
-}
-
 export function studioCountrySearchText(value) {
-	const code = canonicalCountryCode(value);
-	if (!code) return "";
-	const displayName = countryDisplayNames?.of(code);
-	const safeDisplayName = displayName && displayName !== code ? displayName : "";
-	const parts = [code, safeDisplayName, ...(countrySearchAliases[code] ?? [])]
-		.map(normalizedSearchText)
-		.filter(Boolean);
-	return [...new Set(parts)].join(" ");
-}
-
-function compactHeadquarters(value, countryCode) {
-	const countrySearch = new Set(studioCountrySearchText(countryCode).split(" ").filter(Boolean));
-	const segments = normalizedText(value)
-		.split(",")
-		.map((segment) => segment.replace(postalPattern, "").replace(/\s+/g, " ").trim())
-		.filter((segment) => segment && !streetSegmentPattern.test(segment))
-		.filter((segment) => {
-			const normalized = normalizedSearchText(segment);
-			return normalized !== normalizedSearchText(countryCode)
-				&& ![...countrySearch].some((countryPart) => normalized === countryPart);
-		});
-	const unique = segments.filter((segment, index) => (
-		segments.findIndex((candidate) => normalizedSearchText(candidate) === normalizedSearchText(segment)) === index
-	));
-	return unique.slice(-2).join(", ");
+	return tmdbCountrySearchText(value);
 }
 
 export function formatStudioLocation(studio) {
-	const country = canonicalCountryCode(studio?.country);
-	const headquarters = compactHeadquarters(studio?.headquarters, country);
-	return [country, headquarters].filter(Boolean).join(" · ");
+	return formatTmdbEntityLocation(studio);
 }
 
 function positiveSafeInteger(value) {
@@ -181,7 +133,7 @@ export function normalizeStudioCatalogueRow(value, { legacyImplicitZeroCount = f
 		searchCountry: studioCountrySearchText(value.c),
 		headquarters: normalizedText(value.h),
 		searchHeadquarters: normalizedSearchText(value.h),
-		logoPath: typeof value.l === "string" && safeLogoPathPattern.test(value.l) ? value.l : null,
+		logoPath: normalizeTmdbLogoPath(value.l),
 		movieCount: Object.hasOwn(value, "t")
 			? Number.isSafeInteger(value.t) && value.t >= 0 ? value.t : null
 			: legacyImplicitZeroCount ? 0 : null,
@@ -268,10 +220,7 @@ export function searchStudioCatalogue(catalogue, parsedInput, {
 }
 
 export function buildTmdbStudioLogoUrl(logoPath, size = "w92") {
-	if (typeof logoPath !== "string" || !safeLogoPathPattern.test(logoPath) || !supportedLogoSizes.has(size)) {
-		return null;
-	}
-	return new URL(`/t/p/${size}${logoPath}`, TMDB_IMAGE_ORIGIN).toString();
+	return buildTmdbLogoUrl(logoPath, size);
 }
 
 function providerError(kind, message, { retryable = true } = {}) {

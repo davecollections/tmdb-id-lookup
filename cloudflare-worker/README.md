@@ -105,9 +105,18 @@ The Worker only proxies the TMDB paths the frontend needs:
 * Exact Studio Movie and Series count requests using only
   `/3/discover/movie?with_companies={positive integer}` and
   `/3/discover/tv?with_companies={positive integer}`
+* Exact Network Series count requests using only
+  `/3/discover/tv?with_networks={positive integer}`
 
-The two Studio count paths fail closed unless `with_companies` appears exactly
-once with a canonical positive safe integer and no additional query parameter.
-Other Discover filters and broad `/3/discover/*` forwarding remain disallowed.
+The Movie count path fails closed unless `with_companies` appears exactly once
+with a canonical positive safe integer and no additional query parameter. The TV
+count path accepts exactly one of `with_companies` or `with_networks` under the
+same canonical rule. Mixed, duplicate, and additional query parameters fail
+closed. Other Discover filters and broad `/3/discover/*` forwarding remain
+disallowed.
+
+The tracked Network route was added for Builder issue #98. It was manually
+deployed to the existing `tmdb-id-lookup-proxy` Worker and live validated on
+2026-08-09 after separate explicit authorization.
 
 If a frontend feature adds a new TMDB endpoint, update `ALLOWED_PATHS` here and redeploy the Worker.

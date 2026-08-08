@@ -3,6 +3,7 @@ import { buildTmdbEntityPageUrl } from "../source-add/index.js";
 const entityLabels = Object.freeze({
 	company: "company",
 	collection: "collection",
+	network: "network",
 	person: "person",
 });
 

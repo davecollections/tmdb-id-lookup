@@ -16,9 +16,45 @@ export {
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE,
 	PEOPLE_SOURCE_MODE_ID,
+	NETWORK_SOURCE_MODE,
+	NETWORK_SOURCE_MODE_ID,
 	STUDIO_SOURCE_MODE,
 	STUDIO_SOURCE_MODE_ID,
 } from "./source-modes.js";
+export {
+	buildTmdbNetworkLogoUrl,
+	createNetworkCatalogueProvider,
+	formatNetworkLocation,
+	NETWORK_CATALOGUE_PATH,
+	NETWORK_SEARCH_PAGE_SIZE,
+	normalizeNetworkCatalogue,
+	normalizeNetworkCatalogueRow,
+	parseNetworkSearchInput,
+	searchNetworkCatalogue,
+} from "./network-catalogue.js";
+export {
+	buildNetworkSourceDraft,
+	createNetworkSource,
+	DEFAULT_NETWORK_SORT,
+	DEFAULT_NETWORK_SORT_OPTION_ID,
+	inspectNetworkSourceDuplicates,
+	isSupportedNetworkSort,
+	networkDuplicateOverrideIdentity,
+	networkSortOptionId,
+	networkSortValue,
+	networkSourceIdentity,
+	NETWORK_SORT_OPTIONS,
+	validateNetworkSourceDraft,
+} from "./network-source.js";
+export {
+	createTmdbNetworkCountProvider,
+	normalizeTmdbNetworkCountResponse,
+	TMDB_NETWORK_COUNT_CACHE_MAX_ENTRIES,
+	TMDB_NETWORK_COUNT_CACHE_TTL_MS,
+	TMDB_NETWORK_COUNT_LOCAL_MOCK,
+	TMDB_NETWORK_COUNT_PROXY_BASE_URL,
+	TMDB_NETWORK_COUNT_REQUEST_TIMEOUT_MS,
+} from "./tmdb-network-count-provider.js";
 export {
 	buildTmdbStudioLogoUrl,
 	createStudioCatalogueProvider,

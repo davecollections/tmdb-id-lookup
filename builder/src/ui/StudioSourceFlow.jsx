@@ -6,10 +6,8 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { isValidVisibleNuvioTitle } from "../nuvio/titles.js";
 import {
 	buildStudioSourceDrafts,
-	buildTmdbStudioLogoUrl,
 	createAsyncRequestCoordinator,
 	createSourceSubmissionGate,
 	DEFAULT_STUDIO_SEARCH_SORT,
@@ -32,7 +30,10 @@ import { restoreAddSourceSearchView } from "./add-source-navigation-state.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { StudioSortChoices } from "./StudioSortChoices.jsx";
+import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
+import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
+import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import {
 	completeStudioSearchRestore,
 	createStudioSourceNavigationState,
@@ -51,27 +52,7 @@ const INITIAL_COUNTS = Object.freeze({
 });
 
 export function StudioLogo({ studio, size = "w92", context = "result", loading = "lazy" }) {
-	const source = buildTmdbStudioLogoUrl(studio.logoPath, size);
-	const [failed, setFailed] = useState(false);
-	useEffect(() => setFailed(false), [source]);
-	return (
-		<span className={`studio-logo-tile studio-logo-tile--${context}`} data-logo-state={source && !failed ? "ready" : failed ? "error" : "missing"}>
-			{source && !failed ? (
-				<img
-					className="studio-logo-image"
-					src={source}
-					alt={`${studio.name} logo`}
-					loading={loading}
-					decoding="async"
-					onError={() => setFailed(true)}
-				/>
-			) : (
-				<span className="studio-logo-fallback" role="img" aria-label={`${studio.name} logo unavailable`}>
-					<span aria-hidden="true">{context === "result" ? "No logo" : "No logo available"}</span>
-				</span>
-			)}
-		</span>
-	);
+	return <TmdbEntityLogo entity={studio} entityType="studio" size={size} context={context} loading={loading} />;
 }
 
 function StudioResult({ studio, onSelect }) {
@@ -212,44 +193,8 @@ export function StudioDuplicateNotice({ duplicateReview }) {
 	);
 }
 
-function safeStudioLocationTitle(title, fallback) {
-	return isValidVisibleNuvioTitle(title) ? title.trim() : fallback;
-}
-
-function uniqueStudioElsewhereLocations(occurrences) {
-	const locations = [];
-	const seen = new Set();
-	for (const [index, occurrence] of (occurrences ?? []).entries()) {
-		const collection = safeStudioLocationTitle(occurrence?.collectionTitle, "Hidden collection");
-		const folder = safeStudioLocationTitle(occurrence?.folderTitle, "Hidden folder");
-		const locationKey = typeof occurrence?.folderInternalId === "string" && occurrence.folderInternalId
-			? `folder:${occurrence.folderInternalId}`
-			: typeof occurrence?.collectionInternalId === "string" && occurrence.collectionInternalId
-				? `collection:${occurrence.collectionInternalId}\nfolder:${folder}`
-				: `display:${collection}\n${folder}\n${index}`;
-		if (seen.has(locationKey)) continue;
-		seen.add(locationKey);
-		locations.push(Object.freeze({ key: locationKey, collection, folder }));
-	}
-	return locations;
-}
-
 export function StudioElsewhereNotice({ occurrences, visibleLimit = 3 }) {
-	const locations = uniqueStudioElsewhereLocations(occurrences);
-	if (locations.length === 0) return null;
-	const boundedLimit = Number.isSafeInteger(visibleLimit) && visibleLimit > 0 ? visibleLimit : 3;
-	const visible = locations.slice(0, boundedLimit);
-	const remaining = locations.length - visible.length;
-	return (
-		<div className="studio-elsewhere-note" role="status">
-			<strong className="studio-elsewhere-heading">This source exists elsewhere</strong>
-			<ul className="studio-elsewhere-locations">
-				{visible.map((location) => <li key={location.key}>{location.folder} · in {location.collection}</li>)}
-			</ul>
-			{remaining > 0 ? <p className="studio-elsewhere-more">+ {remaining} more</p> : null}
-			<p className="studio-elsewhere-action">You can still add it to this folder, or close this window to cancel.</p>
-		</div>
-	);
+	return <SourceElsewhereNotice occurrences={occurrences} visibleLimit={visibleLimit} />;
 }
 
 export function StudioConfigureStep({
@@ -292,6 +237,12 @@ export function StudioConfigureStep({
 									</small>
 								</span>
 								<em>{count.text}</em>
+								<TmdbKnownZeroNotice
+									count={counts[option.countKey]}
+									entity="studio"
+									media={option.mediaType === "MOVIE" ? "movies" : "series"}
+									canStillAdd
+								/>
 							</label>
 						);
 					})}

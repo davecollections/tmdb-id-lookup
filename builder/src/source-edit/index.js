@@ -12,6 +12,11 @@ export {
 	peopleSourceEditor,
 } from "./people-editor.js";
 export {
+	NETWORK_SOURCE_EDITOR_ID,
+	networkEditSortValue,
+	networkSourceEditor,
+} from "./network-editor.js";
+export {
 	STUDIO_SOURCE_EDITOR_ID,
 	studioEditSortValue,
 	studioSourceEditor,
@@ -28,6 +33,7 @@ export {
 	createSourceEditSession,
 	saveSourceEdit,
 	updatePeopleSourceSort,
+	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
@@ -38,6 +44,12 @@ export {
 	INITIAL_PEOPLE_EDIT_COUNT_STATE,
 	peopleEditCountLabel,
 } from "./people-edit-counts.js";
+export {
+	checkingNetworkEditCount,
+	createNetworkEditCountSession,
+	INITIAL_NETWORK_EDIT_COUNT_STATE,
+	unavailableNetworkEditCount,
+} from "./network-edit-counts.js";
 export {
 	checkingStudioEditCounts,
 	createStudioEditCountSession,

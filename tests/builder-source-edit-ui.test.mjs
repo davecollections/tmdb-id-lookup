@@ -34,6 +34,7 @@ const vite = await createServer({
 const { BuilderWorkspace } = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
 const {
 	PeopleEditorFields,
+	NetworkEditorFields,
 	SourceEditErrorPanel,
 	SourceEditorDialog,
 	StudioEditorFields,
@@ -171,6 +172,19 @@ function studioSource(overrides = {}) {
 		tmdbSourceType: "COMPANY",
 		tmdbId: 3,
 		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: {},
+		...overrides,
+	};
+}
+
+function networkSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "ABC",
+		tmdbSourceType: "NETWORK",
+		tmdbId: 2,
+		mediaType: "TV",
 		sortBy: "popularity.desc",
 		filters: {},
 		...overrides,
@@ -360,6 +374,63 @@ test("Studio Series editor keeps COMPANY/TV visible and preselects the media-cor
 	assert.ok(markup.includes('data-selected="true"'));
 	assert.ok(markup.includes('value="recent"'));
 	assert.equal(markup.includes("primary_release_date.desc"), false);
+});
+
+test("Network and Studio Source Edit show only media-specific known-zero notices and keep Save enabled", () => {
+	const networkNotice = "TMDB currently returns no series for this network.";
+	const movieNotice = "TMDB currently returns no movies for this studio.";
+	const seriesNotice = "TMDB currently returns no series for this studio.";
+	const networkFields = (countState) => renderToStaticMarkup(createElement(NetworkEditorFields, {
+		draft: { sortBy: "popularity.desc", originalSortBy: "popularity.desc", sortOptionId: "popular" },
+		network: { id: 2, name: "ABC", logoPath: null, country: "US", headquarters: "New York City, New York" },
+		countState,
+		onSortChange() {},
+	}));
+	assert.ok(networkFields({ status: "ready", count: 0 }).includes(networkNotice));
+	assert.equal(networkFields({ status: "ready", count: 42 }).includes(networkNotice), false);
+	assert.equal(networkFields({ status: "unavailable", count: null }).includes(networkNotice), false);
+
+	const studioFields = (mediaType, countState) => renderToStaticMarkup(createElement(StudioEditorFields, {
+		draft: { mediaType, sortBy: "popularity.desc", originalSortBy: "popularity.desc", sortOptionId: "popular" },
+		studio: { id: 3, name: "Pixar", logoPath: null, country: "US", headquarters: "Emeryville, California" },
+		countState,
+		onSortChange() {},
+	}));
+	const movieZero = studioFields("MOVIE", { movie: { status: "ready", count: 0 }, series: { status: "ready", count: 17 } });
+	assert.ok(movieZero.includes(movieNotice));
+	assert.equal(movieZero.includes(seriesNotice), false);
+	const seriesZero = studioFields("TV", { movie: { status: "ready", count: 42 }, series: { status: "ready", count: 0 } });
+	assert.ok(seriesZero.includes(seriesNotice));
+	assert.equal(seriesZero.includes(movieNotice), false);
+	const studioUnavailable = studioFields("MOVIE", { movie: { status: "unavailable", count: null }, series: { status: "ready", count: 17 } });
+	assert.equal(studioUnavailable.includes(movieNotice), false);
+	assert.equal(studioUnavailable.includes(seriesNotice), false);
+
+	const controller = createController();
+	const folder = importSources(controller, [studioSource(), studioSource({ title: "Pixar Series", mediaType: "TV" }), networkSource()]);
+	const cases = [
+		{ source: folder.sources[0], props: { initialStudioCountState: { movie: { status: "ready", count: 0 }, series: { status: "ready", count: 17 } } }, notice: movieNotice },
+		{ source: folder.sources[1], props: { initialStudioCountState: { movie: { status: "ready", count: 42 }, series: { status: "ready", count: 0 } } }, notice: seriesNotice },
+		{ source: folder.sources[2], props: { initialNetworkCountState: { status: "ready", count: 0 } }, notice: networkNotice },
+	];
+	for (const entry of cases) {
+		const edit = openEdit(controller, entry.source);
+		const markup = renderToStaticMarkup(createElement(SourceEditorDialog, {
+			provider: fakeProvider(),
+			peopleProvider: fakePeopleProvider(),
+			studioCatalogueProvider: fakeStudioCatalogueProvider(),
+			studioCountProvider: fakeStudioCountProvider(),
+			session: edit.session,
+			initialDraft: edit.draft,
+			onCancel() {},
+			onSave() { return { ok: true }; },
+			...entry.props,
+		}));
+		assert.ok(markup.includes(entry.notice));
+		const saveButton = markup.match(/<button[^>]*data-action="save-source-edit"[^>]*>/)?.[0] ?? "";
+		assert.ok(saveButton);
+		assert.equal(saveButton.includes("disabled"), false);
+	}
 });
 
 test("desktop source editors size to content and scroll only when the viewport maximum is exceeded", () => {

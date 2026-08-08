@@ -161,10 +161,50 @@ test("Studio count routes reject missing, duplicate, malformed, fractional, nega
 			"/3/discover/movie?with_companies=9007199254740992",
 			"/3/discover/movie?with_companies=3&page=1",
 			"/3/discover/tv?with_companies=3&api_key=browser-secret",
-			"/3/discover/tv?with_networks=3",
 			"/3/discover/tv?with_genres=18",
 			"/3/discover/person?with_companies=3",
 			"/3/discover/movie/3?with_companies=3",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("Network count route forwards only canonical Network TV filters to the fixed TMDB host", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/tv?with_networks=2",
+			"/3/discover/tv?with_networks=9007199254740991",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 200, pathname);
+		}
+		assert.deepEqual(calls.map(([url]) => url.toString()), [
+			"https://api.themoviedb.org/3/discover/tv?with_networks=2",
+			"https://api.themoviedb.org/3/discover/tv?with_networks=9007199254740991",
+		]);
+	});
+});
+
+test("Network count route rejects Movie, missing, mixed, duplicate, malformed, and extra parameters", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie?with_networks=2",
+			"/3/discover/tv?with_networks=",
+			"/3/discover/tv?with_networks=0",
+			"/3/discover/tv?with_networks=-2",
+			"/3/discover/tv?with_networks=%2B2",
+			"/3/discover/tv?with_networks=02",
+			"/3/discover/tv?with_networks=2.5",
+			"/3/discover/tv?with_networks=2e1",
+			"/3/discover/tv?with_networks=2&with_networks=3",
+			"/3/discover/tv?with_networks=2&with_companies=3",
+			"/3/discover/tv?with_networks=2&page=1",
+			"/3/discover/tv/?with_networks=2",
+			"/3/discover/tv?with_networks=%E0%A4%A",
 		]) {
 			const response = await fetchWorker(pathname, { origin: allowedOrigin });
 			assert.equal(response.status, 403, pathname);
