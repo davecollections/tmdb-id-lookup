@@ -40,6 +40,7 @@ runNode(["--test", path.join("tests", "nuvio-contracts.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-compatibility-corpus.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-reordering-client-evidence.test.mjs")]);
 runNode(["--test", path.join("tests", "tmdb-discover-compatibility.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-discover-core.test.mjs")]);
 runNode(["--test", path.join("tests", "maintenance-commit-action.test.mjs")]);
 runNode(["--test", path.join("tests", "tmdb-request-budget.test.mjs")]);
 runNode(["--test", path.join("tests", "tmdb-catalogue-maintenance.test.mjs")]);
