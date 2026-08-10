@@ -3,7 +3,7 @@
     "mode": "tmdb_export_sliced_enrichment",
     "export_date": "08_10_2026",
     "export_total_ids": 5532,
-    "offset": 0,
+    "offset": 2766,
     "limit": 2766,
     "actual_limit": 2766,
     "lowest_id": 1,
@@ -11,33 +11,33 @@
     "checked": 2766,
     "found": 2766,
     "missing": 0,
-    "total_cached": 5531,
+    "total_cached": 5532,
     "month": "2026-08",
     "export_fingerprint": "sha256:7a9d62aeaf2422f7f6837a32e87692519680313e35bdeaf048eb051f161d3b34",
-    "slice_index": 0,
+    "slice_index": 1,
     "total_slices": 2,
     "current_ids": 2766,
     "base_current_requests": 5532,
     "max_reserved_requests": 15000,
     "results": {
-      "positive": 2560,
-      "zero": 206,
+      "positive": 2223,
+      "zero": 543,
       "failed": 0,
       "unavailable": 0
     },
     "catalogue_counts": {
-      "positive": 4785,
-      "zero": 746,
+      "positive": 4783,
+      "zero": 749,
       "unknown": 0
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "31368499194-1-network-series",
-      "reservation_sha256": "b22bee3088bd15d34aed0bcba21b9157aaa5b57ef518c59a9b3ebd61c7b5d7fe",
+      "reservation_id": "31369197970-1-network-series",
+      "reservation_sha256": "76426df2cb5697335c3e03f08602fc1aa8aef9aa71e843b98bc396a75c39c737",
       "utc_date": "2026-08-10",
       "planned_month": "2026-08",
       "workflow": "Monthly TMDB Network Refresh",
-      "run_id": "31368499194",
+      "run_id": "31369197970",
       "run_attempt": "1",
       "job": "collect-network-series",
       "allocation_key": "collection",
@@ -46,8 +46,8 @@
       "allowance": 15000,
       "attempts_used": 5532,
       "unused_allowance": 9468,
-      "first_attempt_at": "2026-08-10T08:05:31.898Z",
-      "last_attempt_at": "2026-08-10T08:13:33.691Z",
+      "first_attempt_at": "2026-08-10T08:15:20.557Z",
+      "last_attempt_at": "2026-08-10T08:29:34.460Z",
       "by_host": {
         "api.themoviedb.org": 5532,
         "files.tmdb.org": 0
@@ -57,7 +57,7 @@
       },
       "retries": 0
     },
-    "started_at": "2026-08-10T08:05:31.593Z",
-    "finished_at": "2026-08-10T08:13:33.865Z"
+    "started_at": "2026-08-10T08:15:19.933Z",
+    "finished_at": "2026-08-10T08:29:34.707Z"
   }
 }
