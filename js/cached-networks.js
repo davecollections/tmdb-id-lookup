@@ -17,6 +17,36 @@ function setNetworkTitleCountFilter(minCount) {
 	});
 }
 
+function normaliseNetworkTitleCount(value) {
+	return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+function normaliseCachedNetwork(network) {
+	return {
+		id: network.i,
+		name: network.n || "",
+		origin_country: network.c || "",
+		headquarters: network.h || "",
+		logo_path: network.l || "",
+		titles_count: Object.prototype.hasOwnProperty.call(network, "t")
+			? normaliseNetworkTitleCount(network.t)
+			: null,
+		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
+	};
+}
+
+function networkMatchesTitleCountFilter(network, minCount) {
+	const minimum = Number(minCount || 0);
+	if (minimum <= 0) return true;
+	const count = normaliseNetworkTitleCount(network.titles_count);
+	return count !== null && count >= minimum;
+}
+
+function formatNetworkTitleCount(value) {
+	const count = normaliseNetworkTitleCount(value);
+	return count === null ? "Unknown" : count.toLocaleString();
+}
+
 async function loadNetworks() {
 	if (networksLoaded || networksLoading) {
 		return;
@@ -36,15 +66,7 @@ async function loadNetworks() {
 
 		const compactNetworks = await networksRes.json();
 
-		networks = compactNetworks.map((network) => ({
-			id: network.i,
-			name: network.n || "",
-			origin_country: network.c || "",
-			headquarters: network.h || "",
-			logo_path: network.l || "",
-			titles_count: network.t || 0,
-			tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
-		}));
+		networks = compactNetworks.map(normaliseCachedNetwork);
 
 		document.getElementById("network-stats").innerText = `${networks.length.toLocaleString()} TMDB TV network IDs cached`;
 		const [auditSummary, rebuildMeta, repairMeta] = await Promise.all([
@@ -80,11 +102,35 @@ async function loadNetworks() {
 function getNetworkSortValue(network, key) {
 	const value = network[key];
 
-	if (key === "id" || key === "titles_count") {
+	if (key === "titles_count") {
+		return normaliseNetworkTitleCount(value);
+	}
+
+	if (key === "id") {
 		return Number(value || 0);
 	}
 
 	return String(value || "").toLowerCase();
+}
+
+function compareNetworkRows(a, b, key, direction) {
+	const aValue = getNetworkSortValue(a, key);
+	const bValue = getNetworkSortValue(b, key);
+
+	if (key === "titles_count") {
+		if (aValue === null && bValue !== null) return 1;
+		if (aValue !== null && bValue === null) return -1;
+	}
+
+	if (aValue < bValue) {
+		return direction === "asc" ? -1 : 1;
+	}
+
+	if (aValue > bValue) {
+		return direction === "asc" ? 1 : -1;
+	}
+
+	return Number(a.id || 0) - Number(b.id || 0);
 }
 
 function getNetworkTotalPages() {
@@ -102,7 +148,7 @@ function applyNetworkFiltersAndSort() {
 	const query = currentNetworkSearch.toLowerCase().trim();
 
 	filteredNetworks = networks.filter((network) => {
-		const matchesTitleCount = Number(network.titles_count || 0) >= minNetworkTitleCount;
+		const matchesTitleCount = networkMatchesTitleCountFilter(network, minNetworkTitleCount);
 
 		const matchesSearch =
 			String(network.id).includes(query) ||
@@ -120,20 +166,9 @@ function applyNetworkFiltersAndSort() {
 		return matchesTitleCount && matchesSearch;
 	});
 
-	filteredNetworks.sort((a, b) => {
-		const aValue = getNetworkSortValue(a, networkSortKey);
-		const bValue = getNetworkSortValue(b, networkSortKey);
-
-		if (aValue < bValue) {
-			return networkSortDirection === "asc" ? -1 : 1;
-		}
-
-		if (aValue > bValue) {
-			return networkSortDirection === "asc" ? 1 : -1;
-		}
-
-		return Number(a.id || 0) - Number(b.id || 0);
-	});
+	filteredNetworks.sort((a, b) =>
+		compareNetworkRows(a, b, networkSortKey, networkSortDirection),
+	);
 
 	renderNetworks(getNetworkPageItems());
 	updateNetworkPagination();
@@ -230,7 +265,7 @@ function renderNetworks(items) {
 		tr.appendChild(createLogoCell(logoUrl, network.name || "Network logo"));
 		tr.appendChild(createCopyIdCell(network.id, "Copy network ID"));
 		tr.appendChild(createElement("td", { text: network.name || "" }));
-		tr.appendChild(createElement("td", { text: Number(network.titles_count || 0).toLocaleString() }));
+		tr.appendChild(createElement("td", { text: formatNetworkTitleCount(network.titles_count) }));
 		tr.appendChild(createElement("td", { text: network.origin_country || "" }));
 		tr.appendChild(createElement("td", { text: network.headquarters || "" }));
 		tr.appendChild(createOpenLinkCell(network.tmdb_url));

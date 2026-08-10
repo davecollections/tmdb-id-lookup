@@ -7,7 +7,11 @@ import {
 	validateRepairAudit,
 } from "./lib/entity-cache-repair.mjs";
 import {
+	CATALOGUE_COUNT_STATUSES,
 	CATALOGUE_DIMENSIONS,
+	parseTmdbTotalResults,
+	statusForKnownCount,
+	truncateToUtcSecond,
 	utcMonth,
 } from "./lib/tmdb-catalogue-counts.mjs";
 import { createTmdbRequestClient } from "./lib/tmdb-maintenance-request.mjs";
@@ -45,7 +49,7 @@ function expandCompactNetwork(network) {
 		origin_country: network.c || "",
 		headquarters: network.h || "",
 		logo_path: network.l || "",
-		titles_count: network.t || 0,
+		titles_count: compactNetworkTitleCount(network),
 		homepage: "",
 		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
 	};
@@ -69,8 +73,74 @@ function compactNetwork(network) {
 	if (network.origin_country) compact.c = network.origin_country;
 	if (network.headquarters) compact.h = network.headquarters;
 	if (network.logo_path) compact.l = network.logo_path;
-	if (network.titles_count) compact.t = network.titles_count;
+	if (network.titles_count !== null) {
+		if (!Number.isSafeInteger(network.titles_count) || network.titles_count < 0) {
+			throw new TypeError(`Invalid title count for Network ${network.id}.`);
+		}
+		compact.t = network.titles_count;
+	}
 	return compact;
+}
+
+function compactNetworkTitleCount(network) {
+	if (!Object.hasOwn(network, "t")) return null;
+	if (!Number.isSafeInteger(network.t) || network.t < 0) {
+		throw new TypeError(`Invalid compact title count for Network ${network.i}.`);
+	}
+	return network.t;
+}
+
+function failedCountRetry(id, error, attempts = []) {
+	return {
+		id,
+		dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
+		status: CATALOGUE_COUNT_STATUSES.FAILED,
+		count: null,
+		observed_at: truncateToUtcSecond(OBSERVED_AT),
+		error_code: error?.code || "request_failed",
+		error: error?.message || String(error),
+		attempts,
+	};
+}
+
+async function repairUnknownNetworkCounts({ ids, client }) {
+	const outcomes = [];
+	let allocationStopped = false;
+	for (const id of ids) {
+		let result;
+		try {
+			const request = await client.requestJson(
+				`https://api.themoviedb.org/3/discover/tv?with_networks=${id}`,
+				{ maxAttempts: 5 },
+			);
+			if (!request.response.ok) {
+				throw Object.assign(
+					new Error(`Discover count failed with HTTP ${request.response.status}.`),
+					{ code: `count_http_${request.response.status}`, requestAttempts: request.attempts },
+				);
+			}
+			const count = parseTmdbTotalResults(request.data);
+			result = {
+				id,
+				dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
+				status: statusForKnownCount(count),
+				count,
+				observed_at: truncateToUtcSecond(OBSERVED_AT),
+				attempts: request.attempts,
+			};
+		} catch (error) {
+			if (error?.stopCollection) {
+				allocationStopped = true;
+				break;
+			}
+			result = failedCountRetry(id, error, error?.requestAttempts || []);
+		}
+		outcomes.push(result);
+		if (REQUEST_DELAY_MS > 0) {
+			await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+		}
+	}
+	return { outcomes, allocationStopped };
 }
 
 function csvEscape(value) {
@@ -138,10 +208,23 @@ try {
 	throw error;
 }
 
+const existingCompact = await readJsonFile(MIN_JSON_PATH, []);
+const extraIdSet = new Set(extraIds);
+const unknownCountIds = existingCompact
+	.filter((network) => network?.i && !Object.hasOwn(network, "t"))
+	.map((network) => Number(network.i))
+	.filter((id) => Number.isSafeInteger(id) && id > 0 && !extraIdSet.has(id))
+	.sort((left, right) => left - right);
+const unknownRetryCapacity =
+	MAX_REPAIR_IDS === null
+		? unknownCountIds.length
+		: Math.max(0, MAX_REPAIR_IDS - requestedRepairCount);
+const selectedUnknownCountIds = unknownCountIds.slice(0, unknownRetryCapacity);
+const deferredUnknownCountIds = unknownCountIds.slice(selectedUnknownCountIds.length);
 const requestPlan = {
 	details_requests: missingIds.length,
-	discover_requests: missingIds.length,
-	base_requests: missingIds.length * 2,
+	discover_requests: missingIds.length + selectedUnknownCountIds.length,
+	base_requests: missingIds.length * 2 + selectedUnknownCountIds.length,
 };
 console.log(
 	JSON.stringify(
@@ -152,6 +235,9 @@ console.log(
 				audit_freshness: auditFreshness,
 				missing_ids: missingIds.length,
 				extra_ids: extraIds.length,
+				unknown_count_ids: unknownCountIds.length,
+				selected_unknown_count_ids: selectedUnknownCountIds.length,
+				deferred_unknown_count_ids: deferredUnknownCountIds.length,
 				...requestPlan,
 			},
 		},
@@ -161,45 +247,60 @@ console.log(
 );
 if (["plan", "validate"].includes(MODE)) process.exit(0);
 
-const existingCompact = await readJsonFile(MIN_JSON_PATH, []);
-if (requestedRepairCount === 0) {
+if (requestedRepairCount === 0 && selectedUnknownCountIds.length === 0) {
 	await writeRepairMetadata(
-		buildRepairMetadata({
-			entityType: "network",
-			mode: MODE,
-			month: MONTH,
-			audit,
-			auditFreshness,
-			maxRepairIds: MAX_REPAIR_IDS,
-			missingIds,
-			extraIds,
-			startedAt: OBSERVED_AT,
-			finishedAt: new Date().toISOString(),
-			status: "skipped",
-			reason: "nothing_to_repair",
-			totalCached: existingCompact.length,
-		}),
+		{
+			...buildRepairMetadata({
+				entityType: "network",
+				mode: MODE,
+				month: MONTH,
+				audit,
+				auditFreshness,
+				maxRepairIds: MAX_REPAIR_IDS,
+				missingIds,
+				extraIds,
+				startedAt: OBSERVED_AT,
+				finishedAt: new Date().toISOString(),
+				status: "skipped",
+				reason: "nothing_to_repair",
+				totalCached: existingCompact.length,
+			}),
+			network_count_retry: {
+				candidates: unknownCountIds.length,
+				selected: 0,
+				deferred: deferredUnknownCountIds.length,
+				outcomes: [],
+			},
+		},
 	);
 	console.log("Nothing to repair. Skipping Network cache update.");
 	process.exit(0);
 }
 if (MAX_REPAIR_IDS !== null && requestedRepairCount > MAX_REPAIR_IDS) {
 	await writeRepairMetadata(
-		buildRepairMetadata({
-			entityType: "network",
-			mode: MODE,
-			month: MONTH,
-			audit,
-			auditFreshness,
-			maxRepairIds: MAX_REPAIR_IDS,
-			missingIds,
-			extraIds,
-			startedAt: OBSERVED_AT,
-			finishedAt: new Date().toISOString(),
-			status: "skipped",
-			reason: "max_repair_ids_exceeded",
-			totalCached: existingCompact.length,
-		}),
+		{
+			...buildRepairMetadata({
+				entityType: "network",
+				mode: MODE,
+				month: MONTH,
+				audit,
+				auditFreshness,
+				maxRepairIds: MAX_REPAIR_IDS,
+				missingIds,
+				extraIds,
+				startedAt: OBSERVED_AT,
+				finishedAt: new Date().toISOString(),
+				status: "skipped",
+				reason: "max_repair_ids_exceeded",
+				totalCached: existingCompact.length,
+			}),
+			network_count_retry: {
+				candidates: unknownCountIds.length,
+				selected: 0,
+				deferred: unknownCountIds.length,
+				outcomes: [],
+			},
+		},
 	);
 	console.log(`Repair skipped: ${requestedRepairCount} exceeds MAX_REPAIR_IDS=${MAX_REPAIR_IDS}.`);
 	process.exit(0);
@@ -246,38 +347,74 @@ const repair = await repairMissingLegacyRows({
 for (const outcome of repair.outcomes) {
 	if (outcome.row) networkMap.set(outcome.id, outcome.row);
 }
+const countRetry = await repairUnknownNetworkCounts({
+	ids: selectedUnknownCountIds,
+	client,
+});
+for (const outcome of countRetry.outcomes) {
+	if (outcome.status === CATALOGUE_COUNT_STATUSES.FAILED) continue;
+	const network = networkMap.get(outcome.id);
+	if (!network) {
+		throw new Error(`Unknown-count retry lost cached Network ${outcome.id}.`);
+	}
+	networkMap.set(outcome.id, { ...network, titles_count: outcome.count });
+}
 const usage = client.usageSummary();
 await client.writeUsage({
 	month: MONTH,
 	dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
 	target_fingerprint: auditFreshness.export_fingerprint,
 });
+if (
+	repair.allocationStopped ||
+	repair.outcomes.length !== missingIds.length ||
+	countRetry.allocationStopped ||
+	countRetry.outcomes.length !== selectedUnknownCountIds.length
+) {
+	throw new Error(
+		"Network repair exhausted its request allocation before completing the selected batch; catalogue files were not written.",
+	);
+}
 const networks = [...networkMap.values()].sort((left, right) => left.id - right.id);
 await fs.writeFile(MIN_JSON_PATH, JSON.stringify(networks.map(compactNetwork)));
 await fs.writeFile(CSV_PATH, toCsv(networks));
-const partialFailure = hasRepairPartialFailure({
-	repair,
-	requestedMissingCount: missingIds.length,
-});
+const partialFailure =
+	hasRepairPartialFailure({
+		repair,
+		requestedMissingCount: missingIds.length,
+	}) || countRetry.outcomes.some((outcome) => outcome.status === CATALOGUE_COUNT_STATUSES.FAILED);
 await writeRepairMetadata(
-	buildRepairMetadata({
-		entityType: "network",
-		mode: MODE,
-		month: MONTH,
-		audit,
-		auditFreshness,
-		maxRepairIds: MAX_REPAIR_IDS,
-		missingIds,
-		extraIds,
-		startedAt: OBSERVED_AT,
-		finishedAt: new Date().toISOString(),
-		status: partialFailure ? "partial_failure" : "completed",
-		reason: repair.allocationStopped ? "request_allowance_exhausted" : null,
-		outcomes: repair.outcomes,
-		removed,
-		usage,
-		requestPlan,
-		totalCached: networks.length,
-	}),
+	{
+		...buildRepairMetadata({
+			entityType: "network",
+			mode: MODE,
+			month: MONTH,
+			audit,
+			auditFreshness,
+			maxRepairIds: MAX_REPAIR_IDS,
+			missingIds,
+			extraIds,
+			startedAt: OBSERVED_AT,
+			finishedAt: new Date().toISOString(),
+			status: partialFailure ? "partial_failure" : "completed",
+			reason: null,
+			outcomes: repair.outcomes,
+			removed,
+			usage,
+			requestPlan,
+			totalCached: networks.length,
+		}),
+		network_count_retry: {
+			candidates: unknownCountIds.length,
+			selected: selectedUnknownCountIds.length,
+			deferred: deferredUnknownCountIds.length,
+			outcomes: countRetry.outcomes.map((outcome) => ({
+				id: outcome.id,
+				status: outcome.status,
+				count: outcome.count,
+				error: outcome.error || null,
+			})),
+		},
+	},
 );
 console.log(`Saved ${networks.length.toLocaleString()} total cached TV networks.`);

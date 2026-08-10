@@ -64,8 +64,21 @@ function compactNetwork(network) {
 	if (network.origin_country) compact.c = network.origin_country;
 	if (network.headquarters) compact.h = network.headquarters;
 	if (network.logo_path) compact.l = network.logo_path;
-	if (network.titles_count) compact.t = network.titles_count;
+	if (network.titles_count !== null) {
+		if (!Number.isSafeInteger(network.titles_count) || network.titles_count < 0) {
+			throw new TypeError(`Invalid title count for Network ${network.id}.`);
+		}
+		compact.t = network.titles_count;
+	}
 	return compact;
+}
+
+function compactNetworkTitleCount(network) {
+	if (!Object.hasOwn(network, "t")) return null;
+	if (!Number.isSafeInteger(network.t) || network.t < 0) {
+		throw new TypeError(`Invalid compact title count for Network ${network.i}.`);
+	}
+	return network.t;
 }
 
 function expandCompactNetwork(network) {
@@ -75,7 +88,7 @@ function expandCompactNetwork(network) {
 		origin_country: network.c || "",
 		headquarters: network.h || "",
 		logo_path: network.l || "",
-		titles_count: network.t || 0,
+		titles_count: compactNetworkTitleCount(network),
 		homepage: "",
 		tmdb_url: `https://www.themoviedb.org/network/${network.i}`,
 	};
@@ -237,7 +250,27 @@ await client.writeUsage({
 	dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
 	target_fingerprint: snapshot.target_fingerprint,
 });
+if (results.length !== selection.ids.length) {
+	throw new Error(
+		`Network collection stopped after ${results.length} of ${selection.ids.length} selected IDs; catalogue files were not written.`,
+	);
+}
+for (const result of results) {
+	if (result.status !== CATALOGUE_COUNT_STATUSES.FAILED) continue;
+	const details = detailsById.get(result.id);
+	const existing = networkMap.get(result.id);
+	if (details) {
+		networkMap.set(result.id, normalizeNetwork(details, null));
+	} else if (existing) {
+		networkMap.set(result.id, { ...existing, titles_count: null });
+	}
+}
 const networks = [...networkMap.values()].sort((left, right) => left.id - right.id);
+const countSummary = {
+	positive: networks.filter((network) => Number(network.titles_count) > 0).length,
+	zero: networks.filter((network) => network.titles_count === 0).length,
+	unknown: networks.filter((network) => network.titles_count === null).length,
+};
 await fs.writeFile(MIN_JSON_PATH, JSON.stringify(networks.map(compactNetwork)));
 await fs.writeFile(CSV_PATH, toCsv(networks));
 await fs.writeFile(
@@ -297,6 +330,7 @@ await fs.writeFile(
 					).length,
 					unavailable: 0,
 				},
+				catalogue_counts: countSummary,
 				requests: usage,
 				started_at: OBSERVED_AT,
 				finished_at: new Date().toISOString(),

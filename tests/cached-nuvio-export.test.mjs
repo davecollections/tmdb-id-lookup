@@ -388,6 +388,23 @@ test("schema-v1 and test-only schema-v2 cached network exports remain byte-ident
 	assert.equal(v2Folder.heroBackdropUrl, "");
 });
 
+test("cached Network count state does not change V1 Nuvio export output", async () => {
+	const bridge = createBridge(async () => responseFor(createV1Lookup()));
+	const zeroHarness = createExporterHarness({
+		bridge,
+		networks: [{ id: 20, name: "Alpha Network", logo_path: "/alpha.png", titles_count: 0 }],
+	});
+	const unknownHarness = createExporterHarness({
+		bridge,
+		networks: [{ id: 20, name: "Alpha Network", logo_path: "/alpha.png", titles_count: null }],
+	});
+	const [zeroPayload, unknownPayload] = await Promise.all([
+		zeroHarness.context.getNetworkNuvioExportPayload(),
+		unknownHarness.context.getNetworkNuvioExportPayload(),
+	]);
+	assert.equal(unknownPayload.json, zeroPayload.json);
+});
+
 test("company and network exports prefer curated artwork then cached TMDB logos then title/emoji", async () => {
 	let fetchCount = 0;
 	const bridge = createBridge(async () => {
