@@ -14,6 +14,8 @@ import {
 import {
 	CATALOGUE_COUNT_STATUSES,
 	CATALOGUE_DIMENSIONS,
+	CATALOGUE_PARSER_SEMANTIC_VERSION,
+	CATALOGUE_SCHEMA_VERSION,
 	parseTmdbTotalResults,
 	partitionCatalogueIds,
 } from "../scripts/lib/tmdb-catalogue-counts.mjs";
@@ -90,7 +92,7 @@ function jsonResponse(payload, status = 200) {
 	});
 }
 
-function mockedFetchModule({ ids, details, counts }) {
+function mockedFetchModule({ ids, details, counts, missingCountStatus = 500 }) {
 	return `
 import fs from "node:fs";
 import zlib from "node:zlib";
@@ -98,6 +100,7 @@ import zlib from "node:zlib";
 const ids = ${JSON.stringify(ids)};
 const details = ${JSON.stringify(details)};
 const counts = ${JSON.stringify(counts)};
+const missingCountStatus = ${JSON.stringify(missingCountStatus)};
 const requests = [];
 
 process.on("exit", () => {
@@ -130,7 +133,7 @@ globalThis.fetch = async (input) => {
 		});
 	}
 	return new Response(JSON.stringify({ status_message: "unexpected mock URL" }), {
-		status: 500,
+		status: missingCountStatus,
 		headers: { "content-type": "application/json" },
 	});
 };
@@ -153,7 +156,7 @@ async function runCatalogueContractFixture(context, config) {
 	const reservationId = `fixture-${config.entityType}`;
 	const workflow = `Fixture ${config.entityType} catalogue`;
 	const runId = config.entityType === "company" ? "901" : "902";
-	const allocations = { collection: 20, target_export: 7 };
+	const allocations = { collection: config.collectionAllowance ?? 20, target_export: 7 };
 	const built = buildReservationReceipt({
 		date: now,
 		reservationId,
@@ -196,14 +199,151 @@ async function runCatalogueContractFixture(context, config) {
 			ids: config.exportIds,
 			details: config.details,
 			counts: config.counts,
+			missingCountStatus: config.missingCountStatus,
 		}),
 	);
+	let executionError = null;
+	try {
+		execFileSync(
+			process.execPath,
+			[
+				"--import",
+				pathToFileURL(preloadPath).href,
+				path.join(root, "scripts", config.script),
+			],
+			{
+				cwd: temporary,
+				env: {
+					...process.env,
+					MODE: "collect",
+					COUNT_MONTH: plannedMonth,
+					SLICE_INDEX: "0",
+					TOTAL_SLICES: "2",
+					SCHEDULED_RUN: "false",
+					REQUEST_DELAY_MS: "0",
+					TMDB_BEARER_TOKEN: "fixture-token",
+					TMDB_RESERVATION_ID: reservationId,
+					TMDB_RESERVATION_PATH: reservationPath,
+					TMDB_RESERVATION_SHA256: built.sha256,
+					TMDB_RESERVATION_UTC_DATE: plannedUtcDate,
+					TMDB_ALLOCATION_KEY: "collection",
+					TMDB_REQUEST_CLASS: config.dimension,
+					TMDB_TARGET_DIMENSION: config.dimension,
+					TMDB_APPROVED_ALLOWANCE: String(allocations.collection),
+					TMDB_COLLECTION_ALLOWANCE: String(allocations.collection),
+					TMDB_TARGET_EXPORT_ALLOWANCE: String(allocations.target_export),
+					GITHUB_WORKFLOW: workflow,
+					GITHUB_RUN_ID: runId,
+					GITHUB_RUN_ATTEMPT: "1",
+					MOCK_LOG_PATH: requestLogPath,
+				},
+				encoding: "utf8",
+			},
+		);
+	} catch (error) {
+		if (!config.expectFailure) throw error;
+		executionError = error;
+	}
+	if (config.expectFailure && !executionError) {
+		throw new Error(`Expected ${config.entityType} fixture to fail.`);
+	}
+
+	return {
+		temporary,
+		dataDirectory,
+		plannedUtcDate,
+		plannedMonth,
+		reservationId,
+		executionError,
+		requests: JSON.parse(await fs.readFile(requestLogPath, "utf8")),
+		usageDirectory: path.join(
+			temporary,
+			"maintenance",
+			"tmdb-request-budget",
+			plannedUtcDate,
+			"usage",
+		),
+	};
+}
+
+async function runNetworkRepairFixture(context, config) {
+	const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "tmdb-network-repair-contract-"));
+	context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+	const dataDirectory = path.join(temporary, "data");
+	await fs.mkdir(dataDirectory, { recursive: true });
+	await fs.writeFile(
+		path.join(dataDirectory, "tv-networks.min.json"),
+		JSON.stringify(config.seedRows),
+	);
+
+	const now = new Date();
+	const plannedUtcDate = now.toISOString().slice(0, 10);
+	const plannedMonth = plannedUtcDate.slice(0, 7);
+	const audit = {
+		schema_version: CATALOGUE_SCHEMA_VERSION,
+		parser_semantic_version: CATALOGUE_PARSER_SEMANTIC_VERSION,
+		dataset: "networks",
+		export_month: plannedMonth,
+		export_fingerprint: `sha256:${"a".repeat(64)}`,
+		audited_at: now.toISOString(),
+		missing_from_cache: config.missingIds || [],
+		extra_in_cache: config.extraIds || [],
+	};
+	await fs.writeFile(
+		path.join(dataDirectory, "tv-network-id-audit.json"),
+		JSON.stringify(audit),
+	);
+
+	const reservationId = "fixture-network-repair";
+	const workflow = "Fixture Network repair";
+	const runId = "903";
+	const allowance = config.allowance ?? 20;
+	const built = buildReservationReceipt({
+		date: now,
+		reservationId,
+		workflow,
+		runId,
+		runAttempt: "1",
+		job: "network-series",
+		plannedMonth,
+		plannedUtcDate,
+		allocations: { network_repair: allowance },
+		bindings: {
+			network_repair: {
+				request_class: "network-repair",
+				target_dimension: "network-series",
+				approved_allowance: allowance,
+			},
+		},
+	});
+	const reservationDirectory = path.join(
+		temporary,
+		"maintenance",
+		"tmdb-request-budget",
+		plannedUtcDate,
+		"reservations",
+	);
+	await fs.mkdir(reservationDirectory, { recursive: true });
+	const reservationPath = path.join(reservationDirectory, `${reservationId}.json`);
+	await fs.writeFile(reservationPath, JSON.stringify(built.receipt));
+	const preloadPath = path.join(temporary, "mock-fetch.mjs");
+	const requestLogPath = path.join(temporary, "requests.json");
+	await fs.writeFile(
+		preloadPath,
+		mockedFetchModule({
+			ids: [],
+			details: config.details || {},
+			counts: config.counts || {},
+			missingCountStatus: config.missingCountStatus,
+		}),
+	);
+
 	execFileSync(
 		process.execPath,
 		[
 			"--import",
 			pathToFileURL(preloadPath).href,
-			path.join(root, "scripts", config.script),
+			path.join(root, "scripts", "repair-tv-network-cache-from-audit.mjs"),
 		],
 		{
 			cwd: temporary,
@@ -211,21 +351,17 @@ async function runCatalogueContractFixture(context, config) {
 				...process.env,
 				MODE: "collect",
 				COUNT_MONTH: plannedMonth,
-				SLICE_INDEX: "0",
-				TOTAL_SLICES: "2",
-				SCHEDULED_RUN: "false",
+				MAX_REPAIR_IDS: String(config.maxRepairIds ?? 200),
 				REQUEST_DELAY_MS: "0",
 				TMDB_BEARER_TOKEN: "fixture-token",
 				TMDB_RESERVATION_ID: reservationId,
 				TMDB_RESERVATION_PATH: reservationPath,
 				TMDB_RESERVATION_SHA256: built.sha256,
 				TMDB_RESERVATION_UTC_DATE: plannedUtcDate,
-				TMDB_ALLOCATION_KEY: "collection",
-				TMDB_REQUEST_CLASS: config.dimension,
-				TMDB_TARGET_DIMENSION: config.dimension,
-				TMDB_APPROVED_ALLOWANCE: String(allocations.collection),
-				TMDB_COLLECTION_ALLOWANCE: String(allocations.collection),
-				TMDB_TARGET_EXPORT_ALLOWANCE: String(allocations.target_export),
+				TMDB_ALLOCATION_KEY: "network_repair",
+				TMDB_REQUEST_CLASS: "network-repair",
+				TMDB_TARGET_DIMENSION: "network-series",
+				TMDB_APPROVED_ALLOWANCE: String(allowance),
 				GITHUB_WORKFLOW: workflow,
 				GITHUB_RUN_ID: runId,
 				GITHUB_RUN_ATTEMPT: "1",
@@ -236,19 +372,8 @@ async function runCatalogueContractFixture(context, config) {
 	);
 
 	return {
-		temporary,
 		dataDirectory,
-		plannedUtcDate,
-		plannedMonth,
-		reservationId,
 		requests: JSON.parse(await fs.readFile(requestLogPath, "utf8")),
-		usageDirectory: path.join(
-			temporary,
-			"maintenance",
-			"tmdb-request-budget",
-			plannedUtcDate,
-			"usage",
-		),
 	};
 }
 
@@ -395,7 +520,7 @@ test("Network collector preserves the exact ordinary catalogue contract for mock
 	assert.deepEqual(
 		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.min.json"), "utf8")),
 		[
-			{ i: 1, n: "Network One", c: "AU", h: "Sydney", l: "/network-1.png" },
+			{ i: 1, n: "Network One", c: "AU", h: "Sydney", l: "/network-1.png", t: 0 },
 			{ i: 2, n: "Network, Two", c: "US", h: "Los Angeles", l: "/network-2.png", t: 6 },
 			{ i: 3, n: "Preserved network", c: "GB", h: "Old HQ", l: "/old-3.png", t: 4 },
 			{ i: 9, n: "Unlisted network", t: 2 },
@@ -435,6 +560,67 @@ test("Network collector preserves the exact ordinary catalogue contract for mock
 		fs.access(path.join(fixture.temporary, "maintenance", "entity-title-counts")),
 		{ code: "ENOENT" },
 	);
+});
+
+test("Network collector records an unavailable current count as unknown", async (context) => {
+	const fixture = await runCatalogueContractFixture(context, {
+		entityType: "network",
+		dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
+		script: "fetch-tv-network-details-from-export.mjs",
+		minJsonName: "tv-networks.min.json",
+		exportIds: [1, 2],
+		seedRows: [{ i: 1, n: "Previously known", c: "AU", t: 8 }],
+		details: {
+			1: {
+				id: 1,
+				name: "Current Network",
+				origin_country: "AU",
+			},
+			2: { id: 2, name: "Other slice" },
+		},
+		counts: {},
+		missingCountStatus: 400,
+	});
+	assert.deepEqual(
+		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.min.json"), "utf8")),
+		[{ i: 1, n: "Current Network", c: "AU" }],
+	);
+	assert.match(
+		await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.csv"), "utf8"),
+		/1,Current Network,,.*,AU,,https:\/\/www\.themoviedb\.org\/network\/1/,
+	);
+	const metadata = JSON.parse(
+		await fs.readFile(path.join(fixture.dataDirectory, "tv-network-scan-meta.json"), "utf8"),
+	);
+	assert.equal(metadata.last_scan.results.failed, 1);
+	assert.deepEqual(metadata.last_scan.catalogue_counts, { positive: 0, zero: 0, unknown: 1 });
+});
+
+test("Network collector does not write catalogue files after request allocation exhaustion", async (context) => {
+	const seedRows = [{ i: 1, n: "Preserved Network", t: 8 }];
+	const fixture = await runCatalogueContractFixture(context, {
+		entityType: "network",
+		dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
+		script: "fetch-tv-network-details-from-export.mjs",
+		minJsonName: "tv-networks.min.json",
+		exportIds: [1, 2],
+		seedRows,
+		details: { 1: { id: 1, name: "Must not be written" } },
+		counts: { 1: 0 },
+		collectionAllowance: 1,
+		expectFailure: true,
+	});
+	assert.match(
+		String(fixture.executionError.stderr),
+		/Network collection stopped after 0 of 1 selected IDs/,
+	);
+	assert.deepEqual(
+		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.min.json"), "utf8")),
+		seedRows,
+	);
+	for (const name of ["tv-networks.csv", "tv-network-scan-meta.json", "tv-network-export.json"]) {
+		await assert.rejects(fs.access(path.join(fixture.dataDirectory, name)), { code: "ENOENT" });
+	}
 });
 
 test("Company days 1-14 and Network days 1-2 plan ordinary catalogue collection in every month", () => {
@@ -568,6 +754,88 @@ test("catalogue repair always refreshes details and the legacy title total", asy
 	assert.equal(requests.length, 2);
 	assert.equal(repair.outcomes[0].result.status, CATALOGUE_COUNT_STATUSES.ZERO);
 	assert.equal(repair.outcomes[0].row.titles_count, 0);
+});
+
+test("Network repair retries unknown counts without refreshing details and honors its cap", async (context) => {
+	const fixture = await runNetworkRepairFixture(context, {
+		seedRows: [
+			{ i: 3, n: "Deferred unknown" },
+			{ i: 2, n: "Known zero", t: 0 },
+			{ i: 1, n: "Selected unknown" },
+		],
+		counts: { 1: 0, 3: 4 },
+		maxRepairIds: 1,
+	});
+	assert.deepEqual(
+		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.min.json"), "utf8")),
+		[
+			{ i: 1, n: "Selected unknown", t: 0 },
+			{ i: 2, n: "Known zero", t: 0 },
+			{ i: 3, n: "Deferred unknown" },
+		],
+	);
+	assert.equal(fixture.requests.length, 1);
+	assert.equal(new URL(fixture.requests[0]).searchParams.get("with_networks"), "1");
+	assert.equal(fixture.requests.some((url) => /\/3\/network\//.test(url)), false);
+	const metadata = JSON.parse(
+		await fs.readFile(path.join(fixture.dataDirectory, "tv-network-cache-repair-meta.json"), "utf8"),
+	).last_repair;
+	assert.deepEqual(metadata.network_count_retry, {
+		candidates: 2,
+		selected: 1,
+		deferred: 1,
+		outcomes: [{ id: 1, status: "zero", count: 0, error: null }],
+	});
+});
+
+test("Network repair gives structural changes priority over unknown-count retries", async (context) => {
+	const fixture = await runNetworkRepairFixture(context, {
+		seedRows: [
+			{ i: 1, n: "Deferred unknown" },
+			{ i: 99, n: "Removed extra", t: 5 },
+		],
+		missingIds: [4],
+		extraIds: [99],
+		details: { 4: { id: 4, name: "Restored Network" } },
+		counts: { 1: 8, 4: 2 },
+		maxRepairIds: 2,
+	});
+	assert.deepEqual(
+		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.min.json"), "utf8")),
+		[
+			{ i: 1, n: "Deferred unknown" },
+			{ i: 4, n: "Restored Network", t: 2 },
+		],
+	);
+	assert.deepEqual(
+		fixture.requests.map((url) => new URL(url).pathname),
+		["/3/network/4", "/3/discover/tv"],
+	);
+	const metadata = JSON.parse(
+		await fs.readFile(path.join(fixture.dataDirectory, "tv-network-cache-repair-meta.json"), "utf8"),
+	).last_repair;
+	assert.equal(metadata.network_count_retry.selected, 0);
+	assert.equal(metadata.network_count_retry.deferred, 1);
+});
+
+test("Network repair leaves a failed count retry unknown without failing the action", async (context) => {
+	const fixture = await runNetworkRepairFixture(context, {
+		seedRows: [{ i: 1, n: "Still unknown" }],
+		counts: {},
+		missingCountStatus: 400,
+		maxRepairIds: 1,
+	});
+	assert.deepEqual(
+		JSON.parse(await fs.readFile(path.join(fixture.dataDirectory, "tv-networks.min.json"), "utf8")),
+		[{ i: 1, n: "Still unknown" }],
+	);
+	const metadata = JSON.parse(
+		await fs.readFile(path.join(fixture.dataDirectory, "tv-network-cache-repair-meta.json"), "utf8"),
+	).last_repair;
+	assert.equal(metadata.status, "partial_failure");
+	assert.deepEqual(metadata.network_count_retry.outcomes, [
+		{ id: 1, status: "failed", count: null, error: "Discover count failed with HTTP 400." },
+	]);
 });
 
 test("catalogue repair classifies a details 404 as not found without a discover request or partial failure", async () => {

@@ -75,6 +75,8 @@ Selected company, network, and genre results can also be exported as Nuvio colle
 
 Title counts are intended as a practical guide when deciding which company, network, or genre references may be useful. They are based on TMDB data and may change as TMDB updates its records.
 
+For cached TV networks, a numeric title count is the latest successfully collected TMDB result: zero means TMDB explicitly returned no matching series, while an unavailable count is shown as `Unknown` and left blank in the downloadable CSV. The existing nightly Network repair retries unknown counts without treating them as confirmed zero.
+
 ## Genres
 
 The genre lookup includes official TMDB movie and TV genre IDs, plus curated TMDB list references for useful categories that TMDB does not expose as official genres.

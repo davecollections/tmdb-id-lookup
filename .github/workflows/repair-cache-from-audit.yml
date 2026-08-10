@@ -27,7 +27,7 @@ on:
         required: true
         default: "200"
       max_network_ids:
-        description: Maximum Network add/remove changes
+        description: Maximum Network IDs repaired per run
         required: true
         default: "200"
 

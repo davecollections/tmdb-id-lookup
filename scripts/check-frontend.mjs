@@ -212,8 +212,43 @@ function checkCsvIds(file, label) {
 	return rows;
 }
 
+function checkNetworkCountContract(records, csvRows) {
+	const csvById = new Map(csvRows.map((row) => [String(row.id), row]));
+	const recordIds = new Set(records.map((record) => String(record.i)));
+
+	records.forEach((record, index) => {
+		const hasCount = Object.hasOwn(record, "t");
+		if (hasCount && (!Number.isSafeInteger(record.t) || record.t < 0)) {
+			failures.push(
+				`data/tv-networks.min.json: row ${index + 1} has invalid Network title count`,
+			);
+		}
+
+		const csvRow = csvById.get(String(record.i));
+		if (!csvRow) {
+			failures.push(`data/tv-networks.csv: missing Network ${record.i}`);
+			return;
+		}
+		const expectedCount = hasCount && Number.isSafeInteger(record.t) && record.t >= 0
+			? String(record.t)
+			: "";
+		if (csvRow.titles_count !== expectedCount) {
+			failures.push(
+				`Network ${record.i}: JSON count ${expectedCount || "Unknown"} does not match CSV count ${csvRow.titles_count || "Unknown"}`,
+			);
+		}
+	});
+
+	for (const row of csvRows) {
+		if (!recordIds.has(String(row.id))) {
+			failures.push(`data/tv-networks.min.json: missing Network ${row.id}`);
+		}
+	}
+}
+
 function checkCachedDataIds() {
 	const companyJsonIds = checkCompactCache("data/companies.min.json", "i", "n", "company");
+	const networkRecords = readJson("data/tv-networks.min.json");
 	const networkJsonIds = checkCompactCache("data/tv-networks.min.json", "i", "n", "network");
 	const companyCsvRows = checkCsvIds("data/companies.csv", "company");
 	const networkCsvRows = checkCsvIds("data/tv-networks.csv", "network");
@@ -225,6 +260,7 @@ function checkCachedDataIds() {
 	if (networkJsonIds.size !== networkCsvRows.length) {
 		failures.push("Network JSON and CSV cache sizes do not match");
 	}
+	checkNetworkCountContract(networkRecords, networkCsvRows);
 
 	const genreRows = parseCsvFile("data/genres.csv");
 	const genreKeys = genreRows.map((row) => `${row.type}:${row.media}:${row.tmdb_id}`);
