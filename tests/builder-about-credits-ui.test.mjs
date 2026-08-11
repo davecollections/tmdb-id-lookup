@@ -73,7 +73,7 @@ test("welcome uses an About control and workspace replaces its former V1 link wi
 	assert.ok(openMarkup.includes("About &amp; Credits"));
 });
 
-test("About & Credits contains compact linked attribution and the approved footer links", () => {
+test("About & Credits contains compact linked attribution and the marked root application link", () => {
 	const markup = renderToStaticMarkup(createElement(AboutCreditsDialog, { onClose() {} }));
 	assert.ok(markup.includes("This product uses the TMDB API but is not endorsed or certified by TMDB."));
 	assert.ok(markup.includes("Streaming provider availability data supplied by JustWatch via TMDB."));
@@ -83,7 +83,7 @@ test("About & Credits contains compact linked attribution and the approved foote
 	assert.match(markup, /<img[^>]+alt="JustWatch"/);
 	assert.match(markup, /tmdb-logo-square\.svg/);
 	assert.match(markup, /justwatch-mark-gold\.svg/);
-	assert.match(markup, /href="\.\.\/"[^>]*>TMDB ID Lookup Tool<\/a>/);
+	assert.match(markup, /<a[^>]+data-root-link="true"[^>]+href="\.\.\/"[^>]*>TMDB ID Lookup Tool<\/a>/);
 	assert.match(markup, /href="https:\/\/github\.com\/davecollections\/tmdb-id-lookup\/issues\/new\/choose"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
 	assert.ok(markup.includes("Feedback / report an issue"));
 	assert.match(markup, /Created by[\s\S]*href="https:\/\/github\.com\/davecollections"[^>]+target="_blank"[^>]+rel="noopener noreferrer"[\s\S]*davecollections/);
