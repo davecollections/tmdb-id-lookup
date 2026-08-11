@@ -9,6 +9,8 @@ import {
 	createNetworkSource,
 	createStudioCatalogueProvider,
 	createStudioSourceBundle,
+	createStreamingCatalogueProvider,
+	createStreamingSourceBundle,
 	createTmdbCollectionProvider,
 	createTmdbPersonProvider,
 	createTmdbNetworkCountProvider,
@@ -17,11 +19,13 @@ import {
 	PEOPLE_SOURCE_MODE_ID,
 	NETWORK_SOURCE_MODE_ID,
 	STUDIO_SOURCE_MODE_ID,
+	STREAMING_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import {
 	createSourceEditSession,
 	saveSourceEdit,
 } from "../source-edit/index.js";
+import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
@@ -53,6 +57,7 @@ import { NodeEditor } from "./NodeEditor.jsx";
 import { NetworkSourceFlow } from "./NetworkSourceFlow.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
+import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
@@ -605,12 +610,14 @@ export function BuilderWorkspace({
 	initialDeleteConfirmation = null,
 	initialAddSourceOpen = false,
 	initialSourceEdit = null,
+	initialAboutCreditsOpen = false,
 	sourceProvider = null,
 	peopleProvider = null,
 	networkCatalogueProvider = null,
 	networkCountProvider = null,
 	studioCatalogueProvider = null,
 	studioCountProvider = null,
+	streamingCatalogueProvider = null,
 	artworkClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
@@ -650,6 +657,8 @@ export function BuilderWorkspace({
 	const [pendingEditedSourceFocus, setPendingEditedSourceFocus] = useState(null);
 	const [pendingSourceEditFallback, setPendingSourceEditFallback] = useState(null);
 	const [sourceEditStatusText, setSourceEditStatusText] = useState("");
+	const [aboutCreditsOpen, setAboutCreditsOpen] = useState(initialAboutCreditsOpen);
+	const [restoreAboutCreditsFocus, setRestoreAboutCreditsFocus] = useState(false);
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
@@ -670,6 +679,7 @@ export function BuilderWorkspace({
 	const deleteGateRef = useRef(null);
 	const addSourceRestoreFocusRef = useRef(null);
 	const sourceEditRestoreFocusRef = useRef(null);
+	const aboutCreditsTriggerRef = useRef(null);
 	const sourceProviderRef = useRef(null);
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
@@ -693,6 +703,10 @@ export function BuilderWorkspace({
 	const studioCountProviderRef = useRef(null);
 	if (studioCountProviderRef.current === null) {
 		studioCountProviderRef.current = studioCountProvider ?? createTmdbStudioCountProvider();
+	}
+	const streamingCatalogueProviderRef = useRef(null);
+	if (streamingCatalogueProviderRef.current === null) {
+		streamingCatalogueProviderRef.current = streamingCatalogueProvider ?? createStreamingCatalogueProvider();
 	}
 	const artworkClientRef = useRef(null);
 	if (artworkClientRef.current === null) {
@@ -727,7 +741,7 @@ export function BuilderWorkspace({
 	const deleteLocked = deleteConfirmation !== null;
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
-	const modalLocked = editorLocked || deleteLocked || addSourceLocked || sourceEditLocked;
+	const modalLocked = editorLocked || deleteLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -811,6 +825,12 @@ export function BuilderWorkspace({
 		sourceEditRestoreFocusRef.current = null;
 		focusElementWithoutScroll(trigger);
 	}, [restoreSourceEditTriggerFocus]);
+
+	useEffect(() => {
+		if (!restoreAboutCreditsFocus) return;
+		setRestoreAboutCreditsFocus(false);
+		focusElementWithoutScroll(aboutCreditsTriggerRef.current);
+	}, [restoreAboutCreditsFocus]);
 
 	useEffect(() => {
 		if (createdCardTarget === null || createdCardRef.current === null) return;
@@ -1057,6 +1077,17 @@ export function BuilderWorkspace({
 		setEditorMode("settings");
 	}
 
+	function openAboutCredits() {
+		if (navigationLocked || pointerInteractionLocked()) return;
+		setAboutCreditsOpen(true);
+	}
+
+	function closeAboutCredits() {
+		if (!aboutCreditsOpen) return;
+		setAboutCreditsOpen(false);
+		setRestoreAboutCreditsFocus(true);
+	}
+
 	function handleEditorSubmit(event) {
 		event.preventDefault();
 		if (!visibleEditorDraft) return;
@@ -1185,7 +1216,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID].includes(modeId)
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -1372,6 +1403,43 @@ export function BuilderWorkspace({
 		return result;
 	}
 
+	function applyStreamingSources(bundle) {
+		if (!visibleAddSourceSession || visibleAddSourceSession.context !== "folder") {
+			return {
+				ok: false,
+				errors: [{
+					code: "STREAMING_FOLDER_UNAVAILABLE",
+					path: "$streaming.destination",
+					message: "The selected destination folder is no longer available.",
+				}],
+			};
+		}
+		const result = createStreamingSourceBundle(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			provider: bundle.provider,
+			regions: bundle.regions,
+			catalogueRegions: bundle.catalogueRegions,
+			mediaChoice: bundle.mediaChoice,
+			sortOptionId: bundle.sortOptionId,
+			drafts: bundle.drafts,
+			duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+			interactionLocked: (
+				editorLocked
+					|| deleteLocked
+					|| returnConfirmationOpen
+					|| actionsMenuInternalId !== null
+					|| pointerInteractionLocked()
+			),
+		});
+		if (!result.ok) return result;
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} Streaming source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.provider.name}”.`));
+		return result;
+	}
+
 	function completeDeletion(impact) {
 		const outcome = executeDeletion(controller, impact, deleteGateRef.current);
 		if (!outcome.started) return;
@@ -1418,12 +1486,6 @@ export function BuilderWorkspace({
 		if (!deleteConfirmation) return;
 		setDeleteConfirmation(null);
 		setRestoreDeleteTriggerFocus(true);
-	}
-
-	function handleRootNavigation(event) {
-		if (!hierarchyInteractionLocked && !pointerInteractionLocked()) return;
-		event.preventDefault();
-		event.stopPropagation();
 	}
 
 	function announceMovement(message) {
@@ -1782,6 +1844,7 @@ export function BuilderWorkspace({
 			data-delete-open={deleteLocked ? "true" : undefined}
 			data-add-source-open={addSourceLocked ? "true" : undefined}
 			data-source-edit-open={sourceEditLocked ? "true" : undefined}
+			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
 		>
 			<div
 				className="workspace-underlay"
@@ -1809,15 +1872,18 @@ export function BuilderWorkspace({
 						>
 							Back to builder home
 						</button>
-						<a
-							className="root-link"
-							data-root-link="true"
-							href="../"
-							onClick={handleRootNavigation}
+						<button
+							ref={aboutCreditsTriggerRef}
+							className="about-credits-trigger"
+							type="button"
+							data-action="open-about-credits"
+							aria-label="About & Credits"
+							aria-haspopup="dialog"
+							disabled={hierarchyInteractionLocked}
+							onClick={openAboutCredits}
 						>
-							<span aria-hidden="true">←</span>
-							Back to TMDB ID Lookup
-						</a>
+							<span aria-hidden="true">?</span>
+						</button>
 					</div>
 				</header>
 
@@ -2104,7 +2170,7 @@ export function BuilderWorkspace({
 										</button>
 									)}
 								>
-									Add a TMDB movie franchise or People source to begin.
+									Add a supported TMDB source to begin.
 								</EmptyState>
 							)}
 						</div>
@@ -2112,6 +2178,7 @@ export function BuilderWorkspace({
 				</div>
 			</div>
 
+			{aboutCreditsOpen ? <AboutCreditsDialog onClose={closeAboutCredits} /> : null}
 			{visibleEditorDraft ? (
 				<NodeEditor
 					draft={visibleEditorDraft}
@@ -2176,6 +2243,15 @@ export function BuilderWorkspace({
 						onCancel={cancelAddSource}
 						onApply={applyNetworkSource}
 					/>
+				) : visibleAddSourceSession.modeId === STREAMING_SOURCE_MODE_ID ? (
+					<StreamingSourceFlow
+						catalogueProvider={streamingCatalogueProviderRef.current}
+						project={state.project}
+						folder={addSourceFolder}
+						onBack={returnToSourceModePicker}
+						onCancel={cancelAddSource}
+						onApply={applyStreamingSources}
+					/>
 				) : (
 					<AddSourceDialog
 						provider={sourceProviderRef.current}
@@ -2194,6 +2270,7 @@ export function BuilderWorkspace({
 					networkCountProvider={networkCountProviderRef.current}
 					studioCatalogueProvider={studioCatalogueProviderRef.current}
 					studioCountProvider={studioCountProviderRef.current}
+					streamingCatalogueProvider={streamingCatalogueProviderRef.current}
 					session={sourceEdit.session}
 					initialDraft={sourceEdit.draft}
 					onCancel={cancelSourceEdit}

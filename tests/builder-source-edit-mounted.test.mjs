@@ -214,6 +214,14 @@ test("mounted Collection validation shares the Source name focus path and perfor
 	);
 });
 
+test("mounted Streaming validation focuses Source name and preserves the physical source without mutation", () => {
+	assertRequiredNameFailure(mountedResults.streamingRequiredName);
+	assert.equal(
+		mountedResults.streamingRequiredName.helper,
+		"This is the name shown in Nuvio. You can customise it.",
+	);
+});
+
 test("mounted duplicate failure focuses the diagnostic alert and preserves the draft without mutation", () => {
 	const result = mountedResults.duplicate;
 	assert.equal(result.activeElementIsAlert, true);
@@ -226,4 +234,14 @@ test("mounted duplicate failure focuses the diagnostic alert and preserves the d
 	assert.equal(result.updateCalls, 0);
 	assert.equal(result.revisionAfter, result.revisionBefore);
 	assert.equal(result.serializedUnchanged, true);
+});
+
+test("mounted Streaming creation reopens and focuses the invalid physical-source name without applying", () => {
+	const result = mountedResults.streamingCreationRequiredName;
+	assert.equal(result.activeElementIsInput, true);
+	assert.equal(result.ariaInvalid, "true");
+	assert.equal(result.inlineError, "Enter a name for this source before adding it.");
+	assert.equal(result.alertRendered, true);
+	assert.equal(result.dialogOpen, true);
+	assert.equal(result.applyCalls, 0);
 });

@@ -1033,13 +1033,13 @@ function validateSourceBundleOptions(options, { path, requireFolder, allowFolder
 		}
 	}
 
-	if (!Array.isArray(options.sources) || options.sources.length < 1 || options.sources.length > 4) {
+	if (!Array.isArray(options.sources) || options.sources.length < 1) {
 		return {
 			ok: false,
 			error: controllerDiagnostic(
 				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
 				`${path}.sources`,
-				"A source bundle must contain one to four source options.",
+				"A source bundle must contain at least one source option.",
 			),
 		};
 	}

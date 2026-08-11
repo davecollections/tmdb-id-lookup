@@ -96,13 +96,14 @@ function renderSearch({ context = "folder", results = [person()], selection = cr
 	}));
 }
 
-test("source chooser retains Movie franchise, People, and Studios while adding Networks", () => {
+test("source chooser retains existing modes while adding Streaming service fifth", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "People", onCancel() {}, onSelectMode() {} }));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-movie-franchise"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-people"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-studios"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-networks"'));
-	assert.equal((markup.match(/<button/g) ?? []).length, 5);
+	assert.ok(markup.includes('data-source-mode-option="tmdb-streaming-services"'));
+	assert.equal((markup.match(/<button/g) ?? []).length, 6);
 });
 
 test("folder Search preserves TMDB order, disambiguates identities, and uses friendly profile states", () => {

@@ -13,6 +13,7 @@ import {
 	NETWORK_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_EDITOR_ID,
 	STUDIO_SOURCE_EDITOR_ID,
+	STREAMING_SOURCE_EDITOR_ID,
 	canEditSource,
 	chooseMovieCollection,
 	choosePeopleSourceCombination,
@@ -23,8 +24,10 @@ import {
 	peopleSortOptions,
 	saveSourceEdit,
 	sourceEditorFor,
+	streamingDefaultSourceName,
 	updatePeopleSourceSort,
 	updateStudioSourceSort,
+	updateStreamingSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
@@ -82,6 +85,19 @@ function studioSource(overrides = {}) {
 	};
 }
 
+function streamingSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Netflix · AU",
+		tmdbSourceType: "DISCOVER",
+		tmdbId: null,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: { watchRegion: "AU", withWatchProviders: "8" },
+		...overrides,
+	};
+}
+
 function importFolder(controller, sources, folderOverrides = {}, collectionOverrides = {}) {
 	const result = controller.importValue([{
 		id: "collection-id",
@@ -127,7 +143,7 @@ function sessionFor(controller, sourceIndex = 0) {
 	return { ...opened, source };
 }
 
-test("registry discovers complete Movie Collection, People, Studio, and Network sources", () => {
+test("registry discovers complete Movie Collection, People, Studio, Network, and simple Streaming sources", () => {
 	const controller = createController();
 	const folder = importFolder(controller, [
 		collectionSource({ provider: "TMDB", tmdbSourceType: "collection", tmdbId: "0100", mediaType: "movie" }),
@@ -141,6 +157,8 @@ test("registry discovers complete Movie Collection, People, Studio, and Network 
 		{ provider: "addon", title: "Addon", addonId: "a", type: "movie", catalogId: "c" },
 		{ provider: "community", title: "Opaque", unknown: true },
 		{ provider: "tmdb", title: "Incomplete", tmdbSourceType: "COLLECTION", mediaType: "MOVIE" },
+		streamingSource(),
+		streamingSource({ title: "Netflix series · AU", mediaType: "TV" }),
 	]);
 	assert.equal(sourceEditorFor(folder.sources[0]).id, MOVIE_COLLECTION_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[1]).id, PEOPLE_SOURCE_EDITOR_ID);
@@ -148,7 +166,122 @@ test("registry discovers complete Movie Collection, People, Studio, and Network 
 	assert.equal(sourceEditorFor(folder.sources[5]).id, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[6]).id, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[7]).id, NETWORK_SOURCE_EDITOR_ID);
+	assert.equal(sourceEditorFor(folder.sources[11]).id, STREAMING_SOURCE_EDITOR_ID);
+	assert.equal(sourceEditorFor(folder.sources[12]).id, STREAMING_SOURCE_EDITOR_ID);
 	for (const index of [3, 4, 8, 9, 10]) assert.equal(canEditSource(folder.sources[index]), false);
+});
+
+test("Streaming Edit recognition fails closed for compound, filtered, unknown and malformed DISCOVER sources", () => {
+	const controller = createController();
+	const folder = importFolder(controller, [
+		streamingSource(),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: "8|9" } }),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: "8", withGenres: "18" } }),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: "8", releaseDateGte: "2020-01-01" } }),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: "8", voteAverageGte: 7 } }),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: "8", withoutWatchProviders: "9" } }),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: "8", withoutGenres: "18" } }),
+		streamingSource({ filters: { watchRegion: "au", withWatchProviders: "8" } }),
+		streamingSource({ filters: { watchRegion: "AU", withWatchProviders: 8 } }),
+		streamingSource({ unknownMeaningful: { keep: true } }),
+		streamingSource({ sortBy: { unsafe: true } }),
+	]);
+	assert.equal(sourceEditorFor(folder.sources[0]).id, STREAMING_SOURCE_EDITOR_ID);
+	for (let index = 1; index < folder.sources.length; index += 1) assert.equal(canEditSource(folder.sources[index]), false, index);
+});
+
+test("Streaming Edit changes only title and semantic sort while fixed identity and raw null evidence survive", () => {
+	const controller = createController();
+	importFolder(controller, [streamingSource({ legacyNull: null, filters: { watchRegion: "AU", withWatchProviders: "8", withGenres: null } })]);
+	const opened = sessionFor(controller);
+	assert.equal(opened.session.adapterId, STREAMING_SOURCE_EDITOR_ID);
+	assert.equal(opened.draft.providerId, 8);
+	assert.equal(opened.draft.regionCode, "AU");
+	assert.equal(opened.draft.mediaType, "MOVIE");
+	const beforeIdentity = opened.session.originalIdentity;
+	let draft = updateSourceEditTitle(opened.draft, "Netflix cinema");
+	draft = updateStreamingSourceSort(draft, "vote_average.desc", "top-rated");
+	const saved = saveSourceEdit(controller, opened.session, draft);
+	assert.equal(saved.ok, true);
+	assert.deepEqual(saved.patch, { title: "Netflix cinema", sortBy: "vote_average.desc" });
+	const output = serialize(controller).value[0].folders[0].sources[0];
+	assert.equal(output.title, "Netflix cinema");
+	assert.equal(output.sortBy, "vote_average.desc");
+	assert.equal(output.tmdbId, null);
+	assert.deepEqual(output.filters, { watchRegion: "AU", withWatchProviders: "8", withGenres: null });
+	assert.equal(output.legacyNull, null);
+	assert.notEqual(opened.session.originalIdentity, sourceEditorFor(controller.getState().project.collections[0].folders[0].sources[0]).sourceIdentity(controller.getState().project.collections[0].folders[0].sources[0]));
+	assert.equal(typeof beforeIdentity, "string");
+});
+
+test("Streaming default-name reset is media-qualified for Movie and TV", () => {
+	assert.equal(streamingDefaultSourceName("Netflix", "AU", "MOVIE"), "Netflix, AU - Movies");
+	assert.equal(streamingDefaultSourceName("Netflix", "AU", "TV"), "Netflix, AU - Series");
+	assert.equal(streamingDefaultSourceName("Netflix", "AU", null), null);
+});
+
+test("Streaming TV Recent saves a sort-only patch with the DISCOVER-owned media mapping", () => {
+	const controller = createController();
+	importFolder(controller, [streamingSource({ title: "Netflix series", mediaType: "TV" })]);
+	const opened = sessionFor(controller);
+	const saved = saveSourceEdit(
+		controller,
+		opened.session,
+		updateStreamingSourceSort(opened.draft, "first_air_date.desc", "recent"),
+	);
+	assert.equal(saved.ok, true);
+	assert.deepEqual(saved.patch, { sortBy: "first_air_date.desc" });
+	assert.equal(serialize(controller).value[0].folders[0].sources[0].sortBy, "first_air_date.desc");
+});
+
+test("Streaming Edit preserves unsupported imported sort until touched and makes no-op Save mutation-free", () => {
+	const controller = createController();
+	importFolder(controller, [streamingSource({ sortBy: "owner.custom.order" })]);
+	const opened = sessionFor(controller);
+	assert.equal(opened.draft.sortOptionId, null);
+	const before = serialize(controller);
+	let saved = saveSourceEdit(controller, opened.session, opened.draft);
+	assert.equal(saved.ok, true);
+	assert.equal(saved.changed, false);
+	assert.equal(serialize(controller).json, before.json);
+	saved = saveSourceEdit(controller, opened.session, updateStreamingSourceSort(opened.draft, "invented.desc", "invented"));
+	assert.equal(saved.ok, false);
+	assert.equal(saved.validationFailed, true);
+	assert.equal(saved.errors[0].code, "SOURCE_EDIT_STREAMING_SORT_UNSUPPORTED");
+	assert.equal(serialize(controller).json, before.json);
+});
+
+test("Streaming sort change uses full DISCOVER identity for duplicate rejection while title-only edit does not", () => {
+	const controller = createController();
+	importFolder(controller, [
+		streamingSource(),
+		streamingSource({ title: "Recent duplicate target", sortBy: "vote_count.desc", filters: { watchRegion: "AU", withWatchProviders: "8", withGenres: null } }),
+	]);
+	let opened = sessionFor(controller, 0);
+	const before = serialize(controller);
+	const duplicate = saveSourceEdit(controller, opened.session, updateStreamingSourceSort(opened.draft, "vote_count.desc", "most-votes"));
+	assert.equal(duplicate.ok, false);
+	assert.equal(duplicate.duplicateRejected, true);
+	assert.equal(serialize(controller).json, before.json);
+	opened = sessionFor(controller, 0);
+	const renamed = saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Custom Netflix"));
+	assert.equal(renamed.ok, true);
+	assert.deepEqual(renamed.patch, { title: "Custom Netflix" });
+});
+
+test("custom-named Streaming source edits remain exact through export and a second import cycle", () => {
+	const controller = createController();
+	importFolder(controller, [streamingSource({ title: "Imported stream shelf", legacyNull: null })]);
+	const opened = sessionFor(controller);
+	let draft = updateSourceEditTitle(opened.draft, "My Streaming shelf");
+	draft = updateStreamingSourceSort(draft, "primary_release_date.desc", "recent");
+	assert.equal(saveSourceEdit(controller, opened.session, draft).ok, true);
+	const first = serialize(controller);
+	const cycled = createController();
+	assert.equal(cycled.importValue(first.value).ok, true);
+	const second = serialize(cycled);
+	assert.deepEqual(second.value, first.value);
+	assert.equal(second.json, first.json);
 });
 
 test("opening binds exact physical source context and never uses duplicate titles as a locator", () => {

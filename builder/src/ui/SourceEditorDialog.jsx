@@ -13,6 +13,7 @@ import {
 	parseNetworkSearchInput,
 	parseStudioSearchInput,
 	PEOPLE_SOURCE_COMBINATIONS,
+	STREAMING_SORT_OPTIONS,
 	studioSortOptionId,
 	studioSortValue,
 } from "../source-add/index.js";
@@ -25,6 +26,7 @@ import {
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_EDITOR_ID,
 	STUDIO_SOURCE_EDITOR_ID,
+	STREAMING_SOURCE_EDITOR_ID,
 	chooseMovieCollection,
 	choosePeopleSourceCombination,
 	createPeopleEditCountSession,
@@ -37,9 +39,12 @@ import {
 	updatePeopleSourceSort,
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
+	updateStreamingSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
+	streamingDefaultSourceName,
+	streamingEditSortValue,
 } from "../source-edit/index.js";
 import {
 	lockAddSourceDocumentBody,
@@ -55,6 +60,8 @@ import { StudioLogo } from "./StudioSourceFlow.jsx";
 import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
+import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
+import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import {
 	focusSourceEditAlert,
 	sourceEditErrorPresentation,
@@ -291,6 +298,27 @@ export function NetworkEditorFields({ draft, network, countState, sortRef, title
 	);
 }
 
+export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefaultName, onSortChange }) {
+	const selectedSortId = draft.sortOptionId;
+	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
+	return (
+		<section className="source-edit-options studio-source-edit-options streaming-source-edit-options" aria-labelledby="source-edit-options-title">
+			<div className="studio-configure-identity tmdb-review-identity streaming-edit-identity">
+				<TmdbEntityLogo entity={providerIdentity} entityType="streaming-provider" size="w92" context="streaming-edit" loading="eager" />
+				<div className="tmdb-review-identity-copy">
+					<p className="panel-kicker">Streaming provider</p>
+					<h3 id="source-edit-options-title">{providerIdentity.name}</h3>
+					<p>Provider ID {draft.providerId} · {draft.regionCode} · {mediaLabel}</p>
+				</div>
+			</div>
+			<p className="source-edit-fixed-note">Provider, region and media type stay fixed for this physical source.</p>
+			{providerIdentity.resolved ? <button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button> : null}
+			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
+			<SemanticSortChoices options={STREAMING_SORT_OPTIONS} selectedId={selectedSortId} name="streaming-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
+		</section>
+	);
+}
+
 export function SourceEditErrorPanel({ result, alertRef = null }) {
 	const presentation = sourceEditErrorPresentation(result);
 	return (
@@ -332,6 +360,7 @@ export function SourceEditorDialog({
 	peopleProvider,
 	networkCatalogueProvider,
 	networkCountProvider,
+	streamingCatalogueProvider,
 	studioCatalogueProvider,
 	studioCountProvider,
 	session,
@@ -377,6 +406,12 @@ export function SourceEditorDialog({
 		logoPath: null,
 		movieCount: null,
 	}));
+	const [streamingProviderIdentity, setStreamingProviderIdentity] = useState(() => Object.freeze({
+		id: initialDraft.providerId,
+		name: `Provider ${initialDraft.providerId}`,
+		logoPath: null,
+		resolved: false,
+	}));
 	const [submitting, setSubmitting] = useState(false);
 	const [viewportStyle, setViewportStyle] = useState(() => (
 		typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window)
@@ -388,6 +423,7 @@ export function SourceEditorDialog({
 	const chooseButtonRef = useRef(null);
 	const studioSortRef = useRef(null);
 	const networkSortRef = useRef(null);
+	const streamingSortRef = useRef(null);
 	const pickerInputRef = useRef(null);
 	const diagnosticRef = useRef(null);
 	const peopleCountSessionRef = useRef(null);
@@ -431,7 +467,7 @@ export function SourceEditorDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
@@ -477,6 +513,18 @@ export function SourceEditorDialog({
 	}, [initialDraft.tmdbId, session.adapterId, studioCatalogueProvider]);
 
 	useEffect(() => {
+		if (session.adapterId !== STREAMING_SOURCE_EDITOR_ID || typeof streamingCatalogueProvider?.loadCatalogue !== "function") return undefined;
+		let active = true;
+		streamingCatalogueProvider.loadCatalogue().then((result) => {
+			const providerIdentity = result?.ok
+				? result.data?.providers?.find((entry) => entry.id === initialDraft.providerId)
+				: null;
+			if (active && providerIdentity) setStreamingProviderIdentity(Object.freeze({ ...providerIdentity, resolved: true }));
+		}).catch(() => {});
+		return () => { active = false; };
+	}, [initialDraft.providerId, session.adapterId, streamingCatalogueProvider]);
+
+	useEffect(() => {
 		const countSession = networkCountSessionRef.current;
 		if (countSession === null || initialNetworkCountState !== null) return undefined;
 		let active = true;
@@ -509,7 +557,8 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const invalidField = firstMountedInvalidField(failure, { sort: networkSortRef.current ? networkSortRef : studioSortRef, title: titleInputRef });
+		const sortRef = networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : studioSortRef;
+		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
 			focusElementWithoutScroll(invalidField);
@@ -604,8 +653,10 @@ export function SourceEditorDialog({
 								? "Choose a replacement TMDB movie franchise."
 								: session.adapterId === STUDIO_SOURCE_EDITOR_ID
 									? "Update this Studio source name and title order."
-									: session.adapterId === NETWORK_SOURCE_EDITOR_ID
+								: session.adapterId === NETWORK_SOURCE_EDITOR_ID
 										? "Update this Network Series source name and title order."
+										: session.adapterId === STREAMING_SOURCE_EDITOR_ID
+											? "Update this Streaming source name and title order. Provider, region and media stay fixed."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
@@ -628,7 +679,7 @@ export function SourceEditorDialog({
 									{failure ? (
 										<SourceEditErrorPanel result={failure} alertRef={diagnosticRef} />
 									) : null}
-									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
+									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
 									{session.adapterId !== NETWORK_SOURCE_EDITOR_ID ? <SourceTitleField
 											draft={draft}
 											titleInputRef={titleInputRef}
@@ -691,6 +742,21 @@ export function SourceEditorDialog({
 											sortRef={studioSortRef}
 											onSortChange={(sortBy, sortOptionId) => {
 												setDraft((current) => updateStudioSourceSort(current, sortBy, sortOptionId));
+												clearFieldDiagnostic("sort");
+											}}
+										/>
+									) : session.adapterId === STREAMING_SOURCE_EDITOR_ID ? (
+										<StreamingEditorFields
+											draft={draft}
+											providerIdentity={streamingProviderIdentity}
+											sortRef={streamingSortRef}
+											onDefaultName={() => {
+												const defaultName = streamingDefaultSourceName(streamingProviderIdentity.name, draft.regionCode, draft.mediaType);
+												if (defaultName !== null) setDraft((current) => updateSourceEditTitle(current, defaultName));
+												clearFieldDiagnostic("title");
+											}}
+											onSortChange={(optionId) => {
+												setDraft((current) => updateStreamingSourceSort(current, streamingEditSortValue(optionId, current.mediaType), optionId));
 												clearFieldDiagnostic("sort");
 											}}
 										/>

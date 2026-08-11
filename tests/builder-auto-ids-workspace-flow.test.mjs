@@ -198,12 +198,14 @@ test("source TMDB metadata remains visible while collection and folder IDs stay 
 	assert.equal(markup.includes("F-ID"), false);
 });
 
-test("workspace home and root navigation are distinct and welcome omits workspace action", () => {
+test("workspace home and About actions are distinct and welcome omits workspace home action", () => {
 	const controller = makeController();
 	const workspace = renderWorkspace(controller);
 	const welcome = renderToStaticMarkup(createElement(BuilderWelcome, { controller, state: controller.getState(), onEnterWorkspace() {} }));
 	assert.ok(workspace.includes('data-action="return-builder-home"'));
-	assert.ok(workspace.includes("Back to TMDB ID Lookup"));
+	assert.equal((workspace.match(/data-action="open-about-credits"/g) ?? []).length, 1);
+	assert.equal(workspace.includes("Back to TMDB ID Lookup"), false);
+	assert.ok(welcome.includes('data-action="open-about-credits"'));
 	assert.equal(welcome.includes('data-action="return-builder-home"'), false);
 });
 

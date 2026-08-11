@@ -122,7 +122,7 @@ test("production welcome uses collection-focused startup copy and retains litera
 	assert.equal(markup.includes("Nuvio Collection Builder"), false);
 });
 
-test("welcome renders stable actions, import markers, and the root backlink", () => {
+test("welcome renders stable actions, import markers, and the About control", () => {
 	const markup = render(createController());
 	for (const marker of [
 		'data-action="start-new-project"',
@@ -133,7 +133,9 @@ test("welcome renders stable actions, import markers, and the root backlink", ()
 	]) {
 		assert.ok(markup.includes(marker), marker);
 	}
-	assert.match(markup, /data-root-link="true" href="\.\.\/"/);
+	assert.match(markup, /<button[^>]+data-action="open-about-credits"/);
+	assert.match(markup, />About<\/button>/);
+	assert.equal(markup.includes("Back to TMDB ID Lookup"), false);
 });
 
 test("welcome forms are labelled, described, semantic, and ID-safe", () => {
@@ -549,7 +551,7 @@ test("screen state remains UI-only while the controller subscription stays above
 	assert.match(app, /screen === "workspace"/);
 	assert.doesNotMatch(app, /createBuilderController|history\.|pushState|replaceState/);
 	const welcome = read("builder/src/ui/BuilderWelcome.jsx");
-	assert.equal((welcome.match(/useState\(/g) ?? []).length, 4);
+	assert.equal((welcome.match(/useState\(/g) ?? []).length, 5);
 	assert.doesNotMatch(welcome, /setProject|setCollections|setFolders|setSources|setSnapshot/);
 });
 
@@ -621,13 +623,14 @@ test("welcome source contains busy and disabled behavior without routes or defer
 	assert.match(source, /aria-busy=\{isBusy\}/);
 	assert.match(source, /aria-busy=\{busyAction === "file"\}/);
 	assert.match(source, /aria-busy=\{busyAction === "pasted"\}/);
-	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 5);
+	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 6);
 	for (const controlPattern of [
 		/data-action="start-new-project"[\s\S]{0,120}disabled=\{isBusy\}/,
 		/data-import-control="file"[\s\S]{0,160}disabled=\{isBusy\}/,
 		/data-action="import-file"[\s\S]{0,100}disabled=\{isBusy\}/,
 		/data-import-control="pasted-json"[\s\S]{0,140}disabled=\{isBusy\}/,
 		/data-action="import-pasted-json"[\s\S]{0,100}disabled=\{isBusy\}/,
+		/data-action="open-about-credits"[\s\S]{0,160}disabled=\{isBusy\}/,
 	]) {
 		assert.match(source, controlPattern);
 	}

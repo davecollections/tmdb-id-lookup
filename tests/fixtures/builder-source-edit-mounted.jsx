@@ -7,6 +7,7 @@ import {
 	saveSourceEdit,
 } from "../../builder/src/source-edit/index.js";
 import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx";
+import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -45,6 +46,19 @@ function peopleSource(overrides = {}) {
 		mediaType: "MOVIE",
 		sortBy: "popularity.desc",
 		filters: {},
+		...overrides,
+	};
+}
+
+function streamingSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Netflix · AU",
+		tmdbSourceType: "DISCOVER",
+		tmdbId: null,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: { watchRegion: "AU", withWatchProviders: "8" },
 		...overrides,
 	};
 }
@@ -203,11 +217,84 @@ async function runDuplicateScenario() {
 	});
 }
 
+async function runStreamingCreationRequiredNameScenario() {
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	let applyCalls = 0;
+	await act(async () => {
+		root.render(createElement(StreamingSourceFlow, {
+			catalogueProvider: {
+				async loadCatalogue() {
+					return {
+						ok: true,
+						data: {
+							regions: [{ code: "AU", name: "Australia" }],
+							providers: [{ id: 8, name: "Netflix", logoPath: null, moviePriorities: { AU: 1 }, tvPriorities: { AU: 2 } }],
+						},
+					};
+				},
+			},
+			project: { collections: [] },
+			folder: { internalId: "streaming-folder", editable: { title: "Streaming" } },
+			onBack() {},
+			onCancel() {},
+			onApply() { applyCalls += 1; return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		await act(async () => {
+			document.querySelector('[data-streaming-region="AU"]').click();
+			await afterCommittedEffects();
+		});
+		await act(async () => {
+			document.querySelector(".streaming-region-actions .editor-apply").click();
+			await afterCommittedEffects();
+		});
+		await act(async () => {
+			document.querySelector('[data-streaming-provider="8"]').click();
+			await afterCommittedEffects();
+		});
+		await act(async () => {
+			document.querySelector(".streaming-generated-source-actions button").click();
+			await afterCommittedEffects();
+		});
+		let input = document.querySelector("#streaming-source-name-AU-movie");
+		await act(async () => {
+			setInputValue(input, "");
+			await afterCommittedEffects();
+		});
+		await act(async () => {
+			document.querySelector(".streaming-generated-source-actions button").click();
+			await afterCommittedEffects();
+		});
+		await act(async () => {
+			document.querySelector(".streaming-configure-actions .editor-apply").click();
+			await afterCommittedEffects();
+		});
+		input = document.querySelector("#streaming-source-name-AU-movie");
+		return {
+			activeElementIsInput: document.activeElement === input,
+			ariaInvalid: input?.getAttribute("aria-invalid") ?? null,
+			inlineError: document.querySelector("#streaming-source-name-AU-movie-error")?.textContent ?? "",
+			alertRendered: Boolean(document.querySelector(".streaming-configure .editor-diagnostics")),
+			dialogOpen: Boolean(document.querySelector('[data-source-mode="tmdb-streaming-services"]')),
+			applyCalls,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
 async function runMountedRegressions() {
 	return {
 		peopleRequiredName: await runRequiredNameScenario(peopleSource()),
 		collectionRequiredName: await runRequiredNameScenario(collectionSource()),
+		streamingRequiredName: await runRequiredNameScenario(streamingSource()),
 		duplicate: await runDuplicateScenario(),
+		streamingCreationRequiredName: await runStreamingCreationRequiredNameScenario(),
 	};
 }
 

@@ -47,6 +47,12 @@ function failure(code, path, message, extras = {}) {
 	};
 }
 
+function sourceIdentity(adapter, source) {
+	return typeof adapter.sourceIdentity === "function"
+		? adapter.sourceIdentity(source)
+		: adapter.identity(source?.editable);
+}
+
 export function createSourceEditSession(project, sourceInternalId) {
 	const anywhere = findSourceAnywhere(project, sourceInternalId);
 	if (anywhere === null) {
@@ -64,7 +70,7 @@ export function createSourceEditSession(project, sourceInternalId) {
 			"This source does not have a supported editor.",
 		);
 	}
-	const originalIdentity = adapter.identity(anywhere.source.editable);
+	const originalIdentity = sourceIdentity(adapter, anywhere.source);
 	const session = Object.freeze({
 		openingProject: project,
 		collectionInternalId: anywhere.collection.internalId,
@@ -138,6 +144,10 @@ export function updateStudioSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }
 
+export function updateStreamingSourceSort(draft, sortBy, sortOptionId = null) {
+	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
+}
+
 export function chooseMovieCollection(draft, collection) {
 	const tmdbId = canonicalPositiveId(collection?.id);
 	if (tmdbId === null || typeof collection?.name !== "string" || collection.name.trim().length === 0) {
@@ -167,7 +177,7 @@ function duplicateFor(folder, adapter, draft, session) {
 	) return null;
 	for (const source of folder.sources) {
 		if (source.internalId === session.sourceInternalId) continue;
-		if (adapter.identity(source.editable) !== proposedIdentity) continue;
+		if (sourceIdentity(adapter, source) !== proposedIdentity) continue;
 		return Object.freeze({
 			internalId: source.internalId,
 			identity: proposedIdentity,
@@ -229,7 +239,7 @@ export function saveSourceEdit(controller, session, draft) {
 			{ conflict: true, closeRequired: false },
 		);
 	}
-	if (adapter.identity(exact.source.editable) !== session.originalIdentity) {
+	if (sourceIdentity(adapter, exact.source) !== session.originalIdentity) {
 		return failure(
 			"SOURCE_EDIT_IDENTITY_STALE",
 			"$sourceEdit.source",
