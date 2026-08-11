@@ -38,6 +38,7 @@ const {
 	SourceEditErrorPanel,
 	SourceEditorDialog,
 	StudioEditorFields,
+	StreamingEditorFields,
 } = await vite.ssrLoadModule("/src/ui/SourceEditorDialog.jsx");
 const { MovieCollectionPicker } = await vite.ssrLoadModule("/src/ui/MovieCollectionPicker.jsx");
 after(() => vite.close());
@@ -191,6 +192,19 @@ function networkSource(overrides = {}) {
 	};
 }
 
+function streamingSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Netflix · AU",
+		tmdbSourceType: "DISCOVER",
+		tmdbId: null,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: { watchRegion: "AU", withWatchProviders: "8" },
+		...overrides,
+	};
+}
+
 function read(relativePath) {
 	return fs.readFileSync(path.join(rootDir, relativePath), "utf8");
 }
@@ -212,13 +226,13 @@ function openEdit(controller, source) {
 	return { session: opened.session, draft: opened.draft };
 }
 
-test("supported source menus show Edit source immediately before Delete", () => {
+test("supported source menus include simple Streaming and show Edit source immediately before Delete", () => {
 	const controller = createController();
-	importSources(controller, [collectionSource(), peopleSource(), studioSource()]);
+	importSources(controller, [collectionSource(), peopleSource(), studioSource(), streamingSource()]);
 	const markup = renderWorkspace(controller);
-	assert.equal((markup.match(/data-action="edit-source"/g) ?? []).length, 3);
-	assert.equal((markup.match(/>Edit source<\/button>/g) ?? []).length, 3);
-	assert.equal((markup.match(/data-action="delete-source"/g) ?? []).length, 3);
+	assert.equal((markup.match(/data-action="edit-source"/g) ?? []).length, 4);
+	assert.equal((markup.match(/>Edit source<\/button>/g) ?? []).length, 4);
+	assert.equal((markup.match(/data-action="delete-source"/g) ?? []).length, 4);
 	for (const menu of markup.match(/<div[^>]+data-actions-menu="source"[\s\S]*?<\/div>/g) ?? []) {
 		assert.ok(menu.indexOf('data-action="edit-source"') < menu.indexOf('data-action="delete-source"'));
 	}
@@ -356,6 +370,50 @@ test("Studio editor preserves an unusual imported sort until a supported option 
 	assert.equal(markup.includes("Retry Movie count"), false);
 	assert.equal(markup.includes("Retry Series count"), false);
 	assert.equal(markup.includes("Refresh title count"), false);
+});
+
+test("Streaming editor shows fixed fallback identity, four semantic sorts and no unreliable default-name action", () => {
+	const controller = createController();
+	const folder = importSources(controller, [streamingSource()]);
+	const edit = openEdit(controller, folder.sources[0]);
+	const markup = renderToStaticMarkup(createElement(SourceEditorDialog, {
+		provider: fakeProvider(),
+		streamingCatalogueProvider: { loadCatalogue() { throw new Error("effects do not run during SSR"); } },
+		session: edit.session,
+		initialDraft: edit.draft,
+		onCancel() {},
+		onSave() { return { ok: true }; },
+	}));
+	assert.ok(markup.includes('data-source-edit-adapter="streaming"'));
+	assert.ok(markup.includes("Update this Streaming source name and title order."));
+	assert.ok(markup.includes("Provider 8"));
+	assert.ok(markup.includes("Provider ID 8 · AU · Movies"));
+	assert.ok(markup.includes("Provider, region and media type stay fixed"));
+	for (const label of ["Popular", "Recent", "Top Rated", "Most Votes"]) assert.ok(markup.includes(label), label);
+	assert.equal(markup.includes("Use default name"), false);
+	assert.equal(markup.includes("Title count"), false);
+	assert.equal(markup.includes('href="https://www.themoviedb.org'), false);
+	assert.ok(markup.includes("Source name"));
+});
+
+test("resolved Streaming provider presentation enables default naming while imported sort stays untouched", () => {
+	const markup = renderToStaticMarkup(createElement(StreamingEditorFields, {
+		draft: { providerId: 8, regionCode: "AU", mediaType: "TV", sortBy: "owner.imported", originalSortBy: "owner.imported", sortOptionId: null },
+		providerIdentity: { id: 8, name: "Netflix", logoPath: "/netflix.png", resolved: true },
+		onDefaultName() {},
+		onSortChange() {},
+	}));
+	assert.ok(markup.includes("Netflix"));
+	assert.ok(markup.includes("Provider ID 8 · AU · Series"));
+	assert.ok(markup.includes("tmdb-entity-logo-tile--streaming-edit"));
+	assert.ok(markup.includes("/w92/netflix.png"));
+	assert.ok(markup.includes("Use default name"));
+	assert.ok(markup.includes("Current imported sort is preserved until you choose a supported sort: owner.imported"));
+	assert.equal(markup.includes("checked=\"\""), false);
+	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
+	assert.match(styles, /\.streaming-edit-identity\s*>\s*\.tmdb-entity-logo-tile--streaming-edit\s*\{/);
+	const dialogSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "SourceEditorDialog.jsx"), "utf8");
+	assert.match(dialogSource, /streamingDefaultSourceName\(streamingProviderIdentity\.name, draft\.regionCode, draft\.mediaType\)/);
 });
 
 test("Studio Series editor keeps COMPANY/TV visible and preselects the media-correct Recent card", () => {

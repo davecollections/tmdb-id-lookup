@@ -214,6 +214,46 @@ test("Network count route rejects Movie, missing, mixed, duplicate, malformed, a
 	});
 });
 
+test("Streaming provider catalogue routes forward only exact language requests to the fixed TMDB host", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/watch/providers/regions?language=en-US",
+			"/3/watch/providers/movie?language=en-US",
+			"/3/watch/providers/tv?language=en-US",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 200, pathname);
+		}
+		assert.deepEqual(calls.map(([url]) => url.toString()), [
+			"https://api.themoviedb.org/3/watch/providers/regions?language=en-US",
+			"https://api.themoviedb.org/3/watch/providers/movie?language=en-US",
+			"https://api.themoviedb.org/3/watch/providers/tv?language=en-US",
+		]);
+		for (const [, init] of calls) {
+			assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
+		}
+	});
+});
+
+test("Streaming provider catalogue routes reject missing, duplicate, changed, and extra parameters", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/watch/providers/regions",
+			"/3/watch/providers/movie?language=en-us",
+			"/3/watch/providers/tv?language=en-US&language=en-US",
+			"/3/watch/providers/tv?language=en-US&page=1",
+			"/3/watch/providers/tv?language=en-US&api_key=browser-secret",
+			"/3/watch/providers/person?language=en-US",
+			"/3/watch/providers/tv/?language=en-US",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
 test("Studio count route failures stay sanitized and never expose request details", async () => {
 	const originalConsoleError = console.error;
 	console.error = () => {};

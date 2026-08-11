@@ -527,6 +527,47 @@ test("creation uses domain defaults supports indexed insertion and never auto-se
 	assert.equal(controller.getState().dirty, true);
 });
 
+test("generic source batches accept six ordered sources in one content revision", () => {
+	const controller = createBuilderController({ idFactory: countingIdFactory() });
+	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const folder = controller.createFolder(collection.createdInternalId, { editable: { id: "folder", title: "Folder" } });
+	const sources = Array.from({ length: 6 }, (_, index) => ({
+		category: "native-tmdb",
+		editable: { title: `Source ${index + 1}` },
+	}));
+	const beforeRevision = controller.getState().revision;
+
+	const result = controller.addSourcesToFolder(folder.createdInternalId, { sources });
+	const inserted = controller.getState().project.collections[0].folders[0].sources;
+
+	assert.equal(result.ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(inserted.length, 6);
+	assert.deepEqual(inserted.map((source) => source.editable.title), sources.map((source) => source.editable.title));
+	assert.deepEqual(inserted.map((source) => source.internalId), result.createdSourceInternalIds);
+	assert.equal(new Set(result.createdSourceInternalIds).size, 6);
+});
+
+test("generic source batches reject an invalid fifth source without partial insertion", () => {
+	const controller = createBuilderController({ idFactory: countingIdFactory() });
+	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const folder = controller.createFolder(collection.createdInternalId, { editable: { id: "folder", title: "Folder" } });
+	const sources = Array.from({ length: 6 }, (_, index) => ({
+		category: "native-tmdb",
+		editable: { title: `Source ${index + 1}` },
+	}));
+	sources[4] = { category: "unsupported", editable: { title: "Invalid fifth source" } };
+	const beforeProject = controller.getState().project;
+
+	const result = controller.addSourcesToFolder(folder.createdInternalId, { sources });
+
+	assert.equal(result.ok, false);
+	assert.equal(result.errors[0].code, "INVALID_CONTROLLER_ARGUMENT");
+	assert.equal(result.errors[0].path, "$controller.addSourcesToFolder.sources[4]");
+	assert.equal(controller.getState().project, beforeProject);
+	assert.equal(controller.getState().project.collections[0].folders[0].sources.length, 0);
+});
+
 test("creation rejects wrong parents invalid indices categories and generated collisions atomically", () => {
 	const idFactory = sequenceIdFactory("project", "collection", "folder", "project");
 	const controller = createBuilderController({ idFactory });

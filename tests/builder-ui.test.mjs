@@ -102,7 +102,6 @@ test("empty shell renders the product header, navigation, and start action", () 
 		"Built for Nuvio collections",
 		"Development preview",
 		"Back to builder home",
-		"Back to TMDB ID Lookup",
 		"Start your first collection",
 		"New collection",
 	]) {
@@ -110,7 +109,8 @@ test("empty shell renders the product header, navigation, and start action", () 
 	}
 	assert.match(markup, /<main[^>]+data-builder-shell="true"/);
 	assert.match(markup, /data-panel="collections"/);
-	assert.match(markup, /data-root-link="true" href="\.\.\/"/);
+	assert.equal(markup.includes("Back to TMDB ID Lookup"), false);
+	assert.equal((markup.match(/data-action="open-about-credits"/g) ?? []).length, 1);
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);
 });
 
@@ -648,16 +648,23 @@ test("builder HTML uses development metadata and retains the private preview bou
 	assert.doesNotMatch(html, /deployment-test|data-deployment-test/i);
 });
 
-test("production UI keeps one local SVG and excludes deferred browser and rendering APIs", () => {
+test("production UI keeps local Builder and approved attribution assets while excluding deferred browser and rendering APIs", () => {
 	const source = `${read("builder/src/main.jsx")}\n${uiSource()}`;
-	const assets = fs.readdirSync(path.join(builderSrcDir, "assets")).filter((name) => name.endsWith(".svg"));
-	assert.deepEqual(assets, ["builder-mark.svg"]);
+	const assets = fs.readdirSync(path.join(builderSrcDir, "assets")).sort();
+	assert.deepEqual(assets, ["builder-mark.svg", "justwatch-mark-gold.svg", "tmdb-logo-square.svg"]);
 	assert.match(source, /builder-mark\.svg/);
+	assert.match(source, /tmdb-logo-square\.svg/);
+	assert.match(source, /justwatch-mark-gold\.svg/);
 	assert.doesNotMatch(source, /from\s+["']node:/);
 	assert.doesNotMatch(source, /\b(?:localStorage|indexedDB|fetch|showOpenFilePicker|showSaveFilePicker|Blob|File|createObjectURL)\b/);
 	assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
 	assert.doesNotMatch(source, /react-router|ReactRouter/i);
-	assert.doesNotMatch(source, /https?:\/\//);
+	assert.deepEqual([...source.matchAll(/https?:\/\/[^"']+/g)].map((match) => match[0]), [
+		"https://www.themoviedb.org/",
+		"https://www.justwatch.com/",
+		"https://github.com/davecollections",
+		"https://github.com/davecollections/tmdb-id-lookup/issues/new/choose",
+	]);
 });
 
 test("styles provide mobile protection, touch sizing, focus, desktop panels, and reduced motion", () => {

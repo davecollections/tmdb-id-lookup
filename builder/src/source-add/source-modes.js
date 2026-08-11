@@ -38,9 +38,20 @@ export const NETWORK_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const STREAMING_SOURCE_MODE_ID = "tmdb-streaming-services";
+
+export const STREAMING_SOURCE_MODE = Object.freeze({
+	id: STREAMING_SOURCE_MODE_ID,
+	label: "Streaming service",
+	providerLabel: "TMDB",
+	description: "Add Movie or Series sources for one streaming provider across one or more regions.",
+	category: "native-tmdb",
+});
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	PEOPLE_SOURCE_MODE,
 	STUDIO_SOURCE_MODE,
 	NETWORK_SOURCE_MODE,
+	STREAMING_SOURCE_MODE,
 ]);

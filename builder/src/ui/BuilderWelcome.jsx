@@ -1,5 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
+import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
+import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import {
 	importJsonFile,
 	importPastedJson,
@@ -39,7 +41,10 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 	const [pastedText, setPastedText] = useState("");
 	const [localDiagnostics, setLocalDiagnostics] = useState([]);
 	const [busyAction, setBusyAction] = useState(null);
+	const [aboutCreditsOpen, setAboutCreditsOpen] = useState(false);
 	const actionGateRef = useRef(null);
+	const aboutCreditsTriggerRef = useRef(null);
+	const restoreAboutCreditsFocusRef = useRef(false);
 	if (actionGateRef.current === null) {
 		actionGateRef.current = createWelcomeActionGate();
 	}
@@ -51,6 +56,12 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 	];
 	const visibleErrors = localDiagnostics.length > 0 ? localDiagnostics : controllerErrors;
 	const visibleWarnings = localDiagnostics.length > 0 ? [] : state.diagnostics.import.warnings;
+
+	useEffect(() => {
+		if (aboutCreditsOpen || !restoreAboutCreditsFocusRef.current) return;
+		restoreAboutCreditsFocusRef.current = false;
+		focusElementWithoutScroll(aboutCreditsTriggerRef.current);
+	}, [aboutCreditsOpen]);
 
 	function showFailure(result) {
 		setLocalDiagnostics(result.errors[0]?.path === "$ui.import" ? result.errors : []);
@@ -103,8 +114,22 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 		});
 	}
 
+	function closeAboutCredits() {
+		if (!aboutCreditsOpen) return;
+		restoreAboutCreditsFocusRef.current = true;
+		setAboutCreditsOpen(false);
+	}
+
 	return (
-		<main className="builder-welcome" data-builder-welcome="true" aria-busy={isBusy}>
+		<>
+		<main
+			className="builder-welcome"
+			data-builder-welcome="true"
+			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
+			aria-busy={isBusy}
+			inert={aboutCreditsOpen || undefined}
+			aria-hidden={aboutCreditsOpen ? "true" : undefined}
+		>
 			<header className="welcome-brand">
 				<img className="welcome-mark" src={builderMark} alt="" width="68" height="68" />
 				<div>
@@ -213,11 +238,21 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 
 			<footer className="welcome-footer">
 				<p className="privacy-note">Your collection JSON is processed locally in this browser and is not uploaded.</p>
-				<a className="root-link" data-root-link="true" href="../">
-					<span aria-hidden="true">←</span>
-					Back to TMDB ID Lookup
-				</a>
+				<button
+					ref={aboutCreditsTriggerRef}
+					className="root-link welcome-about-trigger"
+					type="button"
+					data-action="open-about-credits"
+					aria-label="About & Credits"
+					aria-haspopup="dialog"
+					disabled={isBusy}
+					onClick={() => setAboutCreditsOpen(true)}
+				>
+					About
+				</button>
 			</footer>
 		</main>
+		{aboutCreditsOpen ? <AboutCreditsDialog onClose={closeAboutCredits} /> : null}
+		</>
 	);
 }

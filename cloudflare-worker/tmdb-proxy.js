@@ -26,6 +26,11 @@ const COMPANY_DISCOVER_PATHS = new Set([
   "/3/discover/movie",
   "/3/discover/tv",
 ]);
+const WATCH_PROVIDER_PATHS = new Set([
+  "/3/watch/providers/regions",
+  "/3/watch/providers/movie",
+  "/3/watch/providers/tv",
+]);
 const TV_DISCOVER_PARAMETERS = new Set([
   "with_companies",
   "with_networks",
@@ -41,6 +46,15 @@ function isCanonicalPositiveSafeInteger(value) {
 }
 
 function isAllowedTmdbRequest(url) {
+  if (WATCH_PROVIDER_PATHS.has(url.pathname)) {
+    const entries = [...url.searchParams.entries()];
+    return (
+      entries.length === 1 &&
+      entries[0][0] === "language" &&
+      entries[0][1] === "en-US"
+    );
+  }
+
   if (ALLOWED_PATHS.some((pattern) => pattern.test(url.pathname))) {
     return true;
   }

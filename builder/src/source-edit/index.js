@@ -22,6 +22,13 @@ export {
 	studioSourceEditor,
 } from "./studio-editor.js";
 export {
+	inspectEditableStreamingSource,
+	STREAMING_SOURCE_EDITOR_ID,
+	streamingDefaultSourceName,
+	streamingEditSortValue,
+	streamingSourceEditor,
+} from "./streaming-editor.js";
+export {
 	SOURCE_EDITORS,
 	canEditSource,
 	sourceEditorById,
@@ -35,6 +42,7 @@ export {
 	updatePeopleSourceSort,
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
+	updateStreamingSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,

@@ -880,8 +880,7 @@ test("capture admission and one pointer-session gate protect active and settling
 		["openEditor", "closeEditor"],
 		["handleReturnHome", "stayInWorkspace"],
 		["createCollection", "createFolder"],
-		["createFolder", "handleRootNavigation"],
-		["handleRootNavigation", "announceMovement"],
+		["createFolder", "announceMovement"],
 		["moveNodeWithKeyboard", "toggleKeyboardReorder"],
 		["toggleKeyboardReorder", "releasePointerCapture"],
 	]) {
@@ -892,7 +891,6 @@ test("capture admission and one pointer-session gate protect active and settling
 		);
 	}
 	assert.match(beginPointer, /pointerInteractionLocked\(\)/);
-	assert.match(workspace, /onClick=\{handleRootNavigation\}/);
 	assert.match(workspace, /function handleReorderClick[\s\S]*pointerInteractionLocked\(\)/);
 
 	assert.match(keyboard, /const pointerSession = dragSessionRef\.current/);

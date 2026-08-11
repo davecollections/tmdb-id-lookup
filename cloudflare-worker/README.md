@@ -107,6 +107,10 @@ The Worker only proxies the TMDB paths the frontend needs:
   `/3/discover/tv?with_companies={positive integer}`
 * Exact Network Series count requests using only
   `/3/discover/tv?with_networks={positive integer}`
+* Exact Streaming provider catalogue requests using only:
+  * `/3/watch/providers/regions?language=en-US`
+  * `/3/watch/providers/movie?language=en-US`
+  * `/3/watch/providers/tv?language=en-US`
 
 The Movie count path fails closed unless `with_companies` appears exactly once
 with a canonical positive safe integer and no additional query parameter. The TV
@@ -115,8 +119,19 @@ same canonical rule. Mixed, duplicate, and additional query parameters fail
 closed. Other Discover filters and broad `/3/discover/*` forwarding remain
 disallowed.
 
+Each Streaming provider path requires exactly one `language=en-US` parameter.
+Missing, duplicate, differently cased, or additional parameters fail closed.
+The Worker remains a thin pass-through; Builder validates and combines the three
+official response shapes in memory and caches only a successful catalogue for
+the current workspace/session.
+
 The tracked Network route was added for Builder issue #98. It was manually
 deployed to the existing `tmdb-id-lookup-proxy` Worker and live validated on
 2026-08-09 after separate explicit authorization.
 
-If a frontend feature adds a new TMDB endpoint, update `ALLOWED_PATHS` here and redeploy the Worker.
+The tracked Streaming routes were added for Builder issue #104. Source changes
+do not update the live Worker. Deployment and live provider acceptance require
+separate explicit owner authorization; do not deploy these routes implicitly as
+part of ordinary implementation, commit, push, PR, or local testing work.
+
+If a frontend feature adds a new TMDB endpoint, update the appropriate narrow route allowlist here and redeploy the Worker.

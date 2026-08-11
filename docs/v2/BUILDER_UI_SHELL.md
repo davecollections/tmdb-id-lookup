@@ -213,10 +213,9 @@ Deployment and focused source tests use a small stable surface:
 - `data-builder-root="true"`
 - `data-builder-welcome="true"`
 - `data-builder-shell="true"`
-- `data-root-link="true"`
 - `data-panel="collections|folders|sources"`
 - `data-panel-header="collections|folders|sources"`
-- `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder|return-builder-home"`
+- `data-action="start-new-project|import-file|import-pasted-json|create-collection|create-folder|return-builder-home|open-about-credits"`
 - `data-action="edit-collection|edit-folder"`
 - `data-action="open-collection-actions|open-folder-actions|open-source-actions"`
 - `data-action="delete-collection|delete-folder|delete-source"`

@@ -20,6 +20,8 @@ export {
 	NETWORK_SOURCE_MODE_ID,
 	STUDIO_SOURCE_MODE,
 	STUDIO_SOURCE_MODE_ID,
+	STREAMING_SOURCE_MODE,
+	STREAMING_SOURCE_MODE_ID,
 } from "./source-modes.js";
 export {
 	buildTmdbNetworkLogoUrl,
@@ -78,6 +80,41 @@ export {
 	TMDB_STUDIO_COUNT_PROXY_BASE_URL,
 	TMDB_STUDIO_COUNT_REQUEST_TIMEOUT_MS,
 } from "./tmdb-studio-count-provider.js";
+export {
+	browseStreamingRegions,
+	browseStreamingProviders,
+	createStreamingCatalogueProvider,
+	eligibleStreamingProviders,
+	normalizeStreamingCatalogue,
+	searchStreamingProviders,
+	searchStreamingRegions,
+	STREAMING_CATALOGUE_LANGUAGE,
+	STREAMING_CATALOGUE_PROXY_BASE_URL,
+	STREAMING_CATALOGUE_REQUEST_TIMEOUT_MS,
+	STREAMING_COMMON_REGION_CODES,
+	STREAMING_PROVIDER_BROWSE_MODES,
+	STREAMING_PROVIDER_PATHS,
+	STREAMING_REGION_BROWSE_MODES,
+	STREAMING_TOP_PROVIDER_COUNT,
+	streamingProviderAvailability,
+	streamingProviderCommonAvailability,
+} from "./streaming-catalogue.js";
+export {
+	buildStreamingSourceDrafts,
+	createStreamingSourceBundle,
+	defaultStreamingSourceName,
+	defaultStreamingMediaChoice,
+	DEFAULT_STREAMING_SORT_OPTION_ID,
+	inspectStreamingSourceDuplicates,
+	reconcileStreamingSourceTitles,
+	summarizeStreamingSourceDrafts,
+	streamingDuplicateOverrideIdentity,
+	streamingMediaChoiceSupport,
+	streamingSourceCandidateKey,
+	STREAMING_MEDIA_CHOICES,
+	STREAMING_SORT_OPTIONS,
+	validateStreamingSourceDrafts,
+} from "./streaming-source.js";
 export {
 	buildStudioSourceDrafts,
 	createStudioSourceBundle,
