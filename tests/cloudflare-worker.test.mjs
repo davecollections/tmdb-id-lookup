@@ -64,12 +64,14 @@ test("approved browser origins retain access without a service token", async () 
 
 test("disallowed or missing origins fail without valid service access", async () => {
 	await withMockFetch(async (calls) => {
-		for (const options of [
-			{ origin: "https://example.com" },
-			{},
-			{ token: "incorrect-service-token-at-least-32" },
+		for (const [pathname, options] of [
+			["/3/person/31", { origin: "https://example.com" }],
+			["/3/person/31", {}],
+			["/3/person/31", { token: "incorrect-service-token-at-least-32" }],
+			["/3/watch/providers/movie?language=en-US", {}],
+			["/3/watch/providers/movie?language=en-US", { token: "incorrect-service-token-at-least-32" }],
 		]) {
-			const response = await fetchWorker("/3/person/31", options);
+			const response = await fetchWorker(pathname, options);
 			assert.equal(response.status, 403);
 			assert.equal(await response.text(), "Origin not allowed");
 			assert.equal(response.headers.get("Access-Control-Allow-Origin"), null);
@@ -123,6 +125,30 @@ test("valid origin-free People service requests forward append_to_response and s
 		assert.equal(upstreamUrl.searchParams.has("api_key"), false);
 		assert.equal(upstreamInit.headers.Authorization, "Bearer mock-tmdb-token");
 		assert.equal(Object.keys(upstreamInit.headers).some((name) => name.toLowerCase() === "x-nuvio-service-token"), false);
+	});
+});
+
+test("valid origin-free Watch Provider service requests use the fixed TMDB host without forwarding the service token", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/watch/providers/regions?language=en-US",
+			"/3/watch/providers/movie?language=en-US",
+			"/3/watch/providers/tv?language=en-US",
+		]) {
+			const response = await fetchWorker(pathname, { token: serviceToken });
+			assert.equal(response.status, 200, pathname);
+			assert.equal(response.headers.get("Access-Control-Allow-Origin"), null);
+		}
+
+		assert.deepEqual(calls.map(([url]) => url.toString()), [
+			"https://api.themoviedb.org/3/watch/providers/regions?language=en-US",
+			"https://api.themoviedb.org/3/watch/providers/movie?language=en-US",
+			"https://api.themoviedb.org/3/watch/providers/tv?language=en-US",
+		]);
+		for (const [, init] of calls) {
+			assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
+			assert.equal(Object.keys(init.headers).some((name) => name.toLowerCase() === "x-nuvio-service-token"), false);
+		}
 	});
 });
 
@@ -235,20 +261,21 @@ test("Streaming provider catalogue routes forward only exact language requests t
 	});
 });
 
-test("Streaming provider catalogue routes reject missing, duplicate, changed, and extra parameters", async () => {
+test("Watch Provider service access keeps exact query validation authoritative", async () => {
 	await withMockFetch(async (calls) => {
-		for (const pathname of [
-			"/3/watch/providers/regions",
-			"/3/watch/providers/movie?language=en-us",
-			"/3/watch/providers/tv?language=en-US&language=en-US",
-			"/3/watch/providers/tv?language=en-US&page=1",
-			"/3/watch/providers/tv?language=en-US&api_key=browser-secret",
-			"/3/watch/providers/person?language=en-US",
-			"/3/watch/providers/tv/?language=en-US",
+		for (const [pathname, expectedMessage] of [
+			["/3/watch/providers/regions", "TMDB path not allowed"],
+			["/3/watch/providers/movie?language=en-us", "TMDB path not allowed"],
+			["/3/watch/providers/movie?language=en-GB", "TMDB path not allowed"],
+			["/3/watch/providers/tv?language=en-US&language=en-US", "TMDB path not allowed"],
+			["/3/watch/providers/tv?language=en-US&page=1", "TMDB path not allowed"],
+			["/3/watch/providers/tv?language=en-US&api_key=browser-secret", "TMDB path not allowed"],
+			["/3/watch/providers/person?language=en-US", "Origin not allowed"],
+			["/3/watch/providers/tv/?language=en-US", "Origin not allowed"],
 		]) {
-			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			const response = await fetchWorker(pathname, { token: serviceToken });
 			assert.equal(response.status, 403, pathname);
-			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+			assert.equal(await response.text(), expectedMessage, pathname);
 		}
 		assert.equal(calls.length, 0);
 	});
@@ -287,7 +314,7 @@ test("missing, incorrect, short, and empty configured service tokens fail closed
 	});
 });
 
-test("valid service token is limited to the exact Person details pathname", async () => {
+test("valid service token is limited to People details and exact Watch Provider pathnames", async () => {
 	await withMockFetch(async (calls) => {
 		for (const pathname of [
 			"/3/person/31/combined_credits",
@@ -296,6 +323,8 @@ test("valid service token is limited to the exact Person details pathname", asyn
 			"/3/movie/550",
 			"/3/tv/1399",
 			"/3/search/keyword",
+			"/3/discover/movie?with_companies=3",
+			"/3/watch/providers/person?language=en-US",
 			"/3/person/not-a-number",
 			"/3/person/31/",
 		]) {
