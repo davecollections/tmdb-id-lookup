@@ -52,6 +52,7 @@ const descriptor = (field, valueType, semanticType, media, {
 
 export const DISCOVER_FILTER_DESCRIPTORS = Object.freeze([
 	descriptor("withGenres", "string", "id-expression", bothMedia("with_genres"), { multiValue: "comma-AND-or-pipe-OR" }),
+	descriptor("withoutGenres", "string", "id-expression", bothMedia("without_genres")),
 	descriptor("releaseDateGte", "string", "date", bothMedia("primary_release_date.gte", "first_air_date.gte")),
 	descriptor("releaseDateLte", "string", "date", bothMedia("primary_release_date.lte", "first_air_date.lte")),
 	descriptor("voteAverageGte", "number", "rating", bothMedia("vote_average.gte")),
@@ -60,7 +61,9 @@ export const DISCOVER_FILTER_DESCRIPTORS = Object.freeze([
 	descriptor("withOriginalLanguage", "string", "language-code", bothMedia("with_original_language")),
 	descriptor("withOriginCountry", "string", "country-code", bothMedia("with_origin_country")),
 	descriptor("withKeywords", "string", "id-expression", bothMedia("with_keywords"), { multiValue: "comma-AND-or-pipe-OR" }),
+	descriptor("withoutKeywords", "string", "id-expression", bothMedia("without_keywords")),
 	descriptor("withCompanies", "string", "id-expression", bothMedia("with_companies"), { multiValue: "comma-AND-or-pipe-OR" }),
+	descriptor("withoutCompanies", "string", "id-expression", bothMedia("without_companies")),
 	descriptor("withNetworks", "string", "single-id", Object.freeze({
 		MOVIE: Object.freeze({ applicable: false, portable: false, requestParameter: null }),
 		TV: Object.freeze({ applicable: true, portable: true, requestParameter: "with_networks" }),
@@ -68,11 +71,14 @@ export const DISCOVER_FILTER_DESCRIPTORS = Object.freeze([
 		clientDivergence: "Desktop/Mobile forward an undocumented Movie parameter; TV/Web omit it.",
 	}),
 	descriptor("year", "integer", "year", bothMedia("year", "first_air_date_year")),
-	descriptor("watchRegion", "string", "region-code", bothMedia("watch_region"), { conditionalOn: "withWatchProviders" }),
+	descriptor("watchRegion", "string", "region-code", bothMedia("watch_region"), {
+		conditionalOn: Object.freeze(["withWatchProviders", "withoutWatchProviders"]),
+	}),
 	descriptor("withWatchProviders", "string", "id-expression", bothMedia("with_watch_providers"), {
 		multiValue: "comma-AND-or-pipe-OR",
 		clientDivergence: "Active providers default a missing region to US and inject all supported monetization types.",
 	}),
+	descriptor("withoutWatchProviders", "string", "id-expression", bothMedia("without_watch_providers")),
 ]);
 
 const descriptorByField = new Map(DISCOVER_FILTER_DESCRIPTORS.map((entry) => [entry.field, entry]));
@@ -165,8 +171,7 @@ export function canonicalizeDiscoverFiltersForComparison(filters) {
 		canonicalEntries.push([field, canonicalValue.value]);
 	}
 
-	const activeProviders = canonicalEntries.find(([field]) => field === "withWatchProviders")?.[1];
-	const providerIsActive = typeof activeProviders === "string" && activeProviders.trim().length > 0;
+	const providerIsActive = activeWatchProviders(objectFromEntries(canonicalEntries));
 	const withoutRegion = canonicalEntries.filter(([field]) => field !== "watchRegion");
 	if (providerIsActive) {
 		const region = canonicalEntries.find(([field]) => field === "watchRegion");
@@ -408,7 +413,9 @@ function isStrictValidCalendarDate(value) {
 }
 
 function activeWatchProviders(filters) {
-	return typeof filters.withWatchProviders === "string" && filters.withWatchProviders.trim().length > 0;
+	return ["withWatchProviders", "withoutWatchProviders"].some((field) => (
+		typeof filters[field] === "string" && filters[field].trim().length > 0
+	));
 }
 
 function strictIdExpression(value) {

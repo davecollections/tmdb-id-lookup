@@ -1,4 +1,4 @@
-# TMDB Discover compatibility across current Nuvio clients
+# TMDB Discover compatibility — historical July 2026 audit and current addendum
 
 Reviewed: **2026-07-23**
 
@@ -8,7 +8,17 @@ Evidence: official TMDB documentation/OpenAPI, pinned public Nuvio source, local
 
 The normalized row-level artifact is [`manual-tests/tmdb-discover/compatibility-matrix.json`](../../manual-tests/tmdb-discover/compatibility-matrix.json). It is generated deterministically from [`scripts/lib/tmdb-discover-compatibility.mjs`](../../scripts/lib/tmdb-discover-compatibility.mjs) and keeps official acceptance, JSON deserialization, request mapping, defaults, preservation, and visible-result evidence separate. Completed device evidence is recorded in [`OWNER_RESULTS_2026-07-23.md`](../../manual-tests/tmdb-discover/OWNER_RESULTS_2026-07-23.md) and normalized in [`owner-results-2026-07-23.json`](../../manual-tests/tmdb-discover/owner-results-2026-07-23.json).
 
-## Executive answer
+## Current 18-field addendum — issue #106
+
+Issue [#106](https://github.com/davecollections/tmdb-id-lookup/issues/106), reviewed 2026-08-12, supersedes the audit's current-contract conclusion but does not rewrite its dated matrices, fixtures, owner results, or build-scoped counts. Current NuvioTV `f6e504868765aa6e5657c383723bdd2a9e6ebf7b` and NuvioMobile `f9ad843b14cd3be7fa3ddb800b6961233e0e5b56` persist the same 18 fields: the original 14 plus `withoutGenres`, `withoutKeywords`, `withoutCompanies`, and `withoutWatchProviders`. All four are nullable strings for Movie and TV and map literally to `without_genres`, `without_keywords`, `without_companies`, and `without_watch_providers`.
+
+Included or excluded watch-provider filtering activates the same effective region rule: explicit nonblank `watchRegion` is authoritative, while missing/null/blank active region has effective value `US`. The inferred `US` is runtime/comparison-only and is not inserted into persisted JSON. Current evidence is insufficient to normalize exclusion expression ordering safely, so Builder keeps exclusion comparison exact and order-sensitive while still using strict ID-expression validation for canonical construction.
+
+The NuvioTV local web-config projection still appears to model only the older 14 fields and may be lossy for exclusions in that adapter path. This upstream caveat does not change the authoritative 18-field persisted contract and is not worked around in Builder.
+
+Every unqualified “current” statement in the historical sections below refers to the 2026-07-23 issue #47 snapshots unless a later addendum explicitly says otherwise.
+
+## Historical July executive answer
 
 TMDB currently documents **38 Movie Discover parameters** and **33 TV Discover parameters**. Those totals include request controls and `sort_by`; the content-filter/context subsets are **35 Movie** and **29 TV**.
 
@@ -103,9 +113,9 @@ A Nuvio.tv account-management profile export later removed provider/region field
 
 NuvioTV `0.7.19-beta` device testing remains pending at 0/29 because a practical device run was not available. Pinned NuvioTV source is still the static contract evidence. A later TV addendum is preferred product confirmation but does not block this research package.
 
-## Exact current Nuvio JSON contract
+## Historical July Nuvio JSON contract
 
-Both client models declare these 14 filter fields. Every member is optional/nullable, and no camelCase, snake_case, or other filter aliases were found. The owner-supplied Windows screenshots independently show the same visible 14-field editor surface, with no extra Windows-only field. “Editor” refers to current client source creation, not this repository's builder UI.
+The client models reviewed for issue #47 declared these 14 filter fields. Every member was optional/nullable, and no camelCase, snake_case, or other filter aliases were found. The owner-supplied Windows screenshots independently showed the same visible 14-field editor surface, with no extra Windows-only field. “Editor” refers to that dated client source-creation surface, not this repository's builder UI. Issue #106's current 18-field addendum above supersedes this inventory without changing the historical table.
 
 | JSON field | Client type | Movie query | TV query | Current client editors | Limitation/transformation |
 | --- | --- | --- | --- | --- | --- |
@@ -281,9 +291,9 @@ The retained official iOS `1.2.23` (96) result is a historical exception to the 
 
 ## Builder preservation and editability
 
-The local builder recognizes exactly the same 14 filter keys in `builder/src/nuvio/known-fields.js`. Current behavior is:
+As of issue #106, the local builder recognizes the current 18 persisted filter keys in `builder/src/nuvio/known-fields.js`: the historical 14 plus `withoutGenres`, `withoutKeywords`, `withoutCompanies`, and `withoutWatchProviders`. Current behavior is:
 
-- Importer: extracts only those 14 keys into `editable.filters`; retains the complete imported source and filter object in `rawImported`.
+- Importer: extracts only those 18 keys into `editable.filters`; retains the complete imported source and filter object in `rawImported`.
 - Validation: requires a supported native source's `filters` to be a plain object, but does not validate semantic types for recognized filter values. Any JSON-compatible value reaches the serializer.
 - Domain defaults: `createSource()` clones only the supplied editable object; it invents neither Discover filters nor a `sortBy` default.
 - Serializer overlay: clones raw filters, removes recognized keys, reapplies current recognized editable keys, and leaves unknown raw keys intact.
@@ -291,14 +301,14 @@ The local builder recognizes exactly the same 14 filter keys in `builder/src/nuv
 - Deliberate recognized-filter clearing: can remove that recognized key by design.
 - Source replacement/removal: discards the source's raw evidence. New sources do not acquire unsupported unknown filter keys from editable state.
 - Migration: addon-projection-only logic does not transform native TMDB sources or filters.
-- UI: the visible builder has no source creation/edit/filter UI yet, so **0 of 14 fields are currently visually editable in this repository**, despite all 14 being importer/serializer contract-recognized.
+- UI: Streaming creation still emits only `watchRegion` and `withWatchProviders`, and simple Streaming Source Edit still permits only display-name/sort changes for that narrow shape. The four exclusions have no creation or editing UI.
 - `sortBy`: is a recognized top-level raw string and is not enum-validated by builder serialization.
 
-No existing builder preservation defect was found, so importer, serializer, domain, controller, migration, and UI production code remain unchanged. Builder preservation must not be mistaken for Nuvio usability: an unknown key can round-trip through the builder and then be ignored/lost by both current clients.
+No importer, serializer, domain, controller, migration, or UI production change is required for issue #106 because those paths consume the shared inventory or retain their independent narrow guards. Valid exclusions are now known Core fields; malformed known exclusions remain exact preservation-only data, and unrelated future unknown filter keys still survive known edits and serialize → reimport → serialize cycles.
 
-## High-value official gaps
+## Historical July high-value official gaps
 
-- Exclusions: all four `without_*` families are unavailable through current JSON.
+- Exclusions: all four `without_*` families were unavailable through the issue #47 client JSON snapshots. Issue #106 supersedes this item for the current persisted contract.
 - Runtime: `with_runtime.gte/lte` is unavailable on both media.
 - Vote-count maximum: `vote_count.lte` is unavailable; only minimum is modeled.
 - People: Movie cast, crew, and combined people are unavailable.
@@ -323,11 +333,11 @@ The primary complete fixture is the exact ordered concatenation of four retained
 
 The completed owner report covers 29/29 on Desktop alpha and 29/29 on retained iOS. NuvioTV remains 0/29 pending, and direct TMDB remains 0/60. This is sufficient to complete the version-scoped research package, while a later NuvioTV addendum remains the preferred product confirmation.
 
-## Recommendations
+## Historical July recommendations
 
 ### Safe candidates for a later, separately scoped builder issue
 
-- Preserve the current 14-field wire contract and expose only fields whose media mapping is clearly labelled.
+- The issue #47 recommendation was to preserve its 14-field wire contract and expose only fields whose media mapping was clearly labelled. Issue #106 supersedes the internal persisted vocabulary with the current 18 fields while adding no exclusion UI.
 - Treat Movie `withNetworks` as unavailable until the client divergence and TMDB runtime behavior are resolved.
 - Consider raw official sorts only with their build-scoped evidence and remaining current-client gaps; keep correct-media values distinct and explain that client editors expose only four.
 - Keep comma/pipe ID composition in an advanced control with explicit TMDB-documented AND/OR wording only for parameters whose official docs promise it.
@@ -352,8 +362,8 @@ The completed owner report covers 29/29 on Desktop alpha and 29/29 on retained i
 - Do not expose: invalid/off-media sort values or Movie `withNetworks` while behavior is unresolved.
 - Do not expose `include_adult` without an explicit product and safety decision plus verified forwarding policy.
 
-## Concise answer: how many can we actually use today?
+## Historical July concise answer: how many could the audited builds use?
 
-At source-code contract level, users can place **14 common filter fields** in current Nuvio collection JSON. **13** map to official Movie Discover parameters, while all **14** map to official TV Discover parameters. Five are transformed or conditional, provider filtering adds a non-selectable monetization union, and Movie `withNetworks` diverges between clients. Current raw JSON can also carry all **14 Movie** and **12 TV** official sort values even though only four per media are shown in client editors.
+At the issue #47 source-code checkpoint, users could place **14 common filter fields** in the reviewed Nuvio collection JSON. **13** mapped to official Movie Discover parameters, while all **14** mapped to official TV Discover parameters. Five were transformed or conditional, provider filtering added a non-selectable monetization union, and Movie `withNetworks` diverged between clients. Raw JSON at that checkpoint could also carry all **14 Movie** and **12 TV** official sort values even though only four per media were shown in client editors.
 
 At the visible-device evidence level, this issue records all **29 fixture sources** on Desktop `0.1.14-alpha` (14) and all **29** on retained official iOS `1.2.23` (96), including controlled comparisons, no-effect candidates, preservation checks, aliases, and failure/fallback cases. That is not “29 supported filters”: the result is build-scoped, NuvioTV is still 0/29, the iOS build is historical rather than current Mobile proof, and direct TMDB is 0/60. The official counts, 14-field contract, and static client mapping counts remain unchanged.

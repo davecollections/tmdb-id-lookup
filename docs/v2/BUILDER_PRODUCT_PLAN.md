@@ -302,6 +302,8 @@ Product use cases include:
 
 Only fields and combinations inside the confirmed Nuvio compatibility contract may become supported controls. TMDB accepting a parameter is not enough to prove Nuvio compatibility. Composite concepts such as Romantic Comedy may require a curated recipe or keyword logic and must not be presented as a single official TMDB genre. Runtime-length filtering remains unsupported unless later evidence expands the contract.
 
+Issue #100 established the original 14-field internal DISCOVER Core. Issue #106 updates that internal persisted vocabulary to the current 18 fields by recognizing `withoutGenres`, `withoutKeywords`, `withoutCompanies`, and `withoutWatchProviders`. This widens Core knowledge and fixes exclusion-only provider-region identity; it does not approve exclusion controls, generic Discover editing, or a new user-facing flow.
+
 See [`TMDB_DISCOVER_COMPATIBILITY.md`](./TMDB_DISCOVER_COMPATIBILITY.md) for the current evidence boundary.
 
 ## 13. Artwork behaviour
@@ -422,7 +424,7 @@ Trakt integration remains outside current project scope; a possible future colou
 11. Native physical-source editing — integrated through issue #78 / PR #79 for Movie Collection and People, extended through merged Studio issue #92 / PR #93 and Network issue #98 / PR #99, then narrowly extended by issue #104 for simple Streaming-shaped DISCOVER display-name/sort editing. Generic Discover remains intentionally non-editable. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and is not an unfinished integration gate.
 12. Studio Movie/Series source creation and physical-source editing — merged through issue #92 / PR #93 with V1-informed Company metadata discovery, hidden relevance plus automatic browse/sort/filter controls, contained logos and shared TMDB identity links, automatic quiet informational post-selection counts, retained media-specific Movie/TV sort mappings, and preservation-safe display-name/sort updates.
 13. Network Series source creation and physical-source editing — merged through issue #98 / PR #99 with cached discovery that completely ignores legacy `t`, one automatic informational on-demand Series Count, exact projection-free `NETWORK/TV` construction, folder-aware duplicate handling, and display-name/sort-only edits. The reviewed Worker route was manually deployed and bounded live acceptance passed on 2026-08-09.
-14. Internal DISCOVER Core contract — implemented on issue #100's branch with no intended user-facing change; see [`BUILDER_DISCOVER_CORE.md`](./BUILDER_DISCOVER_CORE.md).
+14. Internal DISCOVER Core contract — the original 14-field milestone was implemented through issue #100; issue #106 updates it to the current 18-field persisted contract with no intended user-facing change. See [`BUILDER_DISCOVER_CORE.md`](./BUILDER_DISCOVER_CORE.md).
 15. Streaming Services — implemented on issue #104's focused branch; tracked Worker deployment and owner/client acceptance remain separate gates.
 16. Genres.
 17. Decades.

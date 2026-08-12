@@ -88,6 +88,7 @@ function importSourceNodes(sources) {
 
 const completeTvFilters = Object.freeze({
 	withGenres: "28,12",
+	withoutGenres: "27|35",
 	releaseDateGte: "2020-01-01",
 	releaseDateLte: "2026-12-31",
 	voteAverageGte: 7,
@@ -96,17 +97,21 @@ const completeTvFilters = Object.freeze({
 	withOriginalLanguage: "en",
 	withOriginCountry: "AU",
 	withKeywords: "9715|12377",
+	withoutKeywords: "99,100",
 	withCompanies: "1,2",
+	withoutCompanies: "3|4",
 	withNetworks: "213",
 	year: 2026,
 	watchRegion: "AU",
 	withWatchProviders: "8|337",
+	withoutWatchProviders: "9|15",
 });
 
-test("the descriptor inventory exactly matches all 14 authoritative recognized fields and expected types", () => {
+test("the descriptor inventory exactly matches all 18 authoritative recognized fields and expected types", () => {
 	assert.deepEqual(DISCOVER_FILTER_DESCRIPTORS.map((entry) => entry.field), DISCOVER_FILTER_FIELDS);
 	assert.deepEqual(Object.fromEntries(DISCOVER_FILTER_DESCRIPTORS.map((entry) => [entry.field, entry.valueType])), {
 		withGenres: "string",
+		withoutGenres: "string",
 		releaseDateGte: "string",
 		releaseDateLte: "string",
 		voteAverageGte: "number",
@@ -115,11 +120,14 @@ test("the descriptor inventory exactly matches all 14 authoritative recognized f
 		withOriginalLanguage: "string",
 		withOriginCountry: "string",
 		withKeywords: "string",
+		withoutKeywords: "string",
 		withCompanies: "string",
+		withoutCompanies: "string",
 		withNetworks: "string",
 		year: "integer",
 		watchRegion: "string",
 		withWatchProviders: "string",
+		withoutWatchProviders: "string",
 	});
 	assert.equal(discoverFilterDescriptor("futureFilter"), null);
 });
@@ -137,6 +145,26 @@ test("descriptors record Movie and TV request semantics without making Movie net
 	assert.equal(discoverFilterDescriptor("withNetworks").media.MOVIE.applicable, false);
 	assert.equal(discoverFilterDescriptor("withNetworks").media.MOVIE.portable, false);
 	assert.equal(discoverFilterDescriptor("withNetworks").media.TV.requestParameter, "with_networks");
+	assert.deepEqual(discoverFilterDescriptor("watchRegion").conditionalOn, ["withWatchProviders", "withoutWatchProviders"]);
+	assert.deepEqual(Object.fromEntries([
+		"withoutGenres",
+		"withoutKeywords",
+		"withoutCompanies",
+		"withoutWatchProviders",
+	].map((field) => [field, discoverFilterDescriptor(field).media.MOVIE.requestParameter])), {
+		withoutGenres: "without_genres",
+		withoutKeywords: "without_keywords",
+		withoutCompanies: "without_companies",
+		withoutWatchProviders: "without_watch_providers",
+	});
+	for (const field of ["withoutGenres", "withoutKeywords", "withoutCompanies", "withoutWatchProviders"]) {
+		const exclusion = discoverFilterDescriptor(field);
+		assert.equal(exclusion.semanticType, "id-expression");
+		assert.equal(exclusion.media.MOVIE.applicable, true);
+		assert.equal(exclusion.media.TV.applicable, true);
+		assert.equal(exclusion.media.TV.requestParameter, exclusion.media.MOVIE.requestParameter);
+		assert.equal(exclusion.multiValue, null);
+	}
 });
 
 test("DISCOVER owns all four media-specific semantic sort mappings", () => {
@@ -179,7 +207,7 @@ test("canonical Movie construction emits the exact native source shape and expli
 	assert.equal(inspectDiscoverSource(result.draft.editable).classification, DISCOVER_CLASSIFICATIONS.CANONICAL);
 });
 
-test("canonical TV construction accepts all 14 descriptors without inventing null filter keys", () => {
+test("canonical TV construction accepts all 18 descriptors without inventing null filter keys", () => {
 	const result = buildDiscoverSourceDraft({
 		title: "Complete Series Discover",
 		mediaType: "TV",
@@ -189,7 +217,7 @@ test("canonical TV construction accepts all 14 descriptors without inventing nul
 	assert.equal(result.ok, true, JSON.stringify(result.errors));
 	assert.equal(result.draft.editable.sortBy, "first_air_date.desc");
 	assert.deepEqual(result.draft.editable.filters, completeTvFilters);
-	assert.equal(Object.keys(result.draft.editable.filters).length, 14);
+	assert.equal(Object.keys(result.draft.editable.filters).length, 18);
 	assert.equal(inspectDiscoverSource(result.draft.editable).classification, DISCOVER_CLASSIFICATIONS.CANONICAL);
 });
 
@@ -233,7 +261,15 @@ test("canonical construction omits null and blank filters but does not retain an
 	const omitted = buildDiscoverSourceDraft({
 		title: "No filters",
 		mediaType: "MOVIE",
-		filters: { withGenres: null, withKeywords: "", voteAverageGte: null },
+		filters: {
+			withGenres: null,
+			withoutGenres: " ",
+			withKeywords: "",
+			withoutKeywords: undefined,
+			withoutCompanies: null,
+			withoutWatchProviders: "\t",
+			voteAverageGte: null,
+		},
 	});
 	assert.equal(omitted.ok, true);
 	assert.deepEqual(omitted.draft.editable.filters, {});
@@ -393,6 +429,33 @@ test("compound expression normalization retains duplicate token multiplicity", (
 	}
 });
 
+test("exclusion expressions remain exact and are never reordered or deduplicated for comparison", () => {
+	for (const field of ["withoutGenres", "withoutKeywords", "withoutCompanies", "withoutWatchProviders"]) {
+		for (const [left, right] of [
+			["28,12", "12,28"],
+			["28|12", "12|28"],
+			["28,28,12", "28,12"],
+			["028,12", "12,028"],
+			["9007199254740993,9007199254740992", "9007199254740992,9007199254740993"],
+			["28, 12", "12, 28"],
+			["28,12|35", "12,28|35"],
+		]) {
+			assert.notEqual(identity({ filters: { [field]: left } }), identity({ filters: { [field]: right } }), `${field}: ${left}`);
+		}
+	}
+});
+
+test("include and exclude filters remain distinct functional identities", () => {
+	assert.notEqual(
+		identity({ filters: { withGenres: "27" } }),
+		identity({ filters: { withoutGenres: "27" } }),
+	);
+	assert.notEqual(
+		identity({ filters: { withWatchProviders: "8" } }),
+		identity({ filters: { withoutWatchProviders: "8" } }),
+	);
+});
+
 test("mixed malformed whitespace leading-zero and empty-token expressions remain opaque", () => {
 	for (const [left, right] of [
 		["28,12|35", "12,28|35"],
@@ -404,10 +467,14 @@ test("mixed malformed whitespace leading-zero and empty-token expressions remain
 	}
 });
 
-test("provider-region comparison uses the evidenced US default and ignores inactive regions", () => {
+test("provider-region comparison uses one include-or-exclude US default and ignores inactive regions", () => {
 	assert.equal(
 		identity({ filters: { withWatchProviders: "8" } }),
 		identity({ filters: { withWatchProviders: "8", watchRegion: "US" } }),
+	);
+	assert.equal(
+		identity({ filters: { withoutWatchProviders: "9" } }),
+		identity({ filters: { withoutWatchProviders: "9", watchRegion: "US" } }),
 	);
 	assert.equal(
 		identity({ filters: {} }),
@@ -417,6 +484,31 @@ test("provider-region comparison uses the evidenced US default and ignores inact
 		identity({ filters: { withWatchProviders: "8", watchRegion: "AU" } }),
 		identity({ filters: { withWatchProviders: "8", watchRegion: "US" } }),
 	);
+	assert.notEqual(
+		identity({ filters: { withoutWatchProviders: "9", watchRegion: "AU" } }),
+		identity({ filters: { withoutWatchProviders: "9", watchRegion: "US" } }),
+	);
+	assert.equal(
+		identity({ filters: { withWatchProviders: "8", withoutWatchProviders: "9" } }),
+		identity({ filters: { withWatchProviders: "8", withoutWatchProviders: "9", watchRegion: "US" } }),
+	);
+	assert.notEqual(
+		identity({ filters: { withWatchProviders: "8", withoutWatchProviders: "9", watchRegion: "AU" } }),
+		identity({ filters: { withWatchProviders: "8", withoutWatchProviders: "9", watchRegion: "US" } }),
+	);
+});
+
+test("exclusion-only provider construction does not persist the effective US region", () => {
+	const built = buildDiscoverSourceDraft({
+		title: "Exclude provider 9",
+		mediaType: "MOVIE",
+		filters: { withoutWatchProviders: "9" },
+	});
+	assert.equal(built.ok, true, JSON.stringify(built.errors));
+	assert.deepEqual(built.draft.editable.filters, { withoutWatchProviders: "9" });
+	assert.equal(discoverSourceIdentity(built.draft.editable).value.filters.watchRegion, "US");
+	const folder = serializeSource(built.draft.editable);
+	assert.equal(Object.hasOwn(folder.sources[0].filters, "watchRegion"), false);
 });
 
 test("missing null and empty sort use effective Popular while unusual or whitespace sorts remain exact", () => {
@@ -434,6 +526,31 @@ test("DISCOVER identity includes sort and media while excluding display title", 
 	assert.equal(identity({ provider: "TMDB", tmdbSourceType: "discover", mediaType: "movie" }), identity());
 	assert.notEqual(identity({ sortBy: "popularity.desc" }), identity({ sortBy: "primary_release_date.desc" }));
 	assert.notEqual(identity({ mediaType: "MOVIE" }), identity({ mediaType: "TV" }));
+});
+
+test("the previous 14-field DISCOVER identity remains byte-for-byte unchanged without exclusions", () => {
+	const legacyIdentity = discoverSourceIdentity(source({
+		title: "Legacy 14",
+		mediaType: "TV",
+		filters: {
+			withGenres: "28,12",
+			releaseDateGte: "2020-01-01",
+			releaseDateLte: "2026-12-31",
+			voteAverageGte: 7,
+			voteAverageLte: 10,
+			voteCountGte: 100,
+			withOriginalLanguage: "en",
+			withOriginCountry: "AU",
+			withKeywords: "9715|12377",
+			withCompanies: "1,2",
+			withNetworks: "213",
+			year: 2026,
+			watchRegion: "AU",
+			withWatchProviders: "8|337",
+		},
+	}));
+	assert.equal(legacyIdentity.comparable, true, JSON.stringify(legacyIdentity.reasons));
+	assert.equal(legacyIdentity.key, "{\"filters\":{\"releaseDateGte\":\"2020-01-01\",\"releaseDateLte\":\"2026-12-31\",\"voteAverageGte\":7,\"voteAverageLte\":10,\"voteCountGte\":100,\"watchRegion\":\"AU\",\"withCompanies\":\"1,2\",\"withGenres\":\"12,28\",\"withKeywords\":\"9715|12377\",\"withNetworks\":\"213\",\"withOriginCountry\":\"AU\",\"withOriginalLanguage\":\"en\",\"withWatchProviders\":\"8|337\",\"year\":2026},\"mediaType\":\"TV\",\"provider\":\"tmdb\",\"sortBy\":\"popularity.desc\",\"tmdbSourceType\":\"DISCOVER\"}");
 });
 
 test("absent and null tmdbId are equivalent while a non-null imported ID conservatively distinguishes identity", () => {
@@ -490,6 +607,26 @@ test("unusual imported sorts remain exact preservable data", () => {
 	assert.notEqual(discoverSourceIdentity(imported).key, identity({ sortBy: "popularity.desc" }));
 });
 
+test("malformed known exclusions remain exact comparison data and preserve-only for structured editing", () => {
+	for (const [field, value] of [
+		["withoutGenres", "27, 28"],
+		["withoutKeywords", "99|100,101"],
+		["withoutCompanies", "01,2"],
+		["withoutWatchProviders", "8,,9"],
+	]) {
+		const imported = source({ filters: { [field]: value } });
+		const inspected = inspectDiscoverSource(imported);
+		assert.equal(inspected.classification, DISCOVER_CLASSIFICATIONS.PRESERVABLE, field);
+		assert.equal(inspected.capabilities.comparisonSafe, true, field);
+		assert.equal(inspected.capabilities.knownFieldEditingSafe, false, field);
+		assert.equal(inspected.capabilities.editReadiness, DISCOVER_EDIT_READINESS.PRESERVE_ONLY, field);
+		assert.deepEqual(inspected.capabilities.preservedUnknownFields, [], field);
+		assert.deepEqual(inspected.capabilities.unsafeKnownFields, [field], field);
+		assert.equal(discoverSourceIdentity(imported).value.filters[field], value, field);
+		assert.equal(serializeSource(imported).sources[0].filters[field], value, field);
+	}
+});
+
 test("full nullable client filter envelopes are preservable and remain safe for known-field overlay", () => {
 	const filters = Object.fromEntries(DISCOVER_FILTER_FIELDS.map((field) => [field, null]));
 	const inspected = inspectDiscoverSource(source({ filters }));
@@ -514,6 +651,38 @@ test("existing importer and serializer preserve known plus unknown custom filter
 	assert.equal(folder.sources[0].filters.withGenres, "28,12");
 	assert.deepEqual(folder.sources[0].filters.futureNested, { beta: [2, 1], alpha: false });
 	assert.deepEqual(folder.sources[0].unknownSource, { keep: true });
+});
+
+test("a known exclusion edit preserves future unknown data across serialize reimport serialize cycles", () => {
+	const imported = importSourceNodes([source({
+		filters: {
+			withoutGenres: "27|35",
+			withoutKeywords: "99,100",
+			withoutCompanies: "3|4",
+			withoutWatchProviders: "9|15",
+			futureNested: { keep: [1, null, { exact: "yes" }] },
+		},
+	})]);
+	imported.nodes[0].editable.filters.withoutGenres = "18,27";
+	const first = serializeNuvioProject(imported.project);
+	assert.equal(first.ok, true, JSON.stringify(first.errors));
+	const firstSource = first.value[0].folders[0].sources[0];
+	assert.equal(firstSource.filters.withoutGenres, "18,27");
+	assert.deepEqual(firstSource.filters.futureNested, { keep: [1, null, { exact: "yes" }] });
+
+	const reimported = importNuvioCollections(first.value, { idFactory: countingIdFactory("exclusion-cycle") });
+	assert.equal(reimported.ok, true, JSON.stringify(reimported.errors));
+	const second = serializeNuvioProject(reimported.project);
+	assert.equal(second.ok, true, JSON.stringify(second.errors));
+	assert.deepEqual(second.value, first.value);
+
+	const reimportedNode = reimported.project.collections[0].folders[0].sources[0];
+	reimportedNode.editable.filters = {};
+	const cleared = serializeNuvioProject(reimported.project);
+	assert.equal(cleared.ok, true, JSON.stringify(cleared.errors));
+	assert.deepEqual(cleared.value[0].folders[0].sources[0].filters, {
+		futureNested: { keep: [1, null, { exact: "yes" }] },
+	});
 });
 
 test("actual imported SourceNodes retain unknown filters in distinct identities and PRESERVABLE classification", () => {
@@ -590,15 +759,16 @@ test("the checked-in owner-run DISCOVER audit imports into explicit real-world r
 		"T2 TV withNetworks 49",
 		"W1 Movie providers 8 no region",
 		"W2 Movie providers 8 region AU",
+		"U1 Movie candidate withoutGenres 27",
 	]) {
 		assert.equal(byTitle.get(title).inspected.capabilities.editReadiness, DISCOVER_EDIT_READINESS.FULLY_UNDERSTOOD, title);
 	}
 	assert.deepEqual(byTitle.get("M2 Movie withGenres 28").inspected.capabilities.editableKnownFields, ["withGenres"]);
 	assert.deepEqual(byTitle.get("T2 TV withNetworks 49").inspected.capabilities.editableKnownFields, ["withNetworks"]);
 	assert.deepEqual(byTitle.get("W2 Movie providers 8 region AU").inspected.capabilities.editableKnownFields, ["watchRegion", "withWatchProviders"]);
+	assert.deepEqual(byTitle.get("U1 Movie candidate withoutGenres 27").inspected.capabilities.editableKnownFields, ["withoutGenres"]);
 
 	const unknownCases = new Map([
-		["U1 Movie candidate withoutGenres 27", "withoutGenres"],
 		["U2 Movie candidate withRuntimeGte 90", "withRuntimeGte"],
 		["U3 Movie candidate voteCountLte 500", "voteCountLte"],
 		["U4 Movie candidate withCast 31", "withCast"],
