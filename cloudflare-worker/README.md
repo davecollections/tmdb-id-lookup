@@ -22,8 +22,8 @@ NUVIO_PEOPLE_SERVICE_TOKEN
 
 `TMDB_BEARER_TOKEN` is the TMDB API read access token. `NUVIO_PEOPLE_SERVICE_TOKEN`
 is a separate server-to-server credential for the `nuvio-people-assets` generator
-and must contain at least 32 characters. Never reuse, expose, log, or commit either
-value.
+and controlled Watch Provider automation. It must contain at least 32 characters.
+Never reuse, expose, log, or commit either value.
 
 Production was manually updated with the People service-token behavior on
 2026-08-06 before the matching repository change. Once the synchronizing change
@@ -52,10 +52,11 @@ https://davecollections.github.io
 It also allows local development from any `localhost` or `127.0.0.1` port.
 
 Browser requests remain controlled by this CORS allowlist and do not need the
-People service token. The service-token header is intentionally absent from the
-CORS allowed-header list because browser clients do not use it.
+service token. This behavior is unchanged by the origin-free service access. The
+service-token header is intentionally absent from the CORS allowed-header list
+because browser clients do not use it.
 
-## People Service Access
+## People And Watch Provider Service Access
 
 An origin-free server-to-server request is accepted only when all of these are
 true:
@@ -64,7 +65,8 @@ true:
 * `X-Nuvio-Service-Token` exactly matches the configured
   `NUVIO_PEOPLE_SERVICE_TOKEN` secret;
 * the configured secret is a string containing at least 32 characters; and
-* the pathname exactly matches `/3/person/{numeric ID}`.
+* the pathname exactly matches `/3/person/{numeric ID}` or one of the three
+  approved Watch Provider paths below.
 
 The People generator uses this single request shape:
 
@@ -75,9 +77,22 @@ GET /3/person/31?append_to_response=combined_credits,images
 The query string is forwarded to TMDB, so the response can include Person
 details, combined movie/TV credits, and official profile images. The pathname is
 still `/3/person/31`; the separate `/3/person/31/combined_credits` route is
-intentionally not service-token enabled. Search, Collection, Movie, TV, Keyword,
-and every other route continue to require an allowed browser Origin even when a
-valid service token is supplied.
+intentionally not service-token enabled.
+
+Controlled automation may also use these exact origin-free request shapes:
+
+```text
+GET /3/watch/providers/regions?language=en-US
+GET /3/watch/providers/movie?language=en-US
+GET /3/watch/providers/tv?language=en-US
+```
+
+Each Watch Provider route still requires exactly one `language=en-US` parameter.
+Missing, changed, duplicate, or additional parameters, including `api_key`, are
+rejected by the existing TMDB request validator. Token access does not broaden
+the TMDB path or query allowlist. Search, Collection, Movie, TV, Keyword,
+Discover, unsupported Watch Provider paths, and every other route continue to
+require an allowed browser Origin even when a valid service token is supplied.
 
 The service-token header is used only for the Worker's access decision. It is not
 forwarded to TMDB, returned in responses, or deliberately logged.
@@ -87,10 +102,10 @@ allowed` when no allowed browser Origin is present. Missing TMDB configuration
 receives `500 TMDB token not configured`; upstream network failure receives `502
 TMDB request failed`. Error responses remain `Cache-Control: no-store`.
 
-To rotate the People credential, generate a new high-entropy value of at least 32
-characters, update the Cloudflare Worker secret and the authorized generator's
-secret through their protected operator interfaces, verify the exact Person
-request, then retire the old value. Do not place either value in commands, logs,
+To rotate the service credential, generate a new high-entropy value of at least
+32 characters, update the Cloudflare Worker secret and each authorized service's
+secret through their protected operator interfaces, verify the exact approved
+requests, then retire the old value. Do not place either value in commands, logs,
 issues, pull requests, documentation, or repository files.
 
 ## Allowed TMDB Paths

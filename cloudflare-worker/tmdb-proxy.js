@@ -121,8 +121,9 @@ export default {
     const suppliedServiceToken =
       request.headers.get("X-Nuvio-Service-Token") || "";
 
-    const hasPeopleServiceAccess =
-      PEOPLE_SERVICE_PATH.test(url.pathname) &&
+    const hasServiceAccess =
+      (PEOPLE_SERVICE_PATH.test(url.pathname) ||
+        WATCH_PROVIDER_PATHS.has(url.pathname)) &&
       typeof env.NUVIO_PEOPLE_SERVICE_TOKEN === "string" &&
       env.NUVIO_PEOPLE_SERVICE_TOKEN.length >= 32 &&
       suppliedServiceToken === env.NUVIO_PEOPLE_SERVICE_TOKEN;
@@ -140,7 +141,7 @@ export default {
       });
     }
 
-    if (!isAllowedOrigin(origin) && !hasPeopleServiceAccess) {
+    if (!isAllowedOrigin(origin) && !hasServiceAccess) {
       return textResponse("Origin not allowed", 403, origin);
     }
 
