@@ -2,7 +2,7 @@
 
 Status: implemented for issue [#35](https://github.com/davecollections/tmdb-id-lookup/issues/35)
 
-Last reviewed: 2026-07-11
+Last reviewed: 2026-08-12
 
 ## Purpose and boundary
 
@@ -10,7 +10,7 @@ The importer converts Nuvio collection JSON into the framework-independent build
 
 The implementation lives under `builder/src/import/`. It uses plain JavaScript, JSDoc, the existing builder domain factories, and standard JavaScript APIs. It has no React, browser, state-management, schema-library, validation-library, or networking dependency.
 
-Recognised collection, folder, source, and Discover-filter field lists and the confirmed native TMDB type list are shared with the serializer through `builder/src/nuvio/known-fields.js`. This centralisation does not change importer behavior or turn the contract into a complete schema. The matching export contract is documented in [BUILDER_SERIALIZER.md](./BUILDER_SERIALIZER.md).
+Recognised collection, folder, source, and Discover-filter field lists and the confirmed native TMDB type list are shared with the serializer through `builder/src/nuvio/known-fields.js`. Issue [#106](https://github.com/davecollections/tmdb-id-lookup/issues/106) expands the shared DISCOVER inventory from the original 14 fields to the current 18-field persisted contract without adding importer-specific parsing. This centralisation does not turn the contract into a complete schema. The matching export contract is documented in [BUILDER_SERIALIZER.md](./BUILDER_SERIALIZER.md).
 
 Import establishes safe editor state. It does not define canonical Nuvio output and does not implement migration, editable-over-raw overlay, projection generation, or serialization. Callers that deliberately opt into the confirmed addon projection-only conversion may invoke the separate contract documented in [BUILDER_MIGRATION.md](./BUILDER_MIGRATION.md) after a successful import.
 
@@ -164,6 +164,7 @@ An unsupported TMDB source does not reject the import. Its complete object remai
 When `filters` is a plain object, editable state receives only:
 
 - `withGenres`
+- `withoutGenres`
 - `releaseDateGte`
 - `releaseDateLte`
 - `voteAverageGte`
@@ -172,13 +173,16 @@ When `filters` is a plain object, editable state receives only:
 - `withOriginalLanguage`
 - `withOriginCountry`
 - `withKeywords`
+- `withoutKeywords`
 - `withCompanies`
+- `withoutCompanies`
 - `withNetworks`
 - `year`
 - `watchRegion`
 - `withWatchProviders`
+- `withoutWatchProviders`
 
-Unknown keys, including experimental `filters.search`, remain in the source raw snapshot but are not promoted. A non-object `filters` value is also preserved raw-only and produces `INVALID_FILTERS_PRESERVED`.
+All 18 structurally present recognized values enter editable state, including unusual values that later Core inspection may classify as preservation-only. Unknown keys, including experimental `filters.search`, remain in the source raw snapshot but are not promoted. A non-object `filters` value is also preserved raw-only and produces `INVALID_FILTERS_PRESERVED`.
 
 ## Ordering, identity, and preservation
 

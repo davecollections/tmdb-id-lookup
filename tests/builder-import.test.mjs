@@ -313,10 +313,11 @@ test("copies only recognised source fields and keeps future fields raw-only", ()
 
 test("extracts only recognised Discover filter fields", () => {
 	const recognisedFilters = {
-		withGenres: "28", releaseDateGte: "2020-01-01", releaseDateLte: "2026-12-31",
+		withGenres: "28", withoutGenres: "27", releaseDateGte: "2020-01-01", releaseDateLte: "2026-12-31",
 		voteAverageGte: 6, voteAverageLte: 10, voteCountGte: 100,
-		withOriginalLanguage: "en", withOriginCountry: "AU", withKeywords: "15097",
-		withCompanies: "1", withNetworks: "2", year: 2026, watchRegion: "AU", withWatchProviders: "8",
+		withOriginalLanguage: "en", withOriginCountry: "AU", withKeywords: "15097", withoutKeywords: "99",
+		withCompanies: "1", withoutCompanies: "3", withNetworks: "2", year: 2026,
+		watchRegion: "AU", withWatchProviders: "8", withoutWatchProviders: "9",
 	};
 	const result = importOneSource({
 		provider: "tmdb",
@@ -326,6 +327,7 @@ test("extracts only recognised Discover filter fields", () => {
 	const imported = result.project.collections[0].folders[0].sources[0];
 
 	assert.deepEqual(imported.editable.filters, recognisedFilters);
+	assert.equal(Object.keys(imported.editable.filters).length, 18);
 	assert.equal(imported.editable.filters.search, undefined);
 	assert.equal(imported.editable.filters.futureFilter, undefined);
 	assert.equal(imported.rawImported.filters.search, "experimental");

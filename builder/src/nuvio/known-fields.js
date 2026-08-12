@@ -46,6 +46,7 @@ export const NATIVE_TMDB_SOURCE_TYPES = Object.freeze([
 
 export const DISCOVER_FILTER_FIELDS = Object.freeze([
 	"withGenres",
+	"withoutGenres",
 	"releaseDateGte",
 	"releaseDateLte",
 	"voteAverageGte",
@@ -54,9 +55,12 @@ export const DISCOVER_FILTER_FIELDS = Object.freeze([
 	"withOriginalLanguage",
 	"withOriginCountry",
 	"withKeywords",
+	"withoutKeywords",
 	"withCompanies",
+	"withoutCompanies",
 	"withNetworks",
 	"year",
 	"watchRegion",
 	"withWatchProviders",
+	"withoutWatchProviders",
 ]);
