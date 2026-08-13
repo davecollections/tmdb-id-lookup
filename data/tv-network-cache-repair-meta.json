@@ -4,49 +4,85 @@
     "mode": "collect",
     "status": "completed",
     "reason": null,
-    "source_audit_date": "2026-08-12T09:30:18.883Z",
+    "source_audit_date": "2026-08-13T09:31:44.419Z",
     "audit_freshness": {
-      "audited_at": "2026-08-12T09:30:18.883Z",
-      "age_hours": 0.014964444444444445,
+      "audited_at": "2026-08-13T09:31:44.419Z",
+      "age_hours": 0.01253,
       "max_age_hours": 36,
       "export_month": "2026-08",
-      "export_fingerprint": "sha256:e11d86ab9eeacb645579a211e4300bb7e7a244a71c9f23d6786deb54cef97bf8"
+      "export_fingerprint": "sha256:8f71006ba60199400b6c88d3606222d2a75372ed11bb8953188c5151706236ed"
     },
     "month": "2026-08",
-    "export_fingerprint": "sha256:e11d86ab9eeacb645579a211e4300bb7e7a244a71c9f23d6786deb54cef97bf8",
+    "export_fingerprint": "sha256:8f71006ba60199400b6c88d3606222d2a75372ed11bb8953188c5151706236ed",
     "parser_semantic_version": "1.0.0",
     "binding_error": null,
     "max_repair_ids": 200,
     "cap": {
       "maximum": 200,
-      "requested": 4,
+      "requested": 16,
       "exceeded": false
     },
-    "requested_repair_count": 4,
+    "requested_repair_count": 16,
     "missing_requested": [
-      9392,
-      9393
+      9394,
+      9395,
+      9396,
+      9397,
+      9398,
+      9399,
+      9400,
+      9401,
+      9402,
+      9403,
+      9404,
+      9406,
+      9407,
+      9408
     ],
-    "missing_requested_count": 2,
+    "missing_requested_count": 14,
     "extra_requested": [
-      9390,
-      9391
+      8827,
+      9392
     ],
     "extra_requested_count": 2,
     "processed_missing": [
-      9392,
-      9393
+      9394,
+      9395,
+      9396,
+      9397,
+      9398,
+      9399,
+      9400,
+      9401,
+      9402,
+      9403,
+      9404,
+      9406,
+      9407,
+      9408
     ],
-    "processed_missing_count": 2,
-    "processed_repair_count": 4,
+    "processed_missing_count": 14,
+    "processed_repair_count": 16,
     "added": [
-      9392,
-      9393
+      9394,
+      9395,
+      9396,
+      9397,
+      9398,
+      9399,
+      9400,
+      9401,
+      9402,
+      9403,
+      9404,
+      9406,
+      9407,
+      9408
     ],
-    "added_count": 2,
+    "added_count": 14,
     "removed": [
-      9390,
-      9391
+      8827,
+      9392
     ],
     "removed_count": 2,
     "not_found": [],
@@ -54,41 +90,41 @@
     "failed": [],
     "failed_count": 0,
     "request_plan": {
-      "details_requests": 2,
-      "discover_requests": 2,
-      "base_requests": 4
+      "details_requests": 14,
+      "discover_requests": 14,
+      "base_requests": 28
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "31583220578-1-cache-repair",
-      "reservation_sha256": "4ba7024bfaf5da3b6df92a32a4148aa55f0959b2a7769cc3ae0160a36af61651",
-      "utc_date": "2026-08-12",
+      "reservation_id": "31687012901-1-cache-repair",
+      "reservation_sha256": "77e9b8eea4d8a92c3dd0c608bb9edd63080b0d07d8d9925bf997fd41a6589b64",
+      "utc_date": "2026-08-13",
       "planned_month": "2026-08",
       "workflow": "Daily Capped Repair Cache From Audit",
-      "run_id": "31583220578",
+      "run_id": "31687012901",
       "run_attempt": "1",
       "job": "repair-network",
       "allocation_key": "network_repair",
       "request_class": "network-repair",
       "target_dimension": "network-series",
       "allowance": 2000,
-      "attempts_used": 4,
-      "unused_allowance": 1996,
-      "first_attempt_at": "2026-08-12T09:31:12.777Z",
-      "last_attempt_at": "2026-08-12T09:31:13.438Z",
+      "attempts_used": 28,
+      "unused_allowance": 1972,
+      "first_attempt_at": "2026-08-13T09:32:29.544Z",
+      "last_attempt_at": "2026-08-13T09:32:33.924Z",
       "by_host": {
-        "api.themoviedb.org": 4,
+        "api.themoviedb.org": 28,
         "files.tmdb.org": 0
       },
       "by_status_or_outcome": {
-        "200": 4
+        "200": 28
       },
       "retries": 0
     },
-    "total_cached": 5534,
+    "total_cached": 5546,
     "skipped": false,
-    "started_at": "2026-08-12T09:31:12.753Z",
-    "finished_at": "2026-08-12T09:31:13.669Z",
+    "started_at": "2026-08-13T09:32:29.526Z",
+    "finished_at": "2026-08-13T09:32:34.157Z",
     "network_count_retry": {
       "candidates": 0,
       "selected": 0,
