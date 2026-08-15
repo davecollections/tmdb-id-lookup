@@ -114,6 +114,7 @@ test("the controller exposes only the documented public method surface", () => {
 		"clearDiagnostics",
 		"clearSelection",
 		"createCollection",
+		"createCollectionsWithFoldersAndSources",
 		"createFolder",
 		"createFolderWithSources",
 		"createFoldersWithSources",

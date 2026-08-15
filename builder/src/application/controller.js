@@ -11,6 +11,7 @@ import {
 	NODE_TYPES,
 	removeNode as removeDomainNode,
 	SOURCE_CATEGORIES,
+	traverseProject,
 	updateEditableValues,
 } from "../domain/index.js";
 import { importNuvioCollections, parseNuvioJsonText } from "../import/index.js";
@@ -617,6 +618,96 @@ export function createBuilderController(options = {}) {
 		});
 	}
 
+	function createCollectionsWithFoldersAndSources(actionOptions = {}) {
+		const path = "$controller.createCollectionsWithFoldersAndSources";
+		const validation = validateCollectionHierarchyOptions(actionOptions, path);
+		if (!validation.ok) {
+			return failAtomicBundleOperation(
+				validation.error.code,
+				validation.error.path,
+				validation.error.message,
+			);
+		}
+
+		let project = state.project;
+		const collections = [];
+		const folders = [];
+		const sources = [];
+		const reservedInternalIds = new Set(traverseProject(state.project).map((entry) => entry.internalId));
+		let internalIdCollision = false;
+		const reserveInternalId = (node) => {
+			if (reservedInternalIds.has(node.internalId)) {
+				internalIdCollision = true;
+				throw new Error("Internal ID collision");
+			}
+			reservedInternalIds.add(node.internalId);
+		};
+
+		try {
+			for (const bundle of validation.bundles) {
+				const collectionEditable = prepareNewNodeEditable(project, bundle.collectionEditable, nuvioIdFactory);
+				const collection = createCollection({ idFactory, editable: collectionEditable });
+				reserveInternalId(collection);
+				project = insertChild(project, project.internalId, collection);
+				collections.push(collection);
+
+				for (const folderBundle of bundle.folders) {
+					const folderEditable = prepareNewNodeEditable(project, folderBundle.folderEditable, nuvioIdFactory);
+					const folder = createFolder({ idFactory, editable: folderEditable });
+					reserveInternalId(folder);
+					const folderSources = folderBundle.sources.map((sourceOptions) => {
+						const source = createSource({
+							idFactory,
+							category: sourceOptions.category,
+							editable: sourceOptions.editable,
+						});
+						reserveInternalId(source);
+						sources.push(source);
+						return source;
+					});
+					const completeFolder = { ...folder, sources: folderSources };
+					project = insertChild(project, collection.internalId, completeFolder);
+					folders.push(completeFolder);
+				}
+			}
+		} catch (error) {
+			if (internalIdCollision) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+					path,
+					"The configured internal ID factory produced a project-wide collision while constructing the complete hierarchy.",
+				);
+			}
+			if (error instanceof NuvioIdGenerationError) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+					"$controller.nuvioIds",
+					"Unique Nuvio collection and folder IDs could not be generated for the complete hierarchy.",
+				);
+			}
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
+				path,
+				"The complete collection, folder and source hierarchy could not be created from the supplied values.",
+			);
+		}
+
+		if (!checkInternalIdUniqueness(project).unique) {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+				path,
+				"The configured internal ID factory produced a project-wide collision while constructing the complete hierarchy.",
+			);
+		}
+
+		commitProjectEdit(project, reconcileSelection(project, state.selection));
+		return actionResult(true, [], [], {
+			createdCollectionInternalIds: collections.map((collection) => collection.internalId),
+			createdFolderInternalIds: folders.map((folder) => folder.internalId),
+			createdSourceInternalIds: sources.map((source) => source.internalId),
+		});
+	}
+
 	function createNode({
 		options: actionOptions,
 		path,
@@ -1001,6 +1092,7 @@ export function createBuilderController(options = {}) {
 		createFolderWithSources,
 		addSourcesToFolder,
 		createFoldersWithSources,
+		createCollectionsWithFoldersAndSources,
 		updateNode,
 		moveNode,
 		removeNode,
@@ -1009,6 +1101,94 @@ export function createBuilderController(options = {}) {
 		stringifyProject,
 		clearDiagnostics,
 	});
+}
+
+function validateCollectionHierarchyOptions(options, path) {
+	if (
+		!isPlainObject(options)
+		|| Object.keys(options).some((key) => key !== "bundles")
+		|| !Array.isArray(options.bundles)
+		|| options.bundles.length < 1
+	) {
+		return {
+			ok: false,
+			error: controllerDiagnostic(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				`${path}.bundles`,
+				"Collection hierarchy batches must contain at least one bundle.",
+			),
+		};
+	}
+
+	const bundles = [];
+	for (let collectionIndex = 0; collectionIndex < options.bundles.length; collectionIndex += 1) {
+		if (!Object.hasOwn(options.bundles, collectionIndex)) {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.bundles`,
+					"Collection hierarchy batch arrays must not contain missing entries.",
+				),
+			};
+		}
+		const bundle = options.bundles[collectionIndex];
+		const bundlePath = `${path}.bundles[${collectionIndex}]`;
+		if (
+			!isPlainObject(bundle)
+			|| Object.keys(bundle).some((key) => !["collection", "folders"].includes(key))
+			|| !isPlainObject(bundle.collection)
+			|| Object.keys(bundle.collection).some((key) => key !== "editable")
+			|| !isPlainObject(bundle.collection.editable)
+			|| !Array.isArray(bundle.folders)
+			|| bundle.folders.length < 1
+		) {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					bundlePath,
+					"Each collection hierarchy bundle must contain one editable collection and at least one complete folder-source bundle.",
+				),
+			};
+		}
+
+		let collectionEditable;
+		try {
+			collectionEditable = cloneJsonValue(bundle.collection.editable, "collection editable");
+		} catch {
+			return {
+				ok: false,
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${bundlePath}.collection.editable`,
+					"Bundled collection editable values must be JSON-compatible.",
+				),
+			};
+		}
+
+		const folders = [];
+		for (let folderIndex = 0; folderIndex < bundle.folders.length; folderIndex += 1) {
+			if (!Object.hasOwn(bundle.folders, folderIndex)) {
+				return {
+					ok: false,
+					error: controllerDiagnostic(
+						CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+						`${bundlePath}.folders`,
+						"Folder-source bundle arrays must not contain missing entries.",
+					),
+				};
+			}
+			const folderValidation = validateSourceBundleOptions(bundle.folders[folderIndex], {
+				path: `${bundlePath}.folders[${folderIndex}]`,
+				requireFolder: true,
+			});
+			if (!folderValidation.ok) return folderValidation;
+			folders.push(folderValidation);
+		}
+		bundles.push({ collectionEditable, folders });
+	}
+	return { ok: true, bundles };
 }
 
 function validateSourceBundleOptions(options, { path, requireFolder, allowFolder = requireFolder }) {
