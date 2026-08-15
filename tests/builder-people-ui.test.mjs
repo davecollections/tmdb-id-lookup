@@ -96,14 +96,15 @@ function renderSearch({ context = "folder", results = [person()], selection = cr
 	}));
 }
 
-test("source chooser retains existing modes while adding Streaming service fifth", () => {
+test("source chooser retains the established first five modes before Genres", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "People", onCancel() {}, onSelectMode() {} }));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-movie-franchise"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-people"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-studios"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-networks"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-streaming-services"'));
-	assert.equal((markup.match(/<button/g) ?? []).length, 6);
+	assert.ok(markup.includes('data-source-mode-option="tmdb-genres"'));
+	assert.equal((markup.match(/<button/g) ?? []).length, 7);
 });
 
 test("folder Search preserves TMDB order, disambiguates identities, and uses friendly profile states", () => {
@@ -505,6 +506,6 @@ test("workspace exposes both entry points and routes quick-add and atomic collec
 	assert.match(workspace, /context:\s*"collection"[\s\S]*modeId:\s*PEOPLE_SOURCE_MODE_ID/);
 	assert.match(workspace, /createPeopleFolderBatch\(controller/);
 	assert.match(workspace, /createPeopleSourceBundle\(controller/);
-	assert.match(workspace, /setPendingPeopleFolderFocus\(focusFolderInternalId\)/);
+	assert.match(workspace, /setPendingCreatedFolderFocus\(focusFolderInternalId\)/);
 	assert.match(workspace, /data-source-creation-status="true"/);
 });

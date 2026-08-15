@@ -134,6 +134,17 @@ export function createBuilderController(options = {}) {
 		return actionResult(false, state.diagnostics[scope].errors, state.diagnostics[scope].warnings, extra);
 	}
 
+	function failAtomicBundleOperation(code, path, message) {
+		return failWithControllerDiagnostic(
+			"operation",
+			code,
+			path,
+			message,
+			{},
+			{ incrementRevision: false },
+		);
+	}
+
 	function clearSuccessfulOperationDiagnostics(patch = {}, commitOptions = {}) {
 		const diagnostics = replaceDiagnosticScope(state.diagnostics, "operation", [], []);
 		commitPatch({ ...patch, diagnostics }, commitOptions);
@@ -419,8 +430,7 @@ export function createBuilderController(options = {}) {
 			allowFolder: true,
 		});
 		if (!optionsValidation.ok) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				optionsValidation.error.code,
 				optionsValidation.error.path,
 				optionsValidation.error.message,
@@ -428,16 +438,14 @@ export function createBuilderController(options = {}) {
 		}
 		const resolution = resolveTarget(folderInternalId, path);
 		if (resolution.error) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				resolution.error.code,
 				resolution.error.path,
 				resolution.error.message,
 			);
 		}
 		if (resolution.location.node.nodeType !== NODE_TYPES.FOLDER) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
 				path,
 				"The parent for this operation must be a folder node.",
@@ -459,16 +467,14 @@ export function createBuilderController(options = {}) {
 				project = insertChild(project, folderInternalId, source);
 			}
 		} catch {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
 				path,
 				"The folder update and source bundle could not be created from the supplied values.",
 			);
 		}
 		if (!checkInternalIdUniqueness(project).unique) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
 				path,
 				"The configured internal ID factory produced a project-wide collision.",
@@ -484,25 +490,28 @@ export function createBuilderController(options = {}) {
 
 	function createFoldersWithSources(collectionInternalId, actionOptions = {}) {
 		const path = "$controller.createFoldersWithSources";
+		const invalidReplacementId = isPlainObject(actionOptions)
+			&& Object.hasOwn(actionOptions, "replaceEmptyFolderInternalId")
+			&& (typeof actionOptions.replaceEmptyFolderInternalId !== "string" || actionOptions.replaceEmptyFolderInternalId.length === 0);
 		if (
 			!isPlainObject(actionOptions)
-			|| Object.keys(actionOptions).some((key) => key !== "bundles")
+			|| Object.keys(actionOptions).some((key) => !["bundles", "replaceEmptyFolderInternalId"].includes(key))
 			|| !Array.isArray(actionOptions.bundles)
 			|| actionOptions.bundles.length < 1
-			|| actionOptions.bundles.length > 20
+			|| invalidReplacementId
 		) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
-				`${path}.bundles`,
-				"Folder-source batches must contain between one and 20 bundles.",
+				invalidReplacementId ? `${path}.replaceEmptyFolderInternalId` : `${path}.bundles`,
+				invalidReplacementId
+					? "The replacement folder ID must be a nonempty internal ID."
+					: "Folder-source batches must contain at least one bundle.",
 			);
 		}
 		const validatedBundles = [];
 		for (let index = 0; index < actionOptions.bundles.length; index += 1) {
 			if (!Object.hasOwn(actionOptions.bundles, index)) {
-				return failWithControllerDiagnostic(
-					"operation",
+				return failAtomicBundleOperation(
 					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
 					`${path}.bundles`,
 					"Folder-source batch arrays must not contain missing entries.",
@@ -513,8 +522,7 @@ export function createBuilderController(options = {}) {
 				requireFolder: true,
 			});
 			if (!validation.ok) {
-				return failWithControllerDiagnostic(
-					"operation",
+				return failAtomicBundleOperation(
 					validation.error.code,
 					validation.error.path,
 					validation.error.message,
@@ -525,20 +533,35 @@ export function createBuilderController(options = {}) {
 
 		const resolution = resolveTarget(collectionInternalId, path);
 		if (resolution.error) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				resolution.error.code,
 				resolution.error.path,
 				resolution.error.message,
 			);
 		}
 		if (resolution.location.node.nodeType !== NODE_TYPES.COLLECTION) {
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
 				path,
 				"The parent for this operation must be a collection node.",
 			);
+		}
+		const replaceEmptyFolderInternalId = actionOptions.replaceEmptyFolderInternalId ?? null;
+		if (replaceEmptyFolderInternalId !== null) {
+			const replacementTarget = resolution.location.node.folders.find((folder) => folder.internalId === replaceEmptyFolderInternalId);
+			if (
+				!replacementTarget
+				|| replacementTarget.nodeType !== NODE_TYPES.FOLDER
+				|| !Array.isArray(replacementTarget.sources)
+				|| replacementTarget.sources.length > 0
+				|| Object.hasOwn(replacementTarget, "rawImported")
+			) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.replaceEmptyFolderInternalId`,
+					"Only an empty non-imported folder in the destination collection can be replaced by this batch.",
+				);
+			}
 		}
 
 		let project = state.project;
@@ -564,35 +587,33 @@ export function createBuilderController(options = {}) {
 				folders.push(folder);
 				sourceGroups.push(sources);
 			}
+			if (!checkInternalIdUniqueness(project).unique) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+					path,
+					"The configured internal ID factory produced a project-wide collision.",
+				);
+			}
+			if (replaceEmptyFolderInternalId !== null) project = removeDomainNode(project, replaceEmptyFolderInternalId);
 		} catch (error) {
 			if (error instanceof NuvioIdGenerationError) {
-				return failWithControllerDiagnostic(
-					"operation",
+				return failAtomicBundleOperation(
 					CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
 					"$controller.nuvioIds",
 					"Unique Nuvio folder IDs could not be generated for the complete batch.",
 				);
 			}
-			return failWithControllerDiagnostic(
-				"operation",
+			return failAtomicBundleOperation(
 				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
 				path,
 				"The complete folder and source batch could not be created from the supplied values.",
 			);
 		}
-		if (!checkInternalIdUniqueness(project).unique) {
-			return failWithControllerDiagnostic(
-				"operation",
-				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
-				path,
-				"The configured internal ID factory produced a project-wide collision.",
-			);
-		}
-
-		commitProjectEdit(project);
+		commitProjectEdit(project, reconcileSelection(project, state.selection));
 		return actionResult(true, [], [], {
 			createdFolderInternalIds: folders.map((folder) => folder.internalId),
 			createdSourceInternalIds: sourceGroups.flatMap((sources) => sources.map((source) => source.internalId)),
+			replacedFolderInternalId: replaceEmptyFolderInternalId,
 		});
 	}
 

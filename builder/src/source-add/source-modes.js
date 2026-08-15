@@ -48,10 +48,21 @@ export const STREAMING_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const GENRE_SOURCE_MODE_ID = "tmdb-genres";
+
+export const GENRE_SOURCE_MODE = Object.freeze({
+	id: GENRE_SOURCE_MODE_ID,
+	label: "Genres",
+	providerLabel: "TMDB",
+	description: "Add official TMDB Movie or Series Genre sources.",
+	category: "native-tmdb",
+});
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	PEOPLE_SOURCE_MODE,
 	STUDIO_SOURCE_MODE,
 	NETWORK_SOURCE_MODE,
 	STREAMING_SOURCE_MODE,
+	GENRE_SOURCE_MODE,
 ]);

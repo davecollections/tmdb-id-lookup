@@ -140,9 +140,10 @@ State does not contain output JSON, exported values, external resources, callbac
 
 - `revision` starts at `0`.
 - `getState()` returns the same object identity until public state changes.
-- One committed project edit or ordinary diagnostic state change creates one new top-level object and increments `revision` once.
+- One committed project edit or ordinary diagnostic state change creates one new top-level object and increments `revision` once, except the explicitly non-content-revision diagnostic paths below.
 - A successful selection or clear-selection change creates and notifies a new snapshot but does not increment `revision` or change `dirty`.
 - An invalid move index may commit an operation diagnostic without advancing project revision. A same-index move may clear stale operation diagnostics without advancing revision.
+- A failed atomic `addSourcesToFolder` bundle may commit its operation diagnostic without advancing project revision; its project document remains unchanged.
 - True no-ops retain the existing snapshot and revision.
 - The complete state, project, raw evidence, selection, preview, and diagnostics are deeply frozen.
 - Previous snapshots never change after later actions.
@@ -268,6 +269,10 @@ Folder options use the same shape and require one collection parent. Source opti
 ```
 
 Collection/folder creation preserves a supplied usable unique Nuvio ID or generates one before committing. Source creation does not use the Nuvio ID factory. Creation otherwise uses domain factories plus `insertChild`, detaches caller values, supports an optional insertion index, validates full-project internal-ID uniqueness, does not infer source category, and does not auto-select the new node. Success adds `createdInternalId` to the result.
+
+`addSourcesToFolder` validates and constructs a complete ordered source array before one project commit. `createFoldersWithSources` does the same for a nonempty ordered array of folder/source bundles. Neither primitive imposes an arbitrary item-count ceiling; both retain shape, parent, generated-ID uniqueness, deterministic-order, and all-or-nothing validation. Issue #110 directly covers the complete current Genre catalogue as either 35 sources in one folder or 27 folders containing 35 sources, without claiming a generic capacity maximum. Success advances content revision once. Validation, construction, and collision failures retain the original project and content revision while still committing a structured operation diagnostic snapshot. Family services remain responsible for their narrower candidate and duplicate contracts.
+
+`createFoldersWithSources` also accepts optional `replaceEmptyFolderInternalId`. When present, the target must be an empty non-imported folder directly inside the destination collection. All replacement guards and all new folder/source construction complete before one commit; success removes the target and inserts the planned bundles atomically, reports `replacedFolderInternalId`, and reconciles target selection through the existing removal rule. A populated, imported, missing, or cross-collection target fails without changing project content or selection. The controller deliberately does not decide whether a blank folder is a product-owned placeholder: the Genre family applies its stricter exact generated-default predicate before requesting this narrow replacement. This is not a generic folder merge/copy API.
 
 `updateNode` delegates to `updateEditableValues` and supports project, collection, folder, and source nodes. It changes only editable values. Identity, type, category, raw evidence, and children remain intact. A structurally equal patch is a no-op.
 

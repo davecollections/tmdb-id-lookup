@@ -148,6 +148,14 @@ export function updateStreamingSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }
 
+export function updateGenreSourceSort(draft, sortBy, sortOptionId = null) {
+	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
+}
+
+export function updateGenreSourceAdvanced(draft, advanced) {
+	return Object.freeze({ ...draft, advanced, advancedTouched: true });
+}
+
 export function chooseMovieCollection(draft, collection) {
 	const tmdbId = canonicalPositiveId(collection?.id);
 	if (tmdbId === null || typeof collection?.name !== "string" || collection.name.trim().length === 0) {

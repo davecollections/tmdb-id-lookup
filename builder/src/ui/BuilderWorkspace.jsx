@@ -4,6 +4,7 @@ import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
 	createPeopleFolderBatch,
 	createPeopleSourceBundle,
+	createGenreSourceBundle,
 	createMovieFranchiseSource,
 	createNetworkCatalogueProvider,
 	createNetworkSource,
@@ -20,6 +21,7 @@ import {
 	NETWORK_SOURCE_MODE_ID,
 	STUDIO_SOURCE_MODE_ID,
 	STREAMING_SOURCE_MODE_ID,
+	GENRE_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import {
 	createSourceEditSession,
@@ -58,6 +60,7 @@ import { NetworkSourceFlow } from "./NetworkSourceFlow.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
+import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
@@ -650,7 +653,7 @@ export function BuilderWorkspace({
 	));
 	const [restoreAddSourceTriggerFocus, setRestoreAddSourceTriggerFocus] = useState(false);
 	const [pendingCreatedSourceFocus, setPendingCreatedSourceFocus] = useState(null);
-	const [pendingPeopleFolderFocus, setPendingPeopleFolderFocus] = useState(null);
+	const [pendingCreatedFolderFocus, setPendingCreatedFolderFocus] = useState(null);
 	const [sourceCreationStatusText, setSourceCreationStatusText] = useState("");
 	const [sourceEdit, setSourceEdit] = useState(initialSourceEdit);
 	const [restoreSourceEditTriggerFocus, setRestoreSourceEditTriggerFocus] = useState(false);
@@ -915,15 +918,15 @@ export function BuilderWorkspace({
 	}, [pendingSourceEditFallback, state.revision]);
 
 	useEffect(() => {
-		if (pendingPeopleFolderFocus === null) return;
-		const target = primaryControlRefs.current.get(pendingPeopleFolderFocus);
+		if (pendingCreatedFolderFocus === null) return;
+		const target = primaryControlRefs.current.get(pendingCreatedFolderFocus);
 		target?.scrollIntoView?.({
 			behavior: builderCardScrollBehavior(),
 			block: "nearest",
 		});
 		focusElementWithoutScroll(target);
-		setPendingPeopleFolderFocus(null);
-	}, [pendingPeopleFolderFocus, state.revision]);
+		setPendingCreatedFolderFocus(null);
+	}, [pendingCreatedFolderFocus, state.revision]);
 
 	useEffect(() => () => {
 		const session = dragSessionRef.current;
@@ -1216,7 +1219,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID].includes(modeId)
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -1323,7 +1326,7 @@ export function BuilderWorkspace({
 		addSourceRestoreFocusRef.current = null;
 		setAddSourceSession(null);
 		setMobileLevelOverride("folders");
-		setPendingPeopleFolderFocus(focusFolderInternalId);
+		setPendingCreatedFolderFocus(focusFolderInternalId);
 		setSourceCreationStatusText("");
 		queueMicrotask(() => {
 			setSourceCreationStatusText(bundle.context === "collection"
@@ -1437,6 +1440,48 @@ export function BuilderWorkspace({
 		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
 		setSourceCreationStatusText("");
 		queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} Streaming source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.provider.name}”.`));
+		return result;
+	}
+
+	function applyGenreSources(bundle) {
+		if (!visibleAddSourceSession) {
+			return {
+				ok: false,
+				errors: [{ code: "GENRE_DESTINATION_UNAVAILABLE", path: "$genres.destination", message: "The selected Genre destination is no longer available." }],
+			};
+		}
+		const interactionLocked = (
+			editorLocked
+			|| deleteLocked
+			|| returnConfirmationOpen
+			|| actionsMenuInternalId !== null
+			|| pointerInteractionLocked()
+		);
+		const result = createGenreSourceBundle(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			genres: bundle.genres,
+			sharedMediaChoice: bundle.sharedMediaChoice,
+			sortOptionId: bundle.sortOptionId,
+			advanced: bundle.advanced,
+			destinationMode: bundle.destinationMode,
+			drafts: bundle.drafts,
+			duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+			interactionLocked,
+		});
+		if (!result.ok) return result;
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setSourceCreationStatusText("");
+		if (bundle.destinationMode === "genre-folders") {
+			const firstFolderInternalId = result.createdFolderInternalIds[0];
+			controller.selectNode(firstFolderInternalId);
+			setMobileLevelOverride("folders");
+			setPendingCreatedFolderFocus(firstFolderInternalId);
+			queueMicrotask(() => setSourceCreationStatusText(`Created ${result.addedFolderCount} Genre folder${result.addedFolderCount === 1 ? "" : "s"} with ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"}.`));
+		} else {
+			setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
+			queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} Genre source${result.addedSourceCount === 1 ? "" : "s"}.`));
+		}
 		return result;
 	}
 
@@ -2251,6 +2296,14 @@ export function BuilderWorkspace({
 						onBack={returnToSourceModePicker}
 						onCancel={cancelAddSource}
 						onApply={applyStreamingSources}
+					/>
+				) : visibleAddSourceSession.modeId === GENRE_SOURCE_MODE_ID ? (
+					<GenreSourceFlow
+						project={state.project}
+						folder={addSourceFolder}
+						onBack={returnToSourceModePicker}
+						onCancel={cancelAddSource}
+						onApply={applyGenreSources}
 					/>
 				) : (
 					<AddSourceDialog

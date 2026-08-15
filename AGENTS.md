@@ -82,10 +82,13 @@ For future builder work:
 - Use wizard or step-based flows for complex collection creation.
 - Give controls large, mobile-friendly tap targets.
 - Use progressive disclosure for advanced options.
+- On browse/select catalogue screens, do not auto-focus Search or automatically summon the mobile keyboard; focus Search only after explicit user interaction. Auto-focus editable text only when typing is the primary task and the mobile keyboard does not obstruct the intended flow.
 - Test mobile-first work at common widths including 360, 384, 393, 402, and 412 pixels.
 - Treat desktop layouts as polished extensions of the mobile-first layout.
 - Follow a modern, dark, sleek direction with restrained TMDB-inspired blue, cyan, and green accents.
 - The visual direction is not warm or cosy.
+- For selectable option or choice cards, indicate selection with the established border, check or radio state, and restrained selected surface; do not add a coloured leading/left-edge accent rail solely to indicate selection. Reserve accent rails for non-selectable semantic messaging such as warnings, errors, or notices where appropriate.
+- For source review, keep candidate rows visually neutral and communicate readiness, destination duplicates, and elsewhere matches with concise shared status text. Use semantic notices only when explanation, locations, or an override action is needed; differently configured valid sources remain normally addable unless a future approved related-variant feature says otherwise.
 - Do not copy reference-site branding, wording, or layouts.
 - For long-running phases, prepare a handover before context loss rather than relying on chat memory.
 
