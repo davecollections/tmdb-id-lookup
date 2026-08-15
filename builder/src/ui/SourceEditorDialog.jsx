@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import {
 	formatNetworkLocation,
 	formatStudioLocation,
+	GENRE_SORT_OPTIONS,
 	networkSortOptionId,
 	networkSortValue,
 	parseNetworkSearchInput,
@@ -23,6 +24,9 @@ import {
 	createNetworkEditCountSession,
 	createStudioEditCountSession,
 	INITIAL_STUDIO_EDIT_COUNT_STATE,
+	GENRE_SOURCE_EDITOR_ID,
+	genreDefaultSourceName,
+	genreEditSortValue,
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_EDITOR_ID,
 	STUDIO_SOURCE_EDITOR_ID,
@@ -40,6 +44,8 @@ import {
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateStreamingSourceSort,
+	updateGenreSourceAdvanced,
+	updateGenreSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
@@ -61,6 +67,7 @@ import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
+import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import {
 	focusSourceEditAlert,
@@ -319,6 +326,34 @@ export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefa
 	);
 }
 
+export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange, onAdvancedChange, onOpenSecondary }) {
+	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
+	return (
+		<section className="source-edit-options studio-source-edit-options genre-source-edit-options" aria-labelledby="source-edit-options-title">
+			<div className="studio-configure-identity tmdb-review-identity genre-edit-identity">
+				<div className="genre-edit-mark" aria-hidden="true">G</div>
+				<div className="tmdb-review-identity-copy">
+					<p className="panel-kicker">Official TMDB Genre</p>
+					<h3 id="source-edit-options-title">{draft.genreName}</h3>
+					<p>Genre ID {draft.genreId} · {mediaLabel}</p>
+				</div>
+			</div>
+			<p className="source-edit-fixed-note">Genre ID and media type stay fixed for this source.</p>
+			<button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button>
+			{draft.sortOptionId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
+			<SemanticSortChoices options={GENRE_SORT_OPTIONS} selectedId={draft.sortOptionId} name="genre-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
+			<GenreAdvancedOptions
+				value={draft.advanced}
+				includedGenres={[draft.genreName]}
+				sharedMediaChoice={draft.mediaType === "TV" ? "series" : "movies"}
+				onChange={onAdvancedChange}
+				onOpenSecondary={onOpenSecondary}
+				idPrefix="genre-edit-advanced"
+			/>
+		</section>
+	);
+}
+
 export function SourceEditErrorPanel({ result, alertRef = null }) {
 	const presentation = sourceEditErrorPresentation(result);
 	return (
@@ -374,6 +409,7 @@ export function SourceEditorDialog({
 	const adapter = sourceEditorById(session.adapterId);
 	const [draft, setDraft] = useState(initialDraft);
 	const [stage, setStage] = useState("edit");
+	const [genreSecondarySurface, setGenreSecondarySurface] = useState(null);
 	const [failure, setFailure] = useState(null);
 	const [peopleCountState, setPeopleCountState] = useState(() => (
 		initialPeopleCountState ?? (session.adapterId === PEOPLE_SOURCE_EDITOR_ID
@@ -424,6 +460,9 @@ export function SourceEditorDialog({
 	const studioSortRef = useRef(null);
 	const networkSortRef = useRef(null);
 	const streamingSortRef = useRef(null);
+	const genreSortRef = useRef(null);
+	const genreSecondaryHeadingRef = useRef(null);
+	const genreSecondaryReturnFocusRef = useRef(null);
 	const pickerInputRef = useRef(null);
 	const diagnosticRef = useRef(null);
 	const peopleCountSessionRef = useRef(null);
@@ -467,7 +506,7 @@ export function SourceEditorDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? genreSortRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
@@ -477,6 +516,18 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (stage === "picker") focusElementWithoutScroll(pickerInputRef.current);
 	}, [stage]);
+
+	useEffect(() => {
+		if (genreSecondarySurface) {
+			focusElementWithoutScroll(genreSecondaryHeadingRef.current);
+			return;
+		}
+		if (genreSecondaryReturnFocusRef.current) {
+			const trigger = genreSecondaryReturnFocusRef.current;
+			genreSecondaryReturnFocusRef.current = null;
+			focusElementWithoutScroll(trigger);
+		}
+	}, [genreSecondarySurface]);
 
 	useEffect(() => {
 		const countSession = peopleCountSessionRef.current;
@@ -557,7 +608,7 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const sortRef = networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : studioSortRef;
+		const sortRef = networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
 		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
@@ -587,7 +638,7 @@ export function SourceEditorDialog({
 
 	function submit(event) {
 		event.preventDefault();
-		if (submitting || stage !== "edit") return;
+		if (genreSecondarySurface || submitting || stage !== "edit") return;
 		setSubmitting(true);
 		const result = onSave(draft);
 		if (result?.ok || result?.closeRequired) return;
@@ -598,6 +649,15 @@ export function SourceEditorDialog({
 
 	function cancel() {
 		if (!submitting) onCancel();
+	}
+
+	function openGenreSecondarySurface(surface, trigger) {
+		genreSecondaryReturnFocusRef.current = trigger;
+		setGenreSecondarySurface(surface);
+	}
+
+	function closeGenreSecondarySurface() {
+		setGenreSecondarySurface(null);
 	}
 
 	const content = (
@@ -620,14 +680,23 @@ export function SourceEditorDialog({
 					data-source-edit-modal="true"
 					data-source-edit-adapter={session.adapterId}
 					data-source-edit-stage={stage}
+					data-secondary-surface={genreSecondarySurface ?? undefined}
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="source-edit-title"
 					aria-describedby="source-edit-description"
 					tabIndex={-1}
-					onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}
+					onKeyDown={(event) => {
+						if (genreSecondarySurface && event.key === "Escape") {
+							event.preventDefault();
+							event.stopPropagation();
+							closeGenreSecondarySurface();
+							return;
+						}
+						handleDialogKeyDown(event, dialogRef.current, cancel);
+					}}
 				>
-					<header className="add-source-heading">
+					<header className="add-source-heading" inert={genreSecondarySurface || undefined} aria-hidden={genreSecondarySurface ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							{stage === "picker" ? (
 								<button
@@ -657,12 +726,14 @@ export function SourceEditorDialog({
 										? "Update this Network Series source name and title order."
 										: session.adapterId === STREAMING_SOURCE_EDITOR_ID
 											? "Update this Streaming source name and title order. Provider, region and media stay fixed."
+										: session.adapterId === GENRE_SOURCE_EDITOR_ID
+											? "Update this Genre source name, title order and supported filters. Genre ID and media stay fixed."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
 
 					<form className="add-source-form source-edit-form" onSubmit={submit} noValidate>
-						<div ref={scrollRef} className="add-source-scroll source-edit-scroll">
+						<div ref={scrollRef} className="add-source-scroll source-edit-scroll" inert={genreSecondarySurface || undefined} aria-hidden={genreSecondarySurface ? "true" : undefined}>
 							{stage === "picker" ? (
 								<MovieCollectionPicker
 									provider={provider}
@@ -679,16 +750,18 @@ export function SourceEditorDialog({
 									{failure ? (
 										<SourceEditErrorPanel result={failure} alertRef={diagnosticRef} />
 									) : null}
-									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
+									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
 									{session.adapterId !== NETWORK_SOURCE_EDITOR_ID ? <SourceTitleField
 											draft={draft}
 											titleInputRef={titleInputRef}
 											error={titleError}
 											helperText={session.adapterId === STUDIO_SOURCE_EDITOR_ID
 												? "Changes how this source appears in Nuvio, not which Studio it represents."
-												: session.adapterId === NETWORK_SOURCE_EDITOR_ID
-													? "Changes how this source appears in Nuvio, not which Network it represents."
-													: null}
+											: session.adapterId === NETWORK_SOURCE_EDITOR_ID
+												? "Changes how this source appears in Nuvio, not which Network it represents."
+											: session.adapterId === GENRE_SOURCE_EDITOR_ID
+												? "Changes how this source appears in Nuvio, not which Genre it represents."
+												: null}
 												onChange={(title) => {
 												setDraft((current) => updateSourceEditTitle(current, title));
 												clearFieldDiagnostic("title");
@@ -760,6 +833,25 @@ export function SourceEditorDialog({
 												clearFieldDiagnostic("sort");
 											}}
 										/>
+									) : session.adapterId === GENRE_SOURCE_EDITOR_ID ? (
+										<GenreEditorFields
+											draft={draft}
+											sortRef={genreSortRef}
+											onDefaultName={() => {
+												const defaultName = genreDefaultSourceName(draft.genreName, draft.mediaType);
+												if (defaultName !== null) setDraft((current) => updateSourceEditTitle(current, defaultName));
+												clearFieldDiagnostic("title");
+											}}
+											onSortChange={(optionId) => {
+												setDraft((current) => updateGenreSourceSort(current, genreEditSortValue(optionId, current.mediaType), optionId));
+												clearFieldDiagnostic("sort");
+											}}
+											onAdvancedChange={(advanced) => {
+												setDraft((current) => updateGenreSourceAdvanced(current, advanced));
+												setFailure(null);
+											}}
+											onOpenSecondary={openGenreSecondarySurface}
+										/>
 									) : session.adapterId === MOVIE_COLLECTION_SOURCE_EDITOR_ID ? (
 										<MovieCollectionEditorFields
 											draft={draft}
@@ -775,14 +867,15 @@ export function SourceEditorDialog({
 								</>
 							)}
 						</div>
-						<footer className="add-source-actions source-edit-actions">
+						{genreSecondarySurface ? <div className="genre-secondary-surface" data-surface={genreSecondarySurface}><GenreAdvancedSecondarySurface surface={genreSecondarySurface} value={draft.advanced} includedGenres={[draft.genreName]} sharedMediaChoice={draft.mediaType === "TV" ? "series" : "movies"} onChange={(advanced) => { setDraft((current) => updateGenreSourceAdvanced(current, advanced)); setFailure(null); }} onDone={closeGenreSecondarySurface} focusRef={genreSecondaryHeadingRef} /></div> : null}
+						{!genreSecondarySurface ? <footer className="add-source-actions source-edit-actions">
 							{stage === "edit" ? (
 								<button className="editor-apply" type="submit" data-action="save-source-edit" disabled={submitting}>
 									{submitting ? "Saving changes…" : "Save changes"}
 								</button>
 							) : null}
 							<button className="editor-cancel" type="button" data-action="cancel-source-edit" disabled={submitting} onClick={cancel}>Cancel</button>
-						</footer>
+						</footer> : null}
 					</form>
 				</section>
 			</div>

@@ -25,7 +25,7 @@ export function SemanticSortChoices({
 					</label>
 				))}
 			</div>
-			{selected ? <p className="studio-sort-description semantic-sort-description">{selected.description}</p> : null}
+			{selected?.description ? <p className="studio-sort-description semantic-sort-description">{selected.description}</p> : null}
 		</fieldset>
 	);
 }

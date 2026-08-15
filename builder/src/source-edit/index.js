@@ -1,4 +1,11 @@
 export {
+	GENRE_SOURCE_EDITOR_ID,
+	genreDefaultSourceName,
+	genreEditSortValue,
+	genreSourceEditor,
+	inspectEditableGenreSource,
+} from "./genre-editor.js";
+export {
 	MOVIE_COLLECTION_SOURCE_EDITOR_ID,
 	movieCollectionEditIdentity,
 	movieCollectionSourceEditor,
@@ -43,6 +50,8 @@ export {
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateStreamingSourceSort,
+	updateGenreSourceAdvanced,
+	updateGenreSourceSort,
 	updateSourceEditTitle,
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,

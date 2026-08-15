@@ -1,0 +1,71 @@
+[
+  {
+    "id": "issue-110-nuvio-1",
+    "title": "Issue 110 Genre Review",
+    "folders": [
+      {
+        "id": "issue-110-nuvio-2",
+        "title": "Genre Sources",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Comedy Movies",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": "35",
+              "releaseDateGte": "2001-01-01",
+              "releaseDateLte": "2024-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.2,
+              "voteCountGte": 250,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "AU",
+              "withoutGenres": "99,27"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "Comedy Series",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": "35",
+              "releaseDateGte": "2001-01-01",
+              "releaseDateLte": "2024-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.2,
+              "voteCountGte": 250,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "AU",
+              "withoutGenres": "99,10762"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "Action & Adventure Series",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": "10759",
+              "releaseDateGte": "2001-01-01",
+              "releaseDateLte": "2024-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.2,
+              "voteCountGte": 250,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "AU"
+            }
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

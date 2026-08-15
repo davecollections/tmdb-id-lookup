@@ -1,3 +1,4 @@
+import { genreSourceEditor } from "./genre-editor.js";
 import { movieCollectionSourceEditor } from "./movie-collection-editor.js";
 import { networkSourceEditor } from "./network-editor.js";
 import { peopleSourceEditor } from "./people-editor.js";
@@ -9,6 +10,7 @@ export const SOURCE_EDITORS = Object.freeze([
 	peopleSourceEditor,
 	studioSourceEditor,
 	networkSourceEditor,
+	genreSourceEditor,
 	streamingSourceEditor,
 ]);
 

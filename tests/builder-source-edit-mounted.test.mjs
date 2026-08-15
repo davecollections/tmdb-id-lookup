@@ -150,7 +150,19 @@ async function runMountedPage() {
 				returnByValue: true,
 			});
 			const result = evaluated.result?.value;
-			if (result?.status === "complete") return result.results;
+			if (result?.status === "complete") {
+				const genreToolbarWidths = [];
+				for (const width of [360, 384, 393, 402, 412]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: true });
+					const toolbarEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runGenreToolbarScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					genreToolbarWidths.push(toolbarEvaluation.result?.value);
+				}
+				return { ...result.results, genreToolbarWidths };
+			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
 		}
@@ -244,4 +256,116 @@ test("mounted Streaming creation reopens and focuses the invalid physical-source
 	assert.equal(result.alertRendered, true);
 	assert.equal(result.dialogOpen, true);
 	assert.equal(result.applyCalls, 0);
+});
+
+test("mounted Genre Browse is browse-first and only focuses Search after explicit interaction", () => {
+	const result = mountedResults.genreBrowseFocus;
+	assert.deepEqual(result.initial, { searchFocused: false, browseHeadingFocused: true });
+	assert.equal(result.explicitFocused, true);
+	assert.equal(result.selectionSurvivedFiltering, true);
+	assert.equal(result.returnSearchFocused, false);
+	assert.equal(result.returnHeadingFocused, true);
+	assert.equal(result.returnQuery, "a");
+	assert.equal(result.returnSelectionCount, true);
+	assert.equal(result.returnScrollTop, 173);
+});
+
+test("mounted Genre selection toolbar remains grouped and overflow-free at every required narrow width", () => {
+	assert.deepEqual(mountedResults.genreToolbarWidths.map((result) => result.width), [360, 384, 393, 402, 412]);
+	for (const result of mountedResults.genreToolbarWidths) {
+		assert.equal(result.countPresent, true, `${result.width}px count`);
+		assert.equal(result.countUpdated, true, `${result.width}px immediate count`);
+		assert.equal(result.actionsGrouped, true, `${result.width}px grouped actions`);
+		assert.equal(result.actionsShareRow, true, `${result.width}px action row`);
+		assert.equal(result.comfortableTargets, true, `${result.width}px targets`);
+		assert.equal(result.disabledInitially, true, `${result.width}px initial Clear all`);
+		assert.equal(result.clearEnabledAfterSelection, true, `${result.width}px selected Clear all`);
+		assert.equal(result.headingHasWidth, true, `${result.width}px heading width`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px overflow`);
+	}
+});
+
+test("mounted Genre review rows stay neutral while statuses and elsewhere notice carry meaning", () => {
+	const result = mountedResults.genreStatuses;
+	assert.deepEqual(result.statuses, ["Already in this folder", "Exists elsewhere", "Ready to add"]);
+	assert.equal(result.rowsNeutral, true);
+	assert.equal(result.noAttentionAttribute, true);
+	assert.equal(result.noticeUsesSharedTreatment, true);
+	assert.equal(result.noticeHeading, "A matching source exists elsewhere in this project");
+	assert.equal(result.noticeAction, "You can still add it here.");
+});
+
+test("mounted Genre exact duplicate overrides use singular and bundle canonical labels", () => {
+	assert.deepEqual(mountedResults.genreOverrideLabels, {
+		bundleOverride: "Add all anyway",
+		bundleNoNew: "No new sources to add",
+		singleOverride: "Add anyway",
+		singleNoNew: "No new sources to add",
+	});
+});
+
+test("mounted Genre Add secondary surfaces keep the form mounted and block the underlying operation", () => {
+	const result = mountedResults.genreCreationSecondary;
+	assert.deepEqual(result.help, {
+		surfaceOpen: true,
+		underlyingMounted: true,
+		underlyingInert: true,
+		underlyingHeaderInert: true,
+		footerHidden: true,
+		focusOnHeading: true,
+		doneActive: true,
+		submitBlocked: true,
+		escapeClosed: true,
+		focusRestored: true,
+	});
+	assert.deepEqual(result.exclusions, {
+		initialMobileView: "genres",
+		pickerMobileView: "picker",
+		selfOmitted: true,
+		otherSelectedGenreAvailable: true,
+		incompatibleGenreOmitted: true,
+		footerHidden: true,
+		rootDoneVisible: true,
+		innerDoneHidden: true,
+		detailBackVisible: true,
+		detailBackLabel: "← Back to Genres",
+		detailHeaderSticky: true,
+		detailBackRemainsVisibleAfterScroll: true,
+		detailHeadingFocused: true,
+		singleScrollOwner: true,
+		browserBackReturnedToRoot: true,
+		rootDoneReturnedAfterBrowserBack: true,
+		backPreservedValue: true,
+		mainSummaryUpdated: true,
+		focusRestored: true,
+		footerReturned: true,
+	});
+	assert.equal(result.applyCalls, 0);
+});
+
+test("mounted Genre Source Edit hides Save during Help/exclusions and restores focus and values", () => {
+	const result = mountedResults.genreEditSecondary;
+	assert.deepEqual(result.help, {
+		surfaceOpen: true,
+		underlyingMounted: true,
+		underlyingInert: true,
+		underlyingHeaderInert: true,
+		footerHidden: true,
+		focusOnHeading: true,
+		doneActive: true,
+		submitBlocked: true,
+		escapeClosed: true,
+		focusRestored: true,
+	});
+	assert.deepEqual(result.exclusions, {
+		surfaceOpen: true,
+		selfOmitted: true,
+		tvOnlyOmitted: true,
+		compatibleGenreAvailable: true,
+		footerHidden: true,
+		doneActive: true,
+		valuePreserved: true,
+		focusRestored: true,
+		footerReturned: true,
+	});
 });

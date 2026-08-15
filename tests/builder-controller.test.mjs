@@ -548,6 +548,105 @@ test("generic source batches accept six ordered sources in one content revision"
 	assert.equal(new Set(result.createdSourceInternalIds).size, 6);
 });
 
+test("generic folder-source batches accept 27 folders and 35 sources in one content revision", () => {
+	const controller = createBuilderController({ idFactory: countingIdFactory() });
+	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const bundles = Array.from({ length: 27 }, (_, index) => ({
+		folder: { editable: { title: `Genre ${index + 1}` } },
+		sources: Array.from({ length: index < 8 ? 2 : 1 }, (__, sourceIndex) => ({
+			category: "native-tmdb",
+			editable: { title: `Genre ${index + 1} source ${sourceIndex + 1}` },
+		})),
+	}));
+	const beforeRevision = controller.getState().revision;
+
+	const result = controller.createFoldersWithSources(collection.createdInternalId, { bundles });
+	const inserted = controller.getState().project.collections[0].folders;
+
+	assert.equal(result.ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(inserted.length, 27);
+	assert.equal(inserted.reduce((count, folder) => count + folder.sources.length, 0), 35);
+	assert.equal(result.createdFolderInternalIds.length, 27);
+	assert.equal(result.createdSourceInternalIds.length, 35);
+});
+
+test("folder-source batches can atomically replace one empty non-imported folder", () => {
+	const controller = createBuilderController({ idFactory: countingIdFactory() });
+	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const placeholder = controller.createFolder(collection.createdInternalId, { editable: { id: "placeholder", title: "Untitled Folder", tileShape: "POSTER", hideTitle: true } });
+	controller.selectNode(placeholder.createdInternalId);
+	const beforeRevision = controller.getState().revision;
+	const result = controller.createFoldersWithSources(collection.createdInternalId, {
+		replaceEmptyFolderInternalId: placeholder.createdInternalId,
+		bundles: [{ folder: { editable: { title: "Action" } }, sources: [{ category: "native-tmdb", editable: { title: "Action Movies" } }] }],
+	});
+	assert.equal(result.ok, true);
+	assert.equal(result.replacedFolderInternalId, placeholder.createdInternalId);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	assert.equal(controller.getState().project.collections[0].folders.length, 1);
+	assert.equal(controller.getState().project.collections[0].folders[0].editable.title, "Action");
+	assert.deepEqual(controller.getState().selection, { collectionInternalId: collection.createdInternalId, folderInternalId: null, sourceInternalId: null });
+});
+
+test("folder-source replacement rejects populated, imported and cross-collection targets without mutation", () => {
+	const bundle = { bundles: [{ folder: { editable: { title: "Action" } }, sources: [{ category: "native-tmdb", editable: { title: "Action Movies" } }] }] };
+	for (const kind of ["populated", "imported", "cross-collection"]) {
+		const controller = createBuilderController({ idFactory: countingIdFactory() });
+		const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+		const otherCollection = controller.createCollection({ editable: { id: "other", title: "Other" } });
+		const target = controller.createFolder(kind === "cross-collection" ? otherCollection.createdInternalId : collection.createdInternalId, {
+			editable: { id: "target", title: "Untitled Folder" },
+			...(kind === "imported" ? { rawImported: { id: "target", title: "Untitled Folder", preserved: true } } : {}),
+		});
+		if (kind === "populated") controller.createSource(target.createdInternalId, { category: "native-tmdb", editable: { title: "Existing" } });
+		const before = controller.getState();
+		const result = controller.createFoldersWithSources(collection.createdInternalId, { ...bundle, replaceEmptyFolderInternalId: target.createdInternalId });
+		assert.equal(result.ok, false, kind);
+		assert.equal(controller.getState().revision, before.revision, kind);
+		assert.equal(controller.getState().project.revision, before.project.revision, kind);
+		assert.deepEqual(controller.getState().project, before.project, kind);
+		assert.deepEqual(controller.getState().selection, before.selection, kind);
+	}
+});
+
+test("folder-source replacement keeps a valid empty target when bundle construction fails", () => {
+	const controller = createBuilderController({ idFactory: countingIdFactory() });
+	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const placeholder = controller.createFolder(collection.createdInternalId, { editable: { id: "placeholder", title: "Untitled Folder", tileShape: "POSTER", hideTitle: true } });
+	controller.selectNode(placeholder.createdInternalId);
+	const before = controller.getState();
+	const result = controller.createFoldersWithSources(collection.createdInternalId, {
+		replaceEmptyFolderInternalId: placeholder.createdInternalId,
+		bundles: [{ folder: { editable: { title: "Action" } }, sources: [{ category: "unsupported", editable: { title: "Invalid" } }] }],
+	});
+	assert.equal(result.ok, false);
+	assert.equal(controller.getState().revision, before.revision);
+	assert.equal(controller.getState().project.revision, before.project.revision);
+	assert.deepEqual(controller.getState().project, before.project);
+	assert.deepEqual(controller.getState().selection, before.selection);
+});
+
+test("folder-source replacement cannot hide a generated collision with the removed target", () => {
+	let collisionId = null;
+	let count = 0;
+	const controller = createBuilderController({ idFactory: () => collisionId ?? `builder-${++count}` });
+	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const placeholder = controller.createFolder(collection.createdInternalId, { editable: { id: "placeholder", title: "Untitled Folder", tileShape: "POSTER", hideTitle: true } });
+	controller.selectNode(placeholder.createdInternalId);
+	collisionId = placeholder.createdInternalId;
+	const before = controller.getState();
+	const result = controller.createFoldersWithSources(collection.createdInternalId, {
+		replaceEmptyFolderInternalId: placeholder.createdInternalId,
+		bundles: [{ folder: { editable: { title: "Action" } }, sources: [{ category: "native-tmdb", editable: { title: "Action Movies" } }] }],
+	});
+	assert.equal(result.ok, false);
+	assert.equal(result.errors[0].code, "INTERNAL_ID_COLLISION");
+	assert.equal(controller.getState().revision, before.revision);
+	assert.deepEqual(controller.getState().project, before.project);
+	assert.deepEqual(controller.getState().selection, before.selection);
+});
+
 test("generic source batches reject an invalid fifth source without partial insertion", () => {
 	const controller = createBuilderController({ idFactory: countingIdFactory() });
 	const collection = controller.createCollection({ editable: { id: "collection", title: "Collection" } });
