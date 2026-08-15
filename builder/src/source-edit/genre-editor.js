@@ -10,6 +10,7 @@ import {
 	compileGenreAdvancedFilters,
 	readGenreAdvancedFilters,
 } from "../source-add/genre-advanced.js";
+import { inspectCanonicalDecadeSourceNode } from "../source-add/decades-classification.js";
 import { officialGenreReference } from "../source-add/genre-catalogue.js";
 import { genreSourceTitle } from "../source-add/genre-source.js";
 import {
@@ -50,6 +51,7 @@ function buildEditableFilters(draft) {
 }
 
 export function inspectEditableGenreSource(source) {
+	if (inspectCanonicalDecadeSourceNode(source) !== null) return null;
 	const effective = resolveEffectiveDiscoverSource(source);
 	if (!effective.ok || !isPlainObject(effective.value)) return null;
 	const value = effective.value;
@@ -57,7 +59,8 @@ export function inspectEditableGenreSource(source) {
 	const sourceType = canonicalText(value.tmdbSourceType).toUpperCase();
 	const mediaType = canonicalText(value.mediaType).toUpperCase();
 	if (provider !== "tmdb" || sourceType !== "DISCOVER" || !["MOVIE", "TV"].includes(mediaType)) return null;
-	if (meaningful(value.tmdbId) || !isPlainObject(value.filters)) return null;
+	const canonicalTmdbId = !Object.hasOwn(value, "tmdbId") || value.tmdbId === null;
+	if (!canonicalTmdbId || !isPlainObject(value.filters)) return null;
 	for (const [field, fieldValue] of Object.entries(value)) {
 		if (!knownSourceFields.has(field) && meaningful(fieldValue)) return null;
 	}

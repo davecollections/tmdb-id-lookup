@@ -3,6 +3,42 @@ export {
 	INITIAL_ASYNC_REQUEST_STATE,
 } from "./async-request-state.js";
 export {
+	BEFORE_1950_PERIOD,
+	classifyCanonicalDecadePeriod,
+	currentDecadePreset,
+	DECADE_CURRENT_YEAR_MODES,
+	DECADE_PRESET_IDS,
+	DECADE_PRESETS,
+	decadeIndividualPeriods,
+	decadePresetById,
+	DEFAULT_DECADE_CURRENT_YEAR_MODE,
+} from "./decades-catalogue.js";
+export {
+	inspectCanonicalDecadeSource,
+	inspectCanonicalDecadeSourceNode,
+} from "./decades-classification.js";
+export {
+	applyDecadesHierarchyPlan,
+	createDecadesHierarchyPlan,
+	DECADES_COLLECTION_LAYOUTS,
+	DECADES_CREATION_SCOPES,
+	DECADES_HIERARCHY_PLAN_TYPE,
+	DECADES_PLACEMENT_STATUSES,
+	inspectDecadesSourcePlacement,
+	validateDecadesHierarchyPlan,
+} from "./decades-plan.js";
+export {
+	buildDecadesSourceDrafts,
+	completeOfficialGenreNames,
+	DECADES_ADVANCED_FILTER_FIELDS,
+	DECADES_MEDIA_MODES,
+	DECADES_SORT_OPTIONS,
+	DEFAULT_DECADES_CONTENT,
+	DEFAULT_DECADES_SORT_OPTION_ID,
+	normalizeDecadesSourceConfiguration,
+	validateDecadesSourceDrafts,
+} from "./decades-source.js";
+export {
 	buildMovieFranchiseSourceDraft,
 	createSourceSubmissionGate,
 	createMovieFranchiseSource,

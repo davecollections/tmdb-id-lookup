@@ -1,8 +1,8 @@
 # Builder Application Controller
 
-Status: implemented for issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39)
+Status: implemented for issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39), with bounded atomic hierarchy extensions through issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112)
 
-Last reviewed: 2026-07-11
+Last reviewed: 2026-08-15
 
 ## Purpose and boundary
 
@@ -77,6 +77,7 @@ controller.clearSelection()
 controller.createCollection(options)
 controller.createFolder(collectionInternalId, options)
 controller.createSource(folderInternalId, options)
+controller.createCollectionsWithFoldersAndSources(options)
 
 controller.updateNode(internalId, editablePatch)
 controller.moveNode(internalId, targetIndex)
@@ -273,6 +274,8 @@ Collection/folder creation preserves a supplied usable unique Nuvio ID or genera
 `addSourcesToFolder` validates and constructs a complete ordered source array before one project commit. `createFoldersWithSources` does the same for a nonempty ordered array of folder/source bundles. Neither primitive imposes an arbitrary item-count ceiling; both retain shape, parent, generated-ID uniqueness, deterministic-order, and all-or-nothing validation. Issue #110 directly covers the complete current Genre catalogue as either 35 sources in one folder or 27 folders containing 35 sources, without claiming a generic capacity maximum. Success advances content revision once. Validation, construction, and collision failures retain the original project and content revision while still committing a structured operation diagnostic snapshot. Family services remain responsible for their narrower candidate and duplicate contracts.
 
 `createFoldersWithSources` also accepts optional `replaceEmptyFolderInternalId`. When present, the target must be an empty non-imported folder directly inside the destination collection. All replacement guards and all new folder/source construction complete before one commit; success removes the target and inserts the planned bundles atomically, reports `replacedFolderInternalId`, and reconciles target selection through the existing removal rule. A populated, imported, missing, or cross-collection target fails without changing project content or selection. The controller deliberately does not decide whether a blank folder is a product-owned placeholder: the Genre family applies its stricter exact generated-default predicate before requesting this narrow replacement. This is not a generic folder merge/copy API.
+
+Issue #112 adds `createCollectionsWithFoldersAndSources` for one or more complete new Collection → Folder → Source bundles. It validates the complete argument tree before candidate construction, builds every collection and descendant in one in-memory candidate project, reserves every internal ID across existing and candidate nodes, generates collection/folder Nuvio IDs against that evolving candidate, and commits once. Success reports ordered created collection, folder, and source internal IDs, advances one content revision, and reconciles the existing selection. Invalid shapes, internal-ID collisions, source/folder candidate collisions, Nuvio-ID failures, and later-collection failures retain project content, selection, dirty state, and content revision; only the existing non-revision operation diagnostic snapshot may change. This is the bounded multi-collection counterpart used by Decades, not a generic transaction or hierarchy interpreter.
 
 `updateNode` delegates to `updateEditableValues` and supports project, collection, folder, and source nodes. It changes only editable values. Identity, type, category, raw evidence, and children remain intact. A structurally equal patch is a no-op.
 
