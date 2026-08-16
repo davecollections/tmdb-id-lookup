@@ -288,7 +288,8 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onDone() {},
 	}));
 	assert.ok(exclusions.includes("Exclude from Comedy"));
-	assert.ok(exclusions.includes("Choose what you want left out of this genre’s results."));
+	assert.ok(exclusions.includes("Choose a Genre, then select Genres to exclude from that source."));
+	assert.equal(exclusions.includes("Choose what you want left out of this genre’s results."), false);
 	assert.ok(exclusions.includes('data-multiple-genres="false"'));
 	assert.equal(exclusions.includes("genre-included-genre-pane"), false);
 	assert.equal(exclusions.includes("<strong>Comedy</strong>"), false);
@@ -328,8 +329,9 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onChange() {},
 		onDone() {},
 	}));
-	assert.ok(multi.includes("Choose a genre on the left"));
-	assert.ok(multi.includes("Then choose what you want left out of that genre’s results."));
+	assert.ok(multi.includes("Choose a Genre, then select Genres to exclude from that source."));
+	assert.ok(multi.includes("Then select Genres to exclude from that source."));
+	assert.equal(multi.includes("Choose a genre on the left"), false);
 	assert.ok(multi.includes("Horror excluded"));
 	assert.ok(multi.includes("Comedy excluded"));
 	assert.equal(multi.includes("media-correct"), false);

@@ -27,6 +27,20 @@ export const DECADES_SORT_OPTIONS = Object.freeze(DISCOVER_SORT_OPTIONS.map((opt
 
 export const DEFAULT_DECADES_SORT_OPTION_ID = DEFAULT_DISCOVER_SORT_OPTION_ID;
 
+export const DECADES_CHRONOLOGICAL_ORDERS = Object.freeze([
+	Object.freeze({ id: "oldest-first", label: "Oldest to newest" }),
+	Object.freeze({ id: "newest-first", label: "Newest to oldest" }),
+]);
+
+export const DEFAULT_DECADES_CHRONOLOGICAL_ORDER = DECADES_CHRONOLOGICAL_ORDERS[0].id;
+
+export const DECADES_SOURCE_GROUPINGS = Object.freeze([
+	Object.freeze({ id: "movies-first", label: "Movies first" }),
+	Object.freeze({ id: "paired", label: "Pair Movies & Series" }),
+]);
+
+export const DEFAULT_DECADES_SOURCE_GROUPING = DECADES_SOURCE_GROUPINGS[0].id;
+
 export const DEFAULT_DECADES_CONTENT = Object.freeze({
 	wholeDecade: true,
 	individualYears: false,
@@ -50,6 +64,10 @@ const CONFIGURATION_KEYS = new Set([
 	"currentYearMode",
 	"sortOptionId",
 	"genreNames",
+	"genreNamesByDecade",
+	"decadeOrder",
+	"yearOrder",
+	"sourceGrouping",
 	"advanced",
 ]);
 const CONTENT_KEYS = new Set(Object.keys(DEFAULT_DECADES_CONTENT));
@@ -61,6 +79,8 @@ const ADVANCED_KEYS = new Set([
 	"originCountry",
 	"ordinaryExcludedGenres",
 	"exclusionsByGenre",
+	"ordinaryExcludedGenresByDecade",
+	"exclusionsByGenreByDecade",
 ]);
 
 function diagnostic(code, path, message) {
@@ -106,7 +126,95 @@ function officialGenreNames(values, path, errors, { allowEmpty = true } = {}) {
 	return names;
 }
 
-function normalizeAdvanced(value, genreNames, errors) {
+function normalizedGenreConfiguration(value, orderedSelectedIds, content, media, errors) {
+	const hasShared = Object.hasOwn(value, "genreNames") && value.genreNames !== undefined;
+	const hasByDecade = Object.hasOwn(value, "genreNamesByDecade") && value.genreNamesByDecade !== undefined;
+	if (hasShared && hasByDecade) {
+		errors.push(diagnostic(
+			"AMBIGUOUS_DECADES_GENRES",
+			"$decades.genreNamesByDecade",
+			"Use either the shared Genre selection or per-Decade Genre selections, not both.",
+		));
+	}
+
+	const byDecade = {};
+	if (!content.genreBreakdown) {
+		const shared = hasShared
+			? officialGenreNames(value.genreNames, "$decades.genreNames", errors)
+			: [];
+		if (shared.length > 0) {
+			errors.push(diagnostic("UNEXPECTED_DECADES_GENRES", "$decades.genreNames", "Genre selections require Genre breakdown to be enabled."));
+		}
+		if (hasByDecade) {
+			if (!plainObject(value.genreNamesByDecade)) {
+				errors.push(diagnostic("INVALID_DECADES_GENRES_BY_DECADE", "$decades.genreNamesByDecade", "Per-Decade Genre selections must be keyed by selected Decade."));
+			} else if (Object.keys(value.genreNamesByDecade).length > 0) {
+				errors.push(diagnostic("UNEXPECTED_DECADES_GENRES", "$decades.genreNamesByDecade", "Genre selections require Genre breakdown to be enabled."));
+			}
+		}
+		return Object.freeze({ byDecade: Object.freeze({}), union: Object.freeze([]) });
+	}
+
+	if (hasByDecade) {
+		const supplied = value.genreNamesByDecade;
+		if (!plainObject(supplied)) {
+			errors.push(diagnostic("INVALID_DECADES_GENRES_BY_DECADE", "$decades.genreNamesByDecade", "Per-Decade Genre selections must be keyed by selected Decade."));
+		} else {
+			const suppliedIds = Object.keys(supplied);
+			if (
+				suppliedIds.some((id) => !orderedSelectedIds.includes(id))
+				|| orderedSelectedIds.some((id) => !Object.hasOwn(supplied, id))
+			) {
+				errors.push(diagnostic("INVALID_DECADES_GENRES_BY_DECADE", "$decades.genreNamesByDecade", "Provide one Genre selection for every selected Decade and no others."));
+			}
+			for (const decadeId of orderedSelectedIds) {
+				byDecade[decadeId] = Object.freeze(officialGenreNames(
+					supplied[decadeId] ?? [],
+					`$decades.genreNamesByDecade.${decadeId}`,
+					errors,
+					{ allowEmpty: false },
+				));
+			}
+		}
+	} else {
+		const shared = officialGenreNames(value.genreNames ?? [], "$decades.genreNames", errors, { allowEmpty: false });
+		for (const decadeId of orderedSelectedIds) byDecade[decadeId] = Object.freeze([...shared]);
+	}
+
+	if (media) {
+		for (const decadeId of orderedSelectedIds) {
+			for (const [index, genreName] of (byDecade[decadeId] ?? []).entries()) {
+				const concept = officialGenreConcept(genreName);
+				const available = concept !== null && media.mediaTypes.some((mediaType) => (
+					mediaType === "MOVIE" ? concept.movieId !== null : concept.tvId !== null
+				));
+				if (!available) {
+					errors.push(diagnostic(
+						"DECADES_GENRE_UNAVAILABLE_FOR_MEDIA",
+						hasByDecade
+							? `$decades.genreNamesByDecade.${decadeId}[${index}]`
+							: `$decades.genreNames[${index}]`,
+						`${genreName} is not available for ${media.label}.`,
+					));
+				}
+			}
+		}
+	}
+
+	const selected = new Set(Object.values(byDecade).flat());
+	const union = GENRE_CONCEPTS.filter((concept) => selected.has(concept.name)).map((concept) => concept.name);
+	return Object.freeze({ byDecade: Object.freeze(byDecade), union: Object.freeze(union) });
+}
+
+function normalizeChoice(value, choices, fallback, path, message, errors) {
+	const selected = value ?? fallback;
+	if (!choices.some((choice) => choice.id === selected)) {
+		errors.push(diagnostic("INVALID_DECADES_ORDERING", path, message));
+	}
+	return selected;
+}
+
+function normalizeAdvanced(value, genreNames, genreNamesByDecade, selectedDecadeIds, errors) {
 	const supplied = value ?? {};
 	if (!hasOnlyKeys(supplied, ADVANCED_KEYS)) {
 		errors.push(diagnostic("UNSUPPORTED_DECADES_ADVANCED_FIELD", "$decades.advanced", "Decades Advanced settings contain an unsupported field."));
@@ -158,6 +266,51 @@ function normalizeAdvanced(value, genreNames, errors) {
 			exclusionsByGenre[includedGenre] = Object.freeze(exclusions);
 		}
 	}
+	const hasOrdinaryByDecade = Object.hasOwn(supplied, "ordinaryExcludedGenresByDecade");
+	const ordinaryExcludedGenresByDecade = {};
+	const suppliedOrdinaryByDecade = supplied.ordinaryExcludedGenresByDecade ?? {};
+	if (hasOrdinaryByDecade && !plainObject(suppliedOrdinaryByDecade)) {
+		errors.push(diagnostic("INVALID_DECADES_EXCLUSIONS_BY_DECADE", "$decades.advanced.ordinaryExcludedGenresByDecade", "Per-Decade exclusions must be keyed by selected Decade."));
+	} else if (plainObject(suppliedOrdinaryByDecade)) {
+		for (const [decadeId, excludedValues] of Object.entries(suppliedOrdinaryByDecade)) {
+			const path = `$decades.advanced.ordinaryExcludedGenresByDecade.${decadeId || "unknown"}`;
+			if (!selectedDecadeIds.includes(decadeId)) {
+				errors.push(diagnostic("INVALID_DECADES_EXCLUSION_DECADE", path, "Per-Decade exclusions require a selected Decade."));
+				continue;
+			}
+			ordinaryExcludedGenresByDecade[decadeId] = Object.freeze(officialGenreNames(excludedValues, path, errors));
+		}
+	}
+	const hasGenreByDecade = Object.hasOwn(supplied, "exclusionsByGenreByDecade");
+	const exclusionsByGenreByDecade = {};
+	const suppliedGenreByDecade = supplied.exclusionsByGenreByDecade ?? {};
+	if (hasGenreByDecade && !plainObject(suppliedGenreByDecade)) {
+		errors.push(diagnostic("INVALID_DECADES_GENRE_EXCLUSIONS_BY_DECADE", "$decades.advanced.exclusionsByGenreByDecade", "Per-Genre exclusions by Decade must be keyed by selected Decade."));
+	} else if (plainObject(suppliedGenreByDecade)) {
+		for (const [decadeId, suppliedForDecade] of Object.entries(suppliedGenreByDecade)) {
+			const decadePath = `$decades.advanced.exclusionsByGenreByDecade.${decadeId || "unknown"}`;
+			if (!selectedDecadeIds.includes(decadeId)) {
+				errors.push(diagnostic("INVALID_DECADES_EXCLUSION_DECADE", decadePath, "Per-Decade exclusions require a selected Decade."));
+				continue;
+			}
+			if (!plainObject(suppliedForDecade)) {
+				errors.push(diagnostic("INVALID_DECADES_GENRE_EXCLUSIONS_BY_DECADE", decadePath, "Per-Genre exclusions for a Decade must be keyed by selected official Genre."));
+				continue;
+			}
+			const normalizedForDecade = {};
+			for (const [includedGenre, excludedValues] of Object.entries(suppliedForDecade)) {
+				const path = `${decadePath}.${includedGenre || "unknown"}`;
+				if (!(genreNamesByDecade[decadeId] ?? []).includes(includedGenre)) {
+					errors.push(diagnostic("INVALID_DECADES_GENRE_EXCLUSION_OWNER", path, "Per-Genre exclusions require a selected breakdown Genre in that Decade."));
+					continue;
+				}
+				const exclusions = officialGenreNames(excludedValues, path, errors);
+				if (exclusions.includes(includedGenre)) errors.push(diagnostic("DECADES_GENRE_SELF_EXCLUSION", path, "A Genre source cannot include and exclude the same Genre."));
+				normalizedForDecade[includedGenre] = Object.freeze(exclusions);
+			}
+			exclusionsByGenreByDecade[decadeId] = Object.freeze(normalizedForDecade);
+		}
+	}
 	return Object.freeze({
 		minimumRating,
 		maximumRating,
@@ -166,6 +319,8 @@ function normalizeAdvanced(value, genreNames, errors) {
 		originCountry,
 		ordinaryExcludedGenres: Object.freeze(ordinaryExcludedGenres),
 		exclusionsByGenre: Object.freeze(exclusionsByGenre),
+		...(hasOrdinaryByDecade ? { ordinaryExcludedGenresByDecade: Object.freeze(ordinaryExcludedGenresByDecade) } : {}),
+		...(hasGenreByDecade ? { exclusionsByGenreByDecade: Object.freeze(exclusionsByGenreByDecade) } : {}),
 	});
 }
 
@@ -202,7 +357,7 @@ export function normalizeDecadesSourceConfiguration(value) {
 		genreBreakdown: suppliedContent.genreBreakdown === true,
 	});
 	if (!content.wholeDecade && !content.individualYears && !content.genreBreakdown) {
-		errors.push(diagnostic("EMPTY_DECADES_CONTENT", "$decades.content", "Enable Whole decade, Individual years, or Genre breakdown."));
+		errors.push(diagnostic("EMPTY_DECADES_CONTENT", "$decades.content", "Enable Decade overview, Individual years, or Genre breakdown."));
 	}
 
 	if (!Number.isInteger(value.currentYear) || value.currentYear < 1000 || value.currentYear > 9999) {
@@ -225,29 +380,38 @@ export function normalizeDecadesSourceConfiguration(value) {
 	if (!DECADES_SORT_OPTIONS.some((option) => option.id === sortOptionId)) {
 		errors.push(diagnostic("INVALID_DECADES_SORT", "$decades.sortOptionId", "Choose a supported Decades sort order."));
 	}
-	const genreNames = officialGenreNames(value.genreNames ?? [], "$decades.genreNames", errors, { allowEmpty: !content.genreBreakdown });
-	if (!content.genreBreakdown && genreNames.length > 0) {
-		errors.push(diagnostic("UNEXPECTED_DECADES_GENRES", "$decades.genreNames", "Genre selections require Genre breakdown to be enabled."));
-	}
-	if (content.genreBreakdown && media) {
-		for (const [index, genreName] of genreNames.entries()) {
-			const concept = officialGenreConcept(genreName);
-			const available = media.mediaTypes.some((mediaType) => (
-				mediaType === "MOVIE" ? concept.movieId !== null : concept.tvId !== null
-			));
-			if (!available) {
-				errors.push(diagnostic(
-					"DECADES_GENRE_UNAVAILABLE_FOR_MEDIA",
-					`$decades.genreNames[${index}]`,
-					`${genreName} is not available for ${media.label}.`,
-				));
-			}
-		}
-	}
-	const advanced = normalizeAdvanced(value.advanced, genreNames, errors);
+	const genres = normalizedGenreConfiguration(value, orderedSelectedIds, content, media, errors);
+	const advanced = normalizeAdvanced(value.advanced, genres.union, genres.byDecade, orderedSelectedIds, errors);
 	if (!content.genreBreakdown && Object.keys(advanced.exclusionsByGenre).length > 0) {
 		errors.push(diagnostic("UNEXPECTED_DECADES_GENRE_EXCLUSIONS", "$decades.advanced.exclusionsByGenre", "Per-Genre exclusions require Genre breakdown to be enabled."));
 	}
+	if (!content.genreBreakdown && Object.values(advanced.exclusionsByGenreByDecade ?? {}).some((entry) => Object.keys(entry).length > 0)) {
+		errors.push(diagnostic("UNEXPECTED_DECADES_GENRE_EXCLUSIONS", "$decades.advanced.exclusionsByGenreByDecade", "Per-Genre exclusions require Genre breakdown to be enabled."));
+	}
+	const decadeOrder = normalizeChoice(
+		value.decadeOrder,
+		DECADES_CHRONOLOGICAL_ORDERS,
+		DEFAULT_DECADES_CHRONOLOGICAL_ORDER,
+		"$decades.decadeOrder",
+		"Choose oldest-to-newest or newest-to-oldest Decade order.",
+		errors,
+	);
+	const yearOrder = normalizeChoice(
+		value.yearOrder,
+		DECADES_CHRONOLOGICAL_ORDERS,
+		DEFAULT_DECADES_CHRONOLOGICAL_ORDER,
+		"$decades.yearOrder",
+		"Choose oldest-to-newest or newest-to-oldest year order.",
+		errors,
+	);
+	const sourceGrouping = normalizeChoice(
+		value.sourceGrouping,
+		DECADES_SOURCE_GROUPINGS,
+		DEFAULT_DECADES_SOURCE_GROUPING,
+		"$decades.sourceGrouping",
+		"Choose Movies first or paired Movies and Series source grouping.",
+		errors,
+	);
 
 	return Object.freeze({
 		ok: errors.length === 0,
@@ -258,7 +422,10 @@ export function normalizeDecadesSourceConfiguration(value) {
 			currentYear: value.currentYear,
 			currentYearMode,
 			sortOptionId,
-			genreNames: Object.freeze(genreNames),
+			genreNamesByDecade: genres.byDecade,
+			decadeOrder,
+			yearOrder,
+			sourceGrouping,
 			advanced,
 		}) : null,
 		errors: Object.freeze(errors),
@@ -310,18 +477,23 @@ export function buildDecadesSourceDrafts(value) {
 	const drafts = [];
 	const errors = [];
 
-	for (const decadeId of configuration.selectedDecadeIds) {
+	const orderedDecadeIds = configuration.decadeOrder === "newest-first"
+		? [...configuration.selectedDecadeIds].reverse()
+		: configuration.selectedDecadeIds;
+	for (const decadeId of orderedDecadeIds) {
 		const preset = DECADE_PRESETS.find((entry) => entry.id === decadeId);
+		const ordinaryExcludedGenres = configuration.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? configuration.advanced.ordinaryExcludedGenres;
+		const exclusionsByGenre = configuration.advanced.exclusionsByGenreByDecade?.[decadeId] ?? configuration.advanced.exclusionsByGenre;
 		for (const mediaType of mediaTypes) {
 			const sources = [];
-			const ordinaryExcludedIds = exclusionIds(configuration.advanced.ordinaryExcludedGenres, mediaType);
+			const ordinaryExcludedIds = exclusionIds(ordinaryExcludedGenres, mediaType);
 			const ordinaryAdvanced = {
 				...baseFilters,
 				...(ordinaryExcludedIds.length > 0 ? { withoutGenres: ordinaryExcludedIds.join(",") } : {}),
 			};
 			if (configuration.content.wholeDecade) {
 				const result = buildEntry({
-					title: `${preset.label} ${mediaLabel(mediaType)}`,
+					title: `All ${preset.label} ${mediaLabel(mediaType)}`,
 					mediaType,
 					sortOptionId: configuration.sortOptionId,
 					filters: { ...preset.wholePeriod.filters, ...ordinaryAdvanced },
@@ -335,7 +507,10 @@ export function buildDecadesSourceDrafts(value) {
 					currentYear: configuration.currentYear,
 					currentYearMode: configuration.currentYearMode ?? DEFAULT_DECADE_CURRENT_YEAR_MODE,
 				});
-				for (const period of periods ?? []) {
+				const orderedPeriods = configuration.yearOrder === "newest-first"
+					? [...(periods ?? [])].reverse()
+					: periods ?? [];
+				for (const period of orderedPeriods) {
 					const result = buildEntry({
 						title: `${period.label} ${mediaLabel(mediaType)}`,
 						mediaType,
@@ -348,11 +523,11 @@ export function buildDecadesSourceDrafts(value) {
 				}
 			}
 			if (configuration.content.genreBreakdown) {
-				for (const genreName of configuration.genreNames) {
+				for (const genreName of configuration.genreNamesByDecade[decadeId]) {
 					const concept = officialGenreConcept(genreName);
 					const genreId = mediaType === "MOVIE" ? concept.movieId : concept.tvId;
 					if (genreId === null) continue;
-					const excludedIds = exclusionIds(configuration.advanced.exclusionsByGenre[genreName] ?? [], mediaType)
+					const excludedIds = exclusionIds(exclusionsByGenre[genreName] ?? [], mediaType)
 						.filter((tmdbId) => tmdbId !== genreId);
 					const result = buildEntry({
 						title: `${preset.label} ${genreName} ${mediaLabel(mediaType)}`,

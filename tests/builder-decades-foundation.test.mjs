@@ -108,7 +108,7 @@ test("source planning defaults to one whole-period source and validates bounded 
 	assert.equal(result.ok, true);
 	assert.equal(result.drafts.length, 1);
 	assert.deepEqual(result.drafts[0].editable, {
-		title: "1980s Movies",
+		title: "All 1980s Movies",
 		sortBy: "popularity.desc",
 		tmdbId: null,
 		filters: { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31" },
@@ -134,9 +134,9 @@ test("Movie and Series sources are distinct and ordered by media grouping", () =
 	}));
 	assert.equal(result.ok, true);
 	assert.equal(result.drafts.length, 22);
-	assert.deepEqual(result.drafts.slice(0, 3).map((draft) => draft.editable.title), ["1980s Movies", "1980 Movies", "1981 Movies"]);
+	assert.deepEqual(result.drafts.slice(0, 3).map((draft) => draft.editable.title), ["All 1980s Movies", "1980 Movies", "1981 Movies"]);
 	assert.equal(result.drafts[10].editable.title, "1989 Movies");
-	assert.equal(result.drafts[11].editable.title, "1980s Series");
+	assert.equal(result.drafts[11].editable.title, "All 1980s Series");
 	assert.ok(result.drafts.slice(0, 11).every((draft) => draft.editable.mediaType === "MOVIE"));
 	assert.ok(result.drafts.slice(11).every((draft) => draft.editable.mediaType === "TV"));
 });
@@ -159,6 +159,55 @@ test("whole, years and Genre breakdown are additive without any Year by Genre pr
 	]);
 	assert.ok(entries.filter((entry) => entry.contentKind === "genre-breakdown").every((entry) => entry.period.kind === "decade"));
 	assert.equal(entries.some((entry) => /^198\d .* (Movies|Series)$/.test(entry.draft.editable.title) && entry.contentKind === "genre-breakdown"), false);
+});
+
+test("per-Decade Genre selections stay ordered and never create a Year by Genre product", () => {
+	const configuration = sourceConfiguration({
+		selectedDecadeIds: ["1980s", "1990s"],
+		mediaMode: "both",
+		content: { wholeDecade: false, individualYears: true, genreBreakdown: true },
+		genreNames: undefined,
+		genreNamesByDecade: {
+			"1980s": ["Action", "Horror"],
+			"1990s": ["Comedy", "News"],
+		},
+	});
+	const result = buildDecadesSourceDrafts(configuration);
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.configuration.genreNamesByDecade, configuration.genreNamesByDecade);
+	const genresByDecade = Object.fromEntries(result.groups
+		.filter((group) => group.mediaType === "MOVIE")
+		.map((group) => [group.decadeId, group.sources.filter((entry) => entry.contentKind === "genre-breakdown").map((entry) => entry.genreName)]));
+	assert.deepEqual(genresByDecade, { "1980s": ["Action", "Horror"], "1990s": ["Comedy"] });
+	const tv1990s = result.groups.find((group) => group.decadeId === "1990s" && group.mediaType === "TV");
+	assert.deepEqual(tv1990s.sources.filter((entry) => entry.contentKind === "genre-breakdown").map((entry) => entry.genreName), ["Comedy", "News"]);
+	assert.equal(result.groups.flatMap((group) => group.sources).some((entry) => entry.contentKind === "genre-breakdown" && entry.period.kind === "year"), false);
+
+	assert.equal(buildDecadesSourceDrafts({
+		...configuration,
+		genreNamesByDecade: { "1980s": ["Action"] },
+	}).ok, false);
+	assert.equal(buildDecadesSourceDrafts({
+		...configuration,
+		genreNames: ["Action"],
+	}).ok, false);
+});
+
+test("Decade and year ordering are deterministic while aggregate sources stay first", () => {
+	const result = buildDecadesSourceDrafts(sourceConfiguration({
+		selectedDecadeIds: ["1950s-and-earlier", "1980s"],
+		content: { wholeDecade: true, individualYears: true, genreBreakdown: false },
+		decadeOrder: "newest-first",
+		yearOrder: "newest-first",
+	}));
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.groups.map((group) => group.decadeId), ["1980s", "1950s-and-earlier"]);
+	assert.deepEqual(result.groups[0].sources.slice(0, 4).map((entry) => entry.draft.editable.title), [
+		"All 1980s Movies", "1989 Movies", "1988 Movies", "1987 Movies",
+	]);
+	assert.deepEqual(result.groups[1].sources.slice(1).map((entry) => entry.period.label), [
+		"1959", "1958", "1957", "1956", "1955", "1954", "1953", "1952", "1951", "1950", "Before 1950",
+	]);
 });
 
 test("selected structural Genres must be available for the chosen media without weakening Both", () => {
@@ -265,8 +314,8 @@ test("ordinary and per-Genre exclusions compile independently per physical media
 	}));
 	assert.equal(result.ok, true);
 	const byTitle = new Map(result.drafts.map((draft) => [draft.editable.title, draft.editable.filters]));
-	assert.equal(byTitle.get("1980s Movies").withoutGenres, "27");
-	assert.equal(byTitle.get("1980s Series").withoutGenres, "10762");
+	assert.equal(byTitle.get("All 1980s Movies").withoutGenres, "27");
+	assert.equal(byTitle.get("All 1980s Series").withoutGenres, "10762");
 	assert.equal(byTitle.get("1980s Horror Movies").withoutGenres, "35");
 	assert.equal(byTitle.get("1980s Comedy Movies").withoutGenres, "27");
 	assert.equal(byTitle.get("1980s Comedy Series").withoutGenres, undefined);

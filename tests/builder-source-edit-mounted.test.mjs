@@ -152,6 +152,22 @@ async function runMountedPage() {
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
 				const genreToolbarWidths = [];
+				const decadesActionWidths = [];
+				const decadesGenreWidths = [];
+				const decadesExclusionWidths = [];
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+				const decadesGenreDesktopEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runDecadesGenreLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				const decadesGenreDesktop = decadesGenreDesktopEvaluation.result?.value;
+				const decadesExclusionDesktopEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runDecadesExclusionLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				const decadesExclusionDesktop = decadesExclusionDesktopEvaluation.result?.value;
 				for (const width of [360, 384, 393, 402, 412]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: true });
 					const toolbarEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -160,8 +176,26 @@ async function runMountedPage() {
 						returnByValue: true,
 					});
 					genreToolbarWidths.push(toolbarEvaluation.result?.value);
+					const decadesActionEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runDecadesActionLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					decadesActionWidths.push(decadesActionEvaluation.result?.value);
+					const decadesGenreEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runDecadesGenreLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					decadesGenreWidths.push(decadesGenreEvaluation.result?.value);
+					const decadesExclusionEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runDecadesExclusionLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					decadesExclusionWidths.push(decadesExclusionEvaluation.result?.value);
 				}
-				return { ...result.results, genreToolbarWidths };
+				return { ...result.results, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -302,6 +336,248 @@ test("mounted Genre exact duplicate overrides use singular and bundle canonical 
 		singleOverride: "Add anyway",
 		singleNoNew: "No new sources to add",
 	});
+});
+
+test("mounted Blank collection and folder creation immediately unlock the next manual action", () => {
+	assert.deepEqual(mountedResults.blankCreation, {
+		collection: {
+			dialogClosed: true,
+			revisionDelta: 1,
+			selected: true,
+			defaults: {
+				id: "nuvio-1",
+				title: "Untitled Collection",
+				pinToTop: false,
+				focusGlowEnabled: true,
+				viewMode: "TABBED_GRID",
+				showAllTab: true,
+			},
+			newFolderEnabled: true,
+		},
+		folder: {
+			dialogClosed: true,
+			revisionDelta: 1,
+			selected: true,
+			parentPreserved: true,
+			defaults: { id: "nuvio-2", title: "Untitled Folder", tileShape: "POSTER", hideTitle: true },
+			addSourceEnabled: true,
+		},
+	});
+});
+
+test("mounted Decades Back navigation stays in the header, preserves drafts, and never mutates", () => {
+	assert.deepEqual(mountedResults.decadesNavigation, {
+		root: {
+			backAbsent: true,
+			closePresent: true,
+			footerAbsent: true,
+		},
+		firstStage: {
+			stage: "presets",
+			backAction: "back-to-creation-launcher",
+			backInHeader: true,
+			footerLabels: ["Continue"],
+			headingFocused: true,
+		},
+		optionsEntered: {
+			stage: "options",
+			backAction: "back-to-decades-presets",
+			footerLabels: ["Continue"],
+			headingFocused: true,
+			defaultDisplayOrder: true,
+		},
+		returnedToPresets: {
+			stage: "presets",
+			selected1980s: true,
+			selected2000s: true,
+			headingFocused: true,
+		},
+		optionsDraftPreserved: {
+			mediaBoth: true,
+			individualYears: true,
+			newestThroughoutDisplayOrder: true,
+			redundantChronologyAbsent: true,
+			recentSort: true,
+			appearanceAbsent: true,
+			orderingVisible: true,
+			advancedCollapsed: true,
+			genreConfigured: true,
+		},
+		genreSecondary: {
+			surfaceOpen: true,
+			underlyingInert: true,
+			headerInert: true,
+			footerHidden: true,
+			headingFocused: true,
+			exclusionBackdropBorderless: true,
+			exclusionPanelBounded: true,
+			exclusionHeadingFocused: true,
+			exclusionDoneReachable: true,
+			exclusionSingleScrollOwner: true,
+			summaryUpdated: true,
+			focusRestored: true,
+			footerReturned: true,
+		},
+		reviewEntered: {
+			stage: "review",
+			backAction: "back-to-decades-options",
+			footerLabels: ["Create 4 folders"],
+			headingFocused: true,
+			countCards: 3,
+			removedSummariesAbsent: true,
+			sectionLabels: ["Titles & visibility", "Collection options", "Folder options", "View folder details"],
+			oldFolderLabelAbsent: true,
+		},
+		reviewBack: {
+			stage: "options",
+			mediaBoth: true,
+			individualYears: true,
+			newestThroughoutDisplayOrder: true,
+			recentSort: true,
+			appearanceAbsent: true,
+			headingFocused: true,
+		},
+		hiddenCollectionTitles: {
+			messageCount: 1,
+			messageText: "Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.",
+			fieldCount: 2,
+			allBlankAndDisabled: true,
+			allShareDescription: true,
+		},
+		reviewNamePreserved: true,
+		launcherReturn: {
+			backAbsent: true,
+			footerAbsent: true,
+			firstOptionFocused: true,
+		},
+		revisionUnchanged: true,
+	});
+});
+
+test("mounted Decades header Back and primary-only footer remain reachable at every required narrow width", () => {
+	assert.deepEqual(mountedResults.decadesActionWidths.map((result) => result.width), [360, 384, 393, 402, 412]);
+	for (const result of mountedResults.decadesActionWidths) {
+		assert.equal(result.topBackVisible, true, `${result.width}px Back`);
+		assert.equal(result.footerOnlyPrimary, true, `${result.width}px footer`);
+		assert.equal(result.primaryReachable, true, `${result.width}px primary`);
+		assert.equal(result.headingFocused, true, `${result.width}px focus`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px overflow`);
+		assert.equal(result.allCollapsed, true, `${result.width}px defaults collapsed`);
+		assert.equal(result.collapsedIsShorter, true, `${result.width}px progressive disclosure`);
+		assert.equal(result.accordionFocusRetained, true, `${result.width}px disclosure focus`);
+		assert.equal(result.oneScrollOwner, true, `${result.width}px scroll ownership`);
+		assert.equal(result.currentYearSelectorAbsent, true, `${result.width}px current-year selector`);
+		assert.equal(result.mediaPills, 3, `${result.width}px media pills`);
+		assert.equal(result.sortPills, 4, `${result.width}px sort pills`);
+		assert.equal(result.genreCatalogueAbsent, true, `${result.width}px compact Genre summary`);
+		assert.equal(result.orderingVisible, true, `${result.width}px ordering`);
+		assert.equal(result.bothDefault, true, `${result.width}px Both default`);
+		assert.equal(result.displayOrderChoices, 3, `${result.width}px Display order choices`);
+		assert.equal(result.defaultDisplayOrder, true, `${result.width}px Display order default`);
+		assert.equal(result.oldChronologyAbsent, true, `${result.width}px redundant chronology controls`);
+	}
+});
+
+test("mounted Decades Configure Genres uses the shared desktop context/catalogue layout", () => {
+	const result = mountedResults.decadesGenreDesktop;
+	assert.deepEqual(result.initial.contextLabels, ["All selected Decades", "1950s & Earlier", "1960s", "1970s", "1980s", "1990s", "2000s", "2010s", "2020s"]);
+	assert.equal(result.initial.width, 1280);
+	assert.equal(result.initial.contextCount, 9);
+	assert.equal(result.initial.contextPaneVisible, true);
+	assert.equal(result.initial.catalogueVisible, true);
+	assert.equal(result.initial.activeAll, true);
+	assert.equal(result.initial.rootFocused, true);
+	assert.equal(result.initial.validationVisible, true);
+	assert.equal(result.initial.noHorizontalStrip, true);
+	assert.equal(result.initial.sharedShell, true);
+	assert.equal(result.initial.noHorizontalOverflow, true);
+	assert.equal(result.initial.contextsFitWidth, true);
+	assert.equal(result.initial.twoPane, true);
+	assert.equal(result.initial.boundedBorder, true);
+	assert.equal(result.initial.doneReachable, true);
+	assert.ok(result.initial.rootScrollOwners <= 1);
+	assert.equal(result.detail.catalogueVisible, true);
+	assert.equal(result.detail.keyboardAbsent, true);
+	assert.ok(result.detail.detailScrollOwners <= 1);
+	for (const key of ["validationCleared", "sharedCountUpdated", "sharedAppliedToEveryDecade", "backPreservedSharedSelection", "switchedContext", "sharedSelectionPreserved", "individualCountUpdated", "selectAllWorked", "clearAllWorked", "validationReturned", "lastContextReachable", "lastContextActive", "lastContextPreserved", "contextValuesPreserved", "closed", "focusRestored", "revisionUnchanged"]) assert.equal(result[key], true, key);
+});
+
+test("mounted Decades Configure Genres matches the accepted mobile context-detail flow at every required width", () => {
+	assert.deepEqual(mountedResults.decadesGenreWidths.map((result) => result.initial.width), [360, 384, 393, 402, 412]);
+	for (const result of mountedResults.decadesGenreWidths) {
+		const width = result.initial.width;
+		assert.equal(result.initial.contextCount, 9, `${width}px contexts`);
+		assert.equal(result.initial.contextPaneVisible, true, `${width}px context pane`);
+		assert.equal(result.initial.catalogueVisible, false, `${width}px root hides catalogue`);
+		assert.equal(result.initial.activeAll, true, `${width}px active context`);
+		assert.equal(result.initial.rootFocused, true, `${width}px root focus`);
+		assert.equal(result.initial.validationVisible, true, `${width}px required validation`);
+		assert.equal(result.initial.noHorizontalStrip, true, `${width}px no context strip`);
+		assert.equal(result.initial.sharedShell, true, `${width}px shared shell`);
+		assert.equal(result.initial.noHorizontalOverflow, true, `${width}px overflow`);
+		assert.equal(result.initial.contextsFitWidth, true, `${width}px context width`);
+		assert.equal(result.initial.mobileRootOnly, true, `${width}px mobile root`);
+		assert.equal(result.initial.boundedBorder, true, `${width}px bounded border`);
+		assert.equal(result.initial.doneReachable, true, `${width}px Done`);
+		assert.equal(result.initial.safeAreaPadding, true, `${width}px safe area`);
+		assert.ok(result.initial.rootScrollOwners <= 1, `${width}px root scroll ownership`);
+		assert.equal(result.detail.catalogueVisible, true, `${width}px catalogue`);
+		assert.equal(result.detail.contextPaneHidden, true, `${width}px detail hides contexts`);
+		assert.equal(result.detail.backVisible, true, `${width}px context Back`);
+		assert.equal(result.detail.detailFocused, true, `${width}px detail focus`);
+		assert.equal(result.detail.keyboardAbsent, true, `${width}px no keyboard focus`);
+		assert.ok(result.detail.detailScrollOwners <= 1, `${width}px detail scroll ownership`);
+		for (const key of ["validationCleared", "sharedCountUpdated", "sharedAppliedToEveryDecade", "backPreservedSharedSelection", "switchedContext", "sharedSelectionPreserved", "individualCountUpdated", "selectAllWorked", "clearAllWorked", "validationReturned", "lastContextReachable", "lastContextActive", "lastContextPreserved", "contextValuesPreserved", "closed", "focusRestored", "revisionUnchanged"]) assert.equal(result[key], true, `${width}px ${key}`);
+	}
+});
+
+test("mounted Decades Genre exclusions use the bounded shared desktop context/catalogue layout", () => {
+	const result = mountedResults.decadesExclusionDesktop;
+	assert.deepEqual(result.initial.contextLabels, ["All selected Decades", "1950s & Earlier", "1960s", "1970s", "1980s", "1990s", "2000s", "2010s", "2020s"]);
+	assert.equal(result.initial.width, 1280);
+	assert.equal(result.initial.contextCount, 9);
+	assert.equal(result.initial.contextPaneVisible, true);
+	assert.equal(result.initial.catalogueVisible, true);
+	assert.equal(result.initial.activeAll, true);
+	assert.equal(result.initial.rootFocused, true);
+	assert.equal(result.initial.noHorizontalStrip, true);
+	assert.equal(result.initial.noHorizontalOverflow, true);
+	assert.equal(result.initial.contextsFitWidth, true);
+	assert.equal(result.initial.twoPane, true);
+	assert.equal(result.initial.boundedBorder, true);
+	assert.equal(result.initial.doneReachable, true);
+	assert.ok(result.initial.rootScrollOwners <= 1);
+	assert.equal(result.detail.catalogueVisible, true);
+	assert.equal(result.detail.keyboardAbsent, true);
+	assert.ok(result.detail.detailScrollOwners <= 1);
+	for (const key of ["sharedCountUpdated", "sharedAppliedToEveryDecade", "sharedSelectionPreserved", "individualCountUpdated", "selectAllWorked", "clearAllWorked", "lastContextReachable", "lastContextActive", "lastContextPreserved", "contextValuesPreserved", "closed", "focusRestored"]) assert.equal(result[key], true, key);
+});
+
+test("mounted Decades Genre exclusions match the accepted mobile context-detail flow at every required width", () => {
+	assert.deepEqual(mountedResults.decadesExclusionWidths.map((result) => result.initial.width), [360, 384, 393, 402, 412]);
+	for (const result of mountedResults.decadesExclusionWidths) {
+		const width = result.initial.width;
+		assert.equal(result.initial.contextCount, 9, `${width}px contexts`);
+		assert.equal(result.initial.contextPaneVisible, true, `${width}px context pane`);
+		assert.equal(result.initial.catalogueVisible, false, `${width}px root hides catalogue`);
+		assert.equal(result.initial.activeAll, true, `${width}px active context`);
+		assert.equal(result.initial.rootFocused, true, `${width}px root focus`);
+		assert.equal(result.initial.noHorizontalStrip, true, `${width}px no context strip`);
+		assert.equal(result.initial.noHorizontalOverflow, true, `${width}px overflow`);
+		assert.equal(result.initial.contextsFitWidth, true, `${width}px context width`);
+		assert.equal(result.initial.mobileRootOnly, true, `${width}px mobile root`);
+		assert.equal(result.initial.boundedBorder, true, `${width}px bounded border`);
+		assert.equal(result.initial.doneReachable, true, `${width}px Done`);
+		assert.equal(result.initial.safeAreaPadding, true, `${width}px safe area`);
+		assert.ok(result.initial.rootScrollOwners <= 1, `${width}px root scroll ownership`);
+		assert.equal(result.detail.catalogueVisible, true, `${width}px catalogue`);
+		assert.equal(result.detail.contextPaneHidden, true, `${width}px detail hides contexts`);
+		assert.equal(result.detail.backVisible, true, `${width}px context Back`);
+		assert.equal(result.detail.detailFocused, true, `${width}px detail focus`);
+		assert.equal(result.detail.keyboardAbsent, true, `${width}px no keyboard focus`);
+		assert.ok(result.detail.detailScrollOwners <= 1, `${width}px detail scroll ownership`);
+		for (const key of ["sharedCountUpdated", "sharedAppliedToEveryDecade", "sharedSelectionPreserved", "individualCountUpdated", "selectAllWorked", "clearAllWorked", "lastContextReachable", "lastContextActive", "lastContextPreserved", "contextValuesPreserved", "closed", "focusRestored"]) assert.equal(result[key], true, `${width}px ${key}`);
+	}
 });
 
 test("mounted Genre Add secondary surfaces keep the form mounted and block the underlying operation", () => {

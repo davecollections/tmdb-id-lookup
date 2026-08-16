@@ -1,4 +1,5 @@
 import { discoverSourceIdentity, discoverSourceNodeIdentity } from "../nuvio/discover.js";
+import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { buildDecadesSourceDrafts } from "./decades-source.js";
 import { equalDecadesStructures, isDecadesStructure } from "./decades-structural.js";
 
@@ -28,10 +29,17 @@ const PLAN_OPTION_KEYS = new Set([
 	"destinationCollectionInternalId",
 	"layout",
 	"viewMode",
+	"showAllTab",
+	"pinToTop",
+	"hideCollectionTitle",
+	"folderTileShape",
+	"folderTitleVisibility",
 	"collectionTitles",
 	"source",
 ]);
 const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const FOLDER_TILE_SHAPES = new Set(["POSTER", "LANDSCAPE"]);
+const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 
 function diagnostic(code, path, message) {
 	return Object.freeze({ code, path, message });
@@ -121,24 +129,96 @@ function findCollection(project, internalId) {
 	return project?.collections?.find((collection) => collection.internalId === internalId) ?? null;
 }
 
-function sourceGroupsFor(sourcePlan, decadeId, mediaTypes) {
-	return mediaTypes.flatMap((mediaType) => sourcePlan.groups
-		.filter((group) => group.decadeId === decadeId && group.mediaType === mediaType)
-		.flatMap((group) => group.sources));
+function sourceEntryKey(entry) {
+	if (entry.contentKind === "whole-decade") return "whole";
+	if (entry.contentKind === "individual-year") return `year:${entry.period.id}`;
+	return `genre:${entry.genreName}`;
 }
 
-function collectionEditable(title, viewMode) {
+function titleForPhysicalFolder(entry, mixedMedia) {
+	const base = entry.contentKind === "whole-decade"
+		? `All ${entry.period.label}`
+		: entry.contentKind === "individual-year"
+			? entry.period.label
+			: entry.genreName;
+	if (!mixedMedia) return base;
+	return `${base} ${entry.draft.editable.mediaType === "MOVIE" ? "Movies" : "Series"}`;
+}
+
+function withPhysicalFolderTitle(entry, mixedMedia) {
 	return Object.freeze({
-		title,
-		pinToTop: false,
-		focusGlowEnabled: true,
-		viewMode,
-		showAllTab: true,
+		...entry,
+		draft: Object.freeze({
+			...entry.draft,
+			editable: Object.freeze({
+				...entry.draft.editable,
+				title: titleForPhysicalFolder(entry, mixedMedia),
+			}),
+		}),
 	});
 }
 
-function folderEditable(title) {
-	return Object.freeze({ title, tileShape: "POSTER", hideTitle: true });
+function pairableSourceOrder(entries, sourcePlan, decadeId) {
+	const contentRank = { "whole-decade": 0, "individual-year": 1, "genre-breakdown": 2 };
+	const yearKeys = [];
+	for (const entry of entries) {
+		if (entry.contentKind !== "individual-year") continue;
+		const key = sourceEntryKey(entry);
+		if (!yearKeys.includes(key)) yearKeys.push(key);
+	}
+	const genreNames = sourcePlan.configuration.genreNamesByDecade[decadeId] ?? [];
+	return [...entries].sort((left, right) => {
+		const kindDifference = contentRank[left.contentKind] - contentRank[right.contentKind];
+		if (kindDifference !== 0) return kindDifference;
+		if (left.contentKind === "individual-year") {
+			const periodDifference = yearKeys.indexOf(sourceEntryKey(left)) - yearKeys.indexOf(sourceEntryKey(right));
+			if (periodDifference !== 0) return periodDifference;
+		}
+		if (left.contentKind === "genre-breakdown") {
+			const genreDifference = genreNames.indexOf(left.genreName) - genreNames.indexOf(right.genreName);
+			if (genreDifference !== 0) return genreDifference;
+		}
+		return (left.draft.editable.mediaType === "MOVIE" ? 0 : 1)
+			- (right.draft.editable.mediaType === "MOVIE" ? 0 : 1);
+	});
+}
+
+function sourceGroupsFor(sourcePlan, decadeId, mediaTypes) {
+	let entries = mediaTypes.flatMap((mediaType) => sourcePlan.groups
+		.filter((group) => group.decadeId === decadeId && group.mediaType === mediaType)
+		.flatMap((group) => group.sources));
+	const physicalMedia = new Set(entries.map((entry) => entry.draft.editable.mediaType));
+	const mixedMedia = physicalMedia.size > 1;
+	if (mixedMedia && sourcePlan.configuration.sourceGrouping === "paired") {
+		entries = pairableSourceOrder(entries, sourcePlan, decadeId);
+	}
+	return entries.map((entry) => withPhysicalFolderTitle(entry, mixedMedia));
+}
+
+function orderedDecadeIds(sourcePlan) {
+	const ids = [];
+	for (const group of sourcePlan.groups) {
+		if (!ids.includes(group.decadeId)) ids.push(group.decadeId);
+	}
+	return ids;
+}
+
+function collectionEditable(title, { viewMode, showAllTab, pinToTop, hideCollectionTitle }) {
+	return Object.freeze({
+		title: hideCollectionTitle ? NUVIO_INVISIBLE_TITLE : title,
+		pinToTop,
+		focusGlowEnabled: true,
+		viewMode,
+		showAllTab,
+	});
+}
+
+function folderEditable(title, { folderTileShape, folderTitleVisibility }) {
+	return Object.freeze({
+		title: folderTitleVisibility === "HIDE_EVERYWHERE" ? NUVIO_INVISIBLE_TITLE : title,
+		tileShape: folderTileShape,
+		hideTitle: folderTitleVisibility !== "SHOW_EVERYWHERE",
+	});
 }
 
 function normalizeCollectionTitles(value, roles, errors) {
@@ -175,7 +255,16 @@ function outcomeForFolder(project, sourceEntries, options = {}) {
 	});
 }
 
-function buildNewCollectionPlan(project, sourcePlan, { layout, viewMode, collectionTitles }) {
+function buildNewCollectionPlan(project, sourcePlan, {
+	layout,
+	viewMode,
+	showAllTab,
+	pinToTop,
+	hideCollectionTitle,
+	folderTileShape,
+	folderTitleVisibility,
+	collectionTitles,
+}) {
 	const mediaMode = sourcePlan.configuration.mediaMode;
 	const roles = mediaMode === "movies"
 		? [{ role: "movies", mediaTypes: ["MOVIE"] }]
@@ -185,31 +274,31 @@ function buildNewCollectionPlan(project, sourcePlan, { layout, viewMode, collect
 				? [{ role: "mixed", mediaTypes: ["MOVIE", "TV"] }]
 				: [{ role: "movies", mediaTypes: ["MOVIE"] }, { role: "series", mediaTypes: ["TV"] }];
 	const collections = roles.map(({ role, mediaTypes }) => {
-		const folders = sourcePlan.configuration.selectedDecadeIds.map((decadeId) => {
+		const folders = orderedDecadeIds(sourcePlan).map((decadeId) => {
 			const group = sourcePlan.groups.find((entry) => entry.decadeId === decadeId);
 			const sources = sourceGroupsFor(sourcePlan, decadeId, mediaTypes);
 			return Object.freeze({
 				decadeId,
-				editable: folderEditable(group.decadeLabel),
+				editable: folderEditable(group.decadeLabel, { folderTileShape, folderTitleVisibility }),
 				sources: Object.freeze(sources),
 				outcome: outcomeForFolder(project, sources),
 			});
 		});
 		return Object.freeze({
 			role,
-			editable: collectionEditable(collectionTitles[role], viewMode),
-			titleCollisions: titleCollisions(project, collectionTitles[role]),
+			editable: collectionEditable(collectionTitles[role], { viewMode, showAllTab, pinToTop, hideCollectionTitle }),
+			titleCollisions: hideCollectionTitle ? Object.freeze([]) : titleCollisions(project, collectionTitles[role]),
 			folders: Object.freeze(folders),
 		});
 	});
 	return Object.freeze({ collections: Object.freeze(collections), folders: Object.freeze([]), outcomes: Object.freeze(collections.flatMap((collection) => collection.folders.map((folder) => folder.outcome))) });
 }
 
-function buildNewFolderPlan(project, sourcePlan, destinationCollection) {
+function buildNewFolderPlan(project, sourcePlan, destinationCollection, { folderTileShape, folderTitleVisibility }) {
 	const mediaTypes = sourcePlan.configuration.mediaMode === "movies"
 		? ["MOVIE"]
 		: sourcePlan.configuration.mediaMode === "series" ? ["TV"] : ["MOVIE", "TV"];
-	const evaluated = sourcePlan.configuration.selectedDecadeIds.map((decadeId) => {
+	const evaluated = orderedDecadeIds(sourcePlan).map((decadeId) => {
 		const group = sourcePlan.groups.find((entry) => entry.decadeId === decadeId);
 		const sources = sourceGroupsFor(sourcePlan, decadeId, mediaTypes);
 		const outcome = outcomeForFolder(project, sources, { destinationCollectionInternalId: destinationCollection.internalId });
@@ -218,7 +307,7 @@ function buildNewFolderPlan(project, sourcePlan, destinationCollection) {
 			.map((folder) => Object.freeze({ folderInternalId: folder.internalId, folderTitle: folder.editable.title }));
 		return Object.freeze({
 			decadeId,
-			editable: folderEditable(group.decadeLabel),
+			editable: folderEditable(group.decadeLabel, { folderTileShape, folderTitleVisibility }),
 			sources: Object.freeze(sources),
 			outcome,
 			titleCollisions: Object.freeze(titleMatches),
@@ -265,8 +354,15 @@ export function createDecadesHierarchyPlan(project, options) {
 
 	let layout = null;
 	let viewMode = null;
+	let showAllTab = null;
+	let pinToTop = null;
+	let hideCollectionTitle = null;
+	const folderTileShape = options.folderTileShape ?? "POSTER";
+	const folderTitleVisibility = options.folderTitleVisibility ?? "SHOW_EVERYWHERE";
 	let collectionTitles = Object.freeze({});
 	let destinationCollection = null;
+	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_DECADES_FOLDER_TILE_SHAPE", "$decadesPlan.folderTileShape", "Decade folders must use the existing Poster or Landscape value."));
+	if (!FOLDER_TITLE_VISIBILITIES.has(folderTitleVisibility)) errors.push(diagnostic("INVALID_DECADES_FOLDER_TITLE_VISIBILITY", "$decadesPlan.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
 	if (scope === "new-collection" && sourcePlan.ok) {
 		if (sourcePlan.configuration.mediaMode === "both") {
 			layout = options.layout ?? "separate-media-collections";
@@ -278,6 +374,12 @@ export function createDecadesHierarchyPlan(project, options) {
 		}
 		viewMode = options.viewMode ?? "TABBED_GRID";
 		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_DECADES_VIEW_MODE", "$decadesPlan.viewMode", "New Decades collections must use the existing Tabs or Rows value."));
+		showAllTab = options.showAllTab ?? true;
+		pinToTop = options.pinToTop ?? false;
+		hideCollectionTitle = options.hideCollectionTitle ?? false;
+		if (typeof showAllTab !== "boolean") errors.push(diagnostic("INVALID_DECADES_ALL_TAB", "$decadesPlan.showAllTab", "The All-tab preference must be true or false."));
+		if (typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_DECADES_PIN_TO_TOP", "$decadesPlan.pinToTop", "The pin-to-top preference must be true or false."));
+		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_DECADES_COLLECTION_TITLE_VISIBILITY", "$decadesPlan.hideCollectionTitle", "The collection-title visibility preference must be true or false."));
 		const roles = sourcePlan.configuration.mediaMode === "movies"
 			? ["movies"]
 			: sourcePlan.configuration.mediaMode === "series"
@@ -294,6 +396,9 @@ export function createDecadesHierarchyPlan(project, options) {
 		}
 		if (options.layout !== undefined && options.layout !== null) errors.push(diagnostic("UNEXPECTED_DECADES_LAYOUT", "$decadesPlan.layout", "New Folder scope does not create a parent collection layout."));
 		if (options.viewMode !== undefined && options.viewMode !== null) errors.push(diagnostic("UNEXPECTED_DECADES_VIEW_MODE", "$decadesPlan.viewMode", "New Folder scope inherits the parent collection presentation."));
+		if (options.showAllTab !== undefined && options.showAllTab !== null) errors.push(diagnostic("UNEXPECTED_DECADES_ALL_TAB", "$decadesPlan.showAllTab", "New Folder scope inherits the parent collection presentation."));
+		if (options.pinToTop !== undefined && options.pinToTop !== null) errors.push(diagnostic("UNEXPECTED_DECADES_PIN_TO_TOP", "$decadesPlan.pinToTop", "New Folder scope cannot pin or unpin the parent collection."));
+		if (options.hideCollectionTitle !== undefined && options.hideCollectionTitle !== null) errors.push(diagnostic("UNEXPECTED_DECADES_COLLECTION_TITLE_VISIBILITY", "$decadesPlan.hideCollectionTitle", "New Folder scope cannot change the parent collection title."));
 		if (options.collectionTitles !== undefined && Object.keys(options.collectionTitles ?? {}).length > 0) errors.push(diagnostic("UNEXPECTED_DECADES_COLLECTION_TITLES", "$decadesPlan.collectionTitles", "New Folder scope does not propose a parent collection title."));
 	}
 	if (errors.length > 0) return Object.freeze({ ok: false, plan: null, errors: Object.freeze(errors) });
@@ -302,16 +407,24 @@ export function createDecadesHierarchyPlan(project, options) {
 		scope,
 		layout,
 		viewMode,
+		showAllTab,
+		pinToTop,
+		hideCollectionTitle,
+		folderTileShape,
+		folderTitleVisibility,
 		collectionTitles,
 		source: sourcePlan.configuration,
 	});
 	const hierarchy = scope === "new-collection"
-		? buildNewCollectionPlan(project, sourcePlan, { layout, viewMode, collectionTitles })
-		: buildNewFolderPlan(project, sourcePlan, destinationCollection);
+		? buildNewCollectionPlan(project, sourcePlan, { layout, viewMode, showAllTab, pinToTop, hideCollectionTitle, folderTileShape, folderTitleVisibility, collectionTitles })
+		: buildNewFolderPlan(project, sourcePlan, destinationCollection, { folderTileShape, folderTitleVisibility });
 	const destination = scope === "new-folder" ? Object.freeze({
 		collectionInternalId: destinationCollection.internalId,
 		collectionTitle: typeof destinationCollection.editable?.title === "string" ? destinationCollection.editable.title : "",
 		viewMode: Object.hasOwn(destinationCollection.editable ?? {}, "viewMode") ? destinationCollection.editable.viewMode : null,
+		showAllTab: Object.hasOwn(destinationCollection.editable ?? {}, "showAllTab") ? destinationCollection.editable.showAllTab : null,
+		pinToTop: Object.hasOwn(destinationCollection.editable ?? {}, "pinToTop") ? destinationCollection.editable.pinToTop : null,
+		titleHidden: isInvisibleNuvioTitle(destinationCollection.editable?.title),
 	}) : null;
 	const plan = Object.freeze({
 		planType: DECADES_HIERARCHY_PLAN_TYPE,
@@ -336,6 +449,11 @@ function planOptions(plan) {
 		...(plan.destination ? { destinationCollectionInternalId: plan.destination.collectionInternalId } : {}),
 		layout: plan.configuration.layout,
 		viewMode: plan.configuration.viewMode,
+		showAllTab: plan.configuration.showAllTab,
+		pinToTop: plan.configuration.pinToTop,
+		hideCollectionTitle: plan.configuration.hideCollectionTitle,
+		folderTileShape: plan.configuration.folderTileShape,
+		folderTitleVisibility: plan.configuration.folderTitleVisibility,
 		collectionTitles: plan.configuration.collectionTitles,
 		source: plan.configuration.source,
 	};
