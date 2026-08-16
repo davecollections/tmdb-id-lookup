@@ -1,8 +1,8 @@
 # V2 Builder Network Sources
 
-Status: implemented on the review branch for issue [#98](https://github.com/davecollections/tmdb-id-lookup/issues/98)
+Status: merged through issue [#98](https://github.com/davecollections/tmdb-id-lookup/issues/98) / PR [#99](https://github.com/davecollections/tmdb-id-lookup/pull/99), with owner review complete
 
-Last reviewed: 2026-08-09
+Last reviewed: 2026-08-16
 
 ## Scope
 

@@ -2,7 +2,7 @@
 
 Status: Durable owner, planning, repository, and review process
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-08-16
 
 This document describes how Dave, the ChatGPT planning/review chat, Codex, GitHub, and repository evidence work together. Repository-specific enforceable rules remain in [`AGENTS.md`](../../AGENTS.md); current product direction is in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md).
 
@@ -33,7 +33,7 @@ This document describes how Dave, the ChatGPT planning/review chat, Codex, GitHu
 
 ## 2. New chat versus same chat
 
-Start a new Codex chat when:
+Dave decides externally when to start a new Codex chat. Use a new chat when:
 
 - starting a new GitHub issue;
 - beginning a separately scoped implementation task;
@@ -48,14 +48,17 @@ Continue in the same Codex chat when:
 - opening the approved pull request for the same issue;
 - completing the approved merge and cleanup for that issue.
 
-Only the first prompt of a new chat should provide the Codex chat name. Do not repeatedly instruct the same chat to rename itself.
+The first prompt in a new Codex chat begins with:
 
-Every prompt should say near the top either:
+`Rename this chat to: <descriptive title>`
 
-- **Start a new Codex chat in the project**, or
-- **Continue in the current Codex chat**.
+Never include `Start a new Codex chat` inside the copyable Codex prompt.
 
-Provide prompts as one uninterrupted copyable block where practical.
+Every follow-up prompt in the same Codex chat begins with:
+
+`Continue in the current Codex chat. Do not rename it.`
+
+Do not repeatedly ask an existing chat to rename itself. Provide prompts as one uninterrupted copyable block where practical.
 
 ## 3. Model, effort, and speed guidance
 
