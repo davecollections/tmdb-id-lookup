@@ -1,12 +1,12 @@
 # Native Source Editing
 
-Status: foundation merged through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); Studio Movie/Series, Network Series, and simple Streaming DISCOVER name-and-sort adapters were added through issues [#92](https://github.com/davecollections/tmdb-id-lookup/issues/92), [#98](https://github.com/davecollections/tmdb-id-lookup/issues/98), and [#104](https://github.com/davecollections/tmdb-id-lookup/issues/104). Issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110) adds the fail-closed simple official Genre DISCOVER adapter, and issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) adds the narrower canonical Decade-period adapter locally for owner review. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and was not an unfinished merge gate.
+Status: merged foundation through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); extended through Studio #92 / PR #93, Network #98 / PR #99, Streaming #104 / PR #105, official Genre #110 / PR #111, and canonical Decade #113 / PR #115. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and was not an unfinished merge gate.
 
-Last reviewed: 2026-08-15
+Last reviewed: 2026-08-16
 
 ## Scope
 
-The first source-editing slice edits one existing physical source in place. It supports only:
+The current narrow source-editing surface edits one existing physical source in place. It supports only:
 
 - native TMDB movie collections with identity `tmdb|COLLECTION|<collection id>|MOVIE`;
 - native TMDB People sources with one of the four supported Acting/Directing and Movie/Series identities;
@@ -16,7 +16,7 @@ The first source-editing slice edits one existing physical source in place. It s
 - native TMDB Genre `DISCOVER` Movie/TV sources with exactly one official media-correct positive `withGenres` ID and only the losslessly representable issue #110 year, rating, vote, language, country, and comma-separated official exclusion filters.
 - canonical native TMDB Decade-period `DISCOVER` Movie/TV sources classified by issue #112, optionally with one official media-correct included Genre and only the approved rating, vote, language, country, and comma-separated official exclusion filters.
 
-Addon-backed, opaque/community, non-Streaming/non-Genre or unsupported/compound/malformed/non-comparable Discover, List, incomplete Company/Network, and other unsupported native source shapes remain readable, movable, preservable, and removable, but do not expose Edit. The editor never treats several sources as one logical bundle.
+Addon-backed, opaque/community, Discover shapes outside the recognized simple Streaming, official single-Genre, or canonical Decade-period boundaries, Lists, incomplete Company/Network, and other unsupported native source shapes remain readable, movable, preservable, and removable, but do not expose Edit. The editor never treats several sources as one logical bundle.
 
 ## Architecture
 
@@ -79,7 +79,7 @@ Opening an editor binds:
 
 Save re-resolves that binding before validation. It refuses to mutate when the source was deleted, moved to another parent, reordered, changed into another category/editor shape, had its identity changed elsewhere, or the controller project changed after the modal opened. Conflict copy asks the user to close and reopen rather than merging stale intent. These guards remain above the controller and add no edit-session metadata to Nuvio JSON.
 
-Duplicate identity is evaluated only inside the destination folder and excludes the physical source being edited. A changed movie-collection identity collides on `tmdb|COLLECTION|id|MOVIE`; a changed People combination collides on `tmdb|PERSON|person id|media` or `tmdb|DIRECTOR|person id|media`; Studio and Network name/sort saves retain their fixed `tmdb|COMPANY|studio id|media` or `tmdb|NETWORK|network id|TV` identity and ignore only their own physical source, not a second same-identity source. Streaming sort and Genre sort/filter changes use the full effective DISCOVER Core node identity, including sort and filters but excluding title; title-only editing does not create a new identity. Unlike Add Source, editing has no `Add anyway` override. The failed Save renders a bordered `role="alert"` panel headed **Source already exists**, describes the identity-derived conflict without relying on the other source's custom title, scrolls/focuses the panel, retains the draft, and performs zero mutations.
+Duplicate identity is evaluated only inside the destination folder and excludes the physical source being edited. A changed movie-collection identity collides on `tmdb|COLLECTION|id|MOVIE`; a changed People combination collides on `tmdb|PERSON|person id|media` or `tmdb|DIRECTOR|person id|media`; Studio and Network name/sort saves retain their fixed `tmdb|COMPANY|studio id|media` or `tmdb|NETWORK|network id|TV` identity and ignore only their own physical source, not a second same-identity source. Streaming sort plus Genre and Decade sort/filter changes use the full effective DISCOVER Core node identity, including sort and filters but excluding title; title-only editing does not create a new identity. Unlike Add Source, editing has no `Add anyway` override. The failed Save renders a bordered `role="alert"` panel headed **Source already exists**, describes the identity-derived conflict without relying on the other source's custom title, scrolls/focuses the panel, retains the draft, and performs zero mutations.
 
 ## Mutation and preservation contract
 
@@ -121,4 +121,4 @@ The manual package defines a Movie Collection identity/title change, a default-t
 
 ## Deliberate exclusions
 
-The editing foundation does not add logical multi-source/bundle editing, person replacement, Collection sort or any filter controls, edit-time duplicate overrides, artwork changes, collection/folder settings, export UI, persistence, migration actions, v1 changes, dependencies, lockfiles, Pages contracts, workflows, production data, or `nuvio-assets` changes. Issue #98 separately adds only the Network Series adapter and its narrowly required tracked Worker route; it does not deploy that Worker.
+The editing foundation does not add logical multi-source/bundle editing, person replacement, Movie Collection sort/filter controls, edit-time duplicate overrides, artwork changes, collection/folder settings, export UI, persistence, migration actions, v1 changes, dependencies, lockfiles, Pages contracts, workflows, production data, or `nuvio-assets` changes. Family-specific Studio, Network, Streaming, Genre, and Decade editors remain limited to the owned fields described above. The issue #98 Worker route was manually deployed and accepted on 2026-08-09; Source Edit itself does not deploy or broaden Worker routes.

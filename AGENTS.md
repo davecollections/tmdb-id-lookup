@@ -77,6 +77,7 @@ For future builder work:
 ## Architecture and design
 
 - Keep framework-independent source, validation, parsing, migration, serialization, and ID logic outside UI components.
+- Before adding a Builder component, helper, picker, selector, catalogue, modal, validator, source constructor, identity or duplicate helper, review block, presentation control, responsive shell, focus/history/scroll behavior, controller operation, test fixture, or test harness, inspect the existing Builder for the same or substantially similar behavior. Prefer, in order: direct reuse; extraction into a shared abstraction; extension of an existing abstraction; and new code only when semantics materially differ. Do not create parallel screen-specific copies merely because consumers live in different flows; record any material semantic difference in the issue and final report.
 - Keep new builder work isolated from v1 until explicit integration issues are approved.
 - Do not introduce React/Vite merely because comparison sites use it.
 - Use wizard or step-based flows for complex collection creation.
