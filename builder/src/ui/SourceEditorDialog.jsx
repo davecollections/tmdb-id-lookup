@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import {
 	formatNetworkLocation,
 	formatStudioLocation,
+	DECADES_SORT_OPTIONS,
 	GENRE_SORT_OPTIONS,
 	networkSortOptionId,
 	networkSortValue,
@@ -24,6 +25,8 @@ import {
 	createNetworkEditCountSession,
 	createStudioEditCountSession,
 	INITIAL_STUDIO_EDIT_COUNT_STATE,
+	DECADE_SOURCE_EDITOR_ID,
+	decadeEditSortValue,
 	GENRE_SOURCE_EDITOR_ID,
 	genreDefaultSourceName,
 	genreEditSortValue,
@@ -44,6 +47,8 @@ import {
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateStreamingSourceSort,
+	updateDecadeSourceAdvanced,
+	updateDecadeSourceSort,
 	updateGenreSourceAdvanced,
 	updateGenreSourceSort,
 	updateSourceEditTitle,
@@ -68,6 +73,7 @@ import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
+import { DecadesAdvancedOptions } from "./DecadesAdvancedOptions.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import {
 	focusSourceEditAlert,
@@ -354,6 +360,27 @@ export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange,
 	);
 }
 
+export function DecadeEditorFields({ draft, sortRef, onSortChange, onAdvancedChange }) {
+	const mediaMode = draft.mediaType === "TV" ? "series" : "movies";
+	return (
+		<>
+			<section className="source-edit-options decade-source-fixed" aria-labelledby="decade-source-fixed-title">
+				<div><p className="panel-kicker">Fixed structure</p><h3 id="decade-source-fixed-title">Decade source</h3></div>
+				<dl>
+					<div><dt>Period</dt><dd>{draft.periodLabel}</dd></div>
+					<div><dt>Media</dt><dd>{draft.mediaType === "TV" ? "Series" : "Movies"}</dd></div>
+					{draft.genreName ? <div><dt>Included Genre</dt><dd>{draft.genreName}</dd></div> : null}
+				</dl>
+				<p className="source-edit-fixed-note">Period dates, media and the included Genre stay fixed. Use the Decades creation flow to build a different structure.</p>
+			</section>
+			<div ref={sortRef} tabIndex={-1}>
+				<SemanticSortChoices options={DECADES_SORT_OPTIONS} selectedId={draft.sortOptionId} name="decade-edit-sort" legend="Sort titles by" onChange={onSortChange} />
+			</div>
+			<DecadesAdvancedOptions value={draft.advanced} mediaMode={mediaMode} includedGenres={draft.genreName ? [draft.genreName] : []} onChange={onAdvancedChange} idPrefix="decade-edit-advanced" />
+		</>
+	);
+}
+
 export function SourceEditErrorPanel({ result, alertRef = null }) {
 	const presentation = sourceEditErrorPresentation(result);
 	return (
@@ -460,6 +487,7 @@ export function SourceEditorDialog({
 	const studioSortRef = useRef(null);
 	const networkSortRef = useRef(null);
 	const streamingSortRef = useRef(null);
+	const decadeSortRef = useRef(null);
 	const genreSortRef = useRef(null);
 	const genreSecondaryHeadingRef = useRef(null);
 	const genreSecondaryReturnFocusRef = useRef(null);
@@ -506,7 +534,7 @@ export function SourceEditorDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? genreSortRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? decadeSortRef.current ?? genreSortRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
@@ -608,7 +636,7 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const sortRef = networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
+		const sortRef = networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
 		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
@@ -728,6 +756,8 @@ export function SourceEditorDialog({
 											? "Update this Streaming source name and title order. Provider, region and media stay fixed."
 										: session.adapterId === GENRE_SOURCE_EDITOR_ID
 											? "Update this Genre source name, title order and supported filters. Genre ID and media stay fixed."
+										: session.adapterId === DECADE_SOURCE_EDITOR_ID
+											? "Update this Decade source name, title order and supported filters. Period, media and included Genre stay fixed."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
@@ -750,7 +780,7 @@ export function SourceEditorDialog({
 									{failure ? (
 										<SourceEditErrorPanel result={failure} alertRef={diagnosticRef} />
 									) : null}
-									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
+									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, DECADE_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
 									{session.adapterId !== NETWORK_SOURCE_EDITOR_ID ? <SourceTitleField
 											draft={draft}
 											titleInputRef={titleInputRef}
@@ -761,6 +791,8 @@ export function SourceEditorDialog({
 												? "Changes how this source appears in Nuvio, not which Network it represents."
 											: session.adapterId === GENRE_SOURCE_EDITOR_ID
 												? "Changes how this source appears in Nuvio, not which Genre it represents."
+											: session.adapterId === DECADE_SOURCE_EDITOR_ID
+												? "Changes how this source appears in Nuvio, not its fixed Decade structure."
 												: null}
 												onChange={(title) => {
 												setDraft((current) => updateSourceEditTitle(current, title));
@@ -831,6 +863,19 @@ export function SourceEditorDialog({
 											onSortChange={(optionId) => {
 												setDraft((current) => updateStreamingSourceSort(current, streamingEditSortValue(optionId, current.mediaType), optionId));
 												clearFieldDiagnostic("sort");
+											}}
+										/>
+									) : session.adapterId === DECADE_SOURCE_EDITOR_ID ? (
+										<DecadeEditorFields
+											draft={draft}
+											sortRef={decadeSortRef}
+											onSortChange={(optionId) => {
+												setDraft((current) => updateDecadeSourceSort(current, decadeEditSortValue(optionId, current.mediaType), optionId));
+												clearFieldDiagnostic("sort");
+											}}
+											onAdvancedChange={(advanced) => {
+												setDraft((current) => updateDecadeSourceAdvanced(current, advanced));
+												setFailure(null);
 											}}
 										/>
 									) : session.adapterId === GENRE_SOURCE_EDITOR_ID ? (

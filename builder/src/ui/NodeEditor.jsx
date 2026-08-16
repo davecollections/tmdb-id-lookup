@@ -8,6 +8,13 @@ import {
 	handleDialogKeyDown,
 	initializeTitleInput,
 } from "./modal-focus.js";
+import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import {
+	CollectionTitleVisibilitySwitch,
+	FolderShapeChoices,
+	FolderTitleVisibilityChoices,
+	PresentationSwitch,
+} from "./PresentationControls.jsx";
 
 function TitleStatus({ original, replacementPending, statusId }) {
 	if (original.supported || replacementPending) {
@@ -109,78 +116,11 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 				<p className="editor-field-help" id={`${prefix}-layout-help`}>
 					Choose how each folder in this collection displays its sources in Nuvio.
 				</p>
-				<div className="editor-choice-grid">
-					<label className={`editor-choice editor-layout-choice${tabsSelected ? " is-selected" : ""}`}>
-						<input
-							type="radio"
-							name={`${prefix}-layout`}
-							value="TABBED_GRID"
-							data-editor-choice="tabs"
-							checked={tabsSelected}
-							onChange={() => onChange("viewMode", "TABBED_GRID")}
-						/>
-						<span className="editor-layout-choice-content">
-							<strong>Tabs (recommended)</strong>
-							<small>Switch between sources using tabs. An optional All tab combines them.</small>
-							<span
-								className="source-layout-preview source-layout-preview-tabs"
-								data-layout-preview="tabs"
-								aria-hidden="true"
-							>
-								<span className="source-layout-preview-tab-bar">
-									<span className="is-selected">All</span>
-									<span>Source 1</span>
-									<span>Source 2</span>
-								</span>
-								<span className="source-layout-preview-poster-grid">
-									<span />
-									<span />
-									<span />
-									<span />
-									<span />
-								</span>
-							</span>
-						</span>
-					</label>
-					<label className={`editor-choice editor-layout-choice${rowsSelected ? " is-selected" : ""}`}>
-						<input
-							type="radio"
-							name={`${prefix}-layout`}
-							value="ROWS"
-							data-editor-choice="rows"
-							checked={rowsSelected}
-							onChange={() => onChange("viewMode", "ROWS")}
-						/>
-						<span className="editor-layout-choice-content">
-							<strong>Rows</strong>
-							<small>Show each source as its own horizontal content row.</small>
-							<span
-								className="source-layout-preview source-layout-preview-rows"
-								data-layout-preview="rows"
-								aria-hidden="true"
-							>
-								<span className="source-layout-preview-row">
-									<span className="source-layout-preview-row-label">Source 1</span>
-									<span className="source-layout-preview-poster-strip">
-										<span />
-										<span />
-										<span />
-										<span />
-									</span>
-								</span>
-								<span className="source-layout-preview-row">
-									<span className="source-layout-preview-row-label">Source 2</span>
-									<span className="source-layout-preview-poster-strip">
-										<span />
-										<span />
-										<span />
-										<span />
-									</span>
-								</span>
-							</span>
-						</span>
-					</label>
-				</div>
+				<CollectionPresentationChoices
+					selectedId={draft.values.viewMode}
+					name={`${prefix}-layout`}
+					onChange={(viewMode) => onChange("viewMode", viewMode)}
+				/>
 				<ChoiceStatus
 					original={draft.original.viewMode}
 					kind="layout"
@@ -190,25 +130,17 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			</fieldset>
 
 			<div className="editor-switch-field" data-editor-field="showAllTab">
-				<label className="editor-switch">
-					<span>
-						<strong>Include an All tab when using Tabs</strong>
-						<small id={`${prefix}-all-tab-help`}>
-							{tabsSelected
-								? "For each folder with two or more sources, adds an All tab that combines its sources."
-								: "Rows do not show tabs. This preference will be used if the collection is later changed to Tabs."}
-						</small>
-					</span>
-					<input
-						type="checkbox"
-						role="switch"
-						data-editor-control="showAllTab"
-						checked={draft.values.showAllTab}
-						aria-describedby={allTabDescriptionIds}
-						onChange={(event) => onChange("showAllTab", event.target.checked)}
-					/>
-					<span className="editor-switch-control" aria-hidden="true" />
-				</label>
+				<PresentationSwitch
+					label="Include an All tab when using Tabs"
+					description={tabsSelected
+						? "For each folder with two or more sources, adds an All tab that combines its sources."
+						: "Rows do not show tabs. This preference will be used if the collection is later changed to Tabs."}
+					descriptionId={`${prefix}-all-tab-help`}
+					describedBy={allTabDescriptionIds}
+					controlName="showAllTab"
+					checked={draft.values.showAllTab}
+					onChange={(checked) => onChange("showAllTab", checked)}
+				/>
 				<BooleanStatus
 					original={draft.original.showAllTab}
 					label="All tab"
@@ -218,23 +150,15 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			</div>
 
 			<div className="editor-switch-field" data-editor-field="pinToTop">
-				<label className="editor-switch">
-					<span>
-						<strong>Pin to top</strong>
-						<small id={`${prefix}-pin-help`}>
-							Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list.
-						</small>
-					</span>
-					<input
-						type="checkbox"
-						role="switch"
-						data-editor-control="pinToTop"
-						checked={draft.values.pinToTop}
-						aria-describedby={pinDescriptionIds}
-						onChange={(event) => onChange("pinToTop", event.target.checked)}
-					/>
-					<span className="editor-switch-control" aria-hidden="true" />
-				</label>
+				<PresentationSwitch
+					label="Pin to top"
+					description="Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list."
+					descriptionId={`${prefix}-pin-help`}
+					describedBy={pinDescriptionIds}
+					controlName="pinToTop"
+					checked={draft.values.pinToTop}
+					onChange={(checked) => onChange("pinToTop", checked)}
+				/>
 				<BooleanStatus
 					original={draft.original.pinToTop}
 					label="pin to top"
@@ -265,61 +189,12 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 			<p className="editor-field-help" id={`${prefix}-shape-help`}>
 				Choose the shape of this folder card in Nuvio.
 			</p>
-			<div
-				className="editor-choice-grid editor-shape-choice-grid"
-				data-control-presentation="visual-cards"
-			>
-				<label
-					className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}
-					htmlFor={`${prefix}-poster-shape`}
-					onClick={(event) => {
-						if (event.target.closest("input")) return;
-						onChange("tileShape", "POSTER");
-					}}
-				>
-					<input
-						className="visually-hidden"
-						id={`${prefix}-poster-shape`}
-						type="radio"
-						name={`${prefix}-shape`}
-						value="POSTER"
-						data-editor-choice="poster"
-						checked={posterSelected}
-						onChange={() => onChange("tileShape", "POSTER")}
-					/>
-					<span className="shape-preview is-poster" aria-hidden="true" />
-					<span>
-						<strong>Poster</strong>
-						<small>Tall artwork for poster-style folders.</small>
-					</span>
-					<span className="editor-choice-check" aria-hidden="true">{posterSelected ? "✓" : ""}</span>
-				</label>
-				<label
-					className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}
-					htmlFor={`${prefix}-landscape-shape`}
-					onClick={(event) => {
-						if (event.target.closest("input")) return;
-						onChange("tileShape", "LANDSCAPE");
-					}}
-				>
-					<input
-						className="visually-hidden"
-						id={`${prefix}-landscape-shape`}
-						type="radio"
-						name={`${prefix}-shape`}
-						value="LANDSCAPE"
-						data-editor-choice="landscape"
-						checked={landscapeSelected}
-						onChange={() => onChange("tileShape", "LANDSCAPE")}
-					/>
-					<span className="shape-preview is-landscape" aria-hidden="true" />
-					<span>
-						<strong>Landscape</strong>
-						<small>Wide artwork for horizontal folders.</small>
-					</span>
-					<span className="editor-choice-check" aria-hidden="true">{landscapeSelected ? "✓" : ""}</span>
-				</label>
-			</div>
+			<FolderShapeChoices
+				selectedId={draft.values.tileShape}
+				name={`${prefix}-shape`}
+				idPrefix={prefix}
+				onChange={(tileShape) => onChange("tileShape", tileShape)}
+			/>
 			<ChoiceStatus
 				original={draft.original.tileShape}
 				kind="shape"
@@ -345,8 +220,6 @@ function FolderVisibilityStatus({ original, replacementPending, statusId }) {
 }
 
 function FolderTitleVisibilityField({ draft, prefix, onChange }) {
-	const showEverywhere = draft.values.folderTitleVisibility === "SHOW_EVERYWHERE";
-	const hideHomeScreen = draft.values.folderTitleVisibility === "HIDE_HOME_SCREEN";
 	const hideEverywhere = draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
 	const replacementPending = draft.touched.folderTitleVisibility && (
 		!hideEverywhere || draft.canonicalizeFolderInvisibleTitle
@@ -364,53 +237,11 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 			}
 		>
 			<legend>Folder title visibility</legend>
-			<div
-				className="editor-compact-radio-grid"
-				data-control-presentation="compact-radios"
-			>
-				<label className={`editor-compact-radio${showEverywhere ? " is-selected" : ""}`}>
-					<input
-						type="radio"
-						name={`${prefix}-title-visibility`}
-						value="SHOW_EVERYWHERE"
-						data-editor-choice="show-everywhere"
-						checked={showEverywhere}
-						onChange={() => onChange("folderTitleVisibility", "SHOW_EVERYWHERE")}
-					/>
-					<span>
-						<strong>Show everywhere</strong>
-						<small>Home screen and open folder</small>
-					</span>
-				</label>
-				<label className={`editor-compact-radio${hideHomeScreen ? " is-selected" : ""}`}>
-					<input
-						type="radio"
-						name={`${prefix}-title-visibility`}
-						value="HIDE_HOME_SCREEN"
-						data-editor-choice="hide-home-screen"
-						checked={hideHomeScreen}
-						onChange={() => onChange("folderTitleVisibility", "HIDE_HOME_SCREEN")}
-					/>
-					<span>
-						<strong>Hide on home screen only</strong>
-						<small>Still shown inside the folder</small>
-					</span>
-				</label>
-				<label className={`editor-compact-radio${hideEverywhere ? " is-selected" : ""}`}>
-					<input
-						type="radio"
-						name={`${prefix}-title-visibility`}
-						value="HIDE_EVERYWHERE"
-						data-editor-choice="hide-everywhere"
-						checked={hideEverywhere}
-						onChange={() => onChange("folderTitleVisibility", "HIDE_EVERYWHERE")}
-					/>
-					<span>
-						<strong>Hide everywhere</strong>
-						<small>Uses an invisible title</small>
-					</span>
-				</label>
-			</div>
+			<FolderTitleVisibilityChoices
+				selectedId={draft.values.folderTitleVisibility}
+				name={`${prefix}-title-visibility`}
+				onChange={(folderTitleVisibility) => onChange("folderTitleVisibility", folderTitleVisibility)}
+			/>
 			<FolderVisibilityStatus
 				original={draft.original.hideTitle}
 				replacementPending={replacementPending}
@@ -440,23 +271,11 @@ function SettingsSection({ prefix, slug, title, children }) {
 function InvisibleCollectionTitleField({ draft, prefix, onChange }) {
 	return (
 		<div className="editor-switch-field" data-editor-field="hideNuvioTitle">
-			<label className="editor-switch">
-				<span>
-					<strong>Hide collection title in Nuvio</strong>
-					<small id={`${prefix}-hidden-title-help`}>
-						Uses an invisible character to hide the collection title in Nuvio.
-					</small>
-				</span>
-				<input
-					type="checkbox"
-					role="switch"
-					data-editor-control="hideNuvioTitle"
-					checked={draft.values.hideNuvioTitle}
-					aria-describedby={`${prefix}-hidden-title-help`}
-					onChange={(event) => onChange("hideNuvioTitle", event.target.checked)}
-				/>
-				<span className="editor-switch-control" aria-hidden="true" />
-			</label>
+			<CollectionTitleVisibilitySwitch
+				descriptionId={`${prefix}-hidden-title-help`}
+				checked={draft.values.hideNuvioTitle}
+				onChange={(checked) => onChange("hideNuvioTitle", checked)}
+			/>
 		</div>
 	);
 }
@@ -466,28 +285,17 @@ function RenameFolderInvisibleTitleField({ draft, prefix, onChange }) {
 
 	return (
 		<div className="editor-switch-field" data-editor-field="folderTitleVisibility">
-			<label className="editor-switch">
-				<span>
-					<strong>Hide folder title everywhere in Nuvio</strong>
-					<small id={`${prefix}-hidden-title-help`}>
-						Uses an invisible character to hide the folder title on the home screen and when the folder is opened.
-					</small>
-				</span>
-				<input
-					type="checkbox"
-					role="switch"
-					data-editor-control="hideFolderTitleEverywhere"
-					checked={hiddenEverywhere}
-					aria-describedby={`${prefix}-hidden-title-help`}
-					onChange={(event) => onChange(
-						"folderTitleVisibility",
-						event.target.checked
-							? "HIDE_EVERYWHERE"
-							: draft.renameVisibleFolderTitleVisibility,
-					)}
-				/>
-				<span className="editor-switch-control" aria-hidden="true" />
-			</label>
+			<PresentationSwitch
+				label="Hide folder title everywhere in Nuvio"
+				description="Uses an invisible character to hide the folder title on the home screen and when the folder is opened."
+				descriptionId={`${prefix}-hidden-title-help`}
+				controlName="hideFolderTitleEverywhere"
+				checked={hiddenEverywhere}
+				onChange={(checked) => onChange(
+					"folderTitleVisibility",
+					checked ? "HIDE_EVERYWHERE" : draft.renameVisibleFolderTitleVisibility,
+				)}
+			/>
 		</div>
 	);
 }

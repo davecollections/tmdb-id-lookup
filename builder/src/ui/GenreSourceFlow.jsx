@@ -21,20 +21,22 @@ import {
 } from "../source-add/index.js";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
+import {
+	GenreCatalogueList,
+	genreMediaLabel,
+	GenreSelectionToolbar,
+} from "./GenreCatalogueSelector.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
+import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const COMPACT_REVIEW_THRESHOLD = 6;
 const COMPACT_SELECTION_THRESHOLD = 6;
 
 export const GENRE_SOURCE_STEPS = Object.freeze({ BROWSE: "browse", CONFIGURE_REVIEW: "configure-review" });
-
-function genreMediaLabel(concept) {
-	return concept.shared ? "Movies & Series" : concept.movieId !== null ? "Movies" : "Series";
-}
 
 function currentCollection(project, folderInternalId) {
 	return project?.collections?.find((collection) => collection.folders.some((folder) => folder.internalId === folderInternalId)) ?? null;
@@ -61,26 +63,19 @@ export function GenreBrowseStep({ query, headingRef, inputRef, selection, onQuer
 			<div className="add-source-section-heading genre-browse-heading">
 				<div><p className="panel-kicker">Browse</p><h3 id="genre-browse-title" ref={headingRef} tabIndex={-1}>Official TMDB Genres</h3></div>
 			</div>
-			<div className="genre-selection-toolbar">
-				<span role="status">{selection.length} of {GENRE_CONCEPTS.length} selected</span>
-				<div className="genre-selection-actions"><button type="button" onClick={onSelectAll}>Select all</button><button type="button" disabled={selection.length === 0} onClick={onClearAll}>Clear all</button></div>
-			</div>
+			<GenreSelectionToolbar selectionCount={selection.length} totalCount={GENRE_CONCEPTS.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
 			<div className="editor-field add-source-query-field genre-search-field">
 				<label htmlFor="genre-source-query">Search Genres</label>
 				<div className="genre-search-control"><input ref={inputRef} id="genre-source-query" type="search" value={query} placeholder="Search the local catalogue" autoComplete="off" onChange={onQueryChange} />{query ? <button type="button" onClick={onClearSearch}>Clear search</button> : null}</div>
 			</div>
-			{concepts.length > 0 ? <ul className="genre-catalogue-list">{concepts.map((concept) => {
-				const selected = selection.includes(concept.name);
-				return <li key={concept.name}><button type="button" data-genre-name={concept.name} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onChoose(concept.name)}><span><strong>{concept.name}</strong><small>{genreMediaLabel(concept)}</small></span><span aria-hidden="true">{selected ? "✓" : "+"}</span></button></li>;
-			})}</ul> : <div className="add-source-empty"><strong>No Genres found</strong><span>Clear the search or try another name.</span></div>}
+			<GenreCatalogueList concepts={concepts} selection={selection} onChoose={onChoose} />
 		</section>
 	);
 }
 
 export function SelectedGenreSummary({ genres, onRemove }) {
 	if (genres.length === 1) return <div className="genre-configure-selection genre-single-selection"><strong>{genres[0].name}</strong><span>{genreMediaLabel(genres[0])}</span></div>;
-	if (genres.length <= COMPACT_SELECTION_THRESHOLD) return <ul className="genre-selection-pills">{genres.map((concept) => <li key={concept.name}><button type="button" onClick={() => onRemove(concept.name)}><span>{concept.name}</span><span aria-hidden="true">×</span><span className="visually-hidden">Remove {concept.name}</span></button></li>)}</ul>;
-	return <details className="genre-selected-disclosure"><summary>View selected genres</summary><ul>{genres.map((concept) => <li key={concept.name}><div><strong>{concept.name}</strong><span>{genreMediaLabel(concept)}</span></div><button type="button" aria-label={`Remove ${concept.name}`} onClick={() => onRemove(concept.name)}>×</button></li>)}</ul></details>;
+	return <RemovableSelectionSummary items={genres.map((concept) => ({ id: concept.name, label: concept.name, detail: genreMediaLabel(concept) }))} onRemove={onRemove} ariaLabel="Selected genres" disclosureLabel="View selected genres" compactThreshold={COMPACT_SELECTION_THRESHOLD} />;
 }
 
 function DestinationChoices({ selectedId, onChange }) {

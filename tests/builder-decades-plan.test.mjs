@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createBuilderController } from "../builder/src/application/index.js";
+import { discoverSourceIdentity } from "../builder/src/nuvio/discover.js";
+import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
 import {
 	applyDecadesHierarchyPlan,
 	buildDecadesSourceDrafts,
@@ -59,8 +61,8 @@ function addExistingDecadeSource(current, collectionInternalId, folderInternalId
 
 test("New Collection Movies and Series plans use deterministic names, folders, sources and real presentation values", () => {
 	for (const [mediaMode, title, sourceTitle] of [
-		["movies", "Movie Decades", "1980s Movies"],
-		["series", "TV Decades", "1980s Series"],
+		["movies", "Movie Decades", "All 1980s"],
+		["series", "TV Decades", "All 1980s"],
 	]) {
 		const current = controller();
 		const result = planFor(current, {
@@ -72,7 +74,7 @@ test("New Collection Movies and Series plans use deterministic names, folders, s
 		assert.equal(result.plan.collections[0].editable.title, title);
 		assert.equal(result.plan.collections[0].editable.viewMode, "ROWS");
 		assert.equal(result.plan.collections[0].editable.showAllTab, true);
-		assert.deepEqual(result.plan.collections[0].folders[0].editable, { title: "1980s", tileShape: "POSTER", hideTitle: true });
+		assert.deepEqual(result.plan.collections[0].folders[0].editable, { title: "1980s", tileShape: "POSTER", hideTitle: false });
 		assert.equal(result.plan.collections[0].folders[0].sources[0].draft.editable.title, sourceTitle);
 	}
 });
@@ -94,18 +96,254 @@ test("Both defaults to separate Movie and TV collections and can use one mixed c
 	assert.deepEqual(mixed.plan.counts, { collectionCount: 1, folderCount: 1, sourceCount: 2 });
 	assert.equal(mixed.plan.collections[0].editable.title, "My Decades");
 	assert.deepEqual(mixed.plan.collections[0].folders[0].sources.map((entry) => entry.draft.editable.title), [
-		"1980s Movies", "1980s Series",
+		"All 1980s Movies", "All 1980s Series",
+	]);
+	assert.deepEqual(separate.plan.collections.map((collection) => collection.folders[0].sources[0].draft.editable.title), ["All 1980s", "All 1980s"]);
+});
+
+test("New Collection applies one selected collection and folder appearance configuration to every generated node", () => {
+	const current = controller();
+	const result = planFor(current, {
+		showAllTab: false,
+		pinToTop: true,
+		hideCollectionTitle: true,
+		folderTileShape: "LANDSCAPE",
+		folderTitleVisibility: "HIDE_EVERYWHERE",
+		source: sourceConfiguration({
+			selectedDecadeIds: ["1980s", "1990s"],
+			mediaMode: "both",
+		}),
+	});
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.plan.collections.map((collection) => collection.role), ["movies", "series"]);
+	for (const collection of result.plan.collections) {
+		assert.deepEqual(collection.editable, {
+			title: NUVIO_INVISIBLE_TITLE,
+			pinToTop: true,
+			focusGlowEnabled: true,
+			viewMode: "TABBED_GRID",
+			showAllTab: false,
+		});
+		assert.deepEqual(collection.folders.map((folder) => folder.editable), [
+			{ title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true },
+			{ title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true },
+		]);
+	}
+	const applied = applyDecadesHierarchyPlan(current, result.plan);
+	assert.equal(applied.ok, true);
+	assert.ok(current.getState().project.collections.every((collection) => collection.editable.title === NUVIO_INVISIBLE_TITLE));
+});
+
+test("source names follow physical folder media composition and keep All aggregate distinct", () => {
+	for (const [mediaMode, genreName] of [["movies", "Horror"], ["series", "Drama"]]) {
+		const current = controller();
+		const result = planFor(current, { source: sourceConfiguration({
+			selectedDecadeIds: ["2000s"],
+			mediaMode,
+			content: { wholeDecade: true, individualYears: true, genreBreakdown: true },
+			genreNames: [genreName],
+		}) });
+		const titles = result.plan.collections[0].folders[0].sources.map((entry) => entry.draft.editable.title);
+		assert.deepEqual([titles[0], titles[1], titles.at(-1)], ["All 2000s", "2000", genreName]);
+	}
+
+	const mixedController = controller();
+	const mixed = planFor(mixedController, {
+		layout: "mixed-collection",
+		source: sourceConfiguration({
+			selectedDecadeIds: ["2000s"],
+			mediaMode: "both",
+			content: { wholeDecade: true, individualYears: false, genreBreakdown: true },
+			genreNames: ["Drama"],
+		}),
+	});
+	assert.deepEqual(mixed.plan.collections[0].folders[0].sources.map((entry) => entry.draft.editable.title), [
+		"All 2000s Movies", "Drama Movies", "All 2000s Series", "Drama Series",
+	]);
+
+	const folderController = controller();
+	const destination = folderController.createCollection({ editable: { title: "Destination" } });
+	const folderPlan = createDecadesHierarchyPlan(folderController.getState().project, {
+		scope: "new-folder",
+		projectRevision: folderController.getState().revision,
+		destinationCollectionInternalId: destination.createdInternalId,
+		source: sourceConfiguration({
+			selectedDecadeIds: ["1950s-and-earlier"],
+			mediaMode: "both",
+			content: { wholeDecade: true, individualYears: true, genreBreakdown: false },
+		}),
+	});
+	const earlierTitles = folderPlan.plan.folders[0].sources.map((entry) => entry.draft.editable.title);
+	assert.deepEqual(earlierTitles.slice(0, 3), ["All 1950s & Earlier Movies", "Before 1950 Movies", "1950 Movies"]);
+	assert.deepEqual(earlierTitles.slice(12, 15), ["All 1950s & Earlier Series", "Before 1950 Series", "1950 Series"]);
+});
+
+test("folder, year, and mixed-source ordering apply without changing Movie-before-TV collection order", () => {
+	const current = controller();
+	const result = planFor(current, {
+		source: sourceConfiguration({
+			selectedDecadeIds: ["1950s-and-earlier", "1980s", "2000s"],
+			mediaMode: "both",
+			content: { wholeDecade: true, individualYears: true, genreBreakdown: false },
+			decadeOrder: "newest-first",
+			yearOrder: "newest-first",
+		}),
+	});
+	assert.deepEqual(result.plan.collections.map((collection) => collection.role), ["movies", "series"]);
+	assert.deepEqual(result.plan.collections[0].folders.map((folder) => folder.decadeId), ["2000s", "1980s", "1950s-and-earlier"]);
+	assert.deepEqual(result.plan.collections[0].folders.at(-1).sources.slice(0, 4).map((entry) => entry.draft.editable.title), [
+		"All 1950s & Earlier", "1959", "1958", "1957",
+	]);
+	assert.equal(result.plan.collections[0].folders.at(-1).sources.at(-1).draft.editable.title, "Before 1950");
+
+	const paired = planFor(current, {
+		layout: "mixed-collection",
+		source: sourceConfiguration({
+			mediaMode: "both",
+			content: { wholeDecade: true, individualYears: false, genreBreakdown: true },
+			genreNames: ["Music", "Drama", "News"],
+			sourceGrouping: "paired",
+		}),
+	});
+	assert.deepEqual(paired.plan.collections[0].folders[0].sources.map((entry) => entry.draft.editable.title), [
+		"All 1980s Movies", "All 1980s Series", "Music Movies", "Drama Movies", "Drama Series", "News Series",
 	]);
 });
 
-test("New Folder scope creates sibling decade folders and inherits the captured collection presentation without mutating it", () => {
+test("combined ordering choices only reorder the same mixed hierarchy and New Folder preserves the reviewed result", () => {
 	const current = controller();
-	const collection = current.createCollection({ editable: { title: "Existing", viewMode: "ROWS", showAllTab: false } });
+	const baseSource = sourceConfiguration({
+		selectedDecadeIds: ["1950s-and-earlier", "2010s", "2020s"],
+		mediaMode: "both",
+		content: { wholeDecade: true, individualYears: true, genreBreakdown: true },
+		currentYearMode: "full-decade",
+		genreNames: ["Music", "Drama", "News"],
+		decadeOrder: "newest-first",
+		yearOrder: "newest-first",
+	});
+	const moviesFirst = planFor(current, {
+		layout: "mixed-collection",
+		source: { ...baseSource, sourceGrouping: "movies-first" },
+	});
+	const paired = planFor(current, {
+		layout: "mixed-collection",
+		source: { ...baseSource, sourceGrouping: "paired" },
+	});
+	assert.deepEqual(moviesFirst.plan.collections[0].folders.map((folder) => folder.decadeId), ["2020s", "2010s", "1950s-and-earlier"]);
+	assert.deepEqual(paired.plan.collections[0].folders.map((folder) => folder.decadeId), ["2020s", "2010s", "1950s-and-earlier"]);
+	assert.deepEqual(moviesFirst.plan.collections[0].folders[0].sources.slice(0, 4).map((entry) => entry.draft.editable.title), [
+		"All 2020s Movies", "2029 Movies", "2028 Movies", "2027 Movies",
+	]);
+	assert.deepEqual(paired.plan.collections[0].folders[0].sources.slice(0, 6).map((entry) => entry.draft.editable.title), [
+		"All 2020s Movies", "All 2020s Series", "2029 Movies", "2029 Series", "2028 Movies", "2028 Series",
+	]);
+	assert.deepEqual(moviesFirst.plan.counts, paired.plan.counts);
+	const identitySet = (plan) => plan.collections[0].folders
+		.flatMap((folder) => folder.sources)
+		.map((entry) => discoverSourceIdentity(entry.draft.editable).key)
+		.sort();
+	assert.deepEqual(identitySet(moviesFirst.plan), identitySet(paired.plan));
+
+	const oldestPaired = planFor(current, {
+		layout: "mixed-collection",
+		source: { ...baseSource, decadeOrder: "oldest-first", sourceGrouping: "paired" },
+	});
+	assert.deepEqual(oldestPaired.plan.collections[0].folders.map((folder) => folder.decadeId), ["1950s-and-earlier", "2010s", "2020s"]);
+	assert.deepEqual(oldestPaired.plan.collections[0].folders[0].sources.slice(0, 6).map((entry) => entry.draft.editable.title), [
+		"All 1950s & Earlier Movies", "All 1950s & Earlier Series", "1959 Movies", "1959 Series", "1958 Movies", "1958 Series",
+	]);
+	assert.deepEqual(oldestPaired.plan.collections[0].folders[0].sources.slice(-4).map((entry) => entry.draft.editable.title), [
+		"Music Movies", "Drama Movies", "Drama Series", "News Series",
+	]);
+
+	const destination = current.createCollection({ editable: { title: "Destination", viewMode: "ROWS" } });
+	const folderPlan = createDecadesHierarchyPlan(current.getState().project, {
+		scope: "new-folder",
+		projectRevision: current.getState().revision,
+		destinationCollectionInternalId: destination.createdInternalId,
+		source: { ...baseSource, sourceGrouping: "paired" },
+	});
+	assert.deepEqual(folderPlan.plan.folders.map((folder) => folder.decadeId), ["2020s", "2010s", "1950s-and-earlier"]);
+	assert.deepEqual(folderPlan.plan.folders[0].sources.slice(0, 4).map((entry) => entry.draft.editable.title), [
+		"All 2020s Movies", "All 2020s Series", "2029 Movies", "2029 Series",
+	]);
+	assert.equal(applyDecadesHierarchyPlan(current, folderPlan.plan).ok, true);
+	assert.deepEqual(current.getState().project.collections.at(-1).folders.map((folder) => folder.editable.title), ["2020s", "2010s", "1950s & Earlier"]);
+
+	const separate = planFor(controller(), {
+		source: { ...baseSource, sourceGrouping: "paired" },
+	});
+	assert.deepEqual(separate.plan.collections.map((collection) => collection.role), ["movies", "series"]);
+	assert.deepEqual(separate.plan.collections[0].folders[0].sources.slice(0, 3).map((entry) => entry.draft.editable.title), ["All 2020s", "2029", "2028"]);
+	assert.deepEqual(separate.plan.collections[1].folders[0].sources.slice(0, 3).map((entry) => entry.draft.editable.title), ["All 2020s", "2029", "2028"]);
+});
+
+test("per-Decade Genre choices flow through hierarchy planning and strict revalidation", () => {
+	const current = controller();
+	const result = planFor(current, {
+		source: sourceConfiguration({
+			selectedDecadeIds: ["1980s", "1990s"],
+			content: { wholeDecade: false, individualYears: false, genreBreakdown: true },
+			genreNames: undefined,
+			genreNamesByDecade: { "1980s": ["Action"], "1990s": ["Horror", "Comedy"] },
+		}),
+	});
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.plan.collections[0].folders.map((folder) => folder.sources.map((entry) => entry.draft.editable.title)), [
+		["Action"], ["Horror", "Comedy"],
+	]);
+	assert.equal(validateDecadesHierarchyPlan(result.plan, { project: current.getState().project, projectRevision: current.getState().revision }).ok, true);
+	const tampered = structuredClone(result.plan);
+	tampered.configuration.source.genreNamesByDecade["1990s"].reverse();
+	assert.equal(validateDecadesHierarchyPlan(tampered, { project: current.getState().project, projectRevision: current.getState().revision }).ok, false);
+});
+
+test("shared-capable Decade exclusions produce deterministic per-Decade ordinary and per-included-Genre filters", () => {
+	const configuration = sourceConfiguration({
+		selectedDecadeIds: ["1980s", "1990s"],
+		content: { wholeDecade: true, individualYears: false, genreBreakdown: true },
+		genreNames: undefined,
+		genreNamesByDecade: { "1980s": ["Action"], "1990s": ["Action"] },
+		advanced: {
+			ordinaryExcludedGenresByDecade: { "1980s": ["Comedy"], "1990s": ["Horror"] },
+			exclusionsByGenreByDecade: {
+				"1980s": { Action: ["Horror"] },
+				"1990s": { Action: ["Comedy"] },
+			},
+		},
+	});
+	const built = buildDecadesSourceDrafts(configuration);
+	assert.equal(built.ok, true);
+	assert.deepEqual(built.groups.map((group) => group.sources.map((entry) => entry.draft.editable.filters)), [
+		[
+			{ releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31", withoutGenres: "35" },
+			{ releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31", withGenres: "28", withoutGenres: "27" },
+		],
+		[
+			{ releaseDateGte: "1990-01-01", releaseDateLte: "1999-12-31", withoutGenres: "27" },
+			{ releaseDateGte: "1990-01-01", releaseDateLte: "1999-12-31", withGenres: "28", withoutGenres: "35" },
+		],
+	]);
+	assert.deepEqual(buildDecadesSourceDrafts(reverseObjectKeys(configuration)).drafts, built.drafts);
+
+	const invalid = buildDecadesSourceDrafts({
+		...configuration,
+		advanced: { ...configuration.advanced, ordinaryExcludedGenresByDecade: { "1970s": ["Comedy"] } },
+	});
+	assert.equal(invalid.ok, false);
+	assert.equal(invalid.errors.some((entry) => entry.code === "INVALID_DECADES_EXCLUSION_DECADE"), true);
+});
+
+test("New Folder creates configured sibling folders, reports inherited presentation, and never mutates the parent", () => {
+	const current = controller();
+	const collection = current.createCollection({ editable: { title: "Existing", viewMode: "ROWS", showAllTab: false, pinToTop: true } });
 	const beforeEditable = current.getState().project.collections[0].editable;
 	const result = createDecadesHierarchyPlan(current.getState().project, {
 		scope: "new-folder",
 		projectRevision: current.getState().revision,
 		destinationCollectionInternalId: collection.createdInternalId,
+		folderTileShape: "LANDSCAPE",
+		folderTitleVisibility: "HIDE_HOME_SCREEN",
 		source: sourceConfiguration({
 			selectedDecadeIds: ["1970s", "1980s"],
 			mediaMode: "both",
@@ -114,8 +352,22 @@ test("New Folder scope creates sibling decade folders and inherits the captured 
 	assert.equal(result.ok, true);
 	assert.deepEqual(result.plan.counts, { collectionCount: 0, folderCount: 2, sourceCount: 4 });
 	assert.equal(result.plan.destination.viewMode, "ROWS");
+	assert.equal(result.plan.destination.showAllTab, false);
+	assert.equal(result.plan.destination.pinToTop, true);
+	assert.equal(result.plan.destination.titleHidden, false);
 	assert.deepEqual(result.plan.folders.map((folder) => folder.editable.title), ["1970s", "1980s"]);
+	assert.ok(result.plan.folders.every((folder) => folder.editable.tileShape === "LANDSCAPE" && folder.editable.hideTitle === true));
 	assert.deepEqual(result.plan.folders[0].sources.map((entry) => entry.draft.editable.mediaType), ["MOVIE", "TV"]);
+	assert.equal(current.getState().project.collections[0].editable, beforeEditable);
+	const rejectedParentChange = createDecadesHierarchyPlan(current.getState().project, {
+		scope: "new-folder",
+		projectRevision: current.getState().revision,
+		destinationCollectionInternalId: collection.createdInternalId,
+		pinToTop: false,
+		source: sourceConfiguration(),
+	});
+	assert.equal(rejectedParentChange.ok, false);
+	assert.equal(rejectedParentChange.errors.some((entry) => entry.code === "UNEXPECTED_DECADES_PIN_TO_TOP"), true);
 	assert.equal(current.getState().project.collections[0].editable, beforeEditable);
 
 	const applied = applyDecadesHierarchyPlan(current, result.plan);

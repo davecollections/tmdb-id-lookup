@@ -1,4 +1,10 @@
 export {
+	DECADE_SOURCE_EDITOR_ID,
+	decadeEditSortValue,
+	decadeExclusionNamesForMedia,
+	decadeSourceEditor,
+} from "./decade-editor.js";
+export {
 	GENRE_SOURCE_EDITOR_ID,
 	genreDefaultSourceName,
 	genreEditSortValue,
@@ -50,6 +56,8 @@ export {
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateStreamingSourceSort,
+	updateDecadeSourceAdvanced,
+	updateDecadeSourceSort,
 	updateGenreSourceAdvanced,
 	updateGenreSourceSort,
 	updateSourceEditTitle,

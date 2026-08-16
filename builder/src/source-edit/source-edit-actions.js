@@ -148,6 +148,14 @@ export function updateStreamingSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }
 
+export function updateDecadeSourceSort(draft, sortBy, sortOptionId = null) {
+	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
+}
+
+export function updateDecadeSourceAdvanced(draft, advanced) {
+	return Object.freeze({ ...draft, advanced, advancedTouched: true });
+}
+
 export function updateGenreSourceSort(draft, sortBy, sortOptionId = null) {
 	return Object.freeze({ ...draft, sortBy, sortOptionId, sortTouched: true });
 }

@@ -5,6 +5,7 @@ import {
 	createPeopleFolderBatch,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
+	applyDecadesHierarchyPlan,
 	createMovieFranchiseSource,
 	createNetworkCatalogueProvider,
 	createNetworkSource,
@@ -29,6 +30,7 @@ import {
 } from "../source-edit/index.js";
 import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
+import { CreationDialog } from "./CreationDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
@@ -612,6 +614,7 @@ export function BuilderWorkspace({
 	initialReturnConfirmationOpen = false,
 	initialDeleteConfirmation = null,
 	initialAddSourceOpen = false,
+	initialCreationSession = null,
 	initialSourceEdit = null,
 	initialAboutCreditsOpen = false,
 	sourceProvider = null,
@@ -641,6 +644,9 @@ export function BuilderWorkspace({
 	const [pendingDeleteFocus, setPendingDeleteFocus] = useState(null);
 	const [restoreDeleteTriggerFocus, setRestoreDeleteTriggerFocus] = useState(false);
 	const [actionsMenuInternalId, setActionsMenuInternalId] = useState(null);
+	const [creationSession, setCreationSession] = useState(initialCreationSession);
+	const [restoreCreationTriggerFocus, setRestoreCreationTriggerFocus] = useState(false);
+	const [creationStatusText, setCreationStatusText] = useState("");
 	const [addSourceSession, setAddSourceSession] = useState(() => (
 		initialAddSourceOpen && state.selection.folderInternalId
 			? {
@@ -680,6 +686,7 @@ export function BuilderWorkspace({
 	const folderEmptyAddRef = useRef(null);
 	const sourceBackControlRef = useRef(null);
 	const deleteGateRef = useRef(null);
+	const creationRestoreFocusRef = useRef(null);
 	const addSourceRestoreFocusRef = useRef(null);
 	const sourceEditRestoreFocusRef = useRef(null);
 	const aboutCreditsTriggerRef = useRef(null);
@@ -742,9 +749,10 @@ export function BuilderWorkspace({
 		: null;
 	const editorLocked = visibleEditorDraft !== null;
 	const deleteLocked = deleteConfirmation !== null;
+	const creationLocked = creationSession !== null;
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
-	const modalLocked = editorLocked || deleteLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen;
+	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -812,6 +820,14 @@ export function BuilderWorkspace({
 		deleteTriggerRef.current = null;
 		trigger?.focus?.();
 	}, [restoreDeleteTriggerFocus]);
+
+	useEffect(() => {
+		if (!restoreCreationTriggerFocus) return;
+		setRestoreCreationTriggerFocus(false);
+		const trigger = creationRestoreFocusRef.current;
+		creationRestoreFocusRef.current = null;
+		focusElementWithoutScroll(trigger);
+	}, [restoreCreationTriggerFocus]);
 
 	useEffect(() => {
 		if (!restoreAddSourceTriggerFocus) return;
@@ -1145,36 +1161,83 @@ export function BuilderWorkspace({
 		setRestoreReturnFocus(true);
 	}
 
-	function createCollection() {
+	function createCollection(event) {
 		if (hierarchyInteractionLocked || pointerInteractionLocked()) return;
-		const result = createDraftCollection(controller, { selectCreated: desktopViewport });
-		if (!result.ok) return;
-
-		setMobileLevelOverride(desktopViewport ? null : "collections");
-		setCreatedCardTarget(desktopViewport ? null : {
-			nodeType: "collection",
-			internalId: result.createdInternalId,
+		creationRestoreFocusRef.current = event?.currentTarget ?? null;
+		setCreationStatusText("");
+		setCreationSession({
+			scope: "new-collection",
+			openingProject: state.project,
+			projectRevision: state.revision,
+			currentYear: new Date().getFullYear(),
+			destinationCollectionInternalId: null,
+			destinationCollectionTitle: null,
 		});
 	}
 
-	function createFolder() {
+	function createFolder(event) {
 		if (
 			hierarchyInteractionLocked
 			|| pointerInteractionLocked()
 			|| !view.selectedCollection
 		) return;
-		const result = createDraftFolder(
-			controller,
-			view.selectedCollection.internalId,
-			{ selectCreated: desktopViewport },
-		);
+		creationRestoreFocusRef.current = event?.currentTarget ?? null;
+		setCreationStatusText("");
+		setCreationSession({
+			scope: "new-folder",
+			openingProject: state.project,
+			projectRevision: state.revision,
+			currentYear: new Date().getFullYear(),
+			destinationCollectionInternalId: view.selectedCollection.internalId,
+			destinationCollectionTitle: view.selectedCollection.title,
+		});
+	}
+
+	function createBlankItem() {
+		if (!creationSession) return;
+		const result = creationSession.scope === "new-collection"
+			? createDraftCollection(controller, { selectCreated: desktopViewport })
+			: createDraftFolder(
+				controller,
+				creationSession.destinationCollectionInternalId,
+				{ selectCreated: desktopViewport },
+			);
 		if (!result.ok) return;
 
-		setMobileLevelOverride(desktopViewport ? null : "folders");
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection"
+			? desktopViewport ? null : "collections"
+			: desktopViewport ? null : "folders");
 		setCreatedCardTarget(desktopViewport ? null : {
-			nodeType: "folder",
+			nodeType,
 			internalId: result.createdInternalId,
 		});
+	}
+
+	function cancelCreation() {
+		if (!creationSession) return;
+		setCreationSession(null);
+		setRestoreCreationTriggerFocus(true);
+	}
+
+	function applyDecadesPlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyDecadesHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection"
+			? result.createdCollectionInternalIds?.[0]
+			: result.createdFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} Decade folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
+		return result;
 	}
 
 	function openAddSource(trigger) {
@@ -1887,6 +1950,7 @@ export function BuilderWorkspace({
 			data-editor-lock={editorLocked ? "true" : undefined}
 			data-settings-open={editorLocked ? "true" : undefined}
 			data-delete-open={deleteLocked ? "true" : undefined}
+			data-creation-open={creationLocked ? "true" : undefined}
 			data-add-source-open={addSourceLocked ? "true" : undefined}
 			data-source-edit-open={sourceEditLocked ? "true" : undefined}
 			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
@@ -1969,6 +2033,15 @@ export function BuilderWorkspace({
 					aria-atomic="true"
 				>
 					{deleteStatusText}
+				</p>
+				<p
+					className="visually-hidden"
+					data-creation-status="true"
+					role="status"
+					aria-live="polite"
+					aria-atomic="true"
+				>
+					{creationStatusText}
 				</p>
 				<p
 					className="visually-hidden"
@@ -2224,6 +2297,20 @@ export function BuilderWorkspace({
 			</div>
 
 			{aboutCreditsOpen ? <AboutCreditsDialog onClose={closeAboutCredits} /> : null}
+			{creationSession ? (
+				<CreationDialog
+					scope={creationSession.scope}
+					project={creationSession.openingProject ?? state.project}
+					projectRevision={creationSession.projectRevision ?? state.revision}
+					currentYear={creationSession.currentYear ?? new Date().getFullYear()}
+					destinationCollectionInternalId={creationSession.destinationCollectionInternalId}
+					destinationCollectionTitle={creationSession.destinationCollectionTitle}
+					initialOptionId={creationSession.optionId ?? null}
+					onCancel={cancelCreation}
+					onCreateBlank={createBlankItem}
+					onApplyDecades={applyDecadesPlan}
+				/>
+			) : null}
 			{visibleEditorDraft ? (
 				<NodeEditor
 					draft={visibleEditorDraft}
