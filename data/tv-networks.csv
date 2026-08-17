@@ -1780,7 +1780,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 3087,TTV,21,,PL,,https://www.themoviedb.org/network/3087
 3088,Señal Colombia,7,"Bogota, Colombia",CO,,https://www.themoviedb.org/network/3088
 3089,Rai YoYo,13,,IT,,https://www.themoviedb.org/network/3089
-3090,Echorouk Plus,4,Echorouk,DZ,,https://www.themoviedb.org/network/3090
 3091,Quibi,70,"Los Angeles, California",US,,https://www.themoviedb.org/network/3091
 3093,Kanal 7,20,"Eyüp, Istanbul",TR,,https://www.themoviedb.org/network/3093
 3094,Bioscope,7,,BD,,https://www.themoviedb.org/network/3094
@@ -5375,11 +5374,9 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9219,Anione,1,,KR,,https://www.themoviedb.org/network/9219
 9220,e,0,,,,https://www.themoviedb.org/network/9220
 9221,Sky Originals NZ,0,Новая Зеландия,NZ,,https://www.themoviedb.org/network/9221
-9222,Stickman studios TV,4,Stickman studios,BR,,https://www.themoviedb.org/network/9222
 9223,Mədəniyyət TV,2,"Mehdi Huseyn 1, Baku, Azerbaijan",AZ,,https://www.themoviedb.org/network/9223
 9224,Fine Living,1,,,,https://www.themoviedb.org/network/9224
 9225,广东珠江频道,1,广州,CN,,https://www.themoviedb.org/network/9225
-9226,Stickman studios DVD AND CD,1,,,,https://www.themoviedb.org/network/9226
 9227,TSUTAYA TV,1,,JP,,https://www.themoviedb.org/network/9227
 9228,Hiru TV Digital,1,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9228
 9229,YoYo彩虹剧社,0,,,,https://www.themoviedb.org/network/9229
@@ -5553,3 +5550,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9417,Realms,1,,,,https://www.themoviedb.org/network/9417
 9418,Astro Plus,0,,,,https://www.themoviedb.org/network/9418
 9419,K+,1,,VN,,https://www.themoviedb.org/network/9419
+9420,DF 1,1,,,,https://www.themoviedb.org/network/9420
+9421,ERT,0,,,,https://www.themoviedb.org/network/9421
+9422,Trakepids Corporation. TV,0,,,,https://www.themoviedb.org/network/9422
