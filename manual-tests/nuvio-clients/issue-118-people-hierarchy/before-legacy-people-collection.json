@@ -1,0 +1,31 @@
+[
+  {
+    "id": "people-1",
+    "title": "People",
+    "pinToTop": false,
+    "focusGlowEnabled": true,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "folders": [
+      {
+        "id": "people-2",
+        "title": "Tom Hanks",
+        "hideTitle": true,
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/poster/31.webp?v=38f6b5d3b64c",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Movie Credits",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

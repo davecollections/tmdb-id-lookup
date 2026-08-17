@@ -1,5 +1,8 @@
 import {
 	PEOPLE_SOURCE_COMBINATIONS,
+	PEOPLE_SOURCE_SORT_OPTIONS,
+	isVerifiedPeopleSort,
+	peopleSortOptions,
 	peopleSourceIdentity,
 } from "../source-add/index.js";
 import {
@@ -9,43 +12,12 @@ import {
 	validateTouchedSourceTitle,
 } from "./source-edit-utils.js";
 
+export { PEOPLE_SOURCE_SORT_OPTIONS, isVerifiedPeopleSort, peopleSortOptions };
+
 export const PEOPLE_SOURCE_EDITOR_ID = "people";
 
 const combinationById = new Map(PEOPLE_SOURCE_COMBINATIONS.map((entry) => [entry.id, entry]));
 const approvedDefaultTitles = new Set(PEOPLE_SOURCE_COMBINATIONS.map((entry) => entry.sourceTitle));
-
-export const PEOPLE_SOURCE_SORT_OPTIONS = Object.freeze([
-	Object.freeze({
-		id: "popular",
-		label: "Popular",
-		values: Object.freeze({ MOVIE: "popularity.desc", TV: "popularity.desc" }),
-	}),
-	Object.freeze({
-		id: "recent",
-		label: "Recent",
-		values: Object.freeze({ MOVIE: "primary_release_date.desc", TV: "first_air_date.desc" }),
-	}),
-	Object.freeze({
-		id: "top-rated",
-		label: "Top rated",
-		values: Object.freeze({ MOVIE: "vote_average.desc", TV: "vote_average.desc" }),
-	}),
-]);
-
-export function peopleSortOptions(mediaType) {
-	const canonicalMediaType = canonicalText(mediaType).toUpperCase();
-	if (!["MOVIE", "TV"].includes(canonicalMediaType)) return Object.freeze([]);
-	return Object.freeze(PEOPLE_SOURCE_SORT_OPTIONS.map((option) => Object.freeze({
-		id: option.id,
-		label: option.label,
-		value: option.values[canonicalMediaType],
-	})));
-}
-
-export function isVerifiedPeopleSort(value, mediaType) {
-	return typeof value === "string"
-		&& peopleSortOptions(mediaType).some((option) => option.value === value);
-}
 
 export function peopleEditCombination(tmdbSourceType, mediaType) {
 	const sourceType = canonicalText(tmdbSourceType).toUpperCase();

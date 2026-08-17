@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "recordCount": 5,
+  "assetCounts": {
+    "poster": 5,
+    "landscape": 5,
+    "titleLogo": 5,
+    "hero": 5,
+    "focusPoster": 3,
+    "focusLandscape": 3
+  },
+  "people": [
+    {
+      "tmdbPersonId": 31,
+      "canonicalName": "Tom Hanks",
+      "categoryMembership": ["actor"],
+      "assets": {
+        "poster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/poster.webp", "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+        "landscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/landscape.webp", "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+        "titleLogo": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/title-logo.png", "sha256": "3333333333333333333333333333333333333333333333333333333333333333" },
+        "hero": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/hero.webp", "sha256": "4444444444444444444444444444444444444444444444444444444444444444" },
+        "focusPoster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/focus-poster.webp", "sha256": "5555555555555555555555555555555555555555555555555555555555555555" },
+        "focusLandscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/focus-landscape.webp", "sha256": "6666666666666666666666666666666666666666666666666666666666666666" }
+      }
+    },
+    {
+      "tmdbPersonId": 40,
+      "canonicalName": "Orson Welles",
+      "categoryMembership": ["actor", "director"],
+      "assets": {
+        "poster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/poster.webp", "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+        "landscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/landscape.webp", "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+        "titleLogo": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/title-logo.png", "sha256": "3333333333333333333333333333333333333333333333333333333333333333" },
+        "hero": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/hero.webp", "sha256": "4444444444444444444444444444444444444444444444444444444444444444" },
+        "focusPoster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/focus-poster.webp", "sha256": "5555555555555555555555555555555555555555555555555555555555555555" },
+        "focusLandscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/focus-landscape.webp", "sha256": "6666666666666666666666666666666666666666666666666666666666666666" }
+      }
+    },
+    {
+      "tmdbPersonId": 8559,
+      "canonicalName": "Kátia Lund",
+      "categoryMembership": ["director"],
+      "assets": {
+        "poster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/8559/poster.webp", "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+        "landscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/8559/landscape.webp", "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+        "titleLogo": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/8559/title-logo.png", "sha256": "3333333333333333333333333333333333333333333333333333333333333333" },
+        "hero": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/8559/hero.webp", "sha256": "4444444444444444444444444444444444444444444444444444444444444444" }
+      }
+    },
+    {
+      "tmdbPersonId": 76447,
+      "canonicalName": "Shimit Amin",
+      "categoryMembership": ["director"],
+      "assets": {
+        "poster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/76447/poster.webp", "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+        "landscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/76447/landscape.webp", "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+        "titleLogo": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/76447/title-logo.png", "sha256": "3333333333333333333333333333333333333333333333333333333333333333" },
+        "hero": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/76447/hero.webp", "sha256": "4444444444444444444444444444444444444444444444444444444444444444" }
+      }
+    },
+    {
+      "tmdbPersonId": 532227,
+      "canonicalName": "Arturo Ripstein",
+      "categoryMembership": ["director"],
+      "assets": {
+        "poster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/532227/poster.webp", "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+        "landscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/532227/landscape.webp", "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+        "titleLogo": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/532227/title-logo.png", "sha256": "3333333333333333333333333333333333333333333333333333333333333333" },
+        "hero": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/532227/hero.webp", "sha256": "4444444444444444444444444444444444444444444444444444444444444444" },
+        "focusPoster": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/532227/focus-poster.webp", "sha256": "5555555555555555555555555555555555555555555555555555555555555555" },
+        "focusLandscape": { "url": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/532227/focus-landscape.webp", "sha256": "6666666666666666666666666666666666666666666666666666666666666666" }
+      }
+    }
+  ]
+}

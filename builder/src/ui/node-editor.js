@@ -4,6 +4,7 @@ import {
 	isValidVisibleNuvioTitle,
 	NUVIO_INVISIBLE_TITLE,
 } from "../nuvio/titles.js";
+import { FOLDER_ARTWORK_URL_FIELD_NAMES } from "../nuvio/folder-artwork-fields.js";
 
 const editableNodeTypes = new Set(["collection", "folder"]);
 const collectionLayoutValues = new Set(["TABBED_GRID", "ROWS"]);
@@ -25,6 +26,8 @@ const folderEditorFields = new Set([
 	"title",
 	"folderTitleVisibility",
 	"tileShape",
+	...FOLDER_ARTWORK_URL_FIELD_NAMES,
+	"focusGifEnabled",
 ]);
 
 function isPlainObject(value) {
@@ -166,6 +169,8 @@ export function createNodeEditorDraft(node) {
 		"SQUARE",
 	);
 	const hideTitle = originalBooleanField(node, "hideTitle");
+	const artwork = Object.fromEntries(FOLDER_ARTWORK_URL_FIELD_NAMES.map((field) => [field, originalTextField(node, field)]));
+	const focusGifEnabled = originalBooleanField(node, "focusGifEnabled");
 	const renameVisibleFolderTitleVisibility = hideTitle.supported && hideTitle.value
 		? "HIDE_HOME_SCREEN"
 		: "SHOW_EVERYWHERE";
@@ -182,16 +187,22 @@ export function createNodeEditorDraft(node) {
 						: "SHOW_EVERYWHERE"
 					: "",
 			tileShape: tileShape.supported ? tileShape.value : "",
+			...Object.fromEntries(FOLDER_ARTWORK_URL_FIELD_NAMES.map((field) => [field, artwork[field].supported ? artwork[field].value : ""])),
+			focusGifEnabled: focusGifEnabled.supported ? focusGifEnabled.value : false,
 		},
 		original: {
 			...baseDraft.original,
 			tileShape,
 			hideTitle,
+			...artwork,
+			focusGifEnabled,
 		},
 		touched: {
 			...baseDraft.touched,
 			folderTitleVisibility: false,
 			tileShape: false,
+			...Object.fromEntries(FOLDER_ARTWORK_URL_FIELD_NAMES.map((field) => [field, false])),
+			focusGifEnabled: false,
 		},
 		visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 		canonicalizeFolderInvisibleTitle: false,
@@ -203,7 +214,7 @@ export function updateNodeEditorField(draft, field, value) {
 	const allowedFields = draft.nodeType === "collection"
 		? collectionEditorFields
 		: folderEditorFields;
-	const validStringField = field === "title" && typeof value === "string";
+	const validStringField = (field === "title" || FOLDER_ARTWORK_URL_FIELD_NAMES.includes(field)) && typeof value === "string";
 	const validChoiceField = (
 		(field === "viewMode" && collectionLayoutValues.has(value))
 		|| (field === "tileShape" && folderShapeValues.has(value))
@@ -215,6 +226,7 @@ export function updateNodeEditorField(draft, field, value) {
 			"showAllTab",
 			"pinToTop",
 			"focusGlowEnabled",
+			"focusGifEnabled",
 		].includes(field)
 		&& typeof value === "boolean"
 	);
@@ -370,6 +382,15 @@ export function buildNodeEditorPatch(draft) {
 	) {
 		patch.tileShape = draft.values.tileShape;
 	}
+	for (const field of FOLDER_ARTWORK_URL_FIELD_NAMES) {
+		if (
+			draft.touched[field]
+			&& (!draft.original[field].supported || draft.values[field] !== draft.original[field].value)
+		) {
+			patch[field] = draft.values[field];
+		}
+	}
+	includeBooleanPatch(patch, draft, "focusGifEnabled");
 	if (
 		draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
 		&& draft.canonicalizeFolderInvisibleTitle

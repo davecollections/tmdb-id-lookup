@@ -7,7 +7,6 @@ import { createBuilderController } from "../builder/src/application/index.js";
 import {
 	buildPeopleSourceDrafts,
 	createPeopleFolderBatch,
-	resolvePersonFolderArtwork,
 } from "../builder/src/source-add/index.js";
 import { validateNuvioContract } from "../tests/helpers/nuvio-contract-validator.mjs";
 import { normalizeTextLineEndings } from "./lib/text-comparison.mjs";
@@ -61,19 +60,16 @@ function generateFixture() {
 			combinations: entry.combinations,
 		});
 		assert.equal(draftResult.ok, true);
-		const artwork = resolvePersonFolderArtwork({
-			person: entry,
-			tileShape: "POSTER",
-			runtimeResult: publishedPosterArtwork[entry.id],
-		});
-		assert.equal(artwork.source, "runtime");
+		const publishedArtwork = publishedPosterArtwork[entry.id];
+		assert.equal(publishedArtwork.status, "ready");
 		return {
 			person: entry,
 			drafts: draftResult.drafts,
 			folderEditable: {
 				title: entry.name,
 				tileShape: "POSTER",
-				...artwork.folderEditable,
+				coverImageUrl: publishedArtwork.assetUrl,
+				hideTitle: true,
 			},
 		};
 	});

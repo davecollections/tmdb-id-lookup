@@ -8,6 +8,7 @@ import {
 } from "../../builder/src/source-edit/index.js";
 import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx";
 import { GenreSourceFlow } from "../../builder/src/ui/GenreSourceFlow.jsx";
+import { PeopleSourceFlow } from "../../builder/src/ui/PeopleSourceFlow.jsx";
 import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
 import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
@@ -733,6 +734,471 @@ async function runBlankCreationScenario() {
 	}
 }
 
+function mountedPerson({ id, name, department, membership, actingMovies, actingSeries, directingMovies, directingSeries }) {
+	const cast = [
+		...Array.from({ length: actingMovies }, (_, index) => ({
+			id: id * 1000 + index + 1,
+			mediaType: "movie",
+			posterPath: `/person-${id}-movie-${index}.jpg`,
+			popularity: 100 - index,
+			voteAverage: 7 + (index % 3) / 10,
+			voteCount: 1000 - index,
+			releaseDate: `${2025 - index}-01-01`,
+		})),
+		...Array.from({ length: actingSeries }, (_, index) => ({
+			id: id * 2000 + index + 1,
+			mediaType: "tv",
+			posterPath: `/person-${id}-series-${index}.jpg`,
+			popularity: 80 - index,
+			voteAverage: 6 + (index % 3) / 10,
+			voteCount: 500 - index,
+			releaseDate: `${2024 - index}-01-01`,
+		})),
+	];
+	const crew = [
+		...Array.from({ length: directingMovies }, (_, index) => ({
+			id: id * 3000 + index + 1,
+			mediaType: "movie",
+			job: "Director",
+			posterPath: `/person-${id}-directed-movie-${index}.jpg`,
+			popularity: 60 - index,
+			voteAverage: 8 + (index % 2) / 10,
+			voteCount: 300 - index,
+			releaseDate: `${2023 - index}-01-01`,
+		})),
+		...Array.from({ length: directingSeries }, (_, index) => ({
+			id: id * 4000 + index + 1,
+			mediaType: "tv",
+			job: "Director",
+			posterPath: `/person-${id}-directed-series-${index}.jpg`,
+			popularity: 40 - index,
+			voteAverage: 8,
+			voteCount: 200 - index,
+			releaseDate: `${2022 - index}-01-01`,
+		})),
+	];
+	return {
+		id,
+		name,
+		knownForDepartment: department,
+		categoryMembership: membership,
+		profilePath: `/person-${id}.jpg`,
+		knownFor: [],
+		counts: { actingMovies, actingSeries, directingMovies, directingSeries },
+		combinedCredits: { cast, crew },
+	};
+}
+
+async function runPeopleSelectionScrollScenario() {
+	const searchResults = Array.from({ length: 12 }, (_, index) => mountedPerson({
+		id: 2000 + index,
+		name: `Scroll Person ${index + 1}`,
+		department: "Acting",
+		membership: ["actor"],
+		actingMovies: 10 + index,
+		actingSeries: 2,
+		directingMovies: 0,
+		directingSeries: 0,
+	}));
+	const people = new Map(searchResults.map((person) => [person.id, person]));
+	const provider = {
+		async searchPeople() {
+			return { ok: true, data: { results: searchResults, page: 1, totalPages: 1, totalResults: searchResults.length } };
+		},
+		async getPerson(id) {
+			const person = people.get(Number(id));
+			return person ? { ok: true, data: person, checkedAt: 1 } : { ok: false, error: { message: "Missing fixture person.", retryable: false } };
+		},
+	};
+	const manifestClient = { peek() { return null; }, async load() { return { ok: false, error: { message: "Fixture manifest unavailable." } }; } };
+	const controller = createController();
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: controller.getState().project,
+			projectRevision: controller.getState().revision,
+			currentYear: 2026,
+			initialOptionId: "people",
+			peopleProvider: provider,
+			peopleManifestClient: manifestClient,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyDecades() { return { ok: true }; },
+			onApplyPeople() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted People scroll ${label} is missing.`);
+		return element;
+	}
+	function capture(dialog, scrollElement, action, card = null, input = null) {
+		const dialogRect = dialog.getBoundingClientRect();
+		const actionRect = action.getBoundingClientRect();
+		const cardRect = card?.getBoundingClientRect() ?? null;
+		const inputRect = input?.getBoundingClientRect() ?? null;
+		return {
+			dialogTop: dialogRect.top,
+			dialogBottom: dialogRect.bottom,
+			dialogScrollTop: dialog.scrollTop,
+			documentScrollX: window.scrollX,
+			documentScrollY: window.scrollY,
+			innerScrollTop: scrollElement.scrollTop,
+			actionTop: actionRect.top,
+			actionBottom: actionRect.bottom,
+			cardTop: cardRect?.top ?? null,
+			cardBottom: cardRect?.bottom ?? null,
+			inputTop: inputRect?.top ?? null,
+			inputBottom: inputRect?.bottom ?? null,
+			inputInsideCard: Boolean(cardRect && inputRect && inputRect.top >= cardRect.top - 1 && inputRect.bottom <= cardRect.bottom + 1),
+		};
+	}
+	async function partiallyClip(scrollElement, card) {
+		const scrollRect = scrollElement.getBoundingClientRect();
+		const cardRect = card.getBoundingClientRect();
+		const visibleHeight = Math.min(42, cardRect.height / 3);
+		scrollElement.scrollTop += cardRect.top - (scrollRect.bottom - visibleHeight);
+		await afterCommittedEffects();
+		const clippedRect = card.getBoundingClientRect();
+		return clippedRect.top < scrollRect.bottom - 1 && clippedRect.bottom > scrollRect.bottom + 1;
+	}
+	function stableOuter(before, after) {
+		return Math.abs(before.dialogTop - after.dialogTop) <= 1
+			&& Math.abs(before.dialogBottom - after.dialogBottom) <= 1
+			&& before.dialogScrollTop === after.dialogScrollTop;
+	}
+	function stableDocument(before, after) {
+		return before.documentScrollX === after.documentScrollX && before.documentScrollY === after.documentScrollY;
+	}
+
+	try {
+		const query = required(document.querySelector("#people-source-query"), "query");
+		await act(async () => {
+			setInputValue(query, "scroll people");
+			await new Promise((resolve) => setTimeout(resolve, 360));
+			await afterCommittedEffects();
+		});
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "outer dialog");
+		const scrollElement = required(dialog.querySelector(".add-source-scroll"), "inner result scroll owner");
+		const action = required(dialog.querySelector(".add-source-actions .editor-apply"), "sticky Configure action");
+		const cards = [...dialog.querySelectorAll(".people-result-selectable")];
+		if (cards.length !== searchResults.length) throw new Error(`Mounted People scroll expected ${searchResults.length} results, received ${cards.length}.`);
+
+		const pointerCard = cards[5];
+		const pointerInput = required(pointerCard.querySelector('input[type="checkbox"]'), "pointer checkbox");
+		const pointerPartiallyClipped = await partiallyClip(scrollElement, pointerCard);
+		const pointerBefore = capture(dialog, scrollElement, action, pointerCard, pointerInput);
+		await clickAndSettle(pointerCard);
+		const pointerAfter = capture(dialog, scrollElement, action, pointerCard, pointerInput);
+		const pointerIndicator = required(pointerCard.querySelector('[data-selection-indicator="true"]'), "pointer selection indicator");
+
+		const disclosure = required(dialog.querySelector(".people-selected-tray details"), "selected disclosure");
+		const summary = required(disclosure.querySelector("summary"), "selected disclosure summary");
+		const disclosureBefore = capture(dialog, scrollElement, action);
+		await clickAndSettle(summary);
+		const disclosureOpen = disclosure.open;
+		await clickAndSettle(summary);
+		const disclosureAfter = capture(dialog, scrollElement, action);
+
+		const keyboardCard = cards[7];
+		const keyboardInput = required(keyboardCard.querySelector('input[type="checkbox"]'), "keyboard checkbox");
+		const keyboardPartiallyClipped = await partiallyClip(scrollElement, keyboardCard);
+		const keyboardBefore = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
+		await act(async () => {
+			keyboardInput.focus();
+			await afterCommittedEffects();
+		});
+		const keyboardFocused = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
+		const keyboardActive = document.activeElement === keyboardInput;
+		await clickAndSettle(keyboardInput);
+		const keyboardAfterToggle = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
+		const keyboardIndicator = required(keyboardCard.querySelector('[data-selection-indicator="true"]'), "keyboard selection indicator");
+
+		await clickAndSettle(summary);
+		const removePointer = required(dialog.querySelector(`[aria-label="Remove ${searchResults[5].name}"]`), "remove selected person action");
+		const removalBefore = capture(dialog, scrollElement, action);
+		await clickAndSettle(removePointer);
+		const removalAfter = capture(dialog, scrollElement, action);
+		await clickAndSettle(pointerCard);
+		const reselectionAfter = capture(dialog, scrollElement, action);
+		const selectedOrder = [...dialog.querySelectorAll('.people-selected-tray [aria-label^="Remove "]')].map((button) => button.getAttribute("aria-label").replace(/^Remove /, ""));
+
+		return {
+			width: window.innerWidth,
+			resultCount: cards.length,
+			pointer: {
+				partiallyClipped: pointerPartiallyClipped,
+				inputInsideCardBeforeFocus: pointerBefore.inputInsideCard,
+				selectedExactlyOnce: pointerInput.checked === true,
+				selectedState: pointerIndicator.dataset.selectionState,
+				selectedTick: pointerIndicator.textContent.trim(),
+				outerStable: stableOuter(pointerBefore, pointerAfter),
+				documentStable: stableDocument(pointerBefore, pointerAfter),
+				innerScrollDelta: pointerAfter.innerScrollTop - pointerBefore.innerScrollTop,
+				actionStable: Math.abs(pointerBefore.actionTop - pointerAfter.actionTop) <= 1 && Math.abs(pointerBefore.actionBottom - pointerAfter.actionBottom) <= 1,
+			},
+			keyboard: {
+				partiallyClipped: keyboardPartiallyClipped,
+				inputInsideCardBeforeFocus: keyboardBefore.inputInsideCard,
+				focused: keyboardActive,
+				outerStable: stableOuter(keyboardBefore, keyboardFocused) && stableOuter(keyboardFocused, keyboardAfterToggle),
+				documentStable: stableDocument(keyboardBefore, keyboardFocused) && stableDocument(keyboardFocused, keyboardAfterToggle),
+				innerScrolledToKeepFocusVisible: keyboardFocused.innerScrollTop > keyboardBefore.innerScrollTop,
+				selectedExactlyOnce: keyboardInput.checked === true,
+				selectedState: keyboardIndicator.dataset.selectionState,
+				selectedTick: keyboardIndicator.textContent.trim(),
+				actionStable: Math.abs(keyboardBefore.actionTop - keyboardFocused.actionTop) <= 1 && Math.abs(keyboardBefore.actionBottom - keyboardFocused.actionBottom) <= 1,
+				spaceActivationDeferredToOwner: true,
+			},
+			disclosure: {
+				opened: disclosureOpen,
+				outerStable: stableOuter(disclosureBefore, disclosureAfter),
+				documentStable: stableDocument(disclosureBefore, disclosureAfter),
+				actionStable: Math.abs(disclosureBefore.actionTop - disclosureAfter.actionTop) <= 1 && Math.abs(disclosureBefore.actionBottom - disclosureAfter.actionBottom) <= 1,
+			},
+			removalReselection: {
+				outerStable: stableOuter(removalBefore, removalAfter) && stableOuter(removalAfter, reselectionAfter),
+				documentStable: stableDocument(removalBefore, removalAfter) && stableDocument(removalAfter, reselectionAfter),
+				selectedOrder,
+			},
+			outerDialogScrollTop: dialog.scrollTop,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+		};
+	} finally {
+		await act(async () => {
+			root.unmount();
+			await afterCommittedEffects();
+		});
+		host.remove();
+	}
+}
+
+async function runPeopleConfigureLayoutScenario() {
+	const people = new Map([
+		[31, mountedPerson({ id: 31, name: "Tom Hanks", department: "Acting", membership: ["actor"], actingMovies: 12, actingSeries: 3, directingMovies: 2, directingSeries: 0 })],
+		[40, mountedPerson({ id: 40, name: "Orson Welles", department: "Directing", membership: ["actor", "director"], actingMovies: 8, actingSeries: 2, directingMovies: 4, directingSeries: 1 })],
+	]);
+	const provider = {
+		async searchPeople() { return { ok: true, data: { results: [], page: 1, totalPages: 1, totalResults: 0 } }; },
+		async getPerson(id) {
+			const person = people.get(Number(id));
+			return person ? { ok: true, data: person, checkedAt: 1 } : { ok: false, error: { message: "Missing fixture person.", retryable: false } };
+		},
+	};
+	const manifestClient = { peek() { return null; }, async load() { return { ok: false, error: { message: "Fixture manifest unavailable." } }; } };
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(PeopleSourceFlow, {
+			context: "hierarchy",
+			hierarchyScope: "new-collection",
+			provider,
+			manifestClient,
+			project: initialProject,
+			projectRevision: controller.getState().revision,
+			collection: null,
+			onBack() {},
+			onCancel() {},
+			onApply() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	async function waitAndSettle(ms = 0) {
+		await act(async () => {
+			if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+			await afterCommittedEffects();
+		});
+	}
+	function selectedCombinationIds(row) {
+		return [...row.querySelectorAll('.people-source-pill input:checked')].map((input) => input.closest("label")?.textContent.trim().replace(/^✓/, "").replace(/\d+$/, "").trim());
+	}
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted People ${label} is missing.`);
+		return element;
+	}
+	try {
+		const query = document.querySelector("#people-source-query");
+		let selectionAffordance = null;
+		for (const personId of [31, 40]) {
+			await act(async () => {
+				setInputValue(query, String(personId));
+				await new Promise((resolve) => setTimeout(resolve, 360));
+				await afterCommittedEffects();
+			});
+			const resultInput = document.querySelector(`[data-tmdb-person-result="${personId}"] input[type="checkbox"]`);
+			if (resultInput === null) throw new Error(`Mounted People result ${personId} did not render.`);
+			if (personId === 31) {
+				const card = required(resultInput.closest("label"), "selectable result card");
+				const indicator = required(card.querySelector('[data-selection-indicator="true"]'), "circular selection indicator");
+				const indicatorBefore = getComputedStyle(indicator);
+				const unselectedState = indicator.dataset.selectionState;
+				resultInput.focus();
+				const keyboardFocusable = document.activeElement === resultInput && resultInput.tabIndex === 0;
+				await clickAndSettle(card);
+				const indicatorAfter = getComputedStyle(indicator);
+				selectionAffordance = {
+					nativeCheckbox: resultInput.type === "checkbox",
+					keyboardFocusable,
+					unselectedState,
+					cardClickToggled: resultInput.checked === true,
+					accessibleChecked: resultInput.checked === true,
+					selectedState: indicator.dataset.selectionState,
+					selectedTick: indicator.textContent.trim(),
+					circular: indicatorAfter.borderRadius === "50%" || indicatorAfter.borderRadius === `${indicator.getBoundingClientRect().width / 2}px`,
+					size: Math.round(indicator.getBoundingClientRect().width),
+					unselectedRingVisible: indicatorBefore.borderTopWidth !== "0px",
+				};
+			} else await clickAndSettle(resultInput);
+		}
+		const configureButton = buttonContaining(document, "Configure 2 people");
+		if (configureButton === null) throw new Error("Mounted People Configure action did not render.");
+		await clickAndSettle(configureButton);
+		await waitAndSettle(50);
+		const dialog = document.querySelector('[data-people-context="hierarchy"]');
+		const rows = [...dialog.querySelectorAll(".people-bulk-row")];
+		const firstRow = rows[0];
+		const secondRow = rows[1];
+		const firstDirectedMovies = [...firstRow.querySelectorAll("label")].find((label) => label.textContent.includes("Directed Movies"))?.querySelector("input");
+		await clickAndSettle(required(firstDirectedMovies, "first Directed Movies choice"));
+		const automaticOverride = {
+			automaticActive: inputContaining(dialog, "Automatic")?.checked === true,
+			customAbsent: inputContaining(dialog, "Custom per person") === null,
+			notificationAbsent: dialog.querySelector(".people-mode-transition") === null,
+			firstSelections: selectedCombinationIds(firstRow),
+			secondSelections: selectedCombinationIds(secondRow),
+		};
+
+		await clickAndSettle(required(inputContaining(dialog, "Same for all"), "Same for all mode"));
+		const sharedVisible = dialog.querySelectorAll(".people-bulk-controls > .people-combination-group .people-source-pill").length === 4;
+		const sharedGroup = required(dialog.querySelector(".people-bulk-controls > .people-combination-group"), "shared source choices");
+		const sharedDirectedMovies = [...sharedGroup.querySelectorAll("label")].find((label) => label.textContent.includes("Directed Movies"))?.querySelector("input");
+		const sharedDirectedSeries = [...sharedGroup.querySelectorAll("label")].find((label) => label.textContent.includes("Directed Series"))?.querySelector("input");
+		await clickAndSettle(required(sharedDirectedMovies, "shared Directed Movies choice"));
+		await clickAndSettle(required(sharedDirectedSeries, "shared Directed Series choice"));
+		const afterSharedChanges = rows.map(selectedCombinationIds);
+		const secondDirectedSeries = [...secondRow.querySelectorAll("label")].find((label) => label.textContent.includes("Directed Series"))?.querySelector("input");
+		await clickAndSettle(required(secondDirectedSeries, "second Directed Series override"));
+		const sharedOverride = {
+			sharedVisible,
+			sharedModeActive: inputContaining(dialog, "Same for all")?.checked === true,
+			customAbsent: inputContaining(dialog, "Custom per person") === null,
+			notificationAbsent: dialog.querySelector(".people-mode-transition") === null,
+			existingOverridePreserved: JSON.stringify(afterSharedChanges[0]) === JSON.stringify(["Acting Movies", "Acting Series", "Directed Movies"]),
+			sharedChangesReachedUnmodified: JSON.stringify(afterSharedChanges[1]) === JSON.stringify(["Acting Movies", "Acting Series", "Directed Movies", "Directed Series"]),
+			firstSelections: selectedCombinationIds(firstRow),
+			secondSelections: selectedCombinationIds(secondRow),
+		};
+
+		const recentSort = dialog.querySelector('input[name="people-hierarchy-sort"][value="recent"]');
+		if (recentSort === null) throw new Error(`Mounted People Recent sort missing at ${dialog.dataset.addSourceStep}: ${dialog.innerHTML.slice(-1200)}`);
+		await clickAndSettle(required(recentSort, "Recent sort"));
+		const pillGroups = [...dialog.querySelectorAll(".people-bulk-row .people-combination-group > div")];
+		const firstGroupStyle = getComputedStyle(pillGroups[0]);
+		const pillColumns = firstGroupStyle.gridTemplateColumns.split(" ").filter(Boolean).length;
+		const pillsFit = pillGroups.every((group) => {
+			const groupRect = group.getBoundingClientRect();
+			return [...group.querySelectorAll(".people-source-pill")].every((pill) => {
+				const rect = pill.getBoundingClientRect();
+				return rect.left >= groupRect.left - 1 && rect.right <= groupRect.right + 1;
+			});
+		});
+		const peopleList = dialog.querySelector(".people-bulk-list");
+		const continueButton = buttonContaining(dialog, "Continue");
+		const continueRect = continueButton.getBoundingClientRect();
+		const scrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		}).length;
+		const layout = {
+			width: window.innerWidth,
+			modeChoices: dialog.querySelectorAll('input[name="people-configuration-mode"]').length,
+			helperCopyAbsent: dialog.querySelector(".people-bulk-guidance, .add-source-heading-description") === null,
+			rowCount: rows.length,
+			pillCount: dialog.querySelectorAll(".people-bulk-row .people-source-pill").length,
+			pillColumns,
+			pillsFit,
+			sortChoices: dialog.querySelectorAll('input[name="people-hierarchy-sort"]').length,
+			previewActions: dialog.querySelectorAll(".people-bulk-actions button:first-child").length,
+			listBounded: getComputedStyle(peopleList).overflowY === "auto" && peopleList.clientHeight >= 92 && peopleList.clientHeight < dialog.clientHeight,
+			continueReachable: continueRect.top >= -1 && continueRect.bottom <= window.innerHeight + 1 && continueRect.height >= 44,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+			noNestedScrollTrap: scrollOwners <= 1,
+		};
+
+		const previewTrigger = firstRow.querySelector(".people-bulk-actions button:first-child");
+		await clickAndSettle(required(previewTrigger, "first Preview titles action"));
+		await waitAndSettle();
+		let preview = document.querySelector(".people-title-preview");
+		const previewGrid = preview.querySelector(".people-title-preview-grid");
+		const previewState = {
+			modalSurface: preview.dataset.previewSurface === "modal" && preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
+			outsidePeopleRow: preview.closest(".people-bulk-row") === null,
+			posterCount: previewGrid.querySelectorAll(":scope > img").length,
+			gridColumns: getComputedStyle(previewGrid).gridTemplateColumns.split(" ").filter(Boolean).length,
+			posterOnly: previewGrid.children.length > 0 && [...previewGrid.children].every((child) => child.tagName === "IMG"),
+			noHorizontalOverflow: preview.scrollWidth <= preview.clientWidth && document.documentElement.scrollWidth <= window.innerWidth,
+			headingFocused: document.activeElement === preview.querySelector("strong"),
+		};
+		await act(async () => {
+			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+			await afterCommittedEffects();
+		});
+		previewState.escapeClosed = document.querySelector(".people-title-preview") === null;
+		previewState.escapeRestoredFocus = document.activeElement === previewTrigger;
+		await clickAndSettle(required(previewTrigger, "reopened Preview titles action"));
+		preview = document.querySelector(".people-title-preview");
+		await clickAndSettle(required(buttonContaining(preview, "Close"), "preview Close action"));
+		previewState.closeRestoredFocus = document.activeElement === previewTrigger;
+
+		await clickAndSettle(required(continueButton, "Continue action"));
+		const reviewReached = dialog.querySelector(".people-review-step") !== null;
+		const posterShape = dialog.querySelector('input[name="people-folder-shape"][value="POSTER"]');
+		const landscapeShape = dialog.querySelector('input[name="people-folder-shape"][value="LANDSCAPE"]');
+		const appearance = {
+			posterDefault: posterShape?.checked === true,
+			shapeChoices: dialog.querySelectorAll('input[name="people-folder-shape"]').length,
+			titleOptionsPresent: dialog.querySelector('[data-review-title-options="true"]') !== null,
+			collectionTitleVisibilityPresent: dialog.querySelector('[data-editor-control="hideNuvioTitle"]') !== null,
+			folderTitleChoices: dialog.querySelectorAll('input[name="people-folder-title-visibility"]').length,
+			folderTitleDefault: dialog.querySelector('input[name="people-folder-title-visibility"][value="HIDE_HOME_SCREEN"]')?.checked === true,
+			titleOptionsBeforeLayout: dialog.querySelector('[data-review-title-options="true"]')?.compareDocumentPosition(dialog.querySelector('[data-review-layout="true"]')) === Node.DOCUMENT_POSITION_FOLLOWING,
+			layoutControlsVisible: dialog.querySelector('[data-review-layout="true"]') !== null,
+			personSelectorAbsent: dialog.querySelector("#people-folder-artwork-person") === null,
+			artworkFields: dialog.querySelectorAll('.people-folder-appearance input[type="url"]').length,
+			focusOverrideAbsent: dialog.querySelector('.people-folder-appearance [data-editor-control="focusGifEnabled"]') === null,
+			guidance: dialog.querySelector(".people-folder-artwork-note")?.textContent.trim() ?? "",
+			personDetailsPresent: dialog.querySelector(".decades-review-details > summary")?.textContent.includes("View person details · 2") === true,
+		};
+		const hideEverywhere = dialog.querySelector('input[name="people-folder-title-visibility"][value="HIDE_EVERYWHERE"]');
+		await clickAndSettle(required(hideEverywhere, "Hide everywhere folder title choice"));
+		await clickAndSettle(required(landscapeShape, "Landscape folder shape"));
+		await clickAndSettle(required(dialog.querySelector(".add-source-heading-row .add-source-header-action:not(.add-source-close-action)"), "Review Back action"));
+		const sortSurvivesReviewBack = dialog.querySelector('input[name="people-hierarchy-sort"][value="recent"]')?.checked === true;
+		await clickAndSettle(required(buttonContaining(dialog, "Continue"), "Continue back to Review"));
+		appearance.backReviewPreserved = dialog.querySelector('input[name="people-folder-shape"][value="LANDSCAPE"]')?.checked === true;
+		appearance.folderTitleBackReviewPreserved = dialog.querySelector('input[name="people-folder-title-visibility"][value="HIDE_EVERYWHERE"]')?.checked === true;
+		const createButton = buttonContaining(dialog, "Create 2 folders");
+		const createRect = createButton?.getBoundingClientRect();
+		appearance.createReachable = Boolean(createRect && createRect.top >= -1 && createRect.bottom <= window.innerHeight + 1 && createRect.height >= 44);
+		appearance.noDeadEditor = dialog.querySelector(".people-folder-artwork-editor") === null;
+		appearance.noHorizontalOverflow = document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth;
+		return { selectionAffordance, automaticOverride, sharedOverride, layout, preview: previewState, appearance, reviewReached, sortSurvivesReviewBack, revisionUnchanged: controller.getState().project === initialProject };
+	} finally {
+		await act(async () => {
+			root.unmount();
+			await afterCommittedEffects();
+		});
+		host.remove();
+	}
+}
+
 async function runDecadesNavigationScenario() {
 	const controller = createController();
 	const initialRevision = controller.getState().revision;
@@ -843,8 +1309,8 @@ async function runDecadesNavigationScenario() {
 			countCards: dialog().querySelectorAll(".decades-plan-totals > div").length,
 			removedSummariesAbsent: dialog().querySelector(".decades-review-configuration") === null,
 			sectionLabels: [
-				dialog().querySelector(".decades-titles-visibility h4")?.textContent.trim(),
-				dialog().querySelector('details[data-decades-settings="collection-options"] > summary strong')?.textContent.trim(),
+				dialog().querySelector(".review-title-options h4")?.textContent.trim(),
+				dialog().querySelector('[data-decades-settings="layout"] h4')?.textContent.trim(),
 				dialog().querySelector('details[data-decades-settings="folder-options"] > summary strong')?.textContent.trim(),
 				dialog().querySelector(".decades-review-details > summary")?.textContent.split(" · ")[0].trim(),
 			],
@@ -855,7 +1321,6 @@ async function runDecadesNavigationScenario() {
 			setInputValue(collectionName, "My Movie Decades");
 			await afterCommittedEffects();
 		});
-		await clickAndSettle(dialog().querySelector('details[data-decades-settings="collection-options"] > summary'));
 		await clickAndSettle(dialog().querySelector('input[name="decades-view"][value="ROWS"]'));
 		await clickAndSettle(dialog().querySelector('input[data-editor-control="showAllTab"]'));
 		await clickAndSettle(dialog().querySelector('input[data-editor-control="pinToTop"]'));
@@ -1279,6 +1744,8 @@ window.__runGenreToolbarScenario = runGenreToolbarScenario;
 window.__runDecadesActionLayoutScenario = runDecadesActionLayoutScenario;
 window.__runDecadesGenreLayoutScenario = runDecadesGenreLayoutScenario;
 window.__runDecadesExclusionLayoutScenario = runDecadesExclusionLayoutScenario;
+window.__runPeopleConfigureLayoutScenario = runPeopleConfigureLayoutScenario;
+window.__runPeopleSelectionScrollScenario = runPeopleSelectionScrollScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {

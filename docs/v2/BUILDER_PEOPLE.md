@@ -1,16 +1,18 @@
-# Builder People Search/Add
+# Builder People creation and source behavior
 
-Status: merged through issue #74 / PR #75. Both the first Nuvio Desktop source-contract run and Dave's 2026-08-02 regenerated-artwork visual/import/export acceptance passed.
+Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 adds the People hierarchy family and canonical artwork migration on its work branch; owner review is pending before commit/push.
 
-Issue: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74)
+Issues: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74); [#118 — Add People hierarchy creation and migrate People artwork authority](https://github.com/davecollections/tmdb-id-lookup/issues/118)
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-16
 
 This document records the focused People contract. [`BUILDER_KNOWLEDGE.md`](./BUILDER_KNOWLEDGE.md) remains the broader evidence record, and [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) remains the durable product-direction source.
 
 ## Shared identity and provider
 
-People is one TMDB-backed source mode shared by two creation contexts. Search accepts a name, TMDB person ID, or TMDB person link. The selected canonical numeric person ID is authoritative.
+People is one TMDB-backed source mode shared by Add Source and the higher-level creation launcher. Search accepts a name, TMDB person ID, or TMDB person link. The selected canonical numeric person ID is authoritative.
+
+For active V2 People identity/category/artwork enrichment, [`nuvio-people-assets`](https://github.com/davecollections/nuvio-people-assets) is canonical through its schema-v2 [`manifests/people.json`](https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/manifests/people.json). The Builder loads and validates that manifest once per workspace, indexes it by numeric `tmdbPersonId`, and uses `canonicalName`, `categoryMembership`, and the supplied asset records when an ID is registered. Search query/result ordering and TMDB detail/count behavior remain TMDB-owned. An absent manifest ID preserves the searched TMDB identity/details and uses the safe existing artwork fallback; it never reconstructs a legacy People URL.
 
 Search preserves TMDB result order. Each result shows canonical name and ID plus `Known for <department>` as disambiguation only. Normalized state retains every valid TMDB-supplied `known_for` entry without sorting or mutation. Desktop renders at most the first three entries; at 520px and below the same markup shows only the first entry. Titles wrap without forced ellipsis, and movie/series type plus year remain when supplied. No entry means no known-for row. These rows are never recomputed or fetched separately, and exact ID/link results omit the list when it is unavailable.
 
@@ -24,7 +26,7 @@ Profile presentation distinguishes:
 - `No profile image`, announced as `No profile image available for <name>` when TMDB supplies no path;
 - `Image unavailable`, announced as `Profile image unavailable for <name>` when an expected image fails.
 
-## Two creation contexts
+## Creation entry points
 
 ### Folder-level quick add
 
@@ -40,21 +42,28 @@ An empty Builder-generated `Untitled Folder`, `Untitled Folder 2`, and later num
 
 Every other destination is an existing folder. Named folders, populated Untitled folders, imported folders, and Untitled folders with deliberate cover, emoji, focus, hero, or title-logo artwork keep title, artwork, tile shape, title visibility, emoji, raw/unknown values, source order, and all presentation state. Existing-folder quick add adds sources only and performs no folder-artwork request or preview.
 
-### Collection-level bulk add
+### New Collection / New Folder hierarchy
 
-`Add people` in the Folders panel opens a shared People search configured for the selected collection:
+People is a first-class family in the shared `New Collection` / `New Folder` launcher. The retained Folders-header `+ People` action is a compatibility alias for `New Folder → People`; it does not own a second implementation.
 
-1. Search and select up to 20 exact people.
-2. Configure every selected person.
-3. Add all folders and sources.
+1. Select ordered exact people with no artificial product ceiling.
+2. Choose Automatic or Same for all and review every selected person in one bounded ordered configuration list; direct per-person changes are retained as internal overrides rather than a third visible mode.
+3. Review names, counts, artwork and destination placement.
+4. Create the ordinary hierarchy atomically.
 
-Each person creates one Poster folder named with the canonical person name. Its sources use the stable role-and-media tab titles documented below. Selection is insertion-ordered, exact-ID deduplicated, removable per person, and retained across query changes, result pages, scrolling, Back, and rerender. Result controls are explicit checkboxes; focusing or opening a card does not select it. Details and combined credits are fetched only for selected people when configuration begins.
+New Collection defaults to an editable `People` collection using normal generated Collection defaults, with one Poster folder per selected person and no nested role/media folders. New Folder creates sibling person folders inside the captured Collection and exposes that parent presentation read-only; it never patches the parent. Review can change all generated person folders between Poster and Landscape and apply one canonical Folder title-visibility outcome to all of them. The accepted default is **Hide on home screen only**, retaining each canonical name with `hideTitle: true`; **Show everywhere** and **Hide everywhere** reuse the ordinary Folder semantics, including U+200E for the latter. Their cover, hero, title-logo, and optional focus fields stay on the shape-specific canonical manifest or fallback defaults; individual artwork links can be customised later through the ordinary Folder editor. Each person folder uses the canonical manifest/search name and the existing source ordering/titles. Selection is insertion-ordered, exact-ID deduplicated, removable, and retained across query changes, result pages, scrolling, and Back. Search shows one compact selected-summary row with the count and a separate `View selected people` disclosure instead of permanent person chips or repeated order copy. A tunable informational notice appears at 50 selections without blocking Continue or implying a maximum. Details and combined credits are fetched only for selected people when configuration begins.
 
-The complete batch validates before construction and commits in one controller revision. A validation, parent, identity, generated-ID, or construction failure leaves the project unchanged. Created folder IDs are returned in selection order for focus and success messaging.
+Hierarchy Configure adapts the stable V1 batch concepts without importing V1 code, styling, or unsupported settings. Every person row always exposes the same four compact source pills with a tick, an inline count state, and restrained Acting-versus-Directing colour treatment. The only visible strategy choices are **Automatic** and **Same for all**. Automatic begins with each person's established Acting/Directing Movie/Series defaults from current manifest/category and count evidence. Editing any person's pill changes only that person and records an internal override while the visible strategy remains Automatic or Same for all; there is no Custom mode, transition notice, or explanatory helper copy. Shared changes apply to people without an override and preserve explicit per-person choices. Strategy changes retain both the shared set and individual overrides. All selected people remain visible in one bounded ordered list with poster, canonical name, category/department, direct source choices, Preview titles, and Remove actions.
+
+One shared **Sort** control applies to all generated People sources and exposes only the three People values already verified by the physical-source editor: **Popular**, **Recent**, and **Top rated**. Recent maps to `primary_release_date.desc` for Movies and `first_air_date.desc` for Series; the other two use their common media values. `vote_count.desc` is evidenced for other source families but not for the retained native `PERSON`/`DIRECTOR` contract, so a speculative **Most votes** option is not added. The plan stores the concrete media-correct values. Sort deliberately remains outside People duplicate identity, matching existing edit behavior.
+
+**Preview titles** reuses the selected person's already loaded combined credits and the current role/media pills plus shared sort. It makes no separate title-preview request or endpoint call; explicit Retry may repeat the existing person-details request after a failure. A body-portalled, bounded pop-out modal deduplicates by media type and TMDB title ID, includes Director crew entries only for Directing, and shows poster-only results capped at 10 above 520px or 5 at 520px and below. It has loading, empty, and recoverable error states, contains focus, closes with its button or Escape, and restores focus to the exact Preview titles trigger. There is no title metadata or pagination.
+
+The ephemeral People plan expands to ordinary Collection → Folder → Source bundles and is not serialized. It captures exact destination evidence, revalidates against current state immediately before apply, and delegates to the existing atomic multi-folder/multi-collection controller operations. A validation, stale destination, identity, generated-ID, or later-bundle construction failure creates nothing and advances no content revision.
 
 ## Direct source combinations and defaults
 
-The UI offers four independent checkbox rows:
+The source contract offers four independent choices. Add Source retains its established checkbox rows; hierarchy Configure presents the same choices as compact direct pills:
 
 | Friendly control | Source title | `tmdbSourceType` | `mediaType` |
 | --- | --- | --- | --- |
@@ -65,14 +74,14 @@ The UI offers four independent checkbox rows:
 
 Each row shows its distinct title count, `No titles found`, `Count unavailable`, or `Checking…`. Zero and unavailable counts remain selectable and never block creation. There is no separate role/media cross-product or repeated count matrix. Refresh requests that selected person's details again and does not overwrite manual choices.
 
-Defaults apply once when the current details/counts first resolve:
+Defaults apply once when the current details/counts first resolve. For registered people, manifest `categoryMembership` is the V2 actor/director authority: actor selects positive Acting combinations, director selects positive Directing combinations, and dual membership may select positive combinations from both roles. For unregistered people, the established TMDB department/count fallback remains:
 
 - Acting preselects every positive Acting media combination and no Directing combination.
 - Directing preselects every positive Directing media combination and no Acting combination.
 - Other departments compare supported Acting and Directing totals, select the strictly larger non-zero role, and select every positive media combination inside it.
 - A tie, all-zero set, or unavailable count set selects nothing.
 
-`known_for_department` remains display context; defaults do not permanently classify a person. Users may choose any supported combination independently. Retry, Refresh, Back, and rerender preserve later manual choices.
+`known_for_department` remains display context and fallback rather than a second active registered-person catalogue. Users may choose any supported combination independently. Retry, Refresh, Back, and rerender preserve later manual choices.
 
 ## Source contract and naming
 
@@ -110,29 +119,29 @@ tmdb|tmdbSourceType|positivePersonId|mediaType
 
 Provider/source/media casing and imported numeric-string IDs normalize for comparison. Exact identities in the quick-add destination folder are actionable; matches elsewhere are informational. The main action inserts only missing identities. `Add all anyway` remains bound to the exact destination folder and ordered current identities, so changing the person or any combination invalidates the override.
 
-New collection-level folders cannot contain duplicate selected person IDs in one submitted batch.
+New hierarchy selections cannot contain duplicate selected person IDs. For New Folder, all exact requested identities already in the destination yields **Already in this collection**; any partial requested match—or an existing logical person folder evidenced by another People source—yields **Partly in this collection**. Both outcomes omit that person folder rather than creating a duplicate. Exact matches only elsewhere are informational **Exists elsewhere** and remain creatable. New Collection treats elsewhere matches as informational. Add Source keeps its existing folder-local missing/add-all behavior.
 
-## New and promoted-folder artwork
+## Canonical and fallback folder artwork
 
-Collection-created folders and eligible untouched-folder promotions resolve artwork independently for every exact person ID and creation context:
+Hierarchy-created folders and eligible untouched-folder promotions resolve artwork independently for every exact person ID and creation context:
 
-1. exact published runtime `person` record for the final Poster or Landscape tile orientation;
-2. validated TMDB `profile_path` at `w500`, including when a Landscape runtime record is unavailable;
+1. exact validated `nuvio-people-assets` manifest record for the final Poster or Landscape tile orientation;
+2. validated TMDB `profile_path` at `w500` when the manifest has no registered record or is unavailable;
 3. empty `coverImageUrl`, visible title, and `👤`.
 
-Curated artwork sets `hideTitle: true`. TMDB and emoji/no-art outcomes set `hideTitle: false`. Runtime results are accepted only when entity type, ID, orientation, SHA, path, and version query all match.
+Manifest artwork resolution starts with `hideTitle: true` for registered artwork and visible-title fallback values. Hierarchy planning then authoritatively applies the one selected canonical Folder title-visibility outcome to every generated person folder. `poster` or compatibility `landscape` maps to `coverImageUrl`; `hero` maps only to `heroBackdropUrl`; and `titleLogo` maps separately to `titleLogoUrl`. When both optional focus records exist, the matching static colour counterpart maps to `focusGifUrl` with `focusGifEnabled: true`. Review exposes only one shared Poster/Landscape control for generated person folders. Changing orientation recomputes each folder's manifest or fallback defaults synchronously; Review does not expose per-person artwork overrides, URL inputs, focus toggles, or reset controls. The ordinary manual Folder editor separately exposes the same known artwork fields, preserves untouched imported values, and emits minimal patches for later individual customisation. The current Builder persisted contract recognizes `focusGifUrl` as a generic optional string, and import/serialization apply no GIF extension or MIME restriction, so a static WebP URL is schema-compatible. This is Builder round-trip evidence, not a claim that issue #118 rendered the WebP in a current Nuvio client. If either focus record is absent, neither focus field is emitted by hierarchy creation. Asset SHA-256 values remain transient comparison/invalidation evidence; stable manifest URLs are not rewritten as cache-version paths.
 
-Search results keep TMDB profiles for identity. Configuration for a new or promoted folder replaces that profile with the one final representation that will be applied and labels it `Curated artwork`, `TMDB image`, or `No folder artwork available`; there is no repeated artwork panel. The preview uses the resolved folder shape rather than image dimensions: Poster remains `2 / 3`, while Landscape uses the Builder's `42 / 25` wide-tile proportion for curated, TMDB, and emoji outcomes alike. Artwork request state and generation tokens are keyed by exact person ID plus creation context. A second person, a failed runtime lookup, multiple bulk selections, or a reopened flow cannot reuse or suppress another person's artwork. Non-promotable existing-folder quick add requests and displays no folder artwork.
+Search results keep TMDB profiles for identity. Configuration for a new or promoted folder replaces that profile with the final applied representation and labels it `Canonical People artwork`, `TMDB image`, or `No folder artwork available`; there is no repeated artwork panel. The preview uses the resolved folder shape rather than image dimensions. Artwork request state and generation tokens remain keyed by exact person ID plus creation context. A second person, manifest failure, multiple selections, or a reopened flow cannot reuse or suppress another person's artwork. Non-promotable existing-folder quick add requests and displays no folder artwork.
 
-Missing curated records discovered in bounded owner QA are recorded in [`ASSET_GAPS.md`](../../manual-tests/nuvio-clients/issue-74-builder-add-people/ASSET_GAPS.md) with the exact selected identity and without changing `nuvio-assets`.
+The active V2 resolver no longer constructs `assets/collection_covers/people/poster|landscape|title-logo` paths in `nuvio-assets`. Company and Network remain owned by `nuvio-assets`. Historical issue #74 evidence and the legacy runtime remain intact for their recorded/V1 boundaries; no asset repository is written by the Builder. Deletion of legacy People assets is explicitly deferred until merged runtime/client/V1 migration evidence and separate owner approval.
 
 ## Submission, modal, and accessibility
 
-People has Search and Configure stages only. Configuration contains the selected people, combination controls, count status, duplicate context, applicable final artwork, and the final result summary. Each configured person's validated positive numeric ID links to `https://www.themoviedb.org/person/<id>` in a new tab with `noopener noreferrer`, a visible external indicator, meaningful accessible naming, and mobile-safe wrapping. Search-result cards keep their ID as plain metadata, and unsupported or malformed entity data never becomes a link. Final actions state the mutation, for example `Create Tom Hanks · 2 sources`, `Add Tom Hanks · 2 sources`, or `Add 4 folders · 7 sources`.
+Add Source retains Search → Configure. Hierarchy creation uses Search → Configure → Review & Appearance. New Collection Review exposes plan counts and editable name followed by one shared **Title options** card for Collection and generated-folder title visibility, then directly visible **Layout** controls for Tabs/Rows, All tab, and Pin. New Folder omits the Collection title switch, keeps its destination layout inherited/read-only, and applies only the generated-folder title choice. Both scopes expose only a shared generated-folder Poster/Landscape choice with concise canonical-default/later-Edit-Folder guidance, retain neutral placement status, collapse only `View person details · <count>`, and use a count-aware Create action. Each configured person's validated positive numeric ID retains the existing safe TMDB link behavior.
 
-The source-mode chooser and short/empty People Search use content-based height. Results and bulk configuration expand only toward the existing maximum. The dialog retains one scroll owner, body lock, focus containment, safe areas, Visual Viewport keyboard handling, Escape/Close behavior, trigger restoration, status/alert regions, and reduced-motion support.
+The source-mode chooser and short/empty People Search use content-based height. Selected people and configuration rows each use bounded internal lists, so 20–100+ selections do not expand the dialog by default. Configure gives the bounded People list the available vertical space, has no person dropdown or expanded per-person editor, and keeps every compact direct-pill row reachable. At most one body-portalled title-preview modal is mounted. The shared CreationDialog retains one scroll owner, body lock, focus containment, safe areas, Visual Viewport keyboard handling, Escape/Close behavior, trigger restoration, status/alert regions, and reduced-motion support. Result selection and native checkbox focus keep the outer dialog, document, and sticky Configure action fixed; only the inner `.add-source-scroll` owner may move to keep a partially visible result available.
 
-Checkboxes and buttons retain keyboard behavior and mobile tap targets. Combination controls collapse to one column on narrow screens. The 360, 384, 393, 402, and 412px widths require no horizontal scrolling.
+The People result card remains one clickable positioned label around a focusable native checkbox. Position containment keeps the global 1×1 visually-hidden checkbox in the card's coordinate and scroll context even when that result is clipped at the bottom of the inner viewport; browser-native focus scrolling therefore cannot reposition the fixed creation shell. A reusable circular indicator renders an empty ring or a filled tick without replacing native checked state, keyboard toggling, screen-reader exposure, visible focus, or the selected card border/surface. The native checkboxes behind the source pills and all buttons likewise retain keyboard behavior and mobile tap targets. The four pills use two columns at 520px and below, while the preview uses five poster columns there. The 360, 384, 393, 402, and 412px widths require no horizontal scrolling; the 899/900/901px shell boundary remains intact.
 
 ## Current-client evidence gate
 
@@ -149,5 +158,6 @@ On 2026-08-02, Dave imported the regenerated final fixture into current Nuvio De
 
 - Only Acting and Directing are supported. Writer, creator, producer, and generic crew/all-credit sources are not generated.
 - Count data is configuration-time context, not exported data or a persistent service.
-- Issue #74's creation flow does not create a collection, edit existing sources, expose sort controls, implement Basic Discover, or implement generic collection-level multi-add. Issue #78 later adds an editor for one existing physical People source: the person ID remains fixed; the user may change among the same four Acting/Directing and Movie/Series combinations; approved default titles auto-follow until typing makes them custom; **Use default title** restores syncing; and only the stable-v1 Popular/Recent/Top-rated sort inventory is editable. Opening remains immediate from stored data while the shared successful person-details cache or one bounded non-blocking combined-credit request supplies all four issue #74 counts. Failure/Retry never blocks Save, no artwork request occurs, and logical person-folder/bundle editing remains future work.
-- V1 People behavior, ordinary Company/Network catalogue workflows and legacy counts, Worker routes, dependencies, lockfiles, Pages allowlists, production data, and `nuvio-assets` remain unchanged.
+- Issue #78 edits one existing physical People source only; logical person-folder/bundle editing remains future work.
+- Franchises, Studios, Networks, Genres, Streaming, templates, recipes, generic picker infrastructure, new People roles, V1 People migration, Worker/deployment changes, live Nuvio sending, asset publication, and legacy asset deletion remain outside issue #118.
+- V1 People behavior, Company/Network artwork resolution, Worker routes, dependencies, lockfiles, Pages allowlists, production data, `nuvio-assets`, and `nuvio-people-assets` remain unchanged by the Builder repository work.

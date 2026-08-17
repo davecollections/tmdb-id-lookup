@@ -1,12 +1,11 @@
 import { buildTmdbProfileUrl, normalizeTmdbProfilePath } from "./tmdb-person-provider.js";
 import { isPositiveSafePersonId } from "./tmdb-person-input.js";
-
-const READY = "ready";
 const supportedTileShapes = Object.freeze({
 	POSTER: "poster",
 	LANDSCAPE: "landscape",
 });
 const generatedFolderTitle = /^Untitled Folder(?: (?:[2-9]|[1-9]\d+))?$/;
+const assetSha256 = /^[a-f0-9]{64}$/;
 const folderArtworkFields = Object.freeze([
 	"coverEmoji",
 	"coverImageUrl",
@@ -15,7 +14,6 @@ const folderArtworkFields = Object.freeze([
 	"heroVideoUrl",
 	"titleLogoUrl",
 ]);
-
 function normalizedHttpsUrl(value) {
 	if (typeof value !== "string" || value.trim() !== value || value.length === 0) return null;
 	try {
@@ -60,30 +58,22 @@ export function peoplePromotionTileShape(folder) {
 		: "POSTER";
 }
 
-function readyRuntimeUrl(result, tmdbId, orientation) {
-	if (
-		result?.status !== READY
-		|| result.entityType !== "person"
-		|| result.tmdbId !== tmdbId
-		|| result.orientation !== orientation
-		|| typeof result.sha256 !== "string"
-		|| !/^[a-f0-9]{64}$/.test(result.sha256)
-	) return null;
-	const assetUrl = normalizedHttpsUrl(result.assetUrl);
-	if (assetUrl === null) return null;
-	const url = new URL(assetUrl);
-	if (
-		url.searchParams.size !== 1
-		|| url.searchParams.get("v") !== result.sha256.slice(0, 12)
-		|| !url.pathname.endsWith(`/assets/collection_covers/people/${orientation}/${tmdbId}.webp`)
-	) return null;
-	return assetUrl;
+function validManifestRecord(record, tmdbId) {
+	if (record?.tmdbPersonId !== tmdbId || typeof record.canonicalName !== "string" || record.canonicalName.length === 0) return null;
+	for (const key of ["poster", "landscape", "titleLogo", "hero"]) {
+		if (normalizedHttpsUrl(record.assets?.[key]?.url) === null || !assetSha256.test(record.assets[key].sha256)) return null;
+	}
+	const focusPoster = record.assets?.focusPoster;
+	const focusLandscape = record.assets?.focusLandscape;
+	if (Boolean(focusPoster) !== Boolean(focusLandscape)) return null;
+	if (focusPoster && [focusPoster, focusLandscape].some((asset) => normalizedHttpsUrl(asset.url) === null || !assetSha256.test(asset.sha256))) return null;
+	return record;
 }
 
 export function resolvePersonFolderArtwork({
 	person,
 	tileShape = "POSTER",
-	runtimeResult = null,
+	manifestRecord = person?.peopleManifestRecord ?? null,
 	existingFolder = null,
 	replaceExisting = false,
 } = {}) {
@@ -102,18 +92,25 @@ export function resolvePersonFolderArtwork({
 	}
 
 	const orientation = personArtworkOrientation(tileShape);
-	const runtimeUrl = orientation === null ? null : readyRuntimeUrl(runtimeResult, tmdbId, orientation);
-	if (runtimeUrl !== null) {
+	const record = validManifestRecord(manifestRecord, tmdbId);
+	const baseAsset = orientation === null || record === null ? null : record.assets[orientation];
+	if (baseAsset && normalizedHttpsUrl(baseAsset.url) !== null) {
+		const focusPair = record.assets.focusPoster && record.assets.focusLandscape;
+		const focusAsset = focusPair ? record.assets[`focus${orientation[0].toUpperCase()}${orientation.slice(1)}`] : null;
+		const folderEditable = {
+			coverImageUrl: baseAsset.url,
+			heroBackdropUrl: record.assets.hero.url,
+			titleLogoUrl: record.assets.titleLogo.url,
+			hideTitle: true,
+			...(focusAsset ? { focusGifUrl: focusAsset.url, focusGifEnabled: true } : {}),
+		};
 		return Object.freeze({
 			personId: tmdbId,
 			tileShape,
-			source: "runtime",
-			previewUrl: runtimeUrl,
-			fallbackUsed: runtimeResult.fallbackUsed === true,
-			folderEditable: Object.freeze({
-				coverImageUrl: runtimeUrl,
-				hideTitle: true,
-			}),
+			source: "manifest",
+			previewUrl: baseAsset.url,
+			assetHashes: Object.freeze(Object.fromEntries(Object.entries(record.assets).map(([key, asset]) => [key, asset.sha256]))),
+			folderEditable: Object.freeze(folderEditable),
 		});
 	}
 
@@ -147,6 +144,30 @@ export function resolvePersonFolderArtwork({
 	});
 }
 
+export function buildPeopleHierarchyFolderEditable(person, artwork, {
+	tileShape = "POSTER",
+} = {}) {
+	const personName = typeof person?.name === "string" ? person.name.trim() : "";
+	if (
+		!isPositiveSafePersonId(person?.id)
+		|| !personName
+		|| person.name !== personName
+		|| artwork?.personId !== person.id
+		|| artwork?.tileShape !== tileShape
+		|| !["manifest", "tmdb", "emoji"].includes(artwork?.source)
+		|| !artwork.folderEditable
+		|| typeof artwork.folderEditable !== "object"
+		|| Array.isArray(artwork.folderEditable)
+	) {
+		throw new TypeError("People hierarchy artwork requires one resolved person folder.");
+	}
+	return Object.freeze({
+		title: personName,
+		tileShape,
+		...artwork.folderEditable,
+	});
+}
+
 export function buildPromotedPeopleFolderEditable(folder, person, artwork) {
 	if (!isPromotablePeopleFolder(folder)) return null;
 	const personName = typeof person?.name === "string" ? person.name.trim() : "";
@@ -157,7 +178,7 @@ export function buildPromotedPeopleFolderEditable(folder, person, artwork) {
 		|| person.name !== personName
 		|| artwork?.personId !== person.id
 		|| artwork?.tileShape !== tileShape
-		|| !["runtime", "tmdb", "emoji"].includes(artwork?.source)
+		|| !["manifest", "tmdb", "emoji"].includes(artwork?.source)
 	) return null;
 
 	const editable = artwork.folderEditable;
@@ -169,12 +190,20 @@ export function buildPromotedPeopleFolderEditable(folder, person, artwork) {
 			|| editable.hideTitle !== false
 			|| editable.coverEmoji !== "👤"
 		) return null;
-	} else if (
-		Object.keys(editable).sort().join("\n") !== ["coverImageUrl", "hideTitle"].sort().join("\n")
-		|| normalizedHttpsUrl(editable.coverImageUrl) === null
-		|| editable.hideTitle !== (artwork.source === "runtime")
-	) {
-		return null;
+	} else {
+		const expectedKeys = artwork.source === "manifest"
+			? ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "hideTitle", ...(editable.focusGifEnabled === true ? ["focusGifUrl", "focusGifEnabled"] : [])]
+			: ["coverImageUrl", "hideTitle"];
+		if (
+			Object.keys(editable).sort().join("\n") !== expectedKeys.sort().join("\n")
+			|| normalizedHttpsUrl(editable.coverImageUrl) === null
+			|| editable.hideTitle !== (artwork.source === "manifest")
+			|| (artwork.source === "manifest" && (
+				normalizedHttpsUrl(editable.heroBackdropUrl) === null
+				|| normalizedHttpsUrl(editable.titleLogoUrl) === null
+				|| (editable.focusGifEnabled === true && normalizedHttpsUrl(editable.focusGifUrl) === null)
+			))
+		) return null;
 	}
 
 	return Object.freeze({
@@ -184,13 +213,13 @@ export function buildPromotedPeopleFolderEditable(folder, person, artwork) {
 	});
 }
 
-export async function requestPersonRuntimeArtwork(client, { tmdbId, tileShape } = {}) {
-	const orientation = personArtworkOrientation(tileShape);
-	if (!client || typeof client.resolve !== "function" || !isPositiveSafePersonId(tmdbId) || orientation === null) {
+export async function requestPersonManifestArtwork(client, { tmdbId } = {}) {
+	if (!client || typeof client.load !== "function" || !isPositiveSafePersonId(tmdbId)) {
 		return null;
 	}
 	try {
-		return await client.resolve({ entityType: "person", tmdbId, orientation });
+		const result = await client.load();
+		return result?.ok ? result.data?.byId?.[tmdbId] ?? null : null;
 	} catch {
 		return null;
 	}

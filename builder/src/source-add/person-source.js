@@ -20,8 +20,32 @@ export const PEOPLE_SOURCE_COMBINATIONS = Object.freeze([
 	Object.freeze({ id: "directing-movies", label: "Directed Movies", sourceTitle: "Directed Movies", role: "directing", media: "movies", countKey: "directingMovies", tmdbSourceType: "DIRECTOR", mediaType: "MOVIE" }),
 	Object.freeze({ id: "directing-series", label: "Directed Series", sourceTitle: "Directed Series", role: "directing", media: "series", countKey: "directingSeries", tmdbSourceType: "DIRECTOR", mediaType: "TV" }),
 ]);
+export const PEOPLE_CONFIGURATION_MODES = Object.freeze({
+	AUTOMATIC: "automatic",
+	SHARED: "shared",
+	CUSTOM: "custom",
+});
+export const PEOPLE_SOURCE_SORT_OPTIONS = Object.freeze([
+	Object.freeze({
+		id: "popular",
+		label: "Popular",
+		values: Object.freeze({ MOVIE: "popularity.desc", TV: "popularity.desc" }),
+	}),
+	Object.freeze({
+		id: "recent",
+		label: "Recent",
+		values: Object.freeze({ MOVIE: "primary_release_date.desc", TV: "first_air_date.desc" }),
+	}),
+	Object.freeze({
+		id: "top-rated",
+		label: "Top rated",
+		values: Object.freeze({ MOVIE: "vote_average.desc", TV: "vote_average.desc" }),
+	}),
+]);
+export const DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID = "popular";
 
 const combinationById = new Map(PEOPLE_SOURCE_COMBINATIONS.map((entry) => [entry.id, entry]));
+const sortOptionById = new Map(PEOPLE_SOURCE_SORT_OPTIONS.map((entry) => [entry.id, entry]));
 const editableKeys = Object.freeze([
 	"filters",
 	"mediaType",
@@ -74,6 +98,14 @@ function selectedPositiveCombinations(counts, role) {
 export function defaultPeopleSourceCombinations(person) {
 	const counts = person?.counts;
 	if (!isPersonCreditCountSet(counts)) return Object.freeze([]);
+	if (Array.isArray(person?.categoryMembership) && person.categoryMembership.length > 0) {
+		const roles = person.categoryMembership.flatMap((membership) => (
+			membership === "actor" ? ["acting"] : membership === "director" ? ["directing"] : []
+		));
+		if (roles.length > 0) {
+			return Object.freeze(roles.flatMap((role) => selectedPositiveCombinations(counts, role)));
+		}
+	}
 	const department = canonicalText(person?.knownForDepartment).toLocaleLowerCase("en");
 	if (department === "acting") return Object.freeze(selectedPositiveCombinations(counts, "acting"));
 	if (department === "directing") return Object.freeze(selectedPositiveCombinations(counts, "directing"));
@@ -105,6 +137,53 @@ export function createPeopleConfiguration(person, previous = null) {
 	});
 }
 
+export function peopleSortValue(sortOptionId, mediaType) {
+	const canonicalMediaType = canonicalText(mediaType).toUpperCase();
+	return sortOptionById.get(sortOptionId)?.values?.[canonicalMediaType] ?? null;
+}
+
+export function peopleSortOptionId(sortBy, mediaType) {
+	const canonicalMediaType = canonicalText(mediaType).toUpperCase();
+	return PEOPLE_SOURCE_SORT_OPTIONS.find((option) => option.values[canonicalMediaType] === sortBy)?.id ?? null;
+}
+
+export function peopleSortOptions(mediaType) {
+	const canonicalMediaType = canonicalText(mediaType).toUpperCase();
+	if (!["MOVIE", "TV"].includes(canonicalMediaType)) return Object.freeze([]);
+	return Object.freeze(PEOPLE_SOURCE_SORT_OPTIONS.map((option) => Object.freeze({
+		id: option.id,
+		label: option.label,
+		value: option.values[canonicalMediaType],
+	})));
+}
+
+export function isVerifiedPeopleSort(value, mediaType) {
+	return typeof value === "string" && peopleSortOptionId(value, mediaType) !== null;
+}
+
+export function peopleTitlePreviewLimit(viewportWidth) {
+	return Number.isFinite(viewportWidth) && viewportWidth <= 520 ? 5 : 10;
+}
+
+export function resolvePeopleConfigurationForMode(person, {
+	mode = PEOPLE_CONFIGURATION_MODES.AUTOMATIC,
+	sharedCombinations = [],
+	customConfiguration = null,
+} = {}) {
+	const automatic = createPeopleConfiguration(person);
+	const override = customConfiguration?.personId === person.id
+		? createPeopleConfiguration(person, customConfiguration)
+		: null;
+	if (mode === PEOPLE_CONFIGURATION_MODES.AUTOMATIC) return override ?? automatic;
+	if (mode === PEOPLE_CONFIGURATION_MODES.SHARED) {
+		return override ?? updatePeopleConfiguration(automatic, sharedCombinations);
+	}
+	if (mode === PEOPLE_CONFIGURATION_MODES.CUSTOM) {
+		return override ?? automatic;
+	}
+	throw new TypeError("Choose a supported People configuration mode.");
+}
+
 export function updatePeopleConfiguration(configuration, combinations) {
 	if (!isPositiveSafePersonId(configuration?.personId)) throw new TypeError("A People configuration is required.");
 	const validation = validatePeopleCombinationSelection(combinations, { allowEmpty: true });
@@ -130,6 +209,96 @@ export function validatePeopleCombinationSelection(combinations, { allowEmpty = 
 	return { ok: true, errors: [] };
 }
 
+export function createPeopleCustomConfigurationMap(configurations, {
+	overridePersonId = null,
+	combinationId = null,
+} = {}) {
+	if (!Array.isArray(configurations) || configurations.length === 0) {
+		throw new TypeError("One or more People configurations are required.");
+	}
+	const byId = {};
+	for (const configuration of configurations) {
+		if (!isPositiveSafePersonId(configuration?.personId) || byId[configuration.personId]) {
+			throw new TypeError("People custom configurations must use distinct positive person IDs.");
+		}
+		byId[configuration.personId] = updatePeopleConfiguration(configuration, configuration.combinations);
+	}
+	if (overridePersonId !== null || combinationId !== null) {
+		const target = byId[overridePersonId];
+		if (!target || !combinationById.has(combinationId)) throw new TypeError("Choose a valid person and source combination to customise.");
+		const combinations = target.combinations.includes(combinationId)
+			? target.combinations.filter((id) => id !== combinationId)
+			: [...target.combinations, combinationId];
+		byId[overridePersonId] = updatePeopleConfiguration(target, combinations);
+	}
+	return Object.freeze(byId);
+}
+
+function comparePreviewCredits(left, right, sortOptionId) {
+	if (sortOptionId === "recent") {
+		return right.releaseDate.localeCompare(left.releaseDate)
+			|| right.popularity - left.popularity
+			|| right.voteCount - left.voteCount
+			|| left.identity.localeCompare(right.identity);
+	}
+	if (sortOptionId === "top-rated") {
+		return right.voteAverage - left.voteAverage
+			|| right.voteCount - left.voteCount
+			|| right.popularity - left.popularity
+			|| left.identity.localeCompare(right.identity);
+	}
+	return right.popularity - left.popularity
+		|| right.voteCount - left.voteCount
+		|| right.voteAverage - left.voteAverage
+		|| left.identity.localeCompare(right.identity);
+}
+
+export function buildPeopleTitlePreview(person, {
+	combinations,
+	sortOptionId = DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID,
+	limit = 10,
+} = {}) {
+	const selectionValidation = validatePeopleCombinationSelection(combinations, { allowEmpty: true });
+	if (!selectionValidation.ok) return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze(selectionValidation.errors) });
+	if (!sortOptionById.has(sortOptionId)) {
+		return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_SORT", "$people.preview.sortOptionId", "Choose a supported People sort order.")]) });
+	}
+	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 10) {
+		return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_LIMIT", "$people.preview.limit", "People title previews must contain one to ten posters.")]) });
+	}
+	if (!plainObject(person?.combinedCredits) || !Array.isArray(person.combinedCredits.cast) || !Array.isArray(person.combinedCredits.crew)) {
+		return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze([diagnostic("PEOPLE_PREVIEW_UNAVAILABLE", "$people.preview.credits", "Title preview data is unavailable for this person.")]) });
+	}
+
+	const selected = new Set(combinations);
+	const byIdentity = new Map();
+	for (const combination of PEOPLE_SOURCE_COMBINATIONS) {
+		if (!selected.has(combination.id)) continue;
+		const credits = combination.role === "acting" ? person.combinedCredits.cast : person.combinedCredits.crew;
+		for (const credit of credits) {
+			if (!plainObject(credit) || !isPositiveSafePersonId(credit.id) || typeof credit.posterPath !== "string") continue;
+			if (credit.mediaType !== (combination.mediaType === "MOVIE" ? "movie" : "tv")) continue;
+			if (combination.role === "directing" && canonicalText(credit.job).toLowerCase() !== "director") continue;
+			const identity = `${credit.mediaType}|${credit.id}`;
+			if (byIdentity.has(identity)) continue;
+			byIdentity.set(identity, Object.freeze({
+				identity,
+				id: credit.id,
+				mediaType: credit.mediaType === "movie" ? "MOVIE" : "TV",
+				posterPath: credit.posterPath,
+				popularity: Number.isFinite(credit.popularity) ? credit.popularity : 0,
+				voteAverage: Number.isFinite(credit.voteAverage) ? credit.voteAverage : 0,
+				voteCount: Number.isFinite(credit.voteCount) ? credit.voteCount : 0,
+				releaseDate: typeof credit.releaseDate === "string" ? credit.releaseDate : "",
+			}));
+		}
+	}
+	const items = [...byIdentity.values()]
+		.sort((left, right) => comparePreviewCredits(left, right, sortOptionId))
+		.slice(0, limit);
+	return Object.freeze({ ok: true, items: Object.freeze(items), errors: Object.freeze([]) });
+}
+
 export function validatePeopleRoleMediaSelection({ roles, media } = {}) {
 	if (!Array.isArray(roles) || !Array.isArray(media)) {
 		return { ok: false, errors: [diagnostic("INVALID_PEOPLE_SELECTION", "$people", "Choose supported roles and media values.")] };
@@ -148,7 +317,7 @@ export function validatePeopleRoleMediaSelection({ roles, media } = {}) {
 	return validatePeopleCombinationSelection(combinations);
 }
 
-export function buildPeopleSourceDrafts(person, { combinations } = {}) {
+export function buildPeopleSourceDrafts(person, { combinations, sortOptionId = DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID } = {}) {
 	const errors = [];
 	const personName = canonicalText(person?.name);
 	if (!isPositiveSafePersonId(person?.id) || !personName || person?.name !== personName) {
@@ -156,6 +325,9 @@ export function buildPeopleSourceDrafts(person, { combinations } = {}) {
 	}
 	const selectionValidation = validatePeopleCombinationSelection(combinations);
 	errors.push(...selectionValidation.errors);
+	if (!sortOptionById.has(sortOptionId)) {
+		errors.push(diagnostic("INVALID_PEOPLE_SORT_OPTION", "$people.sortOptionId", "Choose a supported People sort order."));
+	}
 	if (errors.length > 0) return { ok: false, drafts: [], errors };
 
 	const selected = new Set(combinations);
@@ -165,7 +337,7 @@ export function buildPeopleSourceDrafts(person, { combinations } = {}) {
 			category: PEOPLE_SOURCE_MODE.category,
 			editable: {
 				title: entry.sourceTitle,
-				sortBy: "popularity.desc",
+				sortBy: peopleSortValue(sortOptionId, entry.mediaType),
 				tmdbId: person.id,
 				filters: {},
 				provider: "tmdb",
@@ -207,7 +379,7 @@ export function validatePeopleSourceDraft(draft, path = "$people.sources[0]") {
 	if (!["MOVIE", "TV"].includes(mediaType) || editable.mediaType !== mediaType) {
 		errors.push(diagnostic("INVALID_PEOPLE_MEDIA_TYPE", `${path}.editable.mediaType`, "The People source media type must be MOVIE or TV."));
 	}
-	if (editable.sortBy !== "popularity.desc") errors.push(diagnostic("INVALID_PEOPLE_SORT", `${path}.editable.sortBy`, "The People source sort must be popularity.desc."));
+	if (!isVerifiedPeopleSort(editable.sortBy, mediaType)) errors.push(diagnostic("INVALID_PEOPLE_SORT", `${path}.editable.sortBy`, "Choose a supported People source sort."));
 	if (!plainObject(editable.filters) || Object.keys(editable.filters).length !== 0) {
 		errors.push(diagnostic("INVALID_PEOPLE_FILTERS", `${path}.editable.filters`, "People source filters must be an explicit empty object."));
 	}
@@ -370,8 +542,8 @@ export function createPeopleFolderBatch(controller, {
 	if (interactionLocked) {
 		return { ok: false, errors: [diagnostic("PEOPLE_CREATION_INTERACTION_LOCKED", "$people.creation", "Finish the current hierarchy interaction before adding people.")], warnings: [] };
 	}
-	if (!Array.isArray(people) || people.length < 1 || people.length > 20) {
-		return { ok: false, errors: [diagnostic("INVALID_PEOPLE_BATCH", "$people.batch", "Choose between one and 20 people.")], warnings: [] };
+	if (!Array.isArray(people) || people.length < 1) {
+		return { ok: false, errors: [diagnostic("INVALID_PEOPLE_BATCH", "$people.batch", "Choose at least one person.")], warnings: [] };
 	}
 	const personIds = people.map((entry) => entry?.person?.id);
 	if (personIds.some((id) => !isPositiveSafePersonId(id)) || new Set(personIds).size !== personIds.length) {

@@ -4,9 +4,11 @@ export function RemovableSelectionSummary({
 	ariaLabel,
 	disclosureLabel,
 	compactThreshold = 6,
+	alwaysDisclose = false,
+	showDisclosureCount = true,
 }) {
 	if (!Array.isArray(items) || items.length === 0) return null;
-	if (items.length <= compactThreshold) {
+	if (!alwaysDisclose && items.length <= compactThreshold) {
 		return (
 			<ul className="genre-selection-pills removable-selection-pills" aria-label={ariaLabel}>
 				{items.map((item) => (
@@ -23,7 +25,7 @@ export function RemovableSelectionSummary({
 	}
 	return (
 		<details className="genre-selected-disclosure removable-selection-disclosure">
-			<summary>{disclosureLabel} · {items.length}</summary>
+			<summary>{disclosureLabel}{showDisclosureCount ? ` · ${items.length}` : ""}</summary>
 			<ul>
 				{items.map((item) => (
 					<li key={item.id}>

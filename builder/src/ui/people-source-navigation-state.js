@@ -1,6 +1,7 @@
 export const PEOPLE_SOURCE_STEPS = Object.freeze({
 	SEARCH: "search",
 	CONFIGURE: "configure",
+	REVIEW: "review",
 });
 
 function normalizedScrollTop(value) {
@@ -54,6 +55,16 @@ export function returnPeopleToSearch(state) {
 		step: PEOPLE_SOURCE_STEPS.SEARCH,
 		restoreSearchFocusId: state.selectedId,
 	});
+}
+
+export function enterPeopleReview(state) {
+	if (state?.step !== PEOPLE_SOURCE_STEPS.CONFIGURE) return state;
+	return Object.freeze({ ...state, step: PEOPLE_SOURCE_STEPS.REVIEW, restoreSearchFocusId: null });
+}
+
+export function returnPeopleToConfigure(state) {
+	if (state?.step !== PEOPLE_SOURCE_STEPS.REVIEW) return state;
+	return Object.freeze({ ...state, step: PEOPLE_SOURCE_STEPS.CONFIGURE });
 }
 
 export function completePeopleSearchRestore(state) {
