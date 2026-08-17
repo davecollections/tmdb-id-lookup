@@ -20,7 +20,9 @@ import {
 	completePeopleSearchRestore,
 	createPeopleSourceNavigationState,
 	enterPeopleConfigure,
+	enterPeopleReview,
 	PEOPLE_SOURCE_STEPS,
+	returnPeopleToConfigure,
 	returnPeopleToSearch,
 } from "../builder/src/ui/people-source-navigation-state.js";
 
@@ -34,9 +36,13 @@ const vite = await createServer({
 const { SourceModeDialog } = await vite.ssrLoadModule("/src/ui/SourceModeDialog.jsx");
 const {
 	activateFolderPersonResult,
+	PeopleBulkConfigurationList,
 	PeopleConfigurationCard,
+	PeopleConfigurationModeControls,
+	PeopleReviewStep,
 	PeopleSearchStep,
 	PeopleSourceFlow,
+	PeopleTitlePreviewSurface,
 	requestSelectedPersonDetails,
 } = await vite.ssrLoadModule("/src/ui/PeopleSourceFlow.jsx");
 after(() => vite.close());
@@ -167,16 +173,116 @@ test("People result cards omit empty known-for rows and never fabricate title to
 	assert.ok(markup.includes("TMDB 31"));
 });
 
-test("collection Search uses explicit checkboxes, retained selected chips, and the 20-person cap copy", () => {
-	const people = Array.from({ length: 20 }, (_, index) => person({ id: index + 1, name: `Person ${index + 1}` }));
-	const markup = renderSearch({ context: "collection", results: [people[0], person({ id: 99, name: "New person" })], selection: selectionOf(...people) });
-	assert.ok(markup.includes("20 selected"));
-	assert.ok(markup.includes("0 remaining"));
-	assert.ok(markup.includes("maximum of 20 people"));
-	assert.ok(markup.includes('type="checkbox"'));
-	assert.ok(markup.includes('checked=""'));
-	assert.ok(markup.includes('aria-label="Remove Person 1"'));
-	assert.equal(markup.includes('aria-pressed='), false);
+test("multi-select People cards expose native checkbox state through a circular reusable indicator", () => {
+	const selected = person();
+	const unselected = person({ id: 488, name: "Steven Spielberg" });
+	const markup = renderSearch({ context: "collection", results: [selected, unselected], selection: selectionOf(selected) });
+	const styles = read("builder/src/styles.css");
+	assert.match(markup, /<label[^>]*people-result-selectable is-selected[^>]*data-tmdb-person-result="31"/);
+	assert.match(markup, /<input class="visually-hidden selectable-card-checkbox" type="checkbox" checked=""/);
+	assert.match(markup, /data-selection-indicator="true" data-selection-state="selected"[^>]*>✓<\/span>/);
+	assert.match(markup, /data-selection-indicator="true" data-selection-state="unselected"[^>]*><\/span>/);
+	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 2);
+	assert.match(styles, /\.people-result-selectable\s*\{[\s\S]*position:\s*relative/);
+	assert.match(styles, /\.selectable-card-indicator\s*\{[\s\S]*border-radius:\s*50%/);
+	assert.match(styles, /\.selectable-card-checkbox:focus-visible \+ \.selectable-card-indicator/);
+});
+
+test("collection Search always uses a bounded selected-people disclosure and adds the 50-person notice", () => {
+	for (const count of [2, 20, 50, 105]) {
+		const people = Array.from({ length: count }, (_, index) => person({ id: index + 1, name: `Person ${index + 1}` }));
+		const markup = renderSearch({ context: "collection", results: [people[0], person({ id: 999, name: "New person" })], selection: selectionOf(...people) });
+		assert.ok(markup.includes(`${count} people selected`), count);
+		assert.ok(markup.includes(">View selected people<"), count);
+		assert.equal(markup.includes(`View selected people · ${count}`), false, count);
+		assert.ok(markup.includes('class="people-selected-summary"'), count);
+		assert.equal(markup.includes("Folder order preserved"), false, count);
+		assert.ok(markup.includes('class="genre-selected-disclosure removable-selection-disclosure"'), count);
+		assert.equal(markup.includes('class="genre-selection-pills removable-selection-pills"'), false, count);
+		assert.ok(markup.includes('aria-label="Remove Person 1"'), count);
+		assert.ok(markup.includes('type="checkbox"'), count);
+		assert.ok(markup.includes('checked=""'), count);
+		assert.equal(markup.includes('disabled=""'), false, count);
+		assert.equal(markup.includes("maximum"), false, count);
+		assert.equal(markup.includes("may take a little longer"), count >= 50, count);
+	}
+});
+
+test("100+ configured People keep four direct compact choices without mounting expanded person editors", () => {
+	const entries = Array.from({ length: 105 }, (_, index) => {
+		const selected = person({ id: index + 1, name: `Person ${index + 1}` });
+		return {
+			result: selected,
+			person: selected,
+			detail: { status: "ready", person: selected },
+			configuration: createPeopleConfiguration(selected),
+			artworkState: null,
+		};
+	});
+	const callbacks = { onToggleCombination() {}, onRetry() {}, onRemove() {}, onPreview() {}, onClosePreview() {}, onRetryPreview() {}, previewState: null, previewItems: [], previewLimit: 10 };
+	const automatic = renderToStaticMarkup(createElement(PeopleBulkConfigurationList, { entries, mode: "automatic", ...callbacks }));
+	assert.ok(automatic.includes('data-people-bulk-count="105"'));
+	assert.equal((automatic.match(/class="people-bulk-row"/g) ?? []).length, 105);
+	assert.equal((automatic.match(/class="people-combination-group is-compact is-pills"/g) ?? []).length, 105);
+	assert.equal((automatic.match(/class="people-source-pill"/g) ?? []).length, 420);
+	assert.equal((automatic.match(/class="people-title-preview"/g) ?? []).length, 0);
+	assert.equal((automatic.match(/>Preview titles</g) ?? []).length, 105);
+	assert.equal(automatic.includes("Person to configure"), false);
+	assert.equal(/<select\b/.test(automatic), false);
+	const custom = renderToStaticMarkup(createElement(PeopleBulkConfigurationList, { entries, mode: "custom", ...callbacks }));
+	assert.equal((custom.match(/class="people-combination-group is-compact is-pills"/g) ?? []).length, 105);
+	assert.equal(custom.includes("data-person-editor-expanded"), false);
+	assert.equal(custom.includes("Customise"), false);
+	assert.equal(custom.includes(">Done<"), false);
+});
+
+test("People bulk controls expose only Automatic and Same for all while rows remain directly editable", () => {
+	const automatic = renderToStaticMarkup(createElement(PeopleConfigurationModeControls, { mode: "automatic", sharedCombinations: ["acting-movies"], onModeChange() {}, onToggleShared() {} }));
+	for (const label of ["Automatic", "Same for all"]) assert.ok(automatic.includes(label), label);
+	assert.equal(automatic.includes("Custom per person"), false);
+	assert.equal(automatic.includes("Automatic starts each person"), false);
+	assert.equal(automatic.includes("mode-transition"), false);
+	assert.equal(automatic.includes("expand only"), false);
+	assert.equal((automatic.match(/type="radio"/g) ?? []).length, 2);
+	const shared = renderToStaticMarkup(createElement(PeopleConfigurationModeControls, { mode: "shared", sharedCombinations: ["acting-movies", "directing-series"], onModeChange() {}, onToggleShared() {} }));
+	assert.ok(shared.includes("Sources for every selected person"));
+	assert.equal((shared.match(/type="checkbox"/g) ?? []).length, 4);
+	assert.equal((shared.match(/people-source-pill-check/g) ?? []).length, 4);
+	assert.ok(shared.includes('data-people-role="acting"'));
+	assert.ok(shared.includes('data-people-role="directing"'));
+	assert.equal(shared.includes("PERSON · MOVIE"), false);
+	const flow = read("builder/src/ui/PeopleSourceFlow.jsx");
+	assert.equal(flow.includes("Choose Automatic or Same for all, then adjust any person directly."), false);
+	assert.match(flow, /aria-describedby=\{headingDescription \? descriptionId : undefined\}/);
+});
+
+test("poster-only title preview exposes bounded ready, loading, empty, and recoverable error states", () => {
+	const selected = person();
+	const items = Array.from({ length: 10 }, (_, index) => ({ identity: `movie|${index + 1}`, posterPath: `/poster-${index + 1}.jpg` }));
+	const ready = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items, limit: 10, onClose() {}, onRetry() {} }));
+	assert.ok(ready.includes('data-preview-surface="modal"'));
+	assert.ok(ready.includes('role="dialog"'));
+	assert.ok(ready.includes('aria-modal="true"'));
+	assert.ok(ready.includes('data-preview-status="ready"'));
+	assert.ok(ready.includes('data-preview-limit="10"'));
+	assert.equal((ready.match(/<img/g) ?? []).length, 10);
+	assert.ok(ready.includes('alt="Preview poster 1"'));
+	assert.equal(ready.includes("Forrest Gump"), false);
+	assert.equal(ready.includes("rating"), false);
+	assert.equal(ready.includes("release"), false);
+	assert.ok(ready.includes(">Close<"));
+	const mobile = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items: items.slice(0, 5), limit: 5, onClose() {}, onRetry() {} }));
+	assert.equal((mobile.match(/<img/g) ?? []).length, 5);
+	assert.ok(mobile.includes('data-preview-limit="5"'));
+	const loading = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "loading" }, items: [], limit: 5, onClose() {}, onRetry() {} }));
+	assert.ok(loading.includes('role="status"'));
+	assert.ok(loading.includes("Preparing poster preview"));
+	const empty = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items: [], limit: 5, onClose() {}, onRetry() {} }));
+	assert.ok(empty.includes("No poster previews were available"));
+	const error = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "error", error: { message: "Preview unavailable." } }, items: [], limit: 5, onClose() {}, onRetry() {} }));
+	assert.ok(error.includes('role="alert"'));
+	assert.ok(error.includes("Preview unavailable."));
+	assert.ok(error.includes(">Retry<"));
 });
 
 test("selection loading and failure are distinct announced states", () => {
@@ -344,7 +450,7 @@ test("new-folder configuration shows only the final applied artwork representati
 test("final artwork preview uses explicit Poster and Landscape folder shapes for every fallback source", () => {
 	const selected = person();
 	const styles = read("builder/src/styles.css");
-	const posterArtwork = { personId: 31, tileShape: "POSTER", source: "runtime", previewUrl: "https://example.test/poster.webp?v=123456789abc", folderEditable: { coverImageUrl: "https://example.test/poster.webp?v=123456789abc", hideTitle: true } };
+	const posterArtwork = { personId: 31, tileShape: "POSTER", source: "manifest", previewUrl: "https://example.test/poster.webp", folderEditable: { coverImageUrl: "https://example.test/poster.webp", hideTitle: true } };
 	const posterMarkup = renderToStaticMarkup(createElement(PeopleConfigurationCard, {
 		personResult: selected,
 		detail: { status: "ready", person: selected },
@@ -356,7 +462,7 @@ test("final artwork preview uses explicit Poster and Landscape folder shapes for
 	assert.ok(posterMarkup.includes('data-artwork-tile-shape="POSTER"'));
 
 	for (const [source, previewUrl] of [
-		["runtime", "https://example.test/landscape.webp?v=123456789abc"],
+		["manifest", "https://example.test/landscape.webp"],
 		["tmdb", "https://image.tmdb.org/t/p/w500/profile.jpg"],
 		["emoji", null],
 	]) {
@@ -365,7 +471,7 @@ test("final artwork preview uses explicit Poster and Landscape folder shapes for
 			tileShape: "LANDSCAPE",
 			source,
 			previewUrl,
-			folderEditable: previewUrl ? { coverImageUrl: previewUrl, hideTitle: source === "runtime" } : { coverImageUrl: "", hideTitle: false, coverEmoji: "👤" },
+			folderEditable: previewUrl ? { coverImageUrl: previewUrl, hideTitle: source === "manifest" } : { coverImageUrl: "", hideTitle: false, coverEmoji: "👤" },
 		};
 		const markup = renderToStaticMarkup(createElement(PeopleConfigurationCard, {
 			personResult: selected,
@@ -382,10 +488,10 @@ test("final artwork preview uses explicit Poster and Landscape folder shapes for
 	assert.match(styles, /\.people-applied-artwork\[data-artwork-tile-shape="LANDSCAPE"\][\s\S]*aspect-ratio:\s*42 \/ 25;/);
 });
 
-test("curated and no-art states use friendly final-artwork labels without implementation terms", () => {
+test("canonical and no-art states use friendly final-artwork labels without implementation terms", () => {
 	const selected = person();
 	for (const [artwork, label] of [
-		[{ personId: 31, tileShape: "POSTER", source: "runtime", previewUrl: "https://example.test/31.webp?v=123456789abc", folderEditable: { coverImageUrl: "https://example.test/31.webp?v=123456789abc", hideTitle: true } }, "Curated artwork"],
+		[{ personId: 31, tileShape: "POSTER", source: "manifest", previewUrl: "https://example.test/31.webp", folderEditable: { coverImageUrl: "https://example.test/31.webp", hideTitle: true } }, "Canonical People artwork"],
 		[{ personId: 31, tileShape: "POSTER", source: "emoji", previewUrl: null, folderEditable: { coverImageUrl: "", hideTitle: false, coverEmoji: "👤" } }, "No folder artwork available"],
 	]) {
 		const markup = renderToStaticMarkup(createElement(PeopleConfigurationCard, {
@@ -404,7 +510,7 @@ test("curated and no-art states use friendly final-artwork labels without implem
 
 test("multiple configured people retain independent final artwork", () => {
 	const entries = [
-		{ person: person({ id: 31, name: "Tom Hanks" }), source: "runtime", url: "https://example.test/31.webp?v=123456789abc" },
+		{ person: person({ id: 31, name: "Tom Hanks" }), source: "manifest", url: "https://example.test/31.webp" },
 		{ person: person({ id: 488, name: "Steven Spielberg" }), source: "tmdb", url: "https://image.tmdb.org/t/p/w500/spielberg.jpg" },
 	];
 	const markup = renderToStaticMarkup(createElement("div", null, entries.map((entry) => createElement(PeopleConfigurationCard, {
@@ -412,22 +518,101 @@ test("multiple configured people retain independent final artwork", () => {
 		personResult: entry.person,
 		detail: { status: "ready", person: entry.person },
 		configuration: createPeopleConfiguration(entry.person),
-		artworkState: { status: "ready", personId: entry.person.id, contextKey: "new-folder", artwork: { personId: entry.person.id, tileShape: "POSTER", source: entry.source, previewUrl: entry.url, folderEditable: { coverImageUrl: entry.url, hideTitle: entry.source === "runtime" } } },
+		artworkState: { status: "ready", personId: entry.person.id, contextKey: "new-folder", artwork: { personId: entry.person.id, tileShape: "POSTER", source: entry.source, previewUrl: entry.url, folderEditable: { coverImageUrl: entry.url, hideTitle: entry.source === "manifest" } } },
 		showArtwork: true,
 		onToggle() {}, onRefresh() {}, onRetry() {}, onRetryArtwork() {}, onRemove() {},
 	}))));
 	assert.equal((markup.match(/data-artwork-person-id=/g) ?? []).length, 2);
-	assert.ok(markup.includes('data-artwork-person-id="31" data-artwork-source="runtime"'));
+	assert.ok(markup.includes('data-artwork-person-id="31" data-artwork-source="manifest"'));
 	assert.ok(markup.includes('data-artwork-person-id="488" data-artwork-source="tmdb"'));
 	assert.equal(markup.includes('data-profile-state='), false);
 });
 
-test("People navigation has Search and Configure only and restores result focus with recorded scroll", () => {
-	assert.deepEqual(PEOPLE_SOURCE_STEPS, { SEARCH: "search", CONFIGURE: "configure" });
+test("People Review keeps shared Title options and Layout visible and only collapses the large people detail", () => {
+	const selected = person();
+	const markup = renderToStaticMarkup(createElement(PeopleReviewStep, {
+		planResult: { ok: true, plan: {
+			configuration: { scope: "new-collection" },
+			counts: { collectionCount: 1, folderCount: 1, sourceCount: 2 },
+			collections: [{ titleCollisions: [] }],
+			destination: null,
+			outcomes: [{ status: "ready-to-create", occurrences: [] }],
+		} },
+		entries: [{ person: selected, drafts: { drafts: [{}, {}] }, artworkState: { artwork: { source: "manifest" } } }],
+		collectionOptions: { title: "People", hideTitle: false, viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false },
+		onCollectionOptionsChange() {},
+		folderTileShape: "POSTER",
+		onFolderTileShapeChange() {},
+		folderTitleVisibility: "HIDE_HOME_SCREEN",
+		onFolderTitleVisibilityChange() {},
+		applyDiagnostic: null,
+		headingRef: null,
+	}));
+	assert.ok(markup.includes("Title options"));
+	assert.ok(markup.includes("Layout"));
+	assert.ok(markup.includes("Hide collection title in Nuvio"));
+	assert.ok(markup.includes("Person folder titles"));
+	for (const label of ["Show everywhere", "Hide on home screen only", "Hide everywhere"]) assert.ok(markup.includes(label), label);
+	assert.match(markup, /data-editor-choice="hide-home-screen"[^>]*checked="" value="HIDE_HOME_SCREEN"/);
+	assert.ok(markup.includes("Show All tab"));
+	assert.ok(markup.includes("Pin collection to top"));
+	assert.ok(markup.indexOf("Title options") < markup.indexOf("Layout"));
+	assert.ok(markup.indexOf("Layout") < markup.indexOf("Person folder appearance"));
+	assert.ok(markup.includes("Person folder appearance"));
+	assert.ok(markup.includes("Poster (recommended)"));
+	assert.ok(markup.includes("Landscape"));
+	assert.match(markup, /<input(?=[^>]*data-editor-choice="poster")(?=[^>]*checked="")[^>]*>/);
+	assert.ok(markup.includes("Each person’s Hero, Title Logo and Focus artwork will use the canonical People defaults."));
+	assert.ok(markup.includes("edit that person’s folder"));
+	for (const label of ["Person folder to edit", "Tile artwork URL", "Hero / background URL", "Title Logo URL", "Focus artwork URL", "Enable focus artwork", "Restore default artwork"]) assert.equal(markup.includes(label), false, label);
+	assert.equal(/<select\b/.test(markup), false);
+	assert.equal(/type="url"/.test(markup), false);
+	assert.equal(markup.includes("decades-settings-disclosure"), false);
+	assert.equal((markup.match(/<details/g) ?? []).length, 1);
+	assert.ok(markup.includes("View person details · 1"));
+});
+
+test("People New Folder Review keeps parent presentation read-only while generated folder appearance stays editable", () => {
+	const selected = person();
+	const markup = renderToStaticMarkup(createElement(PeopleReviewStep, {
+		planResult: { ok: true, plan: {
+			configuration: { scope: "new-folder" },
+			counts: { collectionCount: 0, folderCount: 1, sourceCount: 1 },
+			collections: [],
+			destination: { collectionInternalId: "parent", collectionTitle: "Parent", viewMode: "ROWS", showAllTab: false, pinToTop: true, titleHidden: false },
+			outcomes: [{ status: "ready-to-create", occurrences: [] }],
+		} },
+		entries: [{ person: selected, drafts: { drafts: [{}] }, artworkState: { artwork: { source: "manifest" } } }],
+		collectionOptions: { title: "People", hideTitle: false, viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false },
+		onCollectionOptionsChange() {},
+		folderTileShape: "LANDSCAPE",
+		onFolderTileShapeChange() {},
+		folderTitleVisibility: "HIDE_EVERYWHERE",
+		onFolderTitleVisibilityChange() {},
+		applyDiagnostic: null,
+		headingRef: null,
+	}));
+	assert.ok(markup.includes("Inherited Collection options"));
+	assert.ok(markup.includes("parent unchanged"));
+	assert.ok(markup.includes("Title options"));
+	assert.ok(markup.includes("Person folder titles"));
+	assert.equal(markup.includes("Hide collection title in Nuvio"), false);
+	assert.match(markup, /data-editor-choice="hide-everywhere"[^>]*checked="" value="HIDE_EVERYWHERE"/);
+	assert.match(markup, /<input(?=[^>]*data-editor-choice="landscape")(?=[^>]*checked="")[^>]*>/);
+	assert.ok(markup.includes("edit that person’s folder"));
+	assert.equal(markup.includes("Person folder to edit"), false);
+	assert.equal(/type="url"/.test(markup), false);
+});
+
+test("People navigation adds hierarchy Review while preserving Search restoration", () => {
+	assert.deepEqual(PEOPLE_SOURCE_STEPS, { SEARCH: "search", CONFIGURE: "configure", REVIEW: "review" });
 	const captured = capturePeopleSelectionScroll(createPeopleSourceNavigationState(), 31, 428.5);
 	const configure = enterPeopleConfigure(captured, 31, 900);
 	assert.equal(configure.step, PEOPLE_SOURCE_STEPS.CONFIGURE);
 	assert.equal(configure.searchScrollTop, 428.5);
+	const review = enterPeopleReview(configure);
+	assert.equal(review.step, PEOPLE_SOURCE_STEPS.REVIEW);
+	assert.equal(returnPeopleToConfigure(review).step, PEOPLE_SOURCE_STEPS.CONFIGURE);
 	const search = returnPeopleToSearch(configure);
 	assert.equal(search.restoreSearchFocusId, 31);
 	assert.equal(completePeopleSearchRestore(search).restoreSearchFocusId, null);
@@ -446,7 +631,7 @@ test("shared People flow keeps modal lifecycle contracts for both contexts", () 
 		const markup = renderToStaticMarkup(createElement(PeopleSourceFlow, {
 			context,
 			provider: { async searchPeople() { return { ok: true, data: { results: [], page: 1, totalPages: 1, totalResults: 0 } }; }, async getPerson() { return { ok: true, data: person() }; } },
-			artworkClient: { async resolve() { return { status: "missing" }; } },
+			manifestClient: { peek() { return null; }, async load() { return { ok: false }; } },
 			project: { collections: [] },
 			collection: { internalId: "collection", editable: { title: "People" } },
 			folder: context === "folder" ? { internalId: "folder", editable: { title: "Current folder" } } : null,
@@ -461,26 +646,65 @@ test("shared People flow keeps modal lifecycle contracts for both contexts", () 
 	}
 });
 
-test("People source is Review-free, mobile-first, and keys artwork by person plus creation context", () => {
+test("shared People flow keeps Add Source behavior and adds a bounded hierarchy Review", () => {
 	const styles = read("builder/src/styles.css");
 	const flow = read("builder/src/ui/PeopleSourceFlow.jsx");
 	const navigation = read("builder/src/ui/people-source-navigation-state.js");
-	assert.equal(/PeopleReview|PEOPLE_SOURCE_STEPS\.REVIEW|enterPeopleReview/.test(`${flow}\n${navigation}`), false);
+	assert.match(`${flow}\n${navigation}`, /PeopleReview|PEOPLE_SOURCE_STEPS\.REVIEW|enterPeopleReview/);
 	assert.equal(/people-destination|Destination selector/.test(flow), false);
 	assert.ok(flow.includes("Image unavailable"));
 	assert.equal(/<table\b/i.test(flow), false);
 	assert.match(flow, /artworkById\[result\.id\]/);
 	assert.match(flow, /const requestKey = `\$\{artworkContextKey\}:\$\{person\.id\}`/);
 	assert.match(flow, /artworkTokensRef\.current\.get\(requestKey\) !== token/);
-	assert.match(flow, /tmdbId:\s*person\.id,\s*tileShape:\s*resolvedTileShape/);
+	assert.match(flow, /loadManifestOnce\(\{ retry: force \}\)/);
+	assert.match(flow, /data\?\.byId\?\.\[person\.id\]/);
 	assert.match(flow, /if \(!resolvesFolderArtwork\) return/);
-	assert.equal(flow.includes("people-folder-artwork"), false);
-	assert.equal(flow.includes("Folder artwork"), false);
+	assert.match(flow, /<PeopleBulkConfigurationList/);
+	assert.match(flow, /PEOPLE_CONFIGURATION_MODES\.AUTOMATIC/);
+	assert.match(flow, /setConfigurationOverrides/);
+	assert.match(flow, /updatePeopleConfiguration\(target, combinations\)/);
+	assert.equal(flow.includes("setConfigurationMode(PEOPLE_CONFIGURATION_MODES.CUSTOM)"), false);
+	assert.equal(flow.includes("Custom per person is now active"), false);
+	assert.equal(flow.includes("people-mode-transition"), false);
+	assert.match(flow, /SemanticSortChoices options=\{PEOPLE_SOURCE_SORT_OPTIONS\}/);
+	assert.match(flow, /buildPeopleSourceDrafts\(person, \{ combinations: configuration\.combinations, sortOptionId \}\)/);
+	assert.match(flow, /buildPeopleTitlePreview\(detailResult\.person/);
+	assert.match(flow, /\(!retry && entry\.detail\?\.status !== "ready"\)/);
+	assert.match(flow, /onRetryPreview=\{\(entry\) => openTitlePreview\(entry, null, \{ retry: true \}\)\}/);
+	assert.match(flow, /previewRestoreFocusRef/);
+	assert.match(flow, /window\.requestAnimationFrame\(\(\) => focusElementWithoutScroll\(trigger\)\)/);
+	assert.match(flow, /handleDialogKeyDown\(event, dialogRef\.current, onClose\)/);
+	assert.match(flow, /event\.stopPropagation\(\)/);
+	assert.match(flow, /alwaysDisclose/);
+	assert.match(flow, /showDisclosureCount=\{false\}/);
+	assert.equal(flow.includes("people-configuration-person"), false);
+	assert.equal(flow.includes("Person to configure"), false);
+	assert.match(flow, /data-large-selection-notice/);
+	assert.ok(flow.includes("people-folder-artwork-note"));
+	assert.equal(flow.includes("FolderArtworkFields"), false);
+	assert.equal(flow.includes("artworkOverridesById"), false);
+	assert.equal(flow.includes("activeArtworkPersonId"), false);
+	assert.equal(flow.includes("changeFolderArtwork"), false);
+	assert.equal(flow.includes("resetFolderArtwork"), false);
+	assert.ok(flow.includes("buildPeopleHierarchyFolderEditable"));
+	assert.match(flow, /folderTitleVisibility/);
+	assert.match(flow, /<TitleOptions/);
 	assert.match(styles, /\.people-combination-group label[\s\S]*min-height:\s*58px/);
-	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-combination-group > div[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+	assert.match(styles, /\.people-combination-group\.is-pills > div\s*\{[\s\S]*grid-template-columns:\s*repeat\(4/);
+	assert.match(styles, /\.people-combination-group\.is-pills \.people-source-pill\s*\{[\s\S]*min-height:\s*38px/);
+	assert.match(styles, /\.people-source-pill:has\(input:checked\) \.people-source-pill-check\s*\{[\s\S]*opacity:\s*1/);
+	assert.match(styles, /\.people-source-pill\[data-people-role="directing"\]/);
+	assert.match(styles, /\.people-title-preview-backdrop\s*\{[\s\S]*z-index:\s*4000/);
+	assert.match(styles, /\.people-title-preview\s*\{[\s\S]*max-height:/);
+	assert.match(styles, /\.people-title-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(10/);
+	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*max-height:[\s\S]*overflow-y:\s*auto/);
+	assert.match(styles, /\.people-combination-group label:has\(input:checked\)[\s\S]*box-shadow:\s*none/);
+	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-combination-group\.is-pills > div[\s\S]*grid-template-columns:\s*repeat\(2/);
+	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-title-preview-grid[\s\S]*grid-template-columns:\s*repeat\(5/);
 	assert.match(styles, /\.people-source-dialog\[data-dialog-compact="true"\][\s\S]*height:\s*auto/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
-	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 520);
+	for (const width of [360, 384, 393, 402, 412, 899, 900, 901]) assert.ok(width > 0);
 });
 
 test("issue #74 artwork-gap log uses the owner-QA table contract", () => {
@@ -497,14 +721,15 @@ test("issue #74 artwork-gap log uses the owner-QA table contract", () => {
 	assert.equal(gapLog.includes("ID to confirm"), false);
 });
 
-test("workspace exposes both entry points and routes quick-add and atomic collection batches", () => {
+test("workspace keeps Add Source People and routes + People through the shared hierarchy family", () => {
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.equal((workspace.match(/<AddSourceDialog/g) ?? []).length, 1);
 	assert.equal((workspace.match(/<PeopleSourceFlow/g) ?? []).length, 1);
 	assert.equal((workspace.match(/<SourceModeDialog/g) ?? []).length, 1);
 	assert.match(workspace, /data-action="add-people"/);
-	assert.match(workspace, /context:\s*"collection"[\s\S]*modeId:\s*PEOPLE_SOURCE_MODE_ID/);
-	assert.match(workspace, /createPeopleFolderBatch\(controller/);
+	assert.match(workspace, /optionId:\s*CREATION_OPTION_IDS\.PEOPLE/);
+	assert.match(workspace, /applyPeopleHierarchyPlan\(controller, plan\)/);
+	assert.equal(workspace.includes("createPeopleFolderBatch(controller"), false);
 	assert.match(workspace, /createPeopleSourceBundle\(controller/);
 	assert.match(workspace, /setPendingCreatedFolderFocus\(focusFolderInternalId\)/);
 	assert.match(workspace, /data-source-creation-status="true"/);

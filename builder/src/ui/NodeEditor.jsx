@@ -9,6 +9,7 @@ import {
 	initializeTitleInput,
 } from "./modal-focus.js";
 import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import { FolderArtworkFields } from "./FolderArtworkFields.jsx";
 import {
 	CollectionTitleVisibilitySwitch,
 	FolderShapeChoices,
@@ -452,6 +453,9 @@ export function NodeEditor({
 							<SettingsSection prefix={prefix} slug="display" title="Display">
 								<FolderTitleVisibilityField draft={draft} prefix={prefix} onChange={onChange} />
 								<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+							</SettingsSection>
+							<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
+								<FolderArtworkFields values={draft.values} original={draft.original} touched={draft.touched} prefix={`${prefix}-artwork`} onChange={onChange} />
 							</SettingsSection>
 						</>
 					)}

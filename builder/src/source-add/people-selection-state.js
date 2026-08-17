@@ -1,6 +1,6 @@
 import { isPositiveSafePersonId } from "./tmdb-person-input.js";
 
-export const PEOPLE_SELECTION_LIMIT = 20;
+export const PEOPLE_LARGE_SELECTION_NOTICE_THRESHOLD = 50;
 
 function freezeState(order, byId) {
 	return Object.freeze({
@@ -24,13 +24,15 @@ export function selectedPeople(state) {
 	return (state?.order ?? []).map((id) => state.byId[id]).filter(Boolean);
 }
 
-export function addSelectedPerson(state, person, limit = PEOPLE_SELECTION_LIMIT) {
+export function peopleSelectionNotice(state, threshold = PEOPLE_LARGE_SELECTION_NOTICE_THRESHOLD) {
+	if (!Number.isSafeInteger(threshold) || threshold < 1) throw new TypeError("The People notice threshold must be a positive safe integer.");
+	const count = state?.order?.length ?? 0;
+	return Object.freeze({ visible: count >= threshold, count, threshold });
+}
+
+export function addSelectedPerson(state, person) {
 	const normalized = normalizedPerson(person);
-	if (!Number.isInteger(limit) || limit < 1 || limit > PEOPLE_SELECTION_LIMIT) {
-		throw new TypeError(`People selection limit must be between 1 and ${PEOPLE_SELECTION_LIMIT}.`);
-	}
 	if (state.byId[normalized.id]) return Object.freeze({ state, added: false, duplicate: true, limitReached: false });
-	if (state.order.length >= limit) return Object.freeze({ state, added: false, duplicate: false, limitReached: true });
 	return Object.freeze({
 		state: freezeState([...state.order, normalized.id], { ...state.byId, [normalized.id]: normalized }),
 		added: true,
@@ -46,9 +48,9 @@ export function removeSelectedPerson(state, personId) {
 	return freezeState(state.order.filter((id) => id !== personId), byId);
 }
 
-export function toggleSelectedPerson(state, person, limit = PEOPLE_SELECTION_LIMIT) {
+export function toggleSelectedPerson(state, person) {
 	if (state.byId[person?.id]) {
 		return Object.freeze({ state: removeSelectedPerson(state, person.id), added: false, removed: true, duplicate: false, limitReached: false });
 	}
-	return addSelectedPerson(state, person, limit);
+	return addSelectedPerson(state, person);
 }

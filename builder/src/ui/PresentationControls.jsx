@@ -48,7 +48,7 @@ export function CollectionTitleVisibilitySwitch({
 	);
 }
 
-export function FolderShapeChoices({ selectedId, name, idPrefix, onChange }) {
+export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, posterLabel = "Poster" }) {
 	const posterSelected = isSelected(selectedId, "POSTER");
 	const landscapeSelected = isSelected(selectedId, "LANDSCAPE");
 	return (
@@ -73,7 +73,7 @@ export function FolderShapeChoices({ selectedId, name, idPrefix, onChange }) {
 				/>
 				<span className="shape-preview is-poster" aria-hidden="true" />
 				<span>
-					<strong>Poster</strong>
+					<strong>{posterLabel}</strong>
 					<small>Tall artwork for poster-style folders.</small>
 				</span>
 				<span className="editor-choice-check" aria-hidden="true">{posterSelected ? "✓" : ""}</span>
@@ -129,5 +129,38 @@ export function FolderTitleVisibilityChoices({ selectedId, name, onChange }) {
 				</label>
 			))}
 		</div>
+	);
+}
+
+export function TitleOptions({
+	idPrefix,
+	collectionTitleVisibility = null,
+	collectionStatus = null,
+	folderTitleVisibility,
+}) {
+	const headingId = `${idPrefix}-title-options-title`;
+	return (
+		<section className="review-title-options" data-review-title-options="true" aria-labelledby={headingId}>
+			<h4 id={headingId}>Title options</h4>
+			{collectionTitleVisibility ? (
+				<div className="editor-switch-field" data-editor-field="hideNuvioTitle">
+					<CollectionTitleVisibilitySwitch
+						checked={collectionTitleVisibility.checked}
+						onChange={collectionTitleVisibility.onChange}
+						descriptionId={collectionTitleVisibility.descriptionId}
+						controlName={collectionTitleVisibility.controlName}
+					/>
+				</div>
+			) : null}
+			{collectionStatus}
+			<fieldset className="editor-field editor-choice-field editor-compact-radio-field" data-editor-field="folderTitleVisibility">
+				<legend>{folderTitleVisibility.legend}</legend>
+				<FolderTitleVisibilityChoices
+					selectedId={folderTitleVisibility.selectedId}
+					name={folderTitleVisibility.name}
+					onChange={folderTitleVisibility.onChange}
+				/>
+			</fieldset>
+		</section>
 	);
 }

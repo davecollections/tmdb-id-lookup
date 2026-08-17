@@ -1,0 +1,35 @@
+[
+  {
+    "id": "people-1",
+    "title": "People",
+    "pinToTop": false,
+    "focusGlowEnabled": true,
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "folders": [
+      {
+        "id": "people-2",
+        "title": "Tom Hanks",
+        "hideTitle": true,
+        "tileShape": "POSTER",
+        "focusGifUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/focus-poster.webp",
+        "titleLogoUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/title-logo.png",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/poster.webp",
+        "focusGifEnabled": true,
+        "heroBackdropUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/hero.webp",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "Movie Credits",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

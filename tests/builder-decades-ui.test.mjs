@@ -108,6 +108,7 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 	assert.deepEqual(CREATION_OPTIONS.map((option) => option.id), [
 		CREATION_OPTION_IDS.BLANK,
 		CREATION_OPTION_IDS.DECADES,
+		CREATION_OPTION_IDS.PEOPLE,
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
@@ -514,9 +515,11 @@ test("structure, ordering, and shared presentation choices render schematic prev
 	assert.match(creationSource, /CollectionPresentationChoices/);
 	for (const shared of ["FolderShapeChoices", "FolderTitleVisibilityChoices", "PresentationSwitch"]) {
 		assert.ok(nodeEditorSource.includes(shared));
-		assert.ok(creationSource.includes(shared));
 		assert.ok(presentationSource.includes(`export function ${shared}`));
 	}
+	for (const directShared of ["FolderShapeChoices", "PresentationSwitch"]) assert.ok(creationSource.includes(directShared));
+	assert.ok(creationSource.includes("TitleOptions"));
+	assert.ok(presentationSource.includes("export function TitleOptions"));
 });
 
 test("Step 2 owns content configuration while Step 3 owns names, presentation, and folder details", () => {
@@ -553,18 +556,19 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	assert.ok(review.includes("20</strong><span>Sources"));
 	assert.ok(review.includes('id="decades-collection-movies"'));
 	assert.ok(review.includes('id="decades-collection-series"'));
-	assert.ok(review.includes("Titles &amp; visibility"));
+	assert.ok(review.includes("Title options"));
 	assert.ok(review.includes("Hide collection title in Nuvio"));
 	for (const label of ["Show everywhere", "Hide on home screen only", "Hide everywhere"]) assert.ok(review.includes(label), label);
-	assert.ok(review.includes('data-decades-settings="collection-options"'));
+	assert.ok(review.includes('data-decades-settings="layout"'));
 	assert.ok(review.includes('data-decades-settings="folder-options"'));
-	for (const label of ["Titles &amp; visibility", "Collection options", "Folder options", "View folder details"]) assert.ok(review.includes(label), label);
-	assert.ok(review.indexOf("Titles &amp; visibility") < review.indexOf("Collection options"));
-	assert.ok(review.indexOf("Collection options") < review.indexOf("Folder options"));
+	for (const label of ["Title options", "Layout", "Folder options", "View folder details"]) assert.ok(review.includes(label), label);
+	assert.ok(review.indexOf("Title options") < review.indexOf("Layout"));
+	assert.ok(review.indexOf("Layout") < review.indexOf("Folder options"));
 	assert.ok(review.indexOf("Folder options") < review.indexOf("View folder details"));
 	assert.equal(review.includes("Decade folder options"), false);
-	const collectionOptions = review.match(/<details class="decades-settings-disclosure" data-decades-settings="collection-options">[\s\S]*?<\/details>/)?.[0] ?? "";
+	const collectionOptions = review.match(/<section class="review-layout-options"[^>]*data-decades-settings="layout"[\s\S]*?<\/section>/)?.[0] ?? "";
 	const folderOptions = review.match(/<details class="decades-settings-disclosure" data-decades-settings="folder-options">[\s\S]*?<\/details>/)?.[0] ?? "";
+	assert.ok(collectionOptions.includes("How sources appear in each collection"));
 	assert.equal(collectionOptions.includes("hideNuvioTitle"), false);
 	assert.equal(collectionOptions.includes("Hide collection title"), false);
 	assert.equal(folderOptions.includes("folderTitleVisibility"), false);
@@ -589,7 +593,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	assert.equal(folderReview.includes("Collection</span>"), false);
 	assert.ok(folderReview.includes("Inherited Collection options"));
 	assert.ok(folderReview.includes("Rows · All tab off · title visible · pinned"));
-	assert.ok(folderReview.includes("Titles &amp; visibility"));
+	assert.ok(folderReview.includes("Title options"));
 	assert.equal(folderReview.includes("Hide collection title in Nuvio"), false);
 	assert.ok(folderReview.includes("Decade folder titles"));
 	assert.ok(folderReview.includes('data-decades-settings="folder-options"'));
@@ -658,7 +662,10 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 	const current = controller();
 	const plan = buildDecadesCreationPlan(current.getState().project, current.getState().revision, state);
 	assert.equal(plan.ok, true);
+	const serializedPlanBeforeRender = JSON.stringify(plan.plan);
 	const review = renderToStaticMarkup(createElement(DecadesReviewStep, { state: prepareDecadesReview(state), planResult: plan, onCollectionTitleChange() {}, onStateChange() {} }));
+	assert.equal(JSON.stringify(plan.plan), serializedPlanBeforeRender);
+	assert.ok(review.indexOf("Title options") < review.indexOf("Layout"));
 	for (const summary of ["Rows · All tab off · pinned", "Landscape"]) assert.ok(review.includes(summary), summary);
 	assert.match(review, /id="decades-collection-mixed" type="text" disabled=""[^>]*value=""/);
 	assert.equal((review.match(/Collection titles are intentionally hidden in Nuvio\. Turn this off to edit visible titles\./g) ?? []).length, 1);
@@ -765,6 +772,7 @@ test("creation styles keep selected cards restrained and cover required responsi
 	assert.ok(styles.includes(".decades-settings-disclosure > summary:focus-visible"));
 	assert.match(styles, /\.genre-secondary-surface\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;/s);
 	assert.match(styles, /\.genre-secondary-surface > \.genre-advanced-subview\s*\{[^}]*border:\s*1px solid/s);
-	assert.ok(styles.includes(".decades-titles-visibility"));
+	assert.ok(styles.includes(".review-title-options"));
+	assert.ok(styles.includes(".review-layout-options"));
 	assert.doesNotMatch(styles, /\.decades-(?:preset|choice|content|genre)[^}]*border-left:/);
 });

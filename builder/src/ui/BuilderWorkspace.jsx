@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
-import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
-	createPeopleFolderBatch,
+	applyPeopleHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
 	applyDecadesHierarchyPlan,
@@ -15,6 +14,7 @@ import {
 	createStreamingSourceBundle,
 	createTmdbCollectionProvider,
 	createTmdbPersonProvider,
+	createPeopleManifestClient,
 	createTmdbNetworkCountProvider,
 	createTmdbStudioCountProvider,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
@@ -31,6 +31,7 @@ import {
 import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import { CreationDialog } from "./CreationDialog.jsx";
+import { CREATION_OPTION_IDS } from "./creation-options.js";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
@@ -624,7 +625,7 @@ export function BuilderWorkspace({
 	studioCatalogueProvider = null,
 	studioCountProvider = null,
 	streamingCatalogueProvider = null,
-	artworkClient = null,
+	peopleManifestClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
 	const desktopViewport = useBuilderDesktopViewport();
@@ -718,9 +719,9 @@ export function BuilderWorkspace({
 	if (streamingCatalogueProviderRef.current === null) {
 		streamingCatalogueProviderRef.current = streamingCatalogueProvider ?? createStreamingCatalogueProvider();
 	}
-	const artworkClientRef = useRef(null);
-	if (artworkClientRef.current === null) {
-		artworkClientRef.current = artworkClient ?? createArtworkRuntimeClient();
+	const peopleManifestClientRef = useRef(null);
+	if (peopleManifestClientRef.current === null) {
+		peopleManifestClientRef.current = peopleManifestClient ?? createPeopleManifestClient();
 	}
 	if (deleteGateRef.current === null) {
 		deleteGateRef.current = createDeletionSubmissionGate();
@@ -1240,6 +1241,21 @@ export function BuilderWorkspace({
 		return result;
 	}
 
+	function applyPeoplePlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyPeopleHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} People folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
 	function openAddSource(trigger) {
 		if (
 			navigationLocked
@@ -1269,12 +1285,16 @@ export function BuilderWorkspace({
 		setKeyboardReorderInternalId(null);
 		setActionsMenuInternalId(null);
 		setCreatedCardTarget(null);
-		setSourceCreationStatusText("");
-		addSourceRestoreFocusRef.current = trigger;
-		setAddSourceSession({
-			context: "collection",
-			collectionInternalId: view.selectedCollection.internalId,
-			modeId: PEOPLE_SOURCE_MODE_ID,
+		setCreationStatusText("");
+		creationRestoreFocusRef.current = trigger;
+		setCreationSession({
+			scope: "new-folder",
+			openingProject: state.project,
+			projectRevision: state.revision,
+			currentYear: new Date().getFullYear(),
+			destinationCollectionInternalId: view.selectedCollection.internalId,
+			destinationCollectionTitle: view.selectedCollection.title,
+			optionId: CREATION_OPTION_IDS.PEOPLE,
 		});
 	}
 
@@ -1363,13 +1383,7 @@ export function BuilderWorkspace({
 				|| actionsMenuInternalId !== null
 				|| pointerInteractionLocked()
 			);
-		const result = bundle.context === "collection"
-			? createPeopleFolderBatch(controller, {
-				collectionInternalId: visibleAddSourceSession.collectionInternalId,
-				people: bundle.people,
-				interactionLocked,
-			})
-			: createPeopleSourceBundle(controller, {
+		const result = createPeopleSourceBundle(controller, {
 				destination: {
 					kind: "existing-folder",
 					folderInternalId: visibleAddSourceSession.folderInternalId,
@@ -1382,9 +1396,7 @@ export function BuilderWorkspace({
 			});
 		if (!result.ok) return result;
 
-		const focusFolderInternalId = bundle.context === "collection"
-			? result.createdFolderInternalIds[0]
-			: result.updatedFolderInternalId;
+		const focusFolderInternalId = result.updatedFolderInternalId;
 		controller.selectNode(focusFolderInternalId);
 		addSourceRestoreFocusRef.current = null;
 		setAddSourceSession(null);
@@ -1392,9 +1404,7 @@ export function BuilderWorkspace({
 		setPendingCreatedFolderFocus(focusFolderInternalId);
 		setSourceCreationStatusText("");
 		queueMicrotask(() => {
-			setSourceCreationStatusText(bundle.context === "collection"
-				? `Added ${result.addedFolderCount} People folder${result.addedFolderCount === 1 ? "" : "s"} with ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"}.`
-				: result.promotedFolder
+			setSourceCreationStatusText(result.promotedFolder
 					? `Created “${bundle.person.name}” with ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"}.`
 					: `Added ${result.addedSourceCount} source${result.addedSourceCount === 1 ? "" : "s"} for “${bundle.person.name}”.`);
 		});
@@ -2309,6 +2319,9 @@ export function BuilderWorkspace({
 					onCancel={cancelCreation}
 					onCreateBlank={createBlankItem}
 					onApplyDecades={applyDecadesPlan}
+					onApplyPeople={applyPeoplePlan}
+					peopleProvider={peopleProviderRef.current}
+					peopleManifestClient={peopleManifestClientRef.current}
 				/>
 			) : null}
 			{visibleEditorDraft ? (
@@ -2347,7 +2360,7 @@ export function BuilderWorkspace({
 					<PeopleSourceFlow
 						context={visibleAddSourceSession.context}
 						provider={peopleProviderRef.current}
-						artworkClient={artworkClientRef.current}
+						manifestClient={peopleManifestClientRef.current}
 						project={state.project}
 						collection={addSourceCollection}
 						folder={addSourceFolder}

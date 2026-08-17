@@ -7,16 +7,20 @@ import { fileURLToPath } from "node:url";
 import { createBuilderController } from "../builder/src/application/index.js";
 import {
 	beginPersonCountCheck,
+	buildPeopleHierarchyFolderEditable,
 	buildPromotedPeopleFolderEditable,
 	buildPeopleSourceDrafts,
+	buildPeopleTitlePreview,
 	buildTmdbProfileUrl,
 	calculatePersonCreditCounts,
 	completePersonCountCheck,
 	createPeopleConfiguration,
+	createPeopleCustomConfigurationMap,
 	createPeopleFolderBatch,
 	createPeopleSelectionState,
 	createPeopleSourceBundle,
 	createTmdbPersonProvider,
+	DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID,
 	failPersonCountCheck,
 	hasCustomHttpsFolderArtwork,
 	hasDeliberateFolderArtwork,
@@ -24,13 +28,16 @@ import {
 	inspectPeopleSourceDuplicates,
 	isPromotablePeopleFolder,
 	markPersonCountsStale,
+	normalizePeopleManifest,
 	normalizePersonCombinedCredits,
 	normalizeTmdbPersonDetailsResponse,
 	normalizeTmdbPersonSearchResponse,
 	parseTmdbPersonInput,
+	PEOPLE_CONFIGURATION_MODES,
 	PEOPLE_MEDIA,
 	PEOPLE_ROLES,
 	PEOPLE_SOURCE_COMBINATIONS,
+	PEOPLE_SOURCE_SORT_OPTIONS,
 	addSelectedPerson,
 	defaultPeopleSourceCombinations,
 	peopleDuplicateOverrideIdentity,
@@ -39,8 +46,12 @@ import {
 	personCountDisplayState,
 	peopleSourceIdentity,
 	peopleSourceTitle,
-	requestPersonRuntimeArtwork,
+	peopleSortOptionId,
+	peopleSortValue,
+	peopleTitlePreviewLimit,
+	requestPersonManifestArtwork,
 	removeSelectedPerson,
+	resolvePeopleConfigurationForMode,
 	resolvePersonFolderArtwork,
 	selectedPeople,
 	updatePeopleConfiguration,
@@ -54,6 +65,7 @@ import { validateNuvioContract } from "./helpers/nuvio-contract-validator.mjs";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const searchFixture = JSON.parse(fs.readFileSync(path.join(rootDir, "tests/fixtures/tmdb/people-search.json"), "utf8"));
 const detailsFixture = JSON.parse(fs.readFileSync(path.join(rootDir, "tests/fixtures/tmdb/person-details.json"), "utf8"));
+const peopleManifest = normalizePeopleManifest(JSON.parse(fs.readFileSync(path.join(rootDir, "tests/fixtures/people-manifest-v2.json"), "utf8")));
 
 function countingIdFactory(prefix = "internal") {
 	let calls = 0;
@@ -99,17 +111,8 @@ function draftsFor(person, combinations = ["acting-movies", "acting-series"]) {
 	return result.drafts;
 }
 
-function runtimeResult({ orientation = "poster", fallbackUsed = false, tmdbId = 31 } = {}) {
-	const sha256 = "a".repeat(64);
-	return {
-		status: "ready",
-		entityType: "person",
-		tmdbId,
-		orientation,
-		sha256,
-		fallbackUsed,
-		assetUrl: `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/${orientation}/${tmdbId}.webp?v=${sha256.slice(0, 12)}`,
-	};
+function manifestRecord(tmdbId = 31) {
+	return peopleManifest.byId[tmdbId] ?? null;
 }
 
 test("person input accepts names, exact positive IDs, and strict person URLs", () => {
@@ -240,15 +243,116 @@ test("manual combination choices persist across refreshed person details", () =>
 	assert.equal(validatePeopleCombinationSelection([]).ok, false);
 });
 
-test("multi-person selection preserves insertion order, blocks duplicates, removes independently, and caps at 20", () => {
+test("People creation reuses exactly the three verified semantic sorts while identity deliberately excludes sort", () => {
+	assert.equal(DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID, "popular");
+	assert.deepEqual(PEOPLE_SOURCE_SORT_OPTIONS.map((option) => option.label), ["Popular", "Recent", "Top rated"]);
+	const expected = {
+		popular: ["popularity.desc", "popularity.desc"],
+		recent: ["primary_release_date.desc", "first_air_date.desc"],
+		"top-rated": ["vote_average.desc", "vote_average.desc"],
+	};
+	for (const option of PEOPLE_SOURCE_SORT_OPTIONS) {
+		const built = buildPeopleSourceDrafts({ id: 31, name: "Tom Hanks" }, { combinations: ["acting-movies", "acting-series"], sortOptionId: option.id });
+		assert.equal(built.ok, true, option.id);
+		assert.deepEqual(built.drafts.map((draft) => draft.editable.sortBy), expected[option.id]);
+		assert.equal(peopleSortValue(option.id, "MOVIE"), expected[option.id][0]);
+		assert.equal(peopleSortOptionId(expected[option.id][1], "TV"), option.id);
+	}
+	assert.equal(buildPeopleSourceDrafts({ id: 31, name: "Tom Hanks" }, { combinations: ["acting-movies"], sortOptionId: "most-votes" }).ok, false);
+	const popular = buildPeopleSourceDrafts({ id: 31, name: "Tom Hanks" }, { combinations: ["acting-movies"], sortOptionId: "popular" }).drafts[0];
+	const recent = buildPeopleSourceDrafts({ id: 31, name: "Tom Hanks" }, { combinations: ["acting-movies"], sortOptionId: "recent" }).drafts[0];
+	assert.notEqual(popular.editable.sortBy, recent.editable.sortBy);
+	assert.equal(peopleSourceIdentity(popular.editable), peopleSourceIdentity(recent.editable));
+});
+
+test("People bulk starting strategies preserve explicit per-person overrides without a visible third mode", () => {
+	const selected = {
+		id: 40,
+		name: "Orson Welles",
+		knownForDepartment: "Acting",
+		categoryMembership: ["actor", "director"],
+		counts: { actingMovies: 2, actingSeries: 1, directingMovies: 3, directingSeries: 1 },
+	};
+	const automatic = resolvePeopleConfigurationForMode(selected);
+	assert.deepEqual(automatic.combinations, ["acting-movies", "acting-series", "directing-movies", "directing-series"]);
+	const shared = resolvePeopleConfigurationForMode(selected, { mode: PEOPLE_CONFIGURATION_MODES.SHARED, sharedCombinations: ["acting-series", "directing-movies"] });
+	assert.deepEqual(shared.combinations, ["acting-series", "directing-movies"]);
+	const customChoice = updatePeopleConfiguration(automatic, ["directing-series"]);
+	const custom = resolvePeopleConfigurationForMode(selected, { mode: PEOPLE_CONFIGURATION_MODES.CUSTOM, customConfiguration: customChoice });
+	assert.deepEqual(custom.combinations, ["directing-series"]);
+	assert.deepEqual(resolvePeopleConfigurationForMode(selected, { mode: PEOPLE_CONFIGURATION_MODES.AUTOMATIC, customConfiguration: customChoice }).combinations, ["directing-series"]);
+	assert.deepEqual(resolvePeopleConfigurationForMode(selected, { mode: PEOPLE_CONFIGURATION_MODES.SHARED, sharedCombinations: ["acting-movies"], customConfiguration: customChoice }).combinations, ["directing-series"]);
+	assert.deepEqual(resolvePeopleConfigurationForMode(selected).combinations, automatic.combinations);
+	assert.deepEqual(resolvePeopleConfigurationForMode(selected, { mode: PEOPLE_CONFIGURATION_MODES.CUSTOM, customConfiguration: customChoice }).combinations, custom.combinations);
+	assert.throws(() => resolvePeopleConfigurationForMode(selected, { mode: "unsupported" }), /supported People configuration mode/);
+});
+
+test("individual overrides snapshot automatic or shared configurations before changing only the intended person", () => {
+	const tom = createPeopleConfiguration({ id: 31, knownForDepartment: "Acting", counts: { actingMovies: 2, actingSeries: 1, directingMovies: 0, directingSeries: 0 } });
+	const orsonAutomatic = createPeopleConfiguration({ id: 40, categoryMembership: ["actor", "director"], counts: { actingMovies: 2, actingSeries: 1, directingMovies: 3, directingSeries: 1 } });
+	const automaticOverride = createPeopleCustomConfigurationMap([tom, orsonAutomatic], { overridePersonId: 31, combinationId: "directing-movies" });
+	assert.deepEqual(automaticOverride[31].combinations, ["acting-movies", "acting-series", "directing-movies"]);
+	assert.deepEqual(automaticOverride[40].combinations, orsonAutomatic.combinations);
+
+	const shared = [tom, orsonAutomatic].map((configuration) => updatePeopleConfiguration(configuration, ["acting-movies", "directing-series"]));
+	const sharedOverride = createPeopleCustomConfigurationMap(shared, { overridePersonId: 40, combinationId: "directing-series" });
+	assert.deepEqual(sharedOverride[31].combinations, ["acting-movies", "directing-series"]);
+	assert.deepEqual(sharedOverride[40].combinations, ["acting-movies"]);
+	assert.deepEqual(shared.map((configuration) => configuration.combinations), [["acting-movies", "directing-series"], ["acting-movies", "directing-series"]]);
+});
+
+test("poster-only People previews use selected role/media combinations, semantic sort, deduplication, and bounded limits", () => {
+	const rawCredits = {
+		cast: [
+			{ id: 1, media_type: "movie", poster_path: "/one.jpg", popularity: 10, vote_average: 7, vote_count: 100, release_date: "2020-01-01" },
+			{ id: 2, media_type: "tv", poster_path: "/two.jpg", popularity: 50, vote_average: 6, vote_count: 20, first_air_date: "2024-01-01" },
+			{ id: 3, media_type: "movie", poster_path: null, popularity: 100 },
+		],
+		crew: [
+			{ id: 1, media_type: "movie", job: "Director", poster_path: "/one.jpg", popularity: 10, vote_average: 7, vote_count: 100, release_date: "2020-01-01" },
+			{ id: 4, media_type: "movie", job: "Director", poster_path: "/four.jpg", popularity: 30, vote_average: 8, vote_count: 50, release_date: "2023-01-01" },
+			{ id: 5, media_type: "tv", job: "Director", poster_path: "/five.jpg", popularity: 5, vote_average: 9, vote_count: 10, first_air_date: "2025-01-01" },
+			{ id: 6, media_type: "movie", job: "Writer", poster_path: "/six.jpg", popularity: 99 },
+		],
+	};
+	const combinedCredits = normalizePersonCombinedCredits(rawCredits);
+	const person = { id: 31, name: "Tom Hanks", combinedCredits };
+	const before = JSON.stringify(person);
+	const combinations = PEOPLE_SOURCE_COMBINATIONS.map((entry) => entry.id);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "popular", limit: 10 }).items.map((item) => item.id), [2, 4, 1, 5]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "recent", limit: 10 }).items.map((item) => item.id), [5, 2, 4, 1]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "top-rated", limit: 10 }).items.map((item) => item.id), [5, 4, 1, 2]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: ["directing-movies"], sortOptionId: "popular", limit: 10 }).items.map((item) => item.id), [4, 1]);
+	assert.equal(buildPeopleTitlePreview({ id: 31, combinedCredits: null }, { combinations, limit: 5 }).ok, false);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: [], limit: 5 }).items, []);
+	assert.equal(peopleTitlePreviewLimit(360), 5);
+	assert.equal(peopleTitlePreviewLimit(520), 5);
+	assert.equal(peopleTitlePreviewLimit(521), 10);
+	assert.equal(peopleTitlePreviewLimit(1440), 10);
+	const manyCredits = normalizePersonCombinedCredits({
+		cast: Array.from({ length: 12 }, (_, index) => ({
+			id: index + 100,
+			media_type: "movie",
+			poster_path: `/poster-${index}.jpg`,
+			popularity: 100 - index,
+		})),
+		crew: [],
+	});
+	const manyPerson = { id: 32, name: "Many Credits", combinedCredits: manyCredits };
+	assert.equal(buildPeopleTitlePreview(manyPerson, { combinations: ["acting-movies"], limit: 10 }).items.length, 10);
+	assert.equal(buildPeopleTitlePreview(manyPerson, { combinations: ["acting-movies"], limit: 5 }).items.length, 5);
+	assert.equal(JSON.stringify(person), before);
+});
+
+test("multi-person selection preserves insertion order, blocks duplicates, removes independently, and has no artificial cap", () => {
 	let state = createPeopleSelectionState();
-	for (let id = 1; id <= 20; id += 1) state = addSelectedPerson(state, { id, name: `Person ${id}` }).state;
-	assert.deepEqual(selectedPeople(state).map((person) => person.id), Array.from({ length: 20 }, (_, index) => index + 1));
+	for (let id = 1; id <= 120; id += 1) state = addSelectedPerson(state, { id, name: `Person ${id}` }).state;
+	assert.deepEqual(selectedPeople(state).map((person) => person.id), Array.from({ length: 120 }, (_, index) => index + 1));
 	assert.equal(addSelectedPerson(state, { id: 10, name: "Duplicate" }).duplicate, true);
-	assert.equal(addSelectedPerson(state, { id: 21, name: "Person 21" }).limitReached, true);
+	assert.equal(addSelectedPerson(state, { id: 121, name: "Person 121" }).added, true);
 	state = removeSelectedPerson(state, 7);
 	assert.equal(state.byId[7], undefined);
-	assert.equal(addSelectedPerson(state, { id: 21, name: "Person 21" }).added, true);
+	assert.equal(addSelectedPerson(state, { id: 122, name: "Person 122" }).added, true);
 });
 
 test("every generated source contains exactly the approved native fields", () => {
@@ -459,7 +563,7 @@ test("numbered untouched folder promotion applies curated artwork and sources in
 	const created = controller.createFolder(collectionInternalId, { editable: { title: "Untitled Folder 2", tileShape: "POSTER", hideTitle: true } });
 	controller.selectNode(created.createdInternalId);
 	const person = { id: 31, name: "Tom Hanks", profilePath: "/profile.jpg" };
-	const artwork = resolvePersonFolderArtwork({ person, runtimeResult: runtimeResult() });
+	const artwork = resolvePersonFolderArtwork({ person, manifestRecord: manifestRecord() });
 	const beforeRevision = controller.getState().revision;
 	const result = createPeopleSourceBundle(controller, {
 		destination: { kind: "existing-folder", folderInternalId: created.createdInternalId },
@@ -487,7 +591,7 @@ test("untouched folder promotion uses TMDB then visible-title emoji fallbacks", 
 		const collectionInternalId = createCollection(controller);
 		const created = controller.createFolder(collectionInternalId, { editable: { title: scenario.title, tileShape: "POSTER", hideTitle: true } });
 		controller.selectNode(created.createdInternalId);
-		const artwork = resolvePersonFolderArtwork({ person: scenario.person, runtimeResult: null });
+		const artwork = resolvePersonFolderArtwork({ person: scenario.person, manifestRecord: null });
 		assert.equal(artwork.source, scenario.expectedSource);
 		const result = createPeopleSourceBundle(controller, {
 			destination: { kind: "existing-folder", folderInternalId: created.createdInternalId },
@@ -510,10 +614,13 @@ test("promoted folders preserve an existing non-default tile shape", () => {
 	const created = controller.createFolder(collectionInternalId, { editable: { title: "Untitled Folder", tileShape: "LANDSCAPE", hideTitle: false } });
 	controller.selectNode(created.createdInternalId);
 	const person = { id: 31, name: "Tom Hanks", profilePath: "/profile.jpg" };
-	const artwork = resolvePersonFolderArtwork({ person, tileShape: "LANDSCAPE", runtimeResult: runtimeResult({ orientation: "landscape" }) });
-	assert.deepEqual(buildPromotedPeopleFolderEditable(controller.getState().project.collections[0].folders[0], person, artwork), {
-		title: "Tom Hanks", tileShape: "LANDSCAPE", coverImageUrl: artwork.previewUrl, hideTitle: true,
-	});
+	const artwork = resolvePersonFolderArtwork({ person, tileShape: "LANDSCAPE", manifestRecord: manifestRecord() });
+	const promoted = buildPromotedPeopleFolderEditable(controller.getState().project.collections[0].folders[0], person, artwork);
+	assert.equal(promoted.title, "Tom Hanks");
+	assert.equal(promoted.tileShape, "LANDSCAPE");
+	assert.equal(promoted.coverImageUrl, artwork.previewUrl);
+	assert.match(promoted.heroBackdropUrl, /\/31\/hero\.webp$/);
+	assert.match(promoted.titleLogoUrl, /\/31\/title-logo\.png$/);
 	assert.equal(createPeopleSourceBundle(controller, {
 		destination: { kind: "existing-folder", folderInternalId: created.createdInternalId }, person, drafts: draftsFor(person, ["acting-movies"]), artwork,
 	}).ok, true);
@@ -525,21 +632,21 @@ test("Landscape promotion uses exact curated art, then TMDB profile, then visibl
 		{
 			label: "curated",
 			person: { id: 31, name: "Tom Hanks", profilePath: "/profile.jpg" },
-			runtimeResult: runtimeResult({ orientation: "landscape" }),
-			expectedSource: "runtime",
+			manifestRecord: manifestRecord(),
+			expectedSource: "manifest",
 			expectedHideTitle: true,
 		},
 		{
 			label: "TMDB profile fallback",
 			person: { id: 31, name: "Tom Hanks", profilePath: "/profile.jpg" },
-			runtimeResult: null,
+			manifestRecord: null,
 			expectedSource: "tmdb",
 			expectedHideTitle: false,
 		},
 		{
 			label: "emoji fallback",
 			person: { id: 202, name: "Alex Smith", profilePath: null },
-			runtimeResult: null,
+			manifestRecord: null,
 			expectedSource: "emoji",
 			expectedHideTitle: false,
 		},
@@ -550,7 +657,7 @@ test("Landscape promotion uses exact curated art, then TMDB profile, then visibl
 		const collectionInternalId = createCollection(controller);
 		const created = controller.createFolder(collectionInternalId, { editable: { title: "Untitled Folder", tileShape: "LANDSCAPE", hideTitle: true } });
 		controller.selectNode(created.createdInternalId);
-		const artwork = resolvePersonFolderArtwork({ person: scenario.person, tileShape: "LANDSCAPE", runtimeResult: scenario.runtimeResult });
+		const artwork = resolvePersonFolderArtwork({ person: scenario.person, tileShape: "LANDSCAPE", manifestRecord: scenario.manifestRecord });
 		assert.equal(artwork.source, scenario.expectedSource, scenario.label);
 		assert.equal(artwork.tileShape, "LANDSCAPE", scenario.label);
 		assert.equal(artwork.folderEditable.hideTitle, scenario.expectedHideTitle, scenario.label);
@@ -586,7 +693,7 @@ test("invalid promotion input and source-construction failure leave a default fo
 			destination: { kind: "existing-folder", folderInternalId: created.createdInternalId },
 			person,
 			drafts: draftsFor(person, ["acting-movies"]),
-			artwork: mutationFailure ? resolvePersonFolderArtwork({ person, tileShape: "LANDSCAPE", runtimeResult: runtimeResult({ orientation: "landscape" }) }) : null,
+			artwork: mutationFailure ? resolvePersonFolderArtwork({ person, tileShape: "LANDSCAPE", manifestRecord: manifestRecord() }) : null,
 		});
 		assert.equal(result.ok, false);
 		assert.equal(controller.getState().project, beforeProject);
@@ -668,34 +775,65 @@ test("explicit Add all anyway is identity-bound and configuration changes invali
 	assert.deepEqual(controller.getState().project.collections[0].folders[0].sources.map((source) => source.editable.mediaType), ["MOVIE", "TV"]);
 });
 
-test("runtime artwork resolves exact poster and landscape orientation including approved fallbackUsed", () => {
+test("manifest artwork resolves exact poster and landscape roles with separate hero, logo and focus fields", () => {
 	for (const tileShape of ["POSTER", "LANDSCAPE"]) {
 		const orientation = personArtworkOrientation(tileShape);
 		const result = resolvePersonFolderArtwork({
 			person: { id: 31, name: "Tom Hanks", profilePath: "/profile.jpg" },
 			tileShape,
-			runtimeResult: runtimeResult({ orientation, fallbackUsed: true }),
+			manifestRecord: manifestRecord(),
 		});
-		assert.equal(result.source, "runtime");
-		assert.equal(result.fallbackUsed, true);
+		assert.equal(result.source, "manifest");
 		assert.equal(result.folderEditable.hideTitle, true);
-		assert.match(result.folderEditable.coverImageUrl, new RegExp(`/people/${orientation}/31\\.webp\\?v=${"a".repeat(12)}$`));
+		assert.match(result.folderEditable.coverImageUrl, new RegExp(`/people/31/${orientation}\\.webp$`));
+		assert.match(result.folderEditable.heroBackdropUrl, /\/people\/31\/hero\.webp$/);
+		assert.match(result.folderEditable.titleLogoUrl, /\/people\/31\/title-logo\.png$/);
+		assert.match(result.folderEditable.focusGifUrl, new RegExp(`/people/31/focus-${orientation}\\.webp$`));
 	}
 });
 
-test("missing runtime record or orientation falls back to TMDB w500 then visible-title emoji", () => {
+test("People hierarchy artwork keeps canonical manifest roles distinct for both shared shapes", () => {
+	const person = { id: 31, name: "Tom Hanks", profilePath: "/profile.jpg" };
+	const posterArtwork = resolvePersonFolderArtwork({ person, tileShape: "POSTER", manifestRecord: manifestRecord() });
+	const poster = buildPeopleHierarchyFolderEditable(person, posterArtwork, { tileShape: "POSTER" });
+	assert.equal(poster.tileShape, "POSTER");
+	assert.match(poster.coverImageUrl, /\/poster\.webp$/);
+	assert.match(poster.heroBackdropUrl, /\/hero\.webp$/);
+	assert.match(poster.titleLogoUrl, /\/title-logo\.png$/);
+	assert.match(poster.focusGifUrl, /\/focus-poster\.webp$/);
+	const landscapeArtwork = resolvePersonFolderArtwork({ person, tileShape: "LANDSCAPE", manifestRecord: manifestRecord() });
+	const landscape = buildPeopleHierarchyFolderEditable(person, landscapeArtwork, { tileShape: "LANDSCAPE" });
+	assert.deepEqual(
+		{
+			tileShape: landscape.tileShape,
+			coverImageUrl: landscape.coverImageUrl,
+			heroBackdropUrl: landscape.heroBackdropUrl,
+			titleLogoUrl: landscape.titleLogoUrl,
+			focusGifUrl: landscape.focusGifUrl,
+			focusGifEnabled: landscape.focusGifEnabled,
+		},
+		{
+			tileShape: "LANDSCAPE",
+			coverImageUrl: landscapeArtwork.folderEditable.coverImageUrl,
+			heroBackdropUrl: landscapeArtwork.folderEditable.heroBackdropUrl,
+			titleLogoUrl: landscapeArtwork.folderEditable.titleLogoUrl,
+			focusGifUrl: landscapeArtwork.folderEditable.focusGifUrl,
+			focusGifEnabled: true,
+		},
+	);
+	assert.match(landscapeArtwork.folderEditable.coverImageUrl, /\/landscape\.webp$/);
+	assert.match(landscape.focusGifUrl, /\/focus-landscape\.webp$/);
+});
+
+test("missing manifest record falls back to TMDB w500 then visible-title emoji", () => {
 	for (const tileShape of ["POSTER", "LANDSCAPE"]) {
-		const tmdb = resolvePersonFolderArtwork({
-			person: { id: 31, profilePath: "/profile.jpg" }, tileShape, runtimeResult: null,
-		});
+		const tmdb = resolvePersonFolderArtwork({ person: { id: 31, profilePath: "/profile.jpg" }, tileShape, manifestRecord: null });
 		assert.equal(tmdb.source, "tmdb", tileShape);
 		assert.equal(tmdb.tileShape, tileShape);
 		assert.equal(tmdb.folderEditable.coverImageUrl, buildTmdbProfileUrl("/profile.jpg", "w500"));
 		assert.equal(tmdb.folderEditable.hideTitle, false);
 		assert.equal(Object.hasOwn(tmdb.folderEditable, "coverEmoji"), false);
-		const emoji = resolvePersonFolderArtwork({
-			person: { id: 31, profilePath: null }, tileShape, runtimeResult: null,
-		});
+		const emoji = resolvePersonFolderArtwork({ person: { id: 31, profilePath: null }, tileShape, manifestRecord: null });
 		assert.equal(emoji.tileShape, tileShape);
 		assert.deepEqual(emoji.folderEditable, { coverImageUrl: "", hideTitle: false, coverEmoji: "👤" });
 	}
@@ -703,21 +841,21 @@ test("missing runtime record or orientation falls back to TMDB w500 then visible
 
 test("sequential, missing, reopened, and bulk artwork resolution remains independent by person ID", () => {
 	const personA = { id: 31, name: "Person A", profilePath: "/a.jpg" };
-	const personB = { id: 202, name: "Person B", profilePath: "/b.jpg" };
-	const artworkA = resolvePersonFolderArtwork({ person: personA, runtimeResult: runtimeResult({ tmdbId: 31 }) });
-	const artworkBRuntime = resolvePersonFolderArtwork({ person: personB, runtimeResult: runtimeResult({ tmdbId: 202 }) });
-	const artworkBFallback = resolvePersonFolderArtwork({ person: personB, runtimeResult: runtimeResult({ tmdbId: 31 }) });
-	const missingA = resolvePersonFolderArtwork({ person: { ...personA, profilePath: null }, runtimeResult: null });
-	const reopenedA = resolvePersonFolderArtwork({ person: personA, runtimeResult: runtimeResult({ tmdbId: 202 }) });
-	assert.equal(artworkA.source, "runtime");
-	assert.equal(artworkBRuntime.source, "runtime");
-	assert.match(artworkBRuntime.previewUrl, /\/people\/poster\/202\.webp/);
+	const personB = { id: 40, name: "Person B", profilePath: "/b.jpg" };
+	const artworkA = resolvePersonFolderArtwork({ person: personA, manifestRecord: manifestRecord(31) });
+	const artworkBManifest = resolvePersonFolderArtwork({ person: personB, manifestRecord: manifestRecord(40) });
+	const artworkBFallback = resolvePersonFolderArtwork({ person: personB, manifestRecord: manifestRecord(31) });
+	const missingA = resolvePersonFolderArtwork({ person: { ...personA, profilePath: null }, manifestRecord: null });
+	const reopenedA = resolvePersonFolderArtwork({ person: personA, manifestRecord: manifestRecord(40) });
+	assert.equal(artworkA.source, "manifest");
+	assert.equal(artworkBManifest.source, "manifest");
+	assert.match(artworkBManifest.previewUrl, /\/people\/40\/poster\.webp/);
 	assert.equal(artworkBFallback.source, "tmdb");
 	assert.equal(artworkBFallback.previewUrl, buildTmdbProfileUrl("/b.jpg", "w500"));
 	assert.equal(missingA.source, "emoji");
 	assert.equal(reopenedA.source, "tmdb");
 	assert.equal(reopenedA.previewUrl, buildTmdbProfileUrl("/a.jpg", "w500"));
-	assert.notEqual(artworkA.previewUrl, artworkBRuntime.previewUrl);
+	assert.notEqual(artworkA.previewUrl, artworkBManifest.previewUrl);
 });
 
 test("existing custom artwork and presentation are preserved unless replacement is explicit", () => {
@@ -726,7 +864,7 @@ test("existing custom artwork and presentation are preserved unless replacement 
 	const result = resolvePersonFolderArtwork({
 		person: { id: 31, profilePath: "/profile.jpg" },
 		tileShape: "LANDSCAPE",
-		runtimeResult: runtimeResult({ orientation: "landscape" }),
+		manifestRecord: manifestRecord(),
 		existingFolder: folder,
 	});
 	assert.equal(result.source, "preserved");
@@ -734,15 +872,13 @@ test("existing custom artwork and presentation are preserved unless replacement 
 	assert.equal(result.previewUrl, "https://example.test/custom.webp");
 });
 
-test("runtime artwork requests use person identity and exact orientation only", async () => {
+test("manifest artwork requests use one loaded manifest and numeric person identity", async () => {
 	const calls = [];
-	const result = await requestPersonRuntimeArtwork({
-		async resolve(options) { calls.push(options); return runtimeResult({ orientation: "poster" }); },
-	}, { tmdbId: 31, tileShape: "POSTER" });
-	assert.equal(result.status, "ready");
-	assert.deepEqual(calls, [{ entityType: "person", tmdbId: 31, orientation: "poster" }]);
-	assert.equal(await requestPersonRuntimeArtwork({ resolve() { throw new Error("offline"); } }, { tmdbId: 31, tileShape: "POSTER" }), null);
-	assert.equal(await requestPersonRuntimeArtwork({ resolve() {} }, { tmdbId: 31, tileShape: "SQUARE" }), null);
+	const result = await requestPersonManifestArtwork({ async load() { calls.push("load"); return { ok: true, data: peopleManifest }; } }, { tmdbId: 31 });
+	assert.equal(result.tmdbPersonId, 31);
+	assert.deepEqual(calls, ["load"]);
+	assert.equal(await requestPersonManifestArtwork({ load() { throw new Error("offline"); } }, { tmdbId: 31 }), null);
+	assert.equal(await requestPersonManifestArtwork({ async load() { return { ok: true, data: peopleManifest }; } }, { tmdbId: 999 }), null);
 });
 
 test("count state covers loading, ready positive, ready zero, failure, retry, stale, and refresh", () => {

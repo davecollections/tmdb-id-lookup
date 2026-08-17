@@ -1,4 +1,5 @@
 import { isPositiveSafePersonId } from "./tmdb-person-input.js";
+import { normalizeTmdbPosterPath } from "./tmdb-image.js";
 
 const COUNT_KEYS = Object.freeze([
 	"actingMovies",
@@ -20,6 +21,26 @@ function normalizedMediaType(value) {
 	return value === "movie" || value === "tv" ? value : null;
 }
 
+function normalizedFiniteNumber(value) {
+	return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function normalizedDate(value) {
+	return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
+function normalizeCredit(entry) {
+	return {
+		id: entry.id,
+		mediaType: normalizedMediaType(entry.media_type),
+		posterPath: normalizeTmdbPosterPath(entry.poster_path),
+		popularity: normalizedFiniteNumber(entry.popularity),
+		voteAverage: normalizedFiniteNumber(entry.vote_average),
+		voteCount: normalizedFiniteNumber(entry.vote_count),
+		releaseDate: normalizedDate(entry.media_type === "movie" ? entry.release_date : entry.first_air_date),
+	};
+}
+
 function addDistinctCredit(sets, role, entry) {
 	if (!plainObject(entry) || !isPositiveSafePersonId(entry.id)) return;
 	const mediaType = normalizedMediaType(entry.media_type);
@@ -32,13 +53,9 @@ export function normalizePersonCombinedCredits(value) {
 		return null;
 	}
 	return {
-		cast: value.cast.filter(plainObject).map((entry) => ({
-			id: entry.id,
-			mediaType: normalizedMediaType(entry.media_type),
-		})),
+		cast: value.cast.filter(plainObject).map((entry) => normalizeCredit(entry)),
 		crew: value.crew.filter(plainObject).map((entry) => ({
-			id: entry.id,
-			mediaType: normalizedMediaType(entry.media_type),
+			...normalizeCredit(entry),
 			job: typeof entry.job === "string" ? entry.job.trim() : "",
 		})),
 	};

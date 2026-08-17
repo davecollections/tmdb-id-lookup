@@ -61,6 +61,7 @@ runNode(["--test", path.join("tests", "builder-auto-ids-workspace-flow.test.mjs"
 runNode(["--test", path.join("tests", "builder-add-source-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-add-source-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-foundation.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-people-hierarchy.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-studio-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-studio-ui.test.mjs")]);

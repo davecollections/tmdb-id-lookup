@@ -155,6 +155,28 @@ async function runMountedPage() {
 				const decadesActionWidths = [];
 				const decadesGenreWidths = [];
 				const decadesExclusionWidths = [];
+				const peopleConfigureWidths = [];
+				const peopleSelectionScrollWidths = [];
+				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runPeopleConfigureLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (peopleEvaluation.exceptionDetails) throw new Error(peopleEvaluation.exceptionDetails.exception?.description ?? peopleEvaluation.exceptionDetails.text);
+					peopleConfigureWidths.push(peopleEvaluation.result?.value);
+				}
+				for (const width of [360, 393, 412, 899, 901, 1280]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					const peopleScrollEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runPeopleSelectionScrollScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (peopleScrollEvaluation.exceptionDetails) throw new Error(peopleScrollEvaluation.exceptionDetails.exception?.description ?? peopleScrollEvaluation.exceptionDetails.text);
+					peopleSelectionScrollWidths.push(peopleScrollEvaluation.result?.value);
+				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
 				const decadesGenreDesktopEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runDecadesGenreLayoutScenario()",
@@ -195,7 +217,7 @@ async function runMountedPage() {
 					});
 					decadesExclusionWidths.push(decadesExclusionEvaluation.result?.value);
 				}
-				return { ...result.results, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peopleSelectionScrollWidths, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -365,6 +387,118 @@ test("mounted Blank collection and folder creation immediately unlock the next m
 	});
 });
 
+test("mounted People Configure stays compact, editable, preview-safe, and overflow-free at every owner width", () => {
+	assert.deepEqual(mountedResults.peopleConfigureWidths.map((result) => result.layout.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.peopleConfigureWidths) {
+		const width = result.layout.width;
+		assert.deepEqual(result.selectionAffordance, {
+			nativeCheckbox: true,
+			keyboardFocusable: true,
+			unselectedState: "unselected",
+			cardClickToggled: true,
+			accessibleChecked: true,
+			selectedState: "selected",
+			selectedTick: "✓",
+			circular: true,
+			size: width <= 520 ? 20 : 22,
+			unselectedRingVisible: true,
+		}, `${width}px selection affordance`);
+		assert.deepEqual(result.automaticOverride.firstSelections, ["Acting Movies", "Acting Series", "Directed Movies"], `${width}px Automatic override`);
+		assert.deepEqual(result.automaticOverride.secondSelections, ["Acting Movies", "Acting Series", "Directed Movies", "Directed Series"], `${width}px untouched defaults`);
+		assert.equal(result.automaticOverride.automaticActive, true, `${width}px Automatic remains selected`);
+		assert.equal(result.automaticOverride.customAbsent, true, `${width}px no Custom global mode`);
+		assert.equal(result.automaticOverride.notificationAbsent, true, `${width}px no mode-transition status`);
+		assert.equal(result.sharedOverride.sharedVisible, true, `${width}px shared pills`);
+		assert.equal(result.sharedOverride.sharedModeActive, true, `${width}px Same for all remains selected`);
+		assert.equal(result.sharedOverride.customAbsent, true, `${width}px shared has no Custom mode`);
+		assert.equal(result.sharedOverride.notificationAbsent, true, `${width}px shared has no transition notice`);
+		assert.equal(result.sharedOverride.existingOverridePreserved, true, `${width}px existing override survives shared changes`);
+		assert.equal(result.sharedOverride.sharedChangesReachedUnmodified, true, `${width}px shared changes reach unmodified person`);
+		assert.deepEqual(result.sharedOverride.firstSelections, ["Acting Movies", "Acting Series", "Directed Movies"], `${width}px shared starting state`);
+		assert.deepEqual(result.sharedOverride.secondSelections, ["Acting Movies", "Acting Series", "Directed Movies"], `${width}px individual shared override`);
+		assert.equal(result.layout.modeChoices, 2, `${width}px visible modes`);
+		assert.equal(result.layout.helperCopyAbsent, true, `${width}px redundant helper removed`);
+		assert.equal(result.layout.rowCount, 2, `${width}px rows`);
+		assert.equal(result.layout.pillCount, 8, `${width}px row pills`);
+		assert.equal(result.layout.pillColumns, width <= 520 ? 2 : 4, `${width}px pill columns`);
+		assert.equal(result.layout.pillsFit, true, `${width}px pill fit`);
+		assert.equal(result.layout.sortChoices, 3, `${width}px sorts`);
+		assert.equal(result.layout.previewActions, 2, `${width}px preview actions`);
+		assert.equal(result.layout.listBounded, true, `${width}px bounded list`);
+		assert.equal(result.layout.continueReachable, true, `${width}px Continue`);
+		assert.equal(result.layout.noHorizontalOverflow, true, `${width}px document overflow`);
+		assert.equal(result.layout.noNestedScrollTrap, true, `${width}px scroll ownership`);
+		assert.equal(result.preview.posterCount, width <= 520 ? 5 : 10, `${width}px preview limit`);
+		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
+		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
+		assert.equal(result.preview.gridColumns, width <= 520 ? 5 : 10, `${width}px preview columns`);
+		assert.equal(result.preview.posterOnly, true, `${width}px poster-only`);
+		assert.equal(result.preview.noHorizontalOverflow, true, `${width}px preview overflow`);
+		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
+		assert.equal(result.preview.escapeClosed, true, `${width}px Escape`);
+		assert.equal(result.preview.escapeRestoredFocus, true, `${width}px Escape restore`);
+		assert.equal(result.preview.closeRestoredFocus, true, `${width}px Close restore`);
+		assert.equal(result.reviewReached, true, `${width}px Review`);
+		assert.equal(result.appearance.posterDefault, true, `${width}px Poster default`);
+		assert.equal(result.appearance.shapeChoices, 2, `${width}px folder shape choices`);
+		assert.equal(result.appearance.titleOptionsPresent, true, `${width}px Title options`);
+		assert.equal(result.appearance.collectionTitleVisibilityPresent, true, `${width}px collection title visibility`);
+		assert.equal(result.appearance.folderTitleChoices, 3, `${width}px folder title choices`);
+		assert.equal(result.appearance.folderTitleDefault, true, `${width}px accepted folder title default`);
+		assert.equal(result.appearance.titleOptionsBeforeLayout, true, `${width}px Title options before Layout`);
+		assert.equal(result.appearance.layoutControlsVisible, true, `${width}px Layout controls visible`);
+		assert.equal(result.appearance.personSelectorAbsent, true, `${width}px no person artwork selector`);
+		assert.equal(result.appearance.artworkFields, 0, `${width}px no hierarchy artwork URL fields`);
+		assert.equal(result.appearance.focusOverrideAbsent, true, `${width}px no hierarchy focus override`);
+		assert.equal(result.appearance.guidance, "Each person’s Hero, Title Logo and Focus artwork will use the canonical People defaults. To customise artwork links later, edit that person’s folder.", `${width}px canonical artwork guidance`);
+		assert.equal(result.appearance.personDetailsPresent, true, `${width}px person details reachable`);
+		assert.equal(result.appearance.backReviewPreserved, true, `${width}px Landscape survives Back and Review`);
+		assert.equal(result.appearance.folderTitleBackReviewPreserved, true, `${width}px folder title choice survives Back and Review`);
+		assert.equal(result.appearance.createReachable, true, `${width}px Create action`);
+		assert.equal(result.appearance.noDeadEditor, true, `${width}px removed editor leaves no dead container`);
+		assert.equal(result.appearance.noHorizontalOverflow, true, `${width}px appearance overflow`);
+		assert.equal(result.sortSurvivesReviewBack, true, `${width}px sort preservation`);
+		assert.equal(result.revisionUnchanged, true, `${width}px preview/configure mutation`);
+	}
+});
+
+test("mounted People selection keeps a partially clipped native checkbox inside the inner result scroller", () => {
+	assert.deepEqual(mountedResults.peopleSelectionScrollWidths.map((result) => result.width), [360, 393, 412, 899, 901, 1280]);
+	for (const result of mountedResults.peopleSelectionScrollWidths) {
+		const width = result.width;
+		assert.equal(result.resultCount, 12, `${width}px result boundary fixture`);
+		assert.equal(result.pointer.partiallyClipped, true, `${width}px pointer target clipped`);
+		assert.equal(result.pointer.inputInsideCardBeforeFocus, true, `${width}px pointer checkbox belongs to card coordinates`);
+		assert.equal(result.pointer.selectedExactlyOnce, true, `${width}px pointer selection`);
+		assert.equal(result.pointer.selectedState, "selected", `${width}px pointer selected badge`);
+		assert.equal(result.pointer.selectedTick, "✓", `${width}px pointer tick`);
+		assert.equal(result.pointer.outerStable, true, `${width}px pointer outer dialog position`);
+		assert.equal(result.pointer.documentStable, true, `${width}px pointer document position`);
+		assert.ok(Number.isFinite(result.pointer.innerScrollDelta), `${width}px pointer inner scroll measurement`);
+		assert.equal(result.pointer.actionStable, true, `${width}px pointer sticky Configure action`);
+		assert.equal(result.keyboard.partiallyClipped, true, `${width}px keyboard target clipped`);
+		assert.equal(result.keyboard.inputInsideCardBeforeFocus, true, `${width}px keyboard checkbox belongs to card coordinates`);
+		assert.equal(result.keyboard.focused, true, `${width}px native checkbox focus`);
+		assert.equal(result.keyboard.outerStable, true, `${width}px keyboard outer dialog position`);
+		assert.equal(result.keyboard.documentStable, true, `${width}px keyboard document position`);
+		assert.equal(result.keyboard.innerScrolledToKeepFocusVisible, true, `${width}px keyboard inner scroll ownership`);
+		assert.equal(result.keyboard.selectedExactlyOnce, true, `${width}px keyboard-path selection`);
+		assert.equal(result.keyboard.selectedState, "selected", `${width}px keyboard selected badge`);
+		assert.equal(result.keyboard.selectedTick, "✓", `${width}px keyboard tick`);
+		assert.equal(result.keyboard.actionStable, true, `${width}px keyboard sticky Configure action`);
+		assert.equal(result.keyboard.spaceActivationDeferredToOwner, true, `${width}px no synthetic Space claim`);
+		assert.equal(result.disclosure.opened, true, `${width}px selected disclosure opens`);
+		assert.equal(result.disclosure.outerStable, true, `${width}px selected disclosure outer position`);
+		assert.equal(result.disclosure.documentStable, true, `${width}px selected disclosure document position`);
+		assert.equal(result.disclosure.actionStable, true, `${width}px selected disclosure Configure action`);
+		assert.equal(result.removalReselection.outerStable, true, `${width}px removal/reselection outer position`);
+		assert.equal(result.removalReselection.documentStable, true, `${width}px removal/reselection document position`);
+		assert.deepEqual(result.removalReselection.selectedOrder, ["Scroll Person 8", "Scroll Person 6"], `${width}px removal/reselection order`);
+		assert.equal(result.outerDialogScrollTop, 0, `${width}px outer dialog does not scroll`);
+		assert.equal(result.noHorizontalOverflow, true, `${width}px horizontal overflow`);
+	}
+});
+
 test("mounted Decades Back navigation stays in the header, preserves drafts, and never mutates", () => {
 	assert.deepEqual(mountedResults.decadesNavigation, {
 		root: {
@@ -425,7 +559,7 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 			headingFocused: true,
 			countCards: 3,
 			removedSummariesAbsent: true,
-			sectionLabels: ["Titles & visibility", "Collection options", "Folder options", "View folder details"],
+			sectionLabels: ["Title options", "Layout", "Folder options", "View folder details"],
 			oldFolderLabelAbsent: true,
 		},
 		reviewBack: {

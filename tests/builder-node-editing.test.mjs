@@ -167,6 +167,11 @@ test("folder draft retains only stable target identity and editor values", () =>
 		title: "Folder title",
 		folderTitleVisibility: "",
 		tileShape: "",
+		coverImageUrl: "",
+		heroBackdropUrl: "",
+		titleLogoUrl: "",
+		focusGifUrl: "",
+		focusGifEnabled: false,
 	});
 	assert.equal(JSON.stringify(draft).includes("folder-id"), false);
 });
@@ -343,6 +348,43 @@ test("folder visibility choices map visible modes to hideTitle", () => {
 	draft = updateNodeEditorField(draft, "tileShape", "POSTER");
 	draft = updateNodeEditorField(draft, "folderTitleVisibility", "SHOW_EVERYWHERE");
 	assert.deepEqual(buildNodeEditorPatch(draft), {});
+});
+
+test("folder artwork editing reuses known URL fields and emits only deliberate replacements", () => {
+	const folder = {
+		nodeType: "folder",
+		internalId: "folder-artwork",
+		editable: {
+			title: "Artwork folder",
+			tileShape: "POSTER",
+			hideTitle: true,
+			coverImageUrl: "https://example.test/poster.webp",
+			heroBackdropUrl: "https://example.test/hero.webp",
+			titleLogoUrl: "https://example.test/logo.png",
+			focusGifUrl: "https://example.test/focus.webp",
+			focusGifEnabled: true,
+		},
+	};
+	let draft = createNodeEditorDraft(folder);
+	assert.deepEqual(
+		Object.fromEntries(["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl", "focusGifEnabled"].map((field) => [field, draft.values[field]])),
+		{
+			coverImageUrl: "https://example.test/poster.webp",
+			heroBackdropUrl: "https://example.test/hero.webp",
+			titleLogoUrl: "https://example.test/logo.png",
+			focusGifUrl: "https://example.test/focus.webp",
+			focusGifEnabled: true,
+		},
+	);
+	draft = updateNodeEditorField(draft, "coverImageUrl", "https://example.test/replacement.webp");
+	draft = updateNodeEditorField(draft, "heroBackdropUrl", "");
+	draft = updateNodeEditorField(draft, "focusGifEnabled", false);
+	assert.deepEqual(buildNodeEditorPatch(draft), {
+		coverImageUrl: "https://example.test/replacement.webp",
+		heroBackdropUrl: "",
+		focusGifEnabled: false,
+	});
+	assert.equal(updateNodeEditorField(draft, "heroVideoUrl", "https://example.test/video.mp4"), draft);
 });
 
 test("Follow Layout and Square are preservation-only until deliberate replacement", () => {
@@ -1849,6 +1891,10 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.ok(display.includes("Folder title visibility"));
 	assert.ok(display.includes("Tile shape"));
 	assert.ok(markup.indexOf('data-settings-section="basic-details"') < markup.indexOf('data-settings-section="display"'));
+	const artwork = markedElement(markup, 'data-settings-section="artwork"', "section");
+	assert.ok(artwork.includes('<h3 id="node-editor-folder-artwork-heading">Artwork</h3>'));
+	for (const marker of ["Tile artwork URL", "Hero / background URL", "Title Logo URL", "Focus artwork URL", "Enable focus artwork"]) assert.ok(artwork.includes(marker), marker);
+	assert.ok(markup.indexOf('data-settings-section="display"') < markup.indexOf('data-settings-section="artwork"'));
 	assert.equal(markup.includes('data-editor-field="hideNuvioTitle"'), false);
 	assert.equal(markup.includes('data-editor-control="hideNuvioTitle"'), false);
 	assert.equal((markup.match(/<legend>Folder title visibility<\/legend>/g) ?? []).length, 1);
@@ -1894,8 +1940,8 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.equal(markup.includes("hideTitle"), false);
 	assert.ok(markup.indexOf(">Title</label>") < markup.indexOf("Folder title visibility"));
 	assert.ok(markup.indexOf("Folder title visibility") < markup.indexOf("Tile shape"));
-	assert.equal(markup.includes('data-settings-section="artwork"'), false);
-	assert.equal(markup.includes(">Artwork<"), false);
+	assert.ok(markup.includes('data-settings-section="artwork"'));
+	assert.ok(markup.includes(">Artwork<"));
 	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
 	assert.equal(sourceList.includes("folderTitleVisibility"), false);
 	assert.equal(sourceList.includes("Folder title visibility"), false);
@@ -2206,7 +2252,8 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb:hover\s*\{[\s\S]*background:\s*rgb\(62 146 174\)/);
 	assert.match(styles, /body\.settings-modal-open\s*\{[\s\S]*overflow:\s*hidden/);
 	assert.match(styles, /\.workspace-underlay\[aria-hidden="true"\]\s*\{[\s\S]*pointer-events:\s*none/);
-	assert.match(styles, /\.editor-field input\[type="text"\]\s*\{[\s\S]*min-height:\s*48px/);
+	assert.match(styles, /\.editor-field input\[type="text"\],[\s\S]*min-height:\s*48px/);
+	assert.match(styles, /\.folder-artwork-fields\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.editor-settings-section\s*\{[\s\S]*min-width:\s*0[\s\S]*border-radius:\s*14px/);
 	assert.match(styles, /\.editor-choice\s*\{[\s\S]*min-height:\s*72px/);
 	assert.match(

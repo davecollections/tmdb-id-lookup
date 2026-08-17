@@ -21,7 +21,7 @@ import {
 	observeAddSourceViewport,
 	resolveAddSourceViewportStyle,
 } from "./add-source-modal-lifecycle.js";
-import { CREATION_OPTIONS, CREATION_OPTION_IDS } from "./creation-options.js";
+import { creationOptionById, creationOptionSupportsScope, creationOptionsForScope, CREATION_OPTION_IDS } from "./creation-options.js";
 import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
 import {
 	DecadesAdvancedHelpSubview,
@@ -54,14 +54,14 @@ import { GenreCatalogueList, GenreContextCatalogueSubview, GenreSelectionToolbar
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import {
-	CollectionTitleVisibilitySwitch,
 	FolderShapeChoices,
-	FolderTitleVisibilityChoices,
 	PresentationSwitch,
+	TitleOptions,
 } from "./PresentationControls.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
+import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 
 const DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID = "decades-hidden-collection-titles-help";
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -119,10 +119,11 @@ function ChoiceCards({ legend, helper = null, name, options, selectedId, onChang
 	);
 }
 
-function CreationLauncher({ firstOptionRef, onSelect }) {
+function CreationLauncher({ firstOptionRef, onSelect, scope }) {
+	const options = creationOptionsForScope(scope);
 	return (
 		<ul className="add-source-scroll creation-option-list">
-			{CREATION_OPTIONS.map((option, index) => (
+			{options.map((option, index) => (
 				<li key={option.id}>
 					<button
 						ref={index === 0 ? firstOptionRef : null}
@@ -403,7 +404,8 @@ function DecadesOrdering({ state, onStateChange }) {
 function CollectionAppearance({ state, onStateChange }) {
 	const showOverviewAllTabNote = state.content.wholeDecade && state.viewMode === "TABBED_GRID" && state.showAllTab;
 	return (
-		<DecadesSettingsDisclosure id="collection-options" title="Collection options" summary={collectionAppearanceSummary(state)}>
+		<section className="review-layout-options" data-review-layout="true" data-decades-settings="layout" aria-labelledby="decades-layout-title">
+			<div className="review-presentation-heading"><h4 id="decades-layout-title">Layout</h4><span>{collectionAppearanceSummary(state)}</span></div>
 			<fieldset className="editor-field editor-choice-field decades-presentation">
 				<legend>How sources appear in each collection</legend>
 				<p className="editor-field-help">Choose how each Decade folder displays its sources in Nuvio.</p>
@@ -418,7 +420,7 @@ function CollectionAppearance({ state, onStateChange }) {
 				</div>
 			</div>
 			{showOverviewAllTabNote ? <p className="decades-information-note" data-decades-overview-all-tab-note="true">Decade overview is also enabled. The All tab combines this folder’s sources, while Decade overview is one source covering the full Decade, so their results and ordering may differ.</p> : null}
-		</DecadesSettingsDisclosure>
+		</section>
 	);
 }
 
@@ -436,17 +438,21 @@ function FolderAppearance({ state, onStateChange }) {
 
 function TitlesAndVisibility({ state, onStateChange }) {
 	return (
-		<section className="decades-titles-visibility" aria-labelledby="decades-titles-visibility-title">
-			<h4 id="decades-titles-visibility-title">Titles &amp; visibility</h4>
-			{state.scope === "new-collection" ? <div className="editor-switch-field" data-editor-field="hideNuvioTitle">
-				<CollectionTitleVisibilitySwitch descriptionId="decades-hidden-title-help" checked={state.hideCollectionTitle} onChange={(hideCollectionTitle) => onStateChange(Object.freeze({ ...state, hideCollectionTitle }))} />
-			</div> : null}
-			{state.scope === "new-collection" && state.hideCollectionTitle ? <p id={DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID} className="editor-field-help" role="status">Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.</p> : null}
-			<fieldset className="editor-field editor-choice-field editor-compact-radio-field" data-editor-field="folderTitleVisibility">
-				<legend>Decade folder titles</legend>
-				<FolderTitleVisibilityChoices selectedId={state.folderTitleVisibility} name="decades-folder-title-visibility" onChange={(folderTitleVisibility) => onStateChange(Object.freeze({ ...state, folderTitleVisibility }))} />
-			</fieldset>
-		</section>
+		<TitleOptions
+			idPrefix="decades"
+			collectionTitleVisibility={state.scope === "new-collection" ? {
+				checked: state.hideCollectionTitle,
+				descriptionId: "decades-hidden-title-help",
+				onChange: (hideCollectionTitle) => onStateChange(Object.freeze({ ...state, hideCollectionTitle })),
+			} : null}
+			collectionStatus={state.scope === "new-collection" && state.hideCollectionTitle ? <p id={DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID} className="editor-field-help" role="status">Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.</p> : null}
+			folderTitleVisibility={{
+				legend: "Decade folder titles",
+				selectedId: state.folderTitleVisibility,
+				name: "decades-folder-title-visibility",
+				onChange: (folderTitleVisibility) => onStateChange(Object.freeze({ ...state, folderTitleVisibility })),
+			}}
+		/>
 	);
 }
 
@@ -691,8 +697,11 @@ export function CreationDialog({
 	onCancel,
 	onCreateBlank,
 	onApplyDecades,
+	onApplyPeople,
+	peopleProvider,
+	peopleManifestClient,
 }) {
-	const [optionId, setOptionId] = useState(initialOptionId);
+	const [optionId, setOptionId] = useState(() => creationOptionSupportsScope(initialOptionId, scope) ? initialOptionId : null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
 	const firstOptionRef = useRef(null);
@@ -700,7 +709,10 @@ export function CreationDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObserving = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current);
+		const initialTarget = optionId === CREATION_OPTION_IDS.PEOPLE
+			? dialogRef.current?.querySelector?.("#people-source-query")
+			: optionId === null ? firstOptionRef.current : dialogRef.current;
+		focusElementWithoutScroll(initialTarget ?? dialogRef.current);
 		return () => { stopObserving(); unlockBody(); };
 	}, []);
 
@@ -709,11 +721,13 @@ export function CreationDialog({
 	}, [optionId]);
 
 	function selectOption(nextOptionId) {
+		const option = creationOptionById(nextOptionId);
+		if (option === null || !creationOptionSupportsScope(option.id, scope)) return;
 		if (nextOptionId === CREATION_OPTION_IDS.BLANK) {
 			onCreateBlank();
 			return;
 		}
-		if (nextOptionId === CREATION_OPTION_IDS.DECADES) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	const launcher = optionId === null;
@@ -723,10 +737,12 @@ export function CreationDialog({
 				<section ref={dialogRef} className="add-source-dialog creation-dialog" data-creation-dialog="true" data-creation-scope={scope} data-creation-option={optionId ?? undefined} role="dialog" aria-modal="true" aria-labelledby="creation-title" aria-describedby="creation-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, onCancel)}>
 					{launcher ? <>
 						<CreationHeader title="What would you like to create?" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description="Choose Blank or a guided starting point." onClose={onCancel} />
-						<CreationLauncher firstOptionRef={firstOptionRef} onSelect={selectOption} />
-					</> : (
+						<CreationLauncher firstOptionRef={firstOptionRef} onSelect={selectOption} scope={scope} />
+					</> : optionId === CREATION_OPTION_IDS.DECADES ? (
 						<DecadesFlow project={project} projectRevision={projectRevision} scope={scope} currentYear={currentYear} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} onBackToLauncher={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyDecades} />
-					)}
+					) : optionId === CREATION_OPTION_IDS.PEOPLE ? (
+						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
+					) : null}
 				</section>
 			</div>
 		</div>

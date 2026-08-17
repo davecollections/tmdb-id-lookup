@@ -1,6 +1,6 @@
 # Native Source Editing
 
-Status: merged foundation through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); extended through Studio #92 / PR #93, Network #98 / PR #99, Streaming #104 / PR #105, official Genre #110 / PR #111, and canonical Decade #113 / PR #115. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and was not an unfinished merge gate.
+Status: merged foundation through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); extended through Studio #92 / PR #93, Network #98 / PR #99, Streaming #104 / PR #105, official Genre #110 / PR #111, and canonical Decade #113 / PR #115. Issue #118 changes shared People creation identity/artwork authority but deliberately leaves the physical People source editor contract unchanged. A complete current-client V2 edit/export round trip is deliberately deferred until V2 exposes export and was not an unfinished merge gate.
 
 Last reviewed: 2026-08-16
 
@@ -37,6 +37,8 @@ Source editing is framework-independent under `builder/src/source-edit/`:
 - `source-edit-utils.js` contains shared canonicalisation, title validation, and safe-label helpers.
 
 The registry is deliberately independent of Add Source. A future native editor can be added through another adapter without adding a conditional branch to the controller or changing the importer/serializer/domain contract. UI modules consume only the public source-edit entry point.
+
+Issue #118's `nuvio-people-assets` manifest is a creation-time canonical-name/category/artwork authority for registered person IDs. Source Edit remains bound to the stored numeric TMDB person ID, edits one existing physical source, makes no artwork request, and neither renames nor restyles its parent folder. The source identity and supported Acting/Directing Movie/Series combinations therefore remain exactly the contract below.
 
 ## Editable fields
 
