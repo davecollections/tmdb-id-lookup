@@ -4,6 +4,8 @@
 
 Issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) adds the deterministic, non-UI Decades foundation consumed by the later visible issue #113.
 
+This document owns Decades-specific behavior. [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md) owns the shared standards established by Decades and the later People family.
+
 The persisted hierarchy remains:
 
 ```text

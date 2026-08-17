@@ -1,12 +1,12 @@
 # Builder People creation and source behavior
 
-Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 adds the People hierarchy family and canonical artwork migration on its work branch; owner review is pending before commit/push.
+Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 / PR #119 is the merged People hierarchy-family and canonical-artwork baseline.
 
 Issues: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74); [#118 — Add People hierarchy creation and migrate People artwork authority](https://github.com/davecollections/tmdb-id-lookup/issues/118)
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
-This document records the focused People contract. [`BUILDER_KNOWLEDGE.md`](./BUILDER_KNOWLEDGE.md) remains the broader evidence record, and [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) remains the durable product-direction source.
+This document records the focused People contract. [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md) owns the shared cross-family creation standard, [`BUILDER_KNOWLEDGE.md`](./BUILDER_KNOWLEDGE.md) remains the broader evidence record, and [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) remains the durable product-direction source.
 
 ## Shared identity and provider
 

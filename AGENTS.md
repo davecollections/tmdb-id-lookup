@@ -15,6 +15,11 @@ Before v2 product, UX, startup, template, recipe, Search/Add, presentation, or p
 - `docs/v2/BUILDER_PRODUCT_PLAN.md`
 - `docs/v2/PROJECT_WORKFLOW.md`
 
+Before hierarchy creation or a new hierarchy-family issue, also read:
+
+- `docs/v2/BUILDER_HIERARCHY_CREATION.md`
+- the focused document for every existing family being reused or changed
+
 `BUILDER_PRODUCT_PLAN.md` is the durable product-direction source. `PROJECT_WORKFLOW.md` is the durable Dave/ChatGPT/Codex process. Repository implementation, deterministic tests, and confirmed manual evidence override obsolete plans. Do not silently treat an open product decision as a confirmed requirement.
 
 ## Product boundaries
@@ -78,6 +83,11 @@ For future builder work:
 
 - Keep framework-independent source, validation, parsing, migration, serialization, and ID logic outside UI components.
 - Before adding a Builder component, helper, picker, selector, catalogue, modal, validator, source constructor, identity or duplicate helper, review block, presentation control, responsive shell, focus/history/scroll behavior, controller operation, test fixture, or test harness, inspect the existing Builder for the same or substantially similar behavior. Prefer, in order: direct reuse; extraction into a shared abstraction; extension of an existing abstraction; and new code only when semantics materially differ. Do not create parallel screen-specific copies merely because consumers live in different flows; record any material semantic difference in the issue and final report.
+- New hierarchy families must use the scope-aware creation registry, generate ordinary Collection → Folder → Source nodes through an ephemeral revalidated plan, and apply atomically through existing controller operations; do not add parallel launchers or persisted hierarchy/recipe nodes.
+- Do not add an arbitrary bulk-selection hard cap. Keep one intentional scroll owner per creation stage and verify that partially clipped card focus leaves the outer modal and document stable.
+- Bulk hierarchy creators expose only batch-safe artwork/presentation choices; per-item artwork URLs and focus overrides belong to ordinary Edit Folder unless a focused issue proves a real batch-edit need.
+- Source-family sort values must be evidenced by that family's current contract; shared sort UI does not authorize normalizing options across families.
+- Naming normalization is family-specific. Preserve meaningful semantic wording and do not copy cleanup rules across families merely to shorten generated names.
 - Keep new builder work isolated from v1 until explicit integration issues are approved.
 - Do not introduce React/Vite merely because comparison sites use it.
 - Use wizard or step-based flows for complex collection creation.

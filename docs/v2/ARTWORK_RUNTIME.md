@@ -2,7 +2,7 @@
 
 Status: shared `nuvio-assets` foundation retained for V1 Company/Network and historical People compatibility; active V2 People resolution moved to `nuvio-people-assets` in issue #118
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
 ## Evidence and scope
 
@@ -13,13 +13,13 @@ This contract is based on the final `davecollections/nuvio-assets` schema-v1 pub
 
 The shared consumer implementation is [`js/artwork-runtime.mjs`](../../js/artwork-runtime.mjs). It deliberately validates only the application-facing safety and resolution contract rather than duplicating the complete publication schema. Publication generation, counts, fingerprints, source-manifest metadata, and review workflows remain owned by `nuvio-assets`.
 
-Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) added strict consumer compatibility for schema versions 1 and 2 but did not itself publish runtime v2. Assets PR #3 later completed that publication. V1 Company/Network continue to consume this runtime. Issue #74 temporarily used its People map in V2; issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) removes that active V2 dependency in favor of the separate canonical People manifest described below. V1 People migration remains outside #118.
+Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) added strict consumer compatibility for schema versions 1 and 2 but did not itself publish runtime v2. Assets PR #3 later completed that publication. V1 Company/Network continue to consume this runtime. Issue #74 temporarily used its People map in V2; issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) removed that active V2 dependency in favor of the separate canonical People manifest described below. V1 People migration remains outside #118.
 
 ## Active V2 People replacement
 
 Active V2 People creation now loads [`nuvio-people-assets/manifests/people.json`](https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/manifests/people.json) once per workspace and indexes records by numeric TMDB Person ID. The manifest supplies registered canonical name, actor/director membership, stable asset URLs, and per-asset SHA-256 values. Poster or compatibility Landscape maps to `coverImageUrl`; Hero and Title Logo remain separate; optional focus Poster/Landscape are accepted only as a complete pair. People Review exposes only a shared Poster/Landscape choice. Orientation changes recompute every generated folder's canonical manifest/fallback values; there are no per-person artwork URL, focus, or reset controls in hierarchy creation. The extracted known-field group remains available in the ordinary manual Folder editor for later individual customisation with preservation-first minimal patches. Missing IDs use the existing TMDB profile/emoji fallback and never construct the legacy paths listed later in this document. The historical `focusGifUrl` name is treated as a generic optional string by import/overlay/serialization, so the manifest's static WebP focus counterpart round-trips; no current-client rendering claim is made.
 
-The `nuvio-assets` People paths and tests below remain valid historical/publication and V1 compatibility documentation. They are not an active V2 Builder fallback. Company and Network behavior in this runtime is unchanged. No legacy asset may be deleted until the Builder migration is merged, generated JSON is accepted in Nuvio, remaining consumers are migrated/retired, and Dave separately approves deletion.
+The `nuvio-assets` People paths and tests below remain valid historical/publication and V1 compatibility documentation. They are not an active V2 Builder fallback. Company and Network behavior in this runtime is unchanged. The Builder migration is merged, but no legacy asset may be deleted until generated JSON is accepted in Nuvio, remaining consumers are migrated or retired, and Dave separately approves deletion.
 
 ## Published location
 
