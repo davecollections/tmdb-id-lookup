@@ -1,12 +1,14 @@
 # Builder UI Shell and Hierarchy Navigator
 
-Status: merged shell through issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115); issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) locally extends the hierarchy launcher to Blank/Decades/People and awaits owner review before commit/push
+Status: merged shell through issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119), including the Blank/Decades/People hierarchy launcher
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
 ## Purpose and scope
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
+
+The shared architecture and interaction rules for current and future New Collection/New Folder families are in [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md). This document records how those flows fit into the workspace shell.
 
 The workspace displays ordered collections, the selected collection's ordered folders, and the selected folder's ordered sources. It can create draft collections and folders through existing controller actions. Issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43) makes collection/folder Nuvio-facing IDs automatic and hidden. Issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53) uses one entity-owned Edit action and one responsive settings modal for titles and contained presentation fields, documented in [BUILDER_NODE_EDITING.md](./BUILDER_NODE_EDITING.md). Issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59) adds compact pointer/touch and keyboard reordering to every existing collection, folder, and source card and removes the deferred Selection details summary. Issue [#63](https://github.com/davecollections/tmdb-id-lookup/issues/63) adds persistent bottom Add actions for populated collection/folder lists plus safe collection, folder, and source deletion. Issues #65, #74, #92, #98, #104, and #110 provide the six ordered selected-folder Add Source modes: Movie franchise, People, Studios, Networks, Streaming service, and Genres. Issue #113 adds the contextual Blank/Decades New Collection/New Folder flow; issue #118 adds People to both scopes while retaining Add Source and routing the temporary `+ People` shortcut to the same New Folder flow. Issue #78 established preservation-safe physical-source editing for Movie Collection and People; the current fail-closed registry also supports Studio, Network, Decade, Genre, and simple Streaming sources. Unsupported shapes remain Delete-only. Import is documented separately in [BUILDER_WELCOME_IMPORT.md](./BUILDER_WELCOME_IMPORT.md). Logical multi-source editing, bulk settings, export, persistence, and migration application remain deferred.
 
@@ -261,7 +263,7 @@ Deployment and focused source tests use a small stable surface:
 - `data-source-mode="tmdb-movie-franchise|tmdb-people|tmdb-studios|tmdb-networks|tmdb-streaming-services|tmdb-genres"`
 - `data-creation-dialog="true"`
 - `data-creation-scope="new-collection|new-folder"`
-- `data-creation-option="blank|decades"`
+- `data-creation-option="blank|decades|people"`
 - `data-source-creation-status="true"`
 - `data-workspace-underlay="true"`
 - `data-editor-field="title|hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|tileShape"`
@@ -285,4 +287,4 @@ The current workspace does not add project-title editing, logical multi-source/b
 
 ## Current evidence boundary
 
-Issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115) merged the Blank/Decades hierarchy flow and canonical Decade editor after focused automated and owner UI review. Issue #118 is an uncommitted owner-review candidate in this repository; its deterministic before/after JSON is not a Nuvio client result. No Decades or People-hierarchy client import/export result is claimed. A complete current-client V2 edit/export round trip remains deferred until V2 exposes export.
+Issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115) merged the Blank/Decades hierarchy flow and canonical Decade editor after focused automated and owner UI review. Issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) then merged People into both launcher scopes, including the final selectable-card focus/scroll and shared Title-options corrections. The deterministic People before/after JSON is not a Nuvio client result. No Decades or People-hierarchy client import/export result is claimed. A complete current-client V2 edit/export round trip remains deferred until V2 exposes export.
