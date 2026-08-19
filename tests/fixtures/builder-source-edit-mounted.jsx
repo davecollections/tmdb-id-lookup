@@ -119,6 +119,19 @@ async function afterCommittedEffects() {
 	await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 }
 
+async function waitForMountedCondition(resolveCondition, { label, timeoutMs = 2000, pollIntervalMs = 25 } = {}) {
+	const deadline = performance.now() + timeoutMs;
+	while (performance.now() < deadline) {
+		const result = resolveCondition();
+		if (result) return result;
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+			await afterCommittedEffects();
+		});
+	}
+	throw new Error(`${label ?? "Mounted condition"} did not become ready within ${timeoutMs} ms.`);
+}
+
 async function clickAndSettle(element) {
 	await act(async () => {
 		element.click();
@@ -1675,8 +1688,10 @@ async function runPeopleConfigureLayoutScenario() {
 		const configureButton = buttonContaining(document, "Configure 2 people");
 		if (configureButton === null) throw new Error("Mounted People Configure action did not render.");
 		await clickAndSettle(configureButton);
-		await waitAndSettle(50);
-		const dialog = document.querySelector('[data-people-context="hierarchy"]');
+		const dialog = await waitForMountedCondition(() => {
+			const candidate = document.querySelector('[data-people-context="hierarchy"][data-add-source-step="configure"]');
+			return candidate?.querySelectorAll(".people-bulk-row").length === 2 ? candidate : null;
+		}, { label: "Mounted People Configure stage with two selected rows" });
 		const rows = [...dialog.querySelectorAll(".people-bulk-row")];
 		const firstRow = rows[0];
 		const secondRow = rows[1];
