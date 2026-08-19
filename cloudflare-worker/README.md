@@ -117,9 +117,10 @@ The Worker only proxies the TMDB paths the frontend needs:
 * Movie search, details, and keywords
 * TV search, details, and keywords
 * Keyword search
-* Exact Studio Movie and Series count requests using only
+* Exact Studio Movie and Series count/Preview requests using only
   `/3/discover/movie?with_companies={positive integer}` and
-  `/3/discover/tv?with_companies={positive integer}`
+  `/3/discover/tv?with_companies={positive integer}`, optionally with one
+  approved media-specific `sort_by` value for explicit title Preview
 * Exact Network Series count requests using only
   `/3/discover/tv?with_networks={positive integer}`
 * Exact Streaming provider catalogue requests using only:
@@ -127,12 +128,16 @@ The Worker only proxies the TMDB paths the frontend needs:
   * `/3/watch/providers/movie?language=en-US`
   * `/3/watch/providers/tv?language=en-US`
 
-The Movie count path fails closed unless `with_companies` appears exactly once
-with a canonical positive safe integer and no additional query parameter. The TV
-count path accepts exactly one of `with_companies` or `with_networks` under the
-same canonical rule. Mixed, duplicate, and additional query parameters fail
-closed. Other Discover filters and broad `/3/discover/*` forwarding remain
-disallowed.
+The Movie Company path accepts exactly one canonical positive-safe-integer
+`with_companies` value and either no other parameter or exactly one `sort_by`
+from `popularity.desc`, `primary_release_date.desc`, `vote_average.desc`, or
+`vote_count.desc`. The TV Company path applies the same rule with
+`popularity.desc`, `first_air_date.desc`, `vote_average.desc`, or
+`vote_count.desc`. Query parameter order may vary. The existing TV Network path
+continues to accept exactly one canonical `with_networks` value and no
+`sort_by`. Mixed, duplicate, malformed, wrong-media, unsupported, and additional
+parameters fail closed. Other Discover filters and broad `/3/discover/*`
+forwarding remain disallowed.
 
 Each Streaming provider path requires exactly one `language=en-US` parameter.
 Missing, duplicate, differently cased, or additional parameters fail closed.
@@ -143,6 +148,14 @@ the current workspace/session.
 The tracked Network route was added for Builder issue #98. It was manually
 deployed to the existing `tmdb-id-lookup-proxy` Worker and live validated on
 2026-08-09 after separate explicit authorization.
+
+The optional Company `sort_by` allowlist is tracked for Builder issue #124 so
+one explicit Studio Preview response can supply both `total_results` and the
+ordered first result page. After separate owner authorization, the exact
+reviewed Worker source was manually deployed and its approved Company Movie/TV
+no-sort and sort requests plus the rejection matrix were live validated on
+2026-08-19. Worker deployment is independent of Builder publication; the
+overall V2 Builder remains governed by its separate release and noindex boundary.
 
 The tracked Streaming routes were added for Builder issue #104. Source changes
 do not update the live Worker. Deployment and live provider acceptance require

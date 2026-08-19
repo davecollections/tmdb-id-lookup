@@ -50,6 +50,10 @@ export const STUDIO_MOVIE_SORT_OPTIONS = Object.freeze(STUDIO_SORT_OPTIONS.map((
 	value: option.values.MOVIE,
 })));
 export const DEFAULT_STUDIO_MOVIE_SORT = STUDIO_MOVIE_SORT_OPTIONS[0].value;
+export const STUDIO_SOURCE_TITLE_MODES = Object.freeze({
+	ENTITY: "entity",
+	HIERARCHY: "hierarchy",
+});
 
 const optionById = new Map(STUDIO_SOURCE_OPTIONS.map((option) => [option.id, option]));
 const editableKeys = Object.freeze([
@@ -86,9 +90,15 @@ function diagnostic(code, path, message) {
 	return { code, path, message };
 }
 
-export function studioSourceTitle(studioName, mediaType) {
+export function studioSourceTitle(studioName, mediaType, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY) {
 	const name = canonicalText(studioName);
 	if (!name) return null;
+	if (titleMode === STUDIO_SOURCE_TITLE_MODES.HIERARCHY) {
+		if (mediaType === "MOVIE") return "Movies";
+		if (mediaType === "TV") return "Series";
+		return null;
+	}
+	if (titleMode !== STUDIO_SOURCE_TITLE_MODES.ENTITY) return null;
 	if (mediaType === "MOVIE") return name;
 	if (mediaType === "TV") return `${name} Series`;
 	return null;
@@ -129,6 +139,7 @@ export function buildStudioSourceDrafts(studio, {
 	choices,
 	sortOptionId = null,
 	sortBy = null,
+	titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY,
 } = {}) {
 	const name = canonicalText(studio?.name);
 	const errors = [];
@@ -150,6 +161,9 @@ export function buildStudioSourceDrafts(studio, {
 	if (!STUDIO_SORT_OPTIONS.some((option) => option.id === resolvedSortOptionId)) {
 		errors.push(diagnostic("UNSUPPORTED_STUDIO_SORT", "$studio.sortBy", "Choose a supported Studio sort order."));
 	}
+	if (!Object.values(STUDIO_SOURCE_TITLE_MODES).includes(titleMode)) {
+		errors.push(diagnostic("UNSUPPORTED_STUDIO_TITLE_MODE", "$studio.titleMode", "Choose a supported Studio source naming mode."));
+	}
 	if (errors.length > 0) return { ok: false, drafts: [], errors };
 
 	const selected = new Set(choices);
@@ -158,7 +172,7 @@ export function buildStudioSourceDrafts(studio, {
 		.map((option) => ({
 			category: STUDIO_SOURCE_MODE.category,
 			editable: {
-				title: studioSourceTitle(name, option.mediaType),
+				title: studioSourceTitle(name, option.mediaType, titleMode),
 				sortBy: studioSortValue(resolvedSortOptionId, option.mediaType),
 				tmdbId: studio.id,
 				filters: {},
@@ -167,11 +181,11 @@ export function buildStudioSourceDrafts(studio, {
 				tmdbSourceType: "COMPANY",
 			},
 		}));
-	const validation = validateStudioSourceDrafts(drafts, { studio });
+	const validation = validateStudioSourceDrafts(drafts, { studio, titleMode });
 	return { ...validation, drafts: validation.ok ? drafts : [] };
 }
 
-export function validateStudioSourceDraft(draft, { studio = null, path = "$studio.sources[0]" } = {}) {
+export function validateStudioSourceDraft(draft, { studio = null, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY, path = "$studio.sources[0]" } = {}) {
 	const errors = [];
 	if (!plainObject(draft) || !sameKeys(draft, ["category", "editable"])) {
 		return { ok: false, errors: [diagnostic("INVALID_STUDIO_SOURCE_DRAFT", path, "The Studio source draft contains an unsupported field.")] };
@@ -190,7 +204,7 @@ export function validateStudioSourceDraft(draft, { studio = null, path = "$studi
 	if (!["MOVIE", "TV"].includes(editable.mediaType)) errors.push(diagnostic("UNSUPPORTED_STUDIO_MEDIA_TYPE", `${path}.editable.mediaType`, "Studio sources must use the proven COMPANY Movie or TV contract."));
 	if (id === null) errors.push(diagnostic("INVALID_STUDIO_TMDB_ID", `${path}.editable.tmdbId`, "The Studio TMDB ID must be a positive safe integer."));
 	if (!title || editable.title !== title) errors.push(diagnostic("INVALID_STUDIO_TITLE", `${path}.editable.title`, "The Studio source title must be non-empty and trimmed."));
-	if (studio !== null && (id !== studio.id || editable.title !== studioSourceTitle(name, editable.mediaType))) {
+	if (studio !== null && (id !== studio.id || editable.title !== studioSourceTitle(name, editable.mediaType, titleMode))) {
 		errors.push(diagnostic("MISMATCHED_STUDIO_SOURCE", path, "The Studio source must match the selected cached Studio."));
 	}
 	if (!isSupportedStudioSort(editable.sortBy, editable.mediaType)) errors.push(diagnostic("INVALID_STUDIO_SORT", `${path}.editable.sortBy`, "Choose a supported Studio sort order for this media type."));
@@ -198,11 +212,11 @@ export function validateStudioSourceDraft(draft, { studio = null, path = "$studi
 	return { ok: errors.length === 0, errors };
 }
 
-export function validateStudioSourceDrafts(drafts, { studio = null } = {}) {
+export function validateStudioSourceDrafts(drafts, { studio = null, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY } = {}) {
 	if (!Array.isArray(drafts) || drafts.length < 1 || drafts.length > 2) {
 		return { ok: false, errors: [diagnostic("INVALID_STUDIO_SOURCE_BUNDLE", "$studio.sources", "Studio source bundles must contain one or two sources.")] };
 	}
-	const errors = drafts.flatMap((draft, index) => validateStudioSourceDraft(draft, { studio, path: `$studio.sources[${index}]` }).errors);
+	const errors = drafts.flatMap((draft, index) => validateStudioSourceDraft(draft, { studio, titleMode, path: `$studio.sources[${index}]` }).errors);
 	const identities = drafts.map((draft) => studioSourceIdentity(draft?.editable));
 	if (identities.some((identity) => identity === null) || new Set(identities).size !== identities.length) {
 		errors.push(diagnostic("DUPLICATE_STUDIO_SOURCE_IDENTITY", "$studio.sources", "Studio source bundles must contain distinct supported identities."));

@@ -41,6 +41,7 @@ import {
 	addSelectedPerson,
 	defaultPeopleSourceCombinations,
 	peopleDuplicateOverrideIdentity,
+	peoplePreviewMediaTypes,
 	peoplePromotionTileShape,
 	personArtworkOrientation,
 	personCountDisplayState,
@@ -301,7 +302,7 @@ test("individual overrides snapshot automatic or shared configurations before ch
 	assert.deepEqual(shared.map((configuration) => configuration.combinations), [["acting-movies", "directing-series"], ["acting-movies", "directing-series"]]);
 });
 
-test("poster-only People previews use selected role/media combinations, semantic sort, deduplication, and bounded limits", () => {
+test("poster-only People previews separate media, combine selected roles, deduplicate physical titles, and preserve semantic sort", () => {
 	const rawCredits = {
 		cast: [
 			{ id: 1, media_type: "movie", poster_path: "/one.jpg", popularity: 10, vote_average: 7, vote_count: 100, release_date: "2020-01-01" },
@@ -319,12 +320,25 @@ test("poster-only People previews use selected role/media combinations, semantic
 	const person = { id: 31, name: "Tom Hanks", combinedCredits };
 	const before = JSON.stringify(person);
 	const combinations = PEOPLE_SOURCE_COMBINATIONS.map((entry) => entry.id);
-	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "popular", limit: 10 }).items.map((item) => item.id), [2, 4, 1, 5]);
-	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "recent", limit: 10 }).items.map((item) => item.id), [5, 2, 4, 1]);
-	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "top-rated", limit: 10 }).items.map((item) => item.id), [5, 4, 1, 2]);
+	assert.deepEqual(peoplePreviewMediaTypes(combinations), ["MOVIE", "TV"]);
+	assert.deepEqual(peoplePreviewMediaTypes(["acting-series", "directing-series"]), ["TV"]);
+	assert.deepEqual(peoplePreviewMediaTypes([]), []);
+	const popularMovies = buildPeopleTitlePreview(person, { combinations, sortOptionId: "popular", limit: 10, mediaType: "MOVIE" });
+	assert.equal(popularMovies.mediaType, "MOVIE");
+	assert.equal(popularMovies.totalResults, 2);
+	assert.deepEqual(popularMovies.items.map((item) => item.id), [4, 1]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "recent", limit: 10, mediaType: "MOVIE" }).items.map((item) => item.id), [4, 1]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "top-rated", limit: 10, mediaType: "MOVIE" }).items.map((item) => item.id), [4, 1]);
+	const popularSeries = buildPeopleTitlePreview(person, { combinations, sortOptionId: "popular", limit: 10, mediaType: "TV" });
+	assert.equal(popularSeries.mediaType, "TV");
+	assert.equal(popularSeries.totalResults, 2);
+	assert.deepEqual(popularSeries.items.map((item) => item.id), [2, 5]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "recent", limit: 10, mediaType: "TV" }).items.map((item) => item.id), [5, 2]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "top-rated", limit: 10, mediaType: "TV" }).items.map((item) => item.id), [5, 2]);
 	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: ["directing-movies"], sortOptionId: "popular", limit: 10 }).items.map((item) => item.id), [4, 1]);
 	assert.equal(buildPeopleTitlePreview({ id: 31, combinedCredits: null }, { combinations, limit: 5 }).ok, false);
-	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: [], limit: 5 }).items, []);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: [], limit: 5 }), { ok: true, mediaType: null, totalResults: 0, items: [], errors: [] });
+	assert.equal(buildPeopleTitlePreview(person, { combinations: ["acting-movies"], mediaType: "TV", limit: 5 }).ok, false);
 	assert.equal(peopleTitlePreviewLimit(360), 5);
 	assert.equal(peopleTitlePreviewLimit(520), 5);
 	assert.equal(peopleTitlePreviewLimit(521), 10);

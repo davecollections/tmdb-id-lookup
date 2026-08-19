@@ -3,6 +3,7 @@ export const CREATION_OPTION_IDS = Object.freeze({
 	DECADES: "decades",
 	PEOPLE: "people",
 	FRANCHISES: "franchises",
+	STUDIOS: "studios",
 });
 
 export const CREATION_SCOPES = Object.freeze({
@@ -35,6 +36,12 @@ export const CREATION_OPTIONS = Object.freeze([
 		id: CREATION_OPTION_IDS.FRANCHISES,
 		label: "Franchises",
 		description: "Create one folder and native movie source for each TMDB collection.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.STUDIOS,
+		label: "Studios",
+		description: "Create one configured folder for each selected Studio.",
 		scopes: BOTH_SCOPES,
 	}),
 ]);

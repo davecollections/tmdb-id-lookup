@@ -4858,9 +4858,15 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-title-preview > header span,
-.people-title-preview-state {
+.people-title-preview-state,
+.people-title-preview-summary {
 	color: var(--muted);
 	font-size: 0.61rem;
+}
+
+.people-title-preview-summary {
+	margin: 0;
+	line-height: 1.4;
 }
 
 .people-title-preview > header button,
@@ -5131,7 +5137,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 .studio-search-controls {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
+	align-items: stretch;
 	gap: 7px;
 	margin-top: -3px;
 	padding: 9px 11px;
@@ -5175,6 +5181,25 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .studio-search-controls .studio-zero-filter {
 	margin-left: auto;
+}
+
+.studio-search-controls--hierarchy {
+	align-items: flex-end;
+}
+
+.studio-search-controls--hierarchy .studio-search-count-controls {
+	flex: 1 1 520px;
+	align-items: flex-start;
+}
+
+.studio-search-controls--hierarchy .studio-search-count-controls > .studio-search-control-label {
+	padding-top: 10px;
+}
+
+.studio-search-controls--hierarchy .studio-search-alpha-override {
+	flex: 0 0 auto;
+	margin-left: auto;
+	background: transparent;
 }
 
 .studio-configure-focus-target:focus {
@@ -7048,49 +7073,317 @@ body.hierarchy-pointer-dragging .builder-shell {
 	gap: 12px;
 	margin: 0;
 	padding: 2px 3px 4px;
-	overflow-y: auto;
-	list-style: none;
 }
 
-.franchise-preview-grid li {
+.poster-only-preview-grid img {
+	display: block;
+	width: 100%;
+	aspect-ratio: 2 / 3;
+	object-fit: cover;
+	background: rgb(4 14 21 / 88%);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+
+.preview-posters-empty {
+	margin: 0;
+}
+
+.studio-search-control-group {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 7px;
+	flex-wrap: wrap;
+}
+
+.studio-search-control-buttons {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 7px;
+	flex-wrap: wrap;
+}
+
+.studio-hierarchy-form [data-studio-hierarchy-stage],
+.studio-hierarchy-configure,
+.studio-hierarchy-review {
 	display: grid;
 	min-width: 0;
 	align-content: start;
-	gap: 4px;
+	gap: 16px;
 }
 
-.franchise-preview-poster-frame {
+.studio-hierarchy-focus-target:focus,
+.studio-hierarchy-configure:focus {
+	outline: none;
+}
+
+.studio-result-selectable {
+	position: relative;
+	grid-template-columns: 22px 76px minmax(0, 1fr);
+	align-items: center;
+	cursor: pointer;
+}
+
+.studio-result-selectable.is-selected {
+	background: rgb(1 180 228 / 12%);
+	border-color: rgb(98 225 255 / 56%);
+	box-shadow: none;
+}
+
+.studio-selected-tray {
+	margin-block: 2px 4px;
+}
+
+.studio-selected-disclosure {
+	min-width: 0;
+}
+
+.studio-selected-disclosure li > div {
 	display: grid;
-	width: 100%;
-	aspect-ratio: 2 / 3;
-	place-items: center;
-	overflow: hidden;
-	color: var(--quiet);
-	background: rgb(4 14 21 / 88%);
+	min-width: 0;
+	gap: 2px;
+}
+
+.studio-selected-disclosure li strong,
+.studio-selected-disclosure li span {
+	overflow-wrap: anywhere;
+}
+
+.studio-selected-actions {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 8px;
+}
+
+.studio-selected-actions button,
+.studio-review-list button,
+.studio-configure-row-actions button,
+.studio-preview-tabs button {
+	min-height: 40px;
+	padding: 5px 9px;
+	color: var(--cyan-bright);
+	font: inherit;
+	font-size: 0.62rem;
+	font-weight: 800;
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 24%);
 	border-radius: 8px;
-	font-size: 0.58rem;
+	cursor: pointer;
 }
 
-.franchise-preview-poster {
-	display: block;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
+.studio-selected-actions .studio-selected-remove {
+	width: 40px;
+	min-width: 40px;
+	padding: 0;
+	font-size: 1rem;
 }
 
-.franchise-preview-grid strong,
-.franchise-preview-grid span {
-	overflow: hidden;
-	font-size: 0.66rem;
-	line-height: 1.35;
-	text-overflow: ellipsis;
+.studio-configure-selected,
+.studio-configure-list {
+	display: grid;
+	min-width: 0;
+	align-content: start;
+	gap: 10px;
 }
 
-.franchise-preview-grid span {
-	color: var(--quiet);
+.studio-configure-helper {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.68rem;
+	line-height: 1.45;
+}
+
+.studio-configure-selected > .add-source-section-heading h4 {
+	margin: 0;
+}
+
+.studio-configure-row {
+	display: grid;
+	min-width: 0;
+	gap: 8px;
+	padding: 10px;
+	background: rgb(5 17 25 / 70%);
+	border: 1px solid var(--border);
+	border-radius: 11px;
+}
+
+.studio-configure-row-main {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: 64px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+}
+
+.studio-configure-row-main .studio-logo-tile--result {
+	width: 64px;
+	height: 48px;
+}
+
+.studio-configure-row-copy {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+}
+
+.studio-configure-row-copy strong,
+.studio-configure-row-copy span,
+.studio-configure-row-copy small {
+	overflow-wrap: anywhere;
+}
+
+.studio-configure-row-copy strong {
+	font-size: 0.78rem;
+}
+
+.studio-configure-row-copy span {
+	color: var(--green);
+	font-size: 0.65rem;
+	font-weight: 780;
+}
+
+.studio-configure-row-copy small,
+.studio-configure-placement,
+.studio-configure-locations summary,
+.studio-configure-empty {
+	color: var(--muted);
+	font-size: 0.63rem;
+	line-height: 1.4;
+}
+
+.studio-configure-row-actions {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.studio-configure-row-actions .studio-configure-remove {
+	width: 40px;
+	min-width: 40px;
+	padding: 0;
+	font-size: 1rem;
+}
+
+.studio-configure-placement,
+.studio-configure-empty {
+	margin: 0;
+}
+
+.studio-configure-row[data-placement-status="READY"] .studio-configure-placement,
+.studio-configure-row[data-placement-status="EXISTS_ELSEWHERE"] .studio-configure-placement {
+	color: var(--green);
+}
+
+.studio-configure-locations {
+	min-width: 0;
+}
+
+.studio-configure-locations summary {
+	cursor: pointer;
+	font-weight: 750;
+}
+
+.studio-configure-locations .source-elsewhere-note {
+	margin-top: 8px;
+}
+
+.studio-review-list .studio-review-row-primary {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: 64px minmax(0, 1fr);
+	align-items: center;
+	gap: 10px;
+}
+
+.studio-review-row-primary .studio-logo-tile--result {
+	width: 64px;
+	height: 48px;
+}
+
+.studio-review-row-primary > span:last-child {
+	display: grid;
+	min-width: 0;
+	gap: 3px;
+}
+
+.studio-review-row-primary small {
+	color: var(--muted);
+	font-size: 0.64rem;
+}
+
+.studio-preview-modal {
+	grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
+.studio-preview-tabs {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.studio-preview-tabs button[aria-selected="true"] {
+	color: #e9fbff;
+	background: rgb(1 180 228 / 18%);
+	border-color: rgb(98 225 255 / 58%);
+}
+
+.studio-preview-state {
+	align-self: start;
+	color: var(--muted);
+}
+
+.studio-preview-single-media {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.68rem;
+	font-weight: 800;
+}
+
+@media (min-width: 521px) and (max-width: 620px) {
+	.studio-preview-grid img:nth-child(n + 6) {
+		display: block;
+	}
+}
+
+@media (max-width: 520px) {
+	.studio-preview-grid img:nth-child(n + 6),
+	.franchise-preview-grid img:nth-child(n + 6) {
+		display: none;
+	}
 }
 
 @media (max-width: 620px) {
+	.studio-result-selectable {
+		grid-template-columns: 20px 58px minmax(0, 1fr);
+	}
+
+	.studio-result-selectable .studio-logo-tile--result {
+		width: 58px;
+		height: 48px;
+	}
+
+	.studio-selected-disclosure li {
+		align-items: flex-start;
+	}
+
+	.studio-configure-row-main {
+		grid-template-columns: 58px minmax(0, 1fr);
+		align-items: start;
+	}
+
+	.studio-configure-row-main .studio-logo-tile--result {
+		width: 58px;
+		height: 46px;
+	}
+
+	.studio-configure-row-actions {
+		grid-column: 2;
+		justify-content: flex-end;
+	}
+
 	.franchise-result-selectable {
 		grid-template-columns: 22px 58px minmax(0, 1fr);
 	}
@@ -7125,12 +7418,12 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 
 	.franchise-preview-grid {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(5, minmax(0, 1fr));
 		gap: 9px;
 	}
 
-	.franchise-preview-grid li:nth-child(n + 6) {
-		display: none;
+	.studio-search-controls--hierarchy .studio-search-alpha-override {
+		margin-left: 0;
 	}
 }
 

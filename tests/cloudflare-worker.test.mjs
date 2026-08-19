@@ -70,6 +70,7 @@ test("disallowed or missing origins fail without valid service access", async ()
 			["/3/person/31", { token: "incorrect-service-token-at-least-32" }],
 			["/3/watch/providers/movie?language=en-US", {}],
 			["/3/watch/providers/movie?language=en-US", { token: "incorrect-service-token-at-least-32" }],
+			["/3/discover/movie?with_companies=3", { token: serviceToken }],
 		]) {
 			const response = await fetchWorker(pathname, options);
 			assert.equal(response.status, 403);
@@ -152,21 +153,27 @@ test("valid origin-free Watch Provider service requests use the fixed TMDB host 
 	});
 });
 
-test("Studio count routes forward only canonical Company filters to the fixed TMDB host", async () => {
+test("Studio Company Discover routes forward only canonical IDs and the exact media sort allowlists", async () => {
 	await withMockFetch(async (calls) => {
-		for (const pathname of [
+		const paths = [
 			"/3/discover/movie?with_companies=3",
 			"/3/discover/tv?with_companies=9007199254740991",
-		]) {
+			"/3/discover/movie?with_companies=3&sort_by=popularity.desc",
+			"/3/discover/movie?sort_by=primary_release_date.desc&with_companies=3",
+			"/3/discover/movie?with_companies=3&sort_by=vote_average.desc",
+			"/3/discover/movie?with_companies=3&sort_by=vote_count.desc",
+			"/3/discover/tv?with_companies=3&sort_by=popularity.desc",
+			"/3/discover/tv?sort_by=first_air_date.desc&with_companies=3",
+			"/3/discover/tv?with_companies=3&sort_by=vote_average.desc",
+			"/3/discover/tv?with_companies=3&sort_by=vote_count.desc",
+		];
+		for (const pathname of paths) {
 			const response = await fetchWorker(pathname, { origin: allowedOrigin });
 			assert.equal(response.status, 200, pathname);
 		}
 
-		assert.equal(calls.length, 2);
-		assert.deepEqual(calls.map(([url]) => url.toString()), [
-			"https://api.themoviedb.org/3/discover/movie?with_companies=3",
-			"https://api.themoviedb.org/3/discover/tv?with_companies=9007199254740991",
-		]);
+		assert.equal(calls.length, paths.length);
+		assert.deepEqual(calls.map(([url]) => url.toString()), paths.map((path) => `https://api.themoviedb.org${path}`));
 		for (const [url, init] of calls) {
 			assert.equal(url.origin, "https://api.themoviedb.org");
 			assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
@@ -174,7 +181,7 @@ test("Studio count routes forward only canonical Company filters to the fixed TM
 	});
 });
 
-test("Studio count routes reject missing, duplicate, malformed, fractional, negative, and extra filters", async () => {
+test("Studio Company Discover rejects duplicates, wrong-media sorts, unknown sorts, malformed IDs, and every extra filter", async () => {
 	await withMockFetch(async (calls) => {
 		for (const pathname of [
 			"/3/discover/movie",
@@ -186,6 +193,14 @@ test("Studio count routes reject missing, duplicate, malformed, fractional, nega
 			"/3/discover/movie?with_companies=03",
 			"/3/discover/movie?with_companies=9007199254740992",
 			"/3/discover/movie?with_companies=3&page=1",
+			"/3/discover/movie?with_companies=3&language=en-US",
+			"/3/discover/movie?with_companies=3&api_key=browser-secret",
+			"/3/discover/movie?with_companies=3&with_genres=18",
+			"/3/discover/movie?with_companies=3&sort_by=first_air_date.desc",
+			"/3/discover/tv?with_companies=3&sort_by=primary_release_date.desc",
+			"/3/discover/movie?with_companies=3&sort_by=revenue.desc",
+			"/3/discover/movie?with_companies=3&sort_by=popularity.desc&sort_by=vote_count.desc",
+			"/3/discover/tv?with_companies=3&with_networks=2",
 			"/3/discover/tv?with_companies=3&api_key=browser-secret",
 			"/3/discover/tv?with_genres=18",
 			"/3/discover/person?with_companies=3",
@@ -229,6 +244,7 @@ test("Network count route rejects Movie, missing, mixed, duplicate, malformed, a
 			"/3/discover/tv?with_networks=2&with_networks=3",
 			"/3/discover/tv?with_networks=2&with_companies=3",
 			"/3/discover/tv?with_networks=2&page=1",
+			"/3/discover/tv?with_networks=2&sort_by=popularity.desc",
 			"/3/discover/tv/?with_networks=2",
 			"/3/discover/tv?with_networks=%E0%A4%A",
 		]) {

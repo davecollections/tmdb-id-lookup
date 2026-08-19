@@ -16,10 +16,34 @@ export const STUDIO_SEARCH_SORTS = Object.freeze({
 	NAME_ASC: "name-asc",
 });
 export const DEFAULT_STUDIO_SEARCH_SORT = STUDIO_SEARCH_SORTS.BEST_MATCH;
+export const STUDIO_MOVIE_COUNT_FILTERS = Object.freeze({
+	ALL: "all",
+	EXCLUDE_ZERO: "exclude-zero",
+	AT_LEAST_10: "10-plus",
+	AT_LEAST_50: "50-plus",
+	AT_LEAST_100: "100-plus",
+	AT_LEAST_500: "500-plus",
+});
+export const STUDIO_MOVIE_COUNT_FILTER_OPTIONS = Object.freeze([
+	Object.freeze({ id: STUDIO_MOVIE_COUNT_FILTERS.ALL, label: "All" }),
+	Object.freeze({ id: STUDIO_MOVIE_COUNT_FILTERS.EXCLUDE_ZERO, label: "Exclude 0" }),
+	Object.freeze({ id: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_10, label: "10+" }),
+	Object.freeze({ id: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_50, label: "50+" }),
+	Object.freeze({ id: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_100, label: "100+" }),
+	Object.freeze({ id: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_500, label: "500+" }),
+]);
+export const DEFAULT_STUDIO_MOVIE_COUNT_FILTER = STUDIO_MOVIE_COUNT_FILTERS.ALL;
 
 const decimalIdPattern = /^\d+$/;
 const numericLikePattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
 const supportedSearchSorts = new Set(Object.values(STUDIO_SEARCH_SORTS));
+const supportedMovieCountFilters = new Set(Object.values(STUDIO_MOVIE_COUNT_FILTERS));
+const movieCountThresholds = new Map([
+	[STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_10, 10],
+	[STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_50, 50],
+	[STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_100, 100],
+	[STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_500, 500],
+]);
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -86,6 +110,14 @@ function publicStudio(studio) {
 		logoPath: studio.logoPath,
 		movieCount: studio.movieCount,
 	});
+}
+
+export function studioMatchesMovieCountFilter(studio, filterId = DEFAULT_STUDIO_MOVIE_COUNT_FILTER) {
+	if (!supportedMovieCountFilters.has(filterId)) throw new TypeError("Choose a supported Studio Movie Count filter.");
+	if (filterId === STUDIO_MOVIE_COUNT_FILTERS.ALL) return true;
+	if (filterId === STUDIO_MOVIE_COUNT_FILTERS.EXCLUDE_ZERO) return studio?.movieCount !== 0;
+	const threshold = movieCountThresholds.get(filterId);
+	return Number.isSafeInteger(studio?.movieCount) && studio.movieCount >= threshold;
 }
 
 export function parseStudioSearchInput(input) {
@@ -160,6 +192,7 @@ export function searchStudioCatalogue(catalogue, parsedInput, {
 	pageSize = STUDIO_SEARCH_PAGE_SIZE,
 	sort = DEFAULT_STUDIO_SEARCH_SORT,
 	hideZero = false,
+	movieCountFilter = null,
 } = {}) {
 	if (
 		!plainObject(catalogue)
@@ -170,8 +203,9 @@ export function searchStudioCatalogue(catalogue, parsedInput, {
 	if (!Number.isSafeInteger(page) || page <= 0 || !Number.isSafeInteger(pageSize) || pageSize <= 0) {
 		throw new TypeError("Studio result pages and page sizes must be positive safe integers.");
 	}
-	if (!supportedSearchSorts.has(sort) || typeof hideZero !== "boolean") {
-		throw new TypeError("Choose a supported Studio result sort and zero-count filter state.");
+	const effectiveMovieCountFilter = movieCountFilter ?? (hideZero ? STUDIO_MOVIE_COUNT_FILTERS.EXCLUDE_ZERO : DEFAULT_STUDIO_MOVIE_COUNT_FILTER);
+	if (!supportedSearchSorts.has(sort) || typeof hideZero !== "boolean" || !supportedMovieCountFilters.has(effectiveMovieCountFilter)) {
+		throw new TypeError("Choose a supported Studio result sort and Movie Count filter state.");
 	}
 
 	let rankedMatches;
@@ -195,7 +229,7 @@ export function searchStudioCatalogue(catalogue, parsedInput, {
 		rankedMatches = [];
 	}
 
-	rankedMatches = rankedMatches.filter(({ studio }) => !hideZero || studio.movieCount !== 0);
+	rankedMatches = rankedMatches.filter(({ studio }) => studioMatchesMovieCountFilter(studio, effectiveMovieCountFilter));
 	rankedMatches.sort((left, right) => {
 		if (sort === STUDIO_SEARCH_SORTS.BEST_MATCH) {
 			return left.tier - right.tier || compareMovieCounts(left.studio, right.studio);
@@ -288,6 +322,7 @@ export function createStudioCatalogueProvider({
 		page = 1,
 		sort = DEFAULT_STUDIO_SEARCH_SORT,
 		hideZero = false,
+		movieCountFilter = null,
 	} = {}) {
 		const parsedInput = typeof input === "string" ? parseStudioSearchInput(input) : input;
 		if (
@@ -302,7 +337,7 @@ export function createStudioCatalogueProvider({
 		const loaded = await loadCatalogue();
 		if (!loaded.ok) return loaded;
 		try {
-			return { ok: true, data: searchStudioCatalogue(loaded.data, parsedInput, { page, sort, hideZero }) };
+			return { ok: true, data: searchStudioCatalogue(loaded.data, parsedInput, { page, sort, hideZero, movieCountFilter }) };
 		} catch {
 			return providerError("invalid-request", "Choose a valid Studio result page.", { retryable: false });
 		}

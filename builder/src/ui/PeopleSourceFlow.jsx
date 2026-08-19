@@ -10,7 +10,6 @@ import {
 	buildPeopleHierarchyFolderEditable,
 	buildPeopleSourceDrafts,
 	buildPeopleTitlePreview,
-	buildTmdbPosterUrl,
 	buildTmdbProfileUrl,
 	applyPeopleManifestAuthority,
 	createAsyncRequestCoordinator,
@@ -30,6 +29,7 @@ import {
 	PEOPLE_SOURCE_SORT_OPTIONS,
 	PEOPLE_SOURCE_MODE,
 	peopleDuplicateOverrideIdentity,
+	peoplePreviewMediaTypes,
 	peoplePromotionTileShape,
 	peopleSelectionNotice,
 	peopleTitlePreviewLimit,
@@ -49,6 +49,7 @@ import {
 } from "./add-source-modal-lifecycle.js";
 import { restoreAddSourceSearchView } from "./add-source-navigation-state.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
+import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { FolderShapeChoices, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
@@ -393,9 +394,15 @@ export function PeopleConfigurationModeControls({ mode, sharedCombinations, onMo
 	);
 }
 
-export function PeopleTitlePreviewSurface({ person, state, items, limit, onClose, onRetry }) {
+function peoplePreviewMediaLabel(mediaType) {
+	return mediaType === "TV" ? "Series" : "Movies";
+}
+
+export function PeopleTitlePreviewSurface({ person, state, items, limit, mediaTypes = ["MOVIE"], totalResults = items.length, onChangeMedia = () => {}, onClose, onRetry }) {
 	const headingRef = useRef(null);
 	const dialogRef = useRef(null);
+	const activeMediaType = state.mediaType ?? mediaTypes[0] ?? "MOVIE";
+	const activeLabel = peoplePreviewMediaLabel(activeMediaType);
 	useEffect(() => {
 		focusElementWithoutScroll(headingRef.current);
 	}, [person.id]);
@@ -410,11 +417,12 @@ export function PeopleTitlePreviewSurface({ person, state, items, limit, onClose
 			event.stopPropagation();
 			handleDialogKeyDown(event, dialogRef.current, onClose);
 		}}>
-			<header><div><strong id={`people-title-preview-${person.id}`} ref={headingRef} tabIndex={-1}>Title preview</strong><span>{person.name} · poster sample</span></div><button type="button" onClick={onClose}>Close</button></header>
-			{state.status === "loading" ? <p className="people-title-preview-state" role="status">Preparing poster preview…</p> : null}
+			<header><div><strong id={`people-title-preview-${person.id}`} ref={headingRef} tabIndex={-1}>Title preview</strong><span>{person.name} · {activeLabel.toLowerCase()} poster sample</span></div><button type="button" onClick={onClose}>Close</button></header>
+			{mediaTypes.length > 1 ? <div className="studio-preview-tabs people-preview-tabs" role="tablist" aria-label="Preview media">{mediaTypes.map((mediaType) => <button key={mediaType} type="button" role="tab" aria-selected={activeMediaType === mediaType} onClick={() => onChangeMedia(mediaType)}>{peoplePreviewMediaLabel(mediaType)}</button>)}</div> : null}
+			<p className="people-title-preview-summary">{activeLabel}{state.status === "ready" ? ` · ${totalResults.toLocaleString("en")}` : ""} · selected Acting and Directing credits are combined and deduplicated for this media.</p>
+			{state.status === "loading" ? <p className="people-title-preview-state" role="status">Preparing {activeLabel.toLowerCase()} poster preview…</p> : null}
 			{state.status === "error" ? <div className="people-title-preview-state" role="alert"><p>{errorMessage(state.error, "This title preview could not be prepared.")}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-			{state.status === "ready" && items.length === 0 ? <p className="people-title-preview-state">No poster previews were available for these source choices.</p> : null}
-			{state.status === "ready" && items.length > 0 ? <div className="people-title-preview-grid" aria-label={`${items.length} representative title posters`}>{items.map((item, index) => <img key={item.identity} src={buildTmdbPosterUrl(item.posterPath, "w185")} alt={`Preview poster ${index + 1}`} loading="lazy" />)}</div> : null}
+			{state.status === "ready" ? <PosterOnlyPreviewGrid items={items} limit={limit} size="w185" className="people-title-preview-grid" ariaLabel={`${activeLabel} poster preview`} altPrefix={activeLabel} /> : null}
 		</section>
 		</div>
 	);
@@ -431,6 +439,9 @@ export function PeopleBulkConfigurationList({
 	previewState,
 	previewItems,
 	previewLimit,
+	previewMediaTypes,
+	previewTotalResults,
+	onChangePreviewMedia,
 	onClosePreview,
 	onRetryPreview,
 }) {
@@ -458,7 +469,7 @@ export function PeopleBulkConfigurationList({
 				);
 			})}
 		</div>
-		{previewEntry ? <PeopleTitlePreviewSurface person={previewEntry.person ?? previewEntry.result} state={previewState} items={previewItems} limit={previewLimit} onClose={onClosePreview} onRetry={() => onRetryPreview(previewEntry)} /> : null}
+		{previewEntry ? <PeopleTitlePreviewSurface person={previewEntry.person ?? previewEntry.result} state={previewState} items={previewItems} limit={previewLimit} mediaTypes={previewMediaTypes} totalResults={previewTotalResults} onChangeMedia={onChangePreviewMedia} onClose={onClosePreview} onRetry={() => onRetryPreview(previewEntry)} /> : null}
 		</>
 	);
 }
@@ -690,8 +701,9 @@ export function PeopleSourceFlow({
 	});
 	const previewEntry = previewState ? configuredEntries.find((entry) => entry.result.id === previewState.personId) ?? null : null;
 	const previewLimit = previewState?.limit ?? peopleTitlePreviewLimit(typeof window === "undefined" ? 1024 : window.innerWidth);
+	const previewMediaTypes = peoplePreviewMediaTypes(previewEntry?.configuration?.combinations ?? []);
 	const previewResult = previewState?.status === "ready" && previewEntry?.person
-		? buildPeopleTitlePreview(previewEntry.person, { combinations: previewEntry.configuration?.combinations ?? [], sortOptionId, limit: previewLimit })
+		? buildPeopleTitlePreview(previewEntry.person, { combinations: previewEntry.configuration?.combinations ?? [], sortOptionId, limit: previewLimit, mediaType: previewState.mediaType })
 		: null;
 	const quickEntry = configuredEntries[0] ?? null;
 	const quickDuplicates = context === "folder" && quickEntry?.drafts.ok
@@ -770,8 +782,15 @@ export function PeopleSourceFlow({
 	}, [manifest]);
 
 	useEffect(() => {
-		if (previewState !== null && !chosenPeople.some((person) => person.id === previewState.personId)) setPreviewState(null);
-	}, [chosenPeople, previewState]);
+		if (previewState === null) return;
+		if (!chosenPeople.some((person) => person.id === previewState.personId) || previewMediaTypes.length === 0) {
+			setPreviewState(null);
+			return;
+		}
+		if (!previewMediaTypes.includes(previewState.mediaType)) {
+			setPreviewState((current) => current ? { ...current, mediaType: previewMediaTypes[0] } : current);
+		}
+	}, [chosenPeople, previewMediaTypes, previewState]);
 
 	useEffect(() => {
 		if (!multiContext || configurationMode !== PEOPLE_CONFIGURATION_MODES.SHARED || sharedConfigurationInitialized) return;
@@ -929,19 +948,27 @@ export function PeopleSourceFlow({
 		if ((!retry && entry.detail?.status !== "ready") || !entry.configuration?.combinations.length) return;
 		if (trigger) previewRestoreFocusRef.current = trigger;
 		const limit = peopleTitlePreviewLimit(typeof window === "undefined" ? 1024 : window.innerWidth);
+		const mediaTypes = peoplePreviewMediaTypes(entry.configuration.combinations);
+		const mediaType = retry && previewState?.personId === entry.result.id && mediaTypes.includes(previewState.mediaType) ? previewState.mediaType : mediaTypes[0];
+		if (!mediaType) return;
 		const token = Symbol(`people-preview-${entry.result.id}`);
 		previewTokenRef.current = token;
-		setPreviewState({ status: "loading", personId: entry.result.id, limit, error: null });
+		setPreviewState({ status: "loading", personId: entry.result.id, mediaType, limit, error: null });
 		const detailResult = await loadDetails(entry.result, { bypassCache: retry });
 		if (previewTokenRef.current !== token) return;
 		if (!detailResult.ok) {
-			setPreviewState({ status: "error", personId: entry.result.id, limit, error: detailResult.error ?? { message: "This title preview could not be prepared." } });
+			setPreviewState({ status: "error", personId: entry.result.id, mediaType, limit, error: detailResult.error ?? { message: "This title preview could not be prepared." } });
 			return;
 		}
-		const preview = buildPeopleTitlePreview(detailResult.person, { combinations: entry.configuration.combinations, sortOptionId, limit });
+		const preview = buildPeopleTitlePreview(detailResult.person, { combinations: entry.configuration.combinations, sortOptionId, limit, mediaType });
 		setPreviewState(preview.ok
-			? { status: "ready", personId: entry.result.id, limit, error: null }
-			: { status: "error", personId: entry.result.id, limit, error: preview.errors[0] });
+			? { status: "ready", personId: entry.result.id, mediaType, limit, error: null }
+			: { status: "error", personId: entry.result.id, mediaType, limit, error: preview.errors[0] });
+	}
+
+	function changePeoplePreviewMedia(mediaType) {
+		if (!previewMediaTypes.includes(mediaType)) return;
+		setPreviewState((current) => current ? { ...current, mediaType } : current);
 	}
 
 	function toggleCombination(personId, combinationId) {
@@ -1105,7 +1132,7 @@ export function PeopleSourceFlow({
 									{multiContext ? <PeopleConfigurationModeControls mode={configurationMode} sharedCombinations={sharedCombinations} onModeChange={changeConfigurationMode} onToggleShared={(combinationId) => toggleCombination(null, combinationId)} /> : null}
 									{hierarchy ? <SemanticSortChoices options={PEOPLE_SOURCE_SORT_OPTIONS} selectedId={sortOptionId} name="people-hierarchy-sort" legend="Sort titles by" onChange={(nextSortOptionId) => { setSortOptionId(nextSortOptionId); setApplyDiagnostic(null); }} /> : null}
 									{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}
-									{multiContext ? <PeopleBulkConfigurationList entries={configuredEntries} mode={configurationMode} onToggleCombination={toggleCombination} onRetry={(entry) => loadDetails(entry.result, { bypassCache: true })} onRemove={removePerson} onPreview={openTitlePreview} previewState={previewState} previewItems={previewResult?.ok ? previewResult.items : []} previewLimit={previewLimit} onClosePreview={() => closeTitlePreview()} onRetryPreview={(entry) => openTitlePreview(entry, null, { retry: true })} /> : <div className="people-configuration-list">{configuredEntries.map((entry) => <PeopleConfigurationCard key={entry.result.id} personResult={entry.result} detail={entry.detail} configuration={entry.configuration} artworkState={entry.artworkState} showArtwork={resolvesFolderArtwork} onToggle={(id) => toggleCombination(entry.result.id, id)} onRefresh={() => loadDetails(entry.result, { bypassCache: true })} onRetry={() => loadDetails(entry.result, { bypassCache: true })} onRetryArtwork={() => entry.person && loadArtwork(entry.person, true)} onRemove={null} />)}</div>}
+									{multiContext ? <PeopleBulkConfigurationList entries={configuredEntries} mode={configurationMode} onToggleCombination={toggleCombination} onRetry={(entry) => loadDetails(entry.result, { bypassCache: true })} onRemove={removePerson} onPreview={openTitlePreview} previewState={previewState} previewItems={previewResult?.ok ? previewResult.items : []} previewLimit={previewLimit} previewMediaTypes={previewMediaTypes} previewTotalResults={previewResult?.ok ? previewResult.totalResults : 0} onChangePreviewMedia={changePeoplePreviewMedia} onClosePreview={() => closeTitlePreview()} onRetryPreview={(entry) => openTitlePreview(entry, null, { retry: true })} /> : <div className="people-configuration-list">{configuredEntries.map((entry) => <PeopleConfigurationCard key={entry.result.id} personResult={entry.result} detail={entry.detail} configuration={entry.configuration} artworkState={entry.artworkState} showArtwork={resolvesFolderArtwork} onToggle={(id) => toggleCombination(entry.result.id, id)} onRefresh={() => loadDetails(entry.result, { bypassCache: true })} onRetry={() => loadDetails(entry.result, { bypassCache: true })} onRetryArtwork={() => entry.person && loadArtwork(entry.person, true)} onRemove={null} />)}</div>}
 									{context === "folder" && quickDuplicates.destination.length ? <div className="add-source-duplicate-warning" role="alert" data-people-duplicate-warning="true"><strong>{quickDuplicates.duplicateDrafts.length} selected source{quickDuplicates.duplicateDrafts.length === 1 ? " is" : "s are"} already in this folder.</strong><p>The main action adds only missing sources. Add all anyway is an explicit override for this person and selection.</p></div> : null}
 									{context === "folder" && quickDuplicates.elsewhere.length ? <p className="people-elsewhere-note" role="status">Matching sources also exist elsewhere in this Builder document. This does not block adding them here.</p> : null}
 								</section>

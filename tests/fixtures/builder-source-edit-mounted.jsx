@@ -1,6 +1,7 @@
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
+import { createTmdbStudioPreviewProvider } from "../../builder/src/source-add/index.js";
 import {
 	chooseMovieCollection,
 	createSourceEditSession,
@@ -672,6 +673,8 @@ function MountedWorkspace({ controller }) {
 		networkCountProvider: {},
 		studioCatalogueProvider: {},
 		studioCountProvider: {},
+		studioPreviewProvider: {},
+		studioArtworkRuntimeClient: {},
 		streamingCatalogueProvider: {},
 		artworkClient: {},
 	});
@@ -999,12 +1002,12 @@ function mountedFranchise(id, name) {
 		overview: `${name} overview`,
 		posterPath: `/franchise-${id}.jpg`,
 		backdropPath: `/franchise-${id}-backdrop.jpg`,
-		movieCount: 8,
-		containedTitles: Array.from({ length: 8 }, (_, index) => ({
+		movieCount: 12,
+		containedTitles: Array.from({ length: 12 }, (_, index) => ({
 			id: id * 100 + index,
 			title: `${name} Title ${index + 1}`,
 			releaseYear: 2000 + index,
-			posterPath: `/franchise-${id}-title-${index + 1}.jpg`,
+			posterPath: index === 0 ? null : `/franchise-${id}-title-${index + 1}.jpg`,
 		})),
 	};
 }
@@ -1121,6 +1124,12 @@ async function runFranchiseReviewScenario() {
 		});
 		const selectFocusContained = selectLayer.preview.contains(document.activeElement);
 		const selectOpenPosition = outerPosition(dialog, scrollElement);
+		const selectPosterState = {
+			posterCount: [...selectLayer.preview.querySelectorAll(".franchise-preview-grid img")].filter((image) => image.getClientRects().length > 0).length,
+			posterOnly: [...selectLayer.preview.querySelectorAll(".franchise-preview-grid > *")].every((item) => item.tagName === "IMG"),
+			captionsAbsent: !selectLayer.preview.textContent.includes(`${longName} Title`) && !selectLayer.preview.textContent.includes("2000"),
+			missingCardsAbsent: !selectLayer.preview.textContent.includes("No poster"),
+		};
 		await act(async () => {
 			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
 			await afterCommittedEffects();
@@ -1135,6 +1144,7 @@ async function runFranchiseReviewScenario() {
 			exactFocusRestored: document.activeElement === previewTrigger,
 			outerStable: positionStable(selectBefore, selectOpenPosition) && positionStable(selectBefore, outerPosition(dialog, scrollElement)),
 			selectionPreserved: dialog.querySelectorAll(".franchise-selected-disclosure li").length === 2,
+			...selectPosterState,
 		};
 
 		disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure after preview");
@@ -1182,6 +1192,12 @@ async function runFranchiseReviewScenario() {
 		const previewOpenedWithoutExpanding = reviewDetails.open === false;
 		const reviewLayer = previewLayerState();
 		const reviewClose = required(reviewLayer.preview.querySelector("header button"), "Review preview Close action");
+		const reviewPosterState = {
+			posterCount: [...reviewLayer.preview.querySelectorAll(".franchise-preview-grid img")].filter((image) => image.getClientRects().length > 0).length,
+			posterOnly: [...reviewLayer.preview.querySelectorAll(".franchise-preview-grid > *")].every((item) => item.tagName === "IMG"),
+			captionsAbsent: !reviewLayer.preview.textContent.includes(`${longName} Title`) && !reviewLayer.preview.textContent.includes("2000"),
+			missingCardsAbsent: !reviewLayer.preview.textContent.includes("No poster"),
+		};
 		await clickAndSettle(reviewClose);
 		const remainedCollapsedAfterPreview = reviewDetails.open === false;
 		const reviewPreview = {
@@ -1194,6 +1210,7 @@ async function runFranchiseReviewScenario() {
 			outerStable: positionStable(reviewBefore, outerPosition(dialog, scrollElement)),
 			previewOpenedWithoutExpanding,
 			remainedCollapsedAfterPreview,
+			...reviewPosterState,
 		};
 		await clickAndSettle(reviewSummary);
 		const detailDisclosure = {
@@ -1235,14 +1252,354 @@ async function runFranchiseReviewScenario() {
 	}
 }
 
+function mountedStudio(id, name = `Studio ${id}`) {
+	return {
+		id,
+		name,
+		parent: id % 3 === 0 ? "Parent Company" : "",
+		country: "US",
+		headquarters: "Los Angeles, California",
+		location: "US · Los Angeles, California",
+		logoPath: `/studio-${id}.png`,
+		movieCount: 1000 + id,
+	};
+}
+
+function studioCatalogueProvider(studios) {
+	return {
+		async searchStudios(_input, { page = 1 } = {}) {
+			return { ok: true, data: { results: studios, page, totalPages: 1, totalResults: studios.length } };
+		},
+	};
+}
+
+function studioPreviewFixture(requests) {
+	return createTmdbStudioPreviewProvider({
+		baseUrl: "https://preview.example.test",
+		fetchImpl: async (requestUrl) => {
+			const url = new URL(requestUrl);
+			requests.push(url.pathname + url.search);
+			const mediaType = url.pathname.endsWith("/tv") ? "TV" : "MOVIE";
+			const sortBy = url.searchParams.get("sort_by");
+			const recent = sortBy === "primary_release_date.desc" || sortBy === "first_air_date.desc";
+			const results = Array.from({ length: 12 }, (_, index) => mediaType === "TV" ? {
+				id: 5000 + index,
+				name: `${recent ? "Recent" : "Popular"} Series ${index + 1}`,
+				first_air_date: `${2025 - index}-01-02`,
+				poster_path: index === 0 ? null : `/series-${index + 1}.jpg`,
+			} : {
+				id: 4000 + index,
+				title: `${recent ? "Recent" : "Popular"} Movie ${index + 1}`,
+				release_date: `${2024 - index}-02-03`,
+				poster_path: index === 0 ? null : `/movie-${index + 1}.jpg`,
+			});
+			return new Response(JSON.stringify({ total_results: mediaType === "TV" ? (recent ? 1800 : 1742) : 2468, results }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			});
+		},
+	});
+}
+
+async function runStudioHierarchyScenario() {
+	const studios = [mountedStudio(3, "Pixar"), mountedStudio(174, "Warner Bros. Pictures")];
+	const requests = [];
+	const previewProvider = studioPreviewFixture(requests);
+	let artworkLoads = 0;
+	let artworkResolves = 0;
+	const artworkRuntimeClient = {
+		async load() { artworkLoads += 1; return { ok: true }; },
+		async resolve() { artworkResolves += 1; return { status: "missing" }; },
+	};
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "studios",
+			studioCatalogueProvider: studioCatalogueProvider(studios),
+			studioPreviewProvider: previewProvider,
+			studioArtworkRuntimeClient: artworkRuntimeClient,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStudios() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted Studio ${label} is missing.`);
+		return element;
+	}
+	async function waitAndSettle(ms = 0) {
+		await act(async () => {
+			if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+			await afterCommittedEffects();
+		});
+	}
+	function visiblePreviewItems() {
+		return [...document.querySelectorAll(".studio-preview-grid img")].filter((item) => item.getClientRects().length > 0);
+	}
+	function outerPosition(dialog, scrollElement) {
+		const rect = dialog.getBoundingClientRect();
+		return { top: rect.top, bottom: rect.bottom, dialogScrollTop: dialog.scrollTop, innerScrollTop: scrollElement.scrollTop, x: window.scrollX, y: window.scrollY };
+	}
+	function positionStable(before, after) {
+		return Math.abs(before.top - after.top) <= 1 && Math.abs(before.bottom - after.bottom) <= 1 && before.dialogScrollTop === after.dialogScrollTop && before.innerScrollTop === after.innerScrollTop && before.x === after.x && before.y === after.y;
+	}
+	try {
+		await waitAndSettle(320);
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const scrollElement = required(dialog.querySelector(".add-source-scroll"), "inner scroll owner");
+		const countFilter = required(buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "500+"), "500+ Movie Count filter");
+		await clickAndSettle(countFilter);
+		await waitAndSettle(320);
+		const cards = [...dialog.querySelectorAll(".studio-result-selectable")];
+		const search = {
+			resultCount: cards.length,
+			exactCountWording: cards[0]?.textContent.includes("Movie Count: 1,003") === true,
+			previewAbsent: cards.every((card) => !card.textContent.includes("Preview") && card.querySelector('button[aria-haspopup="dialog"]') === null),
+			movieCountFilter: buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "500+")?.getAttribute("aria-pressed") === "true",
+			hideZeroAbsent: buttonContaining(dialog, "Hide studios with no movies") === null,
+			mostMoviesAbsent: buttonContaining(dialog, "Most movies") === null,
+			alphaOverridePresent: dialog.querySelector('button[aria-label="Order Studios A–Z"]') !== null,
+			requestsBeforeSelection: requests.length,
+		};
+		for (const card of cards) await clickAndSettle(card);
+		const disclosure = required(dialog.querySelector(".studio-selected-disclosure"), "selected disclosure");
+		await clickAndSettle(required(disclosure.querySelector("summary"), "selected disclosure summary"));
+		const selectPreviewState = {
+			absent: disclosure.querySelector('button[aria-haspopup="dialog"]') === null && !disclosure.textContent.includes("Preview"),
+			removePresent: disclosure.querySelectorAll(".studio-selected-remove").length === 2,
+			requests: requests.length,
+		};
+
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Studios"), "Configure action"));
+		let configure = required(dialog.querySelector(".studio-hierarchy-configure"), "Configure stage");
+		const configureInitialRequests = requests.length;
+		const defaults = {
+			movies: configure.querySelector('input[name="studio-hierarchy-media"][value="movies"]')?.checked === true,
+			popular: configure.querySelector('input[name="studio-hierarchy-sort"][value="popular"]')?.checked === true,
+			requestFree: configureInitialRequests === 0,
+			helperCopy: configure.querySelector(".studio-configure-helper")?.textContent.trim(),
+			oldDefaultsCopyAbsent: !configure.textContent.includes("Movies and Popular are selected by default"),
+		};
+		const initialConfigureRows = [...configure.querySelectorAll(".studio-configure-row")];
+		const configureRows = {
+			initialCount: initialConfigureRows.length,
+			order: initialConfigureRows.map((row) => row.querySelector(".studio-configure-row-copy strong")?.textContent.trim()),
+			countsPresent: initialConfigureRows.every((row) => row.textContent.includes("Movies ·")),
+			placementPresent: initialConfigureRows.every((row) => row.querySelector(".studio-configure-placement")?.textContent.includes("Ready to create")),
+			previewActions: initialConfigureRows.filter((row) => row.querySelector('button[aria-haspopup="dialog"]')).length,
+			removeLabels: initialConfigureRows.map((row) => row.querySelector(".studio-configure-remove")?.getAttribute("aria-label")),
+			disclosureAbsent: configure.querySelector(".studio-selected-disclosure") === null,
+		};
+		await clickAndSettle(required(initialConfigureRows[0].querySelector(".studio-configure-remove"), "first Configure remove action"));
+		configureRows.afterFirstRemoval = configure.querySelectorAll(".studio-configure-row").length;
+		await clickAndSettle(required(configure.querySelector(".studio-configure-remove"), "last Configure remove action"));
+		configureRows.lastRemovalStayedConfigure = dialog.querySelector('[data-studio-hierarchy-stage="configure"]') !== null;
+		configureRows.emptyState = configure.textContent.includes("No Studios selected. Go Back to Select");
+		configureRows.appearanceDisabled = buttonContaining(dialog, "Continue to Appearance")?.disabled === true;
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-studio-selection"]'), "Back to Select after removals"));
+		configureRows.filterPreserved = buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "500+")?.getAttribute("aria-pressed") === "true";
+		for (const card of [...dialog.querySelectorAll(".studio-result-selectable")]) await clickAndSettle(card);
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Studios"), "Configure after reselection"));
+		configure = required(dialog.querySelector(".studio-hierarchy-configure"), "restored Configure stage");
+		configureRows.reselectedOrder = [...configure.querySelectorAll(".studio-configure-row")].map((row) => row.querySelector(".studio-configure-row-copy strong")?.textContent.trim());
+		let configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Configure Preview action");
+		const beforeConfigurePreview = outerPosition(dialog, scrollElement);
+		await clickAndSettle(configurePreviewTrigger);
+		await waitAndSettle();
+		const configurePreviewModal = required(document.querySelector(".studio-preview-modal"), "Configure Preview modal");
+		const configureMoviePreview = {
+			requests: requests.length,
+			moviePopularRequest: requests[0]?.includes("with_companies=3") === true && requests[0]?.includes("sort_by=popularity.desc") === true,
+			visiblePosters: visiblePreviewItems().length,
+			posterOnly: [...configurePreviewModal.querySelectorAll(".studio-preview-grid > *")].every((item) => item.tagName === "IMG"),
+			captionsAbsent: !configurePreviewModal.textContent.includes("Popular Movie") && !configurePreviewModal.textContent.includes("2024"),
+			missingCardsAbsent: !configurePreviewModal.textContent.includes("No poster"),
+			countWithMedia: configurePreviewModal.textContent.includes("Movies · 2,468"),
+			focusEntered: document.activeElement === configurePreviewModal.querySelector("header button"),
+			sharedLayer: configurePreviewModal.closest(".nested-modal-backdrop")?.dataset.nestedModalBackdrop === "true",
+			modalSemantics: configurePreviewModal.getAttribute("role") === "dialog" && configurePreviewModal.getAttribute("aria-modal") === "true",
+			technicalCopyAbsent: !/first-page|Preview does not change|request|cache/i.test(configurePreviewModal.textContent),
+		};
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "cached Preview close"));
+		configureMoviePreview.exactFocusRestored = document.activeElement === configurePreviewTrigger;
+		configureMoviePreview.outerStable = positionStable(beforeConfigurePreview, outerPosition(dialog, scrollElement));
+
+		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-media"][value="both"]'), "Movies plus Series choice"));
+		configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Both Preview action");
+		await clickAndSettle(configurePreviewTrigger);
+		await waitAndSettle();
+		const bothMovieRequests = requests.length;
+		const seriesTab = required(buttonContaining(document.querySelector(".studio-preview-tabs"), "Series"), "Series tab");
+		await clickAndSettle(seriesTab);
+		await waitAndSettle();
+		const lazySeries = {
+			unopenedMadeNoRequest: bothMovieRequests === configureMoviePreview.requests,
+			explicitTabAddedOne: requests.length === bothMovieRequests + 1,
+			countInPreview: document.querySelector(".studio-preview-modal")?.textContent.includes("Series · 1,742") === true,
+		};
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Series Preview close"));
+		lazySeries.countRetained = configure.textContent.includes("Series · 1,742");
+
+		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-sort"][value="recent"]'), "Recent sort"));
+		const countSurvivesSort = configure.textContent.includes("Series · 1,742");
+		configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Recent Preview action");
+		await clickAndSettle(configurePreviewTrigger);
+		await waitAndSettle();
+		const recentMovieAddedOne = requests.length === 3 && requests.at(-1)?.includes("sort_by=primary_release_date.desc") === true;
+		await clickAndSettle(required(buttonContaining(document.querySelector(".studio-preview-tabs"), "Series"), "Recent Series tab"));
+		await waitAndSettle();
+		const recentSeriesAddedOne = requests.length === 4 && document.querySelector(".studio-preview-modal")?.textContent.includes("Series · 1,800") === true;
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Recent Preview close"));
+		const newerSeriesReplaced = configure.textContent.includes("Series · 1,800");
+		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-sort"][value="popular"]'), "Popular sort"));
+		configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "restored Popular Preview action");
+		await clickAndSettle(configurePreviewTrigger);
+		await waitAndSettle();
+		const previousSortCacheHit = requests.length === 4 && document.querySelector(".studio-preview-modal")?.textContent.includes("Movies · 2,468") === true;
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "restored Preview close"));
+
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action"));
+		await waitAndSettle();
+		const appearance = required(dialog.querySelector(".studio-hierarchy-appearance"), "Appearance stage");
+		const appearanceState = {
+			requestFree: requests.length === 4,
+			heading: appearance.querySelector("h3")?.textContent.trim(),
+			studioRowsAbsent: appearance.querySelector(".studio-configure-row, .studio-review-list") === null,
+			previewAbsent: appearance.querySelector('button[aria-haspopup="dialog"]') === null && !appearance.textContent.includes("Preview titles"),
+			countsAbsent: !appearance.textContent.includes("Movies ·") && !appearance.textContent.includes("Series ·"),
+			artworkSectionAbsent: appearance.querySelector(".studio-appearance-artwork, [data-studio-artwork-rule]") === null && ![...appearance.querySelectorAll("h4")].some((heading) => heading.textContent.trim() === "Artwork"),
+			representativeAbsent: appearance.querySelector(".studio-appearance-artwork-preview, img[alt^='Representative Landscape artwork']") === null,
+			artworkCopyAbsent: !/artwork|landscape|Edit Folder/i.test(appearance.textContent),
+			shapeSelectorAbsent: appearance.querySelector('input[name="studio-folder-shape"]') === null && !appearance.textContent.includes("Folder artwork shape"),
+			presentationControlsPresent: appearance.querySelector("#studio-collection-name") !== null
+				&& appearance.querySelector('input[data-editor-control="studioHideNuvioTitle"]') !== null
+				&& appearance.querySelector('input[name="studio-folder-title-visibility"]') !== null
+				&& appearance.querySelector('input[name="studio-collection-layout"]') !== null
+				&& appearance.querySelector('input[data-editor-control="studioShowAllTab"]') !== null
+				&& appearance.querySelector('input[data-editor-control="studioPinToTop"]') !== null,
+			createAction: buttonContaining(dialog, "Create 2 folders")?.textContent.trim(),
+		};
+		const scrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		}).length;
+		return {
+			width: window.innerWidth,
+			search,
+			selection: {
+				selectedCount: 2,
+				checkboxesNative: cards.every((card) => card.querySelector('input[type="checkbox"]') !== null),
+			},
+			selectPreview: selectPreviewState,
+			configure: { defaults, rows: configureRows, configureMoviePreview, lazySeries, countSurvivesSort, recentMovieAddedOne, recentSeriesAddedOne, newerSeriesReplaced, previousSortCacheHit },
+			appearance: appearanceState,
+			artwork: { loads: artworkLoads, resolves: artworkResolves, shapeSelectorAbsent: appearance.querySelector('input[name="studio-folder-shape"]') === null },
+			oneScrollOwner: scrollOwners <= 1 && dialog.querySelectorAll(".add-source-scroll").length === 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+			revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runStudioScaleScenario() {
+	const studios = Array.from({ length: 100 }, (_, index) => mountedStudio(index + 1));
+	let previewRequests = 0;
+	let applyCalls = 0;
+	let artworkLoads = 0;
+	let artworkResolves = 0;
+	const controller = createController();
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: controller.getState().project,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "studios",
+			studioCatalogueProvider: studioCatalogueProvider(studios),
+			studioPreviewProvider: { async getStudioPreview() { previewRequests += 1; throw new Error("Scale Preview must stay explicit."); } },
+			studioArtworkRuntimeClient: {
+				async load() { artworkLoads += 1; },
+				async resolve() { artworkResolves += 1; return { status: "missing" }; },
+			},
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStudios() { applyCalls += 1; return { ok: false, errors: [{ message: "Mounted rollback-free apply probe." }] }; },
+		}));
+		await afterCommittedEffects();
+	});
+	await act(async () => {
+		await new Promise((resolve) => setTimeout(resolve, 320));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = document.querySelector('[data-creation-dialog="true"]');
+		const required = (element, label) => {
+			if (!element) throw new Error(`Mounted Studio scale ${label} is missing.`);
+			return element;
+		};
+		const cards = [...dialog.querySelectorAll(".studio-result-selectable")];
+		const afterBrowse = previewRequests;
+		for (const card of cards) await clickAndSettle(card);
+		const afterSelection = previewRequests;
+		const selectedCount = Number.parseInt(dialog.querySelector(".people-selected-summary > strong")?.textContent ?? "0", 10);
+		const noticeAt100 = dialog.querySelector('[data-large-selection-notice="true"]')?.textContent.includes("100 Studios") === true;
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 100 Studios"), `Configure action after ${selectedCount} selections`));
+		const afterConfigure = previewRequests;
+		await clickAndSettle(required(dialog.querySelector('input[name="studio-hierarchy-media"][value="both"]'), "Movies plus Series choice"));
+		const configureRows = dialog.querySelectorAll(".studio-configure-row").length;
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action"));
+		const afterAppearance = previewRequests;
+		const totals = [...dialog.querySelectorAll(".decades-plan-totals strong")].map((element) => Number(element.textContent));
+		const appearanceRows = dialog.querySelectorAll(".studio-configure-row, .studio-review-list details").length;
+		await clickAndSettle(required(buttonContaining(dialog, "Create 100 folders"), `Create action with totals ${totals.join("/")}`));
+		return {
+			cards: cards.length,
+			selectedCount,
+			noticeAt100,
+			requests: { afterBrowse, afterSelection, afterConfigure, afterAppearance, afterApply: previewRequests },
+			artworkLoads,
+			artworkResolves,
+			totals,
+			configureRows,
+			appearanceRows,
+			applyCalls,
+			revisionUnchanged: controller.getState().revision === initialRevision,
+			oneScrollOwner: dialog.querySelectorAll(".add-source-scroll").length === 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
 async function runPeopleConfigureLayoutScenario() {
 	const people = new Map([
 		[31, mountedPerson({ id: 31, name: "Tom Hanks", department: "Acting", membership: ["actor"], actingMovies: 12, actingSeries: 3, directingMovies: 2, directingSeries: 0 })],
 		[40, mountedPerson({ id: 40, name: "Orson Welles", department: "Directing", membership: ["actor", "director"], actingMovies: 8, actingSeries: 2, directingMovies: 4, directingSeries: 1 })],
 	]);
+	let detailRequests = 0;
 	const provider = {
 		async searchPeople() { return { ok: true, data: { results: [], page: 1, totalPages: 1, totalResults: 0 } }; },
 		async getPerson(id) {
+			detailRequests += 1;
 			const person = people.get(Number(id));
 			return person ? { ok: true, data: person, checkedAt: 1 } : { ok: false, error: { message: "Missing fixture person.", retryable: false } };
 		},
@@ -1391,12 +1748,34 @@ async function runPeopleConfigureLayoutScenario() {
 		};
 
 		const previewTrigger = firstRow.querySelector(".people-bulk-actions button:first-child");
+		const requestsBeforePreview = detailRequests;
 		await clickAndSettle(required(previewTrigger, "first Preview titles action"));
 		await waitAndSettle();
 		let preview = document.querySelector(".people-title-preview");
-		const previewGrid = preview.querySelector(".people-title-preview-grid");
+		let previewGrid = preview.querySelector(".people-title-preview-grid");
 		const previewBackdrop = preview.closest(".nested-modal-backdrop");
 		const creationPortal = document.querySelector(".add-source-portal");
+		const previewTabs = required(preview.querySelector(".people-preview-tabs"), "People Preview media tabs");
+		const movieTab = required(buttonContaining(previewTabs, "Movies"), "People Movies Preview tab");
+		const seriesTab = required(buttonContaining(previewTabs, "Series"), "People Series Preview tab");
+		const moviesInitiallyActive = movieTab.getAttribute("aria-selected") === "true" && seriesTab.getAttribute("aria-selected") === "false";
+		const moviePosterCount = previewGrid.querySelectorAll(":scope > img").length;
+		await clickAndSettle(seriesTab);
+		preview = document.querySelector(".people-title-preview");
+		previewGrid = preview.querySelector(".people-title-preview-grid");
+		const mediaSeparation = {
+			tabCount: previewTabs.querySelectorAll('[role="tab"]').length,
+			moviesInitiallyActive,
+			seriesActive: movieTab.getAttribute("aria-selected") === "false" && seriesTab.getAttribute("aria-selected") === "true",
+			moviePosterCount,
+			seriesPosterCount: previewGrid.querySelectorAll(":scope > img").length,
+			seriesCount: preview.textContent.includes("Series · 3"),
+			noCombinedTotal: !preview.textContent.includes("Movies + Series") && !preview.textContent.includes("Combined"),
+			noAdditionalRequests: detailRequests === requestsBeforePreview,
+		};
+		await clickAndSettle(movieTab);
+		preview = document.querySelector(".people-title-preview");
+		previewGrid = preview.querySelector(".people-title-preview-grid");
 		const previewState = {
 			modalSurface: preview.dataset.previewSurface === "modal" && preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
 			outsidePeopleRow: preview.closest(".people-bulk-row") === null,
@@ -1407,6 +1786,7 @@ async function runPeopleConfigureLayoutScenario() {
 			headingFocused: document.activeElement === preview.querySelector("strong"),
 			sharedNestedLayer: previewBackdrop?.dataset.nestedModalBackdrop === "true",
 			aboveCreationModal: Number.parseInt(getComputedStyle(previewBackdrop).zIndex, 10) > Number.parseInt(getComputedStyle(creationPortal).zIndex, 10),
+			mediaSeparation,
 		};
 		await act(async () => {
 			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -2118,6 +2498,8 @@ window.__runPeopleConfigureLayoutScenario = runPeopleConfigureLayoutScenario;
 window.__runPeoplePillStabilityScenario = runPeoplePillStabilityScenario;
 window.__runPeopleSelectionScrollScenario = runPeopleSelectionScrollScenario;
 window.__runFranchiseReviewScenario = runFranchiseReviewScenario;
+window.__runStudioHierarchyScenario = runStudioHierarchyScenario;
+window.__runStudioScaleScenario = runStudioScaleScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {

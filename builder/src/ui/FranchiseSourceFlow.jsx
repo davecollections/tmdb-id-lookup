@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
 	createAsyncRequestCoordinator,
 	createFranchiseHierarchyPlan,
@@ -16,7 +15,8 @@ import {
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
-import { handleDialogKeyDown } from "./modal-focus.js";
+import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
+import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 import { PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
@@ -73,23 +73,13 @@ function SelectedFranchises({ franchises, onRemove, onPreview }) {
 function TitlesPreview({ franchise, onClose }) {
 	const dialogRef = useRef(null);
 	const closeRef = useRef(null);
-	useEffect(() => {
-		focusElementWithoutScroll(closeRef.current ?? dialogRef.current);
-	}, []);
-	const titles = (franchise.containedTitles ?? []).slice(0, 10);
-	const content = (
-		<div className="settings-modal-backdrop nested-modal-backdrop franchise-preview-backdrop" data-nested-modal-backdrop="true" data-franchise-preview-backdrop="true" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-			<section ref={dialogRef} className="franchise-preview-modal" role="dialog" aria-modal="true" aria-labelledby="franchise-preview-title" tabIndex={-1} onKeyDown={(event) => {
-				event.stopPropagation();
-				handleDialogKeyDown(event, dialogRef.current, onClose);
-			}}>
+	const titles = franchise.containedTitles ?? [];
+	return (
+		<NestedPreviewDialog ariaLabelledBy="franchise-preview-title" backdropClassName="franchise-preview-backdrop" backdropProps={{ "data-franchise-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
 				<header><div><p className="panel-kicker">Poster preview</p><h3 id="franchise-preview-title">{franchise.name}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
-				<p>Up to 10 TMDB titles from this collection. This preview does not change the generated source.</p>
-				{titles.length ? <ul className="franchise-preview-grid">{titles.map((movie, index) => <li key={`${movie.id ?? movie.title}-${index}`}><Poster item={movie} className="franchise-preview-poster" size="w342" alt="" /><strong>{movie.title}</strong><span>{movie.releaseYear ?? "Year unavailable"}</span></li>)}</ul> : <p className="add-source-empty-results">TMDB reports no titles to preview for this collection.</p>}
-			</section>
-		</div>
+				<PosterOnlyPreviewGrid items={titles} limit={10} className="franchise-preview-grid" ariaLabel={`${franchise.name} poster preview`} altPrefix="Franchise" />
+		</NestedPreviewDialog>
 	);
-	return typeof document === "undefined" ? content : createPortal(content, document.body);
 }
 
 function statusLabel(status) {

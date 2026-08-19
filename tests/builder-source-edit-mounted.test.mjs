@@ -136,14 +136,14 @@ async function runMountedPage() {
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl);
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 15000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
 			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html`,
 		});
-		const deadline = Date.now() + 15000;
+		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
 			const evaluated = await resources.pageConnection.command("Runtime.evaluate", {
 				expression: "window.__builderSourceEditMounted ?? null",
@@ -159,6 +159,7 @@ async function runMountedPage() {
 				const peoplePillStabilityWidths = [];
 				const peopleSelectionScrollWidths = [];
 				const franchiseReviewWidths = [];
+				const studioHierarchyWidths = [];
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -182,6 +183,13 @@ async function runMountedPage() {
 					});
 					if (franchiseEvaluation.exceptionDetails) throw new Error(franchiseEvaluation.exceptionDetails.exception?.description ?? franchiseEvaluation.exceptionDetails.text);
 					franchiseReviewWidths.push(franchiseEvaluation.result?.value);
+					const studioEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runStudioHierarchyScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (studioEvaluation.exceptionDetails) throw new Error(studioEvaluation.exceptionDetails.exception?.description ?? studioEvaluation.exceptionDetails.text);
+					studioHierarchyWidths.push(studioEvaluation.result?.value);
 				}
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
@@ -233,7 +241,14 @@ async function runMountedPage() {
 					});
 					decadesExclusionWidths.push(decadesExclusionEvaluation.result?.value);
 				}
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+				const studioScaleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runStudioScaleScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -453,6 +468,16 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
 		assert.equal(result.preview.sharedNestedLayer, true, `${width}px shared nested preview layer`);
 		assert.equal(result.preview.aboveCreationModal, true, `${width}px preview above creation modal`);
+		assert.deepEqual(result.preview.mediaSeparation, {
+			tabCount: 2,
+			moviesInitiallyActive: true,
+			seriesActive: true,
+			moviePosterCount: width <= 520 ? 5 : 10,
+			seriesPosterCount: 3,
+			seriesCount: true,
+			noCombinedTotal: true,
+			noAdditionalRequests: true,
+		}, `${width}px media-separated People Preview`);
 		assert.equal(result.preview.escapeClosed, true, `${width}px Escape`);
 		assert.equal(result.preview.escapeRestoredFocus, true, `${width}px Escape restore`);
 		assert.equal(result.preview.closeRestoredFocus, true, `${width}px Close restore`);
@@ -527,6 +552,10 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 			assert.equal(preview.noHorizontalOverflow, true, `${width}px ${origin} preview overflow`);
 			assert.equal(preview.exactFocusRestored, true, `${width}px ${origin} exact trigger restoration`);
 			assert.equal(preview.outerStable, true, `${width}px ${origin} outer scroll position`);
+			assert.ok(preview.posterCount <= (width <= 520 ? 5 : 10), `${width}px ${origin} bounded usable posters`);
+			assert.equal(preview.posterOnly, true, `${width}px ${origin} poster-only results`);
+			assert.equal(preview.captionsAbsent, true, `${width}px ${origin} result captions absent`);
+			assert.equal(preview.missingCardsAbsent, true, `${width}px ${origin} missing-poster cards absent`);
 		}
 		assert.equal(result.selectPreview.focusEntered, true, `${width}px Select preview focus entry`);
 		assert.equal(result.selectPreview.focusContained, true, `${width}px Select preview focus containment`);
@@ -556,6 +585,102 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 		assert.equal(result.noHorizontalOverflow, true, `${width}px flow overflow`);
 		assert.equal(result.revisionUnchanged, true, `${width}px preview/removal non-mutation`);
 	}
+});
+
+test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe, and responsive at every owner width", () => {
+	assert.deepEqual(mountedResults.studioHierarchyWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.studioHierarchyWidths) {
+		const width = result.width;
+		assert.deepEqual(result.search, {
+			resultCount: 2,
+			exactCountWording: true,
+			previewAbsent: true,
+			movieCountFilter: true,
+			hideZeroAbsent: true,
+			mostMoviesAbsent: true,
+			alphaOverridePresent: true,
+			requestsBeforeSelection: 0,
+		}, `${width}px Search`);
+		assert.deepEqual(result.selection, { selectedCount: 2, checkboxesNative: true }, `${width}px selection`);
+		assert.deepEqual(result.selectPreview, { absent: true, removePresent: true, requests: 0 }, `${width}px Select disclosure has Remove without Preview`);
+		assert.deepEqual(result.configure.defaults, { movies: true, popular: true, requestFree: true, helperCopy: "These choices apply to every selected Studio.", oldDefaultsCopyAbsent: true }, `${width}px defaults and quiet Configure helper`);
+		assert.deepEqual(result.configure.rows, {
+			initialCount: 2,
+			order: ["Pixar", "Warner Bros. Pictures"],
+			countsPresent: true,
+			placementPresent: true,
+			previewActions: 2,
+			removeLabels: ["Remove Pixar", "Remove Warner Bros. Pictures"],
+			disclosureAbsent: true,
+			afterFirstRemoval: 1,
+			lastRemovalStayedConfigure: true,
+			emptyState: true,
+			appearanceDisabled: true,
+			filterPreserved: true,
+			reselectedOrder: ["Pixar", "Warner Bros. Pictures"],
+		}, `${width}px Configure rows, removal and canonical reselection`);
+		assert.deepEqual(result.configure.configureMoviePreview, {
+			requests: 1,
+			moviePopularRequest: true,
+			visiblePosters: width <= 520 ? 5 : 10,
+			posterOnly: true,
+			captionsAbsent: true,
+			missingCardsAbsent: true,
+			countWithMedia: true,
+			focusEntered: true,
+			sharedLayer: true,
+			modalSemantics: true,
+			technicalCopyAbsent: true,
+			exactFocusRestored: true,
+			outerStable: true,
+		}, `${width}px configured poster-only Movies Preview`);
+		assert.deepEqual(result.configure.lazySeries, {
+			unopenedMadeNoRequest: true,
+			explicitTabAddedOne: true,
+			countInPreview: true,
+			countRetained: true,
+		}, `${width}px lazy Series`);
+		assert.equal(result.configure.countSurvivesSort, true, `${width}px transient Series count survives sort`);
+		assert.equal(result.configure.recentMovieAddedOne, true, `${width}px Movie sort-key request`);
+		assert.equal(result.configure.recentSeriesAddedOne, true, `${width}px Series sort-key request`);
+		assert.equal(result.configure.newerSeriesReplaced, true, `${width}px newer Series total replaces old`);
+		assert.equal(result.configure.previousSortCacheHit, true, `${width}px previous-sort cache reuse`);
+		assert.deepEqual(result.appearance, {
+			requestFree: true,
+			heading: "Appearance",
+			studioRowsAbsent: true,
+			previewAbsent: true,
+			countsAbsent: true,
+			artworkSectionAbsent: true,
+			representativeAbsent: true,
+			artworkCopyAbsent: true,
+			shapeSelectorAbsent: true,
+			presentationControlsPresent: true,
+			createAction: "Create 2 folders",
+		}, `${width}px Appearance-only final stage`);
+		assert.deepEqual(result.artwork, { loads: 1, resolves: 2, shapeSelectorAbsent: true }, `${width}px artwork batch`);
+		assert.equal(result.oneScrollOwner, true, `${width}px scroll ownership`);
+		assert.equal(result.noHorizontalOverflow, true, `${width}px dialog overflow`);
+		assert.equal(result.revisionUnchanged, true, `${width}px pre-apply mutation`);
+	}
+});
+
+test("mounted Studio hierarchy scales to 100 ordered Studios and 200 sources with zero automatic Preview requests", () => {
+	assert.deepEqual(mountedResults.studioScale, {
+		cards: 100,
+		selectedCount: 100,
+		noticeAt100: true,
+		requests: { afterBrowse: 0, afterSelection: 0, afterConfigure: 0, afterAppearance: 0, afterApply: 0 },
+		artworkLoads: 1,
+		artworkResolves: 100,
+		totals: [1, 100, 200],
+		configureRows: 100,
+		appearanceRows: 0,
+		applyCalls: 1,
+		revisionUnchanged: true,
+		oneScrollOwner: true,
+		noHorizontalOverflow: true,
+	});
 });
 
 test("mounted People selection keeps a partially clipped native checkbox inside the inner result scroller", () => {

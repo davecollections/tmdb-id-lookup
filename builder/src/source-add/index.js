@@ -177,14 +177,18 @@ export {
 export {
 	buildTmdbStudioLogoUrl,
 	createStudioCatalogueProvider,
+	DEFAULT_STUDIO_MOVIE_COUNT_FILTER,
 	DEFAULT_STUDIO_SEARCH_SORT,
 	formatStudioLocation,
 	normalizeStudioCatalogue,
 	normalizeStudioCatalogueRow,
 	parseStudioSearchInput,
 	searchStudioCatalogue,
+	studioMatchesMovieCountFilter,
 	studioCountrySearchText,
 	STUDIO_CATALOGUE_PATH,
+	STUDIO_MOVIE_COUNT_FILTER_OPTIONS,
+	STUDIO_MOVIE_COUNT_FILTERS,
 	STUDIO_SEARCH_PAGE_SIZE,
 	STUDIO_SEARCH_SORTS,
 } from "./studio-catalogue.js";
@@ -197,6 +201,39 @@ export {
 	TMDB_STUDIO_COUNT_PROXY_BASE_URL,
 	TMDB_STUDIO_COUNT_REQUEST_TIMEOUT_MS,
 } from "./tmdb-studio-count-provider.js";
+export {
+	createTmdbStudioPreviewProvider,
+	normalizeTmdbStudioPreviewResponse,
+	TMDB_STUDIO_PREVIEW_CACHE_MAX_ENTRIES,
+	TMDB_STUDIO_PREVIEW_CACHE_TTL_MS,
+	TMDB_STUDIO_PREVIEW_LOCAL_MOCK,
+	TMDB_STUDIO_PREVIEW_REQUEST_TIMEOUT_MS,
+} from "./tmdb-studio-preview-provider.js";
+export {
+	DEFAULT_STUDIO_FOLDER_TILE_SHAPE,
+	resolveStudioFolderArtworkBatch,
+} from "./studio-folder-artwork.js";
+export {
+	applyStudioHierarchyPlan,
+	createStudioHierarchyPlan,
+	DEFAULT_STUDIO_COLLECTION_TITLE,
+	DEFAULT_STUDIO_FOLDER_TITLE_VISIBILITY,
+	DEFAULT_STUDIO_HIERARCHY_MEDIA_MODE,
+	inspectStudioHierarchyPlacement,
+	STUDIO_CREATION_SCOPES,
+	STUDIO_HIERARCHY_MEDIA_MODES,
+	STUDIO_HIERARCHY_PLAN_TYPE,
+	STUDIO_PLACEMENT_STATUSES,
+	validateStudioHierarchyPlan,
+} from "./studio-plan.js";
+export {
+	createStudioSelectionState,
+	removeSelectedStudio,
+	selectedStudios,
+	STUDIO_LARGE_SELECTION_NOTICE_THRESHOLD,
+	studioSelectionNotice,
+	toggleSelectedStudio,
+} from "./studio-selection-state.js";
 export {
 	browseStreamingRegions,
 	browseStreamingProviders,
@@ -248,6 +285,7 @@ export {
 	STUDIO_MOVIE_SORT_OPTIONS,
 	STUDIO_SORT_OPTIONS,
 	STUDIO_SOURCE_OPTIONS,
+	STUDIO_SOURCE_TITLE_MODES,
 	validateStudioSourceDraft,
 	validateStudioSourceDrafts,
 	validateStudioSourceSelection,
@@ -327,6 +365,7 @@ export {
 	PEOPLE_SOURCE_COMBINATIONS,
 	PEOPLE_SOURCE_SORT_OPTIONS,
 	peopleDuplicateOverrideIdentity,
+	peoplePreviewMediaTypes,
 	peopleSortOptionId,
 	peopleSortOptions,
 	peopleSortValue,

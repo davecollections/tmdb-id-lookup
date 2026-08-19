@@ -31,10 +31,20 @@ const WATCH_PROVIDER_PATHS = new Set([
   "/3/watch/providers/movie",
   "/3/watch/providers/tv",
 ]);
-const TV_DISCOVER_PARAMETERS = new Set([
-  "with_companies",
-  "with_networks",
-]);
+const COMPANY_DISCOVER_SORTS = Object.freeze({
+  "/3/discover/movie": new Set([
+    "popularity.desc",
+    "primary_release_date.desc",
+    "vote_average.desc",
+    "vote_count.desc",
+  ]),
+  "/3/discover/tv": new Set([
+    "popularity.desc",
+    "first_air_date.desc",
+    "vote_average.desc",
+    "vote_count.desc",
+  ]),
+});
 
 function isCanonicalPositiveSafeInteger(value) {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
@@ -64,14 +74,31 @@ function isAllowedTmdbRequest(url) {
   }
 
   const entries = [...url.searchParams.entries()];
-  const allowedParameter = url.pathname === "/3/discover/tv"
-    ? TV_DISCOVER_PARAMETERS.has(entries[0]?.[0])
-    : entries[0]?.[0] === "with_companies";
-  return (
-    entries.length === 1 &&
-    allowedParameter &&
-    isCanonicalPositiveSafeInteger(entries[0][1])
-  );
+  const companyIds = url.searchParams.getAll("with_companies");
+  const networkIds = url.searchParams.getAll("with_networks");
+  const sorts = url.searchParams.getAll("sort_by");
+
+  if (networkIds.length > 0) {
+    return url.pathname === "/3/discover/tv" &&
+      entries.length === 1 &&
+      networkIds.length === 1 &&
+      companyIds.length === 0 &&
+      sorts.length === 0 &&
+      isCanonicalPositiveSafeInteger(networkIds[0]);
+  }
+
+  if (
+    companyIds.length !== 1 ||
+    networkIds.length !== 0 ||
+    sorts.length > 1 ||
+    entries.length !== 1 + sorts.length ||
+    entries.some(([key]) => key !== "with_companies" && key !== "sort_by") ||
+    !isCanonicalPositiveSafeInteger(companyIds[0])
+  ) {
+    return false;
+  }
+
+  return sorts.length === 0 || COMPANY_DISCOVER_SORTS[url.pathname].has(sorts[0]);
 }
 
 function isAllowedOrigin(origin) {

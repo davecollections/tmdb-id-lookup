@@ -24,10 +24,12 @@ import {
 	searchStudioCatalogue,
 	studioDuplicateOverrideIdentity,
 	STUDIO_MOVIE_SORT_OPTIONS,
+	STUDIO_MOVIE_COUNT_FILTERS,
 	STUDIO_SEARCH_SORTS,
 	STUDIO_SORT_OPTIONS,
 	STUDIO_SOURCE_OPTIONS,
 	studioSourceIdentity,
+	studioMatchesMovieCountFilter,
 	studioSortValue,
 	validateStudioSourceDraft,
 	validateStudioSourceSelection,
@@ -207,6 +209,34 @@ test("Studio zero filtering distinguishes known zero from unknown before typed-s
 	assert.equal(filtered.results[0].movieCount, null);
 	assert.equal(filtered.results.some((entry) => entry.movieCount === 0), false);
 	assert.throws(() => searchStudioCatalogue(catalogue, parseStudioSearchInput("Studio"), { sort: "invented" }), /supported Studio result sort/);
+});
+
+test("Studio hierarchy Movie count filters run before pagination and preserve Unknown semantics", () => {
+	const catalogue = normalizeStudioCatalogue([
+		{ i: 1, n: "Unknown Studio" },
+		{ i: 2, n: "Zero Studio", t: 0 },
+		{ i: 3, n: "Nine Studio", t: 9 },
+		{ i: 4, n: "Ten Studio", t: 10 },
+		{ i: 5, n: "Fifty Studio", t: 50 },
+		{ i: 6, n: "Hundred Studio", t: 100 },
+		{ i: 7, n: "Five Hundred Studio", t: 500 },
+	]);
+	const all = searchStudioCatalogue(catalogue, { kind: "browse" }, { sort: STUDIO_SEARCH_SORTS.NAME_ASC, movieCountFilter: STUDIO_MOVIE_COUNT_FILTERS.ALL, pageSize: 2 });
+	assert.equal(all.totalResults, 7);
+	assert.equal(all.totalPages, 4);
+	const excludeZero = searchStudioCatalogue(catalogue, { kind: "browse" }, { sort: STUDIO_SEARCH_SORTS.NAME_ASC, movieCountFilter: STUDIO_MOVIE_COUNT_FILTERS.EXCLUDE_ZERO, page: 3, pageSize: 2 });
+	assert.equal(excludeZero.totalResults, 6);
+	assert.equal(excludeZero.totalPages, 3);
+	assert.deepEqual(excludeZero.results.map((entry) => entry.id), [4, 1]);
+	assert.equal(studioMatchesMovieCountFilter(catalogue.byId.get(1), STUDIO_MOVIE_COUNT_FILTERS.ALL), true);
+	assert.equal(studioMatchesMovieCountFilter(catalogue.byId.get(1), STUDIO_MOVIE_COUNT_FILTERS.EXCLUDE_ZERO), true);
+	for (const filter of [STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_10, STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_50, STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_100, STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_500]) {
+		assert.equal(studioMatchesMovieCountFilter(catalogue.byId.get(1), filter), false, filter);
+	}
+	assert.deepEqual(searchStudioCatalogue(catalogue, { kind: "browse" }, { sort: STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC, movieCountFilter: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_10 }).results.map((entry) => entry.id), [7, 6, 5, 4]);
+	assert.deepEqual(searchStudioCatalogue(catalogue, { kind: "browse" }, { sort: STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC, movieCountFilter: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_50 }).results.map((entry) => entry.id), [7, 6, 5]);
+	assert.deepEqual(searchStudioCatalogue(catalogue, { kind: "browse" }, { sort: STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC, movieCountFilter: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_100 }).results.map((entry) => entry.id), [7, 6]);
+	assert.deepEqual(searchStudioCatalogue(catalogue, { kind: "browse" }, { sort: STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC, movieCountFilter: STUDIO_MOVIE_COUNT_FILTERS.AT_LEAST_500 }).results.map((entry) => entry.id), [7]);
 });
 
 test("Studio Browse all reuses paged catalogue ordering without treating missing counts as zero", () => {

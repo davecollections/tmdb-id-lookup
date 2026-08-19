@@ -12,6 +12,8 @@ const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 const presentationControls = read("builder/src/ui/CollectionPresentationChoices.jsx");
 const sharedPresentationControls = read("builder/src/ui/PresentationControls.jsx");
 const styles = read("builder/src/styles.css");
+const nestedDialog = read("builder/src/ui/NestedPreviewDialog.jsx");
+const posterGrid = read("builder/src/ui/PosterOnlyPreviewGrid.jsx");
 
 test("Franchises is a guided New Collection and New Folder option with a two-stage flow", () => {
 	assert.match(dialog, /CREATION_OPTION_IDS\.FRANCHISES/);
@@ -104,16 +106,22 @@ test("candidate rows stay neutral and communicate exact destination and elsewher
 	assert.doesNotMatch(flow, /add-source-duplicate-warning|semantic-notice.*candidate/i);
 });
 
-test("title preview is a bounded body portal with explicit Close and no source mutation controls", () => {
-	assert.match(flow, /createPortal\(content, document\.body\)/);
+test("title preview is a bounded poster-only body portal with explicit Close and no source mutation controls", () => {
+	const preview = flow.slice(flow.indexOf("function TitlesPreview"), flow.indexOf("function statusLabel"));
+	assert.match(flow, /<NestedPreviewDialog/);
+	assert.match(nestedDialog, /createPortal\(content, document\.body\)/);
 	assert.match(flow, /data-franchise-preview-backdrop/);
-	assert.match(flow, /role="dialog" aria-modal="true"/);
-	assert.match(flow, /nested-modal-backdrop/);
-	assert.match(flow, /event\.stopPropagation\(\);\s*handleDialogKeyDown/);
-	assert.match(flow, /slice\(0, 10\)/);
+	assert.match(nestedDialog, /role="dialog"/);
+	assert.match(nestedDialog, /aria-modal="true"/);
+	assert.match(nestedDialog, /nested-modal-backdrop/);
+	assert.match(nestedDialog, /handleDialogKeyDown/);
+	assert.match(preview, /<PosterOnlyPreviewGrid items=\{titles\} limit=\{10\}/);
+	assert.doesNotMatch(preview, /movie\.title|movie\.releaseYear|No poster|preview does not change/i);
+	assert.match(posterGrid, /slice\(0, limit\)/);
+	assert.match(posterGrid, /No posters available\./);
 	assert.match(flow, />Close<\/button>/);
 	assert.match(styles, /\.franchise-preview-modal[\s\S]*max-height:/);
-	assert.match(styles, /\.franchise-preview-grid li:nth-child\(n \+ 6\)/);
+	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.franchise-preview-grid img:nth-child\(n \+ 6\)/);
 	assert.match(styles, /--layer-add-source:\s*3000/);
 	assert.match(styles, /--layer-nested-modal:\s*4000/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);

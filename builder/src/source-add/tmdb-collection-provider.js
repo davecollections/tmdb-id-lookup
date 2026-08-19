@@ -2,6 +2,7 @@ import { parseCanonicalHttpsOrigin } from "../../worker-origin.js";
 import { isPositiveSafeTmdbId } from "./tmdb-collection-input.js";
 import { normalizeTmdbPosterPath } from "./tmdb-image.js";
 import { createTmdbLocalPreviewFetch } from "./tmdb-local-preview-proxy.js";
+import { cloneResponseData, createBoundedResponseCache } from "./bounded-response-cache.js";
 
 // Vite injects this from the stable root lookup's current js/config.js value.
 // The typeof guard keeps the pure adapter importable in direct Node tests,
@@ -16,14 +17,6 @@ const TMDB_COLLECTION_OVERVIEW_MAX_LENGTH = 600;
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function cloneData(value) {
-	if (Array.isArray(value)) return value.map((entry) => cloneData(entry));
-	if (!plainObject(value)) return value;
-	return Object.fromEntries(
-		Object.entries(value).map(([key, entry]) => [key, cloneData(entry)]),
-	);
 }
 
 function providerError(kind, message, {
@@ -155,39 +148,6 @@ function linkAbortSignal(signal, controller) {
 function contentTypeIsJson(response) {
 	const contentType = response?.headers?.get?.("content-type");
 	return !contentType || contentType.toLowerCase().includes("application/json");
-}
-
-function createBoundedResponseCache({
-	ttlMs,
-	maxEntries,
-	now,
-}) {
-	const entries = new Map();
-
-	function get(key) {
-		const entry = entries.get(key);
-		if (!entry) return null;
-		if (now() - entry.createdAt > ttlMs) {
-			entries.delete(key);
-			return null;
-		}
-		entries.delete(key);
-		entries.set(key, entry);
-		return cloneData(entry.data);
-	}
-
-	function set(key, data) {
-		entries.delete(key);
-		entries.set(key, {
-			createdAt: now(),
-			data: cloneData(data),
-		});
-		while (entries.size > maxEntries) {
-			entries.delete(entries.keys().next().value);
-		}
-	}
-
-	return { get, set };
 }
 
 function configuredBaseUrl(value) {
@@ -378,7 +338,7 @@ export function createTmdbCollectionProvider({
 		cache.set(cacheKey, data);
 		return {
 			ok: true,
-			data: cloneData(data),
+			data: cloneResponseData(data),
 			fromCache: false,
 		};
 	}
