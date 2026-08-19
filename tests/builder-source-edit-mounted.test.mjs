@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
+import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
@@ -19,6 +20,7 @@ import {
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builderModules = path.join(rootDir, "builder", "node_modules");
+const tmdbProxyBaseUrl = extractTmdbProxyBaseUrl(fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8"));
 
 function chromeExecutable() {
 	const candidates = [
@@ -79,6 +81,11 @@ async function runMountedPage() {
 			appType: "spa",
 			logLevel: "silent",
 			plugins: [react()],
+			define: {
+				__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl),
+				__TMDB_STUDIO_MOCK_COUNTS__: "false",
+				__TMDB_NETWORK_MOCK_COUNTS__: "false",
+			},
 			resolve: {
 				alias: [
 					{ find: /^react$/, replacement: path.join(builderModules, "react", "index.js") },
@@ -136,7 +143,7 @@ async function runMountedPage() {
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 15000 });
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
 		const address = resources.vite.httpServer.address();
@@ -460,6 +467,8 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.layout.noHorizontalOverflow, true, `${width}px document overflow`);
 		assert.equal(result.layout.noNestedScrollTrap, true, `${width}px scroll ownership`);
 		assert.equal(result.preview.posterCount, width <= 520 ? 5 : 10, `${width}px preview limit`);
+		assert.equal(result.preview.postersReady, true, `${width}px loaded Movie posters`);
+		assert.equal(result.preview.genuineTmdbSources, true, `${width}px genuine TMDB Movie poster sources`);
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
 		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
 		assert.equal(result.preview.gridColumns, width <= 520 ? 5 : 10, `${width}px preview columns`);
@@ -473,8 +482,10 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 			moviesInitiallyActive: true,
 			seriesActive: true,
 			moviePosterCount: width <= 520 ? 5 : 10,
-			seriesPosterCount: 3,
+			seriesPosterCount: width <= 520 ? 5 : 10,
 			seriesCount: true,
+			seriesPostersReady: true,
+			seriesGenuineTmdbSources: true,
 			noCombinedTotal: true,
 			noAdditionalRequests: true,
 		}, `${width}px media-separated People Preview`);
@@ -505,6 +516,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.appearance.noDeadEditor, true, `${width}px removed editor leaves no dead container`);
 		assert.equal(result.appearance.noHorizontalOverflow, true, `${width}px appearance overflow`);
 		assert.equal(result.sortSurvivesReviewBack, true, `${width}px sort preservation`);
+		assert.equal(result.liveRequests.personDetailsOnly, true, `${width}px production TMDB Person detail requests`);
 		assert.equal(result.revisionUnchanged, true, `${width}px preview/configure mutation`);
 	}
 });
@@ -552,7 +564,9 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 			assert.equal(preview.noHorizontalOverflow, true, `${width}px ${origin} preview overflow`);
 			assert.equal(preview.exactFocusRestored, true, `${width}px ${origin} exact trigger restoration`);
 			assert.equal(preview.outerStable, true, `${width}px ${origin} outer scroll position`);
-			assert.ok(preview.posterCount <= (width <= 520 ? 5 : 10), `${width}px ${origin} bounded usable posters`);
+			assert.equal(preview.posterCount, width <= 520 ? 5 : 10, `${width}px ${origin} full bounded poster grid`);
+			assert.equal(preview.postersReady, true, `${width}px ${origin} loaded posters`);
+			assert.equal(preview.genuineTmdbSources, true, `${width}px ${origin} genuine TMDB poster sources`);
 			assert.equal(preview.posterOnly, true, `${width}px ${origin} poster-only results`);
 			assert.equal(preview.captionsAbsent, true, `${width}px ${origin} result captions absent`);
 			assert.equal(preview.missingCardsAbsent, true, `${width}px ${origin} missing-poster cards absent`);
@@ -565,7 +579,8 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 		assert.equal(result.reviewPreview.previewOpenedWithoutExpanding, true, `${width}px collapsed Review preview opens directly`);
 		assert.equal(result.reviewPreview.remainedCollapsedAfterPreview, true, `${width}px Review row stays collapsed after preview`);
 		assert.equal(result.selection.removalWorked, true, `${width}px selected removal`);
-		assert.deepEqual(result.selection.selectedOrder, ["Star Wars Collection", "The ExtraordinarilyLongUnbrokenFranchiseNameThatMustNeverOverflowItsSelectedDisclosure Collection"], `${width}px removal/reselection order`);
+		assert.equal(result.selection.reselectionOrderPreserved, true, `${width}px removal/reselection order`);
+		assert.equal(result.liveRequests.collectionDetailsOnly, true, `${width}px production TMDB Collection detail requests`);
 		assert.equal(result.review.artworkGuidance, "Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.", `${width}px user-facing artwork guidance`);
 		assert.equal(result.review.technicalArtworkCopyAbsent, true, `${width}px technical artwork wording absent`);
 		assert.equal(result.review.shapeSelectorAbsent, true, `${width}px no Franchise shape selector`);
@@ -592,8 +607,8 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 	for (const result of mountedResults.studioHierarchyWidths) {
 		const width = result.width;
 		assert.deepEqual(result.search, {
-			resultCount: 2,
-			exactCountWording: true,
+			realIdentitiesFound: true,
+			numericMovieCounts: true,
 			previewAbsent: true,
 			movieCountFilter: true,
 			hideZeroAbsent: true,
@@ -606,23 +621,25 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 		assert.deepEqual(result.configure.defaults, { movies: true, popular: true, requestFree: true, helperCopy: "These choices apply to every selected Studio.", oldDefaultsCopyAbsent: true }, `${width}px defaults and quiet Configure helper`);
 		assert.deepEqual(result.configure.rows, {
 			initialCount: 2,
-			order: ["Pixar", "Warner Bros. Pictures"],
+			order: [3, 174],
 			countsPresent: true,
 			placementPresent: true,
 			previewActions: 2,
-			removeLabels: ["Remove Pixar", "Remove Warner Bros. Pictures"],
+			removeLabelsAccessible: true,
 			disclosureAbsent: true,
 			afterFirstRemoval: 1,
 			lastRemovalStayedConfigure: true,
 			emptyState: true,
 			appearanceDisabled: true,
 			filterPreserved: true,
-			reselectedOrder: ["Pixar", "Warner Bros. Pictures"],
+			reselectedOrder: [3, 174],
 		}, `${width}px Configure rows, removal and canonical reselection`);
 		assert.deepEqual(result.configure.configureMoviePreview, {
 			requests: 1,
 			moviePopularRequest: true,
 			visiblePosters: width <= 520 ? 5 : 10,
+			postersReady: true,
+			genuineTmdbSources: true,
 			posterOnly: true,
 			captionsAbsent: true,
 			missingCardsAbsent: true,
@@ -638,12 +655,14 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 			unopenedMadeNoRequest: true,
 			explicitTabAddedOne: true,
 			countInPreview: true,
+			postersReady: true,
+			genuineTmdbSources: true,
 			countRetained: true,
 		}, `${width}px lazy Series`);
 		assert.equal(result.configure.countSurvivesSort, true, `${width}px transient Series count survives sort`);
 		assert.equal(result.configure.recentMovieAddedOne, true, `${width}px Movie sort-key request`);
 		assert.equal(result.configure.recentSeriesAddedOne, true, `${width}px Series sort-key request`);
-		assert.equal(result.configure.newerSeriesReplaced, true, `${width}px newer Series total replaces old`);
+		assert.equal(result.configure.recentSeriesCountRetained, true, `${width}px recent Series total retained`);
 		assert.equal(result.configure.previousSortCacheHit, true, `${width}px previous-sort cache reuse`);
 		assert.deepEqual(result.appearance, {
 			requestFree: true,
@@ -658,7 +677,7 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 			presentationControlsPresent: true,
 			createAction: "Create 2 folders",
 		}, `${width}px Appearance-only final stage`);
-		assert.deepEqual(result.artwork, { loads: 1, resolves: 2, shapeSelectorAbsent: true }, `${width}px artwork batch`);
+		assert.deepEqual(result.artwork, { loads: 1, resolves: 2, loadSucceeded: true, shapeSelectorAbsent: true }, `${width}px live artwork batch`);
 		assert.equal(result.oneScrollOwner, true, `${width}px scroll ownership`);
 		assert.equal(result.noHorizontalOverflow, true, `${width}px dialog overflow`);
 		assert.equal(result.revisionUnchanged, true, `${width}px pre-apply mutation`);
