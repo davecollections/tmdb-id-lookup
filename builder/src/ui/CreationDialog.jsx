@@ -64,6 +64,7 @@ import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { FranchiseSourceFlow } from "./FranchiseSourceFlow.jsx";
+import { StudioHierarchyFlow } from "./StudioHierarchyFlow.jsx";
 
 const DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID = "decades-hidden-collection-titles-help";
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -673,9 +674,13 @@ export function CreationDialog({
 	onApplyDecades,
 	onApplyPeople,
 	onApplyFranchises,
+	onApplyStudios,
 	collectionProvider,
 	peopleProvider,
 	peopleManifestClient,
+	studioCatalogueProvider,
+	studioPreviewProvider,
+	studioArtworkRuntimeClient,
 }) {
 	const [optionId, setOptionId] = useState(() => creationOptionSupportsScope(initialOptionId, scope) ? initialOptionId : null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
@@ -703,7 +708,7 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.STUDIOS].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	const launcher = optionId === null;
@@ -720,6 +725,8 @@ export function CreationDialog({
 						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
 					) : optionId === CREATION_OPTION_IDS.FRANCHISES ? (
 						<FranchiseSourceFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={collectionProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyFranchises} />
+					) : optionId === CREATION_OPTION_IDS.STUDIOS ? (
+						<StudioHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={studioCatalogueProvider} previewProvider={studioPreviewProvider} artworkRuntimeClient={studioArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStudios} />
 					) : null}
 				</section>
 			</div>

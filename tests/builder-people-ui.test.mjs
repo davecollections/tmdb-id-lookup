@@ -256,17 +256,21 @@ test("People bulk controls expose only Automatic and Same for all while rows rem
 	assert.match(flow, /aria-describedby=\{headingDescription \? descriptionId : undefined\}/);
 });
 
-test("poster-only title preview exposes bounded ready, loading, empty, and recoverable error states", () => {
+test("poster-only title preview separates applicable media and exposes bounded ready, loading, empty, and recoverable error states", () => {
 	const selected = person();
 	const items = Array.from({ length: 10 }, (_, index) => ({ identity: `movie|${index + 1}`, posterPath: `/poster-${index + 1}.jpg` }));
-	const ready = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items, limit: 10, onClose() {}, onRetry() {} }));
+	const ready = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready", mediaType: "MOVIE" }, items, limit: 10, mediaTypes: ["MOVIE", "TV"], totalResults: 14, onChangeMedia() {}, onClose() {}, onRetry() {} }));
 	assert.ok(ready.includes('data-preview-surface="modal"'));
 	assert.ok(ready.includes('role="dialog"'));
 	assert.ok(ready.includes('aria-modal="true"'));
 	assert.ok(ready.includes('data-preview-status="ready"'));
 	assert.ok(ready.includes('data-preview-limit="10"'));
 	assert.equal((ready.match(/<img/g) ?? []).length, 10);
-	assert.ok(ready.includes('alt="Preview poster 1"'));
+	assert.ok(ready.includes('alt="Movies preview poster 1"'));
+	assert.equal((ready.match(/role="tab"/g) ?? []).length, 2);
+	assert.ok(ready.includes('aria-selected="true">Movies'));
+	assert.ok(ready.includes("Movies · 14"));
+	assert.equal(ready.includes("Movies + Series"), false);
 	assert.equal(ready.includes("Forrest Gump"), false);
 	assert.equal(ready.includes("rating"), false);
 	assert.equal(ready.includes("release"), false);
@@ -274,11 +278,14 @@ test("poster-only title preview exposes bounded ready, loading, empty, and recov
 	const mobile = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items: items.slice(0, 5), limit: 5, onClose() {}, onRetry() {} }));
 	assert.equal((mobile.match(/<img/g) ?? []).length, 5);
 	assert.ok(mobile.includes('data-preview-limit="5"'));
-	const loading = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "loading" }, items: [], limit: 5, onClose() {}, onRetry() {} }));
+	const loading = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "loading", mediaType: "TV" }, items: [], limit: 5, mediaTypes: ["TV"], onClose() {}, onRetry() {} }));
 	assert.ok(loading.includes('role="status"'));
-	assert.ok(loading.includes("Preparing poster preview"));
+	assert.ok(loading.includes("Preparing series poster preview"));
+	const filtered = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items: [{ identity: "missing", posterPath: null }, { identity: "invalid", posterPath: "poster.jpg" }, items[0]], limit: 5, onClose() {}, onRetry() {} }));
+	assert.equal((filtered.match(/<img/g) ?? []).length, 1);
+	assert.equal(filtered.includes("No poster"), false);
 	const empty = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "ready" }, items: [], limit: 5, onClose() {}, onRetry() {} }));
-	assert.ok(empty.includes("No poster previews were available"));
+	assert.ok(empty.includes("No posters available."));
 	const error = renderToStaticMarkup(createElement(PeopleTitlePreviewSurface, { person: selected, state: { status: "error", error: { message: "Preview unavailable." } }, items: [], limit: 5, onClose() {}, onRetry() {} }));
 	assert.ok(error.includes('role="alert"'));
 	assert.ok(error.includes("Preview unavailable."));
@@ -680,6 +687,9 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.match(flow, /SemanticSortChoices options=\{PEOPLE_SOURCE_SORT_OPTIONS\}/);
 	assert.match(flow, /buildPeopleSourceDrafts\(person, \{ combinations: configuration\.combinations, sortOptionId \}\)/);
 	assert.match(flow, /buildPeopleTitlePreview\(detailResult\.person/);
+	assert.match(flow, /peoplePreviewMediaTypes/);
+	assert.match(flow, /changePeoplePreviewMedia/);
+	assert.match(flow, /mediaType: previewState\.mediaType/);
 	assert.match(flow, /\(!retry && entry\.detail\?\.status !== "ready"\)/);
 	assert.match(flow, /onRetryPreview=\{\(entry\) => openTitlePreview\(entry, null, \{ retry: true \}\)\}/);
 	assert.match(flow, /previewRestoreFocusRef/);

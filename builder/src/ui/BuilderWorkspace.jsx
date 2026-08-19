@@ -3,6 +3,7 @@ import builderMark from "../assets/builder-mark.svg";
 import {
 	applyPeopleHierarchyPlan,
 	applyFranchiseHierarchyPlan,
+	applyStudioHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
 	applyDecadesHierarchyPlan,
@@ -18,6 +19,7 @@ import {
 	createPeopleManifestClient,
 	createTmdbNetworkCountProvider,
 	createTmdbStudioCountProvider,
+	createTmdbStudioPreviewProvider,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE_ID,
 	NETWORK_SOURCE_MODE_ID,
@@ -25,6 +27,7 @@ import {
 	STREAMING_SOURCE_MODE_ID,
 	GENRE_SOURCE_MODE_ID,
 } from "../source-add/index.js";
+import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
 	createSourceEditSession,
 	saveSourceEdit,
@@ -625,6 +628,8 @@ export function BuilderWorkspace({
 	networkCountProvider = null,
 	studioCatalogueProvider = null,
 	studioCountProvider = null,
+	studioPreviewProvider = null,
+	studioArtworkRuntimeClient = null,
 	streamingCatalogueProvider = null,
 	peopleManifestClient = null,
 }) {
@@ -715,6 +720,14 @@ export function BuilderWorkspace({
 	const studioCountProviderRef = useRef(null);
 	if (studioCountProviderRef.current === null) {
 		studioCountProviderRef.current = studioCountProvider ?? createTmdbStudioCountProvider();
+	}
+	const studioPreviewProviderRef = useRef(null);
+	if (studioPreviewProviderRef.current === null) {
+		studioPreviewProviderRef.current = studioPreviewProvider ?? createTmdbStudioPreviewProvider();
+	}
+	const studioArtworkRuntimeClientRef = useRef(null);
+	if (studioArtworkRuntimeClientRef.current === null) {
+		studioArtworkRuntimeClientRef.current = studioArtworkRuntimeClient ?? createArtworkRuntimeClient();
 	}
 	const streamingCatalogueProviderRef = useRef(null);
 	if (streamingCatalogueProviderRef.current === null) {
@@ -1269,6 +1282,21 @@ export function BuilderWorkspace({
 		if (internalId) setCreatedCardTarget({ nodeType, internalId });
 		setCreationStatusText("");
 		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} Franchise folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
+	function applyStudioPlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyStudioHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} Studio folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
 		return result;
 	}
 
@@ -2337,9 +2365,13 @@ export function BuilderWorkspace({
 					onApplyDecades={applyDecadesPlan}
 					onApplyPeople={applyPeoplePlan}
 					onApplyFranchises={applyFranchisePlan}
+					onApplyStudios={applyStudioPlan}
 					collectionProvider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
 					peopleManifestClient={peopleManifestClientRef.current}
+					studioCatalogueProvider={studioCatalogueProviderRef.current}
+					studioPreviewProvider={studioPreviewProviderRef.current}
+					studioArtworkRuntimeClient={studioArtworkRuntimeClientRef.current}
 				/>
 			) : null}
 			{visibleEditorDraft ? (

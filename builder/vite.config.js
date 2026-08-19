@@ -57,27 +57,60 @@ function serveEntityCountMock(server, studioEnabled, networkEnabled) {
 		const url = new URL(request.url ?? "/", "http://builder.local");
 		const route = url.pathname.slice(TMDB_LOCAL_PREVIEW_PROXY_PREFIX.length);
 		const entries = [...url.searchParams.entries()];
-		const queryParameter = entries[0]?.[0];
-		const companyRequest = studioEnabled && queryParameter === "with_companies" && ["/3/discover/movie", "/3/discover/tv"].includes(route);
-		const networkRequest = networkEnabled && queryParameter === "with_networks" && route === "/3/discover/tv";
+		const companyIds = url.searchParams.getAll("with_companies");
+		const networkIds = url.searchParams.getAll("with_networks");
+		const sorts = url.searchParams.getAll("sort_by");
+		const allowedSorts = route === "/3/discover/movie"
+			? new Set(["popularity.desc", "primary_release_date.desc", "vote_average.desc", "vote_count.desc"])
+			: new Set(["popularity.desc", "first_air_date.desc", "vote_average.desc", "vote_count.desc"]);
+		const companyRequest = studioEnabled
+			&& ["/3/discover/movie", "/3/discover/tv"].includes(route)
+			&& companyIds.length === 1
+			&& networkIds.length === 0
+			&& sorts.length <= 1
+			&& entries.length === 1 + sorts.length
+			&& entries.every(([key]) => key === "with_companies" || key === "sort_by")
+			&& (sorts.length === 0 || allowedSorts.has(sorts[0]));
+		const networkRequest = networkEnabled
+			&& route === "/3/discover/tv"
+			&& networkIds.length === 1
+			&& companyIds.length === 0
+			&& sorts.length === 0
+			&& entries.length === 1;
+		const entityValue = companyRequest ? companyIds[0] : networkRequest ? networkIds[0] : null;
 		if (
 			!url.pathname.startsWith(`${TMDB_LOCAL_PREVIEW_PROXY_PREFIX}/`)
 			|| (!companyRequest && !networkRequest)
-			|| entries.length !== 1
-			|| !/^[1-9]\d*$/.test(entries[0][1])
-			|| !Number.isSafeInteger(Number(entries[0][1]))
+			|| !/^[1-9]\d*$/.test(entityValue)
+			|| !Number.isSafeInteger(Number(entityValue))
 		) {
 			next();
 			return;
 		}
-		const entityId = Number(entries[0][1]);
+		const entityId = Number(entityValue);
 		const totalResults = networkRequest
 			? (entityId * 13) % 3_000
 			: route.endsWith("/movie") ? (entityId * 37) % 5_000 : (entityId * 11) % 800;
 		response.statusCode = 200;
 		response.setHeader("Content-Type", "application/json; charset=utf-8");
 		response.setHeader("Cache-Control", "no-store");
-		response.end(JSON.stringify({ total_results: totalResults }));
+		const sortIndex = Math.max(0, [...allowedSorts].indexOf(sorts[0] ?? "popularity.desc"));
+		const mediaLabel = route.endsWith("/movie") ? "Movie" : "Series";
+		const results = companyRequest ? Array.from({ length: 20 }, (_, index) => {
+			const ordinal = sortIndex * 20 + index + 1;
+			return route.endsWith("/movie") ? {
+				id: entityId * 1_000 + ordinal,
+				title: `${mediaLabel} ${ordinal}`,
+				release_date: `${2026 - (index % 20)}-01-01`,
+				poster_path: `/studio-${entityId}-movie-${sortIndex}-${index + 1}.jpg`,
+			} : {
+				id: entityId * 1_000 + ordinal,
+				name: `${mediaLabel} ${ordinal}`,
+				first_air_date: `${2026 - (index % 20)}-01-01`,
+				poster_path: `/studio-${entityId}-series-${sortIndex}-${index + 1}.jpg`,
+			};
+		}) : [];
+		response.end(JSON.stringify({ total_results: totalResults, results }));
 	});
 }
 

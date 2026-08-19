@@ -1,7 +1,6 @@
 import {
 	useEffect,
 	useLayoutEffect,
-	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -13,13 +12,12 @@ import {
 	DEFAULT_STUDIO_SEARCH_SORT,
 	DEFAULT_STUDIO_SORT_OPTION_ID,
 	formatStudioLocation,
-	INITIAL_ASYNC_REQUEST_STATE,
 	inspectStudioSourceDuplicates,
-	parseStudioSearchInput,
 	studioDuplicateOverrideIdentity,
 	STUDIO_SOURCE_MODE,
 	STUDIO_SOURCE_OPTIONS,
 	STUDIO_SEARCH_SORTS,
+	STUDIO_MOVIE_COUNT_FILTER_OPTIONS,
 } from "../source-add/index.js";
 import {
 	lockAddSourceDocumentBody,
@@ -41,8 +39,9 @@ import {
 	returnStudioToSearch,
 	STUDIO_SOURCE_STEPS,
 } from "./studio-source-navigation-state.js";
+import { STUDIO_SEARCH_DEBOUNCE_MS, useStudioCatalogueSearch } from "./use-studio-catalogue-search.js";
 
-export const STUDIO_SEARCH_DEBOUNCE_MS = 250;
+export { STUDIO_SEARCH_DEBOUNCE_MS };
 export { STUDIO_SOURCE_STEPS };
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -55,11 +54,23 @@ export function StudioLogo({ studio, size = "w92", context = "result", loading =
 	return <TmdbEntityLogo entity={studio} entityType="studio" size={size} context={context} loading={loading} />;
 }
 
-function StudioResult({ studio, onSelect }) {
+export function StudioResultContent({ studio }) {
 	const metadata = studio.location || formatStudioLocation(studio);
 	const movieCount = Number.isSafeInteger(studio.movieCount) && studio.movieCount >= 0
 		? studio.movieCount.toLocaleString("en")
 		: "Unknown";
+	return <>
+		<StudioLogo studio={studio} context="result" />
+		<span className="add-source-result-content">
+			<span className="add-source-result-heading"><strong>{studio.name}</strong><span>TMDB {studio.id}</span></span>
+			{metadata ? <span className="studio-result-metadata">{metadata}</span> : null}
+			{studio.parentCompany ? <span className="studio-result-parent">Parent: {studio.parentCompany}</span> : null}
+			<span className="studio-result-count">Movie Count: {movieCount}</span>
+		</span>
+	</>;
+}
+
+function StudioResult({ studio, onSelect }) {
 	return (
 		<button
 			className="add-source-result studio-result"
@@ -67,13 +78,7 @@ function StudioResult({ studio, onSelect }) {
 			data-tmdb-studio-result={studio.id}
 			onClick={() => onSelect(studio)}
 		>
-			<StudioLogo studio={studio} context="result" />
-			<span className="add-source-result-content">
-				<span className="add-source-result-heading"><strong>{studio.name}</strong><span>TMDB {studio.id}</span></span>
-				{metadata ? <span className="studio-result-metadata">{metadata}</span> : null}
-				{studio.parentCompany ? <span className="studio-result-parent">Parent: {studio.parentCompany}</span> : null}
-				<span className="studio-result-count">Movie Count: {movieCount}</span>
-			</span>
+			<StudioResultContent studio={studio} />
 		</button>
 	);
 }
@@ -87,12 +92,17 @@ export function StudioSearchStep({
 	effectiveSearchSort = DEFAULT_STUDIO_SEARCH_SORT,
 	browsing = false,
 	hideZero = false,
+	movieCountFilter = null,
+	showMovieCountFilters = false,
 	onInputChange,
 	onSortChange = () => {},
 	onHideZeroChange = () => {},
+	onMovieCountFilterChange = () => {},
 	onRetry,
 	onSelect,
 	onChangePage,
+	renderResult = null,
+	resultsHeading = "Choose a studio",
 }) {
 	return (
 		<>
@@ -126,11 +136,17 @@ export function StudioSearchStep({
 								: null}
 				</p>
 			</div>
-			<div className="studio-search-controls" aria-label="Studio result controls">
-				<span className="studio-search-control-label">Sort</span>
-				<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
-				<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC} onClick={() => onSortChange(STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC)}>Most movies</button>
-				<button className="studio-zero-filter" type="button" aria-pressed={hideZero} onClick={onHideZeroChange}>Hide studios with no movies</button>
+			<div className={`studio-search-controls${showMovieCountFilters ? " studio-search-controls--hierarchy" : ""}`} aria-label="Studio result controls">
+				{showMovieCountFilters ? <>
+					<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Movie Count filter"><span className="studio-search-control-label">Movie count</span><span className="studio-search-control-buttons">{STUDIO_MOVIE_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={movieCountFilter === option.id} aria-label={`Movie Count ${option.label}`} onClick={() => onMovieCountFilterChange(option.id)}>{option.label}</button>)}</span></div>
+					<button className="studio-search-alpha-override" type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} aria-label="Order Studios A–Z" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
+				</> : <>
+					<div className="studio-search-control-group"><span className="studio-search-control-label">Sort</span><span className="studio-search-control-buttons">
+						<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
+						<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC} onClick={() => onSortChange(STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC)}>Most movies</button>
+					</span></div>
+					<button className="studio-zero-filter" type="button" aria-pressed={hideZero} onClick={onHideZeroChange}>Hide studios with no movies</button>
+				</>}
 			</div>
 			{lookupState.status === "error" ? (
 				<div className="add-source-request-state" role="alert">
@@ -141,12 +157,12 @@ export function StudioSearchStep({
 			{searchData ? (
 				<section className="add-source-results" aria-labelledby="studio-results-title">
 					<div className="add-source-section-heading">
-						<div><p className="panel-kicker">Studio results</p><h3 id="studio-results-title">Choose a studio</h3></div>
+						<div><p className="panel-kicker">Studio results</p><h3 id="studio-results-title">{resultsHeading}</h3></div>
 						{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}
 					</div>
 					{searchData.results.length ? (
 						<div className="add-source-result-list">
-							{searchData.results.map((studio) => <StudioResult key={studio.id} studio={studio} onSelect={onSelect} />)}
+							{searchData.results.map((studio) => renderResult ? renderResult(studio) : <StudioResult key={studio.id} studio={studio} onSelect={onSelect} />)}
 						</div>
 					) : <p className="add-source-empty-results">{browsing ? "No Studios are available for these filters." : "No Studios matched this search."}</p>}
 					{searchData.totalPages > 1 ? (
@@ -283,12 +299,7 @@ export function StudioSourceFlow({
 	onApply,
 }) {
 	const [navigation, setNavigation] = useState(createStudioSourceNavigationState);
-	const [input, setInput] = useState("");
-	const [page, setPage] = useState(1);
-	const [searchSortOverride, setSearchSortOverride] = useState(null);
-	const [hideZero, setHideZero] = useState(false);
-	const [retryGeneration, setRetryGeneration] = useState(0);
-	const [lookupState, setLookupState] = useState(INITIAL_ASYNC_REQUEST_STATE);
+	const search = useStudioCatalogueSearch(catalogueProvider);
 	const [selectedStudio, setSelectedStudio] = useState(null);
 	const [counts, setCounts] = useState(INITIAL_COUNTS);
 	const [choices, setChoices] = useState([]);
@@ -300,24 +311,11 @@ export function StudioSourceFlow({
 	const scrollRef = useRef(null);
 	const inputRef = useRef(null);
 	const configureRef = useRef(null);
-	const lookupCoordinatorRef = useRef(null);
 	const countCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
-	if (!lookupCoordinatorRef.current) lookupCoordinatorRef.current = createAsyncRequestCoordinator({ onStateChange: setLookupState });
 	if (!countCoordinatorRef.current) countCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 
-	const parsedInput = useMemo(() => parseStudioSearchInput(input), [input]);
-	const browsing = parsedInput.kind === "empty";
-	const effectiveSearchSort = searchSortOverride
-		?? (browsing ? STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC : DEFAULT_STUDIO_SEARCH_SORT);
-	const searchData = lookupState.status === "success" && (
-		(lookupState.context?.kind === "exact" && parsedInput.kind === "exact" && lookupState.context.id === parsedInput.id)
-		|| (lookupState.context?.kind === "search" && parsedInput.kind === "search" && lookupState.context.query === parsedInput.query && lookupState.context.page === page)
-		|| (lookupState.context?.kind === "browse" && browsing && parsedInput.kind === "empty" && lookupState.context.page === page)
-	) && lookupState.context?.sort === effectiveSearchSort && lookupState.context?.hideZero === hideZero
-		? lookupState.data
-		: null;
 	const duplicateReview = selectedStudio
 		? inspectStudioSourceDuplicates(project, folder?.internalId ?? null, selectedStudio.id)
 		: { destination: [], elsewhere: [] };
@@ -336,27 +334,7 @@ export function StudioSourceFlow({
 		return () => { stopViewport(); unlockBody(); };
 	}, []);
 
-	useEffect(() => {
-		const coordinator = lookupCoordinatorRef.current;
-		coordinator.cancel({ notify: false });
-		setLookupState(INITIAL_ASYNC_REQUEST_STATE);
-		if (parsedInput.kind === "invalid" || (parsedInput.kind === "search" && !parsedInput.eligible)) return undefined;
-		const requestInput = browsing && parsedInput.kind === "empty" ? Object.freeze({ kind: "browse" }) : parsedInput;
-		const timer = window.setTimeout(() => {
-			coordinator.run(
-				() => catalogueProvider.searchStudios(requestInput, { page, sort: effectiveSearchSort, hideZero }),
-				requestInput.kind === "exact"
-					? { kind: "exact", id: requestInput.id, page: 1, sort: effectiveSearchSort, hideZero }
-					: requestInput.kind === "browse"
-						? { kind: "browse", page, sort: effectiveSearchSort, hideZero }
-						: { kind: "search", query: requestInput.query, page, sort: effectiveSearchSort, hideZero },
-			);
-		}, STUDIO_SEARCH_DEBOUNCE_MS);
-		return () => { window.clearTimeout(timer); coordinator.cancel({ reset: false, notify: false }); };
-	}, [browsing, catalogueProvider, effectiveSearchSort, hideZero, page, parsedInput, retryGeneration]);
-
 	useEffect(() => () => {
-		lookupCoordinatorRef.current.cancel({ notify: false });
 		countCoordinatorRef.current.cancel({ notify: false });
 	}, []);
 
@@ -424,14 +402,12 @@ export function StudioSourceFlow({
 	}
 
 	function handleSearchInputChange(event) {
-		setInput(event.target.value);
-		setPage(1);
+		search.handleInputChange(event);
 		setApplyDiagnostic(null);
 	}
 
 	function toggleSearchSort(sort) {
-		setSearchSortOverride((current) => current === sort ? null : sort);
-		setPage(1);
+		search.toggleSearchSort(sort);
 	}
 
 	async function applyStudioSources(addAllAnyway = false) {
@@ -482,7 +458,7 @@ export function StudioSourceFlow({
 					<form className="add-source-form" data-studio-source-form-step={step} onSubmit={submit} noValidate>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === STUDIO_SOURCE_STEPS.SEARCH ? (
-								<StudioSearchStep input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} effectiveSearchSort={effectiveSearchSort} browsing={browsing} hideZero={hideZero} onInputChange={handleSearchInputChange} onSortChange={toggleSearchSort} onHideZeroChange={() => { setHideZero((current) => !current); setPage(1); }} onRetry={() => setRetryGeneration((value) => value + 1)} onSelect={selectStudio} onChangePage={setPage} />
+								<StudioSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} hideZero={search.hideZero} onInputChange={handleSearchInputChange} onSortChange={toggleSearchSort} onHideZeroChange={search.toggleHideZero} onRetry={search.retrySearch} onSelect={selectStudio} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<StudioConfigureStep studio={selectedStudio} counts={counts} choices={choices} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionId={titleSortOptionId} onToggle={toggleChoice} onSortChange={(optionId) => { setTitleSortOptionId(optionId); setApplyDiagnostic(null); }} />

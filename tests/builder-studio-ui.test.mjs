@@ -204,6 +204,40 @@ test("Studio search keeps Best Match hidden and exposes only Builder-style overr
 	]) assert.equal(`${source}\n${catalogue}`.includes(forbidden), false, forbidden);
 });
 
+test("Studio hierarchy Search prioritizes Movie count and exposes only the quiet A–Z override", () => {
+	const hierarchy = renderToStaticMarkup(createElement(StudioSearchStep, {
+		input: "",
+		inputRef: null,
+		parsedInput: { kind: "empty", message: null },
+		lookupState: INITIAL_ASYNC_REQUEST_STATE,
+		searchData: null,
+		browsing: true,
+		effectiveSearchSort: "movie-count-desc",
+		movieCountFilter: "all",
+		showMovieCountFilters: true,
+		onInputChange() {}, onSortChange() {}, onMovieCountFilterChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
+	}));
+	assert.ok(hierarchy.includes("Movie count"));
+	for (const label of ["All", "Exclude 0", "10+", "50+", "100+", "500+"]) assert.ok(hierarchy.includes(`>${label}</button>`), label);
+	assert.match(hierarchy, /<button(?=[^>]*aria-label="Order Studios A–Z")(?=[^>]*aria-pressed="false")[^>]*>/);
+	assert.equal(hierarchy.includes("Most movies"), false);
+	assert.equal(hierarchy.includes(">Sort<"), false);
+	assert.equal(hierarchy.includes("Best match"), false);
+	const alphabetical = renderToStaticMarkup(createElement(StudioSearchStep, {
+		input: "warner",
+		inputRef: null,
+		parsedInput: { kind: "search", query: "warner", eligible: true, message: null },
+		lookupState: INITIAL_ASYNC_REQUEST_STATE,
+		searchData: null,
+		browsing: false,
+		effectiveSearchSort: "name-asc",
+		movieCountFilter: "all",
+		showMovieCountFilters: true,
+		onInputChange() {}, onSortChange() {}, onMovieCountFilterChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
+	}));
+	assert.match(alphabetical, /<button(?=[^>]*aria-label="Order Studios A–Z")(?=[^>]*aria-pressed="true")[^>]*>/);
+});
+
 test("empty Studio search browses automatically with effective Most movies and no extra Browse action", () => {
 	const browsing = renderToStaticMarkup(createElement(StudioSearchStep, {
 		input: "",
@@ -230,7 +264,7 @@ test("empty Studio search browses automatically with effective Most movies and n
 	}));
 	assert.match(alphabetical, /aria-pressed="true">A–Z<\/button>/);
 	assert.match(alphabetical, /aria-pressed="false">Most movies<\/button>/);
-	const source = read("builder/src/ui/StudioSourceFlow.jsx");
+	const source = read("builder/src/ui/use-studio-catalogue-search.js");
 	assert.match(source, /const browsing = parsedInput\.kind === "empty"/);
 	assert.match(source, /browsing \? STUDIO_SEARCH_SORTS\.MOVIE_COUNT_DESC : DEFAULT_STUDIO_SEARCH_SORT/);
 	assert.match(source, /current === sort \? null : sort/);
@@ -301,7 +335,7 @@ test("Franchise, People, and Studio searches use one native in-field search clea
 		assert.equal(markup.includes("Clear people search"), false);
 		assert.equal(markup.includes("Clear studio search"), false);
 	}
-	for (const file of ["AddSourceDialog.jsx", "PeopleSourceFlow.jsx", "StudioSourceFlow.jsx"]) {
+	for (const file of ["AddSourceDialog.jsx", "PeopleSourceFlow.jsx", "use-studio-catalogue-search.js"]) {
 		const source = read(`builder/src/ui/${file}`);
 		assert.equal(source.includes("SearchInputControl"), false, file);
 		assert.match(source, /setPage\(1\)/, file);
@@ -497,14 +531,16 @@ test("source-picker return focus and Configure-to-Search state restoration stay 
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 	const people = read("builder/src/ui/PeopleSourceFlow.jsx");
 	const studios = read("builder/src/ui/StudioSourceFlow.jsx");
+	const studioSearch = read("builder/src/ui/use-studio-catalogue-search.js");
 	assert.match(chooser, /initialFocusModeId[\s\S]*data-source-mode-option/);
 	assert.match(workspace, /returnFocusModeId:\s*current\.modeId[\s\S]*modeId:\s*null/);
 	assert.match(people, /setNavigation\(returnPeopleToSearch\)/);
 	assert.doesNotMatch(people.slice(people.indexOf("setNavigation(returnPeopleToSearch)"), people.indexOf("function beginBulkConfigure")), /setInput|setPage|setLookupState/);
 	assert.match(studios, /setNavigation\(returnStudioToSearch\)/);
-	assert.match(studios, /const \[searchSortOverride, setSearchSortOverride\][\s\S]*const \[hideZero, setHideZero\][\s\S]*const browsing = parsedInput\.kind === "empty"/);
-	assert.match(studios, /setSearchSortOverride\(\(current\) => current === sort \? null : sort\)[\s\S]*setPage\(1\)/);
-	assert.match(studios, /setHideZero\(\(current\) => !current\); setPage\(1\)/);
+	assert.match(studios, /useStudioCatalogueSearch\(catalogueProvider\)/);
+	assert.match(studioSearch, /const \[searchSortOverride, setSearchSortOverride\][\s\S]*const \[hideZero, setHideZero\][\s\S]*const browsing = parsedInput\.kind === "empty"/);
+	assert.match(studioSearch, /setSearchSortOverride\(\(current\) => current === sort \? null : sort\); setPage\(1\)/);
+	assert.match(studioSearch, /setHideZero\(\(current\) => !current\); setPage\(1\)/);
 	assert.match(studios, /restoreAddSourceSearchView/);
 	assert.doesNotMatch(workspace, /history\.(?:pushState|replaceState|back)/);
 });

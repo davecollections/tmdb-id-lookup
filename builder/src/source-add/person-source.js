@@ -165,6 +165,15 @@ export function peopleTitlePreviewLimit(viewportWidth) {
 	return Number.isFinite(viewportWidth) && viewportWidth <= 520 ? 5 : 10;
 }
 
+export function peoplePreviewMediaTypes(combinations) {
+	const validation = validatePeopleCombinationSelection(combinations, { allowEmpty: true });
+	if (!validation.ok) return Object.freeze([]);
+	const selected = new Set(combinations);
+	return Object.freeze(["MOVIE", "TV"].filter((mediaType) => (
+		PEOPLE_SOURCE_COMBINATIONS.some((combination) => selected.has(combination.id) && combination.mediaType === mediaType)
+	)));
+}
+
 export function resolvePeopleConfigurationForMode(person, {
 	mode = PEOPLE_CONFIGURATION_MODES.AUTOMATIC,
 	sharedCombinations = [],
@@ -257,23 +266,32 @@ export function buildPeopleTitlePreview(person, {
 	combinations,
 	sortOptionId = DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID,
 	limit = 10,
+	mediaType = null,
 } = {}) {
 	const selectionValidation = validatePeopleCombinationSelection(combinations, { allowEmpty: true });
-	if (!selectionValidation.ok) return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze(selectionValidation.errors) });
+	if (!selectionValidation.ok) return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze(selectionValidation.errors) });
 	if (!sortOptionById.has(sortOptionId)) {
-		return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_SORT", "$people.preview.sortOptionId", "Choose a supported People sort order.")]) });
+		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_SORT", "$people.preview.sortOptionId", "Choose a supported People sort order.")]) });
 	}
 	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 10) {
-		return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_LIMIT", "$people.preview.limit", "People title previews must contain one to ten posters.")]) });
+		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_LIMIT", "$people.preview.limit", "People title previews must contain one to ten posters.")]) });
 	}
 	if (!plainObject(person?.combinedCredits) || !Array.isArray(person.combinedCredits.cast) || !Array.isArray(person.combinedCredits.crew)) {
-		return Object.freeze({ ok: false, items: Object.freeze([]), errors: Object.freeze([diagnostic("PEOPLE_PREVIEW_UNAVAILABLE", "$people.preview.credits", "Title preview data is unavailable for this person.")]) });
+		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("PEOPLE_PREVIEW_UNAVAILABLE", "$people.preview.credits", "Title preview data is unavailable for this person.")]) });
 	}
 
 	const selected = new Set(combinations);
+	const availableMediaTypes = peoplePreviewMediaTypes(combinations);
+	const resolvedMediaType = mediaType === null ? availableMediaTypes[0] ?? null : canonicalText(mediaType).toUpperCase();
+	if (resolvedMediaType === null) {
+		return Object.freeze({ ok: true, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([]) });
+	}
+	if (!["MOVIE", "TV"].includes(resolvedMediaType) || !availableMediaTypes.includes(resolvedMediaType)) {
+		return Object.freeze({ ok: false, mediaType: resolvedMediaType, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_MEDIA", "$people.preview.mediaType", "Choose a media type included in this person’s selected sources.")]) });
+	}
 	const byIdentity = new Map();
 	for (const combination of PEOPLE_SOURCE_COMBINATIONS) {
-		if (!selected.has(combination.id)) continue;
+		if (!selected.has(combination.id) || combination.mediaType !== resolvedMediaType) continue;
 		const credits = combination.role === "acting" ? person.combinedCredits.cast : person.combinedCredits.crew;
 		for (const credit of credits) {
 			if (!plainObject(credit) || !isPositiveSafePersonId(credit.id) || typeof credit.posterPath !== "string") continue;
@@ -293,10 +311,14 @@ export function buildPeopleTitlePreview(person, {
 			}));
 		}
 	}
-	const items = [...byIdentity.values()]
-		.sort((left, right) => comparePreviewCredits(left, right, sortOptionId))
-		.slice(0, limit);
-	return Object.freeze({ ok: true, items: Object.freeze(items), errors: Object.freeze([]) });
+	const sortedItems = [...byIdentity.values()].sort((left, right) => comparePreviewCredits(left, right, sortOptionId));
+	return Object.freeze({
+		ok: true,
+		mediaType: resolvedMediaType,
+		totalResults: sortedItems.length,
+		items: Object.freeze(sortedItems.slice(0, limit)),
+		errors: Object.freeze([]),
+	});
 }
 
 export function validatePeopleRoleMediaSelection({ roles, media } = {}) {

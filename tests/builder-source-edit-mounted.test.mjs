@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
+import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
@@ -19,6 +20,7 @@ import {
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builderModules = path.join(rootDir, "builder", "node_modules");
+const tmdbProxyBaseUrl = extractTmdbProxyBaseUrl(fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8"));
 
 function chromeExecutable() {
 	const candidates = [
@@ -79,6 +81,11 @@ async function runMountedPage() {
 			appType: "spa",
 			logLevel: "silent",
 			plugins: [react()],
+			define: {
+				__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl),
+				__TMDB_STUDIO_MOCK_COUNTS__: "false",
+				__TMDB_NETWORK_MOCK_COUNTS__: "false",
+			},
 			resolve: {
 				alias: [
 					{ find: /^react$/, replacement: path.join(builderModules, "react", "index.js") },
@@ -136,14 +143,14 @@ async function runMountedPage() {
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl);
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
 			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html`,
 		});
-		const deadline = Date.now() + 15000;
+		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
 			const evaluated = await resources.pageConnection.command("Runtime.evaluate", {
 				expression: "window.__builderSourceEditMounted ?? null",
@@ -159,6 +166,7 @@ async function runMountedPage() {
 				const peoplePillStabilityWidths = [];
 				const peopleSelectionScrollWidths = [];
 				const franchiseReviewWidths = [];
+				const studioHierarchyWidths = [];
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -182,6 +190,13 @@ async function runMountedPage() {
 					});
 					if (franchiseEvaluation.exceptionDetails) throw new Error(franchiseEvaluation.exceptionDetails.exception?.description ?? franchiseEvaluation.exceptionDetails.text);
 					franchiseReviewWidths.push(franchiseEvaluation.result?.value);
+					const studioEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runStudioHierarchyScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (studioEvaluation.exceptionDetails) throw new Error(studioEvaluation.exceptionDetails.exception?.description ?? studioEvaluation.exceptionDetails.text);
+					studioHierarchyWidths.push(studioEvaluation.result?.value);
 				}
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
@@ -233,7 +248,14 @@ async function runMountedPage() {
 					});
 					decadesExclusionWidths.push(decadesExclusionEvaluation.result?.value);
 				}
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+				const studioScaleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runStudioScaleScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -445,6 +467,8 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.layout.noHorizontalOverflow, true, `${width}px document overflow`);
 		assert.equal(result.layout.noNestedScrollTrap, true, `${width}px scroll ownership`);
 		assert.equal(result.preview.posterCount, width <= 520 ? 5 : 10, `${width}px preview limit`);
+		assert.equal(result.preview.postersReady, true, `${width}px loaded Movie posters`);
+		assert.equal(result.preview.genuineTmdbSources, true, `${width}px genuine TMDB Movie poster sources`);
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
 		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
 		assert.equal(result.preview.gridColumns, width <= 520 ? 5 : 10, `${width}px preview columns`);
@@ -453,6 +477,18 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
 		assert.equal(result.preview.sharedNestedLayer, true, `${width}px shared nested preview layer`);
 		assert.equal(result.preview.aboveCreationModal, true, `${width}px preview above creation modal`);
+		assert.deepEqual(result.preview.mediaSeparation, {
+			tabCount: 2,
+			moviesInitiallyActive: true,
+			seriesActive: true,
+			moviePosterCount: width <= 520 ? 5 : 10,
+			seriesPosterCount: width <= 520 ? 5 : 10,
+			seriesCount: true,
+			seriesPostersReady: true,
+			seriesGenuineTmdbSources: true,
+			noCombinedTotal: true,
+			noAdditionalRequests: true,
+		}, `${width}px media-separated People Preview`);
 		assert.equal(result.preview.escapeClosed, true, `${width}px Escape`);
 		assert.equal(result.preview.escapeRestoredFocus, true, `${width}px Escape restore`);
 		assert.equal(result.preview.closeRestoredFocus, true, `${width}px Close restore`);
@@ -480,6 +516,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.appearance.noDeadEditor, true, `${width}px removed editor leaves no dead container`);
 		assert.equal(result.appearance.noHorizontalOverflow, true, `${width}px appearance overflow`);
 		assert.equal(result.sortSurvivesReviewBack, true, `${width}px sort preservation`);
+		assert.equal(result.liveRequests.personDetailsOnly, true, `${width}px production TMDB Person detail requests`);
 		assert.equal(result.revisionUnchanged, true, `${width}px preview/configure mutation`);
 	}
 });
@@ -527,6 +564,12 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 			assert.equal(preview.noHorizontalOverflow, true, `${width}px ${origin} preview overflow`);
 			assert.equal(preview.exactFocusRestored, true, `${width}px ${origin} exact trigger restoration`);
 			assert.equal(preview.outerStable, true, `${width}px ${origin} outer scroll position`);
+			assert.equal(preview.posterCount, width <= 520 ? 5 : 10, `${width}px ${origin} full bounded poster grid`);
+			assert.equal(preview.postersReady, true, `${width}px ${origin} loaded posters`);
+			assert.equal(preview.genuineTmdbSources, true, `${width}px ${origin} genuine TMDB poster sources`);
+			assert.equal(preview.posterOnly, true, `${width}px ${origin} poster-only results`);
+			assert.equal(preview.captionsAbsent, true, `${width}px ${origin} result captions absent`);
+			assert.equal(preview.missingCardsAbsent, true, `${width}px ${origin} missing-poster cards absent`);
 		}
 		assert.equal(result.selectPreview.focusEntered, true, `${width}px Select preview focus entry`);
 		assert.equal(result.selectPreview.focusContained, true, `${width}px Select preview focus containment`);
@@ -536,7 +579,8 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 		assert.equal(result.reviewPreview.previewOpenedWithoutExpanding, true, `${width}px collapsed Review preview opens directly`);
 		assert.equal(result.reviewPreview.remainedCollapsedAfterPreview, true, `${width}px Review row stays collapsed after preview`);
 		assert.equal(result.selection.removalWorked, true, `${width}px selected removal`);
-		assert.deepEqual(result.selection.selectedOrder, ["Star Wars Collection", "The ExtraordinarilyLongUnbrokenFranchiseNameThatMustNeverOverflowItsSelectedDisclosure Collection"], `${width}px removal/reselection order`);
+		assert.equal(result.selection.reselectionOrderPreserved, true, `${width}px removal/reselection order`);
+		assert.equal(result.liveRequests.collectionDetailsOnly, true, `${width}px production TMDB Collection detail requests`);
 		assert.equal(result.review.artworkGuidance, "Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.", `${width}px user-facing artwork guidance`);
 		assert.equal(result.review.technicalArtworkCopyAbsent, true, `${width}px technical artwork wording absent`);
 		assert.equal(result.review.shapeSelectorAbsent, true, `${width}px no Franchise shape selector`);
@@ -556,6 +600,106 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 		assert.equal(result.noHorizontalOverflow, true, `${width}px flow overflow`);
 		assert.equal(result.revisionUnchanged, true, `${width}px preview/removal non-mutation`);
 	}
+});
+
+test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe, and responsive at every owner width", () => {
+	assert.deepEqual(mountedResults.studioHierarchyWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.studioHierarchyWidths) {
+		const width = result.width;
+		assert.deepEqual(result.search, {
+			realIdentitiesFound: true,
+			numericMovieCounts: true,
+			previewAbsent: true,
+			movieCountFilter: true,
+			hideZeroAbsent: true,
+			mostMoviesAbsent: true,
+			alphaOverridePresent: true,
+			requestsBeforeSelection: 0,
+		}, `${width}px Search`);
+		assert.deepEqual(result.selection, { selectedCount: 2, checkboxesNative: true }, `${width}px selection`);
+		assert.deepEqual(result.selectPreview, { absent: true, removePresent: true, requests: 0 }, `${width}px Select disclosure has Remove without Preview`);
+		assert.deepEqual(result.configure.defaults, { movies: true, popular: true, requestFree: true, helperCopy: "These choices apply to every selected Studio.", oldDefaultsCopyAbsent: true }, `${width}px defaults and quiet Configure helper`);
+		assert.deepEqual(result.configure.rows, {
+			initialCount: 2,
+			order: [3, 174],
+			countsPresent: true,
+			placementPresent: true,
+			previewActions: 2,
+			removeLabelsAccessible: true,
+			disclosureAbsent: true,
+			afterFirstRemoval: 1,
+			lastRemovalStayedConfigure: true,
+			emptyState: true,
+			appearanceDisabled: true,
+			filterPreserved: true,
+			reselectedOrder: [3, 174],
+		}, `${width}px Configure rows, removal and canonical reselection`);
+		assert.deepEqual(result.configure.configureMoviePreview, {
+			requests: 1,
+			moviePopularRequest: true,
+			visiblePosters: width <= 520 ? 5 : 10,
+			postersReady: true,
+			genuineTmdbSources: true,
+			posterOnly: true,
+			captionsAbsent: true,
+			missingCardsAbsent: true,
+			countWithMedia: true,
+			focusEntered: true,
+			sharedLayer: true,
+			modalSemantics: true,
+			technicalCopyAbsent: true,
+			exactFocusRestored: true,
+			outerStable: true,
+		}, `${width}px configured poster-only Movies Preview`);
+		assert.deepEqual(result.configure.lazySeries, {
+			unopenedMadeNoRequest: true,
+			explicitTabAddedOne: true,
+			countInPreview: true,
+			postersReady: true,
+			genuineTmdbSources: true,
+			countRetained: true,
+		}, `${width}px lazy Series`);
+		assert.equal(result.configure.countSurvivesSort, true, `${width}px transient Series count survives sort`);
+		assert.equal(result.configure.recentMovieAddedOne, true, `${width}px Movie sort-key request`);
+		assert.equal(result.configure.recentSeriesAddedOne, true, `${width}px Series sort-key request`);
+		assert.equal(result.configure.recentSeriesCountRetained, true, `${width}px recent Series total retained`);
+		assert.equal(result.configure.previousSortCacheHit, true, `${width}px previous-sort cache reuse`);
+		assert.deepEqual(result.appearance, {
+			requestFree: true,
+			heading: "Appearance",
+			studioRowsAbsent: true,
+			previewAbsent: true,
+			countsAbsent: true,
+			artworkSectionAbsent: true,
+			representativeAbsent: true,
+			artworkCopyAbsent: true,
+			shapeSelectorAbsent: true,
+			presentationControlsPresent: true,
+			createAction: "Create 2 folders",
+		}, `${width}px Appearance-only final stage`);
+		assert.deepEqual(result.artwork, { loads: 1, resolves: 2, loadSucceeded: true, shapeSelectorAbsent: true }, `${width}px live artwork batch`);
+		assert.equal(result.oneScrollOwner, true, `${width}px scroll ownership`);
+		assert.equal(result.noHorizontalOverflow, true, `${width}px dialog overflow`);
+		assert.equal(result.revisionUnchanged, true, `${width}px pre-apply mutation`);
+	}
+});
+
+test("mounted Studio hierarchy scales to 100 ordered Studios and 200 sources with zero automatic Preview requests", () => {
+	assert.deepEqual(mountedResults.studioScale, {
+		cards: 100,
+		selectedCount: 100,
+		noticeAt100: true,
+		requests: { afterBrowse: 0, afterSelection: 0, afterConfigure: 0, afterAppearance: 0, afterApply: 0 },
+		artworkLoads: 1,
+		artworkResolves: 100,
+		totals: [1, 100, 200],
+		configureRows: 100,
+		appearanceRows: 0,
+		applyCalls: 1,
+		revisionUnchanged: true,
+		oneScrollOwner: true,
+		noHorizontalOverflow: true,
+	});
 });
 
 test("mounted People selection keeps a partially clipped native checkbox inside the inner result scroller", () => {

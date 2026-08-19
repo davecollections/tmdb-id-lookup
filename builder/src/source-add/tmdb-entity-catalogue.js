@@ -1,6 +1,6 @@
 const safeLogoPathPattern = /^\/[A-Za-z0-9._-]+$/;
 const TMDB_IMAGE_ORIGIN = "https://image.tmdb.org";
-const supportedLogoSizes = new Set(["w92", "w185"]);
+const supportedLogoSizes = new Set(["w92", "w185", "w500"]);
 const countryDisplayNames = typeof Intl !== "undefined" && Intl.DisplayNames
 	? new Intl.DisplayNames(["en"], { type: "region" })
 	: null;

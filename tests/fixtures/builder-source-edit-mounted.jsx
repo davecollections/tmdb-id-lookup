@@ -2,6 +2,13 @@ import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import {
+	createPeopleManifestClient,
+	createStudioCatalogueProvider,
+	createTmdbCollectionProvider,
+	createTmdbPersonProvider,
+	createTmdbStudioPreviewProvider,
+} from "../../builder/src/source-add/index.js";
+import {
 	chooseMovieCollection,
 	createSourceEditSession,
 	saveSourceEdit,
@@ -12,9 +19,14 @@ import { PeopleBulkConfigurationList, PeopleSourceFlow } from "../../builder/src
 import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
 import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
+import { createArtworkRuntimeClient } from "../../js/artwork-runtime.mjs";
 import "../../builder/src/styles.css";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+const livePeopleManifestClient = createPeopleManifestClient();
+const liveStudioCatalogueProvider = createStudioCatalogueProvider({ catalogueUrl: "/data/companies.min.json" });
+const liveStudioArtworkRuntimeClient = createArtworkRuntimeClient();
 
 function countingIdFactory(prefix = "builder") {
 	let count = 0;
@@ -116,6 +128,91 @@ function setInputValue(input, value) {
 async function afterCommittedEffects() {
 	await Promise.resolve();
 	await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+async function waitForMountedCondition(resolveCondition, { label, timeoutMs = 2000, pollIntervalMs = 25 } = {}) {
+	const deadline = performance.now() + timeoutMs;
+	while (performance.now() < deadline) {
+		const result = resolveCondition();
+		if (result) return result;
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+			await afterCommittedEffects();
+		});
+	}
+	throw new Error(`${label ?? "Mounted condition"} did not become ready within ${timeoutMs} ms.`);
+}
+
+function recordingFetch(requests) {
+	return async (input, init) => {
+		const requestUrl = typeof input === "string" ? input : input?.url;
+		const url = new URL(requestUrl);
+		requests.push(`${url.pathname}${url.search}`);
+		return fetch(input, init);
+	};
+}
+
+function visibleElement(element) {
+	const style = getComputedStyle(element);
+	const rect = element.getBoundingClientRect();
+	return style.display !== "none"
+		&& style.visibility !== "hidden"
+		&& style.visibility !== "collapse"
+		&& Number.parseFloat(style.opacity) !== 0
+		&& element.getClientRects().length > 0
+		&& rect.width > 0
+		&& rect.height > 0;
+}
+
+function genuineTmdbPosterImages(images) {
+	return images.length > 0 && images.every((image) => {
+		const url = new URL(image.currentSrc || image.src);
+		return url.origin === "https://image.tmdb.org" && url.pathname.startsWith("/t/p/");
+	});
+}
+
+async function waitForReadyPosterGrid({
+	preview,
+	gridSelector,
+	expectedVisibleCount,
+	label,
+	timeoutMs = 20_000,
+}) {
+	let diagnostic = { preview: false, grid: false, expectedVisibleCount, images: [] };
+	try {
+		return await waitForMountedCondition(() => {
+			const previewElement = typeof preview === "string" ? document.querySelector(preview) : preview;
+			const grid = previewElement?.querySelector(gridSelector) ?? null;
+			const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
+			const visibleImages = images.filter(visibleElement);
+			diagnostic = {
+				preview: Boolean(previewElement),
+				previewStatus: previewElement?.dataset.previewStatus ?? "not-exposed",
+				grid: Boolean(grid),
+				expectedVisibleCount,
+				visibleCount: visibleImages.length,
+				images: images.map((image) => {
+					const rect = image.getBoundingClientRect();
+					return {
+						src: image.currentSrc || image.src,
+						visible: visibleElement(image),
+						complete: image.complete,
+						naturalWidth: image.naturalWidth,
+						naturalHeight: image.naturalHeight,
+						width: rect.width,
+						height: rect.height,
+					};
+				}),
+			};
+			const previewReady = previewElement?.dataset.previewStatus === undefined
+				|| previewElement.dataset.previewStatus === "ready";
+			if (!previewReady || !grid || visibleImages.length !== expectedVisibleCount) return null;
+			if (visibleImages.some((image) => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
+			return { grid, images, visibleImages };
+		}, { label, timeoutMs });
+	} catch (error) {
+		throw new Error(`${error.message} Poster readiness: ${JSON.stringify(diagnostic)}`);
+	}
 }
 
 async function clickAndSettle(element) {
@@ -672,6 +769,8 @@ function MountedWorkspace({ controller }) {
 		networkCountProvider: {},
 		studioCatalogueProvider: {},
 		studioCountProvider: {},
+		studioPreviewProvider: {},
+		studioArtworkRuntimeClient: {},
 		streamingCatalogueProvider: {},
 		artworkClient: {},
 	});
@@ -992,38 +1091,12 @@ function measureHierarchyShowAllSpacing(root) {
 	};
 }
 
-function mountedFranchise(id, name) {
-	return {
-		id,
-		name,
-		overview: `${name} overview`,
-		posterPath: `/franchise-${id}.jpg`,
-		backdropPath: `/franchise-${id}-backdrop.jpg`,
-		movieCount: 8,
-		containedTitles: Array.from({ length: 8 }, (_, index) => ({
-			id: id * 100 + index,
-			title: `${name} Title ${index + 1}`,
-			releaseYear: 2000 + index,
-			posterPath: `/franchise-${id}-title-${index + 1}.jpg`,
-		})),
-	};
-}
-
 async function runFranchiseReviewScenario() {
-	const longName = "The ExtraordinarilyLongUnbrokenFranchiseNameThatMustNeverOverflowItsSelectedDisclosure Collection";
-	const franchises = [mountedFranchise(1241, longName), mountedFranchise(10, "Star Wars Collection")];
-	const byId = new Map(franchises.map((franchise) => [franchise.id, franchise]));
-	const provider = {
-		async searchCollections() {
-			return { ok: true, data: { results: franchises, page: 1, totalPages: 1, totalResults: franchises.length } };
-		},
-		async getCollection(id) {
-			const franchise = byId.get(Number(id));
-			return franchise ? { ok: true, data: franchise, checkedAt: 1 } : { ok: false, error: { message: "Missing fixture franchise.", retryable: false } };
-		},
-	};
+	const franchiseIds = [645, 1241];
+	const requests = [];
+	const provider = createTmdbCollectionProvider({ fetchImpl: recordingFetch(requests) });
 	const controller = createController();
-	importSources(controller, [collectionSource({ title: longName, tmdbId: 1241 })]);
+	importSources(controller, [collectionSource({ title: "Existing franchise source", tmdbId: franchiseIds[0] })]);
 	const initialProject = controller.getState().project;
 	const initialRevision = controller.getState().revision;
 	const host = document.createElement("div");
@@ -1049,11 +1122,24 @@ async function runFranchiseReviewScenario() {
 		if (element === null || element === undefined) throw new Error(`Mounted Franchise ${label} is missing.`);
 		return element;
 	}
-	async function waitAndSettle(ms = 0) {
+	const expectedPosterCount = window.innerWidth <= 520 ? 5 : 10;
+	const selectedNames = new Map();
+	async function selectExactCollection(dialog, query, id, expectedSelectionCount) {
 		await act(async () => {
-			if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+			setInputValue(query, String(id));
 			await afterCommittedEffects();
 		});
+		const card = await waitForMountedCondition(
+			() => dialog.querySelector(`[data-tmdb-franchise-result="${id}"]`),
+			{ label: `Live TMDB Collection ${id} result`, timeoutMs: 15_000 },
+		);
+		selectedNames.set(id, card.querySelector("strong")?.textContent.trim() ?? "");
+		await clickAndSettle(card);
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll(".franchise-selected-disclosure li").length === expectedSelectionCount,
+			{ label: `Live TMDB Collection ${id} selection`, timeoutMs: 15_000 },
+		);
+		return card;
 	}
 	function outerPosition(dialog, scrollElement) {
 		const rect = dialog.getBoundingClientRect();
@@ -1079,17 +1165,8 @@ async function runFranchiseReviewScenario() {
 		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
 		const scrollElement = required(dialog.querySelector(".add-source-scroll"), "inner scroll owner");
 		const query = required(dialog.querySelector("#franchise-source-query"), "search query");
-		await act(async () => {
-			setInputValue(query, "franchise");
-			await new Promise((resolve) => setTimeout(resolve, 360));
-			await afterCommittedEffects();
-		});
-		const resultCards = [...dialog.querySelectorAll(".franchise-result-selectable")];
-		if (resultCards.length !== franchises.length) throw new Error(`Mounted Franchise expected ${franchises.length} results, received ${resultCards.length}.`);
-		for (const card of resultCards) {
-			await clickAndSettle(card);
-			await waitAndSettle();
-		}
+		await selectExactCollection(dialog, query, franchiseIds[0], 1);
+		await selectExactCollection(dialog, query, franchiseIds[1], 2);
 		let disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure");
 		await clickAndSettle(required(disclosure.querySelector("summary"), "selected disclosure summary"));
 		let selectedRows = [...disclosure.querySelectorAll("li")];
@@ -1113,6 +1190,12 @@ async function runFranchiseReviewScenario() {
 		const selectBefore = outerPosition(dialog, scrollElement);
 		await clickAndSettle(previewTrigger);
 		const selectLayer = previewLayerState();
+		const selectReadyPosters = await waitForReadyPosterGrid({
+			preview: selectLayer.preview,
+			gridSelector: ".franchise-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live Franchise Select Preview at ${window.innerWidth}px`,
+		});
 		const selectClose = required(selectLayer.preview.querySelector("header button"), "Select preview Close action");
 		const selectFocusEntered = document.activeElement === selectClose;
 		await act(async () => {
@@ -1121,6 +1204,14 @@ async function runFranchiseReviewScenario() {
 		});
 		const selectFocusContained = selectLayer.preview.contains(document.activeElement);
 		const selectOpenPosition = outerPosition(dialog, scrollElement);
+		const selectPosterState = {
+			posterCount: selectReadyPosters.visibleImages.length,
+			postersReady: selectReadyPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			genuineTmdbSources: genuineTmdbPosterImages(selectReadyPosters.visibleImages),
+			posterOnly: [...selectLayer.preview.querySelectorAll(".franchise-preview-grid > *")].every((item) => item.tagName === "IMG"),
+			captionsAbsent: selectLayer.preview.querySelector(".franchise-preview-grid figcaption, .franchise-preview-grid article, .franchise-preview-grid small") === null,
+			missingCardsAbsent: !selectLayer.preview.textContent.includes("No poster"),
+		};
 		await act(async () => {
 			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
 			await afterCommittedEffects();
@@ -1135,17 +1226,21 @@ async function runFranchiseReviewScenario() {
 			exactFocusRestored: document.activeElement === previewTrigger,
 			outerStable: positionStable(selectBefore, selectOpenPosition) && positionStable(selectBefore, outerPosition(dialog, scrollElement)),
 			selectionPreserved: dialog.querySelectorAll(".franchise-selected-disclosure li").length === 2,
+			...selectPosterState,
 		};
 
 		disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure after preview");
-		await clickAndSettle(required(disclosure.querySelector(`[aria-label="Remove ${longName}"]`), "remove long franchise"));
+		await clickAndSettle(required(disclosure.querySelector("li .franchise-selected-remove"), "remove first franchise"));
 		const removalWorked = dialog.querySelectorAll(".franchise-selected-disclosure li").length === 1;
-		await clickAndSettle(resultCards[0]);
-		await waitAndSettle();
+		await selectExactCollection(dialog, query, franchiseIds[0], 2);
 		disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure after reselection");
 		if (!disclosure.open) await clickAndSettle(required(disclosure.querySelector("summary"), "reopened selected disclosure"));
 		selectedRows = [...disclosure.querySelectorAll("li")];
 		const selectedOrder = selectedRows.map((row) => row.querySelector("strong")?.textContent ?? "");
+		const reselectionOrderPreserved = JSON.stringify(selectedOrder) === JSON.stringify([
+			selectedNames.get(franchiseIds[1]),
+			selectedNames.get(franchiseIds[0]),
+		]);
 
 		await clickAndSettle(required(buttonContaining(dialog, "Review 2 franchises"), "Review action"));
 		const review = required(dialog.querySelector(".franchise-review"), "Review surface");
@@ -1159,7 +1254,7 @@ async function runFranchiseReviewScenario() {
 		const tabsChoice = required(review.querySelector('input[name="franchise-collection-layout"][value="TABBED_GRID"]'), "Tabs choice");
 		await clickAndSettle(tabsChoice);
 		const rowsToTabsRestoresEnabled = review.querySelector('[data-editor-control="franchiseShowAllTab"]')?.checked === true;
-		const reviewDetails = required([...review.querySelectorAll(".franchise-review-list details")].find((details) => details.querySelector("strong")?.textContent === longName), "Review franchise detail");
+		const reviewDetails = required([...review.querySelectorAll(".franchise-review-list details")].find((details) => details.querySelector("small")?.textContent.includes(`TMDB ${franchiseIds[0]} ·`)), "Review franchise detail");
 		const reviewSummary = required(reviewDetails.querySelector("summary"), "Review detail summary");
 		const reviewPreviewTrigger = required(reviewSummary.querySelector('button[aria-haspopup="dialog"]'), "Review Preview titles action");
 		const reviewRowActions = required(reviewSummary.querySelector(".franchise-review-row-actions"), "Review row actions");
@@ -1181,7 +1276,21 @@ async function runFranchiseReviewScenario() {
 		await clickAndSettle(reviewPreviewTrigger);
 		const previewOpenedWithoutExpanding = reviewDetails.open === false;
 		const reviewLayer = previewLayerState();
+		const reviewReadyPosters = await waitForReadyPosterGrid({
+			preview: reviewLayer.preview,
+			gridSelector: ".franchise-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live Franchise Review Preview at ${window.innerWidth}px`,
+		});
 		const reviewClose = required(reviewLayer.preview.querySelector("header button"), "Review preview Close action");
+		const reviewPosterState = {
+			posterCount: reviewReadyPosters.visibleImages.length,
+			postersReady: reviewReadyPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			genuineTmdbSources: genuineTmdbPosterImages(reviewReadyPosters.visibleImages),
+			posterOnly: [...reviewLayer.preview.querySelectorAll(".franchise-preview-grid > *")].every((item) => item.tagName === "IMG"),
+			captionsAbsent: reviewLayer.preview.querySelector(".franchise-preview-grid figcaption, .franchise-preview-grid article, .franchise-preview-grid small") === null,
+			missingCardsAbsent: !reviewLayer.preview.textContent.includes("No poster"),
+		};
 		await clickAndSettle(reviewClose);
 		const remainedCollapsedAfterPreview = reviewDetails.open === false;
 		const reviewPreview = {
@@ -1194,11 +1303,12 @@ async function runFranchiseReviewScenario() {
 			outerStable: positionStable(reviewBefore, outerPosition(dialog, scrollElement)),
 			previewOpenedWithoutExpanding,
 			remainedCollapsedAfterPreview,
+			...reviewPosterState,
 		};
 		await clickAndSettle(reviewSummary);
 		const detailDisclosure = {
 			independentlyExpandable: reviewDetails.open === true && document.querySelector(".franchise-preview-modal") === null,
-			metadataPresent: reviewDetails.querySelector(".franchise-review-details > small")?.textContent.includes("TMDB 1241 · Movie · Collection · TMDB order") === true,
+			metadataPresent: reviewDetails.querySelector(".franchise-review-details > small")?.textContent.includes(`TMDB ${franchiseIds[0]} · Movie · Collection · TMDB order`) === true,
 			duplicateExplanationPresent: reviewDetails.querySelector(".source-elsewhere-note")?.textContent.includes("This franchise source exists elsewhere") === true,
 		};
 		const createButton = required(buttonContaining(dialog, "Create 2 folders"), "Create action");
@@ -1208,7 +1318,11 @@ async function runFranchiseReviewScenario() {
 			selectedActions,
 			selectPreview,
 			reviewPreview,
-			selection: { removalWorked, selectedOrder },
+			selection: { removalWorked, reselectionOrderPreserved },
+			liveRequests: {
+				collectionDetailsOnly: requests.length === franchiseIds.length
+					&& franchiseIds.every((id) => requests.includes(`/3/collection/${id}`)),
+			},
 			review: {
 				artworkGuidance: review.querySelector('[data-franchise-artwork-rule="poster-only"]')?.textContent.trim() ?? "",
 				technicalArtworkCopyAbsent: !/\bPOSTER\b/.test(review.querySelector('[data-franchise-artwork-rule="poster-only"]')?.textContent ?? "")
@@ -1235,19 +1349,383 @@ async function runFranchiseReviewScenario() {
 	}
 }
 
-async function runPeopleConfigureLayoutScenario() {
-	const people = new Map([
-		[31, mountedPerson({ id: 31, name: "Tom Hanks", department: "Acting", membership: ["actor"], actingMovies: 12, actingSeries: 3, directingMovies: 2, directingSeries: 0 })],
-		[40, mountedPerson({ id: 40, name: "Orson Welles", department: "Directing", membership: ["actor", "director"], actingMovies: 8, actingSeries: 2, directingMovies: 4, directingSeries: 1 })],
-	]);
-	const provider = {
-		async searchPeople() { return { ok: true, data: { results: [], page: 1, totalPages: 1, totalResults: 0 } }; },
-		async getPerson(id) {
-			const person = people.get(Number(id));
-			return person ? { ok: true, data: person, checkedAt: 1 } : { ok: false, error: { message: "Missing fixture person.", retryable: false } };
+function mountedStudio(id, name = `Studio ${id}`) {
+	return {
+		id,
+		name,
+		parent: id % 3 === 0 ? "Parent Company" : "",
+		country: "US",
+		headquarters: "Los Angeles, California",
+		location: "US · Los Angeles, California",
+		logoPath: `/studio-${id}.png`,
+		movieCount: 1000 + id,
+	};
+}
+
+function studioCatalogueProvider(studios) {
+	return {
+		async searchStudios(_input, { page = 1 } = {}) {
+			return { ok: true, data: { results: studios, page, totalPages: 1, totalResults: studios.length } };
 		},
 	};
-	const manifestClient = { peek() { return null; }, async load() { return { ok: false, error: { message: "Fixture manifest unavailable." } }; } };
+}
+
+async function runStudioHierarchyScenario() {
+	const studioIds = [3, 174];
+	const requests = [];
+	const previewProvider = createTmdbStudioPreviewProvider({ fetchImpl: recordingFetch(requests) });
+	let artworkLoads = 0;
+	let artworkResolves = 0;
+	let artworkLoadSucceeded = false;
+	const artworkRuntimeClient = {
+		async load() {
+			artworkLoads += 1;
+			const result = await liveStudioArtworkRuntimeClient.load();
+			artworkLoadSucceeded = true;
+			return result;
+		},
+		async resolve(input) { artworkResolves += 1; return liveStudioArtworkRuntimeClient.resolve(input); },
+	};
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "studios",
+			studioCatalogueProvider: liveStudioCatalogueProvider,
+			studioPreviewProvider: previewProvider,
+			studioArtworkRuntimeClient: artworkRuntimeClient,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStudios() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted Studio ${label} is missing.`);
+		return element;
+	}
+	const expectedPosterCount = window.innerWidth <= 520 ? 5 : 10;
+	const selectedCards = [];
+	async function selectExactStudio(dialog, id, expectedSelectionCount) {
+		const query = required(dialog.querySelector("#studio-source-query"), "Studio search query");
+		await act(async () => {
+			setInputValue(query, String(id));
+			await afterCommittedEffects();
+		});
+		const card = await waitForMountedCondition(
+			() => dialog.querySelector(`[data-tmdb-studio-result="${id}"]`),
+			{ label: `Checked-in Studio catalogue result ${id}`, timeoutMs: 10_000 },
+		);
+		selectedCards.push(card);
+		await clickAndSettle(card);
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll(".studio-selected-disclosure li").length === expectedSelectionCount,
+			{ label: `Studio ${id} selection`, timeoutMs: 10_000 },
+		);
+		return card;
+	}
+	function outerPosition(dialog, scrollElement) {
+		const rect = dialog.getBoundingClientRect();
+		return { top: rect.top, bottom: rect.bottom, dialogScrollTop: dialog.scrollTop, innerScrollTop: scrollElement.scrollTop, x: window.scrollX, y: window.scrollY };
+	}
+	function positionStable(before, after) {
+		return Math.abs(before.top - after.top) <= 1 && Math.abs(before.bottom - after.bottom) <= 1 && before.dialogScrollTop === after.dialogScrollTop && before.innerScrollTop === after.innerScrollTop && before.x === after.x && before.y === after.y;
+	}
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const scrollElement = required(dialog.querySelector(".add-source-scroll"), "inner scroll owner");
+		const filterGroup = await waitForMountedCondition(
+			() => dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'),
+			{ label: "Checked-in Studio catalogue controls", timeoutMs: 10_000 },
+		);
+		const countFilter = required(buttonContaining(filterGroup, "100+"), "100+ Movie Count filter");
+		await clickAndSettle(countFilter);
+		await waitForMountedCondition(
+			() => countFilter.getAttribute("aria-pressed") === "true",
+			{ label: "100+ Studio Movie Count filter" },
+		);
+		for (const [index, id] of studioIds.entries()) await selectExactStudio(dialog, id, index + 1);
+		const search = {
+			realIdentitiesFound: studioIds.every((id) => selectedCards.some((card) => Number(card.dataset.tmdbStudioResult) === id)),
+			numericMovieCounts: selectedCards.every((card) => /Movie Count: [\d,]+/.test(card.textContent)),
+			previewAbsent: selectedCards.every((card) => !card.textContent.includes("Preview") && card.querySelector('button[aria-haspopup="dialog"]') === null),
+			movieCountFilter: buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "100+")?.getAttribute("aria-pressed") === "true",
+			hideZeroAbsent: buttonContaining(dialog, "Hide studios with no movies") === null,
+			mostMoviesAbsent: buttonContaining(dialog, "Most movies") === null,
+			alphaOverridePresent: dialog.querySelector('button[aria-label="Order Studios A–Z"]') !== null,
+			requestsBeforeSelection: requests.length,
+		};
+		const disclosure = required(dialog.querySelector(".studio-selected-disclosure"), "selected disclosure");
+		await clickAndSettle(required(disclosure.querySelector("summary"), "selected disclosure summary"));
+		const selectPreviewState = {
+			absent: disclosure.querySelector('button[aria-haspopup="dialog"]') === null && !disclosure.textContent.includes("Preview"),
+			removePresent: disclosure.querySelectorAll(".studio-selected-remove").length === 2,
+			requests: requests.length,
+		};
+
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Studios"), "Configure action"));
+		let configure = required(dialog.querySelector(".studio-hierarchy-configure"), "Configure stage");
+		const configureInitialRequests = requests.length;
+		const defaults = {
+			movies: configure.querySelector('input[name="studio-hierarchy-media"][value="movies"]')?.checked === true,
+			popular: configure.querySelector('input[name="studio-hierarchy-sort"][value="popular"]')?.checked === true,
+			requestFree: configureInitialRequests === 0,
+			helperCopy: configure.querySelector(".studio-configure-helper")?.textContent.trim(),
+			oldDefaultsCopyAbsent: !configure.textContent.includes("Movies and Popular are selected by default"),
+		};
+		const initialConfigureRows = [...configure.querySelectorAll(".studio-configure-row")];
+		const configureRows = {
+			initialCount: initialConfigureRows.length,
+			order: initialConfigureRows.map((row) => Number(row.dataset.studioId)),
+			countsPresent: initialConfigureRows.every((row) => row.textContent.includes("Movies ·")),
+			placementPresent: initialConfigureRows.every((row) => row.querySelector(".studio-configure-placement")?.textContent.includes("Ready to create")),
+			previewActions: initialConfigureRows.filter((row) => row.querySelector('button[aria-haspopup="dialog"]')).length,
+			removeLabelsAccessible: initialConfigureRows.every((row) => /^Remove .+/.test(row.querySelector(".studio-configure-remove")?.getAttribute("aria-label") ?? "")),
+			disclosureAbsent: configure.querySelector(".studio-selected-disclosure") === null,
+		};
+		await clickAndSettle(required(initialConfigureRows[0].querySelector(".studio-configure-remove"), "first Configure remove action"));
+		configureRows.afterFirstRemoval = configure.querySelectorAll(".studio-configure-row").length;
+		await clickAndSettle(required(configure.querySelector(".studio-configure-remove"), "last Configure remove action"));
+		configureRows.lastRemovalStayedConfigure = dialog.querySelector('[data-studio-hierarchy-stage="configure"]') !== null;
+		configureRows.emptyState = configure.textContent.includes("No Studios selected. Go Back to Select");
+		configureRows.appearanceDisabled = buttonContaining(dialog, "Continue to Appearance")?.disabled === true;
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-studio-selection"]'), "Back to Select after removals"));
+		configureRows.filterPreserved = buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "100+")?.getAttribute("aria-pressed") === "true";
+		for (const [index, id] of studioIds.entries()) await selectExactStudio(dialog, id, index + 1);
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Studios"), "Configure after reselection"));
+		configure = required(dialog.querySelector(".studio-hierarchy-configure"), "restored Configure stage");
+		configureRows.reselectedOrder = [...configure.querySelectorAll(".studio-configure-row")].map((row) => Number(row.dataset.studioId));
+		let configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Configure Preview action");
+		const beforeConfigurePreview = outerPosition(dialog, scrollElement);
+		await clickAndSettle(configurePreviewTrigger);
+		const configurePreviewModal = required(document.querySelector(".studio-preview-modal"), "Configure Preview modal");
+		const readyPopularMoviePosters = await waitForReadyPosterGrid({
+			preview: configurePreviewModal,
+			gridSelector: ".studio-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live Studio Popular Movies Preview at ${window.innerWidth}px`,
+		});
+		const configureMoviePreview = {
+			requests: requests.length,
+			moviePopularRequest: requests[0]?.includes("with_companies=3") === true && requests[0]?.includes("sort_by=popularity.desc") === true,
+			visiblePosters: readyPopularMoviePosters.visibleImages.length,
+			postersReady: readyPopularMoviePosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			genuineTmdbSources: genuineTmdbPosterImages(readyPopularMoviePosters.visibleImages),
+			posterOnly: [...configurePreviewModal.querySelectorAll(".studio-preview-grid > *")].every((item) => item.tagName === "IMG"),
+			captionsAbsent: configurePreviewModal.querySelector(".studio-preview-grid figcaption, .studio-preview-grid article, .studio-preview-grid small") === null,
+			missingCardsAbsent: !configurePreviewModal.textContent.includes("No poster"),
+			countWithMedia: /Movies · [\d,]+/.test(configurePreviewModal.textContent),
+			focusEntered: document.activeElement === configurePreviewModal.querySelector("header button"),
+			sharedLayer: configurePreviewModal.closest(".nested-modal-backdrop")?.dataset.nestedModalBackdrop === "true",
+			modalSemantics: configurePreviewModal.getAttribute("role") === "dialog" && configurePreviewModal.getAttribute("aria-modal") === "true",
+			technicalCopyAbsent: !/first-page|Preview does not change|request|cache/i.test(configurePreviewModal.textContent),
+		};
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "cached Preview close"));
+		configureMoviePreview.exactFocusRestored = document.activeElement === configurePreviewTrigger;
+		configureMoviePreview.outerStable = positionStable(beforeConfigurePreview, outerPosition(dialog, scrollElement));
+
+		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-media"][value="both"]'), "Movies plus Series choice"));
+		configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Both Preview action");
+		await clickAndSettle(configurePreviewTrigger);
+		await waitForReadyPosterGrid({
+			preview: ".studio-preview-modal",
+			gridSelector: ".studio-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Cached live Studio Movies Preview at ${window.innerWidth}px`,
+		});
+		const bothMovieRequests = requests.length;
+		const seriesTab = required(buttonContaining(document.querySelector(".studio-preview-tabs"), "Series"), "Series tab");
+		await clickAndSettle(seriesTab);
+		const readyPopularSeriesPosters = await waitForReadyPosterGrid({
+			preview: ".studio-preview-modal",
+			gridSelector: ".studio-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live Studio Popular Series Preview at ${window.innerWidth}px`,
+		});
+		const lazySeries = {
+			unopenedMadeNoRequest: bothMovieRequests === configureMoviePreview.requests,
+			explicitTabAddedOne: requests.length === bothMovieRequests + 1,
+			countInPreview: /Series · [\d,]+/.test(document.querySelector(".studio-preview-modal")?.textContent ?? ""),
+			postersReady: readyPopularSeriesPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			genuineTmdbSources: genuineTmdbPosterImages(readyPopularSeriesPosters.visibleImages),
+		};
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Series Preview close"));
+		lazySeries.countRetained = /Series · [\d,]+/.test(configure.textContent);
+
+		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-sort"][value="recent"]'), "Recent sort"));
+		const countSurvivesSort = /Series · [\d,]+/.test(configure.textContent);
+		configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Recent Preview action");
+		await clickAndSettle(configurePreviewTrigger);
+		await waitForReadyPosterGrid({
+			preview: ".studio-preview-modal",
+			gridSelector: ".studio-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live Studio Recent Movies Preview at ${window.innerWidth}px`,
+		});
+		const recentMovieAddedOne = requests.length === 3 && requests.at(-1)?.includes("sort_by=primary_release_date.desc") === true;
+		await clickAndSettle(required(buttonContaining(document.querySelector(".studio-preview-tabs"), "Series"), "Recent Series tab"));
+		const readyRecentSeriesPosters = await waitForReadyPosterGrid({
+			preview: ".studio-preview-modal",
+			gridSelector: ".studio-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live Studio Recent Series Preview at ${window.innerWidth}px`,
+		});
+		const recentSeriesAddedOne = requests.length === 4
+			&& requests.at(-1)?.includes("sort_by=first_air_date.desc") === true
+			&& /Series · [\d,]+/.test(document.querySelector(".studio-preview-modal")?.textContent ?? "")
+			&& readyRecentSeriesPosters.visibleImages.length === expectedPosterCount;
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Recent Preview close"));
+		const recentSeriesCountRetained = /Series · [\d,]+/.test(configure.textContent);
+		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-sort"][value="popular"]'), "Popular sort"));
+		configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "restored Popular Preview action");
+		await clickAndSettle(configurePreviewTrigger);
+		const restoredPopularMoviePosters = await waitForReadyPosterGrid({
+			preview: ".studio-preview-modal",
+			gridSelector: ".studio-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Restored live Studio Popular Movies Preview at ${window.innerWidth}px`,
+		});
+		const previousSortCacheHit = requests.length === 4
+			&& /Movies · [\d,]+/.test(document.querySelector(".studio-preview-modal")?.textContent ?? "")
+			&& restoredPopularMoviePosters.visibleImages.length === expectedPosterCount;
+		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "restored Preview close"));
+
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action"));
+		const appearance = await waitForMountedCondition(
+			() => dialog.querySelector(".studio-hierarchy-appearance"),
+			{ label: "Live Studio artwork preparation", timeoutMs: 20_000 },
+		);
+		const appearanceState = {
+			requestFree: requests.length === 4,
+			heading: appearance.querySelector("h3")?.textContent.trim(),
+			studioRowsAbsent: appearance.querySelector(".studio-configure-row, .studio-review-list") === null,
+			previewAbsent: appearance.querySelector('button[aria-haspopup="dialog"]') === null && !appearance.textContent.includes("Preview titles"),
+			countsAbsent: !appearance.textContent.includes("Movies ·") && !appearance.textContent.includes("Series ·"),
+			artworkSectionAbsent: appearance.querySelector(".studio-appearance-artwork, [data-studio-artwork-rule]") === null && ![...appearance.querySelectorAll("h4")].some((heading) => heading.textContent.trim() === "Artwork"),
+			representativeAbsent: appearance.querySelector(".studio-appearance-artwork-preview, img[alt^='Representative Landscape artwork']") === null,
+			artworkCopyAbsent: !/artwork|landscape|Edit Folder/i.test(appearance.textContent),
+			shapeSelectorAbsent: appearance.querySelector('input[name="studio-folder-shape"]') === null && !appearance.textContent.includes("Folder artwork shape"),
+			presentationControlsPresent: appearance.querySelector("#studio-collection-name") !== null
+				&& appearance.querySelector('input[data-editor-control="studioHideNuvioTitle"]') !== null
+				&& appearance.querySelector('input[name="studio-folder-title-visibility"]') !== null
+				&& appearance.querySelector('input[name="studio-collection-layout"]') !== null
+				&& appearance.querySelector('input[data-editor-control="studioShowAllTab"]') !== null
+				&& appearance.querySelector('input[data-editor-control="studioPinToTop"]') !== null,
+			createAction: buttonContaining(dialog, "Create 2 folders")?.textContent.trim(),
+		};
+		const scrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		}).length;
+		return {
+			width: window.innerWidth,
+			search,
+			selection: {
+				selectedCount: 2,
+				checkboxesNative: selectedCards.every((card) => card.querySelector('input[type="checkbox"]') !== null),
+			},
+			selectPreview: selectPreviewState,
+			configure: { defaults, rows: configureRows, configureMoviePreview, lazySeries, countSurvivesSort, recentMovieAddedOne, recentSeriesAddedOne, recentSeriesCountRetained, previousSortCacheHit },
+			appearance: appearanceState,
+			artwork: { loads: artworkLoads, resolves: artworkResolves, loadSucceeded: artworkLoadSucceeded, shapeSelectorAbsent: appearance.querySelector('input[name="studio-folder-shape"]') === null },
+			oneScrollOwner: scrollOwners <= 1 && dialog.querySelectorAll(".add-source-scroll").length === 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+			revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runStudioScaleScenario() {
+	const studios = Array.from({ length: 100 }, (_, index) => mountedStudio(index + 1));
+	let previewRequests = 0;
+	let applyCalls = 0;
+	let artworkLoads = 0;
+	let artworkResolves = 0;
+	const controller = createController();
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: controller.getState().project,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "studios",
+			studioCatalogueProvider: studioCatalogueProvider(studios),
+			studioPreviewProvider: { async getStudioPreview() { previewRequests += 1; throw new Error("Scale Preview must stay explicit."); } },
+			studioArtworkRuntimeClient: {
+				async load() { artworkLoads += 1; },
+				async resolve() { artworkResolves += 1; return { status: "missing" }; },
+			},
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStudios() { applyCalls += 1; return { ok: false, errors: [{ message: "Mounted rollback-free apply probe." }] }; },
+		}));
+		await afterCommittedEffects();
+	});
+	await act(async () => {
+		await new Promise((resolve) => setTimeout(resolve, 320));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = document.querySelector('[data-creation-dialog="true"]');
+		const required = (element, label) => {
+			if (!element) throw new Error(`Mounted Studio scale ${label} is missing.`);
+			return element;
+		};
+		const cards = [...dialog.querySelectorAll(".studio-result-selectable")];
+		const afterBrowse = previewRequests;
+		for (const card of cards) await clickAndSettle(card);
+		const afterSelection = previewRequests;
+		const selectedCount = Number.parseInt(dialog.querySelector(".people-selected-summary > strong")?.textContent ?? "0", 10);
+		const noticeAt100 = dialog.querySelector('[data-large-selection-notice="true"]')?.textContent.includes("100 Studios") === true;
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 100 Studios"), `Configure action after ${selectedCount} selections`));
+		const afterConfigure = previewRequests;
+		await clickAndSettle(required(dialog.querySelector('input[name="studio-hierarchy-media"][value="both"]'), "Movies plus Series choice"));
+		const configureRows = dialog.querySelectorAll(".studio-configure-row").length;
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action"));
+		const afterAppearance = previewRequests;
+		const totals = [...dialog.querySelectorAll(".decades-plan-totals strong")].map((element) => Number(element.textContent));
+		const appearanceRows = dialog.querySelectorAll(".studio-configure-row, .studio-review-list details").length;
+		await clickAndSettle(required(buttonContaining(dialog, "Create 100 folders"), `Create action with totals ${totals.join("/")}`));
+		return {
+			cards: cards.length,
+			selectedCount,
+			noticeAt100,
+			requests: { afterBrowse, afterSelection, afterConfigure, afterAppearance, afterApply: previewRequests },
+			artworkLoads,
+			artworkResolves,
+			totals,
+			configureRows,
+			appearanceRows,
+			applyCalls,
+			revisionUnchanged: controller.getState().revision === initialRevision,
+			oneScrollOwner: dialog.querySelectorAll(".add-source-scroll").length === 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runPeopleConfigureLayoutScenario() {
+	const personIds = [31, 40];
+	const requests = [];
+	const provider = createTmdbPersonProvider({ fetchImpl: recordingFetch(requests) });
 	const controller = createController();
 	const initialProject = controller.getState().project;
 	const host = document.createElement("div");
@@ -1258,7 +1736,7 @@ async function runPeopleConfigureLayoutScenario() {
 			context: "hierarchy",
 			hierarchyScope: "new-collection",
 			provider,
-			manifestClient,
+			manifestClient: livePeopleManifestClient,
 			project: initialProject,
 			projectRevision: controller.getState().revision,
 			collection: null,
@@ -1268,12 +1746,6 @@ async function runPeopleConfigureLayoutScenario() {
 		}));
 		await afterCommittedEffects();
 	});
-	async function waitAndSettle(ms = 0) {
-		await act(async () => {
-			if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
-			await afterCommittedEffects();
-		});
-	}
 	function selectedCombinationIds(row) {
 		return [...row.querySelectorAll('.people-source-pill input:checked')].map((input) => input.closest("label")?.textContent.trim().replace(/^✓/, "").replace(/\d+$/, "").trim());
 	}
@@ -1284,14 +1756,15 @@ async function runPeopleConfigureLayoutScenario() {
 	try {
 		const query = document.querySelector("#people-source-query");
 		let selectionAffordance = null;
-		for (const personId of [31, 40]) {
+		for (const [index, personId] of personIds.entries()) {
 			await act(async () => {
 				setInputValue(query, String(personId));
-				await new Promise((resolve) => setTimeout(resolve, 360));
 				await afterCommittedEffects();
 			});
-			const resultInput = document.querySelector(`[data-tmdb-person-result="${personId}"] input[type="checkbox"]`);
-			if (resultInput === null) throw new Error(`Mounted People result ${personId} did not render.`);
+			const resultInput = await waitForMountedCondition(
+				() => document.querySelector(`[data-tmdb-person-result="${personId}"] input[type="checkbox"]`),
+				{ label: `Live TMDB Person ${personId} result`, timeoutMs: 15_000 },
+			);
 			if (personId === 31) {
 				const card = required(resultInput.closest("label"), "selectable result card");
 				const indicator = required(card.querySelector('[data-selection-indicator="true"]'), "circular selection indicator");
@@ -1314,12 +1787,18 @@ async function runPeopleConfigureLayoutScenario() {
 					unselectedRingVisible: indicatorBefore.borderTopWidth !== "0px",
 				};
 			} else await clickAndSettle(resultInput);
+			await waitForMountedCondition(
+				() => document.querySelectorAll(".people-selected-summary .removable-selection-disclosure li").length === index + 1,
+				{ label: `Live TMDB Person ${personId} selection`, timeoutMs: 15_000 },
+			);
 		}
 		const configureButton = buttonContaining(document, "Configure 2 people");
 		if (configureButton === null) throw new Error("Mounted People Configure action did not render.");
 		await clickAndSettle(configureButton);
-		await waitAndSettle(50);
-		const dialog = document.querySelector('[data-people-context="hierarchy"]');
+		const dialog = await waitForMountedCondition(() => {
+			const candidate = document.querySelector('[data-people-context="hierarchy"][data-add-source-step="configure"]');
+			return candidate?.querySelectorAll(".people-bulk-row").length === 2 ? candidate : null;
+		}, { label: "Mounted People Configure stage with two selected rows" });
 		const rows = [...dialog.querySelectorAll(".people-bulk-row")];
 		const firstRow = rows[0];
 		const secondRow = rows[1];
@@ -1391,22 +1870,67 @@ async function runPeopleConfigureLayoutScenario() {
 		};
 
 		const previewTrigger = firstRow.querySelector(".people-bulk-actions button:first-child");
+		const requestsBeforePreview = requests.length;
 		await clickAndSettle(required(previewTrigger, "first Preview titles action"));
-		await waitAndSettle();
 		let preview = document.querySelector(".people-title-preview");
-		const previewGrid = preview.querySelector(".people-title-preview-grid");
+		let previewGrid = preview.querySelector(".people-title-preview-grid");
+		const expectedPosterCount = window.innerWidth <= 520 ? 5 : 10;
+		const readyMoviePosters = await waitForReadyPosterGrid({
+			preview,
+			gridSelector: ".people-title-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live People Movies Preview at ${window.innerWidth}px`,
+		});
 		const previewBackdrop = preview.closest(".nested-modal-backdrop");
 		const creationPortal = document.querySelector(".add-source-portal");
+		const previewTabs = required(preview.querySelector(".people-preview-tabs"), "People Preview media tabs");
+		const movieTab = required(buttonContaining(previewTabs, "Movies"), "People Movies Preview tab");
+		const seriesTab = required(buttonContaining(previewTabs, "Series"), "People Series Preview tab");
+		const moviesInitiallyActive = movieTab.getAttribute("aria-selected") === "true" && seriesTab.getAttribute("aria-selected") === "false";
+		const moviePosterCount = readyMoviePosters.visibleImages.length;
+		await clickAndSettle(seriesTab);
+		preview = document.querySelector(".people-title-preview");
+		previewGrid = preview.querySelector(".people-title-preview-grid");
+		const readySeriesPosters = await waitForReadyPosterGrid({
+			preview,
+			gridSelector: ".people-title-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Live People Series Preview at ${window.innerWidth}px`,
+		});
+		const mediaSeparation = {
+			tabCount: previewTabs.querySelectorAll('[role="tab"]').length,
+			moviesInitiallyActive,
+			seriesActive: movieTab.getAttribute("aria-selected") === "false" && seriesTab.getAttribute("aria-selected") === "true",
+			moviePosterCount,
+			seriesPosterCount: readySeriesPosters.visibleImages.length,
+			seriesCount: /Series · [\d,]+/.test(preview.textContent),
+			seriesPostersReady: readySeriesPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			seriesGenuineTmdbSources: genuineTmdbPosterImages(readySeriesPosters.visibleImages),
+			noCombinedTotal: !preview.textContent.includes("Movies + Series") && !preview.textContent.includes("Combined"),
+			noAdditionalRequests: requests.length === requestsBeforePreview,
+		};
+		await clickAndSettle(movieTab);
+		preview = document.querySelector(".people-title-preview");
+		previewGrid = preview.querySelector(".people-title-preview-grid");
+		const restoredMoviePosters = await waitForReadyPosterGrid({
+			preview,
+			gridSelector: ".people-title-preview-grid",
+			expectedVisibleCount: expectedPosterCount,
+			label: `Restored live People Movies Preview at ${window.innerWidth}px`,
+		});
 		const previewState = {
 			modalSurface: preview.dataset.previewSurface === "modal" && preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
 			outsidePeopleRow: preview.closest(".people-bulk-row") === null,
-			posterCount: previewGrid.querySelectorAll(":scope > img").length,
+			posterCount: restoredMoviePosters.visibleImages.length,
+			postersReady: restoredMoviePosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			genuineTmdbSources: genuineTmdbPosterImages(restoredMoviePosters.visibleImages),
 			gridColumns: getComputedStyle(previewGrid).gridTemplateColumns.split(" ").filter(Boolean).length,
 			posterOnly: previewGrid.children.length > 0 && [...previewGrid.children].every((child) => child.tagName === "IMG"),
 			noHorizontalOverflow: preview.scrollWidth <= preview.clientWidth && document.documentElement.scrollWidth <= window.innerWidth,
 			headingFocused: document.activeElement === preview.querySelector("strong"),
 			sharedNestedLayer: previewBackdrop?.dataset.nestedModalBackdrop === "true",
 			aboveCreationModal: Number.parseInt(getComputedStyle(previewBackdrop).zIndex, 10) > Number.parseInt(getComputedStyle(creationPortal).zIndex, 10),
+			mediaSeparation,
 		};
 		await act(async () => {
 			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -1459,7 +1983,21 @@ async function runPeopleConfigureLayoutScenario() {
 		appearance.createReachable = Boolean(createRect && createRect.top >= -1 && createRect.bottom <= window.innerHeight + 1 && createRect.height >= 44);
 		appearance.noDeadEditor = dialog.querySelector(".people-folder-artwork-editor") === null;
 		appearance.noHorizontalOverflow = document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth;
-		return { selectionAffordance, automaticOverride, sharedOverride, layout, preview: previewState, appearance, reviewReached, sortSurvivesReviewBack, revisionUnchanged: controller.getState().project === initialProject };
+		return {
+			selectionAffordance,
+			automaticOverride,
+			sharedOverride,
+			layout,
+			preview: previewState,
+			appearance,
+			reviewReached,
+			sortSurvivesReviewBack,
+			liveRequests: {
+				personDetailsOnly: requests.length === personIds.length
+					&& personIds.every((id) => requests.some((request) => request.startsWith(`/3/person/${id}?`) && request.includes("append_to_response=combined_credits"))),
+			},
+			revisionUnchanged: controller.getState().project === initialProject,
+		};
 	} finally {
 		await act(async () => {
 			root.unmount();
@@ -2118,6 +2656,8 @@ window.__runPeopleConfigureLayoutScenario = runPeopleConfigureLayoutScenario;
 window.__runPeoplePillStabilityScenario = runPeoplePillStabilityScenario;
 window.__runPeopleSelectionScrollScenario = runPeopleSelectionScrollScenario;
 window.__runFranchiseReviewScenario = runFranchiseReviewScenario;
+window.__runStudioHierarchyScenario = runStudioHierarchyScenario;
+window.__runStudioScaleScenario = runStudioScaleScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {

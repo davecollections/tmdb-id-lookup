@@ -1,10 +1,10 @@
 # Builder Studio Sources
 
-Status: merged through issue [#92](https://github.com/davecollections/tmdb-id-lookup/issues/92) / PR [#93](https://github.com/davecollections/tmdb-id-lookup/pull/93), with owner review complete
+Status: selected-folder Add Source merged through issue [#92](https://github.com/davecollections/tmdb-id-lookup/issues/92) / PR [#93](https://github.com/davecollections/tmdb-id-lookup/pull/93); hierarchy creation complete and owner-reviewed through issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124), with its narrow Worker contract manually deployed and live validated on 2026-08-19
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-20
 
-This document records the selected-folder Studio source flow. The interface always says **Studios**; TMDB and Nuvio continue to use the internal entity and source type `COMPANY`.
+This document records both the stable selected-folder Studio source flow and the issue #124 guided hierarchy implementation. The interface always says **Studios**; TMDB and Nuvio continue to use the internal entity and source type `COMPANY`.
 
 ## Navigation and scope
 
@@ -34,9 +34,9 @@ V2 Studio Search accepts:
 
 When an entered two-letter value is a country represented in the catalogue, it is treated deliberately as that exact country code rather than as an arbitrary two-letter name fragment. Compact result context includes the Studio name, parent when available, TMDB ID, legacy Movie total, and a shortened `country code · locality/region` location. Street, suite, and postal detail are not shown.
 
-For a non-empty query, hidden **Best match** ordering is deterministic: exact ID, exact name, name prefix, name contains, parent, then country/location. Movie count descending breaks ties only inside a relevance tier; it never lets a large unrelated location match outrank an exact or direct name match. The compact **A–Z** and **Most movies** pills are explicit overrides; selecting the active override again returns a normal search to hidden Best Match. **Hide studios with no movies** removes only known zero legacy counts before paging, so missing counts remain visible and result/page totals reflect the filtered set. Query, override, filter, results, page, scroll, folder context, and focus survive Configure → Back.
+For a non-empty query, hidden **Best match** ordering is deterministic: exact ID, exact name, name prefix, name contains, parent, then country/location. Movie count descending breaks ties only inside a relevance tier; it never lets a large unrelated location match outrank an exact or direct name match. Selected-folder Add Source retains its compact **A–Z** and **Most movies** pills plus **Hide studios with no movies**, which removes only known zero legacy counts before paging, so missing counts remain visible and result/page totals reflect the filtered set. Query, override, filter, results, page, scroll, folder context, and focus survive Configure → Back.
 
-When the query is empty, Studio Search automatically browses the same cached catalogue in pages rather than requiring a separate Browse action or rendering every Studio at once. Browse defaults to Most movies because relevance has no meaning without a query, and the **Most movies** pill visibly reflects that effective ordering. A–Z overrides it; deselecting A–Z in Browse visibly returns to Most movies. Typing from Browse without an explicit override naturally returns to hidden Best Match. The standard `type="search"` in-field clear updates ordinary React input state, immediately returns Studio Search to automatic Browse, and resets paging without an adjacent custom clear button.
+When the query is empty, Studio Search automatically browses the same cached catalogue in pages rather than requiring a separate Browse action or rendering every Studio at once. Browse defaults to Most movies because relevance has no meaning without a query. A–Z overrides it; deselecting A–Z returns to automatic Most-movies Browse. Typing from Browse without the A–Z override naturally returns to hidden Best Match. The standard `type="search"` in-field clear updates ordinary React input state, immediately returns Studio Search to automatic Browse, and resets paging without an adjacent custom clear button.
 
 A valid catalogue value uses exactly `Movie Count: XXX`, including `Movie Count: 0`; an absent or malformed value uses `Movie Count: Unknown`. The legacy compact catalogue encoded known zero by omitting `t`, so the loader recognizes that legacy catalogue-wide encoding. Corrected Company writers retain explicit `t: 0`; once that new encoding is present, a missing `t` remains Unknown. The catalogue value is browsing context only and is never promoted into Configure's current count.
 
@@ -64,9 +64,47 @@ $env:TMDB_STUDIO_MOCK_COUNTS = "1"
 npm run dev -- --host 127.0.0.1 --port 4173
 ```
 
-This explicit development-only mode intercepts only the two canonical local Studio Discover paths and returns deterministic fake totals. It is disabled for `npm run build`, does not broaden production routes or authentication, and does not mock any other request. Remove the environment value after review with `Remove-Item Env:TMDB_STUDIO_MOCK_COUNTS`.
+This explicit development-only mode intercepts only the canonical local Studio Discover paths. No-sort requests return deterministic totals for physical Add Source; approved sort-aware Company requests additionally return a deterministic ordered first page for hierarchy Preview. It is disabled for `npm run build`, does not broaden production routes or authentication, and does not mock another request family. Remove the environment value after review with `Remove-Item Env:TMDB_STUDIO_MOCK_COUNTS`.
 
-The Worker admits only the exact Movie and TV paths above with exactly one canonical positive safe-integer `with_companies` value. Missing, duplicate, zero, signed, fractional, unsafe, malformed, unrelated, and extra query values are rejected before an upstream request. The upstream host remains fixed to TMDB; browser-origin, authentication, CORS, successful response caching, API-key stripping for already-allowed requests, and sanitized failure behavior are retained.
+The live Worker admits the exact no-sort Movie and TV paths above with exactly one canonical positive safe-integer `with_companies` value, plus the narrow issue #124 Company `sort_by` expansion for accurate explicit hierarchy Preview. The deployed source permits only Popular, media-correct Recent, Top rated, and Most voted; parameter order may vary, but duplicates, wrong-media sorts, arbitrary filters, mixed Company/Network parameters, and every extra value fail closed. The Network route remains no-sort. The upstream host, browser-origin rules, service-token boundary, authentication, CORS, response forwarding, API-key handling for already-allowed requests, and sanitized failures are unchanged.
+
+After separate owner authorization, the exact reviewed issue #124 Worker source was manually deployed and its complete acceptance/rejection matrix was live validated on 2026-08-19. The deterministic local mock remains available for repeatable UI review. Worker deployment is independent of Builder publication; the overall V2 Builder remains governed by its separate release and noindex boundary.
+
+## Guided Studio hierarchy creation — issue #124
+
+Studios is registered in both hierarchy launcher scopes:
+
+- **New Collection → Studios** creates one ordinary editable `Studios` collection with one Studio Folder per eligible selection.
+- **New Folder → Studios** adds eligible Studio Folders beneath the captured existing Collection without changing its presentation.
+- selected-folder **Add Source → Studios** remains the separate issue #92 physical-source flow described elsewhere in this document.
+
+The hierarchy uses **Select → Configure → Appearance → Create**. Search reuses the exact checked-in Company catalogue, query parsing, automatic Browse, paging, ranking, logo frame, and `Movie Count: XXX` / `Movie Count: Unknown` wording. Hierarchy Search makes the checked-in **Movie count** filter group primary: **All**, **Exclude 0**, **10+**, **50+**, **100+**, and **500+**. It exposes only one quiet **A–Z** ordering override; Most movies remains the hidden automatic Browse order and Best Match remains the hidden automatic text-search order. Toggling A–Z off restores the applicable automatic order. Filtering happens before paging. Unknown counts remain in All and Exclude 0 but do not satisfy a numeric threshold. Changing the filter resets to page 1, and its state survives Configure → Back. The filter makes no API request; selected-folder Add Source remains unchanged with its visible Most-movies and hide-zero controls.
+
+Result cards become full-card native-checkbox targets with the established circular indicator. Selection is insertion-ordered and uncapped; removing and re-adding appends the Studio, and an informational notice begins at 50 without imposing a ceiling. A compact selected disclosure keeps identity, useful count context, and Remove in Select; it has no Preview action because media and sort are not configured yet. Search cards contain no nested Preview action.
+
+Configure applies one shared composition and one shared semantic sort to the batch. **Movies** and **Popular** are the defaults. Composition is Movies, Series, or Movies + Series; sort is Popular, Recent, Top rated, or Most voted using the already-evidenced media-specific values. There is no Automatic mode and no per-Studio override. Beneath those shared controls, every selected Studio is a directly visible row with its logo/fallback, name, checked-in Movie count, any Series total learned from explicit Preview, current placement state, **Preview titles**, and a compact accessible remove action. Placement reacts to composition, sort, destination, and project state without resolving artwork or requesting titles. Removing the last Studio remains in Configure, shows a calm empty state, and disables progression to Appearance. Hierarchy sources are named exactly **Movies** and **Series**, in Movie-then-Series order, while physical Add Source keeps `<Studio>` and `<Studio> Series`.
+
+The final **Appearance** stage contains only applicable presentation controls and useful plan totals. It deliberately has no selected-Studio list, counts, Preview/remove actions, routine per-Studio placement review, artwork section, representative artwork sample, or shape selector. Studio folders still use fixed Landscape artwork from the already-resolved frozen plan; hierarchy creation exposes no artwork/shape decision on Appearance, while individual artwork remains editable later through ordinary Edit Folder. The technical fallback chain remains documented below and is not exposed in this UI.
+
+### Explicit title Preview and transient counts
+
+Preview is user-triggered only from the always-visible action on every Configure Studio row. Movies-only opens Movies, Series-only opens Series, and Movies + Series opens Movies first. The Series tab does not request until it is opened. Closing, switching, and superseding work use the shared request coordinator, linked aborts, and stale-generation suppression. The structural `NestedPreviewDialog` shell is shared with Franchise Preview for the body portal, nested backdrop, dialog/focus semantics, Close, Escape, and containment; Studio and Franchise keep separate provider and result models. Exact trigger focus is restored and the inert outer creation state/scroll is retained. Known exact Discover totals appear with their media label/control; an unopened media remains count-free unless a previous successful Preview already supplied its transient count. The ready grid contains only usable posters, omits posterless results and all individual captions/metadata, renders at most 10 items above 520px or 5 at 520px and below, and uses one modal-level empty state if none remain. No implementation-order, cache, request, or source-mutation prose appears in the ready modal.
+
+One Company Discover response supplies both `total_results` and the ordered first-page results. The Studio provider normalizes title/name, date/year, poster path, and media without locally re-sorting the first page. Its success-only in-memory response cache defaults to five minutes and 40 LRU-style entries. Identity is Company ID + media + concrete sort. Failures and aborts are not cached; a successful zero-result response is cached; viewport slicing is not part of identity.
+
+Search continues to show only the catalogue Movie Count and never mutates it after Preview. A successful explicit Series Preview retains its `total_results` transiently by Company ID + media, so the calm `Series · count` detail may survive sort changes. A later successful Series result replaces the older value, including zero. Until success, Series count is simply omitted outside Preview. Preview responses, counts, errors, cache state, and loading state are never serialized and do not participate in source identity, logical duplicate classification, plan eligibility, stale comparison, or apply.
+
+Browse, select, Configure, Appearance, plan, revalidation, and apply make zero automatic per-Studio Discover title/count requests. One cold media Preview makes one request; the same fresh exact-key Preview makes zero; Movies + Series makes one request when only Movies is opened and two cold requests only after both tabs are explicitly opened.
+
+### Artwork, placement, plan, and presentation
+
+Studio hierarchy Folders are fixed **Landscape** with no shape selector or per-item artwork controls. One workspace-scoped artwork runtime client performs one validated batch load. Resolution is approved Company Landscape runtime artwork, then the checked-in Studio logo through the safe TMDB `w500` helper, then no image plus 🎬. Artwork is resolved before the ephemeral plan; revalidation and apply perform no artwork network work and write nothing to the asset repository.
+
+Folder title visibility defaults to canonical **Show everywhere** and reuses the shared Title options. New Collection also reuses collection title visibility, Tabs/Rows, Tabs-only Show All, and Pin to top. New Folder inherits the captured parent presentation read-only. There is no Studio-specific presentation field.
+
+Logical identity is Company ID; physical identity remains Company ID + media. In New Folder, a destination Company that is complete or partial for the requested composition is omitted with no hierarchy override. Matching identities elsewhere remain informational and addable. The planner creates only ordinary nodes, revalidates immediately against the current revision and placement, and applies through one existing atomic controller batch. Late failure rolls back everything. Order remains selected Studio order, and New Folder preserves parent fields apart from intended ordered Folder insertion.
+
+No current-client Studio hierarchy import/export result is claimed by issue #124. The implementation uses the already-evidenced native `COMPANY/MOVIE` and `COMPANY/TV` source contracts and keeps `catalogSources` empty for native sources.
 
 ## Source-contract evidence and decision
 
@@ -127,3 +165,5 @@ At desktop width, double-clicking a Collection or Folder primary card opens its 
 ## Deliberate exclusions
 
 Issue #92 does not create or modify folders, consume the published artwork runtime, edit Studio identity/media/filter fields, alter V1 output, change the checked-in production Company catalogue JSON/CSV, recreate global count pre-caching, change historical request-budget receipts, add dependencies, or begin Networks, Genres, or Advanced Discover. The final zero-filter regression fix changes only the two existing Company compact writers so future refreshes preserve explicit zero values; no catalogue refresh or hosted workflow is dispatched by the issue branch.
+
+Issue #124 does not change that physical flow, add Network or Decades Preview, expose arbitrary Discover forwarding, manually deploy the frontend or bypass the V2 release/noindex boundary, write assets, add dependencies, or claim new Nuvio-client hierarchy evidence. Its only independently deployed production change is the separately owner-authorized exact narrow Worker contract recorded above.
