@@ -12,6 +12,7 @@ import { CollectionPresentationChoices } from "./CollectionPresentationChoices.j
 import { FolderArtworkFields } from "./FolderArtworkFields.jsx";
 import {
 	CollectionTitleVisibilitySwitch,
+	FOLDER_TITLE_VISIBILITY_LABEL,
 	FolderShapeChoices,
 	FolderTitleVisibilityChoices,
 	PresentationSwitch,
@@ -237,7 +238,7 @@ function FolderTitleVisibilityField({ draft, prefix, onChange }) {
 					: statusId
 			}
 		>
-			<legend>Folder title visibility</legend>
+			<legend>{FOLDER_TITLE_VISIBILITY_LABEL}</legend>
 			<FolderTitleVisibilityChoices
 				selectedId={draft.values.folderTitleVisibility}
 				name={`${prefix}-title-visibility`}

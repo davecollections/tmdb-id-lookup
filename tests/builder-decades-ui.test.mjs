@@ -109,6 +109,7 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		CREATION_OPTION_IDS.BLANK,
 		CREATION_OPTION_IDS.DECADES,
 		CREATION_OPTION_IDS.PEOPLE,
+		CREATION_OPTION_IDS.FRANCHISES,
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
@@ -512,7 +513,7 @@ test("structure, ordering, and shared presentation choices render schematic prev
 	const presentationSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "PresentationControls.jsx"), "utf8");
 	const creationSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "CreationDialog.jsx"), "utf8");
 	assert.match(nodeEditorSource, /CollectionPresentationChoices/);
-	assert.match(creationSource, /CollectionPresentationChoices/);
+	assert.match(creationSource, /HierarchyCollectionPresentationControls/);
 	for (const shared of ["FolderShapeChoices", "FolderTitleVisibilityChoices", "PresentationSwitch"]) {
 		assert.ok(nodeEditorSource.includes(shared));
 		assert.ok(presentationSource.includes(`export function ${shared}`));
@@ -558,6 +559,8 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	assert.ok(review.includes('id="decades-collection-series"'));
 	assert.ok(review.includes("Title options"));
 	assert.ok(review.includes("Hide collection title in Nuvio"));
+	assert.ok(review.includes("Folder title visibility"));
+	assert.equal(review.includes("Decade folder titles"), false);
 	for (const label of ["Show everywhere", "Hide on home screen only", "Hide everywhere"]) assert.ok(review.includes(label), label);
 	assert.ok(review.includes('data-decades-settings="layout"'));
 	assert.ok(review.includes('data-decades-settings="folder-options"'));
@@ -595,7 +598,8 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	assert.ok(folderReview.includes("Rows · All tab off · title visible · pinned"));
 	assert.ok(folderReview.includes("Title options"));
 	assert.equal(folderReview.includes("Hide collection title in Nuvio"), false);
-	assert.ok(folderReview.includes("Decade folder titles"));
+	assert.ok(folderReview.includes("Folder title visibility"));
+	assert.equal(folderReview.includes("Decade folder titles"), false);
 	assert.ok(folderReview.includes('data-decades-settings="folder-options"'));
 	for (const forbidden of ['name="decades-view"', 'name="showAllTab"', 'name="pinToTop"', 'name="hideNuvioTitle"']) assert.equal(folderReview.includes(forbidden), false, forbidden);
 });
@@ -666,7 +670,8 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 	const review = renderToStaticMarkup(createElement(DecadesReviewStep, { state: prepareDecadesReview(state), planResult: plan, onCollectionTitleChange() {}, onStateChange() {} }));
 	assert.equal(JSON.stringify(plan.plan), serializedPlanBeforeRender);
 	assert.ok(review.indexOf("Title options") < review.indexOf("Layout"));
-	for (const summary of ["Rows · All tab off · pinned", "Landscape"]) assert.ok(review.includes(summary), summary);
+	for (const summary of ["Rows · pinned", "Landscape"]) assert.ok(review.includes(summary), summary);
+	assert.equal(review.includes("Include an All tab when using Tabs"), false);
 	assert.match(review, /id="decades-collection-mixed" type="text" disabled=""[^>]*value=""/);
 	assert.equal((review.match(/Collection titles are intentionally hidden in Nuvio\. Turn this off to edit visible titles\./g) ?? []).length, 1);
 	assert.match(review, /data-editor-choice="hide-everywhere"[^>]*checked="" value="HIDE_EVERYWHERE"/);
@@ -698,8 +703,9 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 		pinToTop: true,
 		focusGlowEnabled: true,
 		viewMode: "ROWS",
-		showAllTab: false,
+		showAllTab: true,
 	});
+	assert.equal(plan.plan.configuration.showAllTab, true);
 	assert.deepEqual(plan.plan.collections[0].folders[0].editable, { title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true });
 });
 

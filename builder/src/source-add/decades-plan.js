@@ -2,6 +2,7 @@ import { discoverSourceIdentity, discoverSourceNodeIdentity } from "../nuvio/dis
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { buildDecadesSourceDrafts } from "./decades-source.js";
 import { equalDecadesStructures, isDecadesStructure } from "./decades-structural.js";
+import { normalizeHierarchyShowAllTab } from "./hierarchy-presentation.js";
 
 export const DECADES_CREATION_SCOPES = Object.freeze([
 	Object.freeze({ id: "new-collection", label: "New Collection" }),
@@ -374,10 +375,11 @@ export function createDecadesHierarchyPlan(project, options) {
 		}
 		viewMode = options.viewMode ?? "TABBED_GRID";
 		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_DECADES_VIEW_MODE", "$decadesPlan.viewMode", "New Decades collections must use the existing Tabs or Rows value."));
-		showAllTab = options.showAllTab ?? true;
+		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
 		hideCollectionTitle = options.hideCollectionTitle ?? false;
-		if (typeof showAllTab !== "boolean") errors.push(diagnostic("INVALID_DECADES_ALL_TAB", "$decadesPlan.showAllTab", "The All-tab preference must be true or false."));
+		if (typeof requestedShowAllTab !== "boolean") errors.push(diagnostic("INVALID_DECADES_ALL_TAB", "$decadesPlan.showAllTab", "The All-tab preference must be true or false."));
+		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 		if (typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_DECADES_PIN_TO_TOP", "$decadesPlan.pinToTop", "The pin-to-top preference must be true or false."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_DECADES_COLLECTION_TITLE_VISIBILITY", "$decadesPlan.hideCollectionTitle", "The collection-title visibility preference must be true or false."));
 		const roles = sourcePlan.configuration.mediaMode === "movies"

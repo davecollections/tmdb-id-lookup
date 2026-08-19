@@ -22,7 +22,7 @@ import {
 	resolveAddSourceViewportStyle,
 } from "./add-source-modal-lifecycle.js";
 import { creationOptionById, creationOptionSupportsScope, creationOptionsForScope, CREATION_OPTION_IDS } from "./creation-options.js";
-import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import {
 	DecadesAdvancedHelpSubview,
 	DecadesAdvancedOptions,
@@ -62,6 +62,8 @@ import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
+import { CreationHeader } from "./CreationHeader.jsx";
+import { FranchiseSourceFlow } from "./FranchiseSourceFlow.jsx";
 
 const DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID = "decades-hidden-collection-titles-help";
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -76,30 +78,6 @@ const statusLabels = Object.freeze({
 
 function scopeLabel(scope) {
 	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
-
-function CreationHeader({
-	title,
-	context,
-	description,
-	onBack = null,
-	backAction = null,
-	backDisabled = false,
-	inactive = false,
-	onClose,
-}) {
-	return (
-		<header className="add-source-heading" inert={inactive || undefined} aria-hidden={inactive ? "true" : undefined}>
-			<div className="add-source-heading-row">
-				{onBack ? (
-					<button className="add-source-header-action" type="button" data-action={backAction ?? undefined} disabled={backDisabled} onClick={onBack}><span aria-hidden="true">←</span> Back</button>
-				) : <span className="add-source-header-spacer" aria-hidden="true" />}
-				<div><h2 id="creation-title">{title}</h2><p>{context}</p></div>
-				<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close creation flow" disabled={backDisabled} onClick={onClose}>Close</button>
-			</div>
-			<p id="creation-description" className="add-source-heading-description">{description}</p>
-		</header>
-	);
 }
 
 function ChoiceCards({ legend, helper = null, name, options, selectedId, onChange, gridClassName = "" }) {
@@ -180,7 +158,7 @@ function DecadesSettingsDisclosure({ id, title, summary, children }) {
 
 function collectionAppearanceSummary({ viewMode, showAllTab, pinToTop }) {
 	const layout = typeof viewMode === "string" && viewMode.toUpperCase() === "ROWS" ? "Rows" : "Tabs";
-	return `${layout} · All tab ${showAllTab ? "on" : "off"} · ${pinToTop ? "pinned" : "not pinned"}`;
+	return `${layout}${layout === "Tabs" ? ` · All tab ${showAllTab ? "on" : "off"}` : ""} · ${pinToTop ? "pinned" : "not pinned"}`;
 }
 
 function folderAppearanceSummary({ folderTileShape }) {
@@ -409,12 +387,9 @@ function CollectionAppearance({ state, onStateChange }) {
 			<fieldset className="editor-field editor-choice-field decades-presentation">
 				<legend>How sources appear in each collection</legend>
 				<p className="editor-field-help">Choose how each Decade folder displays its sources in Nuvio.</p>
-				<CollectionPresentationChoices selectedId={state.viewMode} name="decades-view" onChange={(viewMode) => onStateChange(Object.freeze({ ...state, viewMode }))} />
+				<HierarchyCollectionPresentationControls selectedId={state.viewMode} name="decades-view" showAllTab={state.showAllTab} onPresentationChange={(patch) => onStateChange(Object.freeze({ ...state, ...patch }))} showAllLabel="Include an All tab when using Tabs" showAllDescription="For folders with two or more sources, adds an All tab that combines them." showAllDescriptionId="decades-all-tab-help" showAllControlName="showAllTab" />
 			</fieldset>
 			<div className="decades-presentation-switches">
-				<div className="editor-switch-field">
-					<PresentationSwitch label="Include an All tab when using Tabs" description={state.viewMode === "TABBED_GRID" ? "For folders with two or more sources, adds an All tab that combines them." : "Rows do not show tabs. This preference is retained if you switch back to Tabs."} descriptionId="decades-all-tab-help" controlName="showAllTab" checked={state.showAllTab} onChange={(showAllTab) => onStateChange(Object.freeze({ ...state, showAllTab }))} />
-				</div>
 				<div className="editor-switch-field">
 					<PresentationSwitch label="Pin generated collection(s) to top" description="Pinned collections appear before unpinned collections." descriptionId="decades-pin-help" controlName="pinToTop" checked={state.pinToTop} onChange={(pinToTop) => onStateChange(Object.freeze({ ...state, pinToTop }))} />
 				</div>
@@ -447,7 +422,6 @@ function TitlesAndVisibility({ state, onStateChange }) {
 			} : null}
 			collectionStatus={state.scope === "new-collection" && state.hideCollectionTitle ? <p id={DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID} className="editor-field-help" role="status">Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.</p> : null}
 			folderTitleVisibility={{
-				legend: "Decade folder titles",
 				selectedId: state.folderTitleVisibility,
 				name: "decades-folder-title-visibility",
 				onChange: (folderTitleVisibility) => onStateChange(Object.freeze({ ...state, folderTitleVisibility })),
@@ -698,6 +672,8 @@ export function CreationDialog({
 	onCreateBlank,
 	onApplyDecades,
 	onApplyPeople,
+	onApplyFranchises,
+	collectionProvider,
 	peopleProvider,
 	peopleManifestClient,
 }) {
@@ -727,7 +703,7 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	const launcher = optionId === null;
@@ -742,6 +718,8 @@ export function CreationDialog({
 						<DecadesFlow project={project} projectRevision={projectRevision} scope={scope} currentYear={currentYear} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} onBackToLauncher={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyDecades} />
 					) : optionId === CREATION_OPTION_IDS.PEOPLE ? (
 						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
+					) : optionId === CREATION_OPTION_IDS.FRANCHISES ? (
+						<FranchiseSourceFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={collectionProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyFranchises} />
 					) : null}
 				</section>
 			</div>

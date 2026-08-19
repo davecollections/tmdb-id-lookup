@@ -2,6 +2,8 @@ function isSelected(value, canonicalValue) {
 	return typeof value === "string" && value.toUpperCase() === canonicalValue;
 }
 
+export const FOLDER_TITLE_VISIBILITY_LABEL = "Folder title visibility";
+
 export function PresentationSwitch({
 	label,
 	description,
@@ -154,7 +156,7 @@ export function TitleOptions({
 			) : null}
 			{collectionStatus}
 			<fieldset className="editor-field editor-choice-field editor-compact-radio-field" data-editor-field="folderTitleVisibility">
-				<legend>{folderTitleVisibility.legend}</legend>
+				<legend>{folderTitleVisibility.legend ?? FOLDER_TITLE_VISIBILITY_LABEL}</legend>
 				<FolderTitleVisibilityChoices
 					selectedId={folderTitleVisibility.selectedId}
 					name={folderTitleVisibility.name}

@@ -551,7 +551,8 @@ test("People Review keeps shared Title options and Layout visible and only colla
 	assert.ok(markup.includes("Title options"));
 	assert.ok(markup.includes("Layout"));
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
-	assert.ok(markup.includes("Person folder titles"));
+	assert.ok(markup.includes("Folder title visibility"));
+	assert.equal(markup.includes("Person folder titles"), false);
 	for (const label of ["Show everywhere", "Hide on home screen only", "Hide everywhere"]) assert.ok(markup.includes(label), label);
 	assert.match(markup, /data-editor-choice="hide-home-screen"[^>]*checked="" value="HIDE_HOME_SCREEN"/);
 	assert.ok(markup.includes("Show All tab"));
@@ -570,6 +571,14 @@ test("People Review keeps shared Title options and Layout visible and only colla
 	assert.equal(markup.includes("decades-settings-disclosure"), false);
 	assert.equal((markup.match(/<details/g) ?? []).length, 1);
 	assert.ok(markup.includes("View person details · 1"));
+	const rowsMarkup = renderToStaticMarkup(createElement(PeopleReviewStep, {
+		planResult: { ok: true, plan: { configuration: { scope: "new-collection" }, counts: { collectionCount: 1, folderCount: 1, sourceCount: 2 }, collections: [{ titleCollisions: [] }], destination: null, outcomes: [{ status: "ready-to-create", occurrences: [] }] } },
+		entries: [{ person: selected, drafts: { drafts: [{}, {}] }, artworkState: { artwork: { source: "manifest" } } }],
+		collectionOptions: { title: "People", hideTitle: false, viewMode: "ROWS", showAllTab: false, pinToTop: true },
+		onCollectionOptionsChange() {}, folderTileShape: "POSTER", onFolderTileShapeChange() {}, folderTitleVisibility: "HIDE_HOME_SCREEN", onFolderTitleVisibilityChange() {}, applyDiagnostic: null, headingRef: null,
+	}));
+	assert.equal(rowsMarkup.includes("Show All tab"), false);
+	assert.ok(rowsMarkup.includes("Rows · pinned"));
 });
 
 test("People New Folder Review keeps parent presentation read-only while generated folder appearance stays editable", () => {
@@ -595,7 +604,8 @@ test("People New Folder Review keeps parent presentation read-only while generat
 	assert.ok(markup.includes("Inherited Collection options"));
 	assert.ok(markup.includes("parent unchanged"));
 	assert.ok(markup.includes("Title options"));
-	assert.ok(markup.includes("Person folder titles"));
+	assert.ok(markup.includes("Folder title visibility"));
+	assert.equal(markup.includes("Person folder titles"), false);
 	assert.equal(markup.includes("Hide collection title in Nuvio"), false);
 	assert.match(markup, /data-editor-choice="hide-everywhere"[^>]*checked="" value="HIDE_EVERYWHERE"/);
 	assert.match(markup, /<input(?=[^>]*data-editor-choice="landscape")(?=[^>]*checked="")[^>]*>/);
@@ -692,13 +702,17 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.match(flow, /<TitleOptions/);
 	assert.match(styles, /\.people-combination-group label[\s\S]*min-height:\s*58px/);
 	assert.match(styles, /\.people-combination-group\.is-pills > div\s*\{[\s\S]*grid-template-columns:\s*repeat\(4/);
-	assert.match(styles, /\.people-combination-group\.is-pills \.people-source-pill\s*\{[\s\S]*min-height:\s*38px/);
+	assert.match(styles, /\.people-combination-group\.is-pills \.people-source-pill\s*\{[\s\S]*min-height:\s*36px[\s\S]*padding:\s*5px 8px/);
 	assert.match(styles, /\.people-source-pill:has\(input:checked\) \.people-source-pill-check\s*\{[\s\S]*opacity:\s*1/);
 	assert.match(styles, /\.people-source-pill\[data-people-role="directing"\]/);
-	assert.match(styles, /\.people-title-preview-backdrop\s*\{[\s\S]*z-index:\s*4000/);
+	assert.match(flow, /people-title-preview-backdrop nested-modal-backdrop/);
+	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);
 	assert.match(styles, /\.people-title-preview\s*\{[\s\S]*max-height:/);
 	assert.match(styles, /\.people-title-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(10/);
 	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*max-height:[\s\S]*overflow-y:\s*auto/);
+	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*align-content:\s*start;[\s\S]*grid-auto-rows:\s*max-content;/);
+	assert.match(styles, /\.people-bulk-row\s*\{[\s\S]*align-self:\s*start;/);
+	assert.doesNotMatch(styles, /data-people-bulk-count[^\{]*\{[\s\S]*?(?:height|align|grid)/);
 	assert.match(styles, /\.people-combination-group label:has\(input:checked\)[\s\S]*box-shadow:\s*none/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-combination-group\.is-pills > div[\s\S]*grid-template-columns:\s*repeat\(2/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-title-preview-grid[\s\S]*grid-template-columns:\s*repeat\(5/);

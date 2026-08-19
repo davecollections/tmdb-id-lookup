@@ -1,4 +1,5 @@
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
+import { normalizeHierarchyShowAllTab } from "./hierarchy-presentation.js";
 import { peopleSourceIdentity, validatePeopleSourceDrafts } from "./person-source.js";
 import { isPositiveSafePersonId } from "./tmdb-person-input.js";
 
@@ -187,12 +188,13 @@ export function createPeopleHierarchyPlan(project, options) {
 		collectionTitle = options.collectionTitle ?? "People";
 		hideCollectionTitle = options.hideCollectionTitle ?? false;
 		viewMode = options.viewMode ?? "TABBED_GRID";
-		showAllTab = options.showAllTab ?? true;
+		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
 		if (typeof collectionTitle !== "string" || !collectionTitle.trim() || collectionTitle !== collectionTitle.trim()) errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_TITLE", "$peoplePlan.collectionTitle", "The People collection name must be a nonblank trimmed string."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_TITLE_VISIBILITY", "$peoplePlan.hideCollectionTitle", "Collection title visibility must be true or false."));
 		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_VIEW", "$peoplePlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
-		if (typeof showAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_OPTIONS", "$peoplePlan", "Collection options must be explicit boolean values."));
+		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_OPTIONS", "$peoplePlan", "Collection options must be explicit boolean values."));
+		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 		if (options.destinationCollectionInternalId !== undefined && options.destinationCollectionInternalId !== null) errors.push(diagnostic("UNEXPECTED_PEOPLE_DESTINATION", "$peoplePlan.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));
 	} else if (scope === "new-folder") {
 		destinationCollection = project.collections.find((collection) => collection.internalId === options.destinationCollectionInternalId) ?? null;

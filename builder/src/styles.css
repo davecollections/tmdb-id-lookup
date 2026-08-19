@@ -22,6 +22,8 @@
 	--border: rgb(137 190 215 / 16%);
 	--border-strong: rgb(98 225 255 / 38%);
 	--shadow: 0 20px 60px rgb(0 0 0 / 24%);
+	--layer-add-source: 3000;
+	--layer-nested-modal: 4000;
 }
 
 /* Official Genre Add/Edit flows */
@@ -1197,6 +1199,12 @@ body.settings-modal-open {
 	gap: 9px;
 }
 
+.hierarchy-collection-presentation-controls {
+	display: grid;
+	min-width: 0;
+	gap: 14px;
+}
+
 .editor-choice-grid.editor-visibility-choice-grid {
 	grid-template-columns: minmax(0, 1fr);
 }
@@ -1582,7 +1590,7 @@ body.settings-modal-open {
 
 .add-source-portal {
 	position: fixed;
-	z-index: 3000;
+	z-index: var(--layer-add-source);
 	inset: 0;
 	isolation: isolate;
 	overflow: hidden;
@@ -4616,11 +4624,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 	position: relative;
 	display: grid;
 	min-width: 0;
-	min-height: 38px;
+	min-height: 36px;
 	grid-template-columns: 13px minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 5px;
-	padding: 6px 8px;
+	padding: 5px 8px;
 	background: rgb(var(--people-role-color) / 4%);
 	border-color: rgb(var(--people-role-color) / 20%);
 	border-radius: 999px;
@@ -4680,6 +4688,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-bulk-list {
+	align-content: start;
+	grid-auto-rows: max-content;
 	max-height: min(48vh, 500px);
 	gap: 7px;
 	padding-right: 3px;
@@ -4706,6 +4716,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-bulk-row {
+	align-self: start;
 	gap: 8px;
 	padding: 9px;
 	background: rgb(5 17 25 / 70%);
@@ -4790,9 +4801,13 @@ body.hierarchy-pointer-dragging .builder-shell {
 	opacity: 0.48;
 }
 
-.people-title-preview-backdrop {
+.nested-modal-backdrop {
 	position: fixed;
-	z-index: 4000;
+	z-index: var(--layer-nested-modal);
+	isolation: isolate;
+}
+
+.people-title-preview-backdrop {
 	inset: 0;
 	display: grid;
 	place-items: center;
@@ -6809,6 +6824,314 @@ body.hierarchy-pointer-dragging .builder-shell {
 	color: var(--muted);
 	font-size: 0.72rem;
 	line-height: 1.5;
+}
+
+/* Franchise hierarchy creation */
+.franchise-creation-form,
+.franchise-review {
+	display: grid;
+	min-width: 0;
+	min-height: 0;
+}
+
+.franchise-result-selectable {
+	position: relative;
+	grid-template-columns: 22px 72px minmax(0, 1fr);
+	align-items: center;
+	cursor: pointer;
+}
+
+.franchise-result-selectable.is-selected {
+	background: rgb(1 180 228 / 12%);
+	border-color: rgb(98 225 255 / 56%);
+	box-shadow: none;
+}
+
+.franchise-result-poster-frame {
+	display: grid;
+	width: 72px;
+	aspect-ratio: 2 / 3;
+	place-items: center;
+	overflow: hidden;
+	color: var(--quiet);
+	background: rgb(4 14 21 / 88%);
+	border: 1px solid rgb(126 172 192 / 18%);
+	border-radius: 8px;
+	font-size: 0.58rem;
+	text-align: center;
+}
+
+.franchise-result-poster {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.franchise-selected-disclosure {
+	min-width: 0;
+}
+
+.franchise-selected-actions {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 8px;
+}
+
+.franchise-selected-actions button,
+.franchise-review-list button {
+	min-height: 40px;
+	padding: 5px 8px;
+	color: var(--cyan-bright);
+	font: inherit;
+	font-size: 0.62rem;
+	font-weight: 800;
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 24%);
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.franchise-selected-actions .franchise-selected-remove {
+	width: 40px;
+	min-width: 40px;
+	padding: 0;
+	font-size: 1rem;
+}
+
+.franchise-selected-disclosure li > div {
+	min-width: 0;
+}
+
+.franchise-selected-disclosure li strong {
+	display: block;
+	overflow-wrap: anywhere;
+}
+
+.franchise-review {
+	align-content: start;
+	gap: 18px;
+	padding-block: 2px 24px;
+}
+
+.franchise-inherited-summary {
+	display: grid;
+	gap: 4px;
+	padding: 12px 14px;
+	background: rgb(5 17 25 / 68%);
+	border: 1px solid var(--border);
+	border-radius: 11px;
+}
+
+.franchise-inherited-summary span {
+	color: var(--muted);
+	font-size: 0.72rem;
+}
+
+.franchise-review-list {
+	display: grid;
+	gap: 8px;
+}
+
+.franchise-review-list > details {
+	background: rgb(5 17 25 / 64%);
+	border: 1px solid var(--border);
+	border-radius: 11px;
+}
+
+.franchise-review-list summary {
+	display: grid;
+	min-height: 58px;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 13px;
+	cursor: pointer;
+}
+
+.franchise-review-row-primary {
+	display: grid;
+	min-width: 0;
+}
+
+.franchise-review-row-primary strong {
+	overflow-wrap: anywhere;
+}
+
+.franchise-review-row-actions {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.franchise-review-details > small,
+.franchise-review-row-actions em {
+	color: var(--muted);
+	font-size: 0.66rem;
+	font-style: normal;
+	line-height: 1.4;
+}
+
+.franchise-review-row-actions em {
+	min-width: 0;
+	flex: 0 0 auto;
+	text-align: right;
+}
+
+.franchise-review-details {
+	display: grid;
+	gap: 10px;
+	padding: 0 13px 13px;
+}
+
+.franchise-review-details > small {
+	display: block;
+}
+
+.franchise-preview-backdrop {
+	display: grid;
+	place-items: center;
+	padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+.franchise-preview-modal {
+	display: grid;
+	width: min(760px, 100%);
+	max-height: min(720px, calc(100dvh - 32px));
+	grid-template-rows: auto auto minmax(0, 1fr);
+	gap: 12px;
+	padding: 18px;
+	overflow: hidden;
+	color: var(--text);
+	background: rgb(3 14 21 / 98%);
+	border: 1px solid rgb(98 225 255 / 30%);
+	border-radius: 16px;
+	box-shadow: 0 28px 80px rgb(0 0 0 / 58%);
+}
+
+.franchise-preview-modal > header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.franchise-preview-modal h3,
+.franchise-preview-modal p {
+	margin: 0;
+}
+
+.franchise-preview-modal > p {
+	color: var(--muted);
+	font-size: 0.72rem;
+	line-height: 1.5;
+}
+
+.franchise-preview-modal > header button {
+	min-width: 64px;
+	min-height: 44px;
+	color: var(--text);
+	font: inherit;
+	font-weight: 800;
+	background: rgb(1 180 228 / 8%);
+	border: 1px solid rgb(98 225 255 / 28%);
+	border-radius: 9px;
+	cursor: pointer;
+}
+
+.franchise-preview-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 12px;
+	margin: 0;
+	padding: 2px 3px 4px;
+	overflow-y: auto;
+	list-style: none;
+}
+
+.franchise-preview-grid li {
+	display: grid;
+	min-width: 0;
+	align-content: start;
+	gap: 4px;
+}
+
+.franchise-preview-poster-frame {
+	display: grid;
+	width: 100%;
+	aspect-ratio: 2 / 3;
+	place-items: center;
+	overflow: hidden;
+	color: var(--quiet);
+	background: rgb(4 14 21 / 88%);
+	border-radius: 8px;
+	font-size: 0.58rem;
+}
+
+.franchise-preview-poster {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.franchise-preview-grid strong,
+.franchise-preview-grid span {
+	overflow: hidden;
+	font-size: 0.66rem;
+	line-height: 1.35;
+	text-overflow: ellipsis;
+}
+
+.franchise-preview-grid span {
+	color: var(--quiet);
+}
+
+@media (max-width: 620px) {
+	.franchise-result-selectable {
+		grid-template-columns: 22px 58px minmax(0, 1fr);
+	}
+
+	.franchise-result-poster-frame {
+		width: 58px;
+	}
+
+	.franchise-selected-disclosure li {
+		align-items: flex-start;
+	}
+
+	.franchise-review-list summary {
+		align-items: flex-start;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 8px;
+	}
+
+	.franchise-review-row-actions {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.franchise-review-row-actions em {
+		flex: 1 1 auto;
+		text-align: left;
+	}
+
+	.franchise-preview-modal {
+		max-height: calc(100dvh - 24px);
+		padding: 14px;
+	}
+
+	.franchise-preview-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 9px;
+	}
+
+	.franchise-preview-grid li:nth-child(n + 6) {
+		display: none;
+	}
 }
 
 .decades-selected-summary {
