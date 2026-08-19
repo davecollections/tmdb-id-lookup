@@ -309,6 +309,7 @@ test("provider normalization exposes only bounded collection result fields", () 
 			name: "Example Collection",
 			overview: "Overview",
 			posterPath: "/poster.jpg",
+			backdropPath: null,
 			movieCount: null,
 			containedTitles: null,
 		}],
@@ -347,10 +348,11 @@ test("exact detail normalization validates identity and derives movie count", ()
 			name: "Example Collection",
 			overview: "A movie franchise.",
 			posterPath: "/poster.jpg",
+			backdropPath: null,
 			movieCount: 2,
 			containedTitles: [
-				{ title: "First Movie", releaseYear: 2001 },
-				{ title: "Second Movie", releaseYear: null },
+				{ id: 1, title: "First Movie", releaseYear: 2001, posterPath: null },
+				{ id: 2, title: "Second Movie", releaseYear: null, posterPath: null },
 			],
 		},
 	);
@@ -392,10 +394,11 @@ test("details accept mature wording and contained adult flags without collection
 		name: "Sex Collection",
 		overview: "A collection with mature wording.",
 		posterPath: "/mature-poster.jpg",
+		backdropPath: null,
 		movieCount: 2,
 		containedTitles: [
-			{ title: "Sex, Shame & Tears", releaseYear: 1999 },
-			{ title: "The Substitute", releaseYear: null },
+			{ id: 1, title: "Sex, Shame & Tears", releaseYear: 1999, posterPath: null },
+			{ id: 2, title: "The Substitute", releaseYear: null, posterPath: null },
 		],
 	});
 });
@@ -409,9 +412,9 @@ test("details preserve contained-title order with title and year fallbacks", () 
 	];
 	const normalized = normalizeTmdbCollectionDetailsResponse(details, details.id);
 	assert.deepEqual(normalized.containedTitles, [
-		{ title: "First", releaseYear: 1999 },
-		{ title: "Original fallback", releaseYear: null },
-		{ title: "Untitled movie", releaseYear: null },
+		{ id: null, title: "First", releaseYear: 1999, posterPath: null },
+		{ id: null, title: "Original fallback", releaseYear: null, posterPath: null },
+		{ id: null, title: "Untitled movie", releaseYear: null, posterPath: null },
 	]);
 	assert.equal(normalized.movieCount, 3);
 });
@@ -425,6 +428,7 @@ test("poster helper accepts only normalized TMDB paths and supported display siz
 		buildTmdbPosterUrl("/poster_1.jpg", "w185"),
 		"https://image.tmdb.org/t/p/w185/poster_1.jpg",
 	);
+	assert.equal(buildTmdbPosterUrl("/poster_1.jpg", "w500"), "https://image.tmdb.org/t/p/w500/poster_1.jpg");
 	assert.equal(buildTmdbPosterUrl("/poster.jpg", "original"), null);
 });
 

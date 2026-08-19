@@ -8,7 +8,7 @@ import {
 } from "../../builder/src/source-edit/index.js";
 import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx";
 import { GenreSourceFlow } from "../../builder/src/ui/GenreSourceFlow.jsx";
-import { PeopleSourceFlow } from "../../builder/src/ui/PeopleSourceFlow.jsx";
+import { PeopleBulkConfigurationList, PeopleSourceFlow } from "../../builder/src/ui/PeopleSourceFlow.jsx";
 import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
 import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
@@ -977,6 +977,264 @@ async function runPeopleSelectionScrollScenario() {
 	}
 }
 
+function measureHierarchyShowAllSpacing(root) {
+	const controls = root.querySelector(".hierarchy-collection-presentation-controls");
+	const choices = controls?.querySelector(":scope > .editor-choice-grid");
+	const showAll = controls?.querySelector(":scope > .hierarchy-show-all-control");
+	if (!controls || !choices || !showAll) return null;
+	const choicesRect = choices.getBoundingClientRect();
+	const showAllRect = showAll.getBoundingClientRect();
+	return {
+		separateSiblings: choices.parentElement === controls && showAll.parentElement === controls,
+		cssGap: Number.parseFloat(getComputedStyle(controls).rowGap),
+		actualGap: Number((showAllRect.top - choicesRect.bottom).toFixed(2)),
+		noOverlap: showAllRect.top >= choicesRect.bottom,
+	};
+}
+
+function mountedFranchise(id, name) {
+	return {
+		id,
+		name,
+		overview: `${name} overview`,
+		posterPath: `/franchise-${id}.jpg`,
+		backdropPath: `/franchise-${id}-backdrop.jpg`,
+		movieCount: 8,
+		containedTitles: Array.from({ length: 8 }, (_, index) => ({
+			id: id * 100 + index,
+			title: `${name} Title ${index + 1}`,
+			releaseYear: 2000 + index,
+			posterPath: `/franchise-${id}-title-${index + 1}.jpg`,
+		})),
+	};
+}
+
+async function runFranchiseReviewScenario() {
+	const longName = "The ExtraordinarilyLongUnbrokenFranchiseNameThatMustNeverOverflowItsSelectedDisclosure Collection";
+	const franchises = [mountedFranchise(1241, longName), mountedFranchise(10, "Star Wars Collection")];
+	const byId = new Map(franchises.map((franchise) => [franchise.id, franchise]));
+	const provider = {
+		async searchCollections() {
+			return { ok: true, data: { results: franchises, page: 1, totalPages: 1, totalResults: franchises.length } };
+		},
+		async getCollection(id) {
+			const franchise = byId.get(Number(id));
+			return franchise ? { ok: true, data: franchise, checkedAt: 1 } : { ok: false, error: { message: "Missing fixture franchise.", retryable: false } };
+		},
+	};
+	const controller = createController();
+	importSources(controller, [collectionSource({ title: longName, tmdbId: 1241 })]);
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "franchises",
+			collectionProvider: provider,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyDecades() { return { ok: true }; },
+			onApplyPeople() { return { ok: true }; },
+			onApplyFranchises() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted Franchise ${label} is missing.`);
+		return element;
+	}
+	async function waitAndSettle(ms = 0) {
+		await act(async () => {
+			if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+			await afterCommittedEffects();
+		});
+	}
+	function outerPosition(dialog, scrollElement) {
+		const rect = dialog.getBoundingClientRect();
+		return { top: rect.top, bottom: rect.bottom, dialogScrollTop: dialog.scrollTop, innerScrollTop: scrollElement.scrollTop, x: window.scrollX, y: window.scrollY };
+	}
+	function positionStable(before, after) {
+		return Math.abs(before.top - after.top) <= 1 && Math.abs(before.bottom - after.bottom) <= 1 && before.dialogScrollTop === after.dialogScrollTop && before.innerScrollTop === after.innerScrollTop && before.x === after.x && before.y === after.y;
+	}
+	function previewLayerState() {
+		const preview = required(document.querySelector(".franchise-preview-modal"), "Preview titles modal");
+		const backdrop = required(preview.closest(".nested-modal-backdrop"), "shared nested backdrop");
+		const creationPortal = required(document.querySelector(".add-source-portal"), "creation portal");
+		return {
+			preview,
+			backdrop,
+			aboveCreationModal: Number.parseInt(getComputedStyle(backdrop).zIndex, 10) > Number.parseInt(getComputedStyle(creationPortal).zIndex, 10),
+			sharedNestedLayer: backdrop.dataset.nestedModalBackdrop === "true",
+			modalSurface: preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
+			noHorizontalOverflow: preview.scrollWidth <= preview.clientWidth && document.documentElement.scrollWidth <= window.innerWidth,
+		};
+	}
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const scrollElement = required(dialog.querySelector(".add-source-scroll"), "inner scroll owner");
+		const query = required(dialog.querySelector("#franchise-source-query"), "search query");
+		await act(async () => {
+			setInputValue(query, "franchise");
+			await new Promise((resolve) => setTimeout(resolve, 360));
+			await afterCommittedEffects();
+		});
+		const resultCards = [...dialog.querySelectorAll(".franchise-result-selectable")];
+		if (resultCards.length !== franchises.length) throw new Error(`Mounted Franchise expected ${franchises.length} results, received ${resultCards.length}.`);
+		for (const card of resultCards) {
+			await clickAndSettle(card);
+			await waitAndSettle();
+		}
+		let disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure");
+		await clickAndSettle(required(disclosure.querySelector("summary"), "selected disclosure summary"));
+		let selectedRows = [...disclosure.querySelectorAll("li")];
+		const longRow = selectedRows[0];
+		const longRowRect = longRow.getBoundingClientRect();
+		const actionGroup = required(longRow.querySelector(".franchise-selected-actions"), "compact actions");
+		const previewTrigger = required(actionGroup.querySelector(".franchise-selected-preview"), "Select Preview action");
+		const removeAction = required(actionGroup.querySelector(".franchise-selected-remove"), "Select remove action");
+		const previewRect = previewTrigger.getBoundingClientRect();
+		const removeRect = removeAction.getBoundingClientRect();
+		const selectedActions = {
+			visiblePreviewLabel: previewTrigger.textContent.trim(),
+			previewAccessibleLabel: previewTrigger.getAttribute("aria-label"),
+			removeAccessibleLabel: removeAction.getAttribute("aria-label"),
+			previewTouchSafe: previewRect.height >= 40,
+			removeTouchSafe: removeRect.width >= 40 && removeRect.height >= 40,
+			adequateGap: Number.parseFloat(getComputedStyle(actionGroup).gap) >= 8,
+			longRowFits: longRow.scrollWidth <= longRow.clientWidth + 1 && previewRect.right <= longRowRect.right + 1 && removeRect.right <= longRowRect.right + 1,
+		};
+
+		const selectBefore = outerPosition(dialog, scrollElement);
+		await clickAndSettle(previewTrigger);
+		const selectLayer = previewLayerState();
+		const selectClose = required(selectLayer.preview.querySelector("header button"), "Select preview Close action");
+		const selectFocusEntered = document.activeElement === selectClose;
+		await act(async () => {
+			selectClose.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
+			await afterCommittedEffects();
+		});
+		const selectFocusContained = selectLayer.preview.contains(document.activeElement);
+		const selectOpenPosition = outerPosition(dialog, scrollElement);
+		await act(async () => {
+			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+			await afterCommittedEffects();
+		});
+		const selectPreview = {
+			...selectLayer,
+			preview: undefined,
+			backdrop: undefined,
+			focusEntered: selectFocusEntered,
+			focusContained: selectFocusContained,
+			escapeClosed: document.querySelector(".franchise-preview-modal") === null,
+			exactFocusRestored: document.activeElement === previewTrigger,
+			outerStable: positionStable(selectBefore, selectOpenPosition) && positionStable(selectBefore, outerPosition(dialog, scrollElement)),
+			selectionPreserved: dialog.querySelectorAll(".franchise-selected-disclosure li").length === 2,
+		};
+
+		disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure after preview");
+		await clickAndSettle(required(disclosure.querySelector(`[aria-label="Remove ${longName}"]`), "remove long franchise"));
+		const removalWorked = dialog.querySelectorAll(".franchise-selected-disclosure li").length === 1;
+		await clickAndSettle(resultCards[0]);
+		await waitAndSettle();
+		disclosure = required(dialog.querySelector(".franchise-selected-disclosure"), "selected disclosure after reselection");
+		if (!disclosure.open) await clickAndSettle(required(disclosure.querySelector("summary"), "reopened selected disclosure"));
+		selectedRows = [...disclosure.querySelectorAll("li")];
+		const selectedOrder = selectedRows.map((row) => row.querySelector("strong")?.textContent ?? "");
+
+		await clickAndSettle(required(buttonContaining(dialog, "Review 2 franchises"), "Review action"));
+		const review = required(dialog.querySelector(".franchise-review"), "Review surface");
+		const showAll = required(review.querySelector('[data-editor-control="franchiseShowAllTab"]'), "Tabs Show All control");
+		const tabsInitiallyEnabled = showAll.checked === true;
+		const showAllSpacing = measureHierarchyShowAllSpacing(review);
+		await clickAndSettle(showAll);
+		const rowsChoice = required(review.querySelector('input[name="franchise-collection-layout"][value="ROWS"]'), "Rows choice");
+		await clickAndSettle(rowsChoice);
+		const rowsHidesShowAll = review.querySelector('[data-editor-control="franchiseShowAllTab"]') === null;
+		const tabsChoice = required(review.querySelector('input[name="franchise-collection-layout"][value="TABBED_GRID"]'), "Tabs choice");
+		await clickAndSettle(tabsChoice);
+		const rowsToTabsRestoresEnabled = review.querySelector('[data-editor-control="franchiseShowAllTab"]')?.checked === true;
+		const reviewDetails = required([...review.querySelectorAll(".franchise-review-list details")].find((details) => details.querySelector("strong")?.textContent === longName), "Review franchise detail");
+		const reviewSummary = required(reviewDetails.querySelector("summary"), "Review detail summary");
+		const reviewPreviewTrigger = required(reviewSummary.querySelector('button[aria-haspopup="dialog"]'), "Review Preview titles action");
+		const reviewRowActions = required(reviewSummary.querySelector(".franchise-review-row-actions"), "Review row actions");
+		const reviewName = required(reviewSummary.querySelector("strong"), "Review franchise name");
+		const reviewSummaryRect = reviewSummary.getBoundingClientRect();
+		const reviewActionRect = reviewRowActions.getBoundingClientRect();
+		const reviewPreviewRect = reviewPreviewTrigger.getBoundingClientRect();
+		const collapsedRow = {
+			previewDirectlyVisible: reviewDetails.open === false && reviewPreviewRect.width > 0 && reviewPreviewRect.height >= 40,
+			previewInsideSummary: reviewPreviewTrigger.closest("summary") === reviewSummary,
+			longNameReadable: getComputedStyle(reviewName).overflowWrap === "anywhere" && reviewName.scrollWidth <= reviewName.clientWidth + 1,
+			statusAndPreviewFit: reviewSummary.scrollWidth <= reviewSummary.clientWidth + 1
+				&& reviewRowActions.scrollWidth <= reviewRowActions.clientWidth + 1
+				&& reviewActionRect.left >= reviewSummaryRect.left - 1
+				&& reviewActionRect.right <= reviewSummaryRect.right + 1
+				&& reviewPreviewRect.right <= reviewSummaryRect.right + 1,
+		};
+		const reviewBefore = outerPosition(dialog, scrollElement);
+		await clickAndSettle(reviewPreviewTrigger);
+		const previewOpenedWithoutExpanding = reviewDetails.open === false;
+		const reviewLayer = previewLayerState();
+		const reviewClose = required(reviewLayer.preview.querySelector("header button"), "Review preview Close action");
+		await clickAndSettle(reviewClose);
+		const remainedCollapsedAfterPreview = reviewDetails.open === false;
+		const reviewPreview = {
+			aboveCreationModal: reviewLayer.aboveCreationModal,
+			sharedNestedLayer: reviewLayer.sharedNestedLayer,
+			modalSurface: reviewLayer.modalSurface,
+			noHorizontalOverflow: reviewLayer.noHorizontalOverflow,
+			closeClosed: document.querySelector(".franchise-preview-modal") === null,
+			exactFocusRestored: document.activeElement === reviewPreviewTrigger,
+			outerStable: positionStable(reviewBefore, outerPosition(dialog, scrollElement)),
+			previewOpenedWithoutExpanding,
+			remainedCollapsedAfterPreview,
+		};
+		await clickAndSettle(reviewSummary);
+		const detailDisclosure = {
+			independentlyExpandable: reviewDetails.open === true && document.querySelector(".franchise-preview-modal") === null,
+			metadataPresent: reviewDetails.querySelector(".franchise-review-details > small")?.textContent.includes("TMDB 1241 · Movie · Collection · TMDB order") === true,
+			duplicateExplanationPresent: reviewDetails.querySelector(".source-elsewhere-note")?.textContent.includes("This franchise source exists elsewhere") === true,
+		};
+		const createButton = required(buttonContaining(dialog, "Create 2 folders"), "Create action");
+		const createRect = createButton.getBoundingClientRect();
+		return {
+			width: window.innerWidth,
+			selectedActions,
+			selectPreview,
+			reviewPreview,
+			selection: { removalWorked, selectedOrder },
+			review: {
+				artworkGuidance: review.querySelector('[data-franchise-artwork-rule="poster-only"]')?.textContent.trim() ?? "",
+				technicalArtworkCopyAbsent: !/\bPOSTER\b/.test(review.querySelector('[data-franchise-artwork-rule="poster-only"]')?.textContent ?? "")
+					&& !/(?:tileShape|coverImageUrl|emoji|w\d+|fallback|mechanic)/i.test(review.querySelector('[data-franchise-artwork-rule="poster-only"]')?.textContent ?? ""),
+				shapeSelectorAbsent: review.querySelector('input[name="franchise-folder-shape"]') === null && !review.textContent.includes("Folder artwork shape"),
+				collapsedRow,
+				detailDisclosure,
+				tabsInitiallyEnabled,
+				rowsHidesShowAll,
+				rowsToTabsRestoresEnabled,
+				showAllSpacing,
+				createReachable: createRect.top >= -1 && createRect.bottom <= window.innerHeight + 1 && createRect.height >= 44,
+			},
+			oneScrollOwner: dialog.querySelectorAll(".add-source-scroll").length === 1 && dialog.scrollTop === 0,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+			revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+		};
+	} finally {
+		await act(async () => {
+			root.unmount();
+			await afterCommittedEffects();
+		});
+		host.remove();
+	}
+}
+
 async function runPeopleConfigureLayoutScenario() {
 	const people = new Map([
 		[31, mountedPerson({ id: 31, name: "Tom Hanks", department: "Acting", membership: ["actor"], actingMovies: 12, actingSeries: 3, directingMovies: 2, directingSeries: 0 })],
@@ -1137,6 +1395,8 @@ async function runPeopleConfigureLayoutScenario() {
 		await waitAndSettle();
 		let preview = document.querySelector(".people-title-preview");
 		const previewGrid = preview.querySelector(".people-title-preview-grid");
+		const previewBackdrop = preview.closest(".nested-modal-backdrop");
+		const creationPortal = document.querySelector(".add-source-portal");
 		const previewState = {
 			modalSurface: preview.dataset.previewSurface === "modal" && preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
 			outsidePeopleRow: preview.closest(".people-bulk-row") === null,
@@ -1145,6 +1405,8 @@ async function runPeopleConfigureLayoutScenario() {
 			posterOnly: previewGrid.children.length > 0 && [...previewGrid.children].every((child) => child.tagName === "IMG"),
 			noHorizontalOverflow: preview.scrollWidth <= preview.clientWidth && document.documentElement.scrollWidth <= window.innerWidth,
 			headingFocused: document.activeElement === preview.querySelector("strong"),
+			sharedNestedLayer: previewBackdrop?.dataset.nestedModalBackdrop === "true",
+			aboveCreationModal: Number.parseInt(getComputedStyle(previewBackdrop).zIndex, 10) > Number.parseInt(getComputedStyle(creationPortal).zIndex, 10),
 		};
 		await act(async () => {
 			document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -1175,7 +1437,15 @@ async function runPeopleConfigureLayoutScenario() {
 			focusOverrideAbsent: dialog.querySelector('.people-folder-appearance [data-editor-control="focusGifEnabled"]') === null,
 			guidance: dialog.querySelector(".people-folder-artwork-note")?.textContent.trim() ?? "",
 			personDetailsPresent: dialog.querySelector(".decades-review-details > summary")?.textContent.includes("View person details · 2") === true,
+			showAllSpacing: measureHierarchyShowAllSpacing(dialog),
 		};
+		const peopleShowAll = required(dialog.querySelector('[data-editor-control="peopleShowAllTab"]'), "People Tabs Show All control");
+		appearance.tabsShowAllVisibleEnabled = peopleShowAll.checked === true;
+		await clickAndSettle(peopleShowAll);
+		await clickAndSettle(required(dialog.querySelector('input[name="people-collection-view"][value="ROWS"]'), "People Rows choice"));
+		appearance.rowsHidesShowAll = dialog.querySelector('[data-editor-control="peopleShowAllTab"]') === null;
+		await clickAndSettle(required(dialog.querySelector('input[name="people-collection-view"][value="TABBED_GRID"]'), "People Tabs choice"));
+		appearance.rowsToTabsRestoresEnabled = dialog.querySelector('[data-editor-control="peopleShowAllTab"]')?.checked === true;
 		const hideEverywhere = dialog.querySelector('input[name="people-folder-title-visibility"][value="HIDE_EVERYWHERE"]');
 		await clickAndSettle(required(hideEverywhere, "Hide everywhere folder title choice"));
 		await clickAndSettle(required(landscapeShape, "Landscape folder shape"));
@@ -1190,6 +1460,98 @@ async function runPeopleConfigureLayoutScenario() {
 		appearance.noDeadEditor = dialog.querySelector(".people-folder-artwork-editor") === null;
 		appearance.noHorizontalOverflow = document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth;
 		return { selectionAffordance, automaticOverride, sharedOverride, layout, preview: previewState, appearance, reviewReached, sortSurvivesReviewBack, revisionUnchanged: controller.getState().project === initialProject };
+	} finally {
+		await act(async () => {
+			root.unmount();
+			await afterCommittedEffects();
+		});
+		host.remove();
+	}
+}
+
+function mountedPeopleBulkEntry(index) {
+	const person = mountedPerson({
+		id: 5000 + index,
+		name: index === 0 ? "A Deliberately Long Person Name That Must Remain Readable" : `Layout Person ${index + 1}`,
+		department: index % 3 === 0 ? "Directing" : "Acting",
+		membership: index % 3 === 0 ? ["actor", "director"] : ["actor"],
+		actingMovies: 12 + index,
+		actingSeries: 3 + (index % 4),
+		directingMovies: 2 + (index % 3),
+		directingSeries: 1 + (index % 2),
+	});
+	person.profilePath = null;
+	return {
+		result: person,
+		person,
+		detail: { status: "ready", person },
+		configuration: { combinations: index % 2 === 0 ? ["acting-movies", "directing-movies"] : ["acting-series", "directing-series"] },
+		artworkState: { status: "ready", artwork: { previewUrl: "" } },
+	};
+}
+
+async function runPeoplePillStabilityScenario() {
+	const allEntries = Array.from({ length: 20 }, (_, index) => mountedPeopleBulkEntry(index));
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const snapshots = [];
+	try {
+		for (const count of [1, 2, 5, 20]) {
+			await act(async () => {
+				root.render(createElement("section", {
+					className: "people-source-dialog",
+					"data-people-context": "hierarchy",
+					"data-add-source-step": "configure",
+				}, createElement("section", {
+					className: "people-configure",
+					style: { height: "520px", width: "min(960px, calc(100vw - 24px))" },
+				}, createElement(PeopleBulkConfigurationList, {
+					entries: allEntries.slice(0, count),
+					mode: "automatic",
+					onToggleCombination() {},
+					onRetry() {},
+					onRemove() {},
+					onPreview() {},
+					previewState: null,
+					previewItems: [],
+					previewLimit: 10,
+					onClosePreview() {},
+					onRetryPreview() {},
+				}))));
+				await afterCommittedEffects();
+			});
+			const list = host.querySelector(".people-bulk-list");
+			const rows = [...list.querySelectorAll(".people-bulk-row")];
+			const firstRow = rows[0];
+			const listRect = list.getBoundingClientRect();
+			const firstRowRect = firstRow.getBoundingClientRect();
+			const lastRowRect = rows.at(-1).getBoundingClientRect();
+			const pills = [...list.querySelectorAll(".people-source-pill")];
+			const firstRowPills = [...firstRow.querySelectorAll(".people-source-pill")];
+			const inputs = [...list.querySelectorAll('.people-source-pill input[type="checkbox"]')];
+			const countLabels = [...list.querySelectorAll(".people-source-pill em")];
+			const previewRect = firstRow.querySelector(".people-bulk-actions button:first-child").getBoundingClientRect();
+			const removeRect = firstRow.querySelector(".people-bulk-actions button:last-child").getBoundingClientRect();
+			snapshots.push({
+				count,
+				rowCount: rows.length,
+				pillCount: pills.length,
+				pillHeights: firstRowPills.map((pill) => Number(pill.getBoundingClientRect().height.toFixed(2))),
+				allPillsCompact: pills.every((pill) => pill.getBoundingClientRect().height <= 42.5),
+				firstRowTopOffset: Number((firstRowRect.top - listRect.top).toFixed(2)),
+				unusedSpaceBelow: Number((listRect.bottom - lastRowRect.bottom).toFixed(2)),
+				rowsIntrinsic: rows.every((row) => row.getBoundingClientRect().height < listRect.height - 8),
+				listScrollable: list.scrollHeight > list.clientHeight + 1,
+				listOverflowAuto: getComputedStyle(list).overflowY === "auto",
+				inputsAccessible: inputs.length === count * 4 && inputs.every((input) => !input.disabled && input.getAttribute("aria-label")),
+				selectedAndUnselectedPresent: inputs.some((input) => input.checked) && inputs.some((input) => !input.checked),
+				countsReadable: countLabels.length === count * 4 && countLabels.every((label) => label.textContent.trim().length > 0),
+				actionsAligned: Math.abs(previewRect.top - removeRect.top) <= 1 && Math.abs(previewRect.height - removeRect.height) <= 1,
+				noHorizontalOverflow: list.scrollWidth <= list.clientWidth && document.documentElement.scrollWidth <= window.innerWidth,
+			});
+		}
+		return { width: window.innerWidth, snapshots };
 	} finally {
 		await act(async () => {
 			root.unmount();
@@ -1315,14 +1677,16 @@ async function runDecadesNavigationScenario() {
 				dialog().querySelector(".decades-review-details > summary")?.textContent.split(" · ")[0].trim(),
 			],
 			oldFolderLabelAbsent: !dialog().textContent.includes("Decade folder options"),
+			showAllSpacing: measureHierarchyShowAllSpacing(dialog()),
 		};
 		const collectionName = dialog().querySelector('input[id="decades-collection-movies"]');
 		await act(async () => {
 			setInputValue(collectionName, "My Movie Decades");
 			await afterCommittedEffects();
 		});
-		await clickAndSettle(dialog().querySelector('input[name="decades-view"][value="ROWS"]'));
 		await clickAndSettle(dialog().querySelector('input[data-editor-control="showAllTab"]'));
+		await clickAndSettle(dialog().querySelector('input[name="decades-view"][value="ROWS"]'));
+		const rowsHidShowAll = dialog().querySelector('input[data-editor-control="showAllTab"]') === null;
 		await clickAndSettle(dialog().querySelector('input[data-editor-control="pinToTop"]'));
 		await clickAndSettle(dialog().querySelector('input[data-editor-control="hideNuvioTitle"]'));
 		const hiddenTitleFields = [...dialog().querySelectorAll('input[id^="decades-collection-"]')];
@@ -1350,11 +1714,16 @@ async function runDecadesNavigationScenario() {
 		const restoredHiddenName = dialog().querySelector('input[id="decades-collection-movies"]');
 		const hiddenNamePreserved = restoredHiddenName?.value === "" && restoredHiddenName?.disabled === true;
 		await clickAndSettle(dialog().querySelector('input[data-editor-control="hideNuvioTitle"]'));
+		const rowsPreservedWithoutShowAll = dialog().querySelector('input[name="decades-view"][value="ROWS"]')?.checked === true
+			&& dialog().querySelector('input[data-editor-control="showAllTab"]') === null;
+		await clickAndSettle(dialog().querySelector('input[name="decades-view"][value="TABBED_GRID"]'));
+		const rowsToTabsRestoredEnabled = dialog().querySelector('input[data-editor-control="showAllTab"]')?.checked === true;
+		await clickAndSettle(dialog().querySelector('input[name="decades-view"][value="ROWS"]'));
 		const reviewNamePreserved = hiddenNamePreserved
 			&& dialog().querySelector('input[id="decades-collection-movies"]')?.value === "My Movie Decades"
 			&& dialog().querySelector('input[id="decades-collection-movies"]')?.disabled === false
 			&& dialog().querySelector('input[name="decades-view"][value="ROWS"]')?.checked === true
-			&& dialog().querySelector('input[data-editor-control="showAllTab"]')?.checked === false
+			&& dialog().querySelector('input[data-editor-control="showAllTab"]') === null
 			&& dialog().querySelector('input[data-editor-control="pinToTop"]')?.checked === true
 			&& dialog().querySelector('input[data-editor-control="hideNuvioTitle"]')?.checked === false
 			&& dialog().querySelector('input[name="decades-folder-shape"][value="LANDSCAPE"]')?.checked === true
@@ -1372,6 +1741,7 @@ async function runDecadesNavigationScenario() {
 			reviewEntered,
 			reviewBack,
 			hiddenCollectionTitles,
+			sharedLayout: { rowsHidShowAll, rowsPreservedWithoutShowAll, rowsToTabsRestoredEnabled },
 			reviewNamePreserved,
 			launcherReturn: {
 				backAbsent: headerBack() === null,
@@ -1745,7 +2115,9 @@ window.__runDecadesActionLayoutScenario = runDecadesActionLayoutScenario;
 window.__runDecadesGenreLayoutScenario = runDecadesGenreLayoutScenario;
 window.__runDecadesExclusionLayoutScenario = runDecadesExclusionLayoutScenario;
 window.__runPeopleConfigureLayoutScenario = runPeopleConfigureLayoutScenario;
+window.__runPeoplePillStabilityScenario = runPeoplePillStabilityScenario;
 window.__runPeopleSelectionScrollScenario = runPeopleSelectionScrollScenario;
+window.__runFranchiseReviewScenario = runFranchiseReviewScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {

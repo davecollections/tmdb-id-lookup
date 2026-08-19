@@ -69,10 +69,12 @@ function normalizeContainedTitles(parts) {
 	for (const part of parts) {
 		if (!plainObject(part)) return null;
 		titles.push({
+			id: isPositiveSafeTmdbId(part.id) ? part.id : null,
 			title: normalizedText(part.title)
 				|| normalizedText(part.original_title)
 				|| "Untitled movie",
 			releaseYear: normalizedReleaseYear(part.release_date),
+			posterPath: normalizeTmdbPosterPath(part.poster_path),
 		});
 	}
 	return titles;
@@ -92,6 +94,7 @@ function normalizeCollection(value, { includeContainedTitles = false } = {}) {
 		name,
 		overview: boundedOverview(overview),
 		posterPath: normalizeTmdbPosterPath(value.poster_path),
+		backdropPath: normalizeTmdbPosterPath(value.backdrop_path),
 		movieCount: null,
 		containedTitles: null,
 	};

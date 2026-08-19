@@ -41,7 +41,7 @@ import {
 	updatePeopleConfiguration,
 	validatePeopleCombinationSelection,
 } from "../source-add/index.js";
-import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import {
 	lockAddSourceDocumentBody,
 	observeAddSourceViewport,
@@ -400,7 +400,7 @@ export function PeopleTitlePreviewSurface({ person, state, items, limit, onClose
 		focusElementWithoutScroll(headingRef.current);
 	}, [person.id]);
 	const content = (
-		<div className="people-title-preview-backdrop" data-people-title-preview-backdrop="true" onMouseDown={(event) => {
+		<div className="people-title-preview-backdrop nested-modal-backdrop" data-nested-modal-backdrop="true" data-people-title-preview-backdrop="true" onMouseDown={(event) => {
 			if (event.target === event.currentTarget) {
 				event.preventDefault();
 				focusElementWithoutScroll(dialogRef.current);
@@ -528,7 +528,6 @@ export function PeopleReviewStep({
 				onChange: (hideTitle) => onCollectionOptionsChange({ ...collectionOptions, hideTitle, title: hideTitle && !collectionOptions.title.trim() ? "People" : collectionOptions.title }),
 			} : null}
 			folderTitleVisibility={{
-				legend: "Person folder titles",
 				selectedId: folderTitleVisibility,
 				name: "people-folder-title-visibility",
 				onChange: onFolderTitleVisibilityChange,
@@ -552,9 +551,8 @@ export function PeopleReviewStep({
 					</div></div>
 					{titleOptions}
 					<section className="review-layout-options people-review-layout" data-review-layout="true" aria-labelledby="people-review-layout-title">
-						<div className="review-presentation-heading"><h4 id="people-review-layout-title">Layout</h4><span>{collectionOptions.viewMode === "ROWS" ? "Rows" : "Tabs"} · All tab {collectionOptions.showAllTab ? "on" : "off"} · {collectionOptions.pinToTop ? "pinned" : "not pinned"}</span></div>
-						<CollectionPresentationChoices selectedId={collectionOptions.viewMode} name="people-collection-view" onChange={(viewMode) => onCollectionOptionsChange({ ...collectionOptions, viewMode })} />
-						<PresentationSwitch label="Show All tab" description="Combine all person folders in an All tab." descriptionId="people-show-all-help" controlName="peopleShowAllTab" checked={collectionOptions.showAllTab} onChange={(showAllTab) => onCollectionOptionsChange({ ...collectionOptions, showAllTab })} />
+						<div className="review-presentation-heading"><h4 id="people-review-layout-title">Layout</h4><span>{collectionOptions.viewMode === "ROWS" ? "Rows" : `Tabs · All tab ${collectionOptions.showAllTab ? "on" : "off"}`} · {collectionOptions.pinToTop ? "pinned" : "not pinned"}</span></div>
+						<HierarchyCollectionPresentationControls selectedId={collectionOptions.viewMode} name="people-collection-view" showAllTab={collectionOptions.showAllTab} onPresentationChange={(patch) => onCollectionOptionsChange({ ...collectionOptions, ...patch })} showAllDescription="Combine all person folders in an All tab." showAllDescriptionId="people-show-all-help" showAllControlName="peopleShowAllTab" />
 						<PresentationSwitch label="Pin collection to top" description="Keep this collection near the top in Nuvio." descriptionId="people-pin-help" controlName="peoplePinToTop" checked={collectionOptions.pinToTop} onChange={(pinToTop) => onCollectionOptionsChange({ ...collectionOptions, pinToTop })} />
 					</section>
 				</>

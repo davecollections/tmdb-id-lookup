@@ -51,6 +51,31 @@ export {
 	validateMovieFranchiseSourceDraft,
 } from "./movie-franchise-source.js";
 export {
+	DEFAULT_FRANCHISE_FOLDER_TILE_SHAPE,
+	resolveFranchiseFolderArtwork,
+} from "./franchise-folder-artwork.js";
+export { normalizeHierarchyShowAllTab } from "./hierarchy-presentation.js";
+export {
+	applyFranchiseHierarchyPlan,
+	createFranchiseHierarchyPlan,
+	DEFAULT_FRANCHISE_COLLECTION_TITLE,
+	DEFAULT_FRANCHISE_FOLDER_TITLE_VISIBILITY,
+	FRANCHISE_CREATION_SCOPES,
+	FRANCHISE_HIERARCHY_PLAN_TYPE,
+	FRANCHISE_PLACEMENT_STATUSES,
+	inspectFranchiseHierarchyPlacement,
+	validateFranchiseHierarchyPlan,
+} from "./franchise-plan.js";
+export {
+	addSelectedFranchise,
+	createFranchiseSelectionState,
+	franchiseSelectionNotice,
+	FRANCHISE_LARGE_SELECTION_NOTICE_THRESHOLD,
+	removeSelectedFranchise,
+	selectedFranchises,
+	toggleSelectedFranchise,
+} from "./franchise-selection-state.js";
+export {
 	AVAILABLE_SOURCE_MODES,
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,

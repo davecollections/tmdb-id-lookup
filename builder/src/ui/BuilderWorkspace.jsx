@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import {
 	applyPeopleHierarchyPlan,
+	applyFranchiseHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
 	applyDecadesHierarchyPlan,
@@ -1256,6 +1257,21 @@ export function BuilderWorkspace({
 		return result;
 	}
 
+	function applyFranchisePlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyFranchiseHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} Franchise folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
 	function openAddSource(trigger) {
 		if (
 			navigationLocked
@@ -2320,6 +2336,8 @@ export function BuilderWorkspace({
 					onCreateBlank={createBlankItem}
 					onApplyDecades={applyDecadesPlan}
 					onApplyPeople={applyPeoplePlan}
+					onApplyFranchises={applyFranchisePlan}
+					collectionProvider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
 					peopleManifestClient={peopleManifestClientRef.current}
 				/>

@@ -1,6 +1,6 @@
 export const TMDB_IMAGE_ORIGIN = "https://image.tmdb.org";
 
-const supportedPosterSizes = new Set(["w185", "w342"]);
+const supportedPosterSizes = new Set(["w185", "w342", "w500"]);
 const safePosterPathPattern = /^\/[A-Za-z0-9._-]+$/;
 
 export function normalizeTmdbPosterPath(value) {

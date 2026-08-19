@@ -63,7 +63,7 @@ test("creation family registry supports People in both hierarchy scopes and reje
 	assert.equal(creationOptionById(CREATION_OPTION_IDS.PEOPLE).label, "People");
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.PEOPLE, scope), true);
-		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people"]);
+		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises"]);
 	}
 	assert.equal(creationOptionById("future-family"), null);
 	assert.equal(creationOptionSupportsScope("future-family", "new-collection"), false);
@@ -204,6 +204,22 @@ test("People New Collection plan preserves order, canonical naming, source seman
 	]);
 	assert.deepEqual(result.plan.collections[0].folders[1].sources.map((entry) => entry.draft.editable.title), ["Movie Credits", "Directed Movies"]);
 	assert.deepEqual(result.plan.counts, { collectionCount: 1, folderCount: 2, sourceCount: 4 });
+});
+
+test("People Rows plans force the compatibility All-tab value on while Tabs keeps an explicit choice", () => {
+	const app = controller();
+	const state = app.getState();
+	const selected = planEntry({ id: 31, name: "Tom Hanks", counts: { actingMovies: 1, actingSeries: 0, directingMovies: 0, directingSeries: 0 } }, ["acting-movies"]);
+	for (const [viewMode, requestedShowAllTab, expectedShowAllTab] of [
+		["ROWS", false, true],
+		["TABBED_GRID", false, false],
+		["TABBED_GRID", true, true],
+	]) {
+		const result = createPeopleHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, viewMode, showAllTab: requestedShowAllTab, people: [selected] });
+		assert.equal(result.ok, true);
+		assert.equal(result.plan.configuration.showAllTab, expectedShowAllTab);
+		assert.equal(result.plan.collections[0].editable.showAllTab, expectedShowAllTab);
+	}
 });
 
 test("People hierarchy applies each canonical Folder title-visibility outcome and revalidates it", () => {

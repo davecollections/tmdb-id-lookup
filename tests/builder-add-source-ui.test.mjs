@@ -928,7 +928,9 @@ test("body lock prevents page scrolling and restores exact prior styles, class s
 test("responsive CSS provides an opaque full Visual Viewport task surface and safe action area below 900px", () => {
 	const styles = read("builder/src/styles.css");
 	const dialogSource = read("builder/src/ui/AddSourceDialog.jsx");
-	assert.match(styles, /\.add-source-portal\s*\{[\s\S]*z-index:\s*3000[\s\S]*isolation:\s*isolate/);
+	assert.match(styles, /--layer-add-source:\s*3000/);
+	assert.match(styles, /--layer-nested-modal:\s*4000/);
+	assert.match(styles, /\.add-source-portal\s*\{[\s\S]*z-index:\s*var\(--layer-add-source\)[\s\S]*isolation:\s*isolate/);
 	assert.match(styles, /\.add-source-dialog\s*\{[\s\S]*width:\s*100%[\s\S]*height:\s*100%/);
 	assert.match(styles, /\.add-source-scroll\s*\{[\s\S]*overflow-y:\s*auto[\s\S]*overscroll-behavior:\s*contain/);
 	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.add-source-portal\s*\{[\s\S]*background:\s*rgb\(7 24 33\)/);

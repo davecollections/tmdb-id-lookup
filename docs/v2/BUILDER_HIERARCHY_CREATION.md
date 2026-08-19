@@ -2,11 +2,11 @@
 
 Status: Durable cross-family architecture, product, UX, accessibility, scale, presentation, and verification standard
 
-Established by: Decades issues [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) and [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113), then reconciled with People issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) through issue [#120](https://github.com/davecollections/tmdb-id-lookup/issues/120)
+Established by: Decades issues [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) and [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113), then reconciled with People issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) through issue [#120](https://github.com/davecollections/tmdb-id-lookup/issues/120), with Franchises applied in issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122)
 
-Last reviewed: 2026-08-18
+Last reviewed: 2026-08-19
 
-This document owns the rules shared by guided **New Collection** and **New Folder** hierarchy families. Family documents such as [`BUILDER_DECADES.md`](./BUILDER_DECADES.md) and [`BUILDER_PEOPLE.md`](./BUILDER_PEOPLE.md) continue to own family-specific source contracts, defaults, naming, artwork authority, duplicate strictness, and optional features. Repository implementation, deterministic tests, and confirmed owner evidence override obsolete plans.
+This document owns the rules shared by guided **New Collection** and **New Folder** hierarchy families. Family documents such as [`BUILDER_DECADES.md`](./BUILDER_DECADES.md), [`BUILDER_PEOPLE.md`](./BUILDER_PEOPLE.md), and [`BUILDER_FRANCHISES.md`](./BUILDER_FRANCHISES.md) continue to own family-specific source contracts, defaults, naming, artwork authority, duplicate strictness, and optional features. Repository implementation, deterministic tests, and confirmed owner evidence override obsolete plans.
 
 ## 1. Entry points and persisted architecture
 
@@ -114,17 +114,17 @@ Naming normalization is also family-specific:
 - do not apply cleanup rules from one family to another;
 - do not remove words merely to shorten a name when those words clarify what the generated Folder represents.
 
-For a future Franchise hierarchy, preserve meaningful canonical TMDB Collection wording, including suffixes such as `Collection`, `Saga`, `Trilogy`, or another meaningful canonical franchise term. Do not strip a trailing ` Collection`: names such as `Matrix Collection`, `Avatar Collection`, and `Die Hard Collection` remain distinguishable from individual movies. Removing a leading `The ` may be appropriate when it produces a less surprising display name while preserving that semantic wording, such as `The Matrix Collection` → `Matrix Collection`, but it is not a universal normalization rule. Ignoring a leading article for sort without changing the visible canonical title is a separate Franchise-specific option to evaluate against actual TMDB Collection names. The future Franchise issue owns that decision; this standard does not implement it.
+Franchise issue #122 resolves that family decision by preserving the complete canonical TMDB Collection name unchanged after provider trimming. Suffixes such as `Collection`, `Saga`, and `Trilogy` remain, and a leading `The ` is not removed. Ignoring an article for display sorting is not part of the issue #122 flow.
 
 Current contrasts prove why this boundary matters:
 
-| Concern | Decades | People |
-| --- | --- | --- |
-| Sort | Four evidenced Discover sorts, including Most Votes | Popular, Recent, and Top rated only; no evidenced native People Most Votes |
-| Folder-title default | Show everywhere | Hide on home screen only |
-| Artwork in creator | Shared Poster/Landscape presentation only; no artwork request in #113 | Shared Poster/Landscape choice over canonical per-person manifest/fallback defaults |
-| Preview | Ordering schematics and generated hierarchy detail | Optional bounded poster-only title preview |
-| Identity | Exact canonical Discover recipe identity | TMDB person ID plus exact `PERSON`/`DIRECTOR` media identities |
+| Concern | Decades | People | Franchises |
+| --- | --- | --- | --- |
+| Sort | Four evidenced Discover sorts, including Most Votes | Popular, Recent, and Top rated only; no evidenced native People Most Votes | Fixed TMDB-provided `original` order |
+| Folder-title default | Show everywhere | Hide on home screen only | Hide on home screen only |
+| Artwork in creator | Shared Poster/Landscape presentation only; no artwork request in #113 | Shared Poster/Landscape choice over canonical per-person manifest/fallback defaults | Fixed Poster tile from each TMDB Collection poster, then safe emoji fallback |
+| Preview | Ordering schematics and generated hierarchy detail | Optional bounded poster-only title preview | Optional bounded contained-title poster preview |
+| Identity | Exact canonical Discover recipe identity | TMDB person ID plus exact `PERSON`/`DIRECTOR` media identities | Exact TMDB Collection ID with `COLLECTION`/`MOVIE` |
 
 ## 9. Review information hierarchy
 
@@ -150,6 +150,8 @@ Title options may contain:
 - Collection title visibility for New Collection;
 - generated Folder title visibility.
 
+The canonical visible label for the ordinary generated-folder control is **Folder title visibility**. The shared Title options composition owns this label, so hierarchy families reuse it without family-specific prefixes. Ordinary **Edit Folder** uses the same label. No helper text is required beneath it.
+
 Generated Folder title visibility must reuse the canonical existing states:
 
 - **Show everywhere**;
@@ -158,7 +160,7 @@ Generated Folder title visibility must reuse the canonical existing states:
 
 Do not replace these semantics with a family-only boolean.
 
-**Layout** follows Title options and may contain Tabs/Rows, Show All tab, and Pin to top. Show only controls relevant to the current scope. New Folder inherits the parent Collection's presentation as read-only evidence and must not mutate it.
+**Layout** follows Title options and may contain Tabs/Rows, Show All tab, and Pin to top. **Show All tab is a Tabs-specific visible control:** expose and normally toggle it while Tabs is selected; hide it while Rows is selected. Hierarchy plans always retain/generated `showAllTab: true` in Rows mode so changing that Collection back to Tabs later restores an enabled All tab by default. Switching Rows → Tabs inside creation therefore shows the enabled control. Do not display an irrelevant control merely because its serialized field exists. Show only controls relevant to the current scope. New Folder inherits the parent Collection's presentation as read-only evidence and must not mutate it.
 
 ## 11. Artwork boundary
 
@@ -166,7 +168,7 @@ Bulk hierarchy creators expose only batch-safe artwork and presentation choices.
 
 - Do not add per-item artwork URL editors, focus toggles, or reset controls to a bulk creator merely to expose every ordinary Folder field.
 - Individual artwork customization belongs to ordinary **Edit Folder** unless a future family demonstrates a genuine batch-edit requirement.
-- Reuse existing presentation controls such as Poster/Landscape where applicable.
+- Reuse existing presentation controls such as Poster/Landscape where applicable. Family evidence may instead fix one shape; Franchises is Poster-only and therefore exposes no shape selector.
 - Shared control semantics do not require shared artwork providers or defaults.
 
 ## 12. Identity and duplicates
@@ -217,4 +219,4 @@ For visible hierarchy implementation work:
 4. stage, commit, push, and open a pull request only after explicit approval;
 5. use the established normal merge-commit workflow for meaningful V2 pull requests unless Dave explicitly changes it.
 
-Owner review does not broaden the issue. Follow-up fixes stay within the same focused issue and branch; a new creation family such as Franchises requires its own issue after this standard is published.
+Owner review does not broaden the issue. Follow-up fixes stay within the same focused issue and branch; each later creation family requires its own focused issue.

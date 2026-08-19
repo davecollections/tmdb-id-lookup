@@ -156,7 +156,9 @@ async function runMountedPage() {
 				const decadesGenreWidths = [];
 				const decadesExclusionWidths = [];
 				const peopleConfigureWidths = [];
+				const peoplePillStabilityWidths = [];
 				const peopleSelectionScrollWidths = [];
+				const franchiseReviewWidths = [];
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -166,6 +168,20 @@ async function runMountedPage() {
 					});
 					if (peopleEvaluation.exceptionDetails) throw new Error(peopleEvaluation.exceptionDetails.exception?.description ?? peopleEvaluation.exceptionDetails.text);
 					peopleConfigureWidths.push(peopleEvaluation.result?.value);
+					const peoplePillEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runPeoplePillStabilityScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (peoplePillEvaluation.exceptionDetails) throw new Error(peoplePillEvaluation.exceptionDetails.exception?.description ?? peoplePillEvaluation.exceptionDetails.text);
+					peoplePillStabilityWidths.push(peoplePillEvaluation.result?.value);
+					const franchiseEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runFranchiseReviewScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (franchiseEvaluation.exceptionDetails) throw new Error(franchiseEvaluation.exceptionDetails.exception?.description ?? franchiseEvaluation.exceptionDetails.text);
+					franchiseReviewWidths.push(franchiseEvaluation.result?.value);
 				}
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
@@ -217,7 +233,7 @@ async function runMountedPage() {
 					});
 					decadesExclusionWidths.push(decadesExclusionEvaluation.result?.value);
 				}
-				return { ...result.results, peopleConfigureWidths, peopleSelectionScrollWidths, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -435,6 +451,8 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.posterOnly, true, `${width}px poster-only`);
 		assert.equal(result.preview.noHorizontalOverflow, true, `${width}px preview overflow`);
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
+		assert.equal(result.preview.sharedNestedLayer, true, `${width}px shared nested preview layer`);
+		assert.equal(result.preview.aboveCreationModal, true, `${width}px preview above creation modal`);
 		assert.equal(result.preview.escapeClosed, true, `${width}px Escape`);
 		assert.equal(result.preview.escapeRestoredFocus, true, `${width}px Escape restore`);
 		assert.equal(result.preview.closeRestoredFocus, true, `${width}px Close restore`);
@@ -447,6 +465,10 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.appearance.folderTitleDefault, true, `${width}px accepted folder title default`);
 		assert.equal(result.appearance.titleOptionsBeforeLayout, true, `${width}px Title options before Layout`);
 		assert.equal(result.appearance.layoutControlsVisible, true, `${width}px Layout controls visible`);
+		assert.equal(result.appearance.tabsShowAllVisibleEnabled, true, `${width}px People Tabs Show All default`);
+		assert.deepEqual(result.appearance.showAllSpacing, { separateSiblings: true, cssGap: 14, actualGap: 14, noOverlap: true }, `${width}px People Show All separation`);
+		assert.equal(result.appearance.rowsHidesShowAll, true, `${width}px People Rows hides Show All`);
+		assert.equal(result.appearance.rowsToTabsRestoresEnabled, true, `${width}px People Rows to Tabs restores Show All`);
 		assert.equal(result.appearance.personSelectorAbsent, true, `${width}px no person artwork selector`);
 		assert.equal(result.appearance.artworkFields, 0, `${width}px no hierarchy artwork URL fields`);
 		assert.equal(result.appearance.focusOverrideAbsent, true, `${width}px no hierarchy focus override`);
@@ -459,6 +481,80 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.appearance.noHorizontalOverflow, true, `${width}px appearance overflow`);
 		assert.equal(result.sortSurvivesReviewBack, true, `${width}px sort preservation`);
 		assert.equal(result.revisionUnchanged, true, `${width}px preview/configure mutation`);
+	}
+});
+
+test("mounted People source pills keep intrinsic equivalent height for 1, 2, 5, and 20 people", () => {
+	assert.deepEqual(mountedResults.peoplePillStabilityWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.peoplePillStabilityWidths) {
+		const width = result.width;
+		assert.deepEqual(result.snapshots.map((snapshot) => snapshot.count), [1, 2, 5, 20], `${width}px fixture counts`);
+		const expectedHeights = result.snapshots[0].pillHeights;
+		for (const snapshot of result.snapshots) {
+			assert.equal(snapshot.rowCount, snapshot.count, `${width}px ${snapshot.count}-person rows`);
+			assert.equal(snapshot.pillCount, snapshot.count * 4, `${width}px ${snapshot.count}-person pills`);
+			assert.deepEqual(snapshot.pillHeights, expectedHeights, `${width}px ${snapshot.count}-person equivalent pill heights`);
+			assert.equal(snapshot.allPillsCompact, true, `${width}px ${snapshot.count}-person compact pills`);
+			assert.equal(snapshot.rowsIntrinsic, true, `${width}px ${snapshot.count}-person intrinsic rows`);
+			assert.equal(snapshot.listOverflowAuto, true, `${width}px ${snapshot.count}-person bounded list owner`);
+			assert.equal(snapshot.inputsAccessible, true, `${width}px ${snapshot.count}-person accessible editable controls`);
+			assert.equal(snapshot.selectedAndUnselectedPresent, true, `${width}px ${snapshot.count}-person selected/unselected states`);
+			assert.equal(snapshot.countsReadable, true, `${width}px ${snapshot.count}-person counts`);
+			assert.equal(snapshot.actionsAligned, true, `${width}px ${snapshot.count}-person Preview/Remove alignment`);
+			assert.equal(snapshot.noHorizontalOverflow, true, `${width}px ${snapshot.count}-person overflow`);
+		}
+		assert.ok(result.snapshots[0].firstRowTopOffset <= 1.5, `${width}px one person stays at list top`);
+		assert.ok(result.snapshots[0].unusedSpaceBelow > 40, `${width}px one person leaves unused list space below`);
+		assert.equal(result.snapshots.at(-1).listScrollable, true, `${width}px 20-person list scrolls`);
+	}
+});
+
+test("mounted Franchise review corrections remain layered, compact, state-safe, and responsive at every owner width", () => {
+	assert.deepEqual(mountedResults.franchiseReviewWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.franchiseReviewWidths) {
+		const width = result.width;
+		assert.equal(result.selectedActions.visiblePreviewLabel, "Preview", `${width}px compact Preview label`);
+		assert.match(result.selectedActions.previewAccessibleLabel, /^Preview titles for /, `${width}px Preview accessible label`);
+		assert.match(result.selectedActions.removeAccessibleLabel, /^Remove /, `${width}px remove accessible label`);
+		assert.equal(result.selectedActions.previewTouchSafe, true, `${width}px Preview touch target`);
+		assert.equal(result.selectedActions.removeTouchSafe, true, `${width}px remove touch target`);
+		assert.equal(result.selectedActions.adequateGap, true, `${width}px selected action spacing`);
+		assert.equal(result.selectedActions.longRowFits, true, `${width}px long selected name fit`);
+		for (const [origin, preview] of [["Select", result.selectPreview], ["Review", result.reviewPreview]]) {
+			assert.equal(preview.aboveCreationModal, true, `${width}px ${origin} preview layer`);
+			assert.equal(preview.sharedNestedLayer, true, `${width}px ${origin} shared layer`);
+			assert.equal(preview.modalSurface, true, `${width}px ${origin} modal semantics`);
+			assert.equal(preview.noHorizontalOverflow, true, `${width}px ${origin} preview overflow`);
+			assert.equal(preview.exactFocusRestored, true, `${width}px ${origin} exact trigger restoration`);
+			assert.equal(preview.outerStable, true, `${width}px ${origin} outer scroll position`);
+		}
+		assert.equal(result.selectPreview.focusEntered, true, `${width}px Select preview focus entry`);
+		assert.equal(result.selectPreview.focusContained, true, `${width}px Select preview focus containment`);
+		assert.equal(result.selectPreview.escapeClosed, true, `${width}px Select preview Escape`);
+		assert.equal(result.selectPreview.selectionPreserved, true, `${width}px Select preview state preservation`);
+		assert.equal(result.reviewPreview.closeClosed, true, `${width}px Review preview Close`);
+		assert.equal(result.reviewPreview.previewOpenedWithoutExpanding, true, `${width}px collapsed Review preview opens directly`);
+		assert.equal(result.reviewPreview.remainedCollapsedAfterPreview, true, `${width}px Review row stays collapsed after preview`);
+		assert.equal(result.selection.removalWorked, true, `${width}px selected removal`);
+		assert.deepEqual(result.selection.selectedOrder, ["Star Wars Collection", "The ExtraordinarilyLongUnbrokenFranchiseNameThatMustNeverOverflowItsSelectedDisclosure Collection"], `${width}px removal/reselection order`);
+		assert.equal(result.review.artworkGuidance, "Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.", `${width}px user-facing artwork guidance`);
+		assert.equal(result.review.technicalArtworkCopyAbsent, true, `${width}px technical artwork wording absent`);
+		assert.equal(result.review.shapeSelectorAbsent, true, `${width}px no Franchise shape selector`);
+		assert.equal(result.review.collapsedRow.previewDirectlyVisible, true, `${width}px collapsed Preview titles visibility`);
+		assert.equal(result.review.collapsedRow.previewInsideSummary, true, `${width}px Preview belongs to visible summary row`);
+		assert.equal(result.review.collapsedRow.longNameReadable, true, `${width}px long Review name readability`);
+		assert.equal(result.review.collapsedRow.statusAndPreviewFit, true, `${width}px status and Preview fit`);
+		assert.equal(result.review.detailDisclosure.independentlyExpandable, true, `${width}px independent detail disclosure`);
+		assert.equal(result.review.detailDisclosure.metadataPresent, true, `${width}px expanded placement metadata`);
+		assert.equal(result.review.detailDisclosure.duplicateExplanationPresent, true, `${width}px expanded duplicate explanation`);
+		assert.equal(result.review.tabsInitiallyEnabled, true, `${width}px Tabs Show All default`);
+		assert.deepEqual(result.review.showAllSpacing, { separateSiblings: true, cssGap: 14, actualGap: 14, noOverlap: true }, `${width}px Franchise Show All separation`);
+		assert.equal(result.review.rowsHidesShowAll, true, `${width}px Rows hides Show All`);
+		assert.equal(result.review.rowsToTabsRestoresEnabled, true, `${width}px Rows to Tabs restores Show All`);
+		assert.equal(result.review.createReachable, true, `${width}px sticky Create action`);
+		assert.equal(result.oneScrollOwner, true, `${width}px one scroll owner`);
+		assert.equal(result.noHorizontalOverflow, true, `${width}px flow overflow`);
+		assert.equal(result.revisionUnchanged, true, `${width}px preview/removal non-mutation`);
 	}
 });
 
@@ -561,6 +657,7 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 			removedSummariesAbsent: true,
 			sectionLabels: ["Title options", "Layout", "Folder options", "View folder details"],
 			oldFolderLabelAbsent: true,
+			showAllSpacing: { separateSiblings: true, cssGap: 14, actualGap: 14, noOverlap: true },
 		},
 		reviewBack: {
 			stage: "options",
@@ -577,6 +674,11 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 			fieldCount: 2,
 			allBlankAndDisabled: true,
 			allShareDescription: true,
+		},
+		sharedLayout: {
+			rowsHidShowAll: true,
+			rowsPreservedWithoutShowAll: true,
+			rowsToTabsRestoredEnabled: true,
 		},
 		reviewNamePreserved: true,
 		launcherReturn: {
