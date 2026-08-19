@@ -1,6 +1,6 @@
 # Builder UI Shell and Hierarchy Navigator
 
-Status: merged shell through issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119), with owner review complete and accepted for the Franchises launcher in issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122)
+Status: current Builder shell includes the shared hierarchy creation work through issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) / PR [#123](https://github.com/davecollections/tmdb-id-lookup/pull/123)
 
 Last reviewed: 2026-08-18
 
@@ -289,4 +289,4 @@ The current workspace does not add project-title editing, logical multi-source/b
 
 ## Current evidence boundary
 
-Issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115) merged the Blank/Decades hierarchy flow and canonical Decade editor after focused automated and owner UI review. Issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) then merged People into both launcher scopes, including the final selectable-card focus/scroll and shared Title-options corrections. Issue #122 Franchises has completed owner review and is not merged. The deterministic People before/after JSON is not a Nuvio client result. No Decades, People-hierarchy, or Franchise-hierarchy client import/export result is claimed. A complete current-client V2 edit/export round trip remains deferred until V2 exposes export.
+Issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115) added the Blank/Decades hierarchy flow and canonical Decade editor after focused automated and owner UI review. Issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) then added People to both launcher scopes, including the final selectable-card focus/scroll and shared Title-options corrections. Issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) / PR [#123](https://github.com/davecollections/tmdb-id-lookup/pull/123) implements owner-reviewed Franchise hierarchy creation. The deterministic People before/after JSON is not a Nuvio client result. No Decades, People-hierarchy, or Franchise-hierarchy client import/export result is claimed. A complete current-client V2 edit/export round trip remains deferred until V2 exposes export.
