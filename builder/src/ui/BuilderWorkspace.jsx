@@ -3,6 +3,7 @@ import builderMark from "../assets/builder-mark.svg";
 import {
 	applyPeopleHierarchyPlan,
 	applyFranchiseHierarchyPlan,
+	applyNetworkHierarchyPlan,
 	applyStudioHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
@@ -18,6 +19,7 @@ import {
 	createTmdbPersonProvider,
 	createPeopleManifestClient,
 	createTmdbNetworkCountProvider,
+	createTmdbNetworkPreviewProvider,
 	createTmdbStudioCountProvider,
 	createTmdbStudioPreviewProvider,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
@@ -626,6 +628,7 @@ export function BuilderWorkspace({
 	peopleProvider = null,
 	networkCatalogueProvider = null,
 	networkCountProvider = null,
+	networkPreviewProvider = null,
 	studioCatalogueProvider = null,
 	studioCountProvider = null,
 	studioPreviewProvider = null,
@@ -712,6 +715,10 @@ export function BuilderWorkspace({
 	const networkCountProviderRef = useRef(null);
 	if (networkCountProviderRef.current === null) {
 		networkCountProviderRef.current = networkCountProvider ?? createTmdbNetworkCountProvider();
+	}
+	const networkPreviewProviderRef = useRef(null);
+	if (networkPreviewProviderRef.current === null) {
+		networkPreviewProviderRef.current = networkPreviewProvider ?? createTmdbNetworkPreviewProvider();
 	}
 	const studioCatalogueProviderRef = useRef(null);
 	if (studioCatalogueProviderRef.current === null) {
@@ -1297,6 +1304,21 @@ export function BuilderWorkspace({
 		if (internalId) setCreatedCardTarget({ nodeType, internalId });
 		setCreationStatusText("");
 		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} Studio folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
+	function applyNetworkPlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyNetworkHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Created ${result.counts.folderCount} Network folder${result.counts.folderCount === 1 ? "" : "s"} with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
 		return result;
 	}
 
@@ -2366,12 +2388,16 @@ export function BuilderWorkspace({
 					onApplyPeople={applyPeoplePlan}
 					onApplyFranchises={applyFranchisePlan}
 					onApplyStudios={applyStudioPlan}
+					onApplyNetworks={applyNetworkPlan}
 					collectionProvider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
 					peopleManifestClient={peopleManifestClientRef.current}
 					studioCatalogueProvider={studioCatalogueProviderRef.current}
 					studioPreviewProvider={studioPreviewProviderRef.current}
 					studioArtworkRuntimeClient={studioArtworkRuntimeClientRef.current}
+					networkCatalogueProvider={networkCatalogueProviderRef.current}
+					networkPreviewProvider={networkPreviewProviderRef.current}
+					networkArtworkRuntimeClient={studioArtworkRuntimeClientRef.current}
 				/>
 			) : null}
 			{visibleEditorDraft ? (

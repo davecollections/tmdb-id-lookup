@@ -2,9 +2,12 @@ import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import {
+	buildTmdbPosterUrl,
 	createPeopleManifestClient,
+	createNetworkCatalogueProvider,
 	createStudioCatalogueProvider,
 	createTmdbCollectionProvider,
+	createTmdbNetworkPreviewProvider,
 	createTmdbPersonProvider,
 	createTmdbStudioPreviewProvider,
 } from "../../builder/src/source-add/index.js";
@@ -25,7 +28,9 @@ import "../../builder/src/styles.css";
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const livePeopleManifestClient = createPeopleManifestClient();
+const liveNetworkCatalogueProvider = createNetworkCatalogueProvider({ catalogueUrl: "/data/tv-networks.min.json" });
 const liveStudioCatalogueProvider = createStudioCatalogueProvider({ catalogueUrl: "/data/companies.min.json" });
+const liveNetworkArtworkRuntimeClient = createArtworkRuntimeClient();
 const liveStudioArtworkRuntimeClient = createArtworkRuntimeClient();
 
 function countingIdFactory(prefix = "builder") {
@@ -1646,6 +1651,815 @@ async function runStudioHierarchyScenario() {
 	}
 }
 
+function recordingNetworkPreviewFetch(requests) {
+	return async (input, init) => {
+		const requestUrl = typeof input === "string" ? input : input?.url;
+		const url = new URL(requestUrl);
+		const response = await fetch(input, init);
+		const responseClone = response.clone();
+		let value = null;
+		let cloneError = null;
+		try {
+			value = await responseClone.json();
+		} catch (error) {
+			cloneError = error instanceof Error ? error.message : String(error);
+		}
+		requests.push({
+			url: url.toString(),
+			origin: url.origin,
+			pathname: url.pathname,
+			search: url.search,
+			queryEntries: [...url.searchParams.entries()],
+			status: response.status,
+			ok: response.ok,
+			contentType: response.headers.get("content-type"),
+			cloneInspected: cloneError === null,
+			cloneError,
+			originalBodyUnusedBeforeReturn: response.bodyUsed === false,
+			totalResults: value?.total_results ?? null,
+			results: Array.isArray(value?.results) ? value.results.map((item) => ({
+				id: item?.id ?? null,
+				posterPath: typeof item?.poster_path === "string" ? item.poster_path : null,
+			})) : null,
+		});
+		return response;
+	};
+}
+
+async function runNetworkLivePreviewScenario() {
+	const networkId = 213;
+	const requests = [];
+	const failedImageSources = new Set();
+	const previewProvider = createTmdbNetworkPreviewProvider({ fetchImpl: recordingNetworkPreviewFetch(requests) });
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "networks",
+			networkCatalogueProvider: liveNetworkCatalogueProvider,
+			networkPreviewProvider: previewProvider,
+			networkArtworkRuntimeClient: liveNetworkArtworkRuntimeClient,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyNetworks() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted live Network ${label} is missing.`);
+		return element;
+	}
+	function outerPosition(dialog, scrollElement) {
+		const rect = dialog.getBoundingClientRect();
+		return { top: rect.top, bottom: rect.bottom, dialogScrollTop: dialog.scrollTop, innerScrollTop: scrollElement.scrollTop, x: window.scrollX, y: window.scrollY };
+	}
+	function positionStable(before, after) {
+		return Math.abs(before.top - after.top) <= 1
+			&& Math.abs(before.bottom - after.bottom) <= 1
+			&& before.dialogScrollTop === after.dialogScrollTop
+			&& before.innerScrollTop === after.innerScrollTop
+			&& before.x === after.x
+			&& before.y === after.y;
+	}
+	function countLines(row) {
+		const copy = required(row.querySelector(".studio-configure-row-copy"), "Configure row copy");
+		return [...copy.children]
+			.filter((element) => element.tagName === "SPAN" && element.textContent.includes("Series Count:"))
+			.map((element) => element.textContent.trim());
+	}
+	function formattedCount(value) {
+		return Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString("en") : "Unknown";
+	}
+	function safePosterPaths(request) {
+		return Array.isArray(request?.results)
+			? request.results.map((item) => item.posterPath).filter((posterPath) => typeof posterPath === "string" && /^\/[A-Za-z0-9._-]+$/.test(posterPath))
+			: [];
+	}
+	function imagePosterPath(image) {
+		const url = new URL(image.currentSrc || image.src);
+		const prefix = "/t/p/w342";
+		return url.origin === "https://image.tmdb.org" && url.pathname.startsWith(prefix)
+			? url.pathname.slice(prefix.length)
+			: null;
+	}
+	function orderedSubsequence(values, source) {
+		let cursor = -1;
+		return values.every((value) => {
+			cursor = source.indexOf(value, cursor + 1);
+			return cursor >= 0;
+		});
+	}
+	function previewEvidence(modal, readyPosters, request) {
+		const visibleImages = readyPosters.visibleImages;
+		const posterPaths = visibleImages.map(imagePosterPath);
+		const responsePosterPaths = safePosterPaths(request);
+		const responseCandidateSources = responsePosterPaths.map((posterPath) => buildTmdbPosterUrl(posterPath, "w342")).filter(Boolean);
+		const failedPosterSources = responseCandidateSources.filter((source) => failedImageSources.has(source));
+		return {
+			visiblePosterCount: visibleImages.length,
+			renderedPosterCount: readyPosters.images.length,
+			responsePosterCount: responsePosterPaths.length,
+			failedPosterSources,
+			availablePosterCount: responseCandidateSources.length - failedPosterSources.length,
+			posterSources: visibleImages.map((image) => image.currentSrc || image.src),
+			expectedPosterSources: readyPosters.expectedSources,
+			posterPaths,
+			exactResponseOrder: JSON.stringify(visibleImages.map((image) => image.currentSrc || image.src)) === JSON.stringify(readyPosters.expectedSources),
+			orderedResponseCorrespondence: posterPaths.every(Boolean) && orderedSubsequence(posterPaths, responsePosterPaths),
+			postersReady: visibleImages.every((image) => {
+				const rect = image.getBoundingClientRect();
+				return image.complete
+					&& image.naturalWidth > 0
+					&& image.naturalHeight > 0
+					&& image.clientWidth > 0
+					&& image.clientHeight > 0
+					&& rect.width > 0
+					&& rect.height > 0
+					&& visibleElement(image);
+			}),
+			readiness: visibleImages.map((image) => {
+				const rect = image.getBoundingClientRect();
+				return {
+					src: image.currentSrc || image.src,
+					complete: image.complete,
+					naturalWidth: image.naturalWidth,
+					naturalHeight: image.naturalHeight,
+					clientWidth: image.clientWidth,
+					clientHeight: image.clientHeight,
+					width: rect.width,
+					height: rect.height,
+				};
+			}),
+			genuineTmdbSources: genuineTmdbPosterImages(visibleImages),
+			posterOnly: readyPosters.grid.children.length > 0 && [...readyPosters.grid.children].every((child) => child.tagName === "IMG"),
+			captionsAbsent: readyPosters.grid.querySelector("figcaption, article, small, p, span") === null && readyPosters.grid.textContent.trim() === "",
+			missingPosterCardsAbsent: !modal.textContent.includes("No poster") && modal.querySelector("[data-preview-empty-state='true']") === null,
+		};
+	}
+	function requestEvidence(request, expectedSort) {
+		const url = new URL(request.url);
+		return {
+			url: request.url,
+			origin: url.origin,
+			pathname: url.pathname,
+			queryKeys: [...url.searchParams.keys()],
+			networkValues: url.searchParams.getAll("with_networks"),
+			sortValues: url.searchParams.getAll("sort_by"),
+			pageValues: url.searchParams.getAll("page"),
+			exactRequest: url.pathname === "/3/discover/tv"
+				&& url.searchParams.getAll("with_networks").length === 1
+				&& url.searchParams.get("with_networks") === String(networkId)
+				&& url.searchParams.getAll("sort_by").length === 1
+				&& url.searchParams.get("sort_by") === expectedSort
+				&& url.searchParams.has("page") === false
+				&& [...url.searchParams.keys()].every((key) => key === "with_networks" || key === "sort_by")
+				&& [...url.searchParams.keys()].length === 2,
+			status: request.status,
+			ok: request.ok,
+			contentType: request.contentType,
+			cloneInspected: request.cloneInspected,
+			originalBodyUnusedBeforeReturn: request.originalBodyUnusedBeforeReturn,
+			totalResults: request.totalResults,
+		};
+	}
+	async function waitForRequest(index, label) {
+		return waitForMountedCondition(
+			() => requests[index] ?? null,
+			{ label, timeoutMs: 20_000 },
+		);
+	}
+	async function waitForLivePosterGrid(modal, request, label) {
+		const maxVisibleCount = window.innerWidth <= 520 ? 5 : 10;
+		const candidateSources = safePosterPaths(request)
+			.map((posterPath) => buildTmdbPosterUrl(posterPath, "w342"))
+			.filter(Boolean);
+		let diagnostic = { maxVisibleCount, candidateSources, failedImageSources: [], grid: false, images: [] };
+		try {
+			return await waitForMountedCondition(() => {
+				const expectedSources = candidateSources.filter((source) => !failedImageSources.has(source)).slice(0, maxVisibleCount);
+				const grid = modal.querySelector(".network-preview-grid");
+				const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
+				const visibleImages = images.filter(visibleElement);
+				const visibleSources = visibleImages.map((image) => image.currentSrc || image.src);
+				diagnostic = {
+					maxVisibleCount,
+					candidateSources,
+					expectedSources,
+					failedImageSources: [...failedImageSources],
+					grid: Boolean(grid),
+					visibleSources,
+					images: images.map((image) => {
+						const rect = image.getBoundingClientRect();
+						return {
+							src: image.currentSrc || image.src,
+							visible: visibleElement(image),
+							complete: image.complete,
+							naturalWidth: image.naturalWidth,
+							naturalHeight: image.naturalHeight,
+							clientWidth: image.clientWidth,
+							clientHeight: image.clientHeight,
+							width: rect.width,
+							height: rect.height,
+						};
+					}),
+				};
+				if (!grid || expectedSources.length === 0 || visibleSources.length !== expectedSources.length) return null;
+				if (visibleSources.some((source, index) => source !== expectedSources[index])) return null;
+				if (visibleImages.some((image) => {
+					const rect = image.getBoundingClientRect();
+					return !image.complete
+						|| image.naturalWidth <= 0
+						|| image.naturalHeight <= 0
+						|| image.clientWidth <= 0
+						|| image.clientHeight <= 0
+						|| rect.width <= 0
+						|| rect.height <= 0;
+				})) return null;
+				return { grid, images, visibleImages, expectedVisibleCount: expectedSources.length, expectedSources };
+			}, { label, timeoutMs: 30_000 });
+		} catch (error) {
+			throw new Error(`${error.message} Live Network poster readiness: ${JSON.stringify(diagnostic)}`);
+		}
+	}
+	async function waitForPreview(request, label) {
+		if (!request.ok || !request.cloneInspected || !Number.isSafeInteger(request.totalResults) || request.totalResults < 0) {
+			throw new Error(`${label} received an unusable live Worker response: ${JSON.stringify(request)}`);
+		}
+		const responsePosterPaths = safePosterPaths(request);
+		if (responsePosterPaths.length === 0) throw new Error(`${label} returned no usable real TMDB poster_path values: ${JSON.stringify(request)}`);
+		const modal = await waitForMountedCondition(
+			() => document.querySelector(".network-preview-modal"),
+			{ label: `${label} modal`, timeoutMs: 20_000 },
+		);
+		const readyPosters = await waitForLivePosterGrid(modal, request, label);
+		return { modal, readyPosters, expectedVisibleCount: readyPosters.expectedVisibleCount, evidence: previewEvidence(modal, readyPosters, request) };
+	}
+	async function closeWithEscape(modal) {
+		await act(async () => {
+			(document.activeElement ?? modal).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+			await afterCommittedEffects();
+		});
+	}
+	function recordFailedPoster(event) {
+		if (!(event.target instanceof HTMLImageElement)) return;
+		const source = event.target.currentSrc || event.target.src;
+		try {
+			const url = new URL(source);
+			if (url.origin === "https://image.tmdb.org" && url.pathname.startsWith("/t/p/w342/")) failedImageSources.add(url.toString());
+		} catch {}
+	}
+	document.addEventListener("error", recordFailedPoster, true);
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const outerPortal = required(dialog.closest(".add-source-portal"), "outer portal");
+		const scrollElement = required(dialog.querySelector(".add-source-scroll"), "inner scroll owner");
+		const query = required(dialog.querySelector("#network-source-query"), "Search input");
+		await act(async () => {
+			setInputValue(query, String(networkId));
+			await afterCommittedEffects();
+		});
+		const card = await waitForMountedCondition(
+			() => dialog.querySelector(`[data-tmdb-network-result="${networkId}"]`),
+			{ label: `Checked-in Network ${networkId} result`, timeoutMs: 10_000 },
+		);
+		const catalogueCountLine = required(card.querySelector(".network-result-count"), "catalogue Series Count").textContent.trim();
+		await clickAndSettle(card);
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll(".network-selected-disclosure li").length === 1,
+			{ label: `Network ${networkId} selection`, timeoutMs: 10_000 },
+		);
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 Network"), "Configure action"));
+		const configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
+		const row = required(configure.querySelector(`[data-network-id="${networkId}"]`), "Network Configure row");
+		const initialCountLines = countLines(row);
+		const popularSort = required(configure.querySelector('input[name="network-hierarchy-sort"][value="popular"]'), "Popular sort");
+		let previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "Popular Preview trigger");
+		previewTrigger.focus({ preventScroll: true });
+		const requestsBeforeExplicitPreview = requests.length;
+		const beforePopular = outerPosition(dialog, scrollElement);
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const popularRequest = await waitForRequest(0, "Live Network Popular Worker request");
+		const popularReady = await waitForPreview(popularRequest, `Live Network Popular Preview at ${window.innerWidth}px`);
+		const requestsAfterPopular = requests.length;
+		const nestedBackdrop = required(popularReady.modal.closest(".nested-modal-backdrop"), "nested Preview backdrop");
+		const popularLayer = {
+			focusEntered: document.activeElement === popularReady.modal.querySelector("header button"),
+			sharedLayer: nestedBackdrop.dataset.nestedModalBackdrop === "true",
+			modalSemantics: popularReady.modal.getAttribute("role") === "dialog" && popularReady.modal.getAttribute("aria-modal") === "true",
+			nestedAboveOuter: Number.parseInt(getComputedStyle(nestedBackdrop).zIndex, 10) > Number.parseInt(getComputedStyle(outerPortal).zIndex, 10),
+			outerInert: scrollElement.hasAttribute("inert") && scrollElement.getAttribute("aria-hidden") === "true",
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth
+				&& dialog.scrollWidth <= dialog.clientWidth
+				&& popularReady.modal.scrollWidth <= popularReady.modal.clientWidth,
+		};
+		const popularModalCount = popularReady.modal.querySelector(".network-preview-count")?.textContent.trim() ?? null;
+		await clickAndSettle(required(popularReady.modal.querySelector("header button"), "Popular Preview Close action"));
+		const popularCountLines = countLines(row);
+		const popularClose = {
+			closed: document.querySelector(".network-preview-modal") === null,
+			exactFocusRestored: document.activeElement === previewTrigger,
+			outerStable: positionStable(beforePopular, outerPosition(dialog, scrollElement)),
+			configureIntact: dialog.querySelector('[data-network-hierarchy-stage="configure"]') !== null
+				&& dialog.querySelector(`[data-network-id="${networkId}"]`) === row
+				&& popularSort.checked === true,
+			countLines: popularCountLines,
+		};
+
+		const beforeCachedPopular = outerPosition(dialog, scrollElement);
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const cachedPopularReady = await waitForPreview(popularRequest, `Cached live Network Popular Preview at ${window.innerWidth}px`);
+		const requestsAfterCachedPopular = requests.length;
+		await closeWithEscape(cachedPopularReady.modal);
+		const cachedPopular = {
+			requestCount: requestsAfterCachedPopular,
+			cacheHit: requestsAfterCachedPopular === 1,
+			preview: cachedPopularReady.evidence,
+			escapeClosed: document.querySelector(".network-preview-modal") === null,
+			exactFocusRestored: document.activeElement === previewTrigger,
+			outerStable: positionStable(beforeCachedPopular, outerPosition(dialog, scrollElement)),
+		};
+
+		const recentSort = required(configure.querySelector('input[name="network-hierarchy-sort"][value="recent"]'), "Recent sort");
+		await clickAndSettle(recentSort);
+		const countAfterSortBeforePreview = countLines(row);
+		previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "Recent Preview trigger");
+		const beforeRecent = outerPosition(dialog, scrollElement);
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const recentRequest = await waitForRequest(1, "Live Network Recent Worker request");
+		const recentReady = await waitForPreview(recentRequest, `Live Network Recent Preview at ${window.innerWidth}px`);
+		const recentModalCount = recentReady.modal.querySelector(".network-preview-count")?.textContent.trim() ?? null;
+		const responseSequencesDiffer = JSON.stringify(safePosterPaths(popularRequest)) !== JSON.stringify(safePosterPaths(recentRequest));
+		const previousSortNotShown = recentReady.evidence.exactResponseOrder;
+		await clickAndSettle(required(recentReady.modal.querySelector("header button"), "Recent Preview Close action"));
+		const recentCountLines = countLines(row);
+		const recentClose = {
+			closed: document.querySelector(".network-preview-modal") === null,
+			exactFocusRestored: document.activeElement === previewTrigger,
+			outerStable: positionStable(beforeRecent, outerPosition(dialog, scrollElement)),
+		};
+
+		await clickAndSettle(popularSort);
+		const countAfterReturnToPopularBeforePreview = countLines(row);
+		previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "restored Popular Preview trigger");
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const restoredPopularReady = await waitForPreview(popularRequest, `Restored cached Network Popular Preview at ${window.innerWidth}px`);
+		const restoredPopularRequestCount = requests.length;
+		await clickAndSettle(required(restoredPopularReady.modal.querySelector("header button"), "restored Popular Preview Close action"));
+		const finalCountLines = countLines(row);
+
+		return {
+			width: window.innerWidth,
+			networkId,
+			catalogueCountLine,
+			initialCountLines,
+			requestsBeforeExplicitPreview,
+			popular: {
+				requestCount: requestsAfterPopular,
+				request: requestEvidence(popularRequest, "popularity.desc"),
+				expectedVisibleCount: popularReady.expectedVisibleCount,
+				preview: popularReady.evidence,
+				modalCountLine: popularModalCount,
+				configureCountLines: popularCountLines,
+				layer: popularLayer,
+				close: popularClose,
+			},
+			cachedPopular,
+			recent: {
+				requestCount: requests.length,
+				request: requestEvidence(recentRequest, "first_air_date.desc"),
+				expectedVisibleCount: recentReady.expectedVisibleCount,
+				preview: recentReady.evidence,
+				modalCountLine: recentModalCount,
+				countAfterSortBeforePreview,
+				configureCountLines: recentCountLines,
+				previousSortNotShown,
+				responseSequencesDiffer,
+				close: recentClose,
+			},
+			restoredPopular: {
+				requestCount: restoredPopularRequestCount,
+				cacheHit: restoredPopularRequestCount === 2,
+				preview: restoredPopularReady.evidence,
+				matchesOriginalResponse: restoredPopularReady.evidence.orderedResponseCorrespondence && restoredPopularReady.evidence.exactResponseOrder,
+				countAfterReturnToPopularBeforePreview,
+				finalCountLines,
+				closed: document.querySelector(".network-preview-modal") === null,
+				exactFocusRestored: document.activeElement === previewTrigger,
+			},
+			instrumentation: {
+				requestCount: requests.length,
+				allResponsesCloned: requests.every((request) => request.cloneInspected),
+				originalResponsesUntouched: requests.every((request) => request.originalBodyUnusedBeforeReturn),
+				allSuccessfulJson: requests.every((request) => request.ok && request.contentType?.toLowerCase().includes("application/json")),
+			},
+			final: {
+				oneSeriesCountLine: finalCountLines.length === 1 && !row.textContent.includes("Exact Series Count") && !row.textContent.includes("Live Series Count"),
+				configureIntact: dialog.querySelector('[data-network-hierarchy-stage="configure"]') !== null && popularSort.checked === true,
+				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+				revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+			},
+		};
+	} finally {
+		document.removeEventListener("error", recordFailedPoster, true);
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runNetworkHierarchyScenario() {
+	let previewCalls = 0;
+	let artworkLoads = 0;
+	let artworkResolves = 0;
+	let artworkLoadSucceeded = false;
+	let applyCalls = 0;
+	const resolvedArtwork = [];
+	const previewProvider = {
+		getNetworkPreview() {
+			previewCalls += 1;
+			return new Promise(() => {});
+		},
+	};
+	const artworkRuntimeClient = {
+		async load() {
+			artworkLoads += 1;
+			const result = await liveNetworkArtworkRuntimeClient.load();
+			artworkLoadSucceeded = true;
+			return result;
+		},
+		async resolve(input) {
+			artworkResolves += 1;
+			const result = await liveNetworkArtworkRuntimeClient.resolve(input);
+			resolvedArtwork.push({
+				entityType: input.entityType,
+				tmdbId: input.tmdbId,
+				orientation: input.orientation,
+				status: result.status,
+				assetUrl: result.assetUrl ?? null,
+			});
+			return result;
+		},
+	};
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "networks",
+			networkCatalogueProvider: liveNetworkCatalogueProvider,
+			networkPreviewProvider: previewProvider,
+			networkArtworkRuntimeClient: artworkRuntimeClient,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyNetworks() { applyCalls += 1; return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted Network ${label} is missing.`);
+		return element;
+	}
+	function seriesCount(card) {
+		const text = card.querySelector(".network-result-count")?.textContent ?? "";
+		const match = /^Series Count: ([\d,]+)$/.exec(text.trim());
+		return match ? Number(match[1].replaceAll(",", "")) : null;
+	}
+	function stageLayout(dialog) {
+		const scrollElements = [...dialog.querySelectorAll(".add-source-scroll")];
+		const verticalScrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		}).length;
+		const primary = required(dialog.querySelector(".add-source-actions .editor-apply"), "primary action");
+		const primaryRect = primary.getBoundingClientRect();
+		return {
+			singleInnerScroll: scrollElements.length === 1 && ["auto", "scroll"].includes(getComputedStyle(scrollElements[0]).overflowY),
+			oneActiveScrollOwner: verticalScrollOwners <= 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && scrollElements[0].scrollWidth <= scrollElements[0].clientWidth,
+			primaryReachable: visibleElement(primary) && primaryRect.height >= 44 && primaryRect.left >= 0 && primaryRect.right <= window.innerWidth,
+		};
+	}
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const query = required(dialog.querySelector("#network-source-query"), "Search input");
+		const initialSearchFocus = {
+			searchFocused: document.activeElement === query,
+			autoFocusAttributeAbsent: query.autofocus === false && !query.hasAttribute("autofocus"),
+			keyboardTargetAbsent: document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA",
+		};
+		const initialCards = await waitForMountedCondition(
+			() => {
+				const cards = [...dialog.querySelectorAll("[data-tmdb-network-result]")];
+				return cards.length === 20 ? cards : null;
+			},
+			{ label: "checked-in Network catalogue browse results", timeoutMs: 10_000 },
+		);
+		const filterGroup = required(dialog.querySelector('[role="group"][aria-label="Series Count filter"]'), "Series Count filters");
+		const filterButtons = [...filterGroup.querySelectorAll("button")];
+		const allCounts = initialCards.map(seriesCount);
+		const search = {
+			focus: initialSearchFocus,
+			filterLabels: filterButtons.map((button) => button.textContent.trim()),
+			allDefault: filterButtons[0]?.getAttribute("aria-pressed") === "true",
+			pageSize: initialCards.length,
+			countsShown: allCounts.every((count) => Number.isSafeInteger(count) && count >= 0),
+			knownZeroShownByAll: allCounts.includes(0),
+			previewAbsent: dialog.querySelector('[data-network-preview-backdrop="true"]') === null,
+			previewCalls,
+		};
+		const nextPage = required(buttonContaining(dialog.querySelector('[aria-label="Network search result pages"]'), "Next page"), "Next page action");
+		await clickAndSettle(nextPage);
+		await waitForMountedCondition(
+			() => dialog.querySelector("#network-results-title")?.parentElement?.parentElement?.textContent.includes("Page 2 of"),
+			{ label: "Network browse page 2" },
+		);
+		const fiveHundred = required(buttonContaining(filterGroup, "500+"), "500+ Series Count filter");
+		await clickAndSettle(fiveHundred);
+		const thresholdCards = await waitForMountedCondition(
+			() => {
+				const cards = [...dialog.querySelectorAll("[data-tmdb-network-result]")];
+				const counts = cards.map(seriesCount);
+				const pageReset = dialog.querySelector("#network-results-title")?.parentElement?.parentElement?.textContent.includes("Page 1 of");
+				return fiveHundred.getAttribute("aria-pressed") === "true" && pageReset && cards.length === 20 && counts.every((count) => count >= 500) ? cards : null;
+			},
+			{ label: "500+ checked-in Network results and page reset", timeoutMs: 10_000 },
+		);
+		const firstSelectedCard = required(thresholdCards.find((card) => card.dataset.tmdbNetworkResult === "2"), "TMDB Network 2 result");
+		await clickAndSettle(firstSelectedCard);
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll(".network-selected-disclosure li").length === 1,
+			{ label: "first native Network selection" },
+		);
+		const excludeZero = required(buttonContaining(filterGroup, "Exclude 0"), "Exclude 0 Series Count filter");
+		await clickAndSettle(excludeZero);
+		await waitForMountedCondition(
+			() => {
+				const cards = [...dialog.querySelectorAll("[data-tmdb-network-result]")];
+				const counts = cards.map(seriesCount);
+				return excludeZero.getAttribute("aria-pressed") === "true" && cards.length === 20 && counts.every((count) => count !== 0) && counts.some((count) => count < 500) ? cards : null;
+			},
+			{ label: "Exclude 0 checked-in Network results" },
+		);
+		const selectionPreservedAcrossFilter = dialog.querySelectorAll(".network-selected-disclosure li").length === 1;
+		await act(async () => {
+			setInputValue(query, "18");
+			await afterCommittedEffects();
+		});
+		const secondSelectedCard = await waitForMountedCondition(
+			() => dialog.querySelector('[data-tmdb-network-result="18"]'),
+			{ label: "checked-in TMDB Network 18 result", timeoutMs: 10_000 },
+		);
+		await clickAndSettle(secondSelectedCard);
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll(".network-selected-disclosure li").length === 2,
+			{ label: "second native Network selection" },
+		);
+		const selectLayout = stageLayout(dialog);
+		const selection = {
+			selectedCount: dialog.querySelectorAll(".network-selected-disclosure li").length,
+			nativeCheckboxes: [firstSelectedCard, secondSelectedCard].every((card) => card.tagName === "LABEL" && card.querySelector('input[type="checkbox"]')?.checked === true),
+			selectedIndicators: [firstSelectedCard, secondSelectedCard].every((card) => card.querySelector('[data-selection-state="selected"]')?.textContent === "✓"),
+			selectionPreservedAcrossFilter,
+			filterPreserved: excludeZero.getAttribute("aria-pressed") === "true",
+		};
+
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Networks"), "Configure action"));
+		const configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
+		const configureRows = [...configure.querySelectorAll(".network-configure-row")];
+		const configureLayout = stageLayout(dialog);
+		const configureState = {
+			rowIds: configureRows.map((row) => Number(row.dataset.networkId)),
+			focusEntered: document.activeElement === configure.querySelector("#network-hierarchy-configure-title"),
+			catalogueCountsPresent: configureRows.every((row) => /Series Count: [\d,]+/.test(row.textContent)),
+			exactCountsAbsent: configureRows.every((row) => !row.textContent.includes("Exact Series Count:")),
+			previewActions: configureRows.filter((row) => row.querySelector('button[aria-haspopup="dialog"]')).length,
+			previewModalAbsent: document.querySelector('[data-network-preview-backdrop="true"]') === null,
+			previewCalls,
+			popularDefault: configure.querySelector('input[name="network-hierarchy-sort"][value="popular"]')?.checked === true,
+			sortLabels: [...configure.querySelectorAll('input[name="network-hierarchy-sort"]')].map((input) => input.closest("label")?.querySelector("span")?.textContent.trim()),
+		};
+		await clickAndSettle(required(configure.querySelector('input[name="network-hierarchy-sort"][value="recent"]'), "Recent sort"));
+		configureState.sortChangeRequestFree = previewCalls === 0;
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action"));
+		const appearance = await waitForMountedCondition(
+			() => {
+				const stage = dialog.querySelector(".network-hierarchy-appearance");
+				const action = buttonContaining(dialog, "Create 2 folders");
+				return stage && action && !action.disabled && !stage.textContent.includes("Preparing folder artwork") ? stage : null;
+			},
+			{ label: "production Network Poster artwork preparation", timeoutMs: 20_000 },
+		);
+		const poster = required(appearance.querySelector('input[name="network-folder-artwork"][value="POSTER"]'), "Poster artwork choice");
+		const landscape = required(appearance.querySelector('input[name="network-folder-artwork"][value="LANDSCAPE"]'), "Landscape artwork choice");
+		const posterDefault = poster.checked === true && landscape.checked === false;
+		const posterBatch = {
+			loads: artworkLoads,
+			resolves: artworkResolves,
+			orientations: resolvedArtwork.map((result) => result.orientation),
+			loadSucceeded: artworkLoadSucceeded,
+		};
+		await clickAndSettle(landscape);
+		await waitForMountedCondition(
+			() => landscape.checked === true
+				&& !appearance.textContent.includes("Preparing folder artwork")
+				&& buttonContaining(dialog, "Create 2 folders")?.disabled === false
+				&& artworkResolves === 4,
+			{ label: "production Network Landscape artwork preparation", timeoutMs: 20_000 },
+		);
+		const appearanceLayout = stageLayout(dialog);
+		const appearanceState = {
+			heading: appearance.querySelector("h3")?.textContent.trim(),
+			planTotals: [...appearance.querySelectorAll(".decades-plan-totals strong")].map((node) => Number(node.textContent)),
+			posterDefault,
+			landscapeSelected: landscape.checked === true && poster.checked === false,
+			previewAbsent: appearance.querySelector('button[aria-haspopup="dialog"]') === null && document.querySelector('[data-network-preview-backdrop="true"]') === null,
+			previewCalls,
+		};
+		return {
+			width: window.innerWidth,
+			search,
+			filters: {
+				pageReset: true,
+				fiveHundredCounts: thresholdCards.map(seriesCount),
+				excludeZeroActive: selection.filterPreserved,
+			},
+			selection,
+			configure: configureState,
+			appearance: appearanceState,
+			artwork: {
+				posterBatch,
+				loads: artworkLoads,
+				resolves: artworkResolves,
+				orientations: resolvedArtwork.map((result) => result.orientation),
+				entityTypes: [...new Set(resolvedArtwork.map((result) => result.entityType))],
+				ids: [...new Set(resolvedArtwork.map((result) => result.tmdbId))],
+				productionAssetUrls: resolvedArtwork.filter((result) => result.assetUrl !== null).every((result) => result.assetUrl.startsWith("https://raw.githubusercontent.com/davecollections/nuvio-assets/")),
+				loadSucceeded: artworkLoadSucceeded,
+			},
+			layout: { select: selectLayout, configure: configureLayout, appearance: appearanceLayout },
+			previewCalls,
+			applyCalls,
+			revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runNetworkDeferredArtworkScenario() {
+	let previewCalls = 0;
+	let applyCalls = 0;
+	let artworkLoads = 0;
+	let artworkResolves = 0;
+	let releaseArtwork;
+	let markArtworkStarted;
+	const artworkGate = new Promise((resolve) => { releaseArtwork = resolve; });
+	const artworkStarted = new Promise((resolve) => { markArtworkStarted = resolve; });
+	const previewProvider = {
+		getNetworkPreview() {
+			previewCalls += 1;
+			return new Promise(() => {});
+		},
+	};
+	const artworkRuntimeClient = {
+		async load() {
+			artworkLoads += 1;
+			markArtworkStarted();
+			await artworkGate;
+			return liveNetworkArtworkRuntimeClient.load();
+		},
+		async resolve(input) {
+			artworkResolves += 1;
+			return liveNetworkArtworkRuntimeClient.resolve(input);
+		},
+	};
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "networks",
+			networkCatalogueProvider: liveNetworkCatalogueProvider,
+			networkPreviewProvider: previewProvider,
+			networkArtworkRuntimeClient: artworkRuntimeClient,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyNetworks() { applyCalls += 1; return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	const required = (element, label) => {
+		if (!element) throw new Error(`Mounted deferred Network ${label} is missing.`);
+		return element;
+	};
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const query = required(dialog.querySelector("#network-source-query"), "Search input");
+		await act(async () => {
+			setInputValue(query, "2");
+			await afterCommittedEffects();
+		});
+		const card = await waitForMountedCondition(
+			() => dialog.querySelector('[data-tmdb-network-result="2"]'),
+			{ label: "checked-in deferred Network selection", timeoutMs: 10_000 },
+		);
+		await clickAndSettle(card);
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 Network"), "Configure action"));
+		const configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
+		const configureShell = required(configure.parentElement, "Configure interaction shell");
+		const popular = required(configure.querySelector('input[name="network-hierarchy-sort"][value="popular"]'), "Popular sort");
+		const recent = required(configure.querySelector('input[name="network-hierarchy-sort"][value="recent"]'), "Recent sort");
+		const preview = required(configure.querySelector('button[aria-haspopup="dialog"]'), "Preview action");
+		const remove = required(configure.querySelector(".network-configure-row .studio-configure-remove"), "Remove action");
+		const back = required(dialog.querySelector('[data-action="back-to-network-selection"]'), "Back action");
+		const continueAction = required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action");
+		preview.focus({ preventScroll: true });
+		const focusBeforePreparation = document.activeElement === preview;
+		await act(async () => {
+			continueAction.click();
+			await artworkStarted;
+			await afterCommittedEffects();
+		});
+		const preparing = {
+			stageStayedConfigure: dialog.querySelector('[data-network-hierarchy-stage="configure"]') !== null,
+			ariaBusy: configureShell.getAttribute("aria-busy") === "true",
+			inert: configureShell.hasAttribute("inert"),
+			primaryDisabled: continueAction.disabled === true,
+			primaryLabel: continueAction.textContent.trim(),
+			backDisabled: back.disabled === true,
+			focusBeforePreparation,
+		};
+		await clickAndSettle(recent);
+		await clickAndSettle(preview);
+		await clickAndSettle(remove);
+		await clickAndSettle(back);
+		const locked = {
+			popularPreserved: popular.checked === true && recent.checked === false,
+			previewCalls,
+			previewModalAbsent: document.querySelector('[data-network-preview-backdrop="true"]') === null,
+			selectionPreserved: configure.querySelectorAll(".network-configure-row").length === 1,
+			stageStayedConfigure: dialog.querySelector('[data-network-hierarchy-stage="configure"]') !== null,
+		};
+		await act(async () => {
+			releaseArtwork();
+			await afterCommittedEffects();
+		});
+		const appearance = await waitForMountedCondition(
+			() => {
+				const stage = dialog.querySelector(".network-hierarchy-appearance");
+				return stage && buttonContaining(dialog, "Create 1 folder")?.disabled === false ? stage : null;
+			},
+			{ label: "unchanged deferred Network snapshot", timeoutMs: 20_000 },
+		);
+		return {
+			preparing,
+			locked,
+			completion: {
+				unchangedSnapshotAdvanced: dialog.querySelector('[data-network-hierarchy-stage="appearance"]') !== null,
+				planTotals: [...appearance.querySelectorAll(".decades-plan-totals strong")].map((node) => Number(node.textContent)),
+				posterPreserved: appearance.querySelector('input[name="network-folder-artwork"][value="POSTER"]')?.checked === true,
+				focusEnteredAppearance: document.activeElement === appearance.querySelector("#network-hierarchy-appearance-title"),
+				previewModalAbsent: document.querySelector('[data-network-preview-backdrop="true"]') === null,
+			},
+			artworkLoads,
+			artworkResolves,
+			previewCalls,
+			applyCalls,
+			revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+		};
+	} finally {
+		releaseArtwork();
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
 async function runStudioScaleScenario() {
 	const studios = Array.from({ length: 100 }, (_, index) => mountedStudio(index + 1));
 	let previewRequests = 0;
@@ -2657,6 +3471,9 @@ window.__runPeoplePillStabilityScenario = runPeoplePillStabilityScenario;
 window.__runPeopleSelectionScrollScenario = runPeopleSelectionScrollScenario;
 window.__runFranchiseReviewScenario = runFranchiseReviewScenario;
 window.__runStudioHierarchyScenario = runStudioHierarchyScenario;
+window.__runNetworkLivePreviewScenario = runNetworkLivePreviewScenario;
+window.__runNetworkHierarchyScenario = runNetworkHierarchyScenario;
+window.__runNetworkDeferredArtworkScenario = runNetworkDeferredArtworkScenario;
 window.__runStudioScaleScenario = runStudioScaleScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },

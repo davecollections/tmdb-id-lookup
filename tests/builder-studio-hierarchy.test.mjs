@@ -64,7 +64,7 @@ function previewPayload(mediaType, totalResults = 12) {
 test("Studio hierarchy is registered in New Collection and New Folder scopes", () => {
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.STUDIOS, scope), true);
-		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "studios"]);
+		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "studios", "networks"]);
 	}
 });
 
@@ -219,6 +219,27 @@ test("Studio Preview normalization preserves upstream order and rejects malforme
 	assert.deepEqual(normalized.results.map((entry) => entry.title), ["Second upstream", "First upstream"]);
 	assert.equal(normalizeTmdbStudioPreviewResponse({ total_results: 1, results: [{ id: 1 }] }, "MOVIE"), null);
 	assert.equal(normalizeTmdbStudioPreviewResponse({ total_results: -1, results: [] }, "TV"), null);
+});
+
+test("Studio Preview public validation and provider errors remain API-compatible after extraction", async () => {
+	let calls = 0;
+	const provider = createTmdbStudioPreviewProvider({
+		baseUrl: "https://worker.example",
+		fetchImpl: async () => { calls += 1; return jsonResponse({}, { status: 429 }); },
+	});
+	assert.deepEqual(
+		await provider.getStudioPreview(0, { mediaType: "MOVIE", sortOptionId: "popular" }),
+		{ ok: false, error: { kind: "invalid-request", message: "Choose a valid Studio and media preview.", status: 0, retryable: false } },
+	);
+	assert.deepEqual(
+		await provider.getStudioPreview(1, { mediaType: "MOVIE", sortBy: "first_air_date.desc" }),
+		{ ok: false, error: { kind: "invalid-request", message: "Choose a supported Studio preview sort.", status: 0, retryable: false } },
+	);
+	assert.deepEqual(
+		await provider.getStudioPreview(1, { mediaType: "TV", sortOptionId: "popular" }),
+		{ ok: false, error: { kind: "rate-limit", message: "TMDB is receiving too many requests. Wait a moment and try again.", status: 429, retryable: true } },
+	);
+	assert.equal(calls, 1);
 });
 
 test("Studio Preview provider uses one response for count and titles with sort-aware success-only caching", async () => {

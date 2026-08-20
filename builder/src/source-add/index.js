@@ -143,15 +143,20 @@ export {
 export {
 	buildTmdbNetworkLogoUrl,
 	createNetworkCatalogueProvider,
+	DEFAULT_NETWORK_SERIES_COUNT_FILTER,
 	formatNetworkLocation,
 	NETWORK_CATALOGUE_PATH,
+	NETWORK_SERIES_COUNT_FILTER_OPTIONS,
+	NETWORK_SERIES_COUNT_FILTERS,
 	NETWORK_SEARCH_PAGE_SIZE,
+	networkMatchesSeriesCountFilter,
 	normalizeNetworkCatalogue,
 	normalizeNetworkCatalogueRow,
 	parseNetworkSearchInput,
 	searchNetworkCatalogue,
 } from "./network-catalogue.js";
 export {
+	buildNetworkHierarchySourceDraft,
 	buildNetworkSourceDraft,
 	createNetworkSource,
 	DEFAULT_NETWORK_SORT,
@@ -163,8 +168,35 @@ export {
 	networkSortValue,
 	networkSourceIdentity,
 	NETWORK_SORT_OPTIONS,
+	validateNetworkHierarchySourceDraft,
 	validateNetworkSourceDraft,
 } from "./network-source.js";
+export {
+	DEFAULT_NETWORK_ARTWORK_ORIENTATION,
+	DEFAULT_NETWORK_FOLDER_TILE_SHAPE,
+	NETWORK_ARTWORK_ORIENTATIONS,
+	resolveNetworkFolderArtworkBatch,
+} from "./network-folder-artwork.js";
+export {
+	applyNetworkHierarchyPlan,
+	createNetworkHierarchyPlan,
+	DEFAULT_NETWORK_COLLECTION_TITLE,
+	DEFAULT_NETWORK_FOLDER_TITLE_VISIBILITY,
+	inspectNetworkHierarchyPlacement,
+	NETWORK_CREATION_SCOPES,
+	NETWORK_HIERARCHY_PLAN_TYPE,
+	NETWORK_PLACEMENT_STATUSES,
+	validateNetworkHierarchyPlan,
+} from "./network-plan.js";
+export {
+	addSelectedNetwork,
+	createNetworkSelectionState,
+	NETWORK_LARGE_SELECTION_NOTICE_THRESHOLD,
+	networkSelectionNotice,
+	removeSelectedNetwork,
+	selectedNetworks,
+	toggleSelectedNetwork,
+} from "./network-selection-state.js";
 export {
 	createTmdbNetworkCountProvider,
 	normalizeTmdbNetworkCountResponse,
@@ -174,6 +206,14 @@ export {
 	TMDB_NETWORK_COUNT_PROXY_BASE_URL,
 	TMDB_NETWORK_COUNT_REQUEST_TIMEOUT_MS,
 } from "./tmdb-network-count-provider.js";
+export {
+	createTmdbNetworkPreviewProvider,
+	normalizeTmdbNetworkPreviewResponse,
+	TMDB_NETWORK_PREVIEW_CACHE_MAX_ENTRIES,
+	TMDB_NETWORK_PREVIEW_CACHE_TTL_MS,
+	TMDB_NETWORK_PREVIEW_LOCAL_MOCK,
+	TMDB_NETWORK_PREVIEW_REQUEST_TIMEOUT_MS,
+} from "./tmdb-network-preview-provider.js";
 export {
 	buildTmdbStudioLogoUrl,
 	createStudioCatalogueProvider,

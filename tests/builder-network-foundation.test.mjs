@@ -97,7 +97,7 @@ test("Network input distinguishes browse, typed search, exact positive IDs, and 
 	}
 });
 
-test("cached Network rows normalize sparse metadata and deliberately discard legacy t", () => {
+test("cached Network rows retain a validated internal Series Count while public Add Source results omit it", () => {
 	const row = normalizeNetworkCatalogueRow({ i: 2, n: " ABC ", c: "us", h: "New York City, New York", l: "/abc.png", t: 1616 });
 	assert.deepEqual(row, {
 		id: 2,
@@ -108,9 +108,10 @@ test("cached Network rows normalize sparse metadata and deliberately discard leg
 		headquarters: "New York City, New York",
 		searchHeadquarters: "new york city, new york",
 		logoPath: "/abc.png",
+		seriesCount: 1616,
 	});
 	assert.equal(Object.hasOwn(row, "t"), false);
-	assert.equal(Object.hasOwn(row, "seriesCount"), false);
+	assert.equal(normalizeNetworkCatalogueRow({ i: 3, n: "Invalid Count", t: -1 }).seriesCount, null);
 	assert.equal(normalizeNetworkCatalogueRow({ i: 7, n: "Sparse" }).logoPath, null);
 	assert.equal(formatNetworkLocation({ country: "US", headquarters: "123 Main Street, Suite 9, New York City, New York 10001" }), "US · New York City, New York");
 });

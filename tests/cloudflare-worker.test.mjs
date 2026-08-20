@@ -214,26 +214,35 @@ test("Studio Company Discover rejects duplicates, wrong-media sorts, unknown sor
 	});
 });
 
-test("Network count route forwards only canonical Network TV filters to the fixed TMDB host", async () => {
+test("Network TV Discover forwards canonical IDs with no sort or one exact TV sort in either parameter order", async () => {
 	await withMockFetch(async (calls) => {
-		for (const pathname of [
+		const paths = [
 			"/3/discover/tv?with_networks=2",
 			"/3/discover/tv?with_networks=9007199254740991",
-		]) {
+			"/3/discover/tv?with_networks=2&sort_by=popularity.desc",
+			"/3/discover/tv?sort_by=first_air_date.desc&with_networks=2",
+			"/3/discover/tv?with_networks=2&sort_by=vote_average.desc",
+			"/3/discover/tv?sort_by=vote_count.desc&with_networks=2",
+		];
+		for (const pathname of paths) {
 			const response = await fetchWorker(pathname, { origin: allowedOrigin });
 			assert.equal(response.status, 200, pathname);
 		}
-		assert.deepEqual(calls.map(([url]) => url.toString()), [
-			"https://api.themoviedb.org/3/discover/tv?with_networks=2",
-			"https://api.themoviedb.org/3/discover/tv?with_networks=9007199254740991",
-		]);
+		assert.deepEqual(calls.map(([url]) => url.toString()), paths.map((path) => `https://api.themoviedb.org${path}`));
+		for (const [url, init] of calls) {
+			assert.equal(url.origin, "https://api.themoviedb.org");
+			assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
+		}
 	});
 });
 
-test("Network count route rejects Movie, missing, mixed, duplicate, malformed, and extra parameters", async () => {
+test("Network TV Discover rejects Movie, missing, mixed, duplicate, malformed, wrong-sort, and extra parameters", async () => {
 	await withMockFetch(async (calls) => {
 		for (const pathname of [
 			"/3/discover/movie?with_networks=2",
+			"/3/discover/movie?with_networks=2&sort_by=popularity.desc",
+			"/3/discover/tv",
+			"/3/discover/tv?sort_by=popularity.desc",
 			"/3/discover/tv?with_networks=",
 			"/3/discover/tv?with_networks=0",
 			"/3/discover/tv?with_networks=-2",
@@ -241,10 +250,21 @@ test("Network count route rejects Movie, missing, mixed, duplicate, malformed, a
 			"/3/discover/tv?with_networks=02",
 			"/3/discover/tv?with_networks=2.5",
 			"/3/discover/tv?with_networks=2e1",
+			"/3/discover/tv?with_networks=9007199254740992",
 			"/3/discover/tv?with_networks=2&with_networks=3",
 			"/3/discover/tv?with_networks=2&with_companies=3",
 			"/3/discover/tv?with_networks=2&page=1",
-			"/3/discover/tv?with_networks=2&sort_by=popularity.desc",
+			"/3/discover/tv?with_networks=2&language=en-US",
+			"/3/discover/tv?with_networks=2&api_key=browser-secret",
+			"/3/discover/tv?with_networks=2&with_genres=18",
+			"/3/discover/tv?with_networks=2&with_status=0",
+			"/3/discover/tv?with_networks=2&sort_by=",
+			"/3/discover/tv?with_networks=2&sort_by=primary_release_date.desc",
+			"/3/discover/tv?with_networks=2&sort_by=revenue.desc",
+			"/3/discover/tv?with_networks=2&sort_by=popularity.asc",
+			"/3/discover/tv?with_networks=2&sort_by=Popularity.desc",
+			"/3/discover/tv?with_networks=2&sort_by=popularity.desc&sort_by=vote_count.desc",
+			"/3/discover/tv?sort_by=popularity.desc&with_networks=2&page=1",
 			"/3/discover/tv/?with_networks=2",
 			"/3/discover/tv?with_networks=%E0%A4%A",
 		]) {
@@ -340,6 +360,7 @@ test("valid service token is limited to People details and exact Watch Provider 
 			"/3/tv/1399",
 			"/3/search/keyword",
 			"/3/discover/movie?with_companies=3",
+			"/3/discover/tv?with_networks=2&sort_by=popularity.desc",
 			"/3/watch/providers/person?language=en-US",
 			"/3/person/not-a-number",
 			"/3/person/31/",

@@ -45,6 +45,12 @@ const COMPANY_DISCOVER_SORTS = Object.freeze({
     "vote_count.desc",
   ]),
 });
+const NETWORK_DISCOVER_SORTS = new Set([
+  "popularity.desc",
+  "first_air_date.desc",
+  "vote_average.desc",
+  "vote_count.desc",
+]);
 
 function isCanonicalPositiveSafeInteger(value) {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
@@ -79,12 +85,19 @@ function isAllowedTmdbRequest(url) {
   const sorts = url.searchParams.getAll("sort_by");
 
   if (networkIds.length > 0) {
-    return url.pathname === "/3/discover/tv" &&
-      entries.length === 1 &&
-      networkIds.length === 1 &&
-      companyIds.length === 0 &&
-      sorts.length === 0 &&
-      isCanonicalPositiveSafeInteger(networkIds[0]);
+    if (
+      url.pathname !== "/3/discover/tv" ||
+      networkIds.length !== 1 ||
+      companyIds.length !== 0 ||
+      sorts.length > 1 ||
+      entries.length !== 1 + sorts.length ||
+      entries.some(([key]) => key !== "with_networks" && key !== "sort_by") ||
+      !isCanonicalPositiveSafeInteger(networkIds[0])
+    ) {
+      return false;
+    }
+
+    return sorts.length === 0 || NETWORK_DISCOVER_SORTS.has(sorts[0]);
   }
 
   if (

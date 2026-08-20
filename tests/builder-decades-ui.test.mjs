@@ -111,6 +111,7 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		CREATION_OPTION_IDS.PEOPLE,
 		CREATION_OPTION_IDS.FRANCHISES,
 		CREATION_OPTION_IDS.STUDIOS,
+		CREATION_OPTION_IDS.NETWORKS,
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
