@@ -2,7 +2,9 @@
 
 Status: implemented for issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43)
 
-Last reviewed: 2026-07-12
+Last reviewed: 2026-08-20
+
+This document preserves the issue #43 automatic-ID and workspace checkpoint. Later focused issues expanded the editor, empty states, and creation controls; those later contracts supersede only the issue-scoped UI statements called out below, not the automatic-ID rules.
 
 ## Purpose and identity boundary
 
@@ -20,7 +22,7 @@ Only `editable.id` changes. Complete `rawImported` snapshots, unknown/community 
 
 `createBuilderController` accepts independent `idFactory` and `nuvioIdFactory` options. Collection/folder creation preserves a supplied usable unique Nuvio ID or generates a replacement before commit. Source creation never uses this factory. UI draft helpers submit titles only and choose the smallest available exact `Untitled Collection` or `Untitled Folder` suffix.
 
-The collection/folder editor contains one Title field. Its UI draft contains target internal identity/type, title form/original metadata, title touched state, and title diagnostics only. Validation checks trimmed length without trimming the submitted title. Patches are `{}` or `{ title }`; IDs never enter production UI patches.
+At the issue #43 checkpoint, the collection/folder editor contained one Title field. Later presentation and artwork issues expanded the bounded known-field editor, while IDs still never enter production UI drafts or patches.
 
 ## Workspace flow
 
@@ -28,7 +30,7 @@ Collection/folder IDs, project title, and dirty badges are absent from hierarchy
 
 The workspace provides a distinct **Back to builder home** button and one global **?** control in the former V1-link position; the welcome footer uses a text **About** control for the same modal. The V1 TMDB ID Lookup remains available from that modal instead of appearing as a separate shell backlink. Clean return resets the controller before showing welcome. Dirty return opens one inline confirmation with **Stay here** and **Discard and return**. Return completion uses a synchronous exact-once gate: successful completion keeps the gate held until workspace unmount, while structured or contained unexpected failure releases it for retry. While confirmation is open, workspace mutation/navigation controls are disabled and only the confirmation controls remain available. No routes, history APIs, browser confirmation, or persistence are used.
 
-Collection and folder empty states contain real creation buttons sharing the heading-action helpers. The source empty state is neutral and has no plus or source-creation control.
+At the issue #43 checkpoint, Collection and Folder empty states contained real creation buttons while the Source empty state was neutral. Issue #65 and later source-family work superseded the Source statement with the selected-folder Add Source flow.
 
 ## Accessibility, responsive behavior, and markers
 
@@ -36,11 +38,11 @@ The flow uses native buttons and `disabled`, moves focus to **Stay here**, resto
 
 Stable markers include `return-builder-home`, `data-return-confirmation`, `stay-in-workspace`, `discard-and-return`, `create-collection-empty`, `create-folder-empty`, `data-node-editor`, and `data-editor-field="title"`. `data-editor-field="id"` is removed.
 
-## Exclusions and required checkpoint
+## Historical exclusions and required checkpoint
 
-This milestone adds no presentation settings, final edit-icon redesign, source creation/editing/deletion, hierarchy deletion/reordering, export, persistence, routing, networking, migration automation, dependencies, v1, or Worker changes.
+Issue #43 itself added no presentation settings, final edit-icon redesign, source creation/editing/deletion, hierarchy deletion/reordering, export, persistence, routing, networking, migration automation, dependencies, v1, or Worker changes. Later focused issues supplied several of those Builder features without changing the automatic-ID contract.
 
-Required product sequence:
+The required sequence at that historical checkpoint was:
 
 1. Complete automatic IDs and workspace corrections.
 2. Add collection and folder presentation settings.

@@ -6,7 +6,7 @@ Last reviewed: 2026-08-06
 
 ## Scope
 
-Issue #65 establishes the first end-to-end Builder source-creation flow and one reusable provider boundary. Only **Movie franchise · TMDB** is visible. It adds one native TMDB `COLLECTION` source to the currently selected folder; it does not create collections or folders automatically.
+At the issue #65 checkpoint, the first end-to-end Builder source-creation flow and one reusable provider boundary exposed only **Movie franchise · TMDB**. That flow adds one native TMDB `COLLECTION` source to the currently selected folder and still does not create collections or folders automatically; later issues added other modes beside it in the shared picker.
 
 The flow accepts:
 

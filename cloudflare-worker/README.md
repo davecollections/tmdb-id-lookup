@@ -31,15 +31,20 @@ is merged, this tracked source is again the authoritative record. Merging a sour
 change does not deploy the Worker; deployment remains a separate explicit
 operator action.
 
-## Deploying Manually
+## Owner-only manual deployment
 
-For now, deployment is manual:
+Codex never deploys the production Worker or requests its secrets. Codex prepares and fully tests the complete working-tree source. Before commit or publication, Codex gives Dave that complete reviewed source, the exact deployment-handoff source-byte SHA-256, the current branch and HEAD as repository context, and deterministic test evidence, then stops. When the change is uncommitted, the branch and HEAD do not identify the changed Worker source. After separate approval, Dave performs the manual deployment:
 
 1. Open the Cloudflare Worker dashboard.
 2. Open the TMDB proxy Worker.
 3. Replace the Worker code with `tmdb-proxy.js`.
 4. Confirm both required secrets still exist.
 5. Deploy the Worker.
+6. Reply `Worker deployed` and provide the deployment/version identity when available so the approved live validation can begin.
+
+Commit, push, and pull-request publication remain separate later owner gates.
+
+The deployment-handoff SHA-256 identifies the exact reviewed byte sequence supplied or intended for deployment. A tracked Git blob OID becomes useful only after the reviewed source is later committed or published; record and compare it then to verify that repository source remained the reviewed source. It is not a prerequisite for the pre-commit owner-deployment handoff. If `git hash-object` is deliberately used on an uncommitted file, describe the result as a computed blob OID, not a tracked blob identity, and do not make it mandatory. Git stores normalized LF text while the Windows working checkout may contain CRLF, so a CRLF-only working-tree SHA-256 difference is not tracked-source divergence. Neither branch/HEAD context nor a later tracked blob alone proves exact deployed-byte equivalence. See [`docs/v2/PROJECT_WORKFLOW.md`](../docs/v2/PROJECT_WORKFLOW.md) for the full gate.
 
 ## Origin Rules
 
@@ -121,8 +126,9 @@ The Worker only proxies the TMDB paths the frontend needs:
   `/3/discover/movie?with_companies={positive integer}` and
   `/3/discover/tv?with_companies={positive integer}`, optionally with one
   approved media-specific `sort_by` value for explicit title Preview
-* Exact Network Series count requests using only
-  `/3/discover/tv?with_networks={positive integer}`
+* Exact Network Series count/Preview requests using only
+  `/3/discover/tv?with_networks={positive integer}`, optionally with one
+  approved Network TV `sort_by` value for explicit title Preview
 * Exact Streaming provider catalogue requests using only:
   * `/3/watch/providers/regions?language=en-US`
   * `/3/watch/providers/movie?language=en-US`
@@ -133,11 +139,12 @@ The Movie Company path accepts exactly one canonical positive-safe-integer
 from `popularity.desc`, `primary_release_date.desc`, `vote_average.desc`, or
 `vote_count.desc`. The TV Company path applies the same rule with
 `popularity.desc`, `first_air_date.desc`, `vote_average.desc`, or
-`vote_count.desc`. Query parameter order may vary. The existing TV Network path
-continues to accept exactly one canonical `with_networks` value and no
-`sort_by`. Mixed, duplicate, malformed, wrong-media, unsupported, and additional
-parameters fail closed. Other Discover filters and broad `/3/discover/*`
-forwarding remain disallowed.
+`vote_count.desc`. Query parameter order may vary. The TV Network path accepts
+exactly one canonical `with_networks` value and either no other parameter or one
+`sort_by` from those same four TV values. Company and Network allowlists remain
+family-specific. Mixed, duplicate, malformed, wrong-media, unsupported, and
+additional parameters fail closed. Other Discover filters and broad
+`/3/discover/*` forwarding remain disallowed.
 
 Each Streaming provider path requires exactly one `language=en-US` parameter.
 Missing, duplicate, differently cased, or additional parameters fail closed.
@@ -157,9 +164,11 @@ no-sort and sort requests plus the rejection matrix were live validated on
 2026-08-19. Worker deployment is independent of Builder publication; the
 overall V2 Builder remains governed by its separate release and noindex boundary.
 
+Builder Network hierarchy issue [#126](https://github.com/davecollections/tmdb-id-lookup/issues/126) extends only the Network TV route with the optional four-value `sort_by` allowlist above. On 2026-08-20 Dave manually deployed the complete reviewed source as version `f6bee241-afef-447f-b8f9-3d4b8da460cf`; the recorded deployment-handoff source SHA-256 is `612955AD3ECCEF16E12E05ABA6B672B0AD68BA825F13419FFA2A0A9346706AD4`. The merged tracked Worker Git blob is separately `ceb37bb3711a43d6f25508a98943ce71b53baec2`; these identities do not by themselves prove byte equality. The live production Worker/TMDB/image-CDN validation passed before [PR #127](https://github.com/davecollections/tmdb-id-lookup/pull/127) merged. Merge did not redeploy the Worker; automatic Pages publication is a separate workflow.
+
 The tracked Streaming routes were added for Builder issue #104. Source changes
 do not update the live Worker. Deployment and live provider acceptance require
 separate explicit owner authorization; do not deploy these routes implicitly as
 part of ordinary implementation, commit, push, PR, or local testing work.
 
-If a frontend feature adds a new TMDB endpoint, update the appropriate narrow route allowlist here and redeploy the Worker.
+If a frontend feature needs a new TMDB endpoint, prepare and test the appropriate narrow tracked allowlist change, report the exact handoff identities and evidence, then stop for separately authorised owner deployment.

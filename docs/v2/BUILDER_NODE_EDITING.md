@@ -1,16 +1,16 @@
 # Builder Collection and Folder Editing
 
-Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), and settings presentation polish merged through issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69) / PR [#70](https://github.com/davecollections/tmdb-id-lookup/pull/70)
+Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), settings presentation polish merged through issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69) / PR [#70](https://github.com/davecollections/tmdb-id-lookup/pull/70), and ordinary Folder known-artwork controls added through issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119)
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-20
 
 ## Scope and sequencing
 
-One responsive settings modal now manages collection/folder titles and the contained presentation fields approved in issue #53. Every collection and folder card owns one compact, always-visible Edit action; the former Rename/Settings pair, quick-rename form, and large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
+One responsive settings modal manages collection/folder titles and the contained presentation fields approved in issue #53, with the ordinary Folder editor later extended to the existing known artwork fields through issue #118. Every collection and folder card owns one compact Edit action; the former Rename/Settings pair, quick-rename form, and large selected-entity action blocks are removed. Nuvio-facing IDs remain hidden and automatically managed; users do not view, validate, copy, or repair them.
 
 Visible Collection settings are title, Hide collection title in Nuvio, Tabs/Rows layout, Include an All tab when using Tabs, and Pin to top. The source-presentation field uses the heading **How sources appear in this collection**, the helper **Choose how each folder in this collection displays its sources in Nuvio.**, and the visible label **Tabs (recommended)** for the unchanged `TABBED_GRID` value. `focusGlowEnabled` remains a recognised collection compatibility field but is no longer rendered as a user-facing setting.
 
-Folder settings use two compact semantic groups. **Basic details** contains Title. **Display** contains one compact native-radio Folder title visibility group followed by Poster/Landscape visual selection cards. The three visibility choices present the complete outcome instead of exposing two interacting switches:
+Folder settings use compact semantic groups. **Basic details** contains Title. **Display** contains one compact native-radio Folder title visibility group followed by Poster/Landscape visual selection cards. **Artwork** contains the existing known Tile, Hero/background, Title Logo, and Focus artwork URLs plus the focus-artwork switch. The three visibility choices present the complete outcome instead of exposing two interacting switches:
 
 - Show everywhere keeps a valid visible title and maps to `hideTitle: false`.
 - Hide on home screen only keeps a valid visible title and maps to `hideTitle: true`.
@@ -60,7 +60,7 @@ Validation never rewrites submitted values. Empty, ordinary whitespace-only, and
 
 Messages use collection or folder wording. One local `role="alert"` region presents errors, each invalid field references its own error and helper text, and the first invalid field receives focus.
 
-Patch generation returns only deliberately changed supported values. Visible Collection settings can produce `title`, `viewMode`, `showAllTab`, and `pinToTop`; the compatibility helper continues to recognise `focusGlowEnabled`, but the settings UI cannot touch it because the control is absent. Folder patches may contain `title`, `tileShape`, and inverse-mapped `hideTitle`. Patches never include a Nuvio ID, internal identity, node type, raw data, children, sources, artwork, or unknown fields. An empty patch is a clean no-op.
+Patch generation returns only deliberately changed supported values. Visible Collection settings can produce `title`, `viewMode`, `showAllTab`, and `pinToTop`; the compatibility helper continues to recognise `focusGlowEnabled`, but the Collection settings UI cannot touch it because the control is absent. Folder patches may contain `title`, `tileShape`, inverse-mapped `hideTitle`, `coverImageUrl`, `heroBackdropUrl`, `titleLogoUrl`, `focusGifUrl`, and `focusGifEnabled`. Patches never include a Nuvio ID, internal identity, node type, raw data, children, sources, or unknown fields. An empty patch is a clean no-op.
 
 Canonical new or replacement values are:
 
@@ -105,7 +105,7 @@ Imported `FOLLOW_LAYOUT` is preservation-only. It is not offered as a normal cho
 
 ## Folder presentation behavior
 
-The reusable settings-section composition places Title under **Basic details** and title visibility plus tile shape under **Display**. This is the narrow architectural seam for a future semantic group; no Artwork heading, placeholder, disabled control, preview pane, media picker, or artwork field is added.
+The reusable settings-section composition places Title under **Basic details**, title visibility plus tile shape under **Display**, and the existing known artwork fields under **Artwork**. Issue #53 originally left that semantic seam empty; issue #118 later filled it through a shared known-field composition without adding a preview pane, media picker, or schema field. Untouched imported values remain preserved and a deliberate edit produces only the minimal field patch.
 
 Folder title visibility combines the actual title and Nuvio's inverse `hideTitle` field into three user-facing outcomes. The fieldset retains its accessible name and native radio keyboard behavior, while the compact presentation uses shorter supporting text and an explicit checked control instead of tall radio cards. Show everywhere and Hide on home screen only require valid visible text; Hide everywhere disables and blanks the Title input while retaining a valid visible value only in modal state for restoration. An intentional U+200E-only title maps to Hide everywhere regardless of `hideTitle`; a visible title with supported `hideTitle: true` maps to Hide on home screen only; and a visible title with supported `hideTitle: false` maps to Show everywhere. Absent or unusual `hideTitle` values remain untouched until deliberately replaced.
 
@@ -165,7 +165,7 @@ Controller and serializer tests prove that title and presentation editing preser
 
 ## Per-card Edit action
 
-Every collection and folder card owns one visible text Edit button beside its selectable button inside a non-interactive wrapper. Clicking Edit on an unselected card selects and targets that exact node immediately, then opens the settings modal. Selection alone neither marks the project dirty nor advances revision, and Apply or Cancel retains the target selection. Panel headers retain only their panel title, count, and relevant creation action, and source cards gain no Edit action.
+Every collection and folder card owns one Edit action beside its selectable card. Clicking Edit on an unselected card selects and targets that exact node immediately, then opens the settings modal. Selection alone neither marks the project dirty nor advances revision, and Apply or Cancel retains the target selection. Panel headers retain only their panel title, count, and relevant creation action. At the issue #53 checkpoint source cards had no Edit action; issue #78 and later family extensions now expose Edit source only for registered supported physical-source shapes.
 
 The ordinary rename path is the modal Title field. Initial focus enters that Title field when enabled. A supported, non-empty visible title is fully selected once when Edit opens so typing immediately replaces it; rerenders, other field changes, and validation refocus do not select it again. Empty, unsupported, intentionally invisible, or disabled titles are never selected. An intentionally invisible title instead places focus on the first available setting because Title is disabled until a visible outcome is chosen. Closing the modal restores focus to the exact Edit button that opened it.
 
@@ -183,7 +183,7 @@ The form is one DOM instance at all widths. It is full or near-full-screen at na
 - `data-workspace-underlay="true"`
 - `data-editor-field="title"`
 - `data-settings-section="basic-details|display"` (full Folder settings only)
-- `data-editor-field="hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|tileShape"` (`hideNuvioTitle` is collection-only; `folderTitleVisibility` is folder-only)
+- `data-editor-field="hideNuvioTitle|folderTitleVisibility|viewMode|showAllTab|pinToTop|tileShape|coverImageUrl|heroBackdropUrl|titleLogoUrl|focusGifUrl|focusGifEnabled"` (`hideNuvioTitle` is collection-only; the folder visibility/artwork fields are folder-only)
 - `data-editor-choice="tabs|rows|show-everywhere|hide-home-screen|hide-everywhere|poster|landscape"`
 - `data-editor-control="hideNuvioTitle|showAllTab|pinToTop"`
 - `data-control-presentation="compact-radios|visual-cards"`
@@ -197,6 +197,6 @@ Labels, semantics, and native disabled state remain the primary test surface.
 
 ## Deliberate exclusions and later work
 
-The editing workflow does not add project-title editing; emoji, artwork, focus GIF, video, title-logo, backdrop, hero, or cover controls; source editing; Add Source expansion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; additional TMDB or addon providers; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #59 adds bounded pointer/touch dragging and keyboard movement separately through one compact hierarchy-card handle, without bulk movement or editing-form fields. Bulk presentation settings remain a separate focused issue. Artwork remains future work, and future focus-GIF support defaults off unless deliberately enabled.
+The historical issue #53/#69 editing scope did not add project-title editing; emoji or artwork controls; source editing; Add Source expansion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; additional TMDB or addon providers; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Later issue #118 added only the existing known Folder artwork URLs and focus switch through preservation-first minimal patches, and issue #78 plus later family extensions added fail-closed physical Source Edit. Those later additions do not turn this editor into generic artwork discovery, preview, bulk editing, or schema expansion. Bulk presentation settings remain a separate focused issue.
 
 Issue #69's focused validation and owner UI/flow review completed before the settings polish merged through PR #70.

@@ -1,8 +1,8 @@
 # Shared artwork runtime lookup
 
-Status: shared `nuvio-assets` foundation retained for V1 Company/Network and historical People compatibility; active V2 People resolution moved to `nuvio-people-assets` in issue #118
+Status: shared `nuvio-assets` runtime is active for V1 Company/Network and V2 Studio/Network hierarchy; active V2 People resolution moved to `nuvio-people-assets` in issue #118
 
-Last reviewed: 2026-08-18
+Last reviewed: 2026-08-20
 
 ## Evidence and scope
 
@@ -13,7 +13,7 @@ This contract is based on the final `davecollections/nuvio-assets` schema-v1 pub
 
 The shared consumer implementation is [`js/artwork-runtime.mjs`](../../js/artwork-runtime.mjs). It deliberately validates only the application-facing safety and resolution contract rather than duplicating the complete publication schema. Publication generation, counts, fingerprints, source-manifest metadata, and review workflows remain owned by `nuvio-assets`.
 
-Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) added strict consumer compatibility for schema versions 1 and 2 but did not itself publish runtime v2. Assets PR #3 later completed that publication. V1 Company/Network continue to consume this runtime. Issue #74 temporarily used its People map in V2; issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) removed that active V2 dependency in favor of the separate canonical People manifest described below. V1 People migration remains outside #118.
+Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added the shared read-only foundation. Issue [#46](https://github.com/davecollections/tmdb-id-lookup/issues/46) added the first consumer: v1 company and network exports resolve published landscape artwork through a thin module adapter. Issue [#55](https://github.com/davecollections/tmdb-id-lookup/issues/55) added strict consumer compatibility for schema versions 1 and 2 but did not itself publish runtime v2. Assets PR #3 later completed that publication. V1 Company/Network continue to consume this runtime; V2 Studio hierarchy issue #124 consumes Company Landscape and V2 Network hierarchy issue #126 consumes Network Poster/Landscape. Issue #74 temporarily used its People map in V2; issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) removed that active V2 dependency in favor of the separate canonical People manifest described below. V1 People migration remains outside #118.
 
 ## Active V2 People replacement
 
@@ -72,7 +72,7 @@ An absent key means there is no currently published automatic-use artwork for th
 
 The resolver uses only the requested orientation. It does not crop, stretch, or substitute another orientation. Company poster requests return `unsupported-orientation` under both versions, and network poster requests do so under v1. A valid v2 network poster request resolves through the existing `ready` result shape.
 
-Network Poster is now publicly live under runtime v2. The classic v1 bridge remains Company/Network Landscape-only, and Builder Network Poster consumption and UI remain unimplemented.
+Network Poster is publicly live under runtime v2. The classic v1 bridge remains Company/Network Landscape-only; V2 Network hierarchy issue #126 implements the batch-safe Poster/Landscape choice, while per-item/raw Network artwork controls remain deferred.
 
 Valid legacy-runtime consumer paths are exact:
 
@@ -154,7 +154,7 @@ The pure resolver accepts `lookup`, `entityType`, numeric `tmdbId`, `orientation
 - caches only a successful validated lookup in memory for that client’s lifetime;
 - clears a failed in-flight load so a later call can retry.
 
-Its async `resolve()` method loads once and applies the same typed resolver. Tests inject deterministic fetch implementations and explicit synthetic v1/test-only v2 fixtures; repository tests never request the live runtime.
+Its async `resolve()` method loads once and applies the same typed resolver. Narrow resolver/cache unit tests inject deterministic fetch implementations and explicit synthetic v1/test-only v2 fixtures. Mounted, integration, owner-review, and live-behaviour checks that exercise the runtime follow [`docs/TESTING.md`](../TESTING.md) and use the approved production path; the canonical Network mounted suite requests the live runtime and real image resources.
 
 There is no localStorage, IndexedDB, Cache API, or service-worker persistence. Persistent caching, refresh intervals, explicit refresh controls, and multi-tab behaviour remain separate product decisions for a later integration issue.
 
@@ -179,4 +179,4 @@ The `.mjs` location under `js/` is intentional:
 - v1 uses a thin `type="module"` adapter without duplicating resolution rules;
 - a later builder issue can import the pure module through Vite.
 
-Issue #55 changed only the shared resolver, focused compatibility tests, and its contract documentation; it did not publish runtime v2. Assets PR #3 subsequently completed the separately reviewed, pushed, merged, and atomic assets-side publication without a TMDB production-code change. The external v1 adapter interface and cached exporter remain Landscape-only, while people exports, Builder artwork consumption and UI, Worker routes, ordinary lookup thumbnails, and other export families remain unchanged.
+At its historical checkpoint, issue #55 changed only the shared resolver, focused compatibility tests, and contract documentation; it did not publish runtime v2 or add Builder consumption. Assets PR #3 subsequently completed the separately reviewed, pushed, merged, and atomic assets-side publication without a TMDB production-code change. The external v1 adapter interface and cached exporter remain Landscape-only. Later People issue #118 moved active V2 People to its dedicated manifest, Studio issue #124 added V2 Company Landscape consumption, and Network issue #126 added V2 Network Poster/Landscape consumption; Worker routes, ordinary lookup thumbnails, and other export families remain separately governed.

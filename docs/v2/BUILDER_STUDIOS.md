@@ -1,6 +1,6 @@
 # Builder Studio Sources
 
-Status: selected-folder Add Source merged through issue [#92](https://github.com/davecollections/tmdb-id-lookup/issues/92) / PR [#93](https://github.com/davecollections/tmdb-id-lookup/pull/93); hierarchy creation complete and owner-reviewed through issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124), with its narrow Worker contract manually deployed and live validated on 2026-08-19
+Status: selected-folder Add Source merged through issue [#92](https://github.com/davecollections/tmdb-id-lookup/issues/92) / PR [#93](https://github.com/davecollections/tmdb-id-lookup/pull/93); hierarchy creation merged through issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124) / PR [#125](https://github.com/davecollections/tmdb-id-lookup/pull/125), with its narrow Worker contract manually deployed and live validated on 2026-08-19
 
 Last reviewed: 2026-08-20
 
@@ -57,18 +57,18 @@ Movie and Series states resolve independently to Checking, a positive count, zer
 
 The final issue #92 acceptance pass exercised bounded Pixar (`3`) and Warner Bros. Pictures (`174`) requests through the desktop and same-network Vite previews after the reviewed Worker route change was deployed manually. Both previews loaded beyond the initial Builder screen and returned Pixar **136 Movies / 15 Series** and Warner Bros. Pictures **3,123 Movies / 8 Series**. Negative route checks also passed. No credential was moved into the browser.
 
-For deterministic local UI review without Worker deployment or live TMDB requests, run from `builder/`:
+A legacy development-only presentation-mechanics aid can still be enabled from `builder/`:
 
 ```powershell
 $env:TMDB_STUDIO_MOCK_COUNTS = "1"
 npm run dev -- --host 127.0.0.1 --port 4173
 ```
 
-This explicit development-only mode intercepts only the canonical local Studio Discover paths. No-sort requests return deterministic totals for physical Add Source; approved sort-aware Company requests additionally return a deterministic ordered first page for hierarchy Preview. It is disabled for `npm run build`, does not broaden production routes or authentication, and does not mock another request family. Remove the environment value after review with `Remove-Item Env:TMDB_STUDIO_MOCK_COUNTS`.
+This opt-in mode intercepts only the canonical local Studio Discover paths and returns synthetic totals/results. It is disabled for `npm run build`, does not broaden production routes or authentication, and does not mock another request family. It may help inspect isolated presentation mechanics, but it is not valid mounted/integration/end-to-end, owner-acceptance, or live-behaviour evidence. Those checks must follow [`docs/TESTING.md`](../TESTING.md) and use the production Worker and real TMDB. Remove the environment value afterward with `Remove-Item Env:TMDB_STUDIO_MOCK_COUNTS`.
 
-The live Worker admits the exact no-sort Movie and TV paths above with exactly one canonical positive safe-integer `with_companies` value, plus the narrow issue #124 Company `sort_by` expansion for accurate explicit hierarchy Preview. The deployed source permits only Popular, media-correct Recent, Top rated, and Most voted; parameter order may vary, but duplicates, wrong-media sorts, arbitrary filters, mixed Company/Network parameters, and every extra value fail closed. The Network route remains no-sort. The upstream host, browser-origin rules, service-token boundary, authentication, CORS, response forwarding, API-key handling for already-allowed requests, and sanitized failures are unchanged.
+The live Worker admits the exact no-sort Movie and TV paths above with exactly one canonical positive safe-integer `with_companies` value, plus the narrow issue #124 Company `sort_by` expansion for accurate explicit hierarchy Preview. The deployed source permits only Popular, media-correct Recent, Top rated, and Most voted; parameter order may vary, but duplicates, wrong-media sorts, arbitrary filters, mixed Company/Network parameters, and every extra value fail closed. Issue #126 later preserved Network no-sort requests while separately adding the exact four Network TV sorts; Company and Network allowlists remain family-specific. The upstream host, browser-origin rules, service-token boundary, authentication, CORS, response forwarding, API-key handling for already-allowed requests, and sanitized failures are unchanged.
 
-After separate owner authorization, the exact reviewed issue #124 Worker source was manually deployed and its complete acceptance/rejection matrix was live validated on 2026-08-19. The deterministic local mock remains available for repeatable UI review. Worker deployment is independent of Builder publication; the overall V2 Builder remains governed by its separate release and noindex boundary.
+After separate owner authorization, the exact reviewed issue #124 Worker source was manually deployed and its complete acceptance/rejection matrix was live validated on 2026-08-19. The opt-in synthetic development aid cannot replace that live evidence. Worker deployment is independent of Builder publication; the overall V2 Builder remains governed by its separate release and noindex boundary.
 
 ## Guided Studio hierarchy creation — issue #124
 

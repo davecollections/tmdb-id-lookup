@@ -2,7 +2,9 @@
 
 ## 1. Status and boundary
 
-Issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) adds the deterministic, non-UI Decades foundation consumed by the later visible issue #113.
+Status: deterministic foundation merged through issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) / PR [#114](https://github.com/davecollections/tmdb-id-lookup/pull/114), with the visible owner-reviewed flow merged through issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115). No current-client Decades hierarchy import/export result is claimed.
+
+Issue #112 provides the deterministic, non-UI Decades foundation consumed by the later visible issue #113.
 
 This document owns Decades-specific behavior. [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md) owns the shared standards established by Decades and the later People family.
 

@@ -1,6 +1,6 @@
 # Builder Franchise hierarchy creation
 
-Status: implementation complete and owner review accepted for issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) / PR [#123](https://github.com/davecollections/tmdb-id-lookup/pull/123)
+Status: implementation and owner review complete, merged through issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) / PR [#123](https://github.com/davecollections/tmdb-id-lookup/pull/123); no current-client Franchise hierarchy result is claimed
 
 This document owns the Franchise-specific contract layered on the shared rules in [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md). It does not change selected-folder **Add Source → Movie franchise**, V1, Worker routes, or production deployment.
 

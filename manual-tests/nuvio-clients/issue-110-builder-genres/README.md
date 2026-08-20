@@ -1,6 +1,6 @@
 # Issue #110 Builder Genres current-client review
 
-Status: deterministic Builder input prepared; current Nuvio Desktop execution and owner results are pending.
+Status: deterministic Builder input prepared; current Nuvio Desktop execution remains deferred/unverified until V2 exposes export and was not an unfinished issue #110 / PR #111 merge gate.
 
 This bounded fixture contains the current-client evidence requested by issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110):
 
@@ -35,4 +35,4 @@ node scripts/check-builder-genre-fixture.mjs --write
 8. Re-import that immediate export and confirm the same grouping, order, filters, and runtime behavior.
 9. Complete `RESULTS_TEMPLATE.md`, including the actual client version/build, then rerun the checker.
 
-Client normalization may expand compact filters with null/default fields. The material gate is the folder/source order, titles, provider, source type, null TMDB ID, media, sort, approved filters, empty native `catalogSources`, and runtime behavior. Do not describe the current-Nuvio gate as passed until the owner performs it.
+Client normalization may expand compact filters with null/default fields. When this deferred review becomes practical, the material evidence is the folder/source order, titles, provider, source type, null TMDB ID, media, sort, approved filters, empty native `catalogSources`, and runtime behavior. Do not describe current-Nuvio acceptance as passed until the owner performs it.
