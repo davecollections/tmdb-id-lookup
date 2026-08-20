@@ -41,7 +41,9 @@ Before hierarchy creation or a new hierarchy-family issue, also read:
 - Keep work limited to the approved issue; do not include unrelated cleanup.
 - Do not open a pull request unless Dave asks.
 - After Dave authorises it, a pull request is the normal final review gate for meaningful v2 work.
+- Meaningful V2 pull requests use a normal merge commit by default unless Dave explicitly chooses another method. Do not squash, rebase, or force-push unless specifically authorised. Use issue-closing syntax where applicable so the focused issue closes through the merged pull request.
 - Do not merge, close the issue, or delete the branch until Dave explicitly approves after review and testing.
+- After a successful merge, verify required checks and automatic Pages publication before performing approved local/remote branch cleanup and returning to synchronized `main`.
 - Stop and report conflicts, unexpected local changes, or ambiguous scope.
 - Use clear commits and report the final commit hash.
 
@@ -53,6 +55,7 @@ Before hierarchy creation or a new hierarchy-family issue, also read:
 - Do not represent direct movie, direct series, or season sources as supported unless current Nuvio evidence confirms them.
 - Never commit API keys, bearer tokens, credentials, or private data. TMDB credentials remain behind the Cloudflare Worker.
 - Do not broaden Worker routes, CORS, CSP, or external hosts without explicit issue scope.
+- Codex never deploys the production Cloudflare Worker. Worker changes stop at the separately authorised owner-deployment gate described in `docs/v2/PROJECT_WORKFLOW.md` and `cloudflare-worker/README.md`.
 - Do not add production dependencies without explicit approval.
 - Check the licence before reusing external code. Studying patterns is not permission to copy code.
 
@@ -82,7 +85,7 @@ For future builder work:
 ## Architecture and design
 
 - Keep framework-independent source, validation, parsing, migration, serialization, and ID logic outside UI components.
-- Before adding a Builder component, helper, picker, selector, catalogue, modal, validator, source constructor, identity or duplicate helper, review block, presentation control, responsive shell, focus/history/scroll behavior, controller operation, test fixture, or test harness, inspect the existing Builder for the same or substantially similar behavior. Prefer, in order: direct reuse; extraction into a shared abstraction; extension of an existing abstraction; and new code only when semantics materially differ. Do not create parallel screen-specific copies merely because consumers live in different flows; record any material semantic difference in the issue and final report.
+- Before adding a Builder component, helper, picker, selector, catalogue, search hook, ordered-selection store, plan, modal, validator, source constructor, identity or duplicate helper, artwork resolver, review block, presentation control, Preview shell/provider, requester, response normalizer, request coordinator, bounded cache, responsive shell, focus/history/scroll behavior, controller operation, test fixture, or test harness, inspect the existing Builder for the same or substantially similar behavior. Prefer, in order: direct reuse; extraction into a shared abstraction; extension of an existing abstraction; and new code only when semantics materially differ. Keep family-specific semantics in thin adapters instead of forcing them into a generic abstraction for symmetry. Do not create parallel screen-specific copies merely because consumers live in different flows; record any material semantic difference in the issue and final report.
 - New hierarchy families must use the scope-aware creation registry, generate ordinary Collection → Folder → Source nodes through an ephemeral revalidated plan, and apply atomically through existing controller operations; do not add parallel launchers or persisted hierarchy/recipe nodes.
 - Do not add an arbitrary bulk-selection hard cap. Keep one intentional scroll owner per creation stage and verify that partially clipped card focus leaves the outer modal and document stable.
 - Bulk hierarchy creators expose only batch-safe artwork/presentation choices; per-item artwork URLs and focus overrides belong to ordinary Edit Folder unless a focused issue proves a real batch-edit need.
@@ -104,6 +107,8 @@ For future builder work:
 - For long-running phases, prepare a handover before context loss rather than relying on chat memory.
 
 ## Verification
+
+[`docs/TESTING.md`](docs/TESTING.md) owns the operational test policy, including the required live production integration path for mounted, integration, end-to-end, owner-review, and live-behaviour checks that exercise an external service, and the narrower boundary where synthetic data remains appropriate for pure unit tests.
 
 At minimum, before reporting completion run:
 

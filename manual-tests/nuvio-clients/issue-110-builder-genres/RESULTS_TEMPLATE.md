@@ -1,6 +1,6 @@
 # Issue #110 current-Nuvio result
 
-Status: owner execution pending
+Status: owner execution deferred/unverified until V2 exposes export; not an unfinished issue #110 / PR #111 gate
 
 - Date/time:
 - Nuvio Desktop version/build:

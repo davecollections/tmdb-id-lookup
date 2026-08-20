@@ -2,13 +2,13 @@
 
 ## 1. Status and scope
 
-Issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110) implements official TMDB Genres as a focused consumer of [`BUILDER_DISCOVER_CORE.md`](./BUILDER_DISCOVER_CORE.md):
+Issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110) is closed/completed through merged [PR #111](https://github.com/davecollections/tmdb-id-lookup/pull/111) after desktop and physical-iPhone owner acceptance. It implements official TMDB Genres as a focused consumer of [`BUILDER_DISCOVER_CORE.md`](./BUILDER_DISCOVER_CORE.md):
 
 ```text
 Selected folder → Add Source → Genres → Browse → Configure & review → Add or Create
 ```
 
-This is the only Genre entry point. There is no Folders-header **Add genres** action. One selected Genre always adds its generated source or sources to the current folder. With two or more selected Genres, **Configure & review** also offers the explicit choice to create one sibling folder per selected Genre in that folder's collection. Genre Source Edit owns display name, **Sort titles by**, and the same approved advanced filters. The issue does not add a generic Discover form, Worker route, live Genre/count or artwork requests, dependencies, V1 changes, asset-repository changes, public Lists, recipes, or generic picker/help frameworks.
+This is the only current Genre entry point. There is no Folders-header **Add genres** action. One selected Genre always adds its generated source or sources to the current folder. With two or more selected Genres, **Configure & review** also offers the explicit choice to create one sibling folder per selected Genre in that folder's collection. That is a destination mode inside selected-folder Add Source, not a registered New Collection/New Folder hierarchy family. Genre Source Edit owns display name, **Sort titles by**, and the same approved advanced filters. The issue does not add a generic Discover form, Worker route, live Genre/count or artwork requests, dependencies, V1 changes, asset-repository changes, public Lists, recipes, or generic picker/help frameworks.
 
 ## 2. Immutable official catalogue and selection
 
@@ -89,8 +89,8 @@ Focused foundation, controller, and UI suites cover 35 → 27 → 8 catalogue pa
 
 The production-generated sanitized current-client package lives at [`manual-tests/nuvio-clients/issue-110-builder-genres/`](../../manual-tests/nuvio-clients/issue-110-builder-genres/). It deliberately stays small: Comedy Movie/TV plus Action & Adventure TV inside one existing folder, with representative advanced filters. It proves source semantics, not UI maximum capacity. The offline checker proves deterministic canonical Builder output.
 
-Actual current-Nuvio import/runtime/immediate-export/re-import acceptance remains a gate. The owner completed the physical-phone Genre review that produced the final focus, compact-toolbar, exclusion-navigation, and neutral-status corrections; one short physical-phone confirmation of the revised implementation remains before PR consideration. No client, device-version, live catalogue, or live artwork result is claimed by the implementation branch.
+Owner desktop and physical-phone UI acceptance is complete, and issue #110 merged through PR #111. Actual current-Nuvio V2 import/runtime/immediate-export/re-import evidence is deliberately deferred until V2 exposes export and was not an unfinished issue or merge gate. The deterministic fixture is offline source-contract evidence only; no current-client, device-version, live catalogue, or live artwork result is claimed.
 
 ## 9. Deferred work
 
-Deferred work includes Musicals, curated/public Lists, public-list search, known-ID/URL List creation, live Genre requests or counts, generic Advanced Discover, logical pair editing, Genre identity/media editing, semantic V1 merges, generic folder merge/copy and promotion behavior beyond the strict original-placeholder cleanup, Worker/deployment changes, typed artwork-runtime expansion, source-led collection creation, recipes, and generic picker/form/navigation/help extraction.
+Deferred work includes Musicals, curated/public Lists, public-list search, known-ID/URL List creation, live Genre requests or counts, generic Advanced Discover, logical pair editing, Genre identity/media editing, semantic V1 merges, generic folder merge/copy and promotion behavior beyond the strict original-placeholder cleanup, Worker/deployment changes, typed artwork-runtime expansion, source-led collection creation, recipes, and generic picker/form/navigation/help extraction. A guided Genre hierarchy is only the owner's next likely investigation; it is not implemented or approved by this document and must begin by investigating reuse of the merged multi-select and sibling-folder destination behavior above.

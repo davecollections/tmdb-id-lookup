@@ -2,7 +2,7 @@
 
 Status: implemented for issue [#34](https://github.com/davecollections/tmdb-id-lookup/issues/34)
 
-Last reviewed: 2026-07-11
+Last reviewed: 2026-08-20
 
 ## Purpose and boundary
 
@@ -51,7 +51,7 @@ The three concerns are deliberately separate:
 
 - `editable` contains the current known values that builder controls may change. Blank titles and IDs and incomplete source settings are valid editor drafts.
 - `rawImported` is an optional deep-cloned snapshot of the original collection, folder, or source JSON. It preserves unknown/community fields and is not changed by domain operations.
-- `internalId`, `nodeType`, and source `category` are builder-only metadata. A future exporter must not include them automatically.
+- `internalId`, `nodeType`, and source `category` are builder-only metadata. The implemented serializer does not include them in exported Nuvio JSON.
 
 Factories deep-clone caller-provided `editable` and `rawImported` data. They reject functions, class instances, maps, sets, dates, circular references, non-finite numbers, sparse arrays at any nesting depth, and other non-JSON values so project state remains plain data. Immutable operations may structurally share untouched snapshots, but they never mutate them.
 
@@ -61,7 +61,7 @@ The domain remains independent of import parsing and serialization. The implemen
 
 `internalId` is stable across renames, edits, and moves. It is never derived from an array index, title, Nuvio ID, TMDB ID, catalog ID, filter, timestamp, random decimal, or content hash.
 
-Factories accept an injectable `idFactory`, which gives tests and future import code deterministic control. The default uses `globalThis.crypto.randomUUID()`. Environments without that API must inject a factory; there is no weak fallback.
+Factories accept an injectable `idFactory`, which gives tests and the implemented importer deterministic control. The default uses `globalThis.crypto.randomUUID()`. Environments without that API must inject a factory; there is no weak fallback.
 
 `checkInternalIdUniqueness(project)` scans the complete tree and reports duplicate IDs with their counts and node types. Identity-based mutation helpers reject missing or ambiguous targets.
 
@@ -71,7 +71,7 @@ Factories accept an injectable `idFactory`, which gives tests and future import 
 - `addon` means a caller has explicitly identified an addon-backed source.
 - `opaque` means the builder preserves a source without interpreting it as a known provider shape.
 
-The source factory requires one of those explicit categories. It does not inspect `provider`, `addonId`, `type`, `catalogId`, `filters`, or similar fields to guess a category. Deciding the category belongs to the future importer or another informed caller.
+The source factory requires one of those explicit categories. It does not inspect `provider`, `addonId`, `type`, `catalogId`, `filters`, or similar fields to guess a category. Deciding the category belongs to the implemented preservation-first importer or another informed caller.
 
 ## `sources` and `catalogSources`
 

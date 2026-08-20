@@ -2,11 +2,13 @@
 
 Status: Durable cross-family architecture, product, UX, accessibility, scale, presentation, and verification standard
 
-Established by: Decades issues [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) and [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113), then reconciled with People issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) through issue [#120](https://github.com/davecollections/tmdb-id-lookup/issues/120), with Franchises applied in issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122), Studios completed and owner-reviewed in issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124), and Networks applying it in issue [#126](https://github.com/davecollections/tmdb-id-lookup/issues/126)
+Established by: Decades issues [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) and [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113), then reconciled with People issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) through issue [#120](https://github.com/davecollections/tmdb-id-lookup/issues/120), with Franchises applied through issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) / PR [#123](https://github.com/davecollections/tmdb-id-lookup/pull/123), Studios through issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124) / PR [#125](https://github.com/davecollections/tmdb-id-lookup/pull/125), and Networks through issue [#126](https://github.com/davecollections/tmdb-id-lookup/issues/126) / PR [#127](https://github.com/davecollections/tmdb-id-lookup/pull/127), merged at `10a76aeffd351341321ab56658e69858fb85d39c`
 
 Last reviewed: 2026-08-20
 
 This document owns the rules shared by guided **New Collection** and **New Folder** hierarchy families. Family documents such as [`BUILDER_DECADES.md`](./BUILDER_DECADES.md), [`BUILDER_PEOPLE.md`](./BUILDER_PEOPLE.md), [`BUILDER_FRANCHISES.md`](./BUILDER_FRANCHISES.md), [`BUILDER_STUDIOS.md`](./BUILDER_STUDIOS.md), and [`BUILDER_NETWORKS.md`](./BUILDER_NETWORKS.md) continue to own family-specific source contracts, defaults, naming, artwork authority, duplicate strictness, and optional features. Repository implementation, deterministic tests, and confirmed owner evidence override obsolete plans.
+
+The completed guided hierarchy families are **Decades, People, Franchises, Studios, and Networks**. Genres is not a guided New Collection/New Folder family: its merged issue #110 behavior remains selected-folder Add Source with an optional sibling-folder destination for multi-selection.
 
 ## 1. Entry points and persisted architecture
 
@@ -21,7 +23,7 @@ This document owns the rules shared by guided **New Collection** and **New Folde
 
 ## 2. Reuse-first rule
 
-Before adding a family-specific search or catalogue surface, selectable card, ordered-selection store, presentation or title control, layout control, review block, preview surface, source constructor, identity or duplicate helper, responsive shell, focus/scroll behavior, controller operation, fixture, or test harness, inspect the current Builder for substantially similar behavior.
+Before adding a family-specific search or catalogue surface, search hook, selectable card, ordered-selection store, plan, presentation or title control, layout control, review block, Preview shell/provider, requester, response normalizer, request coordinator, success-only bounded cache, thin family adapter, source constructor, identity or duplicate helper, artwork resolver, responsive shell, focus/scroll behavior, controller operation, fixture, or test harness, inspect the current Builder for substantially similar behavior.
 
 Prefer, in order:
 
@@ -132,7 +134,7 @@ When a Preview is a true nested modal, reuse the structural `NestedPreviewDialog
 
 When both Movies and Series are applicable, Preview must separate them into media-specific views. Show only applicable views, load a view lazily if its family requires requests, report the count for that media only, and never present one combined cross-media total. Within each media view, combine all applicable source roles, deduplicate by physical title identity, and apply that family's semantic sort. Studio follows this rule through its separate Discover requests and cache. People follows it over already-loaded combined credits, so switching its Movies/Series view makes no new People request. Franchises remains Movies-only, Networks remains Series-only without a media control, and Decades exposes no title Preview.
 
-Every current and future title Preview result grid is **poster-only**. A successful individual result contributes only its usable poster image: no title, year, date, media label, rating, description, source wording, or technical metadata is rendered on the poster item. Results without a valid poster are omitted before the 10-desktop/5-mobile visual bound; if no usable posters remain, the modal shows one calm **No posters available.** state instead of textual placeholder cards. The modal shell may retain the entity name, applicable Movies/Series controls, reliable media-specific counts, Close, loading, recoverable error/Retry, and accessibility semantics. Single-media families do not add a pointless media tab. This rule guides a future Decades Preview if one is approved; it does not require every family to implement Preview.
+Every current and future title Preview result grid is **poster-only**. A successful individual result contributes only its usable poster image: no title, year, date, media label, rating, vote count, description, source wording, or technical metadata is rendered on the poster item. Results without a valid poster are omitted before the accepted 10-desktop/5-mobile visual bound; do not create `No poster` cards. If no usable posters remain, the modal shows one calm **No posters available.** state instead of textual placeholder cards. The modal shell may retain the entity name, applicable Movies/Series controls, reliable media-specific counts, Close, loading, recoverable error/Retry, and accessibility semantics. Single-media families do not add a pointless media tab. A possible future increase to 10 mobile posters in two rows of five is a deferred whole-Builder visual-review question in the product plan, not a family-specific requirement. This rule guides a future Decades Preview if one is approved; it does not require every family to implement Preview.
 
 ## 9. Review information hierarchy
 
@@ -215,7 +217,7 @@ Where bulk selection exists, cover representative small, approximately 20, appro
 - representative late-bundle rollback with no partial mutation or revision;
 - stale plan rejection immediately before apply.
 
-Tests should use deterministic fixtures and must not require live TMDB requests unless a focused issue explicitly owns bounded live evidence.
+Follow [`docs/TESTING.md`](../TESTING.md): narrow pure unit tests use deterministic injected data when external integration is not under test, while mounted, integration, end-to-end, owner-review, and live-behaviour checks that exercise TMDB or another external service use the approved live production integration path. The canonical Network mounted suite therefore uses the production Worker, real TMDB, and real image resources; an unavailable service is reported as an external failure rather than replaced with fabricated behavior.
 
 ## 14. Owner-review and publication gate
 

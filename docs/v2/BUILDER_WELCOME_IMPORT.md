@@ -103,6 +103,6 @@ The workspace can now return to welcome only after resetting the shared controll
 
 This milestone does not add export, save/download, copy JSON, persistence, recent files, autosave, service workers, return-to-welcome or open-another-file actions, dirty-replacement UI, drag-and-drop, the File System Access API, URL/network import, Nuvio connections, login, authentication, editing, source creation, deletion, reordering, migration actions, automatic migration, TMDB search, addon loading, artwork tools, Ultra MAX or AIO Metadata conversion, account-manager transforms, Trakt, language support, routing, React Router, v1 runtime changes, a v1 builder link, Worker/CSP/CORS changes, dependencies, lockfile changes, Pages allowlist/preparation/deployment changes, or unrelated cleanup.
 
-## Next likely milestone
+## Historical extension boundary
 
-A later separately approved issue can add one contained edit or export workflow. It must retain controller ownership, preservation-first import/serialization, explicit dirty replacement decisions, and the established local-only boundary.
+At the issue #41 checkpoint, the next likely milestone was one separately approved contained edit or export workflow. Later issues added editing while retaining controller ownership, preservation-first import/serialization, explicit dirty replacement decisions, and the established local-only boundary; export remains deferred.

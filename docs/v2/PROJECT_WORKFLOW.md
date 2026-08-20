@@ -2,7 +2,7 @@
 
 Status: Durable owner, planning, repository, and review process
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-20
 
 This document describes how Dave, the ChatGPT planning/review chat, Codex, GitHub, and repository evidence work together. Repository-specific enforceable rules remain in [`AGENTS.md`](../../AGENTS.md); current product direction is in [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md).
 
@@ -12,7 +12,7 @@ This document describes how Dave, the ChatGPT planning/review chat, Codex, GitHu
 
 - Owns product decisions and final approval.
 - Supplies manual UI, artwork, and Nuvio-client evidence where repository checks cannot establish behaviour.
-- Approves issue scope, pull-request creation, merge, and branch cleanup.
+- Approves issue scope, pull-request creation, merge, production Worker deployment, and branch cleanup.
 - May challenge ChatGPT or Codex and expects them to challenge risky assumptions appropriately.
 
 ### ChatGPT planning and review chat
@@ -27,8 +27,9 @@ This document describes how Dave, the ChatGPT planning/review chat, Codex, GitHu
 
 - Reads repository guidance, the relevant issue, and required specialist documentation.
 - Performs only the approved repository changes.
-- Runs checks, commits, pushes, and reports evidence.
+- Runs checks and reports evidence; commits and pushes only after Dave authorises them.
 - Stops at owner, manual-test, pull-request, and merge gates.
+- Never deploys the production Cloudflare Worker or requests its secrets.
 - Does not broaden scope to solve adjacent problems.
 
 ## 2. New chat versus same chat
@@ -91,9 +92,9 @@ The normal sequence is:
 7. Have the ChatGPT planning/review chat independently review the branch.
 8. Dave approves opening a pull request.
 9. Run PR checks and final review against the unchanged reviewed head.
-10. Dave approves merge and the merge method.
-11. Merge through the pull request.
-12. Confirm issue closure, delete approved local/remote branches, and return to clean synchronized `main`.
+10. Dave approves merge; a normal merge commit is the meaningful-V2 default unless Dave explicitly chooses another method.
+11. Merge through the pull request, using issue-closing syntax where applicable.
+12. Confirm issue closure, required checks, and automatic Pages publication; then delete approved local/remote branches and return to clean synchronized `main`.
 
 Earlier V1 work sometimes merged feature branches directly. That practice is **superseded for meaningful V2 work**: a pull request is now the normal final integration gate.
 
@@ -102,6 +103,7 @@ The following remain absolute:
 - one issue per branch;
 - do not open a pull request unless Dave asks;
 - do not merge unless Dave explicitly approves;
+- do not squash, rebase, or force-push unless Dave specifically authorises it;
 - do not close the issue or delete branches before successful merge and approval.
 
 ## 5. Repository preflight
@@ -143,6 +145,20 @@ Repository checks do not replace manual UI or Nuvio-client testing where visual 
 - Do not open a pull request or merge while required checks or evidence are pending or failing.
 - Do not present a build-specific observation as a universal Nuvio guarantee.
 
+Detailed live-versus-pure-unit policy is owned by [`docs/TESTING.md`](../TESTING.md). External-service mounted, integration, end-to-end, owner-review, and live-behaviour evidence must use the approved production integration path; an unavailable service is reported as an external failure rather than replaced with fabricated behaviour.
+
+### Production Worker owner gate
+
+Codex never deploys the production Cloudflare Worker. When an approved issue changes Worker source:
+
+1. Codex implements and fully tests the complete Worker source on the issue branch.
+2. Codex gives Dave the complete reviewed source, its exact deployment-handoff source-byte SHA-256, the branch/head and tracked Git blob identities, and the test evidence, then stops.
+3. Dave manually replaces and deploys that complete source in Cloudflare.
+4. Dave replies `Worker deployed` and supplies the deployment/version identity when available.
+5. Only then may Codex run the separately approved live Worker/Builder validation through production.
+
+The deployment-handoff SHA-256, Git blob OID, and Windows working-tree byte hash are different identity layers. Git normalizes the tracked Worker text to LF while a Windows checkout may contain CRLF; a CRLF-only raw-byte hash difference is not tracked-source divergence. Do not claim byte-for-byte equivalence with deployed source unless the exact compared byte sequence establishes it. Worker deployment is separate from automatic main-triggered GitHub Pages publication, and Codex must not silently deploy, patch production, or ask for credentials.
+
 ## 8. Pull requests
 
 - Pull requests are the normal final integration gate for meaningful V2 work.
@@ -151,8 +167,9 @@ Repository checks do not replace manual UI or Nuvio-client testing where visual 
 - Dave authorises pull-request creation.
 - The PR body links the issue and uses closing syntax where appropriate.
 - The final head SHA must remain the SHA that was reviewed; later changes require renewed review.
-- Choose the merge method explicitly.
-- Do not squash or rebase when the approved workflow specifies a normal merge commit.
+- Meaningful V2 pull requests use a normal merge commit by default unless Dave explicitly chooses another method.
+- Do not squash, rebase, or force-push unless Dave specifically authorises it.
+- Successful merge is followed by issue-closure, required-check, and automatic Pages-publication verification before approved branch cleanup.
 
 ## 9. Final reports
 

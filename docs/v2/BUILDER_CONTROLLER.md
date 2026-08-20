@@ -2,11 +2,11 @@
 
 Status: implemented for issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39), with bounded atomic hierarchy extensions through issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112)
 
-Last reviewed: 2026-08-15
+Last reviewed: 2026-08-20
 
 ## Purpose and boundary
 
-The framework-independent application layer under `builder/src/application/` is the owner of the current builder project and the future React integration boundary. It coordinates the existing domain, importer, explicit addon projection migration, and serializer without reimplementing their rules.
+The framework-independent application layer under `builder/src/application/` is the owner of the current Builder project and the active React integration boundary. It coordinates the existing domain, importer, explicit addon projection migration, and serializer without reimplementing their rules.
 
 The controller owns:
 
@@ -16,7 +16,7 @@ The controller owns:
 - creation, editable updates, sibling movement, and removal;
 - explicit migration preview and application;
 - import, migration, operation, and export diagnostics;
-- subscriptions suitable for a future external-store adapter.
+- subscriptions consumed through the React external-store adapter.
 
 The domain factories and operations remain authoritative for project shape and immutable editing. The importer remains authoritative for parsing, preservation, and source classification. The migration remains authoritative for eligibility and transformation. The serializer remains authoritative for validation, raw overlay, compatibility projection generation, and output.
 
@@ -353,7 +353,7 @@ const controller = createBuilderController({
 
 const unsubscribe = controller.subscribe(() => {
   const state = controller.getState();
-  // A future React integration reads this snapshot.
+  // The React external-store adapter reads this snapshot.
 });
 
 controller.importJsonText(jsonText);
@@ -371,6 +371,6 @@ unsubscribe();
 
 ## Deliberate exclusions
 
-This issue does not add visible builder UI, React integration, navigation, forms, cards, dialogs, notifications, browser file reading or delivery, drag-and-drop, storage, persistence, a project-file format, undo/redo, autosave, account connections, authentication, manifests, backend generation, networking, live TMDB requests, artwork search, Ultra MAX conversion, AIO Metadata runtime integration, account-manager transformations, native TMDB conversion, Trakt, language or translated-artwork support, branding, routing, v1 changes, Worker changes, CSP/CORS changes, Pages contract changes, workflow changes, dependencies, lockfile changes, or cached-data changes.
+The historical issue #39 controller-foundation scope did not add visible Builder UI, React integration, navigation, forms, cards, dialogs, notifications, browser file reading or delivery, drag-and-drop, storage, persistence, a project-file format, undo/redo, autosave, account connections, authentication, manifests, backend generation, networking, live TMDB requests, artwork search, Ultra MAX conversion, AIO Metadata runtime integration, account-manager transformations, native TMDB conversion, Trakt, language or translated-artwork support, branding, routing, v1 changes, Worker changes, CSP/CORS changes, Pages contract changes, workflow changes, dependencies, lockfile changes, or cached-data changes. Later focused issues added the active UI and integrations without changing this controller boundary.
 
-The deployed builder placeholder does not import or use this controller yet. The next planned issue is the first visible builder shell/list interface.
+At the issue #39 checkpoint, the deployed Builder placeholder did not import this controller and the next milestone was the first visible shell. Issue #40 and later work now use this controller in the active Builder; this line records sequencing history, not current deployment state.
