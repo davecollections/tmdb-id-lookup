@@ -167,6 +167,8 @@ async function runMountedPage() {
 				const peopleSelectionScrollWidths = [];
 				const franchiseReviewWidths = [];
 				const studioHierarchyWidths = [];
+				const networkHierarchyWidths = [];
+				const networkLivePreviewWidths = [];
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -197,6 +199,30 @@ async function runMountedPage() {
 					});
 					if (studioEvaluation.exceptionDetails) throw new Error(studioEvaluation.exceptionDetails.exception?.description ?? studioEvaluation.exceptionDetails.text);
 					studioHierarchyWidths.push(studioEvaluation.result?.value);
+					const networkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runNetworkHierarchyScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (networkEvaluation.exceptionDetails) throw new Error(networkEvaluation.exceptionDetails.exception?.description ?? networkEvaluation.exceptionDetails.text);
+					networkHierarchyWidths.push(networkEvaluation.result?.value);
+				}
+				const networkDeferredArtworkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runNetworkDeferredArtworkScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (networkDeferredArtworkEvaluation.exceptionDetails) throw new Error(networkDeferredArtworkEvaluation.exceptionDetails.exception?.description ?? networkDeferredArtworkEvaluation.exceptionDetails.text);
+				const networkDeferredArtwork = networkDeferredArtworkEvaluation.result?.value;
+				for (const width of [393, 900]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 520 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 520 });
+					const networkLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runNetworkLivePreviewScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (networkLivePreviewEvaluation.exceptionDetails) throw new Error(networkLivePreviewEvaluation.exceptionDetails.exception?.description ?? networkLivePreviewEvaluation.exceptionDetails.text);
+					networkLivePreviewWidths.push(networkLivePreviewEvaluation.result?.value);
 				}
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
@@ -255,7 +281,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, networkLivePreviewWidths, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -280,6 +306,25 @@ async function runMountedPage() {
 			viteCacheRetries: execution.cleanupReport.viteCache.retries,
 			durationMs: Date.now() - startedAt,
 		})}`);
+		console.log(`NETWORK_LIVE_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.networkLivePreviewWidths.map((result) => ({
+			width: result.width,
+			networkId: result.networkId,
+			popular: {
+				requestUrl: result.popular.request.url,
+				totalResults: result.popular.request.totalResults,
+				posterSources: result.popular.preview.posterSources,
+				failedPosterSources: result.popular.preview.failedPosterSources,
+			},
+			recent: {
+				requestUrl: result.recent.request.url,
+				totalResults: result.recent.request.totalResults,
+				posterSources: result.recent.preview.posterSources,
+				failedPosterSources: result.recent.preview.failedPosterSources,
+			},
+			requestCount: result.instrumentation.requestCount,
+			cachedPopularRequestCount: result.cachedPopular.requestCount,
+			restoredPopularRequestCount: result.restoredPopular.requestCount,
+		})))}`);
 	}
 	return execution.value;
 }
@@ -681,6 +726,212 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 		assert.equal(result.oneScrollOwner, true, `${width}px scroll ownership`);
 		assert.equal(result.noHorizontalOverflow, true, `${width}px dialog overflow`);
 		assert.equal(result.revisionUnchanged, true, `${width}px pre-apply mutation`);
+	}
+});
+
+test("mounted Network hierarchy remains catalogue-backed, request-free before Preview, and responsive through Appearance", () => {
+	assert.deepEqual(mountedResults.networkHierarchyWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.networkHierarchyWidths) {
+		const width = result.width;
+		assert.deepEqual(result.search, {
+			focus: { searchFocused: false, autoFocusAttributeAbsent: true, keyboardTargetAbsent: true },
+			filterLabels: ["All", "Exclude 0", "10+", "50+", "100+", "500+"],
+			allDefault: true,
+			pageSize: 20,
+			countsShown: true,
+			knownZeroShownByAll: true,
+			previewAbsent: true,
+			previewCalls: 0,
+		}, `${width}px checked-in Network Search`);
+		assert.equal(result.filters.pageReset, true, `${width}px filter resets pagination`);
+		assert.equal(result.filters.fiveHundredCounts.length, 20, `${width}px 500+ page size`);
+		assert.equal(result.filters.fiveHundredCounts.every((count) => count >= 500), true, `${width}px 500+ catalogue semantics`);
+		assert.equal(result.filters.excludeZeroActive, true, `${width}px Exclude 0 remains selected`);
+		assert.deepEqual(result.selection, {
+			selectedCount: 2,
+			nativeCheckboxes: true,
+			selectedIndicators: true,
+			selectionPreservedAcrossFilter: true,
+			filterPreserved: true,
+		}, `${width}px native Network selection`);
+		assert.deepEqual(result.configure, {
+			rowIds: [2, 18],
+			focusEntered: true,
+			catalogueCountsPresent: true,
+			exactCountsAbsent: true,
+			previewActions: 2,
+			previewModalAbsent: true,
+			previewCalls: 0,
+			popularDefault: true,
+			sortLabels: ["Popular", "Recent", "Top rated", "Most voted"],
+			sortChangeRequestFree: true,
+		}, `${width}px request-free Configure`);
+		assert.deepEqual(result.appearance, {
+			heading: "Appearance",
+			planTotals: [1, 2, 2],
+			posterDefault: true,
+			landscapeSelected: true,
+			previewAbsent: true,
+			previewCalls: 0,
+		}, `${width}px production artwork choices`);
+		assert.deepEqual(result.artwork.posterBatch, {
+			loads: 1,
+			resolves: 2,
+			orientations: ["poster", "poster"],
+			loadSucceeded: true,
+		}, `${width}px Poster artwork batch`);
+		assert.equal(result.artwork.loads, 2, `${width}px one production artwork load per orientation batch`);
+		assert.equal(result.artwork.resolves, 4, `${width}px production artwork resolves`);
+		assert.deepEqual(result.artwork.orientations, ["poster", "poster", "landscape", "landscape"], `${width}px exact requested artwork orientations`);
+		assert.deepEqual(result.artwork.entityTypes, ["network"], `${width}px Network runtime entity type`);
+		assert.deepEqual(result.artwork.ids, [2, 18], `${width}px checked-in Network identities`);
+		assert.equal(result.artwork.productionAssetUrls, true, `${width}px production artwork asset base`);
+		assert.equal(result.artwork.loadSucceeded, true, `${width}px production artwork runtime load`);
+		for (const [stage, layout] of Object.entries(result.layout)) {
+			assert.equal(layout.singleInnerScroll, true, `${width}px ${stage} single inner scroll`);
+			assert.equal(layout.oneActiveScrollOwner, true, `${width}px ${stage} scroll ownership`);
+			assert.equal(layout.noHorizontalOverflow, true, `${width}px ${stage} horizontal overflow`);
+			assert.equal(layout.primaryReachable, true, `${width}px ${stage} primary action`);
+		}
+		assert.equal(result.previewCalls, 0, `${width}px zero Preview calls before explicit Preview`);
+		assert.equal(result.applyCalls, 0, `${width}px pre-Create only`);
+		assert.equal(result.revisionUnchanged, true, `${width}px pre-Create project immutability`);
+	}
+});
+
+test("mounted Network hierarchy locks Configure while deferred production artwork resolves", () => {
+	assert.deepEqual(mountedResults.networkDeferredArtwork, {
+		preparing: {
+			stageStayedConfigure: true,
+			ariaBusy: true,
+			inert: true,
+			primaryDisabled: true,
+			primaryLabel: "Preparing artwork…",
+			backDisabled: true,
+			focusBeforePreparation: true,
+		},
+		locked: {
+			popularPreserved: true,
+			previewCalls: 0,
+			previewModalAbsent: true,
+			selectionPreserved: true,
+			stageStayedConfigure: true,
+		},
+		completion: {
+			unchangedSnapshotAdvanced: true,
+			planTotals: [1, 1, 1],
+			posterPreserved: true,
+			focusEnteredAppearance: true,
+			previewModalAbsent: true,
+		},
+		artworkLoads: 1,
+		artworkResolves: 1,
+		previewCalls: 0,
+		applyCalls: 0,
+		revisionUnchanged: true,
+	});
+});
+
+test("mounted Network Preview uses the live Worker, TMDB, and image CDN with transient count, cache, sort, and focus safety", () => {
+	assert.deepEqual(mountedResults.networkLivePreviewWidths.map((result) => result.width), [393, 900]);
+	for (const result of mountedResults.networkLivePreviewWidths) {
+		const width = result.width;
+		const maximumPosterCount = width <= 520 ? 5 : 10;
+		assert.equal(result.networkId, 213, `${width}px real Netflix Network identity`);
+		assert.match(result.catalogueCountLine, /^Series Count: (?:[\d,]+|Unknown)$/, `${width}px checked-in catalogue count`);
+		assert.deepEqual(result.initialCountLines, [result.catalogueCountLine], `${width}px one pre-Preview catalogue count line`);
+		assert.equal(result.requestsBeforeExplicitPreview, 0, `${width}px no automatic Network Preview request`);
+
+		assert.equal(result.popular.requestCount, 1, `${width}px one cold Popular request`);
+		assert.equal(result.popular.request.origin, tmdbProxyBaseUrl, `${width}px production Worker origin`);
+		assert.equal(result.popular.request.pathname, "/3/discover/tv", `${width}px Network TV Discover path`);
+		assert.deepEqual(result.popular.request.networkValues, ["213"], `${width}px one with_networks identity`);
+		assert.deepEqual(result.popular.request.sortValues, ["popularity.desc"], `${width}px Popular concrete sort`);
+		assert.deepEqual(result.popular.request.pageValues, [], `${width}px no page or page-2 request`);
+		assert.deepEqual(result.popular.request.queryKeys.sort(), ["sort_by", "with_networks"], `${width}px no separate count or extra query`);
+		assert.equal(result.popular.request.exactRequest, true, `${width}px exact Popular request shape`);
+		assert.equal(result.popular.request.status, 200, `${width}px live Popular Worker status`);
+		assert.equal(result.popular.request.ok, true, `${width}px live Popular Worker response`);
+		assert.match(result.popular.request.contentType, /application\/json/i, `${width}px live Popular JSON response`);
+		assert.equal(Number.isSafeInteger(result.popular.request.totalResults) && result.popular.request.totalResults >= 0, true, `${width}px numeric volatile total_results`);
+		const popularCountLine = `Series Count: ${result.popular.request.totalResults.toLocaleString("en")}`;
+		assert.equal(result.popular.modalCountLine, popularCountLine, `${width}px Preview count corresponds to cloned live response`);
+		assert.deepEqual(result.popular.configureCountLines, [popularCountLine], `${width}px live total supersedes the catalogue value on one Configure line`);
+		assert.equal(result.popular.expectedVisibleCount, Math.min(maximumPosterCount, result.popular.preview.availablePosterCount), `${width}px dynamic real-resource poster bound`);
+		assert.equal(result.popular.preview.visiblePosterCount, result.popular.expectedVisibleCount, `${width}px bounded Popular posters`);
+		assert.equal(result.popular.preview.visiblePosterCount > 0 && result.popular.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px usable Popular poster count`);
+		assert.equal(result.popular.preview.renderedPosterCount <= 10, true, `${width}px production DOM poster maximum`);
+		assert.equal(result.popular.preview.exactResponseOrder, true, `${width}px exact Popular response order after real failures`);
+		assert.equal(result.popular.preview.orderedResponseCorrespondence, true, `${width}px Popular poster_path correspondence`);
+		assert.deepEqual(result.popular.preview.posterSources, result.popular.preview.expectedPosterSources, `${width}px genuine expected Popular poster URLs`);
+		assert.equal(result.popular.preview.postersReady, true, `${width}px Popular images semantically ready`);
+		assert.equal(result.popular.preview.genuineTmdbSources, true, `${width}px Popular image.tmdb.org sources`);
+		assert.equal(result.popular.preview.posterOnly, true, `${width}px Popular poster-only grid`);
+		assert.equal(result.popular.preview.captionsAbsent, true, `${width}px no title/year/rating/description captions`);
+		assert.equal(result.popular.preview.missingPosterCardsAbsent, true, `${width}px posterless rows omitted`);
+		assert.equal(result.popular.preview.readiness.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && image.clientWidth > 0 && image.clientHeight > 0 && image.width > 0 && image.height > 0), true, `${width}px positive natural and rendered dimensions`);
+		assert.deepEqual(result.popular.layer, {
+			focusEntered: true,
+			sharedLayer: true,
+			modalSemantics: true,
+			nestedAboveOuter: true,
+			outerInert: true,
+			noHorizontalOverflow: true,
+		}, `${width}px nested live Preview layer`);
+		assert.deepEqual(result.popular.close, {
+			closed: true,
+			exactFocusRestored: true,
+			outerStable: true,
+			configureIntact: true,
+			countLines: [popularCountLine],
+		}, `${width}px Close restores the exact trigger and stable outer Configure`);
+
+		assert.equal(result.cachedPopular.requestCount, 1, `${width}px repeat Popular adds no request`);
+		assert.equal(result.cachedPopular.cacheHit, true, `${width}px repeat Popular cache hit`);
+		assert.equal(result.cachedPopular.preview.exactResponseOrder, true, `${width}px cached Popular response order`);
+		assert.equal(result.cachedPopular.escapeClosed, true, `${width}px Escape closes cached Preview`);
+		assert.equal(result.cachedPopular.exactFocusRestored, true, `${width}px Escape restores exact Preview trigger`);
+		assert.equal(result.cachedPopular.outerStable, true, `${width}px Escape preserves outer scroll and position`);
+
+		assert.equal(result.recent.requestCount, 2, `${width}px Recent adds exactly one request`);
+		assert.equal(result.recent.request.origin, tmdbProxyBaseUrl, `${width}px Recent production Worker origin`);
+		assert.deepEqual(result.recent.request.networkValues, ["213"], `${width}px one Recent Network identity`);
+		assert.deepEqual(result.recent.request.sortValues, ["first_air_date.desc"], `${width}px Recent concrete sort`);
+		assert.equal(result.recent.request.exactRequest, true, `${width}px exact Recent request shape`);
+		assert.equal(Number.isSafeInteger(result.recent.request.totalResults) && result.recent.request.totalResults >= 0, true, `${width}px Recent numeric volatile total_results`);
+		assert.deepEqual(result.recent.countAfterSortBeforePreview, [popularCountLine], `${width}px sort does not revert learned count`);
+		const recentCountLine = `Series Count: ${result.recent.request.totalResults.toLocaleString("en")}`;
+		assert.equal(result.recent.modalCountLine, recentCountLine, `${width}px Recent Preview total correspondence`);
+		assert.deepEqual(result.recent.configureCountLines, [recentCountLine], `${width}px one Recent live count line`);
+		assert.equal(result.recent.expectedVisibleCount, Math.min(maximumPosterCount, result.recent.preview.availablePosterCount), `${width}px dynamic Recent real-resource bound`);
+		assert.equal(result.recent.preview.visiblePosterCount, result.recent.expectedVisibleCount, `${width}px bounded Recent posters`);
+		assert.equal(result.recent.preview.exactResponseOrder, true, `${width}px exact Recent response order`);
+		assert.equal(result.recent.preview.postersReady, true, `${width}px Recent images semantically ready`);
+		assert.equal(result.recent.preview.genuineTmdbSources, true, `${width}px Recent image.tmdb.org sources`);
+		assert.equal(result.recent.preview.posterOnly, true, `${width}px Recent poster-only grid`);
+		assert.equal(result.recent.previousSortNotShown, true, `${width}px Popular posters are not reused as Recent ready state`);
+		assert.deepEqual(result.recent.close, { closed: true, exactFocusRestored: true, outerStable: true }, `${width}px Recent Close lifecycle`);
+
+		assert.equal(result.restoredPopular.requestCount, 2, `${width}px returning to Popular adds no request`);
+		assert.equal(result.restoredPopular.cacheHit, true, `${width}px restored Popular cache hit`);
+		assert.equal(result.restoredPopular.preview.exactResponseOrder, true, `${width}px restored Popular response order`);
+		assert.equal(result.restoredPopular.matchesOriginalResponse, true, `${width}px restored Popular posters match the original real response`);
+		assert.deepEqual(result.restoredPopular.countAfterReturnToPopularBeforePreview, [recentCountLine], `${width}px learned count survives return sort change`);
+		assert.deepEqual(result.restoredPopular.finalCountLines, [popularCountLine], `${width}px cached successful Preview updates the same count line`);
+		assert.equal(result.restoredPopular.closed, true, `${width}px restored Popular Preview closes`);
+		assert.equal(result.restoredPopular.exactFocusRestored, true, `${width}px restored Popular trigger focus`);
+		assert.deepEqual(result.instrumentation, {
+			requestCount: 2,
+			allResponsesCloned: true,
+			originalResponsesUntouched: true,
+			allSuccessfulJson: true,
+		}, `${width}px same-response clone instrumentation`);
+		assert.deepEqual(result.final, {
+			oneSeriesCountLine: true,
+			configureIntact: true,
+			noHorizontalOverflow: true,
+			revisionUnchanged: true,
+		}, `${width}px live Preview remains transient and non-mutating`);
 	}
 });
 

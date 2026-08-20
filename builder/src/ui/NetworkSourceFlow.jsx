@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	buildNetworkSourceDraft,
@@ -6,11 +6,10 @@ import {
 	createSourceSubmissionGate,
 	DEFAULT_NETWORK_SORT_OPTION_ID,
 	formatNetworkLocation,
-	INITIAL_ASYNC_REQUEST_STATE,
 	inspectNetworkSourceDuplicates,
 	networkDuplicateOverrideIdentity,
+	NETWORK_SERIES_COUNT_FILTER_OPTIONS,
 	NETWORK_SOURCE_MODE,
-	parseNetworkSearchInput,
 } from "../source-add/index.js";
 import {
 	lockAddSourceDocumentBody,
@@ -32,8 +31,9 @@ import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
+import { NETWORK_SEARCH_DEBOUNCE_MS, useNetworkCatalogueSearch } from "./use-network-catalogue-search.js";
 
-export const NETWORK_SEARCH_DEBOUNCE_MS = 250;
+export { NETWORK_SEARCH_DEBOUNCE_MS };
 export { NETWORK_SOURCE_STEPS };
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -43,8 +43,25 @@ export function NetworkLogo({ network, size = "w92", context = "result", loading
 	return <TmdbEntityLogo entity={network} entityType="network" size={size} context={context} loading={loading} />;
 }
 
-function NetworkResult({ network, onSelect }) {
+function networkSeriesCountLabel(network) {
+	return Number.isSafeInteger(network?.seriesCount) && network.seriesCount >= 0
+		? network.seriesCount.toLocaleString("en")
+		: "Unknown";
+}
+
+export function NetworkResultContent({ network, showSeriesCount = false }) {
 	const metadata = network.location || formatNetworkLocation(network);
+	return <>
+		<NetworkLogo network={network} context="result" />
+		<span className="add-source-result-content">
+			<span className="add-source-result-heading"><strong>{network.name}</strong><span>TMDB {network.id}</span></span>
+			{metadata ? <span className="studio-result-metadata network-result-metadata">{metadata}</span> : null}
+			{showSeriesCount ? <span className="studio-result-count network-result-count">Series Count: {networkSeriesCountLabel(network)}</span> : null}
+		</span>
+	</>;
+}
+
+function NetworkResult({ network, onSelect }) {
 	return (
 		<button
 			className="add-source-result studio-result network-result"
@@ -52,11 +69,7 @@ function NetworkResult({ network, onSelect }) {
 			data-tmdb-network-result={network.id}
 			onClick={() => onSelect(network)}
 		>
-			<NetworkLogo network={network} context="result" />
-			<span className="add-source-result-content">
-				<span className="add-source-result-heading"><strong>{network.name}</strong><span>TMDB {network.id}</span></span>
-				{metadata ? <span className="studio-result-metadata network-result-metadata">{metadata}</span> : null}
-			</span>
+			<NetworkResultContent network={network} />
 		</button>
 	);
 }
@@ -68,10 +81,15 @@ export function NetworkSearchStep({
 	lookupState,
 	searchData,
 	browsing = false,
+	seriesCountFilter = null,
+	showSeriesCountFilters = false,
 	onInputChange,
+	onSeriesCountFilterChange = () => {},
 	onRetry,
 	onSelect,
 	onChangePage,
+	resultsHeading = "Choose a Network",
+	renderResult = null,
 }) {
 	return (
 		<>
@@ -100,6 +118,14 @@ export function NetworkSearchStep({
 							: lookupState.status === "loading" ? "Searching Networks…" : null}
 				</p>
 			</div>
+			{showSeriesCountFilters ? (
+				<div className="studio-search-controls studio-search-controls--hierarchy network-search-controls" aria-label="Network result controls">
+					<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Series Count filter">
+						<span className="studio-search-control-label">Series count</span>
+						<span className="studio-search-control-buttons">{NETWORK_SERIES_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={seriesCountFilter === option.id} aria-label={`Series Count ${option.label}`} onClick={() => onSeriesCountFilterChange(option.id)}>{option.label}</button>)}</span>
+					</div>
+				</div>
+			) : null}
 			{lookupState.status === "error" ? (
 				<div className="add-source-request-state" role="alert">
 					<p>{lookupState.error?.message ?? "Networks could not be searched. Try again."}</p>
@@ -109,12 +135,12 @@ export function NetworkSearchStep({
 			{searchData ? (
 				<section className="add-source-results" aria-labelledby="network-results-title">
 					<div className="add-source-section-heading">
-						<div><p className="panel-kicker">Network results</p><h3 id="network-results-title">Choose a Network</h3></div>
+						<div><p className="panel-kicker">Network results</p><h3 id="network-results-title">{resultsHeading}</h3></div>
 						{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}
 					</div>
 					{searchData.results.length ? (
 						<div className="add-source-result-list">
-							{searchData.results.map((network) => <NetworkResult key={network.id} network={network} onSelect={onSelect} />)}
+							{searchData.results.map((network) => renderResult ? renderResult(network) : <NetworkResult key={network.id} network={network} onSelect={onSelect} />)}
 						</div>
 					) : <p className="add-source-empty-results">{browsing ? "No Networks are available." : "No Networks matched this search."}</p>}
 					{searchData.totalPages > 1 ? (
@@ -175,10 +201,6 @@ export function NetworkConfigureActions({ duplicate, isApplying = false, onAddAn
 
 export function NetworkSourceFlow({ catalogueProvider, countProvider, project, folder, onBack, onCancel, onApply }) {
 	const [navigation, setNavigation] = useState(createNetworkSourceNavigationState);
-	const [input, setInput] = useState("");
-	const [page, setPage] = useState(1);
-	const [retryGeneration, setRetryGeneration] = useState(0);
-	const [lookupState, setLookupState] = useState(INITIAL_ASYNC_REQUEST_STATE);
 	const [selectedNetwork, setSelectedNetwork] = useState(null);
 	const [count, setCount] = useState(INITIAL_NETWORK_COUNT);
 	const [sortOptionId, setSortOptionId] = useState(DEFAULT_NETWORK_SORT_OPTION_ID);
@@ -189,20 +211,12 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 	const scrollRef = useRef(null);
 	const inputRef = useRef(null);
 	const configureRef = useRef(null);
-	const lookupCoordinatorRef = useRef(null);
 	const countCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
-	if (!lookupCoordinatorRef.current) lookupCoordinatorRef.current = createAsyncRequestCoordinator({ onStateChange: setLookupState });
 	if (!countCoordinatorRef.current) countCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 
-	const parsedInput = useMemo(() => parseNetworkSearchInput(input), [input]);
-	const browsing = parsedInput.kind === "empty";
-	const searchData = lookupState.status === "success" && (
-		(lookupState.context?.kind === "exact" && parsedInput.kind === "exact" && lookupState.context.id === parsedInput.id)
-		|| (lookupState.context?.kind === "search" && parsedInput.kind === "search" && lookupState.context.query === parsedInput.query && lookupState.context.page === page)
-		|| (lookupState.context?.kind === "browse" && browsing && lookupState.context.page === page)
-	) ? lookupState.data : null;
+	const search = useNetworkCatalogueSearch(catalogueProvider);
 	const duplicateReview = selectedNetwork
 		? inspectNetworkSourceDuplicates(project, folder?.internalId ?? null, selectedNetwork.id)
 		: { destination: [], elsewhere: [] };
@@ -217,25 +231,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 		return () => { stopViewport(); unlockBody(); };
 	}, []);
 
-	useEffect(() => {
-		const coordinator = lookupCoordinatorRef.current;
-		coordinator.cancel({ notify: false });
-		setLookupState(INITIAL_ASYNC_REQUEST_STATE);
-		if (parsedInput.kind === "invalid" || (parsedInput.kind === "search" && !parsedInput.eligible)) return undefined;
-		const requestInput = browsing ? Object.freeze({ kind: "browse" }) : parsedInput;
-		const timer = window.setTimeout(() => {
-			coordinator.run(
-				() => catalogueProvider.searchNetworks(requestInput, { page }),
-				requestInput.kind === "exact"
-					? { kind: "exact", id: requestInput.id, page: 1 }
-					: requestInput.kind === "browse" ? { kind: "browse", page } : { kind: "search", query: requestInput.query, page },
-			);
-		}, NETWORK_SEARCH_DEBOUNCE_MS);
-		return () => { window.clearTimeout(timer); coordinator.cancel({ reset: false, notify: false }); };
-	}, [browsing, catalogueProvider, page, parsedInput, retryGeneration]);
-
 	useEffect(() => () => {
-		lookupCoordinatorRef.current.cancel({ notify: false });
 		countCoordinatorRef.current.cancel({ notify: false });
 	}, []);
 
@@ -281,8 +277,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 	}
 
 	function handleSearchInputChange(event) {
-		setInput(event.target.value);
-		setPage(1);
+		search.handleInputChange(event);
 		setApplyDiagnostic(null);
 	}
 
@@ -328,7 +323,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 					<form className="add-source-form" data-network-source-form-step={step} onSubmit={submit} noValidate>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === NETWORK_SOURCE_STEPS.SEARCH ? (
-								<NetworkSearchStep input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} browsing={browsing} onInputChange={handleSearchInputChange} onRetry={() => setRetryGeneration((value) => value + 1)} onSelect={selectNetwork} onChangePage={setPage} />
+								<NetworkSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} browsing={search.browsing} onInputChange={handleSearchInputChange} onRetry={search.retrySearch} onSelect={selectNetwork} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<NetworkConfigureStep network={selectedNetwork} count={count} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionId={sortOptionId} onSortChange={(optionId) => { setSortOptionId(optionId); setApplyDiagnostic(null); }} />

@@ -8,6 +8,7 @@ export const NETWORK_SORT_OPTIONS = Object.freeze([
 ]);
 export const DEFAULT_NETWORK_SORT_OPTION_ID = NETWORK_SORT_OPTIONS[0].id;
 export const DEFAULT_NETWORK_SORT = NETWORK_SORT_OPTIONS[0].value;
+export const NETWORK_HIERARCHY_SOURCE_TITLE = "Series";
 
 const editableKeys = Object.freeze(["filters", "mediaType", "provider", "sortBy", "title", "tmdbId", "tmdbSourceType"]);
 
@@ -71,6 +72,31 @@ export function buildNetworkSourceDraft(network, { sortOptionId = DEFAULT_NETWOR
 	return { ...validation, draft: validation.ok ? draft : null };
 }
 
+export function buildNetworkHierarchySourceDraft(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID } = {}) {
+	const name = canonicalText(network?.name);
+	const errors = [];
+	if (!Number.isSafeInteger(network?.id) || network.id <= 0 || !name || network.name !== name) {
+		errors.push(diagnostic("INVALID_NETWORK_HIERARCHY_NETWORK", "$networkHierarchy.network", "A canonical cached Network identity is required."));
+	}
+	const sortBy = networkSortValue(sortOptionId);
+	if (sortBy === null) errors.push(diagnostic("UNSUPPORTED_NETWORK_HIERARCHY_SORT", "$networkHierarchy.sortBy", "Choose a supported Network Series sort order."));
+	if (errors.length > 0) return { ok: false, draft: null, errors };
+	const draft = {
+		category: NETWORK_SOURCE_MODE.category,
+		editable: {
+			title: NETWORK_HIERARCHY_SOURCE_TITLE,
+			sortBy,
+			tmdbId: network.id,
+			filters: {},
+			provider: "tmdb",
+			mediaType: "TV",
+			tmdbSourceType: "NETWORK",
+		},
+	};
+	const validation = validateNetworkHierarchySourceDraft(draft, { network });
+	return { ...validation, draft: validation.ok ? draft : null };
+}
+
 export function validateNetworkSourceDraft(draft, { network = null, path = "$network.source" } = {}) {
 	const errors = [];
 	if (!plainObject(draft) || !sameKeys(draft, ["category", "editable"])) {
@@ -94,6 +120,20 @@ export function validateNetworkSourceDraft(draft, { network = null, path = "$net
 	}
 	if (!isSupportedNetworkSort(editable.sortBy)) errors.push(diagnostic("INVALID_NETWORK_SORT", `${path}.editable.sortBy`, "Choose a supported Network Series sort order."));
 	if (!plainObject(editable.filters) || Object.keys(editable.filters).length !== 0) errors.push(diagnostic("INVALID_NETWORK_FILTERS", `${path}.editable.filters`, "Network source filters must be an explicit empty object."));
+	return { ok: errors.length === 0, errors };
+}
+
+export function validateNetworkHierarchySourceDraft(draft, { network = null, path = "$networkHierarchy.source" } = {}) {
+	const validation = validateNetworkSourceDraft(draft, { path });
+	const errors = [...validation.errors];
+	if (!plainObject(draft?.editable)) return { ok: false, errors };
+	const id = canonicalTmdbId(draft.editable.tmdbId);
+	if (draft.editable.title !== NETWORK_HIERARCHY_SOURCE_TITLE) {
+		errors.push(diagnostic("INVALID_NETWORK_HIERARCHY_TITLE", `${path}.editable.title`, `Network hierarchy sources must use the ${NETWORK_HIERARCHY_SOURCE_TITLE} title.`));
+	}
+	if (network !== null && id !== network?.id) {
+		errors.push(diagnostic("MISMATCHED_NETWORK_HIERARCHY_SOURCE", path, "The Network hierarchy source must match the selected cached Network."));
+	}
 	return { ok: errors.length === 0, errors };
 }
 

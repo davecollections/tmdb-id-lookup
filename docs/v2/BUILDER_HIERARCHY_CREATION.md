@@ -2,11 +2,11 @@
 
 Status: Durable cross-family architecture, product, UX, accessibility, scale, presentation, and verification standard
 
-Established by: Decades issues [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) and [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113), then reconciled with People issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) through issue [#120](https://github.com/davecollections/tmdb-id-lookup/issues/120), with Franchises applied in issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) and Studios completed and owner-reviewed in issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124)
+Established by: Decades issues [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) and [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113), then reconciled with People issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119) through issue [#120](https://github.com/davecollections/tmdb-id-lookup/issues/120), with Franchises applied in issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122), Studios completed and owner-reviewed in issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124), and Networks applying it in issue [#126](https://github.com/davecollections/tmdb-id-lookup/issues/126)
 
 Last reviewed: 2026-08-20
 
-This document owns the rules shared by guided **New Collection** and **New Folder** hierarchy families. Family documents such as [`BUILDER_DECADES.md`](./BUILDER_DECADES.md), [`BUILDER_PEOPLE.md`](./BUILDER_PEOPLE.md), [`BUILDER_FRANCHISES.md`](./BUILDER_FRANCHISES.md), and [`BUILDER_STUDIOS.md`](./BUILDER_STUDIOS.md) continue to own family-specific source contracts, defaults, naming, artwork authority, duplicate strictness, and optional features. Repository implementation, deterministic tests, and confirmed owner evidence override obsolete plans.
+This document owns the rules shared by guided **New Collection** and **New Folder** hierarchy families. Family documents such as [`BUILDER_DECADES.md`](./BUILDER_DECADES.md), [`BUILDER_PEOPLE.md`](./BUILDER_PEOPLE.md), [`BUILDER_FRANCHISES.md`](./BUILDER_FRANCHISES.md), [`BUILDER_STUDIOS.md`](./BUILDER_STUDIOS.md), and [`BUILDER_NETWORKS.md`](./BUILDER_NETWORKS.md) continue to own family-specific source contracts, defaults, naming, artwork authority, duplicate strictness, and optional features. Repository implementation, deterministic tests, and confirmed owner evidence override obsolete plans.
 
 ## 1. Entry points and persisted architecture
 
@@ -42,7 +42,7 @@ Select / Choose → Configure → Review & Appearance → Create
 
 A simple family may collapse a stage. A family may add a focused nested subview when the task would otherwise overload the primary stage. Do not force identical steps when the semantics are simpler.
 
-A family may also move routine entity review earlier when that makes the final presentation stage materially clearer. Studio issue #124 deliberately uses **Select → Configure → Appearance**: Configure owns the directly visible selected-Studio rows, Preview/remove actions, learned counts, and reactive placement; Appearance owns presentation only and contains no Studio rows.
+A family may also move routine entity review earlier when that makes the final presentation stage materially clearer. Studio issue #124 deliberately uses **Select → Configure → Appearance**: Configure owns the directly visible selected-Studio rows, Preview/remove actions, learned counts, and reactive placement; Appearance owns presentation only and contains no Studio rows. Network issue #126 follows that same stage split with Network-specific Series-only configuration and appearance.
 
 Back must preserve every still-valid selection, configuration override, title draft, presentation choice, and relevant search position. Cancel and Back are mutation-free. Browse/select screens do not auto-focus Search or summon the mobile keyboard; Search may receive focus only after explicit interaction or when the user has explicitly chosen a flow whose primary task is typing.
 
@@ -120,17 +120,17 @@ Franchise issue #122 resolves that family decision by preserving the complete ca
 
 Current contrasts prove why this boundary matters:
 
-| Concern | Decades | People | Franchises | Studios |
-| --- | --- | --- | --- | --- |
-| Sort | Four evidenced Discover sorts, including Most Votes | Popular, Recent, and Top rated only; no evidenced native People Most Votes | Fixed TMDB-provided `original` order | Four evidenced Company sorts with media-correct Recent mapping |
-| Folder-title default | Show everywhere | Hide on home screen only | Hide on home screen only | Show everywhere |
-| Artwork in creator | Shared Poster/Landscape presentation only; no artwork request in #113 | Shared Poster/Landscape choice over canonical per-person manifest/fallback defaults | Fixed Poster tile from each TMDB Collection poster, then safe emoji fallback | Fixed Landscape from Company runtime, checked-in `w500` logo, then safe emoji fallback |
-| Preview | Ordering schematics and generated hierarchy detail | Optional bounded poster-only title preview, separated into applicable Movies and Series views | Optional bounded contained-title poster preview | Explicit lazy Movie/Series Discover preview; never automatic |
-| Identity | Exact canonical Discover recipe identity | TMDB person ID plus exact `PERSON`/`DIRECTOR` media identities | Exact TMDB Collection ID with `COLLECTION`/`MOVIE` | Logical Company ID; physical Company ID plus media |
+| Concern | Decades | People | Franchises | Studios | Networks |
+| --- | --- | --- | --- | --- | --- |
+| Sort | Four evidenced Discover sorts, including Most Votes | Popular, Recent, and Top rated only; no evidenced native People Most Votes | Fixed TMDB-provided `original` order | Four evidenced Company sorts with media-correct Recent mapping | Four evidenced Network TV sorts |
+| Folder-title default | Show everywhere | Hide on home screen only | Hide on home screen only | Show everywhere | Show everywhere |
+| Artwork in creator | Shared Poster/Landscape presentation only; no artwork request in #113 | Shared Poster/Landscape choice over canonical per-person manifest/fallback defaults | Fixed Poster tile from each TMDB Collection poster, then safe emoji fallback | Fixed Landscape from Company runtime, checked-in `w500` logo, then safe emoji fallback | Shared Poster/Landscape choice; exact runtime orientation, checked-in `w500` logo, then safe emoji fallback |
+| Preview | Ordering schematics and generated hierarchy detail | Optional bounded poster-only title preview, separated into applicable Movies and Series views | Optional bounded contained-title poster preview | Explicit lazy Movie/Series Discover preview; never automatic | Explicit lazy single-view Series Discover preview; never automatic |
+| Identity | Exact canonical Discover recipe identity | TMDB person ID plus exact `PERSON`/`DIRECTOR` media identities | Exact TMDB Collection ID with `COLLECTION`/`MOVIE` | Logical Company ID; physical Company ID plus media | Logical Network ID; physical Network ID plus `TV` |
 
-When a Preview is a true nested modal, reuse the structural `NestedPreviewDialog` seam for the body portal, nested backdrop, dialog semantics, focus containment, initial focus, Close, Escape, and outer-event isolation. Keep trigger restoration and family request/data state with the owning flow. Do not force People, Franchise, Studio, or a future family into one provider/result model. Preview requests must remain explicit where the family contract requires it; unopened media or views do not authorize prefetching.
+When a Preview is a true nested modal, reuse the structural `NestedPreviewDialog` seam for the body portal, nested backdrop, dialog semantics, focus containment, initial focus, Close, Escape, and outer-event isolation. Keep trigger restoration and family request/data state with the owning flow. Do not force People, Franchise, Studio, Network, or a future family into one provider/result model. Preview requests must remain explicit where the family contract requires it; unopened media or views do not authorize prefetching.
 
-When both Movies and Series are applicable, Preview must separate them into media-specific views. Show only applicable views, load a view lazily if its family requires requests, report the count for that media only, and never present one combined cross-media total. Within each media view, combine all applicable source roles, deduplicate by physical title identity, and apply that family's semantic sort. Studio follows this rule through its separate Discover requests and cache. People follows it over already-loaded combined credits, so switching its Movies/Series view makes no new People request. Franchises remains Movies-only, and Decades exposes no title Preview.
+When both Movies and Series are applicable, Preview must separate them into media-specific views. Show only applicable views, load a view lazily if its family requires requests, report the count for that media only, and never present one combined cross-media total. Within each media view, combine all applicable source roles, deduplicate by physical title identity, and apply that family's semantic sort. Studio follows this rule through its separate Discover requests and cache. People follows it over already-loaded combined credits, so switching its Movies/Series view makes no new People request. Franchises remains Movies-only, Networks remains Series-only without a media control, and Decades exposes no title Preview.
 
 Every current and future title Preview result grid is **poster-only**. A successful individual result contributes only its usable poster image: no title, year, date, media label, rating, description, source wording, or technical metadata is rendered on the poster item. Results without a valid poster are omitted before the 10-desktop/5-mobile visual bound; if no usable posters remain, the modal shows one calm **No posters available.** state instead of textual placeholder cards. The modal shell may retain the entity name, applicable Movies/Series controls, reliable media-specific counts, Close, loading, recoverable error/Retry, and accessibility semantics. Single-media families do not add a pointless media tab. This rule guides a future Decades Preview if one is approved; it does not require every family to implement Preview.
 
@@ -176,7 +176,7 @@ Bulk hierarchy creators expose only batch-safe artwork and presentation choices.
 
 - Do not add per-item artwork URL editors, focus toggles, or reset controls to a bulk creator merely to expose every ordinary Folder field.
 - Individual artwork customization belongs to ordinary **Edit Folder** unless a future family demonstrates a genuine batch-edit requirement.
-- Reuse existing presentation controls such as Poster/Landscape where applicable. Family evidence may instead fix one shape; Franchises is Poster-only and Studios is Landscape-only, so neither exposes a shape selector.
+- Reuse existing presentation controls such as Poster/Landscape where applicable. Family evidence may instead fix one shape; Franchises is Poster-only and Studios is Landscape-only, so neither exposes a shape selector. Networks exposes the shared shape selector because its runtime contract supports exact Poster and Landscape resolution.
 - Shared control semantics do not require shared artwork providers or defaults.
 
 ## 12. Identity and duplicates

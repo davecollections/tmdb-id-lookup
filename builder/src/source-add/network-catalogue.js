@@ -10,9 +10,33 @@ import {
 
 export const NETWORK_SEARCH_PAGE_SIZE = 20;
 export const NETWORK_CATALOGUE_PATH = "../data/tv-networks.min.json";
+export const NETWORK_SERIES_COUNT_FILTERS = Object.freeze({
+	ALL: "all",
+	EXCLUDE_ZERO: "exclude-zero",
+	AT_LEAST_10: "10-plus",
+	AT_LEAST_50: "50-plus",
+	AT_LEAST_100: "100-plus",
+	AT_LEAST_500: "500-plus",
+});
+export const NETWORK_SERIES_COUNT_FILTER_OPTIONS = Object.freeze([
+	Object.freeze({ id: NETWORK_SERIES_COUNT_FILTERS.ALL, label: "All" }),
+	Object.freeze({ id: NETWORK_SERIES_COUNT_FILTERS.EXCLUDE_ZERO, label: "Exclude 0" }),
+	Object.freeze({ id: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_10, label: "10+" }),
+	Object.freeze({ id: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_50, label: "50+" }),
+	Object.freeze({ id: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_100, label: "100+" }),
+	Object.freeze({ id: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_500, label: "500+" }),
+]);
+export const DEFAULT_NETWORK_SERIES_COUNT_FILTER = NETWORK_SERIES_COUNT_FILTERS.ALL;
 
 const decimalIdPattern = /^\d+$/;
 const numericLikePattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
+const supportedSeriesCountFilters = new Set(Object.values(NETWORK_SERIES_COUNT_FILTERS));
+const seriesCountThresholds = new Map([
+	[NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_10, 10],
+	[NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_50, 50],
+	[NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_100, 100],
+	[NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_500, 500],
+]);
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -47,7 +71,7 @@ function matchNetwork(network, query, countryCodeQuery) {
 	return null;
 }
 
-function publicNetwork(network) {
+function publicNetwork(network, { includeSeriesCount = false } = {}) {
 	return Object.freeze({
 		id: network.id,
 		name: network.name,
@@ -55,7 +79,16 @@ function publicNetwork(network) {
 		headquarters: network.headquarters,
 		location: formatNetworkLocation(network),
 		logoPath: network.logoPath,
+		...(includeSeriesCount ? { seriesCount: network.seriesCount } : {}),
 	});
+}
+
+export function networkMatchesSeriesCountFilter(network, filterId = DEFAULT_NETWORK_SERIES_COUNT_FILTER) {
+	if (!supportedSeriesCountFilters.has(filterId)) throw new TypeError("Choose a supported Network Series Count filter.");
+	if (filterId === NETWORK_SERIES_COUNT_FILTERS.ALL) return true;
+	if (filterId === NETWORK_SERIES_COUNT_FILTERS.EXCLUDE_ZERO) return network?.seriesCount !== 0;
+	const threshold = seriesCountThresholds.get(filterId);
+	return Number.isSafeInteger(network?.seriesCount) && network.seriesCount >= threshold;
 }
 
 export function formatNetworkLocation(network) {
@@ -95,6 +128,7 @@ export function normalizeNetworkCatalogueRow(value) {
 		headquarters: normalizeTmdbEntityText(value.h),
 		searchHeadquarters: normalizeTmdbEntitySearchText(value.h),
 		logoPath: normalizeTmdbLogoPath(value.l),
+		seriesCount: Object.hasOwn(value, "t") && Number.isSafeInteger(value.t) && value.t >= 0 ? value.t : null,
 	});
 }
 
@@ -116,6 +150,7 @@ export function normalizeNetworkCatalogue(value) {
 export function searchNetworkCatalogue(catalogue, parsedInput, {
 	page = 1,
 	pageSize = NETWORK_SEARCH_PAGE_SIZE,
+	seriesCountFilter = null,
 } = {}) {
 	if (
 		!plainObject(catalogue)
@@ -125,6 +160,9 @@ export function searchNetworkCatalogue(catalogue, parsedInput, {
 	) throw new TypeError("A normalized Network catalogue is required.");
 	if (!Number.isSafeInteger(page) || page <= 0 || !Number.isSafeInteger(pageSize) || pageSize <= 0) {
 		throw new TypeError("Network result pages and page sizes must be positive safe integers.");
+	}
+	if (seriesCountFilter !== null && !supportedSeriesCountFilters.has(seriesCountFilter)) {
+		throw new TypeError("Choose a supported Network Series Count filter.");
 	}
 
 	let rankedMatches;
@@ -150,6 +188,9 @@ export function searchNetworkCatalogue(catalogue, parsedInput, {
 		rankedMatches = [];
 	}
 
+	if (seriesCountFilter !== null) {
+		rankedMatches = rankedMatches.filter(({ network }) => networkMatchesSeriesCountFilter(network, seriesCountFilter));
+	}
 	rankedMatches.sort((left, right) => left.tier - right.tier || compareNetworks(left.network, right.network));
 	const matches = rankedMatches.map(({ network }) => network);
 	const totalResults = matches.length;
@@ -157,7 +198,7 @@ export function searchNetworkCatalogue(catalogue, parsedInput, {
 	const boundedPage = Math.min(page, totalPages);
 	const start = (boundedPage - 1) * pageSize;
 	return Object.freeze({
-		results: Object.freeze(matches.slice(start, start + pageSize).map(publicNetwork)),
+		results: Object.freeze(matches.slice(start, start + pageSize).map((network) => publicNetwork(network, { includeSeriesCount: seriesCountFilter !== null }))),
 		page: boundedPage,
 		totalPages,
 		totalResults,
@@ -212,7 +253,7 @@ export function createNetworkCatalogueProvider({ fetchImpl = globalThis.fetch, c
 		return result;
 	}
 
-	async function searchNetworks(input, { page = 1 } = {}) {
+	async function searchNetworks(input, { page = 1, seriesCountFilter = null } = {}) {
 		const parsedInput = typeof input === "string" ? parseNetworkSearchInput(input) : input;
 		if (
 			!parsedInput
@@ -224,7 +265,7 @@ export function createNetworkCatalogueProvider({ fetchImpl = globalThis.fetch, c
 		const loaded = await loadCatalogue();
 		if (!loaded.ok) return loaded;
 		try {
-			return { ok: true, data: searchNetworkCatalogue(loaded.data, parsedInput, { page }) };
+			return { ok: true, data: searchNetworkCatalogue(loaded.data, parsedInput, { page, seriesCountFilter }) };
 		} catch {
 			return providerError("invalid-request", "Choose a valid Network result page.", { retryable: false });
 		}

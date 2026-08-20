@@ -11,6 +11,7 @@ const studioFlow = read("builder/src/ui/StudioSourceFlow.jsx");
 const studioCatalogue = read("builder/src/source-add/studio-catalogue.js");
 const searchHook = read("builder/src/ui/use-studio-catalogue-search.js");
 const previewProvider = read("builder/src/source-add/tmdb-studio-preview-provider.js");
+const discoverPreviewRequester = read("builder/src/source-add/tmdb-discover-preview-requester.js");
 const nestedDialog = read("builder/src/ui/NestedPreviewDialog.jsx");
 const franchiseFlow = read("builder/src/ui/FranchiseSourceFlow.jsx");
 const posterGrid = read("builder/src/ui/PosterOnlyPreviewGrid.jsx");
@@ -97,7 +98,8 @@ test("hierarchy Search exposes checked-in Movie count filters while Add Source k
 });
 
 test("Preview response cache is sort-aware while transient Series knowledge is Company/media keyed", () => {
-	assert.match(previewProvider, /company:\$\{studioId\}:\$\{mediaType\}:\$\{concreteSort\}/);
+	assert.match(previewProvider, /entityType: "COMPANY"/);
+	assert.match(discoverPreviewRequester, /`\$\{entityType\}:\$\{entityId\}:\$\{mediaType\}:\$\{sortBy\}`/);
 	assert.match(previewProvider, /cacheTtlMs = TMDB_STUDIO_PREVIEW_CACHE_TTL_MS/);
 	assert.match(previewProvider, /cacheMaxEntries = TMDB_STUDIO_PREVIEW_CACHE_MAX_ENTRIES/);
 	assert.match(flow, /\[`\$\{studio\.id\}\|TV`\]: outcome\.result\.data\.totalResults/);
