@@ -152,12 +152,13 @@ Detailed live-versus-pure-unit policy is owned by [`docs/TESTING.md`](../TESTING
 Codex never deploys the production Cloudflare Worker. When an approved issue changes Worker source:
 
 1. Codex implements and fully tests the complete Worker source on the issue branch.
-2. Codex gives Dave the complete reviewed source, its exact deployment-handoff source-byte SHA-256, the branch/head and tracked Git blob identities, and the test evidence, then stops.
+2. Before commit or publication, Codex gives Dave the complete reviewed working-tree Worker source, its exact deployment-handoff source-byte SHA-256, the current branch and HEAD as repository context, and deterministic test evidence, then stops. When the change is uncommitted, branch and HEAD do not identify the changed Worker source.
 3. Dave manually replaces and deploys that complete source in Cloudflare.
 4. Dave replies `Worker deployed` and supplies the deployment/version identity when available.
 5. Only then may Codex run the separately approved live Worker/Builder validation through production.
+6. Commit, push, and pull-request publication remain separate later owner gates.
 
-The deployment-handoff SHA-256, Git blob OID, and Windows working-tree byte hash are different identity layers. Git normalizes the tracked Worker text to LF while a Windows checkout may contain CRLF; a CRLF-only raw-byte hash difference is not tracked-source divergence. Do not claim byte-for-byte equivalence with deployed source unless the exact compared byte sequence establishes it. Worker deployment is separate from automatic main-triggered GitHub Pages publication, and Codex must not silently deploy, patch production, or ask for credentials.
+The deployment-handoff source SHA-256 identifies the exact reviewed byte sequence supplied or intended for owner deployment. A tracked Git blob OID becomes useful only after the reviewed source is later committed or published; record and compare it then to verify that repository source remained the reviewed source. It is not a prerequisite for the pre-commit owner-deployment handoff. If `git hash-object` is deliberately used on an uncommitted file, describe the result as a computed blob OID, not a tracked blob identity, and do not make it mandatory. Git normalizes tracked Worker text to LF while a Windows checkout may contain CRLF, so a CRLF-only working-tree SHA-256 difference is not tracked-source divergence. Do not claim byte-for-byte equivalence with deployed source unless the exact compared byte sequence establishes it. Worker deployment is separate from automatic main-triggered GitHub Pages publication, and Codex must not silently deploy, patch production, or ask for credentials.
 
 ## 8. Pull requests
 

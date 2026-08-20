@@ -33,7 +33,7 @@ operator action.
 
 ## Owner-only manual deployment
 
-Codex never deploys the production Worker or requests its secrets. Codex prepares and fully tests the complete source, reports the exact deployment-handoff source-byte SHA-256 plus the branch/head, tracked Git blob identity, and checks, then stops. After separate approval, Dave performs the manual deployment:
+Codex never deploys the production Worker or requests its secrets. Codex prepares and fully tests the complete working-tree source. Before commit or publication, Codex gives Dave that complete reviewed source, the exact deployment-handoff source-byte SHA-256, the current branch and HEAD as repository context, and deterministic test evidence, then stops. When the change is uncommitted, the branch and HEAD do not identify the changed Worker source. After separate approval, Dave performs the manual deployment:
 
 1. Open the Cloudflare Worker dashboard.
 2. Open the TMDB proxy Worker.
@@ -42,7 +42,9 @@ Codex never deploys the production Worker or requests its secrets. Codex prepare
 5. Deploy the Worker.
 6. Reply `Worker deployed` and provide the deployment/version identity when available so the approved live validation can begin.
 
-The deployment-handoff SHA-256 identifies the exact reviewed byte sequence supplied for deployment. It is not interchangeable with the Git blob OID or a Windows working-tree SHA-256: Git stores normalized LF text while the working checkout may contain CRLF. A CRLF-only working-tree hash difference is not tracked-source divergence. See [`docs/v2/PROJECT_WORKFLOW.md`](../docs/v2/PROJECT_WORKFLOW.md) for the full gate.
+Commit, push, and pull-request publication remain separate later owner gates.
+
+The deployment-handoff SHA-256 identifies the exact reviewed byte sequence supplied or intended for deployment. A tracked Git blob OID becomes useful only after the reviewed source is later committed or published; record and compare it then to verify that repository source remained the reviewed source. It is not a prerequisite for the pre-commit owner-deployment handoff. If `git hash-object` is deliberately used on an uncommitted file, describe the result as a computed blob OID, not a tracked blob identity, and do not make it mandatory. Git stores normalized LF text while the Windows working checkout may contain CRLF, so a CRLF-only working-tree SHA-256 difference is not tracked-source divergence. Neither branch/HEAD context nor a later tracked blob alone proves exact deployed-byte equivalence. See [`docs/v2/PROJECT_WORKFLOW.md`](../docs/v2/PROJECT_WORKFLOW.md) for the full gate.
 
 ## Origin Rules
 
