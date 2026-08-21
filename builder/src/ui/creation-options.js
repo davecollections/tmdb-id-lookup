@@ -5,6 +5,7 @@ export const CREATION_OPTION_IDS = Object.freeze({
 	FRANCHISES: "franchises",
 	STUDIOS: "studios",
 	NETWORKS: "networks",
+	GENRES: "genres",
 });
 
 export const CREATION_SCOPES = Object.freeze({
@@ -49,6 +50,12 @@ export const CREATION_OPTIONS = Object.freeze([
 		id: CREATION_OPTION_IDS.NETWORKS,
 		label: "Networks",
 		description: "Create one Series folder for each selected TV Network.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.GENRES,
+		label: "Genres",
+		description: "Create one configured folder for each selected official Genre.",
 		scopes: BOTH_SCOPES,
 	}),
 ]);

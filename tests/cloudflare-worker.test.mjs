@@ -26,6 +26,10 @@ function request(pathname, { method = "GET", origin, token } = {}) {
 	return new Request(`https://worker.example${pathname}`, { method, headers });
 }
 
+function withGenreAdult(pathname) {
+	return `${pathname}${pathname.includes("?") ? "&" : "?"}include_adult=false`;
+}
+
 async function withMockFetch(callback, implementation = async () => new Response(
 	JSON.stringify({ ok: true }),
 	{ status: 200, headers: { "Content-Type": "application/json" } },
@@ -202,7 +206,6 @@ test("Studio Company Discover rejects duplicates, wrong-media sorts, unknown sor
 			"/3/discover/movie?with_companies=3&sort_by=popularity.desc&sort_by=vote_count.desc",
 			"/3/discover/tv?with_companies=3&with_networks=2",
 			"/3/discover/tv?with_companies=3&api_key=browser-secret",
-			"/3/discover/tv?with_genres=18",
 			"/3/discover/person?with_companies=3",
 			"/3/discover/movie/3?with_companies=3",
 		]) {
@@ -271,6 +274,115 @@ test("Network TV Discover rejects Movie, missing, mixed, duplicate, malformed, w
 			const response = await fetchWorker(pathname, { origin: allowedOrigin });
 			assert.equal(response.status, 403, pathname);
 			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("Genre Discover forwards exact Movie and TV sorts plus the complete approved Advanced shape", async () => {
+	await withMockFetch(async (calls) => {
+		const paths = [
+			"/3/discover/movie?with_genres=27",
+			"/3/discover/tv?with_genres=10759",
+			...[
+				"popularity.desc",
+				"primary_release_date.desc",
+				"vote_average.desc",
+				"vote_count.desc",
+			].map((sort) => `/3/discover/movie?with_genres=27&sort_by=${sort}`),
+			...[
+				"popularity.desc",
+				"first_air_date.desc",
+				"vote_average.desc",
+				"vote_count.desc",
+			].map((sort) => `/3/discover/tv?with_genres=10759&sort_by=${sort}`),
+			"/3/discover/movie?with_genres=27&primary_release_date.gte=2015-01-01&primary_release_date.lte=2026-12-31&vote_average.gte=6.5&vote_average.lte=9&vote_count.gte=250&with_original_language=en&with_origin_country=AU&without_genres=35%2C99&sort_by=popularity.desc",
+			"/3/discover/tv?with_genres=16&first_air_date.gte=2015-01-01&first_air_date.lte=2026-12-31&vote_average.gte=0&vote_average.lte=10&vote_count.gte=0&with_original_language=en&with_origin_country=US&without_genres=35&sort_by=first_air_date.desc",
+		].map(withGenreAdult);
+		for (const pathname of paths) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 200, pathname);
+		}
+		assert.deepEqual(calls.map(([url]) => url.toString()), paths.map((pathname) => `https://api.themoviedb.org${pathname}`));
+		for (const [, init] of calls) assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
+	});
+});
+
+test("Genre Discover rejects noncanonical identity, wrong-media fields, invalid Advanced values, mixtures, and arbitrary Discover", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie",
+			"/3/discover/movie?sort_by=popularity.desc",
+			"/3/discover/movie?with_genres=0",
+			"/3/discover/movie?with_genres=-27",
+			"/3/discover/movie?with_genres=027",
+			"/3/discover/movie?with_genres=27.0",
+			"/3/discover/movie?with_genres=9007199254740992",
+			"/3/discover/movie?with_genres=27%2C35",
+			"/3/discover/movie?with_genres=27%7C35",
+			"/3/discover/movie?with_genres=27&with_genres=35",
+			"/3/discover/movie?with_genres=27&sort_by=first_air_date.desc",
+			"/3/discover/tv?with_genres=10759&sort_by=primary_release_date.desc",
+			"/3/discover/movie?with_genres=27&first_air_date.gte=2015-01-01",
+			"/3/discover/tv?with_genres=10759&primary_release_date.gte=2015-01-01",
+			"/3/discover/movie?with_genres=27&primary_release_date.gte=2026-01-01&primary_release_date.lte=2015-12-31",
+			"/3/discover/movie?with_genres=27&primary_release_date.gte=2015-02-30",
+			"/3/discover/movie?with_genres=27&vote_average.gte=-1",
+			"/3/discover/movie?with_genres=27&vote_average.gte=6.50",
+			"/3/discover/movie?with_genres=27&vote_average.lte=10.1",
+			"/3/discover/movie?with_genres=27&vote_average.gte=8&vote_average.lte=7",
+			"/3/discover/movie?with_genres=27&vote_count.gte=-1",
+			"/3/discover/movie?with_genres=27&vote_count.gte=01",
+			"/3/discover/movie?with_genres=27&with_original_language=EN",
+			"/3/discover/movie?with_genres=27&with_original_language=eng",
+			"/3/discover/movie?with_genres=27&with_origin_country=au",
+			"/3/discover/movie?with_genres=27&without_genres=0",
+			"/3/discover/movie?with_genres=27&without_genres=35%2C35",
+			"/3/discover/movie?with_genres=27&without_genres=27",
+			"/3/discover/movie?with_genres=27&without_genres=35%7C99",
+			"/3/discover/movie?with_genres=27&with_companies=3",
+			"/3/discover/tv?with_genres=10759&with_networks=2",
+			"/3/discover/movie?with_genres=27&with_watch_providers=8",
+			"/3/discover/movie?with_genres=27&with_keywords=9715",
+			"/3/discover/movie?with_genres=27&page=1",
+			"/3/discover/movie?with_genres=27&unknown=value",
+		].map(withGenreAdult)) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("Genre Discover requires exactly one canonical include_adult=false", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie?with_genres=27",
+			"/3/discover/movie?with_genres=27&include_adult=true",
+			"/3/discover/movie?with_genres=27&include_adult=0",
+			"/3/discover/movie?with_genres=27&include_adult=False",
+			"/3/discover/movie?with_genres=27&include_adult=FALSE",
+			"/3/discover/movie?with_genres=27&include_adult=false&include_adult=false",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("service-token access does not authorize otherwise valid or generic Genre Discover", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie?with_genres=27&sort_by=popularity.desc",
+			"/3/discover/movie?with_genres=27&with_watch_providers=8",
+			"/3/discover/tv?with_genres=10759&unknown=value",
+		].map(withGenreAdult)) {
+			const response = await fetchWorker(pathname, { token: serviceToken });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "Origin not allowed", pathname);
 		}
 		assert.equal(calls.length, 0);
 	});

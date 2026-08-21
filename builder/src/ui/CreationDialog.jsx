@@ -63,7 +63,9 @@ import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
+import { ChoiceCards } from "./ChoiceCards.jsx";
 import { FranchiseSourceFlow } from "./FranchiseSourceFlow.jsx";
+import { GenreHierarchyFlow } from "./GenreHierarchyFlow.jsx";
 import { NetworkHierarchyFlow } from "./NetworkHierarchyFlow.jsx";
 import { StudioHierarchyFlow } from "./StudioHierarchyFlow.jsx";
 
@@ -80,23 +82,6 @@ const statusLabels = Object.freeze({
 
 function scopeLabel(scope) {
 	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
-
-function ChoiceCards({ legend, helper = null, name, options, selectedId, onChange, gridClassName = "" }) {
-	return (
-		<fieldset className="decades-choice-group">
-			<legend>{legend}</legend>
-			{helper ? <p>{helper}</p> : null}
-			<div className={`decades-choice-grid${gridClassName ? ` ${gridClassName}` : ""}`}>
-				{options.map((option) => (
-					<label key={option.id} data-selected={selectedId === option.id ? "true" : undefined}>
-						<input type="radio" name={name} value={option.id} checked={selectedId === option.id} onChange={() => onChange(option.id)} />
-						<span><strong>{option.label}</strong>{option.description ? <small>{option.description}</small> : null}{option.preview ?? null}</span>
-					</label>
-				))}
-			</div>
-		</fieldset>
-	);
 }
 
 function CreationLauncher({ firstOptionRef, onSelect, scope }) {
@@ -677,6 +662,7 @@ export function CreationDialog({
 	onApplyFranchises,
 	onApplyStudios,
 	onApplyNetworks,
+	onApplyGenres,
 	collectionProvider,
 	peopleProvider,
 	peopleManifestClient,
@@ -686,6 +672,7 @@ export function CreationDialog({
 	networkCatalogueProvider,
 	networkPreviewProvider,
 	networkArtworkRuntimeClient,
+	genrePreviewProvider,
 }) {
 	const [optionId, setOptionId] = useState(() => creationOptionSupportsScope(initialOptionId, scope) ? initialOptionId : null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
@@ -697,6 +684,8 @@ export function CreationDialog({
 		const stopObserving = observeAddSourceViewport(setViewportStyle);
 		const initialTarget = optionId === CREATION_OPTION_IDS.PEOPLE
 			? dialogRef.current?.querySelector?.("#people-source-query")
+			: optionId === CREATION_OPTION_IDS.GENRES
+				? dialogRef.current?.querySelector?.("#genre-hierarchy-select-title")
 			: optionId === null ? firstOptionRef.current : dialogRef.current;
 		focusElementWithoutScroll(initialTarget ?? dialogRef.current);
 		return () => { stopObserving(); unlockBody(); };
@@ -713,7 +702,7 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	const launcher = optionId === null;
@@ -734,6 +723,8 @@ export function CreationDialog({
 						<StudioHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={studioCatalogueProvider} previewProvider={studioPreviewProvider} artworkRuntimeClient={studioArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStudios} />
 					) : optionId === CREATION_OPTION_IDS.NETWORKS ? (
 						<NetworkHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={networkCatalogueProvider} previewProvider={networkPreviewProvider} artworkRuntimeClient={networkArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyNetworks} />
+					) : optionId === CREATION_OPTION_IDS.GENRES ? (
+						<GenreHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={genrePreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyGenres} />
 					) : null}
 				</section>
 			</div>

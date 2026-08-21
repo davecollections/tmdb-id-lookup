@@ -2,11 +2,13 @@ import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import {
+	applyGenreHierarchyPlan,
 	buildTmdbPosterUrl,
 	createPeopleManifestClient,
 	createNetworkCatalogueProvider,
 	createStudioCatalogueProvider,
 	createTmdbCollectionProvider,
+	createTmdbGenrePreviewProvider,
 	createTmdbNetworkPreviewProvider,
 	createTmdbPersonProvider,
 	createTmdbStudioPreviewProvider,
@@ -680,6 +682,299 @@ async function runGenreToolbarScenario() {
 			clearEnabledAfterSelection,
 			headingHasWidth: heading.parentElement.clientWidth > 0 && heading.scrollWidth <= heading.parentElement.clientWidth,
 			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && toolbar.scrollWidth <= toolbar.clientWidth,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+function setSelectValue(select, value) {
+	const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+	setter.call(select, value);
+	select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+async function runGenreHierarchyScenario() {
+	const controller = createController();
+	const revisionBefore = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	let applyCalls = 0;
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: controller.getState().project,
+			projectRevision: controller.getState().revision,
+			currentYear: 2026,
+			initialOptionId: "genres",
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyDecades() { return { ok: true }; },
+			onApplyPeople() { return { ok: true }; },
+			onApplyFranchises() { return { ok: true }; },
+			onApplyStudios() { return { ok: true }; },
+			onApplyNetworks() { return { ok: true }; },
+			onApplyGenres(plan) { applyCalls += 1; return applyGenreHierarchyPlan(controller, plan); },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = document.querySelector('[data-creation-option="genres"]');
+		const scrollOwner = dialog.querySelector(".add-source-scroll");
+		const action = dialog.querySelector(".add-source-actions");
+		const search = dialog.querySelector("#genre-hierarchy-query");
+		const selectHeading = dialog.querySelector("#genre-hierarchy-select-title");
+		const cards = [...dialog.querySelectorAll(".genre-catalogue-choice")];
+		const initial = {
+			searchFocused: document.activeElement === search,
+			selectHeadingFocused: document.activeElement === selectHeading,
+			cardCount: cards.length,
+			nativeCheckboxes: cards.every((card) => card.querySelector('input[type="checkbox"]')),
+		};
+		const target = cards[12];
+		const scrollRect = scrollOwner.getBoundingClientRect();
+		const cardRect = target.getBoundingClientRect();
+		const visibleHeight = Math.min(42, cardRect.height / 3);
+		scrollOwner.scrollTop += cardRect.top - (scrollRect.bottom - visibleHeight);
+		await afterCommittedEffects();
+		const targetInput = target.querySelector('input[type="checkbox"]');
+		const ownerRect = scrollOwner.getBoundingClientRect();
+		const targetRect = target.getBoundingClientRect();
+		const dialogRectBeforeFocus = dialog.getBoundingClientRect();
+		const actionTopBeforeFocus = action.getBoundingClientRect().top;
+		const documentScrollBeforeFocus = window.scrollY;
+		const innerScrollBeforeFocus = scrollOwner.scrollTop;
+		await act(async () => {
+			targetInput.focus();
+			await afterCommittedEffects();
+		});
+		const focusEvidence = {
+			partiallyClipped: targetRect.top < ownerRect.bottom && targetRect.bottom > ownerRect.bottom,
+			nativeCheckboxFocused: document.activeElement === targetInput,
+			innerScrollDelta: scrollOwner.scrollTop - innerScrollBeforeFocus,
+			outerStable: Math.abs(dialog.getBoundingClientRect().top - dialogRectBeforeFocus.top) < 1 && Math.abs(dialog.getBoundingClientRect().bottom - dialogRectBeforeFocus.bottom) < 1,
+			documentStable: window.scrollY === documentScrollBeforeFocus,
+			actionStable: Math.abs(action.getBoundingClientRect().top - actionTopBeforeFocus) < 1,
+			actionReachable: action.getBoundingClientRect().top >= -1
+				&& action.getBoundingClientRect().bottom <= window.innerHeight + 1
+				&& action.getBoundingClientRect().height >= 44,
+		};
+
+		await act(async () => {
+			search.focus({ preventScroll: true });
+			search.click();
+			setInputValue(search, "a");
+			await afterCommittedEffects();
+		});
+		const explicitSearchFocused = document.activeElement === search;
+		await clickAndSettle(buttonContaining(dialog.querySelector(".genre-selection-actions"), "Select all"));
+		const selectedAll = dialog.querySelector(".genre-selection-toolbar")?.textContent.includes("27 of 27 selected") ?? false;
+		const selectionIndicator = dialog.querySelector('.genre-catalogue-choice[data-selected="true"] .selectable-card-indicator');
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		const mediaPill = dialog.querySelector('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"][value="both"]')?.closest("label");
+		const noFixedNoteForBoth = !dialog.querySelector(".genre-fixed-media-note");
+		await clickAndSettle(dialog.querySelector('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"][value="movies"]'));
+		const moviesFixedNote = dialog.querySelector(".genre-fixed-media-note")?.textContent ?? "";
+		await clickAndSettle(dialog.querySelector('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"][value="series"]'));
+		const seriesFixedNote = dialog.querySelector(".genre-fixed-media-note")?.textContent ?? "";
+		await clickAndSettle(dialog.querySelector('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"][value="both"]'));
+
+		const configureState = {
+			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
+			headingFocused: document.activeElement === dialog.querySelector("#genre-hierarchy-configure-title"),
+			bothDefault: dialog.querySelector('.genre-hierarchy-configuration-surface input[value="both"]')?.checked ?? false,
+			selectedCount: dialog.querySelector(".genre-hierarchy-configured-genres")?.textContent.includes("Configured Genres · 27") ?? false,
+			allConfiguredRowsVisible: dialog.querySelectorAll(".genre-hierarchy-configure-row").length === 27,
+			duplicateDisclosuresAbsent: !dialog.querySelector(".genre-hierarchy-configure .removable-selection-disclosure, .genre-hierarchy-configure .genre-review-toggle"),
+			noDestinationChooser: !dialog.querySelector(".genre-destination-choices"),
+			noOverride: !dialog.querySelector('[data-action="add-all-genres-anyway"]'),
+			contextualSummary: dialog.querySelector(".genre-hierarchy-configuration-summary")?.textContent.includes("27 configured Genres · 35 sources") ?? false,
+			mediaPills: dialog.querySelectorAll('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"]').length === 3,
+			sortPills: dialog.querySelectorAll('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-sort"]').length === 4,
+			pillRounded: Number.parseFloat(getComputedStyle(mediaPill).borderRadius) >= 18,
+			noFixedNoteForBoth,
+			moviesFixedNote,
+			seriesFixedNote,
+		};
+		await clickAndSettle(dialog.querySelector(".genre-advanced-options > summary"));
+		const helpTrigger = dialog.querySelector(".genre-advanced-help-action");
+		await clickAndSettle(helpTrigger);
+		const secondaryState = {
+			open: Boolean(dialog.querySelector('.genre-secondary-surface[data-surface="help"]')),
+			scrollInert: scrollOwner.hasAttribute("inert"),
+			headerInert: dialog.querySelector(".add-source-heading")?.hasAttribute("inert") ?? false,
+			footerHidden: !dialog.querySelector(".add-source-actions"),
+			focusOnHeading: document.activeElement === dialog.querySelector("#genre-advanced-help-title"),
+		};
+		await act(async () => {
+			dialog.querySelector(".genre-hierarchy-form").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+			await afterCommittedEffects();
+		});
+		secondaryState.escapeClosed = !dialog.querySelector('.genre-secondary-surface[data-surface="help"]');
+		secondaryState.focusRestored = document.activeElement === helpTrigger;
+
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		const structureCards = [...dialog.querySelectorAll(".genre-structure-choice-grid [data-choice-id]")];
+		const structureCounts = Object.fromEntries(structureCards.map((label) => [label.dataset.choiceId, label.querySelector(".genre-structure-counts")?.textContent ?? ""]));
+		const structureGrid = dialog.querySelector(".genre-structure-choice-grid");
+		const structureSection = dialog.querySelector(".genre-hierarchy-structure");
+		const structureFieldset = structureGrid.closest("fieldset");
+		const selectedStructureCard = dialog.querySelector('[data-choice-id="genre-folders"]');
+		const unselectedStructureCard = dialog.querySelector('[data-choice-id="media-folders"]');
+		const selectedStructureStyle = getComputedStyle(selectedStructureCard);
+		const unselectedStructureStyle = getComputedStyle(unselectedStructureCard);
+		const structurePreviews = structureCards.map((card) => card.querySelector(".genre-structure-wireframe"));
+		const descriptionDiagramGaps = structureCards.map((card) => {
+			const descriptionRect = card.querySelector("small").getBoundingClientRect();
+			const diagramRect = card.querySelector(".genre-structure-wireframe").getBoundingClientRect();
+			return diagramRect.top - descriptionRect.bottom;
+		});
+		const structureRows = [];
+		for (const card of structureCards) {
+			const top = Math.round(card.getBoundingClientRect().top);
+			const row = structureRows.find((entry) => entry.top === top);
+			if (row) row.cards.push(card);
+			else structureRows.push({ top, cards: [card] });
+		}
+		const structureVisualEvidence = {
+			previewTypes: structureCards.map((card) => card.querySelector("[data-genre-structure-preview]")?.dataset.genreStructurePreview ?? null),
+			visualHierarchyComplete: structurePreviews.every((preview) => preview
+				&& preview.querySelector(".genre-structure-wireframe-collection-title")
+				&& preview.querySelector(".genre-structure-wireframe-folder-title")
+				&& preview.querySelector(".genre-structure-wireframe-sources i")),
+			visualPreviewsBounded: structureCards.every((card) => {
+				const cardRect = card.getBoundingClientRect();
+				const previewRect = card.querySelector(".genre-structure-wireframe").getBoundingClientRect();
+				return previewRect.width > 0 && previewRect.height > 0 && previewRect.left >= cardRect.left - 1 && previewRect.right <= cardRect.right + 1;
+			}),
+			countsReadable: structureCards.every((card) => {
+				const counts = card.querySelector(".genre-structure-counts");
+				return counts.getBoundingClientRect().height > 0 && counts.scrollWidth <= counts.clientWidth + 1;
+			}),
+			descriptionDiagramSpacingConsistent: Math.max(...descriptionDiagramGaps) - Math.min(...descriptionDiagramGaps) <= 1,
+			rowCountAlignmentPreserved: structureRows.every((row) => {
+				const countBottoms = row.cards.map((card) => card.querySelector(".genre-structure-counts").getBoundingClientRect().bottom);
+				return Math.max(...countBottoms) - Math.min(...countBottoms) <= 1;
+			}),
+			selectedStyleClear: selectedStructureCard.dataset.selected === "true"
+				&& !unselectedStructureCard.hasAttribute("data-selected")
+				&& selectedStructureStyle.borderColor !== unselectedStructureStyle.borderColor
+				&& selectedStructureStyle.backgroundColor !== unselectedStructureStyle.backgroundColor,
+			nativeRadioSemantics: structureCards.every((card) => card.querySelector('input[type="radio"]'))
+				&& dialog.querySelectorAll('.genre-structure-choice-grid input[type="radio"]:checked').length === 1,
+			previewsHiddenFromAccessibilityTree: structurePreviews.every((preview) => preview.getAttribute("aria-hidden") === "true"),
+		};
+		const actionComposite = [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure");
+		const addToBoth = actionComposite?.querySelector('input[value="both"]');
+		const compositeSection = dialog.querySelector(".genre-composite-placement");
+		const compositeRect = compositeSection?.getBoundingClientRect();
+		const structureGridRect = structureGrid.getBoundingClientRect();
+		const structureState = {
+			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
+			headingFocused: document.activeElement === dialog.querySelector("#genre-hierarchy-structure-title"),
+			introCopy: structureSection.querySelector(":scope > .studio-configure-helper")?.textContent ?? "",
+			genreHierarchyHeadingAbsent: !structureSection.textContent.includes("Genre hierarchy"),
+			structureLegendHidden: structureFieldset.querySelector("legend")?.classList.contains("visually-hidden") === true,
+			choiceCount: dialog.querySelectorAll('[name="genre-hierarchy-structure"]').length,
+			defaultGenreFolders: dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]')?.checked ?? false,
+			structureCounts,
+			visibleCountsOmitSources: Object.values(structureCounts).every((value) => !value.includes("source")),
+			structureCopy: Object.fromEntries(structureCards.map((card) => [card.dataset.choiceId, {
+				title: card.querySelector("strong")?.textContent ?? "",
+				description: card.querySelector("small")?.textContent ?? "",
+			}])),
+			structureVisualEvidence,
+			compositesBelowCards: Boolean(compositeRect) && compositeRect.top >= structureGridRect.bottom - 1,
+			compositeHeading: compositeSection?.querySelector("h4")?.textContent ?? "",
+			compositeHelper: compositeSection?.querySelector("h4 + p")?.textContent ?? "",
+			optionalPlacementAbsent: !compositeSection?.textContent.includes("Optional placement"),
+			compositeControlCount: dialog.querySelectorAll(".genre-composite-control").length,
+			actionTargets: [...(actionComposite?.querySelectorAll('input[type="radio"]') ?? [])].map((input) => input.value),
+			actionLabels: [...(actionComposite?.querySelectorAll("label") ?? [])].map((label) => label.textContent.trim()),
+		};
+		await clickAndSettle(addToBoth);
+		structureState.addToBothCount = dialog.querySelector('[data-choice-id="genre-folders"] .genre-structure-counts')?.textContent ?? "";
+		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="media-folders"]'));
+		structureState.mediaFoldersSelected = dialog.querySelector('[data-choice-id="media-folders"]')?.dataset.selected === "true"
+			&& dialog.querySelector('[name="genre-hierarchy-structure"][value="media-folders"]')?.checked === true;
+		structureState.compositesHiddenForMedia = !dialog.querySelector(".genre-composite-placement");
+		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]'));
+		structureState.genreFoldersReselected = dialog.querySelector('[data-choice-id="genre-folders"]')?.dataset.selected === "true";
+		structureState.addToBothPreserved = actionComposite !== null && [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure")?.querySelector('input[value="both"]')?.checked === true;
+		const restoredActionComposite = [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure");
+		await clickAndSettle(restoredActionComposite.querySelector('input[value="standalone"]'));
+		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="separate-media-genre-folders"]'));
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		structureState.separateFoldersShowTitlesDefault = dialog.querySelector('input[name="genre-hierarchy-folder-title-visibility"][value="SHOW_EVERYWHERE"]')?.checked === true;
+		await clickAndSettle(dialog.querySelector('input[name="genre-hierarchy-folder-title-visibility"][value="HIDE_EVERYWHERE"]'));
+		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-structure"]'));
+		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]'));
+		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="separate-media-genre-folders"]'));
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		structureState.manualTitleVisibilityPreserved = dialog.querySelector('input[name="genre-hierarchy-folder-title-visibility"][value="HIDE_EVERYWHERE"]')?.checked === true;
+		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-structure"]'));
+		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]'));
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		await clickAndSettle(dialog.querySelector('input[name="genre-hierarchy-folder-title-visibility"][value="HIDE_HOME_SCREEN"]'));
+		const totals = [...dialog.querySelectorAll(".decades-plan-totals strong")].map((element) => Number(element.textContent));
+		const appearanceState = {
+			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
+			headingFocused: document.activeElement === dialog.querySelector("#genre-hierarchy-appearance-title"),
+			totals,
+			hideHomeDefault: dialog.querySelector('input[name="genre-hierarchy-folder-title-visibility"][value="HIDE_HOME_SCREEN"]')?.checked ?? false,
+			landscapeDefault: dialog.querySelector('input[name="genre-hierarchy-folder-shape"][value="LANDSCAPE"]')?.checked ?? false,
+			posterAvailable: Boolean(dialog.querySelector('input[name="genre-hierarchy-folder-shape"][value="POSTER"]')),
+			configureRowsAbsent: dialog.querySelectorAll(".genre-hierarchy-configure-row").length === 0,
+		};
+
+		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-structure"]'));
+		const structureRestored = dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage === "structure" && dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]')?.checked === true;
+		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-configuration"]'));
+		const configureRestored = dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage === "configure" && dialog.querySelector(".genre-hierarchy-configuration-summary")?.textContent.includes("27 configured Genres · 35 sources");
+		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-selection"]'));
+		const selectRestored = {
+			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
+			query: dialog.querySelector("#genre-hierarchy-query")?.value ?? null,
+			selectedAll: dialog.querySelector(".genre-selection-toolbar")?.textContent.includes("27 of 27 selected") ?? false,
+			headingFocused: document.activeElement === dialog.querySelector("#genre-hierarchy-select-title"),
+		};
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		const state = controller.getState();
+		const collection = state.project.collections[0];
+		const comedy = collection.folders.find((folder) => folder.editable.title === "Comedy");
+		const horror = collection.folders.find((folder) => folder.editable.title === "Horror");
+		const actionAdventure = collection.folders.find((folder) => folder.editable.title === "Action & Adventure");
+		return {
+			width: window.innerWidth,
+			initial,
+			explicitSearchFocused,
+			selectedAll,
+			selectionState: selectionIndicator?.dataset.selectionState ?? null,
+			selectionTick: selectionIndicator?.textContent ?? null,
+			focusEvidence,
+			configureState,
+			secondaryState,
+			structureState,
+			appearanceState,
+			structureRestored,
+			configureRestored,
+			selectRestored,
+			applyCalls,
+			revisionDelta: state.revision - revisionBefore,
+			folderCount: collection.folders.length,
+			sourceCount: collection.folders.flatMap((folder) => folder.sources).length,
+			contextualTitles: {
+				comedy: comedy.sources.map((source) => source.editable.title),
+				horror: horror.sources.map((source) => source.editable.title),
+				actionAdventure: actionAdventure.sources.map((source) => source.editable.title),
+			},
+			oneScrollOwner: dialog.querySelectorAll(".add-source-scroll").length === 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
 		};
 	} finally {
 		await act(async () => root.unmount());
@@ -2078,6 +2373,230 @@ async function runNetworkLivePreviewScenario() {
 	}
 }
 
+async function runGenreLivePreviewScenario() {
+	const requests = [];
+	const failedImageSources = new Set();
+	const previewProvider = createTmdbGenrePreviewProvider({ fetchImpl: recordingNetworkPreviewFetch(requests) });
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "genres",
+			genrePreviewProvider: previewProvider,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyGenres() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted live Genre ${label} is missing.`);
+		return element;
+	}
+	function safePosterPaths(request) {
+		return Array.isArray(request?.results)
+			? request.results.map((item) => item.posterPath).filter((posterPath) => typeof posterPath === "string" && /^\/[A-Za-z0-9._-]+$/.test(posterPath))
+			: [];
+	}
+	function requestEvidence(request) {
+		const url = new URL(request.url);
+		return {
+			url: request.url,
+			origin: url.origin,
+			pathname: url.pathname,
+			queryEntries: [...url.searchParams.entries()],
+			queryKeys: [...url.searchParams.keys()],
+			status: request.status,
+			ok: request.ok,
+			contentType: request.contentType,
+			cloneInspected: request.cloneInspected,
+			originalBodyUnusedBeforeReturn: request.originalBodyUnusedBeforeReturn,
+			totalResults: request.totalResults,
+		};
+	}
+	function serializablePreview(preview) {
+		const { modal: _modal, ...evidence } = preview;
+		return evidence;
+	}
+	async function waitForRequest(index, label) {
+		return waitForMountedCondition(() => requests[index] ?? null, { label, timeoutMs: 20_000 });
+	}
+	async function waitForPreview(request, label) {
+		if (!request.ok || !request.cloneInspected || !Number.isSafeInteger(request.totalResults) || request.totalResults < 0) {
+			throw new Error(`${label} received an unusable live Worker response: ${JSON.stringify(request)}`);
+		}
+		const responsePosterPaths = safePosterPaths(request);
+		if (responsePosterPaths.length === 0) throw new Error(`${label} returned no usable real TMDB poster_path values: ${JSON.stringify(request)}`);
+		const candidateSources = responsePosterPaths.map((posterPath) => buildTmdbPosterUrl(posterPath, "w342")).filter(Boolean);
+		const maximumVisibleCount = window.innerWidth <= 520 ? 5 : 10;
+		let diagnostic = null;
+		try {
+			return await waitForMountedCondition(() => {
+				const modal = document.querySelector(".genre-preview-modal");
+				const grid = modal?.querySelector(".genre-preview-grid");
+				const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
+				const visibleImages = images.filter(visibleElement);
+				const expectedSources = candidateSources.filter((source) => !failedImageSources.has(source)).slice(0, maximumVisibleCount);
+				const visibleSources = visibleImages.map((image) => image.currentSrc || image.src);
+				diagnostic = {
+					modal: Boolean(modal),
+					grid: Boolean(grid),
+					maximumVisibleCount,
+					expectedSources,
+					visibleSources,
+					failedImageSources: [...failedImageSources],
+				};
+				if (!modal || !grid || expectedSources.length === 0 || visibleSources.length !== expectedSources.length) return null;
+				if (visibleSources.some((source, index) => source !== expectedSources[index])) return null;
+				if (visibleImages.some((image) => {
+					const rect = image.getBoundingClientRect();
+					return !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0 || image.clientWidth <= 0 || image.clientHeight <= 0 || rect.width <= 0 || rect.height <= 0;
+				})) return null;
+				return {
+					modal,
+					maximumVisibleCount,
+					visiblePosterCount: visibleImages.length,
+					renderedPosterCount: images.length,
+					responsePosterCount: responsePosterPaths.length,
+					posterSources: visibleSources,
+					expectedSources,
+					postersReady: true,
+					genuineTmdbSources: genuineTmdbPosterImages(visibleImages),
+					posterOnly: [...grid.children].every((child) => child.tagName === "IMG"),
+					captionsAbsent: grid.querySelector("figcaption, article, small, p, span") === null && grid.textContent.trim() === "",
+					countLine: modal.querySelector(".genre-preview-tabs [aria-selected='true'], .studio-preview-single-media")?.textContent.trim() ?? null,
+				};
+			}, { label, timeoutMs: 30_000 });
+		} catch (error) {
+			throw new Error(`${error.message} Live Genre poster readiness: ${JSON.stringify(diagnostic)}`);
+		}
+	}
+	async function updateInput(input, value) {
+		await act(async () => {
+			setInputValue(required(input, `Advanced input ${value}`), value);
+			await afterCommittedEffects();
+		});
+	}
+	async function updateSelect(select, value) {
+		await act(async () => {
+			setSelectValue(required(select, `Advanced select ${value}`), value);
+			await afterCommittedEffects();
+		});
+	}
+	function recordFailedPoster(event) {
+		if (!(event.target instanceof HTMLImageElement)) return;
+		const source = event.target.currentSrc || event.target.src;
+		try {
+			const url = new URL(source);
+			if (url.origin === "https://image.tmdb.org" && url.pathname.startsWith("/t/p/w342/")) failedImageSources.add(url.toString());
+		} catch {}
+	}
+
+	document.addEventListener("error", recordFailedPoster, true);
+	try {
+		const dialog = required(document.querySelector('[data-creation-option="genres"]'), "creation dialog");
+		await clickAndSettle(required(dialog.querySelector('[data-genre-name="Animation"]'), "Animation choice"));
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 Genre"), "Configure action"));
+		const row = required(dialog.querySelector('.genre-hierarchy-configure-row[data-genre-name="Animation"]'), "Animation Configure row");
+		let previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "Animation Preview trigger");
+		const requestsBeforeExplicitPreview = requests.length;
+
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const movieRequest = await waitForRequest(0, "Live Genre Movie Worker request");
+		const movieReady = await waitForPreview(movieRequest, `Live Genre Movie Preview at ${window.innerWidth}px`);
+		const tabs = [...movieReady.modal.querySelectorAll('.genre-preview-tabs [role="tab"]')];
+		const movieTab = required(tabs[0], "Movies tab");
+		const seriesTab = required(tabs[1], "Series tab");
+		const sharedBeforeSwitch = {
+			requestCount: requests.length,
+			movieSelected: movieTab.getAttribute("aria-selected") === "true",
+			movieCountShown: movieTab.textContent.includes(Number(movieRequest.totalResults).toLocaleString("en")),
+			seriesDeferred: seriesTab.textContent.trim() === "Series",
+		};
+
+		failedImageSources.clear();
+		await clickAndSettle(seriesTab);
+		const seriesRequest = await waitForRequest(1, "Live Genre TV Worker request");
+		const seriesReady = await waitForPreview(seriesRequest, `Live Genre TV Preview at ${window.innerWidth}px`);
+		const sharedAfterSwitch = {
+			requestCount: requests.length,
+			seriesSelected: seriesTab.getAttribute("aria-selected") === "true",
+			seriesCountShown: seriesTab.textContent.includes(Number(seriesRequest.totalResults).toLocaleString("en")),
+		};
+		await clickAndSettle(required(seriesReady.modal.querySelector("header button"), "shared Preview Close action"));
+		const sharedClose = {
+			closed: document.querySelector(".genre-preview-modal") === null,
+			exactFocusRestored: document.activeElement === previewTrigger,
+		};
+
+		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-media"][value="movies"]'), "Movies media choice"));
+		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-sort"][value="recent"]'), "Recent sort choice"));
+		await clickAndSettle(required(dialog.querySelector(".genre-advanced-options > summary"), "Advanced options summary"));
+		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-year-from"), "2020");
+		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-year-to"), "2026");
+		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-rating-min"), "6");
+		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-rating-max"), "9");
+		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-votes-min"), "100");
+		await updateSelect(dialog.querySelector("#genre-hierarchy-advanced-language"), "en");
+		await updateSelect(dialog.querySelector("#genre-hierarchy-advanced-country"), "US");
+		await clickAndSettle(required(buttonContaining(dialog.querySelector(".genre-advanced-compact-actions"), "Choose"), "exclusion picker action"));
+		await clickAndSettle(required(buttonContaining(dialog.querySelector(".genre-exclusion-picker-list"), "Family"), "Family exclusion"));
+		await clickAndSettle(required(dialog.querySelector(".genre-secondary-done"), "exclusion Done action"));
+
+		previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "filtered Animation Preview trigger");
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const filteredRequest = await waitForRequest(2, "Live filtered Genre Movie Worker request");
+		const filteredReady = await waitForPreview(filteredRequest, `Live filtered Genre Movie Preview at ${window.innerWidth}px`);
+		const singleMedia = {
+			tabsAbsent: filteredReady.modal.querySelector(".genre-preview-tabs") === null,
+			countShown: filteredReady.countLine?.includes(Number(filteredRequest.totalResults).toLocaleString("en")) ?? false,
+		};
+		await clickAndSettle(required(filteredReady.modal.querySelector("header button"), "filtered Preview Close action"));
+
+		failedImageSources.clear();
+		await clickAndSettle(previewTrigger);
+		const cachedReady = await waitForPreview(filteredRequest, `Cached filtered Genre Movie Preview at ${window.innerWidth}px`);
+		const filteredCacheHit = requests.length === 3;
+		await clickAndSettle(required(cachedReady.modal.querySelector("header button"), "cached filtered Preview Close action"));
+
+		return {
+			width: window.innerWidth,
+			requestsBeforeExplicitPreview,
+			movie: { request: requestEvidence(movieRequest), preview: serializablePreview(movieReady), sharedBeforeSwitch },
+			series: { request: requestEvidence(seriesRequest), preview: serializablePreview(seriesReady), sharedAfterSwitch },
+			sharedClose,
+			filtered: { request: requestEvidence(filteredRequest), preview: serializablePreview(filteredReady), singleMedia, cacheHit: filteredCacheHit },
+			instrumentation: {
+				requestCount: requests.length,
+				allResponsesCloned: requests.every((request) => request.cloneInspected),
+				originalResponsesUntouched: requests.every((request) => request.originalBodyUnusedBeforeReturn),
+				allSuccessfulJson: requests.every((request) => request.ok && request.contentType?.toLowerCase().includes("application/json")),
+			},
+			final: {
+				focusRestored: document.activeElement === previewTrigger,
+				configureIntact: dialog.querySelector('[data-genre-hierarchy-stage="configure"]') !== null,
+				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+				revisionUnchanged: controller.getState().revision === initialRevision && controller.getState().project === initialProject,
+			},
+		};
+	} finally {
+		document.removeEventListener("error", recordFailedPoster, true);
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
 async function runNetworkHierarchyScenario() {
 	let previewCalls = 0;
 	let artworkLoads = 0;
@@ -3463,6 +3982,7 @@ async function runMountedRegressions() {
 
 window.__builderSourceEditMounted = { status: "running" };
 window.__runGenreToolbarScenario = runGenreToolbarScenario;
+window.__runGenreHierarchyScenario = runGenreHierarchyScenario;
 window.__runDecadesActionLayoutScenario = runDecadesActionLayoutScenario;
 window.__runDecadesGenreLayoutScenario = runDecadesGenreLayoutScenario;
 window.__runDecadesExclusionLayoutScenario = runDecadesExclusionLayoutScenario;
@@ -3472,6 +3992,7 @@ window.__runPeopleSelectionScrollScenario = runPeopleSelectionScrollScenario;
 window.__runFranchiseReviewScenario = runFranchiseReviewScenario;
 window.__runStudioHierarchyScenario = runStudioHierarchyScenario;
 window.__runNetworkLivePreviewScenario = runNetworkLivePreviewScenario;
+window.__runGenreLivePreviewScenario = runGenreLivePreviewScenario;
 window.__runNetworkHierarchyScenario = runNetworkHierarchyScenario;
 window.__runNetworkDeferredArtworkScenario = runNetworkDeferredArtworkScenario;
 window.__runStudioScaleScenario = runStudioScaleScenario;

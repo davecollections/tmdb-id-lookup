@@ -8,7 +8,13 @@ Issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110) is cl
 Selected folder → Add Source → Genres → Browse → Configure & review → Add or Create
 ```
 
-This is the only current Genre entry point. There is no Folders-header **Add genres** action. One selected Genre always adds its generated source or sources to the current folder. With two or more selected Genres, **Configure & review** also offers the explicit choice to create one sibling folder per selected Genre in that folder's collection. That is a destination mode inside selected-folder Add Source, not a registered New Collection/New Folder hierarchy family. Genre Source Edit owns display name, **Sort titles by**, and the same approved advanced filters. The issue does not add a generic Discover form, Worker route, live Genre/count or artwork requests, dependencies, V1 changes, asset-repository changes, public Lists, recipes, or generic picker/help frameworks.
+Issue [#130](https://github.com/davecollections/tmdb-id-lookup/issues/130) adds a distinct guided hierarchy entry in both shared creation scopes and is currently unstaged and uncommitted on its dedicated branch. Both owner Worker deployment/live-validation rounds and final desktop/physical-phone owner acceptance are complete. The final Structure-card corrections were presentation-only and required no Worker change:
+
+```text
+New Collection / New Folder → Genres → Select → Configure → Structure → Appearance → Create
+```
+
+Selected-folder Add Source remains unchanged and there is no Folders-header **Add genres** shortcut. One selected Genre in Add Source always adds its generated source or sources to the current folder. With two or more selected Genres, **Configure & review** still offers the existing sibling-folder destination inside that Add Source operation, whose generated Genre folders remain Landscape. Guided Genre hierarchy is separately registered in New Collection and New Folder and does not alter Source Edit. Issue #130 adds exact-config title Preview, four guided structures where applicable, focused composite-TV placement precedent, and the corresponding fail-closed Genre Discover Worker query shape; it does not add a generic Discover form/forwarder, automatic count or artwork request, dependency, V1 change, asset-repository change, public List, recipe, or generic picker/help framework.
 
 ## 2. Immutable official catalogue and selection
 
@@ -20,7 +26,7 @@ Browse filters the complete local A–Z list by name and makes no runtime catalo
 
 ## 3. Media, sorts, and capacity
 
-One global **Movies / Series / Both** choice applies only **For genres available in both Movies and Series**. The heading is sufficient without a second helper sentence. The control is shown only when at least one selected Genre supports both media. Movie-only and Series-only concepts keep their official media without showing an irrelevant media explanation or disabled choice. The default is Both. Candidate order is selected Genre order, then Movie before Series within a paired Genre.
+One global compact-pill **Movies / Series / Both** choice applies only to exact shared concepts and uses the helper **Applies to Genres available in both Movies and Series.** The control is shown only when at least one selected Genre supports both media. Movie-only and Series-only concepts keep their official media. Movies or Series shows a calm named/count note when opposite fixed-media concepts remain; Both needs no note. The default is Both. Candidate order is selected Genre order, then Movie before Series within a paired Genre. **Sort titles by** reuses the same established Studio/Network semantic-pill treatment.
 
 Selecting all 27 concepts with Both produces the current catalogue maximum of 35 ordered sources. The shared controller accepts the complete operation as either 35 sources in one existing folder or 27 folders containing 35 sources in total. This is tested current-catalogue capacity, not a new arbitrary generic maximum; nonempty-array, shape, unique-ID, deterministic-order, and atomicity validations remain.
 
@@ -33,7 +39,7 @@ The four Core-owned choices under **Sort titles by** are:
 | Top Rated | `vote_average.desc` | `vote_average.desc` |
 | Most Votes | `vote_count.desc` | `vote_count.desc` |
 
-Every generated source is native TMDB `DISCOVER`, has explicit `tmdbId: null`, one media-correct positive decimal `withGenres` value, and no native `catalogSources` projection. Default titles are `<Genre> Movies` and `<Genre> Series`.
+Every generated source is native TMDB `DISCOVER`, has explicit `tmdbId: null`, one media-correct positive decimal `withGenres` value, and no native `catalogSources` projection. Add Source and Source Edit retain the self-describing `<Genre> Movies` / `<Genre> Series` defaults. Guided hierarchy uses contextual physical-source titles `Movies` / `Series` inside the already named Genre folder without changing source identity.
 
 ## 4. Destination modes and duplicates
 
@@ -47,13 +53,68 @@ Current-folder duplicate comparison uses full DISCOVER Core identity, including 
 
 Folder-mode planning is collection-scoped per Genre: no configured identities means ready; the complete configured set means **Already in this collection** and is omitted; a partial Movie/Series set means **Partly in this collection** and is also omitted to avoid a split duplicate folder. Matches only in another collection are informational. Folder mode has no bulk duplicate override.
 
-Review headings and primary actions state the actual structure and counts, such as `35 sources will be added to “Mixed Genres”` / **Add 35 sources** or `27 folders will be created with 35 sources` / **Create 27 folders**. Empty normal outcomes use **No new sources to add** or **No new folders to create**.
+### Guided New Collection / New Folder hierarchy
+
+The issue #130 flow reuses the complete local 27-concept catalogue, ordered uncapped selection, circular native-checkbox card language, media/sort/Advanced configuration, static artwork resolver, full Discover identity, shared title/layout/shape controls, the shared nested Preview shell/request coordinator/poster grid, and existing atomic controller batches. Select is browse-first: it focuses a stable heading rather than Search, preserves query and ordered selection on Back, offers Select all/Clear all, and keeps one intentional inner scroll owner. Configure defaults shared Genres to Both, preserves the existing Advanced component, and always renders one compact logical row per selected Genre in selection order. Each row retains media/source count, placement status, Remove, elsewhere details where relevant, and one **Preview titles** action. It has no destination chooser or duplicate override.
+
+Structure owns grouping and shows actual plan-derived Collection/Folder/Source-node counts:
+
+- **Genre folders** is the default: one canonical Genre folder normally contains contextual `Movies` / `Series` sources. The all-catalogue unmerged plan is 1 Collection, 27 Folders, 35 Sources.
+- **Media folders** creates only nonempty `Movies` / `Series` folders. Their sources use exact Genre names, receive no arbitrary Genre artwork, and use the safe visible-title/🎬 fallback. The all-catalogue plan is 1/2/35.
+- **Separate media Genre folders** creates `<Genre> Movies` / `<Genre> Series` folders with contextual sources and the underlying Genre artwork. Its untouched default is Show everywhere so paired artwork stays distinguishable; an explicit user title choice survives Structure switching. The all-catalogue plan is 1/35/35.
+- **Separate Movie & Series collections** is New Collection-only and appears only for effective Both media. It atomically creates editable `Movie Genres` and `Series Genres` collections through the established multi-collection operation. The all-catalogue plan is 2/35/35, and a late second-collection failure leaves neither collection.
+
+Each Structure option uses the established visual-choice-card language: first-time-user title and description, a compact illustrative Collection → Folder → content-choice wireframe, and live plan-derived Collection/Folder counts. Source totals remain part of the authoritative plan, validation, Appearance summary, and Create behavior but are deliberately omitted from these decision cards. The wireframe explains the hierarchy shape but never drives planning; native radio semantics, visible focus, the restrained selected border/surface, and the live count line remain authoritative. The Structure introduction has no redundant intermediate heading. Conditional placement below the cards explains the three narrow combined-Series precedents in ordinary language, defaults to **Keep its own folder**, and retains the same exact target choices and planner values.
+
+Only Genre folders exposes the focused V1 product precedent: `Action & Adventure` may stay standalone or target selected Action/Adventure folders, `Sci-Fi & Fantasy` may target selected Science Fiction/Fantasy folders, and `War & Politics` may target selected War. Merged sources become self-describing (`Action & Adventure Series`, etc.). **Add to both** deliberately plans two ordinary Source nodes with the same functional recipe under the two selected target folders; it is not a global identity relaxation. In New Folder, a target must itself be created in the reviewed atomic plan. An already represented/omitted target is unavailable with an explanation because the current controller cannot atomically append there while creating other bundles; standalone remains safe.
+
+Duplicate semantics follow Structure. Genre folders retains complete/partial logical-folder omission. Separate media Genre folders omits only the exact physical source/folder. Media folders performs exact per-source omission and creates only nonempty aggregate folders, with the omission surfaced in plan outcomes. New Collection matches remain informational/addable. New Folder preserves the parent presentation and existing Untitled folders byte-for-byte. Appearance defaults to a visible `Genres` collection using Tabs, Show All on, Pin off, **Landscape** Genre artwork, and **Hide on home screen only** titles where folders represent canonical Genres. Poster/Landscape remains one batch-safe choice; media folders use only its tile shape and safe fallback.
+
+The official 27-concept artwork mapping is explicit because filenames are not mechanically canonical:
+
+| Canonical Genre | Landscape filename stem | Poster filename stem |
+| --- | --- | --- |
+| Action | `action wide` | `Action` |
+| Action & Adventure | `action_and_adventure wide` | `action_and_adventure` |
+| Adventure | `adventure wide` | `Adventure` |
+| Animation | `animation wide` | `Animation` |
+| Comedy | `comedy wide` | `Comedy` |
+| Crime | `crime wide` | `crime` |
+| Documentary | `documentary wide` | `Documentary` |
+| Drama | `drama wide` | `Drama` |
+| Family | `family wide` | `family` |
+| Fantasy | `fantasy wide` | `Fantasy` |
+| History | `history wide` | `history` |
+| Horror | `horror wide` | `Horror` |
+| Kids | `kids wide` | `kids` |
+| Music | `music wide` | `Music` |
+| Mystery | `mystery wide` | `Mystery` |
+| News | `news wide` | `news` |
+| Reality | `reality wide` | `reality` |
+| Romance | `romance wide` | `Romance` |
+| Sci-Fi & Fantasy | `sci-fi_and_fantasy wide` | `sci-fi_and_fantasy` |
+| Science Fiction | `science fiction wide` | `Sci-Fi` |
+| Soap | `soap wide` | `soap` |
+| Talk | `talk wide` | `talk` |
+| Thriller | `thriller wide` | `Thriller` |
+| TV Movie | `tv movie wide` | `tv movie` |
+| War | `war wide` | `War` |
+| War & Politics | `war_and_politics wide` | `war_and_politics` |
+| Western | `western wide` | `Western` |
+
+Asset-only names such as Musicals, Disaster, Queer, and Rom Com do not expand the official catalogue.
+
+**Preview titles** is explicit and never requested automatically. The exact current physical source draft is the authority: media, Genre ID, concrete sort, date/rating/vote/language/country values, and that included Genre's compiled `withoutGenres` exclusions are translated through the DISCOVER Core descriptors into media-correct TMDB query parameters. Every outgoing Preview request also explicitly includes canonical `include_adult=false`; this is a Preview transport requirement and does not invent a persisted Nuvio source filter. A paired Genre opens one modal with lazy Movies and Series views; only the initial view is requested until the user switches. Single-media Genres have no pointless tab. Results reuse the global poster-only 10-desktop/5-mobile behavior, exact `No posters available.` empty state, loading, recoverable error/Retry, Close, and focus containment/restoration. The five-minute bounded success cache uses the complete canonical functional query, including the changed adult-required contract, so any filter, exclusion, media, or sort change produces a distinct identity; errors, aborts, timeouts, malformed responses, and stale completions never cache.
+
+The tracked Worker admits a distinct Genre branch only for `/3/discover/movie` or `/3/discover/tv` with exactly one canonical positive `with_genres`, exactly one lowercase `include_adult=false`, zero or one of the four media-correct sorts, and only the currently approved media-correct date bounds, rating bounds, vote minimum, two-letter language/country codes, and canonical comma-separated `without_genres`. Missing, true, `0`, differently cased, or duplicated adult values fail closed. Company/Network mixtures, Watch Providers, keywords, paging, unknown parameters, compound included Genres, and generic Discover remain rejected. A service token does not authorize Discover. Production version `857c1fa3-e62d-4fd8-9321-9573aedb1906` with SHA-256 `6F67C0576470CE18901BCF7ADE433F38E411057CB27A2092D014D3185ED8A4B2` is the first correction deployment. Dave confirmed the second complete 10,479-byte source with SHA-256 `45AE6323195F067BCC6428CA8D70889640C35B661B509F47A6069EE906F12539` was deployed on 2026-08-21; no second deployment version identifier was supplied. Codex does not deploy.
+
+Both scopes rebuild the selected structure and placement before apply and commit through one existing atomic batch; stale placement, generated-ID collision, or late bundle failure leaves project content and revision unchanged. Structure and Appearance totals report actual created nodes after destination omissions and deliberate repeated placement.
 
 ## 5. Configure, review, and scaling
 
-There are two screens: **Browse** and **Configure & review**. The standard header **Back** action is the only return path from Configure to Browse and preserves query, selection, destination, media, sort, and advanced values. There is no duplicate **Change genres** control. A single selection is shown as fixed context without a redundant `1 genre selected` heading; selections of two through six use compact removable pills; larger selections use **View selected genres** with a removable row for every Genre. Removing down to one immediately forces current-folder mode and prunes only configuration owned by removed Genres. Adding another Genre later reopens the multi-Genre choices with current-folder as the safe default.
+Selected-folder Add Source has two screens: **Browse** and **Configure & review**. The standard header **Back** action is the only return path from Configure to Browse and preserves query, selection, destination, media, sort, and advanced values. There is no duplicate **Change genres** control. A single selection is shown as fixed context without a redundant `1 genre selected` heading; selections of two through six use compact removable pills; larger selections use **View selected genres** with a removable row for every Genre. Removing down to one immediately forces current-folder mode and prunes only configuration owned by removed Genres. Adding another Genre later reopens the multi-Genre choices with current-folder as the safe default. Guided hierarchy instead uses the five-stage Select → Configure → Structure → Appearance → Create flow described above.
 
-Simple one/few-source reviews show the destination heading and compact result rows without a second redundant count/summary box. Every ordinary review row retains the same neutral source-row surface; state is communicated only by concise **Ready to add**, **Already in this folder**, **Exists elsewhere**, **Already in this collection**, or **Partly in this collection** status text. The shared blue/cyan informational notice supplies useful elsewhere locations and confirms that adding can continue. Above six candidates/groups, ordinary ready rows collapse behind **View all …** while duplicate, partial, conflict, and other attention rows remain visible. Expanded rows contain only the source/folder name, media and sort or source count, and outcome. Zero outcomes use **No new sources to add** or the matching folder wording rather than a `0 sources` block. This keeps a 35-source review usable without hiding warnings or recolouring complete rows.
+Simple one/few-source reviews show the destination heading and compact result rows without a second redundant count/summary box. Every ordinary review row retains the same neutral source-row surface; state is communicated only by concise **Ready to add**, **Already in this folder**, **Exists elsewhere**, **Already in this collection**, or **Partly in this collection** status text. The shared blue/cyan informational notice supplies useful elsewhere locations and confirms that adding can continue. In selected-folder Add Source, above six candidates/groups, ordinary ready rows may still collapse behind **View all …** while attention rows remain visible. Guided hierarchy Configure is deliberately different after owner review: all selected logical Genre rows remain directly rendered in its one intentional scroll owner, including a 27-row selection, and no duplicate selected/configured disclosure is mounted. Zero outcomes use **No new sources to add** or the matching folder wording rather than a `0 sources` block.
 
 ## 6. Approved Advanced options
 
@@ -85,12 +146,14 @@ Partial dates, unsupported/mixed exclusion syntax, self-exclusion, compound incl
 
 ## 8. Deterministic and manual evidence
 
-Focused foundation, controller, and UI suites cover 35 → 27 → 8 catalogue parity; exact grouping; manual and Select-all ordering; 27-concept/35-source capacity; one-revision current-folder and folder-mode operations; one-Genre destination enforcement; strict pristine-placeholder replacement and customized-folder preservation; V1 wide artwork and fallback; sorts and every advanced field; per-Genre media-aware ordered exclusions; fail-closed imported recognition; both duplicate scopes; removable compact/large selection summaries; simplified reviews; responsive exclusion/help surfaces; shared Add/Edit Advanced UI; atomic failures; and serialization cycles.
+Focused foundation, controller, UI, Preview-provider, and Worker suites cover 35 → 27 → 8 catalogue parity; exact grouping; manual and Select-all ordering; all four structures at full 27/35 capacity; structure-specific names, artwork, title defaults, and exact destination omissions; all three composite rules; self-describing merged sources; intentional Add-to-both nodes; multi-collection atomic rollback; explicit 27-concept Landscape/Poster mapping parity; unchanged Add Source Landscape default; all four media-correct sorts; exact Advanced/exclusion/adult query translation and complete cache identity; success/zero/expiry/eviction/error/timeout/abort/stale cache behavior; narrow Worker acceptance/rejection; always-visible guided Configure rows; shared nested poster Preview; responsive exclusion/help surfaces; stale/generated-ID/late-failure atomic rollback; and serialization cycles. Local browser review at 360, 384, 393, 402, 412, 899, 900, 901, and 1280 pixels confirms one scroll owner, reachable sticky actions, no horizontal overflow, bounded visual Structure cards and illustrative wireframes, readable live counts, clear radio/selected/focus states, correctly positioned composite controls, fixed-media notes, composite preservation, and title-default preservation with no console warnings/errors. The final shared grid correction makes each Structure card allocate its description/preview area consistently instead of bottom-aligning the preview after a wrapped title; measured description-to-diagram spacing is 12 pixels at 360, 393, 412, 899, 900, 901, and 1280 pixels, with row counts still aligned and no clipping, compression, or overflow.
+
+The first owner deployment passed the former exact-config mounted live scenario at 393 and 900 pixels through the production Worker, real TMDB, and real `image.tmdb.org` resources. Before the second deployment, the corrected Builder emitted `include_adult=false` and received the expected HTTP 403 from the older Worker rather than fabricating a green result. After Dave confirmed the second deployment, bounded direct production acceptance returned HTTP 200 for canonical false and HTTP 403 for missing, true, duplicated, and generic Discover. The complete 29-scenario mounted suite passed through the production Worker, real TMDB, and real `image.tmdb.org`, including Movie first, lazy TV, exact Advanced/exclusion, posters, cache, mutation, focus, and responsive hierarchy behavior.
 
 The production-generated sanitized current-client package lives at [`manual-tests/nuvio-clients/issue-110-builder-genres/`](../../manual-tests/nuvio-clients/issue-110-builder-genres/). It deliberately stays small: Comedy Movie/TV plus Action & Adventure TV inside one existing folder, with representative advanced filters. It proves source semantics, not UI maximum capacity. The offline checker proves deterministic canonical Builder output.
 
-Owner desktop and physical-phone UI acceptance is complete, and issue #110 merged through PR #111. Actual current-Nuvio V2 import/runtime/immediate-export/re-import evidence is deliberately deferred until V2 exposes export and was not an unfinished issue or merge gate. The deterministic fixture is offline source-contract evidence only; no current-client, device-version, live catalogue, or live artwork result is claimed.
+Owner desktop and physical-phone UI acceptance is complete for issue #110, which merged through PR #111. Final desktop and physical-phone UI acceptance is also complete for issue #130. The guided hierarchy remains unstaged/uncommitted with no PR or merge, and both Worker deployment/live-validation rounds are complete. Actual current-Nuvio V2 import/runtime/immediate-export/re-import evidence is deliberately deferred until V2 exposes export and is not an unfinished issue #130 gate.
 
 ## 9. Deferred work
 
-Deferred work includes Musicals, curated/public Lists, public-list search, known-ID/URL List creation, live Genre requests or counts, generic Advanced Discover, logical pair editing, Genre identity/media editing, semantic V1 merges, generic folder merge/copy and promotion behavior beyond the strict original-placeholder cleanup, Worker/deployment changes, typed artwork-runtime expansion, source-led collection creation, recipes, and generic picker/form/navigation/help extraction. A guided Genre hierarchy is only the owner's next likely investigation; it is not implemented or approved by this document and must begin by investigating reuse of the merged multi-select and sibling-folder destination behavior above.
+Deferred work includes Musicals, curated/public Lists, public-list search, known-ID/URL List creation, automatic Genre counts, generic Advanced Discover, logical pair editing, Genre identity/media editing, arbitrary merges beyond the three evidenced composite-TV rules, generic folder merge/copy and promotion behavior beyond the Add Source-only strict original-placeholder cleanup, typed artwork-runtime expansion, source-led collection creation, recipes, and generic picker/form/navigation/help extraction. Issue #130's commit/PR/merge and any later current-client evidence remain pending rather than assumed; final owner review, the corrected Worker deployment, and postdeployment live validation are complete.

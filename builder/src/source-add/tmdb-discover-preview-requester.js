@@ -19,6 +19,28 @@ function normalizedText(value) {
 	return typeof value === "string" ? value.trim() : "";
 }
 
+function canonicalQueryEntries(value) {
+	if (!plainObject(value) || Object.keys(value).length === 0) return null;
+	const entries = [];
+	for (const [key, suppliedValue] of Object.entries(value).sort(([left], [right]) => left.localeCompare(right))) {
+		if (!/^[a-z][a-z0-9_.]*$/.test(key)) return null;
+		if (
+			(typeof suppliedValue !== "string" && typeof suppliedValue !== "number")
+			|| (typeof suppliedValue === "number" && !Number.isFinite(suppliedValue))
+		) return null;
+		const normalizedValue = String(suppliedValue);
+		if (!normalizedValue || normalizedValue !== normalizedValue.trim()) return null;
+		entries.push(Object.freeze([key, normalizedValue]));
+	}
+	return Object.freeze(entries);
+}
+
+function queryIdentity(entries) {
+	const parameters = new URLSearchParams();
+	for (const [key, value] of entries) parameters.set(key, value);
+	return parameters.toString();
+}
+
 function normalizeDate(value) {
 	const date = normalizedText(value);
 	return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
@@ -95,24 +117,13 @@ export function createTmdbDiscoverPreviewRequester({
 		: fetchImpl;
 	const cache = createBoundedResponseCache({ ttlMs: cacheTtlMs, maxEntries: cacheMaxEntries, now });
 
-	async function getPreview(entityId, mediaType, sortBy, { signal } = {}) {
-		if (
-			!Number.isSafeInteger(entityId)
-			|| entityId < 1
-			|| typeof previewPaths[mediaType] !== "string"
-			|| typeof sortBy !== "string"
-			|| !sortBy
-		) {
-			return providerError("invalid-request", `Choose a valid ${entityLabel} and media preview.`, { retryable: false });
-		}
+	async function requestPreview(mediaType, queryEntries, cacheKey, { signal } = {}) {
 		if (signal?.aborted) return providerError("aborted", `The superseded ${entityLabel} preview was cancelled.`, { retryable: false });
-		const cacheKey = `${entityType}:${entityId}:${mediaType}:${sortBy}`;
 		const cached = cache.get(cacheKey);
 		if (cached !== null) return Object.freeze({ ok: true, data: cached, fromCache: true });
 
 		const url = new URL(previewPaths[mediaType], workerBaseUrl);
-		url.searchParams.set(queryParameter, String(entityId));
-		url.searchParams.set("sort_by", sortBy);
+		for (const [key, value] of queryEntries) url.searchParams.set(key, value);
 		const controller = new AbortController();
 		const unlink = linkAbortSignal(signal, controller);
 		let timeoutTriggered = false;
@@ -146,5 +157,31 @@ export function createTmdbDiscoverPreviewRequester({
 		return Object.freeze({ ok: true, data: cloneResponseData(data), fromCache: false });
 	}
 
-	return Object.freeze({ getPreview });
+	async function getPreview(entityId, mediaType, sortBy, { signal } = {}) {
+		if (
+			!Number.isSafeInteger(entityId)
+			|| entityId < 1
+			|| typeof previewPaths[mediaType] !== "string"
+			|| typeof sortBy !== "string"
+			|| !sortBy
+		) {
+			return providerError("invalid-request", `Choose a valid ${entityLabel} and media preview.`, { retryable: false });
+		}
+		const entries = Object.freeze([
+			Object.freeze([queryParameter, String(entityId)]),
+			Object.freeze(["sort_by", sortBy]),
+		]);
+		const cacheKey = `${entityType}:${entityId}:${mediaType}:${sortBy}`;
+		return requestPreview(mediaType, entries, cacheKey, { signal });
+	}
+
+	async function getQueryPreview(mediaType, queryParameters, { signal } = {}) {
+		const entries = canonicalQueryEntries(queryParameters);
+		if (typeof previewPaths[mediaType] !== "string" || entries === null) {
+			return providerError("invalid-request", `Choose a valid ${entityLabel} and media preview.`, { retryable: false });
+		}
+		return requestPreview(mediaType, entries, `${entityType}:${mediaType}:${queryIdentity(entries)}`, { signal });
+	}
+
+	return Object.freeze({ getPreview, getQueryPreview });
 }

@@ -51,6 +51,35 @@ const NETWORK_DISCOVER_SORTS = new Set([
   "vote_average.desc",
   "vote_count.desc",
 ]);
+const GENRE_DISCOVER_SORTS = COMPANY_DISCOVER_SORTS;
+const GENRE_DISCOVER_PARAMETERS = Object.freeze({
+  "/3/discover/movie": new Set([
+    "include_adult",
+    "with_genres",
+    "without_genres",
+    "sort_by",
+    "primary_release_date.gte",
+    "primary_release_date.lte",
+    "vote_average.gte",
+    "vote_average.lte",
+    "vote_count.gte",
+    "with_original_language",
+    "with_origin_country",
+  ]),
+  "/3/discover/tv": new Set([
+    "include_adult",
+    "with_genres",
+    "without_genres",
+    "sort_by",
+    "first_air_date.gte",
+    "first_air_date.lte",
+    "vote_average.gte",
+    "vote_average.lte",
+    "vote_count.gte",
+    "with_original_language",
+    "with_origin_country",
+  ]),
+});
 
 function isCanonicalPositiveSafeInteger(value) {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
@@ -59,6 +88,103 @@ function isCanonicalPositiveSafeInteger(value) {
 
   const number = Number(value);
   return Number.isSafeInteger(number) && String(number) === value;
+}
+
+function isCanonicalNonnegativeSafeInteger(value) {
+  if (typeof value !== "string" || !/^(0|[1-9]\d*)$/.test(value)) {
+    return false;
+  }
+
+  const number = Number(value);
+  return Number.isSafeInteger(number) && String(number) === value;
+}
+
+function isCanonicalRating(value) {
+  if (typeof value !== "string" || !/^(0|[1-9]\d*)(?:\.\d+)?$/.test(value)) {
+    return false;
+  }
+
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 && number <= 10 && String(number) === value;
+}
+
+function isCanonicalDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match || Number(match[1]) < 1000) {
+    return false;
+  }
+
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function isCanonicalPositiveIdList(value) {
+  if (typeof value !== "string" || !value) {
+    return false;
+  }
+
+  const ids = value.split(",");
+  return ids.every(isCanonicalPositiveSafeInteger) && new Set(ids).size === ids.length;
+}
+
+function isAllowedGenreDiscoverRequest(url, entries) {
+  const allowedParameters = GENRE_DISCOVER_PARAMETERS[url.pathname];
+  const includedGenres = url.searchParams.getAll("with_genres");
+  const includeAdult = url.searchParams.getAll("include_adult");
+  if (
+    includedGenres.length !== 1 ||
+    !isCanonicalPositiveSafeInteger(includedGenres[0]) ||
+    includeAdult.length !== 1 ||
+    includeAdult[0] !== "false" ||
+    entries.length !== new Set(entries.map(([key]) => key)).size ||
+    entries.some(([key]) => !allowedParameters.has(key))
+  ) {
+    return false;
+  }
+
+  const sorts = url.searchParams.getAll("sort_by");
+  if (sorts.length > 1 || (sorts.length === 1 && !GENRE_DISCOVER_SORTS[url.pathname].has(sorts[0]))) {
+    return false;
+  }
+
+  const withoutGenres = url.searchParams.get("without_genres");
+  if (
+    withoutGenres !== null &&
+    (!isCanonicalPositiveIdList(withoutGenres) || withoutGenres.split(",").includes(includedGenres[0]))
+  ) {
+    return false;
+  }
+
+  const lowerDateKey = url.pathname === "/3/discover/movie" ? "primary_release_date.gte" : "first_air_date.gte";
+  const upperDateKey = url.pathname === "/3/discover/movie" ? "primary_release_date.lte" : "first_air_date.lte";
+  const lowerDate = url.searchParams.get(lowerDateKey);
+  const upperDate = url.searchParams.get(upperDateKey);
+  if (
+    (lowerDate !== null && !isCanonicalDate(lowerDate)) ||
+    (upperDate !== null && !isCanonicalDate(upperDate)) ||
+    (lowerDate !== null && upperDate !== null && lowerDate > upperDate)
+  ) {
+    return false;
+  }
+
+  const lowerRating = url.searchParams.get("vote_average.gte");
+  const upperRating = url.searchParams.get("vote_average.lte");
+  if (
+    (lowerRating !== null && !isCanonicalRating(lowerRating)) ||
+    (upperRating !== null && !isCanonicalRating(upperRating)) ||
+    (lowerRating !== null && upperRating !== null && Number(lowerRating) > Number(upperRating))
+  ) {
+    return false;
+  }
+
+  const minimumVotes = url.searchParams.get("vote_count.gte");
+  const language = url.searchParams.get("with_original_language");
+  const country = url.searchParams.get("with_origin_country");
+  return (
+    (minimumVotes === null || isCanonicalNonnegativeSafeInteger(minimumVotes)) &&
+    (language === null || /^[a-z]{2}$/.test(language)) &&
+    (country === null || /^[A-Z]{2}$/.test(country))
+  );
 }
 
 function isAllowedTmdbRequest(url) {
@@ -82,7 +208,12 @@ function isAllowedTmdbRequest(url) {
   const entries = [...url.searchParams.entries()];
   const companyIds = url.searchParams.getAll("with_companies");
   const networkIds = url.searchParams.getAll("with_networks");
+  const genreIds = url.searchParams.getAll("with_genres");
   const sorts = url.searchParams.getAll("sort_by");
+
+  if (genreIds.length > 0) {
+    return isAllowedGenreDiscoverRequest(url, entries);
+  }
 
   if (networkIds.length > 0) {
     if (

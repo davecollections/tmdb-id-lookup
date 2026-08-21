@@ -78,6 +78,9 @@ runNode(["--test", path.join("tests", "builder-streaming-foundation.test.mjs")])
 runNode(["--test", path.join("tests", "builder-streaming-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-genre-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-genre-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-genre-hierarchy.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-genre-preview.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-genre-hierarchy-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-decades-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-decades-controller.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-decades-plan.test.mjs")]);
