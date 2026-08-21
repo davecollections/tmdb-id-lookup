@@ -39,7 +39,6 @@ import {
 import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import { CreationDialog } from "./CreationDialog.jsx";
-import { CREATION_OPTION_IDS } from "./creation-options.js";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
@@ -1364,28 +1363,6 @@ export function BuilderWorkspace({
 		});
 	}
 
-	function openAddPeople(trigger) {
-		if (
-			navigationLocked
-			|| pointerInteractionLocked()
-			|| !view.selectedCollection
-		) return;
-		setKeyboardReorderInternalId(null);
-		setActionsMenuInternalId(null);
-		setCreatedCardTarget(null);
-		setCreationStatusText("");
-		creationRestoreFocusRef.current = trigger;
-		setCreationSession({
-			scope: "new-folder",
-			openingProject: state.project,
-			projectRevision: state.revision,
-			currentYear: new Date().getFullYear(),
-			destinationCollectionInternalId: view.selectedCollection.internalId,
-			destinationCollectionTitle: view.selectedCollection.title,
-			optionId: CREATION_OPTION_IDS.PEOPLE,
-		});
-	}
-
 	function chooseSourceMode(modeId) {
 		if (
 			!visibleAddSourceSession
@@ -2247,28 +2224,16 @@ export function BuilderWorkspace({
 							title="Folders"
 							count={view.folders.length}
 							action={view.selectedCollection ? (
-								<>
-									<button
-										className="secondary-action"
-										type="button"
-										data-action="add-people"
-										disabled={hierarchyInteractionLocked}
-										onClick={(event) => openAddPeople(event.currentTarget)}
-									>
-										<span aria-hidden="true">+</span>
-										Add people
-									</button>
-									<button
-										className="primary-action"
-										type="button"
-										data-action="create-folder"
-										disabled={hierarchyInteractionLocked}
-										onClick={createFolder}
-									>
-										<span aria-hidden="true">+</span>
-										New folder
-									</button>
-								</>
+								<button
+									className="primary-action"
+									type="button"
+									data-action="create-folder"
+									disabled={hierarchyInteractionLocked}
+									onClick={createFolder}
+								>
+									<span aria-hidden="true">+</span>
+									New folder
+								</button>
 							) : null}
 						/>
 						<div className="panel-body">

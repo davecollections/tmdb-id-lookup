@@ -1072,6 +1072,7 @@ function MountedWorkspace({ controller }) {
 		studioPreviewProvider: {},
 		studioArtworkRuntimeClient: {},
 		streamingCatalogueProvider: {},
+		peopleManifestClient: { peek() { return null; }, async load() { return { ok: false, error: { message: "Mounted manifest unavailable." } }; } },
 		artworkClient: {},
 	});
 }
@@ -1094,6 +1095,25 @@ async function runBlankCreationScenario() {
 		const createCollection = host.querySelector('[data-action="create-collection"]');
 		if (createCollection === null) throw new Error(`Mounted Blank workspace did not render Create collection: ${host.innerHTML.slice(0, 500)}`);
 		await clickAndSettle(createCollection);
+		const peopleCollectionOption = document.querySelector('[data-creation-option="people"]');
+		if (peopleCollectionOption === null) throw new Error("Mounted New Collection did not expose People.");
+		await clickAndSettle(peopleCollectionOption);
+		const collectionPeopleHeading = document.querySelector("#people-mode-title");
+		const collectionPeopleQuery = document.querySelector("#people-source-query");
+		await afterCommittedEffects();
+		const collectionInitialFocus = document.activeElement === collectionPeopleHeading && document.activeElement !== collectionPeopleQuery;
+		collectionPeopleQuery.focus({ preventScroll: true });
+		const collectionExplicitSearchFocus = document.activeElement === collectionPeopleQuery;
+		await clickAndSettle(document.querySelector('[data-action="back-to-creation-launcher"]'));
+		const collectionBackFocus = document.activeElement === document.querySelector('[data-creation-option="blank"]');
+		await clickAndSettle(document.querySelector('[data-creation-option="people"]'));
+		await afterCommittedEffects();
+		const collectionReentryFocus = document.activeElement === document.querySelector("#people-mode-title");
+		await clickAndSettle(document.querySelector('[data-creation-dialog="true"] .add-source-close-action'));
+		const collectionCancelFocus = document.activeElement === createCollection;
+		const collectionFocusRevisionUnchanged = controller.getState().revision === initialRevision;
+
+		await clickAndSettle(createCollection);
 		const blankCollection = document.querySelector('[data-creation-option="blank"]');
 		if (blankCollection === null) throw new Error(`Mounted Blank collection launcher did not open: ${document.body.innerHTML.slice(-700)}`);
 		await clickAndSettle(blankCollection);
@@ -1115,7 +1135,51 @@ async function runBlankCreationScenario() {
 		const afterFolder = controller.getState();
 		const folder = afterFolder.project.collections[0].folders[0];
 		const addSource = document.querySelector('[data-action="add-source"]');
+		const backToFolderPanel = document.querySelector('.sources-panel .back-control');
+		if (backToFolderPanel === null) throw new Error("Mounted workspace did not expose the mobile folder-panel return control.");
+		await clickAndSettle(backToFolderPanel);
+		const canonicalNewFolder = document.querySelector('[data-action="create-folder"]');
+		if (canonicalNewFolder === null) throw new Error("Mounted workspace did not retain canonical New folder.");
+		const legacyPeopleLauncherAbsent = document.querySelector('[data-action="add-people"]') === null;
+		await clickAndSettle(canonicalNewFolder);
+		const peopleFolderOption = document.querySelector('[data-creation-option="people"]');
+		if (peopleFolderOption === null) throw new Error("Mounted New Folder did not expose People.");
+		await clickAndSettle(peopleFolderOption);
+		const folderPeopleHeading = document.querySelector("#people-mode-title");
+		const folderPeopleQuery = document.querySelector("#people-source-query");
+		await afterCommittedEffects();
+		const folderInitialFocus = document.activeElement === folderPeopleHeading && document.activeElement !== folderPeopleQuery;
+		folderPeopleQuery.focus({ preventScroll: true });
+		const folderExplicitSearchFocus = document.activeElement === folderPeopleQuery;
+		await clickAndSettle(document.querySelector('[data-action="back-to-creation-launcher"]'));
+		const folderBackFocus = document.activeElement === document.querySelector('[data-creation-option="blank"]');
+		await clickAndSettle(document.querySelector('[data-creation-option="people"]'));
+		await afterCommittedEffects();
+		const folderReentryFocus = document.activeElement === document.querySelector("#people-mode-title");
+		await clickAndSettle(document.querySelector('[data-creation-dialog="true"] .add-source-close-action'));
+		const currentCanonicalNewFolder = document.querySelector('[data-action="create-folder"]');
+		const folderCancelFocus = document.activeElement === currentCanonicalNewFolder;
+		const folderFocusRevisionUnchanged = controller.getState().revision === afterFolder.revision;
 		return {
+			peopleFocus: {
+				newCollection: {
+					initialBrowseHeading: collectionInitialFocus,
+					explicitSearch: collectionExplicitSearchFocus,
+					backToLauncher: collectionBackFocus,
+					reentryBrowseHeading: collectionReentryFocus,
+					cancelRestoredCanonicalTrigger: collectionCancelFocus,
+					revisionUnchanged: collectionFocusRevisionUnchanged,
+				},
+				newFolder: {
+					legacyLauncherAbsent: legacyPeopleLauncherAbsent,
+					initialBrowseHeading: folderInitialFocus,
+					explicitSearch: folderExplicitSearchFocus,
+					backToLauncher: folderBackFocus,
+					reentryBrowseHeading: folderReentryFocus,
+					cancelRestoredCanonicalTrigger: folderCancelFocus,
+					revisionUnchanged: folderFocusRevisionUnchanged,
+				},
+			},
 			collection: collectionResult,
 			folder: {
 				dialogClosed: document.querySelector('[data-creation-dialog="true"]') === null,
@@ -1276,6 +1340,19 @@ async function runPeopleSelectionScrollScenario() {
 
 	try {
 		const query = required(document.querySelector("#people-source-query"), "query");
+		const browseHeading = required(document.querySelector("#people-mode-title"), "browse heading");
+		await afterCommittedEffects();
+		const initialFocus = {
+			browseHeadingFocused: document.activeElement === browseHeading,
+			searchFocused: document.activeElement === query,
+			autoFocusAttributeAbsent: query.autofocus === false && !query.hasAttribute("autofocus"),
+			keyboardTargetAbsent: document.activeElement?.tagName !== "INPUT",
+		};
+		await act(async () => {
+			query.focus({ preventScroll: true });
+			await afterCommittedEffects();
+		});
+		const explicitSearchFocused = document.activeElement === query;
 		await act(async () => {
 			setInputValue(query, "scroll people");
 			await new Promise((resolve) => setTimeout(resolve, 360));
@@ -1328,6 +1405,7 @@ async function runPeopleSelectionScrollScenario() {
 
 		return {
 			width: window.innerWidth,
+			focus: { ...initialFocus, explicitSearchFocused },
 			resultCount: cards.length,
 			pointer: {
 				partiallyClipped: pointerPartiallyClipped,

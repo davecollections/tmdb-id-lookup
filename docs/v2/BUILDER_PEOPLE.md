@@ -1,8 +1,8 @@
 # Builder People creation and source behavior
 
-Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 / PR #119 is the merged People hierarchy-family and canonical-artwork baseline.
+Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 / PR #119 is the merged People hierarchy-family and canonical-artwork baseline. Issue #132 removes the legacy panel launcher and restores guided browse-first focus.
 
-Issues: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74); [#118 — Add People hierarchy creation and migrate People artwork authority](https://github.com/davecollections/tmdb-id-lookup/issues/118)
+Issues: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74); [#118 — Add People hierarchy creation and migrate People artwork authority](https://github.com/davecollections/tmdb-id-lookup/issues/118); [#132 — Remove legacy People launcher and restore browse-first hierarchy focus](https://github.com/davecollections/tmdb-id-lookup/issues/132)
 
 Last reviewed: 2026-08-18
 
@@ -44,7 +44,7 @@ Every other destination is an existing folder. Named folders, populated Untitled
 
 ### New Collection / New Folder hierarchy
 
-People is a first-class family in the shared `New Collection` / `New Folder` launcher. The retained Folders-header `+ People` action is a compatibility alias for `New Folder → People`; it does not own a second implementation.
+People is a first-class family in the shared hierarchy launcher. Its canonical hierarchy routes are `New Collection → People` and `New Folder → People`. The Folders header has only the ordinary `New folder` action and no People-specific shortcut.
 
 1. Select ordered exact people with no artificial product ceiling.
 2. Choose Automatic or Same for all and review every selected person in one bounded ordered configuration list; direct per-person changes are retained as internal overrides rather than a third visible mode.
@@ -144,6 +144,8 @@ Add Source retains Search → Configure. Hierarchy creation uses Search → Conf
 The source-mode chooser and short/empty People Search use content-based height. Selected people and configuration rows each use bounded internal lists, so 20–100+ selections do not expand the dialog by default. Configure gives the bounded People list the available vertical space, has no person dropdown or expanded per-person editor, and keeps every compact direct-pill row reachable. At most one body-portalled title-preview modal is mounted. The shared CreationDialog retains one scroll owner, body lock, focus containment, safe areas, Visual Viewport keyboard handling, Escape/Close behavior, trigger restoration, status/alert regions, and reduced-motion support. Result selection and native checkbox focus keep the outer dialog, document, and sticky Configure action fixed; only the inner `.add-source-scroll` owner may move to keep a partially visible result available.
 
 The People result card remains one clickable positioned label around a focusable native checkbox. Position containment keeps the global 1×1 visually-hidden checkbox in the card's coordinate and scroll context even when that result is clipped at the bottom of the inner viewport; browser-native focus scrolling therefore cannot reposition the fixed creation shell. A reusable circular indicator renders an empty ring or a filled tick without replacing native checked state, keyboard toggling, screen-reader exposure, visible focus, or the selected card border/surface. The native checkboxes behind the source pills and all buttons likewise retain keyboard behavior and mobile tap targets. The four pills use two columns at 520px and below, while the preview uses five poster columns there. The 360, 384, 393, 402, and 412px widths require no horizontal scrolling; the 899/900/901px shell boundary remains intact.
+
+Guided New Collection/New Folder People Search opens browse-first on the stable People heading; Search receives focus only after explicit interaction. Selected-folder `Add Source → People` remains typing-first and initially focuses Search.
 
 ## Current-client evidence gate
 

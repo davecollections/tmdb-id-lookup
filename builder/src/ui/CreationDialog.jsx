@@ -683,7 +683,7 @@ export function CreationDialog({
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObserving = observeAddSourceViewport(setViewportStyle);
 		const initialTarget = optionId === CREATION_OPTION_IDS.PEOPLE
-			? dialogRef.current?.querySelector?.("#people-source-query")
+			? dialogRef.current?.querySelector?.("#people-mode-title")
 			: optionId === CREATION_OPTION_IDS.GENRES
 				? dialogRef.current?.querySelector?.("#genre-hierarchy-select-title")
 			: optionId === null ? firstOptionRef.current : dialogRef.current;

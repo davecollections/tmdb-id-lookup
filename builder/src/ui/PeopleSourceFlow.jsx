@@ -199,6 +199,7 @@ function PersonResult({ result, context, checked, disabled, loading, onActivate 
 
 export function PeopleSearchStep({
 	context,
+	headingRef = null,
 	input,
 	inputRef,
 	parsedInput,
@@ -219,7 +220,7 @@ export function PeopleSearchStep({
 		<>
 			<section className="add-source-mode" aria-labelledby="people-mode-title">
 				<div>
-					<h3 id="people-mode-title">People · TMDB</h3>
+					<h3 ref={headingRef} id="people-mode-title" tabIndex={-1}>People · TMDB</h3>
 					<p>{context === "folder" ? "Choose a person, then add their sources to this folder." : "Choose people in the order their folders should be created."}</p>
 				</div>
 			</section>
@@ -636,6 +637,7 @@ export function PeopleSourceFlow({
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
 	const scrollRef = useRef(null);
+	const searchHeadingRef = useRef(null);
 	const inputRef = useRef(null);
 	const configureRef = useRef(null);
 	const lookupCoordinatorRef = useRef(null);
@@ -758,15 +760,16 @@ export function PeopleSourceFlow({
 	}
 
 	usePrePaintLayoutEffect(() => {
+		const initialFocusTarget = hierarchy ? searchHeadingRef.current : inputRef.current;
 		if (embedded) {
-			focusElementWithoutScroll(inputRef.current ?? dialogRef.current);
+			focusElementWithoutScroll(initialFocusTarget ?? dialogRef.current);
 			return undefined;
 		}
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(inputRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(initialFocusTarget ?? dialogRef.current);
 		return () => { stopViewport(); unlockBody(); };
-	}, [embedded]);
+	}, [embedded, hierarchy]);
 
 	useEffect(() => {
 		loadManifestOnce();
@@ -1125,7 +1128,7 @@ export function PeopleSourceFlow({
 					}} noValidate>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === PEOPLE_SOURCE_STEPS.SEARCH ? (
-								<PeopleSearchStep context={context} input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} selection={selection} loadingPersonId={loadingPersonId} selectionError={selectionError} onInputChange={handleInputChange} onRetryLookup={() => setRetryGeneration((value) => value + 1)} onActivateResult={activateResult} onChangePage={setPage} onRemoveSelected={removePerson} />
+								<PeopleSearchStep context={context} headingRef={searchHeadingRef} input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} selection={selection} loadingPersonId={loadingPersonId} selectionError={selectionError} onInputChange={handleInputChange} onRetryLookup={() => setRetryGeneration((value) => value + 1)} onActivateResult={activateResult} onChangePage={setPage} onRemoveSelected={removePerson} />
 							) : step === PEOPLE_SOURCE_STEPS.CONFIGURE ? (
 								<section ref={configureRef} className="people-configure" aria-labelledby="people-configure-title" tabIndex={-1}>
 									<div className="add-source-section-heading"><div><p className="panel-kicker">Configure</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folders`}</h3></div></div>
