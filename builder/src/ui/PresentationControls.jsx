@@ -155,14 +155,10 @@ export function TitleOptions({
 				</div>
 			) : null}
 			{collectionStatus}
-			<fieldset className="editor-field editor-choice-field editor-compact-radio-field" data-editor-field="folderTitleVisibility">
+			{folderTitleVisibility ? <fieldset className="editor-field editor-choice-field editor-compact-radio-field" data-editor-field="folderTitleVisibility">
 				<legend>{folderTitleVisibility.legend ?? FOLDER_TITLE_VISIBILITY_LABEL}</legend>
-				<FolderTitleVisibilityChoices
-					selectedId={folderTitleVisibility.selectedId}
-					name={folderTitleVisibility.name}
-					onChange={folderTitleVisibility.onChange}
-				/>
-			</fieldset>
+				<FolderTitleVisibilityChoices selectedId={folderTitleVisibility.selectedId} name={folderTitleVisibility.name} onChange={folderTitleVisibility.onChange} />
+			</fieldset> : null}
 		</section>
 	);
 }

@@ -109,6 +109,7 @@ export {
 	GENRE_DESTINATION_MODES,
 	GENRE_MEDIA_CHOICES,
 	GENRE_PHYSICAL_SOURCE_LIMIT,
+	GENRE_SOURCE_TITLE_MODES,
 	GENRE_SORT_OPTIONS,
 	genreDuplicateOverrideIdentity,
 	genreMediaSupport,
@@ -121,8 +122,36 @@ export {
 } from "./genre-source.js";
 export {
 	buildGenreFolderEditable,
+	DEFAULT_GENRE_ARTWORK_SHAPE,
+	GENRE_ARTWORK_SHAPES,
+	genreArtworkUrl,
 	genreWideArtworkUrl,
 } from "./genre-folder-artwork.js";
+export {
+	createTmdbGenrePreviewProvider,
+	genrePreviewQueryFromDraft,
+	normalizeTmdbGenrePreviewResponse,
+	TMDB_GENRE_PREVIEW_CACHE_MAX_ENTRIES,
+	TMDB_GENRE_PREVIEW_CACHE_TTL_MS,
+	TMDB_GENRE_PREVIEW_REQUEST_TIMEOUT_MS,
+} from "./tmdb-genre-preview-provider.js";
+export {
+	applyGenreHierarchyPlan,
+	createGenreHierarchyPlan,
+	DEFAULT_GENRE_HIERARCHY_COLLECTION_TITLE,
+	DEFAULT_GENRE_HIERARCHY_FOLDER_TITLE_VISIBILITY,
+	GENRE_HIERARCHY_CREATION_SCOPES,
+	GENRE_HIERARCHY_PLACEMENT_STATUSES,
+	GENRE_HIERARCHY_PLAN_TYPE,
+	validateGenreHierarchyPlan,
+} from "./genre-hierarchy-plan.js";
+export {
+	DEFAULT_GENRE_HIERARCHY_COLLECTION_TITLES,
+	DEFAULT_GENRE_HIERARCHY_STRUCTURE,
+	GENRE_COMPOSITE_PLACEMENT_RULES,
+	GENRE_HIERARCHY_STRUCTURES,
+	genreCompositePlacementChoices,
+} from "./genre-hierarchy-structures.js";
 export {
 	compileGenreAdvancedFilters,
 	createGenreAdvancedState,

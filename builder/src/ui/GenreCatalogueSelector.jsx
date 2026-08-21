@@ -159,7 +159,7 @@ export function GenreSelectionToolbar({ selectionCount, totalCount, onSelectAll,
 	);
 }
 
-export function GenreCatalogueList({ concepts, selection, onChoose }) {
+export function GenreCatalogueList({ concepts, selection, onChoose, selectionControl = "button" }) {
 	if (concepts.length === 0) {
 		return <div className="add-source-empty"><strong>No Genres found</strong><span>Clear the search or try another name.</span></div>;
 	}
@@ -167,6 +167,17 @@ export function GenreCatalogueList({ concepts, selection, onChoose }) {
 		<ul className="genre-catalogue-list">
 			{concepts.map((concept) => {
 				const selected = selection.includes(concept.name);
+				if (selectionControl === "checkbox") {
+					return (
+						<li key={concept.name}>
+							<label className={`genre-catalogue-choice${selected ? " is-selected" : ""}`} data-genre-name={concept.name} data-selected={selected ? "true" : undefined}>
+								<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={selected} onChange={() => onChoose(concept.name)} />
+								<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
+								<span><strong>{concept.name}</strong><small>{genreMediaLabel(concept)}</small></span>
+							</label>
+						</li>
+					);
+				}
 				return (
 					<li key={concept.name}>
 						<button type="button" data-genre-name={concept.name} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onChoose(concept.name)}>

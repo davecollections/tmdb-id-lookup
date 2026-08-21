@@ -129,6 +129,11 @@ The Worker only proxies the TMDB paths the frontend needs:
 * Exact Network Series count/Preview requests using only
   `/3/discover/tv?with_networks={positive integer}`, optionally with one
   approved Network TV `sort_by` value for explicit title Preview
+* Exact Genre title Preview requests using only `/3/discover/movie` or
+  `/3/discover/tv` with exactly one canonical positive-safe-integer
+  `with_genres`, exactly one lowercase `include_adult=false`, optionally one
+  approved media-specific `sort_by`, and only the current approved Genre
+  Advanced parameters described below
 * Exact Streaming provider catalogue requests using only:
   * `/3/watch/providers/regions?language=en-US`
   * `/3/watch/providers/movie?language=en-US`
@@ -142,9 +147,33 @@ from `popularity.desc`, `primary_release_date.desc`, `vote_average.desc`, or
 `vote_count.desc`. Query parameter order may vary. The TV Network path accepts
 exactly one canonical `with_networks` value and either no other parameter or one
 `sort_by` from those same four TV values. Company and Network allowlists remain
-family-specific. Mixed, duplicate, malformed, wrong-media, unsupported, and
-additional parameters fail closed. Other Discover filters and broad
-`/3/discover/*` forwarding remain disallowed.
+family-specific.
+
+The Genre branch requires exactly one canonical positive `with_genres` and
+exactly one `include_adult=false`. Missing, true, `0`, differently cased, or
+duplicated adult values fail closed. It may also receive zero or one
+media-correct `sort_by` from the existing four-value Movie/TV sets and at most
+one of each current approved Genre Advanced parameter:
+
+* Movie `primary_release_date.gte` / `primary_release_date.lte`, or TV
+  `first_air_date.gte` / `first_air_date.lte`, as real canonical `YYYY-MM-DD`
+  dates in ascending order;
+* `vote_average.gte` / `vote_average.lte` as canonical numbers from 0 to 10 in
+  ascending order;
+* `vote_count.gte` as a canonical nonnegative safe integer;
+* `with_original_language` as exactly two lowercase letters;
+* `with_origin_country` as exactly two uppercase letters; and
+* `without_genres` as unique canonical positive-safe-integer IDs separated by
+  commas, excluding the included ID.
+
+The Genre request cache identity in Builder includes the complete canonical
+functional query, including `include_adult=false`, not merely Genre/media/sort.
+Company+Genre, Network+Genre,
+Watch Provider, Keyword, `page`, duplicate keys, compound included Genre
+expressions, wrong-media dates/sorts, unknown keys, and generic Discover fail
+closed. Service-token access does not authorize Discover. Existing Company and
+Network validators are not widened by the Genre branch. Other Discover filters
+and broad `/3/discover/*` forwarding remain disallowed.
 
 Each Streaming provider path requires exactly one `language=en-US` parameter.
 Missing, duplicate, differently cased, or additional parameters fail closed.
@@ -165,6 +194,8 @@ no-sort and sort requests plus the rejection matrix were live validated on
 overall V2 Builder remains governed by its separate release and noindex boundary.
 
 Builder Network hierarchy issue [#126](https://github.com/davecollections/tmdb-id-lookup/issues/126) extends only the Network TV route with the optional four-value `sort_by` allowlist above. On 2026-08-20 Dave manually deployed the complete reviewed source as version `f6bee241-afef-447f-b8f9-3d4b8da460cf`; the recorded deployment-handoff source SHA-256 is `612955AD3ECCEF16E12E05ABA6B672B0AD68BA825F13419FFA2A0A9346706AD4`. The merged tracked Worker Git blob is separately `ceb37bb3711a43d6f25508a98943ce71b53baec2`; these identities do not by themselves prove byte equality. The live production Worker/TMDB/image-CDN validation passed before [PR #127](https://github.com/davecollections/tmdb-id-lookup/pull/127) merged. Merge did not redeploy the Worker; automatic Pages publication is a separate workflow.
+
+Builder Genre hierarchy issue [#130](https://github.com/davecollections/tmdb-id-lookup/issues/130) adds only the Genre branch above. Codex supplied the first complete reviewed working-tree source at branch `work/130-genre-hierarchy`, HEAD `ae01541ba2d6915e0b0c71f060a68ec6cee6c1ff`, with exact source-byte SHA-256 `6F67C0576470CE18901BCF7ADE433F38E411057CB27A2092D014D3185ED8A4B2`; Dave manually deployed it on 2026-08-21 as version `857c1fa3-e62d-4fd8-9321-9573aedb1906`. Bounded live production acceptance returned HTTP 200 for representative Movie and TV Genre shapes, HTTP 403 for generic Discover, and the mounted Builder passed Movie-first/TV-lazy shared Preview plus an exact Recent/Advanced/exclusion Movie query through real TMDB and `image.tmdb.org` at mobile and desktop widths. The second owner correction adds the mandatory canonical adult parameter above. Its complete handoff source is 10,479 bytes with SHA-256 `45AE6323195F067BCC6428CA8D70889640C35B661B509F47A6069EE906F12539` at the same branch/HEAD; removing only the two allowlist entries and three validation lines reconstructs the 10,304-byte first-deployment source and its exact prior hash, so the reviewed Worker delta is 175 bytes. Dave confirmed the corrected complete source was deployed on 2026-08-21; no second deployment version identifier was supplied. Direct production acceptance now returns HTTP 200 for canonical `include_adult=false` and HTTP 403 for missing, true, duplicated, and generic Discover requests. The mounted Builder passed the full Movie-first/TV-lazy/Advanced/exclusion flow through real TMDB and `image.tmdb.org` at mobile and desktop widths. Final desktop/physical-phone owner review is complete; the source remains unstaged and uncommitted pending separately authorized repository publication. Deployment is independent of commit, PR, merge, and Builder publication.
 
 The tracked Streaming routes were added for Builder issue #104. Source changes
 do not update the live Worker. Deployment and live provider acceptance require

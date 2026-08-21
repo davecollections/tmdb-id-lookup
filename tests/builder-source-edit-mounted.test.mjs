@@ -168,7 +168,9 @@ async function runMountedPage() {
 				const franchiseReviewWidths = [];
 				const studioHierarchyWidths = [];
 				const networkHierarchyWidths = [];
+				const genreHierarchyWidths = [];
 				const networkLivePreviewWidths = [];
+				const genreLivePreviewWidths = [];
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -206,6 +208,13 @@ async function runMountedPage() {
 					});
 					if (networkEvaluation.exceptionDetails) throw new Error(networkEvaluation.exceptionDetails.exception?.description ?? networkEvaluation.exceptionDetails.text);
 					networkHierarchyWidths.push(networkEvaluation.result?.value);
+					const genreHierarchyEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runGenreHierarchyScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (genreHierarchyEvaluation.exceptionDetails) throw new Error(genreHierarchyEvaluation.exceptionDetails.exception?.description ?? genreHierarchyEvaluation.exceptionDetails.text);
+					genreHierarchyWidths.push(genreHierarchyEvaluation.result?.value);
 				}
 				const networkDeferredArtworkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runNetworkDeferredArtworkScenario()",
@@ -223,6 +232,13 @@ async function runMountedPage() {
 					});
 					if (networkLivePreviewEvaluation.exceptionDetails) throw new Error(networkLivePreviewEvaluation.exceptionDetails.exception?.description ?? networkLivePreviewEvaluation.exceptionDetails.text);
 					networkLivePreviewWidths.push(networkLivePreviewEvaluation.result?.value);
+					const genreLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runGenreLivePreviewScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (genreLivePreviewEvaluation.exceptionDetails) throw new Error(genreLivePreviewEvaluation.exceptionDetails.exception?.description ?? genreLivePreviewEvaluation.exceptionDetails.text);
+					genreLivePreviewWidths.push(genreLivePreviewEvaluation.result?.value);
 				}
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
@@ -281,7 +297,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, networkLivePreviewWidths, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, networkLivePreviewWidths, genreLivePreviewWidths, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -324,6 +340,13 @@ async function runMountedPage() {
 			requestCount: result.instrumentation.requestCount,
 			cachedPopularRequestCount: result.cachedPopular.requestCount,
 			restoredPopularRequestCount: result.restoredPopular.requestCount,
+		})))}`);
+		console.log(`GENRE_LIVE_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.genreLivePreviewWidths.map((result) => ({
+			width: result.width,
+			movie: { requestUrl: result.movie.request.url, totalResults: result.movie.request.totalResults, posterSources: result.movie.preview.posterSources },
+			series: { requestUrl: result.series.request.url, totalResults: result.series.request.totalResults, posterSources: result.series.preview.posterSources },
+			filtered: { requestUrl: result.filtered.request.url, totalResults: result.filtered.request.totalResults, posterSources: result.filtered.preview.posterSources, cacheHit: result.filtered.cacheHit },
+			requestCount: result.instrumentation.requestCount,
 		})))}`);
 	}
 	return execution.value;
@@ -421,6 +444,133 @@ test("mounted Genre selection toolbar remains grouped and overflow-free at every
 		assert.equal(result.clearEnabledAfterSelection, true, `${result.width}px selected Clear all`);
 		assert.equal(result.headingHasWidth, true, `${result.width}px heading width`);
 		assert.equal(result.noHorizontalOverflow, true, `${result.width}px overflow`);
+	}
+});
+
+test("mounted Genre hierarchy preserves browse-first focus, configuration state, atomic apply, and responsive scroll ownership", () => {
+	assert.deepEqual(mountedResults.genreHierarchyWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.genreHierarchyWidths) {
+		const width = result.width;
+		assert.deepEqual(result.initial, {
+			searchFocused: false,
+			selectHeadingFocused: true,
+			cardCount: 27,
+			nativeCheckboxes: true,
+		}, `${width}px browse-first selection`);
+		assert.equal(result.explicitSearchFocused, true, `${width}px explicit Search focus`);
+		assert.equal(result.selectedAll, true, `${width}px Select all`);
+		assert.deepEqual({ state: result.selectionState, tick: result.selectionTick }, {
+			state: "selected",
+			tick: "✓",
+		}, `${width}px shared selected-card language`);
+		assert.equal(result.focusEvidence.partiallyClipped, true, `${width}px partial-card setup`);
+		assert.equal(result.focusEvidence.nativeCheckboxFocused, true, `${width}px native checkbox focus`);
+		assert.equal(result.focusEvidence.innerScrollDelta > 0, true, `${width}px inner focus scroll`);
+		assert.equal(result.focusEvidence.outerStable, true, `${width}px outer modal stability`);
+		assert.equal(result.focusEvidence.documentStable, true, `${width}px document stability`);
+		assert.equal(result.focusEvidence.actionStable, true, `${width}px action stability`);
+		assert.equal(result.focusEvidence.actionReachable, true, `${width}px reachable sticky action`);
+		assert.deepEqual(result.configureState, {
+			stage: "configure",
+			headingFocused: true,
+			bothDefault: true,
+			selectedCount: true,
+			allConfiguredRowsVisible: true,
+			duplicateDisclosuresAbsent: true,
+			noDestinationChooser: true,
+			noOverride: true,
+			contextualSummary: true,
+			mediaPills: true,
+			sortPills: true,
+			pillRounded: true,
+			noFixedNoteForBoth: true,
+			moviesFixedNote: "8 selected Genres are Series-only and will still create Series sources.",
+			seriesFixedNote: "11 selected Genres are Movie-only and will still create Movie sources.",
+		}, `${width}px Configure defaults and direct rows`);
+		assert.deepEqual(result.secondaryState, {
+			open: true,
+			scrollInert: true,
+			headerInert: true,
+			footerHidden: true,
+			focusOnHeading: true,
+			escapeClosed: true,
+			focusRestored: true,
+		}, `${width}px Advanced secondary-surface lock`);
+		assert.deepEqual(result.structureState, {
+			stage: "structure",
+			headingFocused: true,
+			introCopy: "Choose how the configured Genres are organised in Nuvio.",
+			genreHierarchyHeadingAbsent: true,
+			structureLegendHidden: true,
+			choiceCount: 4,
+			defaultGenreFolders: true,
+			structureCounts: {
+				"genre-folders": "1 collection · 27 folders",
+				"media-folders": "1 collection · 2 folders",
+				"separate-media-genre-folders": "1 collection · 35 folders",
+				"separate-media-collections": "2 collections · 35 folders",
+			},
+			visibleCountsOmitSources: true,
+			structureCopy: {
+				"genre-folders": { title: "Genre folders", description: "One folder for each Genre, with Movies and Series together." },
+				"media-folders": { title: "Media folders", description: "One Movies folder and one Series folder, with Genres inside each." },
+				"separate-media-genre-folders": { title: "Separate Movie & Series Genre folders", description: "Create a separate folder for every Movie and Series Genre." },
+				"separate-media-collections": { title: "Separate Movie & Series collections", description: "Create one collection for Movie Genres and another for Series Genres." },
+			},
+			structureVisualEvidence: {
+				previewTypes: ["genre-folders", "media-folders", "separate-media-genre-folders", "separate-media-collections"],
+				visualHierarchyComplete: true,
+				visualPreviewsBounded: true,
+				countsReadable: true,
+				descriptionDiagramSpacingConsistent: true,
+				rowCountAlignmentPreserved: true,
+				selectedStyleClear: true,
+				nativeRadioSemantics: true,
+				previewsHiddenFromAccessibilityTree: true,
+			},
+			compositesBelowCards: true,
+			compositeHeading: "Where should combined Series genres go?",
+			compositeHelper: "Some Series genres combine categories that Movies keep separate. You can keep them in their own folder or place them with the matching Movie genres.",
+			optionalPlacementAbsent: true,
+			compositeControlCount: 3,
+			actionTargets: ["standalone", "Action", "Adventure", "both"],
+			actionLabels: ["Keep its own folder", "Add to Action", "Add to Adventure", "Add to both"],
+			addToBothCount: "1 collection · 26 folders",
+			mediaFoldersSelected: true,
+			compositesHiddenForMedia: true,
+			genreFoldersReselected: true,
+			addToBothPreserved: true,
+			separateFoldersShowTitlesDefault: true,
+			manualTitleVisibilityPreserved: true,
+		}, `${width}px Structure counts and composite lifecycle`);
+		assert.deepEqual(result.appearanceState, {
+			stage: "appearance",
+			headingFocused: true,
+			totals: [1, 27, 35],
+			hideHomeDefault: true,
+			landscapeDefault: true,
+			posterAvailable: true,
+			configureRowsAbsent: true,
+		}, `${width}px Appearance-only final stage`);
+		assert.equal(result.structureRestored, true, `${width}px Back restores Structure`);
+		assert.equal(result.configureRestored, true, `${width}px Back restores Configure`);
+		assert.deepEqual(result.selectRestored, {
+			stage: "select",
+			query: "a",
+			selectedAll: true,
+			headingFocused: true,
+		}, `${width}px Back restores Select`);
+		assert.equal(result.applyCalls, 1, `${width}px apply call count`);
+		assert.equal(result.revisionDelta, 1, `${width}px atomic revision`);
+		assert.equal(result.folderCount, 27, `${width}px generated folders`);
+		assert.equal(result.sourceCount, 35, `${width}px generated sources`);
+		assert.deepEqual(result.contextualTitles, {
+			comedy: ["Movies", "Series"],
+			horror: ["Movies"],
+			actionAdventure: ["Series"],
+		}, `${width}px contextual hierarchy source titles`);
+		assert.equal(result.oneScrollOwner, true, `${width}px one scroll owner`);
+		assert.equal(result.noHorizontalOverflow, true, `${width}px horizontal overflow`);
 	}
 });
 
@@ -932,6 +1082,96 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 			noHorizontalOverflow: true,
 			revisionUnchanged: true,
 		}, `${width}px live Preview remains transient and non-mutating`);
+	}
+});
+
+test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN configuration", () => {
+	assert.deepEqual(mountedResults.genreLivePreviewWidths.map((result) => result.width), [393, 900]);
+	for (const result of mountedResults.genreLivePreviewWidths) {
+		const width = result.width;
+		const maximumPosterCount = width <= 520 ? 5 : 10;
+		assert.equal(result.requestsBeforeExplicitPreview, 0, `${width}px no automatic Genre Preview request`);
+
+		assert.equal(result.movie.request.origin, tmdbProxyBaseUrl, `${width}px Movie production Worker origin`);
+		assert.equal(result.movie.request.pathname, "/3/discover/movie", `${width}px Movie Discover path`);
+		assert.deepEqual(Object.fromEntries(result.movie.request.queryEntries), {
+			include_adult: "false",
+			sort_by: "popularity.desc",
+			with_genres: "16",
+		}, `${width}px exact default Movie Genre request`);
+		assert.equal(result.movie.request.status, 200, `${width}px live Movie Worker status`);
+		assert.equal(result.movie.request.ok, true, `${width}px live Movie Worker response`);
+		assert.match(result.movie.request.contentType, /application\/json/i, `${width}px live Movie JSON response`);
+		assert.equal(Number.isSafeInteger(result.movie.request.totalResults) && result.movie.request.totalResults >= 0, true, `${width}px Movie total_results`);
+		assert.deepEqual(result.movie.sharedBeforeSwitch, {
+			requestCount: 1,
+			movieSelected: true,
+			movieCountShown: true,
+			seriesDeferred: true,
+		}, `${width}px Movie-first lazy shared Preview`);
+		assert.equal(result.movie.preview.visiblePosterCount > 0 && result.movie.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded Movie posters`);
+		assert.equal(result.movie.preview.renderedPosterCount <= 10, true, `${width}px Movie DOM poster maximum`);
+		assert.deepEqual(result.movie.preview.posterSources, result.movie.preview.expectedSources, `${width}px Movie response poster order`);
+		assert.equal(result.movie.preview.postersReady, true, `${width}px Movie posters loaded`);
+		assert.equal(result.movie.preview.genuineTmdbSources, true, `${width}px Movie image.tmdb.org sources`);
+		assert.equal(result.movie.preview.posterOnly, true, `${width}px Movie poster-only grid`);
+		assert.equal(result.movie.preview.captionsAbsent, true, `${width}px Movie captions absent`);
+
+		assert.equal(result.series.request.origin, tmdbProxyBaseUrl, `${width}px TV production Worker origin`);
+		assert.equal(result.series.request.pathname, "/3/discover/tv", `${width}px TV Discover path`);
+		assert.deepEqual(Object.fromEntries(result.series.request.queryEntries), {
+			include_adult: "false",
+			sort_by: "popularity.desc",
+			with_genres: "16",
+		}, `${width}px exact default TV Genre request`);
+		assert.equal(result.series.request.status, 200, `${width}px live TV Worker status`);
+		assert.deepEqual(result.series.sharedAfterSwitch, {
+			requestCount: 2,
+			seriesSelected: true,
+			seriesCountShown: true,
+		}, `${width}px TV requested only after switching`);
+		assert.equal(result.series.preview.visiblePosterCount > 0 && result.series.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded TV posters`);
+		assert.deepEqual(result.series.preview.posterSources, result.series.preview.expectedSources, `${width}px TV response poster order`);
+		assert.equal(result.series.preview.postersReady, true, `${width}px TV posters loaded`);
+		assert.equal(result.series.preview.genuineTmdbSources, true, `${width}px TV image.tmdb.org sources`);
+		assert.equal(result.series.preview.posterOnly, true, `${width}px TV poster-only grid`);
+		assert.deepEqual(result.sharedClose, { closed: true, exactFocusRestored: true }, `${width}px shared Preview Close lifecycle`);
+
+		assert.equal(result.filtered.request.origin, tmdbProxyBaseUrl, `${width}px filtered production Worker origin`);
+		assert.equal(result.filtered.request.pathname, "/3/discover/movie", `${width}px filtered Movie path`);
+		assert.deepEqual(Object.fromEntries(result.filtered.request.queryEntries), {
+			"primary_release_date.gte": "2020-01-01",
+			"primary_release_date.lte": "2026-12-31",
+			include_adult: "false",
+			sort_by: "primary_release_date.desc",
+			"vote_average.gte": "6",
+			"vote_average.lte": "9",
+			"vote_count.gte": "100",
+			with_genres: "16",
+			with_origin_country: "US",
+			with_original_language: "en",
+			without_genres: "10751",
+		}, `${width}px exact Advanced and exclusion query`);
+		assert.equal(result.filtered.request.status, 200, `${width}px filtered Worker status`);
+		assert.equal(Number.isSafeInteger(result.filtered.request.totalResults) && result.filtered.request.totalResults >= 0, true, `${width}px filtered total_results`);
+		assert.deepEqual(result.filtered.singleMedia, { tabsAbsent: true, countShown: true }, `${width}px single-media Preview shell`);
+		assert.equal(result.filtered.preview.visiblePosterCount > 0 && result.filtered.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded filtered posters`);
+		assert.deepEqual(result.filtered.preview.posterSources, result.filtered.preview.expectedSources, `${width}px filtered response poster order`);
+		assert.equal(result.filtered.preview.postersReady, true, `${width}px filtered posters loaded`);
+		assert.equal(result.filtered.preview.genuineTmdbSources, true, `${width}px filtered image.tmdb.org sources`);
+		assert.equal(result.filtered.cacheHit, true, `${width}px exact-query successful cache reuse`);
+		assert.deepEqual(result.instrumentation, {
+			requestCount: 3,
+			allResponsesCloned: true,
+			originalResponsesUntouched: true,
+			allSuccessfulJson: true,
+		}, `${width}px same-response live Genre instrumentation`);
+		assert.deepEqual(result.final, {
+			focusRestored: true,
+			configureIntact: true,
+			noHorizontalOverflow: true,
+			revisionUnchanged: true,
+		}, `${width}px live Genre Preview remains responsive and non-mutating`);
 	}
 });
 

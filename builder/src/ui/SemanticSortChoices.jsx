@@ -5,11 +5,13 @@ export function SemanticSortChoices({
 	firstInputRef = null,
 	onChange,
 	legend = "Sort titles by",
+	helper = null,
 }) {
 	const selected = options.find((option) => option.id === selectedId) ?? null;
 	return (
 		<fieldset className="studio-sort-choices semantic-sort-choices">
 			<legend>{legend}</legend>
+			{helper ? <p className="semantic-sort-helper">{helper}</p> : null}
 			<div className="studio-sort-choice-row semantic-sort-choice-row">
 				{options.map((option, index) => (
 					<label key={option.id} data-selected={selectedId === option.id ? "true" : undefined}>
