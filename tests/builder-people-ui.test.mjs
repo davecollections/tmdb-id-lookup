@@ -663,6 +663,15 @@ test("shared People flow keeps modal lifecycle contracts for both contexts", () 
 	}
 });
 
+test("guided People owns browse-first heading focus while Add Source keeps Search focus", () => {
+	const flow = read("builder/src/ui/PeopleSourceFlow.jsx");
+	const creation = read("builder/src/ui/CreationDialog.jsx");
+	assert.match(flow, /const initialFocusTarget = hierarchy \? searchHeadingRef\.current : inputRef\.current/);
+	assert.match(flow, /<h3 ref=\{headingRef\} id="people-mode-title" tabIndex=\{-1\}>/);
+	assert.match(creation, /optionId === CREATION_OPTION_IDS\.PEOPLE[\s\S]*querySelector\?\.\("#people-mode-title"\)/);
+	assert.doesNotMatch(creation, /optionId === CREATION_OPTION_IDS\.PEOPLE[\s\S]{0,120}#people-source-query/);
+});
+
 test("shared People flow keeps Add Source behavior and adds a bounded hierarchy Review", () => {
 	const styles = read("builder/src/styles.css");
 	const flow = read("builder/src/ui/PeopleSourceFlow.jsx");
@@ -745,13 +754,19 @@ test("issue #74 artwork-gap log uses the owner-QA table contract", () => {
 	assert.equal(gapLog.includes("ID to confirm"), false);
 });
 
-test("workspace keeps Add Source People and routes + People through the shared hierarchy family", () => {
+test("workspace exposes People only through canonical hierarchy and Add Source routes", () => {
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
+	const creationOptions = read("builder/src/ui/creation-options.js");
+	const sourceModes = read("builder/src/source-add/source-modes.js");
 	assert.equal((workspace.match(/<AddSourceDialog/g) ?? []).length, 1);
 	assert.equal((workspace.match(/<PeopleSourceFlow/g) ?? []).length, 1);
 	assert.equal((workspace.match(/<SourceModeDialog/g) ?? []).length, 1);
-	assert.match(workspace, /data-action="add-people"/);
-	assert.match(workspace, /optionId:\s*CREATION_OPTION_IDS\.PEOPLE/);
+	assert.doesNotMatch(workspace, /data-action="add-people"|openAddPeople|Add people/);
+	assert.match(workspace, /data-action="create-folder"/);
+	assert.match(workspace, /initialOptionId=\{creationSession\.optionId \?\? null\}/);
+	assert.match(creationOptions, /id:\s*CREATION_OPTION_IDS\.PEOPLE,[\s\S]*scopes:\s*BOTH_SCOPES/);
+	assert.match(sourceModes, /PEOPLE_SOURCE_MODE[\s\S]*AVAILABLE_SOURCE_MODES/);
+	assert.match(workspace, /visibleAddSourceSession\.modeId === PEOPLE_SOURCE_MODE_ID/);
 	assert.match(workspace, /applyPeopleHierarchyPlan\(controller, plan\)/);
 	assert.equal(workspace.includes("createPeopleFolderBatch(controller"), false);
 	assert.match(workspace, /createPeopleSourceBundle\(controller/);

@@ -595,6 +595,25 @@ test("mounted Genre exact duplicate overrides use singular and bundle canonical 
 
 test("mounted Blank collection and folder creation immediately unlock the next manual action", () => {
 	assert.deepEqual(mountedResults.blankCreation, {
+		peopleFocus: {
+			newCollection: {
+				initialBrowseHeading: true,
+				explicitSearch: true,
+				backToLauncher: true,
+				reentryBrowseHeading: true,
+				cancelRestoredCanonicalTrigger: true,
+				revisionUnchanged: true,
+			},
+			newFolder: {
+				legacyLauncherAbsent: true,
+				initialBrowseHeading: true,
+				explicitSearch: true,
+				backToLauncher: true,
+				reentryBrowseHeading: true,
+				cancelRestoredCanonicalTrigger: true,
+				revisionUnchanged: true,
+			},
+		},
 		collection: {
 			dialogClosed: true,
 			revisionDelta: 1,
@@ -1197,6 +1216,13 @@ test("mounted People selection keeps a partially clipped native checkbox inside 
 	assert.deepEqual(mountedResults.peopleSelectionScrollWidths.map((result) => result.width), [360, 393, 412, 899, 901, 1280]);
 	for (const result of mountedResults.peopleSelectionScrollWidths) {
 		const width = result.width;
+		assert.deepEqual(result.focus, {
+			browseHeadingFocused: true,
+			searchFocused: false,
+			autoFocusAttributeAbsent: true,
+			keyboardTargetAbsent: true,
+			explicitSearchFocused: true,
+		}, `${width}px guided People browse-first focus`);
 		assert.equal(result.resultCount, 12, `${width}px result boundary fixture`);
 		assert.equal(result.pointer.partiallyClipped, true, `${width}px pointer target clipped`);
 		assert.equal(result.pointer.inputInsideCardBeforeFocus, true, `${width}px pointer checkbox belongs to card coordinates`);
