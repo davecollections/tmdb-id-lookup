@@ -65,7 +65,7 @@ const requiredCoverageTags = [
 	"multiple-sources",
 	"presentation",
 	"folder-artwork",
-	"raw-only-collection-fields",
+	"preservation-safe-collection-values",
 	"raw-only-source-fields",
 	"unknown-collection",
 	"unknown-folder",
@@ -382,6 +382,7 @@ test("preservation profile cycles stably with exact classification counts and or
 	assert.equal(imported.ok, true, JSON.stringify(imported.errors));
 	assert.deepEqual(codes(imported.errors), entry.expectedDiagnostics.importErrors);
 	assert.deepEqual(codes(imported.warnings), entry.expectedDiagnostics.importWarnings);
+	assert.equal(imported.project.collections[0].editable.backdropImageUrl, null);
 	assert.deepEqual(
 		imported.project.collections[0].folders[0].sources.map((source) => source.category),
 		["native-tmdb", "addon", "opaque", "addon", "opaque"],

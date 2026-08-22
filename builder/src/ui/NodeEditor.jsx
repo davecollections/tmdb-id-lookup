@@ -9,6 +9,7 @@ import {
 	initializeTitleInput,
 } from "./modal-focus.js";
 import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import { CollectionArtworkField } from "./CollectionArtworkField.jsx";
 import { FolderArtworkFields } from "./FolderArtworkFields.jsx";
 import {
 	CollectionTitleVisibilitySwitch,
@@ -442,9 +443,22 @@ export function NodeEditor({
 						</>
 					) : draft.nodeType === "collection" ? (
 						<>
-							{titleField}
-							<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
-							<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+							<SettingsSection prefix={prefix} slug="basic-details" title="Basic details">
+								{titleField}
+							</SettingsSection>
+							<SettingsSection prefix={prefix} slug="display" title="Display">
+								<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
+								<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+							</SettingsSection>
+							<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
+								<CollectionArtworkField
+									values={draft.values}
+									original={draft.original}
+									touched={draft.touched}
+									prefix={`${prefix}-artwork`}
+									onChange={onChange}
+								/>
+							</SettingsSection>
 						</>
 					) : (
 						<>

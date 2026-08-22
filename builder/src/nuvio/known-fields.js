@@ -1,6 +1,7 @@
 export const COLLECTION_EDITABLE_FIELDS = Object.freeze([
 	"id",
 	"title",
+	"backdropImageUrl",
 	"pinToTop",
 	"focusGlowEnabled",
 	"viewMode",

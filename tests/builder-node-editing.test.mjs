@@ -132,12 +132,19 @@ function workspacePanelMarkup(markup, marker) {
 	return markup.slice(start, next === -1 ? markup.length : next);
 }
 
-test("focus glow is recognised only as a collection editable field", () => {
+test("Collection backdrop and focus glow are recognised only as Collection editable fields", () => {
+	assert.ok(COLLECTION_EDITABLE_FIELDS.includes("backdropImageUrl"));
 	assert.ok(COLLECTION_EDITABLE_FIELDS.includes("focusGlowEnabled"));
+	assert.equal(FOLDER_EDITABLE_FIELDS.includes("backdropImageUrl"), false);
+	assert.equal(SOURCE_EDITABLE_FIELDS.includes("backdropImageUrl"), false);
 	assert.equal(FOLDER_EDITABLE_FIELDS.includes("focusGlowEnabled"), false);
 	assert.equal(SOURCE_EDITABLE_FIELDS.includes("focusGlowEnabled"), false);
 	assert.equal(
 		COLLECTION_EDITABLE_FIELDS.filter((field) => field === "focusGlowEnabled").length,
+		1,
+	);
+	assert.equal(
+		COLLECTION_EDITABLE_FIELDS.filter((field) => field === "backdropImageUrl").length,
 		1,
 	);
 });
@@ -154,6 +161,7 @@ test("collection draft retains only stable target identity and editor values", (
 		showAllTab: true,
 		pinToTop: false,
 		focusGlowEnabled: true,
+		backdropImageUrl: "",
 	});
 	assert.equal(JSON.stringify(draft).includes("collection-id"), false);
 });
@@ -239,6 +247,69 @@ test("updating title changes only title form state and touched state", () => {
 	assert.equal(next.touched.showAllTab, false);
 	assert.equal(next.touched.pinToTop, false);
 	assert.equal(next.touched.focusGlowEnabled, false);
+	assert.equal(next.touched.backdropImageUrl, false);
+});
+
+test("Collection backdrop draft preserves exact text and emits only touched minimal patches", () => {
+	const collection = importTree([{
+		id: "collection",
+		title: "Collection",
+		backdropImageUrl: "custom-scheme://saved exact value",
+		unknownCollection: { keep: true },
+		folders: [],
+	}]).getState().project.collections[0];
+	const original = createNodeEditorDraft(collection);
+	assert.equal(original.values.backdropImageUrl, "custom-scheme://saved exact value");
+	assert.equal(original.original.backdropImageUrl.supported, true);
+	assert.equal(original.touched.backdropImageUrl, false);
+	assert.deepEqual(buildNodeEditorPatch(original), {});
+	assert.deepEqual(
+		buildNodeEditorPatch(updateNodeEditorField(original, "title", "Renamed")),
+		{ title: "Renamed" },
+	);
+
+	const replacement = updateNodeEditorField(
+		original,
+		"backdropImageUrl",
+		"https://example.test/replacement.gif?token=exact%20value",
+	);
+	assert.deepEqual(buildNodeEditorPatch(replacement), {
+		backdropImageUrl: "https://example.test/replacement.gif?token=exact%20value",
+	});
+	assert.deepEqual(
+		buildNodeEditorPatch(updateNodeEditorField(original, "backdropImageUrl", "")),
+		{ backdropImageUrl: "" },
+	);
+	assert.deepEqual(
+		buildNodeEditorPatch(updateNodeEditorField(original, "backdropImageUrl", original.values.backdropImageUrl)),
+		{},
+	);
+});
+
+test("unusual imported Collection backdrop values stay hidden and preserved until touched", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		backdropImageUrl: { private: "RAW_BACKDROP" },
+		unknownCollection: { keep: true },
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	const draft = createNodeEditorDraft(collection);
+	assert.equal(draft.values.backdropImageUrl, "");
+	assert.equal(draft.original.backdropImageUrl.status, "unsupported");
+	assert.equal(JSON.stringify(draft).includes("RAW_BACKDROP"), false);
+	assert.deepEqual(buildNodeEditorPatch(draft), {});
+
+	const beforeRevision = controller.getState().revision;
+	assert.equal(applyNodeEditorDraft(
+		controller,
+		updateNodeEditorField(draft, "pinToTop", true),
+	).ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	const output = serializeNuvioProject(controller.getState().project).value[0];
+	assert.deepEqual(output.backdropImageUrl, { private: "RAW_BACKDROP" });
+	assert.deepEqual(output.unknownCollection, { keep: true });
 });
 
 test("field updates are immutable and retain original comparison data", () => {
@@ -1901,6 +1972,7 @@ test("collection settings render exactly one accessible modal with stable marker
 		'data-editor-control="showAllTab"',
 		'data-editor-field="pinToTop"',
 		'data-editor-control="pinToTop"',
+		'data-editor-field="backdropImageUrl"',
 		'data-action="apply-node-edit"',
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
@@ -1945,11 +2017,91 @@ test("collection settings render exactly one accessible modal with stable marker
 	]) assert.equal(markup.includes(obsolete), false, obsolete);
 	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 	assert.equal(markup.includes('data-editor-field="id"'), false);
-	assert.equal(markup.includes('data-settings-section="artwork"'), false);
-	assert.equal(markup.includes(">Artwork<"), false);
+	const basicDetails = markedElement(markup, 'data-settings-section="basic-details"', "section");
+	const display = markedElement(markup, 'data-settings-section="display"', "section");
+	const artwork = markedElement(markup, 'data-settings-section="artwork"', "section");
+	assert.ok(basicDetails.includes('<h3 id="node-editor-collection-basic-details-heading">Basic details</h3>'));
+	assert.ok(basicDetails.includes(">Title</label>"));
+	assert.equal(basicDetails.includes("Hide collection title in Nuvio"), false);
+	assert.ok(display.includes('<h3 id="node-editor-collection-display-heading">Display</h3>'));
+	assert.ok(display.includes("Hide collection title in Nuvio"));
+	assert.ok(display.includes("How sources appear in this collection"));
+	assert.ok(display.includes("Include an All tab when using Tabs"));
+	assert.ok(display.includes("Pin to top"));
+	assert.ok(artwork.includes('<h3 id="node-editor-collection-artwork-heading">Artwork</h3>'));
+	assert.ok(artwork.includes("Backdrop Image or GIF URL"));
+	assert.ok(artwork.includes("Used as fallback folder artwork in Modern View."));
+	assert.equal(artwork.includes("Collection cover"), false);
+	assert.equal(artwork.includes("Collection tile"), false);
+	assert.equal(artwork.includes("Collection hero"), false);
+	assert.equal(artwork.includes("<img"), false);
+	assert.ok(markup.indexOf('data-settings-section="basic-details"') < markup.indexOf('data-settings-section="display"'));
+	assert.ok(markup.indexOf('data-settings-section="display"') < markup.indexOf('data-settings-section="artwork"'));
 	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
 	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes("inert"));
 	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes('aria-hidden="true"'));
+});
+
+test("Collection settings preview the exact current draft backdrop URL with safe image defaults", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		backdropImageUrl: "https://saved.example/backdrop.gif",
+		folders: [],
+	}]);
+	const collection = controller.getState().project.collections[0];
+	controller.selectNode(collection.internalId);
+	const beforeProject = structuredClone(controller.getState().project);
+	const beforeRevision = controller.getState().revision;
+	const draftUrl = "https://arbitrary.example/draft-backdrop.gif?token=exact%20value";
+	const draft = updateNodeEditorField(
+		createNodeEditorDraft(collection),
+		"backdropImageUrl",
+		draftUrl,
+	);
+	const markup = renderWorkspace(controller, { draft });
+	const artwork = markedElement(markup, 'data-settings-section="artwork"', "section");
+	const field = markedElement(artwork, 'data-editor-field="backdropImageUrl"', "div");
+	const input = openingTag(field, 'id="node-editor-collection-artwork-backdropImageUrl"');
+	const preview = openingTag(artwork, 'data-artwork-preview="backdropImageUrl"');
+	const imageStart = artwork.indexOf("<img", artwork.indexOf('data-artwork-preview="backdropImageUrl"'));
+	const image = artwork.slice(imageStart, artwork.indexOf(">", imageStart) + 1);
+
+	assert.ok(openingTag(artwork, 'data-editor-field="backdropImageUrl"').includes('class="editor-field folder-artwork-url-field has-preview"'));
+	assert.ok(field.includes('<label for="node-editor-collection-artwork-backdropImageUrl">Backdrop Image or GIF URL</label>'));
+	assert.ok(input.includes('type="url"'));
+	assert.ok(input.includes('inputMode="url"'));
+	assert.ok(input.includes('aria-describedby="node-editor-collection-artwork-backdropImageUrl-help"'));
+	assert.ok(field.includes('id="node-editor-collection-artwork-backdropImageUrl-help"'));
+	assert.ok(artwork.includes(`value="${draftUrl}"`));
+	assert.ok(preview.includes('data-artwork-preview-kind="backdrop"'));
+	assert.ok(preview.includes('data-artwork-preview-shape="wide"'));
+	assert.ok(preview.includes('aria-hidden="true"'));
+	assert.ok(image.includes(`src="${draftUrl}"`));
+	assert.ok(image.includes('alt=""'));
+	assert.ok(image.includes('loading="lazy"'));
+	assert.ok(image.includes('decoding="async"'));
+	assert.ok(image.includes('referrerPolicy="no-referrer"'));
+	assert.ok(image.includes('draggable="false"'));
+	assert.equal(image.includes("tabindex="), false);
+	assert.equal(markup.includes("https://saved.example/backdrop.gif"), false);
+	assert.deepEqual(controller.getState().project, beforeProject);
+	assert.equal(controller.getState().revision, beforeRevision);
+	assert.deepEqual(buildNodeEditorPatch(draft), { backdropImageUrl: draftUrl });
+});
+
+test("Collection backdrop remains absent from workspace cards", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Backdrop Collection",
+		backdropImageUrl: "https://example.test/backdrop.gif",
+		folders: [],
+	}]);
+	const markup = renderWorkspace(controller);
+	const collectionCard = markedElement(markup, 'data-hierarchy-card="collection"', "div");
+	assert.equal(collectionCard.includes("<img"), false);
+	assert.equal(collectionCard.includes("folder-card-thumbnail"), false);
+	assert.equal(collectionCard.includes("https://example.test/backdrop.gif"), false);
 });
 
 test("folder editor keeps unique IDs, valid descriptions, one h1, and one local alert", () => {
@@ -2253,6 +2405,7 @@ test("unusual imported values show calm replacement guidance without raw values"
 		showAllTab: ["RAW_ALL"],
 		pinToTop: 7,
 		focusGlowEnabled: { secret: "RAW_GLOW" },
+		backdropImageUrl: { secret: "RAW_BACKDROP" },
 		folders: [],
 	}]);
 	const collection = controller.getState().project.collections[0];
@@ -2263,9 +2416,11 @@ test("unusual imported values show calm replacement guidance without raw values"
 	assert.equal(markup.includes("RAW_LAYOUT"), false);
 	assert.equal(markup.includes("RAW_ALL"), false);
 	assert.equal(markup.includes("RAW_GLOW"), false);
+	assert.equal(markup.includes("RAW_BACKDROP"), false);
 	assert.equal(markup.includes('value="false"'), false);
 	assert.ok(markup.includes("will be preserved until you choose Tabs or Rows"));
 	assert.ok(markup.includes("cannot be shown safely"));
+	assert.ok(markup.includes("The current imported value is preserved until this field is edited."));
 });
 
 test("Rows keeps the saved All-tab preference enabled, editable, and independent from layout", () => {

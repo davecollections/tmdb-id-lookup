@@ -240,7 +240,7 @@
       "assertionMode": "semantic-equality",
       "materialFieldPolicy": {
         "builderOwnedOverlaid": [
-          "known collection presentation",
+          "known collection presentation/artwork",
           "known folder presentation/artwork",
           "known Discover filters",
           "known addon identity"
@@ -256,7 +256,7 @@
           "raw source and projection evidence belonging to a removed source"
         ],
         "rawPreservedOnly": [
-          "collection backdropImageUrl/focusGlowEnabled",
+          "collection focusGlowEnabled compatibility values",
           "source sortHow",
           "Trakt traktListId/provider fields",
           "community fields",
@@ -274,7 +274,7 @@
         "multiple-sources",
         "presentation",
         "folder-artwork",
-        "raw-only-collection-fields",
+        "preservation-safe-collection-values",
         "raw-only-source-fields",
         "unknown-collection",
         "unknown-folder",

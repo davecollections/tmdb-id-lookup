@@ -39,6 +39,12 @@ const scaleFolders = Array.from({ length: 100 }, (_, index) => ({
 const imported = controller.importValue([{
 	id: "collection",
 	title: "Artwork collection",
+	backdropImageUrl: `${ARTWORK_BASE_URL}/collection-saved.gif`,
+	viewMode: "TABBED_GRID",
+	showAllTab: true,
+	pinToTop: false,
+	focusGlowEnabled: true,
+	unknownCollection: { keep: "mounted-sentinel" },
 	folders: [
 		{ id: "poster", title: "Poster artwork", tileShape: "POSTER", coverImageUrl: DATA_ARTWORK, sources: [] },
 		{ id: "landscape", title: "Landscape artwork", tileShape: "LANDSCAPE", coverImageUrl: DATA_ARTWORK, sources: [] },
@@ -150,6 +156,25 @@ async function cancelFolderSettings() {
 	await afterCommittedEffects();
 }
 
+async function openCollectionSettings() {
+	if (document.querySelector('[data-node-editor="collection"]')) return;
+	controller.clearSelection();
+	await afterCommittedEffects();
+	const card = [...document.querySelectorAll('[data-hierarchy-card="collection"]')].find((entry) => (
+		entry.querySelector(".node-title")?.textContent.trim() === "Artwork collection"
+	));
+	card.querySelector('[data-action="open-collection-actions"]').click();
+	await afterCommittedEffects();
+	document.querySelector('[data-actions-menu="collection"]:not([hidden]) [data-action="edit-collection"]').click();
+	await afterCommittedEffects();
+}
+
+async function cancelCollectionSettings() {
+	document.querySelector('[data-action="cancel-node-edit"]')?.click();
+	await afterCommittedEffects();
+	await selectCollection();
+}
+
 async function setEditorField(field, value) {
 	const input = document.querySelector(`[data-editor-field="${field}"] input`);
 	const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
@@ -167,6 +192,190 @@ async function waitForPreview(field, expectedUrl) {
 		const image = document.querySelector(`[data-artwork-preview="${field}"] img`);
 		return image?.getAttribute("src") === expectedUrl && image.complete && image.naturalWidth > 0;
 	});
+}
+
+async function measureCollectionSettingsLayout() {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openCollectionSettings();
+	const alternateDisplay = [384, 402, 412, 900, 1280].includes(window.innerWidth);
+	if (alternateDisplay) {
+		document.querySelector('[data-editor-control="hideNuvioTitle"]').click();
+		document.querySelector('[data-editor-choice="rows"]').click();
+		await afterCommittedEffects();
+	}
+	const value = document.querySelector('[data-editor-field="backdropImageUrl"] input').value;
+	await waitForPreview("backdropImageUrl", value);
+	const editor = document.querySelector('[data-node-editor="collection"]');
+	const field = editor.querySelector('[data-editor-field="backdropImageUrl"]');
+	const input = field.querySelector("input");
+	const frame = field.querySelector('[data-artwork-preview="backdropImageUrl"]');
+	const image = frame.querySelector("img");
+	const copyRect = field.querySelector(".folder-artwork-field-copy").getBoundingClientRect();
+	const frameRect = frame.getBoundingClientRect();
+	const actionRow = editor.querySelector(".node-editor-actions");
+	editor.scrollTop = editor.scrollHeight;
+	await afterCommittedEffects();
+	const actionsRect = actionRow.getBoundingClientRect();
+	const result = {
+		width: window.innerWidth,
+		sectionNames: [...editor.querySelectorAll(".editor-settings-section > h3")].map((heading) => heading.textContent.trim()),
+		label: field.querySelector("label").textContent.trim(),
+		helper: field.querySelector(".editor-field-help").textContent.trim(),
+		inputValue: input.value,
+		inputWidth: Math.round(input.getBoundingClientRect().width),
+		previewWidth: Math.round(frameRect.width),
+		previewRatio: Math.round((frameRect.width / frameRect.height) * 100) / 100,
+		previewInsideViewport: frameRect.left >= -1 && frameRect.right <= window.innerWidth + 1,
+		copyAndPreviewDoNotOverlap: copyRect.right <= frameRect.left + 1 || frameRect.right <= copyRect.left + 1 || copyRect.bottom <= frameRect.top + 1 || frameRect.bottom <= copyRect.top + 1,
+		imageAttributes: {
+			src: image.getAttribute("src"),
+			alt: image.getAttribute("alt"),
+			loading: image.getAttribute("loading"),
+			decoding: image.getAttribute("decoding"),
+			referrerPolicy: image.getAttribute("referrerpolicy"),
+			draggable: image.getAttribute("draggable"),
+			tabIndex: image.tabIndex,
+		},
+		titleHidden: document.querySelector('[data-editor-control="hideNuvioTitle"]').checked,
+		rowsSelected: document.querySelector('[data-editor-choice="rows"]').checked,
+		tabsSelected: document.querySelector('[data-editor-choice="tabs"]').checked,
+		focusGlowAbsent: editor.querySelector('[data-editor-field="focusGlowEnabled"], [data-editor-control="focusGlowEnabled"]') === null,
+		collectionCardThumbnailAbsent: document.querySelector('[data-hierarchy-card="collection"] img') === null,
+		onlyEditorScrolls: [...document.querySelectorAll('[data-settings-modal="true"], [data-settings-modal="true"] *')].filter((element) => {
+			const style = getComputedStyle(element);
+			return ["auto", "scroll"].includes(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
+		}).every((element) => element === editor),
+		bodyLocked: getComputedStyle(document.body).overflow === "hidden",
+		noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+		actionsInsideViewport: actionsRect.left >= -1 && actionsRect.right <= window.innerWidth + 1 && actionsRect.bottom <= window.innerHeight + 1,
+	};
+	await cancelCollectionSettings();
+	return {
+		...result,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+}
+
+async function exerciseCollectionBackdropDraftPreviews() {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	const savedUrl = collection.editable.backdropImageUrl;
+	const staticUrl = `${ARTWORK_BASE_URL}/collection-static.jpg`;
+	const gifUrl = `${ARTWORK_BASE_URL}/collection-draft.gif`;
+	const brokenUrl = `${ARTWORK_BASE_URL}/collection-broken.gif`;
+	const recoveringUrl = `${ARTWORK_BASE_URL}/collection-recovering.gif`;
+	const replacementUrl = `${ARTWORK_BASE_URL}/collection-replacement.gif`;
+	const longUrl = `${ARTWORK_BASE_URL}/collection-long.gif?value=${"x".repeat(500)}`;
+	await openCollectionSettings();
+
+	await setEditorField("backdropImageUrl", "");
+	const blank = {
+		input: document.querySelector('[data-editor-field="backdropImageUrl"] input').value,
+		previewAbsent: document.querySelector('[data-artwork-preview="backdropImageUrl"]') === null,
+		statusAbsent: document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status') === null,
+		fetchCallCount: fetchCalls.length,
+	};
+	await setEditorField("backdropImageUrl", staticUrl);
+	await waitForPreview("backdropImageUrl", staticUrl);
+	const staticImage = document.querySelector('[data-artwork-preview="backdropImageUrl"] img').getAttribute("src");
+	await setEditorField("backdropImageUrl", gifUrl);
+	await waitForPreview("backdropImageUrl", gifUrl);
+	const gifImage = document.querySelector('[data-artwork-preview="backdropImageUrl"] img').getAttribute("src");
+	await setEditorField("backdropImageUrl", brokenUrl);
+	await waitForCondition(() => document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status')?.textContent.trim() === "Preview unavailable");
+	const broken = {
+		input: document.querySelector('[data-editor-field="backdropImageUrl"] input').value,
+		status: document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status').textContent.trim(),
+		previewAbsent: document.querySelector('[data-artwork-preview="backdropImageUrl"]') === null,
+	};
+	await setEditorField("backdropImageUrl", recoveringUrl);
+	await waitForCondition(() => document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status')?.textContent.trim() === "Preview unavailable");
+	const firstFailure = {
+		input: document.querySelector('[data-editor-field="backdropImageUrl"] input').value,
+		status: document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status').textContent.trim(),
+	};
+	await setEditorField("backdropImageUrl", replacementUrl);
+	await waitForPreview("backdropImageUrl", replacementUrl);
+	const replacement = {
+		src: document.querySelector('[data-artwork-preview="backdropImageUrl"] img').getAttribute("src"),
+		statusAbsent: document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status') === null,
+	};
+	await setEditorField("backdropImageUrl", recoveringUrl);
+	await waitForPreview("backdropImageUrl", recoveringUrl);
+	const recovered = {
+		src: document.querySelector('[data-artwork-preview="backdropImageUrl"] img').getAttribute("src"),
+		statusAbsent: document.querySelector('[data-editor-field="backdropImageUrl"] .folder-artwork-preview-status') === null,
+	};
+	await setEditorField("backdropImageUrl", longUrl);
+	await waitForPreview("backdropImageUrl", longUrl);
+	const long = {
+		exact: document.querySelector('[data-artwork-preview="backdropImageUrl"] img').getAttribute("src") === longUrl,
+		noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+	};
+	await cancelCollectionSettings();
+	await openCollectionSettings();
+	const cancelRestoredSavedInput = document.querySelector('[data-editor-field="backdropImageUrl"] input').value === savedUrl;
+	await cancelCollectionSettings();
+
+	return {
+		savedUrl,
+		blank,
+		staticImage,
+		gifImage,
+		broken,
+		firstFailure,
+		replacement,
+		recovered,
+		long,
+		cancelRestoredSavedInput,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+}
+
+async function exerciseCollectionBackdropApply() {
+	await openCollectionSettings();
+	const beforeRevision = controller.getState().revision;
+	const appliedUrl = `${ARTWORK_BASE_URL}/collection-applied.gif`;
+	await setEditorField("backdropImageUrl", appliedUrl);
+	document.querySelector('[data-action="apply-node-edit"]').click();
+	await afterCommittedEffects();
+	await waitForCondition(() => document.querySelector('[data-node-editor="collection"]') === null);
+	const current = controller.getState().project.collections[0];
+	const serialized = controller.serializeProject().value[0];
+	return {
+		appliedUrl,
+		oneRevision: controller.getState().revision === beforeRevision + 1,
+		editableValue: current.editable.backdropImageUrl,
+		serializedValue: serialized.backdropImageUrl,
+		rawValueUnchanged: current.rawImported.backdropImageUrl === `${ARTWORK_BASE_URL}/collection-saved.gif`,
+		unknownPreserved: JSON.stringify(serialized.unknownCollection) === JSON.stringify({ keep: "mounted-sentinel" }),
+	};
+}
+
+async function exerciseCollectionBackdropUnrelatedApply() {
+	const savedUrl = controller.getState().project.collections[0].editable.backdropImageUrl;
+	await openCollectionSettings();
+	const beforeRevision = controller.getState().revision;
+	document.querySelector('[data-editor-control="pinToTop"]').click();
+	await afterCommittedEffects();
+	document.querySelector('[data-action="apply-node-edit"]').click();
+	await afterCommittedEffects();
+	await waitForCondition(() => document.querySelector('[data-node-editor="collection"]') === null);
+	const current = controller.getState().project.collections[0];
+	const serialized = controller.serializeProject().value[0];
+	return {
+		oneRevision: controller.getState().revision === beforeRevision + 1,
+		backdropEditableUnchanged: current.editable.backdropImageUrl === savedUrl,
+		backdropSerializedUnchanged: serialized.backdropImageUrl === savedUrl,
+		unknownPreserved: JSON.stringify(serialized.unknownCollection) === JSON.stringify({ keep: "mounted-sentinel" }),
+	};
 }
 
 async function measureSettingsLayout(title = "Settings preview") {
@@ -677,6 +886,7 @@ afterCommittedEffects().then(async () => {
 	));
 	window.__measureFolderArtworkLayout = measureLayout;
 	window.__measureFolderArtworkSettingsLayout = measureSettingsLayout;
+	window.__measureCollectionBackdropSettingsLayout = measureCollectionSettingsLayout;
 	window.__folderArtworkPreservationState = preservationState;
 	window.__exerciseFolderArtworkFailureReplacement = exerciseFailureReplacement;
 	window.__exerciseFolderArtworkSettingsDraftPreviews = exerciseSettingsDraftPreviews;
@@ -684,6 +894,9 @@ afterCommittedEffects().then(async () => {
 	window.__exerciseFolderArtworkOrdinaryVideoVisibility = exerciseOrdinaryVideoVisibility;
 	window.__exerciseFolderArtworkVideoCancel = exerciseVideoCancel;
 	window.__exerciseFolderArtworkVideoReplacement = exerciseVideoReplacement;
+	window.__exerciseCollectionBackdropDraftPreviews = exerciseCollectionBackdropDraftPreviews;
+	window.__exerciseCollectionBackdropUnrelatedApply = exerciseCollectionBackdropUnrelatedApply;
+	window.__exerciseCollectionBackdropApply = exerciseCollectionBackdropApply;
 	window.__builderFolderArtworkMounted = { status: "complete" };
 }).catch((error) => {
 	window.__builderFolderArtworkMounted = {
