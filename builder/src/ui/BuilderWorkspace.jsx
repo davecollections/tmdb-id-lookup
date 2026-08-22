@@ -2443,6 +2443,14 @@ export function BuilderWorkspace({
 					diagnostics={editorDiagnostics}
 					titleInputRef={titleInputRef}
 					mode={editorMode}
+					folderArtworkSuggestionContext={{
+						folder: editorTarget,
+						peopleManifestClient: peopleManifestClientRef.current,
+						peopleProvider: peopleProviderRef.current,
+						artworkRuntimeClient: studioArtworkRuntimeClientRef.current,
+						studioCatalogueProvider: studioCatalogueProviderRef.current,
+						networkCatalogueProvider: networkCatalogueProviderRef.current,
+					}}
 					onChange={(field, value) => {
 						setEditorDraft((current) => updateNodeEditorField(current, field, value));
 						setEditorDiagnostics((current) => current.filter((entry) => (

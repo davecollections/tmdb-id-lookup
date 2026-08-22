@@ -308,6 +308,7 @@ export function NodeEditor({
 	diagnostics,
 	titleInputRef,
 	mode = "settings",
+	folderArtworkSuggestionContext = null,
 	onChange,
 	onSubmit,
 	onCancel,
@@ -470,7 +471,14 @@ export function NodeEditor({
 								<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
 							</SettingsSection>
 							<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
-								<FolderArtworkFields values={draft.values} original={draft.original} touched={draft.touched} prefix={`${prefix}-artwork`} onChange={onChange} />
+								<FolderArtworkFields
+									values={draft.values}
+									original={draft.original}
+									touched={draft.touched}
+									prefix={`${prefix}-artwork`}
+									suggestionContext={folderArtworkSuggestionContext}
+									onChange={onChange}
+								/>
 							</SettingsSection>
 						</>
 					)}

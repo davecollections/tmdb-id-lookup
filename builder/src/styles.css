@@ -4452,6 +4452,58 @@ body.hierarchy-pointer-dragging .builder-shell {
 	justify-self: start;
 }
 
+.folder-artwork-suggestion {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	padding: 8px;
+	background: rgb(6 28 39 / 54%);
+	border: 1px solid rgb(137 190 215 / 18%);
+	border-radius: 10px;
+}
+
+.folder-artwork-suggestion-frame[data-artwork-preview-shape="poster"] {
+	width: 64px;
+}
+
+.folder-artwork-suggestion-frame[data-artwork-preview-shape="landscape"],
+.folder-artwork-suggestion-frame[data-artwork-preview-shape="wide"],
+.folder-artwork-suggestion-frame[data-artwork-preview-shape="logo"] {
+	width: 112px;
+}
+
+.folder-artwork-suggestion-copy {
+	display: grid;
+	min-width: 0;
+	gap: 5px;
+}
+
+.folder-artwork-suggestion-copy > p:first-child {
+	margin: 0;
+	color: rgb(190 236 249);
+	font-size: 0.74rem;
+	font-weight: 700;
+}
+
+.folder-artwork-suggestion-action {
+	justify-self: start;
+	min-height: 44px;
+	max-width: 100%;
+}
+
+.folder-artwork-request-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	justify-self: start;
+	gap: 6px;
+	min-height: 44px;
+	max-width: 100%;
+	text-decoration: none;
+}
+
 .folder-artwork-fields .editor-field-help {
 	line-height: 1.35;
 }

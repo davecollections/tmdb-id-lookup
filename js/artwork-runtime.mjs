@@ -163,7 +163,7 @@ function assertCategories(categories, context, required) {
 	}
 }
 
-function expectedArtworkPath(schemaVersion, entityType, id, orientation) {
+export function expectedArtworkPath(schemaVersion, entityType, id, orientation) {
 	const supportedOrientations = RUNTIME_SCHEMA_CONTRACTS[schemaVersion].orientations[entityType];
 
 	if (!supportedOrientations.includes(orientation)) {
