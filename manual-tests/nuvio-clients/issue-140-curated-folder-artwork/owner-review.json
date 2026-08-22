@@ -1,0 +1,148 @@
+[
+  {
+    "id": "issue-140-review",
+    "title": "Curated Folder artwork suggestions",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "pinToTop": false,
+    "folders": [
+      {
+        "id": "people-blank",
+        "title": "People — blank with curated artwork",
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "people-blank", "preserve": true },
+        "sources": [
+          {
+            "title": "Movie Credits",
+            "sortBy": "popularity.desc",
+            "tmdbId": 31,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "PERSON"
+          },
+          {
+            "title": "Series Credits",
+            "sortBy": "popularity.desc",
+            "tmdbId": 31,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "PERSON"
+          }
+        ]
+      },
+      {
+        "id": "people-custom",
+        "title": "People — existing custom artwork",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/40/poster.webp",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "people-custom", "preserve": true },
+        "sources": [
+          {
+            "title": "Movie Credits",
+            "sortBy": "popularity.desc",
+            "tmdbId": 31,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "PERSON"
+          }
+        ]
+      },
+      {
+        "id": "network-fallback",
+        "title": "Network — existing TMDB fallback",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://image.tmdb.org/t/p/w500/2uy2ZWcplrSObIyt4x0Y9rkG6qO.png",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "network-fallback", "preserve": true },
+        "sources": [
+          {
+            "title": "Series",
+            "sortBy": "popularity.desc",
+            "tmdbId": 2,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "NETWORK"
+          }
+        ]
+      },
+      {
+        "id": "genre-curated",
+        "title": "Genre — curated already assigned",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/vertical/Comedy.jpg",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "genre-curated", "preserve": true },
+        "sources": [
+          {
+            "title": "Comedy Movies",
+            "sortBy": "popularity.desc",
+            "tmdbId": null,
+            "filters": { "withGenres": "35" },
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "DISCOVER"
+          },
+          {
+            "title": "Comedy Series",
+            "sortBy": "popularity.desc",
+            "tmdbId": null,
+            "filters": { "withGenres": "35" },
+            "provider": "tmdb",
+            "mediaType": "TV",
+            "tmdbSourceType": "DISCOVER"
+          }
+        ]
+      },
+      {
+        "id": "people-missing-focus",
+        "title": "Missing curated asset — requestable",
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "people-missing-focus", "preserve": true },
+        "sources": [
+          {
+            "title": "Movie Credits",
+            "sortBy": "popularity.desc",
+            "tmdbId": 8559,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "PERSON"
+          }
+        ]
+      },
+      {
+        "id": "studio-landscape",
+        "title": "Studio — supported orientation",
+        "tileShape": "LANDSCAPE",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "studio-landscape", "preserve": true },
+        "sources": [
+          {
+            "title": "Movies",
+            "sortBy": "popularity.desc",
+            "tmdbId": 3,
+            "filters": {},
+            "provider": "tmdb",
+            "mediaType": "MOVIE",
+            "tmdbSourceType": "COMPANY"
+          }
+        ]
+      },
+      {
+        "id": "ambiguous",
+        "title": "Ambiguous — no action",
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "ambiguous", "preserve": true },
+        "sources": []
+      }
+    ]
+  }
+]

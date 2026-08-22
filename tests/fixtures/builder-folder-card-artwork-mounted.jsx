@@ -1,7 +1,14 @@
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
+import {
+	createNetworkCatalogueProvider,
+	createPeopleManifestClient,
+	createStudioCatalogueProvider,
+	genreArtworkUrl,
+} from "../../builder/src/source-add/index.js";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
+import { createArtworkRuntimeClient } from "../../js/artwork-runtime.mjs";
 import "../../builder/src/styles.css";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,6 +23,59 @@ globalThis.fetch = (...args) => {
 	fetchCalls.push(String(args[0]));
 	return originalFetch(...args);
 };
+const livePeopleManifestClient = createPeopleManifestClient();
+const liveArtworkRuntimeClient = createArtworkRuntimeClient();
+const liveStudioCatalogueProvider = createStudioCatalogueProvider({ catalogueUrl: "/data/companies.min.json" });
+const liveNetworkCatalogueProvider = createNetworkCatalogueProvider({ catalogueUrl: "/data/tv-networks.min.json" });
+
+function personSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Movie Credits",
+		tmdbSourceType: "PERSON",
+		tmdbId: 31,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: {},
+		...overrides,
+	};
+}
+
+function networkSource() {
+	return {
+		provider: "tmdb",
+		title: "Series",
+		tmdbSourceType: "NETWORK",
+		tmdbId: 2,
+		mediaType: "TV",
+		sortBy: "popularity.desc",
+		filters: {},
+	};
+}
+
+function studioSource() {
+	return {
+		provider: "tmdb",
+		title: "Movies",
+		tmdbSourceType: "COMPANY",
+		tmdbId: 3,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: {},
+	};
+}
+
+function comedySource(mediaType, tmdbId) {
+	return {
+		provider: "tmdb",
+		title: mediaType === "MOVIE" ? "Comedy Movies" : "Comedy Series",
+		tmdbSourceType: "DISCOVER",
+		tmdbId: null,
+		mediaType,
+		sortBy: "popularity.desc",
+		filters: { withGenres: String(tmdbId) },
+	};
+}
 
 function countingIdFactory(prefix = "mounted") {
 	let count = 0;
@@ -86,6 +146,59 @@ const imported = controller.importValue([{
 		{ id: "video-clear", title: "Existing video to clear", heroVideoUrl: `${ARTWORK_BASE_URL}/video-a.mp4`, sources: [] },
 		{ id: "video-cancel", title: "Existing video to cancel", heroVideoUrl: `${ARTWORK_BASE_URL}/video-a.mp4`, sources: [] },
 		{ id: "video-replace", title: "Existing video to replace", heroVideoUrl: `${ARTWORK_BASE_URL}/video-a.mp4`, sources: [] },
+		{
+			id: "suggestion-people-blank",
+			title: "People — blank with curated artwork",
+			tileShape: "POSTER",
+			unknownFolder: { keep: "people-blank" },
+			sources: [personSource(), personSource({ title: "Series Credits", mediaType: "TV" })],
+		},
+		{
+			id: "suggestion-people-custom",
+			title: "People — existing custom artwork",
+			tileShape: "POSTER",
+			coverImageUrl: `${ARTWORK_BASE_URL}/settings-tile.gif`,
+			heroBackdropUrl: ["RAW_HERO"],
+			unknownFolder: { keep: "people-custom" },
+			sources: [personSource()],
+		},
+		{
+			id: "suggestion-network-fallback",
+			title: "Network — existing TMDB fallback",
+			tileShape: "POSTER",
+			coverImageUrl: "https://image.tmdb.org/t/p/w500/2uy2ZWcplrSObIyt4x0Y9rkG6qO.png",
+			unknownFolder: { keep: "network" },
+			sources: [networkSource()],
+		},
+		{
+			id: "suggestion-genre-curated",
+			title: "Genre — curated already assigned",
+			tileShape: "POSTER",
+			coverImageUrl: genreArtworkUrl("Comedy", "POSTER"),
+			unknownFolder: { keep: "genre" },
+			sources: [comedySource("MOVIE", 35), comedySource("TV", 35)],
+		},
+		{
+			id: "suggestion-people-request",
+			title: "Missing curated asset — requestable",
+			tileShape: "POSTER",
+			unknownFolder: { keep: "people-request" },
+			sources: [personSource({ tmdbId: 8559 })],
+		},
+		{
+			id: "suggestion-studio-landscape",
+			title: "Studio — supported orientation",
+			tileShape: "LANDSCAPE",
+			unknownFolder: { keep: "studio" },
+			sources: [studioSource()],
+		},
+		{
+			id: "suggestion-ambiguous",
+			title: "Ambiguous — no action",
+			tileShape: "POSTER",
+			unknownFolder: { keep: "ambiguous" },
+			sources: [],
+		},
 		...scaleFolders,
 	],
 }]);
@@ -104,7 +217,14 @@ function MountedWorkspace() {
 		controller.getState,
 		controller.getState,
 	);
-	return createElement(BuilderWorkspace, { controller, state });
+	return createElement(BuilderWorkspace, {
+		controller,
+		state,
+		peopleManifestClient: livePeopleManifestClient,
+		studioArtworkRuntimeClient: liveArtworkRuntimeClient,
+		studioCatalogueProvider: liveStudioCatalogueProvider,
+		networkCatalogueProvider: liveNetworkCatalogueProvider,
+	});
 }
 
 function afterCommittedEffects() {
@@ -871,13 +991,299 @@ async function exerciseFailureReplacement() {
 	};
 }
 
+async function waitForSuggestionState(expected, timeoutMs = 20_000) {
+	await waitForCondition(() => (
+		document.querySelector("[data-folder-artwork-suggestions]")?.dataset.folderArtworkSuggestions === expected
+	), timeoutMs);
+}
+
+async function settleSuggestedImages(expectedCount) {
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const images = [...editor.querySelectorAll("[data-artwork-suggestion-preview] img")];
+	if (images.length !== expectedCount) throw new Error(`Expected ${expectedCount} suggested images, found ${images.length}.`);
+	for (const image of images) {
+		image.scrollIntoView({ block: "center" });
+		await afterCommittedEffects();
+	}
+	await waitForCondition(() => images.every((image) => image.complete && image.naturalWidth > 0), 20_000);
+	return images;
+}
+
+async function inspectSuggestionFolder(title, expectedState, expectedImageCount) {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings(title);
+	await waitForSuggestionState(expectedState);
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const images = expectedImageCount > 0 ? await settleSuggestedImages(expectedImageCount) : [];
+	const suggestions = [...editor.querySelectorAll("[data-artwork-suggestion]")];
+	const requests = [...editor.querySelectorAll("[data-artwork-request]")];
+	const value = {
+		title,
+		state: editor.querySelector("[data-folder-artwork-suggestions]").dataset.folderArtworkSuggestions,
+		fields: suggestions.map((entry) => entry.dataset.artworkSuggestion),
+		actions: suggestions.map((entry) => ({
+			field: entry.dataset.artworkSuggestion,
+			text: entry.querySelector("button")?.textContent.trim(),
+			ariaLabel: entry.querySelector("button")?.getAttribute("aria-label"),
+			buttonType: entry.querySelector("button")?.type,
+		})),
+		requests: requests.map((entry) => ({
+			field: entry.dataset.artworkRequest,
+			text: entry.textContent.trim(),
+			ariaLabel: entry.getAttribute("aria-label"),
+			href: entry.getAttribute("href"),
+			target: entry.getAttribute("target"),
+			rel: entry.getAttribute("rel"),
+		})),
+		previewAttributes: images.map((image) => ({
+			src: image.getAttribute("src"),
+			alt: image.getAttribute("alt"),
+			loading: image.getAttribute("loading"),
+			decoding: image.getAttribute("decoding"),
+			referrerPolicy: image.getAttribute("referrerpolicy"),
+			draggable: image.getAttribute("draggable"),
+		})),
+		coverValue: editor.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		heroPreservedStatus: editor.querySelector('[data-editor-field="heroBackdropUrl"] .editor-field-status')?.textContent.trim() ?? null,
+		focusEnabled: editor.querySelector('[data-editor-control="focusGifEnabled"]')?.checked,
+		suggestionFailureAbsent: editor.querySelector(".folder-artwork-suggestion .folder-artwork-preview-status") === null,
+	};
+	await cancelFolderSettings();
+	return {
+		...value,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+}
+
+async function inspectSuggestionStates() {
+	const cases = [
+		["People — blank with curated artwork", "ready", 4],
+		["People — existing custom artwork", "ready", 2],
+		["Network — existing TMDB fallback", "ready", 0],
+		["Genre — curated already assigned", "ready", 0],
+		["Missing curated asset — requestable", "ready", 3],
+		["Studio — supported orientation", "ready", 1],
+		["Ambiguous — no action", "none", 0],
+	];
+	const result = [];
+	for (const entry of cases) result.push(await inspectSuggestionFolder(...entry));
+	return result;
+}
+
+async function measureSuggestionLayout(title = "People — blank with curated artwork") {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings(title);
+	await waitForSuggestionState("ready");
+	const images = await settleSuggestedImages(4);
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const suggestions = [...editor.querySelectorAll("[data-artwork-suggestion]")];
+	const suggestionRects = suggestions.map((element) => element.getBoundingClientRect());
+	const actionButtons = suggestions.map((element) => element.querySelector("button"));
+	const focusSuggestion = editor.querySelector('[data-artwork-suggestion="focusGifUrl"]');
+	const focusSwitch = editor.querySelector('[data-editor-field="focusGifEnabled"]');
+	editor.scrollTop = editor.scrollHeight;
+	await afterCommittedEffects();
+	const actionRowRect = editor.querySelector(".node-editor-actions").getBoundingClientRect();
+	const result = {
+		width: window.innerWidth,
+		suggestionCount: suggestions.length,
+		compactPreviewWidths: images.map((image) => Math.round(image.closest(".folder-artwork-suggestion-frame").getBoundingClientRect().width)),
+		insideViewport: suggestionRects.every((rect) => rect.left >= -1 && rect.right <= window.innerWidth + 1),
+		actionTapTargets: actionButtons.every((button) => button.getBoundingClientRect().height >= 44),
+		shortCopyOnly: suggestions.every((element) => !element.textContent.includes("https://")),
+		focusSuggestionBeforeSwitch: Boolean(focusSuggestion && focusSwitch && (focusSuggestion.compareDocumentPosition(focusSwitch) & Node.DOCUMENT_POSITION_FOLLOWING)),
+		onlyEditorScrolls: [...document.querySelectorAll('[data-settings-modal="true"], [data-settings-modal="true"] *')].filter((element) => {
+			const style = getComputedStyle(element);
+			return ["auto", "scroll"].includes(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
+		}).every((element) => element === editor),
+		bodyLocked: getComputedStyle(document.body).overflow === "hidden",
+		noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1 && editor.scrollWidth <= editor.clientWidth + 1,
+		actionsInsideViewport: actionRowRect.left >= -1 && actionRowRect.right <= window.innerWidth + 1 && actionRowRect.bottom <= window.innerHeight + 1,
+	};
+	await cancelFolderSettings();
+	return {
+		...result,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+}
+
+async function exerciseSuggestionDraftContract() {
+	const target = foldersById["suggestion-people-blank"];
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings("People — blank with curated artwork");
+	await waitForSuggestionState("ready");
+	await settleSuggestedImages(4);
+	const coverAction = document.querySelector('[data-artwork-suggestion="coverImageUrl"] button');
+	const posterUrl = document.querySelector('[data-artwork-suggestion-preview="coverImageUrl"] img').getAttribute("src");
+	coverAction.focus();
+	coverAction.click();
+	await afterCommittedEffects();
+	const accepted = {
+		input: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		assistanceAbsent: document.querySelector('[data-artwork-suggestion="coverImageUrl"], [data-artwork-request="coverImageUrl"]') === null,
+		normalPreview: document.querySelector('[data-artwork-preview="coverImageUrl"] img')?.getAttribute("src"),
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+	await setEditorField("coverImageUrl", "");
+	await waitForCondition(() => document.querySelector('[data-artwork-suggestion="coverImageUrl"] button'));
+	const cleared = {
+		inputBlank: document.querySelector('[data-editor-field="coverImageUrl"] input').value === "",
+		actionText: document.querySelector('[data-artwork-suggestion="coverImageUrl"] button').textContent.trim(),
+		candidateReturned: document.querySelector('[data-artwork-suggestion-preview="coverImageUrl"] img')?.getAttribute("src") === posterUrl,
+	};
+	document.querySelector('[data-editor-choice="landscape"]').click();
+	await afterCommittedEffects();
+	await waitForCondition(() => {
+		const image = document.querySelector('[data-artwork-suggestion-preview="coverImageUrl"] img');
+		return image && image.getAttribute("src") !== posterUrl;
+	}, 20_000);
+	const landscapeUrl = document.querySelector('[data-artwork-suggestion-preview="coverImageUrl"] img').getAttribute("src");
+	const shapeChange = {
+		landscapeSelected: document.querySelector('[data-editor-choice="landscape"]').checked,
+		inputStillBlank: document.querySelector('[data-editor-field="coverImageUrl"] input').value === "",
+		candidateChanged: landscapeUrl !== posterUrl,
+		actionText: document.querySelector('[data-artwork-suggestion="coverImageUrl"] button').textContent.trim(),
+	};
+	await cancelFolderSettings();
+	await openFolderSettings("People — blank with curated artwork");
+	await waitForSuggestionState("ready");
+	const cancel = {
+		coverBlank: document.querySelector('[data-editor-field="coverImageUrl"] input').value === "",
+		posterSelected: document.querySelector('[data-editor-choice="poster"]').checked,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+	await settleSuggestedImages(4);
+	const applyUrl = document.querySelector('[data-artwork-suggestion-preview="coverImageUrl"] img').getAttribute("src");
+	document.querySelector('[data-artwork-suggestion="coverImageUrl"] button').click();
+	await afterCommittedEffects();
+	document.querySelector('[data-action="apply-node-edit"]').click();
+	await afterCommittedEffects();
+	const serializedFolder = controller.serializeProject().value[0].folders.find((entry) => entry.id === "suggestion-people-blank");
+	const apply = {
+		cover: serializedFolder.coverImageUrl,
+		coverMatchesAccepted: serializedFolder.coverImageUrl === applyUrl,
+		unknownPreserved: JSON.stringify(serializedFolder.unknownFolder) === JSON.stringify({ keep: "people-blank" }),
+		titlePreserved: serializedFolder.title === "People — blank with curated artwork",
+		revisionDelta: controller.getState().revision - beforeRevision,
+		cardUpdated: folderCard("People — blank with curated artwork")?.querySelector("img.folder-card-thumbnail")?.getAttribute("src") === applyUrl,
+		targetInternalIdPreserved: controller.getState().project.collections[0].folders.some((entry) => entry.internalId === target.internalId),
+	};
+	return { posterUrl, accepted, cleared, landscapeUrl, shapeChange, cancel, apply };
+}
+
+async function exerciseBlankOnlyTransitions() {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings("People — existing custom artwork");
+	await waitForSuggestionState("ready");
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const originalUrl = editor.querySelector('[data-editor-field="coverImageUrl"] input').value;
+	const opening = {
+		coverAssistanceAbsent: editor.querySelector('[data-artwork-suggestion="coverImageUrl"], [data-artwork-request="coverImageUrl"]') === null,
+		exactValue: originalUrl,
+	};
+	await setEditorField("coverImageUrl", "");
+	await waitForCondition(() => editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button'));
+	const cleared = {
+		actionText: editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button').textContent.trim(),
+		inputBlank: editor.querySelector('[data-editor-field="coverImageUrl"] input').value === "",
+	};
+	editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button').click();
+	await afterCommittedEffects();
+	const acceptedUrl = editor.querySelector('[data-editor-field="coverImageUrl"] input').value;
+	const accepted = {
+		inputNonblank: acceptedUrl.length > 0,
+		assistanceAbsent: editor.querySelector('[data-artwork-suggestion="coverImageUrl"], [data-artwork-request="coverImageUrl"]') === null,
+	};
+	await setEditorField("coverImageUrl", "");
+	await waitForCondition(() => editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button'));
+	const clearedAgain = editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button').textContent.trim();
+	await cancelFolderSettings();
+	return {
+		opening,
+		cleared,
+		accepted,
+		clearedAgain,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+}
+
+async function exerciseRequestContract() {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings("Missing curated asset — requestable");
+	await waitForSuggestionState("ready");
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const request = editor.querySelector('[data-artwork-request="focusGifUrl"]');
+	let clickObserved = false;
+	const preventNavigation = (event) => {
+		if (event.target.closest('[data-artwork-request="focusGifUrl"]')) {
+			clickObserved = true;
+			event.preventDefault();
+		}
+	};
+	document.addEventListener("click", preventNavigation, { capture: true, once: true });
+	request.click();
+	await afterCommittedEffects();
+	const result = {
+		text: request.textContent.trim(),
+		ariaLabel: request.getAttribute("aria-label"),
+		href: request.getAttribute("href"),
+		target: request.getAttribute("target"),
+		rel: request.getAttribute("rel"),
+		clickObserved,
+		focusBlank: editor.querySelector('[data-editor-field="focusGifUrl"] input').value === "",
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+	await cancelFolderSettings();
+	return result;
+}
+
+async function exerciseStudioOrientationContract() {
+	await openFolderSettings("Studio — supported orientation");
+	await waitForSuggestionState("ready");
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const landscapeAction = editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button')?.textContent.trim();
+	editor.querySelector('[data-editor-choice="poster"]').click();
+	await afterCommittedEffects();
+	const poster = {
+		inputBlank: editor.querySelector('[data-editor-field="coverImageUrl"] input').value === "",
+		assistanceAbsent: editor.querySelector('[data-artwork-suggestion="coverImageUrl"], [data-artwork-request="coverImageUrl"]') === null,
+	};
+	editor.querySelector('[data-editor-choice="landscape"]').click();
+	await afterCommittedEffects();
+	const landscapeReturned = editor.querySelector('[data-artwork-suggestion="coverImageUrl"] button')?.textContent.trim();
+	await cancelFolderSettings();
+	return { landscapeAction, poster, landscapeReturned };
+}
+
 const root = createRoot(document.getElementById("root"));
 window.__builderFolderArtworkMounted = { status: "running" };
 act(() => root.render(createElement(MountedWorkspace)));
 
 afterCommittedEffects().then(async () => {
 	await waitForCondition(() => (
-		document.querySelectorAll('[data-hierarchy-card="folder"]').length === 117
+		document.querySelectorAll('[data-hierarchy-card="folder"]').length === 124
 		&& folderCard("Poster artwork")?.querySelector("img")?.complete === true
 		&& folderCard("Landscape artwork")?.querySelector("img")?.complete === true
 		&& folderCard("Arbitrary origin artwork")?.querySelector("img")?.naturalWidth > 0
@@ -897,6 +1303,12 @@ afterCommittedEffects().then(async () => {
 	window.__exerciseCollectionBackdropDraftPreviews = exerciseCollectionBackdropDraftPreviews;
 	window.__exerciseCollectionBackdropUnrelatedApply = exerciseCollectionBackdropUnrelatedApply;
 	window.__exerciseCollectionBackdropApply = exerciseCollectionBackdropApply;
+	window.__inspectFolderArtworkSuggestionStates = inspectSuggestionStates;
+	window.__measureFolderArtworkSuggestionLayout = measureSuggestionLayout;
+	window.__exerciseFolderArtworkSuggestionDraftContract = exerciseSuggestionDraftContract;
+	window.__exerciseFolderArtworkBlankOnlyTransitions = exerciseBlankOnlyTransitions;
+	window.__exerciseFolderArtworkRequestContract = exerciseRequestContract;
+	window.__exerciseFolderArtworkStudioOrientationContract = exerciseStudioOrientationContract;
 	window.__builderFolderArtworkMounted = { status: "complete" };
 }).catch((error) => {
 	window.__builderFolderArtworkMounted = {

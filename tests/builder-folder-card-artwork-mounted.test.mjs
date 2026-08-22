@@ -371,10 +371,34 @@ async function runMountedPage() {
 		});
 		const collectionUnrelatedApply = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropUnrelatedApply()");
 		const collectionApply = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropApply()");
+
+		const suggestionLayouts = [];
+		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+				width,
+				height: width <= 412 ? 852 : 900,
+				deviceScaleFactor: 1,
+				mobile: width <= 412,
+			});
+			await new Promise((resolve) => setTimeout(resolve, 40));
+			suggestionLayouts.push(await evaluate(resources.pageConnection, "window.__measureFolderArtworkSuggestionLayout()"));
+		}
+
+		await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+			width: 900,
+			height: 900,
+			deviceScaleFactor: 1,
+			mobile: false,
+		});
+		const suggestionStates = await evaluate(resources.pageConnection, "window.__inspectFolderArtworkSuggestionStates()");
+		const suggestionDraftContract = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSuggestionDraftContract()");
+		const suggestionBlankOnlyTransitions = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkBlankOnlyTransitions()");
+		const suggestionRequestContract = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkRequestContract()");
+		const suggestionStudioOrientationContract = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkStudioOrientationContract()");
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		const artworkRequests = resources.artworkRequests.map((request) => ({ ...request }));
 
-		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, collectionSettingsWidths, collectionDraftPreviews, collectionUnrelatedApply, collectionApply, artworkRequests };
+		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, collectionSettingsWidths, collectionDraftPreviews, collectionUnrelatedApply, collectionApply, suggestionLayouts, suggestionStates, suggestionDraftContract, suggestionBlankOnlyTransitions, suggestionRequestContract, suggestionStudioOrientationContract, artworkRequests };
 	}, async () => {
 		const cleanupReport = await cleanupMountedBrowser(resources);
 		if (resources.artworkServer?.listening) {
@@ -452,7 +476,7 @@ test("mounted selected and hidden-title Folder cards retain accessible non-colou
 
 test("mounted 100-plus Folder list uses native lazy/async images without workspace fetches", () => {
 	for (const result of mountedResults.widths) {
-		assert.equal(result.imageCount, 108, `${result.width}px image count`);
+		assert.equal(result.imageCount, 111, `${result.width}px image count`);
 		assert.equal(result.allImagesLazy, true, `${result.width}px lazy`);
 		assert.equal(result.allImagesAsync, true, `${result.width}px async`);
 		assert.equal(result.allImagesDecorative, true, `${result.width}px decorative`);
@@ -809,6 +833,172 @@ test("mounted Apply commits only touched Folder visual fields in one revision", 
 	});
 	assert.deepEqual(result.serializedValues, result.values);
 	assert.equal(result.cardUsesAppliedUrl, true);
+});
+
+test("mounted exact-identity blank-only assistance uses live authorities and preserves every saved Folder on open", () => {
+	const [peopleBlank, peopleCustom, networkFallback, genreCurated, peopleRequest, studioLandscape, ambiguous] = mountedResults.suggestionStates;
+	for (const result of mountedResults.suggestionStates) {
+		assert.equal(result.projectUnchanged, true, `${result.title} project preservation`);
+		assert.equal(result.serializedUnchanged, true, `${result.title} serialization preservation`);
+		assert.equal(result.revisionUnchanged, true, `${result.title} revision preservation`);
+		assert.equal(result.suggestionFailureAbsent, true, `${result.title} live preview`);
+		for (const action of result.actions) {
+			assert.equal(action.buttonType, "button", `${result.title}:${action.field} button type`);
+			assert.match(action.ariaLabel, new RegExp(`${action.text} for`, "i"), `${result.title}:${action.field} accessible name`);
+		}
+		for (const request of result.requests) {
+			assert.equal(request.text, "Request artwork ↗", `${result.title}:${request.field} request text`);
+			assert.match(request.ariaLabel, /opens in a new tab/i, `${result.title}:${request.field} accessible name`);
+			assert.equal(request.target, "_blank", `${result.title}:${request.field} target`);
+			assert.equal(request.rel, "noopener noreferrer", `${result.title}:${request.field} rel`);
+		}
+		for (const preview of result.previewAttributes) {
+			assert.match(preview.src, /^https:\/\//, `${result.title} exact HTTPS candidate`);
+			assert.deepEqual({
+				alt: preview.alt,
+				loading: preview.loading,
+				decoding: preview.decoding,
+				referrerPolicy: preview.referrerPolicy,
+				draggable: preview.draggable,
+			}, {
+				alt: "",
+				loading: "lazy",
+				decoding: "async",
+				referrerPolicy: "no-referrer",
+				draggable: "false",
+			}, `${result.title} preview attributes`);
+		}
+	}
+
+	assert.equal(peopleBlank.state, "ready");
+	assert.deepEqual(peopleBlank.fields, ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl"]);
+	assert.deepEqual(peopleBlank.actions.map((entry) => entry.text), Array(4).fill("Use curated artwork"));
+	assert.deepEqual(peopleBlank.requests, []);
+	assert.equal(peopleBlank.coverValue, "");
+	assert.equal(peopleBlank.focusEnabled, false);
+
+	assert.deepEqual(peopleCustom.fields, ["titleLogoUrl", "focusGifUrl"]);
+	assert.deepEqual(peopleCustom.actions.map((entry) => entry.text), Array(2).fill("Use curated artwork"));
+	assert.deepEqual(peopleCustom.requests, []);
+	assert.match(peopleCustom.coverValue, /^http:\/\/127\.0\.0\.1:\d+\/settings-tile\.gif$/);
+	assert.equal(peopleCustom.heroPreservedStatus, "The current imported value is preserved until this field is edited.");
+
+	assert.deepEqual(networkFallback.fields, []);
+	assert.deepEqual(networkFallback.requests, []);
+	assert.equal(networkFallback.coverValue, "https://image.tmdb.org/t/p/w500/2uy2ZWcplrSObIyt4x0Y9rkG6qO.png");
+
+	assert.equal(genreCurated.state, "ready");
+	assert.deepEqual(genreCurated.fields, []);
+	assert.match(genreCurated.coverValue, /\/genre\/vertical\/Comedy\.jpg$/);
+	assert.deepEqual(genreCurated.requests, []);
+
+	assert.deepEqual(peopleRequest.fields, ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl"]);
+	assert.deepEqual(peopleRequest.actions.map((entry) => entry.text), Array(3).fill("Use curated artwork"));
+	assert.deepEqual(peopleRequest.requests.map((entry) => entry.field), ["focusGifUrl"]);
+	assert.match(peopleRequest.requests[0].href, /^https:\/\/github\.com\/davecollections\/nuvio-people-assets\/issues\/new\?/);
+
+	assert.deepEqual(studioLandscape.fields, ["coverImageUrl"]);
+	assert.equal(studioLandscape.actions[0].text, "Use curated artwork");
+	assert.deepEqual(studioLandscape.requests, []);
+	assert.equal(studioLandscape.coverValue, "");
+
+	assert.equal(ambiguous.state, "none");
+	assert.deepEqual(ambiguous.fields, []);
+	assert.deepEqual(ambiguous.requests, []);
+	assert.equal(ambiguous.coverValue, "");
+});
+
+test("mounted suggestion treatment stays compact and single-scroll at every required width", () => {
+	assert.deepEqual(mountedResults.suggestionLayouts.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.suggestionLayouts) {
+		assert.equal(result.suggestionCount, 4, `${result.width}px suggestion count`);
+		assert.deepEqual(result.compactPreviewWidths, [64, 112, 112, 64], `${result.width}px compact preview widths`);
+		assert.equal(result.insideViewport, true, `${result.width}px suggestion bounds`);
+		assert.equal(result.actionTapTargets, true, `${result.width}px action tap targets`);
+		assert.equal(result.shortCopyOnly, true, `${result.width}px no duplicated long URLs`);
+		assert.equal(result.focusSuggestionBeforeSwitch, true, `${result.width}px Focus relationship`);
+		assert.equal(result.onlyEditorScrolls, true, `${result.width}px one scroll owner`);
+		assert.equal(result.bodyLocked, true, `${result.width}px body lock`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px horizontal overflow`);
+		assert.equal(result.actionsInsideViewport, true, `${result.width}px sticky actions`);
+		assert.equal(result.projectUnchanged, true, `${result.width}px project preservation`);
+		assert.equal(result.serializedUnchanged, true, `${result.width}px serialization preservation`);
+		assert.equal(result.revisionUnchanged, true, `${result.width}px revision preservation`);
+	}
+});
+
+test("mounted suggestion acceptance is draft-only, shape-safe, Cancel-safe, and one-revision Apply", () => {
+	const result = mountedResults.suggestionDraftContract;
+	assert.equal(result.accepted.input, result.posterUrl);
+	assert.equal(result.accepted.assistanceAbsent, true);
+	assert.equal(result.accepted.normalPreview, result.posterUrl);
+	assert.equal(result.accepted.projectUnchanged, true);
+	assert.equal(result.accepted.serializedUnchanged, true);
+	assert.equal(result.accepted.revisionUnchanged, true);
+
+	assert.deepEqual(result.cleared, {
+		inputBlank: true,
+		actionText: "Use curated artwork",
+		candidateReturned: true,
+	});
+	assert.equal(result.shapeChange.landscapeSelected, true);
+	assert.equal(result.shapeChange.inputStillBlank, true);
+	assert.equal(result.shapeChange.candidateChanged, true);
+	assert.equal(result.shapeChange.actionText, "Use curated artwork");
+	assert.notEqual(result.landscapeUrl, result.posterUrl);
+
+	assert.deepEqual(result.cancel, {
+		coverBlank: true,
+		posterSelected: true,
+		projectUnchanged: true,
+		serializedUnchanged: true,
+		revisionUnchanged: true,
+	});
+	assert.equal(result.apply.cover, result.posterUrl);
+	assert.equal(result.apply.coverMatchesAccepted, true);
+	assert.equal(result.apply.unknownPreserved, true);
+	assert.equal(result.apply.titlePreserved, true);
+	assert.equal(result.apply.revisionDelta, 1);
+	assert.equal(result.apply.cardUpdated, true);
+	assert.equal(result.apply.targetInternalIdPreserved, true);
+});
+
+test("mounted nonblank artwork stays quiet until deliberately cleared", () => {
+	const result = mountedResults.suggestionBlankOnlyTransitions;
+	assert.match(result.opening.exactValue, /^http:\/\/127\.0\.0\.1:\d+\/settings-tile\.gif$/);
+	assert.equal(result.opening.coverAssistanceAbsent, true);
+	assert.deepEqual(result.cleared, { actionText: "Use curated artwork", inputBlank: true });
+	assert.deepEqual(result.accepted, { inputNonblank: true, assistanceAbsent: true });
+	assert.equal(result.clearedAgain, "Use curated artwork");
+	assert.equal(result.projectUnchanged, true);
+	assert.equal(result.serializedUnchanged, true);
+	assert.equal(result.revisionUnchanged, true);
+});
+
+test("mounted Request artwork is safe external navigation and changes no draft or project state", () => {
+	const result = mountedResults.suggestionRequestContract;
+	assert.equal(result.text, "Request artwork ↗");
+	assert.match(result.ariaLabel, /Focus artwork URL \(opens in a new tab\)/);
+	assert.match(result.href, /^https:\/\/github\.com\/davecollections\/nuvio-people-assets\/issues\/new\?/);
+	const requestUrl = new URL(result.href);
+	assert.equal(requestUrl.searchParams.get("title"), "Artwork request: Kátia Lund — Focus (Poster)");
+	assert.match(requestUrl.searchParams.get("body"), /TMDB ID: 8559/);
+	assert.match(requestUrl.searchParams.get("body"), /Expected repository path: assets\/people\/8559\/focus-poster\.webp/);
+	assert.equal(result.target, "_blank");
+	assert.equal(result.rel, "noopener noreferrer");
+	assert.equal(result.clickObserved, true);
+	assert.equal(result.focusBlank, true);
+	assert.equal(result.projectUnchanged, true);
+	assert.equal(result.serializedUnchanged, true);
+	assert.equal(result.revisionUnchanged, true);
+});
+
+test("mounted Studio assistance follows only the supported Landscape orientation", () => {
+	assert.deepEqual(mountedResults.suggestionStudioOrientationContract, {
+		landscapeAction: "Use curated artwork",
+		poster: { inputBlank: true, assistanceAbsent: true },
+		landscapeReturned: "Use curated artwork",
+	});
 });
 
 test("mounted pointer overlay and keyboard reorder mode retain the assigned thumbnail without data mutation", () => {
