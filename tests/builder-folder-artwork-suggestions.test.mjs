@@ -261,6 +261,35 @@ test("People requests an unregistered exact person only when canonical TMDB deta
 	}), null);
 });
 
+test("People request metadata builds every supported deterministic slot path", async () => {
+	const tmdbId = 999_999;
+	const suggestionSet = await loadFolderArtworkSuggestions({
+		folder: folder(sourcesFromDrafts(peopleDrafts(tmdbId))),
+		peopleManifestClient: Object.freeze({
+			load: async () => Object.freeze({ ok: true, data: Object.freeze({ byId: Object.freeze({}) }) }),
+		}),
+		peopleProvider: Object.freeze({
+			getPerson: async (id) => Object.freeze({ ok: true, data: Object.freeze({ id, name: "Exact Person" }) }),
+		}),
+	});
+	const cases = [
+		["coverImageUrl", "POSTER", "poster.webp"],
+		["coverImageUrl", "LANDSCAPE", "landscape.webp"],
+		["heroBackdropUrl", "POSTER", "hero.webp"],
+		["titleLogoUrl", "POSTER", "title-logo.png"],
+		["focusGifUrl", "POSTER", "focus-poster.webp"],
+		["focusGifUrl", "LANDSCAPE", "focus-landscape.webp"],
+	];
+
+	for (const [field, tileShape, filename] of cases) {
+		const request = folderArtworkRequestForField(suggestionSet, field, tileShape);
+		const expectedPath = `assets/people/${tmdbId}/${filename}`;
+		assert.equal(request.expectedPath, expectedPath);
+		assert.match(request.body, new RegExp(`Expected repository path: ${expectedPath.replaceAll(".", "\\.")}`));
+		assert.equal(new URL(request.href).searchParams.get("body"), request.body);
+	}
+});
+
 test("Studio exposes only curated Landscape while Network exposes available Poster and Landscape", async () => {
 	const studioSet = await loadFolderArtworkSuggestions({
 		folder: folder(sourcesFromDrafts(studioDrafts())),

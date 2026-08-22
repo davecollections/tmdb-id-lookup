@@ -50,13 +50,17 @@ const AUTHORITY_LABELS = Object.freeze({
 });
 
 const PEOPLE_REQUEST_SLOTS = Object.freeze([
-	Object.freeze({ field: "coverImageUrl", tileShape: "POSTER", artworkField: "Tile", titleLabel: "Poster Tile", orientation: "Poster", filename: "poster.webp" }),
-	Object.freeze({ field: "coverImageUrl", tileShape: "LANDSCAPE", artworkField: "Tile", titleLabel: "Landscape Tile", orientation: "Landscape", filename: "landscape.webp" }),
-	Object.freeze({ field: "heroBackdropUrl", tileShape: null, artworkField: "Hero / Background", titleLabel: "Hero / Background", orientation: null, filename: "hero.webp" }),
-	Object.freeze({ field: "titleLogoUrl", tileShape: null, artworkField: "Title Logo", titleLabel: "Title Logo", orientation: null, filename: "title-logo.png" }),
-	Object.freeze({ field: "focusGifUrl", tileShape: "POSTER", artworkField: "Focus", titleLabel: "Focus (Poster)", orientation: "Poster", filename: "focus-poster.webp" }),
-	Object.freeze({ field: "focusGifUrl", tileShape: "LANDSCAPE", artworkField: "Focus", titleLabel: "Focus (Landscape)", orientation: "Landscape", filename: "focus-landscape.webp" }),
+	Object.freeze({ field: "coverImageUrl", tileShape: "POSTER", artworkField: "Tile", titleLabel: "Poster Tile", orientation: "Poster", assetBasename: "poster", assetExtension: ".webp" }),
+	Object.freeze({ field: "coverImageUrl", tileShape: "LANDSCAPE", artworkField: "Tile", titleLabel: "Landscape Tile", orientation: "Landscape", assetBasename: "landscape", assetExtension: ".webp" }),
+	Object.freeze({ field: "heroBackdropUrl", tileShape: null, artworkField: "Hero / Background", titleLabel: "Hero / Background", orientation: null, assetBasename: "hero", assetExtension: ".webp" }),
+	Object.freeze({ field: "titleLogoUrl", tileShape: null, artworkField: "Title Logo", titleLabel: "Title Logo", orientation: null, assetBasename: "title-logo", assetExtension: ".png" }),
+	Object.freeze({ field: "focusGifUrl", tileShape: "POSTER", artworkField: "Focus", titleLabel: "Focus (Poster)", orientation: "Poster", assetBasename: "focus-poster", assetExtension: ".webp" }),
+	Object.freeze({ field: "focusGifUrl", tileShape: "LANDSCAPE", artworkField: "Focus", titleLabel: "Focus (Landscape)", orientation: "Landscape", assetBasename: "focus-landscape", assetExtension: ".webp" }),
 ]);
+
+function peopleRequestFilename(slot) {
+	return `${slot.assetBasename}${slot.assetExtension}`;
+}
 
 function requestSlotKey(field, tileShape) {
 	return `${field}\u0000${field === "coverImageUrl" || field === "focusGifUrl" ? tileShape : ""}`;
@@ -236,7 +240,7 @@ async function loadPeopleSuggestions(identity, peopleManifestClient, peopleProvi
 				: curated[slot.field];
 			return normalizedHttpsUrl(value) === null;
 		})
-		.map((slot) => freezeRequestSlot(slot, `assets/people/${identity.tmdbId}/${slot.filename}`));
+		.map((slot) => freezeRequestSlot(slot, `assets/people/${identity.tmdbId}/${peopleRequestFilename(slot)}`));
 	return freezeSuggestionSet(identity, curated, {
 		canonicalName,
 		repository: REQUEST_REPOSITORIES[identity.authority],
