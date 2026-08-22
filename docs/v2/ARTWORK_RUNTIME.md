@@ -2,7 +2,7 @@
 
 Status: shared `nuvio-assets` runtime is active for V1 Company/Network and V2 Studio/Network hierarchy; active V2 People resolution moved to `nuvio-people-assets` in issue #118
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-22
 
 ## Evidence and scope
 
@@ -20,6 +20,14 @@ Issue [#45](https://github.com/davecollections/tmdb-id-lookup/issues/45) added t
 Active V2 People creation now loads [`nuvio-people-assets/manifests/people.json`](https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/manifests/people.json) once per workspace and indexes records by numeric TMDB Person ID. The manifest supplies registered canonical name, actor/director membership, stable asset URLs, and per-asset SHA-256 values. Poster or compatibility Landscape maps to `coverImageUrl`; Hero and Title Logo remain separate; optional focus Poster/Landscape are accepted only as a complete pair. People Review exposes only a shared Poster/Landscape choice. Orientation changes recompute every generated folder's canonical manifest/fallback values; there are no per-person artwork URL, focus, or reset controls in hierarchy creation. The extracted known-field group remains available in the ordinary manual Folder editor for later individual customisation with preservation-first minimal patches. Missing IDs use the existing TMDB profile/emoji fallback and never construct the legacy paths listed later in this document. The historical `focusGifUrl` name is treated as a generic optional string by import/overlay/serialization, so the manifest's static WebP focus counterpart round-trips; no current-client rendering claim is made.
 
 The `nuvio-assets` People paths and tests below remain valid historical/publication and V1 compatibility documentation. They are not an active V2 Builder fallback. Company and Network behavior in this runtime is unchanged. The Builder migration is merged, but no legacy asset may be deleted until generated JSON is accepted in Nuvio, remaining consumers are migrated or retired, and Dave separately approves deletion.
+
+## Assigned Folder artwork in the Builder workspace
+
+Issue [#134](https://github.com/davecollections/tmdb-id-lookup/issues/134) is a presentation-only consumer of the Folder's existing persisted `coverImageUrl`. A nonblank string is displayed exactly as assigned on its Folder card, regardless of whether it came from a curated runtime, TMDB, import, or a custom URL. Poster and Landscape values receive compact orientation-aware thumbnails; an unsupported or legacy `tileShape` receives a neutral contained treatment without rewriting the stored shape.
+
+Blank, absent, null, and non-string values retain the original text-only Folder card. An image load failure also falls back to that text-only presentation for the current render while preserving the exact URL, raw import evidence, revision, and serialized output. Failure state is scoped to the exact attempted URL and resets when the assignment changes, so a failed old URL cannot suppress its replacement. Workspace display performs no artwork-runtime lookup, manifest lookup, TMDB request, URL replacement, migration, or cache refresh. Images are decorative, natively lazy-loaded, asynchronously decoded, requested without sending the Builder page as a referrer, and excluded from drag behavior; this host-agnostic request policy permits arbitrary valid artwork origins without an allowlist, while the existing card remains the sole selection and reorder interaction.
+
+This does not add artwork discovery to import or Folder Settings. A later separately approved Folder Settings issue may preview the currently assigned URLs and offer an explicit suggestion only when authoritative exact identity evidence exists. It must keep imported/custom values visible and unchanged until the user deliberately accepts a replacement; no preview or suggestion UI is part of issue #134.
 
 ## Published location
 

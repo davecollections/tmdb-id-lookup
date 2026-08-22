@@ -2,7 +2,7 @@
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-22
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -340,6 +340,10 @@ Artwork should normally feel automatic rather than technical:
 3. otherwise retain a visible title and emoji fallback.
 
 Imported or custom nonblank artwork must be preserved unless the user changes it. Runtime-owned automatic artwork may refresh under a later approved policy. Builder-only ownership metadata must never leak into Nuvio JSON. Missing artwork must not prevent collection creation.
+
+Issue [#134](https://github.com/davecollections/tmdb-id-lookup/issues/134) makes the workspace reflect the Folder Tile artwork that is already assigned: every nonblank string `coverImageUrl` is shown directly on the Folder card with compact Poster/Landscape treatment, regardless of origin. Native image requests omit the Builder referrer without using a host allowlist, and exact-URL failure state resets when the assignment changes. Blank, absent, null, invalid, or genuinely failed images use the established text-only card. This display is presentation-only and performs no resolution, discovery, normalization, migration, mutation, or serialization change; unsupported shapes remain preserved and receive a neutral thumbnail treatment.
+
+Current-URL previews and exact-identity artwork suggestions inside ordinary Folder Settings remain a separate future issue. Any suggestion must be clearly optional and accepted explicitly, and imported/custom artwork must remain visible and byte-preserved until the user chooses replacement. Issue #134 adds no Settings preview, suggestion, or automatic replacement behavior.
 
 The separate `nuvio-assets` project owns artwork production, replacement, review, publication, runtime schema, and asset-contract decisions. TMDB ID Lookup consumes its published runtime. Questions owned by that project must be taken there instead of guessed in V2.
 

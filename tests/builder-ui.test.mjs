@@ -676,7 +676,7 @@ test("styles provide mobile protection, touch sizing, focus, desktop panels, and
 	assert.match(styles, /min-height:\s*(?:46|48)px/);
 	assert.match(styles, /@media \(max-width: 430px\)/);
 	assert.match(styles, /@media \(min-width: 900px\)/);
-	assert.match(styles, /grid-template-columns:\s*minmax\(265px/);
+	assert.match(styles, /grid-template-columns:\s*minmax\(250px/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 	assert.equal(BUILDER_DESKTOP_BREAKPOINT_PX, 900);
 	assert.equal(BUILDER_DESKTOP_MEDIA_QUERY, "(min-width: 900px)");
