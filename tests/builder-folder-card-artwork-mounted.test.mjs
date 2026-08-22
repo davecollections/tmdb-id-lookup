@@ -384,6 +384,20 @@ async function runMountedPage() {
 			suggestionLayouts.push(await evaluate(resources.pageConnection, "window.__measureFolderArtworkSuggestionLayout()"));
 		}
 
+		const shapeAwareLayouts = [];
+		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+				width,
+				height: width <= 412 ? 852 : 900,
+				deviceScaleFactor: 1,
+				mobile: width <= 412,
+			});
+			await new Promise((resolve) => setTimeout(resolve, 40));
+			for (const kind of ["success", "missing", "custom", "blank", "mixed"]) {
+				shapeAwareLayouts.push(await evaluate(resources.pageConnection, `window.__measureFolderArtworkShapeAwareLayout(${JSON.stringify(kind)})`));
+			}
+		}
+
 		await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
 			width: 900,
 			height: 900,
@@ -395,10 +409,13 @@ async function runMountedPage() {
 		const suggestionBlankOnlyTransitions = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkBlankOnlyTransitions()");
 		const suggestionRequestContract = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkRequestContract()");
 		const suggestionStudioOrientationContract = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkStudioOrientationContract()");
+		const shapeAwareTransitions = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkShapeAwareTransitions()");
+		const missingOrientationAndSiblingNotices = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkMissingOrientationAndSiblingNotices()");
+		const mixedSiblingNotice = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkMixedSiblingNotice()");
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		const artworkRequests = resources.artworkRequests.map((request) => ({ ...request }));
 
-		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, collectionSettingsWidths, collectionDraftPreviews, collectionUnrelatedApply, collectionApply, suggestionLayouts, suggestionStates, suggestionDraftContract, suggestionBlankOnlyTransitions, suggestionRequestContract, suggestionStudioOrientationContract, artworkRequests };
+		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, collectionSettingsWidths, collectionDraftPreviews, collectionUnrelatedApply, collectionApply, suggestionLayouts, shapeAwareLayouts, suggestionStates, suggestionDraftContract, suggestionBlankOnlyTransitions, suggestionRequestContract, suggestionStudioOrientationContract, shapeAwareTransitions, missingOrientationAndSiblingNotices, mixedSiblingNotice, artworkRequests };
 	}, async () => {
 		const cleanupReport = await cleanupMountedBrowser(resources);
 		if (resources.artworkServer?.listening) {
@@ -999,6 +1016,105 @@ test("mounted Studio assistance follows only the supported Landscape orientation
 		poster: { inputBlank: true, assistanceAbsent: true },
 		landscapeReturned: "Use curated artwork",
 	});
+});
+
+test("mounted exact curated Tile and disabled Focus switching is draft-only, reversible, Cancel-safe, and one-revision Apply", () => {
+	const result = mountedResults.shapeAwareTransitions;
+	assert.equal(result.initial.posterSelected, true);
+	assert.match(result.initial.cover, /\/people\/31\/poster\.webp/);
+	assert.match(result.initial.focus, /\/people\/31\/focus-poster\.webp/);
+	assert.equal(result.initial.focusEnabled, false);
+	assert.equal(result.initial.siblingNoticeAbsent, true);
+	assert.equal(result.initial.missingNoticeAbsent, true);
+	assert.equal(result.landscape.selected, true);
+	assert.match(result.landscape.cover, /\/people\/31\/landscape\.webp/);
+	assert.match(result.landscape.focus, /\/people\/31\/focus-landscape\.webp/);
+	assert.equal(result.landscape.focusEnabled, false);
+	assert.equal(result.landscape.preview, result.landscape.cover);
+	assert.equal(result.landscape.focusPreview, result.landscape.focus);
+	assert.equal(result.landscape.siblingNotice, "Other folders in this collection use Poster tiles.");
+	assert.equal(result.landscape.missingNoticeAbsent, true);
+	assert.equal(result.landscape.projectUnchanged, true);
+	assert.equal(result.landscape.serializedUnchanged, true);
+	assert.equal(result.landscape.revisionUnchanged, true);
+	assert.equal(result.returned.selected, true);
+	assert.equal(result.returned.cover, result.initial.cover);
+	assert.equal(result.returned.focus, result.initial.focus);
+	assert.equal(result.returned.focusEnabled, false);
+	assert.equal(result.returned.siblingNoticeAbsent, true);
+	assert.deepEqual(result.cancel, {
+		posterSelected: true,
+		cover: result.initial.cover,
+		focus: result.initial.focus,
+		focusEnabled: false,
+		projectUnchanged: true,
+		serializedUnchanged: true,
+		revisionUnchanged: true,
+	});
+	assert.equal(result.apply.tileShape, "LANDSCAPE");
+	assert.equal(result.apply.cover, result.landscape.cover);
+	assert.equal(result.apply.focus, result.landscape.focus);
+	assert.equal(result.apply.focusEnabled, false);
+	assert.deepEqual(result.apply.sentinel, { keep: "people-both" });
+	assert.equal(result.apply.revisionDelta, 1);
+});
+
+test("mounted missing curated orientation and sibling notices are compact, associated, nonblocking, and draft-aware", () => {
+	const result = mountedResults.missingOrientationAndSiblingNotices;
+	assert.equal(result.initial.landscapeSelected, true);
+	assert.match(result.initial.cover, /\/companies\/3\.webp/);
+	assert.equal(result.initial.missingNoticeAbsent, true);
+	assert.equal(result.initial.siblingNoticeAbsent, true);
+	assert.equal(result.changed.posterSelected, true);
+	assert.equal(result.changed.cover, result.initial.cover);
+	assert.equal(result.changed.missingNotice, "Curated Poster artwork isn't available for this folder, so the current tile artwork will be kept.");
+	assert.equal(result.changed.siblingNotice, "Other folders in this collection use Landscape tiles.");
+	assert.equal(result.changed.requestAbsent, true);
+	assert.equal(result.changed.missingNoticeInDisplay, true);
+	assert.equal(result.changed.missingNoticeOutsideArtwork, true);
+	assert.equal(result.changed.tileInputDoesNotDescribeNotice, true);
+	assert.equal(result.changed.shapeFieldDescribesMissingNotice, true);
+	assert.equal(result.changed.shapeFieldDescribesSiblingNotice, true);
+	assert.deepEqual(result.changed.noticeOrder, ["missing", "sibling"]);
+	assert.deepEqual(result.cleared, {
+		inputBlank: true,
+		missingNoticeAbsent: true,
+		requestAbsent: true,
+		siblingNoticeStillPresent: true,
+	});
+	assert.equal(result.apply.tileShape, "POSTER");
+	assert.equal(result.apply.cover, result.initial.cover);
+	assert.deepEqual(result.apply.sentinel, { keep: "studio-landscape-only" });
+	assert.equal(result.apply.revisionDelta, 1);
+	assert.deepEqual(result.reopen, {
+		posterSelected: true,
+		cover: result.initial.cover,
+		missingNoticeAbsent: true,
+		siblingNoticeAbsent: true,
+	});
+	assert.match(mountedResults.mixedSiblingNotice.cover, /\/people\/31\/landscape\.webp/);
+	assert.equal(mountedResults.mixedSiblingNotice.siblingNoticeAbsent, true);
+	assert.equal(mountedResults.mixedSiblingNotice.missingNoticeAbsent, true);
+});
+
+test("mounted shape-aware success, missing, custom, blank, and mixed states remain single-scroll and overflow-free at every required width", () => {
+	const requiredWidths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
+	assert.equal(mountedResults.shapeAwareLayouts.length, requiredWidths.length * 5);
+	for (const width of requiredWidths) {
+		const states = mountedResults.shapeAwareLayouts.filter((result) => result.width === width);
+		assert.deepEqual(states.map((result) => result.kind), ["success", "missing", "custom", "blank", "mixed"]);
+		assert.deepEqual(states.map((result) => result.noticeCount), [1, 2, 0, 0, 0], `${width}px notice counts`);
+		assert.deepEqual(states.map((result) => result.displayNoticeCount), [1, 2, 0, 0, 0], `${width}px Display notice counts`);
+		assert.deepEqual(states.map((result) => result.artworkNoticeCount), [0, 0, 0, 0, 0], `${width}px Artwork notice counts`);
+		for (const result of states) {
+			assert.equal(result.noticesInsideViewport, true, `${width}px ${result.kind} notice bounds`);
+			assert.equal(result.compactNotices, true, `${width}px ${result.kind} notice height`);
+			assert.equal(result.oneScrollOwner, true, `${width}px ${result.kind} nested scroll`);
+			assert.equal(result.bodyLocked, true, `${width}px ${result.kind} body lock`);
+			assert.equal(result.noHorizontalOverflow, true, `${width}px ${result.kind} horizontal overflow`);
+			assert.equal(result.actionsInsideViewport, true, `${width}px ${result.kind} sticky actions`);
+		}
+	}
 });
 
 test("mounted pointer overlay and keyboard reorder mode retain the assigned thumbnail without data mutation", () => {

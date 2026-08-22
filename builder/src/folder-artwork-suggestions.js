@@ -444,3 +444,102 @@ export function classifyFolderArtworkValue(value, {
 	if (tmdbFallbackUrls.includes(value)) return FOLDER_ARTWORK_CLASSIFICATIONS.TMDB_FALLBACK;
 	return FOLDER_ARTWORK_CLASSIFICATIONS.CUSTOM_UNKNOWN;
 }
+
+function planCuratedFolderArtworkShapeTransition({
+	suggestionSet,
+	field,
+	currentUrl,
+	requestedShape,
+} = {}) {
+	const targetUrl = folderArtworkSuggestionForField(
+		suggestionSet,
+		field,
+		requestedShape,
+	);
+	const classification = classifyFolderArtworkValue(currentUrl, {
+		curatedUrls: curatedFolderArtworkUrls(suggestionSet, field),
+	});
+	const recognizedCurated = classification === FOLDER_ARTWORK_CLASSIFICATIONS.CURATED;
+
+	return Object.freeze({
+		requestedShape,
+		currentUrl,
+		recognizedCurated,
+		replacementUrl: recognizedCurated && targetUrl !== null ? targetUrl : null,
+		missingRequestedOrientation: recognizedCurated && targetUrl === null,
+	});
+}
+
+export function planCuratedFolderTileShapeTransition({
+	suggestionSet,
+	currentTileUrl,
+	requestedShape,
+} = {}) {
+	const transition = planCuratedFolderArtworkShapeTransition({
+		suggestionSet,
+		field: "coverImageUrl",
+		currentUrl: currentTileUrl,
+		requestedShape,
+	});
+	return Object.freeze({
+		requestedShape: transition.requestedShape,
+		currentTileUrl,
+		recognizedCurated: transition.recognizedCurated,
+		replacementTileUrl: transition.replacementUrl,
+		missingRequestedOrientation: transition.missingRequestedOrientation,
+	});
+}
+
+export function planCuratedFolderFocusShapeTransition({
+	suggestionSet,
+	currentFocusUrl,
+	requestedShape,
+} = {}) {
+	const transition = planCuratedFolderArtworkShapeTransition({
+		suggestionSet,
+		field: "focusGifUrl",
+		currentUrl: currentFocusUrl,
+		requestedShape,
+	});
+	return Object.freeze({
+		requestedShape: transition.requestedShape,
+		currentFocusUrl,
+		recognizedCurated: transition.recognizedCurated,
+		replacementFocusUrl: transition.replacementUrl,
+		missingRequestedOrientation: transition.missingRequestedOrientation,
+	});
+}
+
+export function missingCuratedFolderTileOrientationNotice({
+	suggestionSet,
+	currentTileUrl,
+	requestedShape,
+	shapeTouched = false,
+} = {}) {
+	if (!shapeTouched || !["POSTER", "LANDSCAPE"].includes(requestedShape)) return null;
+	const transition = planCuratedFolderTileShapeTransition({
+		suggestionSet,
+		currentTileUrl,
+		requestedShape,
+	});
+	if (!transition.missingRequestedOrientation) return null;
+	const label = requestedShape === "POSTER" ? "Poster" : "Landscape";
+	return `Curated ${label} artwork isn't available for this folder, so the current tile artwork will be kept.`;
+}
+
+export function missingCuratedFolderFocusOrientationNotice({
+	suggestionSet,
+	currentFocusUrl,
+	requestedShape,
+	shapeTouched = false,
+} = {}) {
+	if (!shapeTouched || !["POSTER", "LANDSCAPE"].includes(requestedShape)) return null;
+	const transition = planCuratedFolderFocusShapeTransition({
+		suggestionSet,
+		currentFocusUrl,
+		requestedShape,
+	});
+	if (!transition.missingRequestedOrientation) return null;
+	const label = requestedShape === "POSTER" ? "Poster" : "Landscape";
+	return `Curated ${label} focus artwork isn't available for this folder, so the current focus artwork will be kept.`;
+}

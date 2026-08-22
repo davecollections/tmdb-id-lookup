@@ -8,7 +8,12 @@ import {
 	genreArtworkUrl,
 } from "../../builder/src/source-add/index.js";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
-import { createArtworkRuntimeClient } from "../../js/artwork-runtime.mjs";
+import {
+	ARTWORK_ENTITY_TYPES,
+	ARTWORK_ORIENTATIONS,
+	ARTWORK_RESULT_STATUSES,
+	createArtworkRuntimeClient,
+} from "../../js/artwork-runtime.mjs";
 import "../../builder/src/styles.css";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -27,6 +32,27 @@ const livePeopleManifestClient = createPeopleManifestClient();
 const liveArtworkRuntimeClient = createArtworkRuntimeClient();
 const liveStudioCatalogueProvider = createStudioCatalogueProvider({ catalogueUrl: "/data/companies.min.json" });
 const liveNetworkCatalogueProvider = createNetworkCatalogueProvider({ catalogueUrl: "/data/tv-networks.min.json" });
+const livePeopleManifest = await livePeopleManifestClient.load();
+if (!livePeopleManifest?.ok || !livePeopleManifest.data?.byId?.[31]) {
+	throw new Error("Mounted Folder artwork fixture could not load exact People artwork authority.");
+}
+const exactPeoplePosterUrl = livePeopleManifest.data.byId[31].assets.poster.url;
+const exactPeopleLandscapeUrl = livePeopleManifest.data.byId[31].assets.landscape.url;
+const exactPeopleFocusPosterUrl = livePeopleManifest.data.byId[31].assets.focusPoster?.url;
+const exactPeopleFocusLandscapeUrl = livePeopleManifest.data.byId[31].assets.focusLandscape?.url;
+if (!exactPeopleFocusPosterUrl || !exactPeopleFocusLandscapeUrl) {
+	throw new Error("Mounted Folder artwork fixture requires the published People Focus pair.");
+}
+const liveStudioLandscape = await liveArtworkRuntimeClient.resolve({
+	entityType: ARTWORK_ENTITY_TYPES.COMPANY,
+	tmdbId: 3,
+	orientation: ARTWORK_ORIENTATIONS.LANDSCAPE,
+});
+if (liveStudioLandscape?.status !== ARTWORK_RESULT_STATUSES.READY) {
+	throw new Error("Mounted Folder artwork fixture could not load exact Studio Landscape artwork authority.");
+}
+const exactStudioLandscapeUrl = liveStudioLandscape.assetUrl;
+fetchCalls.length = 0;
 
 function personSource(overrides = {}) {
 	return {
@@ -201,10 +227,66 @@ const imported = controller.importValue([{
 		},
 		...scaleFolders,
 	],
+}, {
+	id: "poster-consensus",
+	title: "Poster-consistent siblings",
+	viewMode: "TABBED_GRID",
+	showAllTab: true,
+	pinToTop: false,
+	folders: [
+		{
+			id: "shape-people-both",
+			title: "People — curated both orientations",
+			tileShape: "POSTER",
+			coverImageUrl: exactPeoplePosterUrl,
+			focusGifUrl: exactPeopleFocusPosterUrl,
+			focusGifEnabled: false,
+			reviewSentinel: { keep: "people-both" },
+			sources: [personSource(), personSource({ title: "Series Credits", mediaType: "TV" })],
+		},
+		{ id: "shape-poster-sibling-a", title: "Poster sibling A", tileShape: "POSTER", sources: [] },
+		{ id: "shape-poster-sibling-b", title: "Poster sibling B", tileShape: "POSTER", sources: [] },
+	],
+}, {
+	id: "landscape-consensus",
+	title: "Landscape-consistent siblings",
+	viewMode: "TABBED_GRID",
+	showAllTab: true,
+	pinToTop: false,
+	folders: [
+		{
+			id: "shape-studio-landscape-only",
+			title: "Studio — Landscape only",
+			tileShape: "LANDSCAPE",
+			coverImageUrl: exactStudioLandscapeUrl,
+			reviewSentinel: { keep: "studio-landscape-only" },
+			sources: [studioSource()],
+		},
+		{ id: "shape-landscape-sibling-a", title: "Landscape sibling A", tileShape: "LANDSCAPE", sources: [] },
+		{ id: "shape-landscape-sibling-b", title: "Landscape sibling B", tileShape: "LANDSCAPE", sources: [] },
+	],
+}, {
+	id: "mixed-shapes",
+	title: "Already-mixed siblings",
+	viewMode: "TABBED_GRID",
+	showAllTab: true,
+	pinToTop: false,
+	folders: [
+		{
+			id: "shape-mixed-target",
+			title: "People — already mixed siblings",
+			tileShape: "POSTER",
+			coverImageUrl: exactPeoplePosterUrl,
+			sources: [personSource()],
+		},
+		{ id: "shape-mixed-poster", title: "Mixed Poster", tileShape: "POSTER", sources: [] },
+		{ id: "shape-mixed-landscape", title: "Mixed Landscape", tileShape: "LANDSCAPE", sources: [] },
+	],
 }]);
 if (!imported.ok) throw new Error("Mounted Folder artwork fixture import failed.");
 
 const collection = controller.getState().project.collections[0];
+const collectionsByTitle = Object.fromEntries(controller.getState().project.collections.map((entry) => [entry.editable.title, entry]));
 const foldersById = Object.fromEntries(collection.folders.map((folder) => [folder.editable.id, folder]));
 controller.selectNode(collection.internalId);
 const projectBefore = JSON.stringify(controller.getState().project);
@@ -256,15 +338,18 @@ function roundedRect(element) {
 	};
 }
 
-async function selectCollection() {
-	controller.selectNode(collection.internalId);
+async function selectCollection(title = "Artwork collection") {
+	const target = collectionsByTitle[title];
+	if (!target) throw new Error(`Unknown mounted collection: ${title}`);
+	controller.selectNode(target.internalId);
 	await afterCommittedEffects();
 }
 
-async function openFolderSettings(title = "Settings preview") {
+async function openFolderSettings(title = "Settings preview", collectionTitle = "Artwork collection") {
 	if (document.querySelector('[data-node-editor="folder"]')) return;
-	await selectCollection();
+	await selectCollection(collectionTitle);
 	const card = folderCard(title);
+	if (!card) throw new Error(`Mounted Folder card not found: ${collectionTitle} / ${title}`);
 	card.querySelector('[data-action="open-folder-actions"]').click();
 	await afterCommittedEffects();
 	document.querySelector('[data-actions-menu="folder"]:not([hidden]) [data-action="edit-folder"]').click();
@@ -1277,6 +1362,213 @@ async function exerciseStudioOrientationContract() {
 	return { landscapeAction, poster, landscapeReturned };
 }
 
+async function chooseTileShape(shape) {
+	const choice = document.querySelector(`[data-editor-choice="${shape.toLowerCase()}"]`);
+	choice.click();
+	await afterCommittedEffects();
+}
+
+async function exerciseShapeAwareCuratedTransitions() {
+	const beforeProject = JSON.stringify(controller.getState().project);
+	const beforeSerialized = JSON.stringify(controller.serializeProject().value);
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings("People — curated both orientations", "Poster-consistent siblings");
+	await waitForSuggestionState("ready");
+	const initial = {
+		posterSelected: document.querySelector('[data-editor-choice="poster"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		focus: document.querySelector('[data-editor-field="focusGifUrl"] input').value,
+		focusEnabled: document.querySelector('[data-editor-field="focusGifEnabled"] input').checked,
+		siblingNoticeAbsent: document.querySelector('[data-sibling-shape-notice="true"]') === null,
+		missingNoticeAbsent: document.querySelector('[data-missing-curated-orientation="true"]') === null,
+	};
+	await chooseTileShape("landscape");
+	await waitForCondition(() => (
+		document.querySelector('[data-editor-field="coverImageUrl"] input').value === exactPeopleLandscapeUrl
+		&& document.querySelector('[data-editor-field="focusGifUrl"] input').value === exactPeopleFocusLandscapeUrl
+	));
+	const landscape = {
+		selected: document.querySelector('[data-editor-choice="landscape"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		focus: document.querySelector('[data-editor-field="focusGifUrl"] input').value,
+		focusEnabled: document.querySelector('[data-editor-field="focusGifEnabled"] input').checked,
+		preview: document.querySelector('[data-artwork-preview="coverImageUrl"] img')?.getAttribute("src"),
+		focusPreview: document.querySelector('[data-artwork-preview="focusGifUrl"] img')?.getAttribute("src"),
+		siblingNotice: document.querySelector('[data-sibling-shape-notice="true"]')?.textContent.trim(),
+		missingNoticeAbsent: document.querySelector('[data-missing-curated-orientation="true"]') === null,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+	await chooseTileShape("poster");
+	await waitForCondition(() => (
+		document.querySelector('[data-editor-field="coverImageUrl"] input').value === exactPeoplePosterUrl
+		&& document.querySelector('[data-editor-field="focusGifUrl"] input').value === exactPeopleFocusPosterUrl
+	));
+	const returned = {
+		selected: document.querySelector('[data-editor-choice="poster"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		focus: document.querySelector('[data-editor-field="focusGifUrl"] input').value,
+		focusEnabled: document.querySelector('[data-editor-field="focusGifEnabled"] input').checked,
+		siblingNoticeAbsent: document.querySelector('[data-sibling-shape-notice="true"]') === null,
+	};
+	await cancelFolderSettings();
+	await openFolderSettings("People — curated both orientations", "Poster-consistent siblings");
+	await waitForSuggestionState("ready");
+	const cancel = {
+		posterSelected: document.querySelector('[data-editor-choice="poster"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		focus: document.querySelector('[data-editor-field="focusGifUrl"] input').value,
+		focusEnabled: document.querySelector('[data-editor-field="focusGifEnabled"] input').checked,
+		projectUnchanged: JSON.stringify(controller.getState().project) === beforeProject,
+		serializedUnchanged: JSON.stringify(controller.serializeProject().value) === beforeSerialized,
+		revisionUnchanged: controller.getState().revision === beforeRevision,
+	};
+	await chooseTileShape("landscape");
+	await waitForCondition(() => (
+		document.querySelector('[data-editor-field="coverImageUrl"] input').value === exactPeopleLandscapeUrl
+		&& document.querySelector('[data-editor-field="focusGifUrl"] input').value === exactPeopleFocusLandscapeUrl
+	));
+	document.querySelector('[data-action="apply-node-edit"]').click();
+	await afterCommittedEffects();
+	const saved = controller.serializeProject().value
+		.find((entry) => entry.id === "poster-consensus")
+		.folders.find((entry) => entry.id === "shape-people-both");
+	const apply = {
+		tileShape: saved.tileShape,
+		cover: saved.coverImageUrl,
+		focus: saved.focusGifUrl,
+		focusEnabled: saved.focusGifEnabled,
+		sentinel: saved.reviewSentinel,
+		revisionDelta: controller.getState().revision - beforeRevision,
+	};
+	return { initial, landscape, returned, cancel, apply };
+}
+
+async function exerciseMissingOrientationAndSiblingNotices() {
+	const beforeRevision = controller.getState().revision;
+	await openFolderSettings("Studio — Landscape only", "Landscape-consistent siblings");
+	await waitForSuggestionState("ready");
+	const initial = {
+		landscapeSelected: document.querySelector('[data-editor-choice="landscape"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		missingNoticeAbsent: document.querySelector('[data-missing-curated-orientation="true"]') === null,
+		siblingNoticeAbsent: document.querySelector('[data-sibling-shape-notice="true"]') === null,
+	};
+	await chooseTileShape("poster");
+	await waitForCondition(() => document.querySelector('[data-missing-curated-orientation="true"]'));
+	const changed = {
+		posterSelected: document.querySelector('[data-editor-choice="poster"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		missingNotice: document.querySelector('[data-missing-curated-orientation="true"]').textContent.trim(),
+		siblingNotice: document.querySelector('[data-sibling-shape-notice="true"]')?.textContent.trim(),
+		requestAbsent: document.querySelector('[data-artwork-request="coverImageUrl"]') === null,
+		missingNoticeInDisplay: document.querySelector('[data-missing-curated-orientation="true"]')
+			.closest('[data-settings-section="display"]') !== null,
+		missingNoticeOutsideArtwork: document.querySelector('[data-missing-curated-orientation="true"]')
+			.closest('[data-settings-section="artwork"]') === null,
+		tileInputDoesNotDescribeNotice: !document.querySelector('[data-editor-field="coverImageUrl"] input')
+			.getAttribute("aria-describedby")
+			.split(/\s+/)
+			.includes(document.querySelector('[data-missing-curated-orientation="true"]').id),
+		shapeFieldDescribesMissingNotice: document.querySelector('[data-editor-field="tileShape"]')
+			.getAttribute("aria-describedby")
+			.split(/\s+/)
+			.includes(document.querySelector('[data-missing-curated-orientation="true"]').id),
+		shapeFieldDescribesSiblingNotice: document.querySelector('[data-editor-field="tileShape"]')
+			.getAttribute("aria-describedby")
+			.split(/\s+/)
+			.includes(document.querySelector('[data-sibling-shape-notice="true"]').id),
+		noticeOrder: [...document.querySelector('[data-editor-field="tileShape"]').querySelectorAll(".folder-settings-notice")]
+			.map((notice) => notice.dataset.missingCuratedOrientation === "true" ? "missing" : "sibling"),
+	};
+	await setEditorField("coverImageUrl", "");
+	const cleared = {
+		inputBlank: document.querySelector('[data-editor-field="coverImageUrl"] input').value === "",
+		missingNoticeAbsent: document.querySelector('[data-missing-curated-orientation="true"]') === null,
+		requestAbsent: document.querySelector('[data-artwork-request="coverImageUrl"]') === null,
+		siblingNoticeStillPresent: document.querySelector('[data-sibling-shape-notice="true"]') !== null,
+	};
+	await setEditorField("coverImageUrl", exactStudioLandscapeUrl);
+	await waitForCondition(() => document.querySelector('[data-missing-curated-orientation="true"]'));
+	document.querySelector('[data-action="apply-node-edit"]').click();
+	await afterCommittedEffects();
+	const saved = controller.serializeProject().value
+		.find((entry) => entry.id === "landscape-consensus")
+		.folders.find((entry) => entry.id === "shape-studio-landscape-only");
+	const apply = {
+		tileShape: saved.tileShape,
+		cover: saved.coverImageUrl,
+		sentinel: saved.reviewSentinel,
+		revisionDelta: controller.getState().revision - beforeRevision,
+	};
+	await openFolderSettings("Studio — Landscape only", "Landscape-consistent siblings");
+	await waitForSuggestionState("ready");
+	const reopen = {
+		posterSelected: document.querySelector('[data-editor-choice="poster"]').checked,
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		missingNoticeAbsent: document.querySelector('[data-missing-curated-orientation="true"]') === null,
+		siblingNoticeAbsent: document.querySelector('[data-sibling-shape-notice="true"]') === null,
+	};
+	await cancelFolderSettings();
+	return { initial, changed, cleared, apply, reopen };
+}
+
+async function exerciseMixedSiblingNotice() {
+	await openFolderSettings("People — already mixed siblings", "Already-mixed siblings");
+	await waitForSuggestionState("ready");
+	await chooseTileShape("landscape");
+	await waitForCondition(() => document.querySelector('[data-editor-field="coverImageUrl"] input').value === exactPeopleLandscapeUrl);
+	const result = {
+		cover: document.querySelector('[data-editor-field="coverImageUrl"] input').value,
+		siblingNoticeAbsent: document.querySelector('[data-sibling-shape-notice="true"]') === null,
+		missingNoticeAbsent: document.querySelector('[data-missing-curated-orientation="true"]') === null,
+	};
+	await cancelFolderSettings();
+	return result;
+}
+
+async function measureShapeAwareLayout(kind) {
+	const cases = {
+		success: ["People — curated both orientations", "Poster-consistent siblings", "landscape"],
+		missing: ["Studio — Landscape only", "Landscape-consistent siblings", "poster"],
+		custom: ["People — existing custom artwork", "Artwork collection", "landscape"],
+		blank: ["People — blank with curated artwork", "Artwork collection", "landscape"],
+		mixed: ["People — already mixed siblings", "Already-mixed siblings", "landscape"],
+	};
+	const [folderTitle, collectionTitle, requestedShape] = cases[kind];
+	await openFolderSettings(folderTitle, collectionTitle);
+	await waitForSuggestionState("ready");
+	await chooseTileShape(requestedShape);
+	await afterCommittedEffects();
+	const editor = document.querySelector('[data-node-editor="folder"]');
+	const notices = [...editor.querySelectorAll(".folder-settings-notice")];
+	editor.scrollTop = editor.scrollHeight;
+	await afterCommittedEffects();
+	const actionRect = editor.querySelector(".node-editor-actions").getBoundingClientRect();
+	const result = {
+		kind,
+		width: window.innerWidth,
+		noticeCount: notices.length,
+		displayNoticeCount: editor.querySelectorAll('[data-settings-section="display"] .folder-settings-notice').length,
+		artworkNoticeCount: editor.querySelectorAll('[data-settings-section="artwork"] .folder-settings-notice').length,
+		noticesInsideViewport: notices.every((notice) => {
+			const rect = notice.getBoundingClientRect();
+			return rect.left >= -1 && rect.right <= window.innerWidth + 1;
+		}),
+		compactNotices: notices.every((notice) => notice.getBoundingClientRect().height < 80),
+		oneScrollOwner: [...editor.querySelectorAll("*")].filter((element) => {
+			const style = getComputedStyle(element);
+			return ["auto", "scroll"].includes(style.overflowY) && element.scrollHeight > element.clientHeight + 1;
+		}).length === 0,
+		bodyLocked: getComputedStyle(document.body).overflow === "hidden",
+		noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1 && editor.scrollWidth <= editor.clientWidth + 1,
+		actionsInsideViewport: actionRect.left >= -1 && actionRect.right <= window.innerWidth + 1 && actionRect.bottom <= window.innerHeight + 1,
+	};
+	await cancelFolderSettings();
+	return result;
+}
+
 const root = createRoot(document.getElementById("root"));
 window.__builderFolderArtworkMounted = { status: "running" };
 act(() => root.render(createElement(MountedWorkspace)));
@@ -1309,6 +1601,10 @@ afterCommittedEffects().then(async () => {
 	window.__exerciseFolderArtworkBlankOnlyTransitions = exerciseBlankOnlyTransitions;
 	window.__exerciseFolderArtworkRequestContract = exerciseRequestContract;
 	window.__exerciseFolderArtworkStudioOrientationContract = exerciseStudioOrientationContract;
+	window.__measureFolderArtworkShapeAwareLayout = measureShapeAwareLayout;
+	window.__exerciseFolderArtworkShapeAwareTransitions = exerciseShapeAwareCuratedTransitions;
+	window.__exerciseFolderArtworkMissingOrientationAndSiblingNotices = exerciseMissingOrientationAndSiblingNotices;
+	window.__exerciseFolderArtworkMixedSiblingNotice = exerciseMixedSiblingNotice;
 	window.__builderFolderArtworkMounted = { status: "complete" };
 }).catch((error) => {
 	window.__builderFolderArtworkMounted = {

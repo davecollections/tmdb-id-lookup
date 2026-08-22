@@ -72,7 +72,10 @@ import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
 import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
 import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
-import { updateNodeEditorField } from "./node-editor.js";
+import {
+	updateNodeEditorField,
+	updateNodeEditorTileShape,
+} from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
 	builderCardScrollBehavior,
@@ -809,6 +812,11 @@ export function BuilderWorkspace({
 	const [restoreReturnFocus, setRestoreReturnFocus] = useState(false);
 	const editorTarget = editorDraft ? findEditableNode(state.project, editorDraft.internalId) : null;
 	const visibleEditorDraft = editorTarget?.nodeType === editorDraft?.nodeType ? editorDraft : null;
+	const editorParentCollection = editorTarget?.nodeType === "folder"
+		? state.project.collections.find((collection) => (
+			collection.folders.some((folder) => folder.internalId === editorTarget.internalId)
+		)) ?? null
+		: null;
 	const addSourceFolder = addSourceSession?.context === "folder"
 		? findEditableNode(state.project, addSourceSession.folderInternalId)
 		: null;
@@ -2451,8 +2459,15 @@ export function BuilderWorkspace({
 						studioCatalogueProvider: studioCatalogueProviderRef.current,
 						networkCatalogueProvider: networkCatalogueProviderRef.current,
 					}}
-					onChange={(field, value) => {
-						setEditorDraft((current) => updateNodeEditorField(current, field, value));
+					folderSiblings={editorParentCollection?.folders ?? []}
+					onChange={(field, value, context = null) => {
+						setEditorDraft((current) => {
+							return field === "tileShape" && current?.nodeType === "folder"
+								? updateNodeEditorTileShape(current, value, context?.suggestionSet ?? null, {
+									recheckCurrentShape: context?.recheckCurrentShape === true,
+								})
+								: updateNodeEditorField(current, field, value);
+						});
 						setEditorDiagnostics((current) => current.filter((entry) => (
 							entry.path !== `$ui.editor.${field}`
 							&& !(field === "hideNuvioTitle" && entry.path === "$ui.editor.title")

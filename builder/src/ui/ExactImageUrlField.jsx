@@ -1,10 +1,11 @@
 import { hasPreviewUrl, useExactUrlPreviewFailure } from "./exact-url-preview.js";
 
-function fieldDescriptionIds(prefix, field, preserved, failed) {
+function fieldDescriptionIds(prefix, field, preserved, failed, descriptionId) {
 	return [
 		`${prefix}-${field}-help`,
 		preserved ? `${prefix}-${field}-preserved` : null,
 		failed ? `${prefix}-${field}-preview-status` : null,
+		descriptionId,
 	].filter(Boolean).join(" ");
 }
 
@@ -19,6 +20,7 @@ export function ExactImageUrlField({
 	prefix,
 	preserved,
 	previewShape,
+	descriptionId = null,
 	onChange,
 }) {
 	const { field, label, description, preview } = descriptor;
@@ -27,7 +29,7 @@ export function ExactImageUrlField({
 	const helpId = `${prefix}-${field}-help`;
 	const preservedId = `${prefix}-${field}-preserved`;
 	const statusId = `${prefix}-${field}-preview-status`;
-	const describedBy = fieldDescriptionIds(prefix, field, preserved, previewFailure.failed);
+	const describedBy = fieldDescriptionIds(prefix, field, preserved, previewFailure.failed, descriptionId);
 
 	return (
 		<div className={`editor-field folder-artwork-url-field${hasUrl ? " has-preview" : ""}`} data-editor-field={field}>

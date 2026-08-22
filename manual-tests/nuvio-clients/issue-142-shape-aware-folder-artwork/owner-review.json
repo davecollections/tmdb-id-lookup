@@ -1,0 +1,164 @@
+[
+  {
+    "id": "issue-142-poster-consensus",
+    "title": "Shape-aware artwork — Poster siblings",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "pinToTop": false,
+    "folders": [
+      {
+        "id": "people-curated-both",
+        "title": "People — curated both orientations",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/poster.webp",
+        "focusGifUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/focus-poster.webp",
+        "focusGifEnabled": false,
+        "hideTitle": false,
+        "reviewSentinel": { "case": "people-curated-both", "preserve": true },
+        "sources": [
+          { "title": "Movie Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" },
+          { "title": "Series Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "TV", "tmdbSourceType": "PERSON" }
+        ]
+      },
+      {
+        "id": "network-curated-both",
+        "title": "Network — curated both orientations",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/networks/poster/2.webp?v=4bb867181a3a",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "network-curated-both", "preserve": true },
+        "sources": [
+          { "title": "Series", "sortBy": "popularity.desc", "tmdbId": 2, "filters": {}, "provider": "tmdb", "mediaType": "TV", "tmdbSourceType": "NETWORK" }
+        ]
+      },
+      {
+        "id": "custom-preserve",
+        "title": "Custom artwork — preserve",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://picsum.photos/seed/issue-142-custom/1000/1500",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "custom-preserve", "preserve": true },
+        "sources": [
+          { "title": "Movie Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" }
+        ]
+      },
+      {
+        "id": "tmdb-preserve",
+        "title": "TMDB fallback — preserve",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://image.tmdb.org/t/p/w500/2uy2ZWcplrSObIyt4x0Y9rkG6qO.png",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "tmdb-preserve", "preserve": true },
+        "sources": [
+          { "title": "Series", "sortBy": "popularity.desc", "tmdbId": 2, "filters": {}, "provider": "tmdb", "mediaType": "TV", "tmdbSourceType": "NETWORK" }
+        ]
+      },
+      {
+        "id": "blank-assistance",
+        "title": "Blank artwork — #140 assistance",
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "blank-assistance", "preserve": true },
+        "sources": [
+          { "title": "Movie Credits", "sortBy": "popularity.desc", "tmdbId": 40, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" }
+        ]
+      },
+      {
+        "id": "poster-consistency",
+        "title": "Siblings — consistent Poster",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://picsum.photos/seed/issue-142-sibling/1000/1500",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "poster-consistency", "preserve": true },
+        "sources": []
+      }
+    ]
+  },
+  {
+    "id": "issue-142-landscape-consensus",
+    "title": "Shape-aware artwork — Landscape siblings",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "pinToTop": false,
+    "folders": [
+      {
+        "id": "studio-landscape-only",
+        "title": "Studio — Landscape only",
+        "tileShape": "LANDSCAPE",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/companies/3.webp?v=5505436ae658",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "studio-landscape-only", "preserve": true },
+        "sources": [
+          { "title": "Movies", "sortBy": "popularity.desc", "tmdbId": 3, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "COMPANY" }
+        ]
+      },
+      {
+        "id": "people-curated-landscape-start",
+        "title": "People — curated Landscape start",
+        "tileShape": "LANDSCAPE",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/landscape.webp",
+        "focusGifUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/focus-landscape.webp",
+        "focusGifEnabled": true,
+        "hideTitle": false,
+        "reviewSentinel": { "case": "people-curated-landscape-start", "preserve": true },
+        "sources": [
+          { "title": "Movie Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" },
+          { "title": "Series Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "TV", "tmdbSourceType": "PERSON" }
+        ]
+      },
+      { "id": "landscape-sibling-a", "title": "Landscape sibling A", "tileShape": "LANDSCAPE", "hideTitle": false, "sources": [] },
+      { "id": "landscape-sibling-b", "title": "Landscape sibling B", "tileShape": "LANDSCAPE", "hideTitle": false, "sources": [] }
+    ]
+  },
+  {
+    "id": "issue-142-mixed-siblings",
+    "title": "Shape-aware artwork — mixed siblings",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "pinToTop": false,
+    "folders": [
+      {
+        "id": "mixed-target",
+        "title": "Siblings — already mixed",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/poster.webp",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "mixed-target", "preserve": true },
+        "sources": [
+          { "title": "Movie Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" }
+        ]
+      },
+      { "id": "mixed-poster", "title": "Mixed Poster sibling", "tileShape": "POSTER", "hideTitle": false, "sources": [] },
+      { "id": "mixed-landscape", "title": "Mixed Landscape sibling", "tileShape": "LANDSCAPE", "hideTitle": false, "sources": [] },
+      {
+        "id": "imported-mismatch",
+        "title": "Imported mismatch — explicit interaction only",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/landscape.webp",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "imported-mismatch", "preserve": true },
+        "sources": [
+          { "title": "Movie Credits", "sortBy": "popularity.desc", "tmdbId": 31, "filters": {}, "provider": "tmdb", "mediaType": "MOVIE", "tmdbSourceType": "PERSON" }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "issue-142-ambiguous",
+    "title": "Shape-aware artwork — ambiguous",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": true,
+    "pinToTop": false,
+    "folders": [
+      {
+        "id": "ambiguous-preserve",
+        "title": "Ambiguous — preserve",
+        "tileShape": "POSTER",
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-people-assets/main/assets/people/31/poster.webp",
+        "hideTitle": false,
+        "reviewSentinel": { "case": "ambiguous-preserve", "preserve": true },
+        "sources": []
+      }
+    ]
+  }
+]

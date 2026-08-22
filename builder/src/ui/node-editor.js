@@ -5,6 +5,10 @@ import {
 	NUVIO_INVISIBLE_TITLE,
 } from "../nuvio/titles.js";
 import { FOLDER_ARTWORK_TEXT_FIELD_NAMES } from "../nuvio/folder-artwork-fields.js";
+import {
+	planCuratedFolderFocusShapeTransition,
+	planCuratedFolderTileShapeTransition,
+} from "../folder-artwork-suggestions.js";
 
 const editableNodeTypes = new Set(["collection", "folder"]);
 const collectionLayoutValues = new Set(["TABBED_GRID", "ROWS"]);
@@ -429,4 +433,72 @@ export function buildNodeEditorPatch(draft) {
 
 export function hasNodeEditorChanges(draft) {
 	return Object.keys(buildNodeEditorPatch(draft)).length > 0;
+}
+
+export function updateNodeEditorTileShape(draft, requestedShape, suggestionSet, {
+	recheckCurrentShape = false,
+} = {}) {
+	const shapeAlreadySelected = typeof draft?.values?.tileShape === "string"
+		&& draft.values.tileShape.toUpperCase() === requestedShape;
+	if (
+		draft?.nodeType !== "folder"
+		|| !folderShapeValues.has(requestedShape)
+		|| (shapeAlreadySelected && !recheckCurrentShape)
+	) return draft;
+
+	const tileTransition = planCuratedFolderTileShapeTransition({
+		suggestionSet,
+		currentTileUrl: draft.values.coverImageUrl,
+		requestedShape,
+	});
+	const focusTransition = planCuratedFolderFocusShapeTransition({
+		suggestionSet,
+		currentFocusUrl: draft.values.focusGifUrl,
+		requestedShape,
+	});
+	let next = shapeAlreadySelected
+		? draft
+		: updateNodeEditorField(draft, "tileShape", requestedShape);
+	if (
+		tileTransition.replacementTileUrl !== null
+		&& tileTransition.replacementTileUrl !== draft.values.coverImageUrl
+	) {
+		next = updateNodeEditorField(next, "coverImageUrl", tileTransition.replacementTileUrl);
+	}
+	if (
+		focusTransition.replacementFocusUrl !== null
+		&& focusTransition.replacementFocusUrl !== draft.values.focusGifUrl
+	) {
+		next = updateNodeEditorField(next, "focusGifUrl", focusTransition.replacementFocusUrl);
+	}
+	return next;
+}
+
+export function folderSiblingTileShapeNotice({
+	currentFolderInternalId,
+	currentDraftShape,
+	shapeTouched = false,
+	siblingFolders = [],
+} = {}) {
+	if (
+		!shapeTouched
+		|| typeof currentFolderInternalId !== "string"
+		|| !folderShapeValues.has(currentDraftShape)
+		|| !Array.isArray(siblingFolders)
+	) return null;
+
+	const otherShapes = [];
+	for (const folder of siblingFolders) {
+		if (folder?.internalId === currentFolderInternalId) continue;
+		const rawShape = folder?.editable?.tileShape;
+		const shape = typeof rawShape === "string" ? rawShape.toUpperCase() : null;
+		if (!folderShapeValues.has(shape)) return null;
+		otherShapes.push(shape);
+	}
+	if (otherShapes.length === 0 || new Set(otherShapes).size !== 1) return null;
+
+	const consensusShape = otherShapes[0];
+	if (consensusShape === currentDraftShape) return null;
+	const label = consensusShape === "POSTER" ? "Poster" : "Landscape";
+	return `Other folders in this collection use ${label} tiles.`;
 }

@@ -4,13 +4,21 @@ import {
 	isValidVisibleNuvioTitle,
 } from "../nuvio/titles.js";
 import {
+	missingCuratedFolderFocusOrientationNotice,
+	missingCuratedFolderTileOrientationNotice,
+} from "../folder-artwork-suggestions.js";
+import {
 	focusFirstDialogControl,
 	handleDialogKeyDown,
 	initializeTitleInput,
 } from "./modal-focus.js";
 import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
 import { CollectionArtworkField } from "./CollectionArtworkField.jsx";
-import { FolderArtworkFields } from "./FolderArtworkFields.jsx";
+import {
+	FolderArtworkFields,
+	useFolderArtworkSuggestions,
+} from "./FolderArtworkFields.jsx";
+import { folderSiblingTileShapeNotice } from "./node-editor.js";
 import {
 	CollectionTitleVisibilitySwitch,
 	FOLDER_TITLE_VISIBILITY_LABEL,
@@ -173,20 +181,26 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 	);
 }
 
-function FolderPresentationFields({ draft, prefix, onChange }) {
+function FolderPresentationFields({ draft, prefix, missingTileOrientationNotice, siblingNotice, suggestionSet, onChange }) {
 	const posterSelected = isSelected(draft.values.tileShape, "POSTER");
 	const landscapeSelected = isSelected(draft.values.tileShape, "LANDSCAPE");
 	const shapeReplacementPending = draft.touched.tileShape && (posterSelected || landscapeSelected);
+	const missingTileOrientationNoticeId = `${prefix}-shape-curated-orientation-notice`;
+	const siblingNoticeId = `${prefix}-shape-sibling-notice`;
+	const describedBy = [
+		`${prefix}-shape-help`,
+		draft.original.tileShape.supported || shapeReplacementPending
+			? null
+			: `${prefix}-shape-status`,
+		missingTileOrientationNotice ? missingTileOrientationNoticeId : null,
+		siblingNotice ? siblingNoticeId : null,
+	].filter(Boolean).join(" ");
 
 	return (
 		<fieldset
 			className="editor-field editor-choice-field"
 			data-editor-field="tileShape"
-			aria-describedby={`${prefix}-shape-help${
-				draft.original.tileShape.supported || shapeReplacementPending
-					? ""
-					: ` ${prefix}-shape-status`
-			}`}
+			aria-describedby={describedBy}
 		>
 			<legend>Tile shape</legend>
 			<p className="editor-field-help" id={`${prefix}-shape-help`}>
@@ -196,7 +210,10 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 				selectedId={draft.values.tileShape}
 				name={`${prefix}-shape`}
 				idPrefix={prefix}
-				onChange={(tileShape) => onChange("tileShape", tileShape)}
+				onChange={(tileShape) => {
+					if (isSelected(draft.values.tileShape, tileShape)) return;
+					onChange("tileShape", tileShape, { suggestionSet });
+				}}
 			/>
 			<ChoiceStatus
 				original={draft.original.tileShape}
@@ -204,6 +221,28 @@ function FolderPresentationFields({ draft, prefix, onChange }) {
 				replacementPending={shapeReplacementPending}
 				statusId={`${prefix}-shape-status`}
 			/>
+			{missingTileOrientationNotice ? (
+				<p
+					className="folder-settings-notice is-capability"
+					id={missingTileOrientationNoticeId}
+					data-missing-curated-orientation="true"
+					role="status"
+					aria-live="polite"
+				>
+					{missingTileOrientationNotice}
+				</p>
+			) : null}
+			{siblingNotice ? (
+				<p
+					className="folder-settings-notice is-sibling"
+					id={siblingNoticeId}
+					data-sibling-shape-notice="true"
+					role="status"
+					aria-live="polite"
+				>
+					{siblingNotice}
+				</p>
+			) : null}
 		</fieldset>
 	);
 }
@@ -309,6 +348,7 @@ export function NodeEditor({
 	titleInputRef,
 	mode = "settings",
 	folderArtworkSuggestionContext = null,
+	folderSiblings = [],
 	onChange,
 	onSubmit,
 	onCancel,
@@ -321,6 +361,33 @@ export function NodeEditor({
 			? "Folder settings"
 			: "Collection settings";
 	const prefix = `node-editor-${noun}`;
+	const { suggestionSet, suggestionState } = useFolderArtworkSuggestions(
+		draft.nodeType === "folder" && !renameOnly ? folderArtworkSuggestionContext : null,
+	);
+	const missingTileOrientationNotice = draft.nodeType === "folder" && !renameOnly
+		? missingCuratedFolderTileOrientationNotice({
+			suggestionSet,
+			currentTileUrl: draft.values.coverImageUrl,
+			requestedShape: draft.values.tileShape,
+			shapeTouched: draft.touched.tileShape,
+		})
+		: null;
+	const missingFocusOrientationNotice = draft.nodeType === "folder" && !renameOnly
+		? missingCuratedFolderFocusOrientationNotice({
+			suggestionSet,
+			currentFocusUrl: draft.values.focusGifUrl,
+			requestedShape: draft.values.tileShape,
+			shapeTouched: draft.touched.tileShape,
+		})
+		: null;
+	const siblingShapeNotice = draft.nodeType === "folder" && !renameOnly
+		? folderSiblingTileShapeNotice({
+			currentFolderInternalId: draft.internalId,
+			currentDraftShape: draft.values.tileShape,
+			shapeTouched: draft.touched.tileShape,
+			siblingFolders: folderSiblings,
+		})
+		: null;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
 	const initializedTitleTargetRef = useRef(null);
@@ -339,6 +406,20 @@ export function NodeEditor({
 			|| draft.canonicalizeFolderInvisibleTitle
 		)
 	);
+
+	useEffect(() => {
+		if (
+			draft.nodeType === "folder"
+			&& !renameOnly
+			&& draft.touched.tileShape
+			&& suggestionSet !== null
+		) {
+			onChange("tileShape", draft.values.tileShape, {
+				suggestionSet,
+				recheckCurrentShape: true,
+			});
+		}
+	}, [suggestionSet]);
 
 	useEffect(() => {
 		const outcome = initializeTitleInput(titleInputRef.current, {
@@ -468,7 +549,14 @@ export function NodeEditor({
 							</SettingsSection>
 							<SettingsSection prefix={prefix} slug="display" title="Display">
 								<FolderTitleVisibilityField draft={draft} prefix={prefix} onChange={onChange} />
-								<FolderPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+								<FolderPresentationFields
+									draft={draft}
+									prefix={prefix}
+									missingTileOrientationNotice={missingTileOrientationNotice}
+									siblingNotice={siblingShapeNotice}
+									suggestionSet={suggestionSet}
+									onChange={onChange}
+								/>
 							</SettingsSection>
 							<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
 								<FolderArtworkFields
@@ -476,7 +564,9 @@ export function NodeEditor({
 									original={draft.original}
 									touched={draft.touched}
 									prefix={`${prefix}-artwork`}
-									suggestionContext={folderArtworkSuggestionContext}
+									suggestionSet={suggestionSet}
+									suggestionState={suggestionState}
+									missingFocusOrientationNotice={missingFocusOrientationNotice}
 									onChange={onChange}
 								/>
 							</SettingsSection>
