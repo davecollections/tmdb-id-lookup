@@ -4447,6 +4447,34 @@ body.hierarchy-pointer-dragging .builder-shell {
 	line-height: 1.45;
 }
 
+.folder-settings-notice {
+	margin: 9px 0 0;
+	padding: 8px 10px;
+	font-size: 0.7rem;
+	line-height: 1.45;
+	border-radius: 9px;
+}
+
+.editor-choice-field > .folder-settings-notice + .folder-settings-notice {
+	margin-top: 6px;
+}
+
+.folder-artwork-group-fields > .folder-settings-notice {
+	margin-top: -3px;
+}
+
+.folder-settings-notice.is-sibling {
+	color: #cceff8;
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(98 225 255 / 18%);
+}
+
+.folder-settings-notice.is-capability {
+	color: #fff0ca;
+	background: rgb(255 185 107 / 8%);
+	border: 1px solid rgb(255 185 107 / 24%);
+}
+
 .folder-artwork-preview-button {
 	min-height: 44px;
 	justify-self: start;

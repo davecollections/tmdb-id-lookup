@@ -189,7 +189,7 @@ function ExactVideoPreviewField({ descriptor, value, prefix, preserved, onChange
 	);
 }
 
-function artworkField({ descriptor, values, original, touched, prefix, suggestionSet, onChange }) {
+function artworkField({ descriptor, values, original, touched, prefix, suggestionSet, descriptionId, onChange }) {
 	const { field, inputType, preview } = descriptor;
 	const preserved = original?.[field]?.hasField === true && !original[field].supported && touched?.[field] !== true;
 	const common = {
@@ -203,7 +203,11 @@ function artworkField({ descriptor, values, original, touched, prefix, suggestio
 	if (inputType === "url") {
 		return (
 			<>
-				<ExactImageUrlField {...common} previewShape={previewShape(preview, values?.tileShape)} />
+				<ExactImageUrlField
+					{...common}
+					previewShape={previewShape(preview, values?.tileShape)}
+					descriptionId={descriptionId}
+				/>
 				<SuggestedArtwork
 					descriptor={descriptor}
 					value={common.value}
@@ -228,14 +232,7 @@ function isVisibleArtworkField(descriptor, original) {
 		&& openingValue.value.trim().length > 0;
 }
 
-export function FolderArtworkFields({
-	values,
-	prefix,
-	original = null,
-	touched = null,
-	suggestionContext = null,
-	onChange,
-}) {
+export function useFolderArtworkSuggestions(suggestionContext = null) {
 	const [suggestionSet, setSuggestionSet] = useState(null);
 	const [suggestionState, setSuggestionState] = useState("loading");
 	const folder = suggestionContext?.folder ?? null;
@@ -270,6 +267,21 @@ export function FolderArtworkFields({
 		return () => { active = false; };
 	}, [folder, peopleManifestClient, peopleProvider, artworkRuntimeClient, studioCatalogueProvider, networkCatalogueProvider]);
 
+	return Object.freeze({ suggestionSet, suggestionState });
+}
+
+export function FolderArtworkFields({
+	values,
+	prefix,
+	original = null,
+	touched = null,
+	suggestionSet = null,
+	suggestionState = "loading",
+	missingFocusOrientationNotice = null,
+	onChange,
+}) {
+	const missingFocusOrientationNoticeId = `${prefix}-focusGifUrl-orientation-notice`;
+
 	return (
 		<div
 			className="folder-artwork-fields"
@@ -283,7 +295,29 @@ export function FolderArtworkFields({
 					<section className="folder-artwork-group" data-artwork-group={slug} aria-labelledby={headingId} key={slug}>
 						<h4 id={headingId}>{title}</h4>
 						<div className="folder-artwork-group-fields">
-							{visibleFields.map((descriptor) => <div key={descriptor.field}>{artworkField({ descriptor, values, original, touched, prefix, suggestionSet, onChange })}</div>)}
+							{visibleFields.map((descriptor) => <div key={descriptor.field}>{artworkField({
+								descriptor,
+								values,
+								original,
+								touched,
+								prefix,
+								suggestionSet,
+								descriptionId: descriptor.field === "focusGifUrl" && missingFocusOrientationNotice
+									? missingFocusOrientationNoticeId
+									: null,
+								onChange,
+							})}</div>)}
+							{slug === "focus" && missingFocusOrientationNotice ? (
+								<p
+									className="folder-settings-notice is-capability"
+									id={missingFocusOrientationNoticeId}
+									data-missing-curated-focus-orientation="true"
+									role="status"
+									aria-live="polite"
+								>
+									{missingFocusOrientationNotice}
+								</p>
+							) : null}
 							{slug === "focus" ? (
 								<div className="editor-switch-field folder-focus-enabled-field is-content-sized" data-editor-field="focusGifEnabled">
 									<PresentationSwitch
