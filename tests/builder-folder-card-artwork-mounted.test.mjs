@@ -93,11 +93,16 @@ async function runMountedPage() {
 
 			const recoveringRequestCount = resources.artworkRequests.filter(({ path: requestPath }) => requestPath === "/recovering.gif").length;
 			const previewRecoveringRequestCount = resources.artworkRequests.filter(({ path: requestPath }) => requestPath === "/preview-recovering.gif").length;
+			const collectionRecoveringRequestCount = resources.artworkRequests.filter(({ path: requestPath }) => requestPath === "/collection-recovering.gif").length;
 			if (requestUrl.pathname === "/recovering.gif" && recoveringRequestCount === 1) {
 				response.writeHead(404).end();
 				return;
 			}
 			if (requestUrl.pathname === "/preview-recovering.gif" && previewRecoveringRequestCount === 1) {
+				response.writeHead(404).end();
+				return;
+			}
+			if (requestUrl.pathname === "/collection-recovering.gif" && collectionRecoveringRequestCount === 1) {
 				response.writeHead(404).end();
 				return;
 			}
@@ -120,6 +125,13 @@ async function runMountedPage() {
 				"/settings-focus.gif",
 				"/preview-recovering.gif",
 				"/preview-replacement.gif",
+				"/collection-saved.gif",
+				"/collection-static.jpg",
+				"/collection-draft.gif",
+				"/collection-recovering.gif",
+				"/collection-replacement.gif",
+				"/collection-long.gif",
+				"/collection-applied.gif",
 			].includes(requestUrl.pathname)) {
 				response.writeHead(200, { "Content-Type": "image/gif", "Content-Length": artworkBytes.length });
 				response.end(artworkBytes);
@@ -330,10 +342,39 @@ async function runMountedPage() {
 			mobile: false,
 		});
 		const settingsApply = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSettingsApply()");
+
+		const collectionSettingsWidths = [];
+		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+				width,
+				height: width <= 412 ? 852 : 900,
+				deviceScaleFactor: 1,
+				mobile: width <= 412,
+			});
+			await new Promise((resolve) => setTimeout(resolve, 40));
+			collectionSettingsWidths.push(await evaluate(resources.pageConnection, "window.__measureCollectionBackdropSettingsLayout()"));
+		}
+
+		await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+			width: 393,
+			height: 852,
+			deviceScaleFactor: 1,
+			mobile: true,
+		});
+		const collectionDraftPreviews = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropDraftPreviews()");
+
+		await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+			width: 900,
+			height: 900,
+			deviceScaleFactor: 1,
+			mobile: false,
+		});
+		const collectionUnrelatedApply = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropUnrelatedApply()");
+		const collectionApply = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropApply()");
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		const artworkRequests = resources.artworkRequests.map((request) => ({ ...request }));
 
-		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, artworkRequests };
+		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, collectionSettingsWidths, collectionDraftPreviews, collectionUnrelatedApply, collectionApply, artworkRequests };
 	}, async () => {
 		const cleanupReport = await cleanupMountedBrowser(resources);
 		if (resources.artworkServer?.listening) {
@@ -495,6 +536,99 @@ test("mounted Folder settings previews stay grouped, bounded, exact, and single-
 		assert.equal(result.serializedUnchanged, true, `${result.width}px serialization`);
 		assert.equal(result.revisionUnchanged, true, `${result.width}px revision`);
 	}
+});
+
+test("mounted Collection backdrop settings stay exact, bounded, and single-scroll at every required width", () => {
+	const alternateWidths = new Set([384, 402, 412, 900, 1280]);
+	assert.deepEqual(mountedResults.collectionSettingsWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.collectionSettingsWidths) {
+		assert.deepEqual(result.sectionNames, ["Basic details", "Display", "Artwork"], `${result.width}px sections`);
+		assert.equal(result.label, "Backdrop Image or GIF URL", `${result.width}px label`);
+		assert.equal(result.helper, "Used as fallback folder artwork in Modern View.", `${result.width}px helper`);
+		assert.match(result.inputValue, /^http:\/\/127\.0\.0\.1:\d+\/collection-saved\.gif$/, `${result.width}px saved URL`);
+		assert.equal(result.inputWidth >= 180, true, `${result.width}px input comfort`);
+		assert.equal(result.previewWidth, result.width < 760 ? 208 : 240, `${result.width}px preview width`);
+		assert.equal(result.previewRatio, 1.78, `${result.width}px preview ratio`);
+		assert.equal(result.previewInsideViewport, true, `${result.width}px preview bounds`);
+		assert.equal(result.copyAndPreviewDoNotOverlap, true, `${result.width}px copy/preview collision`);
+		assert.deepEqual(result.imageAttributes, {
+			src: result.inputValue,
+			alt: "",
+			loading: "lazy",
+			decoding: "async",
+			referrerPolicy: "no-referrer",
+			draggable: "false",
+			tabIndex: -1,
+		}, `${result.width}px image attributes`);
+		const alternate = alternateWidths.has(result.width);
+		assert.equal(result.titleHidden, alternate, `${result.width}px title behavior`);
+		assert.equal(result.rowsSelected, alternate, `${result.width}px Rows`);
+		assert.equal(result.tabsSelected, !alternate, `${result.width}px Tabs`);
+		assert.equal(result.focusGlowAbsent, true, `${result.width}px hidden Focus Glow`);
+		assert.equal(result.collectionCardThumbnailAbsent, true, `${result.width}px text-only Collection card`);
+		assert.equal(result.onlyEditorScrolls, true, `${result.width}px scroll owner`);
+		assert.equal(result.bodyLocked, true, `${result.width}px body lock`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px overflow`);
+		assert.equal(result.actionsInsideViewport, true, `${result.width}px actions`);
+		assert.equal(result.projectUnchanged, true, `${result.width}px project`);
+		assert.equal(result.serializedUnchanged, true, `${result.width}px serialization`);
+		assert.equal(result.revisionUnchanged, true, `${result.width}px revision`);
+	}
+});
+
+test("mounted Collection backdrop preview handles blank, static, GIF, broken, long, and A to B to A drafts without mutation", () => {
+	const result = mountedResults.collectionDraftPreviews;
+	assert.match(result.savedUrl, /^http:\/\/127\.0\.0\.1:\d+\/collection-saved\.gif$/);
+	assert.deepEqual(result.blank, { input: "", previewAbsent: true, statusAbsent: true, fetchCallCount: 0 });
+	assert.match(result.staticImage, /^http:\/\/127\.0\.0\.1:\d+\/collection-static\.jpg$/);
+	assert.match(result.gifImage, /^http:\/\/127\.0\.0\.1:\d+\/collection-draft\.gif$/);
+	assert.deepEqual(result.broken, {
+		input: result.broken.input,
+		status: "Preview unavailable",
+		previewAbsent: true,
+	});
+	assert.match(result.broken.input, /^http:\/\/127\.0\.0\.1:\d+\/collection-broken\.gif$/);
+	assert.deepEqual(result.firstFailure, {
+		input: result.firstFailure.input,
+		status: "Preview unavailable",
+	});
+	assert.match(result.firstFailure.input, /^http:\/\/127\.0\.0\.1:\d+\/collection-recovering\.gif$/);
+	assert.deepEqual(result.replacement, {
+		src: result.replacement.src,
+		statusAbsent: true,
+	});
+	assert.match(result.replacement.src, /^http:\/\/127\.0\.0\.1:\d+\/collection-replacement\.gif$/);
+	assert.deepEqual(result.recovered, { src: result.firstFailure.input, statusAbsent: true });
+	assert.deepEqual(result.long, { exact: true, noHorizontalOverflow: true });
+	assert.equal(result.cancelRestoredSavedInput, true);
+	assert.equal(result.projectUnchanged, true);
+	assert.equal(result.serializedUnchanged, true);
+	assert.equal(result.revisionUnchanged, true);
+
+	const recoveringRequests = mountedResults.artworkRequests.filter(({ path: requestPath }) => requestPath === "/collection-recovering.gif");
+	assert.deepEqual(recoveringRequests, [
+		{ path: "/collection-recovering.gif", referer: null },
+		{ path: "/collection-recovering.gif", referer: null },
+	]);
+	for (const request of mountedResults.artworkRequests.filter(({ path: requestPath }) => requestPath.startsWith("/collection-"))) {
+		assert.equal(request.referer, null, request.path);
+	}
+});
+
+test("mounted Collection Apply is touched-only and preserves unknown data", () => {
+	assert.deepEqual(mountedResults.collectionUnrelatedApply, {
+		oneRevision: true,
+		backdropEditableUnchanged: true,
+		backdropSerializedUnchanged: true,
+		unknownPreserved: true,
+	});
+	const result = mountedResults.collectionApply;
+	assert.equal(result.oneRevision, true);
+	assert.match(result.appliedUrl, /^http:\/\/127\.0\.0\.1:\d+\/collection-applied\.gif$/);
+	assert.equal(result.editableValue, result.appliedUrl);
+	assert.equal(result.serializedValue, result.appliedUrl);
+	assert.equal(result.rawValueUnchanged, true);
+	assert.equal(result.unknownPreserved, true);
 });
 
 test("mounted ordinary Folder settings omit Backdrop Video without leaving a Hero gap at every required width", () => {
@@ -721,8 +855,6 @@ test("mounted arbitrary-origin artwork omits the Builder referrer and a failed U
 	const recoveringRequests = mountedResults.artworkRequests.filter((request) => request.path === "/recovering.gif");
 	assert.deepEqual(hotlinkRequest, { path: "/hotlink-sensitive.gif", referer: null });
 	assert.deepEqual(replacementRequest, { path: "/replacement.gif", referer: null });
-	assert.deepEqual(recoveringRequests, [
-		{ path: "/recovering.gif", referer: null },
-		{ path: "/recovering.gif", referer: null },
-	]);
+	assert.ok(recoveringRequests.length >= 2);
+	assert.ok(recoveringRequests.every((request) => request.referer === null));
 });

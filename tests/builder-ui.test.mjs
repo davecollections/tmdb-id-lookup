@@ -421,6 +421,8 @@ test("desktop draft collection creation uses unchanged defaults, selects, and ad
 	assert.equal(controller.getState().dirty, true);
 	assert.deepEqual(collection.folders, []);
 	assert.equal(controller.serializeProject().value[0].focusGlowEnabled, true);
+	assert.equal(Object.hasOwn(collection.editable, "backdropImageUrl"), false);
+	assert.equal(Object.hasOwn(controller.serializeProject().value[0], "backdropImageUrl"), false);
 });
 
 test("mobile collection creation stays on Collections and supports ordered repetition and later targeting", () => {
@@ -454,6 +456,7 @@ test("mobile collection creation stays on Collections and supports ordered repet
 		&& collection.editable.focusGlowEnabled === true
 		&& collection.editable.viewMode === "TABBED_GRID"
 		&& collection.editable.showAllTab === true
+		&& !Object.hasOwn(collection.editable, "backdropImageUrl")
 	)), true);
 
 	const firstCollection = state.project.collections[0];

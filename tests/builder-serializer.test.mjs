@@ -176,6 +176,7 @@ test("exports present recognised optionals but ignores unknown editable fields",
 		collectionEditable: {
 			id: "c",
 			title: "C",
+			backdropImageUrl: "https://example.test/backdrop.gif",
 			pinToTop: false,
 			focusGlowEnabled: true,
 			future: "ignored",
@@ -186,6 +187,7 @@ test("exports present recognised optionals but ignores unknown editable fields",
 	const result = serializeNuvioProject(project);
 	assert.equal(result.value[0].pinToTop, false);
 	assert.equal(result.value[0].focusGlowEnabled, true);
+	assert.equal(result.value[0].backdropImageUrl, "https://example.test/backdrop.gif");
 	assert.equal(result.value[0].future, undefined);
 	assert.equal(onlyFolder(result).hideTitle, true);
 	assert.equal(onlyFolder(result).future, undefined);
@@ -280,6 +282,30 @@ test("preserves unknown collection, folder, and source fields through known edit
 	assert.equal(value[0].folders[0].sources[0].catalogId, "new");
 });
 
+test("preserves and explicitly replaces or clears Collection backdrop values without normalization", () => {
+	let project = importValue([{
+		id: "c",
+		title: "C",
+		backdropImageUrl: "custom-scheme://saved exact value",
+		unknownCollection: { keep: true },
+		folders: [],
+	}]);
+	const collection = project.collections[0];
+	assert.equal(serializeNuvioProject(project).value[0].backdropImageUrl, "custom-scheme://saved exact value");
+
+	project = updateEditableValues(project, collection.internalId, {
+		backdropImageUrl: "https://example.test/replacement.gif?token=exact%20value",
+	});
+	let output = serializeNuvioProject(project).value[0];
+	assert.equal(output.backdropImageUrl, "https://example.test/replacement.gif?token=exact%20value");
+	assert.deepEqual(output.unknownCollection, { keep: true });
+
+	project = updateEditableValues(project, collection.internalId, { backdropImageUrl: "" });
+	output = serializeNuvioProject(project).value[0];
+	assert.equal(output.backdropImageUrl, "");
+	assert.deepEqual(output.unknownCollection, { keep: true });
+});
+
 test("treats explicit false, zero, null, empty string, and empty object as overlay values", () => {
 	const project = importValue([{
 		id: "c", title: "C", pinToTop: true, focusGlowEnabled: true, viewMode: "ROWS", showAllTab: true, folders: [{
@@ -313,14 +339,18 @@ test("treats explicit false, zero, null, empty string, and empty object as overl
 
 test("preserves imported known values when their editable keys are absent", () => {
 	const project = importFixture("valid/nuvio-catalog-addon.json");
+	project.collections[0].rawImported.backdropImageUrl = "custom-scheme://preserved exact value";
+	project.collections[0].editable.backdropImageUrl = "custom-scheme://preserved exact value";
 	project.collections[0].rawImported.focusGlowEnabled = { preserved: true };
 	project.collections[0].editable.focusGlowEnabled = { preserved: true };
 	delete project.collections[0].editable.title;
+	delete project.collections[0].editable.backdropImageUrl;
 	delete project.collections[0].editable.focusGlowEnabled;
 	delete project.collections[0].folders[0].editable.tileShape;
 	delete project.collections[0].folders[0].sources[0].editable.genre;
 	const value = serializeNuvioProject(project).value;
 	assert.equal(value[0].title, "Addon Horror");
+	assert.equal(value[0].backdropImageUrl, "custom-scheme://preserved exact value");
 	assert.deepEqual(value[0].focusGlowEnabled, { preserved: true });
 	assert.equal(value[0].folders[0].tileShape, "POSTER");
 	assert.equal(value[0].folders[0].sources[0].genre, "Horror");

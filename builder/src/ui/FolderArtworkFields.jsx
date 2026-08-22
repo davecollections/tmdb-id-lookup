@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FOLDER_ARTWORK_FIELD_GROUPS } from "../nuvio/folder-artwork-fields.js";
 import { PresentationSwitch } from "./PresentationControls.jsx";
 import { hasPreviewUrl, useExactUrlPreviewFailure } from "./exact-url-preview.js";
+import { ExactImageUrlField } from "./ExactImageUrlField.jsx";
 
 function previewShape(preview, tileShape) {
 	if (preview === "backdrop") return "wide";
@@ -11,7 +12,7 @@ function previewShape(preview, tileShape) {
 	return "unknown";
 }
 
-function fieldDescriptionIds(prefix, field, preserved, failed) {
+function videoFieldDescriptionIds(prefix, field, preserved, failed) {
 	return [
 		`${prefix}-${field}-help`,
 		preserved ? `${prefix}-${field}-preserved` : null,
@@ -22,62 +23,6 @@ function fieldDescriptionIds(prefix, field, preserved, failed) {
 function PreservedFieldStatus({ id, preserved }) {
 	if (!preserved) return null;
 	return <p className="editor-field-status" id={id}>The current imported value is preserved until this field is edited.</p>;
-}
-
-function ExactImagePreviewField({ descriptor, value, prefix, preserved, tileShape, onChange }) {
-	const { field, label, description, preview } = descriptor;
-	const previewFailure = useExactUrlPreviewFailure(value);
-	const hasUrl = hasPreviewUrl(value);
-	const shape = previewShape(preview, tileShape);
-	const helpId = `${prefix}-${field}-help`;
-	const preservedId = `${prefix}-${field}-preserved`;
-	const statusId = `${prefix}-${field}-preview-status`;
-	const describedBy = fieldDescriptionIds(prefix, field, preserved, previewFailure.failed);
-
-	return (
-		<div className={`editor-field folder-artwork-url-field${hasUrl ? " has-preview" : ""}`} data-editor-field={field}>
-			<div className="folder-artwork-field-layout">
-				<div className="folder-artwork-field-copy">
-					<label htmlFor={`${prefix}-${field}`}>{label}</label>
-					<input
-						id={`${prefix}-${field}`}
-						type="url"
-						inputMode="url"
-						value={value}
-						autoComplete="off"
-						spellCheck="false"
-						placeholder="https://"
-						aria-describedby={describedBy}
-						onChange={(event) => onChange(field, event.target.value)}
-					/>
-					<p className="editor-field-help" id={helpId}>{description}</p>
-					<PreservedFieldStatus id={preservedId} preserved={preserved} />
-					{previewFailure.failed ? <p className="folder-artwork-preview-status" id={statusId} role="status">Preview unavailable</p> : null}
-				</div>
-				{hasUrl && !previewFailure.failed ? (
-					<div
-						className="folder-artwork-preview-frame"
-						data-artwork-preview={field}
-						data-artwork-preview-kind={preview}
-						data-artwork-preview-shape={shape}
-						aria-hidden="true"
-					>
-						<img
-							key={value}
-							className="folder-artwork-preview-image"
-							src={value}
-							alt=""
-							loading="lazy"
-							decoding="async"
-							referrerPolicy="no-referrer"
-							draggable="false"
-							onError={previewFailure.markFailed}
-						/>
-					</div>
-				) : null}
-			</div>
-		</div>
-	);
 }
 
 function TextArtworkField({ descriptor, value, prefix, preserved, onChange }) {
@@ -112,7 +57,7 @@ function ExactVideoPreviewField({ descriptor, value, prefix, preserved, onChange
 	const preservedId = `${prefix}-${field}-preserved`;
 	const statusId = `${prefix}-${field}-preview-status`;
 	const previewId = `${prefix}-${field}-preview`;
-	const describedBy = fieldDescriptionIds(prefix, field, preserved, previewFailure.failed);
+	const describedBy = videoFieldDescriptionIds(prefix, field, preserved, previewFailure.failed);
 
 	function handleVideoError() {
 		setActiveUrl(null);
@@ -182,7 +127,7 @@ function artworkField({ descriptor, values, original, touched, prefix, onChange 
 		onChange,
 	};
 	if (preview === "video") return <ExactVideoPreviewField {...common} />;
-	if (inputType === "url") return <ExactImagePreviewField {...common} tileShape={values?.tileShape} />;
+	if (inputType === "url") return <ExactImageUrlField {...common} previewShape={previewShape(preview, values?.tileShape)} />;
 	return <TextArtworkField {...common} />;
 }
 

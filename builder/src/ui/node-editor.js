@@ -17,6 +17,7 @@ const folderTitleVisibilityValues = new Set([
 const collectionEditorFields = new Set([
 	"title",
 	"hideNuvioTitle",
+	"backdropImageUrl",
 	"viewMode",
 	"showAllTab",
 	"pinToTop",
@@ -131,6 +132,7 @@ export function createNodeEditorDraft(node) {
 		const showAllTab = originalBooleanField(node, "showAllTab");
 		const pinToTop = originalBooleanField(node, "pinToTop");
 		const focusGlowEnabled = originalBooleanField(node, "focusGlowEnabled");
+		const backdropImageUrl = originalTextField(node, "backdropImageUrl");
 
 		return {
 			...baseDraft,
@@ -142,6 +144,7 @@ export function createNodeEditorDraft(node) {
 				showAllTab: showAllTab.supported ? showAllTab.value : true,
 				pinToTop: pinToTop.supported ? pinToTop.value : false,
 				focusGlowEnabled: focusGlowEnabled.supported ? focusGlowEnabled.value : true,
+				backdropImageUrl: backdropImageUrl.supported ? backdropImageUrl.value : "",
 			},
 			original: {
 				...baseDraft.original,
@@ -149,6 +152,7 @@ export function createNodeEditorDraft(node) {
 				showAllTab,
 				pinToTop,
 				focusGlowEnabled,
+				backdropImageUrl,
 			},
 			touched: {
 				...baseDraft.touched,
@@ -157,6 +161,7 @@ export function createNodeEditorDraft(node) {
 				showAllTab: false,
 				pinToTop: false,
 				focusGlowEnabled: false,
+				backdropImageUrl: false,
 			},
 			visibleTitleDraft: title.supported && !title.hidden ? title.value : null,
 		};
@@ -214,7 +219,11 @@ export function updateNodeEditorField(draft, field, value) {
 	const allowedFields = draft.nodeType === "collection"
 		? collectionEditorFields
 		: folderEditorFields;
-	const validStringField = (field === "title" || FOLDER_ARTWORK_TEXT_FIELD_NAMES.includes(field)) && typeof value === "string";
+	const validStringField = (
+		field === "title"
+		|| field === "backdropImageUrl"
+		|| FOLDER_ARTWORK_TEXT_FIELD_NAMES.includes(field)
+	) && typeof value === "string";
 	const validChoiceField = (
 		(field === "viewMode" && collectionLayoutValues.has(value))
 		|| (field === "tileShape" && folderShapeValues.has(value))
@@ -359,6 +368,12 @@ export function buildNodeEditorPatch(draft) {
 		includeBooleanPatch(patch, draft, "showAllTab");
 		includeBooleanPatch(patch, draft, "pinToTop");
 		includeBooleanPatch(patch, draft, "focusGlowEnabled");
+		if (
+			draft.touched.backdropImageUrl
+			&& (!draft.original.backdropImageUrl.supported || draft.values.backdropImageUrl !== draft.original.backdropImageUrl.value)
+		) {
+			patch.backdropImageUrl = draft.values.backdropImageUrl;
+		}
 		return patch;
 	}
 
