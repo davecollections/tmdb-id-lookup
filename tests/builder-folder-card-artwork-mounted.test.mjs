@@ -92,15 +92,35 @@ async function runMountedPage() {
 			response.setHeader("Cache-Control", "no-store");
 
 			const recoveringRequestCount = resources.artworkRequests.filter(({ path: requestPath }) => requestPath === "/recovering.gif").length;
+			const previewRecoveringRequestCount = resources.artworkRequests.filter(({ path: requestPath }) => requestPath === "/preview-recovering.gif").length;
 			if (requestUrl.pathname === "/recovering.gif" && recoveringRequestCount === 1) {
 				response.writeHead(404).end();
+				return;
+			}
+			if (requestUrl.pathname === "/preview-recovering.gif" && previewRecoveringRequestCount === 1) {
+				response.writeHead(404).end();
+				return;
+			}
+			if (["/video-a.mp4", "/video-b.mp4"].includes(requestUrl.pathname)) {
+				setTimeout(() => response.writeHead(404).end(), 180);
 				return;
 			}
 			if (requestUrl.pathname === "/hotlink-sensitive.gif" && request.headers.referer) {
 				response.writeHead(403).end();
 				return;
 			}
-			if (["/hotlink-sensitive.gif", "/replacement.gif", "/recovering.gif"].includes(requestUrl.pathname)) {
+			if ([
+				"/hotlink-sensitive.gif",
+				"/replacement.gif",
+				"/recovering.gif",
+				"/settings-tile.gif",
+				"/settings-tile-applied.gif",
+				"/settings-backdrop.gif",
+				"/settings-logo.gif",
+				"/settings-focus.gif",
+				"/preview-recovering.gif",
+				"/preview-replacement.gif",
+			].includes(requestUrl.pathname)) {
 				response.writeHead(200, { "Content-Type": "image/gif", "Content-Length": artworkBytes.length });
 				response.end(artworkBytes);
 				return;
@@ -277,10 +297,43 @@ async function runMountedPage() {
 		})()`);
 
 		const failureReplacement = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkFailureReplacement()");
+
+		const settingsWidths = [];
+		const ordinarySettingsWidths = [];
+		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+				width,
+				height: width <= 412 ? 852 : 900,
+				deviceScaleFactor: 1,
+				mobile: width <= 412,
+			});
+			await new Promise((resolve) => setTimeout(resolve, 40));
+			settingsWidths.push(await evaluate(resources.pageConnection, "window.__measureFolderArtworkSettingsLayout()"));
+			ordinarySettingsWidths.push(await evaluate(resources.pageConnection, "window.__measureFolderArtworkSettingsLayout('Settings without video')"));
+		}
+
+		await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+			width: 393,
+			height: 852,
+			deviceScaleFactor: 1,
+			mobile: true,
+		});
+		const settingsDraftPreviews = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSettingsDraftPreviews()");
+		const ordinaryVideoVisibility = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkOrdinaryVideoVisibility()");
+		const videoCancel = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkVideoCancel()");
+		const videoReplacement = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkVideoReplacement()");
+
+		await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+			width: 900,
+			height: 900,
+			deviceScaleFactor: 1,
+			mobile: false,
+		});
+		const settingsApply = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSettingsApply()");
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		const artworkRequests = resources.artworkRequests.map((request) => ({ ...request }));
 
-		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, artworkRequests };
+		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, artworkRequests };
 	}, async () => {
 		const cleanupReport = await cleanupMountedBrowser(resources);
 		if (resources.artworkServer?.listening) {
@@ -358,12 +411,270 @@ test("mounted selected and hidden-title Folder cards retain accessible non-colou
 
 test("mounted 100-plus Folder list uses native lazy/async images without workspace fetches", () => {
 	for (const result of mountedResults.widths) {
-		assert.equal(result.imageCount, 106, `${result.width}px image count`);
+		assert.equal(result.imageCount, 108, `${result.width}px image count`);
 		assert.equal(result.allImagesLazy, true, `${result.width}px lazy`);
 		assert.equal(result.allImagesAsync, true, `${result.width}px async`);
 		assert.equal(result.allImagesDecorative, true, `${result.width}px decorative`);
 		assert.equal(result.allImagesNonDraggable, true, `${result.width}px non-draggable`);
 	}
+});
+
+test("mounted Folder settings previews stay grouped, bounded, exact, and single-scroll at every required width", () => {
+	assert.deepEqual(mountedResults.settingsWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.settingsWidths) {
+		assert.equal(result.groupCount, 4, `${result.width}px group count`);
+		assert.deepEqual(result.groupNames, ["Tile", "Hero / Background", "Branding", "Focus"], `${result.width}px groups`);
+		assert.equal(result.imageCount, 4, `${result.width}px image previews`);
+		assert.equal(result.noVideoOnOpen, true, `${result.width}px video opt-in`);
+		assert.equal(result.videoFieldPresent, true, `${result.width}px compatibility field`);
+		assert.equal(result.heroFieldCount, 2, `${result.width}px compatibility Hero fields`);
+		assert.equal(result.videoButtonText, "Preview video", `${result.width}px video action`);
+		assert.equal(result.videoButtonStyled, true, `${result.width}px video action style`);
+		assert.equal(result.coverEmojiEditorAbsent, true, `${result.width}px coverEmoji UI`);
+		assert.deepEqual(result.inputValues, {
+			coverImageUrl: mountedResults.settingsWidths[0].inputValues.coverImageUrl,
+			heroBackdropUrl: mountedResults.settingsWidths[0].inputValues.heroBackdropUrl,
+			heroVideoUrl: mountedResults.settingsWidths[0].inputValues.heroVideoUrl,
+			titleLogoUrl: mountedResults.settingsWidths[0].inputValues.titleLogoUrl,
+			focusGifUrl: mountedResults.settingsWidths[0].inputValues.focusGifUrl,
+		}, `${result.width}px exact fields`);
+		assert.deepEqual(result.helperTexts, [
+			"Artwork used for the folder tile.",
+			"Background image for the folder.",
+			"Existing video background for this folder.",
+			"Transparent title logo.",
+			"Artwork shown when the folder is focused.",
+		], `${result.width}px helper copy`);
+		assert.equal(result.helperLineCounts.every((lineCount) => lineCount <= 2), true, `${result.width}px helper wrapping`);
+		assert.equal(result.artworkSectionHeight <= (result.width < 760 ? 1400 : 1100), true, `${result.width}px artwork height`);
+		const expectedWidePreviewWidth = result.width < 760 ? 208 : 240;
+		assert.deepEqual(result.widePreviewWidths, {
+			backdrop: expectedWidePreviewWidth,
+			logo: expectedWidePreviewWidth,
+		}, `${result.width}px wide preview sizing`);
+		assert.deepEqual({
+			height: result.focusSwitch.height,
+			backgroundColor: result.focusSwitch.backgroundColor,
+			borderTopWidth: result.focusSwitch.borderTopWidth,
+			controlWidth: result.focusSwitch.controlWidth,
+			controlHeight: result.focusSwitch.controlHeight,
+			checked: result.focusSwitch.checked,
+		}, {
+			height: 52,
+			backgroundColor: "rgba(0, 0, 0, 0)",
+			borderTopWidth: "0px",
+			controlWidth: 50,
+			controlHeight: 30,
+			checked: true,
+		}, `${result.width}px compact focus switch`);
+		assert.equal(result.focusSwitch.copyDoesNotOverlapControl, true, `${result.width}px focus switch copy/control collision`);
+		assert.equal(result.focusSwitch.controlInsideSwitch, true, `${result.width}px focus switch bounds`);
+		assert.equal(result.focusSwitch.descriptionLines <= 2, true, `${result.width}px focus switch helper wrapping`);
+		if (result.width < 760) {
+			assert.equal(result.focusSwitch.fillsAvailableWidth, true, `${result.width}px mobile focus switch comfort`);
+			assert.equal(result.focusSwitch.width >= 280, true, `${result.width}px mobile focus switch touch width`);
+		} else {
+			assert.equal(result.focusSwitch.fillsAvailableWidth, false, `${result.width}px content-sized focus switch`);
+			assert.equal(result.focusSwitch.width <= 320, true, `${result.width}px bounded focus switch width`);
+			assert.equal(result.focusSwitch.copyControlGap, 16, `${result.width}px focus switch label gap`);
+		}
+		assert.equal(result.imageAttributesSafe, true, `${result.width}px image behavior`);
+		assert.equal(result.previewUrlsExact, true, `${result.width}px exact draft URLs`);
+		assert.equal(result.framesInsideViewport, true, `${result.width}px frames`);
+		assert.equal(result.fieldsDoNotOverlap, true, `${result.width}px field/preview overlap`);
+		assert.equal(result.inputsRemainUsable, true, `${result.width}px input width`);
+		assert.equal(Math.abs(result.tileRatio - 0.67) <= 0.02, true, `${result.width}px tile ratio`);
+		assert.equal(Math.abs(result.focusRatio - 0.67) <= 0.02, true, `${result.width}px focus ratio`);
+		assert.equal(Math.abs(result.backdropRatio - 1.78) <= 0.02, true, `${result.width}px backdrop ratio`);
+		assert.equal(result.logoObjectFit, "contain", `${result.width}px logo fit`);
+		assert.equal(result.onlyEditorScrolls, true, `${result.width}px scroll owner`);
+		assert.equal(result.bodyLocked, true, `${result.width}px body lock`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px overflow`);
+		assert.equal(result.actionsInsideViewport, true, `${result.width}px actions`);
+		assert.equal(result.projectUnchanged, true, `${result.width}px project`);
+		assert.equal(result.serializedUnchanged, true, `${result.width}px serialization`);
+		assert.equal(result.revisionUnchanged, true, `${result.width}px revision`);
+	}
+});
+
+test("mounted ordinary Folder settings omit Backdrop Video without leaving a Hero gap at every required width", () => {
+	assert.deepEqual(mountedResults.ordinarySettingsWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const [index, result] of mountedResults.ordinarySettingsWidths.entries()) {
+		const compatible = mountedResults.settingsWidths[index];
+		assert.equal(result.groupCount, 4, `${result.width}px group count`);
+		assert.deepEqual(result.groupNames, ["Tile", "Hero / Background", "Branding", "Focus"], `${result.width}px groups`);
+		assert.equal(result.imageCount, 4, `${result.width}px image previews`);
+		assert.equal(result.noVideoOnOpen, true, `${result.width}px no video element`);
+		assert.equal(result.videoFieldPresent, false, `${result.width}px no ordinary video field`);
+		assert.equal(result.videoButtonText, null, `${result.width}px no ordinary video action`);
+		assert.equal(result.videoButtonStyled, false, `${result.width}px no ordinary video action style`);
+		assert.equal(result.heroFieldCount, 1, `${result.width}px ordinary Hero fields`);
+		assert.equal(result.heroGroupHeight < compatible.heroGroupHeight, true, `${result.width}px no compatibility gap`);
+		assert.equal(result.artworkSectionHeight < compatible.artworkSectionHeight, true, `${result.width}px compact ordinary artwork`);
+		assert.equal(result.coverEmojiEditorAbsent, true, `${result.width}px coverEmoji UI`);
+		assert.deepEqual(result.inputValues, {
+			coverImageUrl: mountedResults.ordinarySettingsWidths[0].inputValues.coverImageUrl,
+			heroBackdropUrl: mountedResults.ordinarySettingsWidths[0].inputValues.heroBackdropUrl,
+			heroVideoUrl: null,
+			titleLogoUrl: mountedResults.ordinarySettingsWidths[0].inputValues.titleLogoUrl,
+			focusGifUrl: mountedResults.ordinarySettingsWidths[0].inputValues.focusGifUrl,
+		}, `${result.width}px ordinary exact fields`);
+		assert.deepEqual(result.helperTexts, [
+			"Artwork used for the folder tile.",
+			"Background image for the folder.",
+			"Transparent title logo.",
+			"Artwork shown when the folder is focused.",
+		], `${result.width}px ordinary helper copy`);
+		assert.equal(result.helperLineCounts.every((lineCount) => lineCount <= 2), true, `${result.width}px helper wrapping`);
+		assert.equal(result.imageAttributesSafe, true, `${result.width}px image behavior`);
+		assert.equal(result.previewUrlsExact, true, `${result.width}px exact draft URLs`);
+		assert.equal(result.framesInsideViewport, true, `${result.width}px frames`);
+		assert.equal(result.fieldsDoNotOverlap, true, `${result.width}px field/preview overlap`);
+		assert.equal(result.inputsRemainUsable, true, `${result.width}px input width`);
+		assert.equal(result.onlyEditorScrolls, true, `${result.width}px scroll owner`);
+		assert.equal(result.bodyLocked, true, `${result.width}px body lock`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px overflow`);
+		assert.equal(result.actionsInsideViewport, true, `${result.width}px actions`);
+		assert.equal(result.projectUnchanged, true, `${result.width}px project`);
+		assert.equal(result.serializedUnchanged, true, `${result.width}px serialization`);
+		assert.equal(result.revisionUnchanged, true, `${result.width}px revision`);
+	}
+});
+
+test("mounted exact draft failures recover by URL and video loads only after its explicit action", () => {
+	const result = mountedResults.settingsDraftPreviews;
+	assert.deepEqual(result.firstFailure, {
+		status: "Preview unavailable",
+		input: result.firstFailure.input,
+		imageAbsent: true,
+	});
+	assert.match(result.firstFailure.input, /^http:\/\/127\.0\.0\.1:\d+\/preview-recovering\.gif$/);
+	assert.deepEqual(result.replacement, {
+		statusAbsent: true,
+		src: result.replacement.src,
+	});
+	assert.match(result.replacement.src, /^http:\/\/127\.0\.0\.1:\d+\/preview-replacement\.gif$/);
+	assert.deepEqual(result.recovered, {
+		statusAbsent: true,
+		src: result.firstFailure.input,
+	});
+	assert.equal(result.noVideoBeforeClick, true);
+	assert.deepEqual(result.videoAttributes, {
+		src: result.videoAttributes.src,
+		controls: true,
+		playsInline: true,
+		preload: "metadata",
+		referrerPolicy: null,
+		autoplay: false,
+		paused: true,
+	});
+	assert.match(result.videoAttributes.src, /^http:\/\/127\.0\.0\.1:\d+\/video-a\.mp4$/);
+	assert.deepEqual(result.videoFailure, {
+		status: "Preview unavailable",
+		input: result.videoAttributes.src,
+		videoAbsent: true,
+		retryAvailable: true,
+	});
+	assert.deepEqual(result.videoResetOnUrlChange, { statusAbsent: true, videoAbsent: true });
+	assert.equal(result.draftCardStillSaved, true);
+	assert.equal(result.cancelRestoredSavedInputs, true);
+	assert.equal(result.projectUnchanged, true);
+	assert.equal(result.serializedUnchanged, true);
+	assert.equal(result.revisionUnchanged, true);
+
+	const previewRecoveringRequests = mountedResults.artworkRequests.filter(({ path: requestPath }) => requestPath === "/preview-recovering.gif");
+	const videoRequests = mountedResults.artworkRequests.filter(({ path: requestPath }) => requestPath === "/video-a.mp4");
+	assert.deepEqual(previewRecoveringRequests, [
+		{ path: "/preview-recovering.gif", referer: null },
+		{ path: "/preview-recovering.gif", referer: null },
+	]);
+	assert.equal(videoRequests.length >= 3, true);
+	for (const request of videoRequests) {
+		assert.equal(request.path, "/video-a.mp4");
+		assert.match(request.referer, /^http:\/\/127\.0\.0\.1:\d+\/$/);
+	}
+	assert.equal(mountedResults.artworkRequests.some(({ path: requestPath }) => requestPath === "/video-b.mp4"), true);
+});
+
+test("mounted absent, blank, and unsupported Backdrop Video values stay hidden and preserve their exact model state", () => {
+	assert.deepEqual(mountedResults.ordinaryVideoVisibility, [
+		{
+			id: "settings-no-video",
+			hiddenOnOpen: true,
+			oneRevision: true,
+			editableHasVideo: false,
+			editableVideo: null,
+			serializedHasVideo: false,
+			serializedVideo: null,
+		},
+		{
+			id: "settings-blank-video",
+			hiddenOnOpen: true,
+			oneRevision: true,
+			editableHasVideo: true,
+			editableVideo: "   ",
+			serializedHasVideo: true,
+			serializedVideo: "   ",
+		},
+		{
+			id: "settings-unsupported-video",
+			hiddenOnOpen: true,
+			oneRevision: true,
+			editableHasVideo: true,
+			editableVideo: ["RAW_VIDEO"],
+			serializedHasVideo: true,
+			serializedVideo: ["RAW_VIDEO"],
+		},
+	]);
+});
+
+test("mounted Cancel restores an existing compatible video and its control on reopen", () => {
+	const result = mountedResults.videoCancel;
+	assert.equal(result.visibleAfterClear, true);
+	assert.deepEqual(result.reopened, {
+		visible: true,
+		value: result.savedUrl,
+		previewAction: "Preview video",
+	});
+	assert.equal(result.projectUnchanged, true);
+	assert.equal(result.serializedUnchanged, true);
+	assert.equal(result.revisionUnchanged, true);
+});
+
+test("mounted video replacement resets Preview, previews the exact replacement, saves, and stays compatible on reopen", () => {
+	const result = mountedResults.videoReplacement;
+	assert.match(result.originalPreviewUrl, /^http:\/\/127\.0\.0\.1:\d+\/video-a\.mp4$/);
+	assert.match(result.replacementUrl, /^http:\/\/127\.0\.0\.1:\d+\/video-b\.mp4$/);
+	assert.deepEqual(result.resetOnReplacement, { fieldVisible: true, videoAbsent: true, statusAbsent: true });
+	assert.deepEqual(result.replacementPreviewState, {
+		src: result.replacementUrl,
+		controls: true,
+		playsInline: true,
+		preload: "metadata",
+		autoplay: false,
+	});
+	assert.equal(result.oneRevision, true);
+	assert.equal(result.serializedVideo, result.replacementUrl);
+	assert.deepEqual(result.reopened, { visible: true, value: result.replacementUrl });
+});
+
+test("mounted Apply commits only touched Folder visual fields in one revision", () => {
+	const result = mountedResults.settingsApply;
+	assert.equal(result.oneRevision, true);
+	assert.equal(result.videoControlRemainsAfterClear, true);
+	assert.equal(result.videoPreviewActionAbsentAfterClear, true);
+	assert.equal(result.videoControlHiddenAfterReopen, true);
+	assert.match(result.values.coverImageUrl, /^http:\/\/127\.0\.0\.1:\d+\/settings-tile-applied\.gif$/);
+	assert.deepEqual(result.values, {
+		coverImageUrl: result.values.coverImageUrl,
+		coverEmoji: "🛰️",
+		heroVideoUrl: "",
+		titleLogoUrl: "",
+		heroBackdropUrl: result.untouchedBackdrop,
+		focusGifUrl: result.untouchedFocus,
+	});
+	assert.deepEqual(result.serializedValues, result.values);
+	assert.equal(result.cardUsesAppliedUrl, true);
 });
 
 test("mounted pointer overlay and keyboard reorder mode retain the assigned thumbnail without data mutation", () => {
