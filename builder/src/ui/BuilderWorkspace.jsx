@@ -386,7 +386,6 @@ function NodeButton({
 			}}
 		>
 			<span className="node-button-content">{children}</span>
-			<span className="node-chevron" aria-hidden="true">›</span>
 			{node.selected ? <span className="visually-hidden">Selected</span> : null}
 		</button>
 	);
@@ -437,16 +436,67 @@ function FolderList({ folders, actionProps, createdCardTarget, createdCardRef })
 						: undefined}
 				>
 					<HierarchyCard node={folder} noun="folder" siblings={folders} {...actionProps}>
-						<span className="node-title">{folder.title}</span>
-						{folder.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
-						<span className="node-meta">
-							<span>{folder.sourceCountLabel}</span>
-							{folder.tileShape !== null ? <span>{folder.tileShape}</span> : null}
-						</span>
+						<FolderCardContent folder={folder} />
 					</HierarchyCard>
 				</li>
 			))}
 		</ul>
+	);
+}
+
+const folderThumbnailDimensions = Object.freeze({
+	poster: Object.freeze({ width: 34, height: 50 }),
+	landscape: Object.freeze({ width: 60, height: 34 }),
+	unknown: Object.freeze({ width: 44, height: 44 }),
+});
+
+function FolderCardText({ folder }) {
+	return (
+		<>
+			<span className="node-title">{folder.title}</span>
+			{folder.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
+			<span className="node-meta">
+				<span>{folder.sourceCountLabel}</span>
+				{folder.tileShape !== null ? <span>{folder.tileShape}</span> : null}
+			</span>
+		</>
+	);
+}
+
+function FolderCardContent({ folder }) {
+	const [failedArtworkUrl, setFailedArtworkUrl] = useState(null);
+	useEffect(() => {
+		setFailedArtworkUrl(null);
+	}, [folder.tileArtworkUrl]);
+	const artworkVisible = folder.tileArtworkUrl !== null && failedArtworkUrl !== folder.tileArtworkUrl;
+
+	if (!artworkVisible) return <FolderCardText folder={folder} />;
+
+	const shape = folder.tileArtworkShape ?? "unknown";
+	const dimensions = folderThumbnailDimensions[shape] ?? folderThumbnailDimensions.unknown;
+	return (
+		<span className="folder-card-content" data-folder-card-artwork={shape}>
+			<span className="folder-card-thumbnail-frame" data-folder-artwork-shape={shape} aria-hidden="true">
+				<img
+					className="folder-card-thumbnail"
+					src={folder.tileArtworkUrl}
+					alt=""
+					width={dimensions.width}
+					height={dimensions.height}
+					loading="lazy"
+					decoding="async"
+					referrerPolicy="no-referrer"
+					draggable="false"
+					onError={(event) => {
+						event.currentTarget.hidden = true;
+						setFailedArtworkUrl(folder.tileArtworkUrl);
+					}}
+				/>
+			</span>
+			<span className="folder-card-copy">
+				<FolderCardText folder={folder} />
+			</span>
+		</span>
 	);
 }
 

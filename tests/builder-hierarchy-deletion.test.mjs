@@ -737,7 +737,7 @@ test("styles keep Add, actions menus, dialog, and responsive layouts touch-safe 
 	assert.match(styles, /@media \(max-width: 619px\)[\s\S]*\.delete-confirmation\s*\{[\s\S]*max-height:\s*calc\(100dvh - 24px\)/);
 	assert.match(
 		styles,
-		/@media \(min-width: 900px\)[\s\S]*\.workspace\s*\{[\s\S]*minmax\(265px,\s*0\.8fr\)[\s\S]*minmax\(270px,\s*1\.35fr\)[\s\S]*\.panel-header,[\s\S]*\.panel-body\s*\{[\s\S]*padding-right:\s*12px[\s\S]*padding-left:\s*12px/,
+		/@media \(min-width: 900px\)[\s\S]*\.workspace\s*\{[\s\S]*minmax\(250px,\s*0\.9fr\)[\s\S]*minmax\(310px,\s*1\.1fr\)[\s\S]*minmax\(240px,\s*0\.95fr\)[\s\S]*\.panel-header,[\s\S]*\.panel-body\s*\{[\s\S]*padding-right:\s*12px[\s\S]*padding-left:\s*12px/,
 	);
 	assert.match(
 		styles,

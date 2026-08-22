@@ -2331,7 +2331,7 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 		/@media \(min-width: 620px\)[\s\S]*\.editor-compact-radio-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/,
 	);
 	assert.match(styles, /@media \(min-width: 760px\)[\s\S]*\.node-editor-form\s*\{[\s\S]*max-width:\s*760px/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(265px/);
+	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*grid-template-columns:\s*minmax\(250px/);
 	assert.match(styles, /focus-visible/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 	for (const mobileWidth of [360, 384, 393, 402, 412]) {

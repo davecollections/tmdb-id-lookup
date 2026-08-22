@@ -52,6 +52,7 @@ runNode(["--test", path.join("tests", "builder-migration.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-controller.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-welcome-import.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-folder-card-artwork.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-about-credits-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-reordering.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-hierarchy-menu-placement.test.mjs")]);
@@ -89,6 +90,7 @@ runNode(["--test", path.join("tests", "v1-company-search-compatibility.test.mjs"
 runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "mounted-browser-lifecycle.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-folder-card-artwork-mounted.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-mounted.test.mjs")]);
 runNode(["--test", path.join("tests", "fixture-line-endings.test.mjs")]);
 runNode(["--test", path.join("tests", "windows-validation.test.mjs")]);

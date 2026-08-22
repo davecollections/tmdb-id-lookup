@@ -77,6 +77,18 @@ function supportedBoolean(value) {
 	return typeof value === "boolean" ? value : null;
 }
 
+function assignedTileArtworkUrl(value) {
+	return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function tileArtworkShape(value) {
+	if (typeof value !== "string") return "unknown";
+	const normalized = value.toUpperCase();
+	if (normalized === "POSTER") return "poster";
+	if (normalized === "LANDSCAPE") return "landscape";
+	return "unknown";
+}
+
 function buildCollection(collection, selectedInternalId) {
 	const folderCount = collection.folders.length;
 	const sourceCount = collection.folders.reduce((total, folder) => total + folder.sources.length, 0);
@@ -115,6 +127,7 @@ function buildFolder(folder, selectedInternalId) {
 	const sourceCount = folder.sources.length;
 	const artworkCount = folderArtworkFields.filter((field) => presentValue(folder.editable[field]) !== null).length;
 	const title = nodeTitle(folder.editable.title, "folder");
+	const tileArtworkUrl = assignedTileArtworkUrl(folder.editable.coverImageUrl);
 	const tileShape = friendlyChoice(folder.editable.tileShape, {
 		POSTER: "Poster",
 		LANDSCAPE: "Landscape",
@@ -136,6 +149,8 @@ function buildFolder(folder, selectedInternalId) {
 		sourceCount,
 		sourceCountLabel: countLabel(sourceCount, "source"),
 		tileShape,
+		tileArtworkUrl,
+		tileArtworkShape: tileArtworkUrl === null ? null : tileArtworkShape(folder.editable.tileShape),
 		selected: folder.internalId === selectedInternalId,
 		details: compactDetails([
 			detail("Title", title.text),

@@ -2,7 +2,7 @@
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-22
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope. See [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) for durable product direction, [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md) for the shared hierarchy-family standard, and [`PROJECT_WORKFLOW.md`](./PROJECT_WORKFLOW.md) for the Dave/ChatGPT/Codex process.
 
@@ -825,6 +825,8 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 | 2026-08-21 | Genre hierarchy issue #130 final owner-acceptance checkpoint: one shared Structure-card grid correction replaced bottom alignment of the preview area with stretched, space-between description/preview allocation. This removes the longer third title's excess empty space without a card-specific override, preserves card dimensions, diagrams, selected treatment, and bottom count alignment, and measures a consistent 12-pixel description-to-diagram gap at 360, 393, 412, 899, 900, 901, and 1280 pixels with no clipping, horizontal overflow, awkward wrapping, diagram compression, or count drift. Dave accepted the final desktop and physical-phone result. Worker deployment/live validation remain complete and unchanged; implementation and durable evidence remain unstaged/uncommitted with no push or PR pending explicit commit authorization. | [Issue #130](https://github.com/davecollections/tmdb-id-lookup/issues/130) and [`BUILDER_GENRES.md`](./BUILDER_GENRES.md) |
 
 ## Decision history
+
+- **2026-08-22 — Assigned Folder artwork workspace contract:** display every exact nonblank string `coverImageUrl` already assigned to a Folder as a compact decorative card thumbnail, regardless of curated-runtime, TMDB, imported, or custom origin. Use Poster/Landscape proportions and a neutral contained fallback for unsupported shapes without rewriting them. Keep blank, absent, null, non-string, and load-failed images on the original text-only card; image failure is presentation-only and preserves URL, raw data, revision, and serialization. Request the native image without disclosing the Builder page as a referrer so referrer-sensitive arbitrary origins are not rejected, without host allowlists or URL rewriting. Scope failure state to the exact attempted URL and reset it when the assignment changes so an old failure cannot poison a replacement or later reassignment. Use native lazy loading and async decoding, make the image non-draggable, preserve the card's existing selection/accessibility/reorder semantics, and perform no resolver, manifest, TMDB, migration, or replacement request. Keep Folder Settings current-URL previews and exact-authority opt-in suggestions deferred to a separate approved issue. See [issue #134](https://github.com/davecollections/tmdb-id-lookup/issues/134) and [`ARTWORK_RUNTIME.md`](./ARTWORK_RUNTIME.md).
 
 - **2026-08-21 — People entry and browse-first cleanup:** remove the temporary Folders-header People shortcut and its dedicated session path. Keep `New Collection → People` and `New Folder → People` as the hierarchy routes, keep `Selected Folder → Add Source → People` as the physical-source route, focus the stable People browse heading for guided hierarchy, and retain typing-first Search focus for direct Add Source.
 
