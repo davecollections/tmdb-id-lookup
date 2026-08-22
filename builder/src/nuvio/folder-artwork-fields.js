@@ -1,24 +1,95 @@
-export const FOLDER_ARTWORK_URL_FIELDS = Object.freeze([
-	Object.freeze({
-		field: "coverImageUrl",
-		label: "Tile artwork URL",
-		description: "Poster or Landscape artwork used for the folder tile.",
+function field(definition) {
+	return Object.freeze(definition);
+}
+
+function group(definition) {
+	return Object.freeze({
+		...definition,
+		fields: Object.freeze(definition.fields),
+	});
+}
+
+export const FOLDER_ARTWORK_FIELD_GROUPS = Object.freeze([
+	group({
+		slug: "tile",
+		title: "Tile",
+		fields: [
+			field({
+				field: "coverImageUrl",
+				inputType: "url",
+				label: "Tile artwork URL",
+				description: "Artwork used for the folder tile.",
+				preview: "tile",
+			}),
+			field({
+				field: "coverEmoji",
+				inputType: "text",
+				label: "Fallback emoji",
+				description: "Used by Nuvio as a fallback when suitable cover artwork is not available.",
+				visibleInSettings: false,
+			}),
+		],
 	}),
-	Object.freeze({
-		field: "heroBackdropUrl",
-		label: "Hero / background URL",
-		description: "Background artwork shown independently from the folder tile.",
+	group({
+		slug: "hero-background",
+		title: "Hero / Background",
+		fields: [
+			field({
+				field: "heroBackdropUrl",
+				inputType: "url",
+				label: "Backdrop Image URL",
+				description: "Background image for the folder.",
+				preview: "backdrop",
+			}),
+			field({
+				field: "heroVideoUrl",
+				inputType: "url",
+				label: "Backdrop Video URL",
+				description: "Existing video background for this folder.",
+				preview: "video",
+			}),
+		],
 	}),
-	Object.freeze({
-		field: "titleLogoUrl",
-		label: "Title Logo URL",
-		description: "Transparent title-logo artwork kept separate from the Hero.",
+	group({
+		slug: "branding",
+		title: "Branding",
+		fields: [
+			field({
+				field: "titleLogoUrl",
+				inputType: "url",
+				label: "Title Logo URL",
+				description: "Transparent title logo.",
+				preview: "logo",
+			}),
+		],
 	}),
-	Object.freeze({
-		field: "focusGifUrl",
-		label: "Focus artwork URL",
-		description: "Optional focused-state artwork. Static image URLs are supported by the stored field.",
+	group({
+		slug: "focus",
+		title: "Focus",
+		fields: [
+			field({
+				field: "focusGifUrl",
+				inputType: "url",
+				label: "Focus artwork URL",
+				description: "Artwork shown when the folder is focused.",
+				preview: "focus",
+			}),
+		],
 	}),
 ]);
 
-export const FOLDER_ARTWORK_URL_FIELD_NAMES = Object.freeze(FOLDER_ARTWORK_URL_FIELDS.map(({ field }) => field));
+export const FOLDER_ARTWORK_TEXT_FIELDS = Object.freeze(
+	FOLDER_ARTWORK_FIELD_GROUPS.flatMap(({ fields }) => fields),
+);
+
+export const FOLDER_ARTWORK_TEXT_FIELD_NAMES = Object.freeze(
+	FOLDER_ARTWORK_TEXT_FIELDS.map(({ field: fieldName }) => fieldName),
+);
+
+export const FOLDER_ARTWORK_URL_FIELDS = Object.freeze(
+	FOLDER_ARTWORK_TEXT_FIELDS.filter(({ inputType }) => inputType === "url"),
+);
+
+export const FOLDER_ARTWORK_URL_FIELD_NAMES = Object.freeze(
+	FOLDER_ARTWORK_URL_FIELDS.map(({ field: fieldName }) => fieldName),
+);

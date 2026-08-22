@@ -168,7 +168,9 @@ test("folder draft retains only stable target identity and editor values", () =>
 		folderTitleVisibility: "",
 		tileShape: "",
 		coverImageUrl: "",
+		coverEmoji: "",
 		heroBackdropUrl: "",
+		heroVideoUrl: "",
 		titleLogoUrl: "",
 		focusGifUrl: "",
 		focusGifEnabled: false,
@@ -350,7 +352,7 @@ test("folder visibility choices map visible modes to hideTitle", () => {
 	assert.deepEqual(buildNodeEditorPatch(draft), {});
 });
 
-test("folder artwork editing reuses known URL fields and emits only deliberate replacements", () => {
+test("folder artwork draft model retains every known visual text field and emits only deliberate replacements", () => {
 	const folder = {
 		nodeType: "folder",
 		internalId: "folder-artwork",
@@ -359,7 +361,9 @@ test("folder artwork editing reuses known URL fields and emits only deliberate r
 			tileShape: "POSTER",
 			hideTitle: true,
 			coverImageUrl: "https://example.test/poster.webp",
+			coverEmoji: "🛰️",
 			heroBackdropUrl: "https://example.test/hero.webp",
+			heroVideoUrl: "custom-scheme://video exact value",
 			titleLogoUrl: "https://example.test/logo.png",
 			focusGifUrl: "https://example.test/focus.webp",
 			focusGifEnabled: true,
@@ -367,24 +371,119 @@ test("folder artwork editing reuses known URL fields and emits only deliberate r
 	};
 	let draft = createNodeEditorDraft(folder);
 	assert.deepEqual(
-		Object.fromEntries(["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl", "focusGifEnabled"].map((field) => [field, draft.values[field]])),
+		Object.fromEntries(["coverImageUrl", "coverEmoji", "heroBackdropUrl", "heroVideoUrl", "titleLogoUrl", "focusGifUrl", "focusGifEnabled"].map((field) => [field, draft.values[field]])),
 		{
 			coverImageUrl: "https://example.test/poster.webp",
+			coverEmoji: "🛰️",
 			heroBackdropUrl: "https://example.test/hero.webp",
+			heroVideoUrl: "custom-scheme://video exact value",
 			titleLogoUrl: "https://example.test/logo.png",
 			focusGifUrl: "https://example.test/focus.webp",
 			focusGifEnabled: true,
 		},
 	);
 	draft = updateNodeEditorField(draft, "coverImageUrl", "https://example.test/replacement.webp");
+	draft = updateNodeEditorField(draft, "coverEmoji", "arbitrary fallback text 🧩");
 	draft = updateNodeEditorField(draft, "heroBackdropUrl", "");
+	draft = updateNodeEditorField(draft, "heroVideoUrl", "https://example.test/video.mp4?token=exact%20value");
 	draft = updateNodeEditorField(draft, "focusGifEnabled", false);
 	assert.deepEqual(buildNodeEditorPatch(draft), {
 		coverImageUrl: "https://example.test/replacement.webp",
+		coverEmoji: "arbitrary fallback text 🧩",
 		heroBackdropUrl: "",
+		heroVideoUrl: "https://example.test/video.mp4?token=exact%20value",
 		focusGifEnabled: false,
 	});
-	assert.equal(updateNodeEditorField(draft, "heroVideoUrl", "https://example.test/video.mp4"), draft);
+});
+
+test("visible folder visual edits apply once and preserve the model-supported fallback emoji", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Folder",
+			tileShape: "POSTER",
+			coverImageUrl: "https://example.test/saved.webp",
+			coverEmoji: "saved fallback",
+			heroBackdropUrl: "https://example.test/saved-hero.webp",
+			heroVideoUrl: "https://example.test/saved-video.mp4",
+			titleLogoUrl: "https://example.test/saved-logo.png",
+			focusGifUrl: "https://example.test/saved-focus.gif",
+			focusGifEnabled: true,
+			sources: [],
+		}],
+	}]);
+	const beforeRevision = controller.getState().revision;
+	const folder = controller.getState().project.collections[0].folders[0];
+	let draft = createNodeEditorDraft(folder);
+	draft = updateNodeEditorField(draft, "heroVideoUrl", "");
+	assert.deepEqual(buildNodeEditorPatch(draft), {
+		heroVideoUrl: "",
+	});
+	assert.deepEqual(applyNodeEditorDraft(controller, draft), {
+		ok: true,
+		controllerCalled: true,
+		diagnostics: [],
+	});
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	const outputFolder = serializeNuvioProject(controller.getState().project).value[0].folders[0];
+	assert.equal(outputFolder.coverEmoji, "saved fallback");
+	assert.equal(outputFolder.heroVideoUrl, "");
+	assert.equal(outputFolder.coverImageUrl, "https://example.test/saved.webp");
+	assert.equal(outputFolder.heroBackdropUrl, "https://example.test/saved-hero.webp");
+	assert.equal(outputFolder.titleLogoUrl, "https://example.test/saved-logo.png");
+	assert.equal(outputFolder.focusGifUrl, "https://example.test/saved-focus.gif");
+	assert.equal(outputFolder.focusGifEnabled, true);
+});
+
+test("unusual imported Folder visual values remain opaque until their own fields are touched", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Imported artwork",
+			tileShape: "POSTER",
+			coverImageUrl: null,
+			coverEmoji: { privateFallback: "RAW_EMOJI" },
+			heroVideoUrl: ["RAW_VIDEO"],
+			sources: [],
+		}],
+	}]);
+	let folder = controller.getState().project.collections[0].folders[0];
+	let draft = createNodeEditorDraft(folder);
+	assert.equal(draft.values.coverEmoji, "");
+	assert.equal(draft.values.heroVideoUrl, "");
+	assert.equal(draft.values.coverImageUrl, "");
+	assert.equal(draft.original.coverEmoji.status, "unsupported");
+	assert.equal(draft.original.heroVideoUrl.status, "unsupported");
+	assert.equal(JSON.stringify(draft).includes("RAW_EMOJI"), false);
+	assert.equal(JSON.stringify(draft).includes("RAW_VIDEO"), false);
+
+	controller.selectNode(folder.internalId);
+	const preservedMarkup = renderWorkspace(controller, { draft });
+	assert.equal((preservedMarkup.match(/The current imported value is preserved until this field is edited\./g) ?? []).length, 1);
+	assert.equal(preservedMarkup.includes("RAW_EMOJI"), false);
+	assert.equal(preservedMarkup.includes("RAW_VIDEO"), false);
+	assert.equal(preservedMarkup.includes('data-editor-field="coverEmoji"'), false);
+	assert.equal(preservedMarkup.includes('data-editor-field="heroVideoUrl"'), false);
+
+	assert.equal(applyNodeEditorDraft(controller, updateNodeEditorField(draft, "title", "Renamed artwork")).ok, true);
+	let output = serializeNuvioProject(controller.getState().project).value[0].folders[0];
+	assert.deepEqual(output.coverEmoji, { privateFallback: "RAW_EMOJI" });
+	assert.deepEqual(output.heroVideoUrl, ["RAW_VIDEO"]);
+	assert.equal(output.coverImageUrl, null);
+
+	folder = controller.getState().project.collections[0].folders[0];
+	draft = createNodeEditorDraft(folder);
+	draft = updateNodeEditorField(draft, "heroVideoUrl", "");
+	assert.deepEqual(buildNodeEditorPatch(draft), { heroVideoUrl: "" });
+	assert.equal(applyNodeEditorDraft(controller, draft).ok, true);
+	output = serializeNuvioProject(controller.getState().project).value[0].folders[0];
+	assert.deepEqual(output.coverEmoji, { privateFallback: "RAW_EMOJI" });
+	assert.equal(output.heroVideoUrl, "");
+	assert.equal(output.coverImageUrl, null);
 });
 
 test("Follow Layout and Square are preservation-only until deliberate replacement", () => {
@@ -1891,9 +1990,26 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.ok(display.includes("Folder title visibility"));
 	assert.ok(display.includes("Tile shape"));
 	assert.ok(markup.indexOf('data-settings-section="basic-details"') < markup.indexOf('data-settings-section="display"'));
-	const artwork = markedElement(markup, 'data-settings-section="artwork"', "section");
+	const artworkStart = markup.indexOf('data-settings-section="artwork"');
+	const artworkEnd = markup.indexOf('<div class="editor-diagnostics"', artworkStart);
+	const artwork = markup.slice(artworkStart, artworkEnd);
 	assert.ok(artwork.includes('<h3 id="node-editor-folder-artwork-heading">Artwork</h3>'));
-	for (const marker of ["Tile artwork URL", "Hero / background URL", "Title Logo URL", "Focus artwork URL", "Enable focus artwork"]) assert.ok(artwork.includes(marker), marker);
+	for (const marker of ["Tile artwork URL", "Backdrop Image URL", "Title Logo URL", "Focus artwork URL", "Enable focus artwork"]) assert.ok(artwork.includes(marker), marker);
+	assert.equal(artwork.includes("Backdrop Video URL"), false);
+	assert.equal(artwork.includes('data-editor-field="heroVideoUrl"'), false);
+	assert.equal(artwork.includes("Fallback emoji"), false);
+	assert.equal(artwork.includes('data-editor-field="coverEmoji"'), false);
+	for (const helper of [
+		"Artwork used for the folder tile.",
+		"Background image for the folder.",
+		"Transparent title logo.",
+		"Artwork shown when the folder is focused.",
+	]) assert.ok(artwork.includes(helper), helper);
+	assert.equal(artwork.includes("Existing video background for this folder."), false);
+	assert.equal(artwork.includes("Leave blank to clear it."), false);
+	for (const group of ["tile", "hero-background", "branding", "focus"]) assert.ok(artwork.includes(`data-artwork-group="${group}"`), group);
+	assert.equal((artwork.match(/class="folder-artwork-group"/g) ?? []).length, 4);
+	assert.equal((artwork.match(/<video/g) ?? []).length, 0);
 	assert.ok(markup.indexOf('data-settings-section="display"') < markup.indexOf('data-settings-section="artwork"'));
 	assert.equal(markup.includes('data-editor-field="hideNuvioTitle"'), false);
 	assert.equal(markup.includes('data-editor-control="hideNuvioTitle"'), false);
@@ -1945,6 +2061,144 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
 	assert.equal(sourceList.includes("folderTitleVisibility"), false);
 	assert.equal(sourceList.includes("Folder title visibility"), false);
+});
+
+test("folder settings render exact draft artwork previews with safe media defaults", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Preview folder",
+			tileShape: "POSTER",
+			coverImageUrl: "https://saved.example/tile.webp",
+			coverEmoji: "📺",
+			heroBackdropUrl: "https://saved.example/backdrop.webp",
+			heroVideoUrl: "https://saved.example/backdrop.mp4",
+			titleLogoUrl: "https://saved.example/logo.png",
+			focusGifUrl: "https://saved.example/focus.gif",
+			focusGifEnabled: true,
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	controller.selectNode(folder.internalId);
+	let draft = createNodeEditorDraft(folder);
+	const draftUrls = {
+		coverImageUrl: "https://draft.example/tile-case-A.webp",
+		heroBackdropUrl: "https://draft.example/backdrop-case-A.webp",
+		heroVideoUrl: "https://draft.example/video-case-A.mp4",
+		titleLogoUrl: "https://draft.example/logo-case-A.png",
+		focusGifUrl: "https://draft.example/focus-case-A.gif",
+	};
+	for (const [field, value] of Object.entries(draftUrls)) draft = updateNodeEditorField(draft, field, value);
+	const markup = renderWorkspace(controller, { draft });
+	const artworkStart = markup.indexOf('data-settings-section="artwork"');
+	const artworkEnd = markup.indexOf('<div class="editor-diagnostics"', artworkStart);
+	const artwork = markup.slice(artworkStart, artworkEnd);
+	assert.equal(artwork.includes("📺"), false);
+	assert.equal(artwork.includes('data-editor-field="coverEmoji"'), false);
+
+	for (const [field, url] of Object.entries(draftUrls)) {
+		assert.ok(artwork.includes(`value="${url}"`), `${field} input`);
+	}
+	for (const field of ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl"]) {
+		const preview = openingTag(artwork, `data-artwork-preview="${field}"`);
+		assert.ok(preview.includes('aria-hidden="true"'), field);
+		const imageStart = artwork.indexOf("<img", artwork.indexOf(`data-artwork-preview="${field}"`));
+		const image = artwork.slice(imageStart, artwork.indexOf(">", imageStart) + 1);
+		assert.ok(image.includes(`src="${draftUrls[field]}"`), field);
+		assert.ok(image.includes('alt=""'), field);
+		assert.ok(image.includes('loading="lazy"'), field);
+		assert.ok(image.includes('decoding="async"'), field);
+		assert.ok(image.includes('referrerPolicy="no-referrer"'), field);
+		assert.equal(image.includes('tabindex='), false, field);
+	}
+	assert.ok(openingTag(artwork, 'data-artwork-preview="coverImageUrl"').includes('data-artwork-preview-shape="poster"'));
+	assert.ok(openingTag(artwork, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-shape="poster"'));
+	assert.ok(openingTag(artwork, 'data-artwork-preview="heroBackdropUrl"').includes('data-artwork-preview-shape="wide"'));
+	assert.ok(openingTag(artwork, 'data-artwork-preview="titleLogoUrl"').includes('data-artwork-preview-shape="logo"'));
+	assert.equal((artwork.match(/<video/g) ?? []).length, 0);
+	assert.equal((artwork.match(/>Preview video<\/button>/g) ?? []).length, 1);
+	assert.ok(artwork.includes("Existing video background for this folder."));
+	assert.equal(artwork.includes("https://saved.example/backdrop.mp4"), false);
+
+	const landscapeMarkup = renderWorkspace(controller, {
+		draft: updateNodeEditorField(draft, "tileShape", "LANDSCAPE"),
+	});
+	assert.ok(openingTag(landscapeMarkup, 'data-artwork-preview="coverImageUrl"').includes('data-artwork-preview-shape="landscape"'));
+	assert.ok(openingTag(landscapeMarkup, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-shape="landscape"'));
+
+	const squareController = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{ id: "folder", title: "Square", tileShape: "SQUARE", coverImageUrl: "https://draft.example/square.webp", focusGifUrl: "https://draft.example/square-focus.gif", sources: [] }],
+	}]);
+	const squareFolder = squareController.getState().project.collections[0].folders[0];
+	squareController.selectNode(squareFolder.internalId);
+	const squareMarkup = renderWorkspace(squareController, { draft: createNodeEditorDraft(squareFolder) });
+	assert.ok(openingTag(squareMarkup, 'data-artwork-preview="coverImageUrl"').includes('data-artwork-preview-shape="unknown"'));
+	assert.ok(openingTag(squareMarkup, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-shape="unknown"'));
+});
+
+test("Backdrop Video is opening-state compatibility UI and remains hidden for absent, blank, and unsupported values", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [
+			{ id: "absent", title: "Absent video", heroBackdropUrl: "https://saved.example/absent.webp", sources: [] },
+			{ id: "blank", title: "Blank video", heroBackdropUrl: "https://saved.example/blank.webp", heroVideoUrl: "   ", sources: [] },
+			{ id: "unsupported", title: "Unsupported video", heroBackdropUrl: "https://saved.example/unsupported.webp", heroVideoUrl: ["RAW_VIDEO"], sources: [] },
+		],
+	}]);
+
+	for (const folder of controller.getState().project.collections[0].folders) {
+		controller.selectNode(folder.internalId);
+		const draft = createNodeEditorDraft(folder);
+		const markup = renderWorkspace(controller, { draft });
+		assert.equal(markup.includes('data-editor-field="heroVideoUrl"'), false, folder.editable.id);
+		assert.equal(markup.includes("Backdrop Video URL"), false, folder.editable.id);
+		assert.equal(markup.includes(">Preview video</button>"), false, folder.editable.id);
+	}
+
+	const [absentFolder, blankFolder, unsupportedFolder] = controller.getState().project.collections[0].folders;
+	assert.equal(createNodeEditorDraft(absentFolder).original.heroVideoUrl.status, "absent");
+	assert.equal(createNodeEditorDraft(blankFolder).original.heroVideoUrl.value, "   ");
+	assert.equal(createNodeEditorDraft(blankFolder).original.heroVideoUrl.supported, true);
+	assert.equal(createNodeEditorDraft(unsupportedFolder).original.heroVideoUrl.status, "unsupported");
+	assert.deepEqual(unsupportedFolder.rawImported.heroVideoUrl, ["RAW_VIDEO"]);
+});
+
+test("clearing a compatible Backdrop Video keeps its opening control until the next draft", () => {
+	const controller = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{
+			id: "folder",
+			title: "Compatible video",
+			heroVideoUrl: "https://saved.example/video-a.mp4",
+			sources: [],
+		}],
+	}]);
+	const folder = controller.getState().project.collections[0].folders[0];
+	controller.selectNode(folder.internalId);
+	const openingDraft = createNodeEditorDraft(folder);
+	const clearedDraft = updateNodeEditorField(openingDraft, "heroVideoUrl", "");
+	const clearedMarkup = renderWorkspace(controller, { draft: clearedDraft });
+	assert.ok(clearedMarkup.includes('data-editor-field="heroVideoUrl"'));
+	assert.ok(clearedMarkup.includes('value=""'));
+	assert.equal(clearedMarkup.includes(">Preview video</button>"), false);
+	assert.deepEqual(buildNodeEditorPatch(clearedDraft), { heroVideoUrl: "" });
+
+	const reopenedController = importTree([{
+		id: "collection",
+		title: "Collection",
+		folders: [{ id: "folder", title: "Cleared video", heroVideoUrl: "", sources: [] }],
+	}]);
+	const reopenedFolder = reopenedController.getState().project.collections[0].folders[0];
+	reopenedController.selectNode(reopenedFolder.internalId);
+	const reopenedMarkup = renderWorkspace(reopenedController, { draft: createNodeEditorDraft(reopenedFolder) });
+	assert.equal(reopenedMarkup.includes('data-editor-field="heroVideoUrl"'), false);
 });
 
 test("imported invisible folder settings select Hide everywhere without exposing raw text", () => {

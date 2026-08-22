@@ -71,6 +71,7 @@ import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
 import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
+import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
 import { updateNodeEditorField } from "./node-editor.js";
 import { applyNodeEditorDraft } from "./node-editor-actions.js";
 import {
@@ -464,11 +465,8 @@ function FolderCardText({ folder }) {
 }
 
 function FolderCardContent({ folder }) {
-	const [failedArtworkUrl, setFailedArtworkUrl] = useState(null);
-	useEffect(() => {
-		setFailedArtworkUrl(null);
-	}, [folder.tileArtworkUrl]);
-	const artworkVisible = folder.tileArtworkUrl !== null && failedArtworkUrl !== folder.tileArtworkUrl;
+	const artworkFailure = useExactUrlPreviewFailure(folder.tileArtworkUrl);
+	const artworkVisible = folder.tileArtworkUrl !== null && !artworkFailure.failed;
 
 	if (!artworkVisible) return <FolderCardText folder={folder} />;
 
@@ -489,7 +487,7 @@ function FolderCardContent({ folder }) {
 					draggable="false"
 					onError={(event) => {
 						event.currentTarget.hidden = true;
-						setFailedArtworkUrl(folder.tileArtworkUrl);
+						artworkFailure.markFailed();
 					}}
 				/>
 			</span>
