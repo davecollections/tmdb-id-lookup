@@ -182,14 +182,16 @@ async function waitForReadyPosterGrid({
 	preview,
 	gridSelector,
 	expectedVisibleCount,
+	expectedSelectedTab = null,
 	label,
 	timeoutMs = 20_000,
 }) {
-	let diagnostic = { preview: false, grid: false, expectedVisibleCount, images: [] };
+	let diagnostic = { preview: false, grid: false, expectedVisibleCount, expectedSelectedTab, images: [] };
 	try {
 		return await waitForMountedCondition(() => {
 			const previewElement = typeof preview === "string" ? document.querySelector(preview) : preview;
 			const grid = previewElement?.querySelector(gridSelector) ?? null;
+			const selectedTab = previewElement?.querySelector('[role="tab"][aria-selected="true"]') ?? null;
 			const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
 			const visibleImages = images.filter(visibleElement);
 			diagnostic = {
@@ -197,6 +199,8 @@ async function waitForReadyPosterGrid({
 				previewStatus: previewElement?.dataset.previewStatus ?? "not-exposed",
 				grid: Boolean(grid),
 				expectedVisibleCount,
+				expectedSelectedTab,
+				selectedTab: selectedTab?.textContent.trim() ?? null,
 				visibleCount: visibleImages.length,
 				images: images.map((image) => {
 					const rect = image.getBoundingClientRect();
@@ -214,8 +218,9 @@ async function waitForReadyPosterGrid({
 			const previewReady = previewElement?.dataset.previewStatus === undefined
 				|| previewElement.dataset.previewStatus === "ready";
 			if (!previewReady || !grid || visibleImages.length !== expectedVisibleCount) return null;
+			if (expectedSelectedTab !== null && selectedTab?.textContent.trim() !== expectedSelectedTab) return null;
 			if (visibleImages.some((image) => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
-			return { grid, images, visibleImages };
+			return { preview: previewElement, grid, images, visibleImages };
 		}, { label, timeoutMs });
 	} catch (error) {
 		throw new Error(`${error.message} Poster readiness: ${JSON.stringify(diagnostic)}`);
@@ -3283,15 +3288,16 @@ async function runPeopleConfigureLayoutScenario() {
 		const previewTrigger = firstRow.querySelector(".people-bulk-actions button:first-child");
 		const requestsBeforePreview = requests.length;
 		await clickAndSettle(required(previewTrigger, "first Preview titles action"));
-		let preview = document.querySelector(".people-title-preview");
-		let previewGrid = preview.querySelector(".people-title-preview-grid");
 		const expectedPosterCount = window.innerWidth <= 520 ? 5 : 10;
 		const readyMoviePosters = await waitForReadyPosterGrid({
-			preview,
+			preview: ".people-title-preview",
 			gridSelector: ".people-title-preview-grid",
 			expectedVisibleCount: expectedPosterCount,
+			expectedSelectedTab: "Movies",
 			label: `Live People Movies Preview at ${window.innerWidth}px`,
 		});
+		let preview = readyMoviePosters.preview;
+		let previewGrid = readyMoviePosters.grid;
 		const previewBackdrop = preview.closest(".nested-modal-backdrop");
 		const creationPortal = document.querySelector(".add-source-portal");
 		const previewTabs = required(preview.querySelector(".people-preview-tabs"), "People Preview media tabs");
@@ -3300,18 +3306,22 @@ async function runPeopleConfigureLayoutScenario() {
 		const moviesInitiallyActive = movieTab.getAttribute("aria-selected") === "true" && seriesTab.getAttribute("aria-selected") === "false";
 		const moviePosterCount = readyMoviePosters.visibleImages.length;
 		await clickAndSettle(seriesTab);
-		preview = document.querySelector(".people-title-preview");
-		previewGrid = preview.querySelector(".people-title-preview-grid");
 		const readySeriesPosters = await waitForReadyPosterGrid({
-			preview,
+			preview: ".people-title-preview",
 			gridSelector: ".people-title-preview-grid",
 			expectedVisibleCount: expectedPosterCount,
+			expectedSelectedTab: "Series",
 			label: `Live People Series Preview at ${window.innerWidth}px`,
 		});
+		preview = readySeriesPosters.preview;
+		previewGrid = readySeriesPosters.grid;
+		const seriesPreviewTabs = required(preview.querySelector(".people-preview-tabs"), "current People Preview media tabs");
+		const seriesMovieTab = required(buttonContaining(seriesPreviewTabs, "Movies"), "current People Movies Preview tab");
+		const currentSeriesTab = required(buttonContaining(seriesPreviewTabs, "Series"), "current People Series Preview tab");
 		const mediaSeparation = {
-			tabCount: previewTabs.querySelectorAll('[role="tab"]').length,
+			tabCount: seriesPreviewTabs.querySelectorAll('[role="tab"]').length,
 			moviesInitiallyActive,
-			seriesActive: movieTab.getAttribute("aria-selected") === "false" && seriesTab.getAttribute("aria-selected") === "true",
+			seriesActive: seriesMovieTab.getAttribute("aria-selected") === "false" && currentSeriesTab.getAttribute("aria-selected") === "true",
 			moviePosterCount,
 			seriesPosterCount: readySeriesPosters.visibleImages.length,
 			seriesCount: /Series · [\d,]+/.test(preview.textContent),
@@ -3320,15 +3330,16 @@ async function runPeopleConfigureLayoutScenario() {
 			noCombinedTotal: !preview.textContent.includes("Movies + Series") && !preview.textContent.includes("Combined"),
 			noAdditionalRequests: requests.length === requestsBeforePreview,
 		};
-		await clickAndSettle(movieTab);
-		preview = document.querySelector(".people-title-preview");
-		previewGrid = preview.querySelector(".people-title-preview-grid");
+		await clickAndSettle(seriesMovieTab);
 		const restoredMoviePosters = await waitForReadyPosterGrid({
-			preview,
+			preview: ".people-title-preview",
 			gridSelector: ".people-title-preview-grid",
 			expectedVisibleCount: expectedPosterCount,
+			expectedSelectedTab: "Movies",
 			label: `Restored live People Movies Preview at ${window.innerWidth}px`,
 		});
+		preview = restoredMoviePosters.preview;
+		previewGrid = restoredMoviePosters.grid;
 		const previewState = {
 			modalSurface: preview.dataset.previewSurface === "modal" && preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
 			outsidePeopleRow: preview.closest(".people-bulk-row") === null,
@@ -3350,7 +3361,11 @@ async function runPeopleConfigureLayoutScenario() {
 		previewState.escapeClosed = document.querySelector(".people-title-preview") === null;
 		previewState.escapeRestoredFocus = document.activeElement === previewTrigger;
 		await clickAndSettle(required(previewTrigger, "reopened Preview titles action"));
-		preview = document.querySelector(".people-title-preview");
+		preview = await waitForMountedCondition(() => {
+			const candidate = document.querySelector(".people-title-preview");
+			if (!candidate) return null;
+			return buttonContaining(candidate, "Close") ? candidate : null;
+		}, { label: `Reopened People Preview at ${window.innerWidth}px`, timeoutMs: 20_000 });
 		await clickAndSettle(required(buttonContaining(preview, "Close"), "preview Close action"));
 		previewState.closeRestoredFocus = document.activeElement === previewTrigger;
 
