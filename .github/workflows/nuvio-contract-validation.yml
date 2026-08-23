@@ -27,6 +27,8 @@ jobs:
         run: npm ci --prefix builder
 
       - name: Run frontend and Nuvio contract checks
+        env:
+          DEVTOOLS_STARTUP_MS: "30000"
         run: node scripts/check-all.mjs
 
       - name: Build builder
