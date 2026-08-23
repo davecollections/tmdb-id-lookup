@@ -13,7 +13,9 @@ import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
+	createBoundedStderrCapture,
 	createBrowserProcessTree,
+	resolveDevToolsStartupTimeout,
 	runWithLifecycleCleanup,
 	waitForDevToolsEndpoint,
 } from "./helpers/mounted-browser-lifecycle.mjs";
@@ -60,9 +62,11 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const devToolsStartupMs = resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS);
 	const resources = {
 		browserExecutable: null,
 		browserProcess: null,
+		browserStderrCapture: null,
 		browserConnection: null,
 		debugPort: null,
 		pageConnection: null,
@@ -104,6 +108,7 @@ async function runMountedPage() {
 			"--headless=new",
 			"--disable-background-networking",
 			"--disable-component-update",
+			"--disable-dev-shm-usage",
 			"--disable-gpu",
 			"--no-first-run",
 			"--no-sandbox",
@@ -113,31 +118,47 @@ async function runMountedPage() {
 			"about:blank",
 		], {
 			detached: process.platform !== "win32",
-			stdio: "ignore",
+			stdio: ["ignore", "ignore", "pipe"],
 			windowsHide: true,
 		});
-		await new Promise((resolve, reject) => {
-			const cleanup = () => {
-				resources.browserProcess.removeListener("spawn", onSpawn);
-				resources.browserProcess.removeListener("error", onError);
-			};
-			const onSpawn = () => {
-				cleanup();
-				resolve();
-			};
-			const onError = (error) => {
-				cleanup();
-				reject(error);
-			};
-			resources.browserProcess.once("spawn", onSpawn);
-			resources.browserProcess.once("error", onError);
-		});
+		resources.browserStderrCapture = createBoundedStderrCapture(resources.browserProcess.stderr);
+		try {
+			await new Promise((resolve, reject) => {
+				const cleanup = () => {
+					resources.browserProcess.removeListener("spawn", onSpawn);
+					resources.browserProcess.removeListener("error", onError);
+				};
+				const onSpawn = () => {
+					cleanup();
+					resolve();
+				};
+				const onError = (error) => {
+					cleanup();
+					reject(error);
+				};
+				resources.browserProcess.once("spawn", onSpawn);
+				resources.browserProcess.once("error", onError);
+			});
+		} catch (error) {
+			resources.browserStderrCapture.stop();
+			resources.browserStderrCapture = null;
+			throw error;
+		}
 		resources.processTree = createBrowserProcessTree({ rootPid: resources.browserProcess.pid });
 
-		const endpoint = await waitForDevToolsEndpoint({
-			profileDir: resources.profileDir,
-			browserProcess: resources.browserProcess,
-		});
+		let endpoint;
+		try {
+			endpoint = await waitForDevToolsEndpoint({
+				profileDir: resources.profileDir,
+				browserProcess: resources.browserProcess,
+				browserExecutable: resources.browserExecutable,
+				stderrCapture: resources.browserStderrCapture,
+				timeoutMs: devToolsStartupMs,
+			});
+		} finally {
+			resources.browserStderrCapture.stop();
+			resources.browserStderrCapture = null;
+		}
 		resources.debugPort = endpoint.port;
 		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl);
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);

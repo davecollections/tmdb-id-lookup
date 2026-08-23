@@ -7,6 +7,8 @@ import { promisify } from "node:util";
 
 import {
 	BrowserShutdownError,
+	DEFAULT_CHROME_STDERR_MAX_BYTES,
+	DEFAULT_DEVTOOLS_STARTUP_MS,
 	DEFAULT_REMOVE_RETRY_DELAYS_MS,
 	MountedCleanupAfterSuccessError,
 	MountedLifecycleError,
@@ -15,8 +17,10 @@ import {
 	abortableDelay,
 	cleanupMountedBrowser,
 	connectDevTools,
+	createBoundedStderrCapture,
 	createBrowserProcessTree,
 	removeDirectoryWithRetry,
+	resolveDevToolsStartupTimeout,
 	runWithLifecycleCleanup,
 	shutdownBrowser,
 	waitForChildExit,
@@ -99,6 +103,89 @@ function trackedTimers() {
 	};
 }
 
+test("DevTools startup timeout defaults for unset or blank configuration", () => {
+	assert.equal(resolveDevToolsStartupTimeout(undefined), DEFAULT_DEVTOOLS_STARTUP_MS);
+	assert.equal(resolveDevToolsStartupTimeout(null), DEFAULT_DEVTOOLS_STARTUP_MS);
+	assert.equal(resolveDevToolsStartupTimeout(""), DEFAULT_DEVTOOLS_STARTUP_MS);
+	assert.equal(resolveDevToolsStartupTimeout(" \t "), DEFAULT_DEVTOOLS_STARTUP_MS);
+});
+
+test("DevTools startup timeout accepts validated positive integer overrides", () => {
+	assert.equal(resolveDevToolsStartupTimeout("30000"), 30000);
+	assert.equal(resolveDevToolsStartupTimeout("2500"), 2500);
+	assert.equal(resolveDevToolsStartupTimeout("030000"), 30000);
+	assert.equal(resolveDevToolsStartupTimeout(" 30000 "), 30000);
+});
+
+test("DevTools startup timeout rejects ambiguous or invalid configuration", () => {
+	for (const value of ["0", "-1", "1.5", "NaN", "30000oops", "1e3", "9007199254740992"]) {
+		assert.throws(
+			() => resolveDevToolsStartupTimeout(value),
+			/DEVTOOLS_STARTUP_MS must be a .*positive integer in milliseconds/u,
+		);
+	}
+	assert.throws(
+		() => resolveDevToolsStartupTimeout(30000),
+		/DEVTOOLS_STARTUP_MS must be a positive integer in milliseconds/u,
+	);
+});
+
+test("bounded Chrome stderr capture is quiet when no stderr is available", () => {
+	const capture = createBoundedStderrCapture(null);
+	assert.equal(capture.byteLength(), 0);
+	assert.equal(capture.text(), "");
+	capture.stop();
+});
+
+test("bounded Chrome stderr capture retains small string and Buffer chunks", () => {
+	const stream = new EventEmitter();
+	const capture = createBoundedStderrCapture(stream);
+	stream.emit("data", "first line\n");
+	stream.emit("data", Buffer.from("second line\n"));
+	assert.equal(capture.text(), "first line\nsecond line\n");
+	assert.equal(capture.byteLength(), Buffer.byteLength(capture.text()));
+	capture.stop();
+});
+
+test("bounded Chrome stderr capture retains only the configured tail across many chunks", () => {
+	const stream = new EventEmitter();
+	const capture = createBoundedStderrCapture(stream, { maxBytes: 8 });
+	for (const chunk of ["abc", Buffer.from("defg"), "hijklmnop", "qrst"]) stream.emit("data", chunk);
+	assert.equal(capture.text(), "mnopqrst");
+	assert.equal(capture.byteLength(), 8);
+	assert.ok(capture.byteLength() <= DEFAULT_CHROME_STDERR_MAX_BYTES);
+	capture.stop();
+});
+
+test("bounded Chrome stderr capture releases listeners when the stream ends", () => {
+	const stream = new EventEmitter();
+	let unrefCalls = 0;
+	stream.unref = () => { unrefCalls += 1; };
+	const capture = createBoundedStderrCapture(stream);
+	assert.equal(unrefCalls, 1);
+	stream.emit("end");
+	for (const event of ["data", "error", "end", "close"]) assert.equal(stream.listenerCount(event), 0);
+	capture.stop();
+});
+
+test("successful DevTools readiness does not inspect or emit captured stderr", async () => {
+	let stderrReads = 0;
+	const endpoint = await waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: fakeChild(320),
+		fsApi: { readFile: async () => "45123\n/devtools/browser/test-browser\n" },
+		stderrCapture: {
+			error: () => null,
+			text: () => {
+				stderrReads += 1;
+				return "successful startup warning";
+			},
+		},
+	});
+	assert.equal(endpoint.port, 45123);
+	assert.equal(stderrReads, 0);
+});
+
 test("DevToolsActivePort readiness tolerates absent and partial writes before returning Chrome's endpoint", async () => {
 	const child = fakeChild(321);
 	const reads = [
@@ -131,13 +218,25 @@ test("DevToolsActivePort readiness tolerates absent and partial writes before re
 	assert.equal(elapsedMs, 20);
 });
 
-test("DevTools readiness reports Chrome exit state instead of an opaque fetch error", async () => {
+test("DevTools readiness reports Chrome exit state and bounded stderr instead of a timeout", async () => {
 	const child = fakeChild(654);
 	child.exitCode = 23;
+	const stream = new EventEmitter();
+	const stderrCapture = createBoundedStderrCapture(stream, { maxBytes: 64 });
+	stream.emit("data", "zygote initialization failed");
 	await assert.rejects(waitForDevToolsEndpoint({
 		profileDir: "test-profile",
 		browserProcess: child,
-	}), /Chrome exited before publishing.*rootPid=654, exitCode=23, signalCode=none/u);
+		browserExecutable: "/usr/bin/google-chrome",
+		stderrCapture,
+	}), (error) => {
+		assert.match(error.message, /Chrome exited before publishing.*rootPid=654, exitCode=23, signalCode=none/u);
+		assert.match(error.message, /executable="\/usr\/bin\/google-chrome"/u);
+		assert.match(error.message, /chromeStderr="zygote initialization failed"/u);
+		assert.doesNotMatch(error.message, /within \d+ ms/u);
+		return true;
+	});
+	stderrCapture.stop();
 });
 
 test("DevTools readiness timeout retains its lifecycle diagnostic", async () => {
@@ -153,6 +252,93 @@ test("DevTools readiness timeout retains its lifecycle diagnostic", async () => 
 		now: () => elapsedMs,
 	}), /within 40 ms.*rootPid=987.*DevToolsActivePort has not been created/u);
 	assert.equal(elapsedMs, 40);
+});
+
+test("DevTools timeout includes a deterministic bounded Chrome profile inventory", async () => {
+	const child = fakeChild(988);
+	let elapsedMs = 0;
+	const entries = Array.from({ length: 55 }, (_, index) => `entry-${String(54 - index).padStart(2, "0")}`);
+	await assert.rejects(waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+		browserExecutable: "/usr/bin/google-chrome",
+		timeoutMs: 20,
+		pollIntervalMs: 10,
+		fsApi: {
+			readFile: async () => { throw missingError(); },
+			readdir: async () => entries,
+		},
+		delay: async (delayMs) => { elapsedMs += delayMs; },
+		now: () => elapsedMs,
+	}), (error) => {
+		assert.match(error.message, /within 20 ms.*rootPid=988.*lastState=DevToolsActivePort has not been created/u);
+		assert.match(error.message, /executable="\/usr\/bin\/google-chrome"/u);
+		assert.match(error.message, /chromeStderr="<none captured>"/u);
+		assert.match(error.message, /profileEntries=\["entry-00","entry-01"/u);
+		assert.match(error.message, /"entry-49"\]; profileEntriesOmitted=5/u);
+		assert.doesNotMatch(error.message, /entry-50/u);
+		return true;
+	});
+});
+
+test("DevTools timeout distinguishes an incomplete ActivePort file", async () => {
+	const child = fakeChild(989);
+	let elapsedMs = 0;
+	await assert.rejects(waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+		timeoutMs: 10,
+		pollIntervalMs: 5,
+		fsApi: {
+			readFile: async () => "45123\n",
+			readdir: async () => ["DevToolsActivePort", "Local State"],
+		},
+		delay: async (delayMs) => { elapsedMs += delayMs; },
+		now: () => elapsedMs,
+	}), /lastState=DevToolsActivePort was incomplete or invalid.*profileEntries=\["DevToolsActivePort","Local State"\]/u);
+});
+
+test("DevTools timeout distinguishes an unreadable ActivePort file", async () => {
+	const child = fakeChild(990);
+	let elapsedMs = 0;
+	const unreadable = new Error("permission denied");
+	unreadable.code = "EACCES";
+	await assert.rejects(waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+		timeoutMs: 10,
+		pollIntervalMs: 5,
+		fsApi: {
+			readFile: async () => { throw unreadable; },
+			readdir: async () => ["DevToolsActivePort"],
+		},
+		delay: async (delayMs) => { elapsedMs += delayMs; },
+		now: () => elapsedMs,
+	}), /lastState=DevToolsActivePort could not be read: permission denied/u);
+});
+
+test("profile-directory diagnostic failure never masks the Chrome startup timeout", async () => {
+	const child = fakeChild(991);
+	let elapsedMs = 0;
+	const denied = new Error("profile access denied");
+	denied.code = "EACCES";
+	await assert.rejects(waitForDevToolsEndpoint({
+		profileDir: "test-profile",
+		browserProcess: child,
+		timeoutMs: 10,
+		pollIntervalMs: 5,
+		fsApi: {
+			readFile: async () => { throw missingError(); },
+			readdir: async () => { throw denied; },
+		},
+		delay: async (delayMs) => { elapsedMs += delayMs; },
+		now: () => elapsedMs,
+	}), (error) => {
+		assert.match(error.message, /^Chrome did not publish a valid DevTools endpoint within 10 ms/u);
+		assert.match(error.message, /lastState=DevToolsActivePort has not been created/u);
+		assert.match(error.message, /profileEntries=<unavailable: EACCES: profile access denied>/u);
+		return true;
+	});
 });
 
 test("a DevTools WebSocket that never opens is closed at its bounded connection timeout", async () => {

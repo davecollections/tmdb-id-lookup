@@ -16,6 +16,8 @@ Mounted-browser suites register their tests during module loading and start one 
 
 Chrome owns DevTools port selection. Launch it with `--remote-debugging-port=0` and read the fresh profile's `DevToolsActivePort` file; do not reserve and release a port before launch. Browser and page WebSocket opens, fixture execution, cooperative shutdown, and forced shutdown must all remain bounded.
 
+Mounted Chrome startup allows 10,000 ms by default. `DEVTOOLS_STARTUP_MS` may provide a positive integer millisecond override; an unset or blank value keeps the default, surrounding whitespace is ignored, and zero, negative, fractional, malformed, or unsafe integer values fail clearly. Nuvio Contract Validation sets the override to 30,000 ms for GitHub-hosted CI. Exceeding the allowance remains a test failure with bounded process, profile-directory, and Chrome-stderr diagnostics; mounted browser checks are not skipped or converted to success when Chrome starts slowly or cannot become ready.
+
 The normal ownership path is:
 
 1. request `Browser.close` through the browser-level DevTools connection;

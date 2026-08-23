@@ -15,6 +15,8 @@ export const TRANSIENT_REMOVE_CODES = Object.freeze([
 
 export const DEFAULT_REMOVE_RETRY_DELAYS_MS = Object.freeze([25, 50, 100, 200]);
 export const DEFAULT_DEVTOOLS_STARTUP_MS = 10000;
+export const DEFAULT_CHROME_STDERR_MAX_BYTES = 8 * 1024;
+export const DEFAULT_PROFILE_DIAGNOSTIC_ENTRY_LIMIT = 50;
 export const DEFAULT_DEVTOOLS_CONNECTION_MS = 5000;
 export const DEFAULT_DEVTOOLS_COMMAND_MS = 5000;
 export const DEFAULT_GRACEFUL_SHUTDOWN_MS = 5000;
@@ -22,6 +24,106 @@ export const DEFAULT_FALLBACK_SHUTDOWN_MS = 3000;
 
 function asError(value) {
 	return value instanceof Error ? value : new Error(String(value));
+}
+
+function boundedDiagnosticText(value, maxLength = 300) {
+	const text = String(value);
+	return text.length <= maxLength ? text : `${text.slice(0, maxLength - 1)}…`;
+}
+
+export function resolveDevToolsStartupTimeout(value) {
+	if (value === undefined || value === null) return DEFAULT_DEVTOOLS_STARTUP_MS;
+	if (typeof value !== "string") {
+		throw new TypeError("DEVTOOLS_STARTUP_MS must be a positive integer in milliseconds.");
+	}
+	const normalized = value.trim();
+	if (normalized === "") return DEFAULT_DEVTOOLS_STARTUP_MS;
+	if (!/^\d+$/u.test(normalized)) {
+		throw new TypeError(
+			`DEVTOOLS_STARTUP_MS must be a positive integer in milliseconds; received ${JSON.stringify(value)}.`,
+		);
+	}
+	const timeoutMs = Number(normalized);
+	if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+		throw new TypeError(
+			`DEVTOOLS_STARTUP_MS must be a positive integer in milliseconds; received ${JSON.stringify(value)}.`,
+		);
+	}
+	return timeoutMs;
+}
+
+export function createBoundedStderrCapture(
+	stream,
+	{ maxBytes = DEFAULT_CHROME_STDERR_MAX_BYTES } = {},
+) {
+	if (!Number.isInteger(maxBytes) || maxBytes <= 0) {
+		throw new TypeError("A positive integer Chrome stderr byte limit is required.");
+	}
+
+	let tail = Buffer.alloc(0);
+	let captureError = null;
+	let attached = false;
+	let capturing = false;
+	const onData = (chunk) => {
+		try {
+			const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+			const boundedChunk = buffer.length > maxBytes
+				? buffer.subarray(buffer.length - maxBytes)
+				: buffer;
+			const keepFromTail = Math.max(0, maxBytes - boundedChunk.length);
+			const retainedTail = tail.length > keepFromTail
+				? tail.subarray(tail.length - keepFromTail)
+				: tail;
+			tail = Buffer.concat([retainedTail, boundedChunk]);
+		} catch (error) {
+			captureError = asError(error);
+			stop();
+		}
+	};
+	const onError = (error) => {
+		captureError = asError(error);
+	};
+
+	function stop() {
+		if (!capturing) return;
+		capturing = false;
+		stream.removeListener("data", onData);
+	}
+
+	function detach() {
+		stop();
+		if (!attached) return;
+		attached = false;
+		stream.removeListener("error", onError);
+		stream.removeListener("end", detach);
+		stream.removeListener("close", detach);
+	}
+
+	if (
+		stream &&
+		typeof stream.on === "function" &&
+		typeof stream.once === "function" &&
+		typeof stream.removeListener === "function"
+	) {
+		attached = true;
+		capturing = true;
+		stream.on("data", onData);
+		stream.on("error", onError);
+		stream.once("end", detach);
+		stream.once("close", detach);
+		try {
+			stream.unref?.();
+		} catch {
+			// Capturing remains bounded even when the stream cannot be unreferenced.
+		}
+	}
+
+	return Object.freeze({
+		byteLength: () => tail.length,
+		error: () => captureError,
+		text: () => tail.toString("utf8"),
+		stop,
+	});
 }
 
 function abortError() {
@@ -46,6 +148,51 @@ function browserProcessStatus(browserProcess) {
 function browserProcessExited(browserProcess) {
 	return Boolean(browserProcess) &&
 		(browserProcess.exitCode !== null || browserProcess.signalCode !== null);
+}
+
+function chromeStderrDiagnostic(stderrCapture) {
+	try {
+		const captureError = stderrCapture?.error?.();
+		if (captureError) {
+			return `chromeStderr=<capture unavailable: ${boundedDiagnosticText(asError(captureError).message)}>`;
+		}
+		const stderrText = stderrCapture?.text?.() ?? "";
+		return `chromeStderr=${JSON.stringify(stderrText || "<none captured>")}`;
+	} catch (error) {
+		return `chromeStderr=<capture unavailable: ${boundedDiagnosticText(asError(error).message)}>`;
+	}
+}
+
+function chromeLaunchDiagnostic(browserExecutable, stderrCapture) {
+	return [
+		`executable=${JSON.stringify(browserExecutable ?? "unknown")}`,
+		chromeStderrDiagnostic(stderrCapture),
+	].join("; ");
+}
+
+function profileEntryName(entry) {
+	const name = typeof entry === "string" ? entry : entry?.name;
+	if (typeof name !== "string") return "<unnamed entry>";
+	const suffix = typeof entry?.isDirectory === "function" && entry.isDirectory() ? "/" : "";
+	return boundedDiagnosticText(`${name}${suffix}`, 120);
+}
+
+async function chromeProfileDiagnostic(profileDir, fsApi) {
+	try {
+		const entries = (await fsApi.readdir(profileDir, { withFileTypes: true }))
+			.map(profileEntryName)
+			.sort();
+		const visibleEntries = entries.slice(0, DEFAULT_PROFILE_DIAGNOSTIC_ENTRY_LIMIT);
+		const omittedCount = entries.length - visibleEntries.length;
+		return [
+			`profileEntries=${JSON.stringify(visibleEntries)}`,
+			omittedCount > 0 ? `profileEntriesOmitted=${omittedCount}` : null,
+		].filter(Boolean).join("; ");
+	} catch (error) {
+		if (error?.code === "ENOENT") return "profileEntries=<profile directory absent>";
+		const code = typeof error?.code === "string" ? `${error.code}: ` : "";
+		return `profileEntries=<unavailable: ${code}${boundedDiagnosticText(asError(error).message)}>`;
+	}
 }
 
 export function abortableDelay(
@@ -133,6 +280,8 @@ export async function withDeadline(
 export async function waitForDevToolsEndpoint({
 	profileDir,
 	browserProcess,
+	browserExecutable,
+	stderrCapture,
 	timeoutMs = DEFAULT_DEVTOOLS_STARTUP_MS,
 	pollIntervalMs = 50,
 	fsApi = fs,
@@ -154,7 +303,8 @@ export async function waitForDevToolsEndpoint({
 	while (now() < deadlineAt) {
 		if (browserProcessExited(browserProcess)) {
 			throw new Error(
-				`Chrome exited before publishing its DevTools endpoint (${browserProcessStatus(browserProcess)}).`,
+				`Chrome exited before publishing its DevTools endpoint ` +
+				`(${browserProcessStatus(browserProcess)}; ${chromeLaunchDiagnostic(browserExecutable, stderrCapture)}).`,
 			);
 		}
 
@@ -187,12 +337,15 @@ export async function waitForDevToolsEndpoint({
 
 	if (browserProcessExited(browserProcess)) {
 		throw new Error(
-			`Chrome exited before publishing its DevTools endpoint (${browserProcessStatus(browserProcess)}).`,
+			`Chrome exited before publishing its DevTools endpoint ` +
+			`(${browserProcessStatus(browserProcess)}; ${chromeLaunchDiagnostic(browserExecutable, stderrCapture)}).`,
 		);
 	}
+	const profileDiagnostic = await chromeProfileDiagnostic(profileDir, fsApi);
 	throw new Error(
 		`Chrome did not publish a valid DevTools endpoint within ${timeoutMs} ms ` +
-		`(${browserProcessStatus(browserProcess)}; lastState=${lastProblem}).`,
+		`(${browserProcessStatus(browserProcess)}; lastState=${lastProblem}; ` +
+		`${chromeLaunchDiagnostic(browserExecutable, stderrCapture)}; ${profileDiagnostic}).`,
 	);
 }
 
