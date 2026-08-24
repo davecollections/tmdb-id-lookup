@@ -700,6 +700,45 @@ function setSelectValue(select, value) {
 	select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+const GENRE_SUMMARY_TEST_NAMES = Object.freeze([
+	"Action & Adventure",
+	"Science Fiction",
+	"Sci-Fi & Fantasy",
+	"War & Politics",
+	"Action",
+	"Adventure",
+	"Animation",
+]);
+
+function genreCardByName(dialog, name) {
+	return [...dialog.querySelectorAll(".genre-catalogue-choice")].find((card) => card.dataset.genreName === name) ?? null;
+}
+
+function genreSummaryState(dialog, expectedCount) {
+	const tray = dialog.querySelector(".genre-hierarchy-selected-tray");
+	const count = tray?.querySelector(".people-selected-summary > strong") ?? null;
+	const disclosure = tray?.querySelector(".removable-selection-disclosure") ?? null;
+	const countRect = count?.getBoundingClientRect() ?? null;
+	const disclosureRect = disclosure?.getBoundingClientRect() ?? null;
+	const overlaps = Boolean(countRect && disclosureRect
+		&& countRect.left < disclosureRect.right - 0.5
+		&& countRect.right > disclosureRect.left + 0.5
+		&& countRect.top < disclosureRect.bottom - 0.5
+		&& countRect.bottom > disclosureRect.top + 0.5);
+	return {
+		count: expectedCount,
+		trayPresent: Boolean(tray),
+		countText: count?.textContent ?? null,
+		disclosurePresent: Boolean(disclosure),
+		disclosureLabel: disclosure?.querySelector("summary")?.textContent ?? null,
+		disclosureCollapsed: disclosure ? !disclosure.open : null,
+		inlinePillsPresent: Boolean(tray?.querySelector(".removable-selection-pills")),
+		countDisclosureOverlap: overlaps,
+		removeControlCount: disclosure?.querySelectorAll('[aria-label^="Remove "]').length ?? 0,
+		noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1,
+	};
+}
+
 async function runGenreHierarchyScenario() {
 	const controller = createController();
 	const revisionBefore = controller.getState().revision;
@@ -738,7 +777,68 @@ async function runGenreHierarchyScenario() {
 			cardCount: cards.length,
 			nativeCheckboxes: cards.every((card) => card.querySelector('input[type="checkbox"]')),
 		};
-		const target = cards[12];
+		const selectionCountStates = [genreSummaryState(dialog, 0)];
+		for (const name of GENRE_SUMMARY_TEST_NAMES) {
+			await clickAndSettle(genreCardByName(dialog, name));
+			selectionCountStates.push(genreSummaryState(dialog, selectionCountStates.length));
+		}
+		let selectedDisclosure = dialog.querySelector(".genre-hierarchy-selected-tray .removable-selection-disclosure");
+		const selectedDisclosureSummary = selectedDisclosure.querySelector("summary");
+		const dialogRectBeforeDisclosure = dialog.getBoundingClientRect();
+		const actionRectBeforeDisclosure = action.getBoundingClientRect();
+		const documentScrollBeforeDisclosure = window.scrollY;
+		await clickAndSettle(selectedDisclosureSummary);
+		const selectedDisclosureList = selectedDisclosure.querySelector("ul");
+		const selectedDisclosureListStyle = getComputedStyle(selectedDisclosureList);
+		const openDisclosureState = {
+			opened: selectedDisclosure.open,
+			removeControlCount: selectedDisclosure.querySelectorAll('[aria-label^="Remove "]').length,
+			bounded: selectedDisclosureList.clientHeight <= Math.min(window.innerHeight * 0.36, 340) + 2,
+			scrollableWhenNeeded: selectedDisclosureListStyle.overflowY === "auto",
+		};
+		await clickAndSettle(selectedDisclosureSummary);
+		openDisclosureState.closed = !selectedDisclosure.open;
+		openDisclosureState.outerStable = Math.abs(dialog.getBoundingClientRect().top - dialogRectBeforeDisclosure.top) <= 1
+			&& Math.abs(dialog.getBoundingClientRect().bottom - dialogRectBeforeDisclosure.bottom) <= 1;
+		openDisclosureState.documentStable = window.scrollY === documentScrollBeforeDisclosure;
+		openDisclosureState.actionStable = Math.abs(action.getBoundingClientRect().top - actionRectBeforeDisclosure.top) <= 1
+			&& Math.abs(action.getBoundingClientRect().bottom - actionRectBeforeDisclosure.bottom) <= 1;
+
+		await clickAndSettle(selectedDisclosureSummary);
+		await act(async () => {
+			setInputValue(search, "Western");
+			await afterCommittedEffects();
+		});
+		const filteredSelectedCardAbsent = genreCardByName(dialog, GENRE_SUMMARY_TEST_NAMES[0]) === null;
+		const filteredRemoveAction = dialog.querySelector(`[aria-label="Remove ${GENRE_SUMMARY_TEST_NAMES[0]}"]`);
+		await clickAndSettle(filteredRemoveAction);
+		const removedWhileFiltered = dialog.querySelector(".people-selected-summary > strong")?.textContent === "6 Genres selected"
+			&& dialog.querySelector(`[aria-label="Remove ${GENRE_SUMMARY_TEST_NAMES[0]}"]`) === null;
+		await act(async () => {
+			setInputValue(search, "");
+			await afterCommittedEffects();
+		});
+		await clickAndSettle(genreCardByName(dialog, GENRE_SUMMARY_TEST_NAMES[0]));
+		selectedDisclosure = dialog.querySelector(".genre-hierarchy-selected-tray .removable-selection-disclosure");
+		if (!selectedDisclosure.open) await clickAndSettle(selectedDisclosure.querySelector("summary"));
+		const selectedOrder = [...selectedDisclosure.querySelectorAll('[aria-label^="Remove "]')].map((button) => button.getAttribute("aria-label").replace(/^Remove /, ""));
+		const expectedReselectedOrder = [...GENRE_SUMMARY_TEST_NAMES.slice(1), GENRE_SUMMARY_TEST_NAMES[0]];
+		const summaryInteraction = {
+			openDisclosureState,
+			filteredSelectedCardAbsent,
+			filteredRemoveAvailable: Boolean(filteredRemoveAction),
+			removedWhileFiltered,
+			reselectedCount: dialog.querySelector(".people-selected-summary > strong")?.textContent ?? null,
+			selectedOrder,
+			reselectedAtEnd: JSON.stringify(selectedOrder) === JSON.stringify(expectedReselectedOrder),
+			namedRemoveControls: selectedOrder.length === GENRE_SUMMARY_TEST_NAMES.length,
+		};
+		await clickAndSettle(selectedDisclosure.querySelector("summary"));
+		await clickAndSettle(buttonContaining(dialog.querySelector(".genre-selection-actions"), "Clear all"));
+		summaryInteraction.zeroRestored = genreSummaryState(dialog, 0);
+
+		const focusCards = [...dialog.querySelectorAll(".genre-catalogue-choice")];
+		const target = focusCards[12];
 		const scrollRect = scrollOwner.getBoundingClientRect();
 		const cardRect = target.getBoundingClientRect();
 		const visibleHeight = Math.min(42, cardRect.height / 3);
@@ -776,6 +876,26 @@ async function runGenreHierarchyScenario() {
 		const explicitSearchFocused = document.activeElement === search;
 		await clickAndSettle(buttonContaining(dialog.querySelector(".genre-selection-actions"), "Select all"));
 		const selectedAll = dialog.querySelector(".genre-selection-toolbar")?.textContent.includes("27 of 27 selected") ?? false;
+		selectionCountStates.push(genreSummaryState(dialog, 27));
+		const largeDisclosureElement = dialog.querySelector(".genre-hierarchy-selected-tray .removable-selection-disclosure");
+		const largeDisclosureDialogRect = dialog.getBoundingClientRect();
+		const largeDisclosureActionRect = action.getBoundingClientRect();
+		const largeDisclosureDocumentScroll = window.scrollY;
+		await clickAndSettle(largeDisclosureElement.querySelector("summary"));
+		const largeDisclosureList = largeDisclosureElement.querySelector("ul");
+		const largeDisclosure = {
+			opened: largeDisclosureElement.open,
+			removeControlCount: largeDisclosureElement.querySelectorAll('[aria-label^="Remove "]').length,
+			bounded: largeDisclosureList.clientHeight <= Math.min(window.innerHeight * 0.36, 340) + 2,
+			scrollable: getComputedStyle(largeDisclosureList).overflowY === "auto" && largeDisclosureList.scrollHeight >= largeDisclosureList.clientHeight,
+		};
+		await clickAndSettle(largeDisclosureElement.querySelector("summary"));
+		largeDisclosure.closed = !largeDisclosureElement.open;
+		largeDisclosure.outerStable = Math.abs(dialog.getBoundingClientRect().top - largeDisclosureDialogRect.top) <= 1
+			&& Math.abs(dialog.getBoundingClientRect().bottom - largeDisclosureDialogRect.bottom) <= 1;
+		largeDisclosure.documentStable = window.scrollY === largeDisclosureDocumentScroll;
+		largeDisclosure.actionStable = Math.abs(action.getBoundingClientRect().top - largeDisclosureActionRect.top) <= 1
+			&& Math.abs(action.getBoundingClientRect().bottom - largeDisclosureActionRect.bottom) <= 1;
 		const selectionIndicator = dialog.querySelector('.genre-catalogue-choice[data-selected="true"] .selectable-card-indicator');
 		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
 		const mediaPill = dialog.querySelector('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"][value="both"]')?.closest("label");
@@ -957,6 +1077,9 @@ async function runGenreHierarchyScenario() {
 		return {
 			width: window.innerWidth,
 			initial,
+			selectionCountStates,
+			summaryInteraction,
+			largeDisclosure,
 			explicitSearchFocused,
 			selectedAll,
 			selectionState: selectionIndicator?.dataset.selectionState ?? null,
@@ -980,6 +1103,59 @@ async function runGenreHierarchyScenario() {
 			},
 			oneScrollOwner: dialog.querySelectorAll(".add-source-scroll").length === 1,
 			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+async function runGenreNewFolderSummaryScenario() {
+	const controller = createController();
+	const imported = controller.importValue([{ id: "destination", title: "Destination", folders: [] }]);
+	if (!imported.ok) throw new Error("Genre New Folder summary fixture could not import its destination collection.");
+	const destination = controller.getState().project.collections[0];
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-folder",
+			project: controller.getState().project,
+			projectRevision: controller.getState().revision,
+			currentYear: 2026,
+			destinationCollectionInternalId: destination.internalId,
+			destinationCollectionTitle: destination.editable.title,
+			initialOptionId: "genres",
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyDecades() { return { ok: true }; },
+			onApplyPeople() { return { ok: true }; },
+			onApplyFranchises() { return { ok: true }; },
+			onApplyStudios() { return { ok: true }; },
+			onApplyNetworks() { return { ok: true }; },
+			onApplyGenres() { return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = document.querySelector('[data-creation-option="genres"]');
+		const zero = genreSummaryState(dialog, 0);
+		for (const name of GENRE_SUMMARY_TEST_NAMES.slice(0, 4)) await clickAndSettle(genreCardByName(dialog, name));
+		const four = genreSummaryState(dialog, 4);
+		const disclosure = dialog.querySelector(".genre-hierarchy-selected-tray .removable-selection-disclosure");
+		await clickAndSettle(disclosure.querySelector("summary"));
+		const opened = disclosure.open && disclosure.querySelectorAll('[aria-label^="Remove "]').length === 4;
+		await clickAndSettle(disclosure.querySelector("summary"));
+		return {
+			width: window.innerWidth,
+			scope: dialog.dataset.creationScope ?? null,
+			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
+			zero,
+			four,
+			opened,
+			closed: !disclosure.open,
+			oneScrollOwner: dialog.querySelectorAll(".add-source-scroll").length === 1,
 		};
 	} finally {
 		await act(async () => root.unmount());
@@ -4076,6 +4252,7 @@ async function runMountedRegressions() {
 window.__builderSourceEditMounted = { status: "running" };
 window.__runGenreToolbarScenario = runGenreToolbarScenario;
 window.__runGenreHierarchyScenario = runGenreHierarchyScenario;
+window.__runGenreNewFolderSummaryScenario = runGenreNewFolderSummaryScenario;
 window.__runDecadesActionLayoutScenario = runDecadesActionLayoutScenario;
 window.__runDecadesGenreLayoutScenario = runDecadesGenreLayoutScenario;
 window.__runDecadesExclusionLayoutScenario = runDecadesExclusionLayoutScenario;

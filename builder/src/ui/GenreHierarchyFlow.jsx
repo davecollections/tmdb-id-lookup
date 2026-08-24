@@ -39,7 +39,6 @@ import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-const COMPACT_GENRE_THRESHOLD = 6;
 
 function scopeLabel(scope) {
 	return scope === "new-folder" ? "New Folder" : "New Collection";
@@ -55,7 +54,7 @@ function SelectStep({ query, selection, genres, headingRef, onQueryChange, onCle
 		<section className="genre-hierarchy-select genre-browse-step" aria-labelledby="genre-hierarchy-select-title">
 			<div className="add-source-section-heading genre-browse-heading"><div><p className="panel-kicker">Step 1</p><h3 id="genre-hierarchy-select-title" ref={headingRef} tabIndex={-1}>Select Genres</h3></div></div>
 			<p className="studio-configure-helper">Choose official TMDB Genres in the folder order you want.</p>
-			{genres.length ? <section className="people-selected-tray genre-hierarchy-selected-tray"><div className="people-selected-summary"><strong>{genres.length} Genre{genres.length === 1 ? "" : "s"} selected</strong><RemovableSelectionSummary items={selectionItems(genres)} onRemove={onRemove} ariaLabel="Selected Genres" disclosureLabel="View selected Genres" compactThreshold={COMPACT_GENRE_THRESHOLD} /></div></section> : null}
+			{genres.length ? <section className="people-selected-tray genre-hierarchy-selected-tray"><div className="people-selected-summary"><strong>{genres.length} Genre{genres.length === 1 ? "" : "s"} selected</strong><RemovableSelectionSummary items={selectionItems(genres)} onRemove={onRemove} ariaLabel="Selected Genres" disclosureLabel="View selected Genres" alwaysDisclose showDisclosureCount={false} /></div></section> : null}
 			<GenreSelectionToolbar selectionCount={selection.length} totalCount={GENRE_CONCEPTS.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
 			<div className="editor-field add-source-query-field genre-search-field">
 				<label htmlFor="genre-hierarchy-query">Search Genres</label>

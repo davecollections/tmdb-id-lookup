@@ -190,6 +190,7 @@ async function runMountedPage() {
 				const studioHierarchyWidths = [];
 				const networkHierarchyWidths = [];
 				const genreHierarchyWidths = [];
+				const genreNewFolderSummaryWidths = [];
 				const networkLivePreviewWidths = [];
 				const genreLivePreviewWidths = [];
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
@@ -236,6 +237,13 @@ async function runMountedPage() {
 					});
 					if (genreHierarchyEvaluation.exceptionDetails) throw new Error(genreHierarchyEvaluation.exceptionDetails.exception?.description ?? genreHierarchyEvaluation.exceptionDetails.text);
 					genreHierarchyWidths.push(genreHierarchyEvaluation.result?.value);
+					const genreNewFolderSummaryEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runGenreNewFolderSummaryScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (genreNewFolderSummaryEvaluation.exceptionDetails) throw new Error(genreNewFolderSummaryEvaluation.exceptionDetails.exception?.description ?? genreNewFolderSummaryEvaluation.exceptionDetails.text);
+					genreNewFolderSummaryWidths.push(genreNewFolderSummaryEvaluation.result?.value);
 				}
 				const networkDeferredArtworkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runNetworkDeferredArtworkScenario()",
@@ -318,7 +326,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, networkLivePreviewWidths, genreLivePreviewWidths, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, networkLivePreviewWidths, genreLivePreviewWidths, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -478,6 +486,50 @@ test("mounted Genre hierarchy preserves browse-first focus, configuration state,
 			cardCount: 27,
 			nativeCheckboxes: true,
 		}, `${width}px browse-first selection`);
+		assert.deepEqual(result.selectionCountStates.map((state) => state.count), [0, 1, 2, 3, 4, 5, 6, 7, 27], `${width}px selected-summary counts`);
+		const zeroSummary = result.selectionCountStates[0];
+		assert.equal(zeroSummary.trayPresent, false, `${width}px zero selected tray`);
+		assert.equal(zeroSummary.disclosurePresent, false, `${width}px zero selected disclosure`);
+		assert.equal(zeroSummary.inlinePillsPresent, false, `${width}px zero selected pills`);
+		for (const state of result.selectionCountStates.slice(1)) {
+			assert.equal(state.trayPresent, true, `${width}px ${state.count} selected tray`);
+			assert.equal(state.countText, `${state.count} Genre${state.count === 1 ? "" : "s"} selected`, `${width}px ${state.count} selected count`);
+			assert.equal(state.disclosurePresent, true, `${width}px ${state.count} selected disclosure`);
+			assert.equal(state.disclosureLabel, "View selected Genres", `${width}px ${state.count} disclosure label`);
+			assert.equal(state.disclosureCollapsed, true, `${width}px ${state.count} collapsed by default`);
+			assert.equal(state.inlinePillsPresent, false, `${width}px ${state.count} no inline pills`);
+			assert.equal(state.countDisclosureOverlap, false, `${width}px ${state.count} count/disclosure separation`);
+			assert.equal(state.removeControlCount, state.count, `${width}px ${state.count} named removal controls`);
+			assert.equal(state.noHorizontalOverflow, true, `${width}px ${state.count} selected-summary overflow`);
+		}
+		assert.deepEqual(result.summaryInteraction.openDisclosureState, {
+			opened: true,
+			removeControlCount: 7,
+			bounded: true,
+			scrollableWhenNeeded: true,
+			closed: true,
+			outerStable: true,
+			documentStable: true,
+			actionStable: true,
+		}, `${width}px selected disclosure interaction`);
+		assert.equal(result.summaryInteraction.filteredSelectedCardAbsent, true, `${width}px filtered selected card absent`);
+		assert.equal(result.summaryInteraction.filteredRemoveAvailable, true, `${width}px filtered selected removal available`);
+		assert.equal(result.summaryInteraction.removedWhileFiltered, true, `${width}px filtered selected removal`);
+		assert.equal(result.summaryInteraction.reselectedCount, "7 Genres selected", `${width}px reselected count`);
+		assert.deepEqual(result.summaryInteraction.selectedOrder, ["Science Fiction", "Sci-Fi & Fantasy", "War & Politics", "Action", "Adventure", "Animation", "Action & Adventure"], `${width}px selected order`);
+		assert.equal(result.summaryInteraction.reselectedAtEnd, true, `${width}px reselect at end`);
+		assert.equal(result.summaryInteraction.namedRemoveControls, true, `${width}px named removal controls`);
+		assert.equal(result.summaryInteraction.zeroRestored.trayPresent, false, `${width}px clear all restores no summary`);
+		assert.deepEqual(result.largeDisclosure, {
+			opened: true,
+			removeControlCount: 27,
+			bounded: true,
+			scrollable: true,
+			closed: true,
+			outerStable: true,
+			documentStable: true,
+			actionStable: true,
+		}, `${width}px 27-Genre disclosure`);
 		assert.equal(result.explicitSearchFocused, true, `${width}px explicit Search focus`);
 		assert.equal(result.selectedAll, true, `${width}px Select all`);
 		assert.deepEqual({ state: result.selectionState, tick: result.selectionTick }, {
@@ -592,6 +644,27 @@ test("mounted Genre hierarchy preserves browse-first focus, configuration state,
 		}, `${width}px contextual hierarchy source titles`);
 		assert.equal(result.oneScrollOwner, true, `${width}px one scroll owner`);
 		assert.equal(result.noHorizontalOverflow, true, `${width}px horizontal overflow`);
+	}
+});
+
+test("mounted Genre New Folder uses the same compact selected-items disclosure at every required width", () => {
+	assert.deepEqual(mountedResults.genreNewFolderSummaryWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.genreNewFolderSummaryWidths) {
+		const width = result.width;
+		assert.equal(result.scope, "new-folder", `${width}px New Folder scope`);
+		assert.equal(result.stage, "select", `${width}px New Folder Select stage`);
+		assert.equal(result.zero.trayPresent, false, `${width}px New Folder zero summary`);
+		assert.equal(result.four.countText, "4 Genres selected", `${width}px New Folder selected count`);
+		assert.equal(result.four.disclosurePresent, true, `${width}px New Folder disclosure`);
+		assert.equal(result.four.disclosureLabel, "View selected Genres", `${width}px New Folder disclosure label`);
+		assert.equal(result.four.disclosureCollapsed, true, `${width}px New Folder disclosure collapsed`);
+		assert.equal(result.four.inlinePillsPresent, false, `${width}px New Folder no inline pills`);
+		assert.equal(result.four.countDisclosureOverlap, false, `${width}px New Folder count/disclosure separation`);
+		assert.equal(result.four.removeControlCount, 4, `${width}px New Folder named removal controls`);
+		assert.equal(result.four.noHorizontalOverflow, true, `${width}px New Folder horizontal overflow`);
+		assert.equal(result.opened, true, `${width}px New Folder disclosure opens`);
+		assert.equal(result.closed, true, `${width}px New Folder disclosure closes`);
+		assert.equal(result.oneScrollOwner, true, `${width}px New Folder scroll owner`);
 	}
 });
 
