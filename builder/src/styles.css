@@ -181,18 +181,6 @@
 	font-size: 0.72rem;
 }
 
-.genre-edit-mark {
-	display: grid;
-	width: 50px;
-	height: 50px;
-	place-items: center;
-	color: #031119;
-	font-size: 1.1rem;
-	font-weight: 950;
-	background: linear-gradient(145deg, var(--cyan-bright), var(--green));
-	border-radius: 12px;
-}
-
 @media (max-width: 900px) {
 	.genre-catalogue-list button,
 	.genre-catalogue-choice {
@@ -5892,16 +5880,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 .streaming-generated-name-field .editor-field-help,
 .streaming-generated-name-field .editor-field-error {
 	margin: 0;
-}
-
-.streaming-edit-identity {
-	grid-template-columns: 72px minmax(0, 1fr);
-}
-
-.streaming-edit-identity > .tmdb-entity-logo-tile--streaming-edit {
-	width: 58px;
-	height: 58px;
-	padding: 7px;
 }
 
 .studio-elsewhere-note {

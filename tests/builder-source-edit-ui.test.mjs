@@ -338,6 +338,8 @@ test("Studio editor opens the fixed Studio identity with count, TMDB link, sort,
 	assert.ok(markup.includes("Movies source"));
 	assert.ok(markup.includes("Pixar"));
 	assert.ok(markup.includes('href="https://www.themoviedb.org/company/3"'));
+	assert.equal(markup.includes('data-entity-logo="studio"'), false);
+	assert.equal(markup.includes("Pixar logo"), false);
 	assert.ok(markup.includes("42 movies"));
 	assert.ok(markup.includes("Sort titles by"));
 	assert.ok(markup.includes('data-selected="true"'));
@@ -364,6 +366,8 @@ test("Studio editor preserves an unusual imported sort until a supported option 
 		countState: { movie: { status: "unavailable", count: null, error: { retryable: true } }, series: { status: "unavailable", count: null, error: { retryable: true } } },
 		onSortChange() {},
 	}));
+	assert.ok(markup.includes("US · Emeryville, California"));
+	assert.equal(markup.includes('data-entity-logo="studio"'), false);
 	assert.ok(markup.includes("Current imported sort is preserved until you choose a supported sort: Owner.MixedCase"));
 	assert.equal(markup.includes("checked=\"\""), false);
 	assert.ok(markup.includes("Count unavailable"));
@@ -405,14 +409,16 @@ test("resolved Streaming provider presentation enables default naming while impo
 	}));
 	assert.ok(markup.includes("Netflix"));
 	assert.ok(markup.includes("Provider ID 8 · AU · Series"));
-	assert.ok(markup.includes("tmdb-entity-logo-tile--streaming-edit"));
-	assert.ok(markup.includes("/w92/netflix.png"));
+	assert.equal(markup.includes('data-entity-logo="streaming-provider"'), false);
+	assert.equal(markup.includes("tmdb-entity-logo-tile--streaming-edit"), false);
+	assert.equal(markup.includes("/w92/netflix.png"), false);
 	assert.ok(markup.includes("Use default name"));
 	assert.ok(markup.includes("Current imported sort is preserved until you choose a supported sort: owner.imported"));
 	assert.equal(markup.includes("checked=\"\""), false);
 	const styles = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
-	assert.match(styles, /\.streaming-edit-identity\s*>\s*\.tmdb-entity-logo-tile--streaming-edit\s*\{/);
+	assert.doesNotMatch(styles, /\.streaming-edit-identity|\.tmdb-entity-logo-tile--streaming-edit/);
 	const dialogSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "SourceEditorDialog.jsx"), "utf8");
+	assert.match(dialogSource, /streamingCatalogueProvider\.loadCatalogue\(\)/);
 	assert.match(dialogSource, /streamingDefaultSourceName\(streamingProviderIdentity\.name, draft\.regionCode, draft\.mediaType\)/);
 });
 
@@ -679,6 +685,7 @@ test("the extracted Collection picker retains accepted Search inputs and recover
 	const source = read("builder/src/ui/MovieCollectionPicker.jsx");
 	assert.match(source, /provider\.searchCollections/);
 	assert.match(source, /provider\.getCollection/);
+	assert.match(source, /<AddSourceSearchStep/);
 	assert.match(source, /onRetryLookup/);
 	assert.match(source, /onRetrySelection/);
 	assert.match(source, /changePage/);

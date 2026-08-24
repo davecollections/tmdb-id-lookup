@@ -377,6 +377,7 @@ test("Genre Source Edit shares the advanced controls while Genre identity and me
 	}));
 	assert.ok(markup.includes("Official TMDB Genre"));
 	assert.ok(markup.includes("Genre ID 35 · Series"));
+	assert.equal(markup.includes("genre-edit-mark"), false);
 	assert.ok(markup.includes("Genre ID and media type stay fixed for this source"));
 	assert.ok(markup.includes("Use default name"));
 	assert.ok(markup.includes("Advanced options"));
@@ -385,6 +386,7 @@ test("Genre Source Edit shares the advanced controls while Genre identity and me
 	assert.equal(markup.includes("? What do these options do?"), false);
 	assert.equal(markup.includes("physical source"), false);
 	for (const label of ["Popular", "Recent", "Top Rated", "Most Votes"]) assert.ok(markup.includes(`>${label}<`), label);
+	assert.doesNotMatch(read("builder/src/styles.css"), /\.genre-edit-mark\s*\{/);
 });
 
 test("workspace wiring keeps Genres out of the Folders header and supports responsive subviews", () => {

@@ -205,8 +205,11 @@ test("Network Source Edit renders fixed linked identity, count, and editable sem
 		onSortChange() {},
 	}));
 	assert.ok(markup.includes("Network Series source"));
+	assert.ok(markup.includes("US · New York City, New York"));
 	assert.ok(markup.includes("Series Count: 42"));
 	assert.ok(markup.includes('href="https://www.themoviedb.org/network/2"'));
+	assert.equal(markup.includes('data-entity-logo="network"'), false);
+	assert.equal(markup.includes("ABC logo"), false);
 	assert.equal((markup.match(/type="radio"/g) ?? []).length, 4);
 	assert.equal(markup.includes('type="checkbox"'), false);
 	assert.ok(markup.indexOf("Open ABC on TMDB") < markup.indexOf("Source name"));
