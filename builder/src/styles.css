@@ -7551,9 +7551,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .creation-option-list {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(184px, 100%), 1fr));
 	align-content: start;
-	gap: 12px;
+	gap: 10px;
 	margin: 0;
 	list-style: none;
 }
@@ -7561,11 +7561,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 .creation-option-card {
 	display: grid;
 	width: 100%;
-	min-height: 112px;
-	grid-template-columns: minmax(0, 1fr) auto;
+	min-height: 76px;
+	grid-template-columns: auto minmax(0, 1fr);
 	align-items: center;
-	gap: 16px;
-	padding: 18px;
+	gap: 12px;
+	padding: 12px 14px;
 	color: var(--text);
 	font: inherit;
 	text-align: left;
@@ -7581,26 +7581,68 @@ body.hierarchy-pointer-dragging .builder-shell {
 	background: rgb(1 180 228 / 8%);
 }
 
-.creation-option-card > span:first-child {
+.creation-option-icon-shell {
 	display: grid;
-	gap: 7px;
+	width: 42px;
+	height: 42px;
+	place-items: center;
+	color: var(--cyan-bright);
+	background: linear-gradient(145deg, rgb(1 180 228 / 13%), rgb(99 230 190 / 7%));
+	border: 1px solid rgb(98 225 255 / 24%);
+	border-radius: 11px;
+}
+
+.creation-option-card[data-creation-option="blank"] .creation-option-icon-shell {
+	color: #bfd0d6;
+	background: rgb(124 154 166 / 5%);
+	border-color: rgb(124 154 166 / 42%);
+	border-style: dashed;
+}
+
+.creation-option-icon {
+	width: 24px;
+	height: 24px;
+	fill: none;
+	stroke: currentcolor;
+	stroke-width: 1.65;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.creation-option-copy {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
 }
 
 .creation-option-card strong {
-	font-size: 1rem;
+	font-size: 0.92rem;
+	line-height: 1.2;
 }
 
 .creation-option-card small {
 	color: var(--muted);
-	font-size: 0.72rem;
+	font-size: 0.64rem;
 	font-weight: 650;
-	line-height: 1.5;
+	line-height: 1.35;
 }
 
-.creation-option-arrow {
-	color: var(--cyan-bright);
-	font-size: 1.2rem;
-	font-weight: 900;
+@media (max-width: 620px) {
+	.creation-option-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+
+	.creation-option-card {
+		gap: 8px;
+		padding: 10px;
+	}
+}
+
+@media (min-width: 900px) {
+	.creation-dialog:not([data-creation-option]) {
+		height: auto;
+	}
 }
 
 .decades-creation-form,
