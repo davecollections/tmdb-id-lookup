@@ -65,16 +65,13 @@ import {
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { MovieCollectionPicker } from "./MovieCollectionPicker.jsx";
-import { NetworkLogo } from "./NetworkSourceFlow.jsx";
 import { NetworkSortChoices } from "./NetworkSortChoices.jsx";
-import { StudioLogo } from "./StudioSourceFlow.jsx";
 import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
 import { DecadesAdvancedOptions } from "./DecadesAdvancedOptions.jsx";
-import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import {
 	focusSourceEditAlert,
 	sourceEditErrorPresentation,
@@ -261,12 +258,11 @@ export function StudioEditorFields({
 	const mediaLabel = mediaType === "TV" ? "Series" : "Movies";
 	return (
 		<section className="source-edit-options studio-source-edit-options" aria-labelledby="source-edit-options-title">
-			<div className="studio-configure-identity tmdb-review-identity">
-				<StudioLogo studio={studio} size="w185" context="configure" loading="eager" />
+			<div className="add-source-section-heading tmdb-review-identity">
 				<div className="tmdb-review-identity-copy">
 					<p className="panel-kicker">{mediaLabel} source</p>
 					<h3 id="source-edit-options-title">{studio.name}</h3>
-					{formatStudioLocation(studio) ? <p>{formatStudioLocation(studio)}</p> : null}
+					{formatStudioLocation(studio) ? <p className="editor-field-help">{formatStudioLocation(studio)}</p> : null}
 				</div>
 				<TmdbEntityLink entityType="company" tmdbId={studio.id} entityName={studio.name} />
 			</div>
@@ -290,12 +286,11 @@ export function NetworkEditorFields({ draft, network, countState, sortRef, title
 			: { text: "Checking Series Count…", state: "checking" };
 	return (
 		<section className="source-edit-options studio-source-edit-options network-source-edit-options" aria-labelledby="source-edit-options-title">
-			<div className="studio-configure-identity tmdb-review-identity network-configure-identity">
-				<NetworkLogo network={network} size="w185" context="configure" loading="eager" />
+			<div className="add-source-section-heading tmdb-review-identity">
 				<div className="tmdb-review-identity-copy">
 					<p className="panel-kicker">Network Series source</p>
 					<h3 id="source-edit-options-title">{network.name}</h3>
-					{formatNetworkLocation(network) ? <p>{formatNetworkLocation(network)}</p> : null}
+					{formatNetworkLocation(network) ? <p className="editor-field-help">{formatNetworkLocation(network)}</p> : null}
 				</div>
 				<TmdbEntityLink entityType="network" tmdbId={network.id} entityName={network.name} />
 			</div>
@@ -316,12 +311,11 @@ export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefa
 	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
 	return (
 		<section className="source-edit-options studio-source-edit-options streaming-source-edit-options" aria-labelledby="source-edit-options-title">
-			<div className="studio-configure-identity tmdb-review-identity streaming-edit-identity">
-				<TmdbEntityLogo entity={providerIdentity} entityType="streaming-provider" size="w92" context="streaming-edit" loading="eager" />
+			<div className="add-source-section-heading">
 				<div className="tmdb-review-identity-copy">
 					<p className="panel-kicker">Streaming provider</p>
 					<h3 id="source-edit-options-title">{providerIdentity.name}</h3>
-					<p>Provider ID {draft.providerId} · {draft.regionCode} · {mediaLabel}</p>
+					<p className="editor-field-help">Provider ID {draft.providerId} · {draft.regionCode} · {mediaLabel}</p>
 				</div>
 			</div>
 			<p className="source-edit-fixed-note">Provider, region and media type stay fixed for this physical source.</p>
@@ -336,12 +330,11 @@ export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange,
 	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
 	return (
 		<section className="source-edit-options studio-source-edit-options genre-source-edit-options" aria-labelledby="source-edit-options-title">
-			<div className="studio-configure-identity tmdb-review-identity genre-edit-identity">
-				<div className="genre-edit-mark" aria-hidden="true">G</div>
+			<div className="add-source-section-heading">
 				<div className="tmdb-review-identity-copy">
 					<p className="panel-kicker">Official TMDB Genre</p>
 					<h3 id="source-edit-options-title">{draft.genreName}</h3>
-					<p>Genre ID {draft.genreId} · {mediaLabel}</p>
+					<p className="editor-field-help">Genre ID {draft.genreId} · {mediaLabel}</p>
 				</div>
 			</div>
 			<p className="source-edit-fixed-note">Genre ID and media type stay fixed for this source.</p>
