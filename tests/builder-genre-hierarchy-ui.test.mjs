@@ -70,6 +70,14 @@ test("Genre hierarchy opens on an accessible local Select stage without Search a
 	assert.doesNotMatch(markup, /autofocus|large-selection-notice|there is no selection cap/i);
 });
 
+test("Genre hierarchy configures the shared selected-items component as an always-compact disclosure", () => {
+	const selectStep = flowSource.slice(flowSource.indexOf("function SelectStep"), flowSource.indexOf("function placementLabel"));
+	assert.match(selectStep, /<RemovableSelectionSummary[^>]*alwaysDisclose[^>]*showDisclosureCount=\{false\}/);
+	assert.doesNotMatch(selectStep, /compactThreshold/);
+	assert.doesNotMatch(flowSource, /COMPACT_GENRE_THRESHOLD/);
+	assert.match(selectStep, /disclosureLabel="View selected Genres"/);
+});
+
 test("checkbox catalogue mode preserves the existing Add Source button mode", () => {
 	const concepts = GENRE_CONCEPTS.slice(0, 2);
 	const checkbox = renderToStaticMarkup(createElement(GenreCatalogueList, { concepts, selection: [concepts[0].name], selectionControl: "checkbox", onChoose() {} }));
