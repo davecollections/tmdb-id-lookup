@@ -116,6 +116,10 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "studios", "networks", "genres"]);
+	assert.equal(CREATION_OPTIONS[0].supportingText, "Start manually");
+	assert.equal(CREATION_OPTIONS.slice(1).every((option) => option.supportingText === undefined), true);
+	assert.equal(CREATION_OPTIONS.every((option) => option.description === undefined), true);
 });
 
 test("Decade selection is multi-select, catalogue ordered, and the visible flow uses the approved composition defaults", () => {
@@ -360,35 +364,57 @@ test("changing media after Review clears hidden collection-name proposals", () =
 	assert.equal(result.plan.collections[0].editable.title, "TV Decades");
 });
 
-test("launcher and preset surfaces render the approved copy, Blank-first order, and no auto-focused text", () => {
+test("launcher renders compact semantic mode controls before the unchanged Decades flow", () => {
 	const current = controller();
-	const launcher = renderToStaticMarkup(createElement(CreationDialog, {
-		scope: "new-collection",
+	const launcherProps = {
 		project: current.getState().project,
 		projectRevision: current.getState().revision,
 		currentYear: 2026,
 		onCancel() {},
 		onCreateBlank() {},
 		onApplyDecades() {},
-	}));
-	assert.ok(launcher.includes("What would you like to create?"));
-	assert.ok(launcher.includes("Start from scratch and build it yourself."));
-	assert.ok(launcher.includes("Create movie and series collections organised by decade."));
-	for (const disallowed of ["TMDB Discover", "reviewed plan", "atomically"]) assert.equal(launcher.includes(disallowed), false);
-	assert.ok(launcher.indexOf('data-creation-option="blank"') < launcher.indexOf('data-creation-option="decades"'));
+	};
+	const launcher = renderToStaticMarkup(createElement(CreationDialog, { ...launcherProps, scope: "new-collection" }));
+	assert.ok(launcher.includes("What collection would you like to create?"));
+	assert.equal(launcher.includes("What would you like to create?"), false);
+	assert.ok(launcher.includes("Choose Blank or a guided starting point."));
+	assert.equal(launcher.includes("New Collection"), false);
+	assert.ok(launcher.includes("Start manually"));
+	for (const option of CREATION_OPTIONS) assert.ok(launcher.includes(`<strong>${option.label}</strong>`), option.label);
+	for (const disallowed of [
+		"Start from scratch and build it yourself.",
+		"Create movie and series collections organised by decade.",
+		"Create one configured folder for each selected person.",
+		"Create one folder and native movie source for each TMDB collection.",
+		"Create one configured folder for each selected Studio.",
+		"Create one Series folder for each selected TV Network.",
+		"Create one configured folder for each selected official Genre.",
+		"TMDB Discover",
+		"reviewed plan",
+		"atomically",
+	]) assert.equal(launcher.includes(disallowed), false, disallowed);
+	assert.deepEqual([...launcher.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), CREATION_OPTIONS.map((option) => option.id));
+	assert.equal((launcher.match(/<button[^>]+class="creation-option-card"[^>]+type="button"/g) ?? []).length, CREATION_OPTIONS.length);
+	assert.equal((launcher.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, CREATION_OPTIONS.length);
+	assert.equal((launcher.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, CREATION_OPTIONS.length);
+	assert.equal(launcher.includes("creation-option-arrow"), false);
+	assert.equal(launcher.includes("→"), false);
 	assert.equal(launcher.includes("autofocus"), false);
 	assert.equal(launcher.includes('data-action="back-to-creation-launcher"'), false);
 	assert.equal(launcher.includes("decades-creation-actions"), false);
 
+	const folderLauncher = renderToStaticMarkup(createElement(CreationDialog, { ...launcherProps, scope: "new-folder", destinationCollectionTitle: "Destination" }));
+	assert.ok(folderLauncher.includes("What folder would you like to create?"));
+	assert.ok(folderLauncher.includes("Choose Blank or a guided starting point."));
+	assert.equal(folderLauncher.includes("New Folder"), false);
+	assert.equal(folderLauncher.includes("New Folder · Destination"), false);
+	assert.deepEqual([...folderLauncher.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), CREATION_OPTIONS.map((option) => option.id));
+	assert.equal((folderLauncher.match(/<button[^>]+class="creation-option-card"[^>]+type="button"/g) ?? []).length, CREATION_OPTIONS.length);
+
 	const firstStage = renderToStaticMarkup(createElement(CreationDialog, {
+		...launcherProps,
 		scope: "new-collection",
-		project: current.getState().project,
-		projectRevision: current.getState().revision,
-		currentYear: 2026,
 		initialOptionId: CREATION_OPTION_IDS.DECADES,
-		onCancel() {},
-		onCreateBlank() {},
-		onApplyDecades() {},
 	}));
 	assert.ok(firstStage.includes('data-action="back-to-creation-launcher"'));
 	assert.ok(firstStage.includes('data-decades-stage="presets"'));
@@ -424,7 +450,9 @@ test("both hierarchy entry points share the launcher lock and Blank delegates to
 	}));
 	assert.match(markup, /data-creation-open="true"/);
 	assert.match(markup, /class="workspace-underlay"[^>]+inert=""/);
-	assert.ok(markup.includes("New Folder · Destination"));
+	assert.ok(markup.includes("What folder would you like to create?"));
+	assert.ok(markup.includes("Choose Blank or a guided starting point."));
+	assert.equal(markup.includes("New Folder · Destination"), false);
 	const workspaceSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "BuilderWorkspace.jsx"), "utf8");
 	assert.match(workspaceSource, /creationSession\.scope === "new-collection"[\s\S]*createDraftCollection\(controller, \{ selectCreated: desktopViewport \}\)[\s\S]*createDraftFolder\(/);
 	assert.match(workspaceSource, /destinationCollectionTitle: view\.selectedCollection\.title/);
@@ -775,6 +803,13 @@ test("creation styles keep selected cards restrained and cover required responsi
 		"@media (max-width: 430px)",
 		"@media (prefers-reduced-motion: reduce)",
 	]) assert.ok(styles.includes(marker), marker);
+	assert.match(styles, /\.creation-option-list\s*\{[^}]*minmax\(min\(184px, 100%\), 1fr\)/s);
+	assert.match(styles, /\.creation-option-card\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
+	assert.match(styles, /\.creation-option-icon-shell\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card\s*\{[^}]*gap:\s*8px;[^}]*padding:\s*10px/s);
+	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
+	assert.equal(styles.includes(".creation-option-arrow"), false);
 	assert.match(styles, /\.decades-structure-preview\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.decades-choice-grid\.decades-display-order-choices\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.decades-choice-grid\.decades-display-order-choices\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);

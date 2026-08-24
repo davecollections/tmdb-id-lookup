@@ -99,7 +99,7 @@ test("Networks remains ordered immediately before Genres in both hierarchy scope
 		assert.ok(markup.includes(`data-creation-scope="${scope}"`));
 		assert.deepEqual([...markup.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), expected);
 		assert.ok(markup.includes("<strong>Networks</strong>"));
-		assert.ok(markup.includes("Create one Series folder for each selected TV Network."));
+		assert.equal(markup.includes("Create one Series folder for each selected TV Network."), false);
 	}
 	assert.match(creationOptions, /NETWORKS:\s*"networks"/);
 	assert.match(creationOptions, /id:\s*CREATION_OPTION_IDS\.NETWORKS,[\s\S]*scopes:\s*BOTH_SCOPES/);
