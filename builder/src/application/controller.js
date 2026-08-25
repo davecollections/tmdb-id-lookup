@@ -13,6 +13,7 @@ import {
 	SOURCE_CATEGORIES,
 	traverseProject,
 	updateEditableValues,
+	updateEditableValuesMany,
 } from "../domain/index.js";
 import { importNuvioCollections, parseNuvioJsonText } from "../import/index.js";
 import { migrateLegacyAddonProjections } from "../migrate/index.js";
@@ -22,6 +23,7 @@ import {
 	prepareNewNodeEditable,
 	repairProjectNuvioIds,
 } from "../nuvio/nuvio-ids.js";
+import { isValidNuvioTitle } from "../nuvio/titles.js";
 import { serializeNuvioProject, stringifyNuvioProject } from "../serialize/index.js";
 import {
 	CONTROLLER_DIAGNOSTIC_CODES,
@@ -40,6 +42,39 @@ import {
 
 const sourceCategories = new Set(Object.values(SOURCE_CATEGORIES));
 const diagnosticScopes = new Set(DIAGNOSTIC_SCOPES);
+const presentationUpdateKeys = new Set(["nodeType", "internalId", "patch"]);
+const collectionPresentationFields = new Set([
+	"title",
+	"viewMode",
+	"showAllTab",
+	"pinToTop",
+	"backdropImageUrl",
+]);
+const folderPresentationFields = new Set([
+	"title",
+	"hideTitle",
+	"tileShape",
+	"coverImageUrl",
+	"heroBackdropUrl",
+	"titleLogoUrl",
+	"focusGifUrl",
+	"focusGifEnabled",
+]);
+const booleanPresentationFields = new Set([
+	"showAllTab",
+	"pinToTop",
+	"hideTitle",
+	"focusGifEnabled",
+]);
+const stringPresentationFields = new Set([
+	"backdropImageUrl",
+	"coverImageUrl",
+	"heroBackdropUrl",
+	"titleLogoUrl",
+	"focusGifUrl",
+]);
+const collectionViewModes = new Set(["TABBED_GRID", "ROWS"]);
+const folderTileShapes = new Set(["POSTER", "LANDSCAPE"]);
 
 /**
  * @typedef {{code: string, path: string, message: string}} Diagnostic
@@ -859,6 +894,123 @@ export function createBuilderController(options = {}) {
 		return actionResult(true);
 	}
 
+	function applyPresentationUpdates(updates) {
+		const path = "$controller.applyPresentationUpdates";
+		if (!Array.isArray(updates)) {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				path,
+				"Presentation updates must be supplied as an array.",
+			);
+		}
+
+		const targets = new Set();
+		const resolvedUpdates = [];
+		for (let index = 0; index < updates.length; index += 1) {
+			const updatePath = `${path}[${index}]`;
+			if (!Object.hasOwn(updates, index)) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					updatePath,
+					"Presentation updates must not contain empty array positions.",
+				);
+			}
+			const update = updates[index];
+			const optionError = validatePlainOptions(
+				update,
+				presentationUpdateKeys,
+				updatePath,
+				"Each presentation update",
+			);
+			if (optionError) {
+				return failAtomicBundleOperation(optionError.code, optionError.path, optionError.message);
+			}
+			if (update.nodeType !== NODE_TYPES.COLLECTION && update.nodeType !== NODE_TYPES.FOLDER) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${updatePath}.nodeType`,
+					"Presentation update nodeType must be collection or folder.",
+				);
+			}
+			if (typeof update.internalId !== "string" || update.internalId.length === 0) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${updatePath}.internalId`,
+					"A presentation update target internalId must be a non-empty string.",
+				);
+			}
+			if (targets.has(update.internalId)) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${updatePath}.internalId`,
+					"Presentation update target internal IDs must be unique.",
+				);
+			}
+			targets.add(update.internalId);
+
+			const patchValidation = validatePresentationPatch(update.nodeType, update.patch, `${updatePath}.patch`);
+			if (patchValidation.error) {
+				return failAtomicBundleOperation(
+					patchValidation.error.code,
+					patchValidation.error.path,
+					patchValidation.error.message,
+				);
+			}
+
+			const resolution = resolveTarget(update.internalId, `${updatePath}.internalId`);
+			if (resolution.error) {
+				return failAtomicBundleOperation(
+					resolution.error.code,
+					resolution.error.path,
+					resolution.error.message,
+				);
+			}
+			if (resolution.location.node.nodeType !== update.nodeType) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${updatePath}.nodeType`,
+					`The target is a ${resolution.location.node.nodeType} node, not a ${update.nodeType} node.`,
+				);
+			}
+
+			const patch = patchValidation.patch;
+			const node = resolution.location.node;
+			const changed = Object.entries(patch).some(([field, value]) => (
+				!Object.hasOwn(node.editable, field) || !jsonValuesEqual(node.editable[field], value)
+			));
+			resolvedUpdates.push({
+				nodeType: update.nodeType,
+				internalId: update.internalId,
+				patch,
+				changed,
+			});
+		}
+
+		const changedUpdates = resolvedUpdates.filter((update) => update.changed);
+		const changedTargets = changedUpdates.map(({ nodeType, internalId }) => ({ nodeType, internalId }));
+		if (changedUpdates.length === 0) {
+			clearSuccessfulOperationDiagnostics({}, { incrementRevision: false });
+			return actionResult(true, [], [], { changedTargets });
+		}
+
+		let project;
+		try {
+			project = updateEditableValuesMany(
+				state.project,
+				changedUpdates.map(({ internalId, patch }) => ({ internalId, editablePatch: patch })),
+			);
+		} catch {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
+				path,
+				"The presentation updates could not be applied atomically.",
+			);
+		}
+
+		commitProjectEdit(project);
+		return actionResult(true, [], [], { changedTargets });
+	}
+
 	function moveNode(internalId, targetIndex) {
 		const path = "$controller.moveNode";
 		const resolution = resolveTarget(internalId, path);
@@ -1094,6 +1246,7 @@ export function createBuilderController(options = {}) {
 		createFoldersWithSources,
 		createCollectionsWithFoldersAndSources,
 		updateNode,
+		applyPresentationUpdates,
 		moveNode,
 		removeNode,
 		applyLegacyAddonProjectionMigration,
@@ -1322,6 +1475,62 @@ function validatePlainOptions(options, allowedKeys, path, label) {
 		);
 	}
 	return null;
+}
+
+function validatePresentationPatch(nodeType, patch, path) {
+	if (!isPlainObject(patch)) {
+		return {
+			error: controllerDiagnostic(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				path,
+				"A presentation patch must be a plain object.",
+			),
+		};
+	}
+
+	const allowedFields = nodeType === NODE_TYPES.COLLECTION
+		? collectionPresentationFields
+		: folderPresentationFields;
+	const detachedPatch = {};
+	for (const [field, value] of Object.entries(patch)) {
+		const fieldPath = `${path}.${field}`;
+		if (!allowedFields.has(field)) {
+			return {
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					fieldPath,
+					`The ${field} field is not a supported ${nodeType} presentation update.`,
+				),
+			};
+		}
+		if (!isValidPresentationValue(field, value)) {
+			return {
+				error: controllerDiagnostic(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					fieldPath,
+					`The ${field} value is not valid for a ${nodeType} presentation update.`,
+				),
+			};
+		}
+		detachedPatch[field] = value;
+	}
+	return { patch: detachedPatch };
+}
+
+function isValidPresentationValue(field, value) {
+	if (field === "title") {
+		return isValidNuvioTitle(value);
+	}
+	if (field === "viewMode") {
+		return collectionViewModes.has(value);
+	}
+	if (field === "tileShape") {
+		return folderTileShapes.has(value);
+	}
+	if (booleanPresentationFields.has(field)) {
+		return typeof value === "boolean";
+	}
+	return stringPresentationFields.has(field) && typeof value === "string";
 }
 
 function validateDiscardOption(options, path) {

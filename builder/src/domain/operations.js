@@ -76,6 +76,81 @@ export function updateEditableValues(project, internalId, editablePatch) {
 }
 
 /**
+ * Merges several known editable patches in one immutable project traversal.
+ * Targets must be unique and resolve exactly once in the current project.
+ *
+ * @param {import("./model.js").ProjectNode} project
+ * @param {Array<{internalId: string, editablePatch: {[key: string]: import("./model.js").JsonValue}}>} updates
+ * @returns {import("./model.js").ProjectNode}
+ */
+export function updateEditableValuesMany(project, updates) {
+	if (!Array.isArray(updates)) {
+		throw new TypeError("updates must be an array");
+	}
+
+	const patches = new Map();
+	for (const update of updates) {
+		if (update === null || Array.isArray(update) || typeof update !== "object") {
+			throw new TypeError("Each update must be an object");
+		}
+		if (typeof update.internalId !== "string" || update.internalId.length === 0) {
+			throw new TypeError("Each update must identify a target internalId");
+		}
+		if (patches.has(update.internalId)) {
+			throw new TypeError(`Duplicate update target: ${update.internalId}`);
+		}
+
+		const patch = cloneJsonValue(update.editablePatch, "editablePatch");
+		if (patch === null || Array.isArray(patch) || typeof patch !== "object") {
+			throw new TypeError("editablePatch must be a plain object");
+		}
+		patches.set(update.internalId, patch);
+	}
+
+	if (patches.size === 0) {
+		return project;
+	}
+
+	const matchCounts = new Map([...patches.keys()].map((internalId) => [internalId, 0]));
+	function replace(node) {
+		const patch = patches.get(node.internalId);
+		if (patch !== undefined) {
+			matchCounts.set(node.internalId, matchCounts.get(node.internalId) + 1);
+		}
+		let nextNode = patch === undefined ? node : {
+			...node,
+			editable: {
+				...node.editable,
+				...patch,
+			},
+		};
+		const rule = childRules[node.nodeType];
+		if (!rule) {
+			return nextNode;
+		}
+
+		let childrenChanged = false;
+		const nextChildren = node[rule.key].map((child) => {
+			const nextChild = replace(child);
+			childrenChanged ||= nextChild !== child;
+			return nextChild;
+		});
+		if (childrenChanged) {
+			nextNode = { ...nextNode, [rule.key]: nextChildren };
+		}
+		return nextNode;
+	}
+
+	const nextProject = replace(project);
+	for (const [internalId, count] of matchCounts) {
+		if (count !== 1) {
+			throw new RangeError(`Expected exactly one node for internalId: ${internalId}`);
+		}
+	}
+	return nextProject;
+}
+
+/**
  * Inserts a detached copy of a child into the parent's ordered child array.
  *
  * @param {import("./model.js").ProjectNode} project
