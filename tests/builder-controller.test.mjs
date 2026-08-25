@@ -111,6 +111,7 @@ test("the controller exposes only the documented public method surface", () => {
 	assert.deepEqual(Object.keys(controller).sort(), [
 		"addSourcesToFolder",
 		"applyLegacyAddonProjectionMigration",
+		"applyPresentationUpdates",
 		"clearDiagnostics",
 		"clearSelection",
 		"createCollection",

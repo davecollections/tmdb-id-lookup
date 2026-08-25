@@ -16,4 +16,5 @@ export {
 	removeNode,
 	traverseProject,
 	updateEditableValues,
+	updateEditableValuesMany,
 } from "./operations.js";
