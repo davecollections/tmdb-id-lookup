@@ -830,6 +830,42 @@ h1 {
 	margin-top: 12px;
 }
 
+.presentation-settings-trigger {
+	position: relative;
+	display: inline-grid;
+	width: 44px;
+	height: 44px;
+	min-width: 44px;
+	min-height: 44px;
+	place-items: center;
+	padding: 0;
+	color: var(--cyan-bright);
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+}
+
+.presentation-settings-trigger::before {
+	position: absolute;
+	inset: 5px;
+	content: "";
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 22%);
+	border-radius: 8px;
+}
+
+.presentation-settings-icon {
+	position: relative;
+	z-index: 1;
+	width: 18px;
+	height: 18px;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.8;
+}
+
 body.settings-modal-open {
 	overflow: hidden;
 }
@@ -1070,6 +1106,10 @@ body.settings-modal-open {
 	outline: none;
 }
 
+.bulk-edit-dialog {
+	max-width: 640px;
+}
+
 .node-editor-heading {
 	position: sticky;
 	z-index: 2;
@@ -1133,6 +1173,58 @@ body.settings-modal-open {
 	display: grid;
 	min-width: 0;
 	gap: 14px;
+}
+
+.bulk-edit-section {
+	margin: 0;
+}
+
+.bulk-edit-section > legend {
+	padding: 0 5px;
+	color: #dff8ff;
+	font-size: 0.88rem;
+	font-weight: 800;
+	letter-spacing: 0.01em;
+}
+
+.bulk-edit-section:disabled {
+	opacity: 0.64;
+}
+
+.bulk-edit-availability {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.72rem;
+	line-height: 1.5;
+}
+
+[data-bulk-edit-field] label:has(input:disabled) {
+	opacity: 0.46;
+	cursor: not-allowed;
+}
+
+.bulk-edit-field-description {
+	margin: -5px 0 0;
+	color: var(--muted);
+	font-size: 0.7rem;
+	line-height: 1.45;
+}
+
+.bulk-edit-actions {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bulk-title-confirm-action {
+	min-height: 48px;
+	padding: 10px 14px;
+	font-weight: 800;
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+[data-bulk-edit-diagnostics="true"]:focus {
+	outline: 3px solid rgb(255 142 134 / 62%);
+	outline-offset: 3px;
 }
 
 .editor-field label {
@@ -3092,7 +3184,7 @@ body.settings-modal-open {
 
 .panel-header {
 	display: flex;
-	min-height: 84px;
+	min-height: 72px;
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
@@ -3106,9 +3198,16 @@ body.settings-modal-open {
 }
 
 .panel-header h2 {
-	margin: 4px 0 0;
+	margin: 0;
 	font-size: 1.15rem;
 	letter-spacing: -0.02em;
+}
+
+.panel-header-title {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 5px;
 }
 
 .panel-title-inline-count {
@@ -3963,6 +4062,10 @@ body.hierarchy-pointer-dragging .builder-shell {
 		border-radius: 18px;
 	}
 
+	.bulk-edit-dialog {
+		width: min(640px, 100%);
+	}
+
 	.about-credits-dialog {
 		width: min(560px, 100%);
 		max-height: calc(100dvh - 48px);
@@ -4208,6 +4311,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.primary-action:hover {
 		filter: brightness(1.08);
 		transform: translateY(-1px);
+	}
+
+	.presentation-settings-trigger:hover:not(:disabled)::before {
+		background: rgb(1 180 228 / 11%);
+		border-color: rgb(98 225 255 / 42%);
 	}
 
 	.hierarchy-card-main:hover {

@@ -38,6 +38,16 @@ import {
 } from "../source-edit/index.js";
 import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
+import {
+	BulkEditDialog,
+	BulkEditTitleConfirmation,
+} from "./BulkEditDialog.jsx";
+import {
+	buildBulkEditPlan,
+	bulkEditAvailability,
+	createBulkEditDraft,
+	updateBulkEditDraft,
+} from "./bulk-edit.js";
 import { CreationDialog } from "./CreationDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
@@ -95,6 +105,7 @@ function PanelHeader({
 	title,
 	count,
 	action,
+	headingAction = null,
 	mobileInlineCount = false,
 }) {
 	const countLabel = count === 1 && title.endsWith("s")
@@ -103,14 +114,14 @@ function PanelHeader({
 
 	return (
 		<header className="panel-header" data-panel-header={title.toLowerCase()}>
-			<div>
-				<p className="panel-kicker">Project hierarchy</p>
+			<div className="panel-header-title">
 				<h2 id={id}>
 					{title}
 					{mobileInlineCount ? (
 						<span className="panel-title-inline-count mobile-only"> · {count}</span>
 					) : null}
 				</h2>
+				{headingAction}
 			</div>
 			<div className="panel-header-actions">
 				<span
@@ -152,6 +163,17 @@ function PencilIcon() {
 	return (
 		<svg className="quick-rename-icon" viewBox="0 0 20 20" aria-hidden="true">
 			<path d="m13.9 2.8 3.3 3.3-9.4 9.4-4.2.9.9-4.2 9.4-9.4Zm-8 10.1-.3 1.5 1.5-.3 7.9-8-1.2-1.2-7.9 8Z" />
+		</svg>
+	);
+}
+
+function SlidersIcon() {
+	return (
+		<svg className="presentation-settings-icon" viewBox="0 0 20 20" aria-hidden="true">
+			<path d="M2.5 5h3M9.5 5h8M2.5 10h7M13.5 10h4M2.5 15h2M8.5 15h9" />
+			<circle cx="7.5" cy="5" r="1.6" />
+			<circle cx="11.5" cy="10" r="1.6" />
+			<circle cx="6.5" cy="15" r="1.6" />
 		</svg>
 	);
 }
@@ -731,6 +753,10 @@ export function BuilderWorkspace({
 	const [sourceEditStatusText, setSourceEditStatusText] = useState("");
 	const [aboutCreditsOpen, setAboutCreditsOpen] = useState(initialAboutCreditsOpen);
 	const [restoreAboutCreditsFocus, setRestoreAboutCreditsFocus] = useState(false);
+	const [bulkEditDraft, setBulkEditDraft] = useState(null);
+	const [bulkEditDiagnostics, setBulkEditDiagnostics] = useState([]);
+	const [bulkEditConfirmation, setBulkEditConfirmation] = useState(null);
+	const [restoreBulkEditFocus, setRestoreBulkEditFocus] = useState(false);
 	const titleInputRef = useRef(null);
 	const createdCardRef = useRef(null);
 	const editRestoreFocusRef = useRef(null);
@@ -753,6 +779,7 @@ export function BuilderWorkspace({
 	const addSourceRestoreFocusRef = useRef(null);
 	const sourceEditRestoreFocusRef = useRef(null);
 	const aboutCreditsTriggerRef = useRef(null);
+	const bulkEditTriggerRef = useRef(null);
 	const sourceProviderRef = useRef(null);
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
@@ -836,10 +863,12 @@ export function BuilderWorkspace({
 	const creationLocked = creationSession !== null;
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
-	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen;
+	const bulkEditLocked = bulkEditDraft !== null;
+	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
+	const currentBulkEditAvailability = bulkEditAvailability(state.project);
 
 	useEffect(() => {
 		if (editorDraft && !visibleEditorDraft) {
@@ -934,6 +963,12 @@ export function BuilderWorkspace({
 		setRestoreAboutCreditsFocus(false);
 		focusElementWithoutScroll(aboutCreditsTriggerRef.current);
 	}, [restoreAboutCreditsFocus]);
+
+	useEffect(() => {
+		if (!restoreBulkEditFocus) return;
+		setRestoreBulkEditFocus(false);
+		focusElementWithoutScroll(bulkEditTriggerRef.current);
+	}, [restoreBulkEditFocus]);
 
 	useEffect(() => {
 		if (createdCardTarget === null || createdCardRef.current === null) return;
@@ -1189,6 +1224,85 @@ export function BuilderWorkspace({
 		if (!aboutCreditsOpen) return;
 		setAboutCreditsOpen(false);
 		setRestoreAboutCreditsFocus(true);
+	}
+
+	function openBulkEdit() {
+		if (
+			navigationLocked
+			|| pointerInteractionLocked()
+			|| !currentBulkEditAvailability.hasCollections
+		) return;
+		setBulkEditDiagnostics([]);
+		setBulkEditConfirmation(null);
+		setBulkEditDraft(createBulkEditDraft());
+	}
+
+	function closeBulkEdit() {
+		if (bulkEditDraft === null) return;
+		setBulkEditDraft(null);
+		setBulkEditDiagnostics([]);
+		setBulkEditConfirmation(null);
+		setRestoreBulkEditFocus(true);
+	}
+
+	function finishBulkEdit(updates) {
+		let result;
+		try {
+			result = controller.applyPresentationUpdates(updates);
+		} catch {
+			result = {
+				ok: false,
+				errors: [{
+					code: "BULK_EDIT_FAILED",
+					path: "$ui.bulkEdit",
+					message: "Bulk changes could not be applied. The project was not changed.",
+				}],
+			};
+		}
+
+		if (!result?.ok) {
+			setBulkEditConfirmation(null);
+			setBulkEditDiagnostics(result?.errors?.length > 0
+				? [result.errors[0]]
+				: [{
+					code: "BULK_EDIT_FAILED",
+					path: "$ui.bulkEdit",
+					message: "Bulk changes could not be applied. The project was not changed.",
+				}]);
+			return result;
+		}
+
+		setBulkEditDraft(null);
+		setBulkEditDiagnostics([]);
+		setBulkEditConfirmation(null);
+		setRestoreBulkEditFocus(true);
+		return result;
+	}
+
+	function handleBulkEditSubmit(event) {
+		event.preventDefault();
+		if (bulkEditDraft === null) return;
+		const plan = buildBulkEditPlan(state.project, bulkEditDraft);
+		if (!plan.ok) {
+			setBulkEditDiagnostics([plan.errors[0]]);
+			return;
+		}
+		setBulkEditDiagnostics([]);
+		if (plan.requiresTitleConfirmation) {
+			setBulkEditConfirmation({ updates: plan.updates });
+			return;
+		}
+		finishBulkEdit(plan.updates);
+	}
+
+	function cancelBulkEditTitleConfirmation() {
+		if (bulkEditConfirmation === null) return;
+		setBulkEditConfirmation(null);
+	}
+
+	function continueBulkEditTitleConfirmation() {
+		if (bulkEditConfirmation === null) return;
+		finishBulkEdit(bulkEditConfirmation.updates);
 	}
 
 	function handleEditorSubmit(event) {
@@ -2085,6 +2199,7 @@ export function BuilderWorkspace({
 			data-add-source-open={addSourceLocked ? "true" : undefined}
 			data-source-edit-open={sourceEditLocked ? "true" : undefined}
 			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
+			data-bulk-edit-open={bulkEditLocked ? "true" : undefined}
 		>
 			<div
 				className="workspace-underlay"
@@ -2199,6 +2314,21 @@ export function BuilderWorkspace({
 							id="collections-title"
 							title="Collections"
 							count={view.collections.length}
+							headingAction={(
+								<button
+									ref={bulkEditTriggerRef}
+									className="presentation-settings-trigger"
+									type="button"
+									data-action="open-bulk-edit"
+									aria-label="Global display settings"
+									title="Global display settings"
+									aria-haspopup="dialog"
+									disabled={hierarchyInteractionLocked || !currentBulkEditAvailability.hasCollections}
+									onClick={openBulkEdit}
+								>
+									<SlidersIcon />
+								</button>
+							)}
 							action={(
 								<button
 									className="primary-action"
@@ -2416,6 +2546,25 @@ export function BuilderWorkspace({
 			</div>
 
 			{aboutCreditsOpen ? <AboutCreditsDialog onClose={closeAboutCredits} /> : null}
+			{bulkEditDraft && bulkEditConfirmation === null ? (
+				<BulkEditDialog
+					draft={bulkEditDraft}
+					diagnostics={bulkEditDiagnostics}
+					availability={currentBulkEditAvailability}
+					onChange={(field, value) => {
+						setBulkEditDraft((current) => updateBulkEditDraft(current, field, value));
+						setBulkEditDiagnostics([]);
+					}}
+					onSubmit={handleBulkEditSubmit}
+					onCancel={closeBulkEdit}
+				/>
+			) : null}
+			{bulkEditConfirmation ? (
+				<BulkEditTitleConfirmation
+					onCancel={cancelBulkEditTitleConfirmation}
+					onContinue={continueBulkEditTitleConfirmation}
+				/>
+			) : null}
 			{creationSession ? (
 				<CreationDialog
 					scope={creationSession.scope}

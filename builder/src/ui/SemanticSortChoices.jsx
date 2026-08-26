@@ -6,10 +6,12 @@ export function SemanticSortChoices({
 	onChange,
 	legend = "Sort titles by",
 	helper = null,
+	disabledIds = [],
+	fieldsetProps = null,
 }) {
 	const selected = options.find((option) => option.id === selectedId) ?? null;
 	return (
-		<fieldset className="studio-sort-choices semantic-sort-choices">
+		<fieldset {...(fieldsetProps ?? {})} className="studio-sort-choices semantic-sort-choices">
 			<legend>{legend}</legend>
 			{helper ? <p className="semantic-sort-helper">{helper}</p> : null}
 			<div className="studio-sort-choice-row semantic-sort-choice-row">
@@ -21,6 +23,7 @@ export function SemanticSortChoices({
 							name={name}
 							value={option.id}
 							checked={selectedId === option.id}
+							disabled={disabledIds.includes(option.id)}
 							onChange={() => onChange(option.id)}
 						/>
 						<span>{option.label}</span>
