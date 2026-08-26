@@ -169,11 +169,15 @@ test("Studio Configure presents independent counts and compact semantic sort cho
 	assert.ok(markup.includes('rel="noopener noreferrer"'));
 	assert.ok(markup.includes("Open Pixar on TMDB"));
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 2);
+	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox" type="checkbox"/g) ?? []).length, 2);
+	assert.equal((markup.match(/class="selectable-card-indicator"/g) ?? []).length, 2);
 	assert.equal((markup.match(/type="radio"/g) ?? []).length, 4);
 	assert.equal((markup.match(/disabled=""/g) ?? []).length, 0);
 	assert.equal((markup.match(/checked=""/g) ?? []).length, 2);
 	assert.equal(markup.includes("<select"), false);
 	assert.equal(markup.includes("Movie Count: 136"), false);
+	const styles = read("builder/src/styles.css");
+	assert.match(styles, /\.studio-source-choice:has\(input:checked\)\s*\{[^}]*box-shadow:\s*none/);
 });
 
 test("Studio search keeps Best Match hidden and exposes only Builder-style overrides and zero toggle", () => {
@@ -548,7 +552,7 @@ test("source-picker return focus and Configure-to-Search state restoration stay 
 test("Studio modal remains single-column, tappable, scroll-safe, and footer-safe at required mobile widths", () => {
 	const styles = read("builder/src/styles.css");
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 520);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-source-choices > div\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/);
 	assert.match(styles, /\.studio-source-choices label\s*\{[^}]*min-height:\s*68px/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-source-choices label\s*\{[^}]*min-height:\s*60px/);

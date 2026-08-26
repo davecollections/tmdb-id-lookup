@@ -206,6 +206,8 @@ function artworkField({ descriptor, values, original, touched, prefix, suggestio
 				<ExactImageUrlField
 					{...common}
 					previewShape={previewShape(preview, values?.tileShape)}
+					previewHidden={field === "focusGifUrl" && values?.focusGifEnabled !== true}
+					previewOverlayLabel={field === "focusGifUrl" ? "Hidden in Nuvio" : null}
 					descriptionId={descriptionId}
 				/>
 				<SuggestedArtwork
@@ -321,8 +323,10 @@ export function FolderArtworkFields({
 							{slug === "focus" ? (
 								<div className="editor-switch-field folder-focus-enabled-field is-content-sized" data-editor-field="focusGifEnabled">
 									<PresentationSwitch
-										label="Enable focus artwork"
-										description="Use this artwork for the focused state."
+										label="Show Focus GIF"
+										description={values?.focusGifEnabled === true
+											? "Shown when focused."
+											: "Hidden in Nuvio; the URL is kept."}
 										descriptionId={`${prefix}-focus-enabled-help`}
 										controlName="focusGifEnabled"
 										checked={values?.focusGifEnabled === true}

@@ -680,6 +680,10 @@ test("styles provide mobile protection, touch sizing, focus, desktop panels, and
 	assert.match(styles, /@media \(max-width: 430px\)/);
 	assert.match(styles, /@media \(min-width: 900px\)/);
 	assert.match(styles, /grid-template-columns:\s*minmax\(250px/);
+	assert.match(styles, /@media \(min-width: 900px\) and \(max-width: 1023\.98px\)[\s\S]*\.panel-header h2\s*\{[\s\S]*overflow-wrap:\s*normal[\s\S]*white-space:\s*nowrap/);
+	assert.match(styles, /@media \(min-width: 900px\) and \(max-width: 1023\.98px\)[\s\S]*\.panel-title-inline-count\.mobile-only\s*\{[\s\S]*display:\s*inline/);
+	assert.match(styles, /@media \(min-width: 900px\) and \(max-width: 1023\.98px\)[\s\S]*\.panel-count\.panel-count-desktop-only\s*\{[\s\S]*display:\s*none/);
+	assert.match(styles, /@media \(min-width: 900px\) and \(max-width: 1023\.98px\)[\s\S]*\.source-heading\s*\{[\s\S]*flex-direction:\s*column/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 	assert.equal(BUILDER_DESKTOP_BREAKPOINT_PX, 900);
 	assert.equal(BUILDER_DESKTOP_MEDIA_QUERY, "(min-width: 900px)");
@@ -688,6 +692,7 @@ test("styles provide mobile protection, touch sizing, focus, desktop panels, and
 	assert.match(workspace, /selectCreated:\s*desktopViewport/);
 	assert.match(workspace, /desktopViewport \? null : "collections"/);
 	assert.match(workspace, /desktopViewport \? null : "folders"/);
+	for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1023, 1024, 1280]) assert.ok(width > 0);
 });
 
 test("responsive helper matches the established breakpoint and respects reduced motion for card scrolling", () => {

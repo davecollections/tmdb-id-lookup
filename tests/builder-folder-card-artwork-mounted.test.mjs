@@ -526,7 +526,7 @@ test("mounted Folder settings previews stay grouped, bounded, exact, and single-
 	assert.deepEqual(mountedResults.settingsWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.settingsWidths) {
 		assert.equal(result.groupCount, 4, `${result.width}px group count`);
-		assert.deepEqual(result.groupNames, ["Tile", "Hero / Background", "Branding", "Focus"], `${result.width}px groups`);
+		assert.deepEqual(result.groupNames, ["Tile", "Hero / Background", "Branding", "Focus GIF"], `${result.width}px groups`);
 		assert.equal(result.imageCount, 4, `${result.width}px image previews`);
 		assert.equal(result.noVideoOnOpen, true, `${result.width}px video opt-in`);
 		assert.equal(result.videoFieldPresent, true, `${result.width}px compatibility field`);
@@ -546,7 +546,7 @@ test("mounted Folder settings previews stay grouped, bounded, exact, and single-
 			"Background image for the folder.",
 			"Existing video background for this folder.",
 			"Transparent title logo.",
-			"Artwork shown when the folder is focused.",
+			"Animated artwork shown when the folder is focused.",
 		], `${result.width}px helper copy`);
 		assert.equal(result.helperLineCounts.every((lineCount) => lineCount <= 2), true, `${result.width}px helper wrapping`);
 		assert.equal(result.artworkSectionHeight <= (result.width < 760 ? 1400 : 1100), true, `${result.width}px artwork height`);
@@ -698,7 +698,7 @@ test("mounted ordinary Folder settings omit Backdrop Video without leaving a Her
 	for (const [index, result] of mountedResults.ordinarySettingsWidths.entries()) {
 		const compatible = mountedResults.settingsWidths[index];
 		assert.equal(result.groupCount, 4, `${result.width}px group count`);
-		assert.deepEqual(result.groupNames, ["Tile", "Hero / Background", "Branding", "Focus"], `${result.width}px groups`);
+		assert.deepEqual(result.groupNames, ["Tile", "Hero / Background", "Branding", "Focus GIF"], `${result.width}px groups`);
 		assert.equal(result.imageCount, 4, `${result.width}px image previews`);
 		assert.equal(result.noVideoOnOpen, true, `${result.width}px no video element`);
 		assert.equal(result.videoFieldPresent, false, `${result.width}px no ordinary video field`);
@@ -719,7 +719,7 @@ test("mounted ordinary Folder settings omit Backdrop Video without leaving a Her
 			"Artwork used for the folder tile.",
 			"Background image for the folder.",
 			"Transparent title logo.",
-			"Artwork shown when the folder is focused.",
+			"Animated artwork shown when the folder is focused.",
 		], `${result.width}px ordinary helper copy`);
 		assert.equal(result.helperLineCounts.every((lineCount) => lineCount <= 2), true, `${result.width}px helper wrapping`);
 		assert.equal(result.imageAttributesSafe, true, `${result.width}px image behavior`);
@@ -1016,7 +1016,7 @@ test("mounted nonblank artwork stays quiet until deliberately cleared", () => {
 test("mounted Request artwork is safe external navigation and changes no draft or project state", () => {
 	const result = mountedResults.suggestionRequestContract;
 	assert.equal(result.text, "Request artwork ↗");
-	assert.match(result.ariaLabel, /Focus artwork URL \(opens in a new tab\)/);
+	assert.match(result.ariaLabel, /Focus GIF URL \(opens in a new tab\)/);
 	assert.match(result.href, /^https:\/\/github\.com\/davecollections\/nuvio-people-assets\/issues\/new\?/);
 	const requestUrl = new URL(result.href);
 	assert.equal(requestUrl.searchParams.get("title"), "Artwork request: Kátia Lund — Focus (Poster)");

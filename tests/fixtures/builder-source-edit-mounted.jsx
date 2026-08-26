@@ -3925,6 +3925,23 @@ async function runDecadesActionLayoutScenario() {
 		const primaryRect = primary.getBoundingClientRect();
 		const backRect = back.getBoundingClientRect();
 		const headingFocused = document.activeElement?.id === "decades-options-title";
+		const contentInputs = [...dialog.querySelectorAll('.decades-content-grid input[type="checkbox"]')];
+		const selectedContentCard = dialog.querySelector('.decades-content-grid label[data-selected="true"]');
+		const selectedContentIndicator = selectedContentCard?.querySelector('.selectable-card-indicator');
+		const unselectedContentInput = contentInputs.find((input) => !input.checked);
+		unselectedContentInput.focus({ preventScroll: true });
+		await afterCommittedEffects();
+		const unselectedContentFocusable = document.activeElement === unselectedContentInput;
+		await clickAndSettle(unselectedContentInput);
+		const contentToggleSelected = unselectedContentInput.checked === true
+			&& unselectedContentInput.closest("label")?.dataset.selected === "true"
+			&& unselectedContentInput.nextElementSibling?.dataset.selectionState === "selected"
+			&& unselectedContentInput.nextElementSibling?.textContent === "✓";
+		await clickAndSettle(unselectedContentInput);
+		const contentToggleRestored = unselectedContentInput.checked === false
+			&& unselectedContentInput.closest("label")?.dataset.selected === undefined
+			&& unselectedContentInput.nextElementSibling?.dataset.selectionState === "unselected"
+			&& unselectedContentInput.nextElementSibling?.textContent === "";
 		const disclosures = [...dialog.querySelectorAll("details.decades-advanced-options")];
 		const allCollapsed = disclosures.length === 1 && disclosures.every((details) => !details.open);
 		const scroll = dialog.querySelector(".add-source-scroll");
@@ -3958,6 +3975,17 @@ async function runDecadesActionLayoutScenario() {
 			bothDefault: dialog.querySelector('input[name="decades-media"][value="both"]')?.checked === true,
 			displayOrderChoices: dialog.querySelectorAll('input[name="decades-display-order"]').length,
 			defaultDisplayOrder: dialog.querySelector('input[name="decades-display-order"][value="newest-decades-oldest-years"]')?.checked === true,
+			contentSelection: {
+				nativeCheckboxes: contentInputs.length,
+				allVisuallyHidden: contentInputs.every((input) => input.classList.contains("visually-hidden") && input.classList.contains("selectable-card-checkbox") && input.getBoundingClientRect().width <= 1),
+				indicators: dialog.querySelectorAll('.decades-content-grid .selectable-card-indicator').length,
+				selectedState: selectedContentIndicator?.dataset.selectionState ?? null,
+				selectedTick: selectedContentIndicator?.textContent ?? null,
+				selectedSurface: selectedContentCard?.dataset.selected === "true",
+				unselectedFocusable: unselectedContentFocusable,
+				toggleSelected: contentToggleSelected,
+				toggleRestored: contentToggleRestored,
+			},
 			oldChronologyAbsent: dialog.querySelector('input[name="decades-folder-order"], input[name="decades-year-order"]') === null,
 		};
 	} finally {

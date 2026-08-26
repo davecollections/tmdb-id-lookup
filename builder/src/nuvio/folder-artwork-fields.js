@@ -65,13 +65,13 @@ export const FOLDER_ARTWORK_FIELD_GROUPS = Object.freeze([
 	}),
 	group({
 		slug: "focus",
-		title: "Focus",
+		title: "Focus GIF",
 		fields: [
 			field({
 				field: "focusGifUrl",
 				inputType: "url",
-				label: "Focus artwork URL",
-				description: "Artwork shown when the folder is focused.",
+				label: "Focus GIF URL",
+				description: "Animated artwork shown when the folder is focused.",
 				preview: "focus",
 			}),
 		],

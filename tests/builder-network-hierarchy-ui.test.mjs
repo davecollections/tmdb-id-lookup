@@ -221,7 +221,7 @@ test("required responsive owner widths retain 5-mobile and 10-desktop poster beh
 	const widths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
 	assert.deepEqual(widths.filter((width) => width <= 520), [360, 384, 393, 402, 412]);
 	assert.deepEqual(widths.filter((width) => width >= 900), [900, 901, 1280]);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-dialog/);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.add-source-dialog/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*safe-area-inset-bottom/);

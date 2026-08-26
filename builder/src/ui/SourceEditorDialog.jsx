@@ -124,6 +124,14 @@ function SourceIdentity({ adapter, draft }) {
 	);
 }
 
+function PeopleSourceIdentity({ draft }) {
+	return (
+		<p className="source-edit-people-identity" aria-label={`TMDB person ${draft.tmdbId}`}>
+			TMDB person <strong>{draft.tmdbId}</strong>
+		</p>
+	);
+}
+
 function SourceTitleField({ draft, titleInputRef, error, onChange, helperText = null }) {
 	const nameIsAutoManaged = draft.titleMode === "auto"
 		|| (draft.selectedCollectionName !== null && draft.title === draft.selectedCollectionName);
@@ -152,12 +160,11 @@ function SourceTitleField({ draft, titleInputRef, error, onChange, helperText = 
 	);
 }
 
-const importedSortOptionValue = "__source_edit_imported_sort__";
-
 export function PeopleEditorFields({
 	draft,
 	combinationRef,
 	countState,
+	sortRef,
 	onChange,
 	onDefaultTitle,
 	onRetryCounts,
@@ -165,37 +172,37 @@ export function PeopleEditorFields({
 }) {
 	const combination = PEOPLE_SOURCE_COMBINATIONS.find((entry) => entry.id === draft.combinationId);
 	const sortOptions = peopleSortOptions(combination?.mediaType);
-	const normalSortSelected = sortOptions.some((option) => option.value === draft.sortBy);
-	const sortValue = normalSortSelected ? draft.sortBy : importedSortOptionValue;
-	const importedSortLabel = typeof draft.originalSortBy === "string" && draft.originalSortBy.length > 0
-		? `Current imported value (preserved): ${draft.originalSortBy}`
-		: "Current imported value is not set (preserved)";
+	const selectedSortId = sortOptions.find((option) => option.value === draft.sortBy)?.id ?? null;
 	return (
 		<section className="source-edit-options" aria-labelledby="source-edit-options-title">
 			<div className="add-source-section-heading">
 				<div>
 					<p className="panel-kicker">Role and media</p>
-					<h3 id="source-edit-options-title">Choose this physical source</h3>
+					<h3 id="source-edit-options-title">Choose role and media</h3>
 				</div>
 			</div>
 			<div className="source-edit-combinations" role="radiogroup" aria-label="People source combination">
-				{PEOPLE_SOURCE_COMBINATIONS.map((combination, index) => (
-					<label key={combination.id} className="source-edit-combination">
-						<input
-							ref={index === 0 ? combinationRef : undefined}
-							type="radio"
-							name="source-edit-people-combination"
-							value={combination.id}
-							checked={draft.combinationId === combination.id}
-							onChange={() => onChange(combination.id)}
-						/>
-						<span>
-							<strong>{combination.sourceTitle}</strong>
-							<small>{combination.tmdbSourceType} · {combination.mediaType}</small>
-						</span>
-						<em data-count-state={countState.status}>{peopleEditCountLabel(countState, combination.countKey)}</em>
-					</label>
-				))}
+				{PEOPLE_SOURCE_COMBINATIONS.map((combination, index) => {
+					const selected = draft.combinationId === combination.id;
+					return (
+						<label key={combination.id} className="source-edit-combination" data-selected={selected ? "true" : undefined}>
+							<input
+								ref={index === 0 ? combinationRef : undefined}
+								className="visually-hidden selectable-card-checkbox"
+								type="radio"
+								name="source-edit-people-combination"
+								value={combination.id}
+								checked={selected}
+								onChange={() => onChange(combination.id)}
+							/>
+							<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
+							<span>
+								<strong>{combination.role === "directing" ? "Directing" : "Acting"} · {combination.media === "series" ? "Series" : "Movies"}</strong>
+							</span>
+							<em data-count-state={countState.status}>{peopleEditCountLabel(countState, combination.countKey)}</em>
+						</label>
+					);
+				})}
 			</div>
 			{countState.status === "failed" ? (
 				<div className="source-edit-count-failure" role="status">
@@ -207,26 +214,18 @@ export function PeopleEditorFields({
 			<button className="source-edit-title-reset" type="button" onClick={onDefaultTitle}>
 				Use default title
 			</button>
-			<div className="editor-field source-edit-sort-field">
-				<label htmlFor="source-edit-sort">Sort order</label>
-				<select
-					id="source-edit-sort"
-					value={sortValue}
-					onChange={(event) => {
-						const option = sortOptions.find((entry) => entry.value === event.target.value);
-						onSortChange(
-							event.target.value === importedSortOptionValue
-								? draft.originalSortBy
-								: event.target.value,
-							option?.id ?? null,
-						);
-					}}
-				>
-					{!normalSortSelected ? <option value={importedSortOptionValue}>{importedSortLabel}</option> : null}
-					{sortOptions.map((option) => <option key={option.id} value={option.value}>{option.label}</option>)}
-				</select>
-				<p className="editor-field-help">Changing role or media does not rewrite an untouched imported sort value.</p>
-			</div>
+			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
+			<SemanticSortChoices
+				options={sortOptions}
+				selectedId={selectedSortId}
+				name="people-edit-sort"
+				firstInputRef={sortRef}
+				onChange={(optionId) => {
+					const option = sortOptions.find((entry) => entry.id === optionId);
+					onSortChange(option.value, option.id);
+				}}
+				helper="Changing role or media does not rewrite an untouched imported sort value."
+			/>
 		</section>
 	);
 }
@@ -476,6 +475,7 @@ export function SourceEditorDialog({
 	const scrollRef = useRef(null);
 	const titleInputRef = useRef(null);
 	const combinationRef = useRef(null);
+	const peopleSortRef = useRef(null);
 	const chooseButtonRef = useRef(null);
 	const studioSortRef = useRef(null);
 	const networkSortRef = useRef(null);
@@ -527,7 +527,7 @@ export function SourceEditorDialog({
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
 		const stopObservingViewport = observeAddSourceViewport(setViewportStyle);
-		focusElementWithoutScroll(titleInputRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? decadeSortRef.current ?? genreSortRef.current ?? dialogRef.current);
+		focusElementWithoutScroll(titleInputRef.current ?? peopleSortRef.current ?? networkSortRef.current ?? studioSortRef.current ?? streamingSortRef.current ?? decadeSortRef.current ?? genreSortRef.current ?? dialogRef.current);
 		return () => {
 			stopObservingViewport();
 			unlockBody();
@@ -629,7 +629,7 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const sortRef = networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
+		const sortRef = peopleSortRef.current ? peopleSortRef : networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
 		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
@@ -751,6 +751,8 @@ export function SourceEditorDialog({
 											? "Update this Genre source name, title order and supported filters. Genre ID and media stay fixed."
 										: session.adapterId === DECADE_SOURCE_EDITOR_ID
 											? "Update this Decade source name, title order and supported filters. Period, media and included Genre stay fixed."
+										: session.adapterId === PEOPLE_SOURCE_EDITOR_ID
+											? "Update this People source role, media, name and title order."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
@@ -773,7 +775,11 @@ export function SourceEditorDialog({
 									{failure ? (
 										<SourceEditErrorPanel result={failure} alertRef={diagnosticRef} />
 									) : null}
-									{![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, DECADE_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId) ? <SourceIdentity adapter={adapter} draft={draft} /> : null}
+									{session.adapterId === PEOPLE_SOURCE_EDITOR_ID
+										? <PeopleSourceIdentity draft={draft} />
+										: ![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, DECADE_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId)
+											? <SourceIdentity adapter={adapter} draft={draft} />
+											: null}
 									{session.adapterId !== NETWORK_SOURCE_EDITOR_ID ? <SourceTitleField
 											draft={draft}
 											titleInputRef={titleInputRef}
@@ -797,6 +803,7 @@ export function SourceEditorDialog({
 											draft={draft}
 											combinationRef={combinationRef}
 											countState={peopleCountState}
+											sortRef={peopleSortRef}
 											onChange={(combinationId) => {
 												setDraft((current) => choosePeopleSourceCombination(current, combinationId));
 												setFailure(null);

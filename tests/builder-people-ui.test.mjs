@@ -394,8 +394,10 @@ test("configuration exposes four direct combinations with inline counts and zero
 		onRemove: null,
 	}));
 	for (const label of ["Acting Movies", "Acting Series", "Directed Movies", "Directed Series"]) assert.ok(markup.includes(label), label);
-	assert.ok(markup.includes("PERSON · MOVIE"));
-	assert.ok(markup.includes("DIRECTOR · TV"));
+	assert.ok(markup.includes("Acting · Movies"));
+	assert.ok(markup.includes("Directing · Series"));
+	assert.equal(markup.includes("PERSON · MOVIE"), false);
+	assert.equal(markup.includes("DIRECTOR · TV"), false);
 	assert.ok(markup.includes("No titles found"));
 	assert.ok(markup.includes("4 titles"));
 	assert.ok(markup.includes("Refresh title counts"));
@@ -406,6 +408,8 @@ test("configuration exposes four direct combinations with inline counts and zero
 	assert.ok(markup.includes('class="tmdb-review-identity"'));
 	assert.ok(markup.includes('class="tmdb-review-identity-actions"'));
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 4);
+	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox" type="checkbox"/g) ?? []).length, 4);
+	assert.equal((markup.match(/data-selection-indicator="true"/g) ?? []).length, 4);
 	assert.equal(markup.includes("Folder artwork"), false);
 	assert.ok(markup.includes('data-profile-state="ready"'));
 	assert.equal(markup.includes("Curated artwork"), false);
@@ -727,7 +731,7 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.match(flow, /people-title-preview-backdrop nested-modal-backdrop/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);
 	assert.match(styles, /\.people-title-preview\s*\{[\s\S]*max-height:/);
-	assert.match(styles, /\.people-title-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(10/);
+	assert.match(styles, /\.people-title-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5/);
 	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*max-height:[\s\S]*overflow-y:\s*auto/);
 	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*align-content:\s*start;[\s\S]*grid-auto-rows:\s*max-content;/);
 	assert.match(styles, /\.people-bulk-row\s*\{[\s\S]*align-self:\s*start;/);
@@ -735,6 +739,7 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.match(styles, /\.people-combination-group label:has\(input:checked\)[\s\S]*box-shadow:\s*none/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-combination-group\.is-pills > div[\s\S]*grid-template-columns:\s*repeat\(2/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.people-title-preview-grid[\s\S]*grid-template-columns:\s*repeat\(5/);
+	assert.match(flow, /People folder\$\{configuredEntries\.length === 1 \? "" : "s"\}/);
 	assert.match(styles, /\.people-source-dialog\[data-dialog-compact="true"\][\s\S]*height:\s*auto/);
 	assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 	for (const width of [360, 384, 393, 402, 412, 899, 900, 901]) assert.ok(width > 0);

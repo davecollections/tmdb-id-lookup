@@ -264,9 +264,10 @@ function CombinationControls({ person, configuration, loading, onToggle, compact
 			<div>
 				{PEOPLE_SOURCE_COMBINATIONS.map((combination) => {
 					const count = sourceCount(person, combination.countKey, loading);
+					const selected = configuration?.combinations.includes(combination.id) ?? false;
 					if (pills) return (
 						<label className="people-source-pill" data-people-role={combination.role} data-count-state={count.state} key={combination.id}>
-							<input type="checkbox" checked={configuration?.combinations.includes(combination.id) ?? false} disabled={loading} aria-label={`${combination.label}, ${count.text}`} onChange={() => onToggle(combination.id)} />
+							<input type="checkbox" checked={selected} disabled={loading} aria-label={`${combination.label}, ${count.text}`} onChange={() => onToggle(combination.id)} />
 							<span className="people-source-pill-check" aria-hidden="true">✓</span>
 							<strong>{combination.label}</strong>
 							{showCounts ? <em aria-hidden="true">{count.compactText}</em> : null}
@@ -274,8 +275,9 @@ function CombinationControls({ person, configuration, loading, onToggle, compact
 					);
 					return (
 						<label key={combination.id} data-count-state={count.state}>
-							<input type="checkbox" checked={configuration?.combinations.includes(combination.id) ?? false} disabled={loading} onChange={() => onToggle(combination.id)} />
-							<span><strong>{combination.label}</strong>{compact ? null : <small>{combination.tmdbSourceType} · {combination.mediaType}</small>}</span>
+							<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={selected} disabled={loading} onChange={() => onToggle(combination.id)} />
+							<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
+							<span><strong>{combination.label}</strong>{compact ? null : <small>{combination.role === "directing" ? "Directing" : "Acting"} · {combination.media === "series" ? "Series" : "Movies"}</small>}</span>
 							{showCounts ? <em>{count.text}</em> : null}
 						</label>
 					);
@@ -1131,7 +1133,7 @@ export function PeopleSourceFlow({
 								<PeopleSearchStep context={context} headingRef={searchHeadingRef} input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} selection={selection} loadingPersonId={loadingPersonId} selectionError={selectionError} onInputChange={handleInputChange} onRetryLookup={() => setRetryGeneration((value) => value + 1)} onActivateResult={activateResult} onChangePage={setPage} onRemoveSelected={removePerson} />
 							) : step === PEOPLE_SOURCE_STEPS.CONFIGURE ? (
 								<section ref={configureRef} className="people-configure" aria-labelledby="people-configure-title" tabIndex={-1}>
-									<div className="add-source-section-heading"><div><p className="panel-kicker">Configure</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folders`}</h3></div></div>
+									<div className="add-source-section-heading"><div><p className="panel-kicker">Configure</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`}</h3></div></div>
 									{multiContext ? <PeopleConfigurationModeControls mode={configurationMode} sharedCombinations={sharedCombinations} onModeChange={changeConfigurationMode} onToggleShared={(combinationId) => toggleCombination(null, combinationId)} /> : null}
 									{hierarchy ? <SemanticSortChoices options={PEOPLE_SOURCE_SORT_OPTIONS} selectedId={sortOptionId} name="people-hierarchy-sort" legend="Sort titles by" onChange={(nextSortOptionId) => { setSortOptionId(nextSortOptionId); setApplyDiagnostic(null); }} /> : null}
 									{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}

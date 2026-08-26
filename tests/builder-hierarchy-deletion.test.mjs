@@ -741,7 +741,7 @@ test("styles keep Add, actions menus, dialog, and responsive layouts touch-safe 
 	);
 	assert.match(
 		styles,
-		/@media \(min-width: 900px\) and \(max-width: 1023px\)[\s\S]*\.app-header\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+		/@media \(min-width: 900px\) and \(max-width: 1023\.98px\)[\s\S]*\.app-header\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
 	);
 	assert.match(
 		styles,
