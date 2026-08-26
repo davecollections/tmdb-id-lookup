@@ -546,7 +546,7 @@ test("mounted Folder settings previews stay grouped, bounded, exact, and single-
 			"Background image for the folder.",
 			"Existing video background for this folder.",
 			"Transparent title logo.",
-			"Animated artwork shown when the folder is focused.",
+			"Animated artwork when focused.",
 		], `${result.width}px helper copy`);
 		assert.equal(result.helperLineCounts.every((lineCount) => lineCount <= 2), true, `${result.width}px helper wrapping`);
 		assert.equal(result.artworkSectionHeight <= (result.width < 760 ? 1400 : 1100), true, `${result.width}px artwork height`);
@@ -719,7 +719,7 @@ test("mounted ordinary Folder settings omit Backdrop Video without leaving a Her
 			"Artwork used for the folder tile.",
 			"Background image for the folder.",
 			"Transparent title logo.",
-			"Animated artwork shown when the folder is focused.",
+			"Animated artwork when focused.",
 		], `${result.width}px ordinary helper copy`);
 		assert.equal(result.helperLineCounts.every((lineCount) => lineCount <= 2), true, `${result.width}px helper wrapping`);
 		assert.equal(result.imageAttributesSafe, true, `${result.width}px image behavior`);

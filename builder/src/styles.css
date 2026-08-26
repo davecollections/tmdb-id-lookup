@@ -4472,7 +4472,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 	display: grid;
 	min-width: 0;
-	gap: 14px;
+	gap: 4px;
 }
 
 .folder-artwork-group {

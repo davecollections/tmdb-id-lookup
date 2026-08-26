@@ -71,7 +71,7 @@ export const FOLDER_ARTWORK_FIELD_GROUPS = Object.freeze([
 				field: "focusGifUrl",
 				inputType: "url",
 				label: "Focus GIF URL",
-				description: "Animated artwork shown when the folder is focused.",
+				description: "Animated artwork when focused.",
 				preview: "focus",
 			}),
 		],

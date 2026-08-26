@@ -2155,7 +2155,7 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 		"Artwork used for the folder tile.",
 		"Background image for the folder.",
 		"Transparent title logo.",
-		"Animated artwork shown when the folder is focused.",
+		"Animated artwork when focused.",
 	]) assert.ok(artwork.includes(helper), helper);
 	assert.equal(artwork.includes("Existing video background for this folder."), false);
 	assert.equal(artwork.includes("Leave blank to clear it."), false);
