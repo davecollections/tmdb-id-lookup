@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "reservation_id": "32950695722-1-cache-repair",
+  "utc_date": "2026-08-26",
+  "workflow": "Daily Capped Repair Cache From Audit",
+  "run_id": "32950695722",
+  "run_attempt": "1",
+  "job": "cache-repair",
+  "planned_month": "2026-08",
+  "planned_utc_date": "2026-08-26",
+  "bucket": "repair",
+  "allocations": {
+    "company_repair": 2000,
+    "network_repair": 2000
+  },
+  "bindings": {
+    "company_repair": {
+      "request_class": "company-repair",
+      "target_dimension": "company-movie",
+      "approved_allowance": 2000
+    },
+    "network_repair": {
+      "request_class": "network-repair",
+      "target_dimension": "network-series",
+      "approved_allowance": 2000
+    }
+  },
+  "total_allowance": 4000,
+  "projected_daily_total": 4050,
+  "preferred_daily_limit": 90000,
+  "absolute_daily_limit": 100000,
+  "fixed_genre_commitment": 36,
+  "protected_audit_commitment": 14,
+  "protected_repair_commitment": 4000,
+  "preferred_override_used": false,
+  "override_reason": null,
+  "created_at": "2026-08-26T09:00:41.211Z"
+}
