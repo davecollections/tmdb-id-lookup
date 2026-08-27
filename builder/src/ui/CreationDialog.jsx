@@ -221,17 +221,20 @@ function ContentChoices({ state, onChange }) {
 			<legend>What should each decade include?</legend>
 			<p>Select one or more ways to organise each Decade.</p>
 			<div className="decades-content-grid">
-				{options.map((option) => (
-					<label key={option.id} data-selected={state.content[option.id] ? "true" : undefined}>
+				{options.map((option) => {
+					const selected = state.content[option.id];
+					return <label key={option.id} data-selected={selected ? "true" : undefined}>
 						<input
+							className="visually-hidden selectable-card-checkbox"
 							type="checkbox"
-							checked={state.content[option.id]}
-							disabled={state.content[option.id] && selectedCount === 1}
+							checked={selected}
+							disabled={selected && selectedCount === 1}
 							onChange={(event) => onChange(Object.freeze({ ...state.content, [option.id]: event.target.checked }))}
 						/>
+						<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
 						<span><strong>{option.label}</strong><small>{option.description}</small></span>
-					</label>
-				))}
+					</label>;
+				})}
 			</div>
 		</fieldset>
 	);

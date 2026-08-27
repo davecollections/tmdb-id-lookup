@@ -243,8 +243,9 @@ export function StudioConfigureStep({
 						const duplicate = duplicateMedia.has(option.mediaType);
 						const count = currentCountText(option, counts[option.countKey]);
 						return (
-							<label key={option.id} data-count-state={count.state} data-source-supported={option.supported ? "true" : "false"} data-source-duplicate={duplicate ? "true" : undefined}>
-								<input type="checkbox" checked={choices.includes(option.id)} disabled={!option.supported || duplicate} onChange={() => onToggle(option.id)} />
+							<label className="studio-source-choice" key={option.id} data-count-state={count.state} data-source-supported={option.supported ? "true" : "false"} data-source-duplicate={duplicate ? "true" : undefined}>
+								<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={choices.includes(option.id)} disabled={!option.supported || duplicate} onChange={() => onToggle(option.id)} />
+								<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={choices.includes(option.id) ? "selected" : "unselected"} aria-hidden="true">{choices.includes(option.id) ? "✓" : ""}</span>
 								<span>
 									<strong>{option.label}</strong>
 									<small>

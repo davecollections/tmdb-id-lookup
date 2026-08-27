@@ -210,8 +210,9 @@ test("selected empty folder exposes shared Add actions and an intentional inline
 	assert.equal((markup.match(/data-action="add-source-empty"/g) ?? []).length, 1);
 	assert.equal(markup.includes('data-action="add-source-after-list"'), false);
 	assert.ok(markup.includes("Add first source"));
+	assert.equal((markup.match(/class="panel-title-inline-count mobile-only"/g) ?? []).length, 3);
 	assert.ok(markup.includes('class="panel-title-inline-count mobile-only"> · 0</span>'));
-	assert.ok(markup.includes("panel-count panel-count-desktop-only"));
+	assert.equal((markup.match(/panel-count panel-count-desktop-only/g) ?? []).length, 3);
 });
 
 test("selected populated folder exposes header and trailing Add entry points", () => {
@@ -933,13 +934,13 @@ test("responsive CSS provides an opaque full Visual Viewport task surface and sa
 	assert.match(styles, /\.add-source-portal\s*\{[\s\S]*z-index:\s*var\(--layer-add-source\)[\s\S]*isolation:\s*isolate/);
 	assert.match(styles, /\.add-source-dialog\s*\{[\s\S]*width:\s*100%[\s\S]*height:\s*100%/);
 	assert.match(styles, /\.add-source-scroll\s*\{[\s\S]*overflow-y:\s*auto[\s\S]*overscroll-behavior:\s*contain/);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.add-source-portal\s*\{[\s\S]*background:\s*rgb\(7 24 33\)/);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.settings-modal-backdrop\.add-source-backdrop\s*\{[\s\S]*padding:\s*0[\s\S]*background:\s*rgb\(7 24 33\)/);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.add-source-dialog\s*\{[\s\S]*isolation:\s*isolate[\s\S]*background:\s*rgb\(7 24 33\)[\s\S]*border:\s*0[\s\S]*border-radius:\s*0/);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.panel-count\.panel-count-desktop-only\s*\{\s*display:\s*none/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-portal\s*\{[\s\S]*background:\s*rgb\(7 24 33\)/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.settings-modal-backdrop\.add-source-backdrop\s*\{[\s\S]*padding:\s*0[\s\S]*background:\s*rgb\(7 24 33\)/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-dialog\s*\{[\s\S]*isolation:\s*isolate[\s\S]*background:\s*rgb\(7 24 33\)[\s\S]*border:\s*0[\s\S]*border-radius:\s*0/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.panel-count\.panel-count-desktop-only\s*\{\s*display:\s*none/);
 	assert.match(styles, /\.add-source-review-poster-frame\s*\{[\s\S]*width:\s*clamp\(180px,\s*48vw,\s*220px\)/);
-	assert.match(styles, /@media \(max-width: 899px\) and \(max-height: 600px\)[\s\S]*width:\s*clamp\(140px,\s*40vw,\s*180px\)/);
-	assert.match(styles, /@media \(min-width: 600px\) and \(max-width: 899px\) and \(max-height: 600px\)[\s\S]*grid-template-columns:\s*180px minmax\(0,\s*1fr\)/);
+	assert.match(styles, /@media \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*width:\s*clamp\(140px,\s*40vw,\s*180px\)/);
+	assert.match(styles, /@media \(min-width: 600px\) and \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*grid-template-columns:\s*180px minmax\(0,\s*1fr\)/);
 	assert.match(styles, /\.add-source-result-poster,[\s\S]*\.add-source-review-poster\s*\{[\s\S]*object-fit:\s*contain/);
 	assert.equal(/\.add-source-review-poster\s*\{[^}]*object-fit:\s*cover/s.test(styles), false);
 	assert.match(styles, /\.add-source-recipe dl > div\s*\{[\s\S]*min-width:\s*0/);

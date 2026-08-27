@@ -2146,7 +2146,7 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	const artworkEnd = markup.indexOf('<div class="editor-diagnostics"', artworkStart);
 	const artwork = markup.slice(artworkStart, artworkEnd);
 	assert.ok(artwork.includes('<h3 id="node-editor-folder-artwork-heading">Artwork</h3>'));
-	for (const marker of ["Tile artwork URL", "Backdrop Image URL", "Title Logo URL", "Focus artwork URL", "Enable focus artwork"]) assert.ok(artwork.includes(marker), marker);
+	for (const marker of ["Tile artwork URL", "Backdrop Image URL", "Title Logo URL", "Focus GIF URL", "Show Focus GIF"]) assert.ok(artwork.includes(marker), marker);
 	assert.equal(artwork.includes("Backdrop Video URL"), false);
 	assert.equal(artwork.includes('data-editor-field="heroVideoUrl"'), false);
 	assert.equal(artwork.includes("Fallback emoji"), false);
@@ -2155,7 +2155,7 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 		"Artwork used for the folder tile.",
 		"Background image for the folder.",
 		"Transparent title logo.",
-		"Artwork shown when the folder is focused.",
+		"Animated artwork when focused.",
 	]) assert.ok(artwork.includes(helper), helper);
 	assert.equal(artwork.includes("Existing video background for this folder."), false);
 	assert.equal(artwork.includes("Leave blank to clear it."), false);
@@ -2268,12 +2268,26 @@ test("folder settings render exact draft artwork previews with safe media defaul
 	}
 	assert.ok(openingTag(artwork, 'data-artwork-preview="coverImageUrl"').includes('data-artwork-preview-shape="poster"'));
 	assert.ok(openingTag(artwork, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-shape="poster"'));
+	assert.ok(openingTag(artwork, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-visible="true"'));
+	assert.equal(artwork.includes("Hidden in Nuvio"), false);
 	assert.ok(openingTag(artwork, 'data-artwork-preview="heroBackdropUrl"').includes('data-artwork-preview-shape="wide"'));
 	assert.ok(openingTag(artwork, 'data-artwork-preview="titleLogoUrl"').includes('data-artwork-preview-shape="logo"'));
 	assert.equal((artwork.match(/<video/g) ?? []).length, 0);
 	assert.equal((artwork.match(/>Preview video<\/button>/g) ?? []).length, 1);
 	assert.ok(artwork.includes("Existing video background for this folder."));
 	assert.equal(artwork.includes("https://saved.example/backdrop.mp4"), false);
+
+	const hiddenFocusDraft = updateNodeEditorField(draft, "focusGifEnabled", false);
+	const hiddenFocusMarkup = renderWorkspace(controller, { draft: hiddenFocusDraft });
+	const hiddenFocusPreview = openingTag(hiddenFocusMarkup, 'data-artwork-preview="focusGifUrl"');
+	assert.ok(hiddenFocusPreview.includes("is-preview-hidden"));
+	assert.ok(hiddenFocusPreview.includes('data-artwork-preview-visible="false"'));
+	assert.ok(hiddenFocusMarkup.includes("Hidden in Nuvio"));
+	assert.ok(hiddenFocusMarkup.includes(`value="${draftUrls.focusGifUrl}"`));
+	assert.ok(hiddenFocusMarkup.includes(`src="${draftUrls.focusGifUrl}"`));
+	const restoredFocusMarkup = renderWorkspace(controller, { draft: updateNodeEditorField(hiddenFocusDraft, "focusGifEnabled", true) });
+	assert.ok(openingTag(restoredFocusMarkup, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-visible="true"'));
+	assert.equal(restoredFocusMarkup.includes("Hidden in Nuvio"), false);
 
 	const landscapeMarkup = renderWorkspace(controller, {
 		draft: updateNodeEditorField(draft, "tileShape", "LANDSCAPE"),

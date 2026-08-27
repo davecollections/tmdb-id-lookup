@@ -20,6 +20,8 @@ export function ExactImageUrlField({
 	prefix,
 	preserved,
 	previewShape,
+	previewHidden = false,
+	previewOverlayLabel = null,
 	descriptionId = null,
 	onChange,
 }) {
@@ -53,10 +55,11 @@ export function ExactImageUrlField({
 				</div>
 				{hasUrl && !previewFailure.failed ? (
 					<div
-						className="folder-artwork-preview-frame"
+						className={`folder-artwork-preview-frame${previewHidden ? " is-preview-hidden" : ""}`}
 						data-artwork-preview={field}
 						data-artwork-preview-kind={preview}
 						data-artwork-preview-shape={previewShape}
+						data-artwork-preview-visible={previewHidden ? "false" : "true"}
 						aria-hidden="true"
 					>
 						<img
@@ -70,6 +73,7 @@ export function ExactImageUrlField({
 							draggable="false"
 							onError={previewFailure.markFailed}
 						/>
+						{previewHidden && previewOverlayLabel ? <span className="folder-artwork-preview-overlay">{previewOverlayLabel}</span> : null}
 					</div>
 				) : null}
 			</div>

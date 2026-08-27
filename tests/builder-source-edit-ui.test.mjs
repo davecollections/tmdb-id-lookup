@@ -295,14 +295,20 @@ test("People editor opens immediately with four non-blocking counts, title reset
 	assert.equal(collectionCalls.length, 0);
 	assert.equal(peopleCalls.length, 0);
 	for (const text of [
-		"Movie Credits", "Series Credits", "Directed Movies", "Directed Series",
-		"PERSON · MOVIE", "PERSON · TV", "DIRECTOR · MOVIE", "DIRECTOR · TV",
-		"Use default title", "Sort order", "Popular", "Recent", "Top rated",
-		"popularity.desc", "primary_release_date.desc", "vote_average.desc",
+		"Acting · Movies", "Acting · Series", "Directing · Movies", "Directing · Series",
+		"Choose role and media", "Use default title", "Sort titles by", "Popular", "Recent", "Top rated",
 	]) assert.ok(markup.includes(text), text);
+	assert.equal(markup.includes("physical source"), false);
 	assert.equal((markup.match(/name="source-edit-people-combination"/g) ?? []).length, 4);
+	assert.equal((markup.match(/name="people-edit-sort"/g) ?? []).length, 3);
+	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox"/g) ?? []).length, 4);
+	assert.equal((markup.match(/data-selection-indicator="true"/g) ?? []).length, 4);
+	assert.equal((markup.match(/data-selection-state="selected"/g) ?? []).length, 1);
 	assert.equal((markup.match(/Checking titles…/g) ?? []).length, 4);
-	assert.ok(markup.includes("TMDB · PERSON · 31 · MOVIE"));
+	assert.ok(markup.includes("TMDB person <strong>31</strong>"));
+	for (const raw of ["PERSON · MOVIE", "PERSON · TV", "DIRECTOR · MOVIE", "DIRECTOR · TV", "popularity.desc", "primary_release_date.desc", "vote_average.desc"]) {
+		assert.equal(markup.includes(raw), false, raw);
+	}
 	assert.ok(markup.includes("Source name"));
 	assert.ok(markup.includes("This name updates automatically until you customise it."));
 	assert.equal(markup.includes("Nuvio source title"), false);
@@ -656,12 +662,11 @@ test("People sort UI preserves an unusual imported value until the user changes 
 		onRetryCounts() {},
 		onSortChange() {},
 	}));
-	assert.ok(markup.includes("Current imported value (preserved): Owner.MixedCase"));
-	assert.ok(markup.includes('value="__source_edit_imported_sort__" selected=""'));
-	for (const value of ["popularity.desc", "primary_release_date.desc", "vote_average.desc"]) {
-		assert.ok(markup.includes(`value="${value}"`), value);
-	}
-	assert.equal(markup.includes("first_air_date.desc"), false);
+	assert.ok(markup.includes("Current imported sort is preserved until you choose a supported sort: Owner.MixedCase"));
+	assert.equal((markup.match(/name="people-edit-sort"/g) ?? []).length, 3);
+	for (const value of ["popular", "recent", "top-rated"]) assert.ok(markup.includes(`value="${value}"`), value);
+	assert.equal(markup.includes('name="people-edit-sort" value="popular" checked=""'), false);
+	assert.equal(markup.includes("<select"), false);
 });
 
 test("an open source editor makes the workspace inert and retains one polite success region", () => {
@@ -786,7 +791,7 @@ test("responsive source editor styles are safe-area aware and bounded for every 
 	assert.match(styles, /\.source-edit-sort-field select\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /@media \(max-width: 420px\)[\s\S]*\.source-edit-identity,[\s\S]*\.source-edit-combinations,[\s\S]*\.source-edit-option-actions\s*\{[\s\S]*minmax\(0,\s*1fr\)/);
 	assert.match(styles, /\.source-edit-actions\s*\{[\s\S]*minmax\(0,\s*1\.5fr\) minmax\(100px,\s*1fr\)/);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.source-edit-dialog\s*\{[\s\S]*height:\s*100%[\s\S]*max-height:\s*100%[\s\S]*align-self:\s*stretch/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.source-edit-dialog\s*\{[\s\S]*height:\s*100%[\s\S]*max-height:\s*100%[\s\S]*align-self:\s*stretch/);
 	assert.match(styles, /\.add-source-form\s*\{[\s\S]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto[\s\S]*overflow:\s*hidden/);
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 420);
 });

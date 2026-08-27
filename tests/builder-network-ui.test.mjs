@@ -236,7 +236,7 @@ test("Network Source Edit renders fixed linked identity, count, and editable sem
 test("Network flow reuses proven mobile dialog controls at every required width", () => {
 	const styles = read("builder/src/styles.css");
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 520);
-	assert.match(styles, /@media \(max-width: 899px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
+	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-result\s*\{[^}]*grid-template-columns:\s*64px minmax\(0, 1fr\)/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-configure-identity\s*\{[^}]*grid-template-columns:\s*64px minmax\(0, 1fr\) auto/);
 	assert.match(styles, /\.studio-configure-actions \.studio-add-all\s*\{[^}]*min-height:\s*44px/);

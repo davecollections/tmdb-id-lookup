@@ -779,7 +779,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.genuineTmdbSources, true, `${width}px genuine TMDB Movie poster sources`);
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
 		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
-		assert.equal(result.preview.gridColumns, width <= 520 ? 5 : 10, `${width}px preview columns`);
+		assert.equal(result.preview.gridColumns, 5, `${width}px preview columns`);
 		assert.equal(result.preview.posterOnly, true, `${width}px poster-only`);
 		assert.equal(result.preview.noHorizontalOverflow, true, `${width}px preview overflow`);
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
@@ -1465,6 +1465,17 @@ test("mounted Decades header Back and primary-only footer remain reachable at ev
 		assert.equal(result.bothDefault, true, `${result.width}px Both default`);
 		assert.equal(result.displayOrderChoices, 3, `${result.width}px Display order choices`);
 		assert.equal(result.defaultDisplayOrder, true, `${result.width}px Display order default`);
+		assert.deepEqual(result.contentSelection, {
+			nativeCheckboxes: 3,
+			allVisuallyHidden: true,
+			indicators: 3,
+			selectedState: "selected",
+			selectedTick: "✓",
+			selectedSurface: true,
+			unselectedFocusable: true,
+			toggleSelected: true,
+			toggleRestored: true,
+		}, `${result.width}px Decades content selection language`);
 		assert.equal(result.oldChronologyAbsent, true, `${result.width}px redundant chronology controls`);
 	}
 });

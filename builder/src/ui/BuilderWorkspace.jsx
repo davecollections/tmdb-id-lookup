@@ -2314,6 +2314,7 @@ export function BuilderWorkspace({
 							id="collections-title"
 							title="Collections"
 							count={view.collections.length}
+							mobileInlineCount
 							headingAction={(
 								<button
 									ref={bulkEditTriggerRef}
@@ -2409,6 +2410,7 @@ export function BuilderWorkspace({
 							id="folders-title"
 							title="Folders"
 							count={view.folders.length}
+							mobileInlineCount
 							action={view.selectedCollection ? (
 								<button
 									className="primary-action"
