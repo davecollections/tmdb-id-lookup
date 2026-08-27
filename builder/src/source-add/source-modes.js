@@ -58,6 +58,16 @@ export const GENRE_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const DECADE_SOURCE_MODE_ID = "tmdb-decade";
+
+export const DECADE_SOURCE_MODE = Object.freeze({
+	id: DECADE_SOURCE_MODE_ID,
+	label: "Decade",
+	providerLabel: "TMDB",
+	description: "Add one canonical Decade or exact-year Movie, Series, or Both configuration.",
+	category: "native-tmdb",
+});
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	PEOPLE_SOURCE_MODE,
@@ -65,4 +75,5 @@ export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	NETWORK_SOURCE_MODE,
 	STREAMING_SOURCE_MODE,
 	GENRE_SOURCE_MODE,
+	DECADE_SOURCE_MODE,
 ]);

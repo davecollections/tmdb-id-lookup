@@ -9,8 +9,13 @@ export {
 	DECADE_CURRENT_YEAR_MODES,
 	DECADE_PRESET_IDS,
 	DECADE_PRESETS,
+	DECADE_SOURCE_PERIOD_GROUPS,
+	DECADE_SOURCE_PERIODS,
 	decadeIndividualPeriods,
 	decadePresetById,
+	decadeSourcePeriodChoices,
+	toggleDecadeSourcePeriodSelection,
+	decadeSourcePeriodById,
 	DEFAULT_DECADE_CURRENT_YEAR_MODE,
 } from "./decades-catalogue.js";
 export {
@@ -28,8 +33,14 @@ export {
 	validateDecadesHierarchyPlan,
 } from "./decades-plan.js";
 export {
+	buildCanonicalDecadePeriodDrafts,
+	buildDecadeSourceBundleDrafts,
 	buildDecadesSourceDrafts,
 	completeOfficialGenreNames,
+	createDecadeSourceBundle,
+	decadeDuplicateOverrideIdentity,
+	decadeSourceGenreOptions,
+	defaultDecadeSourceTitle,
 	DECADES_ADVANCED_FILTER_FIELDS,
 	DECADES_CHRONOLOGICAL_ORDERS,
 	DECADES_MEDIA_MODES,
@@ -39,7 +50,12 @@ export {
 	DEFAULT_DECADES_CONTENT,
 	DEFAULT_DECADES_SOURCE_GROUPING,
 	DEFAULT_DECADES_SORT_OPTION_ID,
+	DEFAULT_DECADE_SOURCE_ADVANCED,
+	DEFAULT_DECADE_SOURCE_PERIOD_ID,
+	inspectDecadeSourceDuplicates,
 	normalizeDecadesSourceConfiguration,
+	validateCanonicalDecadePeriodDrafts,
+	validateDecadeSourceBundleDrafts,
 	validateDecadesSourceDrafts,
 } from "./decades-source.js";
 export {
@@ -103,6 +119,8 @@ export {
 	STREAMING_SOURCE_MODE_ID,
 	GENRE_SOURCE_MODE,
 	GENRE_SOURCE_MODE_ID,
+	DECADE_SOURCE_MODE,
+	DECADE_SOURCE_MODE_ID,
 } from "./source-modes.js";
 export {
 	EXACT_SHARED_GENRE_NAMES,

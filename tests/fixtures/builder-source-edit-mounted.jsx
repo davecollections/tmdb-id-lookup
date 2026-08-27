@@ -20,6 +20,7 @@ import {
 	saveSourceEdit,
 } from "../../builder/src/source-edit/index.js";
 import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx";
+import { DecadeSourceFlow } from "../../builder/src/ui/DecadeSourceFlow.jsx";
 import { GenreSourceFlow } from "../../builder/src/ui/GenreSourceFlow.jsx";
 import { PeopleBulkConfigurationList, PeopleSourceFlow } from "../../builder/src/ui/PeopleSourceFlow.jsx";
 import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
@@ -4662,6 +4663,451 @@ async function runDecadesLivePreviewScenario() {
 	}
 }
 
+async function runDecadeSourceLayoutScenario() {
+	function required(element, label) {
+		if (!element) throw new Error(`${label} was not rendered.`);
+		return element;
+	}
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	controller.selectNode(folder.internalId);
+	const revisionBefore = controller.getState().revision;
+	const serializedBefore = serializedValue(controller);
+	let cancelCalls = 0;
+	await act(async () => {
+		root.render(createElement(DecadeSourceFlow, {
+			project: controller.getState().project,
+			folder,
+			previewProvider: null,
+			onBack() {},
+			onCancel() { cancelCalls += 1; },
+			onApply() { throw new Error("Layout verification must not save."); },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = required(document.querySelector('.decade-source-dialog[data-source-mode="tmdb-decade"]'), "Decade Add Source dialog");
+		const scroll = required(dialog.querySelector(".add-source-scroll"), "Decade Add Source scroll owner");
+		const fieldset = (label) => required([...dialog.querySelectorAll("fieldset")].find((entry) => entry.querySelector(":scope > legend")?.textContent.trim().startsWith(label)), `${label} fieldset`);
+		const mediaFieldset = fieldset("Media");
+		const sortFieldset = fieldset("Sort titles by");
+		const decadeFieldset = fieldset("Decade");
+		let yearFieldset = fieldset("Year");
+		const genreFieldset = fieldset("Genre sources");
+		const initialYearLabels = [...yearFieldset.querySelectorAll("label")].map((entry) => entry.textContent.trim());
+		const initialYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(decadeFieldset.querySelector('input[value="1980s"]'), "1980s Decade choice"));
+		yearFieldset = fieldset("Year");
+		const eightiesYearLabels = [...yearFieldset.querySelectorAll("label")].map((entry) => entry.textContent.trim());
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1985"]'), "1985 Year choice"));
+		const firstIndividualSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1988"]'), "1988 Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1981"]'), "1981 Year choice"));
+		const multiYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1985"]'), "toggle 1985 Year choice"));
+		const toggledYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="1980s"]'), "All 1980s choice"));
+		const allClearsIndividuals = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1981"]'), "single 1981 Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1981"]'), "deselect final 1981 Year choice"));
+		const finalIndividualRestoresAll = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(decadeFieldset.querySelector('input[value="1950s-and-earlier"]'), "1950s and Earlier choice"));
+		yearFieldset = fieldset("Year");
+		const earlierYearLabels = [...yearFieldset.querySelectorAll("label")].map((entry) => entry.textContent.trim());
+		const earlierResetSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1958"]'), "1958 Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="before-1950"]'), "Before 1950 choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1951"]'), "1951 Year choice"));
+		const earlierMultiSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		await clickAndSettle(required(decadeFieldset.querySelector('input[value="2020s"]'), "2020s Decade choice"));
+		yearFieldset = fieldset("Year");
+		const resetYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		const initialReviewSourceCount = dialog.querySelectorAll(".decade-source-review-list li").length;
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-2028"]'), "2028 future Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-2021"]'), "2021 Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-2025"]'), "2025 Year choice"));
+		const futureMultiSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		const genreIndicatorsAbsent = genreFieldset.querySelectorAll(".selectable-card-indicator").length === 0;
+		const firstGenreInput = required(genreFieldset.querySelector('input[type="checkbox"]'), "first Genre checkbox");
+		const firstGenreLabel = required(firstGenreInput.closest("label"), "first Genre label");
+		const unselectedGenreStyle = getComputedStyle(firstGenreLabel);
+		const unselectedGenreVisual = { background: unselectedGenreStyle.backgroundColor, border: unselectedGenreStyle.borderColor };
+		firstGenreInput.focus({ preventScroll: true });
+		const genreFocusVisible = document.activeElement === firstGenreInput && getComputedStyle(firstGenreLabel).outlineStyle !== "none";
+		await clickAndSettle(firstGenreInput);
+		const selectedGenreStyle = getComputedStyle(firstGenreLabel);
+		const selectedGenreVisual = { background: selectedGenreStyle.backgroundColor, border: selectedGenreStyle.borderColor };
+		await clickAndSettle(required(buttonContaining(genreFieldset, "Select all"), "Select all Genre sources"));
+		const selectedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
+		const selectAllDisabled = buttonContaining(genreFieldset, "Select all")?.disabled === true;
+		const clearEnabled = buttonContaining(genreFieldset, "Clear")?.disabled === false;
+		const footer = required(dialog.querySelector(".decade-source-actions"), "Decade Add Source footer");
+		const cancel = required(buttonContaining(footer, "Cancel"), "Cancel action");
+		const save = required(buttonContaining(footer, "Save 54 sources"), "Save action");
+		const preview = required(buttonContaining(dialog, "Preview titles"), "Preview titles action");
+		const viewport = window.visualViewport;
+		const viewportBounds = {
+			left: viewport?.offsetLeft ?? 0,
+			top: viewport?.offsetTop ?? 0,
+			right: (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
+			bottom: (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight),
+		};
+		const dialogRect = dialog.getBoundingClientRect();
+		const footerRect = footer.getBoundingClientRect();
+		const intendedScrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+			const style = getComputedStyle(element);
+			return style.overflowY === "auto" || style.overflowY === "scroll";
+		});
+		const reviewRows = [...dialog.querySelectorAll(".decade-source-review-list li")];
+		const reviewNoCollisions = reviewRows.every((row) => {
+			const [identity, status] = row.children;
+			const a = identity.getBoundingClientRect();
+			const b = status.getBoundingClientRect();
+			return a.right <= b.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1;
+		});
+		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Advanced options");
+		await clickAndSettle(required(advanced.querySelector(":scope > summary"), "Advanced options summary"));
+		const configure = required(buttonContaining(advanced, "Configure"), "Genre exclusions Configure action");
+		configure.focus({ preventScroll: true });
+		await clickAndSettle(configure);
+		const secondary = required(dialog.querySelector('.genre-secondary-surface[data-surface="ordinary-exclusions"]'), "Decade exclusions surface");
+		const secondaryRect = secondary.getBoundingClientRect();
+		const secondaryHeading = required(secondary.querySelector("#decade-source-exclusion-title"), "Decade exclusions heading");
+		const secondaryEvidence = {
+			contained: secondaryRect.left >= dialogRect.left - 1 && secondaryRect.top >= dialogRect.top - 1 && secondaryRect.right <= dialogRect.right + 1 && secondaryRect.bottom <= dialogRect.bottom + 1,
+			headingFocused: document.activeElement === secondaryHeading,
+			outerInert: scroll.inert === true,
+			noHorizontalOverflow: secondary.scrollWidth <= secondary.clientWidth + 1,
+		};
+		await clickAndSettle(required(buttonContaining(secondary, "Done"), "Decade exclusions Done action"));
+		const secondaryFocusRestored = document.activeElement === configure;
+		await clickAndSettle(required(buttonContaining(genreFieldset, "Clear"), "Clear Genre sources"));
+		const clearedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
+		const clearedReviewSourceCount = dialog.querySelectorAll(".decade-source-review-list li").length;
+		await clickAndSettle(required(buttonContaining(dialog.querySelector(".decade-source-actions"), "Cancel"), "restored Cancel action"));
+		return {
+			width: window.innerWidth,
+			modeId: dialog.dataset.sourceMode,
+			controlOrder: [...dialog.querySelectorAll('[data-decade-source-control], details[data-decades-advanced], .decade-source-generated, .decade-source-preview-action')].map((entry) => entry.dataset.decadeSourceControl ?? (entry.matches("details") ? "advanced" : entry.matches(".decade-source-generated") ? "generated" : "preview")),
+			mediaLabels: [mediaFieldset.querySelector(":scope > legend"), ...mediaFieldset.querySelectorAll("label")].map((element) => element.textContent.trim()).filter(Boolean),
+			sortLabels: [sortFieldset.querySelector(":scope > legend"), ...sortFieldset.querySelectorAll("label")].map((element) => element.textContent.trim()).filter(Boolean),
+			decadeChoiceCount: decadeFieldset.querySelectorAll('input[type="radio"]').length,
+			initialYearLabels,
+			eightiesYearLabels,
+			earlierYearLabels,
+			initialYearSelection,
+			firstIndividualSelection,
+			multiYearSelection,
+			toggledYearSelection,
+			allClearsIndividuals,
+			finalIndividualRestoresAll,
+			earlierResetSelection,
+			earlierMultiSelection,
+			resetYearSelection,
+			futureMultiSelection,
+			radioSemantics: [...mediaFieldset.querySelectorAll("input"), ...sortFieldset.querySelectorAll("input"), ...decadeFieldset.querySelectorAll("input")].every((input) => input.type === "radio" && input.getBoundingClientRect().width <= 1),
+			yearCheckboxSemantics: [...yearFieldset.querySelectorAll("input")].every((input) => input.type === "checkbox" && input.getBoundingClientRect().width <= 1),
+			genreChoiceCount: genreFieldset.querySelectorAll('input[type="checkbox"]').length,
+			genreCheckboxSemantics: [...genreFieldset.querySelectorAll('input[type="checkbox"]')].every((input) => input.getBoundingClientRect().width <= 1),
+			genreIndicatorsAbsent,
+			genreFocusVisible,
+			genreVisualStateChanged: unselectedGenreVisual.background !== selectedGenreVisual.background || unselectedGenreVisual.border !== selectedGenreVisual.border,
+			selectedGenreCount,
+			selectAllDisabled,
+			clearEnabled,
+			clearedGenreCount,
+			clearedReviewSourceCount,
+			initialReviewSourceCount,
+			reviewSourceCount: reviewRows.length,
+			reviewNoCollisions,
+			intendedScrollOwnerCount: intendedScrollOwners.length,
+			intendedScrollOwnerIsInner: intendedScrollOwners.length === 1 && intendedScrollOwners[0] === scroll,
+			dialogWithinViewport: dialogRect.left >= viewportBounds.left - 1 && dialogRect.top >= viewportBounds.top - 1 && dialogRect.right <= viewportBounds.right + 1 && dialogRect.bottom <= viewportBounds.bottom + 1,
+			footerReachable: footerRect.left >= viewportBounds.left - 1 && footerRect.right <= viewportBounds.right + 1 && footerRect.bottom <= viewportBounds.bottom + 1,
+			previewSecondary: preview.classList.contains("secondary-action") === false && !preview.classList.contains("editor-apply") && save.classList.contains("editor-apply"),
+			bodyLocked: document.body.style.position === "fixed",
+			pageNoHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+			secondary: secondaryEvidence,
+			secondaryFocusRestored,
+			cancelCalls,
+			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+let decadeSourceGenreKeyboardSession = null;
+
+async function prepareDecadeSourceGenreKeyboardScenario() {
+	if (decadeSourceGenreKeyboardSession) throw new Error("Decade Genre keyboard scenario is already mounted.");
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	controller.selectNode(folder.internalId);
+	const revisionBefore = controller.getState().revision;
+	const serializedBefore = serializedValue(controller);
+	await act(async () => {
+		root.render(createElement(DecadeSourceFlow, {
+			project: controller.getState().project,
+			folder,
+			previewProvider: null,
+			onBack() {},
+			onCancel() {},
+			onApply() { throw new Error("Keyboard verification must not save."); },
+		}));
+		await afterCommittedEffects();
+	});
+	const input = document.querySelector('.decade-source-dialog [data-decade-source-control="genres"] input[type="checkbox"]');
+	const label = input?.closest("label");
+	if (!input || !label) {
+		await act(async () => root.unmount());
+		host.remove();
+		throw new Error("Decade Genre keyboard checkbox was not rendered.");
+	}
+	const style = getComputedStyle(label);
+	const unselectedVisual = { background: style.backgroundColor, border: style.borderColor };
+	input.focus({ preventScroll: true });
+	decadeSourceGenreKeyboardSession = { host, root, controller, input, label, revisionBefore, serializedBefore, unselectedVisual };
+	return {
+		checkedBefore: input.checked,
+		focused: document.activeElement === input,
+		inputType: input.type,
+		hiddenNativeControl: input.getBoundingClientRect().width <= 1,
+		focusVisible: getComputedStyle(label).outlineStyle !== "none",
+	};
+}
+
+async function finishDecadeSourceGenreKeyboardScenario() {
+	const session = decadeSourceGenreKeyboardSession;
+	if (!session) throw new Error("Decade Genre keyboard scenario was not prepared.");
+	decadeSourceGenreKeyboardSession = null;
+	try {
+		await act(async () => afterCommittedEffects());
+		const style = getComputedStyle(session.label);
+		const selectedVisual = { background: style.backgroundColor, border: style.borderColor };
+		return {
+			checkedAfterSpace: session.input.checked,
+			selectedStateExposed: session.label.dataset.selected === "true",
+			selectedVisualChanged: session.unselectedVisual.background !== selectedVisual.background || session.unselectedVisual.border !== selectedVisual.border,
+			noMutation: session.controller.getState().revision === session.revisionBefore && serializedValue(session.controller) === session.serializedBefore,
+		};
+	} finally {
+		await act(async () => session.root.unmount());
+		session.host.remove();
+	}
+}
+
+async function runDecadeSourcePreviewErrorScenario() {
+	function required(element, label) {
+		if (!element) throw new Error(`${label} was not rendered.`);
+		return element;
+	}
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	controller.selectNode(folder.internalId);
+	const serializedBefore = serializedValue(controller);
+	const revisionBefore = controller.getState().revision;
+	let calls = 0;
+	const previewProvider = {
+		async getDecadePreview() {
+			calls += 1;
+			if (calls === 1) return { ok: false, error: { kind: "network", message: "Temporary preview failure.", retryable: true } };
+			return { ok: true, data: { totalResults: 0, mediaType: "MOVIE", results: [] }, fromCache: false };
+		},
+	};
+	await act(async () => {
+		root.render(createElement(DecadeSourceFlow, {
+			project: controller.getState().project,
+			folder,
+			previewProvider,
+			onBack() {},
+			onCancel() {},
+			onApply() { throw new Error("Preview error verification must not save."); },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = required(document.querySelector(".decade-source-dialog"), "Decade Add Source dialog");
+		const trigger = required(buttonContaining(dialog, "Preview titles"), "Preview titles action");
+		trigger.focus({ preventScroll: true });
+		await clickAndSettle(trigger);
+		const error = await waitForMountedCondition(() => document.querySelector(".decade-add-preview-modal [role=\"alert\"]"), { label: "Decade Preview recoverable error" });
+		const errorMessage = error.textContent.includes("Temporary preview failure.");
+		const modal = required(document.querySelector(".decade-add-preview-modal"), "Decade Preview modal");
+		const redundantSelectors = {
+			yearAbsent: modal.querySelector('[role="tablist"][aria-label="Preview year"]') === null,
+			sourceAbsent: modal.querySelector('[role="tablist"][aria-label="Preview source"]') === null,
+			mediaLabels: [...modal.querySelectorAll('[role="tablist"][aria-label="Preview media"] > button')].map((button) => button.textContent.trim()),
+		};
+		await clickAndSettle(required(buttonContaining(error, "Retry"), "Decade Preview Retry"));
+		const empty = await waitForMountedCondition(() => document.querySelector('.decade-add-preview-modal [data-preview-empty-state="true"]'), { label: "Decade Preview retry empty state" });
+		await clickAndSettle(required(document.querySelector(".decade-add-preview-modal header button"), "Decade Preview Close"));
+		return {
+			calls,
+			errorMessage,
+			redundantSelectors,
+			retryRecovered: empty.textContent.includes("No posters available."),
+			closed: document.querySelector(".decade-add-preview-modal") === null,
+			exactFocusRestored: document.activeElement === trigger,
+			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+async function runDecadeSourceLivePreviewScenario() {
+	function required(element, label) {
+		if (!element) throw new Error(`${label} was not rendered.`);
+		return element;
+	}
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	controller.selectNode(folder.internalId);
+	const requests = [];
+	const previewProvider = createTmdbDecadesPreviewProvider({
+		fetchImpl: async (input, init) => {
+			const response = await fetch(input, init);
+			let payload = null;
+			try { payload = await response.clone().json(); } catch { payload = null; }
+			requests.push({ url: typeof input === "string" ? input : input.url, status: response.status, ok: response.ok, contentType: response.headers.get("content-type"), totalResults: payload?.total_results ?? null });
+			return response;
+		},
+	});
+	const revisionBefore = controller.getState().revision;
+	const serializedBefore = serializedValue(controller);
+	await act(async () => {
+		root.render(createElement(DecadeSourceFlow, {
+			project: controller.getState().project,
+			folder,
+			previewProvider,
+			onBack() {},
+			onCancel() {},
+			onApply() { throw new Error("Live Preview must not save."); },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = required(document.querySelector(".decade-source-dialog"), "Decade Add Source dialog");
+		await clickAndSettle(required(dialog.querySelector('input[name="decade-source-decade"][value="1980s"]'), "1980s Decade choice"));
+		const yearFieldset = required(dialog.querySelector('[data-decade-source-control="year"]'), "Year fieldset");
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1988"]'), "1988 Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1981"]'), "1981 Year choice"));
+		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1985"]'), "1985 Year choice"));
+		const configuredYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
+		const genreFieldset = required(dialog.querySelector('[data-decade-source-control="genres"]'), "Genre sources fieldset");
+		await clickAndSettle(required(genreFieldset.querySelector('[data-genre-name="Comedy"] input'), "Comedy Genre source"));
+		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Advanced options");
+		await clickAndSettle(required(advanced.querySelector(":scope > summary"), "Advanced summary"));
+		await act(async () => {
+			setInputValue(required(dialog.querySelector("#decade-source-advanced-rating-min"), "Minimum rating"), "5");
+			await afterCommittedEffects();
+		});
+		const requestsBeforeExplicitPreview = requests.length;
+		const trigger = required(buttonContaining(dialog, "Preview titles"), "multi-Year Preview titles action");
+		trigger.focus({ preventScroll: true });
+		await clickAndSettle(trigger);
+		const initialReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1981 general Movie Add Source Preview", timeoutMs: 30_000 });
+		const modal = initialReady.preview;
+		const yearSelector = required(modal.querySelector('[role="tablist"][aria-label="Preview year"]'), "Year Preview selector");
+		const sourceSelector = required(modal.querySelector('[role="tablist"][aria-label="Preview source"]'), "Source Preview selector");
+		const mediaSelector = required(modal.querySelector('[role="tablist"][aria-label="Preview media"]'), "Media Preview selector");
+		const selectorLabels = {
+			year: [...yearSelector.querySelectorAll(":scope > button")].map((button) => button.textContent.trim()),
+			source: [...sourceSelector.querySelectorAll(":scope > button")].map((button) => button.textContent.trim()),
+			media: [...mediaSelector.querySelectorAll(":scope > button")].map((button) => button.textContent.trim()),
+		};
+		const initiallySelected = {
+			year: yearSelector.querySelector('[aria-selected="true"]')?.textContent.trim() ?? null,
+			source: sourceSelector.querySelector('[aria-selected="true"]')?.textContent.trim() ?? null,
+			media: mediaSelector.querySelector('[aria-selected="true"]')?.textContent.trim() ?? null,
+		};
+		const oneInitialRequest = requests.length === 1;
+		const noFlattenedCartesianSelector = ![...modal.querySelectorAll('[role="tablist"] button')].some((button) => /1981\s+(Comedy|General)|1985\s+(Comedy|General)|1988\s+(Comedy|General)/.test(button.textContent));
+		await clickAndSettle(required(buttonContaining(mediaSelector, "Series"), "Series Preview tab"));
+		const seriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1981 general Series Add Source Preview", timeoutMs: 30_000 });
+		const seriesRequestedLazily = requests.length === 2;
+		await clickAndSettle(required(buttonContaining(sourceSelector, "Comedy"), "Comedy Source Preview choice"));
+		const comedySeriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1981 Comedy Series Add Source Preview", timeoutMs: 30_000 });
+		const sourceRequestedLazily = requests.length === 3;
+		await clickAndSettle(required(buttonContaining(yearSelector, "1985"), "1985 Year Preview choice"));
+		const secondYearSeriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1985 Comedy Series Add Source Preview", timeoutMs: 30_000 });
+		const yearRequestedLazily = requests.length === 4;
+		await clickAndSettle(required(buttonContaining(mediaSelector, "Movies"), "Movies Preview tab"));
+		const secondYearMovieReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1985 Comedy Movie Add Source Preview", timeoutMs: 30_000 });
+		const secondMediaRequestedLazily = requests.length === 5;
+		await clickAndSettle(required(buttonContaining(sourceSelector, "General"), "General Source Preview choice"));
+		const secondYearGeneralReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1985 general Movie Add Source Preview", timeoutMs: 30_000 });
+		const generalRequestedLazily = requests.length === 6;
+		const beforeCacheRevisit = requests.length;
+		await clickAndSettle(required(buttonContaining(yearSelector, "1981"), "cached 1981 Year Preview choice"));
+		const cachedReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "cached exact 1981 general Movie Add Source Preview", timeoutMs: 30_000 });
+		const cacheReused = requests.length === beforeCacheRevisit;
+		const selectors = [yearSelector, sourceSelector, mediaSelector];
+		const selectorOneLine = selectors.every((selector) => new Set([...selector.querySelectorAll(":scope > button")].map((button) => Math.round(button.getBoundingClientRect().top))).size === 1);
+		const modalRect = cachedReady.preview.getBoundingClientRect();
+		const selectorsContained = selectors.every((selector) => {
+			const rect = selector.getBoundingClientRect();
+			return rect.left >= modalRect.left - 1 && rect.right <= modalRect.right + 1;
+		});
+		const posterEvidence = [initialReady, seriesReady, comedySeriesReady, secondYearSeriesReady, secondYearMovieReady, secondYearGeneralReady].map((ready) => ({
+			count: ready.visibleImages.length,
+			genuine: genuineTmdbPosterImages(ready.visibleImages),
+		}));
+		const geometry = titlePreviewGeometry(cachedReady.preview, cachedReady.grid);
+		const outerInert = dialog.querySelector(".add-source-scroll")?.inert === true && dialog.querySelector(".decade-source-actions")?.inert === true;
+		const focusContained = cachedReady.preview.contains(document.activeElement);
+		const noRepresentativeSample = !cachedReady.preview.textContent.includes("sample");
+		const thirdYearDeferred = requests.every((request) => !request.url.includes("1988-01-01"));
+		await clickAndSettle(required(cachedReady.preview.querySelector("header button"), "multi-Year Preview Close"));
+		const focusRestored = document.activeElement === trigger;
+		return {
+			width: window.innerWidth,
+			requestsBeforeExplicitPreview,
+			configuredYearSelection,
+			requests,
+			selectorLabels,
+			initiallySelected,
+			oneInitialRequest,
+			seriesRequestedLazily,
+			sourceRequestedLazily,
+			yearRequestedLazily,
+			secondMediaRequestedLazily,
+			generalRequestedLazily,
+			thirdYearDeferred,
+			cacheReused,
+			noFlattenedCartesianSelector,
+			selectorOneLine,
+			selectorsContained,
+			posterEvidence,
+			geometry,
+			outerInert,
+			focusContained,
+			focusRestored,
+			noRepresentativeSample,
+			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
 async function runMountedRegressions() {
 	return {
 		peopleRequiredName: await runRequiredNameScenario(peopleSource()),
@@ -4676,6 +5122,7 @@ async function runMountedRegressions() {
 		genreOverrideLabels: await runGenreOverrideLabelsScenario(),
 		blankCreation: await runBlankCreationScenario(),
 		decadesNavigation: await runDecadesNavigationScenario(),
+		decadeSourcePreviewError: await runDecadeSourcePreviewErrorScenario(),
 	};
 }
 
@@ -4698,6 +5145,10 @@ window.__runNetworkDeferredArtworkScenario = runNetworkDeferredArtworkScenario;
 window.__runStudioScaleScenario = runStudioScaleScenario;
 window.__runSourceEditLivePreviewScenario = runSourceEditLivePreviewScenario;
 window.__runDecadesLivePreviewScenario = runDecadesLivePreviewScenario;
+window.__runDecadeSourceLayoutScenario = runDecadeSourceLayoutScenario;
+window.__prepareDecadeSourceGenreKeyboardScenario = prepareDecadeSourceGenreKeyboardScenario;
+window.__finishDecadeSourceGenreKeyboardScenario = finishDecadeSourceGenreKeyboardScenario;
+window.__runDecadeSourceLivePreviewScenario = runDecadeSourceLivePreviewScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {

@@ -3,13 +3,17 @@ import {
 	DEFAULT_DISCOVER_SORT_OPTION_ID,
 	DISCOVER_SORT_OPTIONS,
 	discoverSourceIdentity,
+	discoverSourceNodeIdentity,
 } from "../nuvio/discover.js";
 import {
 	DECADE_CURRENT_YEAR_MODES,
 	DECADE_PRESETS,
+	DECADE_SOURCE_PERIODS,
 	DEFAULT_DECADE_CURRENT_YEAR_MODE,
 	currentDecadePreset,
 	decadeIndividualPeriods,
+	decadeSourcePeriodById,
+	decadeSourcePeriodChoices,
 } from "./decades-catalogue.js";
 import { equalDecadesStructures } from "./decades-structural.js";
 import { GENRE_CONCEPTS, officialGenreConcept } from "./genre-catalogue.js";
@@ -55,6 +59,16 @@ export const DECADES_ADVANCED_FILTER_FIELDS = Object.freeze([
 	"withOriginCountry",
 	"withoutGenres",
 ]);
+
+export const DEFAULT_DECADE_SOURCE_ADVANCED = Object.freeze({
+	minimumRating: "",
+	maximumRating: "",
+	minimumVotes: "",
+	originalLanguage: "",
+	originCountry: "",
+	ordinaryExcludedGenres: Object.freeze([]),
+	exclusionsByGenre: Object.freeze({}),
+});
 
 const CONFIGURATION_KEYS = new Set([
 	"selectedDecadeIds",
@@ -467,12 +481,432 @@ function buildEntry({ title, mediaType, sortOptionId, filters, contentKind, peri
 	};
 }
 
+export const DEFAULT_DECADE_SOURCE_PERIOD_ID = "2020s";
+
+function decadeSourceContentKind(period, genreName) {
+	if (genreName !== null) return "genre-breakdown";
+	return period.kind === "year" || period.kind === "before-1950" ? "individual-year" : "whole-decade";
+}
+
+export function decadeSourceGenreOptions(mediaMode) {
+	const media = DECADES_MEDIA_MODES.find((entry) => entry.id === mediaMode);
+	if (!media) return Object.freeze([]);
+	return Object.freeze(GENRE_CONCEPTS.filter((concept) => media.mediaTypes.every((mediaType) => (
+		mediaType === "MOVIE" ? concept.movieId !== null : concept.tvId !== null
+	))));
+}
+
+export function defaultDecadeSourceTitle(period, mediaType, genreName = null) {
+	if (!DECADE_SOURCE_PERIODS.includes(period) || !["MOVIE", "TV"].includes(mediaType)) return null;
+	const suffix = mediaLabel(mediaType);
+	if (genreName !== null) return `${period.label} ${genreName} ${suffix}`;
+	if (period.kind === "decade" || period.kind === "1950s-and-earlier") return `All ${period.label} ${suffix}`;
+	return `${period.label} ${suffix}`;
+}
+
+function singlePeriodAdvanced(value, selectedGenreNames, periodId, errors) {
+	const supplied = value ?? DEFAULT_DECADE_SOURCE_ADVANCED;
+	if (
+		plainObject(supplied)
+		&& (Object.hasOwn(supplied, "ordinaryExcludedGenresByDecade") || Object.hasOwn(supplied, "exclusionsByGenreByDecade"))
+	) {
+		errors.push(diagnostic(
+			"UNSUPPORTED_DECADE_SOURCE_ADVANCED_SCOPE",
+			"$decadeSource.advanced",
+			"One Decade source configuration cannot contain per-Decade Advanced overrides.",
+		));
+	}
+	const genreNames = Array.isArray(selectedGenreNames)
+		? selectedGenreNames
+		: selectedGenreNames === null ? [] : [selectedGenreNames];
+	return normalizeAdvanced(supplied, genreNames, { [periodId]: genreNames }, [periodId], errors);
+}
+
+export function buildCanonicalDecadePeriodDrafts({
+	periodId = DEFAULT_DECADE_SOURCE_PERIOD_ID,
+	mediaMode = "both",
+	genreName = null,
+	sortOptionId = DEFAULT_DECADES_SORT_OPTION_ID,
+	advanced = DEFAULT_DECADE_SOURCE_ADVANCED,
+	requireGenreForEveryMedia = true,
+} = {}) {
+	const errors = [];
+	const period = decadeSourcePeriodById(periodId);
+	if (period === null) errors.push(diagnostic("INVALID_DECADE_SOURCE_PERIOD", "$decadeSource.periodId", "Choose a supported canonical Decade period or exact year."));
+	const media = DECADES_MEDIA_MODES.find((entry) => entry.id === mediaMode) ?? null;
+	if (media === null) errors.push(diagnostic("INVALID_DECADE_SOURCE_MEDIA", "$decadeSource.mediaMode", "Choose Movies, Series, or Both."));
+	if (!DECADES_SORT_OPTIONS.some((option) => option.id === sortOptionId)) {
+		errors.push(diagnostic("INVALID_DECADE_SOURCE_SORT", "$decadeSource.sortOptionId", "Choose a supported Decade sort order."));
+	}
+
+	const canonicalGenreName = genreName === "" || genreName === undefined ? null : genreName;
+	const genre = canonicalGenreName === null ? null : officialGenreConcept(canonicalGenreName);
+	if (canonicalGenreName !== null && genre === null) {
+		errors.push(diagnostic("INVALID_DECADE_SOURCE_GENRE", "$decadeSource.genreName", "Choose one official TMDB Genre or no included Genre."));
+	} else if (genre !== null && media !== null && !(requireGenreForEveryMedia ? media.mediaTypes.every((mediaType) => (
+		mediaType === "MOVIE" ? genre.movieId !== null : genre.tvId !== null
+	)) : media.mediaTypes.some((mediaType) => (
+		mediaType === "MOVIE" ? genre.movieId !== null : genre.tvId !== null
+	)))) {
+		errors.push(diagnostic(
+			"DECADE_SOURCE_GENRE_UNAVAILABLE_FOR_MEDIA",
+			"$decadeSource.genreName",
+			`${genre.name} is not available for every configured media source.`,
+		));
+	}
+
+	const normalizedAdvanced = singlePeriodAdvanced(advanced, genre?.name ?? null, periodId, errors);
+	if (errors.length > 0 || period === null || media === null) {
+		return Object.freeze({ ok: false, configuration: null, entries: Object.freeze([]), drafts: Object.freeze([]), errors: Object.freeze(errors) });
+	}
+
+	const baseFilters = baseAdvancedFilters(normalizedAdvanced);
+	const excludedNames = genre === null
+		? normalizedAdvanced.ordinaryExcludedGenres
+		: normalizedAdvanced.exclusionsByGenre[genre.name] ?? Object.freeze([]);
+	const entries = [];
+	for (const mediaType of media.mediaTypes) {
+		const includedGenreId = genre === null ? null : mediaType === "MOVIE" ? genre.movieId : genre.tvId;
+		if (genre !== null && includedGenreId === null) continue;
+		const excludedIds = exclusionIds(excludedNames, mediaType).filter((tmdbId) => tmdbId !== includedGenreId);
+		const title = defaultDecadeSourceTitle(period, mediaType, genre?.name ?? null);
+		const result = buildEntry({
+			title,
+			mediaType,
+			sortOptionId,
+			filters: {
+				...period.filters,
+				...(includedGenreId !== null ? { withGenres: String(includedGenreId) } : {}),
+				...baseFilters,
+				...(excludedIds.length > 0 ? { withoutGenres: excludedIds.join(",") } : {}),
+			},
+			contentKind: decadeSourceContentKind(period, genre?.name ?? null),
+			period,
+			genreName: genre?.name ?? null,
+		});
+		if (result.entry) entries.push(result.entry);
+		else errors.push(...result.errors);
+	}
+
+	return Object.freeze({
+		ok: errors.length === 0,
+		configuration: errors.length === 0 ? Object.freeze({
+			periodId: period.id,
+			mediaMode: media.id,
+			genreName: genre?.name ?? null,
+			sortOptionId,
+			advanced: normalizedAdvanced,
+		}) : null,
+		entries: Object.freeze(errors.length === 0 ? entries : []),
+		drafts: Object.freeze(errors.length === 0 ? entries.map((entry) => entry.draft) : []),
+		errors: Object.freeze(errors),
+	});
+}
+
+function logicalSourceAdvanced(advanced, genreName) {
+	return Object.freeze({
+		minimumRating: advanced.minimumRating,
+		maximumRating: advanced.maximumRating,
+		minimumVotes: advanced.minimumVotes,
+		originalLanguage: advanced.originalLanguage,
+		originCountry: advanced.originCountry,
+		ordinaryExcludedGenres: genreName === null ? advanced.ordinaryExcludedGenres : Object.freeze([]),
+		exclusionsByGenre: genreName === null
+			? Object.freeze({})
+			: Object.freeze({ [genreName]: advanced.exclusionsByGenre[genreName] ?? Object.freeze([]) }),
+	});
+}
+
+function normalizeDecadeSourceBundleGenreNames(genreNames, mediaMode, errors) {
+	if (!Array.isArray(genreNames)) {
+		errors.push(diagnostic("INVALID_DECADE_SOURCE_GENRES", "$decadeSource.genreNames", "Genre sources must be an official Genre selection."));
+		return Object.freeze([]);
+	}
+	const supplied = new Set();
+	for (const [index, name] of genreNames.entries()) {
+		if (typeof name !== "string" || officialGenreConcept(name) === null) {
+			errors.push(diagnostic("INVALID_DECADE_SOURCE_GENRE", `$decadeSource.genreNames[${index}]`, "Choose only official TMDB Genres."));
+			continue;
+		}
+		if (supplied.has(name)) {
+			errors.push(diagnostic("DUPLICATE_DECADE_SOURCE_GENRE", `$decadeSource.genreNames[${index}]`, "Choose each Genre source once."));
+			continue;
+		}
+		supplied.add(name);
+	}
+	const eligible = new Set(decadeSourceGenreOptions(mediaMode).map((concept) => concept.name));
+	for (const name of supplied) {
+		if (!eligible.has(name)) {
+			errors.push(diagnostic("DECADE_SOURCE_GENRE_UNAVAILABLE_FOR_MEDIA", "$decadeSource.genreNames", `${name} is not available for every configured media source.`));
+		}
+	}
+	return Object.freeze(GENRE_CONCEPTS.filter((concept) => supplied.has(concept.name) && eligible.has(concept.name)).map((concept) => concept.name));
+}
+
+function normalizeDecadeSourceBundlePeriods(periodIds, legacyPeriodId, errors) {
+	const suppliedValues = periodIds === undefined
+		? [legacyPeriodId ?? DEFAULT_DECADE_SOURCE_PERIOD_ID]
+		: periodIds;
+	if (!Array.isArray(suppliedValues) || suppliedValues.length === 0 || suppliedValues.some((_, index) => !Object.hasOwn(suppliedValues, index))) {
+		errors.push(diagnostic("INVALID_DECADE_SOURCE_PERIODS", "$decadeSource.periodIds", "Choose the whole Decade period or one or more individual years."));
+		return Object.freeze({ decadeId: null, periodIds: Object.freeze([]), periods: Object.freeze([]) });
+	}
+	const suppliedIds = suppliedValues.map((value) => typeof value === "string" ? value : "");
+	if (new Set(suppliedIds).size !== suppliedIds.length) {
+		errors.push(diagnostic("DUPLICATE_DECADE_SOURCE_PERIOD", "$decadeSource.periodIds", "Choose each Decade period or year once."));
+	}
+	const matchingPresets = DECADE_PRESETS.filter((preset) => {
+		const choiceIds = new Set(decadeSourcePeriodChoices(preset.id).map((period) => period.id));
+		return suppliedIds.some((periodId) => choiceIds.has(periodId));
+	});
+	for (const [index, periodId] of suppliedIds.entries()) {
+		if (decadeSourcePeriodById(periodId) === null) {
+			errors.push(diagnostic("INVALID_DECADE_SOURCE_PERIOD", `$decadeSource.periodIds[${index}]`, "Choose only supported canonical Decade periods or exact years."));
+		}
+	}
+	if (matchingPresets.length !== 1) {
+		errors.push(diagnostic("MIXED_DECADE_SOURCE_PERIODS", "$decadeSource.periodIds", "Choose periods and years from one Decade family."));
+		return Object.freeze({ decadeId: null, periodIds: Object.freeze([]), periods: Object.freeze([]) });
+	}
+	const preset = matchingPresets[0];
+	const choices = decadeSourcePeriodChoices(preset.id);
+	const choiceIds = new Set(choices.map((period) => period.id));
+	if (suppliedIds.some((periodId) => !choiceIds.has(periodId))) {
+		errors.push(diagnostic("MIXED_DECADE_SOURCE_PERIODS", "$decadeSource.periodIds", "Choose periods and years from one Decade family."));
+	}
+	if (suppliedIds.includes(preset.wholePeriod.id) && suppliedIds.length > 1) {
+		errors.push(diagnostic("MIXED_WHOLE_AND_INDIVIDUAL_DECADE_PERIODS", "$decadeSource.periodIds", `Choose All ${preset.label} or individual choices, not both.`));
+	}
+	const selected = new Set(suppliedIds);
+	const orderedPeriods = choices.filter((period) => selected.has(period.id));
+	return Object.freeze({
+		decadeId: preset.id,
+		periodIds: Object.freeze(orderedPeriods.map((period) => period.id)),
+		periods: Object.freeze(orderedPeriods),
+	});
+}
+
+function ordinaryBundleAdvanced(value, selectedGenreNames, periodIds, errors) {
+	const supplied = value ?? DEFAULT_DECADE_SOURCE_ADVANCED;
+	if (
+		plainObject(supplied)
+		&& (Object.hasOwn(supplied, "ordinaryExcludedGenresByDecade") || Object.hasOwn(supplied, "exclusionsByGenreByDecade"))
+	) {
+		errors.push(diagnostic(
+			"UNSUPPORTED_DECADE_SOURCE_ADVANCED_SCOPE",
+			"$decadeSource.advanced",
+			"One Add Source bundle cannot contain per-Decade Advanced overrides.",
+		));
+	}
+	const genreNamesByPeriod = Object.fromEntries(periodIds.map((periodId) => [periodId, selectedGenreNames]));
+	return normalizeAdvanced(supplied, selectedGenreNames, genreNamesByPeriod, periodIds, errors);
+}
+
+export function buildDecadeSourceBundleDrafts({
+	periodIds = undefined,
+	periodId = undefined,
+	mediaMode = "both",
+	genreNames = Object.freeze([]),
+	sortOptionId = DEFAULT_DECADES_SORT_OPTION_ID,
+	advanced = DEFAULT_DECADE_SOURCE_ADVANCED,
+} = {}) {
+	const errors = [];
+	const normalizedPeriods = normalizeDecadeSourceBundlePeriods(periodIds, periodId, errors);
+	if (!DECADES_MEDIA_MODES.some((entry) => entry.id === mediaMode)) errors.push(diagnostic("INVALID_DECADE_SOURCE_MEDIA", "$decadeSource.mediaMode", "Choose Movies, Series, or Both."));
+	if (!DECADES_SORT_OPTIONS.some((option) => option.id === sortOptionId)) errors.push(diagnostic("INVALID_DECADE_SOURCE_SORT", "$decadeSource.sortOptionId", "Choose a supported Decade sort order."));
+	const orderedGenreNames = normalizeDecadeSourceBundleGenreNames(genreNames, mediaMode, errors);
+	const normalizedAdvanced = ordinaryBundleAdvanced(advanced, orderedGenreNames, normalizedPeriods.periodIds, errors);
+	if (errors.length > 0 || normalizedPeriods.periods.length === 0) {
+		return Object.freeze({ ok: false, configuration: null, periodGroups: Object.freeze([]), logicalSources: Object.freeze([]), entries: Object.freeze([]), drafts: Object.freeze([]), errors: Object.freeze(errors) });
+	}
+
+	const periodGroups = [];
+	const logicalSources = [];
+	const logicalGenreNames = [null, ...orderedGenreNames];
+	for (const period of normalizedPeriods.periods) {
+		const periodLogicalSources = [];
+		for (const genreName of logicalGenreNames) {
+			const built = buildCanonicalDecadePeriodDrafts({
+				periodId: period.id,
+				mediaMode,
+				genreName,
+				sortOptionId,
+				advanced: logicalSourceAdvanced(normalizedAdvanced, genreName),
+			});
+			if (!built.ok) {
+				errors.push(...built.errors);
+				continue;
+			}
+			const logicalSource = Object.freeze({
+				key: `${period.id}|${genreName === null ? "general" : `genre:${genreName}`}`,
+				variantKey: genreName === null ? "general" : `genre:${genreName}`,
+				periodId: period.id,
+				period,
+				genreName,
+				selectorLabel: genreName ?? "General",
+				entries: built.entries,
+				drafts: built.drafts,
+			});
+			periodLogicalSources.push(logicalSource);
+			logicalSources.push(logicalSource);
+		}
+		periodGroups.push(Object.freeze({
+			key: period.id,
+			period,
+			selectorLabel: period.kind === "decade" || period.kind === "1950s-and-earlier" ? `All ${period.label}` : period.label,
+			logicalSources: Object.freeze(periodLogicalSources),
+		}));
+	}
+	const entries = logicalSources.flatMap((source) => source.entries);
+	const drafts = logicalSources.flatMap((source) => source.drafts);
+	return Object.freeze({
+		ok: errors.length === 0,
+		configuration: errors.length === 0 ? Object.freeze({ decadeId: normalizedPeriods.decadeId, periodIds: normalizedPeriods.periodIds, mediaMode, genreNames: orderedGenreNames, sortOptionId, advanced: normalizedAdvanced }) : null,
+		periodGroups: Object.freeze(errors.length === 0 ? periodGroups : []),
+		logicalSources: Object.freeze(errors.length === 0 ? logicalSources : []),
+		entries: Object.freeze(errors.length === 0 ? entries : []),
+		drafts: Object.freeze(errors.length === 0 ? drafts : []),
+		errors: Object.freeze(errors),
+	});
+}
+
+export function validateDecadeSourceBundleDrafts(drafts, configuration) {
+	const expected = buildDecadeSourceBundleDrafts(configuration);
+	if (!expected.ok) return Object.freeze({ ok: false, errors: expected.errors });
+	if (!equalDecadesStructures(drafts, expected.drafts)) {
+		return Object.freeze({ ok: false, errors: Object.freeze([
+			diagnostic("INVALID_DECADE_SOURCE_DRAFTS", "$decadeSource.sources", "The Decade source bundle must exactly match the reviewed canonical configuration."),
+		]) });
+	}
+	return Object.freeze({ ok: true, errors: Object.freeze([]) });
+}
+
+export function validateCanonicalDecadePeriodDrafts(drafts, configuration) {
+	const expected = buildCanonicalDecadePeriodDrafts(configuration);
+	if (!expected.ok) return Object.freeze({ ok: false, errors: expected.errors });
+	if (!equalDecadesStructures(drafts, expected.drafts)) {
+		return Object.freeze({ ok: false, errors: Object.freeze([
+			diagnostic("INVALID_DECADE_SOURCE_DRAFTS", "$decadeSource.sources", "The Decade source batch must exactly match the reviewed canonical configuration."),
+		]) });
+	}
+	return Object.freeze({ ok: true, errors: Object.freeze([]) });
+}
+
+function decadeDraftIdentities(drafts) {
+	return (drafts ?? []).map((draft) => discoverSourceIdentity(draft?.editable)).filter((identity) => identity.comparable);
+}
+
+function decadeSourceOccurrences(project, identities) {
+	const selected = new Set(identities);
+	const occurrences = [];
+	for (const collection of project?.collections ?? []) {
+		for (const folder of collection.folders ?? []) {
+			for (const source of folder.sources ?? []) {
+				const identity = discoverSourceNodeIdentity(source);
+				if (!identity.comparable || !selected.has(identity.key)) continue;
+				occurrences.push(Object.freeze({
+					identity: identity.key,
+					collectionInternalId: collection.internalId,
+					collectionTitle: typeof collection.editable?.title === "string" ? collection.editable.title.trim() : "",
+					folderInternalId: folder.internalId,
+					folderTitle: typeof folder.editable?.title === "string" ? folder.editable.title.trim() : "",
+					sourceInternalId: source.internalId,
+					sourceTitle: typeof source.editable?.title === "string" ? source.editable.title.trim() : "",
+				}));
+			}
+		}
+	}
+	return Object.freeze(occurrences);
+}
+
+export function inspectDecadeSourceDuplicates(project, destinationFolderInternalId, drafts) {
+	const identities = decadeDraftIdentities(drafts);
+	const occurrences = decadeSourceOccurrences(project, identities.map((identity) => identity.key));
+	const destination = occurrences.filter((entry) => entry.folderInternalId === destinationFolderInternalId);
+	const elsewhere = occurrences.filter((entry) => entry.folderInternalId !== destinationFolderInternalId);
+	const destinationIdentities = new Set(destination.map((entry) => entry.identity));
+	const elsewhereIdentities = new Set(elsewhere.map((entry) => entry.identity));
+	return Object.freeze({
+		destination: Object.freeze(destination),
+		elsewhere: Object.freeze(elsewhere),
+		missingDrafts: Object.freeze((drafts ?? []).filter((draft) => !destinationIdentities.has(discoverSourceIdentity(draft.editable).key))),
+		duplicateDrafts: Object.freeze((drafts ?? []).filter((draft) => destinationIdentities.has(discoverSourceIdentity(draft.editable).key))),
+		elsewhereDrafts: Object.freeze((drafts ?? []).filter((draft) => {
+			const identity = discoverSourceIdentity(draft.editable).key;
+			return !destinationIdentities.has(identity) && elsewhereIdentities.has(identity);
+		})),
+	});
+}
+
+export function decadeDuplicateOverrideIdentity(folderInternalId, drafts) {
+	if (typeof folderInternalId !== "string" || !folderInternalId) return null;
+	const identities = decadeDraftIdentities(drafts);
+	if (identities.length !== drafts?.length) return null;
+	return `${folderInternalId}\n${identities.map((identity) => identity.key).join("\n")}`;
+}
+
+function findDecadeDestination(project, folderInternalId) {
+	for (const collection of project?.collections ?? []) {
+		const folder = collection.folders.find((entry) => entry.internalId === folderInternalId);
+		if (folder) return Object.freeze({ collection, folder });
+	}
+	return null;
+}
+
+export function createDecadeSourceBundle(controller, {
+	folderInternalId,
+	periodIds = undefined,
+	periodId = undefined,
+	mediaMode = "both",
+	genreNames = Object.freeze([]),
+	sortOptionId = DEFAULT_DECADES_SORT_OPTION_ID,
+	advanced = DEFAULT_DECADE_SOURCE_ADVANCED,
+	drafts,
+	duplicateOverrideIdentity = null,
+	interactionLocked = false,
+} = {}) {
+	const configuration = { periodIds, periodId, mediaMode, genreNames, sortOptionId, advanced };
+	const validation = validateDecadeSourceBundleDrafts(drafts, configuration);
+	if (!validation.ok) return { ok: false, errors: validation.errors, warnings: [] };
+	if (interactionLocked) {
+		return { ok: false, errors: [diagnostic("DECADE_SOURCE_CREATION_LOCKED", "$decadeSource.creation", "Finish the current hierarchy interaction before adding Decade sources.")], warnings: [] };
+	}
+	const state = controller.getState();
+	const destination = findDecadeDestination(state.project, folderInternalId);
+	if (destination === null || state.selection.folderInternalId !== folderInternalId) {
+		return { ok: false, errors: [diagnostic("DECADE_SOURCE_FOLDER_UNAVAILABLE", "$decadeSource.destination", "The selected destination folder is no longer available.")], warnings: [] };
+	}
+
+	const duplicateReview = inspectDecadeSourceDuplicates(state.project, folderInternalId, drafts);
+	const override = decadeDuplicateOverrideIdentity(folderInternalId, drafts);
+	const addAll = duplicateReview.duplicateDrafts.length > 0 && duplicateOverrideIdentity === override;
+	const draftsToAdd = addAll ? drafts : duplicateReview.missingDrafts;
+	if (draftsToAdd.length === 0) {
+		return {
+			ok: false,
+			requiresDuplicateOverride: true,
+			duplicateReview,
+			errors: [diagnostic("DECADE_SOURCES_ALREADY_EXIST", "$decadeSource.sources", "Every configured Decade source already exists in this folder.")],
+			warnings: [],
+		};
+	}
+
+	const result = controller.addSourcesToFolder(folderInternalId, {
+		sources: draftsToAdd.map((draft) => ({ category: draft.category, editable: draft.editable })),
+	});
+	return result.ok ? {
+		...result,
+		addedSourceCount: draftsToAdd.length,
+		duplicateReview,
+		duplicateOverrideUsed: addAll,
+	} : result;
+}
+
 export function buildDecadesSourceDrafts(value) {
 	const normalized = normalizeDecadesSourceConfiguration(value);
 	if (!normalized.ok) return Object.freeze({ ok: false, configuration: null, groups: Object.freeze([]), drafts: Object.freeze([]), errors: normalized.errors });
 	const configuration = normalized.configuration;
 	const mediaTypes = DECADES_MEDIA_MODES.find((entry) => entry.id === configuration.mediaMode).mediaTypes;
-	const baseFilters = baseAdvancedFilters(configuration.advanced);
 	const groups = [];
 	const drafts = [];
 	const errors = [];
@@ -484,68 +918,46 @@ export function buildDecadesSourceDrafts(value) {
 		const preset = DECADE_PRESETS.find((entry) => entry.id === decadeId);
 		const ordinaryExcludedGenres = configuration.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? configuration.advanced.ordinaryExcludedGenres;
 		const exclusionsByGenre = configuration.advanced.exclusionsByGenreByDecade?.[decadeId] ?? configuration.advanced.exclusionsByGenre;
+		const ordinaryAdvanced = {
+			minimumRating: configuration.advanced.minimumRating,
+			maximumRating: configuration.advanced.maximumRating,
+			minimumVotes: configuration.advanced.minimumVotes,
+			originalLanguage: configuration.advanced.originalLanguage,
+			originCountry: configuration.advanced.originCountry,
+			ordinaryExcludedGenres,
+			exclusionsByGenre: Object.freeze({}),
+		};
+		const logicalEntries = [];
+		const appendLogicalPeriod = (periodId, genreName = null) => {
+			const result = buildCanonicalDecadePeriodDrafts({
+				periodId,
+				mediaMode: configuration.mediaMode,
+				genreName,
+				sortOptionId: configuration.sortOptionId,
+				requireGenreForEveryMedia: false,
+				advanced: genreName === null ? ordinaryAdvanced : {
+					...ordinaryAdvanced,
+					ordinaryExcludedGenres: Object.freeze([]),
+					exclusionsByGenre: Object.freeze({ [genreName]: Object.freeze([...(exclusionsByGenre[genreName] ?? [])]) }),
+				},
+			});
+			if (result.ok) logicalEntries.push(...result.entries);
+			else errors.push(...result.errors);
+		};
+		if (configuration.content.wholeDecade) appendLogicalPeriod(preset.wholePeriod.id);
+		if (configuration.content.individualYears) {
+			const periods = decadeIndividualPeriods(decadeId, {
+				currentYear: configuration.currentYear,
+				currentYearMode: configuration.currentYearMode ?? DEFAULT_DECADE_CURRENT_YEAR_MODE,
+			});
+			const orderedPeriods = configuration.yearOrder === "newest-first" ? [...(periods ?? [])].reverse() : periods ?? [];
+			for (const period of orderedPeriods) appendLogicalPeriod(period.id);
+		}
+		if (configuration.content.genreBreakdown) {
+			for (const genreName of configuration.genreNamesByDecade[decadeId]) appendLogicalPeriod(preset.wholePeriod.id, genreName);
+		}
 		for (const mediaType of mediaTypes) {
-			const sources = [];
-			const ordinaryExcludedIds = exclusionIds(ordinaryExcludedGenres, mediaType);
-			const ordinaryAdvanced = {
-				...baseFilters,
-				...(ordinaryExcludedIds.length > 0 ? { withoutGenres: ordinaryExcludedIds.join(",") } : {}),
-			};
-			if (configuration.content.wholeDecade) {
-				const result = buildEntry({
-					title: `All ${preset.label} ${mediaLabel(mediaType)}`,
-					mediaType,
-					sortOptionId: configuration.sortOptionId,
-					filters: { ...preset.wholePeriod.filters, ...ordinaryAdvanced },
-					contentKind: "whole-decade",
-					period: preset.wholePeriod,
-				});
-				if (result.entry) sources.push(result.entry); else errors.push(...result.errors);
-			}
-			if (configuration.content.individualYears) {
-				const periods = decadeIndividualPeriods(decadeId, {
-					currentYear: configuration.currentYear,
-					currentYearMode: configuration.currentYearMode ?? DEFAULT_DECADE_CURRENT_YEAR_MODE,
-				});
-				const orderedPeriods = configuration.yearOrder === "newest-first"
-					? [...(periods ?? [])].reverse()
-					: periods ?? [];
-				for (const period of orderedPeriods) {
-					const result = buildEntry({
-						title: `${period.label} ${mediaLabel(mediaType)}`,
-						mediaType,
-						sortOptionId: configuration.sortOptionId,
-						filters: { ...period.filters, ...ordinaryAdvanced },
-						contentKind: "individual-year",
-						period,
-					});
-					if (result.entry) sources.push(result.entry); else errors.push(...result.errors);
-				}
-			}
-			if (configuration.content.genreBreakdown) {
-				for (const genreName of configuration.genreNamesByDecade[decadeId]) {
-					const concept = officialGenreConcept(genreName);
-					const genreId = mediaType === "MOVIE" ? concept.movieId : concept.tvId;
-					if (genreId === null) continue;
-					const excludedIds = exclusionIds(exclusionsByGenre[genreName] ?? [], mediaType)
-						.filter((tmdbId) => tmdbId !== genreId);
-					const result = buildEntry({
-						title: `${preset.label} ${genreName} ${mediaLabel(mediaType)}`,
-						mediaType,
-						sortOptionId: configuration.sortOptionId,
-						filters: {
-							...preset.wholePeriod.filters,
-							withGenres: String(genreId),
-							...baseFilters,
-							...(excludedIds.length > 0 ? { withoutGenres: excludedIds.join(",") } : {}),
-						},
-						contentKind: "genre-breakdown",
-						period: preset.wholePeriod,
-						genreName,
-					});
-					if (result.entry) sources.push(result.entry); else errors.push(...result.errors);
-				}
-			}
+			const sources = logicalEntries.filter((entry) => entry.draft.editable.mediaType === mediaType);
 			groups.push(Object.freeze({
 				decadeId,
 				decadeLabel: preset.label,

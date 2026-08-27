@@ -7,6 +7,7 @@ import {
 	inspectCanonicalDecadeSource,
 	inspectCanonicalDecadeSourceNode,
 } from "../source-add/decades-classification.js";
+import { buildCanonicalDecadePeriodDrafts } from "../source-add/decades-source.js";
 import { GENRE_CONCEPTS, officialGenreConcept } from "../source-add/genre-catalogue.js";
 import {
 	diagnostic,
@@ -102,25 +103,30 @@ function compileCandidate({ source, draft }) {
 	}
 	if (errors.length > 0) return Object.freeze({ ok: false, candidate: null, errors: Object.freeze(errors) });
 
-	const filters = {
-		...draft.periodFilters,
-		...(draft.genreId !== null ? { withGenres: String(draft.genreId) } : {}),
-		...(minimumRating !== null ? { voteAverageGte: minimumRating } : {}),
-		...(maximumRating !== null ? { voteAverageLte: maximumRating } : {}),
-		...(minimumVotes !== null ? { voteCountGte: minimumVotes } : {}),
-		...(originalLanguage ? { withOriginalLanguage: originalLanguage } : {}),
-		...(originCountry ? { withOriginCountry: originCountry } : {}),
-		...(concepts.length > 0 ? { withoutGenres: concepts.map((entry) => entry.tmdbId).join(",") } : {}),
-	};
-	const candidate = Object.freeze({
-		title: draft.title,
-		provider: "tmdb",
-		tmdbSourceType: "DISCOVER",
-		tmdbId: null,
-		mediaType: draft.mediaType,
-		sortBy,
-		filters: Object.freeze(filters),
+	const excludedNames = concepts.map((entry) => entry.concept.name);
+	const built = buildCanonicalDecadePeriodDrafts({
+		periodId: draft.periodId,
+		mediaMode: draft.mediaType === "TV" ? "series" : "movies",
+		genreName: draft.genreName,
+		sortOptionId: draft.sortOptionId,
+		advanced: {
+			minimumRating,
+			maximumRating,
+			minimumVotes,
+			originalLanguage,
+			originCountry,
+			ordinaryExcludedGenres: Object.freeze(draft.genreName === null ? excludedNames : []),
+			exclusionsByGenre: Object.freeze(draft.genreName === null ? {} : { [draft.genreName]: Object.freeze(excludedNames) }),
+		},
 	});
+	if (!built.ok || built.drafts.length !== 1) {
+		return Object.freeze({
+			ok: false,
+			candidate: null,
+			errors: built.errors.length > 0 ? built.errors : Object.freeze([diagnostic("SOURCE_EDIT_DECADE_STRUCTURE_FIXED", "$sourceEdit.identity", "The Decade period, media and included Genre cannot be changed in this editor.")]),
+		});
+	}
+	const candidate = Object.freeze({ ...built.drafts[0].editable, title: draft.title });
 	const candidateInspection = inspectCanonicalDecadeSource(candidate);
 	if (
 		candidateInspection === null
