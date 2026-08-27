@@ -134,6 +134,14 @@ The Worker only proxies the TMDB paths the frontend needs:
   `with_genres`, exactly one lowercase `include_adult=false`, optionally one
   approved media-specific `sort_by`, and only the current approved Genre
   Advanced parameters described below
+* Exact date-only Decade title Preview requests using `/3/discover/movie` or
+  `/3/discover/tv` with exactly one `include_adult=false`, one approved
+  media-specific `sort_by`, one canonical Decade/year/earlier date shape, and
+  only the approved nonstructural Advanced parameters described below
+* Exact simple Streaming title Preview requests using `/3/discover/movie` or
+  `/3/discover/tv` with exactly one `include_adult=false`, one approved
+  media-specific `sort_by`, one uppercase two-letter `watch_region`, and one
+  canonical positive-safe-integer `with_watch_providers`
 * Exact Streaming provider catalogue requests using only:
   * `/3/watch/providers/regions?language=en-US`
   * `/3/watch/providers/movie?language=en-US`
@@ -174,6 +182,35 @@ expressions, wrong-media dates/sorts, unknown keys, and generic Discover fail
 closed. Service-token access does not authorize Discover. Existing Company and
 Network validators are not widened by the Genre branch. Other Discover filters
 and broad `/3/discover/*` forwarding remain disallowed.
+
+The date-only Decade branch deliberately excludes `with_genres`; Decade/Genre
+rows continue through the stricter Genre branch above. It accepts only upper
+bounds `1949-12-31` or `1959-12-31`, exact full years from 1950 through 2029,
+or exact full Decades from the 1960s through the 2020s. Movie uses
+`primary_release_date.gte/lte`; TV uses `first_air_date.gte/lte`. One unique
+canonical `without_genres` list plus the existing rating, vote, language, and
+country fields may accompany the period. Missing or duplicated adult/sort/date
+keys, partial/noncanonical periods, wrong-media names or sorts, compound IDs,
+unknown keys, mixed family identities, and generic Discover fail closed.
+
+The simple Streaming Preview branch requires exactly four unique parameters:
+`include_adult=false`, one media-correct `sort_by`, one uppercase two-letter
+`watch_region`, and one canonical positive `with_watch_providers` ID. Compound
+provider expressions, multiple Regions/Providers, lowercase or long Regions,
+all other filters, and mixtures with Company, Network, Genre, or Decade fields
+fail closed. Service-token access does not authorize either new Discover branch.
+Issue [#158](https://github.com/davecollections/tmdb-id-lookup/issues/158)
+tracks this source change. Dave confirmed deployment of the complete reviewed
+14,718-byte `tmdb-proxy.js` source with SHA-256
+`94CD976AA642A732D969D535D5F09E09D9B1033DC51B02756FCAF3BB28436E91`
+on 2026-08-27; no deployment version identifier was supplied. Direct production
+acceptance returned HTTP 200 with live TMDB results for canonical Movie and TV
+Decade and simple Streaming requests. Missing-adult, noncanonical-period,
+mixed-family, lowercase-Region, compound-Provider, and extra-parameter requests
+returned HTTP 403. The gated mounted Builder suite then passed all 32 scenarios
+through the production Worker, TMDB, and image CDN at 393px and 900px with zero
+skips. Worker deployment remains independent of commit, PR, merge, and Builder
+publication.
 
 Each Streaming provider path requires exactly one `language=en-US` parameter.
 Missing, duplicate, differently cased, or additional parameters fail closed.

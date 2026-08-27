@@ -17,6 +17,7 @@ import {
 	createStreamingCatalogueProvider,
 	createStreamingSourceBundle,
 	createTmdbCollectionProvider,
+	createTmdbDecadesPreviewProvider,
 	createTmdbGenrePreviewProvider,
 	createTmdbPersonProvider,
 	createPeopleManifestClient,
@@ -24,6 +25,7 @@ import {
 	createTmdbNetworkPreviewProvider,
 	createTmdbStudioCountProvider,
 	createTmdbStudioPreviewProvider,
+	createTmdbStreamingPreviewProvider,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE_ID,
 	NETWORK_SOURCE_MODE_ID,
@@ -703,12 +705,14 @@ export function BuilderWorkspace({
 	networkCatalogueProvider = null,
 	networkCountProvider = null,
 	networkPreviewProvider = null,
+	decadePreviewProvider = null,
 	genrePreviewProvider = null,
 	studioCatalogueProvider = null,
 	studioCountProvider = null,
 	studioPreviewProvider = null,
 	studioArtworkRuntimeClient = null,
 	streamingCatalogueProvider = null,
+	streamingPreviewProvider = null,
 	peopleManifestClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
@@ -800,6 +804,10 @@ export function BuilderWorkspace({
 	if (networkPreviewProviderRef.current === null) {
 		networkPreviewProviderRef.current = networkPreviewProvider ?? createTmdbNetworkPreviewProvider();
 	}
+	const decadePreviewProviderRef = useRef(null);
+	if (decadePreviewProviderRef.current === null) {
+		decadePreviewProviderRef.current = decadePreviewProvider ?? createTmdbDecadesPreviewProvider();
+	}
 	const genrePreviewProviderRef = useRef(null);
 	if (genrePreviewProviderRef.current === null) {
 		genrePreviewProviderRef.current = genrePreviewProvider ?? createTmdbGenrePreviewProvider();
@@ -823,6 +831,10 @@ export function BuilderWorkspace({
 	const streamingCatalogueProviderRef = useRef(null);
 	if (streamingCatalogueProviderRef.current === null) {
 		streamingCatalogueProviderRef.current = streamingCatalogueProvider ?? createStreamingCatalogueProvider();
+	}
+	const streamingPreviewProviderRef = useRef(null);
+	if (streamingPreviewProviderRef.current === null) {
+		streamingPreviewProviderRef.current = streamingPreviewProvider ?? createTmdbStreamingPreviewProvider();
 	}
 	const peopleManifestClientRef = useRef(null);
 	if (peopleManifestClientRef.current === null) {
@@ -2593,6 +2605,7 @@ export function BuilderWorkspace({
 					networkCatalogueProvider={networkCatalogueProviderRef.current}
 					networkPreviewProvider={networkPreviewProviderRef.current}
 					genrePreviewProvider={genrePreviewProviderRef.current}
+					decadePreviewProvider={decadePreviewProviderRef.current}
 					networkArtworkRuntimeClient={studioArtworkRuntimeClientRef.current}
 				/>
 			) : null}
@@ -2706,11 +2719,16 @@ export function BuilderWorkspace({
 				<SourceEditorDialog
 					provider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
+					networkPreviewProvider={networkPreviewProviderRef.current}
 					networkCatalogueProvider={networkCatalogueProviderRef.current}
 					networkCountProvider={networkCountProviderRef.current}
 					studioCatalogueProvider={studioCatalogueProviderRef.current}
 					studioCountProvider={studioCountProviderRef.current}
+					studioPreviewProvider={studioPreviewProviderRef.current}
 					streamingCatalogueProvider={streamingCatalogueProviderRef.current}
+					streamingPreviewProvider={streamingPreviewProviderRef.current}
+					genrePreviewProvider={genrePreviewProviderRef.current}
+					decadePreviewProvider={decadePreviewProviderRef.current}
 					session={sourceEdit.session}
 					initialDraft={sourceEdit.draft}
 					onCancel={cancelSourceEdit}

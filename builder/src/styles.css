@@ -2337,6 +2337,17 @@ body.settings-modal-open {
 	padding: 0 2px;
 }
 
+.source-edit-preview-action {
+	display: grid;
+	justify-items: start;
+	gap: 6px;
+	padding: 2px;
+}
+
+.source-edit-preview-action > p {
+	margin: 0;
+}
+
 .source-edit-people-identity {
 	margin: 0 2px;
 	color: var(--muted);
@@ -6418,28 +6429,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 		grid-template-columns: repeat(5, minmax(0, 1fr));
 	}
 
-	.people-title-preview-backdrop {
-		align-items: end;
-		padding:
-			max(8px, env(safe-area-inset-top))
-			0
-			0;
-	}
-
-	.people-title-preview {
-		width: 100%;
-		max-height: calc(100dvh - max(8px, env(safe-area-inset-top)));
-		padding:
-			14px
-			max(14px, env(safe-area-inset-right))
-			max(16px, env(safe-area-inset-bottom))
-			max(14px, env(safe-area-inset-left));
-		border-right: 0;
-		border-bottom: 0;
-		border-left: 0;
-		border-radius: 16px 16px 0 0;
-	}
-
 	.studio-source-choices > div {
 		grid-template-columns: minmax(0, 1fr);
 	}
@@ -6836,8 +6825,13 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .genre-source-dialog[data-secondary-surface] > .add-source-heading,
 .source-edit-dialog[data-secondary-surface] > .add-source-heading,
+.source-edit-dialog[data-preview-open] > .add-source-heading,
 .genre-source-dialog[data-secondary-surface] .add-source-scroll,
-.source-edit-dialog[data-secondary-surface] .source-edit-scroll {
+.source-edit-dialog[data-secondary-surface] .source-edit-scroll,
+.source-edit-dialog[data-preview-open] .source-edit-scroll,
+.source-edit-dialog[data-preview-open] .source-edit-actions,
+.decades-creation-form[data-preview-open] > .add-source-scroll,
+.decades-creation-form[data-preview-open] > .decades-creation-actions {
 	pointer-events: none;
 	opacity: 0.16;
 	filter: blur(1.5px) saturate(0.72);
@@ -7832,6 +7826,98 @@ body.hierarchy-pointer-dragging .builder-shell {
 	line-height: 1.5;
 }
 
+.decades-preview-catalogue,
+.decades-preview-group {
+	min-width: 0;
+	background: rgb(5 17 25 / 68%);
+	border: 1px solid var(--border);
+	border-radius: 11px;
+}
+
+.decades-preview-catalogue > summary {
+	display: flex;
+	min-height: 48px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 10px 12px;
+	cursor: pointer;
+}
+
+.decades-preview-catalogue > summary > span {
+	display: grid;
+	gap: 2px;
+}
+
+.decades-preview-catalogue summary small,
+.decades-preview-row small {
+	color: var(--muted);
+	font-size: 0.64rem;
+	font-weight: 650;
+}
+
+.decades-preview-groups {
+	display: grid;
+	min-width: 0;
+	gap: 8px;
+	padding: 0 10px 10px;
+}
+
+.decades-preview-group {
+	background: rgb(11 35 48 / 48%);
+}
+
+.decades-preview-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 10px;
+}
+
+.decades-preview-row > span {
+	display: grid;
+	min-width: 0;
+	gap: 3px;
+}
+
+.studio-preview-modal.decades-preview-modal {
+	grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.studio-preview-tabs.decades-preview-source-selector {
+	min-width: 0;
+	max-width: 100%;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding: 1px 1px 5px;
+	overscroll-behavior-inline: contain;
+	scrollbar-width: thin;
+}
+
+.decades-preview-source-selector button {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.decades-preview-content {
+	display: grid;
+	min-width: 0;
+	min-height: 0;
+	align-content: start;
+	gap: 10px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.decades-preview-sample-helper {
+	color: var(--muted);
+	font-size: 0.68rem;
+	line-height: 1.45;
+}
+
 /* Franchise hierarchy creation */
 .franchise-creation-form,
 .franchise-review {
@@ -8050,10 +8136,14 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .franchise-preview-grid {
 	display: grid;
+	min-height: 0;
 	grid-template-columns: repeat(5, minmax(0, 1fr));
 	gap: 12px;
 	margin: 0;
 	padding: 2px 3px 4px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .poster-only-preview-grid img {
@@ -8321,19 +8411,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 	color: var(--muted);
 	font-size: 0.68rem;
 	font-weight: 800;
-}
-
-@media (min-width: 521px) and (max-width: 620px) {
-	.studio-preview-grid img:nth-child(n + 6) {
-		display: block;
-	}
-}
-
-@media (max-width: 520px) {
-	.studio-preview-grid img:nth-child(n + 6),
-	.franchise-preview-grid img:nth-child(n + 6) {
-		display: none;
-	}
 }
 
 @media (max-width: 620px) {

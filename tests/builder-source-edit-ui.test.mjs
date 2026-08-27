@@ -192,6 +192,32 @@ function networkSource(overrides = {}) {
 	};
 }
 
+function genreSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Comedy Movies",
+		tmdbSourceType: "DISCOVER",
+		tmdbId: null,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: { withGenres: "35" },
+		...overrides,
+	};
+}
+
+function decadeSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "1980s Movies",
+		tmdbSourceType: "DISCOVER",
+		tmdbId: null,
+		mediaType: "MOVIE",
+		sortBy: "popularity.desc",
+		filters: { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31" },
+		...overrides,
+	};
+}
+
 function streamingSource(overrides = {}) {
 	return {
 		provider: "tmdb",
@@ -236,6 +262,55 @@ test("supported source menus include simple Streaming and show Edit source immed
 	for (const menu of markup.match(/<div[^>]+data-actions-menu="source"[\s\S]*?<\/div>/g) ?? []) {
 		assert.ok(menu.indexOf('data-action="edit-source"') < menu.indexOf('data-action="delete-source"'));
 	}
+});
+
+test("Source Edit exposes one draft-backed Preview action for all seven adapters immediately before the footer", () => {
+	const controller = createController();
+	const folder = importSources(controller, [collectionSource(), peopleSource(), studioSource(), networkSource(), streamingSource(), genreSource(), decadeSource()]);
+	const previewProps = {
+		provider: fakeProvider(),
+		peopleProvider: { getPerson() {} },
+		studioPreviewProvider: { getStudioPreview() {} },
+		networkPreviewProvider: { getNetworkPreview() {} },
+		streamingPreviewProvider: { getStreamingPreview() {} },
+		genrePreviewProvider: { getGenrePreview() {} },
+		decadePreviewProvider: { getDecadePreview() {} },
+	};
+	for (const source of folder.sources) {
+		const opened = openEdit(controller, source);
+		const markup = renderToStaticMarkup(createElement(SourceEditorDialog, {
+			...previewProps,
+			session: opened.session,
+			initialDraft: opened.draft,
+			onCancel() {},
+			onSave() { return { ok: true }; },
+		}));
+		assert.equal((markup.match(/data-action="preview-source-edit"/g) ?? []).length, 1, opened.session.adapterId);
+		assert.ok(markup.indexOf('data-action="preview-source-edit"') < markup.indexOf('class="add-source-actions source-edit-actions"'));
+		assert.ok(markup.includes('aria-haspopup="dialog"'));
+		assert.ok(markup.includes('class="source-edit-preview-action genre-hierarchy-configure-row-actions"'));
+		assert.doesNotMatch(markup, /class="editor-cancel"[^>]+data-action="preview-source-edit"/);
+	}
+
+	const unusualController = createController();
+	const unusualSource = importSources(unusualController, [peopleSource({ sortBy: "community.special" })]).sources[0];
+	const unusual = openEdit(unusualController, unusualSource);
+	const unusualMarkup = renderToStaticMarkup(createElement(SourceEditorDialog, { ...previewProps, session: unusual.session, initialDraft: unusual.draft, onCancel() {}, onSave() {} }));
+	assert.match(unusualMarkup, /data-action="preview-source-edit" disabled=""/);
+	assert.ok(unusualMarkup.includes("Choose a supported sort to preview."));
+
+	const sourceText = read("builder/src/ui/SourceEditorDialog.jsx");
+	const genreText = read("builder/src/ui/GenreHierarchyFlow.jsx");
+	assert.ok(sourceText.includes('source-edit-preview-action genre-hierarchy-configure-row-actions'));
+	assert.ok(genreText.includes('className="genre-hierarchy-configure-row-actions"'));
+	for (const marker of [
+		"prepareSourceEditPreview(session, draft)",
+		"createAsyncRequestCoordinator()",
+		"previewCoordinatorRef.current.cancel",
+		"inert={genreSecondarySurface || preview || undefined}",
+		"data-preview-open={preview ? \"true\" : undefined}",
+		"window.requestAnimationFrame(() => focusElementWithoutScroll(trigger))",
+	]) assert.ok(sourceText.includes(marker), marker);
 });
 
 test("unsupported source menus retain Delete only with no disabled Edit action", () => {

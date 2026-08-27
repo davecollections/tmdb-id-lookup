@@ -43,6 +43,20 @@ export {
 	validateDecadesSourceDrafts,
 } from "./decades-source.js";
 export {
+	buildDecadesPreviewGroups,
+	decadesRepresentativeItems,
+	DECADES_REPRESENTATIVE_SAMPLE_MAX_BUCKETS,
+	selectEvenlyDistributed,
+} from "./decades-preview.js";
+export {
+	createTmdbDecadesPreviewProvider,
+	decadePreviewQueryFromDraft,
+	normalizeTmdbDecadesPreviewResponse,
+	TMDB_DECADES_PREVIEW_CACHE_MAX_ENTRIES,
+	TMDB_DECADES_PREVIEW_CACHE_TTL_MS,
+	TMDB_DECADES_PREVIEW_REQUEST_TIMEOUT_MS,
+} from "./tmdb-decades-preview-provider.js";
+export {
 	buildMovieFranchiseSourceDraft,
 	createSourceSubmissionGate,
 	createMovieFranchiseSource,
@@ -278,6 +292,15 @@ export {
 	TMDB_STUDIO_PREVIEW_LOCAL_MOCK,
 	TMDB_STUDIO_PREVIEW_REQUEST_TIMEOUT_MS,
 } from "./tmdb-studio-preview-provider.js";
+export { inspectSimpleStreamingSourceNode } from "./streaming-classification.js";
+export {
+	createTmdbStreamingPreviewProvider,
+	normalizeTmdbStreamingPreviewResponse,
+	streamingPreviewQueryFromSource,
+	TMDB_STREAMING_PREVIEW_CACHE_MAX_ENTRIES,
+	TMDB_STREAMING_PREVIEW_CACHE_TTL_MS,
+	TMDB_STREAMING_PREVIEW_REQUEST_TIMEOUT_MS,
+} from "./tmdb-streaming-preview-provider.js";
 export {
 	DEFAULT_STUDIO_FOLDER_TILE_SHAPE,
 	resolveStudioFolderArtworkBatch,

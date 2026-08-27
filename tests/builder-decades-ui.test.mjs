@@ -12,6 +12,7 @@ import { discoverSourceIdentity } from "../builder/src/nuvio/discover.js";
 import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
 import {
 	applyDecadesHierarchyPlan,
+	buildDecadesPreviewGroups,
 	DECADE_PRESETS,
 	inspectCanonicalDecadeSourceNode,
 } from "../builder/src/source-add/index.js";
@@ -66,7 +67,10 @@ const {
 	DecadePresetStep,
 	DecadesGenreConfigurationSubview,
 	DecadesOptionsStep,
+	DecadesPreviewCatalogue,
+	DecadesPreviewGroup,
 	DecadesReviewStep,
+	DecadesTitlePreview,
 } = await vite.ssrLoadModule("/src/ui/CreationDialog.jsx");
 const { SourceEditorDialog } = await vite.ssrLoadModule("/src/ui/SourceEditorDialog.jsx");
 const { BuilderWorkspace } = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
@@ -142,6 +146,40 @@ test("Decade selection is multi-select, catalogue ordered, and the visible flow 
 	assert.equal(state.hideCollectionTitle, false);
 	assert.equal(state.folderTileShape, "POSTER");
 	assert.equal(state.folderTitleVisibility, "SHOW_EVERYWHERE");
+});
+
+test("Decades Preview catalogue is closed and request-free by default, one-row-per-Decade, and placed after Advanced options", () => {
+	const previewGroups = buildDecadesPreviewGroups({
+		selectedDecadeIds: ["1980s"],
+		mediaMode: "both",
+		content: { wholeDecade: true, individualYears: true, genreBreakdown: true },
+		currentYear: 2026,
+		sortOptionId: "popular",
+		genreNames: ["Comedy"],
+		advanced: {},
+	}).groups;
+	const closed = renderToStaticMarkup(createElement(DecadesPreviewCatalogue, { groups: previewGroups, previewAvailable: true, onPreview() {} }));
+	assert.ok(closed.includes("Preview titles"));
+	assert.equal(closed.includes("All 1980s"), false);
+	assert.equal(closed.includes("1980s · Comedy"), false);
+	assert.equal(closed.includes('aria-haspopup="dialog"'), false);
+
+	let state = toggleDecadePreset(createDecadesCreationState({ scope: "new-collection", currentYear: 2026 }), "1980s");
+	state = { ...state, mediaMode: "both", content: { wholeDecade: true, individualYears: true, genreBreakdown: true }, genreNames: ["Comedy"] };
+	const options = renderToStaticMarkup(createElement(DecadesOptionsStep, { state, previewGroups, previewAvailable: true, onStateChange() {} }));
+	assert.ok(options.indexOf("Advanced") < options.indexOf("Preview titles"));
+
+	const source = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "CreationDialog.jsx"), "utf8");
+	for (const marker of [
+		"open ? <div className=\"decades-preview-groups\"",
+		"const choice = group.choices[0]",
+		"previewProvider.getDecadeSample(request.drafts",
+		"decades-preview-source-selector",
+		"createAsyncRequestCoordinator()",
+		"previewCoordinatorRef.current.cancel",
+		"data-preview-open={preview ? \"true\" : undefined}",
+		"inert={secondarySurface || preview || undefined}",
+	]) assert.ok(source.includes(marker), marker);
 });
 
 test("the #113 adapter expands 2020s individual years through 2029 while lower-level modes remain separate", () => {
@@ -498,6 +536,100 @@ test("Options keeps selected Decades editable and keeps the Genre catalogue in i
 	assert.ok(large.includes("removable-selection-disclosure"));
 	assert.ok(large.includes(`View selected Decades · ${DECADE_PRESETS.length}`));
 	assert.ok(large.includes('aria-label="Remove 1950s &amp; Earlier"'));
+});
+
+test("Decades Configure shows one compact Genre-standard Preview action per Decade with exact source counts", () => {
+	const configured = buildDecadesPreviewGroups({
+		selectedDecadeIds: ["1980s", "2020s"],
+		mediaMode: "both",
+		content: { wholeDecade: true, individualYears: true, genreBreakdown: false },
+		currentYear: 2026,
+		currentYearMode: "full-decade",
+		sortOptionId: "popular",
+		genreNames: [],
+		advanced: {},
+	});
+	assert.equal(configured.ok, true);
+	const markup = configured.groups.map((group) => renderToStaticMarkup(createElement(DecadesPreviewGroup, {
+		group,
+		previewAvailable: true,
+		onPreview() {},
+	}))).join("");
+	assert.equal((markup.match(/>Preview titles<\/button>/g) ?? []).length, 2);
+	assert.equal((markup.match(/class="decades-preview-group"/g) ?? []).length, 2);
+	assert.equal((markup.match(/class="genre-hierarchy-configure-row-actions"/g) ?? []).length, 2);
+	assert.equal(markup.includes("<details"), false);
+	assert.equal(markup.includes("preview</small>"), false);
+	assert.ok(markup.includes("11 sources"));
+	assert.equal(markup.includes(">2020</strong>"), false);
+	assert.equal(markup.includes(">2029</strong>"), false);
+
+	const single = buildDecadesPreviewGroups({
+		selectedDecadeIds: ["1980s"],
+		mediaMode: "movies",
+		content: { wholeDecade: true, individualYears: false, genreBreakdown: false },
+		currentYear: 2026,
+		sortOptionId: "popular",
+		genreNames: [],
+		advanced: {},
+	}).groups[0];
+	const singleMarkup = renderToStaticMarkup(createElement(DecadesPreviewGroup, { group: single, previewAvailable: true, onPreview() {} }));
+	assert.ok(singleMarkup.includes("1 source"));
+	assert.equal(single.logicalSourceCount, 1);
+	assert.equal(single.choices.length, 2);
+
+	const genreSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "GenreHierarchyFlow.jsx"), "utf8");
+	const decadesSource = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "CreationDialog.jsx"), "utf8");
+	assert.ok(genreSource.includes('className="genre-hierarchy-configure-row-actions"'));
+	assert.ok(decadesSource.includes('className="genre-hierarchy-configure-row-actions"'));
+});
+
+test("Decades Preview defaults to a representative sample and keeps exact choices in one ordered selector", () => {
+	const group = buildDecadesPreviewGroups({
+		selectedDecadeIds: ["2000s"],
+		mediaMode: "both",
+		content: { wholeDecade: true, individualYears: true, genreBreakdown: true },
+		currentYear: 2026,
+		sortOptionId: "popular",
+		genreNames: ["Action", "Comedy"],
+		advanced: {},
+	}).groups[0];
+	const choice = group.choices[0];
+	const request = choice.requests[0];
+	const preview = {
+		status: "ready",
+		group,
+		choice,
+		request,
+		data: { results: Array.from({ length: 10 }, (_, index) => ({ id: index + 1, title: `Title ${index + 1}`, posterPath: `/poster-${index + 1}.jpg`, mediaType: "MOVIE" })) },
+		error: null,
+	};
+	const markup = renderToStaticMarkup(createElement(DecadesTitlePreview, { preview, onChangeChoice() {}, onChangeRequest() {}, onClose() {}, onRetry() {} }));
+	assert.match(markup, /class="studio-preview-tabs decades-preview-source-selector" role="tablist" aria-label="Preview source"/);
+	assert.match(markup, />Decade sample<\/button>[\s\S]*>All 2000s<\/button>[\s\S]*>2000<\/button>[\s\S]*>2009<\/button>[\s\S]*>Action<\/button>[\s\S]*>Comedy<\/button>/);
+	assert.match(markup, /role="tab" aria-selected="true">Decade sample<\/button>/);
+	assert.ok(markup.includes("A representative mix across the decade using your current sort and filters."));
+	assert.match(markup, /aria-label="Preview media"[\s\S]*>Movies<\/button>[\s\S]*>Series<\/button>/);
+	assert.equal((markup.match(/data-preview-poster-only="true"/g) ?? []).length, 1);
+	assert.match(markup, /data-preview-poster-count="10"/);
+	for (const count of [7, 3]) {
+		const naturalMarkup = renderToStaticMarkup(createElement(DecadesTitlePreview, {
+			preview: { ...preview, data: { results: preview.data.results.slice(0, count) } },
+			onChangeChoice() {}, onChangeRequest() {}, onClose() {}, onRetry() {},
+		}));
+		assert.match(naturalMarkup, new RegExp(`data-preview-poster-count="${count}"`));
+		assert.equal((naturalMarkup.match(/<img/g) ?? []).length, count);
+	}
+
+	const exactChoice = group.choices.find((entry) => entry.selectorLabel === "All 2000s");
+	const exactMarkup = renderToStaticMarkup(createElement(DecadesTitlePreview, {
+		preview: { ...preview, choice: exactChoice, request: exactChoice.requests[0] },
+		onChangeChoice() {}, onChangeRequest() {}, onClose() {}, onRetry() {},
+	}));
+	assert.equal(exactMarkup.includes("A representative mix across"), false);
+	assert.match(exactMarkup, /role="tab" aria-selected="true">All 2000s<\/button>/);
+	const css = fs.readFileSync(path.join(rootDir, "builder", "src", "styles.css"), "utf8");
+	for (const declaration of ["flex-wrap: nowrap", "overflow-x: auto", "overflow-y: hidden", "white-space: nowrap"]) assert.ok(css.includes(declaration), declaration);
 });
 
 test("structure, ordering, and shared presentation choices render schematic previews only when applicable", () => {

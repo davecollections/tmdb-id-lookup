@@ -373,6 +373,103 @@ test("Genre Discover requires exactly one canonical include_adult=false", async 
 	});
 });
 
+test("date-only Decade Discover forwards only canonical periods, exact media sorts, and approved Advanced filters", async () => {
+	await withMockFetch(async (calls) => {
+		const valid = [
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/tv?first_air_date.gte=1984-01-01&first_air_date.lte=1984-12-31&without_genres=35%2C10762&vote_average.gte=6.5&vote_average.lte=9&vote_count.gte=0&with_original_language=en&with_origin_country=AU&sort_by=first_air_date.desc&include_adult=false",
+			"/3/discover/movie?primary_release_date.lte=1949-12-31&sort_by=vote_count.desc&include_adult=false",
+			"/3/discover/tv?first_air_date.lte=1959-12-31&sort_by=vote_average.desc&include_adult=false",
+		];
+		for (const pathname of valid) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 200, pathname);
+		}
+		assert.equal(calls.length, valid.length);
+		assert.deepEqual(calls.map(([url]) => url.pathname), ["/3/discover/movie", "/3/discover/tv", "/3/discover/movie", "/3/discover/tv"]);
+	});
+});
+
+test("date-only Decade Discover rejects malformed periods, wrong-media fields, duplicates, mixtures, and every extra parameter", async () => {
+	await withMockFetch(async (calls) => {
+		const invalid = [
+			"/3/discover/movie?sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=true&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=first_air_date.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&first_air_date.gte=1980-01-01&first_air_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1950-01-01&primary_release_date.lte=1959-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1981-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=2030-01-01&primary_release_date.lte=2030-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.lte=1948-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31&without_genres=35%2C35",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31&with_watch_providers=8&watch_region=AU",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31&page=2",
+		];
+		for (const pathname of invalid) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed");
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("simple Streaming Discover forwards one canonical provider, region, adult policy, and media-correct sort", async () => {
+	await withMockFetch(async (calls) => {
+		const valid = [
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=8",
+			"/3/discover/movie?with_watch_providers=337&watch_region=US&sort_by=primary_release_date.desc&include_adult=false",
+			"/3/discover/tv?watch_region=GB&with_watch_providers=9&include_adult=false&sort_by=first_air_date.desc",
+			"/3/discover/tv?sort_by=vote_count.desc&include_adult=false&with_watch_providers=10&watch_region=CA",
+		];
+		for (const pathname of valid) assert.equal((await fetchWorker(pathname, { origin: allowedOrigin })).status, 200, pathname);
+		assert.equal(calls.length, valid.length);
+	});
+});
+
+test("simple Streaming Discover rejects compound IDs, invalid regions, duplicates, wrong sorts, mixtures, and extra filters", async () => {
+	await withMockFetch(async (calls) => {
+		const invalid = [
+			"/3/discover/movie?sort_by=popularity.desc&watch_region=AU&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=8%7C9",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=08",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=au&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AUS&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=first_air_date.desc&watch_region=AU&with_watch_providers=8",
+			"/3/discover/tv?include_adult=false&sort_by=primary_release_date.desc&watch_region=AU&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&sort_by=vote_count.desc&watch_region=AU&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&watch_region=US&with_watch_providers=8",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=8&with_genres=35",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=8&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=8&page=2",
+		];
+		for (const pathname of invalid) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed");
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
+test("service-token access does not authorize Decade or Streaming Discover routes", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31",
+			"/3/discover/movie?include_adult=false&sort_by=popularity.desc&watch_region=AU&with_watch_providers=8",
+		]) {
+			const response = await fetchWorker(pathname, { token: serviceToken });
+			assert.equal(response.status, 403);
+			assert.equal(await response.text(), "Origin not allowed");
+		}
+		assert.equal(calls.length, 0);
+	});
+});
+
 test("service-token access does not authorize otherwise valid or generic Genre Discover", async () => {
 	await withMockFetch(async (calls) => {
 		for (const pathname of [

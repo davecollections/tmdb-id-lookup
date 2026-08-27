@@ -210,7 +210,7 @@ test("Genre Preview uses exact drafts, lazy media tabs, shared nested shell, and
 	assert.match(previewProvider, /withoutGenres/);
 	assert.match(previewRequester, /getQueryPreview/);
 	assert.match(previewRequester, /queryIdentity\(entries\)/);
-	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-preview-grid img:nth-child\(n \+ 6\)/);
+	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);
 });
 
 test("Genre hierarchy has one scroll owner and the established focus/selection styling", () => {

@@ -51,6 +51,7 @@ export {
 	chooseMovieCollection,
 	choosePeopleSourceCombination,
 	createSourceEditSession,
+	resolveExactSource,
 	saveSourceEdit,
 	updatePeopleSourceSort,
 	updateNetworkSourceSort,
@@ -64,6 +65,7 @@ export {
 	usePeopleDefaultTitle,
 	useSelectedMovieCollectionName,
 } from "./source-edit-actions.js";
+export { prepareSourceEditPreview } from "./source-edit-preview.js";
 export {
 	createPeopleEditCountSession,
 	INITIAL_PEOPLE_EDIT_COUNT_STATE,

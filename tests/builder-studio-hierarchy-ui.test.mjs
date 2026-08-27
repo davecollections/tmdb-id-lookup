@@ -136,12 +136,12 @@ test("Appearance exposes presentation decisions without artwork controls or Stud
 	assert.doesNotMatch(flow, /Review &amp; Appearance|Continue to Review/);
 });
 
-test("Studio hierarchy has one scroll owner, sticky actions, and 10 desktop / 5 mobile Preview presentation", () => {
+test("Studio hierarchy has one scroll owner, sticky actions, and 10-poster Preview presentation everywhere", () => {
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.match(flow, /<footer className="add-source-actions">/);
 	assert.match(flow, /<PosterOnlyPreviewGrid items=\{items\} limit=\{10\}/);
-	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-preview-grid img:nth-child\(n \+ 6\)/);
-	assert.match(styles, /@media \(min-width: 521px\) and \(max-width: 620px\)[\s\S]*\.studio-preview-grid img:nth-child\(n \+ 6\)[\s\S]*display:\s*block/);
+	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);
 	assert.match(posterGrid, /filter\(\(candidate\) => candidate\.source !== null\)/);
 	assert.match(posterGrid, /slice\(0, limit\)/);

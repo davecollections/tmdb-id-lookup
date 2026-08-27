@@ -1,6 +1,7 @@
 import {
 	useEffect,
 	useLayoutEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -8,6 +9,8 @@ import { createPortal } from "react-dom";
 import {
 	formatNetworkLocation,
 	formatStudioLocation,
+	buildPeopleTitlePreview,
+	createAsyncRequestCoordinator,
 	DECADES_SORT_OPTIONS,
 	GENRE_SORT_OPTIONS,
 	networkSortOptionId,
@@ -42,6 +45,7 @@ import {
 	NETWORK_SOURCE_EDITOR_ID,
 	peopleEditCountLabel,
 	peopleSortOptions,
+	prepareSourceEditPreview,
 	sourceEditorById,
 	updatePeopleSourceSort,
 	updateNetworkSourceSort,
@@ -72,6 +76,8 @@ import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
 import { DecadesAdvancedOptions } from "./DecadesAdvancedOptions.jsx";
+import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
+import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 import {
 	focusSourceEditAlert,
 	sourceEditErrorPresentation,
@@ -409,14 +415,85 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 	);
 }
 
+function previewProviderAvailable(request, providers) {
+	if (request === null) return false;
+	if (request.kind === "collection") return typeof providers.collection?.getCollection === "function";
+	if (request.kind === "people") return typeof providers.people?.getPerson === "function";
+	if (request.kind === "studio") return typeof providers.studio?.getStudioPreview === "function";
+	if (request.kind === "network") return typeof providers.network?.getNetworkPreview === "function";
+	if (request.kind === "streaming") return typeof providers.streaming?.getStreamingPreview === "function";
+	if (request.kind === "genre") return typeof providers.genre?.getGenrePreview === "function";
+	if (request.kind === "decade") return typeof providers.decade?.getDecadePreview === "function";
+	return false;
+}
+
+async function requestSourceEditPreview(request, providers, signal) {
+	if (request.kind === "collection") {
+		const result = await providers.collection.getCollection(request.tmdbId, { signal });
+		if (!result?.ok) return result;
+		return Object.freeze({ ok: true, data: Object.freeze({
+			results: Object.freeze([...(result.data.containedTitles ?? [])]),
+			totalResults: result.data.movieCount ?? result.data.containedTitles?.length ?? 0,
+			mediaType: "MOVIE",
+		}) });
+	}
+	if (request.kind === "people") {
+		const result = await providers.people.getPerson(request.tmdbId, { signal });
+		if (!result?.ok) return result;
+		const preview = buildPeopleTitlePreview(result.data, {
+			combinations: [request.combinationId],
+			sortOptionId: request.sortOptionId,
+			limit: 10,
+			mediaType: request.mediaType,
+		});
+		return preview.ok
+			? Object.freeze({ ok: true, data: Object.freeze({ results: preview.items, totalResults: preview.totalResults, mediaType: preview.mediaType }) })
+			: Object.freeze({ ok: false, error: Object.freeze({ kind: "invalid-response", message: preview.errors[0]?.message ?? "This People preview could not be prepared.", retryable: false }) });
+	}
+	if (request.kind === "studio") return providers.studio.getStudioPreview(request.tmdbId, { mediaType: request.mediaType, sortBy: request.sortBy, signal });
+	if (request.kind === "network") return providers.network.getNetworkPreview(request.tmdbId, { sortBy: request.sortBy, signal });
+	if (request.kind === "streaming") return providers.streaming.getStreamingPreview(request.sourceNode, { signal });
+	if (request.kind === "genre") return providers.genre.getGenrePreview(request.sourceDraft, { signal });
+	if (request.kind === "decade") return providers.decade.getDecadePreview(request.sourceDraft, { signal });
+	return Object.freeze({ ok: false, error: Object.freeze({ kind: "invalid-request", message: "This source type cannot be previewed.", retryable: false }) });
+}
+
+function SourceEditTitlePreview({ preview, onClose, onRetry }) {
+	const dialogRef = useRef(null);
+	const closeRef = useRef(null);
+	const mediaLabel = preview.candidate.request.mediaType === "TV" ? "Series" : "Movies";
+	return (
+		<NestedPreviewDialog
+			ariaLabelledBy="source-edit-preview-title"
+			backdropClassName="franchise-preview-backdrop studio-preview-backdrop source-edit-preview-backdrop"
+			backdropProps={{ "data-source-edit-preview-backdrop": "true" }}
+			dialogClassName="franchise-preview-modal studio-preview-modal source-edit-preview-modal"
+			dialogRef={dialogRef}
+			initialFocusRef={closeRef}
+			onClose={onClose}
+		>
+			<header><div><p className="panel-kicker">Title preview</p><h3 id="source-edit-preview-title">{preview.candidate.request.label || "Current source"}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
+			<p className="studio-preview-single-media">{mediaLabel}</p>
+			{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing preview…</p> : null}
+			{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This title preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
+			{preview.status === "ready" ? <PosterOnlyPreviewGrid items={preview.data?.results ?? []} limit={10} className="franchise-preview-grid studio-preview-grid source-edit-preview-grid" ariaLabel={`${mediaLabel} poster preview`} altPrefix={mediaLabel} emptyMessage="No posters available." /> : null}
+		</NestedPreviewDialog>
+	);
+}
+
 export function SourceEditorDialog({
 	provider,
 	peopleProvider,
+	networkPreviewProvider,
 	networkCatalogueProvider,
 	networkCountProvider,
+	genrePreviewProvider,
 	streamingCatalogueProvider,
+	streamingPreviewProvider,
 	studioCatalogueProvider,
 	studioCountProvider,
+	studioPreviewProvider,
+	decadePreviewProvider,
 	session,
 	initialDraft,
 	initialPeopleCountState = null,
@@ -430,6 +507,7 @@ export function SourceEditorDialog({
 	const [stage, setStage] = useState("edit");
 	const [genreSecondarySurface, setGenreSecondarySurface] = useState(null);
 	const [failure, setFailure] = useState(null);
+	const [preview, setPreview] = useState(null);
 	const [peopleCountState, setPeopleCountState] = useState(() => (
 		initialPeopleCountState ?? (session.adapterId === PEOPLE_SOURCE_EDITOR_ID
 			? Object.freeze({ ...INITIAL_PEOPLE_EDIT_COUNT_STATE, status: "checking" })
@@ -493,6 +571,9 @@ export function SourceEditorDialog({
 	const studioCountGenerationRef = useRef(0);
 	const networkCountGenerationRef = useRef(0);
 	const pendingFailureFocusRef = useRef(false);
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(null);
+	if (previewCoordinatorRef.current === null) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (
 		session.adapterId === PEOPLE_SOURCE_EDITOR_ID
 		&& peopleCountSessionRef.current === null
@@ -523,6 +604,18 @@ export function SourceEditorDialog({
 
 	const diagnostics = failure?.errors ?? [];
 	const titleError = diagnostics.find((entry) => diagnosticField(entry.path) === "title") ?? null;
+	const previewCandidate = useMemo(() => prepareSourceEditPreview(session, draft), [draft, session]);
+	const previewProviders = useMemo(() => Object.freeze({
+		collection: provider,
+		people: peopleProvider,
+		studio: studioPreviewProvider,
+		network: networkPreviewProvider,
+		streaming: streamingPreviewProvider,
+		genre: genrePreviewProvider,
+		decade: decadePreviewProvider,
+	}), [decadePreviewProvider, genrePreviewProvider, networkPreviewProvider, peopleProvider, provider, streamingPreviewProvider, studioPreviewProvider]);
+	const previewAvailable = previewCandidate.previewable && previewProviderAvailable(previewCandidate.request, previewProviders);
+	const previewGuidance = previewCandidate.guidance ?? (!previewAvailable ? "Preview is unavailable right now." : null);
 
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
@@ -639,6 +732,8 @@ export function SourceEditorDialog({
 		focusSourceEditAlert(diagnosticRef.current ?? dialogRef.current);
 	}, [failure]);
 
+	useEffect(() => () => previewCoordinatorRef.current?.cancel({ notify: false }), []);
+
 	function clearFieldDiagnostic(field) {
 		setFailure((current) => {
 			if (current === null) return null;
@@ -681,6 +776,31 @@ export function SourceEditorDialog({
 		setGenreSecondarySurface(null);
 	}
 
+	async function loadPreview(candidate) {
+		setPreview({ status: "loading", candidate, data: null, error: null });
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => requestSourceEditPreview(candidate.request, previewProviders, signal),
+			candidate.request.kind,
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(event) {
+		if (!previewAvailable || stage !== "edit" || genreSecondarySurface) return;
+		previewTriggerRef.current = event.currentTarget;
+		loadPreview(previewCandidate);
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	const content = (
 		<div className="add-source-portal source-edit-portal" data-source-edit-portal="true" data-mobile-surface="opaque">
 			<div
@@ -702,6 +822,7 @@ export function SourceEditorDialog({
 					data-source-edit-adapter={session.adapterId}
 					data-source-edit-stage={stage}
 					data-secondary-surface={genreSecondarySurface ?? undefined}
+					data-preview-open={preview ? "true" : undefined}
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="source-edit-title"
@@ -717,7 +838,7 @@ export function SourceEditorDialog({
 						handleDialogKeyDown(event, dialogRef.current, cancel);
 					}}
 				>
-					<header className="add-source-heading" inert={genreSecondarySurface || undefined} aria-hidden={genreSecondarySurface ? "true" : undefined}>
+					<header className="add-source-heading" inert={genreSecondarySurface || preview || undefined} aria-hidden={genreSecondarySurface || preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							{stage === "picker" ? (
 								<button
@@ -758,7 +879,7 @@ export function SourceEditorDialog({
 					</header>
 
 					<form className="add-source-form source-edit-form" onSubmit={submit} noValidate>
-						<div ref={scrollRef} className="add-source-scroll source-edit-scroll" inert={genreSecondarySurface || undefined} aria-hidden={genreSecondarySurface ? "true" : undefined}>
+						<div ref={scrollRef} className="add-source-scroll source-edit-scroll" inert={genreSecondarySurface || preview || undefined} aria-hidden={genreSecondarySurface || preview ? "true" : undefined}>
 							{stage === "picker" ? (
 								<MovieCollectionPicker
 									provider={provider}
@@ -909,11 +1030,15 @@ export function SourceEditorDialog({
 											}}
 										/>
 									) : null}
+									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
+										<button type="button" aria-haspopup="dialog" data-action="preview-source-edit" disabled={!previewAvailable || submitting} onClick={openPreview}>Preview titles</button>
+										{previewGuidance ? <p className="editor-field-help" role="status">{previewGuidance}</p> : null}
+									</div>
 								</>
 							)}
 						</div>
 						{genreSecondarySurface ? <div className="genre-secondary-surface" data-surface={genreSecondarySurface}><GenreAdvancedSecondarySurface surface={genreSecondarySurface} value={draft.advanced} includedGenres={[draft.genreName]} sharedMediaChoice={draft.mediaType === "TV" ? "series" : "movies"} onChange={(advanced) => { setDraft((current) => updateGenreSourceAdvanced(current, advanced)); setFailure(null); }} onDone={closeGenreSecondarySurface} focusRef={genreSecondaryHeadingRef} /></div> : null}
-						{!genreSecondarySurface ? <footer className="add-source-actions source-edit-actions">
+						{!genreSecondarySurface ? <footer className="add-source-actions source-edit-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 							{stage === "edit" ? (
 								<button className="editor-apply" type="submit" data-action="save-source-edit" disabled={submitting}>
 									{submitting ? "Saving changes…" : "Save changes"}
@@ -924,6 +1049,7 @@ export function SourceEditorDialog({
 					</form>
 				</section>
 			</div>
+			{preview ? <SourceEditTitlePreview preview={preview} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 
