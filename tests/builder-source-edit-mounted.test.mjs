@@ -193,6 +193,9 @@ async function runMountedPage() {
 				const genreNewFolderSummaryWidths = [];
 				const networkLivePreviewWidths = [];
 				const genreLivePreviewWidths = [];
+				const sourceEditLivePreviewWidths = [];
+				const decadesLivePreviewWidths = [];
+				let shortHeightPreviewGeometry = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -268,7 +271,42 @@ async function runMountedPage() {
 					});
 					if (genreLivePreviewEvaluation.exceptionDetails) throw new Error(genreLivePreviewEvaluation.exceptionDetails.exception?.description ?? genreLivePreviewEvaluation.exceptionDetails.text);
 					genreLivePreviewWidths.push(genreLivePreviewEvaluation.result?.value);
+					const sourceEditLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runSourceEditLivePreviewScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (sourceEditLivePreviewEvaluation.exceptionDetails) throw new Error(sourceEditLivePreviewEvaluation.exceptionDetails.exception?.description ?? sourceEditLivePreviewEvaluation.exceptionDetails.text);
+					sourceEditLivePreviewWidths.push(sourceEditLivePreviewEvaluation.result?.value);
+					if (process.env.TMDB_DECADES_PREVIEW_DEPLOYED === "1") {
+						const decadesLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+							expression: "window.__runDecadesLivePreviewScenario()",
+							awaitPromise: true,
+							returnByValue: true,
+						});
+						if (decadesLivePreviewEvaluation.exceptionDetails) throw new Error(decadesLivePreviewEvaluation.exceptionDetails.exception?.description ?? decadesLivePreviewEvaluation.exceptionDetails.text);
+						decadesLivePreviewWidths.push(decadesLivePreviewEvaluation.result?.value);
+					}
 				}
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 320, deviceScaleFactor: 1, mobile: true });
+				const shortPeopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runPeopleConfigureLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (shortPeopleEvaluation.exceptionDetails) throw new Error(shortPeopleEvaluation.exceptionDetails.exception?.description ?? shortPeopleEvaluation.exceptionDetails.text);
+				const shortSourceEditEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runSourceEditLivePreviewScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (shortSourceEditEvaluation.exceptionDetails) throw new Error(shortSourceEditEvaluation.exceptionDetails.exception?.description ?? shortSourceEditEvaluation.exceptionDetails.text);
+				shortHeightPreviewGeometry = {
+					width: 393,
+					height: 320,
+					people: shortPeopleEvaluation.result?.value?.preview?.geometry,
+					sourceEdit: shortSourceEditEvaluation.result?.value?.geometry,
+				};
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const peopleScrollEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -292,6 +330,16 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				const decadesExclusionDesktop = decadesExclusionDesktopEvaluation.result?.value;
+				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					const decadesActionEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runDecadesActionLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (decadesActionEvaluation.exceptionDetails) throw new Error(decadesActionEvaluation.exceptionDetails.exception?.description ?? decadesActionEvaluation.exceptionDetails.text);
+					decadesActionWidths.push(decadesActionEvaluation.result?.value);
+				}
 				for (const width of [360, 384, 393, 402, 412]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: true });
 					const toolbarEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -300,12 +348,6 @@ async function runMountedPage() {
 						returnByValue: true,
 					});
 					genreToolbarWidths.push(toolbarEvaluation.result?.value);
-					const decadesActionEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
-						expression: "window.__runDecadesActionLayoutScenario()",
-						awaitPromise: true,
-						returnByValue: true,
-					});
-					decadesActionWidths.push(decadesActionEvaluation.result?.value);
 					const decadesGenreEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadesGenreLayoutScenario()",
 						awaitPromise: true,
@@ -326,7 +368,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, networkLivePreviewWidths, genreLivePreviewWidths, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -377,6 +419,31 @@ async function runMountedPage() {
 			filtered: { requestUrl: result.filtered.request.url, totalResults: result.filtered.request.totalResults, posterSources: result.filtered.preview.posterSources, cacheHit: result.filtered.cacheHit },
 			requestCount: result.instrumentation.requestCount,
 		})))}`);
+		console.log(`PEOPLE_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.peopleConfigureWidths.filter((result) => [393, 900].includes(result.layout.width)).map((result) => ({
+			width: result.layout.width,
+			posterCount: result.preview.posterCount,
+			geometry: result.preview.geometry,
+			zeroMutation: result.revisionUnchanged,
+		})))}`);
+		console.log(`SOURCE_EDIT_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.sourceEditLivePreviewWidths.map((result) => ({
+			width: result.width,
+			posterCount: result.visiblePosterCount,
+			geometry: result.geometry,
+			zeroMutation: result.finalNoMutation,
+		})))}`);
+		console.log(`DECADES_LIVE_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.decadesLivePreviewWidths.map((result) => ({
+			width: result.width,
+			completedSamplePosterCount: result.movieSamplePosterCount,
+			currentSamplePosterCount: result.currentSamplePosterCount,
+			futureExactPosterCount: result.futureExact.posterCount,
+			futureExactEmpty: result.futureExact.empty,
+			futureExactRequests: result.futureExact.requests,
+			totalRequestCount: result.totalRequestCount,
+			geometry: result.geometry,
+			currentGeometry: result.currentGeometry,
+			zeroMutation: result.finalNoMutation,
+		})))}`);
+		console.log(`SHORT_HEIGHT_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.shortHeightPreviewGeometry)}`);
 	}
 	return execution.value;
 }
@@ -385,6 +452,24 @@ let mountedResults;
 before(async () => {
 	mountedResults = await runMountedPage();
 });
+
+function assertTitlePreviewGeometry(geometry, { width, posters = 10, short = false, label }) {
+	assert.equal(geometry.centeredHorizontally, true, `${label}: horizontally centred`);
+	assert.equal(geometry.centeredVertically, true, `${label}: vertically centred`);
+	assert.equal(geometry.withinViewport, true, `${label}: visual viewport bounds`);
+	assert.equal(geometry.closeReachable, true, `${label}: Close reachable`);
+	assert.equal(geometry.columns, Math.min(5, posters), `${label}: poster columns`);
+	assert.equal(geometry.rows, Math.ceil(posters / 5), `${label}: poster rows`);
+	assert.ok(geometry.posterWidth >= (width <= 520 ? 48 : 80), `${label}: useful poster width ${geometry.posterWidth}`);
+	assert.ok(Math.abs((geometry.posterHeight / geometry.posterWidth) - 1.5) <= 0.04, `${label}: poster aspect ratio`);
+	assert.ok(geometry.columnGap >= 5 && geometry.columnGap <= 12, `${label}: clean column gap ${geometry.columnGap}`);
+	assert.ok(geometry.rowGap >= 5 && geometry.rowGap <= 12, `${label}: clean row gap ${geometry.rowGap}`);
+	assert.equal(geometry.gridNoHorizontalScroll, true, `${label}: no poster-grid horizontal scroll`);
+	assert.equal(geometry.pageNoHorizontalOverflow, true, `${label}: no page horizontal overflow`);
+	assert.equal(geometry.bodyLocked, true, `${label}: underlying body locked`);
+	if (short) assert.equal(geometry.activeScrollOwnerCount, 1, `${label}: one overflow scroll owner`);
+	else assert.ok(geometry.activeScrollOwnerCount <= 1, `${label}: at most one scroll owner`);
+}
 
 function assertRequiredNameFailure(result) {
 	assert.equal(result.activeElementIsInput, true);
@@ -774,12 +859,13 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.layout.continueReachable, true, `${width}px Continue`);
 		assert.equal(result.layout.noHorizontalOverflow, true, `${width}px document overflow`);
 		assert.equal(result.layout.noNestedScrollTrap, true, `${width}px scroll ownership`);
-		assert.equal(result.preview.posterCount, width <= 520 ? 5 : 10, `${width}px preview limit`);
+		assert.equal(result.preview.posterCount, 10, `${width}px preview limit`);
 		assert.equal(result.preview.postersReady, true, `${width}px loaded Movie posters`);
 		assert.equal(result.preview.genuineTmdbSources, true, `${width}px genuine TMDB Movie poster sources`);
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
 		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
 		assert.equal(result.preview.gridColumns, 5, `${width}px preview columns`);
+		assertTitlePreviewGeometry(result.preview.geometry, { width, label: `${width}px People Preview` });
 		assert.equal(result.preview.posterOnly, true, `${width}px poster-only`);
 		assert.equal(result.preview.noHorizontalOverflow, true, `${width}px preview overflow`);
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
@@ -789,8 +875,8 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 			tabCount: 2,
 			moviesInitiallyActive: true,
 			seriesActive: true,
-			moviePosterCount: width <= 520 ? 5 : 10,
-			seriesPosterCount: width <= 520 ? 5 : 10,
+			moviePosterCount: 10,
+			seriesPosterCount: 10,
 			seriesCount: true,
 			seriesPostersReady: true,
 			seriesGenuineTmdbSources: true,
@@ -872,7 +958,8 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 			assert.equal(preview.noHorizontalOverflow, true, `${width}px ${origin} preview overflow`);
 			assert.equal(preview.exactFocusRestored, true, `${width}px ${origin} exact trigger restoration`);
 			assert.equal(preview.outerStable, true, `${width}px ${origin} outer scroll position`);
-			assert.equal(preview.posterCount, width <= 520 ? 5 : 10, `${width}px ${origin} full bounded poster grid`);
+			assert.equal(preview.posterCount, 10, `${width}px ${origin} full bounded poster grid`);
+			assertTitlePreviewGeometry(preview.geometry, { width, label: `${width}px Franchise ${origin} Preview` });
 			assert.equal(preview.postersReady, true, `${width}px ${origin} loaded posters`);
 			assert.equal(preview.genuineTmdbSources, true, `${width}px ${origin} genuine TMDB poster sources`);
 			assert.equal(preview.posterOnly, true, `${width}px ${origin} poster-only results`);
@@ -945,7 +1032,7 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 		assert.deepEqual(result.configure.configureMoviePreview, {
 			requests: 1,
 			moviePopularRequest: true,
-			visiblePosters: width <= 520 ? 5 : 10,
+			visiblePosters: 10,
 			postersReady: true,
 			genuineTmdbSources: true,
 			posterOnly: true,
@@ -1099,7 +1186,7 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 	assert.deepEqual(mountedResults.networkLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.networkLivePreviewWidths) {
 		const width = result.width;
-		const maximumPosterCount = width <= 520 ? 5 : 10;
+		const maximumPosterCount = 10;
 		assert.equal(result.networkId, 213, `${width}px real Netflix Network identity`);
 		assert.match(result.catalogueCountLine, /^Series Count: (?:[\d,]+|Unknown)$/, `${width}px checked-in catalogue count`);
 		assert.deepEqual(result.initialCountLines, [result.catalogueCountLine], `${width}px one pre-Preview catalogue count line`);
@@ -1202,7 +1289,7 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 	assert.deepEqual(mountedResults.genreLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.genreLivePreviewWidths) {
 		const width = result.width;
-		const maximumPosterCount = width <= 520 ? 5 : 10;
+		const maximumPosterCount = 10;
 		assert.equal(result.requestsBeforeExplicitPreview, 0, `${width}px no automatic Genre Preview request`);
 
 		assert.equal(result.movie.request.origin, tmdbProxyBaseUrl, `${width}px Movie production Worker origin`);
@@ -1224,6 +1311,7 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 		}, `${width}px Movie-first lazy shared Preview`);
 		assert.equal(result.movie.preview.visiblePosterCount > 0 && result.movie.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded Movie posters`);
 		assert.equal(result.movie.preview.renderedPosterCount <= 10, true, `${width}px Movie DOM poster maximum`);
+		assertTitlePreviewGeometry(result.movie.preview.geometry, { width, posters: result.movie.preview.visiblePosterCount, label: `${width}px Genre Movie Preview` });
 		assert.deepEqual(result.movie.preview.posterSources, result.movie.preview.expectedSources, `${width}px Movie response poster order`);
 		assert.equal(result.movie.preview.postersReady, true, `${width}px Movie posters loaded`);
 		assert.equal(result.movie.preview.genuineTmdbSources, true, `${width}px Movie image.tmdb.org sources`);
@@ -1244,6 +1332,7 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 			seriesCountShown: true,
 		}, `${width}px TV requested only after switching`);
 		assert.equal(result.series.preview.visiblePosterCount > 0 && result.series.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded TV posters`);
+		assertTitlePreviewGeometry(result.series.preview.geometry, { width, posters: result.series.preview.visiblePosterCount, label: `${width}px Genre Series Preview` });
 		assert.deepEqual(result.series.preview.posterSources, result.series.preview.expectedSources, `${width}px TV response poster order`);
 		assert.equal(result.series.preview.postersReady, true, `${width}px TV posters loaded`);
 		assert.equal(result.series.preview.genuineTmdbSources, true, `${width}px TV image.tmdb.org sources`);
@@ -1269,6 +1358,7 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 		assert.equal(Number.isSafeInteger(result.filtered.request.totalResults) && result.filtered.request.totalResults >= 0, true, `${width}px filtered total_results`);
 		assert.deepEqual(result.filtered.singleMedia, { tabsAbsent: true, countShown: true }, `${width}px single-media Preview shell`);
 		assert.equal(result.filtered.preview.visiblePosterCount > 0 && result.filtered.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded filtered posters`);
+		assertTitlePreviewGeometry(result.filtered.preview.geometry, { width, posters: result.filtered.preview.visiblePosterCount, label: `${width}px filtered Genre Preview` });
 		assert.deepEqual(result.filtered.preview.posterSources, result.filtered.preview.expectedSources, `${width}px filtered response poster order`);
 		assert.equal(result.filtered.preview.postersReady, true, `${width}px filtered posters loaded`);
 		assert.equal(result.filtered.preview.genuineTmdbSources, true, `${width}px filtered image.tmdb.org sources`);
@@ -1285,6 +1375,114 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 			noHorizontalOverflow: true,
 			revisionUnchanged: true,
 		}, `${width}px live Genre Preview remains responsive and non-mutating`);
+	}
+});
+
+test("mounted Source Edit Preview is live, lazy, cached, poster-only, focus-safe, non-mutating, and responsive", () => {
+	assert.equal(mountedResults.sourceEditLivePreviewWidths.length, 2);
+	for (const result of mountedResults.sourceEditLivePreviewWidths) {
+		assert.equal(result.requestFreeBeforeOpen, true, result.width);
+		assert.equal(result.requestCount, 1, result.width);
+		assert.equal(result.requestPath.startsWith("/3/collection/645"), true, result.requestPath);
+		assert.equal(result.draftLabel, "Current Bond draft");
+		assert.equal(result.domPosterCount, 10);
+		assert.equal(result.visiblePosterCount, 10, result.width);
+		assertTitlePreviewGeometry(result.geometry, { width: result.width, label: `${result.width}px Source Edit Preview` });
+		assert.equal(result.genuinePosters, true, result.width);
+		assert.equal(result.posterOnly, true);
+		assert.equal(result.outerScrollInert, true);
+		assert.equal(result.footerInert, true);
+		assert.equal(result.focusContained, true);
+		assert.ok(result.activeScrollOwnerCount <= 1, `${result.width}: ${result.activeScrollOwnerCount}`);
+		assert.equal(result.noMutation, true);
+		assert.equal(result.escapeClosed, true);
+		assert.equal(result.exactFocusRestored, true);
+		assert.equal(result.cacheReused, true);
+		assert.equal(result.closeRestoredFocus, true);
+		assert.equal(result.bodyLockRetained, true);
+		assert.equal(result.finalNoMutation, true);
+	}
+});
+
+test("mounted Title Previews stay centred and use one scroll owner on a deliberately short phone viewport", () => {
+	const result = mountedResults.shortHeightPreviewGeometry;
+	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
+	assertTitlePreviewGeometry(result.people, { width: 393, short: true, label: "393x320 People Preview" });
+	assertTitlePreviewGeometry(result.sourceEdit, { width: 393, short: true, label: "393x320 Source Edit Preview" });
+	const normalPeople = mountedResults.peopleConfigureWidths.find((entry) => entry.layout.width === 393).preview.geometry;
+	const normalSourceEdit = mountedResults.sourceEditLivePreviewWidths.find((entry) => entry.width === 393).geometry;
+	assert.ok(Math.abs(result.people.posterWidth - normalPeople.posterWidth) <= 1, "People posters do not shrink to fit the short viewport");
+	assert.ok(Math.abs(result.sourceEdit.posterWidth - normalSourceEdit.posterWidth) <= 1, "shared posters do not shrink to fit the short viewport");
+});
+
+test("mounted Decades Preview uses the deployed Worker for bounded representative samples, exact sources, cache, focus, and responsive poster limits", {
+	skip: process.env.TMDB_DECADES_PREVIEW_DEPLOYED !== "1" ? "Pending owner deployment of the reviewed Worker bytes." : false,
+}, () => {
+	function assertAnnualRequests(requests, mediaType, years) {
+		assert.equal(requests.length, years.length);
+		for (const [index, request] of requests.entries()) {
+			const year = years[index];
+			const url = new URL(request, tmdbProxyBaseUrl);
+			const dateField = mediaType === "MOVIE" ? "primary_release_date" : "first_air_date";
+			assert.equal(url.pathname, mediaType === "MOVIE" ? "/3/discover/movie" : "/3/discover/tv");
+			assert.deepEqual(Object.fromEntries(url.searchParams), {
+				include_adult: "false",
+				sort_by: "popularity.desc",
+				[`${dateField}.gte`]: `${year}-01-01`,
+				[`${dateField}.lte`]: `${year}-12-31`,
+			});
+		}
+	}
+	function assertWholeDecadeRequest(requests, mediaType) {
+		assert.equal(requests.length, 1);
+		const url = new URL(requests[0], tmdbProxyBaseUrl);
+		const dateField = mediaType === "MOVIE" ? "primary_release_date" : "first_air_date";
+		assert.equal(url.pathname, mediaType === "MOVIE" ? "/3/discover/movie" : "/3/discover/tv");
+		assert.deepEqual(Object.fromEntries(url.searchParams), {
+			include_adult: "false",
+			sort_by: "popularity.desc",
+			[`${dateField}.gte`]: "1980-01-01",
+			[`${dateField}.lte`]: "1989-12-31",
+		});
+	}
+	assert.deepEqual(mountedResults.decadesLivePreviewWidths.map((result) => result.width), [393, 900]);
+	for (const result of mountedResults.decadesLivePreviewWidths) {
+		assert.equal(result.lightweightClosed, true);
+		assert.equal(result.compactOlderGroup, true);
+		assert.equal(result.requestFreeBeforeExplicitPreview, true);
+		assertAnnualRequests(result.olderMovieSampleRequests, "MOVIE", [1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989]);
+		assertAnnualRequests(result.olderSeriesSampleRequests, "TV", [1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989]);
+		assertWholeDecadeRequest(result.allSeriesRequests, "TV");
+		assertWholeDecadeRequest(result.allMovieRequests, "MOVIE");
+		assertAnnualRequests(result.currentSampleRequests, "MOVIE", [2020, 2021, 2022, 2023, 2024, 2025, 2026]);
+		assertAnnualRequests(result.futureExact.requests, "MOVIE", [2029]);
+		assert.deepEqual(result.olderSelector.labels, ["Decade sample", "All 1980s", "1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989"]);
+		assert.equal(result.olderSelector.selected, "Decade sample");
+		assert.deepEqual(result.currentSelector.labels, ["Decade sample", "All 2020s", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028", "2029"]);
+		assert.equal(result.currentSelector.selected, "Decade sample");
+		for (const selector of [result.olderSelector, result.currentSelector]) {
+			for (const field of ["oneLine", "horizontalScroll", "verticalClipping", "hasOverflowAtMobile"]) assert.equal(selector[field], true, `${result.width}: selector ${field}`);
+		}
+		assert.equal(result.sampleHelper, "A representative mix across the decade using your current sort and filters.");
+		assert.equal(result.currentHelper, result.sampleHelper);
+		assert.equal(result.movieSamplePosterCount, 10);
+		assert.equal(result.seriesSamplePosterCount, 10);
+		assert.equal(result.restoredSamplePosterCount, 10);
+		assert.equal(result.currentSamplePosterCount, 7);
+		assert.equal(result.allSeriesPosterCount, 10);
+		assert.equal(result.allMoviePosterCount, 10);
+		assertTitlePreviewGeometry(result.geometry, { width: result.width, label: `${result.width}px completed Decade sample` });
+		assertTitlePreviewGeometry(result.currentGeometry, { width: result.width, posters: 7, label: `${result.width}px current Decade sample` });
+		assert.equal(result.futureExact.selected, "2029");
+		assert.ok(result.futureExact.posterCount >= 0 && result.futureExact.posterCount <= 10);
+		assert.equal(result.futureExact.empty, result.futureExact.posterCount === 0);
+		assert.equal(result.futureExact.genuinePosters, true);
+		assert.equal(result.futureExact.sampleHelperAbsent, true);
+		assert.equal(result.futureExact.noMutation, true);
+		if (result.futureExact.geometry) assertTitlePreviewGeometry(result.futureExact.geometry, { width: result.width, posters: result.futureExact.posterCount, label: `${result.width}px exact future 2029 Preview` });
+		assert.equal(result.totalRequestCount, 30);
+		assert.ok(result.activeScrollOwnerCount <= 1, `${result.width}: ${result.activeScrollOwnerCount}`);
+		for (const field of ["moviesInitiallySelected", "seriesSelected", "exactHelperAbsent", "allSeriesSelected", "exactYearReusedSampleCache", "sampleCacheReused", "genuineMoviePosters", "genuineSeriesPosters", "genuineAllSeriesPosters", "genuineAllMoviePosters", "oneModal", "outerScrollInert", "footerInert", "focusContained", "noHorizontalOverflow", "noMutation", "exactFocusRestored", "individualYearsPersisted", "compactCurrentGroup", "genuineCurrentPosters", "currentNoMutation", "escapeClosed", "escapeFocusRestored", "finalNoMutation"]) assert.equal(result[field], true, `${result.width}: ${field}`);
 	}
 });
 
@@ -1445,8 +1643,8 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 	});
 });
 
-test("mounted Decades header Back and primary-only footer remain reachable at every required narrow width", () => {
-	assert.deepEqual(mountedResults.decadesActionWidths.map((result) => result.width), [360, 384, 393, 402, 412]);
+test("mounted Decades options and compact Preview actions remain stable at every required width", () => {
+	assert.deepEqual(mountedResults.decadesActionWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.decadesActionWidths) {
 		assert.equal(result.topBackVisible, true, `${result.width}px Back`);
 		assert.equal(result.footerOnlyPrimary, true, `${result.width}px footer`);
@@ -1476,6 +1674,16 @@ test("mounted Decades header Back and primary-only footer remain reachable at ev
 			toggleSelected: true,
 			toggleRestored: true,
 		}, `${result.width}px Decades content selection language`);
+		assert.deepEqual(result.previewGroups, {
+			deferredUntilCatalogueOpen: true,
+			groupCount: 2,
+			oneRowPerDecade: true,
+			noNestedDetails: true,
+			sourceCounts: ["11 sources", "11 sources"],
+			exactGenreActionClass: true,
+			oneActionPerDecade: true,
+			compactActions: true,
+		}, `${result.width}px compact Decades Preview actions`);
 		assert.equal(result.oldChronologyAbsent, true, `${result.width}px redundant chronology controls`);
 	}
 });

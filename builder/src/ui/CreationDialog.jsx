@@ -14,6 +14,9 @@ import {
 	DECADES_SOURCE_GROUPINGS,
 	DECADES_SORT_OPTIONS,
 	GENRE_CONCEPTS,
+	buildDecadesPreviewGroups,
+	createAsyncRequestCoordinator,
+	decadesRepresentativeItems,
 } from "../source-add/index.js";
 import { isInvisibleNuvioTitle } from "../nuvio/titles.js";
 import {
@@ -68,6 +71,8 @@ import { FranchiseSourceFlow } from "./FranchiseSourceFlow.jsx";
 import { GenreHierarchyFlow } from "./GenreHierarchyFlow.jsx";
 import { NetworkHierarchyFlow } from "./NetworkHierarchyFlow.jsx";
 import { StudioHierarchyFlow } from "./StudioHierarchyFlow.jsx";
+import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
+import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 
 const DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID = "decades-hidden-collection-titles-help";
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -455,7 +460,52 @@ function ordinaryExclusionSummary(state) {
 	return `Configured for ${configuredCount} Decade${configuredCount === 1 ? "" : "s"}`;
 }
 
-export function DecadesOptionsStep({ state, headingRef, onStateChange, onRemoveDecade = () => {}, onOpenSecondary = () => {} }) {
+export function DecadesPreviewGroup({ group, previewAvailable, onPreview }) {
+	const sourceCount = group.logicalSourceCount ?? group.rows.length;
+	return (
+		<article className="decades-preview-group">
+			<div className="decades-preview-row">
+				<span><strong>{group.decadeLabel}</strong><small>{sourceCount} source{sourceCount === 1 ? "" : "s"}</small></span>
+				<div className="genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" aria-label={`Preview titles for ${group.decadeLabel}`} disabled={!previewAvailable} onClick={(event) => onPreview(group, event.currentTarget)}>Preview titles</button></div>
+			</div>
+		</article>
+	);
+}
+
+export function DecadesPreviewCatalogue({ groups, previewAvailable, onPreview }) {
+	const [open, setOpen] = useState(false);
+	return (
+		<details className="decades-preview-catalogue" onToggle={(event) => setOpen(event.currentTarget.open)}>
+			<summary><span><strong>Preview titles</strong><small>Check the current Decade, year and Genre sources before continuing.</small></span></summary>
+			{open ? <div className="decades-preview-groups">{groups.map((group) => <DecadesPreviewGroup key={group.decadeId} group={group} previewAvailable={previewAvailable} onPreview={onPreview} />)}</div> : null}
+		</details>
+	);
+}
+
+export function DecadesTitlePreview({ preview, onChangeChoice, onChangeRequest, onClose, onRetry }) {
+	const dialogRef = useRef(null);
+	const closeRef = useRef(null);
+	const activeMedia = preview.request.mediaType === "TV" ? "Series" : "Movies";
+	const sampleSelected = preview.choice.kind === "representative-sample";
+	const items = sampleSelected
+		? decadesRepresentativeItems(preview.data?.results ?? [])
+		: preview.data?.results ?? [];
+	return (
+		<NestedPreviewDialog ariaLabelledBy="decades-preview-title" backdropClassName="franchise-preview-backdrop studio-preview-backdrop decades-preview-backdrop" backdropProps={{ "data-decades-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal studio-preview-modal decades-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
+			<header><div><p className="panel-kicker">Title preview</p><h3 id="decades-preview-title">{preview.group.decadeLabel}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
+			<div className="studio-preview-tabs decades-preview-source-selector" role="tablist" aria-label="Preview source">{preview.group.choices.map((choice) => <button key={choice.key} type="button" role="tab" aria-selected={choice.key === preview.choice.key} onClick={() => onChangeChoice(choice)}>{choice.selectorLabel}</button>)}</div>
+			<div className="decades-preview-content">
+				{sampleSelected ? <p className="decades-preview-sample-helper">{preview.choice.helper}</p> : null}
+				{preview.choice.requests.length > 1 ? <div className="studio-preview-tabs decades-preview-tabs" role="tablist" aria-label="Preview media">{preview.choice.requests.map((request) => <button key={request.mediaType} type="button" role="tab" aria-selected={request.mediaType === preview.request.mediaType} onClick={() => onChangeRequest(request)}>{request.mediaType === "TV" ? "Series" : "Movies"}</button>)}</div> : <p className="studio-preview-single-media">{activeMedia}</p>}
+				{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing {activeMedia.toLowerCase()} preview…</p> : null}
+				{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This Decade preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
+				{preview.status === "ready" ? <PosterOnlyPreviewGrid items={items} limit={10} className="franchise-preview-grid studio-preview-grid decades-preview-grid" ariaLabel={`${activeMedia} poster preview`} altPrefix={activeMedia} emptyMessage="No posters available." /> : null}
+			</div>
+		</NestedPreviewDialog>
+	);
+}
+
+export function DecadesOptionsStep({ state, headingRef, previewGroups = [], previewAvailable = false, onPreview = () => {}, onStateChange, onRemoveDecade = () => {}, onOpenSecondary = () => {} }) {
 	return (
 		<section className="decades-step decades-options-step" aria-labelledby="decades-options-title">
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="decades-options-title" ref={headingRef} tabIndex={-1}>Configure Decades</h3></div></div>
@@ -471,6 +521,7 @@ export function DecadesOptionsStep({ state, headingRef, onStateChange, onRemoveD
 			{state.content.genreBreakdown ? <DecadesGenreSummary state={state} onConfigure={(trigger) => onOpenSecondary("genres", trigger)} /> : null}
 			<DecadesOrdering state={state} onStateChange={onStateChange} />
 			<DecadesAdvancedOptions value={state.advanced} exclusionSummary={ordinaryExclusionSummary(state)} onChange={(advanced) => onStateChange(Object.freeze({ ...state, advanced }))} onOpenSecondary={onOpenSecondary} />
+			<DecadesPreviewCatalogue groups={previewGroups} previewAvailable={previewAvailable} onPreview={onPreview} />
 		</section>
 	);
 }
@@ -551,16 +602,26 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 	);
 }
 
-function DecadesFlow({ project, projectRevision, scope, currentYear, destinationCollectionInternalId, destinationCollectionTitle, onBackToLauncher, onCancel, onApply }) {
+function DecadesFlow({ project, projectRevision, scope, currentYear, destinationCollectionInternalId, destinationCollectionTitle, previewProvider, onBackToLauncher, onCancel, onApply }) {
 	const [state, setState] = useState(() => createDecadesCreationState({ scope, currentYear, destinationCollectionInternalId }));
 	const [isApplying, setIsApplying] = useState(false);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [secondarySurface, setSecondarySurface] = useState(null);
+	const [preview, setPreview] = useState(null);
 	const headingRef = useRef(null);
 	const secondaryHeadingRef = useRef(null);
 	const secondaryReturnFocusRef = useRef(null);
 	const applyingRef = useRef(false);
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(null);
+	if (previewCoordinatorRef.current === null) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 	const planResult = useMemo(() => buildDecadesCreationPlan(project, projectRevision, state), [project, projectRevision, state]);
+	const previewGroupsResult = useMemo(() => planResult.ok
+		? buildDecadesPreviewGroups(planResult.plan.configuration.source)
+		: Object.freeze({ ok: false, groups: Object.freeze([]), errors: Object.freeze([]) }), [planResult]);
+	const previewAvailable = previewGroupsResult.ok
+		&& typeof previewProvider?.getDecadePreview === "function"
+		&& typeof previewProvider?.getDecadeSample === "function";
 	const optionErrors = planResult.ok ? [] : planResult.errors.filter((entry) => !(
 		entry.code === "INVALID_DECADES_GENRES"
 		&& (entry.path === "$decades.genreNames" || entry.path.startsWith("$decades.genreNamesByDecade"))
@@ -580,6 +641,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 			focusElementWithoutScroll(target);
 		}
 	}, [secondarySurface]);
+	useEffect(() => () => previewCoordinatorRef.current?.cancel({ notify: false }), []);
 
 	function openSecondary(surface, trigger) {
 		if (surface !== "genre-exclusions") secondaryReturnFocusRef.current = trigger;
@@ -592,6 +654,35 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 
 	function returnToGenreSurface() {
 		setSecondarySurface("genres");
+	}
+
+	async function loadPreview(group, choice, request) {
+		setPreview({ status: "loading", group, choice, request, data: null, error: null });
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => choice.kind === "representative-sample"
+				? previewProvider.getDecadeSample(request.drafts, { signal })
+				: previewProvider.getDecadePreview(request.draft, { signal }),
+			`${choice.key}|${request.mediaType}`,
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", group, choice, request, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", group, choice, request, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(group, trigger) {
+		const choice = group.choices[0];
+		const request = choice?.requests[0];
+		if (!previewAvailable || secondarySurface || !request) return;
+		previewTriggerRef.current = trigger;
+		loadPreview(group, choice, request);
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
 	}
 
 	function goBack() {
@@ -645,13 +736,13 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 				onBack={goBack}
 				backAction={backAction}
 				backDisabled={isApplying}
-				inactive={Boolean(secondarySurface)}
+				inactive={Boolean(secondarySurface || preview)}
 				onClose={onCancel}
 			/>
-			<form className="add-source-form decades-creation-form" data-decades-stage={state.step} data-secondary-surface={secondarySurface ?? undefined} onSubmit={submit} noValidate>
-				<div className="add-source-scroll" inert={secondarySurface || undefined} aria-hidden={secondarySurface ? "true" : undefined}>
+			<form className="add-source-form decades-creation-form" data-decades-stage={state.step} data-secondary-surface={secondarySurface ?? undefined} data-preview-open={preview ? "true" : undefined} onSubmit={submit} noValidate>
+				<div className="add-source-scroll" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
 					{state.step === DECADES_CREATION_STEPS.PRESETS ? <DecadePresetStep state={state} headingRef={headingRef} onToggle={(id) => { setState((current) => toggleDecadePreset(current, id)); setApplyDiagnostic(null); }} onSelectAll={() => { setState(selectAllDecadePresets); setApplyDiagnostic(null); }} onClearAll={() => { setState(clearAllDecadePresets); setApplyDiagnostic(null); }} /> : null}
-					{state.step === DECADES_CREATION_STEPS.OPTIONS ? <DecadesOptionsStep state={state} headingRef={headingRef} onRemoveDecade={(id) => { setState((current) => toggleDecadePreset(current, id)); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onStateChange={(next) => { setState(next); setApplyDiagnostic(null); }} /> : null}
+					{state.step === DECADES_CREATION_STEPS.OPTIONS ? <DecadesOptionsStep state={state} headingRef={headingRef} previewGroups={previewGroupsResult.groups} previewAvailable={previewAvailable} onPreview={openPreview} onRemoveDecade={(id) => { setState((current) => toggleDecadePreset(current, id)); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onStateChange={(next) => { setState(next); setApplyDiagnostic(null); }} /> : null}
 					{state.step === DECADES_CREATION_STEPS.REVIEW ? <DecadesReviewStep state={state} planResult={planResult} headingRef={headingRef} applyDiagnostic={applyDiagnostic} onStateChange={(next) => { setState(next); setApplyDiagnostic(null); }} onCollectionTitleChange={(role, title) => { setState((current) => Object.freeze({ ...current, collectionTitles: Object.freeze({ ...current.collectionTitles, [role]: title }) })); setApplyDiagnostic(null); }} /> : null}
 					{state.step === DECADES_CREATION_STEPS.OPTIONS && optionErrors.length > 0 ? <ul className="genre-advanced-errors" role="alert">{optionErrors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
 				</div>
@@ -667,10 +758,11 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 					{secondarySurface === "ordinary-exclusions" ? <DecadesOrdinaryExclusionSubview selectedDecadeIds={state.selectedDecadeIds} selectionByDecade={Object.fromEntries(state.selectedDecadeIds.map((decadeId) => [decadeId, state.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? []]))} sharedSelection={decadesOrdinaryExclusionsForContext(state, "all")} contextId={state.genreContextId} selection={decadesOrdinaryExclusionsForContext(state)} mediaMode={state.mediaMode} onContextChange={(genreContextId) => setState((current) => Object.freeze({ ...current, genreContextId }))} onToggle={(genreName) => setState((current) => { const names = decadesOrdinaryExclusionsForContext(current); return setDecadesOrdinaryExclusionsForContext(current, names.includes(genreName) ? names.filter((name) => name !== genreName) : [...names, genreName]); })} onSelectAll={() => setState((current) => setDecadesOrdinaryExclusionsForContext(current, GENRE_CONCEPTS.filter((concept) => current.mediaMode === "movies" ? concept.movieId !== null : current.mediaMode === "series" ? concept.tvId !== null : concept.movieId !== null || concept.tvId !== null).map((concept) => concept.name)))} onClearAll={() => setState((current) => setDecadesOrdinaryExclusionsForContext(current, []))} onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
 					{secondarySurface === "advanced-help" ? <DecadesAdvancedHelpSubview onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
 				</div> : null}
-				{!secondarySurface ? <footer className="add-source-actions decades-creation-actions">
+				{!secondarySurface ? <footer className="add-source-actions decades-creation-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 					<button className="editor-apply" type="submit" disabled={primaryDisabled}>{primaryLabel}</button>
 				</footer> : null}
 			</form>
+			{preview ? <DecadesTitlePreview preview={preview} onChangeChoice={(choice) => loadPreview(preview.group, choice, choice.requests.find((request) => request.mediaType === preview.request.mediaType) ?? choice.requests[0])} onChangeRequest={(request) => loadPreview(preview.group, preview.choice, request)} onClose={closePreview} onRetry={() => loadPreview(preview.group, preview.choice, preview.request)} /> : null}
 		</>
 	);
 }
@@ -701,6 +793,7 @@ export function CreationDialog({
 	networkPreviewProvider,
 	networkArtworkRuntimeClient,
 	genrePreviewProvider,
+	decadePreviewProvider,
 }) {
 	const [optionId, setOptionId] = useState(() => creationOptionSupportsScope(initialOptionId, scope) ? initialOptionId : null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
@@ -742,7 +835,7 @@ export function CreationDialog({
 						<CreationHeader title={scope === "new-folder" ? "What folder would you like to create?" : "What collection would you like to create?"} description="Choose Blank or a guided starting point." onClose={onCancel} />
 						<CreationLauncher firstOptionRef={firstOptionRef} onSelect={selectOption} scope={scope} />
 					</> : optionId === CREATION_OPTION_IDS.DECADES ? (
-						<DecadesFlow project={project} projectRevision={projectRevision} scope={scope} currentYear={currentYear} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} onBackToLauncher={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyDecades} />
+						<DecadesFlow project={project} projectRevision={projectRevision} scope={scope} currentYear={currentYear} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={decadePreviewProvider} onBackToLauncher={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyDecades} />
 					) : optionId === CREATION_OPTION_IDS.PEOPLE ? (
 						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
 					) : optionId === CREATION_OPTION_IDS.FRANCHISES ? (

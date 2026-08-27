@@ -730,7 +730,10 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.match(styles, /\.people-source-pill\[data-people-role="directing"\]/);
 	assert.match(flow, /people-title-preview-backdrop nested-modal-backdrop/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);
+	assert.match(styles, /\.people-title-preview-backdrop\s*\{[\s\S]*place-items:\s*center/);
 	assert.match(styles, /\.people-title-preview\s*\{[\s\S]*max-height:/);
+	assert.doesNotMatch(styles, /\.people-title-preview-backdrop\s*\{[^}]*align-items:\s*end/);
+	assert.doesNotMatch(styles, /\.people-title-preview\s*\{[^}]*border-radius:\s*16px 16px 0 0/);
 	assert.match(styles, /\.people-title-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5/);
 	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*max-height:[\s\S]*overflow-y:\s*auto/);
 	assert.match(styles, /\.people-bulk-list\s*\{[\s\S]*align-content:\s*start;[\s\S]*grid-auto-rows:\s*max-content;/);

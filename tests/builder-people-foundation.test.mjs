@@ -339,8 +339,8 @@ test("poster-only People previews separate media, combine selected roles, dedupl
 	assert.equal(buildPeopleTitlePreview({ id: 31, combinedCredits: null }, { combinations, limit: 5 }).ok, false);
 	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: [], limit: 5 }), { ok: true, mediaType: null, totalResults: 0, items: [], errors: [] });
 	assert.equal(buildPeopleTitlePreview(person, { combinations: ["acting-movies"], mediaType: "TV", limit: 5 }).ok, false);
-	assert.equal(peopleTitlePreviewLimit(360), 5);
-	assert.equal(peopleTitlePreviewLimit(520), 5);
+	assert.equal(peopleTitlePreviewLimit(360), 10);
+	assert.equal(peopleTitlePreviewLimit(520), 10);
 	assert.equal(peopleTitlePreviewLimit(521), 10);
 	assert.equal(peopleTitlePreviewLimit(1440), 10);
 	const manyCredits = normalizePersonCombinedCredits({

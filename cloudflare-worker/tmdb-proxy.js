@@ -80,6 +80,38 @@ const GENRE_DISCOVER_PARAMETERS = Object.freeze({
     "with_origin_country",
   ]),
 });
+const DECADE_DISCOVER_PARAMETERS = Object.freeze({
+  "/3/discover/movie": new Set([
+    "include_adult",
+    "without_genres",
+    "sort_by",
+    "primary_release_date.gte",
+    "primary_release_date.lte",
+    "vote_average.gte",
+    "vote_average.lte",
+    "vote_count.gte",
+    "with_original_language",
+    "with_origin_country",
+  ]),
+  "/3/discover/tv": new Set([
+    "include_adult",
+    "without_genres",
+    "sort_by",
+    "first_air_date.gte",
+    "first_air_date.lte",
+    "vote_average.gte",
+    "vote_average.lte",
+    "vote_count.gte",
+    "with_original_language",
+    "with_origin_country",
+  ]),
+});
+const STREAMING_DISCOVER_PARAMETERS = new Set([
+  "include_adult",
+  "sort_by",
+  "watch_region",
+  "with_watch_providers",
+]);
 
 function isCanonicalPositiveSafeInteger(value) {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
@@ -127,16 +159,111 @@ function isCanonicalPositiveIdList(value) {
   return ids.every(isCanonicalPositiveSafeInteger) && new Set(ids).size === ids.length;
 }
 
+function hasUniqueParameters(entries) {
+  return entries.length === new Set(entries.map(([key]) => key)).size;
+}
+
+function hasCanonicalAdultPolicy(url) {
+  const includeAdult = url.searchParams.getAll("include_adult");
+  return includeAdult.length === 1 && includeAdult[0] === "false";
+}
+
+function hasAllowedRatingsAndLocale(url) {
+  const lowerRating = url.searchParams.get("vote_average.gte");
+  const upperRating = url.searchParams.get("vote_average.lte");
+  if (
+    (lowerRating !== null && !isCanonicalRating(lowerRating)) ||
+    (upperRating !== null && !isCanonicalRating(upperRating)) ||
+    (lowerRating !== null && upperRating !== null && Number(lowerRating) > Number(upperRating))
+  ) {
+    return false;
+  }
+
+  const minimumVotes = url.searchParams.get("vote_count.gte");
+  const language = url.searchParams.get("with_original_language");
+  const country = url.searchParams.get("with_origin_country");
+  return (
+    (minimumVotes === null || isCanonicalNonnegativeSafeInteger(minimumVotes)) &&
+    (language === null || /^[a-z]{2}$/.test(language)) &&
+    (country === null || /^[A-Z]{2}$/.test(country))
+  );
+}
+
+function isCanonicalDecadePeriod(lowerDate, upperDate) {
+  if (lowerDate === null) {
+    return upperDate === "1949-12-31" || upperDate === "1959-12-31";
+  }
+  const lowerMatch = /^(\d{4})-01-01$/.exec(lowerDate);
+  const upperMatch = /^(\d{4})-12-31$/.exec(upperDate ?? "");
+  if (!lowerMatch || !upperMatch) return false;
+  const startYear = Number(lowerMatch[1]);
+  const endYear = Number(upperMatch[1]);
+  if (startYear === endYear) return startYear >= 1950 && startYear <= 2029;
+  return startYear >= 1960 && startYear <= 2020 && startYear % 10 === 0 && endYear === startYear + 9;
+}
+
+function isAllowedDateOnlyDecadeDiscoverRequest(url, entries) {
+  const allowedParameters = DECADE_DISCOVER_PARAMETERS[url.pathname];
+  if (
+    !hasCanonicalAdultPolicy(url) ||
+    !hasUniqueParameters(entries) ||
+    entries.some(([key]) => !allowedParameters.has(key))
+  ) {
+    return false;
+  }
+
+  const sorts = url.searchParams.getAll("sort_by");
+  if (sorts.length !== 1 || !GENRE_DISCOVER_SORTS[url.pathname].has(sorts[0])) return false;
+
+  const lowerDateKey = url.pathname === "/3/discover/movie" ? "primary_release_date.gte" : "first_air_date.gte";
+  const upperDateKey = url.pathname === "/3/discover/movie" ? "primary_release_date.lte" : "first_air_date.lte";
+  const lowerDate = url.searchParams.get(lowerDateKey);
+  const upperDate = url.searchParams.get(upperDateKey);
+  if (
+    (lowerDate !== null && !isCanonicalDate(lowerDate)) ||
+    (upperDate !== null && !isCanonicalDate(upperDate)) ||
+    !isCanonicalDecadePeriod(lowerDate, upperDate)
+  ) {
+    return false;
+  }
+
+  const withoutGenres = url.searchParams.get("without_genres");
+  return (
+    (withoutGenres === null || isCanonicalPositiveIdList(withoutGenres)) &&
+    hasAllowedRatingsAndLocale(url)
+  );
+}
+
+function isAllowedStreamingDiscoverRequest(url, entries) {
+  if (
+    !hasCanonicalAdultPolicy(url) ||
+    !hasUniqueParameters(entries) ||
+    entries.length !== STREAMING_DISCOVER_PARAMETERS.size ||
+    entries.some(([key]) => !STREAMING_DISCOVER_PARAMETERS.has(key))
+  ) {
+    return false;
+  }
+  const providers = url.searchParams.getAll("with_watch_providers");
+  const regions = url.searchParams.getAll("watch_region");
+  const sorts = url.searchParams.getAll("sort_by");
+  return (
+    providers.length === 1 &&
+    isCanonicalPositiveSafeInteger(providers[0]) &&
+    regions.length === 1 &&
+    /^[A-Z]{2}$/.test(regions[0]) &&
+    sorts.length === 1 &&
+    GENRE_DISCOVER_SORTS[url.pathname].has(sorts[0])
+  );
+}
+
 function isAllowedGenreDiscoverRequest(url, entries) {
   const allowedParameters = GENRE_DISCOVER_PARAMETERS[url.pathname];
   const includedGenres = url.searchParams.getAll("with_genres");
-  const includeAdult = url.searchParams.getAll("include_adult");
   if (
     includedGenres.length !== 1 ||
     !isCanonicalPositiveSafeInteger(includedGenres[0]) ||
-    includeAdult.length !== 1 ||
-    includeAdult[0] !== "false" ||
-    entries.length !== new Set(entries.map(([key]) => key)).size ||
+    !hasCanonicalAdultPolicy(url) ||
+    !hasUniqueParameters(entries) ||
     entries.some(([key]) => !allowedParameters.has(key))
   ) {
     return false;
@@ -167,24 +294,7 @@ function isAllowedGenreDiscoverRequest(url, entries) {
     return false;
   }
 
-  const lowerRating = url.searchParams.get("vote_average.gte");
-  const upperRating = url.searchParams.get("vote_average.lte");
-  if (
-    (lowerRating !== null && !isCanonicalRating(lowerRating)) ||
-    (upperRating !== null && !isCanonicalRating(upperRating)) ||
-    (lowerRating !== null && upperRating !== null && Number(lowerRating) > Number(upperRating))
-  ) {
-    return false;
-  }
-
-  const minimumVotes = url.searchParams.get("vote_count.gte");
-  const language = url.searchParams.get("with_original_language");
-  const country = url.searchParams.get("with_origin_country");
-  return (
-    (minimumVotes === null || isCanonicalNonnegativeSafeInteger(minimumVotes)) &&
-    (language === null || /^[a-z]{2}$/.test(language)) &&
-    (country === null || /^[A-Z]{2}$/.test(country))
-  );
+  return hasAllowedRatingsAndLocale(url);
 }
 
 function isAllowedTmdbRequest(url) {
@@ -209,10 +319,22 @@ function isAllowedTmdbRequest(url) {
   const companyIds = url.searchParams.getAll("with_companies");
   const networkIds = url.searchParams.getAll("with_networks");
   const genreIds = url.searchParams.getAll("with_genres");
+  const watchProviderIds = url.searchParams.getAll("with_watch_providers");
+  const watchRegions = url.searchParams.getAll("watch_region");
   const sorts = url.searchParams.getAll("sort_by");
 
   if (genreIds.length > 0) {
     return isAllowedGenreDiscoverRequest(url, entries);
+  }
+
+  if (watchProviderIds.length > 0 || watchRegions.length > 0) {
+    return isAllowedStreamingDiscoverRequest(url, entries);
+  }
+
+  const lowerDateKey = url.pathname === "/3/discover/movie" ? "primary_release_date.gte" : "first_air_date.gte";
+  const upperDateKey = url.pathname === "/3/discover/movie" ? "primary_release_date.lte" : "first_air_date.lte";
+  if (url.searchParams.has(lowerDateKey) || url.searchParams.has(upperDateKey)) {
+    return isAllowedDateOnlyDecadeDiscoverRequest(url, entries);
   }
 
   if (networkIds.length > 0) {

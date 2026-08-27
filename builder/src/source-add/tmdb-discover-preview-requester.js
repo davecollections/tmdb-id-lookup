@@ -107,7 +107,7 @@ export function createTmdbDiscoverPreviewRequester({
 } = {}) {
 	if (fetchImpl !== undefined && typeof fetchImpl !== "function") throw new TypeError("A fetch implementation is required.");
 	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new TypeError("The TMDB request timeout must be positive.");
-	if (typeof queryParameter !== "string" || !queryParameter) throw new TypeError("A TMDB Discover query parameter is required.");
+	if (queryParameter !== undefined && (typeof queryParameter !== "string" || !queryParameter)) throw new TypeError("A TMDB Discover query parameter must be a nonempty string when supplied.");
 	if (!plainObject(previewPaths) || Object.keys(previewPaths).length === 0) throw new TypeError("TMDB Discover preview paths are required.");
 	if (typeof entityLabel !== "string" || !entityLabel) throw new TypeError("A TMDB preview entity label is required.");
 	if (typeof entityType !== "string" || !entityType) throw new TypeError("A TMDB preview entity type is required.");
@@ -159,7 +159,9 @@ export function createTmdbDiscoverPreviewRequester({
 
 	async function getPreview(entityId, mediaType, sortBy, { signal } = {}) {
 		if (
-			!Number.isSafeInteger(entityId)
+			typeof queryParameter !== "string"
+			|| !queryParameter
+			|| !Number.isSafeInteger(entityId)
 			|| entityId < 1
 			|| typeof previewPaths[mediaType] !== "string"
 			|| typeof sortBy !== "string"

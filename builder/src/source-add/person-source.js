@@ -161,8 +161,8 @@ export function isVerifiedPeopleSort(value, mediaType) {
 	return typeof value === "string" && peopleSortOptionId(value, mediaType) !== null;
 }
 
-export function peopleTitlePreviewLimit(viewportWidth) {
-	return Number.isFinite(viewportWidth) && viewportWidth <= 520 ? 5 : 10;
+export function peopleTitlePreviewLimit() {
+	return 10;
 }
 
 export function peoplePreviewMediaTypes(combinations) {

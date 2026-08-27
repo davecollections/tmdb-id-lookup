@@ -8,7 +8,7 @@ import {
 	safeSourceEditTitle,
 } from "./source-edit-utils.js";
 
-function resolveExactSource(project, binding) {
+export function resolveExactSource(project, binding) {
 	const collection = project?.collections?.find((entry) => (
 		entry.internalId === binding.collectionInternalId
 	)) ?? null;

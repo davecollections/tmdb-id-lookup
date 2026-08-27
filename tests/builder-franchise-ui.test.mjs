@@ -121,7 +121,8 @@ test("title preview is a bounded poster-only body portal with explicit Close and
 	assert.match(posterGrid, /No posters available\./);
 	assert.match(flow, />Close<\/button>/);
 	assert.match(styles, /\.franchise-preview-modal[\s\S]*max-height:/);
-	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.franchise-preview-grid img:nth-child\(n \+ 6\)/);
+	assert.doesNotMatch(styles, /\.franchise-preview-grid img:nth-child\(n \+ 6\)/);
+	assert.match(styles, /\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5[\s\S]*overflow-x:\s*hidden/);
 	assert.match(styles, /--layer-add-source:\s*3000/);
 	assert.match(styles, /--layer-nested-modal:\s*4000/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);

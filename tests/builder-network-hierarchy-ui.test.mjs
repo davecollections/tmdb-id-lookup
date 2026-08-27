@@ -217,7 +217,7 @@ test("Select uses accessible full-card checkboxes, stable focus, and one scroll 
 	assert.doesNotMatch(networkFlow, /autoFocus/);
 });
 
-test("required responsive owner widths retain 5-mobile and 10-desktop poster behavior", () => {
+test("required responsive owner widths use the same 10-poster maximum", () => {
 	const widths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
 	assert.deepEqual(widths.filter((width) => width <= 520), [360, 384, 393, 402, 412]);
 	assert.deepEqual(widths.filter((width) => width >= 900), [900, 901, 1280]);
@@ -226,8 +226,8 @@ test("required responsive owner widths retain 5-mobile and 10-desktop poster beh
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*safe-area-inset-bottom/);
 	assert.match(flow, /className="[^\"]*studio-preview-grid network-preview-grid"/);
-	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-preview-grid img:nth-child\(n \+ 6\)[\s\S]*display:\s*none/);
-	assert.match(styles, /@media \(min-width: 521px\) and \(max-width: 620px\)[\s\S]*\.studio-preview-grid img:nth-child\(n \+ 6\)[\s\S]*display:\s*block/);
+	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5/);
 	assert.match(posterGrid, /slice\(0, limit\)/);
 	assert.match(flow, /<PosterOnlyPreviewGrid items=\{items\} limit=\{10\}/);
 });
