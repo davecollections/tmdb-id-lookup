@@ -64,6 +64,32 @@ export const DECADE_PRESETS = Object.freeze([
 
 export const DECADE_PRESET_IDS = Object.freeze(DECADE_PRESETS.map((preset) => preset.id));
 
+const exactYearPeriods = Object.freeze(Array.from({ length: 80 }, (_, index) => yearPeriod(1950 + index)));
+
+export const DECADE_SOURCE_PERIOD_GROUPS = Object.freeze([
+	Object.freeze({
+		id: "canonical-periods",
+		label: "Periods",
+		periods: Object.freeze([
+			...DECADE_PRESETS.map((preset) => preset.wholePeriod),
+			BEFORE_1950_PERIOD,
+		]),
+	}),
+	Object.freeze({
+		id: "exact-years",
+		label: "Exact years",
+		periods: exactYearPeriods,
+	}),
+]);
+
+export const DECADE_SOURCE_PERIODS = Object.freeze(DECADE_SOURCE_PERIOD_GROUPS.flatMap((group) => group.periods));
+
+const sourcePeriodsById = new Map(DECADE_SOURCE_PERIODS.map((period) => [period.id, period]));
+
+export function decadeSourcePeriodById(id) {
+	return sourcePeriodsById.get(id) ?? null;
+}
+
 export const DECADE_CURRENT_YEAR_MODES = Object.freeze([
 	Object.freeze({ id: "through-current-year", label: "Through current year" }),
 	Object.freeze({ id: "current-year-only", label: "Current year only" }),
@@ -107,6 +133,27 @@ export function decadeIndividualPeriods(presetId, {
 		else if (currentYearMode !== "full-decade") return null;
 	}
 	return Object.freeze(years.map(yearPeriod));
+}
+
+export function decadeSourcePeriodChoices(presetId) {
+	const preset = decadePresetById(presetId);
+	if (preset === null) return Object.freeze([]);
+	return Object.freeze([
+		preset.wholePeriod,
+		...decadeIndividualPeriods(presetId, { currentYearMode: "full-decade" }),
+	]);
+}
+
+export function toggleDecadeSourcePeriodSelection(presetId, selectedPeriodIds, toggledPeriodId) {
+	const choices = decadeSourcePeriodChoices(presetId);
+	if (choices.length === 0 || !choices.some((period) => period.id === toggledPeriodId)) return Object.freeze([]);
+	const wholePeriodId = choices[0].id;
+	if (toggledPeriodId === wholePeriodId) return Object.freeze([wholePeriodId]);
+	const selectedIndividuals = new Set((Array.isArray(selectedPeriodIds) ? selectedPeriodIds : []).filter((periodId) => periodId !== wholePeriodId));
+	if (selectedIndividuals.has(toggledPeriodId)) selectedIndividuals.delete(toggledPeriodId);
+	else selectedIndividuals.add(toggledPeriodId);
+	if (selectedIndividuals.size === 0) return Object.freeze([wholePeriodId]);
+	return Object.freeze(choices.filter((period) => selectedIndividuals.has(period.id)).map((period) => period.id));
 }
 
 function hasMeaningfulDate(value) {

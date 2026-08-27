@@ -89,7 +89,7 @@ function configureMarkup(overrides = {}) {
 	}));
 }
 
-test("Add Source exposes Genres sixth without changing the preceding mode order", () => {
+test("Add Source keeps Genres sixth and exposes Decade last without changing the preceding mode order", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, {
 		folderName: "Genres",
 		onCancel() {},
@@ -103,8 +103,10 @@ test("Add Source exposes Genres sixth without changing the preceding mode order"
 		"tmdb-networks",
 		"tmdb-streaming-services",
 		"tmdb-genres",
+		"tmdb-decade",
 	]);
 	assert.ok(markup.includes("<strong>Genres</strong>"));
+	assert.ok(markup.includes("<strong>Decade</strong>"));
 });
 
 test("Genre Browse is local, searchable and uses a compact 27-item selection summary", () => {

@@ -113,7 +113,7 @@ test("Add Source picker exposes Studios with the approved user-facing wording", 
 	assert.ok(markup.includes("<strong>Studios</strong>"));
 	assert.ok(markup.includes("Add Movie or Series sources for one studio."));
 	assert.equal(markup.includes("Studios &amp; Companies"), false);
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 6);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
 });
 
 test("Studio result cards explicitly distinguish positive, zero, and unknown Movie Count values", () => {

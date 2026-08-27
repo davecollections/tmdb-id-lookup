@@ -27,6 +27,53 @@ function optionIsAvailable(concept, mediaMode) {
 			: concept.movieId !== null || concept.tvId !== null;
 }
 
+export function DecadeSingleExclusionSubview({ selection, mediaMode, includedGenre = null, onToggle, onSelectAll, onClearAll, onDone, focusRef }) {
+	const available = GENRE_CONCEPTS.filter((concept) => optionIsAvailable(concept, mediaMode) && concept.name !== includedGenre);
+	return (
+		<section className="genre-advanced-subview decades-exclusion-subview decade-source-exclusion-subview" aria-labelledby="decade-source-exclusion-title">
+			<header><div><p className="panel-kicker">Advanced options</p><h4 id="decade-source-exclusion-title" tabIndex={-1} ref={focusRef}>Genre exclusions</h4></div><button type="button" className="editor-apply genre-secondary-done" onClick={onDone}>Done</button></header>
+			<p className="genre-advanced-secondary-guidance">Choose official Genres to leave out of this Decade configuration. Each generated media source receives only compatible exclusions.</p>
+			<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
+			<GenreCatalogueList concepts={available} selection={selection} onChoose={onToggle} />
+		</section>
+	);
+}
+
+export function DecadeBundleExclusionSubview({ selectedGenreNames, selectionByContext, contextId, selection, mediaMode, onContextChange, onToggle, onSelectAll, onClearAll, onDone, focusRef }) {
+	const includedGenre = contextId.startsWith("genre:") ? contextId.slice("genre:".length) : null;
+	const available = GENRE_CONCEPTS.filter((concept) => optionIsAvailable(concept, mediaMode) && concept.name !== includedGenre);
+	const contexts = [
+		{ id: "general", label: "Main source", summary: `${selectionByContext.general?.length ?? 0} excluded` },
+		...selectedGenreNames.map((genreName) => ({
+			id: `genre:${genreName}`,
+			label: `${genreName} source`,
+			summary: `${selectionByContext[`genre:${genreName}`]?.length ?? 0} excluded`,
+		})),
+	];
+	return (
+		<GenreContextCatalogueSubview
+			activeContextId={contextId}
+			backLabel="Back to sources"
+			className="decade-source-exclusion-subview"
+			contexts={contexts}
+			contextTitle="Generated source contexts"
+			detailGuidance="Each generated media source receives only compatible exclusions."
+			detailTitle={(context) => `Exclude from ${context.label}`}
+			emptyText="Then choose Genres to leave out of it."
+			emptyTitle="Choose a generated source on the left"
+			focusRef={focusRef}
+			guidance="Configure the main source and each selected Genre source independently."
+			onContextChange={onContextChange}
+			onDone={onDone}
+			title="Genre exclusions"
+			titleId="decade-source-exclusion-title"
+		>
+			<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
+			<GenreCatalogueList concepts={available} selection={selection} onChoose={onToggle} />
+		</GenreContextCatalogueSubview>
+	);
+}
+
 export function DecadesOrdinaryExclusionSubview({ selectedDecadeIds, selectionByDecade, sharedSelection, contextId, selection, mediaMode, onContextChange, onToggle, onSelectAll, onClearAll, onDone, focusRef }) {
 	const available = GENRE_CONCEPTS.filter((concept) => optionIsAvailable(concept, mediaMode));
 	const contexts = [

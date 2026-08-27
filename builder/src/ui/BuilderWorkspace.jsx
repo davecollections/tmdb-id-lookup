@@ -8,6 +8,7 @@ import {
 	applyStudioHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
+	createDecadeSourceBundle,
 	applyDecadesHierarchyPlan,
 	createMovieFranchiseSource,
 	createNetworkCatalogueProvider,
@@ -32,6 +33,7 @@ import {
 	STUDIO_SOURCE_MODE_ID,
 	STREAMING_SOURCE_MODE_ID,
 	GENRE_SOURCE_MODE_ID,
+	DECADE_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
@@ -83,6 +85,7 @@ import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
 import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
+import { DecadeSourceFlow } from "./DecadeSourceFlow.jsx";
 import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
 import {
 	updateNodeEditorField,
@@ -1549,7 +1552,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID].includes(modeId)
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -1802,6 +1805,39 @@ export function BuilderWorkspace({
 			setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
 			queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} Genre source${result.addedSourceCount === 1 ? "" : "s"}.`));
 		}
+		return result;
+	}
+
+	function applyDecadeSources(bundle) {
+		if (!visibleAddSourceSession || visibleAddSourceSession.context !== "folder") {
+			return {
+				ok: false,
+				errors: [{ code: "DECADE_SOURCE_FOLDER_UNAVAILABLE", path: "$decadeSource.destination", message: "The selected Decade destination is no longer available." }],
+			};
+		}
+		const result = createDecadeSourceBundle(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			periodIds: bundle.periodIds,
+			mediaMode: bundle.mediaMode,
+			genreNames: bundle.genreNames,
+			sortOptionId: bundle.sortOptionId,
+			advanced: bundle.advanced,
+			drafts: bundle.drafts,
+			duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+			interactionLocked: (
+				editorLocked
+				|| deleteLocked
+				|| returnConfirmationOpen
+				|| actionsMenuInternalId !== null
+				|| pointerInteractionLocked()
+			),
+		});
+		if (!result.ok) return result;
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} Decade source${result.addedSourceCount === 1 ? "" : "s"}.`));
 		return result;
 	}
 
@@ -2704,6 +2740,15 @@ export function BuilderWorkspace({
 						onBack={returnToSourceModePicker}
 						onCancel={cancelAddSource}
 						onApply={applyGenreSources}
+					/>
+				) : visibleAddSourceSession.modeId === DECADE_SOURCE_MODE_ID ? (
+					<DecadeSourceFlow
+						project={state.project}
+						folder={addSourceFolder}
+						previewProvider={decadePreviewProviderRef.current}
+						onBack={returnToSourceModePicker}
+						onCancel={cancelAddSource}
+						onApply={applyDecadeSources}
 					/>
 				) : (
 					<AddSourceDialog

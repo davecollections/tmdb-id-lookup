@@ -102,7 +102,7 @@ function renderSearch({ context = "folder", results = [person()], selection = cr
 	}));
 }
 
-test("source chooser retains the established first five modes before Genres", () => {
+test("source chooser retains the established first five modes before Genres and Decade", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "People", onCancel() {}, onSelectMode() {} }));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-movie-franchise"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-people"'));
@@ -110,7 +110,8 @@ test("source chooser retains the established first five modes before Genres", ()
 	assert.ok(markup.includes('data-source-mode-option="tmdb-networks"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-streaming-services"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-genres"'));
-	assert.equal((markup.match(/<button/g) ?? []).length, 7);
+	assert.ok(markup.includes('data-source-mode-option="tmdb-decade"'));
+	assert.equal((markup.match(/<button/g) ?? []).length, 8);
 });
 
 test("folder Search preserves TMDB order, disambiguates identities, and uses friendly profile states", () => {

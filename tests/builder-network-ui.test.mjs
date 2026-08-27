@@ -89,7 +89,7 @@ test("Add Source picker exposes Networks with product wording and no internal so
 	assert.ok(markup.includes("<strong>Networks</strong>"));
 	assert.ok(markup.includes("Add one Series source for a TV Network."));
 	assert.equal(markup.includes("NETWORK"), false);
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 6);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
 });
 
 test("Network result cards show only logo, identity, location, and quiet TMDB ID", () => {
@@ -247,7 +247,7 @@ test("Network flow reuses proven mobile dialog controls at every required width"
 test("Workspace routes Network providers through one atomic Add path and Source Edit", () => {
 	const source = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(source, /NETWORK_SOURCE_MODE_ID/);
-	assert.match(source, /\[MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID\]\.includes\(modeId\)/);
+	assert.match(source, /\[MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID\]\.includes\(modeId\)/);
 	assert.match(source, /<NetworkSourceFlow/);
 	assert.match(source, /catalogueProvider=\{networkCatalogueProviderRef\.current\}/);
 	assert.match(source, /countProvider=\{networkCountProviderRef\.current\}/);

@@ -6532,6 +6532,121 @@ body.hierarchy-pointer-dragging .builder-shell {
 	width: min(760px, calc(100vw - 32px));
 }
 
+.decade-source-dialog {
+	width: min(760px, calc(100vw - 32px));
+}
+
+.decade-source-editor {
+	display: grid;
+	min-width: 0;
+	gap: 18px;
+}
+
+.decade-source-genre-sources {
+	display: grid;
+	min-width: 0;
+	gap: 7px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.decade-source-genre-sources legend {
+	margin-bottom: 2px;
+	font-size: 0.75rem;
+	font-weight: 850;
+}
+
+.decade-source-genre-sources legend span {
+	color: var(--muted);
+	font-size: 0.66rem;
+	font-weight: 700;
+}
+
+.decade-source-genre-eligibility {
+	margin-top: -3px;
+}
+
+.genre-catalogue-list.decade-source-genre-pill-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+
+.decade-source-genre-pill-list li {
+	flex: 0 0 auto;
+}
+
+.decade-source-genre-pill-list .genre-catalogue-choice {
+	display: inline-grid;
+	width: auto;
+	min-height: 40px;
+	grid-template-columns: auto;
+	gap: 0;
+	padding: 7px 11px;
+	border-radius: 999px;
+}
+
+.decade-source-genre-pill-list .genre-catalogue-choice:focus-within {
+	outline: 2px solid var(--cyan-bright);
+	outline-offset: 2px;
+}
+
+.decade-source-genre-pill-list strong {
+	font-size: 0.68rem;
+}
+
+.decade-source-editor [data-decade-source-control="decade"] label,
+.decade-source-editor [data-decade-source-control="year"] label {
+	min-height: 40px;
+}
+
+.studio-preview-modal.decades-preview-modal.decade-add-preview-modal[data-has-dimensions="false"] {
+	grid-template-rows: auto minmax(0, 1fr);
+}
+
+.decade-add-preview-dimensions {
+	display: grid;
+	min-width: 0;
+	gap: 8px;
+}
+
+.decade-add-preview-dimension {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: 10px;
+}
+
+.decade-add-preview-dimension > span {
+	color: var(--muted);
+	font-size: 0.64rem;
+	font-weight: 850;
+}
+
+.decade-add-preview-dimension .decades-preview-source-selector {
+	padding-bottom: 3px;
+}
+
+.decade-source-generated,
+.decade-source-review-list {
+	min-width: 0;
+}
+
+.decade-source-generated {
+	display: grid;
+	gap: 10px;
+}
+
+.decade-source-preview-action {
+	justify-content: flex-start;
+}
+
+.decade-source-exclusion-subview .genre-catalogue-list {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .genre-search-control {
 	display: flex;
 	align-items: stretch;
@@ -6819,14 +6934,17 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .genre-source-dialog,
+.decade-source-dialog,
 .source-edit-dialog {
 	position: relative;
 }
 
 .genre-source-dialog[data-secondary-surface] > .add-source-heading,
+.decade-source-dialog[data-secondary-surface] > .add-source-heading,
 .source-edit-dialog[data-secondary-surface] > .add-source-heading,
 .source-edit-dialog[data-preview-open] > .add-source-heading,
 .genre-source-dialog[data-secondary-surface] .add-source-scroll,
+.decade-source-dialog[data-secondary-surface] .add-source-scroll,
 .source-edit-dialog[data-secondary-surface] .source-edit-scroll,
 .source-edit-dialog[data-preview-open] .source-edit-scroll,
 .source-edit-dialog[data-preview-open] .source-edit-actions,
@@ -7126,7 +7244,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (max-width: 900px) {
-	.genre-source-dialog {
+	.genre-source-dialog,
+	.decade-source-dialog {
 		width: 100%;
 	}
 
@@ -7215,7 +7334,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (min-width: 900px) {
-	.genre-source-dialog {
+	.genre-source-dialog,
+	.decade-source-dialog {
 		height: auto;
 		max-height: min(800px, calc(100% - 48px));
 		align-self: center;
@@ -7227,6 +7347,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.genre-advanced-grid,
 	.genre-exclusion-picker-list,
 	.decades-exclusion-subview .genre-catalogue-list,
+	.decade-source-exclusion-subview .genre-catalogue-list,
 	.genre-help-subview dl div,
 	.genre-selected-disclosure ul {
 		grid-template-columns: minmax(0, 1fr);

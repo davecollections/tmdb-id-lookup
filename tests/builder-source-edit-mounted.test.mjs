@@ -195,9 +195,19 @@ async function runMountedPage() {
 				const genreLivePreviewWidths = [];
 				const sourceEditLivePreviewWidths = [];
 				const decadesLivePreviewWidths = [];
+				const decadeSourceLayoutWidths = [];
+				const decadeSourceLivePreviewWidths = [];
+				let decadeSourceGenreKeyboard = null;
 				let shortHeightPreviewGeometry = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					const decadeSourceLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runDecadeSourceLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (decadeSourceLayoutEvaluation.exceptionDetails) throw new Error(decadeSourceLayoutEvaluation.exceptionDetails.exception?.description ?? decadeSourceLayoutEvaluation.exceptionDetails.text);
+					decadeSourceLayoutWidths.push(decadeSourceLayoutEvaluation.result?.value);
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleConfigureLayoutScenario()",
 						awaitPromise: true,
@@ -248,6 +258,22 @@ async function runMountedPage() {
 					if (genreNewFolderSummaryEvaluation.exceptionDetails) throw new Error(genreNewFolderSummaryEvaluation.exceptionDetails.exception?.description ?? genreNewFolderSummaryEvaluation.exceptionDetails.text);
 					genreNewFolderSummaryWidths.push(genreNewFolderSummaryEvaluation.result?.value);
 				}
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+				const decadeSourceGenreKeyboardBefore = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__prepareDecadeSourceGenreKeyboardScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (decadeSourceGenreKeyboardBefore.exceptionDetails) throw new Error(decadeSourceGenreKeyboardBefore.exceptionDetails.exception?.description ?? decadeSourceGenreKeyboardBefore.exceptionDetails.text);
+				await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: " ", code: "Space", text: " ", unmodifiedText: " ", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+				await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32, nativeVirtualKeyCode: 32 });
+				const decadeSourceGenreKeyboardAfter = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__finishDecadeSourceGenreKeyboardScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (decadeSourceGenreKeyboardAfter.exceptionDetails) throw new Error(decadeSourceGenreKeyboardAfter.exceptionDetails.exception?.description ?? decadeSourceGenreKeyboardAfter.exceptionDetails.text);
+				decadeSourceGenreKeyboard = { ...decadeSourceGenreKeyboardBefore.result?.value, ...decadeSourceGenreKeyboardAfter.result?.value };
 				const networkDeferredArtworkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runNetworkDeferredArtworkScenario()",
 					awaitPromise: true,
@@ -279,6 +305,13 @@ async function runMountedPage() {
 					if (sourceEditLivePreviewEvaluation.exceptionDetails) throw new Error(sourceEditLivePreviewEvaluation.exceptionDetails.exception?.description ?? sourceEditLivePreviewEvaluation.exceptionDetails.text);
 					sourceEditLivePreviewWidths.push(sourceEditLivePreviewEvaluation.result?.value);
 					if (process.env.TMDB_DECADES_PREVIEW_DEPLOYED === "1") {
+						const decadeSourceLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+							expression: "window.__runDecadeSourceLivePreviewScenario()",
+							awaitPromise: true,
+							returnByValue: true,
+						});
+						if (decadeSourceLivePreviewEvaluation.exceptionDetails) throw new Error(decadeSourceLivePreviewEvaluation.exceptionDetails.exception?.description ?? decadeSourceLivePreviewEvaluation.exceptionDetails.text);
+						decadeSourceLivePreviewWidths.push(decadeSourceLivePreviewEvaluation.result?.value);
 						const decadesLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 							expression: "window.__runDecadesLivePreviewScenario()",
 							awaitPromise: true,
@@ -368,7 +401,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -442,6 +475,14 @@ async function runMountedPage() {
 			geometry: result.geometry,
 			currentGeometry: result.currentGeometry,
 			zeroMutation: result.finalNoMutation,
+		})))}`);
+		console.log(`DECADE_SOURCE_LIVE_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.decadeSourceLivePreviewWidths.map((result) => ({
+			width: result.width,
+			olderMoviePosterCount: result.firstPreview.moviePosterCount,
+			olderSeriesPosterCount: result.firstPreview.seriesPosterCount,
+			filteredPosterCount: result.filtered.posterCount,
+			requests: [...result.firstPreview.requests, result.filtered.generalRequest, result.filtered.request].map((request) => request.url),
+			zeroMutation: result.noMutation,
 		})))}`);
 		console.log(`SHORT_HEIGHT_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.shortHeightPreviewGeometry)}`);
 	}
@@ -1401,6 +1442,168 @@ test("mounted Source Edit Preview is live, lazy, cached, poster-only, focus-safe
 		assert.equal(result.closeRestoredFocus, true);
 		assert.equal(result.bodyLockRetained, true);
 		assert.equal(result.finalNoMutation, true);
+	}
+});
+
+test("mounted Decade Add Source stays compact, accessible, and contained at every required width", () => {
+	assert.deepEqual(mountedResults.decadeSourceLayoutWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.decadeSourceLayoutWidths) {
+		assert.equal(result.modeId, "tmdb-decade", `${result.width}px singular Decade mode`);
+		assert.deepEqual(result.controlOrder, ["media", "sort", "decade", "year", "genres", "advanced", "generated", "preview"], `${result.width}px owner-approved control order`);
+		assert.deepEqual(result.mediaLabels, ["Media", "Movies", "Series", "Both"], `${result.width}px semantic media controls`);
+		assert.deepEqual(result.sortLabels, ["Sort titles by", "Popular", "Recent", "Top Rated", "Most Votes"], `${result.width}px semantic sort controls`);
+		assert.equal(result.decadeChoiceCount, 8, `${result.width}px eight Decade radio pills`);
+		assert.deepEqual(result.initialYearLabels, ["All 2020s", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028", "2029"], `${result.width}px complete configured 2020s`);
+		assert.deepEqual(result.eightiesYearLabels, ["All 1980s", "1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989"], `${result.width}px whole 1980s or multiple years`);
+		assert.deepEqual(result.earlierYearLabels, ["All 1950s & Earlier", "Before 1950", "1950", "1951", "1952", "1953", "1954", "1955", "1956", "1957", "1958", "1959"], `${result.width}px first-period special choices`);
+		assert.deepEqual(result.initialYearSelection, ["2020s"], `${result.width}px default whole-decade selection`);
+		assert.deepEqual(result.firstIndividualSelection, ["year-1985"], `${result.width}px first individual clears All`);
+		assert.deepEqual(result.multiYearSelection, ["year-1981", "year-1985", "year-1988"], `${result.width}px click order normalizes chronologically`);
+		assert.deepEqual(result.toggledYearSelection, ["year-1981", "year-1988"], `${result.width}px individual Year toggles independently`);
+		assert.deepEqual(result.allClearsIndividuals, ["1980s"], `${result.width}px All clears individual Years`);
+		assert.deepEqual(result.finalIndividualRestoresAll, ["1980s"], `${result.width}px deselecting final Year restores All`);
+		assert.deepEqual(result.earlierResetSelection, ["1950s-and-earlier"], `${result.width}px Decade change resets Year to whole period`);
+		assert.deepEqual(result.earlierMultiSelection, ["before-1950", "year-1951", "year-1958"], `${result.width}px special period multi-selection order`);
+		assert.deepEqual(result.resetYearSelection, ["2020s"], `${result.width}px deterministic 2020s reset`);
+		assert.deepEqual(result.futureMultiSelection, ["year-2021", "year-2025", "year-2028"], `${result.width}px future years remain selectable and canonical`);
+		assert.equal(result.radioSemantics, true, `${result.width}px compact radio pills hide native duplication`);
+		assert.equal(result.yearCheckboxSemantics, true, `${result.width}px Year pills retain hidden native checkbox semantics`);
+		assert.equal(result.genreChoiceCount, 8, `${result.width}px Both Genre intersection`);
+		assert.equal(result.genreCheckboxSemantics, true, `${result.width}px Genre pills retain real hidden checkboxes`);
+		assert.equal(result.genreIndicatorsAbsent, true, `${result.width}px Genre pills render no circle or check glyph`);
+		assert.equal(result.genreFocusVisible, true, `${result.width}px hidden Genre checkbox gives the pill a visible focus state`);
+		assert.equal(result.genreVisualStateChanged, true, `${result.width}px selected Genre pill changes surface or border`);
+		assert.equal(result.selectedGenreCount, 8, `${result.width}px Select all chooses every eligible Genre`);
+		assert.equal(result.selectAllDisabled, true, `${result.width}px Select all disables when complete`);
+		assert.equal(result.clearEnabled, true, `${result.width}px Clear enabled for nonempty selection`);
+		assert.equal(result.clearedGenreCount, 0, `${result.width}px Clear removes every Genre source choice`);
+		assert.equal(result.initialReviewSourceCount, 2, `${result.width}px default Both general-source review`);
+		assert.equal(result.reviewSourceCount, 54, `${result.width}px three-Year Select-all Cartesian bundle`);
+		assert.equal(result.clearedReviewSourceCount, 6, `${result.width}px Clear restores three general Both bundles`);
+		assert.equal(result.reviewNoCollisions, true, `${result.width}px review labels and states`);
+		assert.equal(result.intendedScrollOwnerCount, 1, `${result.width}px one intended vertical scroll owner`);
+		assert.equal(result.intendedScrollOwnerIsInner, true, `${result.width}px inner form owns scrolling`);
+		assert.equal(result.dialogWithinViewport, true, `${result.width}px editor viewport containment`);
+		assert.equal(result.footerReachable, true, `${result.width}px Save/Cancel footer reachable`);
+		assert.equal(result.previewSecondary, true, `${result.width}px Preview remains secondary to Save`);
+		assert.equal(result.bodyLocked, true, `${result.width}px underlying document locked`);
+		assert.equal(result.pageNoHorizontalOverflow, true, `${result.width}px no page horizontal overflow`);
+		assert.deepEqual(result.secondary, { contained: true, headingFocused: true, outerInert: true, noHorizontalOverflow: true }, `${result.width}px Advanced exclusions surface`);
+		assert.equal(result.secondaryFocusRestored, true, `${result.width}px Advanced trigger focus restoration`);
+		assert.equal(result.cancelCalls, 1, `${result.width}px ordinary Cancel action`);
+		assert.equal(result.noMutation, true, `${result.width}px detached editor and Cancel`);
+	}
+	assert.deepEqual(mountedResults.decadeSourceGenreKeyboard, {
+		checkedBefore: false,
+		focused: true,
+		inputType: "checkbox",
+		hiddenNativeControl: true,
+		focusVisible: true,
+		checkedAfterSpace: true,
+		selectedStateExposed: true,
+		selectedVisualChanged: true,
+		noMutation: true,
+	}, "393px trusted keyboard Space toggles the real hidden Genre checkbox and visible pill state");
+});
+
+test("mounted Decade Add Source Preview exposes a recoverable error and Retry without mutation", () => {
+	assert.deepEqual(mountedResults.decadeSourcePreviewError, {
+		calls: 2,
+		errorMessage: true,
+		redundantSelectors: {
+			yearAbsent: true,
+			sourceAbsent: true,
+			mediaLabels: ["Movies", "Series"],
+		},
+		retryRecovered: true,
+		closed: true,
+		exactFocusRestored: true,
+		noMutation: true,
+	});
+});
+
+test("mounted Decade Add Source exact Preview uses the deployed Worker, TMDB, and image CDN", {
+	skip: process.env.TMDB_DECADES_PREVIEW_DEPLOYED !== "1" ? "Pending truthful acknowledgement of the already deployed Decades Worker state." : false,
+}, () => {
+	function requestEvidence(request) {
+		const url = new URL(request.url);
+		return { url, query: Object.fromEntries(url.searchParams) };
+	}
+	assert.deepEqual(mountedResults.decadeSourceLivePreviewWidths.map((result) => result.width), [393, 900]);
+	for (const result of mountedResults.decadeSourceLivePreviewWidths) {
+		assert.equal(result.requestsBeforeExplicitPreview, 0, `${result.width}px no automatic request`);
+		assert.deepEqual(result.configuredYearSelection, ["year-1981", "year-1985", "year-1988"], `${result.width}px click-independent canonical Year selection`);
+		assert.deepEqual(result.selectorLabels, {
+			year: ["1981", "1985", "1988"],
+			source: ["General", "Comedy"],
+			media: ["Movies", "Series"],
+		}, `${result.width}px structured Preview selectors`);
+		assert.deepEqual(result.initiallySelected, { year: "1981", source: "General", media: "Movies" }, `${result.width}px canonical initial exact source`);
+		assert.equal(result.requests.length, 6, `${result.width}px exactly six visited combinations requested`);
+		const expectedRequests = [
+			{ path: "/3/discover/movie", dateField: "primary_release_date", year: 1981, genre: false },
+			{ path: "/3/discover/tv", dateField: "first_air_date", year: 1981, genre: false },
+			{ path: "/3/discover/tv", dateField: "first_air_date", year: 1981, genre: true },
+			{ path: "/3/discover/tv", dateField: "first_air_date", year: 1985, genre: true },
+			{ path: "/3/discover/movie", dateField: "primary_release_date", year: 1985, genre: true },
+			{ path: "/3/discover/movie", dateField: "primary_release_date", year: 1985, genre: false },
+		];
+		for (const [index, expected] of expectedRequests.entries()) {
+			const evidence = requestEvidence(result.requests[index]);
+			assert.equal(evidence.url.origin, tmdbProxyBaseUrl, `${result.width}px request ${index + 1} production Worker origin`);
+			assert.equal(evidence.url.pathname, expected.path, `${result.width}px request ${index + 1} exact media path`);
+			assert.deepEqual(evidence.query, {
+				include_adult: "false",
+				sort_by: "popularity.desc",
+				[`${expected.dateField}.gte`]: `${expected.year}-01-01`,
+				[`${expected.dateField}.lte`]: `${expected.year}-12-31`,
+				...(expected.genre ? { with_genres: "35" } : {}),
+				"vote_average.gte": "5",
+			}, `${result.width}px request ${index + 1} exact canonical Advanced query`);
+		}
+		for (const request of result.requests) {
+			assert.equal(request.status, 200, `${result.width}px live Worker response`);
+			assert.equal(request.ok, true, `${result.width}px live Worker success`);
+			assert.match(request.contentType, /application\/json/i, `${result.width}px live JSON`);
+			assert.equal(Number.isSafeInteger(request.totalResults) && request.totalResults > 0, true, `${result.width}px real TMDB results`);
+		}
+		assert.deepEqual(result.posterEvidence, Array.from({ length: 6 }, () => ({ count: 10, genuine: true })), `${result.width}px bounded real image.tmdb.org posters for every visited combination`);
+		assert.deepEqual({
+			oneInitialRequest: result.oneInitialRequest,
+			seriesRequestedLazily: result.seriesRequestedLazily,
+			sourceRequestedLazily: result.sourceRequestedLazily,
+			yearRequestedLazily: result.yearRequestedLazily,
+			secondMediaRequestedLazily: result.secondMediaRequestedLazily,
+			generalRequestedLazily: result.generalRequestedLazily,
+			thirdYearDeferred: result.thirdYearDeferred,
+			cacheReused: result.cacheReused,
+			noFlattenedCartesianSelector: result.noFlattenedCartesianSelector,
+			selectorOneLine: result.selectorOneLine,
+			selectorsContained: result.selectorsContained,
+			outerInert: result.outerInert,
+			focusContained: result.focusContained,
+			focusRestored: result.focusRestored,
+			noRepresentativeSample: result.noRepresentativeSample,
+		}, {
+			oneInitialRequest: true,
+			seriesRequestedLazily: true,
+			sourceRequestedLazily: true,
+			yearRequestedLazily: true,
+			secondMediaRequestedLazily: true,
+			generalRequestedLazily: true,
+			thirdYearDeferred: true,
+			cacheReused: true,
+			noFlattenedCartesianSelector: true,
+			selectorOneLine: true,
+			selectorsContained: true,
+			outerInert: true,
+			focusContained: true,
+			focusRestored: true,
+			noRepresentativeSample: true,
+		}, `${result.width}px structured lazy matrix behavior`);
+		assertTitlePreviewGeometry(result.geometry, { width: result.width, label: `${result.width}px multi-Year Comedy Both Advanced Preview` });
+		assert.equal(result.noMutation, true, `${result.width}px Preview zero mutation`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px live Preview no horizontal overflow`);
 	}
 });
 

@@ -2,11 +2,13 @@
 
 Status: merged through issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65) / PR [#66](https://github.com/davecollections/tmdb-id-lookup/pull/66), with owner desktop, final physical-iPhone, and current Nuvio Desktop acceptance complete
 
-Last reviewed: 2026-08-06
+Last reviewed: 2026-08-27
 
 ## Scope
 
 At the issue #65 checkpoint, the first end-to-end Builder source-creation flow and one reusable provider boundary exposed only **Movie franchise · TMDB**. That flow adds one native TMDB `COLLECTION` source to the currently selected folder and still does not create collections or folders automatically; later issues added other modes beside it in the shared picker.
+
+The current selected-folder picker order is **Movie franchise**, **People**, **Studios**, **Networks**, **Streaming service**, **Genres**, then singular **Decade**. Issue [#160](https://github.com/davecollections/tmdb-id-lookup/issues/160) adds that final mode without changing the original Collection flow documented below. Decade uses compact radio pills for one Decade family, compact all-or-multi-select Year checkbox pills for its complete period or multiple individual years, and the existing Media and Sort radio pills. Every selected period retains its general source; zero or more media-compatible text-only Genre checkbox pills add separate canonical logical sources in catalogue order. Approved Advanced settings apply across the complete period × logical-source × media bundle with general and per-Genre exclusion ownership. Exact title Preview uses optional Year, Source, and media selectors and requests only the active physical combination. Duplicate review remains physical-source exact, and one existing atomic source-batch Save applies every eligible candidate. It creates no hierarchy, artwork, arbitrary date range, compound-Genre physical source, generic Discover recipe, custom Add-time name, schema, controller, importer, serializer, or Worker behavior.
 
 The flow accepts:
 
