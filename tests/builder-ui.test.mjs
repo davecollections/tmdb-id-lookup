@@ -98,7 +98,8 @@ test("React subscribes through the external-store API without mirrored project s
 test("empty shell renders the product header, navigation, and start action", () => {
 	const markup = render(createController());
 	for (const text of [
-		"TMDB Collection Builder",
+		"Dingo",
+		"Collection Builder",
 		"Built for Nuvio collections",
 		"Development preview",
 		"Back to builder home",
@@ -110,6 +111,8 @@ test("empty shell renders the product header, navigation, and start action", () 
 	assert.match(markup, /<main[^>]+data-builder-shell="true"/);
 	assert.match(markup, /data-panel="collections"/);
 	assert.equal(markup.includes("Back to TMDB ID Lookup"), false);
+	assert.equal(markup.includes("TMDB Collection Builder"), false);
+	assert.match(markup, /<h1 class="builder-product-title"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
 	assert.equal((markup.match(/data-action="open-about-credits"/g) ?? []).length, 1);
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);
 });
@@ -644,10 +647,11 @@ test("migration notices are absent, available, or blocked without adding actions
 
 test("builder HTML uses development metadata and retains the private preview boundary", () => {
 	const html = read("builder/index.html");
-	assert.match(html, /<title>TMDB Collection Builder<\/title>/);
+	assert.match(html, /<title>Dingo's Collection Builder<\/title>/);
 	assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
 	assert.match(html, /data-builder-root="true"/);
-	assert.ok(html.includes("Loading TMDB Collection Builder…"));
+	assert.ok(html.includes("Loading Dingo's Collection Builder…"));
+	assert.equal(html.includes("TMDB Collection Builder"), false);
 	assert.doesNotMatch(html, /deployment-test|data-deployment-test/i);
 });
 

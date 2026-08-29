@@ -384,7 +384,7 @@ test("welcome uses collection-focused wording while retaining literal file-picke
 	const controller = makeController();
 	const welcome = renderToStaticMarkup(createElement(BuilderWelcome, { controller, state: controller.getState(), onEnterWorkspace() {} }));
 	for (const text of [
-		"Create, import and organise Nuvio collections using TMDB-powered sources.",
+		"Create, import and organise Nuvio collections.",
 		"Start a new collection",
 		"Create new collection",
 		"Open an existing collection",

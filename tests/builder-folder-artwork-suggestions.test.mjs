@@ -231,7 +231,7 @@ test("People missing supported Focus artwork produces an exact safe request and 
 		"Artwork field: Focus",
 		"Orientation: Poster",
 		"Expected repository path: assets/people/8559/focus-poster.webp",
-		"Source: TMDB Collection Builder",
+		"Source: Dingo's Collection Builder",
 	].join("\n"));
 	const url = new URL(request.href);
 	assert.equal(url.origin, "https://github.com");

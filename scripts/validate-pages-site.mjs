@@ -200,7 +200,7 @@ if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
 
 	const builderJavaScript = scripts.map((file) => fs.readFileSync(file, "utf8")).join("\n");
 
-	if (!builderJavaScript.includes("TMDB Collection Builder")) {
+	if (!builderJavaScript.includes("Dingo's Collection Builder")) {
 		failures.push("The generated builder JavaScript does not contain the builder product marker.");
 	}
 

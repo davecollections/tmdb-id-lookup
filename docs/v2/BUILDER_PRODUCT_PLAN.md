@@ -1,4 +1,4 @@
-# TMDB Collection Builder — Product Plan
+# Dingo's Collection Builder — Product Plan
 
 Status: Durable product direction for the isolated v2 Builder
 
@@ -22,7 +22,7 @@ Implementation, deterministic tests, and confirmed manual Nuvio evidence overrid
 **Confirmed**
 
 - V1 remains the stable TMDB ID lookup and Nuvio JSON export utility at the repository root.
-- V2 is the mobile-first visual **TMDB Collection Builder**, made for Nuvio and powered primarily by TMDB.
+- V2 is the mobile-first visual **Dingo's Collection Builder**, made for Nuvio and powered primarily by TMDB.
 - Lookup and copy-ID capabilities remain part of the broader product.
 - Playback is outside scope.
 - V2 must not replace or destabilise V1.
@@ -49,7 +49,7 @@ Progressive disclosure should let a beginner reach a useful result while preserv
 
 **Confirmed**
 
-- The product name remains **TMDB Collection Builder**.
+- The product name is **Dingo's Collection Builder**.
 - A supporting line such as **Made for Nuvio** may be used; final wording needs later review.
 - The visual direction is modern, dark, sleek, and mobile-first, with restrained TMDB-inspired blue, cyan, and green accents. It is not warm or cosy.
 - No account, personal TMDB API key, or personal information is required to complete the core build-and-export journey.
@@ -141,7 +141,7 @@ Kaptain’s broad onboarding pattern offered:
 - Just give me the collection;
 - Build it manually.
 
-The useful lesson is the separation of audiences before exposing complexity. Kaptain primarily starts with a large curated collection and lets users remove or customise it. TMDB Collection Builder is broader: a user may start with guided setup, a template, entity/search creation, manual creation, or preservation-first import.
+The useful lesson is the separation of audiences before exposing complexity. Kaptain primarily starts with a large curated collection and lets users remove or customise it. Dingo's Collection Builder is broader: a user may start with guided setup, a template, entity/search creation, manual creation, or preservation-first import.
 
 Adopt as product principles:
 
@@ -434,7 +434,7 @@ These are three different concepts:
 2. **Stremio-style addons** — profile-scoped addon manifest URLs used by Nuvio’s addon sync.
 3. **Nuvio integration/plugin repositories** — repository `manifest.json` files that register locally executed integration JavaScript for Hermes.
 
-The third concept is documented in the [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo), reviewed 2026-07-25. Plugin repositories are not part of the TMDB Collection Builder’s core scope. Their manifests must not be treated as collection sources or Stremio addon manifests.
+The third concept is documented in the [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo), reviewed 2026-07-25. Plugin repositories are not part of the Builder's core scope. Their manifests must not be treated as collection sources or Stremio addon manifests.
 
 ## 17. Branding
 

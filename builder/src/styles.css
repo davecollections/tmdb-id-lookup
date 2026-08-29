@@ -299,6 +299,12 @@ summary:focus-visible {
 	font-size: clamp(1.75rem, 8vw, 3.35rem);
 }
 
+.builder-product-title span {
+	display: block;
+	overflow-wrap: normal;
+	white-space: nowrap;
+}
+
 .brand-subtitle,
 .workspace-subtitle {
 	margin: 5px 0 0;
@@ -551,6 +557,10 @@ summary:focus-visible {
 	min-width: 0;
 	align-items: center;
 	gap: 13px;
+}
+
+.brand-lockup > div {
+	min-width: 0;
 }
 
 .builder-mark {
@@ -3806,6 +3816,10 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (max-width: 430px) {
+	.welcome-brand h1 {
+		font-size: clamp(1.4rem, 6.2vw, 1.7rem);
+	}
+
 	.builder-shell {
 		padding: 10px;
 	}
@@ -4024,6 +4038,10 @@ body.hierarchy-pointer-dragging .builder-shell {
 @media (min-width: 760px) {
 	.welcome-brand {
 		grid-template-columns: auto minmax(0, 1fr) minmax(260px, 0.85fr);
+	}
+
+	.welcome-brand h1 {
+		font-size: clamp(2rem, 3.6vw, 2.75rem);
 	}
 
 	.welcome-description {

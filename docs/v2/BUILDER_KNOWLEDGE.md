@@ -48,7 +48,7 @@ This is a living record of confirmed v2/Nuvio findings, current decisions, unsup
 ## 1. Product direction
 
 - v1 is working and stable.
-- v2 changes the product from primarily an ID lookup/export utility into the visual **TMDB Collection Builder**, built for Nuvio collections and powered primarily by TMDB.
+- v2 changes the product from primarily an ID lookup/export utility into the visual **Dingo's Collection Builder**, built for Nuvio collections and powered primarily by TMDB.
 - The active React/Vite builder remains isolated under `/builder/`, unlinked, and `noindex, nofollow`; it is not a released replacement for v1.
 - **Merged through issue #104 / PR #105 from the requirement recorded by issue [#85](https://github.com/davecollections/tmdb-id-lookup/issues/85):** the welcome footer's text **About** control and the Builder workspace header's single global **?** open a compact **About & Credits** modal; the workspace control replaces the former separate V1 backlink. One shared borderless credits group uses the same approved local TMDB square as V1 beside the required notice **“This product uses the TMDB API but is not endorsed or certified by TMDB.”**, plus an official local gold JustWatch mark beside centralized watch-provider attribution. Its divided footer credits and links davecollections, opens the **TMDB ID Lookup Tool**, links to the GitHub issue chooser, and ends with one muted text-only Nuvio independence note.
 - Lookup and copy-ID tools remain available.
@@ -748,7 +748,7 @@ Keep three manifest/source concepts separate:
 - **Stremio-style addons** are profile-scoped addon manifest URLs documented by the API's addon sync.
 - **Nuvio integrations/plugins** are supplementary profile-scoped URLs. The separate [Nuvio Integration Development Guide](https://nuvio.tv/docs?doc=plugins-repo) documents repository `manifest.json` files that register integration JavaScript for local Hermes execution.
 
-The API documents addon and plugin sync as full-replace operations too. Plugin-repository manifests are not collection sources or Stremio addon manifests, and plugin repositories are not core TMDB Collection Builder scope. The official account page at [nuvio.tv/account/login](https://nuvio.tv/account/login) confirms an account-management surface for synced integrations and collections, but it was not used for authenticated testing. The reviewed public documentation did not establish device-pairing endpoints or behaviour; device pairing remains unverified.
+The API documents addon and plugin sync as full-replace operations too. Plugin-repository manifests are not collection sources or Stremio addon manifests, and plugin repositories are not core Builder scope. The official account page at [nuvio.tv/account/login](https://nuvio.tv/account/login) confirms an account-management surface for synced integrations and collections, but it was not used for authenticated testing. The reviewed public documentation did not establish device-pairing endpoints or behaviour; device pairing remains unverified.
 
 ## 16. Roadmap checkpoint
 
