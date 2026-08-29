@@ -122,8 +122,16 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
 	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
-	assert.equal(CREATION_OPTIONS[0].supportingText, "Start manually");
-	assert.equal(CREATION_OPTIONS.slice(1).every((option) => option.supportingText === undefined), true);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), [
+		"Start manually.",
+		"Build by decade or year.",
+		"Build around actors or directors.",
+		"Build from a movie franchise.",
+		"Build from movie or TV studios.",
+		"Build from TV networks.",
+		"Build by genre.",
+		"Build from streaming services.",
+	]);
 	assert.equal(CREATION_OPTIONS.every((option) => option.description === undefined), true);
 });
 
@@ -418,8 +426,10 @@ test("launcher renders compact semantic mode controls before the unchanged Decad
 	assert.equal(launcher.includes("What would you like to create?"), false);
 	assert.ok(launcher.includes("Choose Blank or a guided starting point."));
 	assert.equal(launcher.includes("New Collection"), false);
-	assert.ok(launcher.includes("Start manually"));
-	for (const option of CREATION_OPTIONS) assert.ok(launcher.includes(`<strong>${option.label}</strong>`), option.label);
+	for (const option of CREATION_OPTIONS) {
+		assert.ok(launcher.includes(`<strong>${option.label}</strong>`), option.label);
+		assert.ok(launcher.includes(`<small>${option.supportingText}</small>`), option.supportingText);
+	}
 	for (const disallowed of [
 		"Start from scratch and build it yourself.",
 		"Create movie and series collections organised by decade.",
@@ -449,6 +459,7 @@ test("launcher renders compact semantic mode controls before the unchanged Decad
 	assert.equal(folderLauncher.includes("New Folder · Destination"), false);
 	assert.deepEqual([...folderLauncher.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), CREATION_OPTIONS.map((option) => option.id));
 	assert.equal((folderLauncher.match(/<button[^>]+class="creation-option-card"[^>]+type="button"/g) ?? []).length, CREATION_OPTIONS.length);
+	for (const option of CREATION_OPTIONS) assert.ok(folderLauncher.includes(`<small>${option.supportingText}</small>`), option.supportingText);
 
 	const firstStage = renderToStaticMarkup(createElement(CreationDialog, {
 		...launcherProps,
@@ -940,11 +951,11 @@ test("creation styles keep selected cards restrained and cover required responsi
 		"@media (max-width: 430px)",
 		"@media (prefers-reduced-motion: reduce)",
 	]) assert.ok(styles.includes(marker), marker);
-	assert.match(styles, /\.creation-option-list\s*\{[^}]*minmax\(min\(184px, 100%\), 1fr\)/s);
-	assert.match(styles, /\.creation-option-card\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
+	assert.match(styles, /\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*minmax\(min\(184px, 100%\), 1fr\)/s);
+	assert.match(styles, /\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.creation-option-icon-shell\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px/s);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card\s*\{[^}]*gap:\s*8px;[^}]*padding:\s*10px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*8px;[^}]*padding:\s*10px/s);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
 	assert.equal(styles.includes(".creation-option-arrow"), false);
 	assert.match(styles, /\.decades-structure-preview\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);

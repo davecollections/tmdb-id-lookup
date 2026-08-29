@@ -574,8 +574,8 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 					<header className="add-source-heading">
 						<div className="add-source-heading-row">
 							<button className="add-source-header-action" type="button" disabled={isApplying} onClick={returnOneStep}><span aria-hidden="true">←</span>Back</button>
-							<div><h2 id="streaming-source-title">Add Streaming service</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
-							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Streaming service" disabled={isApplying} onClick={cancel}>Close</button>
+							<div><h2 id="streaming-source-title">Add a streaming service</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
+							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add a streaming service" disabled={isApplying} onClick={cancel}>Close</button>
 						</div>
 						<p id="streaming-source-description" className="add-source-heading-description">{descriptions[step]}</p>
 					</header>

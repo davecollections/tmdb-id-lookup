@@ -5942,6 +5942,266 @@ async function runDecadeSourceLivePreviewScenario() {
 	}
 }
 
+async function runSourceChooserLayoutScenario() {
+	function required(element, label) {
+		if (!element) throw new Error(`${label} was not rendered.`);
+		return element;
+	}
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	controller.selectNode(folder.internalId);
+	const revisionBefore = controller.getState().revision;
+	const serializedBefore = serializedValue(controller);
+	async function measureCreationLauncher(scope) {
+		const creationHost = document.createElement("div");
+		document.body.append(creationHost);
+		const creationRoot = createRoot(creationHost);
+		const state = controller.getState();
+		const destinationCollection = state.project.collections.find((collection) => collection.internalId === state.selection.collectionInternalId) ?? null;
+		let metrics;
+		await act(async () => {
+			creationRoot.render(createElement(CreationDialog, {
+				scope,
+				project: state.project,
+				projectRevision: state.revision,
+				currentYear: 2026,
+				destinationCollectionInternalId: scope === "new-folder" ? destinationCollection?.internalId ?? null : null,
+				destinationCollectionTitle: scope === "new-folder" ? destinationCollection?.editable?.title ?? null : null,
+				onCancel() {},
+				onCreateBlank() {},
+			}));
+			await afterCommittedEffects();
+		});
+		try {
+			const dialog = required(document.querySelector(`[data-creation-dialog="true"][data-creation-scope="${scope}"]`), `${scope} Creation chooser`);
+			const list = required(dialog.querySelector(".creation-option-list"), `${scope} Creation launcher grid`);
+			const cards = [...list.querySelectorAll("[data-creation-option]")];
+			const firstCard = required(cards[0], `${scope} first Creation card`);
+			const finalCard = required(cards.at(-1), `${scope} final Creation card`);
+			const iconRects = cards.map((card) => card.querySelector(".creation-option-icon-shell")?.getBoundingClientRect());
+			const helperMetrics = cards.map((card) => {
+				const helper = required(card.querySelector("small"), `${scope} Creation helper`);
+				const style = getComputedStyle(helper);
+				const lineHeight = Number.parseFloat(style.lineHeight);
+				return {
+					lines: lineHeight > 0 ? Math.round((helper.getBoundingClientRect().height / lineHeight) * 10) / 10 : null,
+					contained: helper.scrollWidth <= helper.clientWidth + 1 && helper.scrollHeight <= helper.clientHeight + 1,
+				};
+			});
+			const rows = [];
+			for (const card of cards) {
+				const rect = card.getBoundingClientRect();
+				const top = Math.round(rect.top);
+				const row = rows.find((entry) => Math.abs(entry.top - top) <= 1);
+				if (row) {
+					row.count += 1;
+					row.height = Math.max(row.height, rect.height);
+				} else rows.push({ top, count: 1, height: rect.height });
+			}
+			const rowHeights = rows.map((row) => Math.round(row.height * 10) / 10);
+			const scrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+				const overflowY = getComputedStyle(element).overflowY;
+				return overflowY === "auto" || overflowY === "scroll";
+			});
+			list.scrollTop = list.scrollHeight;
+			await act(async () => afterCommittedEffects());
+			const listRect = list.getBoundingClientRect();
+			const finalRect = finalCard.getBoundingClientRect();
+			metrics = {
+				scope,
+				optionIds: cards.map((card) => card.dataset.creationOption),
+				labels: cards.map((card) => card.querySelector("strong")?.textContent.trim() ?? null),
+				helpers: cards.map((card) => card.querySelector("small")?.textContent.trim() ?? null),
+				cardCount: cards.length,
+				columnCount: Math.max(...rows.map((row) => row.count)),
+				rowCounts: rows.map((row) => row.count),
+				rowHeightSpread: Math.round((Math.max(...rowHeights) - Math.min(...rowHeights)) * 10) / 10,
+				firstOptionFocused: document.activeElement === firstCard,
+				iconShellsCorrect: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
+				comfortableTargets: cards.every((card) => {
+					const rect = card.getBoundingClientRect();
+					return rect.height >= 76 && rect.width >= 140;
+				}),
+				cardsContained: cards.every((card) => card.scrollWidth <= card.clientWidth + 1 && card.scrollHeight <= card.clientHeight + 1),
+				helpersContained: helperMetrics.every((metric) => metric.contained),
+				maxHelperLines: Math.max(...helperMetrics.map((metric) => metric.lines ?? 0)),
+				oneScrollOwner: scrollOwners.length === 1 && scrollOwners[0] === list,
+				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
+				finalCardReachable: finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1,
+			};
+		} finally {
+			await act(async () => {
+				creationRoot.unmount();
+				await afterCommittedEffects();
+			});
+			creationHost.remove();
+		}
+		return { ...metrics, bodyRestored: document.body.style.position !== "fixed" };
+	}
+	await act(async () => {
+		root.render(createElement(MountedWorkspace, { controller }));
+		await afterCommittedEffects();
+	});
+	try {
+		const trigger = required(host.querySelector('[data-action="add-source"]'), "Add Source trigger");
+		await clickAndSettle(trigger);
+		const dialog = required(document.querySelector('[data-source-mode-chooser="true"]'), "Add Source chooser");
+		const list = required(dialog.querySelector(".source-mode-list"), "Add Source launcher grid");
+		const cards = [...list.querySelectorAll("[data-source-mode-option]")];
+		const firstCard = required(cards[0], "first Add Source card");
+		const finalCard = required(cards.at(-1), "final Add Source card");
+		const iconRects = cards.map((card) => card.querySelector(".creation-option-icon-shell")?.getBoundingClientRect());
+		const helperMetrics = cards.map((card) => {
+			const helper = required(card.querySelector("small"), "Add Source helper");
+			const style = getComputedStyle(helper);
+			const lineHeight = Number.parseFloat(style.lineHeight);
+			return {
+				lines: lineHeight > 0 ? Math.round((helper.getBoundingClientRect().height / lineHeight) * 10) / 10 : null,
+				contained: helper.scrollWidth <= helper.clientWidth + 1 && helper.scrollHeight <= helper.clientHeight + 1,
+			};
+		});
+		const rows = [];
+		for (const card of cards) {
+			const top = Math.round(card.getBoundingClientRect().top);
+			const row = rows.find((entry) => Math.abs(entry.top - top) <= 1);
+			if (row) row.count += 1;
+			else rows.push({ top, count: 1 });
+		}
+		const scrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return overflowY === "auto" || overflowY === "scroll";
+		});
+		const initial = {
+			width: window.innerWidth,
+			height: window.innerHeight,
+			modeIds: cards.map((card) => card.dataset.sourceModeOption),
+			cardCount: cards.length,
+			columnCount: Math.max(...rows.map((row) => row.count)),
+			rowCounts: rows.map((row) => row.count),
+			balancedRows: rows.slice(0, -1).every((row) => row.count === rows[0].count) && rows.at(-1).count >= rows[0].count - 1,
+			firstOptionFocused: document.activeElement === firstCard,
+			iconShellsMatchCreation: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
+			comfortableTargets: cards.every((card) => {
+				const rect = card.getBoundingClientRect();
+				return rect.height >= 76 && rect.width >= 140;
+			}),
+			helpersContained: helperMetrics.every((metric) => metric.contained),
+			maxHelperLines: Math.max(...helperMetrics.map((metric) => metric.lines ?? 0)),
+			oneScrollOwner: scrollOwners.length === 1 && scrollOwners[0] === list,
+			providerDisclosure: dialog.querySelector(".source-mode-heading-description")?.textContent.includes("All available source families use TMDB.") ?? false,
+			noSelectionControls: dialog.querySelector('input[type="radio"], input[type="checkbox"], [role="radio"], [aria-checked]') === null,
+			noSearchAutofocus: dialog.querySelector('input[type="search"]') === null,
+			noArrowLayout: !dialog.textContent.includes("→"),
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
+			bodyLocked: document.body.style.position === "fixed",
+		};
+		list.scrollTop = list.scrollHeight;
+		await act(async () => afterCommittedEffects());
+		const listRect = list.getBoundingClientRect();
+		const finalRect = finalCard.getBoundingClientRect();
+		const finalCardReachable = finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1;
+
+		await clickAndSettle(firstCard);
+		const immediateDestination = document.querySelector('[data-source-mode="tmdb-movie-franchise"]') !== null;
+		await clickAndSettle(required(document.querySelector('[data-action="back-to-source-types"]'), "Movie franchise Back action"));
+		const returnedCard = required(document.querySelector('[data-source-mode-option="tmdb-movie-franchise"]'), "returned Movie franchise card");
+		const backRestoredFocus = document.activeElement === returnedCard;
+		await clickAndSettle(required(document.querySelector('[data-source-mode-chooser="true"] .add-source-close-action'), "Add Source Close action"));
+		const closeRestoredTrigger = document.activeElement === trigger;
+
+		await clickAndSettle(trigger);
+		const reopened = required(document.querySelector('[data-source-mode-chooser="true"]'), "reopened Add Source chooser");
+		await act(async () => {
+			reopened.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+			await afterCommittedEffects();
+		});
+		const escapeClosed = document.querySelector('[data-source-mode-chooser="true"]') === null;
+		const escapeRestoredTrigger = document.activeElement === trigger;
+		const creationChoosers = [];
+		for (const scope of ["new-collection", "new-folder"]) creationChoosers.push(await measureCreationLauncher(scope));
+		return {
+			...initial,
+			creationChoosers,
+			finalCardReachable,
+			immediateDestination,
+			backRestoredFocus,
+			closeRestoredTrigger,
+			escapeClosed,
+			escapeRestoredTrigger,
+			bodyRestored: document.body.style.position !== "fixed",
+			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+let sourceChooserKeyboardSession = null;
+
+async function prepareSourceChooserKeyboardScenario() {
+	if (sourceChooserKeyboardSession) throw new Error("Add Source chooser keyboard scenario is already mounted.");
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	controller.selectNode(folder.internalId);
+	const revisionBefore = controller.getState().revision;
+	const serializedBefore = serializedValue(controller);
+	await act(async () => {
+		root.render(createElement(MountedWorkspace, { controller }));
+		await afterCommittedEffects();
+	});
+	const trigger = host.querySelector('[data-action="add-source"]');
+	if (!trigger) throw new Error("Add Source keyboard trigger was not rendered.");
+	await clickAndSettle(trigger);
+	const card = document.querySelector('[data-source-mode-option="tmdb-decade"]');
+	if (!card) throw new Error("Decade Add Source launcher card was not rendered.");
+	card.focus({ preventScroll: true });
+	sourceChooserKeyboardSession = { host, root, controller, trigger, card, revisionBefore, serializedBefore };
+	return {
+		focused: document.activeElement === card,
+		nativeButton: card.tagName === "BUTTON" && card.type === "button",
+	};
+}
+
+async function finishSourceChooserKeyboardScenario() {
+	const session = sourceChooserKeyboardSession;
+	if (!session) throw new Error("Add Source chooser keyboard scenario was not prepared.");
+	sourceChooserKeyboardSession = null;
+	try {
+		await act(async () => afterCommittedEffects());
+		const keyboardDestination = document.querySelector('.decade-source-dialog[data-source-mode="tmdb-decade"]') !== null;
+		await clickAndSettle(document.querySelector('.decade-source-dialog [data-action="back-to-source-types"]'));
+		const returnedCard = document.querySelector('[data-source-mode-option="tmdb-decade"]');
+		const backRestoredFocus = document.activeElement === returnedCard;
+		await clickAndSettle(document.querySelector('[data-source-mode-chooser="true"] .add-source-close-action'));
+		return {
+			keyboardDestination,
+			backRestoredFocus,
+			closeRestoredTrigger: document.activeElement === session.trigger,
+			noMutation: session.controller.getState().revision === session.revisionBefore && serializedValue(session.controller) === session.serializedBefore,
+		};
+	} finally {
+		await act(async () => session.root.unmount());
+		session.host.remove();
+	}
+}
+
+function inspectSourceChooserKeyboardFocus() {
+	const session = sourceChooserKeyboardSession;
+	if (!session) throw new Error("Add Source chooser keyboard scenario was not prepared.");
+	const style = getComputedStyle(session.card);
+	return {
+		focusVisible: style.outlineStyle !== "none" && style.outlineWidth !== "0px",
+		focusBorderVisible: style.borderColor !== "rgba(0, 0, 0, 0)",
+	};
+}
+
 async function runMountedRegressions() {
 	return {
 		peopleRequiredName: await runRequiredNameScenario(peopleSource()),
@@ -5987,6 +6247,10 @@ window.__runDecadeSourceLayoutScenario = runDecadeSourceLayoutScenario;
 window.__prepareDecadeSourceGenreKeyboardScenario = prepareDecadeSourceGenreKeyboardScenario;
 window.__finishDecadeSourceGenreKeyboardScenario = finishDecadeSourceGenreKeyboardScenario;
 window.__runDecadeSourceLivePreviewScenario = runDecadeSourceLivePreviewScenario;
+window.__runSourceChooserLayoutScenario = runSourceChooserLayoutScenario;
+window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
+window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
+window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
 runMountedRegressions().then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {

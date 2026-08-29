@@ -179,6 +179,7 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				const sourceChooserWidths = [];
 				const genreToolbarWidths = [];
 				const decadesActionWidths = [];
 				const decadesGenreWidths = [];
@@ -201,10 +202,19 @@ async function runMountedPage() {
 				const decadeSourceLayoutWidths = [];
 				const decadeSourceLivePreviewWidths = [];
 				let decadeSourceGenreKeyboard = null;
+				let sourceChooserKeyboard = null;
+				let shortHeightSourceChooser = null;
 				let shortHeightPreviewGeometry = null;
 				let streamingDuplicateConfirmation = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					const sourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runSourceChooserLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (sourceChooserEvaluation.exceptionDetails) throw new Error(sourceChooserEvaluation.exceptionDetails.exception?.description ?? sourceChooserEvaluation.exceptionDetails.text);
+					sourceChooserWidths.push(sourceChooserEvaluation.result?.value);
 					const decadeSourceLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadeSourceLayoutScenario()",
 						awaitPromise: true,
@@ -284,6 +294,28 @@ async function runMountedPage() {
 					streamingSelectionReconciliationWidths.push(streamingReconciliationEvaluation.result?.value);
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+				const sourceChooserKeyboardBefore = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__prepareSourceChooserKeyboardScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (sourceChooserKeyboardBefore.exceptionDetails) throw new Error(sourceChooserKeyboardBefore.exceptionDetails.exception?.description ?? sourceChooserKeyboardBefore.exceptionDetails.text);
+				await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Shift", code: "ShiftLeft", modifiers: 8, windowsVirtualKeyCode: 16, nativeVirtualKeyCode: 16 });
+				await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Shift", code: "ShiftLeft", windowsVirtualKeyCode: 16, nativeVirtualKeyCode: 16 });
+				const sourceChooserKeyboardFocus = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__inspectSourceChooserKeyboardFocus()",
+					returnByValue: true,
+				});
+				if (sourceChooserKeyboardFocus.exceptionDetails) throw new Error(sourceChooserKeyboardFocus.exceptionDetails.exception?.description ?? sourceChooserKeyboardFocus.exceptionDetails.text);
+				await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+				await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+				const sourceChooserKeyboardAfter = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__finishSourceChooserKeyboardScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (sourceChooserKeyboardAfter.exceptionDetails) throw new Error(sourceChooserKeyboardAfter.exceptionDetails.exception?.description ?? sourceChooserKeyboardAfter.exceptionDetails.text);
+				sourceChooserKeyboard = { ...sourceChooserKeyboardBefore.result?.value, ...sourceChooserKeyboardFocus.result?.value, ...sourceChooserKeyboardAfter.result?.value };
 				const streamingDuplicateEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runStreamingDuplicateConfirmationScenario()",
 					awaitPromise: true,
@@ -354,6 +386,13 @@ async function runMountedPage() {
 					}
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 320, deviceScaleFactor: 1, mobile: true });
+				const shortSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runSourceChooserLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (shortSourceChooserEvaluation.exceptionDetails) throw new Error(shortSourceChooserEvaluation.exceptionDetails.exception?.description ?? shortSourceChooserEvaluation.exceptionDetails.text);
+				shortHeightSourceChooser = shortSourceChooserEvaluation.result?.value;
 				const shortPeopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runPeopleConfigureLayoutScenario()",
 					awaitPromise: true,
@@ -433,7 +472,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceChooserWidths, sourceChooserKeyboard, shortHeightSourceChooser, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -852,6 +891,112 @@ test("mounted Genre exact duplicate overrides use singular and bundle canonical 
 		bundleNoNew: "No new sources to add",
 		singleOverride: "Add anyway",
 		singleNoNew: "No new sources to add",
+	});
+});
+
+test("mounted Add Source chooser uses the responsive Creation launcher language at every required width", () => {
+	const expectedModes = [
+		"tmdb-movie-franchise",
+		"tmdb-people",
+		"tmdb-studios",
+		"tmdb-networks",
+		"tmdb-streaming-services",
+		"tmdb-genres",
+		"tmdb-decade",
+	];
+	const expectedCreationIds = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
+	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "Studios", "Networks", "Genres", "Streaming"];
+	const expectedCreationHelpers = [
+		"Start manually.",
+		"Build by decade or year.",
+		"Build around actors or directors.",
+		"Build from a movie franchise.",
+		"Build from movie or TV studios.",
+		"Build from TV networks.",
+		"Build by genre.",
+		"Build from streaming services.",
+	];
+	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	for (const result of mountedResults.sourceChooserWidths) {
+		const width = result.width;
+		assert.deepEqual(result.modeIds, expectedModes, `${width}px registry order`);
+		assert.equal(result.cardCount, 7, `${width}px card count`);
+		assert.equal(result.columnCount, width <= 620 ? 2 : 4, `${width}px responsive columns`);
+		assert.equal(result.balancedRows, true, `${width}px balanced rows`);
+		assert.equal(result.firstOptionFocused, true, `${width}px first-option focus`);
+		assert.equal(result.iconShellsMatchCreation, true, `${width}px icon shells`);
+		assert.equal(result.comfortableTargets, true, `${width}px hit targets`);
+		assert.equal(result.helpersContained, true, `${width}px helper containment`);
+		assert.ok(result.maxHelperLines <= 6, `${width}px readable helper wrapping: ${result.maxHelperLines}`);
+		assert.equal(result.oneScrollOwner, true, `${width}px scroll owner`);
+		assert.equal(result.providerDisclosure, true, `${width}px provider disclosure`);
+		assert.equal(result.noSelectionControls, true, `${width}px no retained selection semantics`);
+		assert.equal(result.noSearchAutofocus, true, `${width}px no Search autofocus`);
+		assert.equal(result.noArrowLayout, true, `${width}px no old arrow list`);
+		assert.equal(result.noHorizontalOverflow, true, `${width}px horizontal overflow`);
+		assert.equal(result.bodyLocked, true, `${width}px body lock`);
+		assert.equal(result.finalCardReachable, true, `${width}px final card reachability`);
+		assert.equal(result.immediateDestination, true, `${width}px immediate navigation`);
+		assert.equal(result.backRestoredFocus, true, `${width}px Back focus restoration`);
+		assert.equal(result.closeRestoredTrigger, true, `${width}px Close focus restoration`);
+		assert.equal(result.escapeClosed, true, `${width}px Escape close`);
+		assert.equal(result.escapeRestoredTrigger, true, `${width}px Escape focus restoration`);
+		assert.equal(result.bodyRestored, true, `${width}px body restoration`);
+		assert.equal(result.noMutation, true, `${width}px chooser navigation mutation`);
+		assert.deepEqual(result.creationChoosers.map((chooser) => chooser.scope), ["new-collection", "new-folder"], `${width}px Creation scopes`);
+		for (const chooser of result.creationChoosers) {
+			assert.deepEqual(chooser.optionIds, expectedCreationIds, `${width}px ${chooser.scope} option order`);
+			assert.deepEqual(chooser.labels, expectedCreationLabels, `${width}px ${chooser.scope} labels`);
+			assert.deepEqual(chooser.helpers, expectedCreationHelpers, `${width}px ${chooser.scope} helpers`);
+			assert.equal(chooser.cardCount, 8, `${width}px ${chooser.scope} card count`);
+			assert.equal(chooser.columnCount, width <= 620 ? 2 : 4, `${width}px ${chooser.scope} responsive columns`);
+			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2] : [4, 4], `${width}px ${chooser.scope} balanced rows`);
+			assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
+			assert.equal(chooser.firstOptionFocused, true, `${width}px ${chooser.scope} first-option focus`);
+			assert.equal(chooser.iconShellsCorrect, true, `${width}px ${chooser.scope} icon shells`);
+			assert.equal(chooser.comfortableTargets, true, `${width}px ${chooser.scope} tap targets`);
+			assert.equal(chooser.cardsContained, true, `${width}px ${chooser.scope} card containment`);
+			assert.equal(chooser.helpersContained, true, `${width}px ${chooser.scope} helper containment`);
+			assert.ok(chooser.maxHelperLines <= 3, `${width}px ${chooser.scope} helper wrapping: ${chooser.maxHelperLines}`);
+			assert.equal(chooser.oneScrollOwner, true, `${width}px ${chooser.scope} scroll owner`);
+			assert.equal(chooser.noHorizontalOverflow, true, `${width}px ${chooser.scope} horizontal overflow`);
+			assert.equal(chooser.finalCardReachable, true, `${width}px ${chooser.scope} final card reachability`);
+			assert.equal(chooser.bodyRestored, true, `${width}px ${chooser.scope} body restoration`);
+		}
+	}
+});
+
+test("mounted Add Source chooser remains reachable in the retained 393 by 320 short-height case", () => {
+	const result = mountedResults.shortHeightSourceChooser;
+	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
+	assert.equal(result.columnCount, 2);
+	assert.equal(result.oneScrollOwner, true);
+	assert.equal(result.noHorizontalOverflow, true);
+	assert.equal(result.finalCardReachable, true);
+	assert.equal(result.backRestoredFocus, true);
+	assert.equal(result.escapeClosed, true);
+	assert.equal(result.noMutation, true);
+	for (const chooser of result.creationChoosers) {
+		assert.equal(chooser.columnCount, 2, `${chooser.scope} short-height columns`);
+		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2], `${chooser.scope} short-height rows`);
+		assert.equal(chooser.cardsContained, true, `${chooser.scope} short-height card containment`);
+		assert.equal(chooser.helpersContained, true, `${chooser.scope} short-height helper containment`);
+		assert.equal(chooser.oneScrollOwner, true, `${chooser.scope} short-height scroll owner`);
+		assert.equal(chooser.noHorizontalOverflow, true, `${chooser.scope} short-height horizontal overflow`);
+		assert.equal(chooser.finalCardReachable, true, `${chooser.scope} short-height final card reachability`);
+	}
+});
+
+test("mounted native Add Source card supports trusted keyboard activation and originating-card focus restoration", () => {
+	assert.deepEqual(mountedResults.sourceChooserKeyboard, {
+		focused: true,
+		nativeButton: true,
+		focusVisible: true,
+		focusBorderVisible: true,
+		keyboardDestination: true,
+		backRestoredFocus: true,
+		closeRestoredTrigger: true,
+		noMutation: true,
 	});
 });
 

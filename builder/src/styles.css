@@ -2534,62 +2534,23 @@ body.settings-modal-open {
 	grid-template-rows: auto minmax(0, 1fr);
 }
 
-.source-mode-list {
-	grid-template-columns: minmax(0, 1fr);
-	align-content: start;
-	margin: 0;
-	list-style: none;
-}
-
-.source-mode-option {
-	display: grid;
-	width: 100%;
-	min-height: 92px;
-	grid-template-columns: minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 8px 14px;
-	padding: 15px;
-	color: var(--text);
-	font: inherit;
-	text-align: left;
-	background: linear-gradient(120deg, rgb(11 35 48 / 88%), rgb(6 24 34 / 88%));
-	border: 1px solid var(--border);
-	border-radius: 13px;
-	cursor: pointer;
-}
-
-.source-mode-option > span:first-child {
+.source-mode-heading-description {
 	display: flex;
-	min-width: 0;
-	align-items: baseline;
-	gap: 9px;
+	align-items: center;
+	justify-content: center;
+	gap: 4px 8px;
+	flex-wrap: wrap;
 }
 
-.source-mode-option strong {
-	font-size: 1rem;
-}
-
-.source-mode-option small {
+.source-mode-heading-description strong {
+	padding: 2px 6px;
 	color: var(--cyan-bright);
-	font-size: 0.66rem;
-	font-weight: 800;
+	font-size: 0.64rem;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
-}
-
-.source-mode-option > span:nth-child(2) {
-	min-width: 0;
-	grid-column: 1;
-	color: var(--muted);
-	font-size: 0.76rem;
-	line-height: 1.5;
-}
-
-.source-mode-option > span:last-child {
-	grid-column: 2;
-	grid-row: 1 / span 2;
-	color: var(--cyan-bright);
-	font-size: 1.2rem;
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 24%);
+	border-radius: 999px;
 }
 
 .people-result {
@@ -6291,7 +6252,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 
 	.source-mode-dialog {
-		width: min(640px, 100%);
+		width: min(920px, 100%);
 	}
 
 	.people-configure-actions {
@@ -7819,7 +7780,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 }
 
-.creation-option-list {
+.creation-option-list,
+.source-mode-list {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(184px, 100%), 1fr));
 	align-content: start;
@@ -7828,7 +7790,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 	list-style: none;
 }
 
-.creation-option-card {
+.creation-option-card,
+.source-mode-option {
 	display: grid;
 	width: 100%;
 	min-height: 76px;
@@ -7846,7 +7809,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .creation-option-card:hover,
-.creation-option-card:focus-visible {
+.creation-option-card:focus-visible,
+.source-mode-option:hover,
+.source-mode-option:focus-visible {
 	border-color: rgb(98 225 255 / 48%);
 	background: rgb(1 180 228 / 8%);
 }
@@ -7885,12 +7850,14 @@ body.hierarchy-pointer-dragging .builder-shell {
 	gap: 2px;
 }
 
-.creation-option-card strong {
+.creation-option-card strong,
+.source-mode-option strong {
 	font-size: 0.92rem;
 	line-height: 1.2;
 }
 
-.creation-option-card small {
+.creation-option-card small,
+.source-mode-option small {
 	color: var(--muted);
 	font-size: 0.64rem;
 	font-weight: 650;
@@ -7898,12 +7865,14 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (max-width: 620px) {
-	.creation-option-list {
+	.creation-option-list,
+	.source-mode-list {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 8px;
 	}
 
-	.creation-option-card {
+	.creation-option-card,
+	.source-mode-option {
 		gap: 8px;
 		padding: 10px;
 	}

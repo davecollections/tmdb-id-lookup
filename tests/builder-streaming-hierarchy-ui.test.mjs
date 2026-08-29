@@ -63,17 +63,25 @@ function provider(id) {
 	};
 }
 
-test("Streaming Services is the eighth scope-aware hierarchy family after Genres", () => {
+test("Streaming is the eighth scope-aware launcher family after Genres in both Creation scopes", () => {
 	const expected = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.deepEqual([...markup.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), expected);
-		assert.ok(markup.includes("<strong>Streaming Services</strong>"));
+		assert.ok(markup.includes("<strong>Streaming</strong>"));
 	}
 	assert.match(creationOptions, /STREAMING_SERVICES:\s*"streaming-services"/);
 	assert.match(creationOptions, /id:\s*CREATION_OPTION_IDS\.STREAMING_SERVICES,[\s\S]*scopes:\s*BOTH_SCOPES/);
 	assert.match(dialog, /CREATION_OPTION_IDS\.STREAMING_SERVICES/);
 	assert.match(dialog, /<StreamingHierarchyFlow/);
+});
+
+test("both Streaming hierarchy scopes use the aligned immediate flow heading", () => {
+	for (const scope of ["new-collection", "new-folder"]) {
+		const markup = renderToStaticMarkup(createElement(CreationDialog, { ...baseCreationProps(scope), initialOptionId: "streaming-services" }));
+		assert.ok(markup.includes("Create with Streaming"));
+		assert.ok(!markup.includes("Create with Streaming Services"));
+	}
 });
 
 test("server rendering is request-free and starts on the unfocused region stage", () => {

@@ -126,7 +126,7 @@ After successful mobile creation, the new card is scrolled into view when practi
 
 The existing panel-header `New collection` and `New folder` controls remain. An otherwise distinct real button appears below the final populated collection or folder card as `+ Add another collection` or `+ Add another folder`. These buttons open the same contextual launcher as their header and empty-state counterparts. Choosing Blank then uses the exact existing defaults, automatic naming, viewport-aware selection, and card scrolling. They are not list items, cards, reorder siblings, or drag targets. Empty panels retain their larger first-item Add control.
 
-When a folder is selected, Sources exposes `Add source` in the header, `Add first source` in the empty state, or `+ Add another source` after a populated list. On mobile, the count is part of the `Sources · N` heading so Add source retains room; desktop retains the separate count badge. No disabled or ambiguous Add action appears without a selected folder. All three entry points open the same responsive mode picker for six ordered modes: Movie franchise, People, Studios, Networks, Streaming service, and Genres. Each child flow has visible Back navigation and preserves its own reviewed state; the shared mobile Genre context/catalogue shell uses scoped browser history so browser Back returns from detail to context. Family-specific construction, duplicate, request, and review contracts remain in their focused Builder documents.
+When a folder is selected, Sources exposes `Add source` in the header, `Add first source` in the empty state, or `+ Add another source` after a populated list. On mobile, the count is part of the `Sources · N` heading so Add source retains room; desktop retains the separate count badge. No disabled or ambiguous Add action appears without a selected folder. All three entry points open the same responsive mode picker for seven ordered modes: Movie franchise, People, Studios, Networks, Streaming, Genres, and singular Decade. The picker shares the Creation launcher's narrow card/icon presentation seam, responsive grid, and focus-visible language while retaining immediate-action buttons with no Blank option or selection state. One compact heading disclosure covers the common TMDB provider. Each child flow has visible Back navigation and preserves its own reviewed state; returning restores focus to the family card that launched it. The shared mobile Genre context/catalogue shell uses scoped browser history so browser Back returns from detail to context. Family-specific construction, duplicate, request, and review contracts remain in their focused Builder documents.
 
 ## Safe hierarchy deletion
 
@@ -264,7 +264,7 @@ Deployment and focused source tests use a small stable surface:
 - `data-source-edit-picker="movie-collection"`
 - `data-source-edit-status="true"`
 - `data-add-source-step="search|review|configure|region|provider|browse|configure-review"`
-- `data-source-mode="tmdb-movie-franchise|tmdb-people|tmdb-studios|tmdb-networks|tmdb-streaming-services|tmdb-genres"`
+- `data-source-mode="tmdb-movie-franchise|tmdb-people|tmdb-studios|tmdb-networks|tmdb-streaming-services|tmdb-genres|tmdb-decade"`
 - `data-creation-dialog="true"`
 - `data-creation-scope="new-collection|new-folder"`
 - `data-creation-option="blank|decades|people|franchises|studios|networks"`

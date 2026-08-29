@@ -87,7 +87,7 @@ test("Add Source picker exposes Networks with product wording and no internal so
 	}));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-networks"'));
 	assert.ok(markup.includes("<strong>Networks</strong>"));
-	assert.ok(markup.includes("Add one Series source for a TV Network."));
+	assert.ok(markup.includes("Add series from a TV network."));
 	assert.equal(markup.includes("NETWORK"), false);
 	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
 });
