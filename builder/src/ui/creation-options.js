@@ -6,6 +6,7 @@ export const CREATION_OPTION_IDS = Object.freeze({
 	STUDIOS: "studios",
 	NETWORKS: "networks",
 	GENRES: "genres",
+	STREAMING_SERVICES: "streaming-services",
 });
 
 export const CREATION_SCOPES = Object.freeze({
@@ -57,6 +58,12 @@ export const CREATION_OPTIONS = Object.freeze([
 		id: CREATION_OPTION_IDS.GENRES,
 		label: "Genres",
 		icon: "genres",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.STREAMING_SERVICES,
+		label: "Streaming Services",
+		icon: "streaming-services",
 		scopes: BOTH_SCOPES,
 	}),
 ]);

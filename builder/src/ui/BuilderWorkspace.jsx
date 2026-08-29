@@ -6,6 +6,7 @@ import {
 	applyGenreHierarchyPlan,
 	applyNetworkHierarchyPlan,
 	applyStudioHierarchyPlan,
+	applyStreamingHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
 	createDecadeSourceBundle,
@@ -1528,6 +1529,23 @@ export function BuilderWorkspace({
 		return result;
 	}
 
+	function applyStreamingPlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyStreamingHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection"
+			? result.createdCollectionInternalIds?.[0]
+			: result.createdFolderInternalIds?.[0] ?? result.updatedFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Applied ${result.counts.newSourceCount} Streaming source${result.counts.newSourceCount === 1 ? "" : "s"} across ${result.counts.folderCount} folder${result.counts.folderCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
 	function openAddSource(trigger) {
 		if (
 			navigationLocked
@@ -2632,6 +2650,7 @@ export function BuilderWorkspace({
 					onApplyStudios={applyStudioPlan}
 					onApplyNetworks={applyNetworkPlan}
 					onApplyGenres={applyGenrePlan}
+					onApplyStreaming={applyStreamingPlan}
 					collectionProvider={sourceProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
 					peopleManifestClient={peopleManifestClientRef.current}
@@ -2642,6 +2661,8 @@ export function BuilderWorkspace({
 					networkPreviewProvider={networkPreviewProviderRef.current}
 					genrePreviewProvider={genrePreviewProviderRef.current}
 					decadePreviewProvider={decadePreviewProviderRef.current}
+					streamingCatalogueProvider={streamingCatalogueProviderRef.current}
+					streamingPreviewProvider={streamingPreviewProviderRef.current}
 					networkArtworkRuntimeClient={studioArtworkRuntimeClientRef.current}
 				/>
 			) : null}

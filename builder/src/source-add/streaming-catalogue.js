@@ -258,19 +258,29 @@ export function streamingProviderCommonAvailability(provider, regionCodes) {
 	});
 }
 
-export function eligibleStreamingProviders(providers, regionCodes) {
+export function eligibleStreamingProviders(providers, regionCodes, { mediaChoice = null } = {}) {
 	if (!Array.isArray(providers)) throw new TypeError("A normalized Streaming provider list is required.");
 	const codes = normalizedRegionCodeSelection(regionCodes);
+	if (mediaChoice !== null && !["movies", "series", "both"].includes(mediaChoice)) {
+		throw new TypeError("A supported Streaming media choice is required.");
+	}
 	return Object.freeze(providers.filter((provider) => (
 		validProvider(provider)
-		&& streamingProviderCommonAvailability(provider, codes).eligible
+		&& (mediaChoice === null
+			? streamingProviderCommonAvailability(provider, codes).eligible
+			: streamingProviderCommonAvailability(provider, codes)[mediaChoice])
 	)));
+}
+
+export function eligibleStreamingProvidersForMedia(providers, regionCodes, mediaChoice) {
+	return eligibleStreamingProviders(providers, regionCodes, { mediaChoice });
 }
 
 export function browseStreamingProviders(providers, {
 	mode = STREAMING_PROVIDER_BROWSE_MODES.TOP,
 	regionCodes,
 	limit = STREAMING_TOP_PROVIDER_COUNT,
+	mediaChoice = null,
 } = {}) {
 	if (!Object.values(STREAMING_PROVIDER_BROWSE_MODES).includes(mode)) {
 		throw new TypeError("A supported Streaming provider browse mode is required.");
@@ -282,7 +292,7 @@ export function browseStreamingProviders(providers, {
 	if (mode === STREAMING_PROVIDER_BROWSE_MODES.TOP && codes.length !== 1) {
 		throw new TypeError("Top Streaming providers require exactly one selected region.");
 	}
-	const sorted = [...eligibleStreamingProviders(providers, codes)].sort((left, right) => {
+	const sorted = [...eligibleStreamingProviders(providers, codes, { mediaChoice })].sort((left, right) => {
 		if (mode === STREAMING_PROVIDER_BROWSE_MODES.ALL) return compareProvidersAlphabetically(left, right);
 		return compareProviderPriority(left, right, codes[0]);
 	});
@@ -361,14 +371,14 @@ export function browseStreamingRegions(regions, {
 	return Object.freeze(alphabetical.filter((region) => commonCodes.has(region.code)));
 }
 
-export function searchStreamingProviders(providers, query = "", { regionCodes } = {}) {
+export function searchStreamingProviders(providers, query = "", { regionCodes, mediaChoice = null } = {}) {
 	const codes = normalizedRegionCodeSelection(regionCodes);
 	const rawQuery = normalizeTmdbEntityText(query);
 	const normalizedQuery = normalizeTmdbEntitySearchText(rawQuery);
 	const exactNumericId = /^[1-9]\d*$/.test(rawQuery) && Number.isSafeInteger(Number(rawQuery))
 		? Number(rawQuery)
 		: null;
-	return Object.freeze(eligibleStreamingProviders(providers, codes)
+	return Object.freeze(eligibleStreamingProviders(providers, codes, { mediaChoice })
 		.map((provider) => {
 			if (!validProvider(provider)) return null;
 			const searchName = normalizeTmdbEntitySearchText(provider?.name);

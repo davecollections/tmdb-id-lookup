@@ -117,10 +117,11 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		CREATION_OPTION_IDS.STUDIOS,
 		CREATION_OPTION_IDS.NETWORKS,
 		CREATION_OPTION_IDS.GENRES,
+		CREATION_OPTION_IDS.STREAMING_SERVICES,
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "studios", "networks", "genres"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
 	assert.equal(CREATION_OPTIONS[0].supportingText, "Start manually");
 	assert.equal(CREATION_OPTIONS.slice(1).every((option) => option.supportingText === undefined), true);
 	assert.equal(CREATION_OPTIONS.every((option) => option.description === undefined), true);

@@ -191,6 +191,9 @@ async function runMountedPage() {
 				const networkHierarchyWidths = [];
 				const genreHierarchyWidths = [];
 				const genreNewFolderSummaryWidths = [];
+				const streamingHierarchyWidths = [];
+				const streamingAffinityDestinationWidths = [];
+				const streamingSelectionReconciliationWidths = [];
 				const networkLivePreviewWidths = [];
 				const genreLivePreviewWidths = [];
 				const sourceEditLivePreviewWidths = [];
@@ -199,6 +202,7 @@ async function runMountedPage() {
 				const decadeSourceLivePreviewWidths = [];
 				let decadeSourceGenreKeyboard = null;
 				let shortHeightPreviewGeometry = null;
+				let streamingDuplicateConfirmation = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const decadeSourceLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
@@ -257,8 +261,36 @@ async function runMountedPage() {
 					});
 					if (genreNewFolderSummaryEvaluation.exceptionDetails) throw new Error(genreNewFolderSummaryEvaluation.exceptionDetails.exception?.description ?? genreNewFolderSummaryEvaluation.exceptionDetails.text);
 					genreNewFolderSummaryWidths.push(genreNewFolderSummaryEvaluation.result?.value);
+					const streamingHierarchyEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: `window.__runStreamingHierarchyScenario(${width === 393 || width === 900})`,
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (streamingHierarchyEvaluation.exceptionDetails) throw new Error(streamingHierarchyEvaluation.exceptionDetails.exception?.description ?? streamingHierarchyEvaluation.exceptionDetails.text);
+					streamingHierarchyWidths.push(streamingHierarchyEvaluation.result?.value);
+					const streamingAffinityDestinationEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runStreamingAffinityDestinationScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (streamingAffinityDestinationEvaluation.exceptionDetails) throw new Error(streamingAffinityDestinationEvaluation.exceptionDetails.exception?.description ?? streamingAffinityDestinationEvaluation.exceptionDetails.text);
+					streamingAffinityDestinationWidths.push(streamingAffinityDestinationEvaluation.result?.value);
+					const streamingReconciliationEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runStreamingSelectionReconciliationScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (streamingReconciliationEvaluation.exceptionDetails) throw new Error(streamingReconciliationEvaluation.exceptionDetails.exception?.description ?? streamingReconciliationEvaluation.exceptionDetails.text);
+					streamingSelectionReconciliationWidths.push(streamingReconciliationEvaluation.result?.value);
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+				const streamingDuplicateEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runStreamingDuplicateConfirmationScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (streamingDuplicateEvaluation.exceptionDetails) throw new Error(streamingDuplicateEvaluation.exceptionDetails.exception?.description ?? streamingDuplicateEvaluation.exceptionDetails.text);
+				streamingDuplicateConfirmation = streamingDuplicateEvaluation.result?.value;
 				const decadeSourceGenreKeyboardBefore = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__prepareDecadeSourceGenreKeyboardScenario()",
 					awaitPromise: true,
@@ -401,7 +433,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -451,6 +483,16 @@ async function runMountedPage() {
 			series: { requestUrl: result.series.request.url, totalResults: result.series.request.totalResults, posterSources: result.series.preview.posterSources },
 			filtered: { requestUrl: result.filtered.request.url, totalResults: result.filtered.request.totalResults, posterSources: result.filtered.preview.posterSources, cacheHit: result.filtered.cacheHit },
 			requestCount: result.instrumentation.requestCount,
+		})))}`);
+		console.log(`STREAMING_HIERARCHY_DIAGNOSTICS ${JSON.stringify(execution.value.streamingHierarchyWidths.map((result) => ({
+			width: result.width,
+			providerId: result.providerId,
+			providerName: result.providerName,
+			planTotals: result.review.planTotals,
+			livePreview: result.livePreview ? {
+				requests: [result.livePreview.movieAu.request, result.livePreview.movieUs.request, result.livePreview.seriesUs.request],
+				posters: [result.livePreview.movieAu.preview.visiblePosterCount, result.livePreview.movieUs.preview.visiblePosterCount, result.livePreview.seriesUs.preview.visiblePosterCount],
+			} : null,
 		})))}`);
 		console.log(`PEOPLE_PREVIEW_DIAGNOSTICS ${JSON.stringify(execution.value.peopleConfigureWidths.filter((result) => [393, 900].includes(result.layout.width)).map((result) => ({
 			width: result.layout.width,
@@ -1416,6 +1458,303 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 			noHorizontalOverflow: true,
 			revisionUnchanged: true,
 		}, `${width}px live Genre Preview remains responsive and non-mutating`);
+	}
+});
+
+test("mounted Streaming New Collection disambiguates duplicate titles and routes the full owner-reviewed delta at every required width", () => {
+	const requiredWidths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
+	assert.deepEqual(mountedResults.streamingHierarchyWidths.map((result) => result.width), requiredWidths);
+	for (const result of mountedResults.streamingHierarchyWidths) {
+		assert.deepEqual(result.providerIds, [2, 444], `${result.width}px live Apple TV and Dekkoo identities`);
+		assert.deepEqual(result.providerNames, ["Apple TV Store", "Dekkoo"], `${result.width}px live provider names`);
+		assert.deepEqual(result.regionFocus, {
+			searchFocused: false,
+			autoFocusAttributeAbsent: true,
+			keyboardTargetAbsent: true,
+		}, `${result.width}px region Search remains deliberate`);
+		assert.deepEqual(result.providerFocus, {
+			searchFocused: false,
+			autoFocusAttributeAbsent: true,
+			keyboardTargetAbsent: true,
+		}, `${result.width}px provider Search remains deliberate`);
+		assert.deepEqual(result.regionSelectionVisual, {
+			selected: true,
+			borderRetained: true,
+			surfaceRetained: true,
+			tickVisible: true,
+			leftRailAbsent: true,
+		}, `${result.width}px Region selection language without left rail`);
+		assert.deepEqual(result.mediaSelectionRetention, {
+			moviesRetained: true,
+			seriesRetained: true,
+			bothRetained: true,
+			searchPreserved: true,
+			noPruneNotice: true,
+		}, `${result.width}px live provider remains selected across eligible Media changes`);
+		for (const [stage, layout] of Object.entries(result.layouts)) {
+			assert.deepEqual(layout, {
+				singleInnerScroll: true,
+				oneActiveScrollOwner: true,
+				noHorizontalOverflow: true,
+				primaryReachable: true,
+			}, `${result.width}px ${stage} layout`);
+		}
+		assert.deepEqual(result.configure, {
+			focusEntered: true,
+			popularDefault: true,
+			groupedDefault: true,
+			groupingChoices: ["group-by-service", "separate-by-region"],
+      runSummary: "RegionsAustralia (AU), United States of America (US)MediaMovies + Series",
+			requestsBeforeExplicitPreview: 0,
+		}, `${result.width}px shared Configure contract`);
+		assert.equal(result.review.focusEntered, true, `${result.width}px Review focus`);
+		assert.deepEqual(result.review.initialDestination.candidateCards, [
+			{ label: "Streaming Services · Collection 1", delta: "2 of 8 sources already here · 6 will be added", contents: "Currently: 1 folder · 2 sources" },
+			{ label: "Streaming Services · Collection 2", delta: "1 of 8 sources already here · 7 will be added", contents: "Currently: 1 folder · 1 source" },
+			{ label: "Streaming Services · Collection 3", delta: "1 of 8 sources already here · 7 will be added", contents: "Currently: 1 folder · 1 source" },
+		], `${result.width}px candidates ranked by overlap`);
+		assert.equal(result.review.initialDestination.helper, "Choose an existing collection to add only what is missing, or create a new collection instead.", `${result.width}px plain destination helper`);
+		assert.deepEqual(result.review.initialDestination.newOption, {
+			label: "Create new collection instead",
+			count: "8 selected sources",
+			description: "Create all 8 sources in a separate collection.",
+		}, `${result.width}px clear new-collection alternative`);
+		assert.equal(result.review.initialDestination.noneSelected, true, `${result.width}px no destination auto-selected`);
+		assert.equal(result.review.initialDestination.primaryDisabled, true, `${result.width}px explicit destination required`);
+		assert.equal(result.review.initialDestination.primaryLabel, "Choose a destination", `${result.width}px destination-required footer`);
+		assert.match(result.review.initialDestination.overlapText, /Some selected sources already exist elsewhere3 of 8 selected sources/);
+		assert.match(result.review.initialDestination.overlapText, /Apple movies · in Streaming Services · Collection 2/);
+		assert.match(result.review.initialDestination.overlapText, /Dekkoo movies · in Streaming Services · Collection 3/);
+		assert.deepEqual(result.review.newCollectionDraftState, {
+			collectionNameVisible: true,
+			folderNameCount: 2,
+			apple: "Curated Apple New",
+			dekkoo: "Curated Dekkoo",
+		}, `${result.width}px New Collection naming state`);
+		assert.deepEqual(result.review.existingDestinationState, {
+			collectionNameAbsent: true,
+			folderNameCount: 1,
+			appleInputAbsent: true,
+			dekkooDraftPreserved: true,
+			destinationSummary: "Streaming Services · Collection 1 · Rows. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.",
+		}, `${result.width}px existing destination naming boundary`);
+		assert.equal(result.review.newCollectionDraftsRestored, true, `${result.width}px New Collection drafts restored after switching back`);
+		assert.deepEqual(result.review.planTotals, [1, 1, 6], `${result.width}px actual one existing, one new, six-source delta`);
+		assert.match(result.review.runSummary, /RegionsAustralia \(AU\), United States of America \(US\)/, `${result.width}px Review Regions`);
+		assert.match(result.review.runSummary, /MediaMovies \+ Series/, `${result.width}px Review Media`);
+		assert.match(result.review.runSummary, /ServicesApple TV Store, Dekkoo/, `${result.width}px Review Services`);
+		assert.match(result.review.runSummary, /SortPopular/, `${result.width}px Review Sort`);
+		assert.match(result.review.runSummary, /GroupingGroup regions by service/, `${result.width}px Review Grouping`);
+		assert.equal(result.review.changeHeading, "What will change", `${result.width}px change-focused heading`);
+		assert.deepEqual(result.review.outcomeRows, [
+			{ status: "extend-folder", text: "Apple TVApple TV StoreExisting folder2 sources already exist · 2 sources will be addedView matches elsewhereThese exact sources exist elsewhereApple movies · in Streaming Services · Collection 2They stay there; choosing this destination does not move them." },
+			{ status: "new-folder", text: "Curated DekkooDekkooNew folder4 sources will be createdView matches elsewhereThese exact sources exist elsewhereDekkoo movies · in Streaming Services · Collection 3They stay there; choosing this destination does not move them." },
+		], `${result.width}px clear existing/new placement rows`);
+		assert.equal(result.review.folderNameCount, 1, `${result.width}px only new Dekkoo folder editable`);
+		assert.equal(result.review.invalidNameBlocked, true, `${result.width}px Folder validation blocks Apply`);
+		assert.equal(result.review.customNamePreservedAfterBack, true, `${result.width}px logical folder custom name survives Back`);
+		assert.equal(result.review.textOnlyNoteAbsent, true, `${result.width}px no temporary artwork warning`);
+		assert.equal(result.review.providerLogoAbsent, true, `${result.width}px transient logos`);
+		assert.equal(result.review.createAction, "Apply 6 sources", `${result.width}px honest Apply label`);
+		assert.equal(result.applyCalls, 1, `${result.width}px one atomic Apply`);
+		assert.equal(result.preApplyUnchanged, true, `${result.width}px zero mutation before Apply`);
+		assert.equal(result.appliedRevisionDelta, 1, `${result.width}px one revision`);
+		assert.deepEqual(result.appliedFolders, [
+			{ title: "Apple TV", sources: ["Movies (AU)", "Series (AU)", "Movies (US)", "Series (US)"] },
+			{ title: "Curated Dekkoo", sources: ["Movies (AU)", "Series (AU)", "Movies (US)", "Series (US)"] },
+		], `${result.width}px exact applied hierarchy`);
+		assert.equal(result.collectionCount, 3, `${result.width}px no new collection created`);
+		assert.equal(result.secondaryCollectionUnchanged, true, `${result.width}px unselected collection unchanged`);
+		assert.equal(result.tertiaryCollectionUnchanged, true, `${result.width}px second unselected collection unchanged`);
+		assert.equal(result.existingArtworkPreserved, true, `${result.width}px reused folder artwork preserved`);
+		assert.equal(result.newArtworkUnassigned, true, `${result.width}px new folder artwork remains unassigned`);
+		assert.equal(result.livePreview !== null, result.width === 393 || result.width === 900, `${result.width}px live Preview owner widths only`);
+	}
+});
+
+test("mounted Streaming New Collection offers a zero-overlap imported collection by content affinity and preserves it at every required width", () => {
+	const requiredWidths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
+	assert.deepEqual(mountedResults.streamingAffinityDestinationWidths.map((result) => result.width), requiredWidths);
+	for (const result of mountedResults.streamingAffinityDestinationWidths) {
+		assert.deepEqual(result.initialChoice, {
+			candidateCount: 1,
+			label: "Streaming Services",
+			kind: "Existing Streaming collection",
+			delta: "None of the selected sources are here yet · all 2 sources will be added",
+			contents: "Currently: 2 folders · 6 sources",
+			newOption: {
+				label: "Create new collection instead",
+				count: "2 selected sources",
+				description: "Create all 2 sources in a separate collection.",
+			},
+			noneSelected: true,
+			primaryDisabled: true,
+		}, `${result.width}px explicit zero-overlap destination choice`);
+		assert.deepEqual(result.review.planTotals, [0, 1, 2], `${result.width}px new sibling-only delta`);
+		assert.equal(result.review.heading, "What will change", `${result.width}px change heading`);
+		assert.deepEqual(result.review.outcomes, [{ status: "new-folder", text: "CrunchyrollNew folder2 sources will be created" }], `${result.width}px strict folder trust keeps the provider in a new sibling`);
+		assert.equal(result.review.collectionSettings, "Collection settings stay unchangedStreaming Services · Tabs. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.", `${result.width}px existing collection settings boundary`);
+		assert.equal(result.review.applyLabel, "Apply 2 sources", `${result.width}px honest Apply action`);
+		assert.deepEqual(result.layout, {
+			singleInnerScroll: true,
+			oneActiveScrollOwner: true,
+			noHorizontalOverflow: true,
+			primaryReachable: true,
+		}, `${result.width}px affinity Review layout`);
+		assert.deepEqual(result.preApply, { revisionDelta: 0, serializedUnchanged: true, applyCalls: 0 }, `${result.width}px no mutation before Apply`);
+		assert.equal(result.applyCalls, 1, `${result.width}px one atomic Apply`);
+		assert.equal(result.revisionDelta, 1, `${result.width}px one revision`);
+		assert.equal(result.collectionCount, 1, `${result.width}px no duplicate Collection`);
+		assert.equal(result.collectionIdentityRetained, true, `${result.width}px same imported Collection`);
+		assert.equal(result.collectionEditablePreserved, true, `${result.width}px imported Collection editable fields preserved`);
+		assert.equal(result.collectionRawPreserved, true, `${result.width}px imported Collection raw fields preserved`);
+		assert.equal(result.existingFoldersPreserved, true, `${result.width}px imported folders and sources preserved`);
+		assert.equal(result.serializedExistingFoldersPreserved, true, `${result.width}px existing serialized folder output preserved`);
+		assert.deepEqual(result.newFolder, {
+			title: "Crunchyroll",
+			sources: [["Movies (AU)", "AU", "MOVIE"], ["Series (AU)", "AU", "TV"]],
+			artworkUnassigned: true,
+		}, `${result.width}px new sibling folder and sources`);
+	}
+});
+
+test("mounted Streaming selection reconciliation retains, prunes, orders, and stays responsive at every required width", () => {
+	const requiredWidths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
+	assert.deepEqual(mountedResults.streamingSelectionReconciliationWidths.map((result) => result.width), requiredWidths);
+	for (const result of mountedResults.streamingSelectionReconciliationWidths) {
+		assert.deepEqual(result.ownerSeries, {
+			selectedNames: ["Netflix"],
+			selectedCount: 1,
+			cardSelected: true,
+			notice: null,
+			continueEnabled: true,
+			configureSeriesOnly: true,
+		}, `${result.width}px owner Both to Series case`);
+		assert.deepEqual(result.ownerMovies, {
+			selectedNames: ["Netflix"],
+			selectedCount: 1,
+			cardSelected: true,
+			notice: null,
+			continueEnabled: true,
+		}, `${result.width}px owner Both to Movies case`);
+		assert.deepEqual(result.somePruned, {
+			selectedNames: ["C Both", "B Both"],
+			selectedCount: 2,
+			notice: "1 selected service was removed because it does not support Movies + Series in every selected region.",
+			retainedCardsSelected: true,
+			removedCardAbsent: true,
+		}, `${result.width}px one ineligible service pruned without reordering`);
+		assert.deepEqual(result.allPruned, {
+			selectedNames: [],
+			selectedCount: 0,
+			notice: "2 selected services were removed because they do not support Series in every selected region.",
+			disclosureAbsent: true,
+			continueDisabled: true,
+		}, `${result.width}px all ineligible services pruned once`);
+		assert.deepEqual(result.regionRestricted, {
+			selectedNames: ["C Both"],
+			selectedCount: 1,
+			notice: "1 selected service was removed because it is not available for the selected media in every region.",
+			retainedCardSelected: true,
+			removedCardAbsent: true,
+		}, `${result.width}px added Region prunes only the AU-only service`);
+		assert.deepEqual(result.regionRelaxed, {
+			selectedNames: ["C Both"],
+			selectedCount: 1,
+			notice: null,
+			retainedCardSelected: true,
+			relaxedNoticeAbsent: true,
+		}, `${result.width}px removing Region retains the service without notice`);
+		assert.deepEqual(result.folderNameCleanup, {
+			summary: "Folder names · 3",
+			sectionHelper: "Keep the generated names or customise new folders.",
+			inputCount: 3,
+			perFolderHelperCount: 0,
+			finalInputAboveFooter: true,
+		}, `${result.width}px compact three-folder naming section`);
+		assert.deepEqual(result.layout, {
+			singleInnerScroll: true,
+			oneActiveScrollOwner: true,
+			noHorizontalOverflow: true,
+			primaryReachable: true,
+		}, `${result.width}px reconciliation Review layout`);
+		assert.equal(result.noHorizontalOverflow, true, `${result.width}px no document overflow`);
+		assert.equal(result.projectUnchanged, true, `${result.width}px selection changes never mutate project`);
+	}
+});
+
+test("mounted complete New Collection overlap requires explicit confirmation before one duplicate creation", () => {
+	const result = mountedResults.streamingDuplicateConfirmation;
+	assert.match(result.evidenceText, /All selected sources already exist elsewhere/);
+	assert.match(result.evidenceText, /2 of 2 selected sources/);
+	assert.match(result.evidenceText, /Custom Netflix folder · in Existing Streaming/);
+	assert.deepEqual(result.initialChoice, {
+		candidateCount: 1,
+		candidateLabel: "Existing Streaming",
+		candidateDelta: "All 2 selected sources already exist here · nothing to add",
+		newOption: {
+			label: "Create new collection instead",
+			count: "2 selected sources",
+			description: "Create all 2 sources in a separate collection.",
+		},
+		noneSelected: true,
+		primaryDisabled: true,
+	});
+	assert.doesNotMatch(result.initialChoice.candidateLabel, /Collection 1/);
+	assert.match(result.zeroChange.message, /Nothing to addAll selected Streaming sources already exist in Existing Streaming\. No project changes are needed\./);
+	assert.deepEqual({ primaryLabel: result.zeroChange.primaryLabel, primaryEnabled: result.zeroChange.primaryEnabled, applyCalls: result.zeroChange.applyCalls, revisionUnchanged: result.zeroChange.revisionUnchanged, sameProject: result.zeroChange.sameProject, collectionNameAbsent: result.zeroChange.collectionNameAbsent }, {
+		primaryLabel: "Close",
+		primaryEnabled: true,
+		applyCalls: 0,
+		revisionUnchanged: true,
+		sameProject: true,
+		collectionNameAbsent: true,
+	});
+	assert.deepEqual(result.duplicateChoice, { collectionNameVisible: true, primaryLabel: "Create duplicate collection" });
+	assert.equal(result.beforeConfirmation.applyCalls, 0);
+	assert.equal(Number.isSafeInteger(result.beforeConfirmation.revision), true);
+	assert.equal(result.beforeConfirmation.sameProject, true);
+	assert.equal(result.cancelRestoredFocus, true);
+	assert.equal(result.applyCalls, 1);
+	assert.equal(result.revisionDelta, 1);
+	assert.equal(result.collectionCount, 2);
+});
+
+test("mounted Streaming Preview uses exact live Worker queries and real TMDB posters at 393px and 900px", () => {
+	const liveResults = mountedResults.streamingHierarchyWidths.filter((result) => result.livePreview !== null);
+	assert.deepEqual(liveResults.map((result) => result.width), [393, 900]);
+	for (const result of liveResults) {
+		const { movieAu, movieUs, seriesUs } = result.livePreview;
+		const expectedQueries = [
+			[movieAu, "/3/discover/movie", "AU"],
+			[movieUs, "/3/discover/movie", "US"],
+			[seriesUs, "/3/discover/tv", "US"],
+		];
+		for (const [entry, pathname, region] of expectedQueries) {
+			assert.equal(entry.request.origin, tmdbProxyBaseUrl, `${result.width}px production Worker origin`);
+			assert.equal(entry.request.pathname, pathname, `${result.width}px exact Discover media path`);
+			assert.deepEqual(Object.fromEntries(entry.request.queryEntries), {
+				include_adult: "false",
+				sort_by: "popularity.desc",
+				watch_region: region,
+				with_watch_providers: "2",
+			}, `${result.width}px exact ${pathname} ${region} query`);
+			assert.equal(entry.request.status, 200, `${result.width}px live Worker status`);
+			assert.equal(entry.request.ok, true, `${result.width}px live Worker response`);
+			assert.match(entry.request.contentType, /application\/json/i, `${result.width}px live JSON response`);
+			assert.equal(Number.isSafeInteger(entry.request.totalResults) && entry.request.totalResults >= 0, true, `${result.width}px volatile total_results`);
+			assert.equal(entry.preview.visiblePosterCount > 0 && entry.preview.visiblePosterCount <= 10, true, `${result.width}px bounded real posters`);
+			assert.equal(entry.preview.renderedPosterCount <= 10, true, `${result.width}px bounded poster DOM`);
+			assert.deepEqual(entry.preview.posterSources, entry.preview.expectedSources, `${result.width}px exact response poster order`);
+			assert.equal(entry.preview.exactResponseOrder, true, `${result.width}px exact poster correspondence`);
+			assert.equal(entry.preview.postersReady, true, `${result.width}px poster readiness`);
+			assert.equal(entry.preview.genuineTmdbSources, true, `${result.width}px image.tmdb.org resources`);
+			assert.equal(entry.preview.posterOnly, true, `${result.width}px poster-only grid`);
+			assertTitlePreviewGeometry(entry.preview.geometry, { width: result.width, posters: entry.preview.visiblePosterCount, label: `${result.width}px Streaming ${pathname} ${region} Preview` });
+		}
+		assert.equal(result.livePreview.requestCount, 3, `${result.width}px region and media tabs request only exact sources`);
+		assert.equal(result.livePreview.closed, true, `${result.width}px Preview closes`);
+		assert.equal(result.livePreview.exactFocusRestored, true, `${result.width}px Preview trigger focus restoration`);
 	}
 });
 

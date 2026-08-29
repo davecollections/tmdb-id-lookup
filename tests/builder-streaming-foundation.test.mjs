@@ -391,8 +391,8 @@ test("Streaming media support applies strict common availability across selected
 });
 
 test("Movies, Series and Both use DISCOVER Core for canonical sources and all four semantic sorts", () => {
-	assert.equal(defaultStreamingSourceName("Netflix", "AU", "MOVIE"), "Netflix, AU - Movies");
-	assert.equal(defaultStreamingSourceName("Netflix", "AU", "TV"), "Netflix, AU - Series");
+	assert.equal(defaultStreamingSourceName("Netflix", "AU", "MOVIE"), "Netflix Movies (AU)");
+	assert.equal(defaultStreamingSourceName("Netflix", "AU", "TV"), "Netflix Series (AU)");
 	assert.equal(defaultStreamingSourceName("Netflix", "AU", "movie"), null);
 	for (const choice of ["movies", "series", "both"]) {
 		for (const option of STREAMING_SORT_OPTIONS) {
@@ -406,7 +406,7 @@ test("Movies, Series and Both use DISCOVER Core for canonical sources and all fo
 			}).ok, true, `validation:${choice}:${option.id}`);
 			for (const draft of built.drafts) {
 				assert.deepEqual(draft.editable, {
-					title: `Netflix, AU - ${draft.editable.mediaType === "MOVIE" ? "Movies" : "Series"}`,
+				title: `Netflix ${draft.editable.mediaType === "MOVIE" ? "Movies" : "Series"} (AU)`,
 					sortBy: discoverSortValue(option.id, draft.editable.mediaType),
 					tmdbId: null,
 					filters: { watchRegion: "AU", withWatchProviders: "8" },
@@ -428,10 +428,10 @@ test("multi-region construction preserves selected-region order, Movie-before-TV
 		mediaType: draft.editable.mediaType,
 		filters: draft.editable.filters,
 	})), [
-		{ title: "Netflix, US - Movies", mediaType: "MOVIE", filters: { watchRegion: "US", withWatchProviders: "8" } },
-		{ title: "Netflix, US - Series", mediaType: "TV", filters: { watchRegion: "US", withWatchProviders: "8" } },
-		{ title: "Netflix, AU - Movies", mediaType: "MOVIE", filters: { watchRegion: "AU", withWatchProviders: "8" } },
-		{ title: "Netflix, AU - Series", mediaType: "TV", filters: { watchRegion: "AU", withWatchProviders: "8" } },
+		{ title: "Netflix Movies (US)", mediaType: "MOVIE", filters: { watchRegion: "US", withWatchProviders: "8" } },
+		{ title: "Netflix Series (US)", mediaType: "TV", filters: { watchRegion: "US", withWatchProviders: "8" } },
+		{ title: "Netflix Movies (AU)", mediaType: "MOVIE", filters: { watchRegion: "AU", withWatchProviders: "8" } },
+		{ title: "Netflix Series (AU)", mediaType: "TV", filters: { watchRegion: "AU", withWatchProviders: "8" } },
 	]);
 	assert.equal(validateStreamingSourceDrafts(built.drafts, {
 		provider: provider(8),
@@ -462,7 +462,7 @@ test("Streaming creation supports independent valid physical-source names and pr
 		"US movie shelf",
 		"US series shelf",
 		" AU movies ",
-		"Netflix, AU - Series",
+		"Netflix Series (AU)",
 	]);
 	const resorted = buildStreamingSourceDrafts(provider(8), {
 		regionCodes: ["US", "AU"], mediaChoice: "both", sortOptionId: "most-votes", sourceTitles,
@@ -473,7 +473,7 @@ test("Streaming creation supports independent valid physical-source names and pr
 	const reset = buildStreamingSourceDrafts(provider(8), {
 		regionCodes: ["US", "AU"], mediaChoice: "both", sortOptionId: "recent", sourceTitles: resetTitles,
 	});
-	assert.equal(reset.drafts[1].editable.title, "Netflix, US - Series");
+	assert.equal(reset.drafts[1].editable.title, "Netflix Series (US)");
 	assert.equal(validateStreamingSourceDrafts(built.drafts, {
 		provider: provider(8), regionCodes: ["US", "AU"], mediaChoice: "both", sortOptionId: "recent",
 	}).ok, true);
@@ -551,10 +551,10 @@ test("Streaming atomically inserts every final custom and default title in a bat
 	assert.deepEqual(
 		serializeNuvioProject(controller.getState().project).value[0].folders[0].sources.map((source) => source.title),
 		[
-			"Australia films", "Netflix, AU - Series",
-			"Netflix, CA - Movies", "Canada series",
-			"Netflix, GB - Movies", "Netflix, GB - Series",
-			"US cinema", "Netflix, US - Series",
+			"Australia films", "Netflix Series (AU)",
+			"Netflix Movies (CA)", "Canada series",
+			"Netflix Movies (GB)", "Netflix Series (GB)",
+			"US cinema", "Netflix Series (US)",
 		],
 	);
 });

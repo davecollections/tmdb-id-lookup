@@ -1,5 +1,6 @@
 import {
 	discoverSourceNodeIdentity,
+	isCanonicalDiscoverFilterValue,
 	resolveEffectiveDiscoverSource,
 } from "../nuvio/discover.js";
 
@@ -58,4 +59,51 @@ export function inspectSimpleStreamingSourceNode(source) {
 		providerId,
 		regionCode,
 	});
+}
+
+function aliasedFilterValue(filters, fields, validate) {
+	const values = fields
+		.filter((field) => Object.hasOwn(filters, field) && meaningful(filters[field]))
+		.map((field) => filters[field]);
+	if (values.length === 0 || values.some((value) => !validate(value))) return null;
+	return new Set(values).size === 1 ? values[0] : null;
+}
+
+export function inspectStreamingAffinitySourceNode(source) {
+	const effective = resolveEffectiveDiscoverSource(source);
+	if (!effective.ok || !plainObject(effective.value)) return null;
+	const value = effective.value;
+	const provider = canonicalText(value.provider).toLowerCase();
+	const sourceType = canonicalText(value.tmdbSourceType).toUpperCase();
+	const mediaType = canonicalText(value.mediaType).toUpperCase();
+	if (provider !== "tmdb" || sourceType !== "DISCOVER" || !["MOVIE", "TV"].includes(mediaType) || !plainObject(value.filters)) return null;
+	const providerExpression = aliasedFilterValue(
+		value.filters,
+		["withWatchProviders", "with_watch_providers"],
+		(entry) => isCanonicalDiscoverFilterValue("withWatchProviders", entry),
+	);
+	const regionCode = aliasedFilterValue(
+		value.filters,
+		["watchRegion", "watch_region"],
+		(entry) => typeof entry === "string" && /^[A-Z]{2}$/.test(entry),
+	);
+	if (providerExpression === null || regionCode === null) return null;
+	return Object.freeze({ mediaType, providerExpression, regionCode });
+}
+
+export function hasStreamingCollectionAffinity(collection) {
+	return (collection?.folders ?? []).some((folder) => (
+		(folder?.sources ?? []).some((source) => inspectStreamingAffinitySourceNode(source) !== null)
+	));
+}
+
+export function hasStreamingSourceEvidence(source) {
+	const effective = resolveEffectiveDiscoverSource(source);
+	const candidates = [effective.ok ? effective.value : null, source?.editable, source?.rawImported].filter(plainObject);
+	return candidates.some((value) => (
+		canonicalText(value.provider).toLowerCase() === "tmdb"
+		&& canonicalText(value.tmdbSourceType).toUpperCase() === "DISCOVER"
+		&& plainObject(value.filters)
+		&& (meaningful(value.filters.watchRegion) || meaningful(value.filters.withWatchProviders))
+	));
 }

@@ -219,8 +219,8 @@ test("Streaming Edit changes only title and semantic sort while fixed identity a
 });
 
 test("Streaming default-name reset is media-qualified for Movie and TV", () => {
-	assert.equal(streamingDefaultSourceName("Netflix", "AU", "MOVIE"), "Netflix, AU - Movies");
-	assert.equal(streamingDefaultSourceName("Netflix", "AU", "TV"), "Netflix, AU - Series");
+	assert.equal(streamingDefaultSourceName("Netflix", "AU", "MOVIE"), "Netflix Movies (AU)");
+	assert.equal(streamingDefaultSourceName("Netflix", "AU", "TV"), "Netflix Series (AU)");
 	assert.equal(streamingDefaultSourceName("Netflix", "AU", null), null);
 });
 

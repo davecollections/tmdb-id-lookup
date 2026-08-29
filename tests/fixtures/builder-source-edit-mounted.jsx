@@ -3,9 +3,11 @@ import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import {
 	applyGenreHierarchyPlan,
+	applyStreamingHierarchyPlan,
 	buildTmdbPosterUrl,
 	createPeopleManifestClient,
 	createNetworkCatalogueProvider,
+	createStreamingCatalogueProvider,
 	createStudioCatalogueProvider,
 	createTmdbCollectionProvider,
 	createTmdbDecadesPreviewProvider,
@@ -13,6 +15,7 @@ import {
 	createTmdbNetworkPreviewProvider,
 	createTmdbPersonProvider,
 	createTmdbStudioPreviewProvider,
+	createTmdbStreamingPreviewProvider,
 } from "../../builder/src/source-add/index.js";
 import {
 	chooseMovieCollection,
@@ -34,6 +37,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const livePeopleManifestClient = createPeopleManifestClient();
 const liveNetworkCatalogueProvider = createNetworkCatalogueProvider({ catalogueUrl: "/data/tv-networks.min.json" });
 const liveStudioCatalogueProvider = createStudioCatalogueProvider({ catalogueUrl: "/data/companies.min.json" });
+const liveStreamingCatalogueProvider = createStreamingCatalogueProvider();
 const liveNetworkArtworkRuntimeClient = createArtworkRuntimeClient();
 const liveStudioArtworkRuntimeClient = createArtworkRuntimeClient();
 
@@ -2906,6 +2910,836 @@ async function runGenreLivePreviewScenario() {
 	}
 }
 
+async function runStreamingHierarchyScenario(runLivePreview = false) {
+	const providerIds = [2, 444];
+	const requests = [];
+	const failedImageSources = new Set();
+	let applyCalls = 0;
+	const previewProvider = createTmdbStreamingPreviewProvider({ fetchImpl: recordingNetworkPreviewFetch(requests) });
+	const controller = createController();
+	const collectionResult = controller.createCollection({ editable: { title: "Streaming Services", viewMode: "ROWS", showAllTab: true, pinToTop: false } });
+	const existingAppleArtwork = {
+		coverImageUrl: "https://image.example/apple-cover.jpg",
+		heroBackdropUrl: "https://image.example/apple-hero.jpg",
+		titleLogoUrl: "https://image.example/apple-logo.png",
+		focusGifUrl: "https://image.example/apple-focus.gif",
+		focusGifEnabled: true,
+	};
+	const appleFolderResult = controller.createFolder(collectionResult.createdInternalId, { editable: { title: "Apple TV", tileShape: "POSTER", hideTitle: false, ...existingAppleArtwork } });
+	const initialAppleSources = [
+		{ category: "native-tmdb", editable: streamingSource({ title: "Movies (AU)", mediaType: "MOVIE", filters: { watchRegion: "AU", withWatchProviders: "2" } }) },
+		{ category: "native-tmdb", editable: streamingSource({ title: "Series (AU)", mediaType: "TV", filters: { watchRegion: "AU", withWatchProviders: "2" } }) },
+	];
+	if (!controller.addSourcesToFolder(appleFolderResult.createdInternalId, { sources: initialAppleSources }).ok) throw new Error("Mounted Streaming hierarchy setup failed.");
+	const secondaryCollectionResult = controller.createCollection({ editable: { title: "Streaming Services", viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false } });
+	const secondaryFolderResult = controller.createFolder(secondaryCollectionResult.createdInternalId, { editable: { title: "Apple movies", tileShape: "POSTER", hideTitle: false } });
+	if (!controller.addSourcesToFolder(secondaryFolderResult.createdInternalId, { sources: [initialAppleSources[0]] }).ok) throw new Error("Mounted Streaming secondary destination setup failed.");
+	const tertiaryCollectionResult = controller.createCollection({ editable: { title: "Streaming Services", viewMode: "ROWS", showAllTab: false, pinToTop: true } });
+	const tertiaryFolderResult = controller.createFolder(tertiaryCollectionResult.createdInternalId, { editable: { title: "Dekkoo movies", tileShape: "LANDSCAPE", hideTitle: true } });
+	const tertiaryDekkooSource = { category: "native-tmdb", editable: streamingSource({ title: "Movies (AU)", mediaType: "MOVIE", filters: { watchRegion: "AU", withWatchProviders: "444" } }) };
+	if (!controller.addSourcesToFolder(tertiaryFolderResult.createdInternalId, { sources: [tertiaryDekkooSource] }).ok) throw new Error("Mounted Streaming tertiary destination setup failed.");
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const secondaryCollectionBefore = JSON.stringify(initialProject.collections.find((collection) => collection.internalId === secondaryCollectionResult.createdInternalId));
+	const tertiaryCollectionBefore = JSON.stringify(initialProject.collections.find((collection) => collection.internalId === tertiaryCollectionResult.createdInternalId));
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "streaming-services",
+			streamingCatalogueProvider: liveStreamingCatalogueProvider,
+			streamingPreviewProvider: previewProvider,
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStreaming(plan) { applyCalls += 1; return applyStreamingHierarchyPlan(controller, plan); },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (element === null || element === undefined) throw new Error(`Mounted Streaming hierarchy ${label} is missing.`);
+		return element;
+	}
+	function stageLayout(dialog) {
+		const scroll = required(dialog.querySelector(".add-source-scroll"), "scroll owner");
+		const primary = required(dialog.querySelector(".add-source-actions .editor-apply"), "primary action");
+		const primaryRect = primary.getBoundingClientRect();
+		const activeScrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		});
+		return {
+			singleInnerScroll: dialog.querySelectorAll(".add-source-scroll").length === 1 && ["auto", "scroll"].includes(getComputedStyle(scroll).overflowY),
+			oneActiveScrollOwner: activeScrollOwners.length <= 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && scroll.scrollWidth <= scroll.clientWidth,
+			primaryReachable: visibleElement(primary) && primaryRect.height >= 44 && primaryRect.left >= -1 && primaryRect.right <= window.innerWidth + 1,
+		};
+	}
+	function recordFailedPoster(event) {
+		if (!(event.target instanceof HTMLImageElement)) return;
+		const source = event.target.currentSrc || event.target.src;
+		try {
+			const url = new URL(source);
+			if (url.origin === "https://image.tmdb.org" && url.pathname.startsWith("/t/p/w342/")) failedImageSources.add(url.toString());
+		} catch {}
+	}
+	function responsePosterSources(request) {
+		return (request?.results ?? [])
+			.map((item) => buildTmdbPosterUrl(item.posterPath, "w342"))
+			.filter(Boolean)
+			.slice(0, 10);
+	}
+	async function waitForRequest(index, label) {
+		return waitForMountedCondition(() => requests[index] ?? null, { label, timeoutMs: 20_000 });
+	}
+	async function waitForPreview(index, label) {
+		const request = await waitForRequest(index, `${label} request`);
+		if (!request.ok || !request.cloneInspected || !Number.isSafeInteger(request.totalResults) || request.totalResults < 0) {
+			throw new Error(`${label} received an unusable live Worker response: ${JSON.stringify(request)}`);
+		}
+		const candidateSources = responsePosterSources(request);
+		if (candidateSources.length === 0) throw new Error(`${label} returned no usable real TMDB poster paths.`);
+		const modal = await waitForMountedCondition(() => document.querySelector(".streaming-hierarchy-preview-modal"), { label: `${label} modal`, timeoutMs: 20_000 });
+		const ready = await waitForMountedCondition(() => {
+			const grid = modal.querySelector(".streaming-hierarchy-preview-grid");
+			const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
+			if (!grid || images.length === 0 || images.some((image) => !image.complete)) return null;
+			const visibleImages = images.filter(visibleElement);
+			if (visibleImages.length === 0 || visibleImages.some((image) => image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
+			return { grid, images, visibleImages };
+		}, { label: `${label} poster grid`, timeoutMs: 30_000 });
+		const visibleSources = ready.visibleImages.map((image) => image.currentSrc || image.src);
+		const expectedSources = candidateSources.filter((source) => !failedImageSources.has(source));
+		return {
+			request,
+			modal,
+			evidence: {
+				visiblePosterCount: ready.visibleImages.length,
+				renderedPosterCount: ready.images.length,
+				posterSources: visibleSources,
+				expectedSources,
+				exactResponseOrder: JSON.stringify(visibleSources) === JSON.stringify(expectedSources),
+				postersReady: ready.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+				genuineTmdbSources: genuineTmdbPosterImages(ready.visibleImages),
+				posterOnly: [...ready.grid.children].every((child) => child.tagName === "IMG"),
+				geometry: titlePreviewGeometry(modal, ready.grid),
+			},
+		};
+	}
+	function requestEvidence(request) {
+		const url = new URL(request.url);
+		return {
+			origin: url.origin,
+			pathname: url.pathname,
+			queryEntries: [...url.searchParams.entries()],
+			status: request.status,
+			ok: request.ok,
+			contentType: request.contentType,
+			totalResults: request.totalResults,
+		};
+	}
+	document.addEventListener("error", recordFailedPoster, true);
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "creation dialog");
+		const regionQuery = await waitForMountedCondition(
+			() => dialog.querySelector("#streaming-region-query"),
+			{ label: "live Streaming catalogue and region Search", timeoutMs: 20_000 },
+		);
+		const regionFocus = {
+			searchFocused: document.activeElement === regionQuery,
+			autoFocusAttributeAbsent: regionQuery.autofocus === false && !regionQuery.hasAttribute("autofocus"),
+			keyboardTargetAbsent: !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName),
+		};
+		const au = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "live AU region", timeoutMs: 20_000 });
+		const us = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="US"]'), { label: "live US region", timeoutMs: 20_000 });
+		await clickAndSettle(au);
+		await clickAndSettle(us);
+		const selectedRegionStyle = getComputedStyle(au);
+		const selectedRegionMark = required(au.querySelector(".streaming-region-selected-mark"), "selected Region tick");
+		const regionSelectionVisual = {
+			selected: au.dataset.selected === "true" && au.getAttribute("aria-pressed") === "true",
+			borderRetained: selectedRegionStyle.borderColor !== "rgba(0, 0, 0, 0)",
+			surfaceRetained: selectedRegionStyle.backgroundColor !== "rgba(0, 0, 0, 0)",
+			tickVisible: getComputedStyle(selectedRegionMark).opacity === "1" && selectedRegionMark.textContent.trim() === "✓",
+			leftRailAbsent: selectedRegionStyle.boxShadow === "none",
+		};
+		const regionLayout = stageLayout(dialog);
+		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 2 regions"), "Choose services action"));
+
+		const providerQuery = required(dialog.querySelector("#streaming-hierarchy-provider-query"), "provider Search");
+		const providerFocus = {
+			searchFocused: document.activeElement === providerQuery,
+			autoFocusAttributeAbsent: providerQuery.autofocus === false && !providerQuery.hasAttribute("autofocus"),
+			keyboardTargetAbsent: !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName),
+		};
+		await act(async () => {
+			setInputValue(providerQuery, String(providerIds[0]));
+			await afterCommittedEffects();
+		});
+		let providerCard = await waitForMountedCondition(() => dialog.querySelector(`[data-streaming-provider="${providerIds[0]}"]`), { label: `live Streaming provider ${providerIds[0]}`, timeoutMs: 20_000 });
+		const providerNames = [required(providerCard.querySelector("strong"), "provider name").textContent.trim()];
+		await clickAndSettle(providerCard);
+		const movies = required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="movies"]'), "Movies media choice");
+		await clickAndSettle(movies);
+		const moviesRetained = dialog.querySelectorAll(".streaming-selected-disclosure li").length === 1 && dialog.querySelector(`[data-streaming-provider="${providerIds[0]}"] input`)?.checked === true;
+		const series = required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="series"]'), "Series media choice");
+		await clickAndSettle(series);
+		const seriesRetained = dialog.querySelectorAll(".streaming-selected-disclosure li").length === 1 && dialog.querySelector(`[data-streaming-provider="${providerIds[0]}"] input`)?.checked === true;
+		const both = required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="both"]'), "Both media choice");
+		await clickAndSettle(both);
+		const mediaSelectionRetention = {
+			moviesRetained,
+			seriesRetained,
+			bothRetained: dialog.querySelectorAll(".streaming-selected-disclosure li").length === 1 && dialog.querySelector(`[data-streaming-provider="${providerIds[0]}"] input`)?.checked === true,
+			searchPreserved: providerQuery.value === String(providerIds[0]),
+			noPruneNotice: dialog.querySelector("[data-streaming-selection-reconciliation]") === null,
+		};
+		await act(async () => {
+			setInputValue(providerQuery, String(providerIds[1]));
+			await afterCommittedEffects();
+		});
+		providerCard = await waitForMountedCondition(() => dialog.querySelector(`[data-streaming-provider="${providerIds[1]}"]`), { label: `live Streaming provider ${providerIds[1]}`, timeoutMs: 20_000 });
+		providerNames.push(required(providerCard.querySelector("strong"), "second provider name").textContent.trim());
+		await clickAndSettle(providerCard);
+		const providerLayout = stageLayout(dialog);
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 services"), "Configure action"));
+
+		const configure = required(dialog.querySelector(".streaming-hierarchy-configure"), "Configure stage");
+		const configureRow = required(configure.querySelector(`[data-streaming-provider="${providerIds[0]}"]`), "Configure provider row");
+		const previewTrigger = required(configureRow.querySelector('button[aria-haspopup="dialog"]'), "Preview trigger");
+		const configureState = {
+			focusEntered: document.activeElement === configure.querySelector("#streaming-hierarchy-configure-title"),
+			popularDefault: configure.querySelector('input[name="streaming-hierarchy-sort"][value="popular"]')?.checked === true,
+			groupedDefault: configure.querySelector('input[name="streaming-hierarchy-grouping"][value="group-by-service"]')?.checked === true,
+			groupingChoices: [...configure.querySelectorAll('input[name="streaming-hierarchy-grouping"]')].map((input) => input.value),
+			runSummary: required(configure.querySelector('[aria-label="Streaming run context"]'), "Configure run summary").textContent.replace(/\s+/g, " ").trim(),
+			requestsBeforeExplicitPreview: requests.length,
+		};
+		const configureLayout = stageLayout(dialog);
+		let livePreview = null;
+		if (runLivePreview) {
+			previewTrigger.focus({ preventScroll: true });
+			failedImageSources.clear();
+			await clickAndSettle(previewTrigger);
+			const movieAu = await waitForPreview(0, `Live Streaming Movies AU at ${window.innerWidth}px`);
+			const regionTabs = required(movieAu.modal.querySelector('[role="tablist"][aria-label="Preview region"]'), "Preview region tabs");
+			const mediaTabs = required(movieAu.modal.querySelector('[role="tablist"][aria-label="Preview media"]'), "Preview media tabs");
+			await clickAndSettle(required(buttonContaining(regionTabs, "US"), "US Preview tab"));
+			const movieUs = await waitForPreview(1, `Live Streaming Movies US at ${window.innerWidth}px`);
+			await clickAndSettle(required(buttonContaining(mediaTabs, "Series"), "Series Preview tab"));
+			const seriesUs = await waitForPreview(2, `Live Streaming Series US at ${window.innerWidth}px`);
+			await clickAndSettle(required(seriesUs.modal.querySelector("header button"), "Preview Close action"));
+			livePreview = {
+				movieAu: { request: requestEvidence(movieAu.request), preview: movieAu.evidence },
+				movieUs: { request: requestEvidence(movieUs.request), preview: movieUs.evidence },
+				seriesUs: { request: requestEvidence(seriesUs.request), preview: seriesUs.evidence },
+				requestCount: requests.length,
+				closed: document.querySelector(".streaming-hierarchy-preview-modal") === null,
+				exactFocusRestored: document.activeElement === previewTrigger,
+			};
+		}
+
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
+		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "Review stage");
+		const reviewFocusEntered = document.activeElement === review.querySelector("#streaming-hierarchy-review-title");
+		const initialDestinationRadios = [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')];
+		const initialNewDestination = required(review.querySelector("[data-streaming-destination-new]"), "New Collection destination card");
+		const initialDestination = {
+			candidateCards: [...review.querySelectorAll("[data-streaming-destination-candidate]")].map((label) => ({
+				label: label.querySelector("strong")?.textContent.trim() ?? null,
+				delta: label.querySelector("small")?.textContent.trim() ?? null,
+				contents: label.querySelector(".streaming-destination-contents")?.textContent.trim() ?? null,
+			})),
+			helper: review.querySelector(".streaming-destination-choice > div > p")?.textContent.trim() ?? null,
+			newOption: {
+				label: initialNewDestination.querySelector("strong")?.textContent.trim() ?? null,
+				count: initialNewDestination.querySelector("small")?.textContent.trim() ?? null,
+				description: initialNewDestination.querySelector(":scope > span > span")?.textContent.trim() ?? null,
+			},
+			noneSelected: initialDestinationRadios.every((input) => !input.checked),
+			primaryDisabled: required(dialog.querySelector(".add-source-actions .editor-apply"), "destination-required action").disabled,
+			primaryLabel: dialog.querySelector(".add-source-actions .editor-apply").textContent.trim(),
+			overlapText: required(review.querySelector('[data-streaming-overlap="partial"]'), "partial overlap evidence").textContent.replace(/\s+/g, " ").trim(),
+		};
+		await clickAndSettle(required(review.querySelector('input[name="streaming-hierarchy-destination"][value="new"]'), "New Collection destination"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "New Collection Review");
+		let newFolderNames = required(review.querySelector(".streaming-folder-names"), "New Collection folder names");
+		await clickAndSettle(required(newFolderNames.querySelector("summary"), "New Collection Folder names summary"));
+		let newAppleName = required(review.querySelector("#streaming-folder-name-2"), "new Apple folder name");
+		let newDekkooName = required(review.querySelector("#streaming-folder-name-444"), "new Dekkoo folder name");
+		await act(async () => {
+			setInputValue(newAppleName, "Curated Apple New");
+			setInputValue(newDekkooName, "Curated Dekkoo");
+			await afterCommittedEffects();
+		});
+		const newCollectionDraftState = {
+			collectionNameVisible: review.querySelector("#streaming-collection-name") !== null,
+			folderNameCount: Number(review.querySelector(".streaming-folder-names")?.dataset.streamingFolderNameCount),
+			apple: newAppleName.value,
+			dekkoo: newDekkooName.value,
+		};
+		await clickAndSettle(required(review.querySelector(`input[name="streaming-hierarchy-destination"][value="existing:${collectionResult.createdInternalId}"]`), "primary existing destination"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "existing destination Review");
+		let folderNames = required(review.querySelector(".streaming-folder-names"), "new-folder names disclosure");
+		await clickAndSettle(required(folderNames.querySelector("summary"), "Folder names summary"));
+		let dekkooName = required(folderNames.querySelector("#streaming-folder-name-444"), "Dekkoo folder name");
+		const existingDestinationState = {
+			collectionNameAbsent: review.querySelector("#streaming-collection-name") === null,
+			folderNameCount: Number(folderNames.dataset.streamingFolderNameCount),
+			appleInputAbsent: review.querySelector("#streaming-folder-name-2") === null,
+			dekkooDraftPreserved: dekkooName.value === "Curated Dekkoo",
+			destinationSummary: review.querySelector(".franchise-inherited-summary span")?.textContent.replace(/\s+/g, " ").trim() ?? null,
+		};
+		await clickAndSettle(required(review.querySelector('input[name="streaming-hierarchy-destination"][value="new"]'), "return to New Collection destination"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "restored New Collection Review");
+		newFolderNames = required(review.querySelector(".streaming-folder-names"), "restored New Collection folder names");
+		await clickAndSettle(required(newFolderNames.querySelector("summary"), "restored New Collection Folder names summary"));
+		newAppleName = required(review.querySelector("#streaming-folder-name-2"), "restored new Apple folder name");
+		newDekkooName = required(review.querySelector("#streaming-folder-name-444"), "restored new Dekkoo folder name");
+		const newCollectionDraftsRestored = newAppleName.value === "Curated Apple New" && newDekkooName.value === "Curated Dekkoo" && review.querySelector("#streaming-collection-name") !== null;
+		await clickAndSettle(required(review.querySelector(`input[name="streaming-hierarchy-destination"][value="existing:${collectionResult.createdInternalId}"]`), "final existing destination"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "final existing destination Review");
+		folderNames = required(review.querySelector(".streaming-folder-names"), "final new-folder names disclosure");
+		await clickAndSettle(required(folderNames.querySelector("summary"), "Folder names summary"));
+		dekkooName = required(folderNames.querySelector("#streaming-folder-name-444"), "Dekkoo folder name");
+		await act(async () => { setInputValue(dekkooName, ""); await afterCommittedEffects(); });
+		const invalidNameBlocked = required(dialog.querySelector(".add-source-actions .editor-apply"), "invalid-name Apply action").disabled === true && dekkooName.getAttribute("aria-invalid") === "true";
+		await act(async () => { setInputValue(dekkooName, "Curated Dekkoo"); await afterCommittedEffects(); });
+		const preApplyUnchanged = controller.getState().revision === initialRevision && controller.getState().project === initialProject;
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-review"]'), "Review Back action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Return to Review action"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "returned Review stage");
+		await clickAndSettle(required(review.querySelector(".streaming-folder-names summary"), "returned Folder names summary"));
+		dekkooName = required(review.querySelector("#streaming-folder-name-444"), "returned Dekkoo folder name");
+		const customNamePreservedAfterBack = dekkooName.value === "Curated Dekkoo";
+		const outcomeRows = [...review.querySelectorAll(".streaming-review-row")].map((row) => ({ status: row.dataset.placementStatus, text: row.textContent.replace(/\s+/g, " ").trim() }));
+		const reviewState = {
+			focusEntered: reviewFocusEntered,
+			initialDestination,
+			newCollectionDraftState,
+			existingDestinationState,
+			newCollectionDraftsRestored,
+			planTotals: [...review.querySelectorAll(".decades-plan-totals strong")].map((node) => Number(node.textContent)),
+			runSummary: required(review.querySelector('[aria-label="Streaming configuration summary"]'), "Review run summary").textContent.replace(/\s+/g, " ").trim(),
+			changeHeading: review.querySelector("#streaming-change-summary-title")?.textContent.trim() ?? null,
+			outcomeRows,
+			folderNameCount: Number(review.querySelector(".streaming-folder-names")?.dataset.streamingFolderNameCount),
+			invalidNameBlocked,
+			customNamePreservedAfterBack,
+			textOnlyNoteAbsent: !review.textContent.includes("Generated folders are text-only") && !review.textContent.includes("Provider logos are used only while choosing and reviewing services"),
+			providerLogoAbsent: review.querySelector("img") === null,
+			createAction: buttonContaining(dialog, "Apply 6 sources")?.textContent.trim() ?? null,
+		};
+		const reviewLayout = stageLayout(dialog);
+		await clickAndSettle(required(buttonContaining(dialog, "Apply 6 sources"), "Apply six sources action"));
+		const appliedCollection = controller.getState().project.collections.find((collection) => collection.internalId === collectionResult.createdInternalId);
+		const secondaryCollectionAfter = controller.getState().project.collections.find((collection) => collection.internalId === secondaryCollectionResult.createdInternalId);
+		const tertiaryCollectionAfter = controller.getState().project.collections.find((collection) => collection.internalId === tertiaryCollectionResult.createdInternalId);
+		const appliedExistingFolder = appliedCollection.folders[0];
+		const appliedNewFolder = appliedCollection.folders[1];
+		return {
+			width: window.innerWidth,
+			providerIds,
+			providerNames,
+			regionFocus,
+			providerFocus,
+			regionSelectionVisual,
+			mediaSelectionRetention,
+			layouts: { regions: regionLayout, providers: providerLayout, configure: configureLayout, review: reviewLayout },
+			configure: configureState,
+			review: reviewState,
+			livePreview,
+			applyCalls,
+			preApplyUnchanged,
+			appliedRevisionDelta: controller.getState().revision - initialRevision,
+			appliedFolders: appliedCollection.folders.map((folder) => ({ title: folder.editable.title, sources: folder.sources.map((source) => source.editable.title) })),
+			collectionCount: controller.getState().project.collections.length,
+			secondaryCollectionUnchanged: JSON.stringify(secondaryCollectionAfter) === secondaryCollectionBefore,
+			tertiaryCollectionUnchanged: JSON.stringify(tertiaryCollectionAfter) === tertiaryCollectionBefore,
+			existingArtworkPreserved: Object.entries(existingAppleArtwork).every(([field, value]) => appliedExistingFolder.editable[field] === value),
+			newArtworkUnassigned: Object.keys(existingAppleArtwork).every((field) => !Object.hasOwn(appliedNewFolder.editable, field)),
+		};
+	} finally {
+		document.removeEventListener("error", recordFailedPoster, true);
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runStreamingAffinityDestinationScenario() {
+	const controller = createController();
+	const imported = controller.importValue([{
+		id: "owner-streaming",
+		title: "Streaming Services",
+		backdropImageUrl: "https://image.example/owner-collection-backdrop.jpg",
+		pinToTop: true,
+		focusGlowEnabled: false,
+		viewMode: "TABBED_GRID",
+		showAllTab: true,
+		ownerCollectionFlag: "preserve-collection",
+		folders: [{
+			id: "owner-netflix",
+			title: "Netflix",
+			hideTitle: true,
+			tileShape: "LANDSCAPE",
+			coverImageUrl: "https://image.example/netflix-cover.jpg",
+			heroBackdropUrl: "https://image.example/netflix-hero.jpg",
+			titleLogoUrl: "https://image.example/netflix-logo.png",
+			focusGifUrl: "https://image.example/netflix-focus.gif",
+			focusGifEnabled: true,
+			ownerFolderFlag: "preserve-netflix",
+			sources: [
+				{ provider: "tmdb", title: "Netflix curated list", tmdbSourceType: "LIST", tmdbId: 8115, mediaType: "MOVIE", sortBy: "CUSTOM" },
+				{ provider: "trakt", title: "Netflix Trakt list", type: "movie", catalogId: "netflix-owner-list", ownerTraktFlag: true },
+				{
+					provider: "tmdb",
+					title: "Netflix rich Movie Discover",
+					tmdbSourceType: "DISCOVER",
+					tmdbId: null,
+					mediaType: "MOVIE",
+					sortBy: "popularity.desc",
+					filters: { withWatchProviders: "8|1796", watchRegion: "US", withGenres: "18|35", withKeywords: "123|456", voteAverageGte: 7, voteCountGte: 200, releaseDateGte: "2020-01-01" },
+					ownerSourceFlag: "preserve-rich-discover",
+				},
+			],
+		}, {
+			id: "owner-apple",
+			title: "Apple TV+",
+			hideTitle: false,
+			tileShape: "POSTER",
+			coverImageUrl: "https://image.example/apple-cover.jpg",
+			sources: [
+				{ provider: "tmdb", title: "Apple TV+ preserved alias Discover", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "MOVIE", sortBy: "vote_count.desc", filters: { with_watch_providers: "350", watch_region: "US", withGenres: "18" } },
+				{ provider: "tmdb", title: "Apple TV+ network Series", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "TV", sortBy: "popularity.desc", filters: { withNetworks: "2552", voteCountGte: 50 } },
+				{ provider: "tmdb", title: "Apple TV+ list", tmdbSourceType: "LIST", tmdbId: 9001, mediaType: "TV", sortBy: "CUSTOM" },
+			],
+		}],
+	}]);
+	if (!imported.ok) throw new Error(`Mounted Streaming affinity import failed: ${imported.errors?.[0]?.message ?? "unknown import error"}`);
+	const initialProject = controller.getState().project;
+	const initialCollection = initialProject.collections[0];
+	const initialCollectionEditable = JSON.stringify(initialCollection.editable);
+	const initialCollectionRaw = JSON.stringify(initialCollection.raw);
+	const initialFolders = new Map(initialCollection.folders.map((folder) => [folder.internalId, JSON.stringify(folder)]));
+	const initialSerializedValue = serializedValue(controller);
+	const initialSerializedFolders = JSON.stringify(controller.serializeProject().value[0].folders);
+	const initialRevision = controller.getState().revision;
+	const catalogueProvider = {
+		async loadCatalogue() {
+			return Object.freeze({ ok: true, data: Object.freeze({
+				regions: Object.freeze([{ code: "AU", name: "Australia" }]),
+				providers: Object.freeze([{ id: 283, name: "Crunchyroll", searchName: "crunchyroll", logoPath: null, moviePriorities: Object.freeze({ AU: 1 }), tvPriorities: Object.freeze({ AU: 1 }) }]),
+			}) });
+		},
+	};
+	let applyCalls = 0;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "streaming-services",
+			streamingCatalogueProvider: catalogueProvider,
+			streamingPreviewProvider: { getStreamingPreview() { throw new Error("Affinity destination scenario must not request Preview."); } },
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStreaming(plan) { applyCalls += 1; return applyStreamingHierarchyPlan(controller, plan); },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (!element) throw new Error(`Mounted Streaming affinity ${label} is missing.`);
+		return element;
+	}
+	function stageLayout(dialog) {
+		const scroll = required(dialog.querySelector(".add-source-scroll"), "scroll owner");
+		const primary = required(dialog.querySelector(".add-source-actions .editor-apply"), "primary action");
+		const primaryRect = primary.getBoundingClientRect();
+		const activeScrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return ["auto", "scroll"].includes(overflowY) && element.scrollHeight > element.clientHeight + 1;
+		}).length;
+		return {
+			singleInnerScroll: dialog.querySelectorAll(".add-source-scroll").length === 1 && ["auto", "scroll"].includes(getComputedStyle(scroll).overflowY),
+			oneActiveScrollOwner: activeScrollOwners <= 1,
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && scroll.scrollWidth <= scroll.clientWidth,
+			primaryReachable: visibleElement(primary) && primaryRect.height >= 44 && primaryRect.left >= -1 && primaryRect.right <= window.innerWidth + 1,
+		};
+	}
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "dialog");
+		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "Streaming affinity AU Region", timeoutMs: 10_000 }));
+		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "Region action"));
+		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-provider="283"]'), { label: "Streaming affinity Crunchyroll provider", timeoutMs: 10_000 }));
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 service"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
+
+		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "destination Review");
+		const candidate = required(review.querySelector("[data-streaming-destination-candidate]"), "affinity destination card");
+		const newDestination = required(review.querySelector("[data-streaming-destination-new]"), "New Collection card");
+		const initialChoice = {
+			candidateCount: review.querySelectorAll("[data-streaming-destination-candidate]").length,
+			label: candidate.querySelector("strong")?.textContent.trim() ?? null,
+			kind: candidate.querySelector(".streaming-destination-affinity")?.textContent.trim() ?? null,
+			delta: candidate.querySelector("small")?.textContent.trim() ?? null,
+			contents: candidate.querySelector(".streaming-destination-contents")?.textContent.trim() ?? null,
+			newOption: {
+				label: newDestination.querySelector("strong")?.textContent.trim() ?? null,
+				count: newDestination.querySelector("small")?.textContent.trim() ?? null,
+				description: newDestination.querySelector(":scope > span > span")?.textContent.trim() ?? null,
+			},
+			noneSelected: [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')].every((input) => !input.checked),
+			primaryDisabled: required(dialog.querySelector(".add-source-actions .editor-apply"), "destination-required action").disabled,
+		};
+		await clickAndSettle(required(candidate.querySelector('input[name="streaming-hierarchy-destination"]'), "affinity destination choice"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "selected Review");
+		const reviewState = {
+			heading: review.querySelector("#streaming-change-summary-title")?.textContent.trim() ?? null,
+			planTotals: [...review.querySelectorAll(".decades-plan-totals strong")].map((node) => Number(node.textContent)),
+			outcomes: [...review.querySelectorAll(".streaming-review-row")].map((row) => ({ status: row.dataset.placementStatus, text: row.textContent.replace(/\s+/g, " ").trim() })),
+			collectionSettings: review.querySelector(".franchise-inherited-summary")?.textContent.replace(/\s+/g, " ").trim() ?? null,
+			applyLabel: buttonContaining(dialog, "Apply 2 sources")?.textContent.trim() ?? null,
+		};
+		const layout = stageLayout(dialog);
+		const preApply = {
+			revisionDelta: controller.getState().revision - initialRevision,
+			serializedUnchanged: serializedValue(controller) === initialSerializedValue,
+			applyCalls,
+		};
+		await clickAndSettle(required(buttonContaining(dialog, "Apply 2 sources"), "Apply action"));
+
+		const appliedRevisionDelta = controller.getState().revision - initialRevision;
+		const appliedCollection = controller.getState().project.collections[0];
+		const existingFoldersPreserved = appliedCollection.folders.slice(0, initialCollection.folders.length).every((folder) => initialFolders.get(folder.internalId) === JSON.stringify(folder));
+		const newFolder = appliedCollection.folders.at(-1);
+		const serializedFolders = controller.serializeProject().value[0].folders;
+		return {
+			width: window.innerWidth,
+			initialChoice,
+			review: reviewState,
+			layout,
+			preApply,
+			applyCalls,
+			revisionDelta: appliedRevisionDelta,
+			collectionCount: controller.getState().project.collections.length,
+			collectionIdentityRetained: appliedCollection.internalId === initialCollection.internalId,
+			collectionEditablePreserved: JSON.stringify(appliedCollection.editable) === initialCollectionEditable,
+			collectionRawPreserved: JSON.stringify(appliedCollection.raw) === initialCollectionRaw,
+			existingFoldersPreserved,
+			serializedExistingFoldersPreserved: JSON.stringify(serializedFolders.slice(0, initialCollection.folders.length)) === initialSerializedFolders,
+			newFolder: {
+				title: newFolder?.editable.title ?? null,
+				sources: newFolder?.sources.map((source) => [source.editable.title, source.editable.filters.watchRegion, source.editable.mediaType]) ?? [],
+				artworkUnassigned: ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl", "focusGifEnabled"].every((field) => !Object.hasOwn(newFolder?.editable ?? {}, field)),
+			},
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runStreamingSelectionReconciliationScenario() {
+	const provider = (id, name, movieRegions, tvRegions) => Object.freeze({
+		id,
+		name,
+		searchName: name.toLowerCase(),
+		logoPath: null,
+		moviePriorities: Object.freeze(Object.fromEntries(movieRegions.map((code, index) => [code, id + index]))),
+		tvPriorities: Object.freeze(Object.fromEntries(tvRegions.map((code, index) => [code, id + index]))),
+	});
+	const netflix = provider(8, "Netflix", ["AU", "US"], ["AU", "US"]);
+	const c = provider(30, "C Both", ["AU", "US"], ["AU", "US"]);
+	const a = provider(31, "A Movies AU", ["AU"], []);
+	const b = provider(32, "B Both", ["AU", "US"], ["AU", "US"]);
+	const auOnly = provider(33, "AU Only Both", ["AU"], ["AU"]);
+	const movieOne = provider(34, "Movie One", ["AU"], []);
+	const movieTwo = provider(35, "Movie Two", ["AU"], []);
+	const providers = Object.freeze([netflix, c, a, b, auOnly, movieOne, movieTwo]);
+	const catalogueProvider = {
+		async loadCatalogue() {
+			return Object.freeze({ ok: true, data: Object.freeze({
+				regions: Object.freeze([{ code: "AU", name: "Australia" }, { code: "US", name: "United States" }]),
+				providers,
+			}) });
+		},
+	};
+	const controller = createController();
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "streaming-services",
+			streamingCatalogueProvider: catalogueProvider,
+			streamingPreviewProvider: { getStreamingPreview() { throw new Error("Selection reconciliation must not request Preview."); } },
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStreaming() { throw new Error("Selection reconciliation must not apply a project change."); },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (!element) throw new Error(`Mounted Streaming reconciliation ${label} is missing.`);
+		return element;
+	}
+	const selectedNames = (dialog) => [...dialog.querySelectorAll(".streaming-selected-disclosure li strong")].map((node) => node.textContent.trim());
+	const selectedCount = (dialog) => Number((dialog.querySelector(".streaming-selected-tray .people-selected-summary > strong")?.textContent.match(/^\d+/) ?? ["0"])[0]);
+	const noticeText = (dialog) => dialog.querySelector("[data-streaming-selection-reconciliation]")?.textContent.trim() ?? null;
+	const card = async (dialog, id) => waitForMountedCondition(() => dialog.querySelector(`[data-streaming-provider="${id}"]`), { label: `Streaming reconciliation provider ${id}`, timeoutMs: 10_000 });
+	function stageLayout(dialog) {
+		const scroll = required(dialog.querySelector(".add-source-scroll"), "scroll owner");
+		const primary = required(dialog.querySelector(".add-source-actions .editor-apply"), "primary action");
+		const primaryRect = primary.getBoundingClientRect();
+		const activeScrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return ["auto", "scroll"].includes(overflowY) && element.scrollHeight > element.clientHeight + 1;
+		}).length;
+		return {
+			singleInnerScroll: ["auto", "scroll"].includes(getComputedStyle(scroll).overflowY),
+			oneActiveScrollOwner: activeScrollOwners <= 1,
+			noHorizontalOverflow: dialog.scrollWidth <= dialog.clientWidth && scroll.scrollWidth <= scroll.clientWidth,
+			primaryReachable: visibleElement(primary) && primaryRect.height >= 44 && primaryRect.left >= 0 && primaryRect.right <= window.innerWidth,
+		};
+	}
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "dialog");
+		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "Streaming reconciliation AU Region", timeoutMs: 10_000 }));
+		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "Region action"));
+
+		await clickAndSettle(await card(dialog, netflix.id));
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="series"]'), "Series Media"));
+		const ownerSeries = {
+			selectedNames: selectedNames(dialog),
+			selectedCount: selectedCount(dialog),
+			cardSelected: dialog.querySelector(`[data-streaming-provider="${netflix.id}"] input`)?.checked === true,
+			notice: noticeText(dialog),
+			continueEnabled: required(dialog.querySelector(".add-source-actions .editor-apply"), "Configure action").disabled === false,
+		};
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 service"), "Netflix Series Configure action"));
+		const configure = required(dialog.querySelector(".streaming-hierarchy-configure"), "Netflix Series Configure");
+		ownerSeries.configureSeriesOnly = configure.textContent.includes("AU · Series") && required(configure.querySelector('[aria-label="Streaming run context"]'), "Series run summary").textContent.includes("MediaSeries");
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-configure"]'), "Configure Back"));
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="both"]'), "Both Media"));
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="movies"]'), "Movies Media"));
+		const ownerMovies = {
+			selectedNames: selectedNames(dialog),
+			selectedCount: selectedCount(dialog),
+			cardSelected: dialog.querySelector(`[data-streaming-provider="${netflix.id}"] input`)?.checked === true,
+			notice: noticeText(dialog),
+			continueEnabled: required(dialog.querySelector(".add-source-actions .editor-apply"), "Movies Configure action").disabled === false,
+		};
+
+		await clickAndSettle(await card(dialog, netflix.id));
+		for (const selectedProvider of [c, a, b]) await clickAndSettle(await card(dialog, selectedProvider.id));
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="both"]'), "Both pruning Media"));
+		const somePruned = {
+			selectedNames: selectedNames(dialog),
+			selectedCount: selectedCount(dialog),
+			notice: noticeText(dialog),
+			retainedCardsSelected: [c, b].every((selectedProvider) => dialog.querySelector(`[data-streaming-provider="${selectedProvider.id}"] input`)?.checked === true),
+			removedCardAbsent: dialog.querySelector(`[data-streaming-provider="${a.id}"]`) === null,
+		};
+
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="movies"]'), "Movies all-pruned setup"));
+		for (const selectedProvider of [c, b]) await clickAndSettle(await card(dialog, selectedProvider.id));
+		for (const selectedProvider of [movieOne, movieTwo]) await clickAndSettle(await card(dialog, selectedProvider.id));
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="series"]'), "Series all-pruned Media"));
+		const allPruned = {
+			selectedNames: selectedNames(dialog),
+			selectedCount: selectedCount(dialog),
+			notice: noticeText(dialog),
+			disclosureAbsent: dialog.querySelector(".streaming-selected-disclosure") === null,
+			continueDisabled: required(dialog.querySelector(".add-source-actions .editor-apply"), "disabled Configure action").disabled === true,
+		};
+
+		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="both"]'), "Both Region setup Media"));
+		for (const selectedProvider of [c, auOnly]) await clickAndSettle(await card(dialog, selectedProvider.id));
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-providers"]'), "Provider Back"));
+		await clickAndSettle(required(dialog.querySelector('[data-streaming-region="US"]'), "add US Region"));
+		const restrictedNotice = noticeText(dialog);
+		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 2 regions"), "two-Region action"));
+		const regionRestricted = {
+			selectedNames: selectedNames(dialog),
+			selectedCount: selectedCount(dialog),
+			notice: noticeText(dialog) ?? restrictedNotice,
+			retainedCardSelected: dialog.querySelector(`[data-streaming-provider="${c.id}"] input`)?.checked === true,
+			removedCardAbsent: dialog.querySelector(`[data-streaming-provider="${auOnly.id}"]`) === null,
+		};
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-providers"]'), "two-Region Provider Back"));
+		await clickAndSettle(required(dialog.querySelector('[data-streaming-region="US"]'), "remove US Region"));
+		const relaxedNoticeAbsent = noticeText(dialog) === null;
+		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "relaxed Region action"));
+		const regionRelaxed = {
+			selectedNames: selectedNames(dialog),
+			selectedCount: selectedCount(dialog),
+			notice: noticeText(dialog),
+			retainedCardSelected: dialog.querySelector(`[data-streaming-provider="${c.id}"] input`)?.checked === true,
+			relaxedNoticeAbsent,
+		};
+
+		for (const selectedProvider of [b, netflix]) await clickAndSettle(await card(dialog, selectedProvider.id));
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 3 services"), "three-service Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "three-service Review action"));
+		const review = required(dialog.querySelector(".streaming-hierarchy-review"), "three-folder Review");
+		const folderNames = required(review.querySelector(".streaming-folder-names"), "Folder names section");
+		await clickAndSettle(required(folderNames.querySelector("summary"), "Folder names summary"));
+		const folderInputs = [...folderNames.querySelectorAll(".streaming-folder-name-field input")];
+		const scroll = required(dialog.querySelector(".add-source-scroll"), "scroll surface");
+		await act(async () => { scroll.scrollTop = scroll.scrollHeight; await afterCommittedEffects(); });
+		const finalInput = required(folderInputs.at(-1), "final Folder input");
+		const footer = required(dialog.querySelector(".add-source-actions"), "fixed action footer");
+		const folderNameCleanup = {
+			summary: folderNames.querySelector("summary")?.textContent.trim() ?? null,
+			sectionHelper: folderNames.querySelector(":scope > .studio-configure-helper")?.textContent.trim() ?? null,
+			inputCount: folderInputs.length,
+			perFolderHelperCount: folderNames.querySelectorAll(".streaming-folder-name-field .editor-field-help").length,
+			finalInputAboveFooter: finalInput.getBoundingClientRect().bottom <= footer.getBoundingClientRect().top + 1,
+		};
+		return {
+			width: window.innerWidth,
+			ownerSeries,
+			ownerMovies,
+			somePruned,
+			allPruned,
+			regionRestricted,
+			regionRelaxed,
+			folderNameCleanup,
+			layout: stageLayout(dialog),
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
+			projectUnchanged: controller.getState().project === initialProject && controller.getState().revision === initialRevision,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
+async function runStreamingDuplicateConfirmationScenario() {
+	const controller = createController();
+	const existing = controller.createCollection({ editable: { title: "Existing Streaming", viewMode: "ROWS", showAllTab: true, pinToTop: false } });
+	const folder = controller.createFolder(existing.createdInternalId, { editable: { title: "Custom Netflix folder", tileShape: "POSTER", hideTitle: false } });
+	const sources = [
+		{ category: "native-tmdb", editable: streamingSource({ title: "Custom Netflix films", mediaType: "MOVIE" }) },
+		{ category: "native-tmdb", editable: streamingSource({ title: "Custom Netflix shows", mediaType: "TV" }) },
+	];
+	if (!controller.addSourcesToFolder(folder.createdInternalId, { sources }).ok) throw new Error("Mounted Streaming duplicate setup failed.");
+	const initialProject = controller.getState().project;
+	const initialRevision = controller.getState().revision;
+	let applyCalls = 0;
+	const catalogueProvider = {
+		async loadCatalogue() {
+			return Object.freeze({ ok: true, data: Object.freeze({
+				regions: Object.freeze([{ code: "AU", name: "Australia" }]),
+				providers: Object.freeze([{ id: 8, name: "Netflix", searchName: "netflix", logoPath: null, moviePriorities: Object.freeze({ AU: 1 }), tvPriorities: Object.freeze({ AU: 1 }) }]),
+			}) });
+		},
+	};
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => {
+		root.render(createElement(CreationDialog, {
+			scope: "new-collection",
+			project: initialProject,
+			projectRevision: initialRevision,
+			currentYear: 2026,
+			initialOptionId: "streaming-services",
+			streamingCatalogueProvider: catalogueProvider,
+			streamingPreviewProvider: { getStreamingPreview() { throw new Error("Preview must remain lazy."); } },
+			onCancel() {},
+			onCreateBlank() {},
+			onApplyStreaming(plan) { applyCalls += 1; return applyStreamingHierarchyPlan(controller, plan); },
+		}));
+		await afterCommittedEffects();
+	});
+	function required(element, label) {
+		if (!element) throw new Error(`Mounted Streaming duplicate ${label} is missing.`);
+		return element;
+	}
+	try {
+		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "dialog");
+		const au = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "duplicate AU region", timeoutMs: 10_000 });
+		await clickAndSettle(au);
+		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "region action"));
+		const provider = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-provider="8"]'), { label: "duplicate Netflix provider", timeoutMs: 10_000 });
+		await clickAndSettle(provider);
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 service"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
+		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "Review");
+		const evidence = required(review.querySelector('[data-streaming-overlap="complete"]'), "complete overlap evidence");
+		const initialPrimary = required(buttonContaining(dialog, "Choose a destination"), "destination-required action");
+		const initialNewDestination = required(review.querySelector("[data-streaming-destination-new]"), "New Collection destination card");
+		const initialChoice = {
+			candidateCount: review.querySelectorAll("[data-streaming-destination-candidate]").length,
+			candidateLabel: review.querySelector("[data-streaming-destination-candidate] strong")?.textContent.trim() ?? null,
+			candidateDelta: review.querySelector("[data-streaming-destination-candidate] small")?.textContent.trim() ?? null,
+			newOption: {
+				label: initialNewDestination.querySelector("strong")?.textContent.trim() ?? null,
+				count: initialNewDestination.querySelector("small")?.textContent.trim() ?? null,
+				description: initialNewDestination.querySelector(":scope > span > span")?.textContent.trim() ?? null,
+			},
+			noneSelected: [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')].every((input) => !input.checked),
+			primaryDisabled: initialPrimary.disabled,
+		};
+		await clickAndSettle(required(review.querySelector(`input[name="streaming-hierarchy-destination"][value="existing:${existing.createdInternalId}"]`), "complete existing destination"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "zero-change Review");
+		const zeroPrimary = required(buttonContaining(dialog, "Close"), "zero-change Close action");
+		const zeroChange = {
+			message: required(review.querySelector(".streaming-nothing-to-add"), "Nothing to add state").textContent.replace(/\s+/g, " ").trim(),
+			primaryLabel: zeroPrimary.textContent.trim(),
+			primaryEnabled: !zeroPrimary.disabled,
+			applyCalls,
+			revisionUnchanged: controller.getState().revision === initialRevision,
+			sameProject: controller.getState().project === initialProject,
+			collectionNameAbsent: review.querySelector("#streaming-collection-name") === null,
+		};
+		await clickAndSettle(required(review.querySelector('input[name="streaming-hierarchy-destination"][value="new"]'), "duplicate New Collection destination"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "duplicate New Collection Review");
+		const primary = required(buttonContaining(dialog, "Create duplicate collection"), "duplicate Create action");
+		const duplicateChoice = {
+			collectionNameVisible: review.querySelector("#streaming-collection-name") !== null,
+			primaryLabel: primary.textContent.trim(),
+		};
+		await clickAndSettle(primary);
+		let confirmation = await waitForMountedCondition(() => document.querySelector(".streaming-duplicate-confirmation"), { label: "duplicate confirmation", timeoutMs: 10_000 });
+		const beforeConfirmation = { applyCalls, revision: controller.getState().revision, sameProject: controller.getState().project === initialProject };
+		await clickAndSettle(required(buttonContaining(confirmation, "Cancel"), "confirmation Cancel"));
+		const cancelRestoredFocus = document.activeElement === primary;
+		await clickAndSettle(primary);
+		confirmation = await waitForMountedCondition(() => document.querySelector(".streaming-duplicate-confirmation"), { label: "second duplicate confirmation", timeoutMs: 10_000 });
+		await clickAndSettle(required(confirmation.querySelector('[data-action="create-duplicate-streaming-collection"]'), "duplicate Create action"));
+		return {
+			evidenceText: evidence.textContent.replace(/\s+/g, " ").trim(),
+			initialChoice,
+			zeroChange,
+			duplicateChoice,
+			beforeConfirmation,
+			cancelRestoredFocus,
+			applyCalls,
+			revisionDelta: controller.getState().revision - initialRevision,
+			collectionCount: controller.getState().project.collections.length,
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
+		host.remove();
+	}
+}
+
 async function runNetworkHierarchyScenario() {
 	let previewCalls = 0;
 	let artworkLoads = 0;
@@ -5130,6 +5964,10 @@ window.__builderSourceEditMounted = { status: "running" };
 window.__runGenreToolbarScenario = runGenreToolbarScenario;
 window.__runGenreHierarchyScenario = runGenreHierarchyScenario;
 window.__runGenreNewFolderSummaryScenario = runGenreNewFolderSummaryScenario;
+window.__runStreamingHierarchyScenario = runStreamingHierarchyScenario;
+window.__runStreamingAffinityDestinationScenario = runStreamingAffinityDestinationScenario;
+window.__runStreamingSelectionReconciliationScenario = runStreamingSelectionReconciliationScenario;
+window.__runStreamingDuplicateConfirmationScenario = runStreamingDuplicateConfirmationScenario;
 window.__runDecadesActionLayoutScenario = runDecadesActionLayoutScenario;
 window.__runDecadesGenreLayoutScenario = runDecadesGenreLayoutScenario;
 window.__runDecadesExclusionLayoutScenario = runDecadesExclusionLayoutScenario;

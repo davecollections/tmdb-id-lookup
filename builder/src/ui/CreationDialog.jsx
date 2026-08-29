@@ -71,6 +71,7 @@ import { FranchiseSourceFlow } from "./FranchiseSourceFlow.jsx";
 import { GenreHierarchyFlow } from "./GenreHierarchyFlow.jsx";
 import { NetworkHierarchyFlow } from "./NetworkHierarchyFlow.jsx";
 import { StudioHierarchyFlow } from "./StudioHierarchyFlow.jsx";
+import { StreamingHierarchyFlow } from "./StreamingHierarchyFlow.jsx";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 
@@ -105,6 +106,8 @@ function CreationModeIcon({ icon }) {
 		drawing = <><rect x="3.5" y="5" width="17" height="12" rx="2" /><circle cx="12" cy="11" r="1" /><path d="M9.3 8.4a3.7 3.7 0 0 0 0 5.2M14.7 8.4a3.7 3.7 0 0 1 0 5.2M9 21l3-4 3 4" /></>;
 	} else if (icon === "genres") {
 		drawing = <><path d="M4 5h7l9 9-6 6L4 10z" /><circle cx="8.5" cy="9.5" r="1" /></>;
+	} else if (icon === "streaming-services") {
+		drawing = <><rect x="3.5" y="5" width="17" height="14" rx="2.5" /><path d="m10 9 5 3-5 3zM7 3h10" /></>;
 	}
 
 	return (
@@ -783,6 +786,7 @@ export function CreationDialog({
 	onApplyStudios,
 	onApplyNetworks,
 	onApplyGenres,
+	onApplyStreaming,
 	collectionProvider,
 	peopleProvider,
 	peopleManifestClient,
@@ -794,6 +798,8 @@ export function CreationDialog({
 	networkArtworkRuntimeClient,
 	genrePreviewProvider,
 	decadePreviewProvider,
+	streamingCatalogueProvider,
+	streamingPreviewProvider,
 }) {
 	const [optionId, setOptionId] = useState(() => creationOptionSupportsScope(initialOptionId, scope) ? initialOptionId : null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
@@ -823,7 +829,7 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	const launcher = optionId === null;
@@ -846,6 +852,8 @@ export function CreationDialog({
 						<NetworkHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={networkCatalogueProvider} previewProvider={networkPreviewProvider} artworkRuntimeClient={networkArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyNetworks} />
 					) : optionId === CREATION_OPTION_IDS.GENRES ? (
 						<GenreHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={genrePreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyGenres} />
+					) : optionId === CREATION_OPTION_IDS.STREAMING_SERVICES ? (
+						<StreamingHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={streamingCatalogueProvider} previewProvider={streamingPreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStreaming} />
 					) : null}
 				</section>
 			</div>

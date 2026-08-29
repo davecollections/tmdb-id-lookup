@@ -25,6 +25,11 @@ export const STREAMING_SORT_OPTIONS = Object.freeze(DISCOVER_SORT_OPTIONS.map((o
 				: "Titles with the most votes first.",
 })));
 export const DEFAULT_STREAMING_SORT_OPTION_ID = DEFAULT_DISCOVER_SORT_OPTION_ID;
+export const STREAMING_SOURCE_NAME_CONTEXTS = Object.freeze({
+	STANDALONE: "standalone",
+	GROUPED_BY_SERVICE: "grouped-by-service",
+	SEPARATE_BY_REGION: "separate-by-region",
+});
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -59,11 +64,28 @@ export function streamingSourceCandidateKey(regionCode, mediaType) {
 		: null;
 }
 
-export function defaultStreamingSourceName(providerName, regionCode, mediaType) {
+export function defaultStreamingSourceName(providerName, regionCode, mediaType, {
+	context = STREAMING_SOURCE_NAME_CONTEXTS.STANDALONE,
+} = {}) {
 	const name = canonicalText(providerName);
 	const code = canonicalRegionCode(regionCode);
 	const mediaLabel = mediaType === "MOVIE" ? "Movies" : mediaType === "TV" ? "Series" : null;
-	return name && code !== null && mediaLabel !== null ? `${name}, ${code} - ${mediaLabel}` : null;
+	if (!name || code === null || mediaLabel === null || !Object.values(STREAMING_SOURCE_NAME_CONTEXTS).includes(context)) return null;
+	if (context === STREAMING_SOURCE_NAME_CONTEXTS.GROUPED_BY_SERVICE) return `${mediaLabel} (${code})`;
+	if (context === STREAMING_SOURCE_NAME_CONTEXTS.SEPARATE_BY_REGION) return mediaLabel;
+	return `${name} ${mediaLabel} (${code})`;
+}
+
+export function defaultStreamingFolderName(providerName, regionCode = null, {
+	context = STREAMING_SOURCE_NAME_CONTEXTS.GROUPED_BY_SERVICE,
+} = {}) {
+	const name = canonicalText(providerName);
+	if (!name) return null;
+	if (context === STREAMING_SOURCE_NAME_CONTEXTS.GROUPED_BY_SERVICE) return name;
+	const code = canonicalRegionCode(regionCode);
+	return context === STREAMING_SOURCE_NAME_CONTEXTS.SEPARATE_BY_REGION && code !== null
+		? `${name} (${code})`
+		: null;
 }
 
 export function reconcileStreamingSourceTitles(sourceTitles, drafts) {
@@ -139,6 +161,7 @@ export function buildStreamingSourceDrafts(provider, {
 	mediaChoice,
 	sortOptionId = DEFAULT_STREAMING_SORT_OPTION_ID,
 	sourceTitles = {},
+	nameContext = STREAMING_SOURCE_NAME_CONTEXTS.STANDALONE,
 } = {}) {
 	const errors = [];
 	const id = Number.isSafeInteger(provider?.id) && provider.id > 0 ? provider.id : null;
@@ -165,13 +188,16 @@ export function buildStreamingSourceDrafts(provider, {
 	if (!plainObject(sourceTitles)) {
 		errors.push(diagnostic("INVALID_STREAMING_SOURCE_TITLES", "$streaming.sourceTitles", "Streaming source names must be keyed by region and media type."));
 	}
+	if (!Object.values(STREAMING_SOURCE_NAME_CONTEXTS).includes(nameContext)) {
+		errors.push(diagnostic("INVALID_STREAMING_NAME_CONTEXT", "$streaming.nameContext", "Choose a supported Streaming naming context."));
+	}
 	if (errors.length > 0) return Object.freeze({ ok: false, drafts: Object.freeze([]), errors: Object.freeze(errors) });
 
 	const drafts = [];
 	for (const code of codes) {
 		for (const mediaType of choice.mediaTypes) {
 			const candidateKey = streamingSourceCandidateKey(code, mediaType);
-			const defaultTitle = defaultStreamingSourceName(name, code, mediaType);
+			const defaultTitle = defaultStreamingSourceName(name, code, mediaType, { context: nameContext });
 			const title = Object.hasOwn(sourceTitles, candidateKey) ? sourceTitles[candidateKey] : defaultTitle;
 			if (!isValidNuvioTitle(title)) {
 				errors.push(diagnostic(
@@ -209,8 +235,9 @@ export function validateStreamingSourceDrafts(drafts, {
 	regionCodes,
 	mediaChoice,
 	sortOptionId = DEFAULT_STREAMING_SORT_OPTION_ID,
+	nameContext = STREAMING_SOURCE_NAME_CONTEXTS.STANDALONE,
 } = {}) {
-	const expected = buildStreamingSourceDrafts(provider, { regionCodes, mediaChoice, sortOptionId });
+	const expected = buildStreamingSourceDrafts(provider, { regionCodes, mediaChoice, sortOptionId, nameContext });
 	if (!expected.ok) return Object.freeze({ ok: false, errors: expected.errors });
 	if (!Array.isArray(drafts) || drafts.length !== expected.drafts.length) {
 		return Object.freeze({ ok: false, errors: Object.freeze([

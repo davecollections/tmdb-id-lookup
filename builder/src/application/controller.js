@@ -653,6 +653,186 @@ export function createBuilderController(options = {}) {
 		});
 	}
 
+	function extendCollectionWithFoldersAndSources(collectionInternalId, actionOptions = {}) {
+		const path = "$controller.extendCollectionWithFoldersAndSources";
+		if (
+			!isPlainObject(actionOptions)
+			|| Object.keys(actionOptions).some((key) => !["newFolders", "existingFolderAdditions"].includes(key))
+			|| (actionOptions.newFolders !== undefined && !Array.isArray(actionOptions.newFolders))
+			|| (actionOptions.existingFolderAdditions !== undefined && !Array.isArray(actionOptions.existingFolderAdditions))
+		) {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				path,
+				"Collection extension options may contain only new-folder and existing-folder source batches.",
+			);
+		}
+
+		const newFolders = actionOptions.newFolders ?? [];
+		const existingFolderAdditions = actionOptions.existingFolderAdditions ?? [];
+		const validatedNewFolders = [];
+		for (let index = 0; index < newFolders.length; index += 1) {
+			if (!Object.hasOwn(newFolders, index)) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.newFolders`,
+					"New-folder batch arrays must not contain missing entries.",
+				);
+			}
+			const validation = validateSourceBundleOptions(newFolders[index], {
+				path: `${path}.newFolders[${index}]`,
+				requireFolder: true,
+			});
+			if (!validation.ok) {
+				return failAtomicBundleOperation(validation.error.code, validation.error.path, validation.error.message);
+			}
+			validatedNewFolders.push(validation);
+		}
+
+		const resolution = resolveTarget(collectionInternalId, path);
+		if (resolution.error) {
+			return failAtomicBundleOperation(resolution.error.code, resolution.error.path, resolution.error.message);
+		}
+		if (resolution.location.node.nodeType !== NODE_TYPES.COLLECTION) {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
+				path,
+				"The parent for this operation must be a collection node.",
+			);
+		}
+
+		const validatedExistingAdditions = [];
+		const targetedFolderInternalIds = new Set();
+		for (let index = 0; index < existingFolderAdditions.length; index += 1) {
+			if (!Object.hasOwn(existingFolderAdditions, index)) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${path}.existingFolderAdditions`,
+					"Existing-folder addition arrays must not contain missing entries.",
+				);
+			}
+			const addition = existingFolderAdditions[index];
+			const additionPath = `${path}.existingFolderAdditions[${index}]`;
+			if (
+				!isPlainObject(addition)
+				|| Object.keys(addition).some((key) => !["folderInternalId", "sources"].includes(key))
+				|| typeof addition.folderInternalId !== "string"
+				|| addition.folderInternalId.length === 0
+			) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					additionPath,
+					"Each existing-folder addition must identify one folder internal ID and its source batch.",
+				);
+			}
+			if (targetedFolderInternalIds.has(addition.folderInternalId)) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${additionPath}.folderInternalId`,
+					"Each existing folder may appear only once in a collection extension batch.",
+				);
+			}
+			const sourceValidation = validateSourceBundleOptions({ sources: addition.sources }, {
+				path: additionPath,
+				requireFolder: false,
+				allowFolder: false,
+			});
+			if (!sourceValidation.ok) {
+				return failAtomicBundleOperation(sourceValidation.error.code, sourceValidation.error.path, sourceValidation.error.message);
+			}
+			const folderResolution = resolveTarget(addition.folderInternalId, `${additionPath}.folderInternalId`);
+			if (folderResolution.error) {
+				return failAtomicBundleOperation(folderResolution.error.code, folderResolution.error.path, folderResolution.error.message);
+			}
+			if (folderResolution.location.node.nodeType !== NODE_TYPES.FOLDER) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_PARENT_NODE_TYPE,
+					`${additionPath}.folderInternalId`,
+					"Existing source additions must target a folder node.",
+				);
+			}
+			if (folderResolution.location.collection?.internalId !== collectionInternalId) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+					`${additionPath}.folderInternalId`,
+					"Every existing folder target must belong to the destination collection.",
+				);
+			}
+			targetedFolderInternalIds.add(addition.folderInternalId);
+			validatedExistingAdditions.push({
+				folderInternalId: addition.folderInternalId,
+				sources: sourceValidation.sources,
+			});
+		}
+
+		if (validatedNewFolders.length === 0 && validatedExistingAdditions.length === 0) {
+			return actionResult(true, [], [], {
+				createdFolderInternalIds: [],
+				createdSourceInternalIds: [],
+				updatedFolderInternalIds: [],
+			});
+		}
+
+		let project = state.project;
+		const folders = [];
+		const sources = [];
+		try {
+			for (const addition of validatedExistingAdditions) {
+				for (const sourceOptions of addition.sources) {
+					const source = createSource({
+						idFactory,
+						category: sourceOptions.category,
+						editable: sourceOptions.editable,
+					});
+					project = insertChild(project, addition.folderInternalId, source);
+					sources.push(source);
+				}
+			}
+			for (const bundle of validatedNewFolders) {
+				const folderEditable = prepareNewNodeEditable(project, bundle.folderEditable, nuvioIdFactory);
+				const folderSources = bundle.sources.map((sourceOptions) => createSource({
+					idFactory,
+					category: sourceOptions.category,
+					editable: sourceOptions.editable,
+				}));
+				const folder = {
+					...createFolder({ idFactory, editable: folderEditable }),
+					sources: folderSources,
+				};
+				project = insertChild(project, collectionInternalId, folder);
+				folders.push(folder);
+				sources.push(...folderSources);
+			}
+		} catch (error) {
+			if (error instanceof NuvioIdGenerationError) {
+				return failAtomicBundleOperation(
+					CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+					"$controller.nuvioIds",
+					"Unique Nuvio folder IDs could not be generated for the complete collection extension.",
+				);
+			}
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.CONTROLLER_OPERATION_FAILED,
+				path,
+				"The complete existing-collection folder and source batch could not be created from the supplied values.",
+			);
+		}
+		if (!checkInternalIdUniqueness(project).unique) {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+				path,
+				"The configured internal ID factory produced a project-wide collision while extending the collection.",
+			);
+		}
+
+		commitProjectEdit(project, reconcileSelection(project, state.selection));
+		return actionResult(true, [], [], {
+			createdFolderInternalIds: folders.map((folder) => folder.internalId),
+			createdSourceInternalIds: sources.map((source) => source.internalId),
+			updatedFolderInternalIds: validatedExistingAdditions.map((addition) => addition.folderInternalId),
+		});
+	}
+
 	function createCollectionsWithFoldersAndSources(actionOptions = {}) {
 		const path = "$controller.createCollectionsWithFoldersAndSources";
 		const validation = validateCollectionHierarchyOptions(actionOptions, path);
@@ -1244,6 +1424,7 @@ export function createBuilderController(options = {}) {
 		createFolderWithSources,
 		addSourcesToFolder,
 		createFoldersWithSources,
+		extendCollectionWithFoldersAndSources,
 		createCollectionsWithFoldersAndSources,
 		updateNode,
 		applyPresentationUpdates,
