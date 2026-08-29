@@ -211,6 +211,8 @@ function RegionResult({ region, selected, onSelect }) {
 }
 
 export function StreamingRegionStep({
+	heading = "Choose regions",
+	description = "Select one or more regions, then choose a provider available across them.",
 	browseMode,
 	query,
 	queryRef,
@@ -225,7 +227,7 @@ export function StreamingRegionStep({
 	return (
 		<>
 			<section className="add-source-mode" aria-labelledby="streaming-region-mode-title">
-				<div><h3 id="streaming-region-mode-title">Streaming service · Region</h3><p>Select one or more regions, then choose a provider available across them.</p></div>
+				<div><h3 id="streaming-region-mode-title">{heading}</h3><p>{description}</p></div>
 			</section>
 			<div className="editor-field add-source-query-field">
 				<label htmlFor="streaming-region-query">Search regions</label>

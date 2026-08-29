@@ -82,8 +82,8 @@ test("Region opens first as an accessible natural multi-select with known alphab
 		onBrowseModeChange() {},
 		onSelect() {},
 	}));
-	assert.ok(markup.includes("Streaming service · Region"));
 	assert.ok(markup.includes("Choose regions"));
+	assert.ok(markup.includes("Select one or more regions, then choose a provider available across them."));
 	assert.ok(markup.includes("Search regions"));
 	assert.match(markup, /aria-label="Region browse mode"/);
 	assert.match(markup, /aria-pressed="true">Common<\/button>/);

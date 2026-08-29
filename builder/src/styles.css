@@ -5588,7 +5588,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .streaming-region-result[data-selected="true"] {
 	background: rgb(1 180 228 / 12%);
-	box-shadow: inset 3px 0 0 var(--green);
 }
 
 .streaming-region-copy {
@@ -9150,6 +9149,233 @@ body.hierarchy-pointer-dragging .builder-shell {
 .decades-review-configuration strong {
 	color: var(--text);
 	font-size: 0.64rem;
+}
+
+.streaming-change-summary,
+.streaming-folder-names,
+.streaming-folder-name-list,
+.streaming-new-collection-overlap,
+.streaming-overlap-details > div {
+	display: grid;
+	gap: 10px;
+}
+
+.streaming-change-summary > h4 {
+	margin: 0;
+}
+
+.streaming-plan-totals[data-plan-scope="new-folder"] {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.streaming-run-summary > div {
+	display: grid;
+	min-width: 0;
+	gap: 3px;
+	padding: 10px 11px;
+	color: var(--muted);
+	font-size: 0.66rem;
+	background: rgb(5 17 25 / 58%);
+	border: 1px solid var(--border);
+	border-radius: 9px;
+}
+
+.streaming-run-summary > div > span,
+.streaming-run-summary summary,
+.streaming-run-summary li {
+	overflow-wrap: anywhere;
+}
+
+.streaming-run-summary strong {
+	color: var(--text);
+	font-size: 0.64rem;
+}
+
+.streaming-run-disclosure,
+.streaming-run-summary .streaming-selected-disclosure {
+	min-width: 0;
+}
+
+.streaming-run-disclosure summary,
+.streaming-run-summary .streaming-selected-disclosure summary,
+.streaming-folder-names > summary,
+.streaming-overlap-details > summary {
+	color: var(--cyan);
+	font-size: 0.66rem;
+	font-weight: 780;
+	cursor: pointer;
+}
+
+.streaming-run-disclosure ul,
+.streaming-run-summary .streaming-selected-disclosure ul {
+	display: grid;
+	gap: 5px;
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.streaming-run-summary .streaming-selected-disclosure li {
+	display: grid;
+	padding: 7px 0;
+	border-top: 1px solid var(--border);
+}
+
+.streaming-review-row-main {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.streaming-placement-kind {
+	width: fit-content;
+}
+
+.streaming-placement-helper {
+	color: var(--muted);
+	line-height: 1.45;
+}
+
+.streaming-new-collection-overlap {
+	padding: 13px 14px;
+	background: rgb(1 180 228 / 7%);
+	border: 1px solid rgb(1 180 228 / 24%);
+	border-radius: 11px;
+}
+
+.streaming-new-collection-overlap.is-complete {
+	background: rgb(255 184 77 / 7%);
+	border-color: rgb(255 184 77 / 34%);
+}
+
+.streaming-new-collection-overlap > p,
+.streaming-overlap-details p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.68rem;
+	line-height: 1.5;
+}
+
+.streaming-overlap-details section {
+	display: grid;
+	gap: 7px;
+}
+
+.streaming-destination-choice,
+.streaming-destination-choice > div,
+.streaming-destination-list,
+.streaming-nothing-to-add {
+	display: grid;
+	gap: 10px;
+}
+
+.streaming-destination-choice {
+	padding: 13px 14px;
+	background: rgb(5 17 25 / 68%);
+	border: 1px solid var(--border);
+	border-radius: 11px;
+}
+
+.streaming-destination-choice h4,
+.streaming-destination-choice p,
+.streaming-nothing-to-add p {
+	margin: 0;
+}
+
+.streaming-destination-choice p,
+.streaming-nothing-to-add p {
+	color: var(--muted);
+	font-size: 0.68rem;
+	line-height: 1.5;
+}
+
+.streaming-destination-choice fieldset {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.streaming-destination-list > label {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: start;
+	gap: 11px;
+	min-height: 52px;
+	padding: 11px 12px;
+	background: rgb(11 35 48 / 58%);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	cursor: pointer;
+}
+
+.streaming-destination-list > label:hover,
+.streaming-destination-list > label:focus-within,
+.streaming-destination-list > label[data-selected="true"] {
+	border-color: rgb(98 225 255 / 52%);
+}
+
+.streaming-destination-list > label[data-selected="true"] {
+	background: rgb(1 180 228 / 12%);
+}
+
+.streaming-destination-list input {
+	width: 18px;
+	height: 18px;
+	margin: 2px 0 0;
+	accent-color: var(--green);
+}
+
+.streaming-destination-list label > span {
+	display: grid;
+	min-width: 0;
+	gap: 3px;
+}
+
+.streaming-destination-list small,
+.streaming-destination-list label > span > span {
+	color: var(--muted);
+	font-size: 0.66rem;
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+}
+
+.streaming-nothing-to-add {
+	padding: 13px 14px;
+	background: rgb(35 209 139 / 7%);
+	border: 1px solid rgb(35 209 139 / 24%);
+	border-radius: 11px;
+}
+
+.streaming-folder-names {
+	padding: 12px 14px;
+	background: rgb(5 17 25 / 68%);
+	border: 1px solid var(--border);
+	border-radius: 11px;
+}
+
+.streaming-folder-name-list {
+	padding-top: 2px;
+}
+
+.streaming-folder-name-field > div {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.streaming-folder-name-field > div button {
+	min-height: 40px;
+	flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+	.streaming-plan-totals[data-plan-scope="new-folder"] {
+		grid-template-columns: 1fr;
+	}
+
+	.streaming-folder-name-field > div {
+		display: grid;
+	}
 }
 
 .decades-plan-totals > div {

@@ -95,6 +95,11 @@ export function discoverFilterDescriptor(field) {
 	return descriptorByField.get(field) ?? null;
 }
 
+export function isCanonicalDiscoverFilterValue(field, value) {
+	const descriptor = descriptorByField.get(field);
+	return descriptor ? canonicalFilterValue(value, descriptor) : false;
+}
+
 export function discoverSortValue(sortOptionId, mediaType) {
 	const option = DISCOVER_SORT_OPTIONS.find((entry) => entry.id === sortOptionId);
 	return option?.values?.[normaliseCase(mediaType, "upper")] ?? null;

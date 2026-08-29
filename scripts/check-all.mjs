@@ -50,6 +50,7 @@ runNode(["--test", path.join("tests", "builder-import.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-serializer.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-migration.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-controller.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-collection-extension.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-presentation-updates.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-bulk-edit.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-welcome-import.test.mjs")]);
@@ -81,6 +82,8 @@ runNode(["--test", path.join("tests", "builder-network-hierarchy-ui.test.mjs")])
 runNode(["--test", path.join("tests", "builder-streaming-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-preview.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-streaming-hierarchy.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-streaming-hierarchy-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-genre-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-genre-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-genre-hierarchy.test.mjs")]);

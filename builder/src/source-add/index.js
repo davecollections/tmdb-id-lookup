@@ -310,7 +310,12 @@ export {
 	TMDB_STUDIO_PREVIEW_LOCAL_MOCK,
 	TMDB_STUDIO_PREVIEW_REQUEST_TIMEOUT_MS,
 } from "./tmdb-studio-preview-provider.js";
-export { inspectSimpleStreamingSourceNode } from "./streaming-classification.js";
+export {
+	hasStreamingCollectionAffinity,
+	hasStreamingSourceEvidence,
+	inspectSimpleStreamingSourceNode,
+	inspectStreamingAffinitySourceNode,
+} from "./streaming-classification.js";
 export {
 	createTmdbStreamingPreviewProvider,
 	normalizeTmdbStreamingPreviewResponse,
@@ -349,6 +354,7 @@ export {
 	browseStreamingProviders,
 	createStreamingCatalogueProvider,
 	eligibleStreamingProviders,
+	eligibleStreamingProvidersForMedia,
 	normalizeStreamingCatalogue,
 	searchStreamingProviders,
 	searchStreamingRegions,
@@ -366,6 +372,7 @@ export {
 export {
 	buildStreamingSourceDrafts,
 	createStreamingSourceBundle,
+	defaultStreamingFolderName,
 	defaultStreamingSourceName,
 	defaultStreamingMediaChoice,
 	DEFAULT_STREAMING_SORT_OPTION_ID,
@@ -376,9 +383,32 @@ export {
 	streamingMediaChoiceSupport,
 	streamingSourceCandidateKey,
 	STREAMING_MEDIA_CHOICES,
+	STREAMING_SOURCE_NAME_CONTEXTS,
 	STREAMING_SORT_OPTIONS,
 	validateStreamingSourceDrafts,
 } from "./streaming-source.js";
+export {
+	applyStreamingHierarchyPlan,
+	createStreamingHierarchyPlan,
+	DEFAULT_STREAMING_HIERARCHY_FOLDER_TITLE_VISIBILITY,
+	DEFAULT_STREAMING_HIERARCHY_GROUPING_MODE,
+	inspectStreamingHierarchyDestinationCandidates,
+	STREAMING_HIERARCHY_CREATION_SCOPES,
+	STREAMING_HIERARCHY_GROUPING_MODES,
+	STREAMING_HIERARCHY_PLACEMENT_STATUSES,
+	STREAMING_HIERARCHY_PLAN_TYPE,
+	validateStreamingHierarchyPlan,
+} from "./streaming-plan.js";
+export {
+	addSelectedStreamingProvider,
+	createStreamingSelectionState,
+	reconcileStreamingSelection,
+	removeSelectedStreamingProvider,
+	selectedStreamingProviders,
+	STREAMING_SELECTION_NOTICE_THRESHOLD,
+	streamingSelectionNotice,
+	toggleSelectedStreamingProvider,
+} from "./streaming-selection.js";
 export {
 	buildStudioSourceDrafts,
 	createStudioSourceBundle,

@@ -120,6 +120,7 @@ test("the controller exposes only the documented public method surface", () => {
 		"createFolderWithSources",
 		"createFoldersWithSources",
 		"createSource",
+		"extendCollectionWithFoldersAndSources",
 		"getState",
 		"importJsonText",
 		"importValue",
