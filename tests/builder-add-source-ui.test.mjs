@@ -520,17 +520,17 @@ test("details selection suppresses repeated activation, keeps failures in Search
 	assert.equal(scrolledIntoView, false);
 });
 
-test("Review renders poster, canonical recipe, editable title, and accessible contained-title expansion", () => {
+test("Review retains the count and authoritative poster Preview without the legacy contained-title disclosure", () => {
 	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
 		selectedResult: detailsResult(),
 		title: "Edited source title",
 		titleInputRef: null,
 		titleError: null,
-		titlesExpanded: true,
 		duplicate: null,
 		applyDiagnostic: null,
+		previewAvailable: true,
 		onTitleChange() {},
-		onToggleTitles() {},
+		onPreview() {},
 	}));
 
 	assert.ok(markup.includes("https://image.tmdb.org/t/p/w342/poster.jpg"));
@@ -548,15 +548,12 @@ test("Review renders poster, canonical recipe, editable title, and accessible co
 	assert.ok(markup.includes('aria-label="Open Example Collection on TMDB (collection 123)"'));
 	assert.ok(markup.includes('class="tmdb-entity-link-indicator" aria-hidden="true">↗</span>'));
 	assert.equal(markup.includes("Original order"), false);
-	assert.ok(markup.includes('aria-expanded="true"'));
-	assert.ok(markup.includes('aria-controls="add-source-contained-titles"'));
-	assert.ok(markup.includes("First Movie"));
-	assert.ok(markup.includes("2001"));
-	assert.ok(markup.includes("Second Movie"));
-	assert.ok(markup.includes("Year unavailable"));
-	for (const control of ["add-source-title-input", "add-source-contained-titles"]) {
-		assert.ok(markup.includes(control), control);
-	}
+	assert.ok(markup.includes('data-action="preview-add-source"'));
+	assert.equal(/data-action="preview-add-source"[^>]*disabled/.test(markup), false);
+	assert.ok(markup.includes("Preview titles"));
+	for (const legacy of ["toggle-contained-titles", "add-source-contained-titles", "View 2 titles in this collection", "First Movie", "Second Movie", "Year unavailable"]) assert.equal(markup.includes(legacy), false, legacy);
+	assert.ok(markup.includes("add-source-title-input"));
+	assert.doesNotMatch(read("builder/src/styles.css"), /\.add-source-title-list/);
 });
 
 test("Review identifies the canonical Collection name as auto-managed until customised", () => {
@@ -566,11 +563,9 @@ test("Review identifies the canonical Collection name as auto-managed until cust
 		title: selectedResult.name,
 		titleInputRef: null,
 		titleError: null,
-		titlesExpanded: false,
 		duplicate: null,
 		applyDiagnostic: null,
 		onTitleChange() {},
-		onToggleTitles() {},
 	}));
 	assert.ok(markup.includes("Source name"));
 	assert.ok(markup.includes("This name updates automatically until you customise it."));
@@ -597,11 +592,9 @@ test("long Collection review titles wrap above a secondary mobile TMDB link", ()
 		title: longName,
 		titleInputRef: null,
 		titleError: null,
-		titlesExpanded: false,
 		duplicate: null,
 		applyDiagnostic: null,
 		onTitleChange() {},
-		onToggleTitles() {},
 	}));
 	const styles = read("builder/src/styles.css");
 	assert.ok(markup.includes(longName));
@@ -617,15 +610,13 @@ test("Review uses a stable no-poster placeholder without emitting an image URL",
 		title: "Example Collection",
 		titleInputRef: null,
 		titleError: null,
-		titlesExpanded: false,
 		duplicate: null,
 		applyDiagnostic: null,
 		onTitleChange() {},
-		onToggleTitles() {},
 	}));
 	assert.ok(markup.includes("No poster available"));
 	assert.equal(markup.includes("https://image.tmdb.org"), false);
-	assert.ok(markup.includes('aria-expanded="false"'));
+	assert.equal(markup.includes("toggle-contained-titles"), false);
 	assert.equal(markup.includes('id="add-source-contained-titles"'), false);
 });
 

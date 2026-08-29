@@ -198,6 +198,7 @@ async function runMountedPage() {
 				const networkLivePreviewWidths = [];
 				const genreLivePreviewWidths = [];
 				const sourceEditLivePreviewWidths = [];
+				const addSourceLivePreviewParityWidths = [];
 				const decadesLivePreviewWidths = [];
 				const decadeSourceLayoutWidths = [];
 				const decadeSourceLivePreviewWidths = [];
@@ -368,6 +369,13 @@ async function runMountedPage() {
 					});
 					if (sourceEditLivePreviewEvaluation.exceptionDetails) throw new Error(sourceEditLivePreviewEvaluation.exceptionDetails.exception?.description ?? sourceEditLivePreviewEvaluation.exceptionDetails.text);
 					sourceEditLivePreviewWidths.push(sourceEditLivePreviewEvaluation.result?.value);
+					const addSourceLivePreviewParityEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runAddSourceLivePreviewParityScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (addSourceLivePreviewParityEvaluation.exceptionDetails) throw new Error(addSourceLivePreviewParityEvaluation.exceptionDetails.exception?.description ?? addSourceLivePreviewParityEvaluation.exceptionDetails.text);
+					addSourceLivePreviewParityWidths.push(addSourceLivePreviewParityEvaluation.result?.value);
 					if (process.env.TMDB_DECADES_PREVIEW_DEPLOYED === "1") {
 						const decadeSourceLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 							expression: "window.__runDecadeSourceLivePreviewScenario()",
@@ -472,7 +480,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceChooserWidths, sourceChooserKeyboard, shortHeightSourceChooser, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceChooserWidths, sourceChooserKeyboard, shortHeightSourceChooser, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -929,7 +937,11 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.helpersContained, true, `${width}px helper containment`);
 		assert.ok(result.maxHelperLines <= 6, `${width}px readable helper wrapping: ${result.maxHelperLines}`);
 		assert.equal(result.oneScrollOwner, true, `${width}px scroll owner`);
-		assert.equal(result.providerDisclosure, true, `${width}px provider disclosure`);
+		assert.equal(result.introductoryCopy, "Choose what you want to add.", `${width}px introductory copy`);
+		assert.equal(result.introductoryAlignment, width < 900 ? "center" : "left", `${width}px intentional introductory alignment`);
+		assert.equal(result.introductoryDisplay, "block", `${width}px ordinary introductory flow`);
+		assert.equal(result.blanketProviderDisclosureAbsent, true, `${width}px blanket provider disclosure absent`);
+		assert.equal(result.noEmptyDisclosureWrapper, true, `${width}px no empty disclosure wrapper`);
 		assert.equal(result.noSelectionControls, true, `${width}px no retained selection semantics`);
 		assert.equal(result.noSearchAutofocus, true, `${width}px no Search autofocus`);
 		assert.equal(result.noArrowLayout, true, `${width}px no old arrow list`);
@@ -971,6 +983,11 @@ test("mounted Add Source chooser remains reachable in the retained 393 by 320 sh
 	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
 	assert.equal(result.columnCount, 2);
 	assert.equal(result.oneScrollOwner, true);
+	assert.equal(result.introductoryCopy, "Choose what you want to add.");
+	assert.equal(result.introductoryAlignment, "center");
+	assert.equal(result.introductoryDisplay, "block");
+	assert.equal(result.blanketProviderDisclosureAbsent, true);
+	assert.equal(result.noEmptyDisclosureWrapper, true);
 	assert.equal(result.noHorizontalOverflow, true);
 	assert.equal(result.finalCardReachable, true);
 	assert.equal(result.backRestoredFocus, true);
@@ -1927,6 +1944,91 @@ test("mounted Source Edit Preview is live, lazy, cached, poster-only, focus-safe
 		assert.equal(result.bodyLockRetained, true);
 		assert.equal(result.finalNoMutation, true);
 	}
+});
+
+test("mounted ordinary Add Source Preview reaches exact live parity for six newly wired families and retains Decade", () => {
+	assert.deepEqual(mountedResults.addSourceLivePreviewParityWidths.map((result) => result.width), [393, 900]);
+	for (const result of mountedResults.addSourceLivePreviewParityWidths) {
+		const families = result.families;
+		assert.deepEqual(Object.keys(families), ["collection", "people", "studio", "network", "streaming", "genre"]);
+		for (const [family, evidence] of Object.entries(families)) {
+			assert.equal(evidence.posterCount > 0 && evidence.posterCount <= 10, true, `${result.width}px ${family} bounded posters`);
+			assert.equal(evidence.genuinePosters, true, `${result.width}px ${family} real image CDN posters`);
+			assert.equal(evidence.posterOnly, true, `${result.width}px ${family} poster-only grid`);
+			assert.equal(evidence.outerInert, true, `${result.width}px ${family} underlying Add flow inert`);
+			assert.equal(evidence.focusContained, true, `${result.width}px ${family} contained Preview focus`);
+			assert.equal(evidence.focusRestored, true, `${result.width}px ${family} trigger focus restoration`);
+			assert.equal(evidence.cacheReused, true, `${result.width}px ${family} successful cache reuse`);
+			assert.equal(evidence.noMutation, true, `${result.width}px ${family} zero project mutation`);
+			assert.equal(evidence.applyCalls, 0, `${result.width}px ${family} Preview never enters Save`);
+			assertTitlePreviewGeometry(evidence.geometry, { width: result.width, posters: evidence.posterCount, label: `${result.width}px ${family} Add Preview` });
+		}
+
+		assert.deepEqual({
+			label: families.collection.initialLabel,
+			selectors: families.collection.selectorGroups,
+			counts: [families.collection.requestCountBeforeOpen, families.collection.requestCountAfterInitial, families.collection.requestCountFinal],
+		}, { label: "James Bond Collection", selectors: [], counts: [1, 1, 1] }, `${result.width}px Collection cached details parity`);
+		assert.match(families.collection.reviewCleanup.countText, /^\d+ titles? in this collection$/, `${result.width}px Collection simple title count`);
+		assert.deepEqual({
+			previewActionAvailable: families.collection.reviewCleanup.previewActionAvailable,
+			legacyTextPreviewAbsent: families.collection.reviewCleanup.legacyTextPreviewAbsent,
+			previewFollowsRecipe: families.collection.reviewCleanup.previewFollowsRecipe,
+			oneScrollOwner: families.collection.reviewCleanup.oneScrollOwner,
+			footerReachable: families.collection.reviewCleanup.footerReachable,
+		}, {
+			previewActionAvailable: true,
+			legacyTextPreviewAbsent: true,
+			previewFollowsRecipe: true,
+			oneScrollOwner: true,
+			footerReachable: true,
+		}, `${result.width}px Collection legacy-text cleanup and retained Review layout`);
+		assert.match(families.collection.requests[0], /^\/3\/collection\/645(?:\?|$)/);
+
+		assert.deepEqual({
+			label: families.people.initialLabel,
+			selectors: families.people.selectorGroups,
+			counts: [families.people.requestCountBeforeOpen, families.people.requestCountAfterInitial, families.people.requestCountFinal],
+		}, {
+			label: "Movie Credits",
+			selectors: [
+				{ label: "Role", options: ["Acting", "Directing"], selected: "Acting" },
+				{ label: "Media", options: ["Movies", "Series"], selected: "Movies" },
+			],
+			counts: [1, 1, 1],
+		}, `${result.width}px People one-physical-source parity`);
+		assert.equal(families.people.switched.label, "Directed Movies");
+		assert.match(families.people.requests[0], /^\/3\/person\/31(?:\?|$)/);
+
+		assert.deepEqual(families.studio.selectorGroups, [{ label: "Media", options: ["Movies", "Series"], selected: "Movies" }]);
+		assert.deepEqual([families.studio.requestCountBeforeOpen, families.studio.requestCountAfterInitial, families.studio.switched.requestCount, families.studio.requestCountFinal], [0, 1, 2, 2]);
+		assert.equal(families.studio.requests[0].startsWith("/3/discover/movie?"), true);
+		assert.equal(new URLSearchParams(families.studio.requests[0].split("?")[1]).get("with_companies"), "3");
+		assert.equal(families.studio.requests[1].startsWith("/3/discover/tv?"), true);
+
+		assert.deepEqual(families.network.selectorGroups, []);
+		assert.deepEqual([families.network.requestCountBeforeOpen, families.network.requestCountAfterInitial, families.network.requestCountFinal], [0, 1, 1]);
+		assert.equal(families.network.requests[0].startsWith("/3/discover/tv?"), true);
+		assert.equal(new URLSearchParams(families.network.requests[0].split("?")[1]).get("with_networks"), "2");
+
+		assert.deepEqual(families.streaming.selectorGroups, [
+			{ label: "Region", options: ["Australia", "United States of America"], selected: "Australia" },
+			{ label: "Media", options: ["Movies", "Series"], selected: "Movies" },
+		]);
+		assert.deepEqual([families.streaming.requestCountBeforeOpen, families.streaming.requestCountAfterInitial, families.streaming.switched.requestCount, families.streaming.requestCountFinal], [0, 1, 2, 2]);
+		assert.equal(new URLSearchParams(families.streaming.requests[0].split("?")[1]).get("watch_region"), "AU");
+		assert.equal(new URLSearchParams(families.streaming.requests[1].split("?")[1]).get("watch_region"), "US");
+
+		assert.deepEqual(families.genre.selectorGroups, [
+			{ label: "Genre", options: ["Comedy", "Horror"], selected: "Comedy" },
+			{ label: "Media", options: ["Movies", "Series"], selected: "Movies" },
+		]);
+		assert.deepEqual([families.genre.requestCountBeforeOpen, families.genre.requestCountAfterInitial, families.genre.switched.requestCount, families.genre.requestCountFinal], [0, 1, 2, 2]);
+		assert.equal(new URLSearchParams(families.genre.requests[0].split("?")[1]).get("with_genres"), "35");
+		assert.equal(new URLSearchParams(families.genre.requests[1].split("?")[1]).get("with_genres"), "27");
+		assert.equal(new URLSearchParams(families.genre.requests[0].split("?")[1]).get("include_adult"), "false");
+	}
+	assert.equal(mountedResults.decadeSourceLayoutWidths.every((entry) => entry.previewSecondary), true, "Decade retains its already-proven exact Add Preview");
 });
 
 test("mounted Decade Add Source stays compact, accessible, and contained at every required width", () => {

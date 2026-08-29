@@ -75,7 +75,7 @@ test("Add Source registry remains exactly seven ordered TMDB families with appro
 	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 7);
 });
 
-test("Add Source renders immediate-action launcher cards with icons, helpers, and one compact provider disclosure", () => {
+test("Add Source renders immediate-action launcher cards with unchanged helpers and no blanket provider disclosure", () => {
 	const markup = renderSourceChooser();
 	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), expectedModes.map(([id]) => id));
 	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 7);
@@ -83,7 +83,8 @@ test("Add Source renders immediate-action launcher cards with icons, helpers, an
 	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 7);
 	assert.match(markup, /<ul class="add-source-scroll source-mode-list" aria-label="Source families">/);
 	assert.match(markup, /Choose what you want to add\./);
-	assert.match(markup, /All available source families use <strong>TMDB<\/strong>\./);
+	assert.doesNotMatch(markup, /All available source families use (?:<strong>)?TMDB/);
+	assert.doesNotMatch(markup, /source-mode-heading-description/);
 	for (const [, label, , helper] of expectedModes) {
 		assert.match(markup, new RegExp(`<strong>${label}<\\/strong>`));
 		assert.ok(markup.includes(`<small>${helper}</small>`), helper);
@@ -142,6 +143,7 @@ test("Add Source and Creation directly share the narrow launcher card and icon p
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*?\.source-mode-dialog\s*\{[^}]*width:\s*min\(920px, 100%\)/s);
 	assert.doesNotMatch(styles, /\.source-mode-option\s*>\s*span|\.source-mode-option\s*\{[^}]*min-height:\s*92px/s);
+	assert.doesNotMatch(styles, /\.source-mode-heading-description/);
 	assert.deepEqual(CREATION_OPTIONS.map((option) => [option.id, option.label, option.icon, option.supportingText]), expectedCreationOptions);
 
 	for (const scope of ["new-collection", "new-folder"]) {

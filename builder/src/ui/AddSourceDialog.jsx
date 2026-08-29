@@ -14,6 +14,8 @@ import {
 	INITIAL_ASYNC_REQUEST_STATE,
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	parseTmdbCollectionInput,
+	requestSourceTitlePreview,
+	sourceTitlePreviewRequest,
 } from "../source-add/index.js";
 import {
 	lockAddSourceDocumentBody,
@@ -32,6 +34,7 @@ import {
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
 export const ADD_SOURCE_SEARCH_DEBOUNCE_MS = 300;
 export { ADD_SOURCE_STEPS };
@@ -210,44 +213,6 @@ function SourceRecipe() {
 					<dd>TMDB-provided order</dd>
 				</div>
 			</dl>
-		</div>
-	);
-}
-
-function ContainedTitles({
-	titles,
-	expanded,
-	onToggle,
-}) {
-	if (!Array.isArray(titles)) return null;
-	if (titles.length === 0) {
-		return <p className="add-source-title-list-empty">TMDB reports no contained titles for this collection.</p>;
-	}
-
-	const label = `${expanded ? "Hide" : "View"} ${titles.length} title${titles.length === 1 ? "" : "s"} in this collection`;
-	return (
-		<div className="add-source-title-list">
-			<button
-				type="button"
-				className="add-source-title-list-toggle"
-				data-action="toggle-contained-titles"
-				aria-expanded={expanded}
-				aria-controls="add-source-contained-titles"
-				onClick={onToggle}
-			>
-				{label}
-				<span aria-hidden="true">{expanded ? "−" : "+"}</span>
-			</button>
-			{expanded ? (
-				<ol id="add-source-contained-titles">
-					{titles.map((movie, index) => (
-						<li key={`${movie.title}-${movie.releaseYear ?? "unknown"}-${index}`}>
-							<span>{movie.title}</span>
-							<span>{movie.releaseYear ?? "Year unavailable"}</span>
-						</li>
-					))}
-				</ol>
-			) : null}
 		</div>
 	);
 }
@@ -442,11 +407,11 @@ export function AddSourceReviewStep({
 	title,
 	titleInputRef,
 	titleError,
-	titlesExpanded,
 	duplicate,
 	applyDiagnostic,
+	previewAvailable,
 	onTitleChange,
-	onToggleTitles,
+	onPreview,
 }) {
 	const nameIsAutoManaged = title === selectedResult.name;
 	return (
@@ -509,11 +474,10 @@ export function AddSourceReviewStep({
 						</p>
 					</div>
 					<SourceRecipe />
-					<ContainedTitles
-						titles={selectedResult.containedTitles}
-						expanded={titlesExpanded}
-						onToggle={onToggleTitles}
-					/>
+					<div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
+						<button type="button" aria-haspopup="dialog" data-action="preview-add-source" disabled={!previewAvailable} onClick={onPreview}>Preview titles</button>
+						{!previewAvailable ? <p className="editor-field-help">Fix the current source fields before previewing.</p> : null}
+					</div>
 				</div>
 			</div>
 		</section>
@@ -560,8 +524,8 @@ export function AddSourceDialog({
 	const [title, setTitle] = useState("");
 	const [duplicate, setDuplicate] = useState(null);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
-	const [titlesExpanded, setTitlesExpanded] = useState(false);
 	const [isApplying, setIsApplying] = useState(false);
+	const [preview, setPreview] = useState(null);
 	const [viewportStyle, setViewportStyle] = useState(() => (
 		typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window)
 	));
@@ -573,6 +537,8 @@ export function AddSourceDialog({
 	const lookupCoordinatorRef = useRef(null);
 	const selectionCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(null);
 	if (lookupCoordinatorRef.current === null) {
 		lookupCoordinatorRef.current = createAsyncRequestCoordinator({
 			onStateChange: setLookupState,
@@ -586,6 +552,7 @@ export function AddSourceDialog({
 	if (submissionGateRef.current === null) {
 		submissionGateRef.current = createSourceSubmissionGate();
 	}
+	if (previewCoordinatorRef.current === null) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 
 	const parsedInput = useMemo(
 		() => parseTmdbCollectionInput(input),
@@ -595,6 +562,9 @@ export function AddSourceDialog({
 		() => buildMovieFranchiseSourceDraft(selectedResult, title),
 		[selectedResult, title],
 	);
+	const previewCandidate = useMemo(() => draftResult.ok
+		? Object.freeze({ sourceDraft: draftResult.draft, request: sourceTitlePreviewRequest("collection", draftResult.draft) })
+		: null, [draftResult]);
 	const searchData = (
 		parsedInput.kind === "search"
 		&& lookupState.status === "success"
@@ -662,7 +632,6 @@ export function AddSourceDialog({
 			setTitle(outcome.result.data.name);
 			setDuplicate(null);
 			setApplyDiagnostic(null);
-			setTitlesExpanded(false);
 			setNavigationState((current) => enterAddSourceReview(
 				current,
 				outcome.result.data.id,
@@ -680,6 +649,7 @@ export function AddSourceDialog({
 	useEffect(() => () => {
 		lookupCoordinatorRef.current.cancel({ notify: false });
 		selectionCoordinatorRef.current.cancel({ notify: false });
+		previewCoordinatorRef.current.cancel({ notify: false });
 	}, []);
 
 	useEffect(() => {
@@ -733,7 +703,6 @@ export function AddSourceDialog({
 		setSelectionCandidate(null);
 		setSelectionState(INITIAL_ASYNC_REQUEST_STATE);
 		setTitle("");
-		setTitlesExpanded(false);
 		clearApprovalAndDiagnostics();
 		selectionCoordinatorRef.current.cancel({ notify: false });
 	}
@@ -741,7 +710,6 @@ export function AddSourceDialog({
 	function showReview(result) {
 		setSelectedResult(result);
 		setTitle(result.name);
-		setTitlesExpanded(false);
 		clearApprovalAndDiagnostics();
 		setNavigationState((current) => enterAddSourceReview(
 			current,
@@ -774,7 +742,6 @@ export function AddSourceDialog({
 		setSelectionCandidate(result);
 		setSelectedResult(null);
 		setTitle("");
-		setTitlesExpanded(false);
 		clearApprovalAndDiagnostics();
 		const outcome = await selection.request;
 		const details = selectedCollectionDetailsFromOutcome(outcome);
@@ -784,7 +751,6 @@ export function AddSourceDialog({
 
 	function returnToSearch() {
 		if (!selectedResult || isApplying) return;
-		setTitlesExpanded(false);
 		clearApprovalAndDiagnostics();
 		setNavigationState(returnAddSourceToSearch);
 	}
@@ -796,7 +762,6 @@ export function AddSourceDialog({
 		setSelectionCandidate(null);
 		setSelectionState(INITIAL_ASYNC_REQUEST_STATE);
 		setTitle("");
-		setTitlesExpanded(false);
 		setNavigationState(createAddSourceNavigationState());
 		clearApprovalAndDiagnostics();
 	}
@@ -843,6 +808,31 @@ export function AddSourceDialog({
 		);
 	}
 
+	async function loadPreview(candidate) {
+		setPreview({ status: "loading", candidate, data: null, error: null });
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => requestSourceTitlePreview(candidate.request, { collection: provider }, signal),
+			"collection",
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(event) {
+		if (!previewCandidate || isApplying) return;
+		previewTriggerRef.current = event.currentTarget;
+		loadPreview(previewCandidate);
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	const cancel = () => {
 		if (!isApplying && !submissionGateRef.current.isActive()) onCancel();
 	};
@@ -871,6 +861,7 @@ export function AddSourceDialog({
 					data-add-source-modal="true"
 					data-add-source-step={step}
 					data-source-mode={MOVIE_FRANCHISE_SOURCE_MODE.id}
+					data-preview-open={preview ? "true" : undefined}
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="add-source-title"
@@ -882,7 +873,7 @@ export function AddSourceDialog({
 						cancel,
 					)}
 				>
-					<header className="add-source-heading">
+					<header className="add-source-heading" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							{step === ADD_SOURCE_STEPS.REVIEW ? (
 								<button
@@ -933,6 +924,8 @@ export function AddSourceDialog({
 						data-add-source-form-step={step}
 						onSubmit={submit}
 						noValidate
+						inert={preview || undefined}
+						aria-hidden={preview ? "true" : undefined}
 					>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === ADD_SOURCE_STEPS.SEARCH ? (
@@ -960,14 +953,14 @@ export function AddSourceDialog({
 									title={title}
 									titleInputRef={titleInputRef}
 									titleError={titleError}
-									titlesExpanded={titlesExpanded}
 									duplicate={duplicate}
 									applyDiagnostic={applyDiagnostic}
+									previewAvailable={previewCandidate !== null}
 									onTitleChange={(event) => {
 										setTitle(event.target.value);
 										setApplyDiagnostic(null);
 									}}
-									onToggleTitles={() => setTitlesExpanded((value) => !value)}
+									onPreview={openPreview}
 								/>
 							)}
 						</div>
@@ -984,6 +977,7 @@ export function AddSourceDialog({
 					</form>
 				</section>
 			</div>
+			{preview ? <SourceTitlePreviewDialog preview={preview} titleId="add-source-preview-title" backdropProps={{ "data-add-source-preview-backdrop": "true" }} dialogProps={{ "data-add-source-preview": "true" }} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 
