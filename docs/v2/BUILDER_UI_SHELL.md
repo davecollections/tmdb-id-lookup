@@ -6,7 +6,7 @@ Last reviewed: 2026-08-20
 
 ## Purpose and scope
 
-The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **TMDB Collection Builder**, with **Built for Nuvio collections** as its supporting line.
+The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **Dingo's Collection Builder**, with **Built for Nuvio collections** as its supporting line.
 
 The shared architecture and interaction rules for current and future New Collection/New Folder families are in [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md). This document records how those flows fit into the workspace shell.
 

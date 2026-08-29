@@ -134,11 +134,14 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 				<img className="welcome-mark" src={builderMark} alt="" width="68" height="68" />
 				<div>
 					<p className="preview-label">Development preview</p>
-					<h1>TMDB Collection Builder</h1>
+					<h1 className="builder-product-title">
+						<span>Dingo's</span>
+						<span>Collection Builder</span>
+					</h1>
 					<p className="brand-subtitle">Built for Nuvio collections</p>
 				</div>
 				<p className="welcome-description">
-					Create, import and organise Nuvio collections using TMDB-powered sources.
+					Create, import and organise Nuvio collections.
 				</p>
 			</header>
 

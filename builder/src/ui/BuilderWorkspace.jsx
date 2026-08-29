@@ -2278,7 +2278,10 @@ export function BuilderWorkspace({
 						<img className="builder-mark" src={builderMark} alt="" width="56" height="56" />
 						<div>
 							<p className="preview-label">Development preview</p>
-							<h1>TMDB Collection Builder</h1>
+							<h1 className="builder-product-title">
+								<span>Dingo's</span>
+								<span>Collection Builder</span>
+							</h1>
 							<p className="workspace-subtitle">Built for Nuvio collections</p>
 						</div>
 					</div>

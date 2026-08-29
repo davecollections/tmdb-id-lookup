@@ -6,7 +6,7 @@ Last reviewed: 2026-07-25
 
 ## Purpose and scope
 
-The `/builder/` entry now opens on a real welcome screen for the **TMDB Collection Builder**. The supporting line is **Built for Nuvio collections**, and the interface retains the small **Development preview** label. The welcome screen starts a clean project or imports an existing Nuvio collection JSON document before entering the existing hierarchy workspace.
+The `/builder/` entry now opens on a real welcome screen for **Dingo's Collection Builder**. The supporting line is **Built for Nuvio collections**, and the interface retains the small **Development preview** label. The welcome screen starts a clean project or imports an existing Nuvio collection JSON document before entering the existing hierarchy workspace.
 
 This is an entry/import milestone, not a complete editor. The existing controller remains the sole owner of project state, while the importer remains authoritative for JSON parsing, structural validation, source classification, ordering, and unknown-field preservation.
 

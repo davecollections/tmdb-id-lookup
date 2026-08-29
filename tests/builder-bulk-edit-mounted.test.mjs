@@ -201,8 +201,23 @@ async function runMountedPage() {
 			await new Promise((resolve) => setTimeout(resolve, 50));
 			layouts.push(await evaluate(resources.pageConnection, "window.__measureBuilderBulkEditLayout()"));
 		}
+		const brandingLayouts = [];
+		for (const { width, height } of [
+			...[360, 384, 393, 402, 412].map((width) => ({ width, height: 852 })),
+			...[899, 900, 901, 1280].map((width) => ({ width, height: 900 })),
+			{ width: 393, height: 320 },
+		]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+				width,
+				height,
+				deviceScaleFactor: 1,
+				mobile: width <= 412,
+			});
+			await new Promise((resolve) => setTimeout(resolve, 50));
+			brandingLayouts.push(await evaluate(resources.pageConnection, "window.__measureBuilderBrandingLayout()"));
+		}
 
-		return { results: mounted.results, keyboard, layouts };
+		return { results: mounted.results, keyboard, layouts, brandingLayouts };
 	}, () => cleanupMountedBrowser({
 		browserExecutable: resources.browserExecutable,
 		browserProcess: resources.browserProcess,
@@ -341,5 +356,34 @@ test("mounted Global display settings stays labelled, single-scroll, wrapped, re
 		if (layout.width <= 412) {
 			assert.ok(layout.titleVisibilityRows >= 2, `Folder Title visibility wrapping at ${layout.width}px`);
 		}
+	}
+});
+
+test("mounted product heading stays exact, stacked, contained, and navigation-safe across the required matrix", () => {
+	assert.deepEqual(mounted.brandingLayouts.map(({ width, height }) => [width, height]), [
+		[360, 852],
+		[384, 852],
+		[393, 852],
+		[402, 852],
+		[412, 852],
+		[899, 900],
+		[900, 900],
+		[901, 900],
+		[1280, 900],
+		[393, 320],
+	]);
+	for (const layout of mounted.brandingLayouts) {
+		const label = `${layout.width}x${layout.height}`;
+		assert.deepEqual(layout.headingLines, ["Dingo's", "Collection Builder"], `heading text at ${label}`);
+		assert.equal(layout.headingLineRows, 2, `stacked rows at ${label}`);
+		assert.deepEqual(layout.headingLineRectCounts, [1, 1], `single-line spans at ${label}`);
+		assert.equal(layout.headingOverflow, false, `heading overflow at ${label}`);
+		assert.equal(layout.headingWithinBrand, true, `heading containment at ${label}`);
+		assert.equal(layout.headerOverflow, false, `header overflow at ${label}`);
+		assert.equal(layout.documentOverflow, false, `document overflow at ${label}`);
+		assert.equal(layout.subtitle, "Built for Nuvio collections", `subtitle at ${label}`);
+		assert.equal(layout.oldProductTitlePresent, false, `old title at ${label}`);
+		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits"], `header actions at ${label}`);
+		assert.equal(layout.headerActionsContained, true, `header action containment at ${label}`);
 	}
 });

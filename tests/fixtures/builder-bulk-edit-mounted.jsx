@@ -358,11 +358,43 @@ function measureLayout() {
 	};
 }
 
+function measureBrandingLayout() {
+	const header = document.querySelector(".app-header");
+	const brand = header.querySelector(".brand-lockup");
+	const title = brand.querySelector(".builder-product-title");
+	const titleLines = [...title.querySelectorAll(":scope > span")];
+	const headerRect = header.getBoundingClientRect();
+	const brandRect = brand.getBoundingClientRect();
+	const lineRects = titleLines.map((line) => line.getBoundingClientRect());
+	const headerActions = [...header.querySelectorAll(".workspace-header-actions button")];
+	return {
+		width: window.innerWidth,
+		height: window.innerHeight,
+		headingLines: titleLines.map((line) => line.textContent.trim()),
+		headingLineRows: new Set(lineRects.map((rect) => Math.round(rect.top))).size,
+		headingLineRectCounts: titleLines.map((line) => line.getClientRects().length),
+		headingOverflow: titleLines.some((line) => line.scrollWidth > line.clientWidth + 1),
+		headingWithinBrand: lineRects.every((rect) => rect.left >= brandRect.left - 1 && rect.right <= brandRect.right + 1),
+		headerOverflow: header.scrollWidth > header.clientWidth,
+		documentOverflow: document.documentElement.scrollWidth > window.innerWidth,
+		subtitle: header.querySelector(".workspace-subtitle")?.textContent.trim(),
+		oldProductTitlePresent: header.textContent.includes("TMDB Collection Builder"),
+		headerActionLabels: headerActions.map((action) => action.getAttribute("aria-label") ?? action.textContent.trim()),
+		headerActionsContained: headerActions.every((action) => {
+			const rect = action.getBoundingClientRect();
+			return rect.width > 0 && rect.height > 0
+				&& rect.left >= headerRect.left - 1 && rect.right <= headerRect.right + 1
+				&& rect.top >= headerRect.top - 1 && rect.bottom <= headerRect.bottom + 1;
+		}),
+	};
+}
+
 async function leaveLayoutScenarioMounted() {
 	const tracked = instrumentController(createController(visibleTree()));
 	await mountWorkspace(tracked.proxy);
 	await click(document.querySelector('[data-action="open-bulk-edit"]'));
 	window.__measureBuilderBulkEditLayout = measureLayout;
+	window.__measureBuilderBrandingLayout = measureBrandingLayout;
 }
 
 window.__builderBulkEditMounted = { status: "running" };

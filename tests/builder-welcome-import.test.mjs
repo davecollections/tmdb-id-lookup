@@ -89,9 +89,10 @@ test("production welcome uses collection-focused startup copy and retains litera
 	const markup = render(createController());
 	for (const text of [
 		"Development preview",
-		"TMDB Collection Builder",
+		"Dingo",
+		"Collection Builder",
 		"Built for Nuvio collections",
-		"Create, import and organise Nuvio collections using TMDB-powered sources.",
+		"Create, import and organise Nuvio collections.",
 		"Start a new collection",
 		"Open a clean workspace and build your Nuvio collection.",
 		"Create new collection",
@@ -118,6 +119,8 @@ test("production welcome uses collection-focused startup copy and retains litera
 	}
 	assert.match(markup, /<main[^>]+data-builder-welcome="true"/);
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);
+	assert.match(markup, /<h1 class="builder-product-title"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
+	assert.equal(markup.includes("TMDB Collection Builder"), false);
 	assert.equal(markup.includes("data-panel=\"collections\""), false);
 	assert.equal(markup.includes("Nuvio Collection Builder"), false);
 });
@@ -157,7 +160,8 @@ test("welcome forms are labelled, described, semantic, and ID-safe", () => {
 test("explicit workspace rendering retains the shell with corrected branding", () => {
 	const markup = render(createController(), { initialScreen: "workspace" });
 	assert.match(markup, /<main[^>]+data-builder-shell="true"/);
-	assert.ok(markup.includes("TMDB Collection Builder"));
+	assert.match(markup, /<h1 class="builder-product-title"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
+	assert.equal(markup.includes("TMDB Collection Builder"), false);
 	assert.ok(markup.includes("Built for Nuvio collections"));
 	assert.ok(markup.includes("New collection"));
 	assert.equal(markup.includes("data-builder-welcome"), false);
@@ -605,16 +609,18 @@ test("welcome styles protect mobile widths, file wrapping, touch targets, and de
 
 test("branding metadata, README naming, and Pages markers are corrected narrowly", () => {
 	const html = read("builder/index.html");
-	assert.match(html, /<title>TMDB Collection Builder<\/title>/);
-	assert.ok(html.includes("Loading TMDB Collection Builder…"));
+	assert.match(html, /<title>Dingo's Collection Builder<\/title>/);
+	assert.ok(html.includes("Loading Dingo's Collection Builder…"));
+	assert.equal(html.includes("TMDB Collection Builder"), false);
 	assert.match(html, /noindex, nofollow/);
 	const readme = read("README.md");
-	assert.match(readme, /## TMDB Collection Builder/);
+	assert.match(readme, /## Dingo's Collection Builder/);
+	assert.equal(readme.includes("## TMDB Collection Builder"), false);
 	assert.equal(readme.includes("## Nuvio Collection Builder"), false);
 	assert.equal(readme.includes("development placeholder"), false);
 	assert.ok(readme.includes("development-preview welcome and collection-building interface"));
 	const validator = read("scripts/validate-pages-site.mjs");
-	assert.ok(validator.includes('builderJavaScript.includes("TMDB Collection Builder")'));
+	assert.ok(validator.includes('builderJavaScript.includes("Dingo\'s Collection Builder")'));
 	assert.ok(validator.includes('builderJavaScript.includes("data-builder-welcome")'));
 });
 
