@@ -60,16 +60,29 @@ const au = { code: "AU", name: "Australia" };
 const us = { code: "US", name: "United States" };
 const gb = { code: "GB", name: "United Kingdom" };
 
-test("Add Source retains Streaming service fifth with multi-region wording", () => {
+test("Add Source retains Streaming fifth with the owner-approved launcher copy", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, {
 		folderName: "Streaming",
 		onCancel() {},
 		onSelectMode() {},
 	}));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-streaming-services"'));
-	assert.ok(markup.includes("<strong>Streaming service</strong>"));
-	assert.ok(markup.includes("one streaming provider across one or more regions"));
+	assert.ok(markup.includes("<strong>Streaming</strong>"));
+	assert.ok(markup.includes("Add a streaming service."));
 	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
+});
+
+test("Add Source Streaming opens with a grammatically complete immediate heading", () => {
+	const markup = renderToStaticMarkup(createElement(StreamingSourceFlow, {
+		catalogueProvider: {},
+		folder: { editable: { title: "Selected folder" } },
+		onApply() {},
+		onBack() {},
+		onCancel() {},
+		project: { collections: [] },
+	}));
+	assert.ok(markup.includes('<h2 id="streaming-source-title">Add a streaming service</h2>'));
+	assert.ok(markup.includes('aria-label="Close Add a streaming service"'));
 });
 
 test("Region opens first as an accessible natural multi-select with known alphabetical rows", () => {

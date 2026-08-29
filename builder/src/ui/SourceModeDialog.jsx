@@ -7,6 +7,7 @@ import {
 	resolveAddSourceViewportStyle,
 } from "./add-source-modal-lifecycle.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
+import { LauncherOptionCard } from "./LauncherOptionCard.jsx";
 import { handleDialogKeyDown } from "./modal-focus.js";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -73,27 +74,24 @@ export function SourceModeDialog({ folderName, initialFocusModeId = null, onCanc
 								Close
 							</button>
 						</div>
-						<p id="source-mode-description" className="add-source-heading-description">
-							Choose what you want to add. The Builder will create the supported Nuvio source shape.
+						<p id="source-mode-description" className="add-source-heading-description source-mode-heading-description">
+							<span>Choose what you want to add.</span>
+							<span>All available source families use <strong>TMDB</strong>.</span>
 						</p>
 					</header>
-					<ul className="add-source-scroll source-mode-list">
+					<ul className="add-source-scroll source-mode-list" aria-label="Source families">
 						{AVAILABLE_SOURCE_MODES.map((mode, index) => (
 							<li key={mode.id}>
-								<button
-									ref={index === 0 ? firstModeRef : null}
+								<LauncherOptionCard
+									buttonRef={index === 0 ? firstModeRef : null}
 									className="source-mode-option"
-									type="button"
-									data-source-mode-option={mode.id}
-									onClick={() => onSelectMode(mode.id)}
-								>
-									<span>
-										<strong>{mode.label}</strong>
-										<small>{mode.providerLabel}</small>
-									</span>
-									<span>{mode.description}</span>
-									<span aria-hidden="true">→</span>
-								</button>
+									dataAttribute="data-source-mode-option"
+									icon={mode.icon}
+									label={mode.label}
+									onSelect={onSelectMode}
+									optionId={mode.id}
+									supportingText={mode.description}
+								/>
 							</li>
 						))}
 					</ul>

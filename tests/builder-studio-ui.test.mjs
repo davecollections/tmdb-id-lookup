@@ -111,7 +111,7 @@ test("Add Source picker exposes Studios with the approved user-facing wording", 
 	}));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-studios"'));
 	assert.ok(markup.includes("<strong>Studios</strong>"));
-	assert.ok(markup.includes("Add Movie or Series sources for one studio."));
+	assert.ok(markup.includes("Add movies or series from a studio."));
 	assert.equal(markup.includes("Studios &amp; Companies"), false);
 	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
 });

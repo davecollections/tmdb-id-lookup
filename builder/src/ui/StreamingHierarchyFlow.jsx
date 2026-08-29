@@ -653,7 +653,7 @@ export function StreamingHierarchyFlow({
 	const interactionOverlayOpen = Boolean(preview || duplicateConfirmation);
 
 	return <>
-		<CreationHeader title="Create with Streaming Services" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={descriptions[activeStage]} onBack={goBack} backAction={activeStage === "regions" ? "back-to-creation-launcher" : `back-to-streaming-${activeStage}`} backDisabled={isApplying} inactive={interactionOverlayOpen} onClose={onCancel} />
+		<CreationHeader title="Create with Streaming" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={descriptions[activeStage]} onBack={goBack} backAction={activeStage === "regions" ? "back-to-creation-launcher" : `back-to-streaming-${activeStage}`} backDisabled={isApplying} inactive={interactionOverlayOpen} onClose={onCancel} />
 		<form className="add-source-form studio-hierarchy-form streaming-hierarchy-form" data-streaming-hierarchy-stage={activeStage} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={interactionOverlayOpen || undefined} aria-hidden={interactionOverlayOpen ? "true" : undefined}>
 				{selectionReconciliationNotice && (activeStage === "regions" || activeStage === "providers") ? <p className="people-selection-limit streaming-selection-reconciliation" data-streaming-selection-reconciliation="true" role="status">{selectionReconciliationNotice}</p> : null}
