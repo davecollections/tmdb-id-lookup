@@ -10,6 +10,9 @@ import {
 	networkDuplicateOverrideIdentity,
 	NETWORK_SERIES_COUNT_FILTER_OPTIONS,
 	NETWORK_SOURCE_MODE,
+	requestSourceTitlePreview,
+	sourceTitlePreviewProviderAvailable,
+	sourceTitlePreviewRequest,
 } from "../source-add/index.js";
 import {
 	lockAddSourceDocumentBody,
@@ -31,6 +34,7 @@ import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 import { NETWORK_SEARCH_DEBOUNCE_MS, useNetworkCatalogueSearch } from "./use-network-catalogue-search.js";
 
 export { NETWORK_SEARCH_DEBOUNCE_MS };
@@ -199,13 +203,14 @@ export function NetworkConfigureActions({ duplicate, isApplying = false, onAddAn
 	);
 }
 
-export function NetworkSourceFlow({ catalogueProvider, countProvider, project, folder, onBack, onCancel, onApply }) {
+export function NetworkSourceFlow({ catalogueProvider, countProvider, previewProvider, project, folder, onBack, onCancel, onApply }) {
 	const [navigation, setNavigation] = useState(createNetworkSourceNavigationState);
 	const [selectedNetwork, setSelectedNetwork] = useState(null);
 	const [count, setCount] = useState(INITIAL_NETWORK_COUNT);
 	const [sortOptionId, setSortOptionId] = useState(DEFAULT_NETWORK_SORT_OPTION_ID);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
+	const [preview, setPreview] = useState(null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
 	const scrollRef = useRef(null);
@@ -213,8 +218,11 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 	const configureRef = useRef(null);
 	const countCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(null);
 	if (!countCoordinatorRef.current) countCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
+	if (!previewCoordinatorRef.current) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 
 	const search = useNetworkCatalogueSearch(catalogueProvider);
 	const duplicateReview = selectedNetwork
@@ -233,6 +241,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 
 	useEffect(() => () => {
 		countCoordinatorRef.current.cancel({ notify: false });
+		previewCoordinatorRef.current.cancel({ notify: false });
 	}, []);
 
 	useEffect(() => {
@@ -305,14 +314,46 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 		applyNetworkSource(false);
 	}
 
+	function networkPreviewCandidate() {
+		return draftResult.ok ? Object.freeze({ sourceDraft: draftResult.draft, request: sourceTitlePreviewRequest("network", draftResult.draft) }) : null;
+	}
+
+	async function loadPreview(candidate) {
+		setPreview({ status: "loading", candidate, data: null, error: null });
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => requestSourceTitlePreview(candidate.request, { network: previewProvider }, signal),
+			"network",
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(event) {
+		const candidate = networkPreviewCandidate();
+		if (!candidate || isApplying) return;
+		previewTriggerRef.current = event.currentTarget;
+		loadPreview(candidate);
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	const cancel = () => {
 		if (!isApplying && !submissionGateRef.current.isActive()) onCancel();
 	};
+	const previewRequest = draftResult.ok ? sourceTitlePreviewRequest("network", draftResult.draft) : null;
+	const previewAvailable = sourceTitlePreviewProviderAvailable(previewRequest, { network: previewProvider });
 	const content = (
 		<div className="add-source-portal" data-add-source-portal="true" data-mobile-surface="opaque">
 			<div className="settings-modal-backdrop add-source-backdrop" data-add-source-modal-backdrop="true" data-backdrop-dismiss="false" style={viewportStyle ?? undefined}>
-				<section ref={dialogRef} className="add-source-dialog studio-source-dialog network-source-dialog" data-dialog-compact="true" data-add-source-modal="true" data-add-source-step={step} data-source-mode={NETWORK_SOURCE_MODE.id} role="dialog" aria-modal="true" aria-labelledby="network-source-title" aria-describedby="network-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}>
-					<header className="add-source-heading">
+				<section ref={dialogRef} className="add-source-dialog studio-source-dialog network-source-dialog" data-dialog-compact="true" data-add-source-modal="true" data-add-source-step={step} data-source-mode={NETWORK_SOURCE_MODE.id} data-preview-open={preview ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="network-source-title" aria-describedby="network-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}>
+					<header className="add-source-heading" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							<button className="add-source-header-action" type="button" disabled={isApplying} onClick={step === NETWORK_SOURCE_STEPS.SEARCH ? onBack : returnToSearch}><span aria-hidden="true">←</span>Back</button>
 							<div><h2 id="network-source-title">Add Network</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
@@ -320,13 +361,14 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 						</div>
 						<p id="network-source-description" className="add-source-heading-description">{step === NETWORK_SOURCE_STEPS.SEARCH ? "Find a Network to add to this folder." : "Review this Network Series source."}</p>
 					</header>
-					<form className="add-source-form" data-network-source-form-step={step} onSubmit={submit} noValidate>
+					<form className="add-source-form" data-network-source-form-step={step} onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === NETWORK_SOURCE_STEPS.SEARCH ? (
 								<NetworkSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} browsing={search.browsing} onInputChange={handleSearchInputChange} onRetry={search.retrySearch} onSelect={selectNetwork} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<NetworkConfigureStep network={selectedNetwork} count={count} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionId={sortOptionId} onSortChange={(optionId) => { setSortOptionId(optionId); setApplyDiagnostic(null); }} />
+									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-network" disabled={!previewAvailable || isApplying} onClick={openPreview}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Preview is unavailable right now.</p> : null}</div>
 								</div>
 							)}
 						</div>
@@ -334,6 +376,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, project, f
 					</form>
 				</section>
 			</div>
+			{preview ? <SourceTitlePreviewDialog preview={preview} titleId="network-add-preview-title" backdropProps={{ "data-network-add-preview-backdrop": "true" }} dialogProps={{ "data-network-add-preview": "true" }} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 	return typeof document === "undefined" ? content : createPortal(content, document.body);

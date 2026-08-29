@@ -9,7 +9,6 @@ import { createPortal } from "react-dom";
 import {
 	formatNetworkLocation,
 	formatStudioLocation,
-	buildPeopleTitlePreview,
 	createAsyncRequestCoordinator,
 	DECADES_SORT_OPTIONS,
 	GENRE_SORT_OPTIONS,
@@ -18,6 +17,8 @@ import {
 	parseNetworkSearchInput,
 	parseStudioSearchInput,
 	PEOPLE_SOURCE_COMBINATIONS,
+	requestSourceTitlePreview,
+	sourceTitlePreviewProviderAvailable,
 	STREAMING_SORT_OPTIONS,
 	studioSortOptionId,
 	studioSortValue,
@@ -76,8 +77,7 @@ import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
 import { DecadesAdvancedOptions } from "./DecadesAdvancedOptions.jsx";
-import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
-import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 import {
 	focusSourceEditAlert,
 	sourceEditErrorPresentation,
@@ -415,69 +415,15 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 	);
 }
 
-function previewProviderAvailable(request, providers) {
-	if (request === null) return false;
-	if (request.kind === "collection") return typeof providers.collection?.getCollection === "function";
-	if (request.kind === "people") return typeof providers.people?.getPerson === "function";
-	if (request.kind === "studio") return typeof providers.studio?.getStudioPreview === "function";
-	if (request.kind === "network") return typeof providers.network?.getNetworkPreview === "function";
-	if (request.kind === "streaming") return typeof providers.streaming?.getStreamingPreview === "function";
-	if (request.kind === "genre") return typeof providers.genre?.getGenrePreview === "function";
-	if (request.kind === "decade") return typeof providers.decade?.getDecadePreview === "function";
-	return false;
-}
-
-async function requestSourceEditPreview(request, providers, signal) {
-	if (request.kind === "collection") {
-		const result = await providers.collection.getCollection(request.tmdbId, { signal });
-		if (!result?.ok) return result;
-		return Object.freeze({ ok: true, data: Object.freeze({
-			results: Object.freeze([...(result.data.containedTitles ?? [])]),
-			totalResults: result.data.movieCount ?? result.data.containedTitles?.length ?? 0,
-			mediaType: "MOVIE",
-		}) });
-	}
-	if (request.kind === "people") {
-		const result = await providers.people.getPerson(request.tmdbId, { signal });
-		if (!result?.ok) return result;
-		const preview = buildPeopleTitlePreview(result.data, {
-			combinations: [request.combinationId],
-			sortOptionId: request.sortOptionId,
-			limit: 10,
-			mediaType: request.mediaType,
-		});
-		return preview.ok
-			? Object.freeze({ ok: true, data: Object.freeze({ results: preview.items, totalResults: preview.totalResults, mediaType: preview.mediaType }) })
-			: Object.freeze({ ok: false, error: Object.freeze({ kind: "invalid-response", message: preview.errors[0]?.message ?? "This People preview could not be prepared.", retryable: false }) });
-	}
-	if (request.kind === "studio") return providers.studio.getStudioPreview(request.tmdbId, { mediaType: request.mediaType, sortBy: request.sortBy, signal });
-	if (request.kind === "network") return providers.network.getNetworkPreview(request.tmdbId, { sortBy: request.sortBy, signal });
-	if (request.kind === "streaming") return providers.streaming.getStreamingPreview(request.sourceNode, { signal });
-	if (request.kind === "genre") return providers.genre.getGenrePreview(request.sourceDraft, { signal });
-	if (request.kind === "decade") return providers.decade.getDecadePreview(request.sourceDraft, { signal });
-	return Object.freeze({ ok: false, error: Object.freeze({ kind: "invalid-request", message: "This source type cannot be previewed.", retryable: false }) });
-}
-
 function SourceEditTitlePreview({ preview, onClose, onRetry }) {
-	const dialogRef = useRef(null);
-	const closeRef = useRef(null);
-	const mediaLabel = preview.candidate.request.mediaType === "TV" ? "Series" : "Movies";
 	return (
-		<NestedPreviewDialog
-			ariaLabelledBy="source-edit-preview-title"
-			backdropClassName="franchise-preview-backdrop studio-preview-backdrop source-edit-preview-backdrop"
+		<SourceTitlePreviewDialog
+			preview={preview}
+			titleId="source-edit-preview-title"
 			backdropProps={{ "data-source-edit-preview-backdrop": "true" }}
-			dialogClassName="franchise-preview-modal studio-preview-modal source-edit-preview-modal"
-			dialogRef={dialogRef}
-			initialFocusRef={closeRef}
 			onClose={onClose}
-		>
-			<header><div><p className="panel-kicker">Title preview</p><h3 id="source-edit-preview-title">{preview.candidate.request.label || "Current source"}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
-			<p className="studio-preview-single-media">{mediaLabel}</p>
-			{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing preview…</p> : null}
-			{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This title preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-			{preview.status === "ready" ? <PosterOnlyPreviewGrid items={preview.data?.results ?? []} limit={10} className="franchise-preview-grid studio-preview-grid source-edit-preview-grid" ariaLabel={`${mediaLabel} poster preview`} altPrefix={mediaLabel} emptyMessage="No posters available." /> : null}
-		</NestedPreviewDialog>
+			onRetry={onRetry}
+		/>
 	);
 }
 
@@ -614,7 +560,7 @@ export function SourceEditorDialog({
 		genre: genrePreviewProvider,
 		decade: decadePreviewProvider,
 	}), [decadePreviewProvider, genrePreviewProvider, networkPreviewProvider, peopleProvider, provider, streamingPreviewProvider, studioPreviewProvider]);
-	const previewAvailable = previewCandidate.previewable && previewProviderAvailable(previewCandidate.request, previewProviders);
+	const previewAvailable = previewCandidate.previewable && sourceTitlePreviewProviderAvailable(previewCandidate.request, previewProviders);
 	const previewGuidance = previewCandidate.guidance ?? (!previewAvailable ? "Preview is unavailable right now." : null);
 
 	usePrePaintLayoutEffect(() => {
@@ -779,7 +725,7 @@ export function SourceEditorDialog({
 	async function loadPreview(candidate) {
 		setPreview({ status: "loading", candidate, data: null, error: null });
 		const outcome = await previewCoordinatorRef.current.run(
-			({ signal }) => requestSourceEditPreview(candidate.request, previewProviders, signal),
+			({ signal }) => requestSourceTitlePreview(candidate.request, previewProviders, signal),
 			candidate.request.kind,
 		);
 		if (!outcome.accepted) return;

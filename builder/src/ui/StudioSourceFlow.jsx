@@ -13,6 +13,9 @@ import {
 	DEFAULT_STUDIO_SORT_OPTION_ID,
 	formatStudioLocation,
 	inspectStudioSourceDuplicates,
+	requestSourceTitlePreview,
+	sourceTitlePreviewProviderAvailable,
+	sourceTitlePreviewRequest,
 	studioDuplicateOverrideIdentity,
 	STUDIO_SOURCE_MODE,
 	STUDIO_SOURCE_OPTIONS,
@@ -32,6 +35,7 @@ import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 import {
 	completeStudioSearchRestore,
 	createStudioSourceNavigationState,
@@ -293,6 +297,7 @@ export function StudioConfigureActions({
 export function StudioSourceFlow({
 	catalogueProvider,
 	countProvider,
+	previewProvider,
 	project,
 	folder,
 	onBack,
@@ -307,6 +312,7 @@ export function StudioSourceFlow({
 	const [titleSortOptionId, setTitleSortOptionId] = useState(DEFAULT_STUDIO_SORT_OPTION_ID);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
+	const [preview, setPreview] = useState(null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
 	const scrollRef = useRef(null);
@@ -314,8 +320,11 @@ export function StudioSourceFlow({
 	const configureRef = useRef(null);
 	const countCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(null);
 	if (!countCoordinatorRef.current) countCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
+	if (!previewCoordinatorRef.current) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 
 	const duplicateReview = selectedStudio
 		? inspectStudioSourceDuplicates(project, folder?.internalId ?? null, selectedStudio.id)
@@ -337,6 +346,7 @@ export function StudioSourceFlow({
 
 	useEffect(() => () => {
 		countCoordinatorRef.current.cancel({ notify: false });
+		previewCoordinatorRef.current.cancel({ notify: false });
 	}, []);
 
 	useEffect(() => {
@@ -438,17 +448,59 @@ export function StudioSourceFlow({
 		applyStudioSources(false);
 	}
 
+	function studioPreviewCandidate(draft) {
+		return Object.freeze({ sourceDraft: draft, request: sourceTitlePreviewRequest("studio", draft) });
+	}
+
+	async function loadPreview(candidate) {
+		setPreview({ status: "loading", candidate, data: null, error: null });
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => requestSourceTitlePreview(candidate.request, { studio: previewProvider }, signal),
+			candidate.request.mediaType,
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(event) {
+		const firstDraft = allDraftResult.ok ? allDraftResult.drafts[0] : null;
+		if (!firstDraft || isApplying) return;
+		previewTriggerRef.current = event.currentTarget;
+		loadPreview(studioPreviewCandidate(firstDraft));
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	const cancel = () => {
 		if (!isApplying && !submissionGateRef.current.isActive()) onCancel();
 	};
 	const primaryCount = draftResult.ok ? draftResult.drafts.length : 0;
 	const configuredCount = allDraftResult.ok ? allDraftResult.drafts.length : 0;
 	const hasDestinationDuplicates = duplicateReview.destination.length > 0;
+	const previewAvailable = allDraftResult.ok && allDraftResult.drafts.length > 0 && sourceTitlePreviewProviderAvailable(sourceTitlePreviewRequest("studio", allDraftResult.drafts[0]), { studio: previewProvider });
+	const previewSelectorGroups = preview && allDraftResult.drafts.length > 1 ? [{
+		id: "media",
+		label: "Media",
+		ariaLabel: "Preview media",
+		options: allDraftResult.drafts.map((draft) => ({
+			id: draft.editable.mediaType,
+			label: draft.editable.mediaType === "TV" ? "Series" : "Movies",
+			selected: preview.candidate.request.mediaType === draft.editable.mediaType,
+			onSelect: () => loadPreview(studioPreviewCandidate(draft)),
+		})),
+	}] : [];
 	const content = (
 		<div className="add-source-portal" data-add-source-portal="true" data-mobile-surface="opaque">
 			<div className="settings-modal-backdrop add-source-backdrop" data-add-source-modal-backdrop="true" data-backdrop-dismiss="false" style={viewportStyle ?? undefined}>
-				<section ref={dialogRef} className="add-source-dialog studio-source-dialog" data-dialog-compact={step === STUDIO_SOURCE_STEPS.SEARCH ? "true" : undefined} data-add-source-modal="true" data-add-source-step={step} data-source-mode={STUDIO_SOURCE_MODE.id} role="dialog" aria-modal="true" aria-labelledby="studio-source-title" aria-describedby="studio-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}>
-					<header className="add-source-heading">
+				<section ref={dialogRef} className="add-source-dialog studio-source-dialog" data-dialog-compact={step === STUDIO_SOURCE_STEPS.SEARCH ? "true" : undefined} data-add-source-modal="true" data-add-source-step={step} data-source-mode={STUDIO_SOURCE_MODE.id} data-preview-open={preview ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="studio-source-title" aria-describedby="studio-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}>
+					<header className="add-source-heading" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							<button className="add-source-header-action" type="button" disabled={isApplying} onClick={step === STUDIO_SOURCE_STEPS.SEARCH ? onBack : returnToSearch}><span aria-hidden="true">←</span>Back</button>
 							<div><h2 id="studio-source-title">Add studio</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
@@ -456,13 +508,14 @@ export function StudioSourceFlow({
 						</div>
 						<p id="studio-source-description" className="add-source-heading-description">{step === STUDIO_SOURCE_STEPS.SEARCH ? "Find a studio to add to this folder." : "Select the Studio sources you want to add."}</p>
 					</header>
-					<form className="add-source-form" data-studio-source-form-step={step} onSubmit={submit} noValidate>
+					<form className="add-source-form" data-studio-source-form-step={step} onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === STUDIO_SOURCE_STEPS.SEARCH ? (
 								<StudioSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} hideZero={search.hideZero} onInputChange={handleSearchInputChange} onSortChange={toggleSearchSort} onHideZeroChange={search.toggleHideZero} onRetry={search.retrySearch} onSelect={selectStudio} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<StudioConfigureStep studio={selectedStudio} counts={counts} choices={choices} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionId={titleSortOptionId} onToggle={toggleChoice} onSortChange={(optionId) => { setTitleSortOptionId(optionId); setApplyDiagnostic(null); }} />
+									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-studio" disabled={!previewAvailable || isApplying} onClick={openPreview}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Choose a valid source configuration to preview.</p> : null}</div>
 								</div>
 							)}
 						</div>
@@ -470,6 +523,7 @@ export function StudioSourceFlow({
 					</form>
 				</section>
 			</div>
+			{preview ? <SourceTitlePreviewDialog preview={preview} titleId="studio-add-preview-title" backdropProps={{ "data-studio-add-preview-backdrop": "true" }} dialogProps={{ "data-studio-add-preview": "true" }} selectorGroups={previewSelectorGroups} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 	return typeof document === "undefined" ? content : createPortal(content, document.body);

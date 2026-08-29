@@ -74,10 +74,7 @@ export function SourceModeDialog({ folderName, initialFocusModeId = null, onCanc
 								Close
 							</button>
 						</div>
-						<p id="source-mode-description" className="add-source-heading-description source-mode-heading-description">
-							<span>Choose what you want to add.</span>
-							<span>All available source families use <strong>TMDB</strong>.</span>
-						</p>
+						<p id="source-mode-description" className="add-source-heading-description">Choose what you want to add.</p>
 					</header>
 					<ul className="add-source-scroll source-mode-list" aria-label="Source families">
 						{AVAILABLE_SOURCE_MODES.map((mode, index) => (

@@ -11,7 +11,10 @@ import {
 	INITIAL_ASYNC_REQUEST_STATE,
 	inspectStreamingSourceDuplicates,
 	reconcileStreamingSourceTitles,
+	requestSourceTitlePreview,
 	searchStreamingProviders,
+	sourceTitlePreviewProviderAvailable,
+	sourceTitlePreviewRequest,
 	streamingDuplicateOverrideIdentity,
 	streamingMediaChoiceSupport,
 	streamingSourceCandidateKey,
@@ -34,6 +37,7 @@ import { handleDialogKeyDown } from "./modal-focus.js";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
 export const STREAMING_SOURCE_STEPS = Object.freeze({
 	PROVIDER: "provider",
@@ -378,7 +382,7 @@ export function StreamingConfigureActions({
 	);
 }
 
-export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack, onCancel, onApply }) {
+export function StreamingSourceFlow({ catalogueProvider, previewProvider, project, folder, onBack, onCancel, onApply }) {
 	const [navigation, setNavigation] = useState(createStreamingSourceNavigationState);
 	const [catalogueState, setCatalogueState] = useState(INITIAL_ASYNC_REQUEST_STATE);
 	const [retryGeneration, setRetryGeneration] = useState(0);
@@ -394,6 +398,7 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 	const [expandedCandidateKey, setExpandedCandidateKey] = useState(null);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
+	const [preview, setPreview] = useState(null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
 	const scrollRef = useRef(null);
@@ -403,8 +408,11 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 	const catalogueCoordinatorRef = useRef(null);
 	const submissionGateRef = useRef(null);
 	const titleInputRefs = useRef(new Map());
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(null);
 	if (!catalogueCoordinatorRef.current) catalogueCoordinatorRef.current = createAsyncRequestCoordinator({ onStateChange: setCatalogueState });
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
+	if (!previewCoordinatorRef.current) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 
 	const catalogue = catalogueState.status === "success" ? catalogueState.data : null;
 	const regionCodes = selectedRegions.map((region) => region.code);
@@ -451,7 +459,10 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 		return () => coordinator.cancel({ reset: false, notify: false });
 	}, [catalogueProvider, retryGeneration]);
 
-	useEffect(() => () => catalogueCoordinatorRef.current.cancel({ notify: false }), []);
+	useEffect(() => () => {
+		catalogueCoordinatorRef.current.cancel({ notify: false });
+		previewCoordinatorRef.current.cancel({ notify: false });
+	}, []);
 
 	useEffect(() => {
 		if (catalogueState.status !== "success") return;
@@ -559,6 +570,37 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 		applyStreamingSources(false);
 	}
 
+	function streamingPreviewCandidate(draft) {
+		return Object.freeze({ sourceDraft: draft, request: sourceTitlePreviewRequest("streaming", draft) });
+	}
+
+	async function loadPreview(candidate) {
+		setPreview({ status: "loading", candidate, data: null, error: null });
+		const key = streamingSourceCandidateKey(candidate.sourceDraft.editable.filters.watchRegion, candidate.request.mediaType);
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => requestSourceTitlePreview(candidate.request, { streaming: previewProvider }, signal),
+			key,
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(event) {
+		const firstDraft = draftResult.ok ? draftResult.drafts[0] : null;
+		if (!firstDraft || isApplying) return;
+		previewTriggerRef.current = event.currentTarget;
+		loadPreview(streamingPreviewCandidate(firstDraft));
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	const cancel = () => {
 		if (!isApplying && !submissionGateRef.current.isActive()) onCancel();
 	};
@@ -567,11 +609,40 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 		[STREAMING_SOURCE_STEPS.PROVIDER]: "Choose one provider with common availability across your selected regions.",
 		[STREAMING_SOURCE_STEPS.CONFIGURE]: "Choose common media and sort options, review generated sources, then add.",
 	};
+	const previewRequest = draftResult.ok && draftResult.drafts.length > 0 ? sourceTitlePreviewRequest("streaming", draftResult.drafts[0]) : null;
+	const previewAvailable = sourceTitlePreviewProviderAvailable(previewRequest, { streaming: previewProvider });
+	const activePreviewRegion = preview?.candidate.sourceDraft.editable.filters.watchRegion ?? null;
+	const previewRegions = draftResult.ok ? [...new Set(draftResult.drafts.map((draft) => draft.editable.filters.watchRegion))] : [];
+	const activeRegionDrafts = draftResult.ok ? draftResult.drafts.filter((draft) => draft.editable.filters.watchRegion === activePreviewRegion) : [];
+	const previewSelectorGroups = preview ? [
+		...(previewRegions.length > 1 ? [{
+			id: "region",
+			label: "Region",
+			ariaLabel: "Preview region",
+			options: previewRegions.map((regionCode) => ({
+				id: regionCode,
+				label: selectedRegions.find((region) => region.code === regionCode)?.name ?? regionCode,
+				selected: activePreviewRegion === regionCode,
+				onSelect: () => loadPreview(streamingPreviewCandidate(draftResult.drafts.find((draft) => draft.editable.filters.watchRegion === regionCode))),
+			})),
+		}] : []),
+		...(activeRegionDrafts.length > 1 ? [{
+			id: "media",
+			label: "Media",
+			ariaLabel: "Preview media",
+			options: activeRegionDrafts.map((draft) => ({
+				id: draft.editable.mediaType,
+				label: draft.editable.mediaType === "TV" ? "Series" : "Movies",
+				selected: preview.candidate.request.mediaType === draft.editable.mediaType,
+				onSelect: () => loadPreview(streamingPreviewCandidate(draft)),
+			})),
+		}] : []),
+	] : [];
 	const content = (
 		<div className="add-source-portal" data-add-source-portal="true" data-mobile-surface="opaque">
 			<div className="settings-modal-backdrop add-source-backdrop" data-add-source-modal-backdrop="true" data-backdrop-dismiss="false" style={viewportStyle ?? undefined}>
-				<section ref={dialogRef} className="add-source-dialog studio-source-dialog streaming-source-dialog" data-dialog-compact="true" data-add-source-modal="true" data-add-source-step={step} data-source-mode={STREAMING_SOURCE_MODE.id} role="dialog" aria-modal="true" aria-labelledby="streaming-source-title" aria-describedby="streaming-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}>
-					<header className="add-source-heading">
+				<section ref={dialogRef} className="add-source-dialog studio-source-dialog streaming-source-dialog" data-dialog-compact="true" data-add-source-modal="true" data-add-source-step={step} data-source-mode={STREAMING_SOURCE_MODE.id} data-preview-open={preview ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="streaming-source-title" aria-describedby="streaming-source-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, cancel)}>
+					<header className="add-source-heading" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							<button className="add-source-header-action" type="button" disabled={isApplying} onClick={returnOneStep}><span aria-hidden="true">←</span>Back</button>
 							<div><h2 id="streaming-source-title">Add a streaming service</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
@@ -579,7 +650,7 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 						</div>
 						<p id="streaming-source-description" className="add-source-heading-description">{descriptions[step]}</p>
 					</header>
-					<form className="add-source-form" data-streaming-source-form-step={step} onSubmit={submit} noValidate>
+					<form className="add-source-form" data-streaming-source-form-step={step} onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll">
 							{catalogueState.status === "loading" || catalogueState.status === "idle" ? (
 								<p className="add-source-selection-status" role="status">Loading Streaming regions and providers…</p>
@@ -616,6 +687,7 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 										});
 										setApplyDiagnostic(null);
 									}} />
+									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-streaming" disabled={!previewAvailable || isApplying} onClick={openPreview}>Preview titles</button>{!draftResult.ok ? <p className="editor-field-help">Fix the current source fields before previewing.</p> : null}</div>
 								</div>
 							)}
 						</div>
@@ -624,6 +696,7 @@ export function StreamingSourceFlow({ catalogueProvider, project, folder, onBack
 					</form>
 				</section>
 			</div>
+			{preview ? <SourceTitlePreviewDialog preview={preview} titleId="streaming-add-preview-title" backdropProps={{ "data-streaming-add-preview-backdrop": "true" }} dialogProps={{ "data-streaming-add-preview": "true" }} selectorGroups={previewSelectorGroups} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 	return typeof document === "undefined" ? content : createPortal(content, document.body);

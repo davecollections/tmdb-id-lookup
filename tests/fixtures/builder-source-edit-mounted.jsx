@@ -23,9 +23,12 @@ import {
 	saveSourceEdit,
 } from "../../builder/src/source-edit/index.js";
 import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx";
+import { AddSourceDialog } from "../../builder/src/ui/AddSourceDialog.jsx";
 import { DecadeSourceFlow } from "../../builder/src/ui/DecadeSourceFlow.jsx";
 import { GenreSourceFlow } from "../../builder/src/ui/GenreSourceFlow.jsx";
+import { NetworkSourceFlow } from "../../builder/src/ui/NetworkSourceFlow.jsx";
 import { PeopleBulkConfigurationList, PeopleSourceFlow } from "../../builder/src/ui/PeopleSourceFlow.jsx";
+import { StudioSourceFlow } from "../../builder/src/ui/StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
 import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
@@ -5173,6 +5176,249 @@ async function runDecadesExclusionLayoutScenario() {
 	}
 }
 
+async function withOrdinaryAddFlow(renderFlow, run) {
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	const project = controller.getState().project;
+	const serializedBefore = serializedValue(controller);
+	let applyCalls = 0;
+	await act(async () => {
+		root.render(renderFlow({
+			project,
+			folder,
+			onApply() {
+				applyCalls += 1;
+				throw new Error("Preview must not enter Save.");
+			},
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		return await run({
+			controller,
+			folder,
+			project,
+			getApplyCalls: () => applyCalls,
+			serializedBefore,
+		});
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+async function ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorLabel = null }) {
+	async function waitForBoundedPreview(label, expectedSelectedTab = null) {
+		return waitForMountedCondition(() => {
+			const preview = document.querySelector(".source-edit-preview-modal");
+			const grid = preview?.querySelector(".source-edit-preview-grid") ?? null;
+			const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
+			const visibleImages = images.filter(visibleElement);
+			const selectedTab = preview?.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim() ?? null;
+			if (!grid || visibleImages.length < 1 || visibleImages.length > 10) return null;
+			if (expectedSelectedTab !== null && selectedTab !== expectedSelectedTab) return null;
+			if (visibleImages.some((image) => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
+			return { preview, grid, images, visibleImages };
+		}, { label, timeoutMs: 30_000 });
+	}
+	const requestCountBeforeOpen = requests.length;
+	trigger.focus({ preventScroll: true });
+	await clickAndSettle(trigger);
+	let ready = await waitForBoundedPreview("ordinary Add Source live preview");
+	const modal = ready.preview;
+	const initialLabel = modal.querySelector("h3")?.textContent.trim() ?? null;
+	const selectorGroups = [...modal.querySelectorAll(".source-title-preview-dimensions .decade-add-preview-dimension")].map((group) => ({
+		label: group.querySelector(":scope > strong")?.textContent.trim() ?? null,
+		options: [...group.querySelectorAll('button[role="tab"]')].map((button) => button.textContent.trim()),
+		selected: group.querySelector('button[role="tab"][aria-selected="true"]')?.textContent.trim() ?? null,
+	}));
+	const requestCountAfterInitial = requests.length;
+	let switched = null;
+	if (selectorLabel !== null) {
+		const selector = [...modal.querySelectorAll('button[role="tab"]')].find((button) => button.textContent.trim() === selectorLabel);
+		if (!selector) throw new Error(`Preview selector ${selectorLabel} was not rendered.`);
+		await clickAndSettle(selector);
+		ready = await waitForBoundedPreview(`ordinary Add Source ${selectorLabel} preview`, selectorLabel);
+		switched = {
+			label: ready.preview.querySelector("h3")?.textContent.trim() ?? null,
+			requestCount: requests.length,
+			genuinePosters: genuineTmdbPosterImages(ready.visibleImages),
+		};
+	}
+	const openState = {
+		initialLabel,
+		posterCount: ready.visibleImages.length,
+		genuinePosters: genuineTmdbPosterImages(ready.visibleImages),
+		posterOnly: [...ready.grid.children].every((entry) => entry.tagName === "IMG"),
+		geometry: titlePreviewGeometry(modal, ready.grid),
+		outerInert: dialog.querySelector(".add-source-heading")?.inert === true && dialog.querySelector(".add-source-form")?.inert === true,
+		focusContained: modal.contains(document.activeElement),
+	};
+	const requestCountBeforeClose = requests.length;
+	await clickAndSettle(requiredElement(modal.querySelector("header button"), "ordinary Add Source Preview Close"));
+	const focusRestored = document.activeElement === trigger;
+	await clickAndSettle(trigger);
+	await waitForBoundedPreview("cached ordinary Add Source preview");
+	const cacheReused = requests.length === requestCountBeforeClose;
+	await clickAndSettle(requiredElement(document.querySelector(".source-edit-preview-modal header button"), "cached ordinary Add Source Preview Close"));
+	return {
+		requestCountBeforeOpen,
+		requestCountAfterInitial,
+		requestCountFinal: requests.length,
+		selectorGroups,
+		switched,
+		...openState,
+		focusRestored,
+		cacheReused,
+	};
+}
+
+function requiredElement(element, label) {
+	if (!element) throw new Error(`${label} was not rendered.`);
+	return element;
+}
+
+async function runAddSourceLivePreviewParityScenario() {
+	const results = {};
+
+	{
+		const requests = [];
+		const provider = createTmdbCollectionProvider({ fetchImpl: recordingFetch(requests) });
+		results.collection = await withOrdinaryAddFlow(
+			({ folder, onApply }) => createElement(AddSourceDialog, { provider, folderName: folder.editable.title, onBack() {}, onCancel() {}, onApply }),
+			async ({ controller, serializedBefore, getApplyCalls }) => {
+				const input = requiredElement(document.querySelector("#add-source-query"), "Collection search");
+				await act(async () => { setInputValue(input, "645"); await afterCommittedEffects(); });
+				const trigger = await waitForMountedCondition(() => document.querySelector('[data-action="preview-add-source"]:not(:disabled)'), { label: "Collection Add Preview action", timeoutMs: 30_000 });
+				const dialog = requiredElement(document.querySelector(".add-source-dialog"), "Collection Add dialog");
+				const reviewScroll = requiredElement(dialog.querySelector(".add-source-scroll"), "Collection Add review scroll owner");
+				const footer = requiredElement(dialog.querySelector(".add-source-actions"), "Collection Add footer");
+				const previewAction = trigger.closest(".source-edit-preview-action");
+				const reviewScrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+					const overflowY = getComputedStyle(element).overflowY;
+					return overflowY === "auto" || overflowY === "scroll";
+				});
+				const reviewCleanup = {
+					countText: dialog.querySelector(".add-source-review-count")?.textContent.trim() ?? null,
+					previewActionAvailable: trigger.textContent.trim() === "Preview titles" && !trigger.disabled,
+					legacyTextPreviewAbsent: dialog.querySelector('[data-action="toggle-contained-titles"], .add-source-title-list, #add-source-contained-titles, .add-source-review-content ol') === null && !/View \d+ titles? in this collection/.test(dialog.textContent),
+					previewFollowsRecipe: dialog.querySelector('[data-source-recipe="tmdb-collection"]')?.nextElementSibling === previewAction,
+					oneScrollOwner: reviewScrollOwners.length === 1 && reviewScrollOwners[0] === reviewScroll,
+					footerReachable: visibleElement(footer) && footer.getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom + 1,
+				};
+				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests });
+				return { ...evidence, reviewCleanup, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+			},
+		);
+	}
+
+	{
+		const requests = [];
+		const provider = createTmdbPersonProvider({ fetchImpl: recordingFetch(requests) });
+		results.people = await withOrdinaryAddFlow(
+			({ project, folder, onApply }) => createElement(PeopleSourceFlow, { context: "folder", provider, project, folder, onBack() {}, onCancel() {}, onApply }),
+			async ({ controller, serializedBefore, getApplyCalls }) => {
+				const input = requiredElement(document.querySelector("#people-source-query"), "People search");
+				await act(async () => { setInputValue(input, "31"); await afterCommittedEffects(); });
+				const result = await waitForMountedCondition(() => document.querySelector('[data-tmdb-person-result="31"]:not(:disabled)'), { label: "People result", timeoutMs: 30_000 });
+				await clickAndSettle(result);
+				const card = await waitForMountedCondition(() => document.querySelector('.people-configuration-card[data-person-id="31"]'), { label: "People Configure", timeoutMs: 30_000 });
+				for (const inputElement of card.querySelectorAll('.people-combination-group input[type="checkbox"]')) {
+					if (!inputElement.checked) await clickAndSettle(inputElement);
+				}
+				const trigger = requiredElement(document.querySelector('[data-action="preview-add-people"]:not(:disabled)'), "People Add Preview action");
+				const dialog = requiredElement(document.querySelector(".people-source-dialog"), "People Add dialog");
+				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorLabel: "Directing" });
+				return { ...evidence, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+			},
+		);
+	}
+
+	{
+		const requests = [];
+		const previewProvider = createTmdbStudioPreviewProvider({ fetchImpl: recordingFetch(requests) });
+		const countProvider = { async getStudioCounts() { return { ok: true, data: { movie: { status: "known", count: 100, error: null }, series: { status: "known", count: 100, error: null } } }; } };
+		results.studio = await withOrdinaryAddFlow(
+			({ project, folder, onApply }) => createElement(StudioSourceFlow, { catalogueProvider: liveStudioCatalogueProvider, countProvider, previewProvider, project, folder, onBack() {}, onCancel() {}, onApply }),
+			async ({ controller, serializedBefore, getApplyCalls }) => {
+				const input = requiredElement(document.querySelector("#studio-source-query"), "Studio search");
+				await act(async () => { setInputValue(input, "3"); await afterCommittedEffects(); });
+				const result = await waitForMountedCondition(() => document.querySelector('[data-tmdb-studio-result="3"]'), { label: "Studio result" });
+				await clickAndSettle(result);
+				const configure = await waitForMountedCondition(() => document.querySelector(".studio-configure-focus-target"), { label: "Studio Configure" });
+				const series = inputContaining(configure, "Series");
+				if (series && !series.checked) await clickAndSettle(series);
+				const trigger = requiredElement(document.querySelector('[data-action="preview-add-studio"]:not(:disabled)'), "Studio Add Preview action");
+				const dialog = requiredElement(document.querySelector(".studio-source-dialog"), "Studio Add dialog");
+				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorLabel: "Series" });
+				return { ...evidence, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+			},
+		);
+	}
+
+	{
+		const requests = [];
+		const previewProvider = createTmdbNetworkPreviewProvider({ fetchImpl: recordingFetch(requests) });
+		const countProvider = { async getNetworkCount() { return { ok: true, data: { status: "known", count: 100, error: null } }; } };
+		results.network = await withOrdinaryAddFlow(
+			({ project, folder, onApply }) => createElement(NetworkSourceFlow, { catalogueProvider: liveNetworkCatalogueProvider, countProvider, previewProvider, project, folder, onBack() {}, onCancel() {}, onApply }),
+			async ({ controller, serializedBefore, getApplyCalls }) => {
+				const input = requiredElement(document.querySelector("#network-source-query"), "Network search");
+				await act(async () => { setInputValue(input, "2"); await afterCommittedEffects(); });
+				const result = await waitForMountedCondition(() => document.querySelector('[data-tmdb-network-result="2"]'), { label: "Network result" });
+				await clickAndSettle(result);
+				const trigger = await waitForMountedCondition(() => document.querySelector('[data-action="preview-add-network"]:not(:disabled)'), { label: "Network Add Preview action" });
+				const dialog = requiredElement(document.querySelector(".network-source-dialog"), "Network Add dialog");
+				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests });
+				return { ...evidence, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+			},
+		);
+	}
+
+	{
+		const requests = [];
+		const previewProvider = createTmdbStreamingPreviewProvider({ fetchImpl: recordingFetch(requests) });
+		results.streaming = await withOrdinaryAddFlow(
+			({ project, folder, onApply }) => createElement(StreamingSourceFlow, { catalogueProvider: liveStreamingCatalogueProvider, previewProvider, project, folder, onBack() {}, onCancel() {}, onApply }),
+			async ({ controller, serializedBefore, getApplyCalls }) => {
+				const au = await waitForMountedCondition(() => document.querySelector('[data-streaming-region="AU"]'), { label: "AU Streaming region", timeoutMs: 30_000 });
+				await clickAndSettle(au);
+				const us = requiredElement(document.querySelector('[data-streaming-region="US"]'), "US Streaming region");
+				await clickAndSettle(us);
+				await clickAndSettle(requiredElement(buttonContaining(document.querySelector(".streaming-region-actions"), "Next"), "Streaming region Next"));
+				const providerResult = await waitForMountedCondition(() => document.querySelector('[data-streaming-provider="8"]'), { label: "Netflix provider" });
+				await clickAndSettle(providerResult);
+				const trigger = await waitForMountedCondition(() => document.querySelector('[data-action="preview-add-streaming"]:not(:disabled)'), { label: "Streaming Add Preview action" });
+				const dialog = requiredElement(document.querySelector(".streaming-source-dialog"), "Streaming Add dialog");
+				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorLabel: "United States of America" });
+				return { ...evidence, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+			},
+		);
+	}
+
+	{
+		const requests = [];
+		const previewProvider = createTmdbGenrePreviewProvider({ fetchImpl: recordingFetch(requests) });
+		results.genre = await withOrdinaryAddFlow(
+			({ project, folder, onApply }) => createElement(GenreSourceFlow, { previewProvider, project, folder, onBack() {}, onCancel() {}, onApply }),
+			async ({ controller, serializedBefore, getApplyCalls }) => {
+				await clickAndSettle(requiredElement(document.querySelector('[data-genre-name="Comedy"]'), "Comedy Genre"));
+				await clickAndSettle(requiredElement(document.querySelector('[data-genre-name="Horror"]'), "Horror Genre"));
+				await clickAndSettle(requiredElement(buttonContaining(document.querySelector(".add-source-actions"), "Continue"), "Genre Continue"));
+				const trigger = await waitForMountedCondition(() => document.querySelector('[data-action="preview-add-genre"]:not(:disabled)'), { label: "Genre Add Preview action" });
+				const dialog = requiredElement(document.querySelector(".genre-source-dialog"), "Genre Add dialog");
+				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorLabel: "Horror" });
+				return { ...evidence, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+			},
+		);
+	}
+
+	return { width: window.innerWidth, families: results };
+}
+
 async function runSourceEditLivePreviewScenario() {
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
@@ -6049,6 +6295,7 @@ async function runSourceChooserLayoutScenario() {
 		const trigger = required(host.querySelector('[data-action="add-source"]'), "Add Source trigger");
 		await clickAndSettle(trigger);
 		const dialog = required(document.querySelector('[data-source-mode-chooser="true"]'), "Add Source chooser");
+		const description = required(dialog.querySelector("#source-mode-description"), "Add Source chooser introduction");
 		const list = required(dialog.querySelector(".source-mode-list"), "Add Source launcher grid");
 		const cards = [...list.querySelectorAll("[data-source-mode-option]")];
 		const firstCard = required(cards[0], "first Add Source card");
@@ -6091,7 +6338,11 @@ async function runSourceChooserLayoutScenario() {
 			helpersContained: helperMetrics.every((metric) => metric.contained),
 			maxHelperLines: Math.max(...helperMetrics.map((metric) => metric.lines ?? 0)),
 			oneScrollOwner: scrollOwners.length === 1 && scrollOwners[0] === list,
-			providerDisclosure: dialog.querySelector(".source-mode-heading-description")?.textContent.includes("All available source families use TMDB.") ?? false,
+			introductoryCopy: description.textContent.trim(),
+			introductoryAlignment: getComputedStyle(description).textAlign,
+			introductoryDisplay: getComputedStyle(description).display,
+			blanketProviderDisclosureAbsent: !dialog.textContent.includes("All available source families use TMDB.") && dialog.querySelector(".source-mode-heading-description") === null,
+			noEmptyDisclosureWrapper: description.childElementCount === 0,
 			noSelectionControls: dialog.querySelector('input[type="radio"], input[type="checkbox"], [role="radio"], [aria-checked]') === null,
 			noSearchAutofocus: dialog.querySelector('input[type="search"]') === null,
 			noArrowLayout: !dialog.textContent.includes("→"),
@@ -6242,6 +6493,7 @@ window.__runNetworkHierarchyScenario = runNetworkHierarchyScenario;
 window.__runNetworkDeferredArtworkScenario = runNetworkDeferredArtworkScenario;
 window.__runStudioScaleScenario = runStudioScaleScenario;
 window.__runSourceEditLivePreviewScenario = runSourceEditLivePreviewScenario;
+window.__runAddSourceLivePreviewParityScenario = runAddSourceLivePreviewParityScenario;
 window.__runDecadesLivePreviewScenario = runDecadesLivePreviewScenario;
 window.__runDecadeSourceLayoutScenario = runDecadeSourceLayoutScenario;
 window.__prepareDecadeSourceGenreKeyboardScenario = prepareDecadeSourceGenreKeyboardScenario;

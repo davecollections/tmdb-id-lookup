@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	buildGenreSourceDrafts,
+	createAsyncRequestCoordinator,
 	createSourceSubmissionGate,
 	DEFAULT_GENRE_DESTINATION_MODE,
 	DEFAULT_GENRE_SORT_OPTION_ID,
@@ -17,7 +18,10 @@ import {
 	inspectGenreSourceDuplicates,
 	officialGenreConcept,
 	pruneGenreExclusionConfiguration,
+	requestSourceTitlePreview,
 	searchGenreConcepts,
+	sourceTitlePreviewProviderAvailable,
+	sourceTitlePreviewRequest,
 } from "../source-add/index.js";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
@@ -31,6 +35,7 @@ import { handleDialogKeyDown } from "./modal-focus.js";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const COMPACT_REVIEW_THRESHOLD = 6;
@@ -150,7 +155,7 @@ export function GenreConfigureReviewStep({ genres, folderName, destinationMode, 
 	);
 }
 
-export function GenreSourceFlow({ project, folder, onBack, onCancel, onApply }) {
+export function GenreSourceFlow({ previewProvider, project, folder, onBack, onCancel, onApply }) {
 	const [step, setStep] = useState(GENRE_SOURCE_STEPS.BROWSE);
 	const [query, setQuery] = useState("");
 	const [selection, setSelection] = useState([]);
@@ -162,6 +167,7 @@ export function GenreSourceFlow({ project, folder, onBack, onCancel, onApply }) 
 	const [secondarySurface, setSecondarySurface] = useState(null);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
+	const [preview, setPreview] = useState(null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
 	const scrollRef = useRef(null);
@@ -172,6 +178,8 @@ export function GenreSourceFlow({ project, folder, onBack, onCancel, onApply }) 
 	const secondaryHeadingRef = useRef(null);
 	const secondaryReturnFocusRef = useRef(null);
 	const submissionGateRef = useRef(createSourceSubmissionGate());
+	const previewTriggerRef = useRef(null);
+	const previewCoordinatorRef = useRef(createAsyncRequestCoordinator());
 	const genres = useMemo(() => selection.map((name) => officialGenreConcept(name)).filter(Boolean), [selection]);
 	const collection = currentCollection(project, folder?.internalId);
 	const effectiveDestinationMode = genres.length === 1 ? DEFAULT_GENRE_DESTINATION_MODE : destinationMode;
@@ -207,6 +215,7 @@ export function GenreSourceFlow({ project, folder, onBack, onCancel, onApply }) 
 			focusElementWithoutScroll(trigger);
 		}
 	}, [secondarySurface]);
+	useEffect(() => () => previewCoordinatorRef.current.cancel({ notify: false }), []);
 
 	function chooseGenre(name) {
 		const nextState = reconcileGenreConfigureState({ selection, genreName: name, advanced, destinationMode });
@@ -260,27 +269,88 @@ export function GenreSourceFlow({ project, folder, onBack, onCancel, onApply }) 
 		if (normalCount > 0) applyGenres(false);
 	}
 
+	function genrePreviewCandidate(draft) {
+		return Object.freeze({ sourceDraft: draft, request: sourceTitlePreviewRequest("genre", draft) });
+	}
+
+	async function loadPreview(candidate) {
+		setPreview({ status: "loading", candidate, data: null, error: null });
+		const outcome = await previewCoordinatorRef.current.run(
+			({ signal }) => requestSourceTitlePreview(candidate.request, { genre: previewProvider }, signal),
+			`${candidate.sourceDraft.editable.filters.withGenres}|${candidate.request.mediaType}`,
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setPreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setPreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openPreview(event) {
+		if (!built.ok || drafts.length === 0 || isApplying || secondarySurface) return;
+		previewTriggerRef.current = event.currentTarget;
+		loadPreview(genrePreviewCandidate(drafts[0]));
+	}
+
+	function closePreview() {
+		previewCoordinatorRef.current.cancel({ notify: false });
+		setPreview(null);
+		const trigger = previewTriggerRef.current;
+		previewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	const primaryLabel = isApplying
 		? effectiveDestinationMode === "current-folder" ? "Adding…" : "Creating…"
 		: effectiveDestinationMode === "current-folder"
 			? normalCount > 0 ? `Add ${normalCount} source${normalCount === 1 ? "" : "s"}` : "No new sources to add"
 			: normalCount > 0 ? `Create ${normalCount} folder${normalCount === 1 ? "" : "s"}` : "No new folders to create";
+	const previewRequest = built.ok && drafts.length > 0 ? sourceTitlePreviewRequest("genre", drafts[0]) : null;
+	const previewAvailable = sourceTitlePreviewProviderAvailable(previewRequest, { genre: previewProvider });
+	const activeGenreId = preview?.candidate.sourceDraft.editable.filters.withGenres ?? null;
+	const genreDraftGroups = built.ok ? genres.map((genre) => ({
+		genre,
+		drafts: drafts.filter((draft) => String(draft.editable.filters.withGenres) === String(draft.editable.mediaType === "MOVIE" ? genre.movieId : genre.tvId)),
+	})).filter((group) => group.drafts.length > 0) : [];
+	const activeGenreGroup = genreDraftGroups.find((group) => group.drafts.some((draft) => String(draft.editable.filters.withGenres) === String(activeGenreId))) ?? null;
+	const previewSelectorGroups = preview ? [
+		...(genreDraftGroups.length > 1 ? [{
+			id: "genre",
+			label: "Genre",
+			ariaLabel: "Preview genre",
+			options: genreDraftGroups.map((group) => ({
+				id: group.genre.name,
+				label: group.genre.name,
+				selected: group === activeGenreGroup,
+				onSelect: () => loadPreview(genrePreviewCandidate(group.drafts[0])),
+			})),
+		}] : []),
+		...((activeGenreGroup?.drafts.length ?? 0) > 1 ? [{
+			id: "media",
+			label: "Media",
+			ariaLabel: "Preview media",
+			options: activeGenreGroup.drafts.map((draft) => ({
+				id: draft.editable.mediaType,
+				label: draft.editable.mediaType === "TV" ? "Series" : "Movies",
+				selected: preview.candidate.request.mediaType === draft.editable.mediaType,
+				onSelect: () => loadPreview(genrePreviewCandidate(draft)),
+			})),
+		}] : []),
+	] : [];
 
 	const content = (
 		<div className="add-source-portal genre-source-portal" data-add-source-portal="true">
 			<div className="settings-modal-backdrop add-source-backdrop" style={viewportStyle ?? undefined}>
-				<section ref={dialogRef} className="add-source-dialog genre-source-dialog" data-add-source-step={step} data-source-mode={GENRE_SOURCE_MODE.id} data-secondary-surface={secondarySurface ?? undefined} role="dialog" aria-modal="true" aria-labelledby="genre-source-title" aria-describedby="genre-source-description" tabIndex={-1} onKeyDown={(event) => {
+				<section ref={dialogRef} className="add-source-dialog genre-source-dialog" data-add-source-step={step} data-source-mode={GENRE_SOURCE_MODE.id} data-secondary-surface={secondarySurface ?? undefined} data-preview-open={preview ? "true" : undefined} role="dialog" aria-modal="true" aria-labelledby="genre-source-title" aria-describedby="genre-source-description" tabIndex={-1} onKeyDown={(event) => {
 					if (secondarySurface && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSecondary(); return; }
 					handleDialogKeyDown(event, dialogRef.current, onCancel);
 				}}>
-					<header className="add-source-heading" inert={secondarySurface || undefined} aria-hidden={secondarySurface ? "true" : undefined}>
+					<header className="add-source-heading" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
 						<div className="add-source-heading-row"><button className="add-source-header-action" type="button" disabled={isApplying} data-action={step === GENRE_SOURCE_STEPS.BROWSE ? "back-to-source-types" : "back-to-genre-browse"} onClick={goBack}><span aria-hidden="true">←</span> Back</button><div><h2 id="genre-source-title">Add Genre sources</h2><p>{folder?.editable?.title || "Selected folder"}</p></div><button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Genre sources" disabled={isApplying} onClick={onCancel}>Close</button></div>
 						<p id="genre-source-description" className="add-source-heading-description">{step === GENRE_SOURCE_STEPS.BROWSE ? "Choose one or more Genres from the local official TMDB catalogue." : "Configure and review the generated Genre sources."}</p>
 					</header>
-					<form className="add-source-form genre-source-form" onSubmit={submit} noValidate>
+					<form className="add-source-form genre-source-form" onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll" inert={secondarySurface || undefined} aria-hidden={secondarySurface ? "true" : undefined}>
 							{step === GENRE_SOURCE_STEPS.BROWSE ? <GenreBrowseStep query={query} headingRef={browseHeadingRef} inputRef={inputRef} selection={selection} onQueryChange={(event) => setQuery(event.target.value)} onClearSearch={() => setQuery("")} onChoose={chooseGenre} onSelectAll={() => { const names = GENRE_CONCEPTS.map((concept) => concept.name); setSelection(names); setDestinationMode(DEFAULT_GENRE_DESTINATION_MODE); setAdvanced((current) => pruneGenreExclusionConfiguration(current, names)); setApplyDiagnostic(null); }} onClearAll={() => { setSelection([]); setDestinationMode(DEFAULT_GENRE_DESTINATION_MODE); setAdvanced((current) => pruneGenreExclusionConfiguration(current, [])); setApplyDiagnostic(null); }} /> : null}
-							{step === GENRE_SOURCE_STEPS.CONFIGURE_REVIEW ? <GenreConfigureReviewStep genres={genres} folderName={folder?.editable?.title || "this folder"} destinationMode={effectiveDestinationMode} sharedMediaChoice={sharedMediaChoice} sortOptionId={sortOptionId} advanced={advanced} drafts={drafts} duplicates={duplicates} folderPlan={folderPlan} buildErrors={built.errors ?? []} applyDiagnostic={applyDiagnostic} configureRef={configureRef} reviewExpanded={reviewExpanded} onRemoveGenre={chooseGenre} onDestinationChange={(value) => { setDestinationMode(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSortChange={(value) => { setSortOptionId(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onToggleReview={() => setReviewExpanded((value) => !value)} /> : null}
+							{step === GENRE_SOURCE_STEPS.CONFIGURE_REVIEW ? <><GenreConfigureReviewStep genres={genres} folderName={folder?.editable?.title || "this folder"} destinationMode={effectiveDestinationMode} sharedMediaChoice={sharedMediaChoice} sortOptionId={sortOptionId} advanced={advanced} drafts={drafts} duplicates={duplicates} folderPlan={folderPlan} buildErrors={built.errors ?? []} applyDiagnostic={applyDiagnostic} configureRef={configureRef} reviewExpanded={reviewExpanded} onRemoveGenre={chooseGenre} onDestinationChange={(value) => { setDestinationMode(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSortChange={(value) => { setSortOptionId(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onToggleReview={() => setReviewExpanded((value) => !value)} /><div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-genre" disabled={!previewAvailable || isApplying} onClick={openPreview}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Fix the current source fields before previewing.</p> : null}</div></> : null}
 						</div>
 						{secondarySurface ? <div className="genre-secondary-surface" data-surface={secondarySurface}><GenreAdvancedSecondarySurface surface={secondarySurface} value={advanced} includedGenres={genres} sharedMediaChoice={sharedMediaChoice} onChange={(value) => { setAdvanced(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onDone={closeSecondary} focusRef={secondaryHeadingRef} /></div> : null}
 						{step === GENRE_SOURCE_STEPS.BROWSE ? <footer className="add-source-actions"><span className="genre-selection-count" role="status">{selection.length} genre{selection.length === 1 ? "" : "s"} selected</span><button className="editor-apply" type="submit" disabled={selection.length === 0}>Continue</button></footer> : null}
@@ -288,6 +358,7 @@ export function GenreSourceFlow({ project, folder, onBack, onCancel, onApply }) 
 					</form>
 				</section>
 			</div>
+			{preview ? <SourceTitlePreviewDialog preview={preview} titleId="genre-add-preview-title" backdropProps={{ "data-genre-add-preview-backdrop": "true" }} dialogProps={{ "data-genre-add-preview": "true" }} selectorGroups={previewSelectorGroups} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 	return typeof document === "undefined" ? content : createPortal(content, document.body);

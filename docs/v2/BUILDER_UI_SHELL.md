@@ -237,7 +237,7 @@ Deployment and focused source tests use a small stable surface:
 - `data-action="create-collection-after-list|create-folder-after-list"`
 - `data-action="add-source|add-source-empty|add-source-after-list"`
 - `data-action="apply-add-source|add-source-anyway|cancel-add-source"`
-- `data-action="back-to-source-search|toggle-contained-titles"`
+- `data-action="back-to-source-search|preview-add-source"`
 - `data-action="reorder-collection|reorder-folder|reorder-source"`
 - `data-hierarchy-card="source"`
 - `data-card-layout="collection|folder|source"`

@@ -33,10 +33,13 @@ import {
 	peoplePromotionTileShape,
 	peopleSelectionNotice,
 	peopleTitlePreviewLimit,
+	requestSourceTitlePreview,
 	removeSelectedPerson,
 	resolvePeopleConfigurationForMode,
 	resolvePersonFolderArtwork,
 	selectedPeople,
+	sourceTitlePreviewProviderAvailable,
+	sourceTitlePreviewRequest,
 	toggleSelectedPerson,
 	updatePeopleConfiguration,
 	validatePeopleCombinationSelection,
@@ -56,6 +59,7 @@ import { FolderShapeChoices, PresentationSwitch, TitleOptions } from "./Presenta
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
+import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 import {
 	completePeopleSearchRestore,
 	createPeopleSourceNavigationState,
@@ -627,6 +631,7 @@ export function PeopleSourceFlow({
 	const [sharedConfigurationInitialized, setSharedConfigurationInitialized] = useState(false);
 	const [sortOptionId, setSortOptionId] = useState(DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID);
 	const [previewState, setPreviewState] = useState(null);
+	const [sourcePreview, setSourcePreview] = useState(null);
 	const [folderTileShape, setFolderTileShape] = useState("POSTER");
 	const [folderTitleVisibility, setFolderTitleVisibility] = useState(DEFAULT_PEOPLE_FOLDER_TITLE_VISIBILITY);
 	const [collectionOptions, setCollectionOptions] = useState(() => Object.freeze({
@@ -652,8 +657,11 @@ export function PeopleSourceFlow({
 	const submissionGateRef = useRef(null);
 	const previewTokenRef = useRef(null);
 	const previewRestoreFocusRef = useRef(null);
+	const sourcePreviewTriggerRef = useRef(null);
+	const sourcePreviewCoordinatorRef = useRef(null);
 	if (!lookupCoordinatorRef.current) lookupCoordinatorRef.current = createAsyncRequestCoordinator({ onStateChange: setLookupState });
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
+	if (!sourcePreviewCoordinatorRef.current) sourcePreviewCoordinatorRef.current = createAsyncRequestCoordinator();
 
 	const parsedInput = useMemo(() => parseTmdbPersonInput(input), [input]);
 	const hierarchy = hierarchyScope === "new-collection" || hierarchyScope === "new-folder";
@@ -827,6 +835,7 @@ export function PeopleSourceFlow({
 		artworkTokensRef.current.clear();
 		quickSelectionTokenRef.current = null;
 		previewTokenRef.current = null;
+		sourcePreviewCoordinatorRef.current.cancel({ notify: false });
 	}, []);
 
 	useEffect(() => {
@@ -976,6 +985,36 @@ export function PeopleSourceFlow({
 		setPreviewState((current) => current ? { ...current, mediaType } : current);
 	}
 
+	function peopleSourcePreviewCandidate(draft) {
+		return Object.freeze({ sourceDraft: draft, request: sourceTitlePreviewRequest("people", draft) });
+	}
+
+	async function loadSourcePreview(candidate) {
+		setSourcePreview({ status: "loading", candidate, data: null, error: null });
+		const outcome = await sourcePreviewCoordinatorRef.current.run(
+			({ signal }) => requestSourceTitlePreview(candidate.request, { people: provider }, signal),
+			candidate.request.combinationId,
+		);
+		if (!outcome.accepted) return;
+		if (outcome.result?.ok) setSourcePreview({ status: "ready", candidate, data: outcome.result.data, error: null });
+		else if (outcome.result?.error?.kind !== "aborted") setSourcePreview({ status: "error", candidate, data: null, error: outcome.result?.error });
+	}
+
+	function openSourcePreview(event) {
+		const firstDraft = quickEntry?.drafts.ok ? quickEntry.drafts.drafts[0] : null;
+		if (!firstDraft || isApplying) return;
+		sourcePreviewTriggerRef.current = event.currentTarget;
+		loadSourcePreview(peopleSourcePreviewCandidate(firstDraft));
+	}
+
+	function closeSourcePreview() {
+		sourcePreviewCoordinatorRef.current.cancel({ notify: false });
+		setSourcePreview(null);
+		const trigger = sourcePreviewTriggerRef.current;
+		sourcePreviewTriggerRef.current = null;
+		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
+	}
+
 	function toggleCombination(personId, combinationId) {
 		if (multiContext && configurationMode === PEOPLE_CONFIGURATION_MODES.SHARED && personId === null) {
 			setSharedCombinations((current) => current.includes(combinationId) ? current.filter((id) => id !== combinationId) : [...current, combinationId]);
@@ -1109,9 +1148,45 @@ export function PeopleSourceFlow({
 		? context === "folder" ? "Search for one person to add to the current folder." : "Select people in folder order, then configure their existing Acting and Directing sources."
 		: step === PEOPLE_SOURCE_STEPS.CONFIGURE ? multiContext ? null : "Choose the exact Acting and Directing sources to add."
 			: "Review names, appearance and destination placement before creating everything atomically.";
+	const sourcePreviewRequest = !multiContext && quickEntry?.drafts.ok && quickEntry.drafts.drafts.length > 0
+		? sourceTitlePreviewRequest("people", quickEntry.drafts.drafts[0])
+		: null;
+	const sourcePreviewAvailable = sourceTitlePreviewProviderAvailable(sourcePreviewRequest, { people: provider });
+	const sourcePreviewDrafts = !multiContext && quickEntry?.drafts.ok ? quickEntry.drafts.drafts : [];
+	const activeSourceCombination = sourcePreview ? PEOPLE_SOURCE_COMBINATIONS.find((entry) => entry.id === sourcePreview.candidate.request.combinationId) ?? null : null;
+	const sourcePreviewRoles = PEOPLE_SOURCE_COMBINATIONS.filter((combination) => sourcePreviewDrafts.some((draft) => draft.editable.tmdbSourceType === combination.tmdbSourceType && draft.editable.mediaType === combination.mediaType)).reduce((roles, combination) => roles.includes(combination.role) ? roles : [...roles, combination.role], []);
+	const activeRoleDrafts = activeSourceCombination ? sourcePreviewDrafts.filter((draft) => draft.editable.tmdbSourceType === (activeSourceCombination.role === "acting" ? "PERSON" : "DIRECTOR")) : [];
+	const sourcePreviewSelectorGroups = sourcePreview ? [
+		...(sourcePreviewRoles.length > 1 ? [{
+			id: "role",
+			label: "Role",
+			ariaLabel: "Preview role",
+			options: sourcePreviewRoles.map((role) => ({
+				id: role,
+				label: role === "acting" ? "Acting" : "Directing",
+				selected: activeSourceCombination?.role === role,
+				onSelect: () => {
+					const combination = PEOPLE_SOURCE_COMBINATIONS.find((entry) => entry.role === role && sourcePreviewDrafts.some((draft) => draft.editable.tmdbSourceType === entry.tmdbSourceType && draft.editable.mediaType === entry.mediaType));
+					const draft = sourcePreviewDrafts.find((entry) => entry.editable.tmdbSourceType === combination.tmdbSourceType && entry.editable.mediaType === combination.mediaType);
+					loadSourcePreview(peopleSourcePreviewCandidate(draft));
+				},
+			})),
+		}] : []),
+		...(activeRoleDrafts.length > 1 ? [{
+			id: "media",
+			label: "Media",
+			ariaLabel: "Preview media",
+			options: activeRoleDrafts.map((draft) => ({
+				id: draft.editable.mediaType,
+				label: draft.editable.mediaType === "TV" ? "Series" : "Movies",
+				selected: sourcePreview.candidate.request.mediaType === draft.editable.mediaType,
+				onSelect: () => loadSourcePreview(peopleSourcePreviewCandidate(draft)),
+			})),
+		}] : []),
+	] : [];
 	const dialogContent = (
-		<section ref={dialogRef} className={`add-source-dialog people-source-dialog${embedded ? " people-source-embedded" : ""}`} data-dialog-compact={step === PEOPLE_SOURCE_STEPS.SEARCH ? "true" : undefined} data-add-source-modal={embedded ? undefined : "true"} data-add-source-step={step} data-people-context={context} data-people-hierarchy-scope={hierarchyScope ?? undefined} data-source-mode={PEOPLE_SOURCE_MODE.id} role={embedded ? undefined : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby={titleId} aria-describedby={headingDescription ? descriptionId : undefined} tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, () => !isApplying && onCancel())}>
-					<header className="add-source-heading">
+		<section ref={dialogRef} className={`add-source-dialog people-source-dialog${embedded ? " people-source-embedded" : ""}`} data-dialog-compact={step === PEOPLE_SOURCE_STEPS.SEARCH ? "true" : undefined} data-add-source-modal={embedded ? undefined : "true"} data-add-source-step={step} data-people-context={context} data-people-hierarchy-scope={hierarchyScope ?? undefined} data-source-mode={PEOPLE_SOURCE_MODE.id} data-preview-open={sourcePreview ? "true" : undefined} role={embedded ? undefined : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby={titleId} aria-describedby={headingDescription ? descriptionId : undefined} tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, () => !isApplying && onCancel())}>
+					<header className="add-source-heading" inert={sourcePreview || undefined} aria-hidden={sourcePreview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							{step !== PEOPLE_SOURCE_STEPS.SEARCH || hierarchy || context === "folder"
 								? <button className="add-source-header-action" type="button" data-action={step === PEOPLE_SOURCE_STEPS.SEARCH ? hierarchy ? "back-to-creation-launcher" : "back-to-source-types" : undefined} disabled={isApplying} onClick={goBack}><span aria-hidden="true">←</span>Back</button>
@@ -1121,7 +1196,7 @@ export function PeopleSourceFlow({
 						</div>
 						{headingDescription ? <p id={descriptionId} className="add-source-heading-description">{headingDescription}</p> : null}
 					</header>
-					<form className="add-source-form" data-people-source-form-step={step} onSubmit={(event) => {
+					<form className="add-source-form" data-people-source-form-step={step} inert={sourcePreview || undefined} aria-hidden={sourcePreview ? "true" : undefined} onSubmit={(event) => {
 						event.preventDefault();
 						if (step === PEOPLE_SOURCE_STEPS.SEARCH) beginBulkConfigure();
 						else if (step === PEOPLE_SOURCE_STEPS.CONFIGURE && hierarchy) {
@@ -1140,12 +1215,14 @@ export function PeopleSourceFlow({
 									{multiContext ? <PeopleBulkConfigurationList entries={configuredEntries} mode={configurationMode} onToggleCombination={toggleCombination} onRetry={(entry) => loadDetails(entry.result, { bypassCache: true })} onRemove={removePerson} onPreview={openTitlePreview} previewState={previewState} previewItems={previewResult?.ok ? previewResult.items : []} previewLimit={previewLimit} previewMediaTypes={previewMediaTypes} previewTotalResults={previewResult?.ok ? previewResult.totalResults : 0} onChangePreviewMedia={changePeoplePreviewMedia} onClosePreview={() => closeTitlePreview()} onRetryPreview={(entry) => openTitlePreview(entry, null, { retry: true })} /> : <div className="people-configuration-list">{configuredEntries.map((entry) => <PeopleConfigurationCard key={entry.result.id} personResult={entry.result} detail={entry.detail} configuration={entry.configuration} artworkState={entry.artworkState} showArtwork={resolvesFolderArtwork} onToggle={(id) => toggleCombination(entry.result.id, id)} onRefresh={() => loadDetails(entry.result, { bypassCache: true })} onRetry={() => loadDetails(entry.result, { bypassCache: true })} onRetryArtwork={() => entry.person && loadArtwork(entry.person, true)} onRemove={null} />)}</div>}
 									{context === "folder" && quickDuplicates.destination.length ? <div className="add-source-duplicate-warning" role="alert" data-people-duplicate-warning="true"><strong>{quickDuplicates.duplicateDrafts.length} selected source{quickDuplicates.duplicateDrafts.length === 1 ? " is" : "s are"} already in this folder.</strong><p>The main action adds only missing sources. Add all anyway is an explicit override for this person and selection.</p></div> : null}
 									{context === "folder" && quickDuplicates.elsewhere.length ? <p className="people-elsewhere-note" role="status">Matching sources also exist elsewhere in this Builder document. This does not block adding them here.</p> : null}
+									{!multiContext ? <div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-people" disabled={!sourcePreviewAvailable || isApplying} onClick={openSourcePreview}>Preview titles</button>{!sourcePreviewAvailable ? <p className="editor-field-help">Choose a valid source configuration to preview.</p> : null}</div> : null}
 								</section>
 							) : <PeopleReviewStep planResult={hierarchyPlanResult} entries={configuredEntries} collectionOptions={collectionOptions} onCollectionOptionsChange={(next) => { setCollectionOptions(Object.freeze(next)); setApplyDiagnostic(null); }} folderTileShape={folderTileShape} onFolderTileShapeChange={(tileShape) => { setFolderTileShape(tileShape); setApplyDiagnostic(null); }} folderTitleVisibility={folderTitleVisibility} onFolderTitleVisibilityChange={(next) => { setFolderTitleVisibility(next); setApplyDiagnostic(null); }} applyDiagnostic={applyDiagnostic} headingRef={configureRef} />}
 						</div>
 						{step === PEOPLE_SOURCE_STEPS.SEARCH && multiContext ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={chosenPeople.length === 0}>Configure {chosenPeople.length} {chosenPeople.length === 1 ? "person" : "people"}</button></footer> : null}
 						{step !== PEOPLE_SOURCE_STEPS.SEARCH ? <footer className="add-source-actions people-configure-actions"><button className="editor-apply" type="submit" disabled={!configureReady || isApplying || (context === "folder" && primaryCount === 0) || (hierarchy && (!hierarchyPlanResult?.ok || (step === PEOPLE_SOURCE_STEPS.REVIEW && hierarchyPlanResult.plan.counts.folderCount === 0)))}>{isApplying ? hierarchy ? "Creating…" : "Adding…" : primaryLabel}</button>{context === "folder" && quickDuplicates.destination.length ? <button className="editor-cancel people-add-all" type="button" disabled={!configureReady || isApplying} data-action="add-all-people-anyway" onClick={() => applyPeople(true)}>Add all {quickEntry?.drafts.drafts.length ?? 0} anyway</button> : null}</footer> : null}
 					</form>
+					{sourcePreview ? <SourceTitlePreviewDialog preview={sourcePreview} titleId="people-add-preview-title" backdropProps={{ "data-people-add-preview-backdrop": "true" }} dialogProps={{ "data-people-add-preview": "true" }} selectorGroups={sourcePreviewSelectorGroups} onClose={closeSourcePreview} onRetry={() => loadSourcePreview(sourcePreview.candidate)} /> : null}
 				</section>
 	);
 	if (embedded) return dialogContent;

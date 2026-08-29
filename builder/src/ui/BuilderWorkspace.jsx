@@ -2729,6 +2729,7 @@ export function BuilderWorkspace({
 					<StudioSourceFlow
 						catalogueProvider={studioCatalogueProviderRef.current}
 						countProvider={studioCountProviderRef.current}
+						previewProvider={studioPreviewProviderRef.current}
 						project={state.project}
 						folder={addSourceFolder}
 						onBack={returnToSourceModePicker}
@@ -2739,6 +2740,7 @@ export function BuilderWorkspace({
 					<NetworkSourceFlow
 						catalogueProvider={networkCatalogueProviderRef.current}
 						countProvider={networkCountProviderRef.current}
+						previewProvider={networkPreviewProviderRef.current}
 						project={state.project}
 						folder={addSourceFolder}
 						onBack={returnToSourceModePicker}
@@ -2748,6 +2750,7 @@ export function BuilderWorkspace({
 				) : visibleAddSourceSession.modeId === STREAMING_SOURCE_MODE_ID ? (
 					<StreamingSourceFlow
 						catalogueProvider={streamingCatalogueProviderRef.current}
+						previewProvider={streamingPreviewProviderRef.current}
 						project={state.project}
 						folder={addSourceFolder}
 						onBack={returnToSourceModePicker}
@@ -2756,6 +2759,7 @@ export function BuilderWorkspace({
 					/>
 				) : visibleAddSourceSession.modeId === GENRE_SOURCE_MODE_ID ? (
 					<GenreSourceFlow
+						previewProvider={genrePreviewProviderRef.current}
 						project={state.project}
 						folder={addSourceFolder}
 						onBack={returnToSourceModePicker}
