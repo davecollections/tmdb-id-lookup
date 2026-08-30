@@ -7822,8 +7822,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 	.creation-option-card,
 	.source-mode-option {
-		gap: 8px;
-		padding: 10px;
+		gap: 6px;
+		padding: 10px 8px;
 	}
 }
 

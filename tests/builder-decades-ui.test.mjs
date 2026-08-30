@@ -957,7 +957,7 @@ test("creation styles keep selected cards restrained and cover required responsi
 	assert.match(styles, /\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.creation-option-icon-shell\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*8px;[^}]*padding:\s*10px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*6px;[^}]*padding:\s*10px 8px/s);
 	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
 	assert.equal(styles.includes(".creation-option-arrow"), false);
 	assert.match(styles, /\.decades-structure-preview\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
