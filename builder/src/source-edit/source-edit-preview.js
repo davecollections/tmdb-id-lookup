@@ -15,6 +15,7 @@ import { PEOPLE_SOURCE_EDITOR_ID, peopleEditCombination } from "./people-editor.
 import { sourceEditorById } from "./source-editors.js";
 import { STUDIO_SOURCE_EDITOR_ID } from "./studio-editor.js";
 import { STREAMING_SOURCE_EDITOR_ID } from "./streaming-editor.js";
+import { TMDB_LIST_SOURCE_EDITOR_ID } from "./tmdb-list-editor.js";
 import { resolveExactSource } from "./source-edit-actions.js";
 
 const FIX_CURRENT_FIELDS_GUIDANCE = "Fix the current source fields before previewing.";
@@ -89,6 +90,13 @@ export function prepareSourceEditPreview(session, draft) {
 	const candidateSource = detachedCandidate(exact.source, patch);
 
 	switch (session.adapterId) {
+		case TMDB_LIST_SOURCE_EDITOR_ID:
+			return ready(candidateSource, {
+				kind: "list",
+				tmdbId: candidateSource.editable.tmdbId,
+				mediaType: "MOVIE",
+				label: draft.title,
+			});
 		case MOVIE_COLLECTION_SOURCE_EDITOR_ID:
 			return ready(candidateSource, {
 				kind: "collection",

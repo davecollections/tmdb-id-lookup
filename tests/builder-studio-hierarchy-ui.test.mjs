@@ -141,7 +141,7 @@ test("Studio hierarchy has one scroll owner, sticky actions, and 10-poster Previ
 	assert.match(flow, /<footer className="add-source-actions">/);
 	assert.match(flow, /<PosterOnlyPreviewGrid items=\{items\} limit=\{10\}/);
 	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5/);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(3/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);
 	assert.match(posterGrid, /filter\(\(candidate\) => candidate\.source !== null\)/);
 	assert.match(posterGrid, /slice\(0, limit\)/);

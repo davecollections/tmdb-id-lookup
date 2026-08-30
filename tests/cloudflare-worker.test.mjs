@@ -157,6 +157,57 @@ test("valid origin-free Watch Provider service requests use the fixed TMDB host 
 	});
 });
 
+test("TMDB List details forward one canonical int32 ID with exactly language en-US and page 1", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/list/1?language=en-US&page=1",
+			"/3/list/2147483647?page=1&language=en-US",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 200, pathname);
+		}
+		assert.deepEqual(calls.map(([url]) => url.toString()), [
+			"https://api.themoviedb.org/3/list/1?language=en-US&page=1",
+			"https://api.themoviedb.org/3/list/2147483647?page=1&language=en-US",
+		]);
+		for (const [, init] of calls) assert.equal(init.headers.Authorization, "Bearer mock-tmdb-token");
+	});
+});
+
+test("TMDB List details reject missing, duplicate, malformed, noncanonical, overflowing, and extra parameters", async () => {
+	await withMockFetch(async (calls) => {
+		for (const pathname of [
+			"/3/list/1",
+			"/3/list/1?language=en-US",
+			"/3/list/1?page=1",
+			"/3/list/0?language=en-US&page=1",
+			"/3/list/01?language=en-US&page=1",
+			"/3/list/-1?language=en-US&page=1",
+			"/3/list/1.0?language=en-US&page=1",
+			"/3/list/2147483648?language=en-US&page=1",
+			"/3/list/9007199254740992?language=en-US&page=1",
+			"/3/list/abc?language=en-US&page=1",
+			"/3/list/1/?language=en-US&page=1",
+			"/3/list/1/edit?language=en-US&page=1",
+			"/3/list/1?language=en&page=1",
+			"/3/list/1?language=en-US&page=2",
+			"/3/list/1?language=en-US&page=01",
+			"/3/list/1?language=en-US&page=1&page=1",
+			"/3/list/1?language=en-US&language=en-US&page=1",
+			"/3/list/1?language=en-US&page=1&api_key=secret",
+			"/3/list/1?language=en-US&page=1&append_to_response=items",
+		]) {
+			const response = await fetchWorker(pathname, { origin: allowedOrigin });
+			assert.equal(response.status, 403, pathname);
+			assert.equal(await response.text(), "TMDB path not allowed", pathname);
+		}
+		const serviceOnly = await fetchWorker("/3/list/1?language=en-US&page=1", { token: serviceToken });
+		assert.equal(serviceOnly.status, 403);
+		assert.equal(await serviceOnly.text(), "Origin not allowed");
+		assert.equal(calls.length, 0);
+	});
+});
+
 test("Studio Company Discover routes forward only canonical IDs and the exact media sort allowlists", async () => {
 	await withMockFetch(async (calls) => {
 		const paths = [

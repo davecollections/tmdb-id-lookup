@@ -7,6 +7,7 @@ import {
 	applyNetworkHierarchyPlan,
 	applyStudioHierarchyPlan,
 	applyStreamingHierarchyPlan,
+	applyTmdbListHierarchyPlan,
 	createPeopleSourceBundle,
 	createGenreSourceBundle,
 	createDecadeSourceBundle,
@@ -28,6 +29,8 @@ import {
 	createTmdbStudioCountProvider,
 	createTmdbStudioPreviewProvider,
 	createTmdbStreamingPreviewProvider,
+	createTmdbListProvider,
+	createTmdbListSourceBundle,
 	MOVIE_FRANCHISE_SOURCE_MODE_ID,
 	PEOPLE_SOURCE_MODE_ID,
 	NETWORK_SOURCE_MODE_ID,
@@ -35,6 +38,7 @@ import {
 	STREAMING_SOURCE_MODE_ID,
 	GENRE_SOURCE_MODE_ID,
 	DECADE_SOURCE_MODE_ID,
+	TMDB_LIST_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
@@ -87,6 +91,7 @@ import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
 import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
 import { DecadeSourceFlow } from "./DecadeSourceFlow.jsx";
+import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
 import {
 	updateNodeEditorField,
@@ -705,6 +710,7 @@ export function BuilderWorkspace({
 	initialSourceEdit = null,
 	initialAboutCreditsOpen = false,
 	sourceProvider = null,
+	listProvider = null,
 	peopleProvider = null,
 	networkCatalogueProvider = null,
 	networkCountProvider = null,
@@ -791,6 +797,10 @@ export function BuilderWorkspace({
 	const sourceProviderRef = useRef(null);
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
+	}
+	const listProviderRef = useRef(null);
+	if (listProviderRef.current === null) {
+		listProviderRef.current = listProvider ?? createTmdbListProvider();
 	}
 	const peopleProviderRef = useRef(null);
 	if (peopleProviderRef.current === null) {
@@ -1484,6 +1494,21 @@ export function BuilderWorkspace({
 		return result;
 	}
 
+	function applyTmdbListPlan(plan) {
+		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
+		const result = applyTmdbListHierarchyPlan(controller, plan);
+		if (!result.ok) return result;
+		const nodeType = creationSession.scope === "new-collection" ? "collection" : "folder";
+		const internalId = nodeType === "collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+		setCreationSession(null);
+		creationRestoreFocusRef.current = null;
+		setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+		if (internalId) setCreatedCardTarget({ nodeType, internalId });
+		setCreationStatusText("");
+		queueMicrotask(() => setCreationStatusText(`Created 1 TMDB Lists folder with ${result.counts.sourceCount} source${result.counts.sourceCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
 	function applyStudioPlan(plan) {
 		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
 		const result = applyStudioHierarchyPlan(controller, plan);
@@ -1570,7 +1595,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
+			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -1856,6 +1881,24 @@ export function BuilderWorkspace({
 		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
 		setSourceCreationStatusText("");
 		queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} Decade source${result.addedSourceCount === 1 ? "" : "s"}.`));
+		return result;
+	}
+
+	function applyTmdbListSources(bundle) {
+		if (!visibleAddSourceSession || visibleAddSourceSession.context !== "folder") return { ok: false, errors: [{ code: "TMDB_LIST_FOLDER_UNAVAILABLE", path: "$tmdbList.destination", message: "The selected destination folder is no longer available." }] };
+		const result = createTmdbListSourceBundle(controller, {
+			folderInternalId: visibleAddSourceSession.folderInternalId,
+			drafts: bundle.drafts,
+			expectedProjectRevision: bundle.expectedProjectRevision,
+			duplicateOverrideIdentity: bundle.duplicateOverrideIdentity,
+			interactionLocked: editorLocked || deleteLocked || returnConfirmationOpen || actionsMenuInternalId !== null || pointerInteractionLocked(),
+		});
+		if (!result.ok) return result;
+		addSourceRestoreFocusRef.current = null;
+		setAddSourceSession(null);
+		setPendingCreatedSourceFocus(result.createdSourceInternalIds[0]);
+		setSourceCreationStatusText("");
+		queueMicrotask(() => setSourceCreationStatusText(`Added ${result.addedSourceCount} TMDB List source${result.addedSourceCount === 1 ? "" : "s"}.`));
 		return result;
 	}
 
@@ -2654,7 +2697,9 @@ export function BuilderWorkspace({
 					onApplyNetworks={applyNetworkPlan}
 					onApplyGenres={applyGenrePlan}
 					onApplyStreaming={applyStreamingPlan}
+					onApplyTmdbLists={applyTmdbListPlan}
 					collectionProvider={sourceProviderRef.current}
+					listProvider={listProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
 					peopleManifestClient={peopleManifestClientRef.current}
 					studioCatalogueProvider={studioCatalogueProviderRef.current}
@@ -2728,6 +2773,16 @@ export function BuilderWorkspace({
 						onCancel={cancelAddSource}
 						onApply={applyPeopleSources}
 					/>
+				) : visibleAddSourceSession.modeId === TMDB_LIST_SOURCE_MODE_ID ? (
+					<TmdbListSourceFlow
+						project={state.project}
+						projectRevision={state.revision}
+						folder={addSourceFolder}
+						provider={listProviderRef.current}
+						onBack={returnToSourceModePicker}
+						onCancel={cancelAddSource}
+						onApply={applyTmdbListSources}
+					/>
 				) : visibleAddSourceSession.modeId === STUDIO_SOURCE_MODE_ID ? (
 					<StudioSourceFlow
 						catalogueProvider={studioCatalogueProviderRef.current}
@@ -2791,6 +2846,7 @@ export function BuilderWorkspace({
 			{sourceEdit ? (
 				<SourceEditorDialog
 					provider={sourceProviderRef.current}
+					listProvider={listProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
 					networkPreviewProvider={networkPreviewProviderRef.current}
 					networkCatalogueProvider={networkCatalogueProviderRef.current}

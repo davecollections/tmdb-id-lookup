@@ -3,6 +3,7 @@ export {
 	INITIAL_ASYNC_REQUEST_STATE,
 } from "./async-request-state.js";
 export {
+	listSourceTitlePreviewSummary,
 	requestSourceTitlePreview,
 	sourceTitlePreviewProviderAvailable,
 	sourceTitlePreviewRequest,
@@ -126,7 +127,43 @@ export {
 	GENRE_SOURCE_MODE_ID,
 	DECADE_SOURCE_MODE,
 	DECADE_SOURCE_MODE_ID,
+	TMDB_LIST_SOURCE_MODE,
+	TMDB_LIST_SOURCE_MODE_ID,
 } from "./source-modes.js";
+export {
+	isCanonicalTmdbListId,
+	parseTmdbListBatch,
+	parseTmdbListInput,
+	TMDB_LIST_ID_MAX,
+} from "./tmdb-list-input.js";
+export {
+	createTmdbListProvider,
+	normalizeTmdbListResponse,
+	TMDB_LIST_CACHE_MAX_ENTRIES,
+	TMDB_LIST_CACHE_TTL_MS,
+	TMDB_LIST_REQUEST_TIMEOUT_MS,
+} from "./tmdb-list-provider.js";
+export {
+	buildTmdbListSourceDraft,
+	canonicalTmdbListSourceId,
+	createTmdbListSourceBundle,
+	defaultTmdbListSourceTitle,
+	inspectTmdbListSourceDuplicates,
+	tmdbListDuplicateOverrideIdentity,
+	tmdbListPhysicalIdentity,
+	tmdbListSelectionIdentity,
+	validateTmdbListSourceDraft,
+} from "./tmdb-list-source.js";
+export {
+	applyTmdbListHierarchyPlan,
+	createTmdbListHierarchyPlan,
+	DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE,
+	DEFAULT_TMDB_LIST_FOLDER_TITLE_VISIBILITY,
+	TMDB_LIST_CREATION_SCOPES,
+	TMDB_LIST_HIERARCHY_PLAN_TYPE,
+	TMDB_LIST_PLACEMENT_STATUSES,
+	validateTmdbListHierarchyPlan,
+} from "./tmdb-list-plan.js";
 export {
 	EXACT_SHARED_GENRE_NAMES,
 	GENRE_CONCEPTS,

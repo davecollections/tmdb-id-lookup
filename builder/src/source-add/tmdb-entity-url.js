@@ -4,6 +4,7 @@ const TMDB_WEB_ORIGIN = "https://www.themoviedb.org";
 const REVIEW_ENTITY_ROUTES = Object.freeze({
 	company: "company",
 	collection: "collection",
+	list: "list",
 	network: "network",
 	person: "person",
 });

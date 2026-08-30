@@ -166,6 +166,19 @@ function peopleSource(overrides = {}) {
 	};
 }
 
+function listSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Public list",
+		tmdbSourceType: "LIST",
+		tmdbId: "5916",
+		mediaType: "MOVIE",
+		sortBy: "original",
+		filters: {},
+		...overrides,
+	};
+}
+
 function studioSource(overrides = {}) {
 	return {
 		provider: "tmdb",
@@ -264,7 +277,7 @@ test("supported source menus include simple Streaming and show Edit source immed
 	}
 });
 
-test("Source Edit exposes one draft-backed Preview action for all seven adapters immediately before the footer", () => {
+test("Source Edit exposes one draft-backed Preview action for all eight adapters immediately before the footer", () => {
 	const controller = createController();
 	const folder = importSources(controller, [collectionSource(), peopleSource(), studioSource(), networkSource(), streamingSource(), genreSource(), decadeSource()]);
 	const previewProps = {
@@ -435,6 +448,30 @@ test("Studio editor opens the fixed Studio identity with count, TMDB link, sort,
 	assert.ok(markup.includes("Source name"));
 	assert.ok(markup.includes("Changes how this source appears in Nuvio, not which Studio it represents."));
 	assert.equal(markup.includes("<select"), false);
+});
+
+test("TMDB List editor links only its normalized numeric ID and retains Preview and safe external-link behavior", () => {
+	const controller = createController();
+	const folder = importSources(controller, [listSource()]);
+	const edit = openEdit(controller, folder.sources[0]);
+	assert.equal(edit.draft.tmdbId, 5916);
+	assert.equal(folder.sources[0].editable.tmdbId, "5916");
+	const markup = renderToStaticMarkup(createElement(SourceEditorDialog, {
+		provider: fakeProvider(),
+		listProvider: { async getList() { throw new Error("Preview must stay lazy."); } },
+		session: edit.session,
+		initialDraft: edit.draft,
+		onCancel() {},
+		onSave() { return { ok: true }; },
+	}));
+	assert.ok(markup.includes('data-source-edit-adapter="tmdb-list"'));
+	assert.match(markup, /TMDB · LIST ·[\s\S]*href="https:\/\/www\.themoviedb\.org\/list\/5916"[\s\S]*>5916<\/span>/);
+	assert.ok(markup.includes('target="_blank"'));
+	assert.ok(markup.includes('rel="noopener noreferrer"'));
+	assert.ok(markup.includes("Open this TMDB list on TMDB (list 5916)"));
+	assert.ok(markup.includes("This is the name shown in Nuvio. You can customise it."));
+	assert.ok(markup.includes(">Preview titles</button>"));
+	assert.equal(markup.includes('href="https://www.themoviedb.org/company/'), false);
 });
 
 test("Studio editor preserves an unusual imported sort until a supported option is chosen", () => {

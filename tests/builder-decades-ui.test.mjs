@@ -114,6 +114,7 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		CREATION_OPTION_IDS.DECADES,
 		CREATION_OPTION_IDS.PEOPLE,
 		CREATION_OPTION_IDS.FRANCHISES,
+		CREATION_OPTION_IDS.TMDB_LISTS,
 		CREATION_OPTION_IDS.STUDIOS,
 		CREATION_OPTION_IDS.NETWORKS,
 		CREATION_OPTION_IDS.GENRES,
@@ -121,12 +122,13 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "lists", "studios", "networks", "genres", "streaming-services"]);
 	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), [
 		"Start manually.",
 		"Build by decade or year.",
 		"Build around actors or directors.",
 		"Build from a movie franchise.",
+		"Build from public TMDB lists.",
 		"Build from movie or TV studios.",
 		"Build from TV networks.",
 		"Build by genre.",

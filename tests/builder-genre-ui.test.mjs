@@ -89,7 +89,7 @@ function configureMarkup(overrides = {}) {
 	}));
 }
 
-test("Add Source keeps Genres sixth and exposes Decade last without changing the preceding mode order", () => {
+test("Add Source keeps Lists second and exposes Genres and Decade after the established modes", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, {
 		folderName: "Genres",
 		onCancel() {},
@@ -98,6 +98,7 @@ test("Add Source keeps Genres sixth and exposes Decade last without changing the
 	const modeIds = [...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]);
 	assert.deepEqual(modeIds, [
 		"tmdb-movie-franchise",
+		"tmdb-lists",
 		"tmdb-people",
 		"tmdb-studios",
 		"tmdb-networks",

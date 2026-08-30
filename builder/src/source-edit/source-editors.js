@@ -5,9 +5,11 @@ import { networkSourceEditor } from "./network-editor.js";
 import { peopleSourceEditor } from "./people-editor.js";
 import { studioSourceEditor } from "./studio-editor.js";
 import { streamingSourceEditor } from "./streaming-editor.js";
+import { tmdbListSourceEditor } from "./tmdb-list-editor.js";
 
 export const SOURCE_EDITORS = Object.freeze([
 	movieCollectionSourceEditor,
+	tmdbListSourceEditor,
 	peopleSourceEditor,
 	studioSourceEditor,
 	networkSourceEditor,

@@ -64,7 +64,7 @@ function provider(id) {
 }
 
 test("Streaming is the eighth scope-aware launcher family after Genres in both Creation scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
+	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.deepEqual([...markup.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), expected);

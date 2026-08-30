@@ -94,6 +94,8 @@ runNode(["--test", path.join("tests", "builder-decades-controller.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-decades-plan.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-decades-preview.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-decades-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-tmdb-lists.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-tmdb-lists-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "v1-company-search-compatibility.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-preview.test.mjs")]);

@@ -75,8 +75,20 @@ export const DECADE_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const TMDB_LIST_SOURCE_MODE_ID = "tmdb-lists";
+
+export const TMDB_LIST_SOURCE_MODE = Object.freeze({
+	id: TMDB_LIST_SOURCE_MODE_ID,
+	label: "TMDB lists",
+	icon: "lists",
+	providerLabel: "TMDB",
+	description: "Add one or more public TMDB lists.",
+	category: "native-tmdb",
+});
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
+	TMDB_LIST_SOURCE_MODE,
 	PEOPLE_SOURCE_MODE,
 	STUDIO_SOURCE_MODE,
 	NETWORK_SOURCE_MODE,

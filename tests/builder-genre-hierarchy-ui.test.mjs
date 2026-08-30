@@ -35,7 +35,7 @@ const { GENRE_CONCEPTS } = await vite.ssrLoadModule("/src/source-add/index.js");
 after(() => vite.close());
 
 test("Genres follows the completed hierarchy families in both creation scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
+	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
 	for (const scope of ["new-collection", "new-folder"]) assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), expected);
 	assert.match(dialogSource, /CREATION_OPTION_IDS\.GENRES/);
 	assert.match(dialogSource, /<GenreHierarchyFlow/);

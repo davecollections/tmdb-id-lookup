@@ -69,7 +69,7 @@ test("Add Source retains Streaming fifth with the owner-approved launcher copy",
 	assert.ok(markup.includes('data-source-mode-option="tmdb-streaming-services"'));
 	assert.ok(markup.includes("<strong>Streaming</strong>"));
 	assert.ok(markup.includes("Add a streaming service."));
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 8);
 });
 
 test("Add Source Streaming opens with a grammatically complete immediate heading", () => {

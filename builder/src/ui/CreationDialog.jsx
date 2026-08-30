@@ -73,6 +73,7 @@ import { GenreHierarchyFlow } from "./GenreHierarchyFlow.jsx";
 import { NetworkHierarchyFlow } from "./NetworkHierarchyFlow.jsx";
 import { StudioHierarchyFlow } from "./StudioHierarchyFlow.jsx";
 import { StreamingHierarchyFlow } from "./StreamingHierarchyFlow.jsx";
+import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 
@@ -761,7 +762,9 @@ export function CreationDialog({
 	onApplyNetworks,
 	onApplyGenres,
 	onApplyStreaming,
+	onApplyTmdbLists,
 	collectionProvider,
+	listProvider,
 	peopleProvider,
 	peopleManifestClient,
 	studioCatalogueProvider,
@@ -803,7 +806,7 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.TMDB_LISTS, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	const launcher = optionId === null;
@@ -820,6 +823,8 @@ export function CreationDialog({
 						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
 					) : optionId === CREATION_OPTION_IDS.FRANCHISES ? (
 						<FranchiseSourceFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={collectionProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyFranchises} />
+					) : optionId === CREATION_OPTION_IDS.TMDB_LISTS ? (
+						<TmdbListSourceFlow context="hierarchy" scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={listProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTmdbLists} />
 					) : optionId === CREATION_OPTION_IDS.STUDIOS ? (
 						<StudioHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={studioCatalogueProvider} previewProvider={studioPreviewProvider} artworkRuntimeClient={studioArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStudios} />
 					) : optionId === CREATION_OPTION_IDS.NETWORKS ? (

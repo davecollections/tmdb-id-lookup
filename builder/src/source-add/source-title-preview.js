@@ -11,6 +11,18 @@ function failure(message) {
 	});
 }
 
+export function listSourceTitlePreviewSummary(data) {
+	const loadedCount = Array.isArray(data?.results) ? data.results.length : 0;
+	if (loadedCount === 0) return null;
+	const totalCount = Number.isSafeInteger(data?.totalResults) && data.totalResults >= loadedCount
+		? data.totalResults
+		: null;
+	const titleLabel = loadedCount === 1 ? "title" : "titles";
+	if (totalCount === loadedCount) return `Showing all ${loadedCount} ${titleLabel}`;
+	if (totalCount !== null) return `Showing ${loadedCount} of ${totalCount} titles`;
+	return `Showing ${loadedCount} ${titleLabel}`;
+}
+
 export function sourceTitlePreviewRequest(kind, sourceDraft) {
 	const editable = sourceDraft?.editable;
 	if (editable === null || typeof editable !== "object") return null;
@@ -20,6 +32,7 @@ export function sourceTitlePreviewRequest(kind, sourceDraft) {
 		label: editable.title,
 	};
 	if (kind === "collection") return Object.freeze({ ...common, tmdbId: editable.tmdbId });
+	if (kind === "list") return Object.freeze({ ...common, tmdbId: editable.tmdbId });
 	if (kind === "people") {
 		const combination = PEOPLE_SOURCE_COMBINATIONS.find((entry) => (
 			entry.tmdbSourceType === editable.tmdbSourceType
@@ -53,6 +66,7 @@ export function sourceTitlePreviewRequest(kind, sourceDraft) {
 export function sourceTitlePreviewProviderAvailable(request, providers) {
 	if (!request) return false;
 	if (request.kind === "collection") return typeof providers.collection?.getCollection === "function";
+	if (request.kind === "list") return typeof providers.list?.getList === "function";
 	if (request.kind === "people") return typeof providers.people?.getPerson === "function";
 	if (request.kind === "studio") return typeof providers.studio?.getStudioPreview === "function";
 	if (request.kind === "network") return typeof providers.network?.getNetworkPreview === "function";
@@ -63,6 +77,11 @@ export function sourceTitlePreviewProviderAvailable(request, providers) {
 }
 
 export async function requestSourceTitlePreview(request, providers, signal) {
+	if (request.kind === "list") {
+		const result = await providers.list.getList(request.tmdbId, { signal });
+		if (!result?.ok) return result;
+		return Object.freeze({ ok: true, data: Object.freeze({ results: Object.freeze([...(result.data.items ?? [])]), totalResults: result.data.itemCount, mediaType: "MIXED" }) });
+	}
 	if (request.kind === "collection") {
 		const result = await providers.collection.getCollection(request.tmdbId, { signal });
 		if (!result?.ok) return result;

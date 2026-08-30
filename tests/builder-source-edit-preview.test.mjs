@@ -35,6 +35,7 @@ const sources = [
 	{ provider: "tmdb", title: "Netflix · AU", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "MOVIE", sortBy: "popularity.desc", filters: { watchRegion: "AU", withWatchProviders: "8" } },
 	{ provider: "tmdb", title: "Comedy Movies", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "MOVIE", sortBy: "popularity.desc", filters: { withGenres: "35" } },
 	{ provider: "tmdb", title: "1980s Movies", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "MOVIE", sortBy: "popularity.desc", filters: { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31" } },
+	{ provider: "tmdb", title: "Public list", tmdbSourceType: "LIST", tmdbId: 9, mediaType: "MOVIE", sortBy: "original", filters: {} },
 ];
 
 function openedAt(controller, index) {
@@ -44,10 +45,10 @@ function openedAt(controller, index) {
 	return opened;
 }
 
-test("Source Edit preview materializes the current detached draft for all seven adapters without mutating the project", () => {
+test("Source Edit preview materializes the current detached draft for all eight adapters without mutating the project", () => {
 	const controller = createProject(sources);
 	const before = JSON.stringify(controller.stringifyProject().value);
-	const expectedKinds = ["collection", "people", "studio", "network", "streaming", "genre", "decade"];
+	const expectedKinds = ["collection", "people", "studio", "network", "streaming", "genre", "decade", "list"];
 
 	for (let index = 0; index < expectedKinds.length; index += 1) {
 		const opened = openedAt(controller, index);

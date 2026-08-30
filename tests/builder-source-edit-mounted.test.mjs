@@ -180,6 +180,8 @@ async function runMountedPage() {
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
 				const sourceChooserWidths = [];
+				const tmdbListLayoutWidths = [];
+				const tmdbListPreviewWidths = [];
 				const genreToolbarWidths = [];
 				const decadesActionWidths = [];
 				const decadesGenreWidths = [];
@@ -205,6 +207,8 @@ async function runMountedPage() {
 				let decadeSourceGenreKeyboard = null;
 				let sourceChooserKeyboard = null;
 				let shortHeightSourceChooser = null;
+				let shortHeightTmdbListLayout = null;
+				let shortHeightTmdbListPreview = null;
 				let shortHeightPreviewGeometry = null;
 				let streamingDuplicateConfirmation = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
@@ -216,6 +220,22 @@ async function runMountedPage() {
 					});
 					if (sourceChooserEvaluation.exceptionDetails) throw new Error(sourceChooserEvaluation.exceptionDetails.exception?.description ?? sourceChooserEvaluation.exceptionDetails.text);
 					sourceChooserWidths.push(sourceChooserEvaluation.result?.value);
+					const tmdbListLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runTmdbListLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (tmdbListLayoutEvaluation.exceptionDetails) throw new Error(tmdbListLayoutEvaluation.exceptionDetails.exception?.description ?? tmdbListLayoutEvaluation.exceptionDetails.text);
+					tmdbListLayoutWidths.push(tmdbListLayoutEvaluation.result?.value);
+					if (width <= 412) await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1.1 });
+					const tmdbListPreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runTmdbListLivePreviewScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (width <= 412) await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
+					if (tmdbListPreviewEvaluation.exceptionDetails) throw new Error(tmdbListPreviewEvaluation.exceptionDetails.exception?.description ?? tmdbListPreviewEvaluation.exceptionDetails.text);
+					tmdbListPreviewWidths.push(tmdbListPreviewEvaluation.result?.value);
 					const decadeSourceLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadeSourceLayoutScenario()",
 						awaitPromise: true,
@@ -401,6 +421,22 @@ async function runMountedPage() {
 				});
 				if (shortSourceChooserEvaluation.exceptionDetails) throw new Error(shortSourceChooserEvaluation.exceptionDetails.exception?.description ?? shortSourceChooserEvaluation.exceptionDetails.text);
 				shortHeightSourceChooser = shortSourceChooserEvaluation.result?.value;
+				const shortTmdbListEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runTmdbListLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (shortTmdbListEvaluation.exceptionDetails) throw new Error(shortTmdbListEvaluation.exceptionDetails.exception?.description ?? shortTmdbListEvaluation.exceptionDetails.text);
+				shortHeightTmdbListLayout = shortTmdbListEvaluation.result?.value;
+				await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1.1 });
+				const shortTmdbListPreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runTmdbListLivePreviewScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
+				if (shortTmdbListPreviewEvaluation.exceptionDetails) throw new Error(shortTmdbListPreviewEvaluation.exceptionDetails.exception?.description ?? shortTmdbListPreviewEvaluation.exceptionDetails.text);
+				shortHeightTmdbListPreview = shortTmdbListPreviewEvaluation.result?.value;
 				const shortPeopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runPeopleConfigureLayoutScenario()",
 					awaitPromise: true,
@@ -480,7 +516,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceChooserWidths, sourceChooserKeyboard, shortHeightSourceChooser, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceChooserWidths, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -583,13 +619,14 @@ before(async () => {
 	mountedResults = await runMountedPage();
 });
 
-function assertTitlePreviewGeometry(geometry, { width, posters = 10, short = false, label }) {
+function assertTitlePreviewGeometry(geometry, { width, posters = 10, phoneColumns = 3, short = false, label }) {
+	const columns = Math.min(width <= 620 ? phoneColumns : 5, posters);
 	assert.equal(geometry.centeredHorizontally, true, `${label}: horizontally centred`);
 	assert.equal(geometry.centeredVertically, true, `${label}: vertically centred`);
 	assert.equal(geometry.withinViewport, true, `${label}: visual viewport bounds`);
 	assert.equal(geometry.closeReachable, true, `${label}: Close reachable`);
-	assert.equal(geometry.columns, Math.min(5, posters), `${label}: poster columns`);
-	assert.equal(geometry.rows, Math.ceil(posters / 5), `${label}: poster rows`);
+	assert.equal(geometry.columns, columns, `${label}: poster columns`);
+	assert.equal(geometry.rows, Math.ceil(posters / columns), `${label}: poster rows`);
 	assert.ok(geometry.posterWidth >= (width <= 520 ? 48 : 80), `${label}: useful poster width ${geometry.posterWidth}`);
 	assert.ok(Math.abs((geometry.posterHeight / geometry.posterWidth) - 1.5) <= 0.04, `${label}: poster aspect ratio`);
 	assert.ok(geometry.columnGap >= 5 && geometry.columnGap <= 12, `${label}: clean column gap ${geometry.columnGap}`);
@@ -905,6 +942,7 @@ test("mounted Genre exact duplicate overrides use singular and bundle canonical 
 test("mounted Add Source chooser uses the responsive Creation launcher language at every required width", () => {
 	const expectedModes = [
 		"tmdb-movie-franchise",
+		"tmdb-lists",
 		"tmdb-people",
 		"tmdb-studios",
 		"tmdb-networks",
@@ -912,13 +950,14 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		"tmdb-genres",
 		"tmdb-decade",
 	];
-	const expectedCreationIds = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
-	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "Studios", "Networks", "Genres", "Streaming"];
+	const expectedCreationIds = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
+	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "TMDB Lists", "Studios", "Networks", "Genres", "Streaming"];
 	const expectedCreationHelpers = [
 		"Start manually.",
 		"Build by decade or year.",
 		"Build around actors or directors.",
 		"Build from a movie franchise.",
+		"Build from public TMDB lists.",
 		"Build from movie or TV studios.",
 		"Build from TV networks.",
 		"Build by genre.",
@@ -928,7 +967,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 	for (const result of mountedResults.sourceChooserWidths) {
 		const width = result.width;
 		assert.deepEqual(result.modeIds, expectedModes, `${width}px registry order`);
-		assert.equal(result.cardCount, 7, `${width}px card count`);
+		assert.equal(result.cardCount, 8, `${width}px card count`);
 		assert.equal(result.columnCount, width <= 620 ? 2 : 4, `${width}px responsive columns`);
 		assert.equal(result.balancedRows, true, `${width}px balanced rows`);
 		assert.equal(result.firstOptionFocused, true, `${width}px first-option focus`);
@@ -960,9 +999,9 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.deepEqual(chooser.optionIds, expectedCreationIds, `${width}px ${chooser.scope} option order`);
 			assert.deepEqual(chooser.labels, expectedCreationLabels, `${width}px ${chooser.scope} labels`);
 			assert.deepEqual(chooser.helpers, expectedCreationHelpers, `${width}px ${chooser.scope} helpers`);
-			assert.equal(chooser.cardCount, 8, `${width}px ${chooser.scope} card count`);
+			assert.equal(chooser.cardCount, 9, `${width}px ${chooser.scope} card count`);
 			assert.equal(chooser.columnCount, width <= 620 ? 2 : 4, `${width}px ${chooser.scope} responsive columns`);
-			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2] : [4, 4], `${width}px ${chooser.scope} balanced rows`);
+			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 1] : [4, 4, 1], `${width}px ${chooser.scope} balanced rows`);
 			assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
 			assert.equal(chooser.firstOptionFocused, true, `${width}px ${chooser.scope} first-option focus`);
 			assert.equal(chooser.iconShellsCorrect, true, `${width}px ${chooser.scope} icon shells`);
@@ -995,12 +1034,271 @@ test("mounted Add Source chooser remains reachable in the retained 393 by 320 sh
 	assert.equal(result.noMutation, true);
 	for (const chooser of result.creationChoosers) {
 		assert.equal(chooser.columnCount, 2, `${chooser.scope} short-height columns`);
-		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2], `${chooser.scope} short-height rows`);
+		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 1], `${chooser.scope} short-height rows`);
 		assert.equal(chooser.cardsContained, true, `${chooser.scope} short-height card containment`);
 		assert.equal(chooser.helpersContained, true, `${chooser.scope} short-height helper containment`);
 		assert.equal(chooser.oneScrollOwner, true, `${chooser.scope} short-height scroll owner`);
 		assert.equal(chooser.noHorizontalOverflow, true, `${chooser.scope} short-height horizontal overflow`);
 		assert.equal(chooser.finalCardReachable, true, `${chooser.scope} short-height final card reachability`);
+	}
+});
+
+test("mounted TMDB Lists stays incremental, preview-safe, and responsive across the complete pre-deploy matrix", () => {
+	assert.deepEqual(mountedResults.tmdbListLayoutWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	assert.deepEqual(
+		{ width: mountedResults.shortHeightTmdbListLayout.width, height: mountedResults.shortHeightTmdbListLayout.height },
+		{ width: 393, height: 320 },
+	);
+	for (const result of [...mountedResults.tmdbListLayoutWidths, mountedResults.shortHeightTmdbListLayout]) {
+		const label = `${result.width}x${result.height}`;
+		assert.equal(result.noSearchAutofocus, true, `${label} no Search autofocus`);
+		assert.deepEqual(result.selection, {
+			count: 18,
+			inputPreservedAfterPartialFailure: true,
+			errorIdentification: true,
+			longErrorContained: true,
+			longErrorAccessible: true,
+			resolveClearContained: true,
+			staleErrorsCleared: true,
+			unchangedNoNetwork: true,
+			unchangedNoWarning: true,
+			genuineDuplicateReported: true,
+			incrementalOnlyNewNetwork: true,
+			incrementalOrder: true,
+			clearHadInputError: true,
+			clearInputCleared: true,
+			clearPreservedSelection: true,
+			reviewEnabledAfterClear: true,
+			multilineInputUsable: true,
+			rowsContained: true,
+			finalItemReachable: true,
+			oneScrollOwner: true,
+			darkBuilderControl: true,
+			builderTypography: true,
+			compactRegularTypography: true,
+			typographyLineCounts: [2, 12, 26],
+			mutedPlaceholder: true,
+			verticalResize: true,
+			focusReachable: true,
+			caretVisible: true,
+		}, `${label} selection`);
+		assert.deepEqual(result.review, {
+			count: 20,
+			countLabel: "20 sources will be added",
+			actionCopy: "Add 20 sources",
+			rowsContained: true,
+			oneScrollOwner: true,
+			footerReachable: true,
+			noSearchMediaOrSort: true,
+			originalOrder: true,
+			sourceNameHelpers: true,
+			noPreviewActions: true,
+			noContainerPresentation: true,
+		}, `${label} review`);
+		assert.equal(result.focusContained, true, `${label} focus containment`);
+		assert.equal(result.genericTitlesLabel, true, `${label} generic Titles label`);
+		assert.equal(result.previewWithinViewport, true, `${label} nested Preview bounds`);
+		assert.equal(result.nestedBodyLocked, true, `${label} nested Preview body lock`);
+		assert.equal(result.previewFocusRestored, true, `${label} Preview focus restoration`);
+		assert.equal(result.backPreservedSelection, true, `${label} Back state preservation`);
+		assert.equal(result.backPreviewAvailable, true, `${label} Back restores Choose Preview`);
+		assert.deepEqual(result.guidedNewCollection, {
+			scope: "new-collection",
+			selectedCount: 4,
+			namesInitiallyEmpty: true,
+			collectionNamePresent: true,
+			collectionControlsPresent: true,
+			folderControlsPresent: true,
+			defaultTabs: true,
+			defaultShowAll: true,
+			defaultCollectionVisible: true,
+			defaultUnpinned: true,
+			defaultFolderHomeHidden: true,
+			defaultPoster: true,
+			originalOrder: true,
+			noReviewPreview: true,
+			focusGlowHidden: true,
+			sourceNameHelpers: true,
+			initialRequiredValidation: {
+				message: "Collection and folder names are required.",
+				collectionInvalid: true,
+				folderInvalid: true,
+				firstMissingFocused: true,
+				messageContained: true,
+				placement: result.width >= 900 ? "right" : "stacked",
+			},
+			folderOnlyValidation: {
+				message: "Folder name is required.",
+				collectionInvalid: false,
+				folderInvalid: true,
+				folderFocused: true,
+			},
+			requiredValidationCleared: true,
+			validationNoMutation: true,
+			actionCopy: "Create collection",
+			actionLineCount: result.guidedNewCollection.actionLineCount,
+			oneScrollOwner: true,
+			footerReachable: true,
+			noHorizontalOverflow: true,
+			backPreservedSelection: true,
+			backPreviewAvailable: true,
+		}, `${label} guided New Collection`);
+		assert.ok(result.guidedNewCollection.actionLineCount <= 2, `${label} New Collection action wrapping`);
+		assert.deepEqual(result.guidedNewFolder, {
+			scope: "new-folder",
+			selectedCount: 1,
+			namesInitiallyEmpty: true,
+			collectionNamePresent: false,
+			collectionControlsPresent: false,
+			folderControlsPresent: true,
+			defaultTabs: null,
+			defaultShowAll: null,
+			defaultCollectionVisible: false,
+			defaultUnpinned: false,
+			defaultFolderHomeHidden: true,
+			defaultPoster: true,
+			originalOrder: true,
+			noReviewPreview: true,
+			focusGlowHidden: true,
+			sourceNameHelpers: true,
+			initialRequiredValidation: {
+				message: "Folder name is required.",
+				collectionInvalid: false,
+				folderInvalid: true,
+				firstMissingFocused: true,
+				messageContained: true,
+				placement: result.width >= 900 ? "right" : "stacked",
+			},
+			folderOnlyValidation: null,
+			requiredValidationCleared: true,
+			validationNoMutation: true,
+			actionCopy: "Create folder",
+			actionLineCount: result.guidedNewFolder.actionLineCount,
+			oneScrollOwner: true,
+			footerReachable: true,
+			noHorizontalOverflow: true,
+			backPreservedSelection: true,
+			backPreviewAvailable: true,
+		}, `${label} guided New Folder`);
+		assert.ok(result.guidedNewFolder.actionLineCount <= 2, `${label} New Folder action wrapping`);
+		assert.deepEqual(result.sourceEdit, {
+			linkText: "5916",
+			href: "https://www.themoviedb.org/list/5916",
+			target: "_blank",
+			rel: "noopener noreferrer",
+			accessibleName: "Open this TMDB list on TMDB (list 5916)",
+			numericLinkOnly: true,
+			linkContained: true,
+			previewAvailable: true,
+			sourceNameHelper: "This is the name shown in Nuvio. You can customise it.",
+			oneScrollOwner: true,
+			noHorizontalOverflow: true,
+			noMutation: true,
+		}, `${label} Source Edit List link`);
+		assert.equal(result.bodyLocked, true, `${label} body lock`);
+		assert.equal(result.noHorizontalOverflow, true, `${label} horizontal containment`);
+		assert.equal(result.noMutation, true, `${label} non-mutation`);
+		assert.deepEqual({ backCalls: result.backCalls, cancelCalls: result.cancelCalls, applyCalls: result.applyCalls }, { backCalls: 0, cancelCalls: 0, applyCalls: 0 }, `${label} no external action`);
+	}
+});
+
+test("mounted TMDB List Preview keeps fixed geometry while the complete live page-one sample scrolls internally", () => {
+	const results = [...mountedResults.tmdbListPreviewWidths, mountedResults.shortHeightTmdbListPreview];
+	assert.deepEqual(mountedResults.tmdbListPreviewWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	assert.deepEqual(
+		{ width: mountedResults.shortHeightTmdbListPreview.width, height: mountedResults.shortHeightTmdbListPreview.height },
+		{ width: 393, height: 320 },
+	);
+	assert.deepEqual(results[0].requestPaths, [
+		"/3/list/5916?language=en-US&page=1",
+		"/3/list/8679739?language=en-US&page=1",
+	]);
+	for (const [index, result] of results.entries()) {
+		const label = `${result.width}x${result.height}`;
+		const initial = result.initialMusicals.geometry;
+		const bottom = result.scrolledMusicals.geometry;
+		const expectedColumns = result.width <= 620 ? 3 : 5;
+		assert.ok([0, 2].includes(result.requestsAfterResolve - result.requestCountBeforeResolve), `${label} resolve uses cache or two exact live requests`);
+		assert.equal(result.initialMusicals.title, "Musicals", `${label} live long-list title`);
+		assert.equal(result.initialMusicals.subtitle, "Showing 20 of 124 titles", `${label} truthful partial subtitle`);
+		assert.equal(result.initialMusicals.rendered, 20, `${label} complete page-one sample rendered at open`);
+		assert.equal(result.initialMusicals.loaded, 20, `${label} twenty page-one titles loaded`);
+		assert.equal(result.initialMusicals.completeSample, true, `${label} complete-sample presentation`);
+		assert.equal(result.initialMusicals.requests, result.requestsAfterResolve, `${label} Preview open uses cache`);
+		assert.equal(result.initialMusicals.bodyLocked, true, `${label} background body lock`);
+		assert.equal(result.initialMusicals.noLoadMore, true, `${label} no Load more control`);
+		assert.equal(initial.posterCount, 20, `${label} all page-one posters exist before scroll`);
+		assert.equal(initial.columns, expectedColumns, `${label} responsive poster columns`);
+		if (result.width <= 412) {
+			assert.ok(initial.viewportScale > 1, `${label} exercises a narrowed live Visual Viewport`);
+			assert.ok(initial.viewportWidth < result.width, `${label} Visual Viewport is narrower than layout viewport`);
+		} else {
+			assert.equal(initial.viewportScale, 1, `${label} unscaled larger-screen Visual Viewport`);
+		}
+		assert.ok(initial.posterWidth >= (result.width <= 520 ? 48 : 80), `${label} established poster width ${initial.posterWidth}`);
+		assert.ok(Math.abs((initial.posterHeight / initial.posterWidth) - 1.5) <= 0.04, `${label} established poster aspect ratio`);
+		assert.equal(initial.verticalScrollable, true, `${label} internal vertical overflow at open`);
+		assert.equal(initial.verticalScrollOnly, true, `${label} vertical-only Preview scroll`);
+		assert.equal(initial.gridScrollWidth <= initial.gridClientWidth + 1, true, `${label} scrollWidth <= clientWidth`);
+		assert.equal(initial.gridScrollLeft, 0, `${label} grid starts without horizontal displacement`);
+		assert.equal(initial.allPosterRectsHaveSize, true, `${label} every mounted poster has real geometry`);
+		assert.equal(initial.allPosterRectsInlineContained, true, `${label} every mounted poster rect is inline-contained`);
+		assert.equal(initial.gridInlineContained, true, `${label} grid is inline-contained by modal and Visual Viewport`);
+		assert.equal(initial.closeReachable, true, `${label} Close remains inside the Visual Viewport`);
+		assert.equal(initial.backdropMatchesVisualViewport, true, `${label} nested backdrop matches the live Visual Viewport`);
+		assert.equal(initial.outerDialogWithinVisualViewport, true, `${label} outer dialog remains inside the live Visual Viewport`);
+		assert.equal(initial.safeHorizontalMargins, true, `${label} modal keeps safe horizontal margins`);
+		assert.equal(initial.oneScrollOwner, true, `${label} one intended internal scroll owner`);
+		assert.equal(initial.dingoScrollbarClass, true, `${label} shared Dingo scrollbar class`);
+		assert.equal(initial.scrollbarColor, "rgb(70, 118, 136) rgb(4, 16, 23)", `${label} shared Dingo scrollbar colors`);
+		assert.equal(initial.scrollbarWidth, "auto", `${label} shared Dingo scrollbar width`);
+		assert.equal(initial.scrollbarThumbBackground, "rgb(70, 118, 136)", `${label} shared Dingo scrollbar thumb`);
+		assert.equal(initial.withinViewport, true, `${label} fixed modal remains within viewport`);
+		assert.equal(initial.pageNoHorizontalOverflow, true, `${label} no page horizontal overflow`);
+		for (const [phase, geometry] of [["wheel", result.wheelGeometry], ["touch", result.touchGeometry], ["bottom", bottom]]) {
+			assert.equal(geometry.modalLeft, initial.modalLeft, `${label} ${phase} keeps modal left`);
+			assert.equal(geometry.modalTop, initial.modalTop, `${label} ${phase} keeps modal top`);
+			assert.equal(geometry.modalWidth, initial.modalWidth, `${label} ${phase} keeps modal width`);
+			assert.equal(geometry.modalHeight, initial.modalHeight, `${label} ${phase} keeps modal height`);
+			assert.equal(geometry.headerTop, initial.headerTop, `${label} ${phase} keeps header top`);
+			assert.equal(geometry.headerBottom, initial.headerBottom, `${label} ${phase} keeps header bottom`);
+			assert.equal(geometry.gridClientWidth, initial.gridClientWidth, `${label} ${phase} keeps grid width`);
+			assert.equal(geometry.gridClientHeight, initial.gridClientHeight, `${label} ${phase} keeps grid height`);
+			assert.equal(geometry.gridScrollHeight, initial.gridScrollHeight, `${label} ${phase} appends no layout content`);
+			assert.equal(geometry.gridScrollLeft, 0, `${label} ${phase} causes no horizontal movement`);
+			assert.equal(geometry.posterCount, 20, `${label} ${phase} keeps complete sample mounted`);
+			assert.equal(geometry.allPosterRectsInlineContained, true, `${label} ${phase} keeps every poster rect inline-contained`);
+			assert.equal(geometry.closeReachable, true, `${label} ${phase} keeps Close reachable`);
+			assert.equal(geometry.backdropMatchesVisualViewport, true, `${label} ${phase} keeps Visual Viewport backdrop bounds`);
+			assert.equal(geometry.verticalScrollOnly, true, `${label} ${phase} remains vertical-only`);
+		}
+		assert.equal(result.scrolledMusicals.rendered, 20, `${label} complete sample remains rendered`);
+		assert.equal(result.scrolledMusicals.loaded, 20, `${label} loaded sample remains bounded`);
+		assert.equal(result.scrolledMusicals.completeSample, true, `${label} complete sample remains marked`);
+		assert.equal(result.scrolledMusicals.requests, result.requestsAfterResolve, `${label} scrolling issues no request`);
+		assert.ok(bottom.gridScrollTop > 0, `${label} vertical scrolling advances`);
+		assert.equal(bottom.atVerticalScrollEnd, true, `${label} vertical scrolling reaches the loaded sample end`);
+		assert.equal(bottom.lastPosterReachable, true, `${label} final loaded page-one poster reachable`);
+		assert.equal(result.focusRestored, true, `${label} long Preview focus restoration`);
+		assert.equal(result.reopenStartsAtTop, true, `${label} reopen returns to top`);
+		assert.equal(result.requestsAfterReopen, result.requestsAfterResolve, `${label} reopen cache`);
+		assert.equal(result.completeSmallList.title, "Top 10 Netflix Movies", `${label} complete-list title`);
+		assert.equal(result.completeSmallList.subtitle, "Showing all 10 titles", `${label} truthful complete-list subtitle`);
+		assert.equal(result.completeSmallList.rendered, 10, `${label} complete ten-title sample`);
+		assert.equal(result.completeSmallList.loaded, 10, `${label} complete ten-title loaded count`);
+		assert.equal(result.completeSmallList.completeSample, true, `${label} complete ten-title marker`);
+		assert.equal(result.completeSmallList.geometry.modalWidth, initial.modalWidth, `${label} long and ten-title modal widths match`);
+		assert.equal(result.completeSmallList.geometry.modalHeight, initial.modalHeight, `${label} long and ten-title modal heights match`);
+		assert.equal(result.completeSmallList.geometry.columns, expectedColumns, `${label} ten-title responsive columns`);
+		assert.equal(result.completeSmallList.geometry.allPosterRectsInlineContained, true, `${label} every ten-title poster rect is inline-contained`);
+		assert.equal(result.completeSmallList.geometry.closeReachable, true, `${label} ten-title Close remains reachable`);
+		assert.ok(Math.abs(result.completeSmallList.geometry.posterWidth - initial.posterWidth) <= 4, `${label} long-list poster width preserves ten-title sizing`);
+		assert.equal(result.completeSmallList.geometry.verticalScrollOnly, true, `${label} ten-title grid has no horizontal overflow`);
+		assert.equal(result.requestsAfterSmallScroll, result.requestsAfterResolve, `${label} scrolling issues no request`);
+		assert.equal(result.noMutation, true, `${label} Preview non-mutation`);
+		assert.equal(result.outerBodyLockPreserved, true, `${label} outer dialog body lock preserved`);
+		assert.ok(result.requestPaths.every((path) => path.endsWith("?language=en-US&page=1") && !path.includes("page=2")), `${label} page-one-only requests`);
+		if (index > 0) assert.equal(result.requestsAfterResolve, results[0].requestsAfterResolve, `${label} shared bounded success cache`);
 	}
 });
 
@@ -1110,7 +1408,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
 		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
 		assert.equal(result.preview.gridColumns, 5, `${width}px preview columns`);
-		assertTitlePreviewGeometry(result.preview.geometry, { width, label: `${width}px People Preview` });
+		assertTitlePreviewGeometry(result.preview.geometry, { width, phoneColumns: 5, label: `${width}px People Preview` });
 		assert.equal(result.preview.posterOnly, true, `${width}px poster-only`);
 		assert.equal(result.preview.noHorizontalOverflow, true, `${width}px preview overflow`);
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
@@ -2196,7 +2494,7 @@ test("mounted Decade Add Source exact Preview uses the deployed Worker, TMDB, an
 test("mounted Title Previews stay centred and use one scroll owner on a deliberately short phone viewport", () => {
 	const result = mountedResults.shortHeightPreviewGeometry;
 	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
-	assertTitlePreviewGeometry(result.people, { width: 393, short: true, label: "393x320 People Preview" });
+	assertTitlePreviewGeometry(result.people, { width: 393, phoneColumns: 5, short: true, label: "393x320 People Preview" });
 	assertTitlePreviewGeometry(result.sourceEdit, { width: 393, short: true, label: "393x320 Source Edit Preview" });
 	const normalPeople = mountedResults.peopleConfigureWidths.find((entry) => entry.layout.width === 393).preview.geometry;
 	const normalSourceEdit = mountedResults.sourceEditLivePreviewWidths.find((entry) => entry.width === 393).geometry;

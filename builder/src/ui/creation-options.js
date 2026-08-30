@@ -7,6 +7,7 @@ export const CREATION_OPTION_IDS = Object.freeze({
 	NETWORKS: "networks",
 	GENRES: "genres",
 	STREAMING_SERVICES: "streaming-services",
+	TMDB_LISTS: "tmdb-lists",
 });
 
 export const CREATION_SCOPES = Object.freeze({
@@ -43,6 +44,13 @@ export const CREATION_OPTIONS = Object.freeze([
 		label: "Franchises",
 		icon: "franchises",
 		supportingText: "Build from a movie franchise.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.TMDB_LISTS,
+		label: "TMDB Lists",
+		icon: "lists",
+		supportingText: "Build from public TMDB lists.",
 		scopes: BOTH_SCOPES,
 	}),
 	Object.freeze({
