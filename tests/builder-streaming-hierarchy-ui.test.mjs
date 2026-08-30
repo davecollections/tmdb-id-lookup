@@ -429,8 +429,8 @@ test("the hierarchy shell owns one scroll surface across every required viewport
 	assert.deepEqual(widths.filter((width) => width >= 900), [900, 901, 1280]);
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.equal((flow.match(/<footer className="add-source-actions"/g) ?? []).length, 1);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-dialog/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.add-source-dialog/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*safe-area-inset-bottom/);
 });

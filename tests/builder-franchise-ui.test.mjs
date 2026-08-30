@@ -137,10 +137,10 @@ test("franchise creation keeps one intentional scroll owner and sticky action fo
 	assert.match(flow, /Create \$\{planResult\.ok \? planResult\.plan\.counts\.folderCount/);
 });
 
-test("responsive styling covers narrow result cards and bounded mobile previews without changing the 900px shell boundary", () => {
+test("responsive styling covers narrow result cards and the shared contained tablet shell boundary", () => {
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-result-selectable/);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid/);
-	assert.match(styles, /@media \(min-width: 900px\)/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.add-source-dialog/);
 });
 
 test("Add Source movie franchise remains a separate route and shares the same workspace provider", () => {

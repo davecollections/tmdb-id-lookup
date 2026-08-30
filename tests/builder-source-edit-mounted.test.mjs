@@ -180,6 +180,7 @@ async function runMountedPage() {
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
 				const sourceChooserWidths = [];
+				const sourceChooserTabletPortraitWidths = [];
 				const tmdbListLayoutWidths = [];
 				const tmdbListPreviewWidths = [];
 				const genreToolbarWidths = [];
@@ -206,6 +207,8 @@ async function runMountedPage() {
 				const decadeSourceLivePreviewWidths = [];
 				let decadeSourceGenreKeyboard = null;
 				let sourceChooserKeyboard = null;
+				let sourceChooserTabletLandscape = null;
+				let wideFontSourceChooser = null;
 				let shortHeightSourceChooser = null;
 				let shortHeightTmdbListLayout = null;
 				let shortHeightTmdbListPreview = null;
@@ -314,6 +317,36 @@ async function runMountedPage() {
 					if (streamingReconciliationEvaluation.exceptionDetails) throw new Error(streamingReconciliationEvaluation.exceptionDetails.exception?.description ?? streamingReconciliationEvaluation.exceptionDetails.text);
 					streamingSelectionReconciliationWidths.push(streamingReconciliationEvaluation.result?.value);
 				}
+				for (const { width, height } of [
+					{ width: 768, height: 1024 },
+					{ width: 820, height: 1180 },
+					{ width: 834, height: 1194 },
+				]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: true });
+					const sourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runSourceChooserLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (sourceChooserEvaluation.exceptionDetails) throw new Error(sourceChooserEvaluation.exceptionDetails.exception?.description ?? sourceChooserEvaluation.exceptionDetails.text);
+					sourceChooserTabletPortraitWidths.push(sourceChooserEvaluation.result?.value);
+				}
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1024, height: 768, deviceScaleFactor: 1, mobile: true });
+				const sourceChooserTabletLandscapeEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runSourceChooserLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (sourceChooserTabletLandscapeEvaluation.exceptionDetails) throw new Error(sourceChooserTabletLandscapeEvaluation.exceptionDetails.exception?.description ?? sourceChooserTabletLandscapeEvaluation.exceptionDetails.text);
+				sourceChooserTabletLandscape = sourceChooserTabletLandscapeEvaluation.result?.value;
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 360, height: 852, deviceScaleFactor: 1, mobile: true });
+				const wideFontSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: `window.__runSourceChooserLayoutScenario({ fontFamily: 'Verdana, sans-serif' })`,
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (wideFontSourceChooserEvaluation.exceptionDetails) throw new Error(wideFontSourceChooserEvaluation.exceptionDetails.exception?.description ?? wideFontSourceChooserEvaluation.exceptionDetails.text);
+				wideFontSourceChooser = wideFontSourceChooserEvaluation.result?.value;
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
 				const sourceChooserKeyboardBefore = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__prepareSourceChooserKeyboardScenario()",
@@ -516,7 +549,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceChooserWidths, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -940,6 +973,20 @@ test("mounted Genre exact duplicate overrides use singular and bundle canonical 
 });
 
 test("mounted Add Source chooser uses the responsive Creation launcher language at every required width", () => {
+	function assertLauncherModal(modal, expectedPresentation, label) {
+		assert.equal(modal.presentation, expectedPresentation, `${label} presentation`);
+		assert.equal(modal.backdropTracksVisualViewport, true, `${label} visual viewport tracking`);
+		if (expectedPresentation === "contained") {
+			assert.ok(modal.horizontalMargin >= 23, `${label} horizontal margin: ${modal.horizontalMargin}`);
+			assert.ok(modal.dialog.borderWidth > 0, `${label} dialog border: ${modal.dialog.borderWidth}`);
+			assert.ok(modal.dialog.borderRadius >= 16, `${label} dialog radius: ${modal.dialog.borderRadius}`);
+			assert.notEqual(modal.dialog.boxShadow, "none", `${label} dialog shadow`);
+		} else {
+			assert.ok(modal.horizontalMargin <= 1, `${label} fullscreen horizontal edge: ${modal.horizontalMargin}`);
+			assert.equal(modal.dialog.borderWidth, 0, `${label} fullscreen border`);
+			assert.equal(modal.dialog.borderRadius, 0, `${label} fullscreen radius`);
+		}
+	}
 	const expectedModes = [
 		"tmdb-movie-franchise",
 		"tmdb-lists",
@@ -966,6 +1013,8 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.sourceChooserWidths) {
 		const width = result.width;
+		const expectedPresentation = width <= 620 ? "phone-fullscreen" : "contained";
+		assertLauncherModal(result.modal, expectedPresentation, `${width}px Add Source`);
 		assert.deepEqual(result.modeIds, expectedModes, `${width}px registry order`);
 		assert.equal(result.cardCount, 8, `${width}px card count`);
 		assert.equal(result.columnCount, width <= 620 ? 2 : 4, `${width}px responsive columns`);
@@ -975,9 +1024,13 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.comfortableTargets, true, `${width}px hit targets`);
 		assert.equal(result.helpersContained, true, `${width}px helper containment`);
 		assert.ok(result.maxHelperLines <= 6, `${width}px readable helper wrapping: ${result.maxHelperLines}`);
+		const sourceGeometryEvidence = result.cardGeometry.map((card) => (
+			`${card.label}: cardTop=${card.card.top}px card=${card.card.width}x${card.card.height}px display=${card.display} grid=${card.gridTemplateColumns} gap=${card.gap} padding=${card.padding.top}/${card.padding.right}/${card.padding.bottom}/${card.padding.left} iconWidth=${card.iconWidth}px copyWidth=${card.copyWidth}px titleLines=${card.title.lines} helperLines=${card.helper.lines}`
+		)).join(" | ");
+		assert.ok(result.rowHeightSpread <= 14, `${width}px Add Source balanced row heights: ${result.rowHeightSpread}; ${sourceGeometryEvidence}`);
 		assert.equal(result.oneScrollOwner, true, `${width}px scroll owner`);
 		assert.equal(result.introductoryCopy, "Choose what you want to add.", `${width}px introductory copy`);
-		assert.equal(result.introductoryAlignment, width < 900 ? "center" : "left", `${width}px intentional introductory alignment`);
+		assert.equal(result.introductoryAlignment, expectedPresentation === "phone-fullscreen" ? "center" : "left", `${width}px intentional introductory alignment`);
 		assert.equal(result.introductoryDisplay, "block", `${width}px ordinary introductory flow`);
 		assert.equal(result.blanketProviderDisclosureAbsent, true, `${width}px blanket provider disclosure absent`);
 		assert.equal(result.noEmptyDisclosureWrapper, true, `${width}px no empty disclosure wrapper`);
@@ -996,6 +1049,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.noMutation, true, `${width}px chooser navigation mutation`);
 		assert.deepEqual(result.creationChoosers.map((chooser) => chooser.scope), ["new-collection", "new-folder"], `${width}px Creation scopes`);
 		for (const chooser of result.creationChoosers) {
+			assertLauncherModal(chooser.modal, expectedPresentation, `${width}px ${chooser.scope}`);
 			assert.deepEqual(chooser.optionIds, expectedCreationIds, `${width}px ${chooser.scope} option order`);
 			assert.deepEqual(chooser.labels, expectedCreationLabels, `${width}px ${chooser.scope} labels`);
 			assert.deepEqual(chooser.helpers, expectedCreationHelpers, `${width}px ${chooser.scope} helpers`);
@@ -1018,11 +1072,54 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.bodyRestored, true, `${width}px ${chooser.scope} body restoration`);
 		}
 	}
+	const tabletResults = [...mountedResults.sourceChooserTabletPortraitWidths, mountedResults.sourceChooserTabletLandscape];
+	assert.deepEqual(
+		tabletResults.map((result) => ({ width: result.width, height: result.height })),
+		[
+			{ width: 768, height: 1024 },
+			{ width: 820, height: 1180 },
+			{ width: 834, height: 1194 },
+			{ width: 1024, height: 768 },
+		],
+	);
+	for (const result of tabletResults) {
+		const size = `${result.width}x${result.height}`;
+		const expectedColumns = result.width < 900 ? 3 : 4;
+		assertLauncherModal(result.modal, "contained", `${size} Add Source`);
+		assert.equal(result.columnCount, expectedColumns, `${size} Add Source columns`);
+		assert.ok(result.rowHeightSpread <= 14, `${size} Add Source balanced row heights: ${result.rowHeightSpread}`);
+		assert.equal(result.oneScrollOwner, true, `${size} Add Source scroll owner`);
+		assert.equal(result.noHorizontalOverflow, true, `${size} Add Source horizontal overflow`);
+		assert.equal(result.bodyLocked, true, `${size} Add Source body lock`);
+		assert.equal(result.finalCardReachable, true, `${size} Add Source final card reachability`);
+		assert.equal(result.closeRestoredTrigger, true, `${size} Add Source focus restoration`);
+		for (const chooser of result.creationChoosers) {
+			assertLauncherModal(chooser.modal, "contained", `${size} ${chooser.scope}`);
+			assert.equal(chooser.columnCount, expectedColumns, `${size} ${chooser.scope} columns`);
+			assert.ok(chooser.rowHeightSpread <= 14, `${size} ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
+			assert.equal(chooser.oneScrollOwner, true, `${size} ${chooser.scope} scroll owner`);
+			assert.equal(chooser.noHorizontalOverflow, true, `${size} ${chooser.scope} horizontal overflow`);
+			assert.equal(chooser.finalCardReachable, true, `${size} ${chooser.scope} final card reachability`);
+			assert.equal(chooser.bodyRestored, true, `${size} ${chooser.scope} body restoration`);
+		}
+	}
+	const wideFont = mountedResults.wideFontSourceChooser;
+	assert.deepEqual({ width: wideFont.width, height: wideFont.height, fontFamily: wideFont.fontFamily }, { width: 360, height: 852, fontFamily: "Verdana, sans-serif" });
+	assertLauncherModal(wideFont.modal, "phone-fullscreen", "360px wide-font Add Source");
+	assert.equal(wideFont.iconShellsMatchCreation, true, "360px wide-font Add Source icon shells");
+	assert.ok(wideFont.rowHeightSpread <= 14, `360px wide-font Add Source balanced row heights: ${wideFont.rowHeightSpread}`);
+	for (const chooser of wideFont.creationChoosers) {
+		assertLauncherModal(chooser.modal, "phone-fullscreen", `360px wide-font ${chooser.scope}`);
+		assert.equal(chooser.iconShellsCorrect, true, `360px wide-font ${chooser.scope} icon shells`);
+		assert.ok(chooser.rowHeightSpread <= 14, `360px wide-font ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
+	}
 });
 
 test("mounted Add Source chooser remains reachable in the retained 393 by 320 short-height case", () => {
 	const result = mountedResults.shortHeightSourceChooser;
 	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
+	assert.equal(result.modal.presentation, "phone-fullscreen");
+	assert.equal(result.modal.backdropTracksVisualViewport, true);
 	assert.equal(result.columnCount, 2);
 	assert.equal(result.oneScrollOwner, true);
 	assert.equal(result.introductoryCopy, "Choose what you want to add.");
@@ -1036,6 +1133,8 @@ test("mounted Add Source chooser remains reachable in the retained 393 by 320 sh
 	assert.equal(result.escapeClosed, true);
 	assert.equal(result.noMutation, true);
 	for (const chooser of result.creationChoosers) {
+		assert.equal(chooser.modal.presentation, "phone-fullscreen", `${chooser.scope} short-height presentation`);
+		assert.equal(chooser.modal.backdropTracksVisualViewport, true, `${chooser.scope} short-height visual viewport tracking`);
 		assert.equal(chooser.columnCount, 2, `${chooser.scope} short-height columns`);
 		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 1], `${chooser.scope} short-height rows`);
 		assert.equal(chooser.cardsContained, true, `${chooser.scope} short-height card containment`);

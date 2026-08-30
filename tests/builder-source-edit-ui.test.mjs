@@ -903,7 +903,7 @@ test("responsive source editor styles are safe-area aware and bounded for every 
 	assert.match(styles, /\.source-edit-sort-field select\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /@media \(max-width: 420px\)[\s\S]*\.source-edit-identity,[\s\S]*\.source-edit-combinations,[\s\S]*\.source-edit-option-actions\s*\{[\s\S]*minmax\(0,\s*1fr\)/);
 	assert.match(styles, /\.source-edit-actions\s*\{[\s\S]*minmax\(0,\s*1\.5fr\) minmax\(100px,\s*1fr\)/);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.source-edit-dialog\s*\{[\s\S]*height:\s*100%[\s\S]*max-height:\s*100%[\s\S]*align-self:\s*stretch/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.source-edit-dialog\s*\{[\s\S]*height:\s*100%[\s\S]*max-height:\s*100%[\s\S]*align-self:\s*stretch/);
 	assert.match(styles, /\.add-source-form\s*\{[\s\S]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto[\s\S]*overflow:\s*hidden/);
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 420);
 });

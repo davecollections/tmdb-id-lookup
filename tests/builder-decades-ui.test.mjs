@@ -958,7 +958,9 @@ test("creation styles keep selected cards restrained and cover required responsi
 	assert.match(styles, /\.creation-option-icon-shell\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*6px;[^}]*padding:\s*10px 8px/s);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-icon-shell\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px/s);
+	assert.match(styles, /@media \(min-width: 621px\) and \(max-width: 967\.98px\) and \(min-height: 601px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*10px;[^}]*padding:\s*12px/s);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
 	assert.equal(styles.includes(".creation-option-arrow"), false);
 	assert.match(styles, /\.decades-structure-preview\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.decades-choice-grid\.decades-display-order-choices\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);

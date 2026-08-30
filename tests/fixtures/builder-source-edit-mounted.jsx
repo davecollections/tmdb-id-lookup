@@ -6296,7 +6296,7 @@ async function runDecadeSourceLivePreviewScenario() {
 	}
 }
 
-async function runSourceChooserLayoutScenario() {
+async function runSourceChooserLayoutScenario({ fontFamily = null } = {}) {
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
@@ -6365,6 +6365,58 @@ async function runSourceChooserLayoutScenario() {
 			},
 		};
 	}
+	function launcherModalGeometry(dialog) {
+		const backdrop = required(dialog.closest(".add-source-backdrop"), "launcher modal backdrop");
+		const viewport = window.visualViewport;
+		const viewportBounds = {
+			left: viewport?.offsetLeft ?? 0,
+			top: viewport?.offsetTop ?? 0,
+			width: viewport?.width ?? window.innerWidth,
+			height: viewport?.height ?? window.innerHeight,
+		};
+		const dialogRect = dialog.getBoundingClientRect();
+		const backdropRect = backdrop.getBoundingClientRect();
+		const dialogStyle = getComputedStyle(dialog);
+		const backdropStyle = getComputedStyle(backdrop);
+		const horizontalMargin = Math.min(
+			dialogRect.left - viewportBounds.left,
+			viewportBounds.left + viewportBounds.width - dialogRect.right,
+		);
+		const verticalMargin = Math.min(
+			dialogRect.top - viewportBounds.top,
+			viewportBounds.top + viewportBounds.height - dialogRect.bottom,
+		);
+		const borderWidth = Number.parseFloat(dialogStyle.borderTopWidth);
+		const borderRadius = Number.parseFloat(dialogStyle.borderTopLeftRadius);
+		return {
+			viewport: { ...viewportBounds },
+			backdrop: {
+				rect: roundedRect(backdrop),
+				alignItems: backdropStyle.alignItems,
+				justifyItems: backdropStyle.justifyItems,
+				padding: backdropStyle.padding,
+				background: backdropStyle.backgroundColor,
+			},
+			dialog: {
+				rect: roundedRect(dialog),
+				left: rounded(dialogRect.left),
+				right: rounded(dialogRect.right),
+				borderWidth: rounded(borderWidth),
+				borderRadius: rounded(borderRadius),
+				boxShadow: dialogStyle.boxShadow,
+			},
+			horizontalMargin: rounded(horizontalMargin),
+			verticalMargin: rounded(verticalMargin),
+			backdropTracksVisualViewport:
+				Math.abs(backdropRect.left - viewportBounds.left) <= 1
+				&& Math.abs(backdropRect.top - viewportBounds.top) <= 1
+				&& Math.abs(backdropRect.width - viewportBounds.width) <= 1
+				&& Math.abs(backdropRect.height - viewportBounds.height) <= 1,
+			presentation: horizontalMargin >= 23 && borderWidth > 0 && borderRadius >= 16 ? "contained" : "phone-fullscreen",
+		};
+	}
+	const originalBodyFontFamily = document.body.style.fontFamily;
+	if (typeof fontFamily === "string" && fontFamily.trim()) document.body.style.fontFamily = fontFamily;
 	const host = document.createElement("div");
 	document.body.append(host);
 	const root = createRoot(host);
@@ -6395,6 +6447,7 @@ async function runSourceChooserLayoutScenario() {
 		});
 		try {
 			const dialog = required(document.querySelector(`[data-creation-dialog="true"][data-creation-scope="${scope}"]`), `${scope} Creation chooser`);
+			const modal = launcherModalGeometry(dialog);
 			const list = required(dialog.querySelector(".creation-option-list"), `${scope} Creation launcher grid`);
 			const listStyle = getComputedStyle(list);
 			const cards = [...list.querySelectorAll("[data-creation-option]")];
@@ -6431,6 +6484,7 @@ async function runSourceChooserLayoutScenario() {
 			const finalRect = finalCard.getBoundingClientRect();
 			metrics = {
 				scope,
+				modal,
 				optionIds: cards.map((card) => card.dataset.creationOption),
 				labels: cards.map((card) => card.querySelector("strong")?.textContent.trim() ?? null),
 				helpers: cards.map((card) => card.querySelector("small")?.textContent.trim() ?? null),
@@ -6445,7 +6499,10 @@ async function runSourceChooserLayoutScenario() {
 				},
 				cardGeometry: cards.map(launcherCardGeometry),
 				firstOptionFocused: document.activeElement === firstCard,
-				iconShellsCorrect: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
+				iconShellsCorrect: iconRects.every((rect) => {
+					const expectedSize = window.innerWidth <= 620 ? 36 : 42;
+					return rect && Math.abs(rect.width - expectedSize) <= 1 && Math.abs(rect.height - expectedSize) <= 1;
+				}),
 				comfortableTargets: cards.every((card) => {
 					const rect = card.getBoundingClientRect();
 					return rect.height >= 76 && rect.width >= 140;
@@ -6491,11 +6548,15 @@ async function runSourceChooserLayoutScenario() {
 		});
 		const rows = [];
 		for (const card of cards) {
-			const top = Math.round(card.getBoundingClientRect().top);
+			const rect = card.getBoundingClientRect();
+			const top = Math.round(rect.top);
 			const row = rows.find((entry) => Math.abs(entry.top - top) <= 1);
-			if (row) row.count += 1;
-			else rows.push({ top, count: 1 });
+			if (row) {
+				row.count += 1;
+				row.height = Math.max(row.height, rect.height);
+			} else rows.push({ top, count: 1, height: rect.height });
 		}
+		const rowHeights = rows.map((row) => rounded(row.height));
 		const scrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
 			const overflowY = getComputedStyle(element).overflowY;
 			return overflowY === "auto" || overflowY === "scroll";
@@ -6503,13 +6564,20 @@ async function runSourceChooserLayoutScenario() {
 		const initial = {
 			width: window.innerWidth,
 			height: window.innerHeight,
+			fontFamily,
+			modal: launcherModalGeometry(dialog),
 			modeIds: cards.map((card) => card.dataset.sourceModeOption),
 			cardCount: cards.length,
 			columnCount: Math.max(...rows.map((row) => row.count)),
 			rowCounts: rows.map((row) => row.count),
+			rowHeightSpread: rounded(Math.max(...rowHeights) - Math.min(...rowHeights)),
+			cardGeometry: cards.map(launcherCardGeometry),
 			balancedRows: rows.slice(0, -1).every((row) => row.count === rows[0].count) && rows.at(-1).count >= rows[0].count - 1,
 			firstOptionFocused: document.activeElement === firstCard,
-			iconShellsMatchCreation: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
+			iconShellsMatchCreation: iconRects.every((rect) => {
+				const expectedSize = window.innerWidth <= 620 ? 36 : 42;
+				return rect && Math.abs(rect.width - expectedSize) <= 1 && Math.abs(rect.height - expectedSize) <= 1;
+			}),
 			comfortableTargets: cards.every((card) => {
 				const rect = card.getBoundingClientRect();
 				return rect.height >= 76 && rect.width >= 140;
@@ -6567,6 +6635,7 @@ async function runSourceChooserLayoutScenario() {
 	} finally {
 		await act(async () => root.unmount());
 		host.remove();
+		document.body.style.fontFamily = originalBodyFontFamily;
 	}
 }
 

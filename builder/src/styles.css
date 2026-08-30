@@ -2919,7 +2919,7 @@ body.settings-modal-open {
 	}
 }
 
-@media (max-width: 899.98px) {
+@media (max-width: 620px), (max-width: 899.98px) and (max-height: 600px) {
 	.add-source-portal {
 		background: rgb(7 24 33);
 	}
@@ -2972,7 +2972,7 @@ body.settings-modal-open {
 	}
 }
 
-@media (min-width: 900px) {
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
 	.add-source-portal {
 		background: transparent;
 	}
@@ -6188,7 +6188,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	align-self: start;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
 	.source-mode-dialog,
 	.people-source-dialog[data-dialog-compact="true"],
 	.people-source-dialog[data-people-context="folder"][data-add-source-step="configure"],
@@ -6209,7 +6209,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 }
 
-@media (max-width: 899.98px) {
+@media (max-width: 620px), (max-width: 899.98px) and (max-height: 600px) {
 	.source-mode-dialog,
 	.people-source-dialog,
 	.studio-source-dialog {
@@ -7242,7 +7242,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 }
 
-@media (min-width: 900px) {
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
 	.genre-source-dialog,
 	.decade-source-dialog {
 		height: auto;
@@ -7825,9 +7825,22 @@ body.hierarchy-pointer-dragging .builder-shell {
 		gap: 6px;
 		padding: 10px 8px;
 	}
+
+	.creation-option-icon-shell {
+		width: 36px;
+		height: 36px;
+	}
 }
 
-@media (min-width: 900px) {
+@media (min-width: 621px) and (max-width: 967.98px) and (min-height: 601px) {
+	.creation-option-card,
+	.source-mode-option {
+		gap: 10px;
+		padding: 12px;
+	}
+}
+
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
 	.creation-dialog:not([data-creation-option]) {
 		height: auto;
 	}

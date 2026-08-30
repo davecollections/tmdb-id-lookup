@@ -917,7 +917,7 @@ test("body lock prevents page scrolling and restores exact prior styles, class s
 	assert.equal(prelockedBody.classAttribute, "settings-modal-open custom-existing");
 });
 
-test("responsive CSS provides an opaque full Visual Viewport task surface and safe action area below 900px", () => {
+test("responsive CSS keeps phone-sized launchers fullscreen and normal tablet viewports contained", () => {
 	const styles = read("builder/src/styles.css");
 	const dialogSource = read("builder/src/ui/AddSourceDialog.jsx");
 	assert.match(styles, /--layer-add-source:\s*3000/);
@@ -925,10 +925,10 @@ test("responsive CSS provides an opaque full Visual Viewport task surface and sa
 	assert.match(styles, /\.add-source-portal\s*\{[\s\S]*z-index:\s*var\(--layer-add-source\)[\s\S]*isolation:\s*isolate/);
 	assert.match(styles, /\.add-source-dialog\s*\{[\s\S]*width:\s*100%[\s\S]*height:\s*100%/);
 	assert.match(styles, /\.add-source-scroll\s*\{[\s\S]*overflow-y:\s*auto[\s\S]*overscroll-behavior:\s*contain/);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-portal\s*\{[\s\S]*background:\s*rgb\(7 24 33\)/);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.settings-modal-backdrop\.add-source-backdrop\s*\{[\s\S]*padding:\s*0[\s\S]*background:\s*rgb\(7 24 33\)/);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-dialog\s*\{[\s\S]*isolation:\s*isolate[\s\S]*background:\s*rgb\(7 24 33\)[\s\S]*border:\s*0[\s\S]*border-radius:\s*0/);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.panel-count\.panel-count-desktop-only\s*\{\s*display:\s*none/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-portal\s*\{[\s\S]*background:\s*rgb\(7 24 33\)/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.settings-modal-backdrop\.add-source-backdrop\s*\{[\s\S]*padding:\s*0[\s\S]*background:\s*rgb\(7 24 33\)/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-dialog\s*\{[\s\S]*isolation:\s*isolate[\s\S]*background:\s*rgb\(7 24 33\)[\s\S]*border:\s*0[\s\S]*border-radius:\s*0/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.panel-count\.panel-count-desktop-only\s*\{\s*display:\s*none/);
 	assert.match(styles, /\.add-source-review-poster-frame\s*\{[\s\S]*width:\s*clamp\(180px,\s*48vw,\s*220px\)/);
 	assert.match(styles, /@media \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*width:\s*clamp\(140px,\s*40vw,\s*180px\)/);
 	assert.match(styles, /@media \(min-width: 600px\) and \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*grid-template-columns:\s*180px minmax\(0,\s*1fr\)/);
@@ -945,7 +945,7 @@ test("responsive CSS provides an opaque full Visual Viewport task surface and sa
 	assert.match(styles, /\.tmdb-entity-link\s*\{[\s\S]*min-height:\s*44px[\s\S]*text-decoration:\s*none/);
 	assert.match(styles, /\.tmdb-entity-link:hover\s*\{[\s\S]*border-color:/);
 	assert.match(styles, /\.tmdb-entity-link:focus-visible\s*\{[\s\S]*outline:/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*width:\s*min\(920px,\s*100%\)/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*width:\s*min\(920px,\s*100%\)/);
 });
 
 test("every Add entry point still delegates to one dialog and successful creation retains focus/status wiring", () => {

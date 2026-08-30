@@ -130,7 +130,7 @@ test("Decade Add Source responsive styles cover the required mobile/desktop boun
 	assert.match(styles, /\.decade-source-dialog\s*\{[^}]*width:\s*min\(760px, calc\(100vw - 32px\)\)/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /@media \(max-width: 900px\)[\s\S]*\.decade-source-dialog\s*\{[^}]*width:\s*100%/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.decade-source-dialog[\s\S]*height:\s*auto/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.decade-source-dialog[\s\S]*height:\s*auto/);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.decade-source-exclusion-subview \.genre-catalogue-list/);
 	assert.match(styles, /\.genre-catalogue-list\.decade-source-genre-pill-list\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
 	assert.match(styles, /\.decade-source-genre-pill-list \.genre-catalogue-choice\s*\{[^}]*border-radius:\s*999px/);

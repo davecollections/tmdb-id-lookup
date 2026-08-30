@@ -221,8 +221,8 @@ test("required responsive owner widths use the same 10-poster maximum", () => {
 	const widths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
 	assert.deepEqual(widths.filter((width) => width <= 520), [360, 384, 393, 402, 412]);
 	assert.deepEqual(widths.filter((width) => width >= 900), [900, 901, 1280]);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-dialog/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.add-source-dialog/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*safe-area-inset-bottom/);
 	assert.match(flow, /className="[^\"]*studio-preview-grid network-preview-grid"/);
