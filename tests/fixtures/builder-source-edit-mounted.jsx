@@ -6301,6 +6301,70 @@ async function runSourceChooserLayoutScenario() {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
 	}
+	function rounded(value) {
+		return Math.round(value * 10) / 10;
+	}
+	function roundedRect(element) {
+		const rect = element.getBoundingClientRect();
+		return {
+			top: rounded(rect.top),
+			width: rounded(rect.width),
+			height: rounded(rect.height),
+		};
+	}
+	function renderedLineCount(element) {
+		const range = document.createRange();
+		range.selectNodeContents(element);
+		const lineTops = [];
+		for (const rect of range.getClientRects()) {
+			if (rect.width <= 0 || rect.height <= 0) continue;
+			if (!lineTops.some((top) => Math.abs(top - rect.top) <= 0.5)) lineTops.push(rect.top);
+		}
+		return lineTops.length;
+	}
+	function launcherCardGeometry(card) {
+		const label = required(card.querySelector("strong"), "launcher card label");
+		const helper = required(card.querySelector("small"), "launcher card helper");
+		const icon = required(card.querySelector(".creation-option-icon-shell"), "launcher card icon");
+		const copy = required(card.querySelector(".creation-option-copy"), "launcher card copy");
+		const cardStyle = getComputedStyle(card);
+		const copyStyle = getComputedStyle(copy);
+		const labelStyle = getComputedStyle(label);
+		const helperStyle = getComputedStyle(helper);
+		return {
+			id: card.dataset.creationOption ?? card.dataset.sourceModeOption ?? null,
+			label: label.textContent.trim(),
+			card: roundedRect(card),
+			display: cardStyle.display,
+			gridTemplateColumns: cardStyle.gridTemplateColumns,
+			gap: cardStyle.gap,
+			padding: {
+				top: cardStyle.paddingTop,
+				right: cardStyle.paddingRight,
+				bottom: cardStyle.paddingBottom,
+				left: cardStyle.paddingLeft,
+			},
+			iconWidth: rounded(icon.getBoundingClientRect().width),
+			copyWidth: rounded(copy.getBoundingClientRect().width),
+			copyGridTemplateColumns: copyStyle.gridTemplateColumns,
+			title: {
+				clientWidth: label.clientWidth,
+				lines: renderedLineCount(label),
+				fontFamily: labelStyle.fontFamily,
+				fontSize: labelStyle.fontSize,
+				fontWeight: labelStyle.fontWeight,
+				lineHeight: labelStyle.lineHeight,
+			},
+			helper: {
+				clientWidth: helper.clientWidth,
+				lines: renderedLineCount(helper),
+				fontFamily: helperStyle.fontFamily,
+				fontSize: helperStyle.fontSize,
+				fontWeight: helperStyle.fontWeight,
+				lineHeight: helperStyle.lineHeight,
+			},
+		};
+	}
 	const host = document.createElement("div");
 	document.body.append(host);
 	const root = createRoot(host);
@@ -6332,6 +6396,7 @@ async function runSourceChooserLayoutScenario() {
 		try {
 			const dialog = required(document.querySelector(`[data-creation-dialog="true"][data-creation-scope="${scope}"]`), `${scope} Creation chooser`);
 			const list = required(dialog.querySelector(".creation-option-list"), `${scope} Creation launcher grid`);
+			const listStyle = getComputedStyle(list);
 			const cards = [...list.querySelectorAll("[data-creation-option]")];
 			const firstCard = required(cards[0], `${scope} first Creation card`);
 			const finalCard = required(cards.at(-1), `${scope} final Creation card`);
@@ -6373,6 +6438,12 @@ async function runSourceChooserLayoutScenario() {
 				columnCount: Math.max(...rows.map((row) => row.count)),
 				rowCounts: rows.map((row) => row.count),
 				rowHeightSpread: Math.round((Math.max(...rowHeights) - Math.min(...rowHeights)) * 10) / 10,
+				grid: {
+					width: rounded(list.getBoundingClientRect().width),
+					gridTemplateColumns: listStyle.gridTemplateColumns,
+					gap: listStyle.gap,
+				},
+				cardGeometry: cards.map(launcherCardGeometry),
 				firstOptionFocused: document.activeElement === firstCard,
 				iconShellsCorrect: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
 				comfortableTargets: cards.every((card) => {

@@ -1002,7 +1002,10 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.cardCount, 9, `${width}px ${chooser.scope} card count`);
 			assert.equal(chooser.columnCount, width <= 620 ? 2 : 4, `${width}px ${chooser.scope} responsive columns`);
 			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 1] : [4, 4, 1], `${width}px ${chooser.scope} balanced rows`);
-			assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
+			const geometryEvidence = chooser.cardGeometry.map((card) => (
+				`${card.label}: cardTop=${card.card.top}px card=${card.card.width}x${card.card.height}px display=${card.display} grid=${card.gridTemplateColumns} gap=${card.gap} padding=${card.padding.top}/${card.padding.right}/${card.padding.bottom}/${card.padding.left} iconWidth=${card.iconWidth}px copyWidth=${card.copyWidth}px copyGrid=${card.copyGridTemplateColumns} titleWidth=${card.title.clientWidth}px titleLines=${card.title.lines} titleFont=${card.title.fontFamily}/${card.title.fontSize}/${card.title.fontWeight}/${card.title.lineHeight} helperWidth=${card.helper.clientWidth}px helperLines=${card.helper.lines} helperFont=${card.helper.fontFamily}/${card.helper.fontSize}/${card.helper.fontWeight}/${card.helper.lineHeight}`
+			)).join(" | ");
+			assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}; launcherGrid=${chooser.grid.width}px/${chooser.grid.gridTemplateColumns}/gap ${chooser.grid.gap}; ${geometryEvidence}`);
 			assert.equal(chooser.firstOptionFocused, true, `${width}px ${chooser.scope} first-option focus`);
 			assert.equal(chooser.iconShellsCorrect, true, `${width}px ${chooser.scope} icon shells`);
 			assert.equal(chooser.comfortableTargets, true, `${width}px ${chooser.scope} tap targets`);
