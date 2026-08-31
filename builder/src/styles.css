@@ -7822,13 +7822,39 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 	.creation-option-card,
 	.source-mode-option {
-		gap: 6px;
+		min-height: 87px;
+		grid-template-columns: 36px minmax(0, 1fr);
+		grid-template-rows: auto auto;
+		column-gap: 6px;
+		row-gap: 2px;
 		padding: 10px 8px;
 	}
 
 	.creation-option-icon-shell {
 		width: 36px;
 		height: 36px;
+		grid-column: 1;
+		grid-row: 1;
+	}
+
+	.creation-option-copy {
+		display: contents;
+	}
+
+	.creation-option-card strong,
+	.source-mode-option strong {
+		min-width: 0;
+		grid-column: 2;
+		grid-row: 1;
+		overflow-wrap: anywhere;
+	}
+
+	.creation-option-card small,
+	.source-mode-option small {
+		min-width: 0;
+		grid-column: 1 / -1;
+		grid-row: 2;
+		overflow-wrap: anywhere;
 	}
 }
 

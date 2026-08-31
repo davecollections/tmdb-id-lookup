@@ -145,7 +145,11 @@ test("Add Source and Creation directly share the narrow launcher card and icon p
 	assert.match(styles, /\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.creation-option-card:focus-visible,\s*\.source-mode-option:hover,\s*\.source-mode-option:focus-visible\s*\{[^}]*border-color:/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-icon-shell\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*87px;[^}]*grid-template-columns:\s*36px minmax\(0, 1fr\);[^}]*grid-template-rows:\s*auto auto;[^}]*column-gap:\s*6px;[^}]*row-gap:\s*2px;[^}]*padding:\s*10px 8px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-icon-shell\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px;[^}]*grid-column:\s*1;[^}]*grid-row:\s*1/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-copy\s*\{[^}]*display:\s*contents/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card strong,\s*\.source-mode-option strong\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;[^}]*overflow-wrap:\s*anywhere/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card small,\s*\.source-mode-option small\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;[^}]*overflow-wrap:\s*anywhere/s);
 	assert.match(styles, /@media \(min-width: 621px\) and \(max-width: 967\.98px\) and \(min-height: 601px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*10px;[^}]*padding:\s*12px/s);
 	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*?\.source-mode-dialog\s*\{[^}]*width:\s*min\(920px, 100%\)/s);
 	assert.doesNotMatch(styles, /\.source-mode-option\s*>\s*span|\.source-mode-option\s*\{[^}]*min-height:\s*92px/s);

@@ -6296,7 +6296,12 @@ async function runDecadeSourceLivePreviewScenario() {
 	}
 }
 
-async function runSourceChooserLayoutScenario({ fontFamily = null } = {}) {
+async function runSourceChooserLayoutScenario({
+	fontFamily = null,
+	includeClassicScrollbarStress = false,
+	includeGrowthStress = false,
+	includeOrderStress = false,
+} = {}) {
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
@@ -6364,6 +6369,186 @@ async function runSourceChooserLayoutScenario({ fontFamily = null } = {}) {
 				lineHeight: helperStyle.lineHeight,
 			},
 		};
+	}
+	const representativeLauncherEntries = [
+		["documentaries", "Documentaries", "Add movies or series from documentaries."],
+		["countries", "Countries", "Add movies or series from a country."],
+		["keywords", "Keywords", "Add movies or series by keyword."],
+		["awards", "Awards", "Add award-winning movies or series."],
+		["recommendations", "Recommendations", "Add recommendations from a TMDB title."],
+		["upcoming", "Upcoming", "Add upcoming movies or series."],
+		["languages", "Languages", "Add movies or series by original language."],
+		["ratings", "Ratings", "Add movies or series by rating."],
+		["certifications", "Certifications", "Add movies or series by certification."],
+	];
+	function launcherOrderCases(cardAttribute, currentIds) {
+		const requested = cardAttribute === "data-source-mode-option"
+			? [
+				["longest-adjacent", ["tmdb-movie-franchise", "tmdb-lists", "tmdb-people", "tmdb-studios", "tmdb-networks", "tmdb-streaming-services", "tmdb-genres", "tmdb-decade"]],
+				["longest-separated", ["tmdb-movie-franchise", "tmdb-networks", "tmdb-studios", "tmdb-people", "tmdb-streaming-services", "tmdb-genres", "tmdb-lists", "tmdb-decade"]],
+			]
+			: [
+				["longest-adjacent", ["people", "streaming-services", "tmdb-lists", "blank", "decades", "franchises", "studios", "networks", "genres"]],
+				["longest-separated", ["people", "blank", "decades", "streaming-services", "franchises", "studios", "tmdb-lists", "networks", "genres"]],
+			];
+		return [
+			{ name: "current", ids: [...currentIds] },
+			...requested.map(([name, preferredIds]) => ({
+				name,
+				ids: [...preferredIds.filter((id) => currentIds.includes(id)), ...currentIds.filter((id) => !preferredIds.includes(id))],
+			})),
+		];
+	}
+	async function measureLauncherVariant({ dialog, list, cardAttribute, extraCount = 0, forceScrollbar = false, name, orderIds = null }) {
+		const originalItems = [...list.children];
+		const originalOverflowY = list.style.overflowY;
+		const originalScrollTop = list.scrollTop;
+		const selector = `[${cardAttribute}]`;
+		try {
+			const templateItem = required(originalItems[0], `${name} launcher template item`);
+			for (const [index, entry] of representativeLauncherEntries.slice(0, extraCount).entries()) {
+				const [id, label, helper] = entry;
+				const item = templateItem.cloneNode(true);
+				const card = required(item.querySelector("button"), `${name} representative launcher card`);
+				card.removeAttribute("data-creation-option");
+				card.removeAttribute("data-source-mode-option");
+				card.setAttribute(cardAttribute, `test-${id}-${index + 1}`);
+				required(card.querySelector("strong"), `${name} representative launcher title`).textContent = label;
+				required(card.querySelector("small"), `${name} representative launcher helper`).textContent = helper;
+				list.append(item);
+			}
+			if (orderIds) {
+				const items = [...list.children];
+				const itemById = new Map(items.map((item) => {
+					const card = required(item.querySelector(selector), `${name} ordered launcher card`);
+					return [card.getAttribute(cardAttribute), item];
+				}));
+				const orderedItems = orderIds.map((id) => itemById.get(id)).filter(Boolean);
+				const orderedSet = new Set(orderedItems);
+				list.replaceChildren(...orderedItems, ...items.filter((item) => !orderedSet.has(item)));
+			}
+			if (forceScrollbar) list.style.overflowY = "scroll";
+			await afterCommittedEffects();
+
+			const cards = [...list.querySelectorAll(selector)];
+			const rows = [];
+			for (const card of cards) {
+				const rect = card.getBoundingClientRect();
+				const top = Math.round(rect.top);
+				const row = rows.find((entry) => Math.abs(entry.top - top) <= 1);
+				if (row) {
+					row.count += 1;
+					row.height = Math.max(row.height, rect.height);
+				} else rows.push({ top, count: 1, height: rect.height });
+			}
+			const rowHeights = rows.map((row) => rounded(row.height));
+			const cardGeometry = cards.map(launcherCardGeometry);
+			const cardWidths = cardGeometry.map((card) => card.card.width);
+			const helperWidths = cardGeometry.map((card) => card.helper.clientWidth);
+			const titleWidths = cardGeometry.map((card) => card.title.clientWidth);
+			const helperLines = cardGeometry.map((card) => card.helper.lines);
+			const fullWidthHelpers = cards.every((card) => {
+				const helper = required(card.querySelector("small"), `${name} full-width helper`);
+				const style = getComputedStyle(card);
+				const expectedWidth = card.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+				return Math.abs(helper.getBoundingClientRect().width - expectedWidth) <= 1;
+			});
+			const topRowsAligned = cards.every((card) => {
+				const iconRect = required(card.querySelector(".creation-option-icon-shell"), `${name} icon`).getBoundingClientRect();
+				const titleRect = required(card.querySelector("strong"), `${name} title`).getBoundingClientRect();
+				const helperRect = required(card.querySelector("small"), `${name} helper`).getBoundingClientRect();
+				return titleRect.left >= iconRect.right + 5
+					&& titleRect.top >= iconRect.top - 1
+					&& titleRect.bottom <= iconRect.bottom + 1
+					&& helperRect.top >= Math.max(iconRect.bottom, titleRect.bottom) + 1;
+			});
+			const scrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+				const overflowY = getComputedStyle(element).overflowY;
+				return overflowY === "auto" || overflowY === "scroll";
+			});
+			const listStyle = getComputedStyle(list);
+			const scrollActive = list.scrollHeight > list.clientHeight + 1;
+			list.scrollTop = list.scrollHeight;
+			await afterCommittedEffects();
+			const listRect = list.getBoundingClientRect();
+			const finalRect = required(cards.at(-1), `${name} final launcher card`).getBoundingClientRect();
+			return {
+				name,
+				extraCount,
+				forceScrollbar,
+				cardCount: cards.length,
+				orderIds: cards.map((card) => card.getAttribute(cardAttribute)),
+				columnCount: Math.max(...rows.map((row) => row.count)),
+				rowCounts: rows.map((row) => row.count),
+				rowHeightSpread: rounded(Math.max(...rowHeights) - Math.min(...rowHeights)),
+				minCardHeight: Math.min(...cardGeometry.map((card) => card.card.height)),
+				maxCardHeight: Math.max(...cardGeometry.map((card) => card.card.height)),
+				cardWidth: cardWidths[0],
+				cardWidthSpread: rounded(Math.max(...cardWidths) - Math.min(...cardWidths)),
+				titleWidth: titleWidths[0],
+				helperWidth: helperWidths[0],
+				helperWidthSpread: rounded(Math.max(...helperWidths) - Math.min(...helperWidths)),
+				maxHelperLines: Math.max(...helperLines),
+				fullWidthHelpers,
+				topRowsAligned,
+				grid: {
+					width: rounded(list.getBoundingClientRect().width),
+					clientWidth: list.clientWidth,
+					offsetWidth: list.offsetWidth,
+					scrollWidth: list.scrollWidth,
+					clientHeight: list.clientHeight,
+					scrollHeight: list.scrollHeight,
+					columns: listStyle.gridTemplateColumns,
+					gap: listStyle.gap,
+					gutter: list.offsetWidth - list.clientWidth,
+					overflowY: listStyle.overflowY,
+					scrollActive,
+				},
+				oneScrollOwner: scrollOwners.length === 1 && scrollOwners[0] === list,
+				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
+				finalCardReachable: finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1,
+			};
+		} finally {
+			list.replaceChildren(...originalItems);
+			list.style.overflowY = originalOverflowY;
+			list.scrollTop = originalScrollTop;
+			await afterCommittedEffects();
+		}
+	}
+	async function measureLauncherStress(dialog, list, cardAttribute, label) {
+		const selector = `[${cardAttribute}]`;
+		const currentIds = [...list.querySelectorAll(selector)].map((card) => card.getAttribute(cardAttribute));
+		const growth = [];
+		if (includeGrowthStress) {
+			for (const extraCount of [0, 3, 6]) growth.push(await measureLauncherVariant({
+				dialog,
+				list,
+				cardAttribute,
+				extraCount,
+				name: `${label} +${extraCount}`,
+			}));
+		}
+		const order = [];
+		if (includeOrderStress) {
+			for (const orderCase of launcherOrderCases(cardAttribute, currentIds)) order.push(await measureLauncherVariant({
+				dialog,
+				list,
+				cardAttribute,
+				name: `${label} ${orderCase.name}`,
+				orderIds: orderCase.ids,
+			}));
+		}
+		const classicScrollbar = includeClassicScrollbarStress
+			? await measureLauncherVariant({
+				dialog,
+				list,
+				cardAttribute,
+				extraCount: 9,
+				forceScrollbar: true,
+				name: `${label} classic scrollbar`,
+			})
+			: null;
+		return { growth, order, classicScrollbar };
 	}
 	function launcherModalGeometry(dialog) {
 		const backdrop = required(dialog.closest(".add-source-backdrop"), "launcher modal backdrop");
@@ -6514,6 +6699,7 @@ async function runSourceChooserLayoutScenario({ fontFamily = null } = {}) {
 				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
 				finalCardReachable: finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1,
 			};
+			metrics.stress = await measureLauncherStress(dialog, list, "data-creation-option", `${scope} Creation`);
 		} finally {
 			await act(async () => {
 				creationRoot.unmount();
@@ -6596,6 +6782,7 @@ async function runSourceChooserLayoutScenario({ fontFamily = null } = {}) {
 			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
 			bodyLocked: document.body.style.position === "fixed",
 		};
+		initial.stress = await measureLauncherStress(dialog, list, "data-source-mode-option", "Add Source");
 		list.scrollTop = list.scrollHeight;
 		await act(async () => afterCommittedEffects());
 		const listRect = list.getBoundingClientRect();
