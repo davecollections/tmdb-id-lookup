@@ -6312,7 +6312,10 @@ async function runSourceChooserLayoutScenario({
 	function roundedRect(element) {
 		const rect = element.getBoundingClientRect();
 		return {
+			left: rounded(rect.left),
 			top: rounded(rect.top),
+			right: rounded(rect.right),
+			bottom: rounded(rect.bottom),
 			width: rounded(rect.width),
 			height: rounded(rect.height),
 		};
@@ -6326,6 +6329,85 @@ async function runSourceChooserLayoutScenario({
 			if (!lineTops.some((top) => Math.abs(top - rect.top) <= 0.5)) lineTops.push(rect.top);
 		}
 		return lineTops.length;
+	}
+	function containsRect(outer, inner, tolerance = 1) {
+		return inner.left >= outer.left - tolerance
+			&& inner.top >= outer.top - tolerance
+			&& inner.right <= outer.right + tolerance
+			&& inner.bottom <= outer.bottom + tolerance;
+	}
+	function rectsOverlap(first, second, tolerance = 0.5) {
+		return first.left < second.right - tolerance
+			&& first.right > second.left + tolerance
+			&& first.top < second.bottom - tolerance
+			&& first.bottom > second.top + tolerance;
+	}
+	function contentFits(element) {
+		return element.scrollWidth <= element.clientWidth + 1 && element.scrollHeight <= element.clientHeight + 1;
+	}
+	function launcherContentSafety(dialog, list, cards) {
+		const dialogRect = dialog.getBoundingClientRect();
+		const listRect = list.getBoundingClientRect();
+		const listStyle = getComputedStyle(list);
+		const cardMetrics = cards.map((card) => {
+			const shell = required(card.querySelector(".creation-option-icon-shell"), "launcher card icon shell");
+			const icon = required(shell.querySelector(".creation-option-icon"), "launcher card icon");
+			const copy = required(card.querySelector(".creation-option-copy"), "launcher card copy");
+			const title = required(card.querySelector("strong"), "launcher card title");
+			const helper = required(card.querySelector("small"), "launcher card helper");
+			const cardRect = card.getBoundingClientRect();
+			const shellRect = shell.getBoundingClientRect();
+			const iconRect = icon.getBoundingClientRect();
+			const copyRect = copy.getBoundingClientRect();
+			const titleRect = title.getBoundingClientRect();
+			const helperRect = helper.getBoundingClientRect();
+			return {
+				id: card.dataset.creationOption ?? card.dataset.sourceModeOption ?? null,
+				cardRect,
+				positiveDimensions: cardRect.width > 0 && cardRect.height > 0,
+				iconContained: containsRect(shellRect, iconRect) && containsRect(cardRect, shellRect),
+				titleContained: containsRect(cardRect, titleRect),
+				helperContained: containsRect(cardRect, helperRect),
+				copyContained: getComputedStyle(copy).display === "contents" || containsRect(cardRect, copyRect),
+				textUnclipped: contentFits(title) && contentFits(helper),
+				contentOverflowFree: contentFits(card),
+				horizontallyContainedByGrid: cardRect.left >= listRect.left - 1 && cardRect.right <= listRect.right + 1,
+			};
+		});
+		const rows = [];
+		for (const metric of cardMetrics) {
+			const row = rows.find((entry) => Math.abs(entry.top - metric.cardRect.top) <= 1);
+			if (row) {
+				row.bottom = Math.max(row.bottom, metric.cardRect.bottom);
+				row.cards.push(metric);
+			} else rows.push({ top: metric.cardRect.top, bottom: metric.cardRect.bottom, cards: [metric] });
+		}
+		rows.sort((first, second) => first.top - second.top);
+		const rowGaps = rows.slice(0, -1).map((row, index) => rounded(rows[index + 1].top - row.bottom));
+		const intendedRowGap = Number.parseFloat(listStyle.rowGap) || 0;
+		const cardWidths = cardMetrics.map((metric) => metric.cardRect.width);
+		return {
+			validCardDimensions: cardMetrics.every((metric) => metric.positiveDimensions),
+			iconsContained: cardMetrics.every((metric) => metric.iconContained),
+			titlesContained: cardMetrics.every((metric) => metric.titleContained),
+			helpersContained: cardMetrics.every((metric) => metric.helperContained),
+			copiesContained: cardMetrics.every((metric) => metric.copyContained),
+			textUnclipped: cardMetrics.every((metric) => metric.textUnclipped),
+			cardContentOverflowFree: cardMetrics.every((metric) => metric.contentOverflowFree),
+			cardsContainedByGridHorizontally: cardMetrics.every((metric) => metric.horizontallyContainedByGrid),
+			noCardOverlap: cardMetrics.every((metric, index) => cardMetrics.slice(index + 1).every((other) => !rectsOverlap(metric.cardRect, other.cardRect))),
+			noRowOverlap: rowGaps.every((gap) => gap >= -1),
+			rowSpacingValid: rowGaps.every((gap) => gap >= intendedRowGap - 1),
+			intendedRowGap: rounded(intendedRowGap),
+			rowGaps,
+			stableCardWidths: Math.max(...cardWidths) - Math.min(...cardWidths) <= 1,
+			cardWidthSpread: rounded(Math.max(...cardWidths) - Math.min(...cardWidths)),
+			gridContainedByModal: containsRect(dialogRect, listRect),
+			modalContainedByViewport: dialogRect.left >= -1
+				&& dialogRect.top >= -1
+				&& dialogRect.right <= window.innerWidth + 1
+				&& dialogRect.bottom <= window.innerHeight + 1,
+		};
 	}
 	function launcherCardGeometry(card) {
 		const label = required(card.querySelector("strong"), "launcher card label");
@@ -6483,6 +6565,7 @@ async function runSourceChooserLayoutScenario({
 				rowHeightSpread: rounded(Math.max(...rowHeights) - Math.min(...rowHeights)),
 				minCardHeight: Math.min(...cardGeometry.map((card) => card.card.height)),
 				maxCardHeight: Math.max(...cardGeometry.map((card) => card.card.height)),
+				contentSafety: launcherContentSafety(dialog, list, cards),
 				cardWidth: cardWidths[0],
 				cardWidthSpread: rounded(Math.max(...cardWidths) - Math.min(...cardWidths)),
 				titleWidth: titleWidths[0],
@@ -6683,6 +6766,7 @@ async function runSourceChooserLayoutScenario({
 					gap: listStyle.gap,
 				},
 				cardGeometry: cards.map(launcherCardGeometry),
+				contentSafety: launcherContentSafety(dialog, list, cards),
 				firstOptionFocused: document.activeElement === firstCard,
 				iconShellsCorrect: iconRects.every((rect) => {
 					const expectedSize = window.innerWidth <= 620 ? 36 : 42;
@@ -6758,6 +6842,7 @@ async function runSourceChooserLayoutScenario({
 			rowCounts: rows.map((row) => row.count),
 			rowHeightSpread: rounded(Math.max(...rowHeights) - Math.min(...rowHeights)),
 			cardGeometry: cards.map(launcherCardGeometry),
+			contentSafety: launcherContentSafety(dialog, list, cards),
 			balancedRows: rows.slice(0, -1).every((row) => row.count === rows[0].count) && rows.at(-1).count >= rows[0].count - 1,
 			firstOptionFocused: document.activeElement === firstCard,
 			iconShellsMatchCreation: iconRects.every((rect) => {
