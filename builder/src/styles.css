@@ -7801,16 +7801,20 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .creation-option-card strong,
 .source-mode-option strong {
+	min-width: 0;
+	overflow-wrap: anywhere;
 	font-size: 0.92rem;
 	line-height: 1.2;
 }
 
 .creation-option-card small,
 .source-mode-option small {
+	min-width: 0;
 	color: var(--muted);
 	font-size: 0.64rem;
 	font-weight: 650;
 	line-height: 1.35;
+	overflow-wrap: anywhere;
 }
 
 @media (max-width: 620px) {
