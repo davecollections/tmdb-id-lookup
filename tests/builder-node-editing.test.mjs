@@ -2667,12 +2667,11 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*height:\s*100dvh/);
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*max-height:\s*100dvh/);
 	assert.match(styles, /\.node-editor\s*\{[\s\S]*overflow-y:\s*auto/);
-	assert.match(styles, /\.node-editor\s*\{[\s\S]*scrollbar-color:\s*rgb\(70 118 136\) rgb\(4 16 23\)/);
-	assert.match(styles, /\.node-editor\s*\{[\s\S]*scrollbar-width:\s*auto/);
-	assert.match(styles, /\.node-editor::\-webkit-scrollbar\s*\{[\s\S]*width:\s*12px/);
-	assert.match(styles, /\.node-editor::\-webkit-scrollbar-track\s*\{[\s\S]*background:\s*rgb\(4 16 23\)/);
-	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb\s*\{[\s\S]*border-radius:\s*999px/);
-	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb:hover\s*\{[\s\S]*background:\s*rgb\(62 146 174\)/);
+	assert.match(styles, /\.node-editor,\s*\.dingo-scrollbar\s*\{[\s\S]*scrollbar-color:\s*rgb\(70 118 136\) rgb\(4 16 23\)[\s\S]*scrollbar-width:\s*auto/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar,\s*\.dingo-scrollbar::\-webkit-scrollbar\s*\{[\s\S]*width:\s*12px/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar-track,\s*\.dingo-scrollbar::\-webkit-scrollbar-track\s*\{[\s\S]*background:\s*rgb\(4 16 23\)/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb,\s*\.dingo-scrollbar::\-webkit-scrollbar-thumb\s*\{[\s\S]*border-radius:\s*999px/);
+	assert.match(styles, /\.node-editor::\-webkit-scrollbar-thumb:hover,\s*\.dingo-scrollbar::\-webkit-scrollbar-thumb:hover\s*\{[\s\S]*background:\s*rgb\(62 146 174\)/);
 	assert.match(styles, /body\.settings-modal-open\s*\{[\s\S]*overflow:\s*hidden/);
 	assert.match(styles, /\.workspace-underlay\[aria-hidden="true"\]\s*\{[\s\S]*pointer-events:\s*none/);
 	assert.match(styles, /\.editor-field input\[type="text"\],[\s\S]*min-height:\s*48px/);

@@ -52,7 +52,7 @@ test("creation family registry exposes Franchises in both hierarchy scopes", () 
 	assert.equal(creationOptionById(CREATION_OPTION_IDS.FRANCHISES).label, "Franchises");
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.FRANCHISES, scope), true);
-		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
+		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"]);
 	}
 });
 

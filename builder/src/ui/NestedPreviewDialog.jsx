@@ -1,7 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+	observeAddSourceViewport,
+	resolveAddSourceViewportStyle,
+} from "./add-source-modal-lifecycle.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
+
+const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function NestedPreviewDialog({
 	ariaLabelledBy,
@@ -16,14 +22,20 @@ export function NestedPreviewDialog({
 }) {
 	const localDialogRef = useRef(null);
 	const activeDialogRef = dialogRef ?? localDialogRef;
+	const [viewportStyle, setViewportStyle] = useState(() => (
+		typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window)
+	));
+	usePrePaintLayoutEffect(() => observeAddSourceViewport(setViewportStyle), []);
 	useEffect(() => {
 		focusElementWithoutScroll(initialFocusRef?.current ?? activeDialogRef.current);
 	}, []);
+	const { style: backdropStyle, ...resolvedBackdropProps } = backdropProps;
 	const content = (
 		<div
 			className={`settings-modal-backdrop nested-modal-backdrop${backdropClassName ? ` ${backdropClassName}` : ""}`}
 			data-nested-modal-backdrop="true"
-			{...backdropProps}
+			{...resolvedBackdropProps}
+			style={{ ...viewportStyle, ...backdropStyle }}
 			onMouseDown={(event) => {
 				backdropProps.onMouseDown?.(event);
 				if (!event.defaultPrevented && event.target === event.currentTarget) onClose();

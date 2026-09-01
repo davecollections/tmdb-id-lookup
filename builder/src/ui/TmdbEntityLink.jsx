@@ -3,11 +3,12 @@ import { buildTmdbEntityPageUrl } from "../source-add/index.js";
 const entityLabels = Object.freeze({
 	company: "company",
 	collection: "collection",
+	list: "list",
 	network: "network",
 	person: "person",
 });
 
-export function TmdbEntityLink({ entityType, tmdbId, entityName = null }) {
+export function TmdbEntityLink({ entityType, tmdbId, entityName = null, linkText = null }) {
 	const href = buildTmdbEntityPageUrl(entityType, tmdbId);
 	if (href === null) return null;
 	const entityLabel = entityLabels[entityType];
@@ -22,7 +23,7 @@ export function TmdbEntityLink({ entityType, tmdbId, entityName = null }) {
 			rel="noopener noreferrer"
 			aria-label={`Open ${subject} on TMDB (${entityLabel} ${tmdbId})`}
 		>
-			<span>TMDB {tmdbId}</span>
+			<span>{linkText ?? `TMDB ${tmdbId}`}</span>
 			<span className="tmdb-entity-link-indicator" aria-hidden="true">↗</span>
 		</a>
 	);

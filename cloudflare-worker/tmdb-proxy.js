@@ -298,6 +298,20 @@ function isAllowedGenreDiscoverRequest(url, entries) {
 }
 
 function isAllowedTmdbRequest(url) {
+  const listMatch = /^\/3\/list\/([1-9]\d*)$/.exec(url.pathname);
+  if (listMatch) {
+    const entries = [...url.searchParams.entries()];
+    return (
+      isCanonicalPositiveSafeInteger(listMatch[1]) &&
+      Number(listMatch[1]) <= 2147483647 &&
+      entries.length === 2 &&
+      hasUniqueParameters(entries) &&
+      url.searchParams.get("language") === "en-US" &&
+      url.searchParams.get("page") === "1" &&
+      entries.every(([key]) => key === "language" || key === "page")
+    );
+  }
+
   if (WATCH_PROVIDER_PATHS.has(url.pathname)) {
     const entries = [...url.searchParams.entries()];
     return (

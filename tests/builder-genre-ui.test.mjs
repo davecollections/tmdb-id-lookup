@@ -89,7 +89,7 @@ function configureMarkup(overrides = {}) {
 	}));
 }
 
-test("Add Source keeps Genres sixth and exposes Decade last without changing the preceding mode order", () => {
+test("Add Source keeps Lists second and exposes Genres and Decade after the established modes", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, {
 		folderName: "Genres",
 		onCancel() {},
@@ -98,6 +98,7 @@ test("Add Source keeps Genres sixth and exposes Decade last without changing the
 	const modeIds = [...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]);
 	assert.deepEqual(modeIds, [
 		"tmdb-movie-franchise",
+		"tmdb-lists",
 		"tmdb-people",
 		"tmdb-studios",
 		"tmdb-networks",
@@ -403,7 +404,7 @@ test("workspace wiring keeps Genres out of the Folders header and supports respo
 	assert.match(flow, /effectiveDestinationMode === "current-folder" && duplicates\.duplicateDrafts\.length > 0/);
 	assert.match(flow, /"No new sources to add"/);
 	assert.doesNotMatch(flow, /Add 0 sources/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.genre-source-dialog\s*\{[\s\S]*height:\s*auto;/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.genre-source-dialog\s*\{[\s\S]*height:\s*auto;/);
 	assert.match(styles, /\.genre-secondary-surface\s*\{[\s\S]*position:\s*absolute;[\s\S]*backdrop-filter:/);
 	assert.match(styles, /data-secondary-surface[\s\S]*filter:\s*blur\(1\.5px\)/);
 	assert.match(styles, /\.genre-secondary-surface > \.genre-advanced-subview::\-webkit-scrollbar-thumb[\s\S]*rgb\(70 118 136\)/);

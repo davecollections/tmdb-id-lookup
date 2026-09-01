@@ -64,7 +64,7 @@ function provider(id) {
 }
 
 test("Streaming is the eighth scope-aware launcher family after Genres in both Creation scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
+	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.deepEqual([...markup.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), expected);
@@ -429,8 +429,8 @@ test("the hierarchy shell owns one scroll surface across every required viewport
 	assert.deepEqual(widths.filter((width) => width >= 900), [900, 901, 1280]);
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.equal((flow.match(/<footer className="add-source-actions"/g) ?? []).length, 1);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.add-source-dialog/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-dialog/);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.add-source-dialog/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*safe-area-inset-bottom/);
 });

@@ -166,6 +166,19 @@ function peopleSource(overrides = {}) {
 	};
 }
 
+function listSource(overrides = {}) {
+	return {
+		provider: "tmdb",
+		title: "Public list",
+		tmdbSourceType: "LIST",
+		tmdbId: "5916",
+		mediaType: "MOVIE",
+		sortBy: "original",
+		filters: {},
+		...overrides,
+	};
+}
+
 function studioSource(overrides = {}) {
 	return {
 		provider: "tmdb",
@@ -264,7 +277,7 @@ test("supported source menus include simple Streaming and show Edit source immed
 	}
 });
 
-test("Source Edit exposes one draft-backed Preview action for all seven adapters immediately before the footer", () => {
+test("Source Edit exposes one draft-backed Preview action for all eight adapters immediately before the footer", () => {
 	const controller = createController();
 	const folder = importSources(controller, [collectionSource(), peopleSource(), studioSource(), networkSource(), streamingSource(), genreSource(), decadeSource()]);
 	const previewProps = {
@@ -435,6 +448,30 @@ test("Studio editor opens the fixed Studio identity with count, TMDB link, sort,
 	assert.ok(markup.includes("Source name"));
 	assert.ok(markup.includes("Changes how this source appears in Nuvio, not which Studio it represents."));
 	assert.equal(markup.includes("<select"), false);
+});
+
+test("TMDB List editor links only its normalized numeric ID and retains Preview and safe external-link behavior", () => {
+	const controller = createController();
+	const folder = importSources(controller, [listSource()]);
+	const edit = openEdit(controller, folder.sources[0]);
+	assert.equal(edit.draft.tmdbId, 5916);
+	assert.equal(folder.sources[0].editable.tmdbId, "5916");
+	const markup = renderToStaticMarkup(createElement(SourceEditorDialog, {
+		provider: fakeProvider(),
+		listProvider: { async getList() { throw new Error("Preview must stay lazy."); } },
+		session: edit.session,
+		initialDraft: edit.draft,
+		onCancel() {},
+		onSave() { return { ok: true }; },
+	}));
+	assert.ok(markup.includes('data-source-edit-adapter="tmdb-list"'));
+	assert.match(markup, /TMDB · LIST ·[\s\S]*href="https:\/\/www\.themoviedb\.org\/list\/5916"[\s\S]*>5916<\/span>/);
+	assert.ok(markup.includes('target="_blank"'));
+	assert.ok(markup.includes('rel="noopener noreferrer"'));
+	assert.ok(markup.includes("Open this TMDB list on TMDB (list 5916)"));
+	assert.ok(markup.includes("This is the name shown in Nuvio. You can customise it."));
+	assert.ok(markup.includes(">Preview titles</button>"));
+	assert.equal(markup.includes('href="https://www.themoviedb.org/company/'), false);
 });
 
 test("Studio editor preserves an unusual imported sort until a supported option is chosen", () => {
@@ -866,7 +903,7 @@ test("responsive source editor styles are safe-area aware and bounded for every 
 	assert.match(styles, /\.source-edit-sort-field select\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /@media \(max-width: 420px\)[\s\S]*\.source-edit-identity,[\s\S]*\.source-edit-combinations,[\s\S]*\.source-edit-option-actions\s*\{[\s\S]*minmax\(0,\s*1fr\)/);
 	assert.match(styles, /\.source-edit-actions\s*\{[\s\S]*minmax\(0,\s*1\.5fr\) minmax\(100px,\s*1fr\)/);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.source-edit-dialog\s*\{[\s\S]*height:\s*100%[\s\S]*max-height:\s*100%[\s\S]*align-self:\s*stretch/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.source-edit-dialog\s*\{[\s\S]*height:\s*100%[\s\S]*max-height:\s*100%[\s\S]*align-self:\s*stretch/);
 	assert.match(styles, /\.add-source-form\s*\{[\s\S]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto[\s\S]*overflow:\s*hidden/);
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 420);
 });

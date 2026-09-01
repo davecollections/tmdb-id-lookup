@@ -114,6 +114,7 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		CREATION_OPTION_IDS.DECADES,
 		CREATION_OPTION_IDS.PEOPLE,
 		CREATION_OPTION_IDS.FRANCHISES,
+		CREATION_OPTION_IDS.TMDB_LISTS,
 		CREATION_OPTION_IDS.STUDIOS,
 		CREATION_OPTION_IDS.NETWORKS,
 		CREATION_OPTION_IDS.GENRES,
@@ -121,12 +122,13 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "lists", "studios", "networks", "genres", "streaming-services"]);
 	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), [
 		"Start manually.",
 		"Build by decade or year.",
 		"Build around actors or directors.",
 		"Build from a movie franchise.",
+		"Build from public TMDB lists.",
 		"Build from movie or TV studios.",
 		"Build from TV networks.",
 		"Build by genre.",
@@ -955,8 +957,13 @@ test("creation styles keep selected cards restrained and cover required responsi
 	assert.match(styles, /\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.creation-option-icon-shell\s*\{[^}]*width:\s*42px;[^}]*height:\s*42px/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*8px;[^}]*padding:\s*10px/s);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*87px;[^}]*grid-template-columns:\s*36px minmax\(0, 1fr\);[^}]*grid-template-rows:\s*auto auto;[^}]*column-gap:\s*6px;[^}]*row-gap:\s*2px;[^}]*padding:\s*10px 8px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-icon-shell\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px;[^}]*grid-column:\s*1;[^}]*grid-row:\s*1/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-copy\s*\{[^}]*display:\s*contents/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card strong,\s*\.source-mode-option strong\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;[^}]*overflow-wrap:\s*anywhere/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card small,\s*\.source-mode-option small\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;[^}]*overflow-wrap:\s*anywhere/s);
+	assert.match(styles, /@media \(min-width: 621px\) and \(max-width: 967\.98px\) and \(min-height: 601px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*10px;[^}]*padding:\s*12px/s);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.creation-dialog:not\(\[data-creation-option\]\)\s*\{[^}]*height:\s*auto/s);
 	assert.equal(styles.includes(".creation-option-arrow"), false);
 	assert.match(styles, /\.decades-structure-preview\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.decades-choice-grid\.decades-display-order-choices\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);

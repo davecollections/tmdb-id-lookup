@@ -119,6 +119,7 @@ The Worker only proxies the TMDB paths the frontend needs:
 
 * Person search, details, and combined credits
 * Official movie collection search and details
+* Exact public TMDB List details using only `/3/list/{canonical positive signed-32-bit ID}?language=en-US&page=1`
 * Movie search, details, and keywords
 * TV search, details, and keywords
 * Keyword search
@@ -156,6 +157,15 @@ from `popularity.desc`, `primary_release_date.desc`, `vote_average.desc`, or
 exactly one canonical `with_networks` value and either no other parameter or one
 `sort_by` from those same four TV values. Company and Network allowlists remain
 family-specific.
+
+The TMDB List path requires a canonical positive decimal pathname ID no greater
+than `2147483647`, exactly one `language=en-US`, and exactly one `page=1`.
+Missing, duplicated, changed, noncanonical, overflowing, or additional values
+fail closed. Query parameter order may vary. Browser Origin rules remain
+authoritative; the People/Watch Provider service token does not authorize List
+details. Issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170)
+tracks this source change. The tracked route is not live until Dave separately
+deploys the complete reviewed Worker and confirms its deployment identity.
 
 The Genre branch requires exactly one canonical positive `with_genres` and
 exactly one `include_adult=false`. Missing, true, `0`, differently cased, or

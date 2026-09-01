@@ -63,7 +63,7 @@ test("creation family registry supports People in both hierarchy scopes and reje
 	assert.equal(creationOptionById(CREATION_OPTION_IDS.PEOPLE).label, "People");
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.PEOPLE, scope), true);
-		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
+		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"]);
 	}
 	assert.equal(creationOptionById("future-family"), null);
 	assert.equal(creationOptionSupportsScope("future-family", "new-collection"), false);

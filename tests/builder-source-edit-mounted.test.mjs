@@ -62,6 +62,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
 	const devToolsStartupMs = resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS);
 	const resources = {
 		browserExecutable: null,
@@ -180,6 +181,9 @@ async function runMountedPage() {
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
 				const sourceChooserWidths = [];
+				const sourceChooserTabletPortraitWidths = [];
+				const tmdbListLayoutWidths = [];
+				const tmdbListPreviewWidths = [];
 				const genreToolbarWidths = [];
 				const decadesActionWidths = [];
 				const decadesGenreWidths = [];
@@ -204,18 +208,39 @@ async function runMountedPage() {
 				const decadeSourceLivePreviewWidths = [];
 				let decadeSourceGenreKeyboard = null;
 				let sourceChooserKeyboard = null;
+				let sourceChooserTabletLandscape = null;
+				let wideFontSourceChooser = null;
 				let shortHeightSourceChooser = null;
+				let shortHeightTmdbListLayout = null;
+				let shortHeightTmdbListPreview = null;
 				let shortHeightPreviewGeometry = null;
 				let streamingDuplicateConfirmation = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
 					const sourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
-						expression: "window.__runSourceChooserLayoutScenario()",
+						expression: `window.__runSourceChooserLayoutScenario({ includeGrowthStress: ${width <= 412 || width === 1280}, includeOrderStress: ${width === 360 || width === 1280}, includeClassicScrollbarStress: ${width === 360} })`,
 						awaitPromise: true,
 						returnByValue: true,
 					});
 					if (sourceChooserEvaluation.exceptionDetails) throw new Error(sourceChooserEvaluation.exceptionDetails.exception?.description ?? sourceChooserEvaluation.exceptionDetails.text);
 					sourceChooserWidths.push(sourceChooserEvaluation.result?.value);
+					if (launcherOnly) continue;
+					const tmdbListLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runTmdbListLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (tmdbListLayoutEvaluation.exceptionDetails) throw new Error(tmdbListLayoutEvaluation.exceptionDetails.exception?.description ?? tmdbListLayoutEvaluation.exceptionDetails.text);
+					tmdbListLayoutWidths.push(tmdbListLayoutEvaluation.result?.value);
+					if (width <= 412) await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1.1 });
+					const tmdbListPreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runTmdbListLivePreviewScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (width <= 412) await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
+					if (tmdbListPreviewEvaluation.exceptionDetails) throw new Error(tmdbListPreviewEvaluation.exceptionDetails.exception?.description ?? tmdbListPreviewEvaluation.exceptionDetails.text);
+					tmdbListPreviewWidths.push(tmdbListPreviewEvaluation.result?.value);
 					const decadeSourceLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadeSourceLayoutScenario()",
 						awaitPromise: true,
@@ -293,6 +318,53 @@ async function runMountedPage() {
 					});
 					if (streamingReconciliationEvaluation.exceptionDetails) throw new Error(streamingReconciliationEvaluation.exceptionDetails.exception?.description ?? streamingReconciliationEvaluation.exceptionDetails.text);
 					streamingSelectionReconciliationWidths.push(streamingReconciliationEvaluation.result?.value);
+				}
+				for (const { width, height } of [
+					{ width: 768, height: 1024 },
+					{ width: 820, height: 1180 },
+					{ width: 834, height: 1194 },
+				]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: true });
+					const sourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: `window.__runSourceChooserLayoutScenario({ includeGrowthStress: ${width === 768}, includeOrderStress: ${width === 768} })`,
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (sourceChooserEvaluation.exceptionDetails) throw new Error(sourceChooserEvaluation.exceptionDetails.exception?.description ?? sourceChooserEvaluation.exceptionDetails.text);
+					sourceChooserTabletPortraitWidths.push(sourceChooserEvaluation.result?.value);
+				}
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1024, height: 768, deviceScaleFactor: 1, mobile: true });
+				const sourceChooserTabletLandscapeEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runSourceChooserLayoutScenario({ includeGrowthStress: true, includeOrderStress: true })",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (sourceChooserTabletLandscapeEvaluation.exceptionDetails) throw new Error(sourceChooserTabletLandscapeEvaluation.exceptionDetails.exception?.description ?? sourceChooserTabletLandscapeEvaluation.exceptionDetails.text);
+				sourceChooserTabletLandscape = sourceChooserTabletLandscapeEvaluation.result?.value;
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 360, height: 852, deviceScaleFactor: 1, mobile: true });
+				const wideFontSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: `window.__runSourceChooserLayoutScenario({ fontFamily: 'Verdana, sans-serif', includeGrowthStress: true, includeOrderStress: true, includeClassicScrollbarStress: true })`,
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (wideFontSourceChooserEvaluation.exceptionDetails) throw new Error(wideFontSourceChooserEvaluation.exceptionDetails.exception?.description ?? wideFontSourceChooserEvaluation.exceptionDetails.text);
+				wideFontSourceChooser = wideFontSourceChooserEvaluation.result?.value;
+				if (launcherOnly) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 320, deviceScaleFactor: 1, mobile: true });
+					const shortSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+						expression: "window.__runSourceChooserLayoutScenario()",
+						awaitPromise: true,
+						returnByValue: true,
+					});
+					if (shortSourceChooserEvaluation.exceptionDetails) throw new Error(shortSourceChooserEvaluation.exceptionDetails.exception?.description ?? shortSourceChooserEvaluation.exceptionDetails.text);
+					shortHeightSourceChooser = shortSourceChooserEvaluation.result?.value;
+					return {
+						sourceChooserWidths,
+						sourceChooserTabletPortraitWidths,
+						sourceChooserTabletLandscape,
+						wideFontSourceChooser,
+						shortHeightSourceChooser,
+					};
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
 				const sourceChooserKeyboardBefore = await resources.pageConnection.command("Runtime.evaluate", {
@@ -401,6 +473,22 @@ async function runMountedPage() {
 				});
 				if (shortSourceChooserEvaluation.exceptionDetails) throw new Error(shortSourceChooserEvaluation.exceptionDetails.exception?.description ?? shortSourceChooserEvaluation.exceptionDetails.text);
 				shortHeightSourceChooser = shortSourceChooserEvaluation.result?.value;
+				const shortTmdbListEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runTmdbListLayoutScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				if (shortTmdbListEvaluation.exceptionDetails) throw new Error(shortTmdbListEvaluation.exceptionDetails.exception?.description ?? shortTmdbListEvaluation.exceptionDetails.text);
+				shortHeightTmdbListLayout = shortTmdbListEvaluation.result?.value;
+				await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1.1 });
+				const shortTmdbListPreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+					expression: "window.__runTmdbListLivePreviewScenario()",
+					awaitPromise: true,
+					returnByValue: true,
+				});
+				await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
+				if (shortTmdbListPreviewEvaluation.exceptionDetails) throw new Error(shortTmdbListPreviewEvaluation.exceptionDetails.exception?.description ?? shortTmdbListPreviewEvaluation.exceptionDetails.text);
+				shortHeightTmdbListPreview = shortTmdbListPreviewEvaluation.result?.value;
 				const shortPeopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runPeopleConfigureLayoutScenario()",
 					awaitPromise: true,
@@ -480,7 +568,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceChooserWidths, sourceChooserKeyboard, shortHeightSourceChooser, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -583,13 +671,14 @@ before(async () => {
 	mountedResults = await runMountedPage();
 });
 
-function assertTitlePreviewGeometry(geometry, { width, posters = 10, short = false, label }) {
+function assertTitlePreviewGeometry(geometry, { width, posters = 10, phoneColumns = 3, short = false, label }) {
+	const columns = Math.min(width <= 620 ? phoneColumns : 5, posters);
 	assert.equal(geometry.centeredHorizontally, true, `${label}: horizontally centred`);
 	assert.equal(geometry.centeredVertically, true, `${label}: vertically centred`);
 	assert.equal(geometry.withinViewport, true, `${label}: visual viewport bounds`);
 	assert.equal(geometry.closeReachable, true, `${label}: Close reachable`);
-	assert.equal(geometry.columns, Math.min(5, posters), `${label}: poster columns`);
-	assert.equal(geometry.rows, Math.ceil(posters / 5), `${label}: poster rows`);
+	assert.equal(geometry.columns, columns, `${label}: poster columns`);
+	assert.equal(geometry.rows, Math.ceil(posters / columns), `${label}: poster rows`);
 	assert.ok(geometry.posterWidth >= (width <= 520 ? 48 : 80), `${label}: useful poster width ${geometry.posterWidth}`);
 	assert.ok(Math.abs((geometry.posterHeight / geometry.posterWidth) - 1.5) <= 0.04, `${label}: poster aspect ratio`);
 	assert.ok(geometry.columnGap >= 5 && geometry.columnGap <= 12, `${label}: clean column gap ${geometry.columnGap}`);
@@ -903,8 +992,107 @@ test("mounted Genre exact duplicate overrides use singular and bundle canonical 
 });
 
 test("mounted Add Source chooser uses the responsive Creation launcher language at every required width", () => {
+	function assertLauncherModal(modal, expectedPresentation, label) {
+		assert.equal(modal.presentation, expectedPresentation, `${label} presentation`);
+		assert.equal(modal.backdropTracksVisualViewport, true, `${label} visual viewport tracking`);
+		if (expectedPresentation === "contained") {
+			assert.ok(modal.horizontalMargin >= 23, `${label} horizontal margin: ${modal.horizontalMargin}`);
+			assert.ok(modal.dialog.borderWidth > 0, `${label} dialog border: ${modal.dialog.borderWidth}`);
+			assert.ok(modal.dialog.borderRadius >= 16, `${label} dialog radius: ${modal.dialog.borderRadius}`);
+			assert.notEqual(modal.dialog.boxShadow, "none", `${label} dialog shadow`);
+		} else {
+			assert.ok(modal.horizontalMargin <= 1, `${label} fullscreen horizontal edge: ${modal.horizontalMargin}`);
+			assert.equal(modal.dialog.borderWidth, 0, `${label} fullscreen border`);
+			assert.equal(modal.dialog.borderRadius, 0, `${label} fullscreen radius`);
+		}
+	}
+	function variantEvidence(variant) {
+		return `cards=${variant.cardCount} rows=${variant.rowCounts.join("/")} spread=${variant.rowHeightSpread}px card=${variant.cardWidth}px title=${variant.titleWidth}px helper=${variant.helperWidth}px helperLines=${variant.maxHelperLines} scroll=${variant.grid.scrollActive} gutter=${variant.grid.gutter}px grid=${variant.grid.clientWidth}/${variant.grid.offsetWidth}/${variant.grid.scrollWidth}px`;
+	}
+	function contentSafetyEvidence(result) {
+		const safety = result.contentSafety;
+		return `cardWidthSpread=${safety.cardWidthSpread}px rowGaps=${safety.rowGaps.join("/")}px intendedGap=${safety.intendedRowGap}px dimensions=${safety.validCardDimensions} icons=${safety.iconsContained} titles=${safety.titlesContained} helpers=${safety.helpersContained} copies=${safety.copiesContained} text=${safety.textUnclipped} cardOverflow=${safety.cardContentOverflowFree} cardOverlap=${safety.noCardOverlap} rowOverlap=${safety.noRowOverlap} grid=${safety.gridContainedByModal} modal=${safety.modalContainedByViewport}`;
+	}
+	function assertContentSafety(result, label) {
+		const safety = result.contentSafety;
+		const evidence = contentSafetyEvidence(result);
+		assert.equal(safety.validCardDimensions, true, `${label} positive card dimensions; ${evidence}`);
+		assert.equal(safety.iconsContained, true, `${label} icon containment; ${evidence}`);
+		assert.equal(safety.titlesContained, true, `${label} title containment; ${evidence}`);
+		assert.equal(safety.helpersContained, true, `${label} helper containment; ${evidence}`);
+		assert.equal(safety.copiesContained, true, `${label} copy containment; ${evidence}`);
+		assert.equal(safety.textUnclipped, true, `${label} unclipped text; ${evidence}`);
+		assert.equal(safety.cardContentOverflowFree, true, `${label} card content overflow; ${evidence}`);
+		assert.equal(safety.cardsContainedByGridHorizontally, true, `${label} card/grid containment; ${evidence}`);
+		assert.equal(safety.noCardOverlap, true, `${label} card overlap; ${evidence}`);
+		assert.equal(safety.noRowOverlap, true, `${label} row overlap; ${evidence}`);
+		assert.equal(safety.rowSpacingValid, true, `${label} rendered row gap; ${evidence}`);
+		assert.equal(safety.stableCardWidths, true, `${label} stable card widths; ${evidence}`);
+		assert.equal(safety.gridContainedByModal, true, `${label} grid/modal containment; ${evidence}`);
+		assert.equal(safety.modalContainedByViewport, true, `${label} modal/viewport containment; ${evidence}`);
+		assert.equal(result.oneScrollOwner, true, `${label} one scroll owner; ${evidence}`);
+		assert.equal(result.noHorizontalOverflow, true, `${label} horizontal overflow; ${evidence}`);
+		assert.equal(result.finalCardReachable, true, `${label} final-card reachability; ${evidence}`);
+	}
+	function assertIntrinsicVariant(variant, expectedCardCount, expectedColumns, label) {
+		assert.equal(variant.cardCount, expectedCardCount, `${label} card count; ${variantEvidence(variant)}`);
+		assert.equal(variant.columnCount, expectedColumns, `${label} columns; ${variantEvidence(variant)}`);
+		assertContentSafety(variant, label);
+	}
+	function assertIntrinsicStress(stress, currentCount, expectedColumns, label) {
+		assert.deepEqual(stress.growth.map((variant) => variant.extraCount), [0, 3, 6], `${label} growth cases`);
+		for (const variant of stress.growth) assertIntrinsicVariant(variant, currentCount + variant.extraCount, expectedColumns, `${label} +${variant.extraCount}`);
+		assert.equal(stress.order.length, 3, `${label} order cases`);
+		for (const variant of stress.order) assertIntrinsicVariant(variant, currentCount, expectedColumns, variant.name);
+		assert.equal(stress.classicScrollbar, null, `${label} no desktop scrollbar override`);
+	}
+	function assertMobileVariant(variant, expectedCardCount, label) {
+		const evidence = variantEvidence(variant);
+		assert.equal(variant.cardCount, expectedCardCount, `${label} card count; ${evidence}`);
+		assert.equal(variant.columnCount, 2, `${label} columns; ${evidence}`);
+		assert.ok(variant.rowHeightSpread <= 14, `${label} balanced row heights; ${evidence}`);
+		assert.ok(variant.minCardHeight >= 87, `${label} 87px card floor; ${evidence}`);
+		assert.equal(variant.cardWidthSpread, 0, `${label} uniform card widths; ${evidence}`);
+		assert.equal(variant.helperWidthSpread, 0, `${label} uniform helper widths; ${evidence}`);
+		assert.ok(variant.helperWidth >= variant.titleWidth + 41, `${label} full-width helper gain; ${evidence}`);
+		assert.ok(variant.maxHelperLines <= 3, `${label} readable helper wrapping; ${evidence}`);
+		assert.equal(variant.fullWidthHelpers, true, `${label} helpers span both card columns; ${evidence}`);
+		assert.equal(variant.topRowsAligned, true, `${label} icon/title top-row alignment; ${evidence}`);
+		assert.equal(variant.oneScrollOwner, true, `${label} one scroll owner; ${evidence}`);
+		assert.equal(variant.noHorizontalOverflow, true, `${label} horizontal overflow; ${evidence}`);
+		assert.equal(variant.finalCardReachable, true, `${label} final-card reachability; ${evidence}`);
+	}
+	function assertGrowthStress(stress, currentCount, label) {
+		assert.deepEqual(stress.growth.map((variant) => variant.extraCount), [0, 3, 6], `${label} growth cases`);
+		for (const variant of stress.growth) assertMobileVariant(variant, currentCount + variant.extraCount, `${label} +${variant.extraCount}`);
+		const [current, plusThree, plusSix] = stress.growth;
+		assert.equal(plusThree.cardWidth, current.cardWidth, `${label} +3 stable card width`);
+		assert.equal(plusThree.helperWidth, current.helperWidth, `${label} +3 stable helper width`);
+		if (!plusSix.grid.scrollActive) {
+			assert.equal(plusSix.cardWidth, current.cardWidth, `${label} +6 stable card width before scrolling`);
+			assert.equal(plusSix.helperWidth, current.helperWidth, `${label} +6 stable helper width before scrolling`);
+		} else {
+			assert.ok(plusSix.cardWidth <= current.cardWidth, `${label} +6 scrollbar card width`);
+			assert.ok(plusSix.helperWidth <= current.helperWidth, `${label} +6 scrollbar helper width`);
+		}
+	}
+	function assertOrderStress(stress, currentCount, label) {
+		assert.deepEqual(stress.order.map((variant) => variant.name.split(" ").at(-1)), ["current", "longest-adjacent", "longest-separated"], `${label} order cases`);
+		for (const variant of stress.order) assertMobileVariant(variant, currentCount, variant.name);
+	}
+	function assertClassicScrollbarStress(stress, currentCount, label) {
+		const variant = stress.classicScrollbar;
+		assert.ok(variant, `${label} classic-scrollbar case`);
+		assertMobileVariant(variant, currentCount + 9, variant.name);
+		assert.equal(variant.forceScrollbar, true, `${label} forced scrollbar`);
+		assert.equal(variant.grid.overflowY, "scroll", `${label} scrollbar overflow contract`);
+		assert.ok(variant.grid.gutter >= 0, `${label} non-negative scrollbar gutter`);
+		assert.ok(variant.cardWidth <= stress.growth[0].cardWidth, `${label} scrollbar card width`);
+		assert.ok(variant.helperWidth <= stress.growth[0].helperWidth, `${label} scrollbar helper width`);
+	}
 	const expectedModes = [
 		"tmdb-movie-franchise",
+		"tmdb-lists",
 		"tmdb-people",
 		"tmdb-studios",
 		"tmdb-networks",
@@ -912,13 +1100,14 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		"tmdb-genres",
 		"tmdb-decade",
 	];
-	const expectedCreationIds = ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"];
-	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "Studios", "Networks", "Genres", "Streaming"];
+	const expectedCreationIds = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
+	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "TMDB Lists", "Studios", "Networks", "Genres", "Streaming"];
 	const expectedCreationHelpers = [
 		"Start manually.",
 		"Build by decade or year.",
 		"Build around actors or directors.",
 		"Build from a movie franchise.",
+		"Build from public TMDB lists.",
 		"Build from movie or TV studios.",
 		"Build from TV networks.",
 		"Build by genre.",
@@ -927,8 +1116,10 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.sourceChooserWidths) {
 		const width = result.width;
+		const expectedPresentation = width <= 620 ? "phone-fullscreen" : "contained";
+		assertLauncherModal(result.modal, expectedPresentation, `${width}px Add Source`);
 		assert.deepEqual(result.modeIds, expectedModes, `${width}px registry order`);
-		assert.equal(result.cardCount, 7, `${width}px card count`);
+		assert.equal(result.cardCount, 8, `${width}px card count`);
 		assert.equal(result.columnCount, width <= 620 ? 2 : 4, `${width}px responsive columns`);
 		assert.equal(result.balancedRows, true, `${width}px balanced rows`);
 		assert.equal(result.firstOptionFocused, true, `${width}px first-option focus`);
@@ -936,9 +1127,14 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.comfortableTargets, true, `${width}px hit targets`);
 		assert.equal(result.helpersContained, true, `${width}px helper containment`);
 		assert.ok(result.maxHelperLines <= 6, `${width}px readable helper wrapping: ${result.maxHelperLines}`);
+		const sourceGeometryEvidence = result.cardGeometry.map((card) => (
+			`${card.label}: cardTop=${card.card.top}px card=${card.card.width}x${card.card.height}px display=${card.display} grid=${card.gridTemplateColumns} gap=${card.gap} padding=${card.padding.top}/${card.padding.right}/${card.padding.bottom}/${card.padding.left} iconWidth=${card.iconWidth}px copyWidth=${card.copyWidth}px titleLines=${card.title.lines} helperLines=${card.helper.lines}`
+		)).join(" | ");
+		if (width <= 620) assert.ok(result.rowHeightSpread <= 14, `${width}px Add Source balanced row heights: ${result.rowHeightSpread}; ${sourceGeometryEvidence}`);
+		else assertContentSafety(result, `${width}px Add Source`);
 		assert.equal(result.oneScrollOwner, true, `${width}px scroll owner`);
 		assert.equal(result.introductoryCopy, "Choose what you want to add.", `${width}px introductory copy`);
-		assert.equal(result.introductoryAlignment, width < 900 ? "center" : "left", `${width}px intentional introductory alignment`);
+		assert.equal(result.introductoryAlignment, expectedPresentation === "phone-fullscreen" ? "center" : "left", `${width}px intentional introductory alignment`);
 		assert.equal(result.introductoryDisplay, "block", `${width}px ordinary introductory flow`);
 		assert.equal(result.blanketProviderDisclosureAbsent, true, `${width}px blanket provider disclosure absent`);
 		assert.equal(result.noEmptyDisclosureWrapper, true, `${width}px no empty disclosure wrapper`);
@@ -955,15 +1151,29 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.escapeRestoredTrigger, true, `${width}px Escape focus restoration`);
 		assert.equal(result.bodyRestored, true, `${width}px body restoration`);
 		assert.equal(result.noMutation, true, `${width}px chooser navigation mutation`);
+		if (width <= 412) {
+			assertGrowthStress(result.stress, 8, `${width}px Add Source`);
+			assert.deepEqual(result.stress.growth.map((variant) => variant.grid.scrollActive), [false, false, false], `${width}px Add Source growth scroll behavior`);
+			if (width === 360) {
+				assertOrderStress(result.stress, 8, "360px Add Source");
+				assertClassicScrollbarStress(result.stress, 8, "360px Add Source");
+			}
+		} else if (width === 1280) assertIntrinsicStress(result.stress, 8, 4, "1280px Add Source");
+		else assert.deepEqual(result.stress, { growth: [], order: [], classicScrollbar: null }, `${width}px no launcher stress fixture`);
 		assert.deepEqual(result.creationChoosers.map((chooser) => chooser.scope), ["new-collection", "new-folder"], `${width}px Creation scopes`);
 		for (const chooser of result.creationChoosers) {
+			assertLauncherModal(chooser.modal, expectedPresentation, `${width}px ${chooser.scope}`);
 			assert.deepEqual(chooser.optionIds, expectedCreationIds, `${width}px ${chooser.scope} option order`);
 			assert.deepEqual(chooser.labels, expectedCreationLabels, `${width}px ${chooser.scope} labels`);
 			assert.deepEqual(chooser.helpers, expectedCreationHelpers, `${width}px ${chooser.scope} helpers`);
-			assert.equal(chooser.cardCount, 8, `${width}px ${chooser.scope} card count`);
+			assert.equal(chooser.cardCount, 9, `${width}px ${chooser.scope} card count`);
 			assert.equal(chooser.columnCount, width <= 620 ? 2 : 4, `${width}px ${chooser.scope} responsive columns`);
-			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2] : [4, 4], `${width}px ${chooser.scope} balanced rows`);
-			assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
+			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 1] : [4, 4, 1], `${width}px ${chooser.scope} balanced rows`);
+			const geometryEvidence = chooser.cardGeometry.map((card) => (
+				`${card.label}: cardTop=${card.card.top}px card=${card.card.width}x${card.card.height}px display=${card.display} grid=${card.gridTemplateColumns} gap=${card.gap} padding=${card.padding.top}/${card.padding.right}/${card.padding.bottom}/${card.padding.left} iconWidth=${card.iconWidth}px copyWidth=${card.copyWidth}px copyGrid=${card.copyGridTemplateColumns} titleWidth=${card.title.clientWidth}px titleLines=${card.title.lines} titleFont=${card.title.fontFamily}/${card.title.fontSize}/${card.title.fontWeight}/${card.title.lineHeight} helperWidth=${card.helper.clientWidth}px helperLines=${card.helper.lines} helperFont=${card.helper.fontFamily}/${card.helper.fontSize}/${card.helper.fontWeight}/${card.helper.lineHeight}`
+			)).join(" | ");
+			if (width <= 620) assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}; launcherGrid=${chooser.grid.width}px/${chooser.grid.gridTemplateColumns}/gap ${chooser.grid.gap}; ${geometryEvidence}`);
+			else assertContentSafety(chooser, `${width}px ${chooser.scope}`);
 			assert.equal(chooser.firstOptionFocused, true, `${width}px ${chooser.scope} first-option focus`);
 			assert.equal(chooser.iconShellsCorrect, true, `${width}px ${chooser.scope} icon shells`);
 			assert.equal(chooser.comfortableTargets, true, `${width}px ${chooser.scope} tap targets`);
@@ -974,14 +1184,80 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.noHorizontalOverflow, true, `${width}px ${chooser.scope} horizontal overflow`);
 			assert.equal(chooser.finalCardReachable, true, `${width}px ${chooser.scope} final card reachability`);
 			assert.equal(chooser.bodyRestored, true, `${width}px ${chooser.scope} body restoration`);
+			if (width <= 412) {
+				assertGrowthStress(chooser.stress, 9, `${width}px ${chooser.scope}`);
+				assert.deepEqual(chooser.stress.growth.slice(0, 2).map((variant) => variant.grid.scrollActive), [false, false], `${width}px ${chooser.scope} current/+3 scroll behavior`);
+				if (width === 360) {
+					assertOrderStress(chooser.stress, 9, `360px ${chooser.scope}`);
+					assertClassicScrollbarStress(chooser.stress, 9, `360px ${chooser.scope}`);
+				}
+			} else if (width === 1280) assertIntrinsicStress(chooser.stress, 9, 4, `1280px ${chooser.scope}`);
+			else assert.deepEqual(chooser.stress, { growth: [], order: [], classicScrollbar: null }, `${width}px ${chooser.scope} no launcher stress fixture`);
 		}
+	}
+	const tabletResults = [...mountedResults.sourceChooserTabletPortraitWidths, mountedResults.sourceChooserTabletLandscape];
+	assert.deepEqual(
+		tabletResults.map((result) => ({ width: result.width, height: result.height })),
+		[
+			{ width: 768, height: 1024 },
+			{ width: 820, height: 1180 },
+			{ width: 834, height: 1194 },
+			{ width: 1024, height: 768 },
+		],
+	);
+	for (const result of tabletResults) {
+		const size = `${result.width}x${result.height}`;
+		const expectedColumns = result.width < 900 ? 3 : 4;
+		assertLauncherModal(result.modal, "contained", `${size} Add Source`);
+		assert.equal(result.columnCount, expectedColumns, `${size} Add Source columns`);
+		assertContentSafety(result, `${size} Add Source`);
+		assert.equal(result.oneScrollOwner, true, `${size} Add Source scroll owner`);
+		assert.equal(result.noHorizontalOverflow, true, `${size} Add Source horizontal overflow`);
+		assert.equal(result.bodyLocked, true, `${size} Add Source body lock`);
+		assert.equal(result.finalCardReachable, true, `${size} Add Source final card reachability`);
+		assert.equal(result.closeRestoredTrigger, true, `${size} Add Source focus restoration`);
+		if (result.width === 768 || result.width === 1024) assertIntrinsicStress(result.stress, 8, expectedColumns, `${size} Add Source`);
+		else assert.deepEqual(result.stress, { growth: [], order: [], classicScrollbar: null }, `${size} Add Source no stress fixture`);
+		for (const chooser of result.creationChoosers) {
+			assertLauncherModal(chooser.modal, "contained", `${size} ${chooser.scope}`);
+			assert.equal(chooser.columnCount, expectedColumns, `${size} ${chooser.scope} columns`);
+			assertContentSafety(chooser, `${size} ${chooser.scope}`);
+			assert.equal(chooser.oneScrollOwner, true, `${size} ${chooser.scope} scroll owner`);
+			assert.equal(chooser.noHorizontalOverflow, true, `${size} ${chooser.scope} horizontal overflow`);
+			assert.equal(chooser.finalCardReachable, true, `${size} ${chooser.scope} final card reachability`);
+			assert.equal(chooser.bodyRestored, true, `${size} ${chooser.scope} body restoration`);
+			if (result.width === 768 || result.width === 1024) assertIntrinsicStress(chooser.stress, 9, expectedColumns, `${size} ${chooser.scope}`);
+			else assert.deepEqual(chooser.stress, { growth: [], order: [], classicScrollbar: null }, `${size} ${chooser.scope} no stress fixture`);
+		}
+	}
+	const wideFont = mountedResults.wideFontSourceChooser;
+	assert.deepEqual({ width: wideFont.width, height: wideFont.height, fontFamily: wideFont.fontFamily }, { width: 360, height: 852, fontFamily: "Verdana, sans-serif" });
+	assertLauncherModal(wideFont.modal, "phone-fullscreen", "360px wide-font Add Source");
+	assert.equal(wideFont.iconShellsMatchCreation, true, "360px wide-font Add Source icon shells");
+	assert.ok(wideFont.rowHeightSpread <= 14, `360px wide-font Add Source balanced row heights: ${wideFont.rowHeightSpread}`);
+	assertGrowthStress(wideFont.stress, 8, "360px wide-font Add Source");
+	assertOrderStress(wideFont.stress, 8, "360px wide-font Add Source");
+	assertClassicScrollbarStress(wideFont.stress, 8, "360px wide-font Add Source");
+	for (const chooser of wideFont.creationChoosers) {
+		assertLauncherModal(chooser.modal, "phone-fullscreen", `360px wide-font ${chooser.scope}`);
+		assert.equal(chooser.iconShellsCorrect, true, `360px wide-font ${chooser.scope} icon shells`);
+		assert.ok(chooser.rowHeightSpread <= 14, `360px wide-font ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
+		assertGrowthStress(chooser.stress, 9, `360px wide-font ${chooser.scope}`);
+		assertOrderStress(chooser.stress, 9, `360px wide-font ${chooser.scope}`);
+		assertClassicScrollbarStress(chooser.stress, 9, `360px wide-font ${chooser.scope}`);
 	}
 });
 
 test("mounted Add Source chooser remains reachable in the retained 393 by 320 short-height case", () => {
 	const result = mountedResults.shortHeightSourceChooser;
 	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
+	assert.equal(result.modal.presentation, "phone-fullscreen");
+	assert.equal(result.modal.backdropTracksVisualViewport, true);
 	assert.equal(result.columnCount, 2);
+	assert.ok(result.rowHeightSpread <= 14, `short-height Add Source balanced row heights: ${result.rowHeightSpread}`);
+	assert.ok(result.cardGeometry.every((card) => card.card.height >= 87), "short-height Add Source 87px card floor");
+	assert.ok(result.cardGeometry.every((card) => card.helper.clientWidth >= card.title.clientWidth + 41), "short-height Add Source full-width helpers");
+	assert.ok(result.cardGeometry.every((card) => card.gridTemplateColumns.startsWith("36px ") && card.gap === "2px 6px"), "short-height Add Source two-row card geometry");
 	assert.equal(result.oneScrollOwner, true);
 	assert.equal(result.introductoryCopy, "Choose what you want to add.");
 	assert.equal(result.introductoryAlignment, "center");
@@ -994,13 +1270,278 @@ test("mounted Add Source chooser remains reachable in the retained 393 by 320 sh
 	assert.equal(result.escapeClosed, true);
 	assert.equal(result.noMutation, true);
 	for (const chooser of result.creationChoosers) {
+		assert.equal(chooser.modal.presentation, "phone-fullscreen", `${chooser.scope} short-height presentation`);
+		assert.equal(chooser.modal.backdropTracksVisualViewport, true, `${chooser.scope} short-height visual viewport tracking`);
 		assert.equal(chooser.columnCount, 2, `${chooser.scope} short-height columns`);
-		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2], `${chooser.scope} short-height rows`);
+		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 1], `${chooser.scope} short-height rows`);
+		assert.ok(chooser.rowHeightSpread <= 14, `${chooser.scope} short-height balanced row heights: ${chooser.rowHeightSpread}`);
+		assert.ok(chooser.cardGeometry.every((card) => card.card.height >= 87), `${chooser.scope} short-height 87px card floor`);
+		assert.ok(chooser.cardGeometry.every((card) => card.helper.clientWidth >= card.title.clientWidth + 41), `${chooser.scope} short-height full-width helpers`);
+		assert.ok(chooser.cardGeometry.every((card) => card.gridTemplateColumns.startsWith("36px ") && card.gap === "2px 6px"), `${chooser.scope} short-height two-row card geometry`);
 		assert.equal(chooser.cardsContained, true, `${chooser.scope} short-height card containment`);
 		assert.equal(chooser.helpersContained, true, `${chooser.scope} short-height helper containment`);
 		assert.equal(chooser.oneScrollOwner, true, `${chooser.scope} short-height scroll owner`);
 		assert.equal(chooser.noHorizontalOverflow, true, `${chooser.scope} short-height horizontal overflow`);
 		assert.equal(chooser.finalCardReachable, true, `${chooser.scope} short-height final card reachability`);
+	}
+});
+
+test("mounted TMDB Lists stays incremental, preview-safe, and responsive across the complete pre-deploy matrix", () => {
+	assert.deepEqual(mountedResults.tmdbListLayoutWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	assert.deepEqual(
+		{ width: mountedResults.shortHeightTmdbListLayout.width, height: mountedResults.shortHeightTmdbListLayout.height },
+		{ width: 393, height: 320 },
+	);
+	for (const result of [...mountedResults.tmdbListLayoutWidths, mountedResults.shortHeightTmdbListLayout]) {
+		const label = `${result.width}x${result.height}`;
+		assert.equal(result.noSearchAutofocus, true, `${label} no Search autofocus`);
+		assert.deepEqual(result.selection, {
+			count: 18,
+			inputPreservedAfterPartialFailure: true,
+			errorIdentification: true,
+			longErrorContained: true,
+			longErrorAccessible: true,
+			resolveClearContained: true,
+			staleErrorsCleared: true,
+			unchangedNoNetwork: true,
+			unchangedNoWarning: true,
+			genuineDuplicateReported: true,
+			incrementalOnlyNewNetwork: true,
+			incrementalOrder: true,
+			clearHadInputError: true,
+			clearInputCleared: true,
+			clearPreservedSelection: true,
+			reviewEnabledAfterClear: true,
+			multilineInputUsable: true,
+			rowsContained: true,
+			finalItemReachable: true,
+			oneScrollOwner: true,
+			darkBuilderControl: true,
+			builderTypography: true,
+			compactRegularTypography: true,
+			typographyLineCounts: [2, 12, 26],
+			mutedPlaceholder: true,
+			verticalResize: true,
+			focusReachable: true,
+			caretVisible: true,
+		}, `${label} selection`);
+		assert.deepEqual(result.review, {
+			count: 20,
+			countLabel: "20 sources will be added",
+			actionCopy: "Add 20 sources",
+			rowsContained: true,
+			oneScrollOwner: true,
+			footerReachable: true,
+			noSearchMediaOrSort: true,
+			originalOrder: true,
+			sourceNameHelpers: true,
+			noPreviewActions: true,
+			noContainerPresentation: true,
+		}, `${label} review`);
+		assert.equal(result.focusContained, true, `${label} focus containment`);
+		assert.equal(result.genericTitlesLabel, true, `${label} generic Titles label`);
+		assert.equal(result.previewWithinViewport, true, `${label} nested Preview bounds`);
+		assert.equal(result.nestedBodyLocked, true, `${label} nested Preview body lock`);
+		assert.equal(result.previewFocusRestored, true, `${label} Preview focus restoration`);
+		assert.equal(result.backPreservedSelection, true, `${label} Back state preservation`);
+		assert.equal(result.backPreviewAvailable, true, `${label} Back restores Choose Preview`);
+		assert.deepEqual(result.guidedNewCollection, {
+			scope: "new-collection",
+			selectedCount: 4,
+			namesInitiallyEmpty: true,
+			collectionNamePresent: true,
+			collectionControlsPresent: true,
+			folderControlsPresent: true,
+			defaultTabs: true,
+			defaultShowAll: true,
+			defaultCollectionVisible: true,
+			defaultUnpinned: true,
+			defaultFolderHomeHidden: true,
+			defaultPoster: true,
+			originalOrder: true,
+			noReviewPreview: true,
+			focusGlowHidden: true,
+			sourceNameHelpers: true,
+			initialRequiredValidation: {
+				message: "Collection and folder names are required.",
+				collectionInvalid: true,
+				folderInvalid: true,
+				firstMissingFocused: true,
+				messageContained: true,
+				placement: result.width >= 900 ? "right" : "stacked",
+			},
+			folderOnlyValidation: {
+				message: "Folder name is required.",
+				collectionInvalid: false,
+				folderInvalid: true,
+				folderFocused: true,
+			},
+			requiredValidationCleared: true,
+			validationNoMutation: true,
+			actionCopy: "Create collection",
+			actionLineCount: result.guidedNewCollection.actionLineCount,
+			oneScrollOwner: true,
+			footerReachable: true,
+			noHorizontalOverflow: true,
+			backPreservedSelection: true,
+			backPreviewAvailable: true,
+		}, `${label} guided New Collection`);
+		assert.ok(result.guidedNewCollection.actionLineCount <= 2, `${label} New Collection action wrapping`);
+		assert.deepEqual(result.guidedNewFolder, {
+			scope: "new-folder",
+			selectedCount: 1,
+			namesInitiallyEmpty: true,
+			collectionNamePresent: false,
+			collectionControlsPresent: false,
+			folderControlsPresent: true,
+			defaultTabs: null,
+			defaultShowAll: null,
+			defaultCollectionVisible: false,
+			defaultUnpinned: false,
+			defaultFolderHomeHidden: true,
+			defaultPoster: true,
+			originalOrder: true,
+			noReviewPreview: true,
+			focusGlowHidden: true,
+			sourceNameHelpers: true,
+			initialRequiredValidation: {
+				message: "Folder name is required.",
+				collectionInvalid: false,
+				folderInvalid: true,
+				firstMissingFocused: true,
+				messageContained: true,
+				placement: result.width >= 900 ? "right" : "stacked",
+			},
+			folderOnlyValidation: null,
+			requiredValidationCleared: true,
+			validationNoMutation: true,
+			actionCopy: "Create folder",
+			actionLineCount: result.guidedNewFolder.actionLineCount,
+			oneScrollOwner: true,
+			footerReachable: true,
+			noHorizontalOverflow: true,
+			backPreservedSelection: true,
+			backPreviewAvailable: true,
+		}, `${label} guided New Folder`);
+		assert.ok(result.guidedNewFolder.actionLineCount <= 2, `${label} New Folder action wrapping`);
+		assert.deepEqual(result.sourceEdit, {
+			linkText: "5916",
+			href: "https://www.themoviedb.org/list/5916",
+			target: "_blank",
+			rel: "noopener noreferrer",
+			accessibleName: "Open this TMDB list on TMDB (list 5916)",
+			numericLinkOnly: true,
+			linkContained: true,
+			previewAvailable: true,
+			sourceNameHelper: "This is the name shown in Nuvio. You can customise it.",
+			oneScrollOwner: true,
+			noHorizontalOverflow: true,
+			noMutation: true,
+		}, `${label} Source Edit List link`);
+		assert.equal(result.bodyLocked, true, `${label} body lock`);
+		assert.equal(result.noHorizontalOverflow, true, `${label} horizontal containment`);
+		assert.equal(result.noMutation, true, `${label} non-mutation`);
+		assert.deepEqual({ backCalls: result.backCalls, cancelCalls: result.cancelCalls, applyCalls: result.applyCalls }, { backCalls: 0, cancelCalls: 0, applyCalls: 0 }, `${label} no external action`);
+	}
+});
+
+test("mounted TMDB List Preview keeps fixed geometry while the complete live page-one sample scrolls internally", () => {
+	const results = [...mountedResults.tmdbListPreviewWidths, mountedResults.shortHeightTmdbListPreview];
+	assert.deepEqual(mountedResults.tmdbListPreviewWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	assert.deepEqual(
+		{ width: mountedResults.shortHeightTmdbListPreview.width, height: mountedResults.shortHeightTmdbListPreview.height },
+		{ width: 393, height: 320 },
+	);
+	assert.deepEqual(results[0].requestPaths, [
+		"/3/list/5916?language=en-US&page=1",
+		"/3/list/8679739?language=en-US&page=1",
+	]);
+	for (const [index, result] of results.entries()) {
+		const label = `${result.width}x${result.height}`;
+		const initial = result.initialMusicals.geometry;
+		const bottom = result.scrolledMusicals.geometry;
+		const expectedColumns = result.width <= 620 ? 3 : 5;
+		assert.ok([0, 2].includes(result.requestsAfterResolve - result.requestCountBeforeResolve), `${label} resolve uses cache or two exact live requests`);
+		assert.equal(result.initialMusicals.title, "Musicals", `${label} live long-list title`);
+		assert.equal(result.initialMusicals.subtitle, "Showing 20 of 124 titles", `${label} truthful partial subtitle`);
+		assert.equal(result.initialMusicals.rendered, 20, `${label} complete page-one sample rendered at open`);
+		assert.equal(result.initialMusicals.loaded, 20, `${label} twenty page-one titles loaded`);
+		assert.equal(result.initialMusicals.completeSample, true, `${label} complete-sample presentation`);
+		assert.equal(result.initialMusicals.requests, result.requestsAfterResolve, `${label} Preview open uses cache`);
+		assert.equal(result.initialMusicals.bodyLocked, true, `${label} background body lock`);
+		assert.equal(result.initialMusicals.noLoadMore, true, `${label} no Load more control`);
+		assert.equal(initial.posterCount, 20, `${label} all page-one posters exist before scroll`);
+		assert.equal(initial.columns, expectedColumns, `${label} responsive poster columns`);
+		if (result.width <= 412) {
+			assert.ok(initial.viewportScale > 1, `${label} exercises a narrowed live Visual Viewport`);
+			assert.ok(initial.viewportWidth < result.width, `${label} Visual Viewport is narrower than layout viewport`);
+		} else {
+			assert.equal(initial.viewportScale, 1, `${label} unscaled larger-screen Visual Viewport`);
+		}
+		assert.ok(initial.posterWidth >= (result.width <= 520 ? 48 : 80), `${label} established poster width ${initial.posterWidth}`);
+		assert.ok(Math.abs((initial.posterHeight / initial.posterWidth) - 1.5) <= 0.04, `${label} established poster aspect ratio`);
+		assert.equal(initial.verticalScrollable, true, `${label} internal vertical overflow at open`);
+		assert.equal(initial.verticalScrollOnly, true, `${label} vertical-only Preview scroll`);
+		assert.equal(initial.gridScrollWidth <= initial.gridClientWidth + 1, true, `${label} scrollWidth <= clientWidth`);
+		assert.equal(initial.gridScrollLeft, 0, `${label} grid starts without horizontal displacement`);
+		assert.equal(initial.allPosterRectsHaveSize, true, `${label} every mounted poster has real geometry`);
+		assert.equal(initial.allPosterRectsInlineContained, true, `${label} every mounted poster rect is inline-contained`);
+		assert.equal(initial.gridInlineContained, true, `${label} grid is inline-contained by modal and Visual Viewport`);
+		assert.equal(initial.closeReachable, true, `${label} Close remains inside the Visual Viewport`);
+		assert.equal(initial.backdropMatchesVisualViewport, true, `${label} nested backdrop matches the live Visual Viewport`);
+		assert.equal(initial.outerDialogWithinVisualViewport, true, `${label} outer dialog remains inside the live Visual Viewport`);
+		assert.equal(initial.safeHorizontalMargins, true, `${label} modal keeps safe horizontal margins`);
+		assert.equal(initial.oneScrollOwner, true, `${label} one intended internal scroll owner`);
+		assert.equal(initial.dingoScrollbarClass, true, `${label} shared Dingo scrollbar class`);
+		assert.equal(initial.scrollbarColor, "rgb(70, 118, 136) rgb(4, 16, 23)", `${label} shared Dingo scrollbar colors`);
+		assert.equal(initial.scrollbarWidth, "auto", `${label} shared Dingo scrollbar width`);
+		assert.equal(initial.scrollbarThumbBackground, "rgb(70, 118, 136)", `${label} shared Dingo scrollbar thumb`);
+		assert.equal(initial.withinViewport, true, `${label} fixed modal remains within viewport`);
+		assert.equal(initial.pageNoHorizontalOverflow, true, `${label} no page horizontal overflow`);
+		for (const [phase, geometry] of [["wheel", result.wheelGeometry], ["touch", result.touchGeometry], ["bottom", bottom]]) {
+			assert.equal(geometry.modalLeft, initial.modalLeft, `${label} ${phase} keeps modal left`);
+			assert.equal(geometry.modalTop, initial.modalTop, `${label} ${phase} keeps modal top`);
+			assert.equal(geometry.modalWidth, initial.modalWidth, `${label} ${phase} keeps modal width`);
+			assert.equal(geometry.modalHeight, initial.modalHeight, `${label} ${phase} keeps modal height`);
+			assert.equal(geometry.headerTop, initial.headerTop, `${label} ${phase} keeps header top`);
+			assert.equal(geometry.headerBottom, initial.headerBottom, `${label} ${phase} keeps header bottom`);
+			assert.equal(geometry.gridClientWidth, initial.gridClientWidth, `${label} ${phase} keeps grid width`);
+			assert.equal(geometry.gridClientHeight, initial.gridClientHeight, `${label} ${phase} keeps grid height`);
+			assert.equal(geometry.gridScrollHeight, initial.gridScrollHeight, `${label} ${phase} appends no layout content`);
+			assert.equal(geometry.gridScrollLeft, 0, `${label} ${phase} causes no horizontal movement`);
+			assert.equal(geometry.posterCount, 20, `${label} ${phase} keeps complete sample mounted`);
+			assert.equal(geometry.allPosterRectsInlineContained, true, `${label} ${phase} keeps every poster rect inline-contained`);
+			assert.equal(geometry.closeReachable, true, `${label} ${phase} keeps Close reachable`);
+			assert.equal(geometry.backdropMatchesVisualViewport, true, `${label} ${phase} keeps Visual Viewport backdrop bounds`);
+			assert.equal(geometry.verticalScrollOnly, true, `${label} ${phase} remains vertical-only`);
+		}
+		assert.equal(result.scrolledMusicals.rendered, 20, `${label} complete sample remains rendered`);
+		assert.equal(result.scrolledMusicals.loaded, 20, `${label} loaded sample remains bounded`);
+		assert.equal(result.scrolledMusicals.completeSample, true, `${label} complete sample remains marked`);
+		assert.equal(result.scrolledMusicals.requests, result.requestsAfterResolve, `${label} scrolling issues no request`);
+		assert.ok(bottom.gridScrollTop > 0, `${label} vertical scrolling advances`);
+		assert.equal(bottom.atVerticalScrollEnd, true, `${label} vertical scrolling reaches the loaded sample end`);
+		assert.equal(bottom.lastPosterReachable, true, `${label} final loaded page-one poster reachable`);
+		assert.equal(result.focusRestored, true, `${label} long Preview focus restoration`);
+		assert.equal(result.reopenStartsAtTop, true, `${label} reopen returns to top`);
+		assert.equal(result.requestsAfterReopen, result.requestsAfterResolve, `${label} reopen cache`);
+		assert.equal(result.completeSmallList.title, "Top 10 Netflix Movies", `${label} complete-list title`);
+		assert.equal(result.completeSmallList.subtitle, "Showing all 10 titles", `${label} truthful complete-list subtitle`);
+		assert.equal(result.completeSmallList.rendered, 10, `${label} complete ten-title sample`);
+		assert.equal(result.completeSmallList.loaded, 10, `${label} complete ten-title loaded count`);
+		assert.equal(result.completeSmallList.completeSample, true, `${label} complete ten-title marker`);
+		assert.equal(result.completeSmallList.geometry.modalWidth, initial.modalWidth, `${label} long and ten-title modal widths match`);
+		assert.equal(result.completeSmallList.geometry.modalHeight, initial.modalHeight, `${label} long and ten-title modal heights match`);
+		assert.equal(result.completeSmallList.geometry.columns, expectedColumns, `${label} ten-title responsive columns`);
+		assert.equal(result.completeSmallList.geometry.allPosterRectsInlineContained, true, `${label} every ten-title poster rect is inline-contained`);
+		assert.equal(result.completeSmallList.geometry.closeReachable, true, `${label} ten-title Close remains reachable`);
+		assert.ok(Math.abs(result.completeSmallList.geometry.posterWidth - initial.posterWidth) <= 4, `${label} long-list poster width preserves ten-title sizing`);
+		assert.equal(result.completeSmallList.geometry.verticalScrollOnly, true, `${label} ten-title grid has no horizontal overflow`);
+		assert.equal(result.requestsAfterSmallScroll, result.requestsAfterResolve, `${label} scrolling issues no request`);
+		assert.equal(result.noMutation, true, `${label} Preview non-mutation`);
+		assert.equal(result.outerBodyLockPreserved, true, `${label} outer dialog body lock preserved`);
+		assert.ok(result.requestPaths.every((path) => path.endsWith("?language=en-US&page=1") && !path.includes("page=2")), `${label} page-one-only requests`);
+		if (index > 0) assert.equal(result.requestsAfterResolve, results[0].requestsAfterResolve, `${label} shared bounded success cache`);
 	}
 });
 
@@ -1110,7 +1651,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
 		assert.equal(result.preview.outsidePeopleRow, true, `${width}px preview outside row flow`);
 		assert.equal(result.preview.gridColumns, 5, `${width}px preview columns`);
-		assertTitlePreviewGeometry(result.preview.geometry, { width, label: `${width}px People Preview` });
+		assertTitlePreviewGeometry(result.preview.geometry, { width, phoneColumns: 5, label: `${width}px People Preview` });
 		assert.equal(result.preview.posterOnly, true, `${width}px poster-only`);
 		assert.equal(result.preview.noHorizontalOverflow, true, `${width}px preview overflow`);
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
@@ -2196,7 +2737,7 @@ test("mounted Decade Add Source exact Preview uses the deployed Worker, TMDB, an
 test("mounted Title Previews stay centred and use one scroll owner on a deliberately short phone viewport", () => {
 	const result = mountedResults.shortHeightPreviewGeometry;
 	assert.deepEqual({ width: result.width, height: result.height }, { width: 393, height: 320 });
-	assertTitlePreviewGeometry(result.people, { width: 393, short: true, label: "393x320 People Preview" });
+	assertTitlePreviewGeometry(result.people, { width: 393, phoneColumns: 5, short: true, label: "393x320 People Preview" });
 	assertTitlePreviewGeometry(result.sourceEdit, { width: 393, short: true, label: "393x320 Source Edit Preview" });
 	const normalPeople = mountedResults.peopleConfigureWidths.find((entry) => entry.layout.width === 393).preview.geometry;
 	const normalSourceEdit = mountedResults.sourceEditLivePreviewWidths.find((entry) => entry.width === 393).geometry;

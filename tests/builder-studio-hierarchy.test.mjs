@@ -64,7 +64,7 @@ function previewPayload(mediaType, totalResults = 12) {
 test("Studio hierarchy is registered in New Collection and New Folder scopes", () => {
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.STUDIOS, scope), true);
-		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "studios", "networks", "genres", "streaming-services"]);
+		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"]);
 	}
 });
 

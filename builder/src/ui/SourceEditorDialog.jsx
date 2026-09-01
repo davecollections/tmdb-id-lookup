@@ -30,6 +30,7 @@ import {
 	createStudioEditCountSession,
 	INITIAL_STUDIO_EDIT_COUNT_STATE,
 	DECADE_SOURCE_EDITOR_ID,
+	TMDB_LIST_SOURCE_EDITOR_ID,
 	decadeEditSortValue,
 	GENRE_SOURCE_EDITOR_ID,
 	genreDefaultSourceName,
@@ -126,6 +127,21 @@ function SourceIdentity({ adapter, draft }) {
 				<h3 id="source-edit-identity-title">{adapter.label}</h3>
 			</div>
 			<code>{adapter.describeIdentity(draft)}</code>
+		</section>
+	);
+}
+
+function TmdbListSourceIdentity({ draft }) {
+	return (
+		<section className="source-edit-identity source-edit-list-identity" aria-labelledby="source-edit-identity-title">
+			<div>
+				<p className="panel-kicker">Native identity</p>
+				<h3 id="source-edit-identity-title">TMDB List</h3>
+			</div>
+			<code>
+				<span>TMDB · LIST · </span>
+				<TmdbEntityLink entityType="list" tmdbId={draft.tmdbId} entityName="this TMDB list" linkText={String(draft.tmdbId)} />
+			</code>
 		</section>
 	);
 }
@@ -429,6 +445,7 @@ function SourceEditTitlePreview({ preview, onClose, onRetry }) {
 
 export function SourceEditorDialog({
 	provider,
+	listProvider,
 	peopleProvider,
 	networkPreviewProvider,
 	networkCatalogueProvider,
@@ -553,13 +570,14 @@ export function SourceEditorDialog({
 	const previewCandidate = useMemo(() => prepareSourceEditPreview(session, draft), [draft, session]);
 	const previewProviders = useMemo(() => Object.freeze({
 		collection: provider,
+		list: listProvider,
 		people: peopleProvider,
 		studio: studioPreviewProvider,
 		network: networkPreviewProvider,
 		streaming: streamingPreviewProvider,
 		genre: genrePreviewProvider,
 		decade: decadePreviewProvider,
-	}), [decadePreviewProvider, genrePreviewProvider, networkPreviewProvider, peopleProvider, provider, streamingPreviewProvider, studioPreviewProvider]);
+	}), [decadePreviewProvider, genrePreviewProvider, listProvider, networkPreviewProvider, peopleProvider, provider, streamingPreviewProvider, studioPreviewProvider]);
 	const previewAvailable = previewCandidate.previewable && sourceTitlePreviewProviderAvailable(previewCandidate.request, previewProviders);
 	const previewGuidance = previewCandidate.guidance ?? (!previewAvailable ? "Preview is unavailable right now." : null);
 
@@ -820,6 +838,8 @@ export function SourceEditorDialog({
 											? "Update this Decade source name, title order and supported filters. Period, media and included Genre stay fixed."
 										: session.adapterId === PEOPLE_SOURCE_EDITOR_ID
 											? "Update this People source role, media, name and title order."
+										: session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID
+											? "Update this TMDB List source name. List ID and media configuration stay fixed; titles use Original order."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
@@ -844,6 +864,8 @@ export function SourceEditorDialog({
 									) : null}
 									{session.adapterId === PEOPLE_SOURCE_EDITOR_ID
 										? <PeopleSourceIdentity draft={draft} />
+										: session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID
+											? <TmdbListSourceIdentity draft={draft} />
 										: ![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, DECADE_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId)
 											? <SourceIdentity adapter={adapter} draft={draft} />
 											: null}

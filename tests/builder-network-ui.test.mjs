@@ -89,7 +89,7 @@ test("Add Source picker exposes Networks with product wording and no internal so
 	assert.ok(markup.includes("<strong>Networks</strong>"));
 	assert.ok(markup.includes("Add series from a TV network."));
 	assert.equal(markup.includes("NETWORK"), false);
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 8);
 });
 
 test("Network result cards show only logo, identity, location, and quiet TMDB ID", () => {
@@ -236,7 +236,7 @@ test("Network Source Edit renders fixed linked identity, count, and editable sem
 test("Network flow reuses proven mobile dialog controls at every required width", () => {
 	const styles = read("builder/src/styles.css");
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 520);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-result\s*\{[^}]*grid-template-columns:\s*64px minmax\(0, 1fr\)/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-configure-identity\s*\{[^}]*grid-template-columns:\s*64px minmax\(0, 1fr\) auto/);
 	assert.match(styles, /\.studio-configure-actions \.studio-add-all\s*\{[^}]*min-height:\s*44px/);
@@ -247,7 +247,7 @@ test("Network flow reuses proven mobile dialog controls at every required width"
 test("Workspace routes Network providers through one atomic Add path and Source Edit", () => {
 	const source = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(source, /NETWORK_SOURCE_MODE_ID/);
-	assert.match(source, /\[MOVIE_FRANCHISE_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID\]\.includes\(modeId\)/);
+	assert.match(source, /\[MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID\]\.includes\(modeId\)/);
 	assert.match(source, /<NetworkSourceFlow/);
 	assert.match(source, /catalogueProvider=\{networkCatalogueProviderRef\.current\}/);
 	assert.match(source, /countProvider=\{networkCountProviderRef\.current\}/);

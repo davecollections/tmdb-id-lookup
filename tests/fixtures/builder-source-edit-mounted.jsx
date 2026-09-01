@@ -12,10 +12,13 @@ import {
 	createTmdbCollectionProvider,
 	createTmdbDecadesPreviewProvider,
 	createTmdbGenrePreviewProvider,
+	createTmdbListProvider,
+	createTmdbLocalPreviewFetch,
 	createTmdbNetworkPreviewProvider,
 	createTmdbPersonProvider,
 	createTmdbStudioPreviewProvider,
 	createTmdbStreamingPreviewProvider,
+	TMDB_PROXY_BASE_URL,
 } from "../../builder/src/source-add/index.js";
 import {
 	chooseMovieCollection,
@@ -30,6 +33,7 @@ import { NetworkSourceFlow } from "../../builder/src/ui/NetworkSourceFlow.jsx";
 import { PeopleBulkConfigurationList, PeopleSourceFlow } from "../../builder/src/ui/PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "../../builder/src/ui/StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "../../builder/src/ui/StreamingSourceFlow.jsx";
+import { TmdbListSourceFlow } from "../../builder/src/ui/TmdbListSourceFlow.jsx";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
 import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
 import { createArtworkRuntimeClient } from "../../js/artwork-runtime.mjs";
@@ -43,6 +47,15 @@ const liveStudioCatalogueProvider = createStudioCatalogueProvider({ catalogueUrl
 const liveStreamingCatalogueProvider = createStreamingCatalogueProvider();
 const liveNetworkArtworkRuntimeClient = createArtworkRuntimeClient();
 const liveStudioArtworkRuntimeClient = createArtworkRuntimeClient();
+const liveTmdbListRequests = [];
+const liveTmdbListFetch = createTmdbLocalPreviewFetch({ workerBaseUrl: TMDB_PROXY_BASE_URL });
+const liveTmdbListProvider = createTmdbListProvider({
+	fetchImpl(input, init) {
+		const url = new URL(input instanceof Request ? input.url : input);
+		liveTmdbListRequests.push(`${url.pathname}${url.search}`);
+		return liveTmdbListFetch(input, init);
+	},
+});
 
 function countingIdFactory(prefix = "builder") {
 	let count = 0;
@@ -141,6 +154,12 @@ function setInputValue(input, value) {
 	input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward", data: null }));
 }
 
+function setTextareaValue(input, value) {
+	const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+	setter.call(input, value);
+	input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: value }));
+}
+
 async function afterCommittedEffects() {
 	await Promise.resolve();
 	await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -222,6 +241,95 @@ function titlePreviewGeometry(preview, grid) {
 		pageNoHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
 		activeScrollOwnerCount: activeScrollOwners.length,
 		bodyLocked: document.body.style.position === "fixed",
+	};
+}
+
+function tmdbListPreviewGeometry(preview, grid) {
+	const viewport = window.visualViewport;
+	const viewportBounds = {
+		left: viewport?.offsetLeft ?? 0,
+		top: viewport?.offsetTop ?? 0,
+		right: (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
+		bottom: (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight),
+		width: viewport?.width ?? window.innerWidth,
+		height: viewport?.height ?? window.innerHeight,
+		scale: viewport?.scale ?? 1,
+	};
+	const previewRect = preview.getBoundingClientRect();
+	const gridRect = grid.getBoundingClientRect();
+	const backdropRect = preview.closest("[data-nested-modal-backdrop]")?.getBoundingClientRect() ?? null;
+	const outerDialogRect = document.querySelector(".tmdb-list-dialog")?.getBoundingClientRect() ?? null;
+	const headerRect = preview.querySelector("header")?.getBoundingClientRect() ?? null;
+	const closeRect = preview.querySelector("header button")?.getBoundingClientRect() ?? null;
+	const images = [...grid.querySelectorAll(":scope > img")];
+	const imageRects = images.map((image) => image.getBoundingClientRect());
+	const firstPosterRect = imageRects[0] ?? null;
+	const lastPosterRect = imageRects.at(-1) ?? null;
+	const gridStyle = getComputedStyle(grid);
+	const scrollbarThumbStyle = getComputedStyle(grid, "::-webkit-scrollbar-thumb");
+	const activeScrollOwners = [preview, ...preview.querySelectorAll("*")].filter((element) => {
+		const overflowY = getComputedStyle(element).overflowY;
+		return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+	});
+	return {
+		viewportLeft: viewportBounds.left,
+		viewportTop: viewportBounds.top,
+		viewportWidth: viewportBounds.width,
+		viewportHeight: viewportBounds.height,
+		viewportScale: viewportBounds.scale,
+		modalLeft: previewRect.left,
+		modalTop: previewRect.top,
+		modalWidth: previewRect.width,
+		modalHeight: previewRect.height,
+		headerTop: headerRect?.top ?? null,
+		headerBottom: headerRect?.bottom ?? null,
+		gridClientWidth: grid.clientWidth,
+		gridScrollWidth: grid.scrollWidth,
+		gridClientHeight: grid.clientHeight,
+		gridScrollHeight: grid.scrollHeight,
+		gridScrollTop: grid.scrollTop,
+		gridScrollLeft: grid.scrollLeft,
+		atVerticalScrollEnd: grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 2,
+		posterCount: images.length,
+		columns: new Set(imageRects.map((rect) => Math.round(rect.left))).size,
+		posterWidth: firstPosterRect?.width ?? 0,
+		posterHeight: firstPosterRect?.height ?? 0,
+		verticalScrollable: grid.scrollHeight > grid.clientHeight + 1 && gridStyle.overflowY === "auto",
+		verticalScrollOnly: grid.scrollWidth <= grid.clientWidth + 1 && gridStyle.overflowX === "hidden",
+		lastPosterReachable: lastPosterRect !== null
+			&& lastPosterRect.bottom >= gridRect.top + 1
+			&& lastPosterRect.top <= gridRect.bottom - 1,
+		allPosterRectsHaveSize: imageRects.every((rect) => rect.width > 0 && rect.height > 0),
+		allPosterRectsInlineContained: imageRects.every((rect) => rect.left >= gridRect.left - 1 && rect.right <= gridRect.right + 1),
+		gridInlineContained: gridRect.left >= previewRect.left - 1 && gridRect.right <= previewRect.right + 1
+			&& gridRect.left >= viewportBounds.left - 1 && gridRect.right <= viewportBounds.right + 1,
+		closeReachable: closeRect !== null
+			&& closeRect.left >= viewportBounds.left - 1
+			&& closeRect.top >= viewportBounds.top - 1
+			&& closeRect.right <= viewportBounds.right + 1
+			&& closeRect.bottom <= viewportBounds.bottom + 1,
+		backdropMatchesVisualViewport: backdropRect !== null
+			&& Math.abs(backdropRect.left - viewportBounds.left) <= 1
+			&& Math.abs(backdropRect.top - viewportBounds.top) <= 1
+			&& Math.abs(backdropRect.right - viewportBounds.right) <= 1
+			&& Math.abs(backdropRect.bottom - viewportBounds.bottom) <= 1,
+		outerDialogWithinVisualViewport: outerDialogRect !== null
+			&& outerDialogRect.left >= viewportBounds.left - 1
+			&& outerDialogRect.top >= viewportBounds.top - 1
+			&& outerDialogRect.right <= viewportBounds.right + 1
+			&& outerDialogRect.bottom <= viewportBounds.bottom + 1,
+		safeHorizontalMargins: previewRect.left - viewportBounds.left >= 15
+			&& viewportBounds.right - previewRect.right >= 15,
+		oneScrollOwner: activeScrollOwners.length === 1 && activeScrollOwners[0] === grid,
+		dingoScrollbarClass: grid.classList.contains("dingo-scrollbar"),
+		scrollbarColor: gridStyle.scrollbarColor,
+		scrollbarWidth: gridStyle.scrollbarWidth,
+		scrollbarThumbBackground: scrollbarThumbStyle.backgroundColor,
+		withinViewport: previewRect.left >= viewportBounds.left - 1
+			&& previewRect.top >= viewportBounds.top - 1
+			&& previewRect.right <= viewportBounds.right + 1
+			&& previewRect.bottom <= viewportBounds.bottom + 1,
+		pageNoHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth,
 	};
 }
 
@@ -6188,11 +6296,395 @@ async function runDecadeSourceLivePreviewScenario() {
 	}
 }
 
-async function runSourceChooserLayoutScenario() {
+async function runSourceChooserLayoutScenario({
+	fontFamily = null,
+	includeClassicScrollbarStress = false,
+	includeGrowthStress = false,
+	includeOrderStress = false,
+} = {}) {
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
 	}
+	function rounded(value) {
+		return Math.round(value * 10) / 10;
+	}
+	function roundedRect(element) {
+		const rect = element.getBoundingClientRect();
+		return {
+			left: rounded(rect.left),
+			top: rounded(rect.top),
+			right: rounded(rect.right),
+			bottom: rounded(rect.bottom),
+			width: rounded(rect.width),
+			height: rounded(rect.height),
+		};
+	}
+	function renderedLineCount(element) {
+		const range = document.createRange();
+		range.selectNodeContents(element);
+		const lineTops = [];
+		for (const rect of range.getClientRects()) {
+			if (rect.width <= 0 || rect.height <= 0) continue;
+			if (!lineTops.some((top) => Math.abs(top - rect.top) <= 0.5)) lineTops.push(rect.top);
+		}
+		return lineTops.length;
+	}
+	function containsRect(outer, inner, tolerance = 1) {
+		return inner.left >= outer.left - tolerance
+			&& inner.top >= outer.top - tolerance
+			&& inner.right <= outer.right + tolerance
+			&& inner.bottom <= outer.bottom + tolerance;
+	}
+	function rectsOverlap(first, second, tolerance = 0.5) {
+		return first.left < second.right - tolerance
+			&& first.right > second.left + tolerance
+			&& first.top < second.bottom - tolerance
+			&& first.bottom > second.top + tolerance;
+	}
+	function contentFits(element) {
+		return element.scrollWidth <= element.clientWidth + 1 && element.scrollHeight <= element.clientHeight + 1;
+	}
+	function launcherContentSafety(dialog, list, cards) {
+		const dialogRect = dialog.getBoundingClientRect();
+		const listRect = list.getBoundingClientRect();
+		const listStyle = getComputedStyle(list);
+		const cardMetrics = cards.map((card) => {
+			const shell = required(card.querySelector(".creation-option-icon-shell"), "launcher card icon shell");
+			const icon = required(shell.querySelector(".creation-option-icon"), "launcher card icon");
+			const copy = required(card.querySelector(".creation-option-copy"), "launcher card copy");
+			const title = required(card.querySelector("strong"), "launcher card title");
+			const helper = required(card.querySelector("small"), "launcher card helper");
+			const cardRect = card.getBoundingClientRect();
+			const shellRect = shell.getBoundingClientRect();
+			const iconRect = icon.getBoundingClientRect();
+			const copyRect = copy.getBoundingClientRect();
+			const titleRect = title.getBoundingClientRect();
+			const helperRect = helper.getBoundingClientRect();
+			return {
+				id: card.dataset.creationOption ?? card.dataset.sourceModeOption ?? null,
+				cardRect,
+				positiveDimensions: cardRect.width > 0 && cardRect.height > 0,
+				iconContained: containsRect(shellRect, iconRect) && containsRect(cardRect, shellRect),
+				titleContained: containsRect(cardRect, titleRect),
+				helperContained: containsRect(cardRect, helperRect),
+				copyContained: getComputedStyle(copy).display === "contents" || containsRect(cardRect, copyRect),
+				textUnclipped: contentFits(title) && contentFits(helper),
+				contentOverflowFree: contentFits(card),
+				horizontallyContainedByGrid: cardRect.left >= listRect.left - 1 && cardRect.right <= listRect.right + 1,
+			};
+		});
+		const rows = [];
+		for (const metric of cardMetrics) {
+			const row = rows.find((entry) => Math.abs(entry.top - metric.cardRect.top) <= 1);
+			if (row) {
+				row.bottom = Math.max(row.bottom, metric.cardRect.bottom);
+				row.cards.push(metric);
+			} else rows.push({ top: metric.cardRect.top, bottom: metric.cardRect.bottom, cards: [metric] });
+		}
+		rows.sort((first, second) => first.top - second.top);
+		const rowGaps = rows.slice(0, -1).map((row, index) => rounded(rows[index + 1].top - row.bottom));
+		const intendedRowGap = Number.parseFloat(listStyle.rowGap) || 0;
+		const cardWidths = cardMetrics.map((metric) => metric.cardRect.width);
+		return {
+			validCardDimensions: cardMetrics.every((metric) => metric.positiveDimensions),
+			iconsContained: cardMetrics.every((metric) => metric.iconContained),
+			titlesContained: cardMetrics.every((metric) => metric.titleContained),
+			helpersContained: cardMetrics.every((metric) => metric.helperContained),
+			copiesContained: cardMetrics.every((metric) => metric.copyContained),
+			textUnclipped: cardMetrics.every((metric) => metric.textUnclipped),
+			cardContentOverflowFree: cardMetrics.every((metric) => metric.contentOverflowFree),
+			cardsContainedByGridHorizontally: cardMetrics.every((metric) => metric.horizontallyContainedByGrid),
+			noCardOverlap: cardMetrics.every((metric, index) => cardMetrics.slice(index + 1).every((other) => !rectsOverlap(metric.cardRect, other.cardRect))),
+			noRowOverlap: rowGaps.every((gap) => gap >= -1),
+			rowSpacingValid: rowGaps.every((gap) => gap >= intendedRowGap - 1),
+			intendedRowGap: rounded(intendedRowGap),
+			rowGaps,
+			stableCardWidths: Math.max(...cardWidths) - Math.min(...cardWidths) <= 1,
+			cardWidthSpread: rounded(Math.max(...cardWidths) - Math.min(...cardWidths)),
+			gridContainedByModal: containsRect(dialogRect, listRect),
+			modalContainedByViewport: dialogRect.left >= -1
+				&& dialogRect.top >= -1
+				&& dialogRect.right <= window.innerWidth + 1
+				&& dialogRect.bottom <= window.innerHeight + 1,
+		};
+	}
+	function launcherCardGeometry(card) {
+		const label = required(card.querySelector("strong"), "launcher card label");
+		const helper = required(card.querySelector("small"), "launcher card helper");
+		const icon = required(card.querySelector(".creation-option-icon-shell"), "launcher card icon");
+		const copy = required(card.querySelector(".creation-option-copy"), "launcher card copy");
+		const cardStyle = getComputedStyle(card);
+		const copyStyle = getComputedStyle(copy);
+		const labelStyle = getComputedStyle(label);
+		const helperStyle = getComputedStyle(helper);
+		return {
+			id: card.dataset.creationOption ?? card.dataset.sourceModeOption ?? null,
+			label: label.textContent.trim(),
+			card: roundedRect(card),
+			display: cardStyle.display,
+			gridTemplateColumns: cardStyle.gridTemplateColumns,
+			gap: cardStyle.gap,
+			padding: {
+				top: cardStyle.paddingTop,
+				right: cardStyle.paddingRight,
+				bottom: cardStyle.paddingBottom,
+				left: cardStyle.paddingLeft,
+			},
+			iconWidth: rounded(icon.getBoundingClientRect().width),
+			copyWidth: rounded(copy.getBoundingClientRect().width),
+			copyGridTemplateColumns: copyStyle.gridTemplateColumns,
+			title: {
+				clientWidth: label.clientWidth,
+				lines: renderedLineCount(label),
+				fontFamily: labelStyle.fontFamily,
+				fontSize: labelStyle.fontSize,
+				fontWeight: labelStyle.fontWeight,
+				lineHeight: labelStyle.lineHeight,
+			},
+			helper: {
+				clientWidth: helper.clientWidth,
+				lines: renderedLineCount(helper),
+				fontFamily: helperStyle.fontFamily,
+				fontSize: helperStyle.fontSize,
+				fontWeight: helperStyle.fontWeight,
+				lineHeight: helperStyle.lineHeight,
+			},
+		};
+	}
+	const representativeLauncherEntries = [
+		["documentaries", "Documentaries", "Add movies or series from documentaries."],
+		["countries", "Countries", "Add movies or series from a country."],
+		["keywords", "Keywords", "Add movies or series by keyword."],
+		["awards", "Awards", "Add award-winning movies or series."],
+		["recommendations", "Recommendations", "Add recommendations from a TMDB title."],
+		["upcoming", "Upcoming", "Add upcoming movies or series."],
+		["languages", "Languages", "Add movies or series by original language."],
+		["ratings", "Ratings", "Add movies or series by rating."],
+		["certifications", "Certifications", "Add movies or series by certification."],
+	];
+	function launcherOrderCases(cardAttribute, currentIds) {
+		const requested = cardAttribute === "data-source-mode-option"
+			? [
+				["longest-adjacent", ["tmdb-movie-franchise", "tmdb-lists", "tmdb-people", "tmdb-studios", "tmdb-networks", "tmdb-streaming-services", "tmdb-genres", "tmdb-decade"]],
+				["longest-separated", ["tmdb-movie-franchise", "tmdb-networks", "tmdb-studios", "tmdb-people", "tmdb-streaming-services", "tmdb-genres", "tmdb-lists", "tmdb-decade"]],
+			]
+			: [
+				["longest-adjacent", ["people", "streaming-services", "tmdb-lists", "blank", "decades", "franchises", "studios", "networks", "genres"]],
+				["longest-separated", ["people", "blank", "decades", "streaming-services", "franchises", "studios", "tmdb-lists", "networks", "genres"]],
+			];
+		return [
+			{ name: "current", ids: [...currentIds] },
+			...requested.map(([name, preferredIds]) => ({
+				name,
+				ids: [...preferredIds.filter((id) => currentIds.includes(id)), ...currentIds.filter((id) => !preferredIds.includes(id))],
+			})),
+		];
+	}
+	async function measureLauncherVariant({ dialog, list, cardAttribute, extraCount = 0, forceScrollbar = false, name, orderIds = null }) {
+		const originalItems = [...list.children];
+		const originalOverflowY = list.style.overflowY;
+		const originalScrollTop = list.scrollTop;
+		const selector = `[${cardAttribute}]`;
+		try {
+			const templateItem = required(originalItems[0], `${name} launcher template item`);
+			for (const [index, entry] of representativeLauncherEntries.slice(0, extraCount).entries()) {
+				const [id, label, helper] = entry;
+				const item = templateItem.cloneNode(true);
+				const card = required(item.querySelector("button"), `${name} representative launcher card`);
+				card.removeAttribute("data-creation-option");
+				card.removeAttribute("data-source-mode-option");
+				card.setAttribute(cardAttribute, `test-${id}-${index + 1}`);
+				required(card.querySelector("strong"), `${name} representative launcher title`).textContent = label;
+				required(card.querySelector("small"), `${name} representative launcher helper`).textContent = helper;
+				list.append(item);
+			}
+			if (orderIds) {
+				const items = [...list.children];
+				const itemById = new Map(items.map((item) => {
+					const card = required(item.querySelector(selector), `${name} ordered launcher card`);
+					return [card.getAttribute(cardAttribute), item];
+				}));
+				const orderedItems = orderIds.map((id) => itemById.get(id)).filter(Boolean);
+				const orderedSet = new Set(orderedItems);
+				list.replaceChildren(...orderedItems, ...items.filter((item) => !orderedSet.has(item)));
+			}
+			if (forceScrollbar) list.style.overflowY = "scroll";
+			await afterCommittedEffects();
+
+			const cards = [...list.querySelectorAll(selector)];
+			const rows = [];
+			for (const card of cards) {
+				const rect = card.getBoundingClientRect();
+				const top = Math.round(rect.top);
+				const row = rows.find((entry) => Math.abs(entry.top - top) <= 1);
+				if (row) {
+					row.count += 1;
+					row.height = Math.max(row.height, rect.height);
+				} else rows.push({ top, count: 1, height: rect.height });
+			}
+			const rowHeights = rows.map((row) => rounded(row.height));
+			const cardGeometry = cards.map(launcherCardGeometry);
+			const cardWidths = cardGeometry.map((card) => card.card.width);
+			const helperWidths = cardGeometry.map((card) => card.helper.clientWidth);
+			const titleWidths = cardGeometry.map((card) => card.title.clientWidth);
+			const helperLines = cardGeometry.map((card) => card.helper.lines);
+			const fullWidthHelpers = cards.every((card) => {
+				const helper = required(card.querySelector("small"), `${name} full-width helper`);
+				const style = getComputedStyle(card);
+				const expectedWidth = card.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+				return Math.abs(helper.getBoundingClientRect().width - expectedWidth) <= 1;
+			});
+			const topRowsAligned = cards.every((card) => {
+				const iconRect = required(card.querySelector(".creation-option-icon-shell"), `${name} icon`).getBoundingClientRect();
+				const titleRect = required(card.querySelector("strong"), `${name} title`).getBoundingClientRect();
+				const helperRect = required(card.querySelector("small"), `${name} helper`).getBoundingClientRect();
+				return titleRect.left >= iconRect.right + 5
+					&& titleRect.top >= iconRect.top - 1
+					&& titleRect.bottom <= iconRect.bottom + 1
+					&& helperRect.top >= Math.max(iconRect.bottom, titleRect.bottom) + 1;
+			});
+			const scrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+				const overflowY = getComputedStyle(element).overflowY;
+				return overflowY === "auto" || overflowY === "scroll";
+			});
+			const listStyle = getComputedStyle(list);
+			const scrollActive = list.scrollHeight > list.clientHeight + 1;
+			list.scrollTop = list.scrollHeight;
+			await afterCommittedEffects();
+			const listRect = list.getBoundingClientRect();
+			const finalRect = required(cards.at(-1), `${name} final launcher card`).getBoundingClientRect();
+			return {
+				name,
+				extraCount,
+				forceScrollbar,
+				cardCount: cards.length,
+				orderIds: cards.map((card) => card.getAttribute(cardAttribute)),
+				columnCount: Math.max(...rows.map((row) => row.count)),
+				rowCounts: rows.map((row) => row.count),
+				rowHeightSpread: rounded(Math.max(...rowHeights) - Math.min(...rowHeights)),
+				minCardHeight: Math.min(...cardGeometry.map((card) => card.card.height)),
+				maxCardHeight: Math.max(...cardGeometry.map((card) => card.card.height)),
+				contentSafety: launcherContentSafety(dialog, list, cards),
+				cardWidth: cardWidths[0],
+				cardWidthSpread: rounded(Math.max(...cardWidths) - Math.min(...cardWidths)),
+				titleWidth: titleWidths[0],
+				helperWidth: helperWidths[0],
+				helperWidthSpread: rounded(Math.max(...helperWidths) - Math.min(...helperWidths)),
+				maxHelperLines: Math.max(...helperLines),
+				fullWidthHelpers,
+				topRowsAligned,
+				grid: {
+					width: rounded(list.getBoundingClientRect().width),
+					clientWidth: list.clientWidth,
+					offsetWidth: list.offsetWidth,
+					scrollWidth: list.scrollWidth,
+					clientHeight: list.clientHeight,
+					scrollHeight: list.scrollHeight,
+					columns: listStyle.gridTemplateColumns,
+					gap: listStyle.gap,
+					gutter: list.offsetWidth - list.clientWidth,
+					overflowY: listStyle.overflowY,
+					scrollActive,
+				},
+				oneScrollOwner: scrollOwners.length === 1 && scrollOwners[0] === list,
+				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
+				finalCardReachable: finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1,
+			};
+		} finally {
+			list.replaceChildren(...originalItems);
+			list.style.overflowY = originalOverflowY;
+			list.scrollTop = originalScrollTop;
+			await afterCommittedEffects();
+		}
+	}
+	async function measureLauncherStress(dialog, list, cardAttribute, label) {
+		const selector = `[${cardAttribute}]`;
+		const currentIds = [...list.querySelectorAll(selector)].map((card) => card.getAttribute(cardAttribute));
+		const growth = [];
+		if (includeGrowthStress) {
+			for (const extraCount of [0, 3, 6]) growth.push(await measureLauncherVariant({
+				dialog,
+				list,
+				cardAttribute,
+				extraCount,
+				name: `${label} +${extraCount}`,
+			}));
+		}
+		const order = [];
+		if (includeOrderStress) {
+			for (const orderCase of launcherOrderCases(cardAttribute, currentIds)) order.push(await measureLauncherVariant({
+				dialog,
+				list,
+				cardAttribute,
+				name: `${label} ${orderCase.name}`,
+				orderIds: orderCase.ids,
+			}));
+		}
+		const classicScrollbar = includeClassicScrollbarStress
+			? await measureLauncherVariant({
+				dialog,
+				list,
+				cardAttribute,
+				extraCount: 9,
+				forceScrollbar: true,
+				name: `${label} classic scrollbar`,
+			})
+			: null;
+		return { growth, order, classicScrollbar };
+	}
+	function launcherModalGeometry(dialog) {
+		const backdrop = required(dialog.closest(".add-source-backdrop"), "launcher modal backdrop");
+		const viewport = window.visualViewport;
+		const viewportBounds = {
+			left: viewport?.offsetLeft ?? 0,
+			top: viewport?.offsetTop ?? 0,
+			width: viewport?.width ?? window.innerWidth,
+			height: viewport?.height ?? window.innerHeight,
+		};
+		const dialogRect = dialog.getBoundingClientRect();
+		const backdropRect = backdrop.getBoundingClientRect();
+		const dialogStyle = getComputedStyle(dialog);
+		const backdropStyle = getComputedStyle(backdrop);
+		const horizontalMargin = Math.min(
+			dialogRect.left - viewportBounds.left,
+			viewportBounds.left + viewportBounds.width - dialogRect.right,
+		);
+		const verticalMargin = Math.min(
+			dialogRect.top - viewportBounds.top,
+			viewportBounds.top + viewportBounds.height - dialogRect.bottom,
+		);
+		const borderWidth = Number.parseFloat(dialogStyle.borderTopWidth);
+		const borderRadius = Number.parseFloat(dialogStyle.borderTopLeftRadius);
+		return {
+			viewport: { ...viewportBounds },
+			backdrop: {
+				rect: roundedRect(backdrop),
+				alignItems: backdropStyle.alignItems,
+				justifyItems: backdropStyle.justifyItems,
+				padding: backdropStyle.padding,
+				background: backdropStyle.backgroundColor,
+			},
+			dialog: {
+				rect: roundedRect(dialog),
+				left: rounded(dialogRect.left),
+				right: rounded(dialogRect.right),
+				borderWidth: rounded(borderWidth),
+				borderRadius: rounded(borderRadius),
+				boxShadow: dialogStyle.boxShadow,
+			},
+			horizontalMargin: rounded(horizontalMargin),
+			verticalMargin: rounded(verticalMargin),
+			backdropTracksVisualViewport:
+				Math.abs(backdropRect.left - viewportBounds.left) <= 1
+				&& Math.abs(backdropRect.top - viewportBounds.top) <= 1
+				&& Math.abs(backdropRect.width - viewportBounds.width) <= 1
+				&& Math.abs(backdropRect.height - viewportBounds.height) <= 1,
+			presentation: horizontalMargin >= 23 && borderWidth > 0 && borderRadius >= 16 ? "contained" : "phone-fullscreen",
+		};
+	}
+	const originalBodyFontFamily = document.body.style.fontFamily;
+	if (typeof fontFamily === "string" && fontFamily.trim()) document.body.style.fontFamily = fontFamily;
 	const host = document.createElement("div");
 	document.body.append(host);
 	const root = createRoot(host);
@@ -6223,7 +6715,9 @@ async function runSourceChooserLayoutScenario() {
 		});
 		try {
 			const dialog = required(document.querySelector(`[data-creation-dialog="true"][data-creation-scope="${scope}"]`), `${scope} Creation chooser`);
+			const modal = launcherModalGeometry(dialog);
 			const list = required(dialog.querySelector(".creation-option-list"), `${scope} Creation launcher grid`);
+			const listStyle = getComputedStyle(list);
 			const cards = [...list.querySelectorAll("[data-creation-option]")];
 			const firstCard = required(cards[0], `${scope} first Creation card`);
 			const finalCard = required(cards.at(-1), `${scope} final Creation card`);
@@ -6258,6 +6752,7 @@ async function runSourceChooserLayoutScenario() {
 			const finalRect = finalCard.getBoundingClientRect();
 			metrics = {
 				scope,
+				modal,
 				optionIds: cards.map((card) => card.dataset.creationOption),
 				labels: cards.map((card) => card.querySelector("strong")?.textContent.trim() ?? null),
 				helpers: cards.map((card) => card.querySelector("small")?.textContent.trim() ?? null),
@@ -6265,8 +6760,18 @@ async function runSourceChooserLayoutScenario() {
 				columnCount: Math.max(...rows.map((row) => row.count)),
 				rowCounts: rows.map((row) => row.count),
 				rowHeightSpread: Math.round((Math.max(...rowHeights) - Math.min(...rowHeights)) * 10) / 10,
+				grid: {
+					width: rounded(list.getBoundingClientRect().width),
+					gridTemplateColumns: listStyle.gridTemplateColumns,
+					gap: listStyle.gap,
+				},
+				cardGeometry: cards.map(launcherCardGeometry),
+				contentSafety: launcherContentSafety(dialog, list, cards),
 				firstOptionFocused: document.activeElement === firstCard,
-				iconShellsCorrect: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
+				iconShellsCorrect: iconRects.every((rect) => {
+					const expectedSize = window.innerWidth <= 620 ? 36 : 42;
+					return rect && Math.abs(rect.width - expectedSize) <= 1 && Math.abs(rect.height - expectedSize) <= 1;
+				}),
 				comfortableTargets: cards.every((card) => {
 					const rect = card.getBoundingClientRect();
 					return rect.height >= 76 && rect.width >= 140;
@@ -6278,6 +6783,7 @@ async function runSourceChooserLayoutScenario() {
 				noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
 				finalCardReachable: finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1,
 			};
+			metrics.stress = await measureLauncherStress(dialog, list, "data-creation-option", `${scope} Creation`);
 		} finally {
 			await act(async () => {
 				creationRoot.unmount();
@@ -6312,11 +6818,15 @@ async function runSourceChooserLayoutScenario() {
 		});
 		const rows = [];
 		for (const card of cards) {
-			const top = Math.round(card.getBoundingClientRect().top);
+			const rect = card.getBoundingClientRect();
+			const top = Math.round(rect.top);
 			const row = rows.find((entry) => Math.abs(entry.top - top) <= 1);
-			if (row) row.count += 1;
-			else rows.push({ top, count: 1 });
+			if (row) {
+				row.count += 1;
+				row.height = Math.max(row.height, rect.height);
+			} else rows.push({ top, count: 1, height: rect.height });
 		}
+		const rowHeights = rows.map((row) => rounded(row.height));
 		const scrollOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
 			const overflowY = getComputedStyle(element).overflowY;
 			return overflowY === "auto" || overflowY === "scroll";
@@ -6324,13 +6834,21 @@ async function runSourceChooserLayoutScenario() {
 		const initial = {
 			width: window.innerWidth,
 			height: window.innerHeight,
+			fontFamily,
+			modal: launcherModalGeometry(dialog),
 			modeIds: cards.map((card) => card.dataset.sourceModeOption),
 			cardCount: cards.length,
 			columnCount: Math.max(...rows.map((row) => row.count)),
 			rowCounts: rows.map((row) => row.count),
+			rowHeightSpread: rounded(Math.max(...rowHeights) - Math.min(...rowHeights)),
+			cardGeometry: cards.map(launcherCardGeometry),
+			contentSafety: launcherContentSafety(dialog, list, cards),
 			balancedRows: rows.slice(0, -1).every((row) => row.count === rows[0].count) && rows.at(-1).count >= rows[0].count - 1,
 			firstOptionFocused: document.activeElement === firstCard,
-			iconShellsMatchCreation: iconRects.every((rect) => rect && Math.abs(rect.width - 42) <= 1 && Math.abs(rect.height - 42) <= 1),
+			iconShellsMatchCreation: iconRects.every((rect) => {
+				const expectedSize = window.innerWidth <= 620 ? 36 : 42;
+				return rect && Math.abs(rect.width - expectedSize) <= 1 && Math.abs(rect.height - expectedSize) <= 1;
+			}),
 			comfortableTargets: cards.every((card) => {
 				const rect = card.getBoundingClientRect();
 				return rect.height >= 76 && rect.width >= 140;
@@ -6349,6 +6867,7 @@ async function runSourceChooserLayoutScenario() {
 			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth && list.scrollWidth <= list.clientWidth,
 			bodyLocked: document.body.style.position === "fixed",
 		};
+		initial.stress = await measureLauncherStress(dialog, list, "data-source-mode-option", "Add Source");
 		list.scrollTop = list.scrollHeight;
 		await act(async () => afterCommittedEffects());
 		const listRect = list.getBoundingClientRect();
@@ -6387,6 +6906,558 @@ async function runSourceChooserLayoutScenario() {
 		};
 	} finally {
 		await act(async () => root.unmount());
+		host.remove();
+		document.body.style.fontFamily = originalBodyFontFamily;
+	}
+}
+
+async function runTmdbListLayoutScenario() {
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	const initialState = controller.getState();
+	const serializedBefore = serializedValue(controller);
+	const providerCalls = [];
+	const provider = {
+		async getList(id) {
+			providerCalls.push(id);
+			if (id === 1001 || id === 1002) return { ok: false, error: { kind: "not-found", message: "This TMDB list could not be found or accessed. Check that it is public." } };
+			return {
+				ok: true,
+				data: {
+					id,
+					name: `Mounted list ${id}`,
+					description: id % 2 === 0 ? "" : `Description ${id}`,
+					itemCount: 12,
+					creator: "Mounted owner",
+					posterPath: null,
+					items: Array.from({ length: 12 }, (_, index) => ({
+						tmdbId: (id * 100) + index + 1,
+						mediaType: index % 2 === 0 ? "MOVIE" : "TV",
+						title: `Mounted title ${id}-${index + 1}`,
+						year: 2000 + index,
+						posterPath: null,
+						position: index,
+					})),
+				},
+			};
+		},
+	};
+	let backCalls = 0;
+	let cancelCalls = 0;
+	let applyCalls = 0;
+	await act(async () => {
+		root.render(createElement(TmdbListSourceFlow, {
+			project: initialState.project,
+			projectRevision: initialState.revision,
+			folder,
+			provider,
+			onBack() { backCalls += 1; },
+			onCancel() { cancelCalls += 1; },
+			onApply() { applyCalls += 1; return { ok: true }; },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = requiredElement(document.querySelector(".tmdb-list-dialog"), "TMDB List dialog");
+		const textarea = requiredElement(dialog.querySelector("textarea"), "TMDB List multiline input");
+		const noSearchAutofocus = dialog.querySelector('input[type="search"]') === null && document.activeElement?.type !== "search";
+		const typographySamples = [];
+		for (const lineCount of [2, 12, 26]) {
+			await act(async () => {
+				setTextareaValue(textarea, Array.from({ length: lineCount }, (_, index) => String(index + 1)).join("\n"));
+				await afterCommittedEffects();
+			});
+			const sampleStyle = getComputedStyle(textarea);
+			typographySamples.push({
+				lineCount,
+				fontSize: Number.parseFloat(sampleStyle.fontSize),
+				fontWeight: Number.parseInt(sampleStyle.fontWeight, 10),
+				lineHeight: Number.parseFloat(sampleStyle.lineHeight),
+			});
+		}
+		const submittedIds = Array.from({ length: 18 }, (_, index) => String(index + 1));
+		const longFailedUrl = `https://www.themoviedb.org/list/1002-${"owner-review-list-".repeat(12)}missing`;
+		const submittedInput = [...submittedIds, "1", "bad-host", "1001", longFailedUrl].join("\n");
+		await act(async () => {
+			setTextareaValue(textarea, submittedInput);
+			await afterCommittedEffects();
+		});
+		await clickAndSettle(requiredElement(buttonContaining(dialog, "Resolve lists"), "Resolve lists action"));
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll(".tmdb-list-selected-items li").length === submittedIds.length,
+			{ label: "mounted TMDB List selection" },
+		);
+		const selectionScroll = requiredElement(dialog.querySelector(".add-source-scroll"), "TMDB List selection scroll owner");
+		const selectedRows = [...dialog.querySelectorAll(".tmdb-list-selected-items li")];
+		selectionScroll.scrollTop = selectionScroll.scrollHeight;
+		await act(async () => afterCommittedEffects());
+		const finalSelectedRect = selectedRows.at(-1).getBoundingClientRect();
+		const selectionScrollRect = selectionScroll.getBoundingClientRect();
+		const initialErrorRows = [...dialog.querySelectorAll(".tmdb-list-input-error")];
+		const inputPreservedAfterPartialFailure = textarea.value === submittedInput;
+		const longErrorRow = initialErrorRows.find((row) => row.textContent.includes("1002-"));
+		const errorIdentification = initialErrorRows.some((row) => row.textContent.includes("Line 20 · bad-host")) && initialErrorRows.some((row) => row.textContent.includes("Line 21 · 1001") && row.textContent.includes("could not be found or accessed")) && Boolean(longErrorRow?.textContent.includes(`Line 22 · ${longFailedUrl}`));
+		const longErrorContained = Boolean(longErrorRow && longErrorRow.scrollWidth <= longErrorRow.clientWidth + 1 && longErrorRow.closest(".add-source-request-state").scrollWidth <= longErrorRow.closest(".add-source-request-state").clientWidth + 1);
+		const longErrorAccessible = longErrorRow?.querySelector(".tmdb-list-error-value")?.getAttribute("title") === longFailedUrl;
+		const resolveButton = requiredElement(buttonContaining(dialog, "Resolve lists"), "Resolve lists action");
+		const clearButton = requiredElement(buttonContaining(dialog, "Clear input"), "Clear input action");
+		const inputActionsRect = resolveButton.parentElement.getBoundingClientRect();
+		const resolveRect = resolveButton.getBoundingClientRect();
+		const clearRect = clearButton.getBoundingClientRect();
+		const selectionOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+			if (element.tagName === "TEXTAREA") return false;
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		});
+		textarea.focus({ preventScroll: true });
+		await act(async () => afterCommittedEffects());
+		const textareaStyle = getComputedStyle(textarea);
+		const placeholderStyle = getComputedStyle(textarea, "::placeholder");
+		const callsAfterInitialResolve = providerCalls.length;
+		await act(async () => {
+			setTextareaValue(textarea, "1\n2");
+			await afterCommittedEffects();
+		});
+		const staleErrorsCleared = dialog.querySelector(".tmdb-list-input-errors") === null && dialog.querySelectorAll(".tmdb-list-selected-items li").length === submittedIds.length;
+		await clickAndSettle(resolveButton);
+		const unchangedNoNetwork = providerCalls.length === callsAfterInitialResolve;
+		const unchangedNoWarning = dialog.querySelector(".editor-field-status") === null;
+		await act(async () => {
+			setTextareaValue(textarea, "1\n1");
+			await afterCommittedEffects();
+		});
+		await clickAndSettle(resolveButton);
+		const genuineDuplicateReported = dialog.querySelector(".editor-field-status")?.textContent.includes("1 repeated entry in this batch was ignored.") ?? false;
+		const callsBeforeIncrementalResolve = providerCalls.length;
+		await act(async () => {
+			setTextareaValue(textarea, "1\n19\n20");
+			await afterCommittedEffects();
+		});
+		await clickAndSettle(resolveButton);
+		await waitForMountedCondition(() => dialog.querySelectorAll(".tmdb-list-selected-items li").length === 20, { label: "incremental TMDB List selection" });
+		const incrementalOnlyNewNetwork = providerCalls.length === callsBeforeIncrementalResolve + 2;
+		const incrementalOrder = [...dialog.querySelectorAll(".tmdb-list-selected-items li strong")].map((element) => element.textContent.trim()).join("|") === Array.from({ length: 20 }, (_, index) => `Mounted list ${index + 1}`).join("|");
+		await act(async () => {
+			setTextareaValue(textarea, "bad-host");
+			await afterCommittedEffects();
+		});
+		await clickAndSettle(resolveButton);
+		const clearHadInputError = dialog.querySelector(".tmdb-list-input-errors")?.textContent.includes("Line 1 · bad-host") ?? false;
+		await clickAndSettle(clearButton);
+		const clearPreservedSelection = dialog.querySelectorAll(".tmdb-list-selected-items li").length === 20;
+		const reviewAfterClear = requiredElement(buttonContaining(dialog.querySelector(".add-source-actions"), "Review 20 lists"), "Review after Clear input");
+		const selection = {
+			count: selectedRows.length,
+			inputPreservedAfterPartialFailure: inputPreservedAfterPartialFailure && initialErrorRows.length === 3,
+			errorIdentification,
+			longErrorContained,
+			longErrorAccessible,
+			resolveClearContained: resolveRect.left >= inputActionsRect.left - 1 && clearRect.right <= inputActionsRect.right + 1 && resolveButton.scrollWidth <= resolveButton.clientWidth + 1 && clearButton.scrollWidth <= clearButton.clientWidth + 1,
+			staleErrorsCleared,
+			unchangedNoNetwork,
+			unchangedNoWarning,
+			genuineDuplicateReported,
+			incrementalOnlyNewNetwork,
+			incrementalOrder,
+			clearHadInputError,
+			clearInputCleared: textarea.value === "" && dialog.querySelector(".tmdb-list-input-errors") === null,
+			clearPreservedSelection,
+			reviewEnabledAfterClear: !reviewAfterClear.disabled,
+			multilineInputUsable: textarea.getBoundingClientRect().height >= 120 && textarea.scrollWidth <= textarea.clientWidth + 1,
+			rowsContained: selectedRows.every((row) => row.scrollWidth <= row.clientWidth + 1),
+			finalItemReachable: finalSelectedRect.bottom > selectionScrollRect.top + 1 && finalSelectedRect.bottom <= selectionScrollRect.bottom + 1,
+			oneScrollOwner: selectionOwners.length === 1 && selectionOwners[0] === selectionScroll,
+			darkBuilderControl: !/255,\s*255,\s*255/.test(textareaStyle.backgroundColor) && textareaStyle.color !== "rgb(0, 0, 0)",
+			builderTypography: textareaStyle.fontFamily.toLowerCase().includes("inter") && !textareaStyle.fontFamily.toLowerCase().includes("monospace"),
+			compactRegularTypography: typographySamples.every((sample) => sample.fontSize >= 14 && sample.fontSize <= 15 && sample.fontWeight === 400 && sample.lineHeight >= sample.fontSize * 1.4 && sample.lineHeight <= sample.fontSize * 1.6),
+			typographyLineCounts: typographySamples.map((sample) => sample.lineCount),
+			mutedPlaceholder: placeholderStyle.color !== textareaStyle.color,
+			verticalResize: textareaStyle.resize === "vertical",
+			focusReachable: document.activeElement === textarea,
+			caretVisible: textareaStyle.caretColor !== "rgba(0, 0, 0, 0)" && textareaStyle.caretColor !== "transparent",
+		};
+		const previewTrigger = requiredElement(selectedRows[0]?.querySelector("button"), "TMDB List Choose Preview action");
+		await clickAndSettle(previewTrigger);
+		const preview = await waitForMountedCondition(
+			() => document.querySelector('[data-tmdb-list-preview-dialog="true"] [data-preview-empty-state="true"]')?.closest('[data-tmdb-list-preview-dialog="true"]'),
+			{ label: "mounted TMDB List Preview" },
+		);
+		const previewRect = preview.getBoundingClientRect();
+		const previewWithinViewport = previewRect.left >= -1 && previewRect.top >= -1 && previewRect.right <= window.innerWidth + 1 && previewRect.bottom <= window.innerHeight + 1;
+		const genericTitlesLabel = preview.querySelector(".studio-preview-single-media")?.textContent.trim() === "Titles";
+		const nestedBodyLocked = document.body.style.position === "fixed";
+		await clickAndSettle(requiredElement(preview.querySelector("header button"), "TMDB List Preview Close"));
+		const previewFocusRestored = document.activeElement === previewTrigger;
+
+		await clickAndSettle(reviewAfterClear);
+		await waitForMountedCondition(() => dialog.querySelector('[data-tmdb-list-stage="review"]'), { label: "mounted TMDB List review" });
+		const reviewScroll = requiredElement(dialog.querySelector(".add-source-scroll"), "TMDB List review scroll owner");
+		const reviewRows = [...dialog.querySelectorAll(".tmdb-list-review-item")];
+		const reviewCountLabel = dialog.querySelector("#tmdb-list-review-title")?.textContent.trim() ?? null;
+		reviewScroll.scrollTop = reviewScroll.scrollHeight;
+		await act(async () => afterCommittedEffects());
+		const reviewOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
+			const overflowY = getComputedStyle(element).overflowY;
+			return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+		});
+		const footer = requiredElement(dialog.querySelector(".add-source-actions"), "TMDB List footer");
+		const submit = requiredElement(footer.querySelector('button[type="submit"]'), "TMDB List submit action");
+		const reviewActionCopy = submit.textContent.trim();
+		submit.focus({ preventScroll: true });
+		await act(async () => {
+			dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
+			await afterCommittedEffects();
+		});
+		const focusContained = dialog.contains(document.activeElement) && document.activeElement !== submit;
+		await clickAndSettle(requiredElement(dialog.querySelector('[data-action="back-to-tmdb-list-selection"]'), "TMDB List Review Back"));
+		const backPreservedSelection = dialog.querySelectorAll(".tmdb-list-selected-items li").length === 20;
+		const backPreviewAvailable = Boolean(dialog.querySelector(".tmdb-list-selected-items button"));
+		const review = {
+			count: reviewRows.length,
+			countLabel: reviewCountLabel,
+			actionCopy: reviewActionCopy,
+			rowsContained: reviewRows.every((row) => row.scrollWidth <= row.clientWidth + 1),
+			oneScrollOwner: reviewOwners.length === 1 && reviewOwners[0] === reviewScroll,
+			footerReachable: footer.getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom + 1,
+			noSearchMediaOrSort: !/Search|Media type|Sort titles by/.test(reviewRows.map((row) => row.textContent).join(" ")),
+			originalOrder: reviewRows.every((row) => row.textContent.includes("Original order") && !row.textContent.includes("List order")),
+			sourceNameHelpers: reviewRows.every((row) => row.querySelector(".editor-field-help")?.textContent.trim() === "This is the name shown in Nuvio. You can customise it."),
+			noPreviewActions: reviewRows.every((row) => !buttonContaining(row, "Preview")),
+			noContainerPresentation: dialog.querySelector('[data-review-title-options="true"], [data-hierarchy-collection-presentation="true"], [data-editor-field="folderTileShape"]') === null,
+		};
+
+		async function measureGuided(scope, ids) {
+			await act(async () => {
+				root.render(createElement(CreationDialog, {
+					key: `guided-${scope}`,
+					scope,
+					initialOptionId: "tmdb-lists",
+					project: initialState.project,
+					projectRevision: initialState.revision,
+					destinationCollectionInternalId: scope === "new-folder" ? initialState.project.collections[0].internalId : null,
+					destinationCollectionTitle: scope === "new-folder" ? initialState.project.collections[0].editable.title : null,
+					listProvider: provider,
+					onCancel() {},
+					onApplyTmdbLists() { throw new Error("Guided TMDB List visual QA must not apply a plan."); },
+				}));
+				await afterCommittedEffects();
+			});
+			const surface = requiredElement(document.querySelector('.creation-dialog[data-creation-option="tmdb-lists"] .tmdb-list-form'), `${scope} TMDB List form`);
+			const guidedTextarea = requiredElement(surface.querySelector("textarea"), `${scope} TMDB List input`);
+			await act(async () => {
+				setTextareaValue(guidedTextarea, ids.join("\n"));
+				await afterCommittedEffects();
+			});
+			await clickAndSettle(requiredElement(buttonContaining(surface, "Resolve lists"), `${scope} Resolve lists`));
+			await waitForMountedCondition(() => surface.querySelectorAll(".tmdb-list-selected-items li").length === ids.length, { label: `${scope} TMDB List selection` });
+			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), `Review ${ids.length} list`), `${scope} Review lists`));
+			await waitForMountedCondition(() => surface.dataset.tmdbListStage === "review", { label: `${scope} TMDB List review` });
+
+			const collectionInput = surface.querySelector("#tmdb-list-collection-title");
+			const folderInput = requiredElement(surface.querySelector("#tmdb-list-folder-title"), `${scope} Folder name`);
+			const namesInitiallyEmpty = folderInput.value === "" && (scope !== "new-collection" || collectionInput?.value === "");
+			const footer = requiredElement(surface.querySelector(".tmdb-list-actions"), `${scope} action footer`);
+			const action = requiredElement(footer.querySelector('button[type="submit"]'), `${scope} Create action`);
+			await clickAndSettle(action);
+			const initialValidationMessage = requiredElement(footer.querySelector(".tmdb-list-footer-validation"), `${scope} required-name message`);
+			const initialMessageRect = initialValidationMessage.getBoundingClientRect();
+			const initialActionRect = action.getBoundingClientRect();
+			const footerRect = footer.getBoundingClientRect();
+			const initialRequiredValidation = {
+				message: initialValidationMessage.textContent.trim(),
+				collectionInvalid: collectionInput?.getAttribute("aria-invalid") === "true",
+				folderInvalid: folderInput.getAttribute("aria-invalid") === "true",
+				firstMissingFocused: document.activeElement === (collectionInput ?? folderInput),
+				messageContained: initialMessageRect.left >= footerRect.left - 1 && initialMessageRect.right <= footerRect.right + 1 && initialMessageRect.bottom <= footerRect.bottom + 1 && initialValidationMessage.scrollWidth <= initialValidationMessage.clientWidth + 1,
+				placement: window.innerWidth >= 900 ? initialMessageRect.left >= initialActionRect.right - 1 ? "right" : "incorrect" : initialMessageRect.top >= initialActionRect.bottom - 1 ? "stacked" : "incorrect",
+			};
+			let folderOnlyValidation = null;
+			await act(async () => {
+				if (collectionInput) setInputValue(collectionInput, "Owner collection");
+				await afterCommittedEffects();
+			});
+			if (collectionInput) {
+				await clickAndSettle(action);
+				folderOnlyValidation = {
+					message: footer.querySelector(".tmdb-list-footer-validation")?.textContent.trim() ?? null,
+					collectionInvalid: collectionInput.getAttribute("aria-invalid") === "true",
+					folderInvalid: folderInput.getAttribute("aria-invalid") === "true",
+					folderFocused: document.activeElement === folderInput,
+				};
+			}
+			await act(async () => {
+				setInputValue(folderInput, "Owner folder");
+				await afterCommittedEffects();
+			});
+			const requiredValidationCleared = footer.querySelector(".tmdb-list-footer-validation") === null && collectionInput?.getAttribute("aria-invalid") !== "true" && folderInput.getAttribute("aria-invalid") !== "true";
+
+			const collectionPresentation = surface.querySelector('[data-hierarchy-collection-presentation="true"]');
+			const folderPresentation = surface.querySelector('[data-review-title-options="true"]');
+			const folderShape = surface.querySelector('[data-editor-field="folderTileShape"]');
+			const reviewRows = [...surface.querySelectorAll(".tmdb-list-review-item")];
+			const reviewScroll = requiredElement(surface.querySelector(".add-source-scroll"), `${scope} review scroll owner`);
+			reviewScroll.scrollTop = reviewScroll.scrollHeight;
+			await act(async () => afterCommittedEffects());
+			const scrollOwners = [surface, ...surface.querySelectorAll("*")].filter((element) => {
+				if (element.tagName === "TEXTAREA") return false;
+				const overflowY = getComputedStyle(element).overflowY;
+				return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
+			});
+			const actionStyle = getComputedStyle(action);
+			const actionLineHeight = Number.parseFloat(actionStyle.lineHeight) || Number.parseFloat(actionStyle.fontSize) * 1.2;
+			const actionContentHeight = action.getBoundingClientRect().height - Number.parseFloat(actionStyle.paddingTop) - Number.parseFloat(actionStyle.paddingBottom);
+			const result = {
+				scope,
+				selectedCount: ids.length,
+				namesInitiallyEmpty,
+				collectionNamePresent: Boolean(collectionInput),
+				collectionControlsPresent: Boolean(collectionPresentation),
+				folderControlsPresent: Boolean(folderPresentation && folderShape),
+				defaultTabs: collectionPresentation?.querySelector('[data-editor-choice="tabs"]')?.checked ?? null,
+				defaultShowAll: collectionPresentation?.querySelector('[data-editor-control="tmdbListShowAllTab"]')?.checked ?? null,
+				defaultCollectionVisible: surface.querySelector('[data-editor-control="tmdbListHideNuvioTitle"]')?.checked === false,
+				defaultUnpinned: surface.querySelector('[data-editor-control="tmdbListPinToTop"]')?.checked === false,
+				defaultFolderHomeHidden: folderPresentation?.querySelector('[data-editor-choice="hide-home-screen"]')?.checked ?? false,
+				defaultPoster: folderShape?.querySelector('[data-editor-choice="poster"]')?.checked ?? false,
+				originalOrder: reviewRows.every((row) => row.textContent.includes("Original order")),
+				noReviewPreview: reviewRows.every((row) => !buttonContaining(row, "Preview")),
+				focusGlowHidden: !surface.textContent.includes("Focus Glow") && !surface.textContent.includes("focusGlowEnabled"),
+				sourceNameHelpers: reviewRows.every((row) => row.querySelector(".editor-field-help")?.textContent.trim() === "This is the name shown in Nuvio. You can customise it."),
+				initialRequiredValidation,
+				folderOnlyValidation,
+				requiredValidationCleared,
+				validationNoMutation: controller.getState().revision === initialState.revision && serializedValue(controller) === serializedBefore,
+				actionCopy: action.textContent.trim(),
+				actionLineCount: Math.max(1, Math.round(actionContentHeight / actionLineHeight)),
+				oneScrollOwner: scrollOwners.length === 0 || (scrollOwners.length === 1 && scrollOwners[0] === reviewScroll),
+				footerReachable: action.closest("footer").getBoundingClientRect().bottom <= window.innerHeight + 1,
+				noHorizontalOverflow: surface.scrollWidth <= surface.clientWidth + 1 && reviewRows.every((row) => row.scrollWidth <= row.clientWidth + 1),
+			};
+			await clickAndSettle(requiredElement(document.querySelector('.creation-dialog[data-creation-option="tmdb-lists"] [data-action="back-to-tmdb-list-selection"]'), `${scope} Review Back`));
+			result.backPreservedSelection = surface.querySelectorAll(".tmdb-list-selected-items li").length === ids.length;
+			result.backPreviewAvailable = Boolean(surface.querySelector(".tmdb-list-selected-items button"));
+			return result;
+		}
+
+		const guidedNewCollection = await measureGuided("new-collection", ["101", "102", "103", "104"]);
+		const guidedNewFolder = await measureGuided("new-folder", ["105"]);
+
+		const editController = createController();
+		const editFolder = importSources(editController, [{ provider: "tmdb", title: "Owner list", tmdbSourceType: "LIST", tmdbId: "5916", mediaType: "MOVIE", sortBy: "original", filters: {} }]);
+		const editSource = editFolder.sources[0];
+		const openedEdit = createSourceEditSession(editController.getState().project, editSource.internalId);
+		if (!openedEdit.ok) throw new Error("Mounted TMDB List Source Edit did not open.");
+		const editRevisionBefore = editController.getState().revision;
+		const editSerializedBefore = serializedValue(editController);
+		await act(async () => {
+			root.render(createElement(SourceEditorDialog, {
+				key: "tmdb-list-source-edit",
+				provider,
+				listProvider: provider,
+				session: openedEdit.session,
+				initialDraft: openedEdit.draft,
+				onCancel() {},
+				onSave() { throw new Error("Mounted TMDB List Source Edit visual QA must not save."); },
+			}));
+			await afterCommittedEffects();
+		});
+		const sourceEditDialog = requiredElement(document.querySelector('.source-edit-dialog[data-source-edit-adapter="tmdb-list"]'), "TMDB List Source Edit dialog");
+		const listLink = requiredElement(sourceEditDialog.querySelector('.source-edit-list-identity a[href="https://www.themoviedb.org/list/5916"]'), "TMDB List identity link");
+		const listLinkRect = listLink.getBoundingClientRect();
+		const listCodeRect = listLink.closest("code").getBoundingClientRect();
+		const sourceEdit = {
+			linkText: listLink.textContent.replace("↗", "").trim(),
+			href: listLink.getAttribute("href"),
+			target: listLink.getAttribute("target"),
+			rel: listLink.getAttribute("rel"),
+			accessibleName: listLink.getAttribute("aria-label"),
+			numericLinkOnly: sourceEditDialog.querySelectorAll(".source-edit-list-identity a").length === 1 && listLink.closest("code") !== null && listLink.closest(".source-edit-list-identity") !== listLink,
+			linkContained: listLinkRect.left >= listCodeRect.left - 1 && listLinkRect.right <= listCodeRect.right + 1,
+			previewAvailable: Boolean(buttonContaining(sourceEditDialog, "Preview titles")),
+			sourceNameHelper: sourceEditDialog.querySelector("#source-edit-title-help")?.textContent.trim() ?? null,
+			oneScrollOwner: sourceEditDialog.querySelectorAll(".source-edit-scroll").length === 1,
+			noHorizontalOverflow: sourceEditDialog.scrollWidth <= sourceEditDialog.clientWidth + 1,
+			noMutation: editController.getState().revision === editRevisionBefore && serializedValue(editController) === editSerializedBefore,
+		};
+		return {
+			width: window.innerWidth,
+			height: window.innerHeight,
+			noSearchAutofocus,
+			selection,
+			review,
+			focusContained,
+			genericTitlesLabel,
+			previewWithinViewport,
+			nestedBodyLocked,
+			previewFocusRestored,
+			backPreservedSelection,
+			backPreviewAvailable,
+			guidedNewCollection,
+			guidedNewFolder,
+			sourceEdit,
+			bodyLocked: document.body.style.position === "fixed",
+			noHorizontalOverflow: document.documentElement.scrollWidth <= window.innerWidth && dialog.scrollWidth <= dialog.clientWidth + 1,
+			noMutation: controller.getState().revision === initialState.revision && serializedValue(controller) === serializedBefore,
+			backCalls,
+			cancelCalls,
+			applyCalls,
+		};
+	} finally {
+		await act(async () => {
+			root.unmount();
+			await afterCommittedEffects();
+		});
+		host.remove();
+	}
+}
+
+async function runTmdbListLivePreviewScenario() {
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const folder = importSources(controller, []);
+	const initialState = controller.getState();
+	const serializedBefore = serializedValue(controller);
+	await act(async () => {
+		root.render(createElement(TmdbListSourceFlow, {
+			project: initialState.project,
+			projectRevision: initialState.revision,
+			folder,
+			provider: liveTmdbListProvider,
+			onBack() {},
+			onCancel() {},
+			onApply() { throw new Error("Live TMDB List Preview QA must not apply sources."); },
+		}));
+		await afterCommittedEffects();
+	});
+	const required = (element, label) => requiredElement(element, `live TMDB List ${label}`);
+	try {
+		const dialog = required(document.querySelector(".tmdb-list-dialog"), "dialog");
+		const textarea = required(dialog.querySelector("textarea"), "input");
+		const requestCountBeforeResolve = liveTmdbListRequests.length;
+		await act(async () => {
+			setTextareaValue(textarea, "5916\n8679739");
+			await afterCommittedEffects();
+		});
+		await clickAndSettle(required(buttonContaining(dialog, "Resolve lists"), "Resolve action"));
+		const selected = await waitForMountedCondition(
+			() => {
+				const rows = [...dialog.querySelectorAll(".tmdb-list-selected-items li")];
+				return rows.length === 2 ? rows : null;
+			},
+			{ label: "live TMDB List 5916 and 8679739 selection", timeoutMs: 30_000 },
+		);
+		const requestsAfterResolve = liveTmdbListRequests.length;
+		const musicalsRow = required(selected.find((row) => row.querySelector("strong")?.textContent.trim() === "Musicals"), "Musicals row");
+		const topTenRow = required(selected.find((row) => row.querySelector("strong")?.textContent.trim() === "Top 10 Netflix Movies"), "Top 10 row");
+		const musicalsTrigger = required(musicalsRow.querySelector("button"), "Musicals Preview action");
+		await clickAndSettle(musicalsTrigger);
+		let preview = await waitForMountedCondition(
+			() => {
+				const modal = document.querySelector('[data-tmdb-list-preview-dialog="true"]');
+				const grid = modal?.querySelector('[data-preview-complete-sample="true"][data-preview-poster-count="20"]');
+				return grid ? { modal, grid } : null;
+			},
+			{ label: "live Musicals complete page-one Preview", timeoutMs: 30_000 },
+		);
+		const initialGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
+		const initialMusicals = {
+			title: preview.modal.querySelector("h3")?.textContent.trim() ?? null,
+			subtitle: preview.modal.querySelector(".source-title-preview-summary")?.textContent.trim() ?? null,
+			rendered: Number(preview.grid.dataset.previewPosterCount),
+			loaded: Number(preview.grid.dataset.previewLoadedCount),
+			completeSample: preview.grid.dataset.previewCompleteSample === "true",
+			requests: liveTmdbListRequests.length,
+			bodyLocked: document.body.style.position === "fixed",
+			noLoadMore: !preview.modal.textContent.includes("Load more"),
+			geometry: initialGeometry,
+		};
+		await act(async () => {
+			preview.grid.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: 160 }));
+			await afterCommittedEffects();
+		});
+		const wheelGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
+		await act(async () => {
+			preview.grid.scrollTop = Math.min(80, preview.grid.scrollHeight - preview.grid.clientHeight);
+			preview.grid.dispatchEvent(new Event("touchmove", { bubbles: true }));
+			preview.grid.dispatchEvent(new Event("scroll", { bubbles: true }));
+			await afterCommittedEffects();
+		});
+		const touchGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
+		await act(async () => {
+			preview.grid.scrollTop = preview.grid.scrollHeight;
+			preview.grid.dispatchEvent(new Event("scroll", { bubbles: true }));
+			await afterCommittedEffects();
+		});
+		const bottomGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
+		const scrolledMusicals = {
+			rendered: Number(preview.grid.dataset.previewPosterCount),
+			loaded: Number(preview.grid.dataset.previewLoadedCount),
+			completeSample: preview.grid.dataset.previewCompleteSample === "true",
+			requests: liveTmdbListRequests.length,
+			geometry: bottomGeometry,
+		};
+		await clickAndSettle(required(preview.modal.querySelector("header button"), "Musicals Close action"));
+		const focusRestored = document.activeElement === musicalsTrigger;
+		await clickAndSettle(musicalsTrigger);
+		const reopened = await waitForMountedCondition(
+			() => document.querySelector('[data-tmdb-list-preview-dialog="true"] [data-preview-complete-sample="true"][data-preview-poster-count="20"]'),
+			{ label: "cached Musicals Preview reopen" },
+		);
+		const reopenStartsAtTop = reopened.scrollTop === 0;
+		const requestsAfterReopen = liveTmdbListRequests.length;
+		await clickAndSettle(required(reopened.closest('[data-tmdb-list-preview-dialog="true"]').querySelector("header button"), "reopened Musicals Close action"));
+
+		const topTenTrigger = required(topTenRow.querySelector("button"), "Top 10 Preview action");
+		await clickAndSettle(topTenTrigger);
+		const smallPreview = await waitForMountedCondition(
+			() => {
+				const modal = document.querySelector('[data-tmdb-list-preview-dialog="true"]');
+				const grid = modal?.querySelector('[data-preview-complete-sample="true"][data-preview-poster-count="10"]');
+				return grid ? { modal, grid } : null;
+			},
+			{ label: "live complete ten-title List Preview", timeoutMs: 30_000 },
+		);
+		const smallGeometry = tmdbListPreviewGeometry(smallPreview.modal, smallPreview.grid);
+		const completeSmallList = {
+			title: smallPreview.modal.querySelector("h3")?.textContent.trim() ?? null,
+			subtitle: smallPreview.modal.querySelector(".source-title-preview-summary")?.textContent.trim() ?? null,
+			rendered: Number(smallPreview.grid.dataset.previewPosterCount),
+			loaded: Number(smallPreview.grid.dataset.previewLoadedCount),
+			completeSample: smallPreview.grid.dataset.previewCompleteSample === "true",
+			geometry: smallGeometry,
+		};
+		await act(async () => {
+			smallPreview.grid.scrollTop = smallPreview.grid.scrollHeight;
+			smallPreview.grid.dispatchEvent(new Event("scroll", { bubbles: true }));
+			await afterCommittedEffects();
+		});
+		const requestsAfterSmallScroll = liveTmdbListRequests.length;
+		await clickAndSettle(required(smallPreview.modal.querySelector("header button"), "Top 10 Close action"));
+		return {
+			width: window.innerWidth,
+			height: window.innerHeight,
+			requestCountBeforeResolve,
+			requestsAfterResolve,
+			requestPaths: [...liveTmdbListRequests],
+			initialMusicals,
+			wheelGeometry,
+			touchGeometry,
+			scrolledMusicals,
+			focusRestored,
+			reopenStartsAtTop,
+			requestsAfterReopen,
+			completeSmallList,
+			requestsAfterSmallScroll,
+			noMutation: controller.getState().revision === initialState.revision && serializedValue(controller) === serializedBefore,
+			outerBodyLockPreserved: document.body.style.position === "fixed",
+		};
+	} finally {
+		await act(async () => { root.unmount(); await afterCommittedEffects(); });
 		host.remove();
 	}
 }
@@ -6500,6 +7571,8 @@ window.__prepareDecadeSourceGenreKeyboardScenario = prepareDecadeSourceGenreKeyb
 window.__finishDecadeSourceGenreKeyboardScenario = finishDecadeSourceGenreKeyboardScenario;
 window.__runDecadeSourceLivePreviewScenario = runDecadeSourceLivePreviewScenario;
 window.__runSourceChooserLayoutScenario = runSourceChooserLayoutScenario;
+window.__runTmdbListLayoutScenario = runTmdbListLayoutScenario;
+window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;

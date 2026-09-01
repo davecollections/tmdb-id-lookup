@@ -17,6 +17,11 @@ export {
 	movieCollectionSourceEditor,
 } from "./movie-collection-editor.js";
 export {
+	TMDB_LIST_SOURCE_EDITOR_ID,
+	tmdbListEditIdentity,
+	tmdbListSourceEditor,
+} from "./tmdb-list-editor.js";
+export {
 	PEOPLE_SOURCE_EDITOR_ID,
 	PEOPLE_SOURCE_SORT_OPTIONS,
 	isVerifiedPeopleSort,

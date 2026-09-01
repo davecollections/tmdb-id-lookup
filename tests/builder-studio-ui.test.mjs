@@ -113,7 +113,7 @@ test("Add Source picker exposes Studios with the approved user-facing wording", 
 	assert.ok(markup.includes("<strong>Studios</strong>"));
 	assert.ok(markup.includes("Add movies or series from a studio."));
 	assert.equal(markup.includes("Studios &amp; Companies"), false);
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 7);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 8);
 });
 
 test("Studio result cards explicitly distinguish positive, zero, and unknown Movie Count values", () => {
@@ -552,7 +552,7 @@ test("source-picker return focus and Configure-to-Search state restoration stay 
 test("Studio modal remains single-column, tappable, scroll-safe, and footer-safe at required mobile widths", () => {
 	const styles = read("builder/src/styles.css");
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 520);
-	assert.match(styles, /@media \(max-width: 899\.98px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
+	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.studio-source-dialog[\s\S]*max-height:\s*100dvh/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-source-choices > div\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/);
 	assert.match(styles, /\.studio-source-choices label\s*\{[^}]*min-height:\s*68px/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.studio-source-choices label\s*\{[^}]*min-height:\s*60px/);

@@ -49,6 +49,7 @@ function renderCreationChooser(scope) {
 
 const expectedModes = Object.freeze([
 	["tmdb-movie-franchise", "Movie franchise", "franchises", "Add a TMDB movie collection."],
+	["tmdb-lists", "TMDB lists", "lists", "Add one or more public TMDB lists."],
 	["tmdb-people", "People", "people", "Add movies or series for an actor or director."],
 	["tmdb-studios", "Studios", "studios", "Add movies or series from a studio."],
 	["tmdb-networks", "Networks", "networks", "Add series from a TV network."],
@@ -62,25 +63,26 @@ const expectedCreationOptions = Object.freeze([
 	["decades", "Decades", "decades", "Build by decade or year."],
 	["people", "People", "people", "Build around actors or directors."],
 	["franchises", "Franchises", "franchises", "Build from a movie franchise."],
+	["tmdb-lists", "TMDB Lists", "lists", "Build from public TMDB lists."],
 	["studios", "Studios", "studios", "Build from movie or TV studios."],
 	["networks", "Networks", "networks", "Build from TV networks."],
 	["genres", "Genres", "genres", "Build by genre."],
 	["streaming-services", "Streaming", "streaming-services", "Build from streaming services."],
 ]);
 
-test("Add Source registry remains exactly seven ordered TMDB families with approved compact card metadata", () => {
+test("Add Source registry exposes eight ordered TMDB families with approved compact card metadata", () => {
 	assert.deepEqual(AVAILABLE_SOURCE_MODES.map((mode) => [mode.id, mode.label, mode.icon, mode.description]), expectedModes);
-	assert.equal(AVAILABLE_SOURCE_MODES.length, 7);
+	assert.equal(AVAILABLE_SOURCE_MODES.length, 8);
 	assert.equal(AVAILABLE_SOURCE_MODES.every((mode) => mode.providerLabel === "TMDB" && mode.category === "native-tmdb"), true);
-	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 7);
+	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 8);
 });
 
 test("Add Source renders immediate-action launcher cards with unchanged helpers and no blanket provider disclosure", () => {
 	const markup = renderSourceChooser();
 	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), expectedModes.map(([id]) => id));
-	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 7);
-	assert.equal((markup.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, 7);
-	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 7);
+	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 8);
+	assert.equal((markup.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, 8);
+	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 8);
 	assert.match(markup, /<ul class="add-source-scroll source-mode-list" aria-label="Source families">/);
 	assert.match(markup, /Choose what you want to add\./);
 	assert.doesNotMatch(markup, /All available source families use (?:<strong>)?TMDB/);
@@ -107,6 +109,7 @@ test("every Add Source card retains its exact existing destination flow", () => 
 	const whitelist = workspace.match(/!\[(MOVIE_FRANCHISE_SOURCE_MODE_ID,[\s\S]*?DECADE_SOURCE_MODE_ID)\]\.includes\(modeId\)/)?.[1] ?? "";
 	assert.deepEqual([...whitelist.matchAll(/([A-Z_]+SOURCE_MODE_ID)/g)].map((match) => match[1]), [
 		"MOVIE_FRANCHISE_SOURCE_MODE_ID",
+		"TMDB_LIST_SOURCE_MODE_ID",
 		"PEOPLE_SOURCE_MODE_ID",
 		"STUDIO_SOURCE_MODE_ID",
 		"NETWORK_SOURCE_MODE_ID",
@@ -115,6 +118,7 @@ test("every Add Source card retains its exact existing destination flow", () => 
 		"DECADE_SOURCE_MODE_ID",
 	]);
 	for (const [mode, flow] of [
+		["TMDB_LIST_SOURCE_MODE_ID", "TmdbListSourceFlow"],
 		["PEOPLE_SOURCE_MODE_ID", "PeopleSourceFlow"],
 		["STUDIO_SOURCE_MODE_ID", "StudioSourceFlow"],
 		["NETWORK_SOURCE_MODE_ID", "NetworkSourceFlow"],
@@ -141,7 +145,13 @@ test("Add Source and Creation directly share the narrow launcher card and icon p
 	assert.match(styles, /\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*76px;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
 	assert.match(styles, /\.creation-option-card:focus-visible,\s*\.source-mode-option:hover,\s*\.source-mode-option:focus-visible\s*\{[^}]*border-color:/s);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-list,\s*\.source-mode-list\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*?\.source-mode-dialog\s*\{[^}]*width:\s*min\(920px, 100%\)/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*min-height:\s*87px;[^}]*grid-template-columns:\s*36px minmax\(0, 1fr\);[^}]*grid-template-rows:\s*auto auto;[^}]*column-gap:\s*6px;[^}]*row-gap:\s*2px;[^}]*padding:\s*10px 8px/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-icon-shell\s*\{[^}]*width:\s*36px;[^}]*height:\s*36px;[^}]*grid-column:\s*1;[^}]*grid-row:\s*1/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-copy\s*\{[^}]*display:\s*contents/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card strong,\s*\.source-mode-option strong\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;[^}]*overflow-wrap:\s*anywhere/s);
+	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.creation-option-card small,\s*\.source-mode-option small\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*grid-row:\s*2;[^}]*overflow-wrap:\s*anywhere/s);
+	assert.match(styles, /@media \(min-width: 621px\) and \(max-width: 967\.98px\) and \(min-height: 601px\)[\s\S]*?\.creation-option-card,\s*\.source-mode-option\s*\{[^}]*gap:\s*10px;[^}]*padding:\s*12px/s);
+	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*?\.source-mode-dialog\s*\{[^}]*width:\s*min\(920px, 100%\)/s);
 	assert.doesNotMatch(styles, /\.source-mode-option\s*>\s*span|\.source-mode-option\s*\{[^}]*min-height:\s*92px/s);
 	assert.doesNotMatch(styles, /\.source-mode-heading-description/);
 	assert.deepEqual(CREATION_OPTIONS.map((option) => [option.id, option.label, option.icon, option.supportingText]), expectedCreationOptions);

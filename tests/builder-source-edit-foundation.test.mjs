@@ -14,6 +14,7 @@ import {
 	PEOPLE_SOURCE_EDITOR_ID,
 	STUDIO_SOURCE_EDITOR_ID,
 	STREAMING_SOURCE_EDITOR_ID,
+	TMDB_LIST_SOURCE_EDITOR_ID,
 	canEditSource,
 	chooseMovieCollection,
 	choosePeopleSourceCombination,
@@ -143,14 +144,14 @@ function sessionFor(controller, sourceIndex = 0) {
 	return { ...opened, source };
 }
 
-test("registry discovers complete Movie Collection, People, Studio, Network, and simple Streaming sources", () => {
+test("registry discovers complete Movie Collection, TMDB List, People, Studio, Network, and simple Streaming sources", () => {
 	const controller = createController();
 	const folder = importFolder(controller, [
 		collectionSource({ provider: "TMDB", tmdbSourceType: "collection", tmdbId: "0100", mediaType: "movie" }),
 		peopleSource({ provider: "TmDb", tmdbSourceType: "director", tmdbId: "31", mediaType: "tv" }),
 		peopleSource({ provider: "tmdb", tmdbSourceType: "PERSON", tmdbId: 32, mediaType: "TV" }),
 		{ provider: "tmdb", title: "People-like Discover", tmdbSourceType: "DISCOVER", tmdbId: 31, mediaType: "MOVIE", filters: { withPeople: "31" } },
-		{ provider: "tmdb", title: "List", tmdbSourceType: "LIST", tmdbId: 1, mediaType: "MOVIE" },
+		{ provider: "tmdb", title: "List", tmdbSourceType: "LIST", tmdbId: 1, mediaType: "MOVIE", sortBy: "original", filters: {} },
 		{ provider: "tmdb", title: "Company", tmdbSourceType: "COMPANY", tmdbId: 2, mediaType: "MOVIE" },
 		{ provider: "tmdb", title: "Company Series", tmdbSourceType: "COMPANY", tmdbId: 2, mediaType: "TV" },
 		{ provider: "tmdb", title: "Network", tmdbSourceType: "NETWORK", tmdbId: 3, mediaType: "TV" },
@@ -163,12 +164,13 @@ test("registry discovers complete Movie Collection, People, Studio, Network, and
 	assert.equal(sourceEditorFor(folder.sources[0]).id, MOVIE_COLLECTION_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[1]).id, PEOPLE_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[2]).id, PEOPLE_SOURCE_EDITOR_ID);
+	assert.equal(sourceEditorFor(folder.sources[4]).id, TMDB_LIST_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[5]).id, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[6]).id, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[7]).id, NETWORK_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[11]).id, STREAMING_SOURCE_EDITOR_ID);
 	assert.equal(sourceEditorFor(folder.sources[12]).id, STREAMING_SOURCE_EDITOR_ID);
-	for (const index of [3, 4, 8, 9, 10]) assert.equal(canEditSource(folder.sources[index]), false);
+	for (const index of [3, 8, 9, 10]) assert.equal(canEditSource(folder.sources[index]), false);
 });
 
 test("Streaming Edit recognition fails closed for compound, filtered, unknown and malformed DISCOVER sources", () => {
