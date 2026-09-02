@@ -26,3 +26,26 @@ export function isValidVisibleNuvioTitle(title) {
 		&& !isInvisibleNuvioTitle(title)
 	);
 }
+
+export function reversibleTitleFieldProps(visibleTitleDraft, hiddenEverywhere) {
+	return Object.freeze({
+		value: hiddenEverywhere ? "" : typeof visibleTitleDraft === "string" ? visibleTitleDraft : "",
+		disabled: hiddenEverywhere,
+	});
+}
+
+export function transitionReversibleTitleDraft({
+	title,
+	visibleTitleDraft,
+	hiddenEverywhere,
+	hiddenTitle = "",
+}) {
+	const rememberedTitle = hiddenEverywhere && isValidVisibleNuvioTitle(title)
+		? title
+		: visibleTitleDraft;
+
+	return Object.freeze({
+		title: hiddenEverywhere ? hiddenTitle : rememberedTitle ?? "",
+		visibleTitleDraft: rememberedTitle,
+	});
+}

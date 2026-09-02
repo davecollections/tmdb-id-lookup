@@ -129,7 +129,7 @@ function normalizeProviders(providers, regionCodes, mediaChoice, errors) {
 	return Object.freeze(normalized);
 }
 
-function normalizeFolderTitleOverrides(value, errors) {
+function normalizeFolderTitleOverrides(value, errors, visibleTitlesRequired = true) {
 	if (value === undefined || value === null) return Object.freeze({});
 	if (!plainObject(value)) {
 		errors.push(diagnostic("INVALID_STREAMING_HIERARCHY_FOLDER_TITLES", "$streamingHierarchy.folderTitleOverrides", "Custom Streaming folder names must use stable planned-folder keys."));
@@ -137,7 +137,7 @@ function normalizeFolderTitleOverrides(value, errors) {
 	}
 	const normalized = {};
 	for (const [key, title] of Object.entries(value)) {
-		if (!key || !isValidVisibleNuvioTitle(title)) {
+		if (!key || typeof title !== "string" || (visibleTitlesRequired && !isValidVisibleNuvioTitle(title))) {
 			errors.push(diagnostic("INVALID_STREAMING_HIERARCHY_FOLDER_TITLE", `$streamingHierarchy.folderTitleOverrides.${key}`, "Enter a folder title before applying changes."));
 			continue;
 		}
@@ -383,7 +383,7 @@ export function createStreamingHierarchyPlan(project, options) {
 	const providers = normalizeProviders(options.providers, regionCodes, mediaChoice, errors);
 	const folderTitleVisibility = options.folderTitleVisibility ?? DEFAULT_STREAMING_HIERARCHY_FOLDER_TITLE_VISIBILITY;
 	if (!folderTitleVisibilities.has(folderTitleVisibility)) errors.push(diagnostic("INVALID_STREAMING_HIERARCHY_FOLDER_TITLE_VISIBILITY", "$streamingHierarchy.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
-	const requestedFolderTitleOverrides = normalizeFolderTitleOverrides(options.folderTitleOverrides, errors);
+	const requestedFolderTitleOverrides = normalizeFolderTitleOverrides(options.folderTitleOverrides, errors, folderTitleVisibility !== "HIDE_EVERYWHERE");
 
 	let collectionTitle = null;
 	let hideCollectionTitle = null;
@@ -397,7 +397,7 @@ export function createStreamingHierarchyPlan(project, options) {
 		viewMode = options.viewMode ?? "TABBED_GRID";
 		showAllTab = normalizeHierarchyShowAllTab(viewMode, options.showAllTab ?? true);
 		pinToTop = options.pinToTop ?? false;
-		if (!canonicalText(collectionTitle) || collectionTitle !== canonicalText(collectionTitle)) errors.push(diagnostic("INVALID_STREAMING_HIERARCHY_COLLECTION_TITLE", "$streamingHierarchy.collectionTitle", "The Streaming Services collection name must be a nonblank trimmed string."));
+		if (typeof collectionTitle !== "string" || (hideCollectionTitle !== true && (!canonicalText(collectionTitle) || collectionTitle !== canonicalText(collectionTitle)))) errors.push(diagnostic("INVALID_STREAMING_HIERARCHY_COLLECTION_TITLE", "$streamingHierarchy.collectionTitle", "The Streaming Services collection name must be a nonblank trimmed string."));
 		if (typeof hideCollectionTitle !== "boolean" || typeof showAllTab !== "boolean" || typeof pinToTop !== "boolean" || !collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_STREAMING_HIERARCHY_COLLECTION_PRESENTATION", "$streamingHierarchy", "Choose supported collection presentation values."));
 		if (options.destinationCollectionInternalId !== undefined && options.destinationCollectionInternalId !== null) errors.push(diagnostic("UNEXPECTED_STREAMING_HIERARCHY_DESTINATION", "$streamingHierarchy.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));
 	} else if (scope === "new-folder") {

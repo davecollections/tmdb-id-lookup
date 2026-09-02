@@ -12,12 +12,13 @@ import {
 	toggleSelectedFranchise,
 	buildTmdbPosterUrl,
 } from "../source-add/index.js";
+import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
-import { PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
+import { HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -95,7 +96,7 @@ function ReviewStep({ planResult, options, onOptionsChange, onPreview, diagnosti
 		<section className="franchise-review" aria-labelledby="franchise-review-title">
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Review &amp; Appearance</p><h3 id="franchise-review-title">{plan.counts.folderCount} folder{plan.counts.folderCount === 1 ? "" : "s"} · {plan.counts.sourceCount} source{plan.counts.sourceCount === 1 ? "" : "s"}</h3></div></div>
 			{plan.configuration.scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><input id="franchise-collection-name" type="text" value={options.collectionTitle} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /></div>
+				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><input id="franchise-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="franchise" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "franchise-hide-title-help", controlName: "franchiseHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every franchise folder in one All tab." showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="franchise-pin-help" controlName="franchisePinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />

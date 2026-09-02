@@ -121,7 +121,7 @@ test("guided Lists starts with empty names, uses concise shared create copy, and
 
 test("guided Lists directly reuses standard Collection and Folder presentation controls while Add Source remains container-free", () => {
 	assert.match(flow, /import \{ HierarchyCollectionPresentationControls \} from "\.\/CollectionPresentationChoices\.jsx"/);
-	assert.match(flow, /import \{ FolderShapeChoices, PresentationSwitch, TitleOptions \} from "\.\/PresentationControls\.jsx"/);
+	assert.match(flow, /import \{ FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions \} from "\.\/PresentationControls\.jsx"/);
 	assert.match(flow, /<TitleOptions[\s\S]*collectionTitleVisibility=\{scope === "new-collection"[\s\S]*folderTitleVisibility=/);
 	assert.match(flow, /<HierarchyCollectionPresentationControls[\s\S]*showAllTab=\{options\.showAllTab\}/);
 	assert.match(flow, /<PresentationSwitch label="Pin collection to top"/);

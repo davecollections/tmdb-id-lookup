@@ -218,7 +218,7 @@ export function createNetworkHierarchyPlan(project, options) {
 		viewMode = options.viewMode ?? "TABBED_GRID";
 		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
-		if (typeof collectionTitle !== "string" || !collectionTitle.trim() || collectionTitle !== collectionTitle.trim()) errors.push(diagnostic("INVALID_NETWORK_COLLECTION_TITLE", "$networkPlan.collectionTitle", "The Networks collection name must be a nonblank trimmed string."));
+		if (typeof collectionTitle !== "string" || (hideCollectionTitle !== true && (!collectionTitle.trim() || collectionTitle !== collectionTitle.trim()))) errors.push(diagnostic("INVALID_NETWORK_COLLECTION_TITLE", "$networkPlan.collectionTitle", "The Networks collection name must be a nonblank trimmed string."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_NETWORK_COLLECTION_TITLE_VISIBILITY", "$networkPlan.hideCollectionTitle", "Collection title visibility must be true or false."));
 		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_NETWORK_COLLECTION_VIEW", "$networkPlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_NETWORK_COLLECTION_OPTIONS", "$networkPlan", "Collection options must be explicit boolean values."));

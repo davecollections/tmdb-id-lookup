@@ -134,6 +134,16 @@ test("New Collection applies one selected collection and folder appearance confi
 	assert.ok(current.getState().project.collections.every((collection) => collection.editable.title === NUVIO_INVISIBLE_TITLE));
 });
 
+test("Decades keyed hidden collection drafts do not participate in final visible-title validation", () => {
+	const current = controller();
+	const options = { collectionTitles: { movies: "" }, source: sourceConfiguration({ mediaMode: "movies" }) };
+	const hidden = planFor(current, { ...options, hideCollectionTitle: true });
+	assert.equal(hidden.ok, true);
+	assert.deepEqual(hidden.plan.configuration.collectionTitles, { movies: "" });
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(planFor(current, { ...options, hideCollectionTitle: false }).ok, false);
+});
+
 test("source names follow physical folder media composition and keep All aggregate distinct", () => {
 	for (const [mediaMode, genreName] of [["movies", "Horror"], ["series", "Drama"]]) {
 		const current = controller();

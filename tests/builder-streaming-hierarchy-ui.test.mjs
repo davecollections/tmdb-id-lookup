@@ -333,7 +333,8 @@ test("Folder naming is collapsed, stable-keyed, validated, and limited to new fo
 	assert.match(flow, /Use default name/);
 	assert.doesNotMatch(flow, /Display title for this new folder/);
 	assert.match(flow, /Keep the generated names or customise new folders/);
-	assert.match(flow, /aria-describedby=\{`\$\{inputId\}-error`\}/);
+	assert.match(flow, /aria-describedby=\{\[`\$\{inputId\}-error`, hiddenEverywhere \? "streaming-folder-titles-hidden-help" : null\]/);
+	assert.match(flow, /<HiddenTitleFieldHelp id="streaming-folder-titles-hidden-help" hidden=\{hiddenEverywhere\} kind="folder" plural=\{folders\.length > 1\}/);
 	assert.doesNotMatch(flow, /Source names and Streaming identity stay unchanged/);
 	assert.match(flow, /setFolderTitleDrafts\(\(current\) => \(\{ \.\.\.current, \[key\]: title \}\)\)/);
 	assert.match(flow, /currentKeys\.has\(key\)/);

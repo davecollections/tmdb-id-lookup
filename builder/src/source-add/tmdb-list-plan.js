@@ -28,12 +28,11 @@ export function createTmdbListHierarchyPlan(project, options) {
 	const scope = TMDB_LIST_CREATION_SCOPES.includes(options.scope) ? options.scope : null;
 	if (!scope) errors.push(diagnostic("INVALID_TMDB_LIST_PLAN_SCOPE", "$tmdbListPlan.scope", "Choose New Collection or New Folder scope."));
 	if (!Number.isSafeInteger(options.projectRevision) || options.projectRevision < 0) errors.push(diagnostic("INVALID_TMDB_LIST_PLAN_REVISION", "$tmdbListPlan.projectRevision", "Capture the current nonnegative Builder revision."));
-	if (!isValidVisibleNuvioTitle(options.folderTitle) || options.folderTitle !== text(options.folderTitle)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE", "$tmdbListPlan.folderTitle", "Enter a visible folder name."));
-	if (scope === "new-collection" && (!isValidVisibleNuvioTitle(options.collectionTitle) || options.collectionTitle !== text(options.collectionTitle))) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE", "$tmdbListPlan.collectionTitle", "Enter a visible collection name."));
 	const folderTitleVisibility = options.folderTitleVisibility ?? DEFAULT_TMDB_LIST_FOLDER_TITLE_VISIBILITY;
 	const folderTileShape = options.folderTileShape ?? DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE;
 	if (!FOLDER_TITLE_VISIBILITIES.has(folderTitleVisibility)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE_VISIBILITY", "$tmdbListPlan.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
 	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TILE_SHAPE", "$tmdbListPlan.folderTileShape", "Choose the existing Poster or Landscape folder tile shape."));
+	if (typeof options.folderTitle !== "string" || (folderTitleVisibility !== "HIDE_EVERYWHERE" && (!isValidVisibleNuvioTitle(options.folderTitle) || options.folderTitle !== text(options.folderTitle)))) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE", "$tmdbListPlan.folderTitle", "Enter a visible folder name."));
 	let hideCollectionTitle = null;
 	let viewMode = null;
 	let showAllTab = null;
@@ -43,6 +42,7 @@ export function createTmdbListHierarchyPlan(project, options) {
 		viewMode = options.viewMode ?? "TABBED_GRID";
 		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
+		if (typeof options.collectionTitle !== "string" || (hideCollectionTitle !== true && (!isValidVisibleNuvioTitle(options.collectionTitle) || options.collectionTitle !== text(options.collectionTitle)))) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE", "$tmdbListPlan.collectionTitle", "Enter a visible collection name."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE_VISIBILITY", "$tmdbListPlan.hideCollectionTitle", "Collection title visibility must be true or false."));
 		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_VIEW", "$tmdbListPlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_OPTIONS", "$tmdbListPlan", "Collection presentation options must be explicit boolean values."));

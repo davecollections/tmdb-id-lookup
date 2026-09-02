@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import {
 	isValidNuvioTitle,
 	isValidVisibleNuvioTitle,
+	reversibleTitleFieldProps,
 } from "../nuvio/titles.js";
 import {
 	missingCuratedFolderFocusOrientationNotice,
@@ -20,7 +21,9 @@ import {
 } from "./FolderArtworkFields.jsx";
 import { folderSiblingTileShapeNotice } from "./node-editor.js";
 import {
+	COLLECTION_INVISIBLE_TITLE_HELP,
 	CollectionTitleVisibilitySwitch,
+	FOLDER_INVISIBLE_TITLE_HELP,
 	FOLDER_TITLE_VISIBILITY_LABEL,
 	FolderShapeChoices,
 	FolderTitleVisibilityChoices,
@@ -457,18 +460,17 @@ export function NodeEditor({
 				id={`${prefix}-title-input`}
 				name="title"
 				type="text"
-				value={titleHiddenEverywhere ? "" : draft.values.title}
+				{...reversibleTitleFieldProps(draft.values.title, titleHiddenEverywhere)}
 				data-editor-field="title"
-				disabled={titleHiddenEverywhere}
 				aria-invalid={titleError ? "true" : undefined}
 				aria-describedby={describedBy(titleError)}
 				onChange={(event) => onChange("title", event.target.value)}
 			/>
 			<p className="editor-field-help" id={`${prefix}-title-help`}>
 				{draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
-					? "The folder title is intentionally invisible everywhere in Nuvio. Choose a visible option below to enter a visible title."
+					? FOLDER_INVISIBLE_TITLE_HELP
 					: draft.nodeType === "collection" && draft.values.hideNuvioTitle
-					? `The ${noun} title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.`
+					? COLLECTION_INVISIBLE_TITLE_HELP
 					: `Displayed as the ${noun} title in Nuvio.`}
 			</p>
 			<TitleStatus

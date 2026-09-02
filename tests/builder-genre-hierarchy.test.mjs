@@ -133,6 +133,23 @@ test("Genre hierarchy applies every canonical Folder title outcome independently
 	}
 });
 
+test("Genre keyed hidden collection drafts do not participate in final visible-title validation", () => {
+	const app = controller();
+	const state = app.getState();
+	const options = {
+		scope: "new-collection",
+		projectRevision: state.revision,
+		structure: "separate-media-collections",
+		collectionTitles: { movies: "", series: "" },
+		genres: ["Comedy"],
+	};
+	const hidden = createGenreHierarchyPlan(state.project, { ...options, hideCollectionTitle: true });
+	assert.equal(hidden.ok, true);
+	assert.deepEqual(hidden.plan.configuration.collectionTitles, { movies: "", series: "" });
+	assert.deepEqual(hidden.plan.collections.map((collection) => collection.editable.title), [NUVIO_INVISIBLE_TITLE, NUVIO_INVISIBLE_TITLE]);
+	assert.equal(createGenreHierarchyPlan(state.project, { ...options, hideCollectionTitle: false }).ok, false);
+});
+
 test("all 27 official Genre concepts have explicit published Landscape and Poster mappings", () => {
 	assert.equal(GENRE_CONCEPTS.length, 27);
 	for (const concept of GENRE_CONCEPTS) {

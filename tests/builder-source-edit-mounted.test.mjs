@@ -2234,6 +2234,18 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 			apple: "Curated Apple New",
 			dekkoo: "Curated Dekkoo",
 		}, `${result.width}px New Collection naming state`);
+		assert.deepEqual(result.review.titleVisibility, {
+			collectionHidden: true,
+			collectionHiddenHelp: true,
+			collectionRestored: true,
+			collectionHiddenHelpRemoved: true,
+			latestCollectionRestored: true,
+			folderHidden: true,
+			folderHiddenHelp: true,
+			folderHomeOnlyRestored: true,
+			folderHiddenHelpRemovedOnHomeOnly: true,
+			planningLabelsRetained: true,
+		}, `${result.width}px live reversible Collection and keyed Folder title fields`);
 		assert.deepEqual(result.review.existingDestinationState, {
 			collectionNameAbsent: true,
 			folderNameCount: 1,

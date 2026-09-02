@@ -13,6 +13,8 @@ import {
 	isValidNuvioTitle,
 	isValidVisibleNuvioTitle,
 	NUVIO_INVISIBLE_TITLE,
+	reversibleTitleFieldProps,
+	transitionReversibleTitleDraft,
 } from "../builder/src/nuvio/titles.js";
 import {
 	COLLECTION_EDITABLE_FIELDS,
@@ -48,6 +50,13 @@ const {
 	BuilderWorkspace,
 	shouldOpenHierarchyEditorFromDoubleClick,
 } = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
+const {
+	COLLECTION_INVISIBLE_TITLE_HELP,
+	COLLECTIONS_INVISIBLE_TITLE_HELP,
+	FOLDER_INVISIBLE_TITLE_HELP,
+	FOLDERS_INVISIBLE_TITLE_HELP,
+	HiddenTitleFieldHelp,
+} = await vite.ssrLoadModule("/src/ui/PresentationControls.jsx");
 after(() => vite.close());
 
 function countingIdFactory(prefix = "internal") {
@@ -1059,6 +1068,68 @@ test("collection hidden-title toggle emits one U+200E and restores the prior vis
 	assert.equal(draft.values.title, "Collection title");
 	assert.equal(draft.values.hideNuvioTitle, false);
 	assert.deepEqual(buildNodeEditorPatch(draft), {});
+});
+
+test("shared reversible title fields blank only the control and restore the latest visible draft", () => {
+	let draft = { title: "Custom", visibleTitleDraft: null };
+	assert.deepEqual(reversibleTitleFieldProps(draft.title, false), { value: "Custom", disabled: false });
+
+	draft = transitionReversibleTitleDraft({ ...draft, hiddenEverywhere: true, hiddenTitle: NUVIO_INVISIBLE_TITLE });
+	assert.deepEqual(draft, { title: NUVIO_INVISIBLE_TITLE, visibleTitleDraft: "Custom" });
+	assert.deepEqual(reversibleTitleFieldProps(draft.visibleTitleDraft, true), { value: "", disabled: true });
+
+	draft = transitionReversibleTitleDraft({ ...draft, hiddenEverywhere: false, hiddenTitle: NUVIO_INVISIBLE_TITLE });
+	assert.deepEqual(draft, { title: "Custom", visibleTitleDraft: "Custom" });
+	draft = { ...draft, title: "Custom 2", visibleTitleDraft: "Custom 2" };
+	draft = transitionReversibleTitleDraft({ ...draft, hiddenEverywhere: true, hiddenTitle: NUVIO_INVISIBLE_TITLE });
+	draft = transitionReversibleTitleDraft({ ...draft, hiddenEverywhere: false, hiddenTitle: NUVIO_INVISIBLE_TITLE });
+	assert.deepEqual(draft, { title: "Custom 2", visibleTitleDraft: "Custom 2" });
+});
+
+test("shared hidden-title help uses the authoritative singular and grouped wording only while hidden", () => {
+	assert.equal(COLLECTION_INVISIBLE_TITLE_HELP, "The collection title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.");
+	assert.equal(COLLECTIONS_INVISIBLE_TITLE_HELP, "Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.");
+	assert.equal(FOLDER_INVISIBLE_TITLE_HELP, "The folder title is intentionally invisible everywhere in Nuvio. Choose a visible option below to enter a visible title.");
+	assert.equal(FOLDERS_INVISIBLE_TITLE_HELP, "Folder titles are intentionally invisible everywhere in Nuvio. Choose a visible option below to enter visible titles.");
+
+	assert.equal(renderToStaticMarkup(createElement(HiddenTitleFieldHelp, { id: "visible", hidden: false, kind: "collection" })), "");
+	const collection = renderToStaticMarkup(createElement(HiddenTitleFieldHelp, { id: "collection-help", hidden: true, kind: "collection" }));
+	assert.match(collection, /id="collection-help"[^>]*role="status"/);
+	assert.ok(collection.includes(COLLECTION_INVISIBLE_TITLE_HELP));
+	const collections = renderToStaticMarkup(createElement(HiddenTitleFieldHelp, { id: "collections-help", hidden: true, kind: "collection", plural: true }));
+	assert.ok(collections.includes(COLLECTIONS_INVISIBLE_TITLE_HELP));
+	const folder = renderToStaticMarkup(createElement(HiddenTitleFieldHelp, { id: "folder-help", hidden: true, kind: "folder" }));
+	assert.ok(folder.includes(FOLDER_INVISIBLE_TITLE_HELP));
+	const folders = renderToStaticMarkup(createElement(HiddenTitleFieldHelp, { id: "folders-help", hidden: true, kind: "folder", plural: true }));
+	assert.ok(folders.includes(FOLDERS_INVISIBLE_TITLE_HELP));
+});
+
+test("all guided output-title fields reuse reversible fields and contextual hidden-state help", () => {
+	for (const file of [
+		"CreationDialog.jsx",
+		"PeopleSourceFlow.jsx",
+		"FranchiseSourceFlow.jsx",
+		"StudioHierarchyFlow.jsx",
+		"NetworkHierarchyFlow.jsx",
+		"GenreHierarchyFlow.jsx",
+		"StreamingHierarchyFlow.jsx",
+		"TmdbListSourceFlow.jsx",
+	]) {
+		const source = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", file), "utf8");
+		assert.match(source, /reversibleTitleFieldProps/, file);
+		assert.match(source, /HiddenTitleFieldHelp/, file);
+	}
+
+	const decades = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "CreationDialog.jsx"), "utf8");
+	assert.match(decades, /kind="collection" plural/);
+	const genres = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "GenreHierarchyFlow.jsx"), "utf8");
+	assert.match(genres, /genre-hierarchy-collection-titles-hidden-help[\s\S]*kind="collection" plural/);
+	const streaming = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "StreamingHierarchyFlow.jsx"), "utf8");
+	assert.match(streaming, /kind="folder" plural=\{folders\.length > 1\}/);
+	assert.match(streaming, /options\.folderTitleVisibility === "HIDE_EVERYWHERE"/);
+	const lists = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "TmdbListSourceFlow.jsx"), "utf8");
+	assert.match(lists, /folderTitleHiddenEverywhere \? "tmdb-list-folder-title-hidden-help" : "tmdb-list-folder-help"/);
+	assert.match(lists, /!folderTitleHiddenEverywhere \? <p id="tmdb-list-folder-help"/);
 });
 
 test("folder Hide everywhere emits one U+200E and restores the original visible choice", () => {
