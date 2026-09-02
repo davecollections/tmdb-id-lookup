@@ -3,6 +3,18 @@ function isSelected(value, canonicalValue) {
 }
 
 export const FOLDER_TITLE_VISIBILITY_LABEL = "Folder title visibility";
+export const COLLECTION_INVISIBLE_TITLE_HELP = "The collection title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.";
+export const COLLECTIONS_INVISIBLE_TITLE_HELP = "Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.";
+export const FOLDER_INVISIBLE_TITLE_HELP = "The folder title is intentionally invisible everywhere in Nuvio. Choose a visible option below to enter a visible title.";
+export const FOLDERS_INVISIBLE_TITLE_HELP = "Folder titles are intentionally invisible everywhere in Nuvio. Choose a visible option below to enter visible titles.";
+
+export function HiddenTitleFieldHelp({ id, hidden, kind, plural = false }) {
+	if (!hidden) return null;
+	const message = kind === "folder"
+		? plural ? FOLDERS_INVISIBLE_TITLE_HELP : FOLDER_INVISIBLE_TITLE_HELP
+		: plural ? COLLECTIONS_INVISIBLE_TITLE_HELP : COLLECTION_INVISIBLE_TITLE_HELP;
+	return <p id={id} className="editor-field-help" role="status">{message}</p>;
+}
 
 export function PresentationSwitch({
 	label,

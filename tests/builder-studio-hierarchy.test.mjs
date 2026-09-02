@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createBuilderController } from "../builder/src/application/index.js";
+import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
 import {
 	applyStudioHierarchyPlan,
 	buildStudioSourceDrafts,
@@ -118,6 +119,16 @@ test("Studio plan defaults to Movies, Popular, Show everywhere and fixed Landsca
 	assert.equal(result.plan.configuration.folderTileShape, "LANDSCAPE");
 	assert.equal(result.plan.collections[0].folders[0].editable.hideTitle, false);
 	assert.equal(result.plan.collections[0].folders[0].sources[0].draft.editable.title, "Movies");
+});
+
+test("Studio hidden collection output does not require its remembered visible title draft", () => {
+	const app = controller();
+	const state = app.getState();
+	const hidden = createStudioHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: true, studios: planEntries([studio(3)]) });
+	assert.equal(hidden.ok, true);
+	assert.equal(hidden.plan.configuration.collectionTitle, "");
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(createStudioHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: false, studios: planEntries([studio(3)]) }).ok, false);
 });
 
 test("one artwork runtime load resolves a batch before plan creation and falls back logo then emoji", async () => {

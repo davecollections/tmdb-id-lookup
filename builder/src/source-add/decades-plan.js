@@ -222,7 +222,7 @@ function folderEditable(title, { folderTileShape, folderTitleVisibility }) {
 	});
 }
 
-function normalizeCollectionTitles(value, roles, errors) {
+function normalizeCollectionTitles(value, roles, errors, visibleTitlesRequired = true) {
 	const defaults = { movies: "Movie Decades", series: "TV Decades", mixed: "Decades" };
 	const supplied = value ?? {};
 	if (!plainObject(supplied) || Object.keys(supplied).some((key) => !roles.includes(key))) {
@@ -231,7 +231,7 @@ function normalizeCollectionTitles(value, roles, errors) {
 	const titles = {};
 	for (const role of roles) {
 		const title = plainObject(supplied) && Object.hasOwn(supplied, role) ? supplied[role] : defaults[role];
-		if (typeof title !== "string" || title.trim().length === 0) {
+		if (typeof title !== "string" || (visibleTitlesRequired && title.trim().length === 0)) {
 			errors.push(diagnostic("INVALID_DECADES_COLLECTION_TITLE", `$decadesPlan.collectionTitles.${role}`, "Collection title proposals must be nonblank strings."));
 		} else titles[role] = title;
 	}
@@ -387,7 +387,7 @@ export function createDecadesHierarchyPlan(project, options) {
 			: sourcePlan.configuration.mediaMode === "series"
 				? ["series"]
 				: layout === "mixed-collection" ? ["mixed"] : ["movies", "series"];
-		collectionTitles = normalizeCollectionTitles(options.collectionTitles, roles, errors);
+		collectionTitles = normalizeCollectionTitles(options.collectionTitles, roles, errors, hideCollectionTitle !== true);
 		if (options.destinationCollectionInternalId !== undefined) errors.push(diagnostic("UNEXPECTED_DECADES_DESTINATION", "$decadesPlan.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));
 	} else if (scope === "new-folder") {
 		if (typeof options.destinationCollectionInternalId !== "string" || options.destinationCollectionInternalId.length === 0) {

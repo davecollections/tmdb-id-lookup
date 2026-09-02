@@ -3280,13 +3280,47 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		review = required(dialog.querySelector(".streaming-hierarchy-review"), "New Collection Review");
 		let newFolderNames = required(review.querySelector(".streaming-folder-names"), "New Collection folder names");
 		await clickAndSettle(required(newFolderNames.querySelector("summary"), "New Collection Folder names summary"));
+		let newCollectionName = required(review.querySelector("#streaming-collection-name"), "new Collection name");
 		let newAppleName = required(review.querySelector("#streaming-folder-name-2"), "new Apple folder name");
 		let newDekkooName = required(review.querySelector("#streaming-folder-name-444"), "new Dekkoo folder name");
 		await act(async () => {
+			setInputValue(newCollectionName, "Custom Collection");
 			setInputValue(newAppleName, "Curated Apple New");
 			setInputValue(newDekkooName, "Curated Dekkoo");
 			await afterCommittedEffects();
 		});
+		const hideCollectionTitle = required(review.querySelector('[data-editor-control="streamingHideNuvioTitle"]'), "Hide Collection title switch");
+		await clickAndSettle(hideCollectionTitle);
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "hidden Collection Review");
+		newCollectionName = required(review.querySelector("#streaming-collection-name"), "hidden Collection name");
+		const collectionHidden = newCollectionName.value === "" && newCollectionName.disabled;
+		const collectionHiddenHelp = review.querySelector("#streaming-collection-title-hidden-help")?.textContent.trim() === "The collection title is intentionally invisible in Nuvio. Turn off the setting below to enter a visible title.";
+		await clickAndSettle(required(review.querySelector('[data-editor-control="streamingHideNuvioTitle"]'), "Show Collection title switch"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "restored Collection Review");
+		newCollectionName = required(review.querySelector("#streaming-collection-name"), "restored Collection name");
+		const collectionRestored = newCollectionName.value === "Custom Collection" && !newCollectionName.disabled;
+		const collectionHiddenHelpRemoved = review.querySelector("#streaming-collection-title-hidden-help") === null;
+		await act(async () => { setInputValue(newCollectionName, "Custom Collection 2"); await afterCommittedEffects(); });
+		await clickAndSettle(required(review.querySelector('[data-editor-control="streamingHideNuvioTitle"]'), "rehide Collection title switch"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "rehidden Collection Review");
+		await clickAndSettle(required(review.querySelector('[data-editor-control="streamingHideNuvioTitle"]'), "reshow Collection title switch"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "second restored Collection Review");
+		newCollectionName = required(review.querySelector("#streaming-collection-name"), "second restored Collection name");
+		const latestCollectionRestored = newCollectionName.value === "Custom Collection 2" && !newCollectionName.disabled;
+		await clickAndSettle(required(review.querySelector('input[name="streaming-folder-title-visibility"][value="HIDE_EVERYWHERE"]'), "Hide Folder titles everywhere option"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "hidden Folder-title Review");
+		newAppleName = required(review.querySelector("#streaming-folder-name-2"), "hidden Apple folder name");
+		newDekkooName = required(review.querySelector("#streaming-folder-name-444"), "hidden Dekkoo folder name");
+		const folderHidden = [newAppleName, newDekkooName].every((input) => input.value === "" && input.disabled);
+		const folderHiddenHelp = review.querySelector("#streaming-folder-titles-hidden-help")?.textContent.trim() === "Folder titles are intentionally invisible everywhere in Nuvio. Choose a visible option below to enter visible titles.";
+		const planningLabelsRetained = [...review.querySelectorAll(".streaming-folder-name-field > label")].map((label) => label.textContent.trim()).join("|") === providerNames.join("|");
+		await clickAndSettle(required(review.querySelector('input[name="streaming-folder-title-visibility"][value="HIDE_HOME_SCREEN"]'), "Hide Folder titles on home only option"));
+		review = required(dialog.querySelector(".streaming-hierarchy-review"), "home-only Folder-title Review");
+		newAppleName = required(review.querySelector("#streaming-folder-name-2"), "home-only Apple folder name");
+		newDekkooName = required(review.querySelector("#streaming-folder-name-444"), "home-only Dekkoo folder name");
+		const folderHomeOnlyRestored = newAppleName.value === "Curated Apple New" && !newAppleName.disabled && newDekkooName.value === "Curated Dekkoo" && !newDekkooName.disabled;
+		const folderHiddenHelpRemovedOnHomeOnly = review.querySelector("#streaming-folder-titles-hidden-help") === null;
+		const titleVisibility = { collectionHidden, collectionHiddenHelp, collectionRestored, collectionHiddenHelpRemoved, latestCollectionRestored, folderHidden, folderHiddenHelp, folderHomeOnlyRestored, folderHiddenHelpRemovedOnHomeOnly, planningLabelsRetained };
 		const newCollectionDraftState = {
 			collectionNameVisible: review.querySelector("#streaming-collection-name") !== null,
 			folderNameCount: Number(review.querySelector(".streaming-folder-names")?.dataset.streamingFolderNameCount),
@@ -3332,6 +3366,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 			focusEntered: reviewFocusEntered,
 			initialDestination,
 			newCollectionDraftState,
+			titleVisibility,
 			existingDestinationState,
 			newCollectionDraftsRestored,
 			planTotals: [...review.querySelectorAll(".decades-plan-totals strong")].map((node) => Number(node.textContent)),

@@ -84,7 +84,7 @@ function titleCollisions(project, title) {
 		.map((collection) => Object.freeze({ collectionInternalId: collection.internalId, collectionTitle: title })));
 }
 
-function normalizeCollectionTitles(value, errors) {
+function normalizeCollectionTitles(value, errors, visibleTitlesRequired = true) {
 	const supplied = value ?? DEFAULT_GENRE_HIERARCHY_COLLECTION_TITLES;
 	if (!plainObject(supplied) || Object.keys(supplied).some((key) => !["movies", "series"].includes(key))) {
 		errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_TITLES", "$genreHierarchy.collectionTitles", "Separate collections require Movie and Series collection names."));
@@ -93,7 +93,7 @@ function normalizeCollectionTitles(value, errors) {
 	const titles = {};
 	for (const role of ["movies", "series"]) {
 		const title = Object.hasOwn(supplied, role) ? supplied[role] : DEFAULT_GENRE_HIERARCHY_COLLECTION_TITLES[role];
-		if (typeof title !== "string" || !title.trim() || title !== title.trim()) {
+		if (typeof title !== "string" || (visibleTitlesRequired && (!title.trim() || title !== title.trim()))) {
 			errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_TITLE", `$genreHierarchy.collectionTitles.${role}`, "Collection names must be nonblank trimmed strings."));
 		} else titles[role] = title;
 	}
@@ -165,11 +165,11 @@ export function createGenreHierarchyPlan(project, options) {
 		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
 		if (structure === "separate-media-collections") {
-			collectionTitles = normalizeCollectionTitles(options.collectionTitles, errors);
+			collectionTitles = normalizeCollectionTitles(options.collectionTitles, errors, hideCollectionTitle !== true);
 			if (options.collectionTitle !== undefined && options.collectionTitle !== null) errors.push(diagnostic("UNEXPECTED_GENRE_HIERARCHY_COLLECTION_TITLE", "$genreHierarchy.collectionTitle", "Separate collections use Movie and Series collection names."));
 		} else {
 			collectionTitle = options.collectionTitle ?? DEFAULT_GENRE_HIERARCHY_COLLECTION_TITLE;
-			if (typeof collectionTitle !== "string" || !collectionTitle.trim() || collectionTitle !== collectionTitle.trim()) errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_TITLE", "$genreHierarchy.collectionTitle", "The Genres collection name must be a nonblank trimmed string."));
+			if (typeof collectionTitle !== "string" || (hideCollectionTitle !== true && (!collectionTitle.trim() || collectionTitle !== collectionTitle.trim()))) errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_TITLE", "$genreHierarchy.collectionTitle", "The Genres collection name must be a nonblank trimmed string."));
 			if (options.collectionTitles !== undefined && Object.keys(options.collectionTitles ?? {}).length > 0) errors.push(diagnostic("UNEXPECTED_GENRE_HIERARCHY_COLLECTION_TITLES", "$genreHierarchy.collectionTitles", "This structure creates one collection."));
 		}
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_TITLE_VISIBILITY", "$genreHierarchy.hideCollectionTitle", "Collection title visibility must be true or false."));

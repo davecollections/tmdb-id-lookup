@@ -17,6 +17,7 @@ import {
 	selectedNetworks,
 	toggleSelectedNetwork,
 } from "../source-add/index.js";
+import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
@@ -24,7 +25,7 @@ import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { NetworkLogo, NetworkResultContent, NetworkSearchStep } from "./NetworkSourceFlow.jsx";
 import { NetworkSortChoices } from "./NetworkSortChoices.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
-import { FolderShapeChoices, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
+import { FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { useNetworkCatalogueSearch } from "./use-network-catalogue-search.js";
 
@@ -135,7 +136,7 @@ function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange,
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="network-hierarchy-appearance-title" ref={headingRef} tabIndex={-1}>Appearance</h3></div></div>
 			{plan ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
 			{options.scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="network-collection-name">Collection name</label><input id="network-collection-name" type="text" value={options.collectionTitle} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /></div>
+				<div className="editor-field"><label htmlFor="network-collection-name">Collection name</label><input id="network-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "network-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="network-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="network-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "network-hide-title-help", controlName: "networkHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "network-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="network-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Network folder in one All tab." showAllDescriptionId="network-all-tab-help" showAllControlName="networkShowAllTab" /></fieldset>

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { isValidVisibleNuvioTitle } from "../nuvio/titles.js";
+import { isValidVisibleNuvioTitle, reversibleTitleFieldProps } from "../nuvio/titles.js";
 import {
 	browseStreamingProviders,
 	browseStreamingRegions,
@@ -32,7 +32,7 @@ import { CreationHeader } from "./CreationHeader.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
-import { PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
+import { HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { StreamingRegionStep, toggleStreamingRegionSelection } from "./StreamingSourceFlow.jsx";
@@ -288,7 +288,7 @@ export function StreamingDestinationChooser({ candidates, selectedDestination, e
 	);
 }
 
-function FolderNameEditor({ folders, drafts, errors, onChange, onUseDefault }) {
+function FolderNameEditor({ folders, drafts, errors, hiddenEverywhere, onChange, onUseDefault }) {
 	if (!folders.length) return null;
 	return (
 		<details className="streaming-folder-names" data-streaming-folder-name-count={folders.length}>
@@ -299,8 +299,9 @@ function FolderNameEditor({ folders, drafts, errors, onChange, onUseDefault }) {
 				const custom = Object.hasOwn(drafts, folder.key);
 				const value = custom ? drafts[folder.key] : folder.generatedTitle;
 				const error = errors.get(folder.key);
-				return <div className="editor-field streaming-folder-name-field" key={folder.key}><label htmlFor={inputId}>{folder.generatedTitle}</label><input id={inputId} type="text" value={value} aria-invalid={error ? "true" : undefined} aria-describedby={`${inputId}-error`} onChange={(event) => onChange(folder.key, event.target.value)} />{custom ? <div><button type="button" onClick={() => onUseDefault(folder.key)}>Use default name</button></div> : null}<p className="editor-field-error" id={`${inputId}-error`}>{error?.message ?? ""}</p></div>;
+				return <div className="editor-field streaming-folder-name-field" key={folder.key}><label htmlFor={inputId}>{folder.generatedTitle}</label><input id={inputId} type="text" {...reversibleTitleFieldProps(value, hiddenEverywhere)} aria-invalid={error ? "true" : undefined} aria-describedby={[`${inputId}-error`, hiddenEverywhere ? "streaming-folder-titles-hidden-help" : null].filter(Boolean).join(" ")} onChange={(event) => onChange(folder.key, event.target.value)} />{custom ? <div><button type="button" onClick={() => onUseDefault(folder.key)}>Use default name</button></div> : null}<p className="editor-field-error" id={`${inputId}-error`}>{error?.message ?? ""}</p></div>;
 			})}</div>
+			<HiddenTitleFieldHelp id="streaming-folder-titles-hidden-help" hidden={hiddenEverywhere} kind="folder" plural={folders.length > 1} />
 		</details>
 	);
 }
@@ -334,7 +335,7 @@ function ReviewStep({ planResult, intentConfiguration, newCollectionElsewhereEvi
 				{existingScope ? <section className="streaming-placement-review" aria-label="Streaming placement changes"><div className="studio-configure-list">{plan.outcomes.map((outcome) => <PlacementReviewRow key={outcome.key} outcome={outcome} collectionDisplayContext={collectionDisplayContext} />)}</div></section> : <NewCollectionElsewhereEvidence evidence={plan.elsewhereEvidence} collectionDisplayContext={collectionDisplayContext} />}
 				{plan.conflicts.length ? <div className="editor-diagnostics" role="alert">{plan.conflicts.map((conflict, index) => <p key={`${conflict.code}-${index}`}>{conflict.message}</p>)}</div> : null}
 				{routedExisting && plan.conflicts.length === 0 && plan.counts.newSourceCount === 0 ? <section className="streaming-nothing-to-add" role="status"><strong>Nothing to add</strong><p>All selected Streaming sources already exist in {activeDestinationLabel}. No project changes are needed.</p></section> : null}
-				{activeScope === "new-collection" ? <><div className="editor-field"><label htmlFor="streaming-collection-name">Collection name</label><input id="streaming-collection-name" type="text" value={options.collectionTitle} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /></div><FolderNameEditor folders={plan.newFolders} drafts={folderTitleDrafts} errors={folderTitleErrors} onChange={onFolderTitleChange} onUseDefault={onUseDefaultFolderTitle} /><TitleOptions idPrefix="streaming-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "streaming-hide-title-help", controlName: "streamingHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "streaming-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} /><fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="streaming-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Streaming folder in one All tab." showAllDescriptionId="streaming-all-tab-help" showAllControlName="streamingShowAllTab" /></fieldset><PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="streaming-pin-help" controlName="streamingPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} /></> : <><div className="franchise-inherited-summary"><strong>Collection settings stay unchanged</strong><span>{activeDestinationLabel} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.</span></div><FolderNameEditor folders={plan.newFolders} drafts={folderTitleDrafts} errors={folderTitleErrors} onChange={onFolderTitleChange} onUseDefault={onUseDefaultFolderTitle} />{plan.newFolders.length ? <TitleOptions idPrefix="streaming-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "streaming-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} /> : null}</>}
+				{activeScope === "new-collection" ? <><div className="editor-field"><label htmlFor="streaming-collection-name">Collection name</label><input id="streaming-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "streaming-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="streaming-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div><FolderNameEditor folders={plan.newFolders} drafts={folderTitleDrafts} errors={folderTitleErrors} hiddenEverywhere={options.folderTitleVisibility === "HIDE_EVERYWHERE"} onChange={onFolderTitleChange} onUseDefault={onUseDefaultFolderTitle} /><TitleOptions idPrefix="streaming-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "streaming-hide-title-help", controlName: "streamingHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "streaming-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} /><fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="streaming-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Streaming folder in one All tab." showAllDescriptionId="streaming-all-tab-help" showAllControlName="streamingShowAllTab" /></fieldset><PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="streaming-pin-help" controlName="streamingPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} /></> : <><div className="franchise-inherited-summary"><strong>Collection settings stay unchanged</strong><span>{activeDestinationLabel} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.</span></div><FolderNameEditor folders={plan.newFolders} drafts={folderTitleDrafts} errors={folderTitleErrors} hiddenEverywhere={options.folderTitleVisibility === "HIDE_EVERYWHERE"} onChange={onFolderTitleChange} onUseDefault={onUseDefaultFolderTitle} />{plan.newFolders.length ? <TitleOptions idPrefix="streaming-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "streaming-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} /> : null}</>}
 				{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 			</>}
 		</section>
@@ -446,9 +447,9 @@ export function StreamingHierarchyFlow({
 	const logicalFolderKeySignature = logicalFolderKeys?.join("\n") ?? "";
 	const activeNewFolderKeys = new Set(planResult?.ok ? planResult.plan.newFolders.map((folder) => folder.key) : []);
 	const activeNewFolderKeySignature = [...activeNewFolderKeys].join("\n");
-	const folderTitleErrors = useMemo(() => new Map(Object.entries(folderTitleDrafts)
+	const folderTitleErrors = useMemo(() => options.folderTitleVisibility === "HIDE_EVERYWHERE" ? new Map() : new Map(Object.entries(folderTitleDrafts)
 		.filter(([key, title]) => activeNewFolderKeys.has(key) && !isValidVisibleNuvioTitle(title))
-		.map(([key]) => [key, { message: "Enter a folder title before applying changes." }])), [activeNewFolderKeySignature, folderTitleDrafts]);
+		.map(([key]) => [key, { message: "Enter a folder title before applying changes." }])), [activeNewFolderKeySignature, folderTitleDrafts, options.folderTitleVisibility]);
 	const currentElsewhereEvidenceSignature = JSON.stringify(newCollectionElsewhereEvidence ?? null);
 
 	useEffect(() => {

@@ -3,6 +3,7 @@ import {
 	isValidNuvioTitle,
 	isValidVisibleNuvioTitle,
 	NUVIO_INVISIBLE_TITLE,
+	transitionReversibleTitleDraft,
 } from "../nuvio/titles.js";
 import { FOLDER_ARTWORK_TEXT_FIELD_NAMES } from "../nuvio/folder-artwork-fields.js";
 import {
@@ -249,19 +250,18 @@ export function updateNodeEditorField(draft, field, value) {
 	}
 
 	if (field === "hideNuvioTitle") {
-		const visibleTitleDraft = value
-			? (
-				isValidVisibleNuvioTitle(draft.values.title)
-					? draft.values.title
-					: draft.visibleTitleDraft
-			)
-			: draft.visibleTitleDraft;
+		const titleTransition = transitionReversibleTitleDraft({
+			title: draft.values.title,
+			visibleTitleDraft: draft.visibleTitleDraft,
+			hiddenEverywhere: value,
+			hiddenTitle: NUVIO_INVISIBLE_TITLE,
+		});
 
 		return {
 			...draft,
 			values: {
 				...draft.values,
-				title: value ? NUVIO_INVISIBLE_TITLE : visibleTitleDraft ?? "",
+				title: titleTransition.title,
 				hideNuvioTitle: value,
 			},
 			touched: {
@@ -269,19 +269,17 @@ export function updateNodeEditorField(draft, field, value) {
 				title: true,
 				hideNuvioTitle: true,
 			},
-			visibleTitleDraft,
+			visibleTitleDraft: titleTransition.visibleTitleDraft,
 		};
 	}
 
 	if (field === "folderTitleVisibility") {
 		const hidingEverywhere = value === "HIDE_EVERYWHERE";
-		const visibleTitleDraft = hidingEverywhere
-			? (
-				isValidVisibleNuvioTitle(draft.values.title)
-					? draft.values.title
-					: draft.visibleTitleDraft
-			)
-			: draft.visibleTitleDraft;
+		const titleTransition = transitionReversibleTitleDraft({
+			title: draft.values.title,
+			visibleTitleDraft: draft.visibleTitleDraft,
+			hiddenEverywhere: hidingEverywhere,
+		});
 		const canonicalizeFolderInvisibleTitle = hidingEverywhere && (
 			!draft.original.title.hidden
 			|| (draft.touched.title && isValidVisibleNuvioTitle(draft.values.title))
@@ -291,14 +289,14 @@ export function updateNodeEditorField(draft, field, value) {
 			...draft,
 			values: {
 				...draft.values,
-				title: hidingEverywhere ? "" : visibleTitleDraft ?? "",
+				title: titleTransition.title,
 				folderTitleVisibility: value,
 			},
 			touched: {
 				...draft.touched,
 				folderTitleVisibility: true,
 			},
-			visibleTitleDraft,
+			visibleTitleDraft: titleTransition.visibleTitleDraft,
 			canonicalizeFolderInvisibleTitle,
 		};
 	}

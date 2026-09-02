@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createBuilderController } from "../builder/src/application/index.js";
+import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
 import {
 	DEFAULT_NETWORK_SERIES_COUNT_FILTER,
 	networkMatchesSeriesCountFilter,
@@ -219,6 +220,16 @@ test("Network plan defaults to Networks, Popular, Show everywhere, Poster, canon
 	assert.equal(folder.editable.hideTitle, false);
 	assert.equal(folder.editable.tileShape, "POSTER");
 	assert.equal(folder.sources[0].draft.editable.title, "Series");
+});
+
+test("Network hidden collection output does not require its remembered visible title draft", () => {
+	const app = controller();
+	const state = app.getState();
+	const hidden = createNetworkHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: true, networks: planEntries([network(2)]) });
+	assert.equal(hidden.ok, true);
+	assert.equal(hidden.plan.configuration.collectionTitle, "");
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(createNetworkHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: false, networks: planEntries([network(2)]) }).ok, false);
 });
 
 test("New Folder distinguishes Already, Elsewhere and Ready without a Partial state", () => {

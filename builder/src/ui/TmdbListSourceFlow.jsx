@@ -12,12 +12,13 @@ import {
 	tmdbListDuplicateOverrideIdentity,
 	TMDB_LIST_PLACEMENT_STATUSES,
 } from "../source-add/index.js";
+import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
-import { FolderShapeChoices, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
+import { FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
@@ -207,6 +208,13 @@ export function TmdbListSourceFlow({
 	}
 	function updatePresentation(patch) {
 		setPresentation((current) => Object.freeze({ ...current, ...patch }));
+		if (patch.hideCollectionTitle === true || patch.folderTitleVisibility === "HIDE_EVERYWHERE") {
+			setRequiredNameErrors((current) => Object.freeze({
+				...current,
+				...(patch.hideCollectionTitle === true ? { collection: false } : {}),
+				...(patch.folderTitleVisibility === "HIDE_EVERYWHERE" ? { folder: false } : {}),
+			}));
+		}
 		setDiagnostic(null);
 	}
 	function updateRequiredName(field, value) {
@@ -222,8 +230,8 @@ export function TmdbListSourceFlow({
 		if (applying) return;
 		if (!standalone) {
 			const missing = Object.freeze({
-				collection: scope === "new-collection" && !collectionTitle.trim(),
-				folder: !folderTitle.trim(),
+				collection: scope === "new-collection" && !presentation.hideCollectionTitle && !collectionTitle.trim(),
+				folder: presentation.folderTitleVisibility !== "HIDE_EVERYWHERE" && !folderTitle.trim(),
 			});
 			if (missing.collection || missing.folder) {
 				setRequiredNameErrors(missing);
@@ -260,6 +268,8 @@ export function TmdbListSourceFlow({
 	}) : planResult?.ok ? planResult.plan.outcomes : [];
 	const count = standalone ? (duplicateOverride ? lists.length : normalAddCount) : planResult?.ok ? planResult.plan.counts.sourceCount : lists.length;
 	const requiredNameMessage = requiredNamesMessage(requiredNameErrors);
+	const collectionTitleHiddenEverywhere = presentation.hideCollectionTitle;
+	const folderTitleHiddenEverywhere = presentation.folderTitleVisibility === "HIDE_EVERYWHERE";
 	const back = () => { if (applying) return; if (step === "review") { setStep("select"); setDiagnostic(null); setRequiredNameErrors(Object.freeze({ collection: false, folder: false })); } else onBack(); };
 
 	const inner = <>
@@ -274,8 +284,8 @@ export function TmdbListSourceFlow({
 					{lists.length ? <SelectedLists lists={lists} onPreview={openPreview} onRemove={(id) => setLists((current) => Object.freeze(current.filter((list) => list.id !== id)))} /> : null}
 				</> : <section className="tmdb-list-review" aria-labelledby="tmdb-list-review-title">
 					<div className="add-source-section-heading"><div><p className="panel-kicker">Review</p><h3 ref={headingRef} id="tmdb-list-review-title" tabIndex={-1}>{count ? `${count} source${count === 1 ? "" : "s"} will be added` : "Nothing to add"}</h3></div></div>
-					{!standalone && scope === "new-collection" ? <div className="editor-field"><label htmlFor="tmdb-list-collection-title">Collection name</label><input ref={collectionTitleRef} id="tmdb-list-collection-title" type="text" value={collectionTitle} aria-invalid={requiredNameErrors.collection ? "true" : undefined} aria-describedby={requiredNameErrors.collection ? "tmdb-list-required-names" : undefined} onChange={(event) => updateRequiredName("collection", event.target.value)} /></div> : null}
-					{!standalone ? <div className="editor-field"><label htmlFor="tmdb-list-folder-title">Folder name</label><input ref={folderTitleRef} id="tmdb-list-folder-title" type="text" value={folderTitle} aria-invalid={requiredNameErrors.folder ? "true" : undefined} aria-describedby={`tmdb-list-folder-help${requiredNameErrors.folder ? " tmdb-list-required-names" : ""}`} onChange={(event) => updateRequiredName("folder", event.target.value)} /><p id="tmdb-list-folder-help" className="editor-field-help">One folder will contain the selected List sources in this order.</p></div> : null}
+					{!standalone && scope === "new-collection" ? <div className="editor-field"><label htmlFor="tmdb-list-collection-title">Collection name</label><input ref={collectionTitleRef} id="tmdb-list-collection-title" type="text" {...reversibleTitleFieldProps(collectionTitle, collectionTitleHiddenEverywhere)} aria-invalid={requiredNameErrors.collection ? "true" : undefined} aria-describedby={[collectionTitleHiddenEverywhere ? "tmdb-list-collection-title-hidden-help" : null, requiredNameErrors.collection ? "tmdb-list-required-names" : null].filter(Boolean).join(" ") || undefined} onChange={(event) => updateRequiredName("collection", event.target.value)} /><HiddenTitleFieldHelp id="tmdb-list-collection-title-hidden-help" hidden={collectionTitleHiddenEverywhere} kind="collection" /></div> : null}
+					{!standalone ? <div className="editor-field"><label htmlFor="tmdb-list-folder-title">Folder name</label><input ref={folderTitleRef} id="tmdb-list-folder-title" type="text" {...reversibleTitleFieldProps(folderTitle, folderTitleHiddenEverywhere)} aria-invalid={requiredNameErrors.folder ? "true" : undefined} aria-describedby={[folderTitleHiddenEverywhere ? "tmdb-list-folder-title-hidden-help" : "tmdb-list-folder-help", requiredNameErrors.folder ? "tmdb-list-required-names" : null].filter(Boolean).join(" ")} onChange={(event) => updateRequiredName("folder", event.target.value)} /><HiddenTitleFieldHelp id="tmdb-list-folder-title-hidden-help" hidden={folderTitleHiddenEverywhere} kind="folder" />{!folderTitleHiddenEverywhere ? <p id="tmdb-list-folder-help" className="editor-field-help">One folder will contain the selected List sources in this order.</p> : null}</div> : null}
 					{!standalone ? <GuidedPresentationControls scope={scope} options={presentation} destinationCollectionTitle={destinationCollectionTitle} onChange={updatePresentation} /> : null}
 					<div className="tmdb-list-review-items">{lists.map((list, index) => { const outcome = reviewOutcomes[index] ?? { status: TMDB_LIST_PLACEMENT_STATUSES.READY, elsewhere: [] }; const sourceHelpId = `tmdb-list-source-title-${list.id}-help`; return <article key={list.id} className="tmdb-list-review-item"><div><strong>{list.name || `TMDB list ${list.id}`}</strong><em>{statusLabel(outcome.status)}</em></div><small>TMDB {list.id} · {list.itemCount} title{list.itemCount === 1 ? "" : "s"} · Original order</small><div className="editor-field"><label htmlFor={`tmdb-list-source-title-${list.id}`}>Source name</label><input id={`tmdb-list-source-title-${list.id}`} type="text" value={list.sourceTitle} aria-describedby={sourceHelpId} onChange={(event) => updateTitle(list.id, event.target.value)} /><p id={sourceHelpId} className="editor-field-help">{SOURCE_NAME_HELPER}</p></div>{outcome.elsewhere?.length ? <SourceElsewhereNotice occurrences={outcome.elsewhere} heading="This TMDB List source exists elsewhere" action="It can still be added here." /> : null}</article>; })}</div>
 					{standalone && destinationDuplicates.length ? <div className="editor-diagnostics"><p>{destinationDuplicates.length} selected source{destinationDuplicates.length === 1 ? " is" : "s are"} already in this folder and will be omitted.</p><button type="button" onClick={() => setDuplicateOverride((value) => !value)}>{duplicateOverride ? "Omit existing sources" : "Add all anyway"}</button></div> : null}

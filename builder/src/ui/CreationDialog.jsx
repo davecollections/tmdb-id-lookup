@@ -18,7 +18,7 @@ import {
 	createAsyncRequestCoordinator,
 	decadesRepresentativeItems,
 } from "../source-add/index.js";
-import { isInvisibleNuvioTitle } from "../nuvio/titles.js";
+import { isInvisibleNuvioTitle, reversibleTitleFieldProps } from "../nuvio/titles.js";
 import {
 	lockAddSourceDocumentBody,
 	observeAddSourceViewport,
@@ -59,6 +59,7 @@ import { LauncherOptionCard } from "./LauncherOptionCard.jsx";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import {
 	FolderShapeChoices,
+	HiddenTitleFieldHelp,
 	PresentationSwitch,
 	TitleOptions,
 } from "./PresentationControls.jsx";
@@ -418,7 +419,7 @@ function TitlesAndVisibility({ state, onStateChange }) {
 				descriptionId: "decades-hidden-title-help",
 				onChange: (hideCollectionTitle) => onStateChange(Object.freeze({ ...state, hideCollectionTitle })),
 			} : null}
-			collectionStatus={state.scope === "new-collection" && state.hideCollectionTitle ? <p id={DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID} className="editor-field-help" role="status">Collection titles are intentionally hidden in Nuvio. Turn this off to edit visible titles.</p> : null}
+			collectionStatus={<HiddenTitleFieldHelp id={DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID} hidden={state.scope === "new-collection" && state.hideCollectionTitle} kind="collection" plural />}
 			folderTitleVisibility={{
 				selectedId: state.folderTitleVisibility,
 				name: "decades-folder-title-visibility",
@@ -536,7 +537,7 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 				<h3 id="decades-review-error-title" ref={headingRef} tabIndex={-1}>Review needs attention</h3>
 				<SelectedDecadesSummary selectedDecadeIds={state.selectedDecadeIds} />
 				{state.scope === "new-collection" ? <div className="decades-collection-names">
-					{Object.entries(state.collectionTitles).map(([role, title]) => <div className="editor-field" key={role}><label htmlFor={`decades-collection-${role}`}>{role === "mixed" ? "Collection name" : `${role === "movies" ? "Movie" : "TV"} collection name`}</label><input id={`decades-collection-${role}`} type="text" value={state.hideCollectionTitle ? "" : title} disabled={state.hideCollectionTitle} aria-describedby={state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : undefined} onChange={(event) => onCollectionTitleChange(role, event.target.value)} /></div>)}
+					{Object.entries(state.collectionTitles).map(([role, title]) => <div className="editor-field" key={role}><label htmlFor={`decades-collection-${role}`}>{role === "mixed" ? "Collection name" : `${role === "movies" ? "Movie" : "TV"} collection name`}</label><input id={`decades-collection-${role}`} type="text" {...reversibleTitleFieldProps(title, state.hideCollectionTitle)} aria-describedby={state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : undefined} onChange={(event) => onCollectionTitleChange(role, event.target.value)} /></div>)}
 				</div> : null}
 				<TitlesAndVisibility state={state} onStateChange={onStateChange} />
 				<ul className="genre-advanced-errors" role="alert">{planResult.errors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul>
@@ -559,7 +560,7 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 					{plan.collections.map((collection) => (
 						<div className="editor-field" key={collection.role}>
 							<label htmlFor={`decades-collection-${collection.role}`}>{collection.role === "mixed" ? "Collection name" : `${collection.role === "movies" ? "Movie" : "TV"} collection name`}</label>
-							<input id={`decades-collection-${collection.role}`} type="text" value={state.hideCollectionTitle ? "" : state.collectionTitles[collection.role] ?? ""} disabled={state.hideCollectionTitle} aria-describedby={[state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : null, collection.titleCollisions.length > 0 ? `decades-title-collision-${collection.role}` : null].filter(Boolean).join(" ") || undefined} onChange={(event) => onCollectionTitleChange(collection.role, event.target.value)} />
+							<input id={`decades-collection-${collection.role}`} type="text" {...reversibleTitleFieldProps(state.collectionTitles[collection.role], state.hideCollectionTitle)} aria-describedby={[state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : null, collection.titleCollisions.length > 0 ? `decades-title-collision-${collection.role}` : null].filter(Boolean).join(" ") || undefined} onChange={(event) => onCollectionTitleChange(collection.role, event.target.value)} />
 							{collection.titleCollisions.length > 0 ? <p id={`decades-title-collision-${collection.role}`} className="editor-field-help">A collection with this name already exists. The new collection will still be created.</p> : null}
 						</div>
 					))}

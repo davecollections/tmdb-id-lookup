@@ -206,6 +206,17 @@ test("People New Collection plan preserves order, canonical naming, source seman
 	assert.deepEqual(result.plan.counts, { collectionCount: 1, folderCount: 2, sourceCount: 4 });
 });
 
+test("People hidden collection output does not require its remembered visible title draft", () => {
+	const app = controller();
+	const state = app.getState();
+	const people = [planEntry({ id: 31, name: "Tom Hanks" }, ["acting-movies"])];
+	const hidden = createPeopleHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: true, people });
+	assert.equal(hidden.ok, true);
+	assert.equal(hidden.plan.configuration.collectionTitle, "");
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(createPeopleHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: false, people }).ok, false);
+});
+
 test("People Rows plans force the compatibility All-tab value on while Tabs keeps an explicit choice", () => {
 	const app = controller();
 	const state = app.getState();

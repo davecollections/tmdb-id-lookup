@@ -151,6 +151,17 @@ test("folder title visibility remains batch-safe while Franchise tile artwork st
 	assert.equal(unsupported.errors[0].code, "INVALID_FRANCHISE_PLAN_OPTIONS");
 });
 
+test("Franchise hidden collection output does not require its remembered visible title draft", () => {
+	const app = controller();
+	const state = app.getState();
+	const selected = [franchise(10, "Example Collection")];
+	const hidden = createFranchiseHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: true, franchises: selected });
+	assert.equal(hidden.ok, true);
+	assert.equal(hidden.plan.configuration.collectionTitle, "");
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(createFranchiseHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", hideCollectionTitle: false, franchises: selected }).ok, false);
+});
+
 test("Franchise Rows plans force the compatibility All-tab value on while Tabs keeps an explicit choice", () => {
 	const app = controller();
 	const state = app.getState();

@@ -296,6 +296,27 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 	]) assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", folderTitle: "Folder", lists: [list(33)], ...invalid }).ok, false);
 });
 
+test("guided TMDB Lists validates remembered titles only when their final fields stay visible", () => {
+	const controller = app();
+	const state = controller.getState();
+	const hidden = createTmdbListHierarchyPlan(state.project, {
+		scope: "new-collection",
+		projectRevision: state.revision,
+		collectionTitle: "",
+		hideCollectionTitle: true,
+		folderTitle: "",
+		folderTitleVisibility: "HIDE_EVERYWHERE",
+		lists: [list(34)],
+	});
+	assert.equal(hidden.ok, true);
+	assert.equal(hidden.plan.configuration.collectionTitle, "");
+	assert.equal(hidden.plan.configuration.folderTitle, "");
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(hidden.plan.collections[0].folders[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", folderTitle: "Folder", lists: [list(35)] }).ok, false);
+	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", folderTitle: "", lists: [list(36)] }).ok, false);
+});
+
 test("guided TMDB Lists has no arbitrary bulk cap and a late atomic failure rolls back all hierarchy nodes", () => {
 	const controller = app();
 	let state = controller.getState();

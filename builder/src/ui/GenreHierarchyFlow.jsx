@@ -24,6 +24,7 @@ import {
 	pruneGenreExclusionConfiguration,
 	searchGenreConcepts,
 } from "../source-add/index.js";
+import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { ChoiceCards } from "./ChoiceCards.jsx";
@@ -33,7 +34,7 @@ import { toggleGenreSelection } from "./GenreSourceFlow.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
-import { FolderShapeChoices, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
+import { FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
@@ -264,7 +265,10 @@ function AppearanceStep({ planResult, options, onOptionsChange, diagnostic, head
 			<div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div>
 			{omittedCount || elsewhereCount ? <p className="studio-configure-helper">{omittedCount ? `${omittedCount} destination match${omittedCount === 1 ? " is" : "es are"} omitted. ` : ""}{elsewhereCount ? `${elsewhereCount} elsewhere match${elsewhereCount === 1 ? " remains" : "es remain"} addable.` : ""}</p> : null}
 			{plan.configuration.scope === "new-collection" ? <>
-				{separateCollections ? <div className="genre-collection-name-grid">{[["movies", "Movie collection name"], ["series", "Series collection name"]].map(([role, label]) => <div className="editor-field" key={role}><label htmlFor={`genre-hierarchy-collection-${role}`}>{label}</label><input id={`genre-hierarchy-collection-${role}`} type="text" value={options.collectionTitles[role]} disabled={options.hideCollectionTitle} onChange={(event) => onOptionsChange({ collectionTitles: Object.freeze({ ...options.collectionTitles, [role]: event.target.value }) })} /></div>)}</div> : <div className="editor-field"><label htmlFor="genre-hierarchy-collection-name">Collection name</label><input id="genre-hierarchy-collection-name" type="text" value={options.collectionTitle} disabled={options.hideCollectionTitle} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /></div>}
+				{separateCollections ? <>
+					<div className="genre-collection-name-grid">{[["movies", "Movie collection name"], ["series", "Series collection name"]].map(([role, label]) => <div className="editor-field" key={role}><label htmlFor={`genre-hierarchy-collection-${role}`}>{label}</label><input id={`genre-hierarchy-collection-${role}`} type="text" {...reversibleTitleFieldProps(options.collectionTitles[role], options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "genre-hierarchy-collection-titles-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitles: Object.freeze({ ...options.collectionTitles, [role]: event.target.value }) })} /></div>)}</div>
+					<HiddenTitleFieldHelp id="genre-hierarchy-collection-titles-hidden-help" hidden={options.hideCollectionTitle} kind="collection" plural />
+				</> : <div className="editor-field"><label htmlFor="genre-hierarchy-collection-name">Collection name</label><input id="genre-hierarchy-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "genre-hierarchy-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="genre-hierarchy-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>}
 				<TitleOptions idPrefix="genre-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "genre-hierarchy-hide-collection-title-help", controlName: "genreHierarchyHideNuvioTitle" }} folderTitleVisibility={folderTitleVisibility} />
 				{mediaFolders ? <p className="genre-fixed-media-note">Movies and Series folders use the safe folder fallback, so their titles remain visible.</p> : null}
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="genre-hierarchy-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Genre folder in one All tab." showAllDescriptionId="genre-hierarchy-all-tab-help" showAllControlName="genreHierarchyShowAllTab" /></fieldset>

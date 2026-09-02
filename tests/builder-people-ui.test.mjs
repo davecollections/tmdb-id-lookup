@@ -584,6 +584,16 @@ test("People Review keeps shared Title options and Layout visible and only colla
 	assert.equal(markup.includes("decades-settings-disclosure"), false);
 	assert.equal((markup.match(/<details/g) ?? []).length, 1);
 	assert.ok(markup.includes("View person details · 1"));
+	assert.equal(markup.includes("The collection title is intentionally invisible in Nuvio."), false);
+	const hiddenTitleMarkup = renderToStaticMarkup(createElement(PeopleReviewStep, {
+		planResult: { ok: true, plan: { configuration: { scope: "new-collection" }, counts: { collectionCount: 1, folderCount: 1, sourceCount: 2 }, collections: [{ titleCollisions: [] }], destination: null, outcomes: [{ status: "ready-to-create", occurrences: [] }] } },
+		entries: [{ person: selected, drafts: { drafts: [{}, {}] }, artworkState: { artwork: { source: "manifest" } } }],
+		collectionOptions: { title: "People", hideTitle: true, viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false },
+		onCollectionOptionsChange() {}, folderTileShape: "POSTER", onFolderTileShapeChange() {}, folderTitleVisibility: "HIDE_HOME_SCREEN", onFolderTitleVisibilityChange() {}, applyDiagnostic: null, headingRef: null,
+	}));
+	assert.match(hiddenTitleMarkup, /<input(?=[^>]*id="people-collection-title")(?=[^>]*value="")(?=[^>]*disabled="")(?=[^>]*aria-describedby="people-collection-title-hidden-help")[^>]*>/);
+	assert.equal((hiddenTitleMarkup.match(/The collection title is intentionally invisible in Nuvio\. Turn off the setting below to enter a visible title\./g) ?? []).length, 1);
+	assert.ok(hiddenTitleMarkup.includes(selected.name));
 	const rowsMarkup = renderToStaticMarkup(createElement(PeopleReviewStep, {
 		planResult: { ok: true, plan: { configuration: { scope: "new-collection" }, counts: { collectionCount: 1, folderCount: 1, sourceCount: 2 }, collections: [{ titleCollisions: [] }], destination: null, outcomes: [{ status: "ready-to-create", occurrences: [] }] } },
 		entries: [{ person: selected, drafts: { drafts: [{}, {}] }, artworkState: { artwork: { source: "manifest" } } }],

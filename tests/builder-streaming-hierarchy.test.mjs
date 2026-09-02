@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createBuilderController } from "../builder/src/application/index.js";
+import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
 import {
 	applyStreamingHierarchyPlan,
 	buildStreamingSourceDrafts,
@@ -710,6 +711,24 @@ test("folder-name overrides reuse Folder title validation and discard removed lo
 	assert.equal(removed.ok, true);
 	assert.deepEqual(removed.plan.configuration.folderTitleOverrides, { "8": "Kept" });
 	assert.equal(removed.plan.newFolders[0].editable.title, "Kept");
+});
+
+test("Streaming hidden collection and keyed folder drafts bypass only final visible-title validation", () => {
+	const controller = createController();
+	const hidden = createStreamingHierarchyPlan(controller.getState().project, baseOptions(controller, {
+		collectionTitle: "",
+		hideCollectionTitle: true,
+		folderTitleVisibility: "HIDE_EVERYWHERE",
+		folderTitleOverrides: { "8": "" },
+		providers: [netflix],
+	}));
+	assert.equal(hidden.ok, true);
+	assert.equal(hidden.plan.configuration.collectionTitle, "");
+	assert.deepEqual(hidden.plan.configuration.folderTitleOverrides, { "8": "" });
+	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(hidden.plan.newFolders[0].editable.title, NUVIO_INVISIBLE_TITLE);
+	assert.equal(createStreamingHierarchyPlan(controller.getState().project, baseOptions(controller, { collectionTitle: "", providers: [netflix] })).ok, false);
+	assert.equal(createStreamingHierarchyPlan(controller.getState().project, baseOptions(controller, { folderTitleOverrides: { "8": "" }, providers: [netflix] })).ok, false);
 });
 
 test("grouped plan atomically extends existing Netflix and creates Disney+", () => {
