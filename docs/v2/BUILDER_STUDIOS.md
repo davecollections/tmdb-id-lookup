@@ -2,13 +2,13 @@
 
 Status: selected-folder Add Source merged through issue [#92](https://github.com/davecollections/tmdb-id-lookup/issues/92) / PR [#93](https://github.com/davecollections/tmdb-id-lookup/pull/93); hierarchy creation merged through issue [#124](https://github.com/davecollections/tmdb-id-lookup/issues/124) / PR [#125](https://github.com/davecollections/tmdb-id-lookup/pull/125), with its narrow Worker contract manually deployed and live validated on 2026-08-19
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-09-02
 
 This document records both the stable selected-folder Studio source flow and the issue #124 guided hierarchy implementation. The interface always says **Studios**; TMDB and Nuvio continue to use the internal entity and source type `COMPANY`.
 
 ## Navigation and scope
 
-`Add source` now opens the six-mode source-type picker: Movie franchise, People, Studios, Networks, Streaming service, and Genres. Every screen below that picker has a visible Back action:
+`Add source` now opens the eight-mode source-type picker: Movie franchise, TMDB lists, People, Studios, Networks, Streaming, Genres, and Decade. Every screen below that picker has a visible Back action. For the Studio path:
 
 - Movie franchise Search returns to the picker.
 - People Search returns to the picker, while People Configure continues to return to People Search with its query, results, page, practical scroll position, selection, folder context, and result focus intact.

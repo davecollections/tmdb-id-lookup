@@ -1,8 +1,8 @@
 # Builder Collection and Folder Editing
 
-Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), settings presentation polish merged through issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69) / PR [#70](https://github.com/davecollections/tmdb-id-lookup/pull/70), ordinary Folder known-artwork controls added through issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119), owner-approved complete Folder visual-field editing plus exact draft previews implemented in issue [#136](https://github.com/davecollections/tmdb-id-lookup/issues/136), and first-class Collection Modern View backdrop editing implemented for owner review in issue [#138](https://github.com/davecollections/tmdb-id-lookup/issues/138)
+Status: title editing implemented for issue [#42](https://github.com/davecollections/tmdb-id-lookup/issues/42), automatic IDs refined in issue [#43](https://github.com/davecollections/tmdb-id-lookup/issues/43), owner-reviewed presentation workflow corrections implemented for issue [#53](https://github.com/davecollections/tmdb-id-lookup/issues/53), hierarchy-card movement added in issue [#59](https://github.com/davecollections/tmdb-id-lookup/issues/59), settings presentation polish merged through issue [#69](https://github.com/davecollections/tmdb-id-lookup/issues/69) / PR [#70](https://github.com/davecollections/tmdb-id-lookup/pull/70), ordinary Folder known-artwork controls added through issue [#118](https://github.com/davecollections/tmdb-id-lookup/issues/118) / PR [#119](https://github.com/davecollections/tmdb-id-lookup/pull/119), owner-approved complete Folder visual-field editing plus exact draft previews implemented in issue [#136](https://github.com/davecollections/tmdb-id-lookup/issues/136), first-class Collection Modern View backdrop editing implemented for owner review in issue [#138](https://github.com/davecollections/tmdb-id-lookup/issues/138), and shared live reversible title drafts merged through issue [#172](https://github.com/davecollections/tmdb-id-lookup/issues/172) / PR [#173](https://github.com/davecollections/tmdb-id-lookup/pull/173)
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-09-02
 
 ## Scope and sequencing
 
@@ -78,6 +78,10 @@ No property-deletion or property-removal semantics were introduced.
 ## Intentional invisible Nuvio titles
 
 The only supported intentional invisible title character is U+200E LEFT-TO-RIGHT MARK. The collection switch explains this neutrally: “Uses an invisible character to hide the collection title in Nuvio.” The folder Hide everywhere choice says, “Uses an invisible title.”
+
+Issue #172 makes the draft transition live and mechanically shared with all eight guided hierarchy families. `reversibleTitleFieldProps` in `builder/src/nuvio/titles.js` derives the visible value and disabled state; `transitionReversibleTitleDraft` owns hide/show restoration; and Node Editor delegates its Collection toggle and Folder visibility changes to that transition rather than keeping a parallel implementation. `HiddenTitleFieldHelp` in `PresentationControls.jsx` owns the corresponding guided locked-state copy.
+
+The live sequence `Original → Custom → hide → show → Custom → Custom 2 → hide → show → Custom 2` restores the latest valid visible draft. Only Folder Hide everywhere blanks and disables Title. Hide on home screen only keeps the visible title editable. The four guided locked-state messages remain quiet muted secondary text rather than warnings, errors, success states, or alerts. This adds no schema field or exported remembered-draft state and changes no final U+200E/`hideTitle` mapping.
 
 ```js
 const NUVIO_INVISIBLE_TITLE = "\u200E";

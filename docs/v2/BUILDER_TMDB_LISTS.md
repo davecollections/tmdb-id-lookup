@@ -1,8 +1,8 @@
 # TMDB Lists
 
-Status: owner-accepted implementation for issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170); the reviewed Worker bytes are deployed, the bounded live production-path and current-Nuvio gates passed, and commit/publication/merge remain separate integration steps
+Status: complete through issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170) / merged [PR #171](https://github.com/davecollections/tmdb-id-lookup/pull/171) at `3e1ceace849d137e17ddfedb8637bc147f511285`; the reviewed Worker bytes were manually deployed, bounded live production-path and current-Nuvio gates passed, owner review completed, and Pages publication succeeded
 
-Last reviewed: 2026-08-30
+Last reviewed: 2026-09-02
 
 ## Product contract
 
@@ -47,6 +47,8 @@ The frontend normalizer fails closed for mismatched IDs, missing item counts, ma
 Add and guided creation expose Preview on the resolved-list Choose cards, while Source Edit exposes the shared title Preview action. Lists Review deliberately omits Preview so it can focus on placement, presentation, names, IDs, counts, **Original order**, duplicates, and the final atomic action. Back from Review preserves the resolved selection so Preview remains immediately available on Choose without resolving again. All three Preview entry points reuse the shared body-portalled poster-only dialog. The mixed-list label is **Titles** rather than Movies or Series. Opening Preview is explicit and does not mutate, save, re-resolve placement, or change source order.
 
 The bounded #170 Preview experiment uses every valid normalized item already returned by the existing page-1 List request and makes no further request. The provider already retained that complete normalized `items` array; the former ten-title limit lived only in the shared dialog's poster-grid `limit`. LIST Preview renders that complete loaded sample into the existing internal poster scroll area at open time. The LIST dialog keeps the established five-column responsive poster sizing and a fixed viewport equivalent to the former two-row/ten-poster presentation, so further page-1 posters sit below the fold and ordinary vertical scrolling reveals them without resizing the modal. Poster images retain native `loading="lazy"`; scroll, wheel, touch, and keyboard movement have no reveal state or request handler. The grid stops after the loaded page-1 sample, offers no Load more control, and creates no paging URL, second cache, prefetch, or page-2 request. Closing and reopening returns the same fully rendered sample to scroll position zero while reusing the established provider success cache. Other Preview families retain their fixed ten-poster behavior.
+
+A shared Preview of up to 100 titles remains parked future work. It is not an extension of the page-1 #170 contract and would require a separately approved Worker change followed by Dave's manual deployment gate.
 
 The LIST-only subtitle is derived from the usable loaded sample and the provider total: **Showing all N titles** when loaded and total counts agree, **Showing N of M titles** when the known total is larger, and **Showing N titles** if a defensive caller lacks a reliable total. Zero loaded titles use the established empty state rather than **Showing all 0 titles**. A bounded live audit on 2026-08-30 found List `5916` (**Musicals**) reporting 124 total with 20 raw, normalized, poster-bearing page-1 items, and List `8679739` (**Top 10 Netflix Movies**) reporting ten total with all ten available on page 1. The implementation does not assume that every page contains exactly 20 items.
 

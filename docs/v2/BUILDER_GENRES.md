@@ -2,13 +2,15 @@
 
 ## 1. Status and scope
 
+Last reviewed: 2026-09-02
+
 Issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110) is closed/completed through merged [PR #111](https://github.com/davecollections/tmdb-id-lookup/pull/111) after desktop and physical-iPhone owner acceptance. It implements official TMDB Genres as a focused consumer of [`BUILDER_DISCOVER_CORE.md`](./BUILDER_DISCOVER_CORE.md):
 
 ```text
 Selected folder → Add Source → Genres → Browse → Configure & review → Add or Create
 ```
 
-Issue [#130](https://github.com/davecollections/tmdb-id-lookup/issues/130) adds a distinct guided hierarchy entry in both shared creation scopes and is currently unstaged and uncommitted on its dedicated branch. Both owner Worker deployment/live-validation rounds and final desktop/physical-phone owner acceptance are complete. The final Structure-card corrections were presentation-only and required no Worker change:
+Issue [#130](https://github.com/davecollections/tmdb-id-lookup/issues/130) is closed/completed through merged [PR #131](https://github.com/davecollections/tmdb-id-lookup/pull/131) at `817b4b8c46ca135e2badcfc6ca903dde3f824222`. It adds a distinct guided hierarchy entry in both shared creation scopes. Both owner Worker deployment/live-validation rounds and final desktop/physical-phone owner acceptance completed before merge. The final Structure-card corrections were presentation-only and required no Worker change:
 
 ```text
 New Collection / New Folder → Genres → Select → Configure → Structure → Appearance → Create
@@ -152,8 +154,8 @@ The first owner deployment passed the former exact-config mounted live scenario 
 
 The production-generated sanitized current-client package lives at [`manual-tests/nuvio-clients/issue-110-builder-genres/`](../../manual-tests/nuvio-clients/issue-110-builder-genres/). It deliberately stays small: Comedy Movie/TV plus Action & Adventure TV inside one existing folder, with representative advanced filters. It proves source semantics, not UI maximum capacity. The offline checker proves deterministic canonical Builder output.
 
-Owner desktop and physical-phone UI acceptance is complete for issue #110, which merged through PR #111. Final desktop and physical-phone UI acceptance is also complete for issue #130. The guided hierarchy remains unstaged/uncommitted with no PR or merge, and both Worker deployment/live-validation rounds are complete. Actual current-Nuvio V2 import/runtime/immediate-export/re-import evidence is deliberately deferred until V2 exposes export and is not an unfinished issue #130 gate.
+Owner desktop and physical-phone UI acceptance is complete for issue #110, which merged through PR #111. Final desktop and physical-phone UI acceptance is also complete for issue #130, which merged through PR #131 after both Worker deployment/live-validation rounds completed. Actual current-Nuvio V2 import/runtime/immediate-export/re-import evidence is deliberately deferred until V2 exposes export and was not an unfinished issue #130 gate.
 
 ## 9. Deferred work
 
-Deferred work includes Musicals, curated/public Lists, public-list search, known-ID/URL List creation, automatic Genre counts, generic Advanced Discover, logical pair editing, Genre identity/media editing, arbitrary merges beyond the three evidenced composite-TV rules, generic folder merge/copy and promotion behavior beyond the Add Source-only strict original-placeholder cleanup, typed artwork-runtime expansion, source-led collection creation, recipes, and generic picker/form/navigation/help extraction. Issue #130's commit/PR/merge and any later current-client evidence remain pending rather than assumed; final owner review, the corrected Worker deployment, and postdeployment live validation are complete.
+Deferred work includes Musicals, public-list search, automatic Genre counts, generic Advanced Discover, logical pair editing, Genre identity/media editing, arbitrary merges beyond the three evidenced composite-TV rules, generic folder merge/copy and promotion behavior beyond the Add Source-only strict original-placeholder cleanup, typed artwork-runtime expansion, source-led collection creation, recipes, and generic picker/form/navigation/help extraction. TMDB List ID/URL creation is complete through issue #170 rather than a Genre milestone. Later current-client Genre hierarchy evidence remains deferred rather than assumed; issue #130 owner review, corrected Worker deployment, postdeployment live validation, PR, and merge are complete.
