@@ -2,7 +2,7 @@
 
 Status: merged foundation through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); extended through Studio #92 / PR #93, Network #98 / PR #99, Streaming #104 / PR #105, official Genre #110 / PR #111, canonical Decade #113 / PR #115, and title-only TMDB Lists #170 / PR #171. Issue #158 added current-draft title Preview to the first seven adapters; issue #170 completed the eighth adapter after Worker deployment, live acceptance, owner review, publication, and merge.
 
-Last reviewed: 2026-09-02
+Last reviewed: 2026-09-03
 
 ## Scope
 
@@ -38,7 +38,7 @@ Source editing is framework-independent under `builder/src/source-edit/`:
 - `source-edit-actions.js` binds the exact physical source, performs stale-state and duplicate checks, and delegates a real change to `controller.updateNode()` exactly once;
 - `source-edit-utils.js` contains shared canonicalisation, title validation, and safe-label helpers.
 
-The registry remains deliberately independent of Add Source. The merged Builder exposes Movie Collection, TMDB List, People, Studio, Network, Streaming, Genre, and Decade adapters without making the registry depend on their creation flows. A future native editor can still be added through another adapter without adding a conditional branch to the controller or changing the importer/serializer/domain contract. UI modules consume only the public source-edit entry point.
+The registry remains deliberately independent of Add Source. The merged Builder exposes Movie Collection, TMDB List, People, Studio, Network, Streaming, Genre, and Decade adapters without making the registry depend on their creation flows. A future native editor can still be added through another adapter without adding a conditional branch to the controller or changing the importer/serializer/domain contract. UI modules consume only the public source-edit entry point. Issue [#176](https://github.com/davecollections/tmdb-id-lookup/issues/176) adds a test-owned capability matrix spanning those eight editors, selected-folder Add, and guided creation; it guards parity without moving capability metadata into the production registry or changing Source Edit behavior.
 
 Issue #118's `nuvio-people-assets` manifest is a creation-time canonical-name/category/artwork authority for registered person IDs. Source Edit remains bound to the stored numeric TMDB person ID, edits one existing physical source, makes no artwork request, and neither renames nor restyles its parent folder. The source identity and supported Acting/Directing Movie/Series combinations therefore remain exactly the contract below.
 

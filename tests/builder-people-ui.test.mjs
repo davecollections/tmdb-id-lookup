@@ -42,6 +42,7 @@ const {
 	PeopleReviewStep,
 	PeopleSearchStep,
 	PeopleSourceFlow,
+	PeopleSourceSortChoices,
 	PeopleTitlePreviewSurface,
 	requestSelectedPersonDetails,
 } = await vite.ssrLoadModule("/src/ui/PeopleSourceFlow.jsx");
@@ -81,6 +82,17 @@ function findElement(node, predicate) {
 	if (!node || typeof node !== "object") return null;
 	if (predicate(node)) return node;
 	return findElement(node.props?.children, predicate);
+}
+
+function findElements(node, predicate, matches = []) {
+	if (Array.isArray(node)) {
+		for (const child of node) findElements(child, predicate, matches);
+		return matches;
+	}
+	if (!node || typeof node !== "object") return matches;
+	if (predicate(node)) matches.push(node);
+	findElements(node.props?.children, predicate, matches);
+	return matches;
 }
 
 function renderSearch({ context = "folder", results = [person()], selection = createPeopleSelectionState(), loadingPersonId = null, selectionError = null } = {}) {
@@ -679,6 +691,31 @@ test("shared People flow keeps modal lifecycle contracts for both contexts", () 
 	}
 });
 
+test("People Add and guided flows share the exact accessible People sort control", () => {
+	const changed = [];
+	const addChoice = PeopleSourceSortChoices({ context: "add", selectedId: "popular", onChange: (value) => changed.push(value) });
+	const addFieldset = addChoice.type(addChoice.props);
+	const radios = findElements(addFieldset, (node) => node.type === "input" && node.props?.type === "radio");
+	const addMarkup = renderToStaticMarkup(createElement(PeopleSourceSortChoices, { context: "add", selectedId: "popular", onChange() {} }));
+	const guidedMarkup = renderToStaticMarkup(createElement(PeopleSourceSortChoices, { context: "guided", selectedId: "recent", onChange() {} }));
+
+	assert.deepEqual(radios.map((radio) => radio.props.value), ["popular", "recent", "top-rated"]);
+	assert.equal(radios.every((radio) => radio.props.name === "people-add-sort"), true);
+	assert.deepEqual(radios.map((radio) => radio.props.checked), [true, false, false]);
+	radios[2].props.onChange();
+	assert.deepEqual(changed, ["top-rated"]);
+	assert.match(addMarkup, /data-source-capability="sort"/);
+	assert.match(addMarkup, /data-source-capability-context="add"/);
+	assert.match(addMarkup, /<legend>Sort titles by<\/legend>/);
+	assert.equal((addMarkup.match(/type="radio"/g) ?? []).length, 3);
+	assert.ok(addMarkup.indexOf("Popular") < addMarkup.indexOf("Recent"));
+	assert.ok(addMarkup.indexOf("Recent") < addMarkup.indexOf("Top rated"));
+	assert.equal(addMarkup.includes("Most votes"), false);
+	assert.match(guidedMarkup, /data-source-capability-context="guided"/);
+	assert.match(guidedMarkup, /name="people-hierarchy-sort"/);
+	assert.match(guidedMarkup, /data-selected="true"><input[^>]*checked=""[^>]*value="recent"/);
+});
+
 test("guided People owns browse-first heading focus while Add Source keeps Search focus", () => {
 	const flow = read("builder/src/ui/PeopleSourceFlow.jsx");
 	const creation = read("builder/src/ui/CreationDialog.jsx");
@@ -709,7 +746,8 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.equal(flow.includes("setConfigurationMode(PEOPLE_CONFIGURATION_MODES.CUSTOM)"), false);
 	assert.equal(flow.includes("Custom per person is now active"), false);
 	assert.equal(flow.includes("people-mode-transition"), false);
-	assert.match(flow, /SemanticSortChoices options=\{PEOPLE_SOURCE_SORT_OPTIONS\}/);
+	assert.match(flow, /<PeopleSourceSortChoices context=\{hierarchy \? "guided" : "add"\}/);
+	assert.match(flow, /hierarchy \|\| context === "folder"/);
 	assert.match(flow, /buildPeopleSourceDrafts\(person, \{ combinations: configuration\.combinations, sortOptionId \}\)/);
 	assert.match(flow, /buildPeopleTitlePreview\(detailResult\.person/);
 	assert.match(flow, /peoplePreviewMediaTypes/);
