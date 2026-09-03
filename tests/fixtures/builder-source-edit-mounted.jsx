@@ -18,6 +18,7 @@ import {
 	createTmdbPersonProvider,
 	createTmdbStudioPreviewProvider,
 	createTmdbStreamingPreviewProvider,
+	createPeopleSourceBundle,
 	TMDB_PROXY_BASE_URL,
 } from "../../builder/src/source-add/index.js";
 import {
@@ -5319,12 +5320,13 @@ async function runDecadesExclusionLayoutScenario() {
 	}
 }
 
-async function withOrdinaryAddFlow(renderFlow, run) {
+async function withOrdinaryAddFlow(renderFlow, run, { applyHandler = null } = {}) {
 	const host = document.createElement("div");
 	document.body.append(host);
 	const root = createRoot(host);
 	const controller = createController();
 	const folder = importSources(controller, []);
+	if (applyHandler) controller.selectNode(folder.internalId);
 	const project = controller.getState().project;
 	const serializedBefore = serializedValue(controller);
 	let applyCalls = 0;
@@ -5332,8 +5334,9 @@ async function withOrdinaryAddFlow(renderFlow, run) {
 		root.render(renderFlow({
 			project,
 			folder,
-			onApply() {
+			onApply(...args) {
 				applyCalls += 1;
+				if (applyHandler) return applyHandler({ controller, folder }, ...args);
 				throw new Error("Preview must not enter Save.");
 			},
 		}));
@@ -5463,19 +5466,68 @@ async function runAddSourceLivePreviewParityScenario() {
 		const provider = createTmdbPersonProvider({ fetchImpl: recordingFetch(requests) });
 		results.people = await withOrdinaryAddFlow(
 			({ project, folder, onApply }) => createElement(PeopleSourceFlow, { context: "folder", provider, project, folder, onBack() {}, onCancel() {}, onApply }),
-			async ({ controller, serializedBefore, getApplyCalls }) => {
+			async ({ controller, folder, serializedBefore, getApplyCalls }) => {
 				const input = requiredElement(document.querySelector("#people-source-query"), "People search");
 				await act(async () => { setInputValue(input, "31"); await afterCommittedEffects(); });
 				const result = await waitForMountedCondition(() => document.querySelector('[data-tmdb-person-result="31"]:not(:disabled)'), { label: "People result", timeoutMs: 30_000 });
 				await clickAndSettle(result);
 				const card = await waitForMountedCondition(() => document.querySelector('.people-configuration-card[data-person-id="31"]'), { label: "People Configure", timeoutMs: 30_000 });
+				const sortFieldset = requiredElement(document.querySelector('[data-source-capability="sort"][data-source-capability-context="add"]'), "People Add Sort");
+				const sortRadios = [...sortFieldset.querySelectorAll('input[type="radio"][name="people-add-sort"]')];
+				const sortLabels = sortRadios.map((radio) => radio.closest("label")?.textContent.trim() ?? "");
+				const defaultPopular = sortRadios.find((radio) => radio.value === "popular")?.checked === true;
+				const recentRadio = requiredElement(sortRadios.find((radio) => radio.value === "recent"), "People Recent Sort");
+				await clickAndSettle(recentRadio);
 				for (const inputElement of card.querySelectorAll('.people-combination-group input[type="checkbox"]')) {
 					if (!inputElement.checked) await clickAndSettle(inputElement);
 				}
+				const retainedThroughConfiguration = recentRadio.checked;
+				const noHorizontalOverflow = sortFieldset.scrollWidth <= sortFieldset.clientWidth + 1
+					&& sortFieldset.getBoundingClientRect().right <= document.querySelector(".people-source-dialog").getBoundingClientRect().right + 1;
+				const radioSemantics = sortRadios.length === 3
+					&& sortRadios.every((radio) => radio.type === "radio" && radio.name === "people-add-sort")
+					&& sortRadios.filter((radio) => radio.checked).length === 1;
 				const trigger = requiredElement(document.querySelector('[data-action="preview-add-people"]:not(:disabled)'), "People Add Preview action");
 				const dialog = requiredElement(document.querySelector(".people-source-dialog"), "People Add dialog");
 				const evidence = await ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorLabel: "Directing" });
-				return { ...evidence, requests, noMutation: serializedValue(controller) === serializedBefore, applyCalls: getApplyCalls() };
+				const noPreviewMutation = serializedValue(controller) === serializedBefore;
+				await clickAndSettle(requiredElement(buttonContaining(dialog.querySelector(".add-source-heading"), "Back"), "People Configure Back"));
+				const restoredResult = await waitForMountedCondition(() => document.querySelector('[data-tmdb-person-result="31"]:not(:disabled)'), { label: "restored People result" });
+				await clickAndSettle(restoredResult);
+				await waitForMountedCondition(() => document.querySelector('.people-configuration-card[data-person-id="31"]'), { label: "restored People Configure" });
+				const restoredAfterBack = document.querySelector('input[name="people-add-sort"][value="recent"]')?.checked === true;
+				const revisionBeforeAdd = controller.getState().revision;
+				await clickAndSettle(requiredElement(document.querySelector(".people-configure-actions .editor-apply:not(:disabled)"), "People Add action"));
+				const savedSources = await waitForMountedCondition(() => {
+					const currentFolder = controller.getState().project.collections.flatMap((collection) => collection.folders).find((entry) => entry.internalId === folder.internalId);
+					return currentFolder?.sources.length === 4 ? currentFolder.sources : null;
+				}, { label: "four saved People sources" });
+				return {
+					...evidence,
+					requests,
+					noMutation: noPreviewMutation,
+					applyCalls: getApplyCalls(),
+					sort: {
+						labels: sortLabels,
+						defaultPopular,
+						recentSelected: recentRadio.checked,
+						retainedThroughConfiguration,
+						restoredAfterBack,
+						radioSemantics,
+						noHorizontalOverflow,
+						savedSorts: savedSources.map((source) => source.editable.sortBy),
+						oneAtomicRevision: controller.getState().revision === revisionBeforeAdd + 1,
+					},
+				};
+			},
+			{
+				applyHandler: ({ controller, folder }, payload) => createPeopleSourceBundle(controller, {
+					destination: { kind: "existing-folder", folderInternalId: folder.internalId },
+					person: payload.person,
+					drafts: payload.drafts,
+					artwork: payload.artwork,
+					duplicateOverrideIdentity: payload.duplicateOverrideIdentity,
+				}),
 			},
 		);
 	}

@@ -1,10 +1,10 @@
 # Builder People creation and source behavior
 
-Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 / PR #119 is the merged People hierarchy-family and canonical-artwork baseline. Issue #132 removes the legacy panel launcher and restores guided browse-first focus.
+Status: issue #74 / PR #75 is the merged Add Source baseline. Issue #118 / PR #119 is the merged People hierarchy-family and canonical-artwork baseline. Issue #132 removes the legacy panel launcher and restores guided browse-first focus. Issue #176 adds selected-folder Sort parity and the cross-family capability regression contract.
 
-Issues: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74); [#118 — Add People hierarchy creation and migrate People artwork authority](https://github.com/davecollections/tmdb-id-lookup/issues/118); [#132 — Remove legacy People launcher and restore browse-first hierarchy focus](https://github.com/davecollections/tmdb-id-lookup/issues/132)
+Issues: [#74 — Add unified People Search/Add to the V2 Builder](https://github.com/davecollections/tmdb-id-lookup/issues/74); [#118 — Add People hierarchy creation and migrate People artwork authority](https://github.com/davecollections/tmdb-id-lookup/issues/118); [#132 — Remove legacy People launcher and restore browse-first hierarchy focus](https://github.com/davecollections/tmdb-id-lookup/issues/132); [#176 — Add People Sort parity and protect source capabilities across contexts](https://github.com/davecollections/tmdb-id-lookup/issues/176)
 
-Last reviewed: 2026-09-02
+Last reviewed: 2026-09-03
 
 This document records the focused People contract. [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md) owns the shared cross-family creation standard, [`BUILDER_KNOWLEDGE.md`](./BUILDER_KNOWLEDGE.md) remains the broader evidence record, and [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) remains the durable product-direction source.
 
@@ -38,7 +38,7 @@ Profile presentation distinguishes:
 
 There is no destination selector, new-folder option, or Review screen. The destination remains the selected folder.
 
-This physical Add Source context exposes role/media combinations and **Preview titles**, and it builds exact drafts and Preview from the shared default `sortOptionId`, but it currently omits the visible Sort choice because `SemanticSortChoices` is rendered only for hierarchy contexts. People New Collection/New Folder and People Source Edit do expose the evidenced Popular/Recent/Top-rated Sort inventory. This is the current cross-context source-capability gap; Network Add Source already exposes Sort and Preview. A later focused issue must close the People gap without conflating source settings with container settings.
+Issue [#176](https://github.com/davecollections/tmdb-id-lookup/issues/176) gives this physical Add Source context the same shared **Sort** control as People New Collection/New Folder and People Source Edit. It exposes only the evidenced Popular/Recent/Top-rated inventory, starts on Popular, and retains the selected semantic option through role/media changes, Back/re-entry, exact draft construction, Preview, duplicate evaluation, and the final atomic Save. Network Add Source remains unchanged. The cross-family capability matrix is test-owned rather than a production registry, and Source-name parity remains a separate open product decision.
 
 An empty Builder-generated `Untitled Folder`, `Untitled Folder 2`, and later numbered default is promoted when it has no sources, imported raw snapshot, or deliberate artwork. Its title becomes the canonical person name and it receives the same final artwork resolution as a newly created People folder. A non-default tile shape is preserved; otherwise Poster remains the default. Rename, artwork, and every selected source commit in one controller revision, and any validation/construction failure leaves the original folder byte-identical.
 

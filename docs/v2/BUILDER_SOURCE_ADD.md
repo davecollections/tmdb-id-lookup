@@ -2,7 +2,7 @@
 
 Status: foundation merged through issue [#65](https://github.com/davecollections/tmdb-id-lookup/issues/65) / PR [#66](https://github.com/davecollections/tmdb-id-lookup/pull/66); owner review of the chooser/Preview checkpoint is complete through issues #164 and #166; eighth family TMDB Lists merged through issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170) / PR [#171](https://github.com/davecollections/tmdb-id-lookup/pull/171) after Worker deployment, live acceptance, and owner review
 
-Last reviewed: 2026-09-02
+Last reviewed: 2026-09-03
 
 ## Scope
 
@@ -12,7 +12,7 @@ The current selected-folder picker order is **Movie franchise**, **TMDB lists**,
 
 Issue #164 aligned the then-seven-family picker with the established New Collection/New Folder launcher-card presentation. Both surfaces share one narrow card/icon rendering seam and the same responsive grid, spacing, typography, surface, hover, and explicit focus-visible language. Add Source retains its own immediate-navigation semantics: no Blank option, selected state, radio/check control, accent rail, or retained chooser choice. Issue #166 later removed the blanket claim that every current or future family uses TMDB; provider context remains source-specific. Initial focus remains on Movie franchise, and Back from a family flow restores focus to the exact originating card.
 
-Context may change container settings, but it must not silently reduce source-level capability. The current audit confirms that Network Add Source exposes both Sort and **Preview titles**. People Add Source exposes **Preview titles** and constructs exact drafts from the shared default `sortOptionId`, but it omits the Sort UI because `SemanticSortChoices` is currently rendered only for hierarchy contexts. People hierarchy creation and People Source Edit do expose Sort. That People gap is future work; this documentation reconciliation changes no flow. Source-name parity remains an open product decision rather than a requirement for bulk generated inputs.
+Context may change container settings, but it must not silently reduce source-level capability. Issue [#176](https://github.com/davecollections/tmdb-id-lookup/issues/176) closes the confirmed People gap: selected-folder People Add now exposes the same Popular/Recent/Top-rated semantic Sort control already used by People hierarchy creation and maps the selection through exact drafts, Preview, duplicate evaluation, and atomic Save. Network Add Source already exposed both Sort and **Preview titles** and is unchanged. An enforceable test-owned matrix now covers Media, Sort, filters/Advanced, role/credit type, Preview, Source name, and safe physical identity across all eight native families in Add, guided creation, and Source Edit. Source-name parity remains an open product decision rather than a requirement for bulk generated inputs.
 
 The flow accepts:
 

@@ -145,6 +145,45 @@ test("the shared Preview executor delegates exact detached drafts without mutati
 	assert.equal(sourceTitlePreviewProviderAvailable(sourceTitlePreviewRequest("people", buildPeopleSourceDrafts({ id: 31, name: "Person" }, { combinations: ["acting-movies"] }).drafts[0]), providers), false);
 });
 
+test("a changed People Add Sort drives the exact Preview request and one atomic physical-source Save", async () => {
+	const person = {
+		id: 31,
+		name: "Person",
+		combinedCredits: {
+			cast: [
+				{ id: 1, mediaType: "movie", posterPath: "/popular.jpg", popularity: 50, voteAverage: 6, voteCount: 100, releaseDate: "2025-01-01" },
+				{ id: 2, mediaType: "movie", posterPath: "/rated.jpg", popularity: 10, voteAverage: 9, voteCount: 20, releaseDate: "2020-01-01" },
+			],
+			crew: [],
+		},
+	};
+	const combinations = ["acting-movies", "acting-series"];
+	const defaultDrafts = buildPeopleSourceDrafts(person, { combinations }).drafts;
+	const changedDrafts = buildPeopleSourceDrafts(person, { combinations, sortOptionId: "top-rated" }).drafts;
+	assert.deepEqual(defaultDrafts.map((draft) => draft.editable.sortBy), ["popularity.desc", "popularity.desc"]);
+	assert.deepEqual(changedDrafts.map((draft) => draft.editable.sortBy), ["vote_average.desc", "vote_average.desc"]);
+
+	const request = sourceTitlePreviewRequest("people", changedDrafts[0]);
+	assert.equal(request.sortOptionId, "top-rated");
+	const preview = await requestSourceTitlePreview(request, {
+		people: { async getPerson() { return { ok: true, data: person }; } },
+	});
+	assert.equal(preview.ok, true);
+	assert.deepEqual(preview.data.results.map((item) => item.id), [2, 1]);
+
+	const { controller, folderInternalId } = selectedFolderController();
+	const beforeRevision = controller.getState().revision;
+	const saved = createPeopleSourceBundle(controller, {
+		destination: { kind: "existing-folder", folderInternalId },
+		person,
+		drafts: changedDrafts,
+	});
+	assert.equal(saved.ok, true);
+	assert.equal(controller.getState().revision, beforeRevision + 1);
+	const folder = controller.getState().project.collections[0].folders[0];
+	assert.deepEqual(folder.sources.map((source) => source.editable.sortBy), ["vote_average.desc", "vote_average.desc"]);
+});
+
 test("configure, Preview, close, then Save is semantically identical to direct Save for every ordinary source family", async () => {
 	const person = { id: 31, name: "Person" };
 	const studio = { id: 3, name: "Studio" };

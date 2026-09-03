@@ -2513,7 +2513,7 @@ test("mounted ordinary Add Source Preview reaches exact live parity for six newl
 			assert.equal(evidence.focusRestored, true, `${result.width}px ${family} trigger focus restoration`);
 			assert.equal(evidence.cacheReused, true, `${result.width}px ${family} successful cache reuse`);
 			assert.equal(evidence.noMutation, true, `${result.width}px ${family} zero project mutation`);
-			assert.equal(evidence.applyCalls, 0, `${result.width}px ${family} Preview never enters Save`);
+			assert.equal(evidence.applyCalls, family === "people" ? 1 : 0, `${result.width}px ${family} expected final-action count`);
 			assertTitlePreviewGeometry(evidence.geometry, { width: result.width, posters: evidence.posterCount, label: `${result.width}px ${family} Add Preview` });
 		}
 
@@ -2552,6 +2552,20 @@ test("mounted ordinary Add Source Preview reaches exact live parity for six newl
 		}, `${result.width}px People one-physical-source parity`);
 		assert.equal(families.people.switched.label, "Directed Movies");
 		assert.match(families.people.requests[0], /^\/3\/person\/31(?:\?|$)/);
+		assert.deepEqual(families.people.sort.labels, ["Popular", "Recent", "Top rated"], `${result.width}px People exact Sort inventory`);
+		assert.equal(families.people.sort.defaultPopular, true, `${result.width}px People default Sort`);
+		assert.equal(families.people.sort.recentSelected, true, `${result.width}px People changed Sort`);
+		assert.equal(families.people.sort.retainedThroughConfiguration, true, `${result.width}px People Sort survives role/media changes`);
+		assert.equal(families.people.sort.restoredAfterBack, true, `${result.width}px People Sort survives Back and re-entry`);
+		assert.equal(families.people.sort.radioSemantics, true, `${result.width}px People Sort native radio semantics`);
+		assert.equal(families.people.sort.noHorizontalOverflow, true, `${result.width}px People Sort stays contained`);
+		assert.deepEqual(families.people.sort.savedSorts, [
+			"primary_release_date.desc",
+			"first_air_date.desc",
+			"primary_release_date.desc",
+			"first_air_date.desc",
+		], `${result.width}px People exact selected Sort persisted to all physical sources`);
+		assert.equal(families.people.sort.oneAtomicRevision, true, `${result.width}px People final Add is one atomic revision`);
 
 		assert.deepEqual(families.studio.selectorGroups, [{ label: "Media", options: ["Movies", "Series"], selected: "Movies" }]);
 		assert.deepEqual([families.studio.requestCountBeforeOpen, families.studio.requestCountAfterInitial, families.studio.switched.requestCount, families.studio.requestCountFinal], [0, 1, 2, 2]);

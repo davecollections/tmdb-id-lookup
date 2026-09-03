@@ -514,6 +514,27 @@ export function PeopleFolderAppearance({
 	);
 }
 
+export function PeopleSourceSortChoices({
+	context,
+	selectedId,
+	onChange,
+}) {
+	const guided = context === "guided";
+	return (
+		<SemanticSortChoices
+			options={PEOPLE_SOURCE_SORT_OPTIONS}
+			selectedId={selectedId}
+			name={guided ? "people-hierarchy-sort" : "people-add-sort"}
+			legend="Sort titles by"
+			onChange={onChange}
+			fieldsetProps={{
+				"data-source-capability": "sort",
+				"data-source-capability-context": guided ? "guided" : "add",
+			}}
+		/>
+	);
+}
+
 export function PeopleReviewStep({
 	planResult,
 	entries,
@@ -1212,7 +1233,7 @@ export function PeopleSourceFlow({
 								<section ref={configureRef} className="people-configure" aria-labelledby="people-configure-title" tabIndex={-1}>
 									<div className="add-source-section-heading"><div><p className="panel-kicker">Configure</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`}</h3></div></div>
 									{multiContext ? <PeopleConfigurationModeControls mode={configurationMode} sharedCombinations={sharedCombinations} onModeChange={changeConfigurationMode} onToggleShared={(combinationId) => toggleCombination(null, combinationId)} /> : null}
-									{hierarchy ? <SemanticSortChoices options={PEOPLE_SOURCE_SORT_OPTIONS} selectedId={sortOptionId} name="people-hierarchy-sort" legend="Sort titles by" onChange={(nextSortOptionId) => { setSortOptionId(nextSortOptionId); setApplyDiagnostic(null); }} /> : null}
+									{hierarchy || context === "folder" ? <PeopleSourceSortChoices context={hierarchy ? "guided" : "add"} selectedId={sortOptionId} onChange={(nextSortOptionId) => { setSortOptionId(nextSortOptionId); setApplyDiagnostic(null); }} /> : null}
 									{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}
 									{multiContext ? <PeopleBulkConfigurationList entries={configuredEntries} mode={configurationMode} onToggleCombination={toggleCombination} onRetry={(entry) => loadDetails(entry.result, { bypassCache: true })} onRemove={removePerson} onPreview={openTitlePreview} previewState={previewState} previewItems={previewResult?.ok ? previewResult.items : []} previewLimit={previewLimit} previewMediaTypes={previewMediaTypes} previewTotalResults={previewResult?.ok ? previewResult.totalResults : 0} onChangePreviewMedia={changePeoplePreviewMedia} onClosePreview={() => closeTitlePreview()} onRetryPreview={(entry) => openTitlePreview(entry, null, { retry: true })} /> : <div className="people-configuration-list">{configuredEntries.map((entry) => <PeopleConfigurationCard key={entry.result.id} personResult={entry.result} detail={entry.detail} configuration={entry.configuration} artworkState={entry.artworkState} showArtwork={resolvesFolderArtwork} onToggle={(id) => toggleCombination(entry.result.id, id)} onRefresh={() => loadDetails(entry.result, { bypassCache: true })} onRetry={() => loadDetails(entry.result, { bypassCache: true })} onRetryArtwork={() => entry.person && loadArtwork(entry.person, true)} onRemove={null} />)}</div>}
 									{context === "folder" && quickDuplicates.destination.length ? <div className="add-source-duplicate-warning" role="alert" data-people-duplicate-warning="true"><strong>{quickDuplicates.duplicateDrafts.length} selected source{quickDuplicates.duplicateDrafts.length === 1 ? " is" : "s are"} already in this folder.</strong><p>The main action adds only missing sources. Add all anyway is an explicit override for this person and selection.</p></div> : null}
