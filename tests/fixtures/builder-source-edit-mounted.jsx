@@ -4406,6 +4406,10 @@ async function runPeopleConfigureLayoutScenario() {
 				const inputRect = resultInput.getBoundingClientRect();
 				const inputVisuallyHidden = resultInput.classList.contains("choice-card-input") && inputRect.width <= 1 && inputRect.height <= 1;
 				await clickAndSettle(card);
+				await waitForMountedCondition(
+					() => getComputedStyle(card).backgroundColor !== unselectedBackground,
+					{ label: "People selected-card surface transition", timeoutMs: 1_000 },
+				);
 				const selectedStyle = getComputedStyle(card);
 				selectionAffordance = {
 					nativeCheckbox: resultInput.type === "checkbox",

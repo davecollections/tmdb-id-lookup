@@ -523,6 +523,20 @@ async function runMountedPage() {
 				};
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					await resources.pageConnection.command("Input.dispatchKeyEvent", {
+						type: "rawKeyDown",
+						key: "Tab",
+						code: "Tab",
+						windowsVirtualKeyCode: 9,
+						nativeVirtualKeyCode: 9,
+					});
+					await resources.pageConnection.command("Input.dispatchKeyEvent", {
+						type: "keyUp",
+						key: "Tab",
+						code: "Tab",
+						windowsVirtualKeyCode: 9,
+						nativeVirtualKeyCode: 9,
+					});
 					const peopleScrollEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleSelectionScrollScenario()",
 						awaitPromise: true,
