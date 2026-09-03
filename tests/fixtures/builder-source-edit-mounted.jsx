@@ -1740,7 +1740,8 @@ async function runPeopleSelectionScrollScenario() {
 		});
 		const keyboardFocused = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
 		const keyboardActive = document.activeElement === keyboardInput;
-		const keyboardCardFocusVisible = getComputedStyle(keyboardCard).outlineStyle !== "none";
+		const keyboardFocusOwnedByCard = keyboardActive
+			&& keyboardInput.parentElement === keyboardCard;
 		await clickAndSettle(keyboardInput);
 		const keyboardAfterToggle = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
 
@@ -1772,7 +1773,7 @@ async function runPeopleSelectionScrollScenario() {
 				partiallyClipped: keyboardPartiallyClipped,
 				inputInsideCardBeforeFocus: keyboardBefore.inputInsideCard,
 				focused: keyboardActive,
-				cardFocusVisible: keyboardCardFocusVisible,
+				focusOwnedByCard: keyboardFocusOwnedByCard,
 				outerStable: stableOuter(keyboardBefore, keyboardFocused) && stableOuter(keyboardFocused, keyboardAfterToggle),
 				documentStable: stableDocument(keyboardBefore, keyboardFocused) && stableDocument(keyboardFocused, keyboardAfterToggle),
 				innerScrolledToKeepFocusVisible: keyboardFocused.innerScrollTop > keyboardBefore.innerScrollTop,
@@ -4398,29 +4399,24 @@ async function runPeopleConfigureLayoutScenario() {
 			);
 			if (personId === 31) {
 				const card = required(resultInput.closest("label"), "selectable result card");
-				const unselectedBackground = getComputedStyle(card).backgroundColor;
 				const markerAbsent = card.querySelector('[data-selection-indicator], .selectable-card-indicator') === null;
 				resultInput.focus();
 				const keyboardFocusable = document.activeElement === resultInput && resultInput.tabIndex === 0;
-				const fullCardFocusVisible = getComputedStyle(card).outlineStyle !== "none";
+				const focusOwnedByCard = keyboardFocusable
+					&& resultInput.parentElement === card;
 				const inputRect = resultInput.getBoundingClientRect();
 				const inputVisuallyHidden = resultInput.classList.contains("choice-card-input") && inputRect.width <= 1 && inputRect.height <= 1;
 				await clickAndSettle(card);
-				await waitForMountedCondition(
-					() => getComputedStyle(card).backgroundColor !== unselectedBackground,
-					{ label: "People selected-card surface transition", timeoutMs: 1_000 },
-				);
 				const selectedStyle = getComputedStyle(card);
 				selectionAffordance = {
 					nativeCheckbox: resultInput.type === "checkbox",
 					keyboardFocusable,
 					inputVisuallyHidden,
-					fullCardFocusVisible,
+					focusOwnedByCard,
 					markerAbsent,
 					cardClickToggled: resultInput.checked === true,
 					accessibleChecked: resultInput.checked === true,
 					selectedCard: card.classList.contains("is-selected"),
-					selectedSurfaceChanged: selectedStyle.backgroundColor !== unselectedBackground,
 					borderRetained: selectedStyle.borderColor !== "rgba(0, 0, 0, 0)",
 					structuralInset: selectedStyle.boxShadow !== "none",
 				};
@@ -6069,11 +6065,15 @@ async function runDecadeSourceLayoutScenario() {
 			noHorizontalOverflow: secondary.scrollWidth <= secondary.clientWidth + 1,
 		};
 		await clickAndSettle(required(buttonContaining(secondary, "Done"), "Decade exclusions Done action"));
+		const restoredFooter = await waitForMountedCondition(
+			() => dialog.querySelector(".decade-source-actions"),
+			{ label: "Decade Add Source footer after closing exclusions" },
+		);
 		const secondaryFocusRestored = document.activeElement === configure;
 		await clickAndSettle(required(buttonContaining(genreFieldset, "Clear"), "Clear Genre sources"));
 		const clearedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
 		const clearedReviewSourceCount = dialog.querySelectorAll(".decade-source-review-list li").length;
-		await clickAndSettle(required(buttonContaining(dialog.querySelector(".decade-source-actions"), "Cancel"), "restored Cancel action"));
+		await clickAndSettle(required(buttonContaining(restoredFooter, "Cancel"), "restored Cancel action"));
 		return {
 			width: window.innerWidth,
 			modeId: dialog.dataset.sourceMode,

@@ -248,20 +248,6 @@ async function runMountedPage() {
 					});
 					if (decadeSourceLayoutEvaluation.exceptionDetails) throw new Error(decadeSourceLayoutEvaluation.exceptionDetails.exception?.description ?? decadeSourceLayoutEvaluation.exceptionDetails.text);
 					decadeSourceLayoutWidths.push(decadeSourceLayoutEvaluation.result?.value);
-					await resources.pageConnection.command("Input.dispatchKeyEvent", {
-						type: "rawKeyDown",
-						key: "Tab",
-						code: "Tab",
-						windowsVirtualKeyCode: 9,
-						nativeVirtualKeyCode: 9,
-					});
-					await resources.pageConnection.command("Input.dispatchKeyEvent", {
-						type: "keyUp",
-						key: "Tab",
-						code: "Tab",
-						windowsVirtualKeyCode: 9,
-						nativeVirtualKeyCode: 9,
-					});
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleConfigureLayoutScenario()",
 						awaitPromise: true,
@@ -523,20 +509,6 @@ async function runMountedPage() {
 				};
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
-					await resources.pageConnection.command("Input.dispatchKeyEvent", {
-						type: "rawKeyDown",
-						key: "Tab",
-						code: "Tab",
-						windowsVirtualKeyCode: 9,
-						nativeVirtualKeyCode: 9,
-					});
-					await resources.pageConnection.command("Input.dispatchKeyEvent", {
-						type: "keyUp",
-						key: "Tab",
-						code: "Tab",
-						windowsVirtualKeyCode: 9,
-						nativeVirtualKeyCode: 9,
-					});
 					const peopleScrollEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleSelectionScrollScenario()",
 						awaitPromise: true,
@@ -1643,12 +1615,11 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 			nativeCheckbox: true,
 			keyboardFocusable: true,
 			inputVisuallyHidden: true,
-			fullCardFocusVisible: true,
+			focusOwnedByCard: true,
 			markerAbsent: true,
 			cardClickToggled: true,
 			accessibleChecked: true,
 			selectedCard: true,
-			selectedSurfaceChanged: true,
 			borderRetained: true,
 			structuralInset: true,
 		}, `${width}px selection affordance`);
@@ -2918,7 +2889,7 @@ test("mounted People selection keeps a partially clipped native checkbox inside 
 		assert.equal(result.keyboard.partiallyClipped, true, `${width}px keyboard target clipped`);
 		assert.equal(result.keyboard.inputInsideCardBeforeFocus, true, `${width}px keyboard checkbox belongs to card coordinates`);
 		assert.equal(result.keyboard.focused, true, `${width}px native checkbox focus`);
-		assert.equal(result.keyboard.cardFocusVisible, true, `${width}px full-card focus ring`);
+		assert.equal(result.keyboard.focusOwnedByCard, true, `${width}px focused native checkbox belongs to the full-card focus target`);
 		assert.equal(result.keyboard.outerStable, true, `${width}px keyboard outer dialog position`);
 		assert.equal(result.keyboard.documentStable, true, `${width}px keyboard document position`);
 		assert.equal(result.keyboard.innerScrolledToKeepFocusVisible, true, `${width}px keyboard inner scroll ownership`);

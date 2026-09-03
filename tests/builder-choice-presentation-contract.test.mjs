@@ -116,6 +116,7 @@ test("independent Decade booleans remain conventional visible checkboxes", () =>
 
 test("selected choices use structural card treatment without selection rails or green alternatives", () => {
 	const styles = read("builder/src/styles.css");
+	assert.match(styles, /\.people-result-selectable\.is-selected\s*\{[\s\S]*?background: rgb\(1 180 228 \/ 12%\);[\s\S]*?border-color: rgb\(98 225 255 \/ 56%\);[\s\S]*?box-shadow: inset 0 0 0 1px rgb\(233 247 255 \/ 12%\)/);
 	assert.match(styles, /\.editor-shape-choice\.is-selected > \.shape-preview/);
 	assert.match(styles, /box-shadow: inset 0 0 0 1px rgb\(233 247 255 \/ 12%\)/);
 	assert.doesNotMatch(styles, /inset \d+px 0 0/);
