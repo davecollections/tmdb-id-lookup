@@ -84,7 +84,7 @@ export function SelectedGenreSummary({ genres, onRemove }) {
 }
 
 function DestinationChoices({ selectedId, onChange }) {
-	return <fieldset className="genre-destination-choices studio-source-choices"><legend>How would you like these added?</legend><div>{GENRE_DESTINATION_MODES.map((option) => <label key={option.id} data-selected={selectedId === option.id ? "true" : undefined}><input type="radio" name="genre-destination" value={option.id} checked={selectedId === option.id} onChange={() => onChange(option.id)} /><span><strong>{option.label}</strong></span></label>)}</div></fieldset>;
+	return <fieldset className="genre-destination-choices studio-source-choices"><legend>How would you like these added?</legend><div>{GENRE_DESTINATION_MODES.map((option) => <label key={option.id} data-selected={selectedId === option.id ? "true" : undefined}><input className="visually-hidden choice-card-input" type="radio" name="genre-destination" value={option.id} checked={selectedId === option.id} onChange={() => onChange(option.id)} /><span><strong>{option.label}</strong></span></label>)}</div></fieldset>;
 }
 
 function CurrentFolderReview({ drafts, duplicates, sortOptionId, expanded, onToggle }) {

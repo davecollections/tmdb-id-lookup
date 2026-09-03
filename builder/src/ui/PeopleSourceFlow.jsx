@@ -195,8 +195,7 @@ function PersonResult({ result, context, checked, disabled, loading, onActivate 
 	}
 	return (
 		<label className={`add-source-result people-result people-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-person-result={result.id}>
-			<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={checked} disabled={disabled && !checked} onChange={() => onActivate(result)} />
-			<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={checked ? "selected" : "unselected"} aria-hidden="true">{checked ? "✓" : ""}</span>
+			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} disabled={disabled && !checked} onChange={() => onActivate(result)} />
 			{body}
 		</label>
 	);
@@ -272,16 +271,14 @@ function CombinationControls({ person, configuration, loading, onToggle, compact
 					const selected = configuration?.combinations.includes(combination.id) ?? false;
 					if (pills) return (
 						<label className="people-source-pill" data-people-role={combination.role} data-count-state={count.state} key={combination.id}>
-							<input type="checkbox" checked={selected} disabled={loading} aria-label={`${combination.label}, ${count.text}`} onChange={() => onToggle(combination.id)} />
-							<span className="people-source-pill-check" aria-hidden="true">✓</span>
+							<input className="visually-hidden choice-card-input" type="checkbox" checked={selected} disabled={loading} aria-label={`${combination.label}, ${count.text}`} onChange={() => onToggle(combination.id)} />
 							<strong>{combination.label}</strong>
 							{showCounts ? <em aria-hidden="true">{count.compactText}</em> : null}
 						</label>
 					);
 					return (
 						<label key={combination.id} data-count-state={count.state}>
-							<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={selected} disabled={loading} onChange={() => onToggle(combination.id)} />
-							<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
+							<input className="visually-hidden choice-card-input" type="checkbox" checked={selected} disabled={loading} onChange={() => onToggle(combination.id)} />
 							<span><strong>{combination.label}</strong>{compact ? null : <small>{combination.role === "directing" ? "Directing" : "Acting"} · {combination.media === "series" ? "Series" : "Movies"}</small>}</span>
 							{showCounts ? <em>{count.text}</em> : null}
 						</label>
@@ -391,7 +388,7 @@ export function PeopleConfigurationModeControls({ mode, sharedCombinations, onMo
 				<div>
 					{peopleConfigurationModeOptions.map((option) => (
 						<label key={option.id}>
-							<input type="radio" name="people-configuration-mode" value={option.id} checked={mode === option.id} onChange={() => onModeChange(option.id)} />
+							<input className="visually-hidden choice-card-input" type="radio" name="people-configuration-mode" value={option.id} checked={mode === option.id} onChange={() => onModeChange(option.id)} />
 							<span><strong>{option.label}</strong><small>{option.description}</small></span>
 						</label>
 					))}

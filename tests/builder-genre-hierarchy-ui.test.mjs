@@ -63,7 +63,8 @@ test("Genre hierarchy opens on an accessible local Select stage without Search a
 	assert.match(markup, /Select Genres/);
 	assert.equal((markup.match(/data-genre-name=/g) ?? []).length, 27);
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 27);
-	assert.match(markup, /selectable-card-indicator/);
+	assert.equal((markup.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 27);
+	assert.doesNotMatch(markup, /selectable-card-indicator|✓/);
 	assert.match(markup, /0 of 27 selected/);
 	assert.match(markup, /Select all/);
 	assert.match(markup, /Clear all/);
@@ -82,8 +83,8 @@ test("checkbox catalogue mode preserves the existing Add Source button mode", ()
 	const concepts = GENRE_CONCEPTS.slice(0, 2);
 	const checkbox = renderToStaticMarkup(createElement(GenreCatalogueList, { concepts, selection: [concepts[0].name], selectionControl: "checkbox", onChoose() {} }));
 	const button = renderToStaticMarkup(createElement(GenreCatalogueList, { concepts, selection: [concepts[0].name], onChoose() {} }));
-	assert.match(checkbox, /type="checkbox"/);
-	assert.match(checkbox, /data-selection-state="selected"/);
+	assert.match(checkbox, /class="visually-hidden choice-card-input" type="checkbox" checked=""/);
+	assert.doesNotMatch(checkbox, /selection-state|selection-indicator|✓/);
 	assert.doesNotMatch(checkbox, /aria-pressed/);
 	assert.match(button, /aria-pressed="true"/);
 	assert.doesNotMatch(button, /type="checkbox"/);
@@ -217,10 +218,10 @@ test("Genre hierarchy has one scroll owner and the established focus/selection s
 	assert.equal((flowSource.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.match(flowSource, /scrollByStepRef/);
 	assert.match(flowSource, /focusElementWithoutScroll/);
-	assert.match(styles, /\.genre-catalogue-choice\s*\{[\s\S]*position:\s*relative[\s\S]*grid-template-columns:\s*22px minmax\(0, 1fr\)/);
+	assert.match(styles, /\.genre-catalogue-choice\s*\{[\s\S]*position:\s*relative[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/);
 	assert.match(styles, /\.genre-catalogue-choice\.is-selected/);
-	assert.match(styles, /\.selectable-card-indicator\s*\{[\s\S]*?border-radius:\s*50%/);
-	assert.match(styles, /\.selectable-card-checkbox:focus-visible \+ \.selectable-card-indicator/);
+	assert.match(styles, /label:has\(> \.choice-card-input:focus-visible\)\s*\{[\s\S]*outline:\s*3px solid var\(--cyan-bright\)/);
+	assert.doesNotMatch(styles, /selectable-card-indicator|selectable-card-checkbox/);
 	assert.doesNotMatch(styles.match(/\.genre-catalogue-choice\.is-selected\s*\{[\s\S]*?\}/)?.[0] ?? "", /border-left/);
 	assert.match(flowSource, /back-to-genre-hierarchy-selection/);
 	assert.match(flowSource, /back-to-genre-hierarchy-configuration/);

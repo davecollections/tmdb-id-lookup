@@ -6,7 +6,7 @@ export function ChoiceCards({ legend, hideLegend = false, helper = null, name, o
 			<div className={`decades-choice-grid${gridClassName ? ` ${gridClassName}` : ""}`}>
 				{options.map((option) => (
 					<label key={option.id} data-selected={selectedId === option.id ? "true" : undefined} data-choice-id={option.id}>
-						<input type="radio" name={name} value={option.id} checked={selectedId === option.id} onChange={() => onChange(option.id)} />
+						<input className="visually-hidden choice-card-input" type="radio" name={name} value={option.id} checked={selectedId === option.id} onChange={() => onChange(option.id)} />
 						<span><strong>{option.label}</strong>{option.description ? <small>{option.description}</small> : null}{option.preview ?? null}</span>
 					</label>
 				))}

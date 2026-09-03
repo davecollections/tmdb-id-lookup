@@ -210,14 +210,13 @@ export function PeopleEditorFields({
 						<label key={combination.id} className="source-edit-combination" data-selected={selected ? "true" : undefined}>
 							<input
 								ref={index === 0 ? combinationRef : undefined}
-								className="visually-hidden selectable-card-checkbox"
+								className="visually-hidden choice-card-input"
 								type="radio"
 								name="source-edit-people-combination"
 								value={combination.id}
 								checked={selected}
 								onChange={() => onChange(combination.id)}
 							/>
-							<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
 							<span>
 								<strong>{combination.role === "directing" ? "Directing" : "Acting"} · {combination.media === "series" ? "Series" : "Movies"}</strong>
 							</span>

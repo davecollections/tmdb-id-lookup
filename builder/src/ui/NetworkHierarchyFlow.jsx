@@ -64,8 +64,7 @@ function SelectedNetworks({ networks, onRemove }) {
 function SelectableNetworkResult({ network, checked, onToggle }) {
 	return (
 		<label className={`add-source-result studio-result network-result studio-result-selectable network-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-network-result={network.id}>
-			<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={checked} onChange={() => onToggle(network)} />
-			<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={checked ? "selected" : "unselected"} aria-hidden="true">{checked ? "✓" : ""}</span>
+			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onToggle(network)} />
 			<NetworkResultContent network={network} showSeriesCount />
 		</label>
 	);

@@ -346,11 +346,11 @@ test("Folder naming is collapsed, stable-keyed, validated, and limited to new fo
 	assert.doesNotMatch(styles, /\.streaming-folder-name-list[^}]*overflow-y/);
 });
 
-test("Streaming Region cards retain border, surface, tick, and semantics without the redundant left rail", () => {
+test("Streaming Region cards retain border, surface, and pressed semantics without markers or a left rail", () => {
 	assert.match(sourceFlow, /data-selected=\{selected \? "true" : "false"\} aria-pressed=\{selected\}/);
-	assert.match(sourceFlow, /streaming-region-selected-mark/);
+	assert.doesNotMatch(sourceFlow, /streaming-region-selected-mark|✓/);
 	assert.match(styles, /\.streaming-region-result\[data-selected="true"\]\s*\{\s*background:/);
-	assert.doesNotMatch(styles, /\.streaming-region-result\[data-selected="true"\][^}]*box-shadow:\s*inset/);
+	assert.match(styles, /\.streaming-region-result\[data-selected="true"\][^}]*box-shadow:\s*inset 0 0 0 1px/);
 	assert.match(styles, /\.streaming-region-result:hover,[\s\S]*border-color:/);
 });
 

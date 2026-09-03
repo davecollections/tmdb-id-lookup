@@ -424,5 +424,7 @@ test("workspace wiring keeps Genres out of the Folders header and supports respo
 	assert.doesNotMatch(styles, /\.genre-elsewhere-note\s*\{/);
 	assert.match(styles, /\.genre-number-input\s*\{[\s\S]*appearance:\s*textfield/);
 	assert.match(styles, /\.genre-number-input::\-webkit-inner-spin-button[\s\S]*\-webkit-appearance:\s*none/);
-	assert.match(styles, /\.genre-destination-choices label:has\(input:checked\)\s*\{[^}]*box-shadow:\s*none;/);
+	assert.doesNotMatch(styles, /\.genre-destination-choices label:has\(input:checked\)\s*\{[^}]*box-shadow:\s*none;/);
+	assert.match(styles, /\.studio-source-choices label:has\(input:checked\)\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/);
+	assert.match(flow, /genre-destination[^>]*[\s\S]*className="visually-hidden choice-card-input"/);
 });

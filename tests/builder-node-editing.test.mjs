@@ -2256,18 +2256,17 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.equal((shapeFieldset.match(/<legend>Tile shape<\/legend>/g) ?? []).length, 1);
 	assert.equal((shapeFieldset.match(/name="node-editor-folder-shape"/g) ?? []).length, 2);
 	assert.equal((shapeFieldset.match(/type="radio"/g) ?? []).length, 2);
-	assert.equal((shapeFieldset.match(/class="visually-hidden"/g) ?? []).length, 2);
+	assert.equal((shapeFieldset.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 2);
 	assert.ok(shapeFieldset.includes('for="node-editor-folder-poster-shape"'));
 	assert.ok(shapeFieldset.includes('id="node-editor-folder-poster-shape"'));
 	assert.ok(shapeFieldset.includes('for="node-editor-folder-landscape-shape"'));
 	assert.ok(shapeFieldset.includes('id="node-editor-folder-landscape-shape"'));
 	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes('value="POSTER"'));
-	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes('class="visually-hidden"'));
+	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes('class="visually-hidden choice-card-input"'));
 	assert.ok(openingTag(markup, 'data-editor-choice="poster"').includes("checked"));
 	assert.ok(openingTag(markup, 'data-editor-choice="landscape"').includes('value="LANDSCAPE"'));
-	assert.ok(openingTag(markup, 'data-editor-choice="landscape"').includes('class="visually-hidden"'));
-	assert.ok(markedElement(markup, 'data-editor-choice="poster"', "label").includes("✓"));
-	assert.equal(markedElement(markup, 'data-editor-choice="landscape"', "label").includes("✓"), false);
+	assert.ok(openingTag(markup, 'data-editor-choice="landscape"').includes('class="visually-hidden choice-card-input"'));
+	assert.equal(shapeFieldset.includes("✓"), false);
 	assert.equal(shapeFieldset.includes("editor-shape-radio-circle"), false);
 	const visibilityFieldset = markedElement(
 		markup,
@@ -2275,7 +2274,7 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 		"fieldset",
 	);
 	assert.equal((visibilityFieldset.match(/type="radio"/g) ?? []).length, 3);
-	assert.equal(visibilityFieldset.includes('class="visually-hidden"'), false);
+	assert.equal((visibilityFieldset.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 3);
 	assert.equal(markup.includes("hideTitle"), false);
 	assert.ok(markup.indexOf(">Title</label>") < markup.indexOf("Folder title visibility"));
 	assert.ok(markup.indexOf("Folder title visibility") < markup.indexOf("Tile shape"));
@@ -2754,7 +2753,7 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 		/\.editor-choice input:not\(\.visually-hidden\)\s*\{[\s\S]*width:\s*20px[\s\S]*height:\s*20px/,
 	);
 	assert.match(styles, /\.editor-compact-radio\s*\{[\s\S]*min-height:\s*54px/);
-	assert.match(styles, /\.editor-compact-radio input\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/);
+	assert.match(styles, /\.editor-compact-radio input:not\(\.choice-card-input\)\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/);
 	assert.match(styles, /\.editor-layout-choice\s*\{[\s\S]*min-height:\s*184px/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*overflow:\s*hidden/);
@@ -2769,9 +2768,10 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	assert.match(styles, /\.editor-shape-choice-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
 	assert.match(
 		styles,
-		/\.editor-shape-choice:has\(> input:focus-visible\)\s*\{[\s\S]*outline:\s*3px solid var\(--cyan-bright\)[\s\S]*outline-offset:\s*3px/,
+		/label:has\(> \.choice-card-input:focus-visible\)\s*\{[\s\S]*outline:\s*3px solid var\(--cyan-bright\)[\s\S]*outline-offset:\s*3px/,
 	);
-	assert.match(styles, /\.editor-choice-check\s*\{[\s\S]*position:\s*absolute/);
+	assert.match(styles, /\.editor-shape-choice\.is-selected > \.shape-preview\s*\{[\s\S]*border-color:\s*var\(--cyan-bright\)/);
+	assert.doesNotMatch(styles, /editor-choice-check/);
 	const visuallyHiddenRule = styles.match(/\.visually-hidden\s*\{([\s\S]*?)\}/)?.[1] ?? "";
 	assert.match(visuallyHiddenRule, /position:\s*absolute/);
 	assert.match(visuallyHiddenRule, /width:\s*1px/);
