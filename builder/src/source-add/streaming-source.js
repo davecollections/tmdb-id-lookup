@@ -64,6 +64,26 @@ export function streamingSourceCandidateKey(regionCode, mediaType) {
 		: null;
 }
 
+export function streamingSourceTitleDraftKey(providerId, regionCode, mediaType) {
+	const candidateKey = streamingSourceCandidateKey(regionCode, mediaType);
+	return Number.isSafeInteger(providerId) && providerId > 0 && candidateKey !== null
+		? `${providerId}|${candidateKey}`
+		: null;
+}
+
+export function streamingSourceTitlesForProvider(titleDrafts, providerId) {
+	if (!plainObject(titleDrafts) || !Number.isSafeInteger(providerId) || providerId <= 0) return Object.freeze({});
+	const prefix = `${providerId}|`;
+	const titles = {};
+	for (const [key, title] of Object.entries(titleDrafts)) {
+		if (!key.startsWith(prefix)) continue;
+		const candidateKey = key.slice(prefix.length);
+		const [regionCode, mediaType, ...extra] = candidateKey.split("|");
+		if (extra.length === 0 && streamingSourceCandidateKey(regionCode, mediaType) === candidateKey) titles[candidateKey] = title;
+	}
+	return Object.freeze(titles);
+}
+
 export function defaultStreamingSourceName(providerName, regionCode, mediaType, {
 	context = STREAMING_SOURCE_NAME_CONTEXTS.STANDALONE,
 } = {}) {

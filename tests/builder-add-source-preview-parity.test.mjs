@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createBuilderController } from "../builder/src/application/index.js";
+import { discoverSourceIdentity } from "../builder/src/nuvio/discover.js";
 import {
 	buildDecadeSourceBundleDrafts,
 	buildGenreSourceDrafts,
@@ -10,6 +11,7 @@ import {
 	buildPeopleSourceDrafts,
 	buildStreamingSourceDrafts,
 	buildStudioSourceDrafts,
+	buildTmdbListSourceDraft,
 	createDecadeSourceBundle,
 	createGenreSourceBundle,
 	createMovieFranchiseSource,
@@ -17,9 +19,11 @@ import {
 	createPeopleSourceBundle,
 	createStreamingSourceBundle,
 	createStudioSourceBundle,
+	movieFranchiseDuplicateIdentity,
 	requestSourceTitlePreview,
 	sourceTitlePreviewProviderAvailable,
 	sourceTitlePreviewRequest,
+	tmdbListPhysicalIdentity,
 } from "../builder/src/source-add/index.js";
 
 function streamingProvider() {
@@ -143,6 +147,44 @@ test("the shared Preview executor delegates exact detached drafts without mutati
 	assert.equal(JSON.stringify({ streamingDraft, genreDraft, decadeDraft }), before);
 	assert.equal(sourceTitlePreviewProviderAvailable(sourceTitlePreviewRequest("genre", genreDraft), providers), true);
 	assert.equal(sourceTitlePreviewProviderAvailable(sourceTitlePreviewRequest("people", buildPeopleSourceDrafts({ id: 31, name: "Person" }, { combinations: ["acting-movies"] }).drafts[0]), providers), false);
+});
+
+test("Add Source title changes drive Preview headings without changing physical requests or duplicate identity", async () => {
+	const collectionDefault = buildMovieFranchiseSourceDraft({ id: 645, name: "James Bond Collection" }).draft;
+	const collectionCustom = buildMovieFranchiseSourceDraft({ id: 645, name: "James Bond Collection" }, "Bond favourites").draft;
+	const listDefault = buildTmdbListSourceDraft({ id: 5916, name: "Musicals" }).draft;
+	const listCustom = buildTmdbListSourceDraft({ id: 5916, name: "Musicals" }, "Musical favourites").draft;
+	const streamingDefault = buildStreamingSourceDrafts(streamingProvider(), { regionCodes: ["AU"], mediaChoice: "movies" }).drafts[0];
+	const streamingCustom = buildStreamingSourceDrafts(streamingProvider(), {
+		regionCodes: ["AU"], mediaChoice: "movies", sourceTitles: { "AU|MOVIE": "Netflix cinema" },
+	}).drafts[0];
+
+	const pairs = [
+		["collection", collectionDefault, collectionCustom, movieFranchiseDuplicateIdentity],
+		["list", listDefault, listCustom, tmdbListPhysicalIdentity],
+		["streaming", streamingDefault, streamingCustom, (editable) => discoverSourceIdentity(editable).key],
+	];
+	for (const [kind, initial, customised, identity] of pairs) {
+		const initialRequest = sourceTitlePreviewRequest(kind, initial);
+		const customRequest = sourceTitlePreviewRequest(kind, customised);
+		assert.equal(customRequest.label, customised.editable.title, `${kind} Preview/Save title`);
+		assert.notEqual(customRequest.label, initialRequest.label, `${kind} changed heading`);
+		assert.equal(identity(customised.editable), identity(initial.editable), `${kind} identity`);
+	}
+
+	const calls = [];
+	const providers = {
+		collection: { async getCollection(id) { calls.push(["collection", id]); return { ok: true, data: { movieCount: 0, containedTitles: [] } }; } },
+		list: { async getList(id) { calls.push(["list", id]); return { ok: true, data: { itemCount: 0, items: [] } }; } },
+		streaming: { async getStreamingPreview(sourceNode) { calls.push(["streaming", discoverSourceIdentity(sourceNode.editable).key]); return { ok: true, data: { results: [] } }; } },
+	};
+	for (const [kind, initial, customised] of pairs) {
+		await requestSourceTitlePreview(sourceTitlePreviewRequest(kind, initial), providers);
+		await requestSourceTitlePreview(sourceTitlePreviewRequest(kind, customised), providers);
+	}
+	assert.deepEqual(calls[0], calls[1]);
+	assert.deepEqual(calls[2], calls[3]);
+	assert.deepEqual(calls[4], calls[5]);
 });
 
 test("a changed People Add Sort drives the exact Preview request and one atomic physical-source Save", async () => {
