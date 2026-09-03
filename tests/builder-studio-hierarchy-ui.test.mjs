@@ -41,8 +41,8 @@ test("Studio hierarchy reuses the physical catalogue search state and preserves 
 test("selectable Studio cards use native full-card checkboxes and contain no nested Preview action", () => {
 	const result = flow.slice(flow.indexOf("function SelectableStudioResult"), flow.indexOf("function previewMediaTypes"));
 	assert.match(result, /<label[^>]+studio-result-selectable/);
-	assert.match(result, /type="checkbox"/);
-	assert.match(result, /selectable-card-indicator/);
+	assert.match(result, /className="visually-hidden choice-card-input" type="checkbox"/);
+	assert.doesNotMatch(result, /selectable-card-indicator|✓/);
 	assert.match(result, /<StudioResultContent/);
 	assert.doesNotMatch(result, /Preview|aria-haspopup="dialog"/);
 	assert.doesNotMatch(styles.match(/\.studio-result-selectable\s*\{[\s\S]*?\}/)?.[0] ?? "", /border-left/);

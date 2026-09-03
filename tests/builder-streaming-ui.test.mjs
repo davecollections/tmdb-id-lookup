@@ -355,7 +355,7 @@ test("Streaming keeps responsive modal scrolling, selected-row accessibility and
 	const styles = read("builder/src/styles.css");
 	assert.match(styles, /\.streaming-region-result\s*\{[^}]*min-height:\s*58px/);
 	assert.match(styles, /\.streaming-region-result\[data-selected="true"\]/);
-	assert.match(styles, /\.streaming-region-selected-mark\s*\{/);
+	assert.doesNotMatch(styles, /streaming-region-selected-mark/);
 	assert.match(styles, /\.streaming-region-actions\s*\{/);
 	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.streaming-media-choices > div\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);

@@ -67,8 +67,7 @@ function SelectedStudios({ studios, knownSeriesCounts, onRemove }) {
 function SelectableStudioResult({ studio, checked, onToggle }) {
 	return (
 		<label key={studio.id} className={`add-source-result studio-result studio-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-studio-result={studio.id}>
-			<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={checked} onChange={() => onToggle(studio)} />
-			<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={checked ? "selected" : "unselected"} aria-hidden="true">{checked ? "✓" : ""}</span>
+			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onToggle(studio)} />
 			<StudioResultContent studio={studio} />
 		</label>
 	);

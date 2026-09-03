@@ -76,7 +76,7 @@ export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, poste
 				}}
 			>
 				<input
-					className="visually-hidden"
+					className="visually-hidden choice-card-input"
 					id={`${idPrefix}-poster-shape`}
 					type="radio"
 					name={name}
@@ -90,7 +90,6 @@ export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, poste
 					<strong>{posterLabel}</strong>
 					<small>Tall artwork for poster-style folders.</small>
 				</span>
-				<span className="editor-choice-check" aria-hidden="true">{posterSelected ? "✓" : ""}</span>
 			</label>
 			<label
 				className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}
@@ -101,7 +100,7 @@ export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, poste
 				}}
 			>
 				<input
-					className="visually-hidden"
+					className="visually-hidden choice-card-input"
 					id={`${idPrefix}-landscape-shape`}
 					type="radio"
 					name={name}
@@ -115,7 +114,6 @@ export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, poste
 					<strong>Landscape</strong>
 					<small>Wide artwork for horizontal folders.</small>
 				</span>
-				<span className="editor-choice-check" aria-hidden="true">{landscapeSelected ? "✓" : ""}</span>
 			</label>
 		</div>
 	);
@@ -132,6 +130,7 @@ export function FolderTitleVisibilityChoices({ selectedId, name, onChange }) {
 			{options.map((option) => (
 				<label key={option.id} className={`editor-compact-radio${selectedId === option.id ? " is-selected" : ""}`}>
 					<input
+						className="visually-hidden choice-card-input"
 						type="radio"
 						name={name}
 						value={option.id}

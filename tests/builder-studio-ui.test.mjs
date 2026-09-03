@@ -169,15 +169,15 @@ test("Studio Configure presents independent counts and compact semantic sort cho
 	assert.ok(markup.includes('rel="noopener noreferrer"'));
 	assert.ok(markup.includes("Open Pixar on TMDB"));
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 2);
-	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox" type="checkbox"/g) ?? []).length, 2);
-	assert.equal((markup.match(/class="selectable-card-indicator"/g) ?? []).length, 2);
+	assert.equal((markup.match(/class="visually-hidden choice-card-input" type="checkbox"/g) ?? []).length, 2);
+	assert.doesNotMatch(markup, /selectable-card-indicator|✓/);
 	assert.equal((markup.match(/type="radio"/g) ?? []).length, 4);
 	assert.equal((markup.match(/disabled=""/g) ?? []).length, 0);
 	assert.equal((markup.match(/checked=""/g) ?? []).length, 2);
 	assert.equal(markup.includes("<select"), false);
 	assert.equal(markup.includes("Movie Count: 136"), false);
 	const styles = read("builder/src/styles.css");
-	assert.match(styles, /\.studio-source-choice:has\(input:checked\)\s*\{[^}]*box-shadow:\s*none/);
+	assert.match(styles, /\.studio-source-choices label:has\(input:checked\)\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/);
 });
 
 test("Studio search keeps Best Match hidden and exposes only Builder-style overrides and zero toggle", () => {

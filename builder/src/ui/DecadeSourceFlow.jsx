@@ -336,7 +336,7 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 									<p className="editor-field-help">Select Genres to add separate genre sources alongside the main decade or year source.</p>
 									{mediaMode === "both" ? <p className="editor-field-help decade-source-genre-eligibility">With Both selected, only Genres available for Movies and Series are shown.</p> : null}
 									<GenreSelectionToolbar selectionCount={genreNames.length} totalCount={genreOptions.length} onSelectAll={() => setSelectedGenres(genreOptions.map((concept) => concept.name))} onClearAll={() => setSelectedGenres([])} clearLabel="Clear" disableSelectAllWhenComplete />
-									<GenreCatalogueList concepts={genreOptions} selection={genreNames} onChoose={toggleGenre} selectionControl="checkbox" className="decade-source-genre-pill-list" showMedia={false} showSelectionIndicator={false} />
+									<GenreCatalogueList concepts={genreOptions} selection={genreNames} onChoose={toggleGenre} selectionControl="checkbox" className="decade-source-genre-pill-list" showMedia={false} />
 									{reconciliationNotice ? <p className="genre-fixed-media-note" role="status">{reconciliationNotice}</p> : null}
 								</fieldset>
 								<DecadesAdvancedOptions value={advanced} exclusionSummary={exclusionCount === 0 ? "No Genre exclusions configured" : `${exclusionCount} Genre exclusion${exclusionCount === 1 ? "" : "s"} configured across generated source choices`} onChange={(value) => { setAdvanced(reconcileAdvanced(value, mediaMode, genreNames)); setDiagnostic(null); }} onOpenSecondary={openSecondary} idPrefix="decade-source-advanced" />

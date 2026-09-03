@@ -187,19 +187,18 @@ test("People result cards omit empty known-for rows and never fabricate title to
 	assert.ok(markup.includes("TMDB 31"));
 });
 
-test("multi-select People cards expose native checkbox state through a circular reusable indicator", () => {
+test("multi-select People cards expose hidden native checkbox state through the full card", () => {
 	const selected = person();
 	const unselected = person({ id: 488, name: "Steven Spielberg" });
 	const markup = renderSearch({ context: "collection", results: [selected, unselected], selection: selectionOf(selected) });
 	const styles = read("builder/src/styles.css");
 	assert.match(markup, /<label[^>]*people-result-selectable is-selected[^>]*data-tmdb-person-result="31"/);
-	assert.match(markup, /<input class="visually-hidden selectable-card-checkbox" type="checkbox" checked=""/);
-	assert.match(markup, /data-selection-indicator="true" data-selection-state="selected"[^>]*>✓<\/span>/);
-	assert.match(markup, /data-selection-indicator="true" data-selection-state="unselected"[^>]*><\/span>/);
+	assert.match(markup, /<input class="visually-hidden choice-card-input" type="checkbox" checked=""/);
+	assert.doesNotMatch(markup, /selection-indicator|selection-state|✓/);
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 2);
 	assert.match(styles, /\.people-result-selectable\s*\{[\s\S]*position:\s*relative/);
-	assert.match(styles, /\.selectable-card-indicator\s*\{[\s\S]*border-radius:\s*50%/);
-	assert.match(styles, /\.selectable-card-checkbox:focus-visible \+ \.selectable-card-indicator/);
+	assert.match(styles, /label:has\(> \.choice-card-input:focus-visible\)/);
+	assert.doesNotMatch(styles, /selectable-card-indicator|selectable-card-checkbox/);
 });
 
 test("collection Search always uses a bounded selected-people disclosure and adds the 50-person notice", () => {
@@ -261,7 +260,8 @@ test("People bulk controls expose only Automatic and Same for all while rows rem
 	const shared = renderToStaticMarkup(createElement(PeopleConfigurationModeControls, { mode: "shared", sharedCombinations: ["acting-movies", "directing-series"], onModeChange() {}, onToggleShared() {} }));
 	assert.ok(shared.includes("Sources for every selected person"));
 	assert.equal((shared.match(/type="checkbox"/g) ?? []).length, 4);
-	assert.equal((shared.match(/people-source-pill-check/g) ?? []).length, 4);
+	assert.equal((shared.match(/class="visually-hidden choice-card-input" type="checkbox"/g) ?? []).length, 4);
+	assert.doesNotMatch(shared, /people-source-pill-check|✓/);
 	assert.ok(shared.includes('data-people-role="acting"'));
 	assert.ok(shared.includes('data-people-role="directing"'));
 	assert.equal(shared.includes("PERSON · MOVIE"), false);
@@ -422,8 +422,8 @@ test("configuration exposes four direct combinations with inline counts and zero
 	assert.ok(markup.includes('class="tmdb-review-identity"'));
 	assert.ok(markup.includes('class="tmdb-review-identity-actions"'));
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 4);
-	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox" type="checkbox"/g) ?? []).length, 4);
-	assert.equal((markup.match(/data-selection-indicator="true"/g) ?? []).length, 4);
+	assert.equal((markup.match(/class="visually-hidden choice-card-input" type="checkbox"/g) ?? []).length, 4);
+	assert.doesNotMatch(markup, /selection-indicator|✓/);
 	assert.equal(markup.includes("Folder artwork"), false);
 	assert.ok(markup.includes('data-profile-state="ready"'));
 	assert.equal(markup.includes("Curated artwork"), false);
@@ -776,7 +776,8 @@ test("shared People flow keeps Add Source behavior and adds a bounded hierarchy 
 	assert.match(styles, /\.people-combination-group label[\s\S]*min-height:\s*58px/);
 	assert.match(styles, /\.people-combination-group\.is-pills > div\s*\{[\s\S]*grid-template-columns:\s*repeat\(4/);
 	assert.match(styles, /\.people-combination-group\.is-pills \.people-source-pill\s*\{[\s\S]*min-height:\s*36px[\s\S]*padding:\s*5px 8px/);
-	assert.match(styles, /\.people-source-pill:has\(input:checked\) \.people-source-pill-check\s*\{[\s\S]*opacity:\s*1/);
+	assert.match(styles, /\.people-combination-group\.is-pills \.people-source-pill:has\(input:checked\)\s*\{[\s\S]*box-shadow:\s*inset 0 0 0 1px/);
+	assert.doesNotMatch(styles, /people-source-pill-check/);
 	assert.match(styles, /\.people-source-pill\[data-people-role="directing"\]/);
 	assert.match(flow, /people-title-preview-backdrop nested-modal-backdrop/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);

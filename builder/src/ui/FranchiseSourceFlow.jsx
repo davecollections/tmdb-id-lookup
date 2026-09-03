@@ -46,8 +46,7 @@ function Poster({ item, className = "franchise-result-poster", size = "w185", al
 function FranchiseResult({ result, checked, loading, onActivate }) {
 	return (
 		<label className={`add-source-result franchise-result-selectable${checked ? " is-selected" : ""}${loading ? " is-loading" : ""}`} data-tmdb-franchise-result={result.id} aria-busy={loading || undefined}>
-			<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={checked} onChange={() => onActivate(result)} />
-			<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={checked ? "selected" : "unselected"} aria-hidden="true">{checked ? "✓" : ""}</span>
+			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onActivate(result)} />
 			<Poster item={result} />
 			<span className="add-source-result-content">
 				<span className="add-source-result-heading"><strong>{result.name}</strong><span>TMDB {result.id}</span></span>

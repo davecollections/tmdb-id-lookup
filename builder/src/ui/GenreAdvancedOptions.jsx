@@ -68,9 +68,8 @@ export function GenreExclusionSubview({ advanced, includedGenres, sharedMediaCho
 					const selected = activeExclusions.includes(concept.name);
 					return (
 						<li key={concept.name}>
-							<button type="button" data-selected={selected ? "true" : undefined} onClick={() => toggle(concept.name)}>
+							<button type="button" data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => toggle(concept.name)}>
 								<span><strong>{concept.name}</strong></span>
-								<span aria-hidden="true">{selected ? "✓" : "+"}</span>
 							</button>
 						</li>
 					);

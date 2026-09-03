@@ -102,8 +102,7 @@ function SelectableProviderResult({ provider, regionCodes, checked, onToggle }) 
 	const media = [availability.movies ? "Movies" : null, availability.series ? "Series" : null].filter(Boolean).join(" · ");
 	return (
 		<label className={`add-source-result studio-result studio-result-selectable streaming-provider-result streaming-provider-selectable${checked ? " is-selected" : ""}`} data-streaming-provider={provider.id}>
-			<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={checked} onChange={() => onToggle(provider)} />
-			<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={checked ? "selected" : "unselected"} aria-hidden="true">{checked ? "✓" : ""}</span>
+			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onToggle(provider)} />
 			<TmdbEntityLogo entity={provider} entityType="streaming-provider" context="result" />
 			<span className="add-source-result-content"><span className="add-source-result-heading"><strong>{provider.name}</strong><span>TMDB {provider.id}</span></span><span className="studio-result-metadata">{media}</span></span>
 		</label>
@@ -280,9 +279,9 @@ export function StreamingDestinationChooser({ candidates, selectedDestination, e
 							: affinityOnly
 								? `None of the selected sources are here yet · all ${sourceCountToAdd} source${sourceCountToAdd === 1 ? "" : "s"} will be added`
 								: `${candidate.matchingSourceCount} of ${candidate.proposedSourceCount} sources already here · ${sourceCountToAdd} will be added`;
-					return <label key={candidate.collectionInternalId} data-selected={selected ? "true" : undefined} data-streaming-destination-candidate={candidate.collectionInternalId}><input type="radio" name="streaming-hierarchy-destination" value={`existing:${candidate.collectionInternalId}`} checked={selected} onChange={() => onChange(candidate.collectionInternalId)} /><span><strong>{display.label}</strong>{affinityOnly ? <span className="streaming-destination-affinity">Existing Streaming collection</span> : null}<small>{helper}</small>{contents ? <span className="streaming-destination-contents">{contents}</span> : null}</span></label>;
+					return <label key={candidate.collectionInternalId} data-selected={selected ? "true" : undefined} data-streaming-destination-candidate={candidate.collectionInternalId}><input className="visually-hidden choice-card-input" type="radio" name="streaming-hierarchy-destination" value={`existing:${candidate.collectionInternalId}`} checked={selected} onChange={() => onChange(candidate.collectionInternalId)} /><span><strong>{display.label}</strong>{affinityOnly ? <span className="streaming-destination-affinity">Existing Streaming collection</span> : null}<small>{helper}</small>{contents ? <span className="streaming-destination-contents">{contents}</span> : null}</span></label>;
 				})}
-				<label data-selected={selectedDestination === "new" ? "true" : undefined} data-streaming-destination-new="true"><input type="radio" name="streaming-hierarchy-destination" value="new" checked={selectedDestination === "new"} onChange={() => onChange("new")} /><span><strong>Create new collection instead</strong><small>{elsewhereEvidence?.proposedSourceCount ?? candidates[0].proposedSourceCount} selected sources</small><span>Create all {elsewhereEvidence?.proposedSourceCount ?? candidates[0].proposedSourceCount} sources in a separate collection.</span></span></label>
+				<label data-selected={selectedDestination === "new" ? "true" : undefined} data-streaming-destination-new="true"><input className="visually-hidden choice-card-input" type="radio" name="streaming-hierarchy-destination" value="new" checked={selectedDestination === "new"} onChange={() => onChange("new")} /><span><strong>Create new collection instead</strong><small>{elsewhereEvidence?.proposedSourceCount ?? candidates[0].proposedSourceCount} selected sources</small><span>Create all {elsewhereEvidence?.proposedSourceCount ?? candidates[0].proposedSourceCount} sources in a separate collection.</span></span></label>
 			</div></fieldset>
 		</section>
 	);

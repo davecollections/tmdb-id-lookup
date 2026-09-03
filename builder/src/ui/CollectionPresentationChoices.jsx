@@ -12,6 +12,7 @@ export function CollectionPresentationChoices({ selectedId, name, onChange }) {
 		<div className="editor-choice-grid">
 			<label className={`editor-choice editor-layout-choice${tabsSelected ? " is-selected" : ""}`}>
 				<input
+					className="visually-hidden choice-card-input"
 					type="radio"
 					name={name}
 					value="TABBED_GRID"
@@ -36,6 +37,7 @@ export function CollectionPresentationChoices({ selectedId, name, onChange }) {
 			</label>
 			<label className={`editor-choice editor-layout-choice${rowsSelected ? " is-selected" : ""}`}>
 				<input
+					className="visually-hidden choice-card-input"
 					type="radio"
 					name={name}
 					value="ROWS"

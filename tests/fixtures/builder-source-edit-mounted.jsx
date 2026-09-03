@@ -1059,7 +1059,15 @@ async function runGenreHierarchyScenario() {
 		largeDisclosure.documentStable = window.scrollY === largeDisclosureDocumentScroll;
 		largeDisclosure.actionStable = Math.abs(action.getBoundingClientRect().top - largeDisclosureActionRect.top) <= 1
 			&& Math.abs(action.getBoundingClientRect().bottom - largeDisclosureActionRect.bottom) <= 1;
-		const selectionIndicator = dialog.querySelector('.genre-catalogue-choice[data-selected="true"] .selectable-card-indicator');
+		const selectedChoiceCard = dialog.querySelector('.genre-catalogue-choice[data-selected="true"]');
+		const selectedChoiceStyle = selectedChoiceCard ? getComputedStyle(selectedChoiceCard) : null;
+		const selectionPresentation = {
+			nativeChecked: selectedChoiceCard?.querySelector('input[type="checkbox"]')?.checked === true,
+			markerAbsent: selectedChoiceCard?.querySelector('[data-selection-indicator], .selectable-card-indicator') === null,
+			surfaceRetained: selectedChoiceStyle?.backgroundColor !== "rgba(0, 0, 0, 0)",
+			borderRetained: selectedChoiceStyle?.borderColor !== "rgba(0, 0, 0, 0)",
+			structuralInset: selectedChoiceStyle?.boxShadow !== "none",
+		};
 		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
 		const mediaPill = dialog.querySelector('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"][value="both"]')?.closest("label");
 		const noFixedNoteForBoth = !dialog.querySelector(".genre-fixed-media-note");
@@ -1245,8 +1253,7 @@ async function runGenreHierarchyScenario() {
 			largeDisclosure,
 			explicitSearchFocused,
 			selectedAll,
-			selectionState: selectionIndicator?.dataset.selectionState ?? null,
-			selectionTick: selectionIndicator?.textContent ?? null,
+			selectionPresentation,
 			focusEvidence,
 			configureState,
 			secondaryState,
@@ -1714,7 +1721,6 @@ async function runPeopleSelectionScrollScenario() {
 		const pointerBefore = capture(dialog, scrollElement, action, pointerCard, pointerInput);
 		await clickAndSettle(pointerCard);
 		const pointerAfter = capture(dialog, scrollElement, action, pointerCard, pointerInput);
-		const pointerIndicator = required(pointerCard.querySelector('[data-selection-indicator="true"]'), "pointer selection indicator");
 
 		const disclosure = required(dialog.querySelector(".people-selected-tray details"), "selected disclosure");
 		const summary = required(disclosure.querySelector("summary"), "selected disclosure summary");
@@ -1734,9 +1740,10 @@ async function runPeopleSelectionScrollScenario() {
 		});
 		const keyboardFocused = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
 		const keyboardActive = document.activeElement === keyboardInput;
+		const keyboardFocusOwnedByCard = keyboardActive
+			&& keyboardInput.parentElement === keyboardCard;
 		await clickAndSettle(keyboardInput);
 		const keyboardAfterToggle = capture(dialog, scrollElement, action, keyboardCard, keyboardInput);
-		const keyboardIndicator = required(keyboardCard.querySelector('[data-selection-indicator="true"]'), "keyboard selection indicator");
 
 		await clickAndSettle(summary);
 		const removePointer = required(dialog.querySelector(`[aria-label="Remove ${searchResults[5].name}"]`), "remove selected person action");
@@ -1755,8 +1762,8 @@ async function runPeopleSelectionScrollScenario() {
 				partiallyClipped: pointerPartiallyClipped,
 				inputInsideCardBeforeFocus: pointerBefore.inputInsideCard,
 				selectedExactlyOnce: pointerInput.checked === true,
-				selectedState: pointerIndicator.dataset.selectionState,
-				selectedTick: pointerIndicator.textContent.trim(),
+				cardSelected: pointerCard.classList.contains("is-selected"),
+				markerAbsent: pointerCard.querySelector('[data-selection-indicator], .selectable-card-indicator') === null,
 				outerStable: stableOuter(pointerBefore, pointerAfter),
 				documentStable: stableDocument(pointerBefore, pointerAfter),
 				innerScrollDelta: pointerAfter.innerScrollTop - pointerBefore.innerScrollTop,
@@ -1766,12 +1773,13 @@ async function runPeopleSelectionScrollScenario() {
 				partiallyClipped: keyboardPartiallyClipped,
 				inputInsideCardBeforeFocus: keyboardBefore.inputInsideCard,
 				focused: keyboardActive,
+				focusOwnedByCard: keyboardFocusOwnedByCard,
 				outerStable: stableOuter(keyboardBefore, keyboardFocused) && stableOuter(keyboardFocused, keyboardAfterToggle),
 				documentStable: stableDocument(keyboardBefore, keyboardFocused) && stableDocument(keyboardFocused, keyboardAfterToggle),
 				innerScrolledToKeepFocusVisible: keyboardFocused.innerScrollTop > keyboardBefore.innerScrollTop,
 				selectedExactlyOnce: keyboardInput.checked === true,
-				selectedState: keyboardIndicator.dataset.selectionState,
-				selectedTick: keyboardIndicator.textContent.trim(),
+				cardSelected: keyboardCard.classList.contains("is-selected"),
+				markerAbsent: keyboardCard.querySelector('[data-selection-indicator], .selectable-card-indicator') === null,
 				actionStable: Math.abs(keyboardBefore.actionTop - keyboardFocused.actionTop) <= 1 && Math.abs(keyboardBefore.actionBottom - keyboardFocused.actionBottom) <= 1,
 				spaceActivationDeferredToOwner: true,
 			},
@@ -3171,13 +3179,13 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		await clickAndSettle(au);
 		await clickAndSettle(us);
 		const selectedRegionStyle = getComputedStyle(au);
-		const selectedRegionMark = required(au.querySelector(".streaming-region-selected-mark"), "selected Region tick");
 		const regionSelectionVisual = {
 			selected: au.dataset.selected === "true" && au.getAttribute("aria-pressed") === "true",
 			borderRetained: selectedRegionStyle.borderColor !== "rgba(0, 0, 0, 0)",
 			surfaceRetained: selectedRegionStyle.backgroundColor !== "rgba(0, 0, 0, 0)",
-			tickVisible: getComputedStyle(selectedRegionMark).opacity === "1" && selectedRegionMark.textContent.trim() === "✓",
-			leftRailAbsent: selectedRegionStyle.boxShadow === "none",
+			markerAbsent: au.querySelector(".streaming-region-selected-mark, [data-selection-indicator]") === null,
+			structuralInset: selectedRegionStyle.boxShadow !== "none",
+			leftRailAbsent: !selectedRegionStyle.boxShadow.includes("3px 0px"),
 		};
 		const regionLayout = stageLayout(dialog);
 		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 2 regions"), "Choose services action"));
@@ -4045,7 +4053,8 @@ async function runNetworkHierarchyScenario() {
 		const selection = {
 			selectedCount: dialog.querySelectorAll(".network-selected-disclosure li").length,
 			nativeCheckboxes: [firstSelectedCard, secondSelectedCard].every((card) => card.tagName === "LABEL" && card.querySelector('input[type="checkbox"]')?.checked === true),
-			selectedIndicators: [firstSelectedCard, secondSelectedCard].every((card) => card.querySelector('[data-selection-state="selected"]')?.textContent === "✓"),
+			selectedSurfaces: [firstSelectedCard, secondSelectedCard].every((card) => card.classList.contains("is-selected") && getComputedStyle(card).boxShadow !== "none"),
+			markersAbsent: [firstSelectedCard, secondSelectedCard].every((card) => card.querySelector('[data-selection-indicator], .selectable-card-indicator') === null),
 			selectionPreservedAcrossFilter,
 			filterPreserved: excludeZero.getAttribute("aria-pressed") === "true",
 		};
@@ -4390,24 +4399,26 @@ async function runPeopleConfigureLayoutScenario() {
 			);
 			if (personId === 31) {
 				const card = required(resultInput.closest("label"), "selectable result card");
-				const indicator = required(card.querySelector('[data-selection-indicator="true"]'), "circular selection indicator");
-				const indicatorBefore = getComputedStyle(indicator);
-				const unselectedState = indicator.dataset.selectionState;
+				const markerAbsent = card.querySelector('[data-selection-indicator], .selectable-card-indicator') === null;
 				resultInput.focus();
 				const keyboardFocusable = document.activeElement === resultInput && resultInput.tabIndex === 0;
+				const focusOwnedByCard = keyboardFocusable
+					&& resultInput.parentElement === card;
+				const inputRect = resultInput.getBoundingClientRect();
+				const inputVisuallyHidden = resultInput.classList.contains("choice-card-input") && inputRect.width <= 1 && inputRect.height <= 1;
 				await clickAndSettle(card);
-				const indicatorAfter = getComputedStyle(indicator);
+				const selectedStyle = getComputedStyle(card);
 				selectionAffordance = {
 					nativeCheckbox: resultInput.type === "checkbox",
 					keyboardFocusable,
-					unselectedState,
+					inputVisuallyHidden,
+					focusOwnedByCard,
+					markerAbsent,
 					cardClickToggled: resultInput.checked === true,
 					accessibleChecked: resultInput.checked === true,
-					selectedState: indicator.dataset.selectionState,
-					selectedTick: indicator.textContent.trim(),
-					circular: indicatorAfter.borderRadius === "50%" || indicatorAfter.borderRadius === `${indicator.getBoundingClientRect().width / 2}px`,
-					size: Math.round(indicator.getBoundingClientRect().width),
-					unselectedRingVisible: indicatorBefore.borderTopWidth !== "0px",
+					selectedCard: card.classList.contains("is-selected"),
+					borderRetained: selectedStyle.borderColor !== "rgba(0, 0, 0, 0)",
+					structuralInset: selectedStyle.boxShadow !== "none",
 				};
 			} else await clickAndSettle(resultInput);
 			await waitForMountedCondition(
@@ -4962,22 +4973,18 @@ async function runDecadesActionLayoutScenario() {
 		const backRect = back.getBoundingClientRect();
 		const headingFocused = document.activeElement?.id === "decades-options-title";
 		const contentInputs = [...dialog.querySelectorAll('.decades-content-grid input[type="checkbox"]')];
-		const selectedContentCard = dialog.querySelector('.decades-content-grid label[data-selected="true"]');
-		const selectedContentIndicator = selectedContentCard?.querySelector('.selectable-card-indicator');
+		const selectedContentCard = contentInputs.find((input) => input.checked)?.closest("label");
 		const unselectedContentInput = contentInputs.find((input) => !input.checked);
+		const unselectedContentCard = unselectedContentInput?.closest("label");
+		const selectedContentStyle = selectedContentCard ? getComputedStyle(selectedContentCard) : null;
+		const unselectedContentStyle = unselectedContentCard ? getComputedStyle(unselectedContentCard) : null;
 		unselectedContentInput.focus({ preventScroll: true });
 		await afterCommittedEffects();
 		const unselectedContentFocusable = document.activeElement === unselectedContentInput;
 		await clickAndSettle(unselectedContentInput);
-		const contentToggleSelected = unselectedContentInput.checked === true
-			&& unselectedContentInput.closest("label")?.dataset.selected === "true"
-			&& unselectedContentInput.nextElementSibling?.dataset.selectionState === "selected"
-			&& unselectedContentInput.nextElementSibling?.textContent === "✓";
+		const contentToggleSelected = unselectedContentInput.checked === true;
 		await clickAndSettle(unselectedContentInput);
-		const contentToggleRestored = unselectedContentInput.checked === false
-			&& unselectedContentInput.closest("label")?.dataset.selected === undefined
-			&& unselectedContentInput.nextElementSibling?.dataset.selectionState === "unselected"
-			&& unselectedContentInput.nextElementSibling?.textContent === "";
+		const contentToggleRestored = unselectedContentInput.checked === false;
 		const wholeDecadeInput = required(inputContaining(dialog, "Decade overview"), "Decade overview content choice");
 		const individualYearsInput = required(inputContaining(dialog, "Individual years"), "Individual years content choice");
 		if (!wholeDecadeInput.checked) await clickAndSettle(wholeDecadeInput);
@@ -5036,11 +5043,11 @@ async function runDecadesActionLayoutScenario() {
 			defaultDisplayOrder: dialog.querySelector('input[name="decades-display-order"][value="newest-decades-oldest-years"]')?.checked === true,
 			contentSelection: {
 				nativeCheckboxes: contentInputs.length,
-				allVisuallyHidden: contentInputs.every((input) => input.classList.contains("visually-hidden") && input.classList.contains("selectable-card-checkbox") && input.getBoundingClientRect().width <= 1),
-				indicators: dialog.querySelectorAll('.decades-content-grid .selectable-card-indicator').length,
-				selectedState: selectedContentIndicator?.dataset.selectionState ?? null,
-				selectedTick: selectedContentIndicator?.textContent ?? null,
-				selectedSurface: selectedContentCard?.dataset.selected === "true",
+				allVisible: contentInputs.every((input) => !input.classList.contains("visually-hidden") && input.getBoundingClientRect().width >= 16),
+				markersAbsent: dialog.querySelector('.decades-content-grid [data-selection-indicator], .decades-content-grid .selectable-card-indicator') === null,
+				neutralCardTreatment: selectedContentStyle?.backgroundColor === unselectedContentStyle?.backgroundColor
+					&& selectedContentStyle?.borderColor === unselectedContentStyle?.borderColor
+					&& selectedContentStyle?.boxShadow === unselectedContentStyle?.boxShadow,
 				unselectedFocusable: unselectedContentFocusable,
 				toggleSelected: contentToggleSelected,
 				toggleRestored: contentToggleRestored,
@@ -6058,11 +6065,15 @@ async function runDecadeSourceLayoutScenario() {
 			noHorizontalOverflow: secondary.scrollWidth <= secondary.clientWidth + 1,
 		};
 		await clickAndSettle(required(buttonContaining(secondary, "Done"), "Decade exclusions Done action"));
+		const restoredFooter = await waitForMountedCondition(
+			() => dialog.querySelector(".decade-source-actions"),
+			{ label: "Decade Add Source footer after closing exclusions" },
+		);
 		const secondaryFocusRestored = document.activeElement === configure;
 		await clickAndSettle(required(buttonContaining(genreFieldset, "Clear"), "Clear Genre sources"));
 		const clearedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
 		const clearedReviewSourceCount = dialog.querySelectorAll(".decade-source-review-list li").length;
-		await clickAndSettle(required(buttonContaining(dialog.querySelector(".decade-source-actions"), "Cancel"), "restored Cancel action"));
+		await clickAndSettle(required(buttonContaining(restoredFooter, "Cancel"), "restored Cancel action"));
 		return {
 			width: window.innerWidth,
 			modeId: dialog.dataset.sourceMode,

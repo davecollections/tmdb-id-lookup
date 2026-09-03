@@ -77,11 +77,13 @@ A hard ceiling requires measured technical evidence and explicit owner review. C
 
 ## 5. Selectable-card accessibility
 
+The authoritative visual rules are in [`BUILDER_UI_SHELL.md`](./BUILDER_UI_SHELL.md#selectable-choice-presentation-contract). This section records the guided-flow accessibility and scroll implications.
+
 For multi-select catalogue or search results:
 
 - the complete card is an activation target;
-- selected state normally uses the established teal/cyan restrained surface and border;
-- a visible dot, tick, or other marker is optional and should remain only when it materially improves comprehension; do not duplicate an already obvious highlighted state;
+- selected state uses the established teal/cyan restrained surface and border plus a structural inset;
+- keep the native checkbox visually hidden and do not add a circular substitute, dot, or tick;
 - never rely on colour alone: keep selected state programmatically available and visually distinguishable through more than hue alone;
 - retain accessible native checkbox semantics where practical;
 - keep keyboard focus visibly apparent on the containing card or label rather than tying it only to a decorative indicator;
@@ -89,7 +91,7 @@ For multi-select catalogue or search results:
 
 The People regression establishes a required layout rule: a visually hidden focusable checkbox, or an equivalent focusable control, must be positioned inside the selectable card and intended inner scroller's coordinate context. When a partially clipped card receives pointer or keyboard focus, browser-native focus scrolling may move the inner result pane only; it must not reposition the outer creation dialog, document, or sticky action. Do not compensate with brittle focus handlers, synthetic keyboard interception, or post-focus scroll resets.
 
-Single-choice visual cards, including Genre Structure, retain native radio semantics and the same restrained selected border/surface plus visible keyboard focus. Their current implementations may retain a visible radio or tick, but future consistency work does not require one when the card already communicates selection accessibly and unambiguously. A wireframe preview is presentation-only, may be hidden from assistive technology when the adjacent title/subtitle names the choice completely, and must not replace the radio label or live derived summary.
+Single-choice visual cards, including Genre Structure, retain visually hidden native radio semantics and the same restrained selected border/surface/inset plus visible full-card keyboard focus. They do not add a visible radio dot or tick. Shape choices may strengthen the selected schematic preview. A wireframe preview is presentation-only, may be hidden from assistive technology when the adjacent title/subtitle names the choice completely, and must not replace the radio label or live derived summary.
 
 ## 6. Scroll ownership
 

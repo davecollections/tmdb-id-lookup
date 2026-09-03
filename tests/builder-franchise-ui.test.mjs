@@ -33,11 +33,12 @@ test("franchise search intentionally avoids auto-focus and reuses the collection
 	assert.match(workspace, /collectionProvider=\{sourceProviderRef\.current\}/);
 });
 
-test("selectable franchise results use native checkboxes, circular indicators, and full-card labels", () => {
+test("selectable franchise results use hidden native checkboxes and full-card selected styling", () => {
 	assert.match(flow, /<label className=\{`add-source-result franchise-result-selectable/);
-	assert.match(flow, /type="checkbox"/);
-	assert.match(flow, /selectable-card-indicator/);
-	assert.match(styles, /\.selectable-card-indicator[\s\S]*border-radius:\s*50%/);
+	assert.match(flow, /className="visually-hidden choice-card-input" type="checkbox"/);
+	assert.doesNotMatch(flow, /selectable-card-indicator|✓/);
+	assert.match(styles, /label:has\(> \.choice-card-input:focus-visible\)/);
+	assert.match(styles, /\.franchise-result-selectable\.is-selected\s*\{[\s\S]*box-shadow:\s*inset 0 0 0 1px/);
 	assert.doesNotMatch(styles.match(/\.franchise-result-selectable[\s\S]*?\}/)?.[0] ?? "", /border-left/);
 });
 

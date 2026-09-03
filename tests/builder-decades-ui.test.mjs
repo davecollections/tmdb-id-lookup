@@ -667,10 +667,10 @@ test("structure, ordering, and shared presentation choices render schematic prev
 	state = updateDecadesCreationMedia(state, "both");
 	state = { ...state, layout: "mixed-collection", content: { wholeDecade: true, individualYears: true, genreBreakdown: false } };
 	const markup = renderToStaticMarkup(createElement(DecadesOptionsStep, { state, onStateChange() {} }));
-	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox" type="checkbox"/g) ?? []).length, 3);
-	assert.equal((markup.match(/data-selection-indicator="true"/g) ?? []).length, 3);
-	assert.equal((markup.match(/data-selection-state="selected"/g) ?? []).length, 2);
-	assert.equal((markup.match(/data-selection-state="unselected"/g) ?? []).length, 1);
+	const contentChoicesMarkup = markup.slice(markup.indexOf('<div class="decades-content-grid">'), markup.indexOf("</fieldset>", markup.indexOf('<div class="decades-content-grid">')));
+	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 3);
+	assert.equal((markup.match(/type="checkbox" checked=""/g) ?? []).length, 2);
+	assert.doesNotMatch(contentChoicesMarkup, /choice-card-input|visually-hidden|data-selected|selection-indicator|selection-state|✓/);
 	for (const marker of ['data-structure-preview="separate"', 'data-structure-preview="mixed"', "Movie Decades", "TV Decades", "Display order", "Source grouping", "Folders", "Inside"]) assert.ok(markup.includes(marker), marker);
 	for (const label of ["Newest Decades, Oldest Years", "Newest throughout", "Oldest throughout"]) assert.ok(markup.includes(`>${label}<`), label);
 	assert.equal((markup.match(/name="decades-display-order"/g) ?? []).length, 3);

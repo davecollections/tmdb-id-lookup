@@ -209,7 +209,6 @@ function RegionResult({ region, selected, onSelect }) {
 	return (
 		<button className="streaming-region-result" type="button" data-streaming-region={region.code} data-selected={selected ? "true" : "false"} aria-pressed={selected} onClick={() => onSelect(region)}>
 			<RegionIdentity region={region} />
-			<span className="streaming-region-selected-mark" aria-hidden="true">{selected ? "✓" : ""}</span>
 		</button>
 	);
 }
@@ -318,7 +317,7 @@ export function StreamingConfigureStep({
 							: regions.length === 1 ? `Not available in ${regions[0].code}` : "Not available in every selected region";
 						return (
 							<label key={choice.id} data-source-supported={supported ? "true" : "false"}>
-								<input type="radio" name="streaming-media-choice" value={choice.id} checked={mediaChoice === choice.id} disabled={!supported} onChange={() => onMediaChange(choice.id)} />
+								<input className="visually-hidden choice-card-input" type="radio" name="streaming-media-choice" value={choice.id} checked={mediaChoice === choice.id} disabled={!supported} onChange={() => onMediaChange(choice.id)} />
 								<span><strong>{choice.label}</strong><small>{availabilityCopy}</small></span>
 							</label>
 						);

@@ -182,9 +182,8 @@ export function DecadePresetStep({ state, headingRef, onToggle, onSelectAll, onC
 				{DECADE_PRESETS.map((preset) => {
 					const selected = state.selectedDecadeIds.includes(preset.id);
 					return (
-						<button key={preset.id} type="button" data-decade-preset={preset.id} data-selected={selected ? "true" : undefined} onClick={() => onToggle(preset.id)}>
+						<button key={preset.id} type="button" data-decade-preset={preset.id} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onToggle(preset.id)}>
 							<span><strong>{preset.label}</strong><small>{preset.startYear === null ? "Everything through 1959" : `${preset.startYear}–${preset.endYear}`}</small></span>
-							<span aria-hidden="true">{selected ? "✓" : "+"}</span>
 						</button>
 					);
 				})}
@@ -207,15 +206,13 @@ function ContentChoices({ state, onChange }) {
 			<div className="decades-content-grid">
 				{options.map((option) => {
 					const selected = state.content[option.id];
-					return <label key={option.id} data-selected={selected ? "true" : undefined}>
+					return <label key={option.id}>
 						<input
-							className="visually-hidden selectable-card-checkbox"
 							type="checkbox"
 							checked={selected}
 							disabled={selected && selectedCount === 1}
 							onChange={(event) => onChange(Object.freeze({ ...state.content, [option.id]: event.target.checked }))}
 						/>
-						<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={selected ? "selected" : "unselected"} aria-hidden="true">{selected ? "✓" : ""}</span>
 						<span><strong>{option.label}</strong><small>{option.description}</small></span>
 					</label>;
 				})}

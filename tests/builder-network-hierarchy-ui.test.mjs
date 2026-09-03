@@ -202,8 +202,8 @@ test("server rendering starts no catalogue, Preview, artwork, or apply request",
 test("Select uses accessible full-card checkboxes, stable focus, and one scroll owner", () => {
 	const selectable = flow.slice(flow.indexOf("function SelectableNetworkResult"), flow.indexOf("function NetworkTitlePreview"));
 	assert.match(selectable, /<label[^>]+network-result-selectable/);
-	assert.match(selectable, /type="checkbox"/);
-	assert.match(selectable, /selectable-card-indicator/);
+	assert.match(selectable, /className="visually-hidden choice-card-input" type="checkbox"/);
+	assert.doesNotMatch(selectable, /selectable-card-indicator|✓/);
 	assert.match(selectable, /<NetworkResultContent[^>]+showSeriesCount/);
 	assert.doesNotMatch(selectable, /Preview|aria-haspopup="dialog"/);
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);

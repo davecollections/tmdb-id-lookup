@@ -83,9 +83,8 @@ test("Decade Add Source server markup is one compact canonical editor in the app
 	assert.match(markup, /Genre sources <span>· optional<\/span>/);
 	assert.match(markup, /Select Genres to add separate genre sources alongside the main decade or year source/);
 	assert.match(markup, /With Both selected, only Genres available for Movies and Series are shown/);
-	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox" type="checkbox"/g) ?? []).length, 8);
-	assert.equal((markup.match(/data-selection-indicator="false"/g) ?? []).length, 8);
-	assert.doesNotMatch(markup, /class="selectable-card-indicator"/);
+	assert.equal((markup.match(/class="visually-hidden choice-card-input" type="checkbox"/g) ?? []).length, 8);
+	assert.doesNotMatch(markup, /selection-indicator|selectable-card-indicator|✓/);
 	assert.match(markup, />Select all<\/button>/);
 	assert.match(markup, />Clear<\/button>/);
 	assert.match(markup, /2 sources configured/);
@@ -103,7 +102,7 @@ test("Decade Add Source directly reuses shared sort, Advanced, Preview, duplicat
 	assert.match(flow, /<SemanticSortChoices options=\{decadeOptions\}/);
 	assert.match(flow, /<DecadePeriodChoices options=\{yearOptions\}/);
 	assert.match(flow, /<GenreCatalogueList[^>]*selectionControl="checkbox"/);
-	assert.match(flow, /showSelectionIndicator=\{false\}/);
+	assert.doesNotMatch(flow, /showSelectionIndicator/);
 	assert.match(flow, /<GenreSelectionToolbar[\s\S]*?clearLabel="Clear"/);
 	assert.match(flow, /buildDecadeSourceBundleDrafts/);
 	assert.match(flow, /setPeriodIds\(\[nextPreset\.wholePeriod\.id\]\)/);

@@ -248,8 +248,7 @@ export function StudioConfigureStep({
 						const count = currentCountText(option, counts[option.countKey]);
 						return (
 							<label className="studio-source-choice" key={option.id} data-count-state={count.state} data-source-supported={option.supported ? "true" : "false"} data-source-duplicate={duplicate ? "true" : undefined}>
-								<input className="visually-hidden selectable-card-checkbox" type="checkbox" checked={choices.includes(option.id)} disabled={!option.supported || duplicate} onChange={() => onToggle(option.id)} />
-								<span className="selectable-card-indicator" data-selection-indicator="true" data-selection-state={choices.includes(option.id) ? "selected" : "unselected"} aria-hidden="true">{choices.includes(option.id) ? "✓" : ""}</span>
+								<input className="visually-hidden choice-card-input" type="checkbox" checked={choices.includes(option.id)} disabled={!option.supported || duplicate} onChange={() => onToggle(option.id)} />
 								<span>
 									<strong>{option.label}</strong>
 									<small>

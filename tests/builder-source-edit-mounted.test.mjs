@@ -836,9 +836,12 @@ test("mounted Genre hierarchy preserves browse-first focus, configuration state,
 		}, `${width}px 27-Genre disclosure`);
 		assert.equal(result.explicitSearchFocused, true, `${width}px explicit Search focus`);
 		assert.equal(result.selectedAll, true, `${width}px Select all`);
-		assert.deepEqual({ state: result.selectionState, tick: result.selectionTick }, {
-			state: "selected",
-			tick: "✓",
+		assert.deepEqual(result.selectionPresentation, {
+			nativeChecked: true,
+			markerAbsent: true,
+			surfaceRetained: true,
+			borderRetained: true,
+			structuralInset: true,
 		}, `${width}px shared selected-card language`);
 		assert.equal(result.focusEvidence.partiallyClipped, true, `${width}px partial-card setup`);
 		assert.equal(result.focusEvidence.nativeCheckboxFocused, true, `${width}px native checkbox focus`);
@@ -1611,14 +1614,14 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.deepEqual(result.selectionAffordance, {
 			nativeCheckbox: true,
 			keyboardFocusable: true,
-			unselectedState: "unselected",
+			inputVisuallyHidden: true,
+			focusOwnedByCard: true,
+			markerAbsent: true,
 			cardClickToggled: true,
 			accessibleChecked: true,
-			selectedState: "selected",
-			selectedTick: "✓",
-			circular: true,
-			size: width <= 520 ? 20 : 22,
-			unselectedRingVisible: true,
+			selectedCard: true,
+			borderRetained: true,
+			structuralInset: true,
 		}, `${width}px selection affordance`);
 		assert.deepEqual(result.automaticOverride.firstSelections, ["Acting Movies", "Acting Series", "Directed Movies"], `${width}px Automatic override`);
 		assert.deepEqual(result.automaticOverride.secondSelections, ["Acting Movies", "Acting Series", "Directed Movies", "Directed Series"], `${width}px untouched defaults`);
@@ -1886,7 +1889,8 @@ test("mounted Network hierarchy remains catalogue-backed, request-free before Pr
 		assert.deepEqual(result.selection, {
 			selectedCount: 2,
 			nativeCheckboxes: true,
-			selectedIndicators: true,
+			selectedSurfaces: true,
+			markersAbsent: true,
 			selectionPreservedAcrossFilter: true,
 			filterPreserved: true,
 		}, `${width}px native Network selection`);
@@ -2184,7 +2188,8 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 			selected: true,
 			borderRetained: true,
 			surfaceRetained: true,
-			tickVisible: true,
+			markerAbsent: true,
+			structuralInset: true,
 			leftRailAbsent: true,
 		}, `${result.width}px Region selection language without left rail`);
 		assert.deepEqual(result.mediaSelectionRetention, {
@@ -2875,8 +2880,8 @@ test("mounted People selection keeps a partially clipped native checkbox inside 
 		assert.equal(result.pointer.partiallyClipped, true, `${width}px pointer target clipped`);
 		assert.equal(result.pointer.inputInsideCardBeforeFocus, true, `${width}px pointer checkbox belongs to card coordinates`);
 		assert.equal(result.pointer.selectedExactlyOnce, true, `${width}px pointer selection`);
-		assert.equal(result.pointer.selectedState, "selected", `${width}px pointer selected badge`);
-		assert.equal(result.pointer.selectedTick, "✓", `${width}px pointer tick`);
+		assert.equal(result.pointer.cardSelected, true, `${width}px pointer selected card`);
+		assert.equal(result.pointer.markerAbsent, true, `${width}px pointer marker absence`);
 		assert.equal(result.pointer.outerStable, true, `${width}px pointer outer dialog position`);
 		assert.equal(result.pointer.documentStable, true, `${width}px pointer document position`);
 		assert.ok(Number.isFinite(result.pointer.innerScrollDelta), `${width}px pointer inner scroll measurement`);
@@ -2884,12 +2889,13 @@ test("mounted People selection keeps a partially clipped native checkbox inside 
 		assert.equal(result.keyboard.partiallyClipped, true, `${width}px keyboard target clipped`);
 		assert.equal(result.keyboard.inputInsideCardBeforeFocus, true, `${width}px keyboard checkbox belongs to card coordinates`);
 		assert.equal(result.keyboard.focused, true, `${width}px native checkbox focus`);
+		assert.equal(result.keyboard.focusOwnedByCard, true, `${width}px focused native checkbox belongs to the full-card focus target`);
 		assert.equal(result.keyboard.outerStable, true, `${width}px keyboard outer dialog position`);
 		assert.equal(result.keyboard.documentStable, true, `${width}px keyboard document position`);
 		assert.equal(result.keyboard.innerScrolledToKeepFocusVisible, true, `${width}px keyboard inner scroll ownership`);
 		assert.equal(result.keyboard.selectedExactlyOnce, true, `${width}px keyboard-path selection`);
-		assert.equal(result.keyboard.selectedState, "selected", `${width}px keyboard selected badge`);
-		assert.equal(result.keyboard.selectedTick, "✓", `${width}px keyboard tick`);
+		assert.equal(result.keyboard.cardSelected, true, `${width}px keyboard selected card`);
+		assert.equal(result.keyboard.markerAbsent, true, `${width}px keyboard marker absence`);
 		assert.equal(result.keyboard.actionStable, true, `${width}px keyboard sticky Configure action`);
 		assert.equal(result.keyboard.spaceActivationDeferredToOwner, true, `${width}px no synthetic Space claim`);
 		assert.equal(result.disclosure.opened, true, `${width}px selected disclosure opens`);
@@ -3021,11 +3027,9 @@ test("mounted Decades options and compact Preview actions remain stable at every
 		assert.equal(result.defaultDisplayOrder, true, `${result.width}px Display order default`);
 		assert.deepEqual(result.contentSelection, {
 			nativeCheckboxes: 3,
-			allVisuallyHidden: true,
-			indicators: 3,
-			selectedState: "selected",
-			selectedTick: "✓",
-			selectedSurface: true,
+			allVisible: true,
+			markersAbsent: true,
+			neutralCardTreatment: true,
 			unselectedFocusable: true,
 			toggleSelected: true,
 			toggleRestored: true,

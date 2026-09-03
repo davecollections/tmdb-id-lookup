@@ -389,9 +389,8 @@ test("People editor opens immediately with four non-blocking counts, title reset
 	assert.equal(markup.includes("physical source"), false);
 	assert.equal((markup.match(/name="source-edit-people-combination"/g) ?? []).length, 4);
 	assert.equal((markup.match(/name="people-edit-sort"/g) ?? []).length, 3);
-	assert.equal((markup.match(/class="visually-hidden selectable-card-checkbox"/g) ?? []).length, 4);
-	assert.equal((markup.match(/data-selection-indicator="true"/g) ?? []).length, 4);
-	assert.equal((markup.match(/data-selection-state="selected"/g) ?? []).length, 1);
+	assert.equal((markup.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 4);
+	assert.doesNotMatch(markup, /selection-indicator|selection-state|✓/);
 	assert.equal((markup.match(/Checking titles…/g) ?? []).length, 4);
 	assert.ok(markup.includes("TMDB person <strong>31</strong>"));
 	for (const raw of ["PERSON · MOVIE", "PERSON · TV", "DIRECTOR · MOVIE", "DIRECTOR · TV", "popularity.desc", "primary_release_date.desc", "vote_average.desc"]) {
