@@ -84,6 +84,8 @@ export {
 	createMovieFranchiseSource,
 	findMovieFranchiseDuplicate,
 	movieFranchiseDuplicateIdentity,
+	movieFranchiseTitleDraftKey,
+	resolveMovieFranchiseTitleDraft,
 	validateMovieFranchiseSourceDraft,
 } from "./movie-franchise-source.js";
 export {
@@ -424,6 +426,8 @@ export {
 	streamingDuplicateOverrideIdentity,
 	streamingMediaChoiceSupport,
 	streamingSourceCandidateKey,
+	streamingSourceTitleDraftKey,
+	streamingSourceTitlesForProvider,
 	STREAMING_MEDIA_CHOICES,
 	STREAMING_SOURCE_NAME_CONTEXTS,
 	STREAMING_SORT_OPTIONS,

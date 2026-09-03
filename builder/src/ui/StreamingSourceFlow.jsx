@@ -10,7 +10,6 @@ import {
 	DEFAULT_STREAMING_SORT_OPTION_ID,
 	INITIAL_ASYNC_REQUEST_STATE,
 	inspectStreamingSourceDuplicates,
-	reconcileStreamingSourceTitles,
 	requestSourceTitlePreview,
 	searchStreamingProviders,
 	sourceTitlePreviewProviderAvailable,
@@ -18,6 +17,8 @@ import {
 	streamingDuplicateOverrideIdentity,
 	streamingMediaChoiceSupport,
 	streamingSourceCandidateKey,
+	streamingSourceTitleDraftKey,
+	streamingSourceTitlesForProvider,
 	STREAMING_MEDIA_CHOICES,
 	STREAMING_PROVIDER_BROWSE_MODES,
 	STREAMING_REGION_BROWSE_MODES,
@@ -393,7 +394,7 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 	const [selectedRegions, setSelectedRegions] = useState([]);
 	const [mediaChoice, setMediaChoice] = useState(null);
 	const [sortOptionId, setSortOptionId] = useState(DEFAULT_STREAMING_SORT_OPTION_ID);
-	const [sourceTitles, setSourceTitles] = useState({});
+	const [sourceTitleDrafts, setSourceTitleDrafts] = useState({});
 	const [expandedCandidateKey, setExpandedCandidateKey] = useState(null);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
@@ -415,6 +416,10 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 
 	const catalogue = catalogueState.status === "success" ? catalogueState.data : null;
 	const regionCodes = selectedRegions.map((region) => region.code);
+	const sourceTitles = useMemo(
+		() => streamingSourceTitlesForProvider(sourceTitleDrafts, selectedProvider?.id),
+		[sourceTitleDrafts, selectedProvider?.id],
+	);
 	const effectiveProviderBrowseMode = regionCodes.length === 1
 		? providerBrowseMode
 		: STREAMING_PROVIDER_BROWSE_MODES.ALL;
@@ -488,7 +493,6 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 		setProviderBrowseMode(selectedRegions.length === 1 ? STREAMING_PROVIDER_BROWSE_MODES.TOP : STREAMING_PROVIDER_BROWSE_MODES.ALL);
 		setMediaChoice(null);
 		setSortOptionId(DEFAULT_STREAMING_SORT_OPTION_ID);
-		setSourceTitles({});
 		setExpandedCandidateKey(null);
 		setApplyDiagnostic(null);
 		setNavigation((current) => enterStreamingProviderStep(current, selectedRegions.map((region) => region.code), scrollRef.current?.scrollTop ?? 0));
@@ -497,10 +501,7 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 	function selectProvider(provider) {
 		const defaultChoice = defaultStreamingMediaChoice(provider, regionCodes);
 		if (defaultChoice === null) return;
-		if (selectedProvider?.id !== provider.id) {
-			setSourceTitles({});
-			setExpandedCandidateKey(null);
-		}
+		if (selectedProvider?.id !== provider.id) setExpandedCandidateKey(null);
 		setSelectedProvider(provider);
 		setMediaChoice(defaultChoice);
 		setSortOptionId(DEFAULT_STREAMING_SORT_OPTION_ID);
@@ -512,7 +513,6 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 	function selectRegion(region) {
 		setSelectedRegions((current) => toggleStreamingRegionSelection(current, region));
 		setSelectedProvider(null);
-		setSourceTitles({});
 		setExpandedCandidateKey(null);
 		setApplyDiagnostic(null);
 	}
@@ -666,22 +666,25 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 									<StreamingConfigureStep provider={selectedProvider} regions={selectedRegions} mediaChoice={mediaChoice} sortOptionId={sortOptionId} drafts={baseDraftResult.drafts} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} expandedCandidateKey={expandedCandidateKey} sourceTitles={sourceTitles} titleErrors={titleErrors} onMediaChange={(choiceId) => {
 										const next = buildStreamingSourceDrafts(selectedProvider, { regionCodes, mediaChoice: choiceId, sortOptionId });
 										setMediaChoice(choiceId);
-										setSourceTitles((current) => reconcileStreamingSourceTitles(current, next.drafts));
 										if (expandedCandidateKey && !next.drafts.some((draft) => streamingSourceCandidateKey(draft.editable.filters.watchRegion, draft.editable.mediaType) === expandedCandidateKey)) setExpandedCandidateKey(null);
 										setApplyDiagnostic(null);
 									}} onSortChange={(optionId) => { setSortOptionId(optionId); setApplyDiagnostic(null); }} onEditName={(candidateKey) => {
 										setExpandedCandidateKey((current) => current === candidateKey ? null : candidateKey);
 										queueMicrotask(() => focusElementWithoutScroll(titleInputRefs.current.get(candidateKey)));
 									}} onTitleChange={(candidateKey, title) => {
-										setSourceTitles((current) => ({ ...current, [candidateKey]: title }));
+										const [regionCode, mediaType] = candidateKey.split("|");
+										const draftKey = streamingSourceTitleDraftKey(selectedProvider?.id, regionCode, mediaType);
+										if (draftKey !== null) setSourceTitleDrafts((current) => ({ ...current, [draftKey]: title }));
 										setApplyDiagnostic(null);
 									}} onTitleInputMount={(candidateKey, element) => {
 										if (element) titleInputRefs.current.set(candidateKey, element);
 										else titleInputRefs.current.delete(candidateKey);
 									}} onUseDefaultName={(candidateKey) => {
-										setSourceTitles((current) => {
+										const [regionCode, mediaType] = candidateKey.split("|");
+										const draftKey = streamingSourceTitleDraftKey(selectedProvider?.id, regionCode, mediaType);
+										if (draftKey !== null) setSourceTitleDrafts((current) => {
 											const next = { ...current };
-											delete next[candidateKey];
+											delete next[draftKey];
 											return next;
 										});
 										setApplyDiagnostic(null);

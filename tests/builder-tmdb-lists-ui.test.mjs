@@ -50,6 +50,7 @@ test("the multiline Lists input reuses the Builder form-control styling contract
 
 test("list resolution and Preview use only the injected provider and the shared title-preview path", () => {
 	assert.match(flow, /provider\.getList\(entry\.id/);
+	assert.match(flow, /kind: "list", tmdbId: list\.id, mediaType: "MOVIE", label: list\.sourceTitle/);
 	assert.match(flow, /requestSourceTitlePreview\(candidate\.request, \{ list: provider \}/);
 	assert.match(flow, /<SourceTitlePreviewDialog/);
 	assert.match(previewDialog, /const listPreview = preview\.candidate\.request\.kind === "list"/);

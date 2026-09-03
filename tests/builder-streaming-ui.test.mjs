@@ -310,7 +310,7 @@ test("Region → Provider → Configure navigation restores selection and provid
 	assert.throws(() => enterStreamingConfigureStep(providers, 0), /positive safe/i);
 });
 
-test("flow derives eligible providers from selected regions and invalidates stale provider state", () => {
+test("flow derives eligible providers while retaining provider-keyed title drafts across reversible navigation", () => {
 	const source = read("builder/src/ui/StreamingSourceFlow.jsx");
 	assert.match(source, /useState\(STREAMING_REGION_BROWSE_MODES\.COMMON\)/);
 	assert.match(source, /browseStreamingRegions\(catalogue\?\.regions \?\? \[\], \{ mode: regionBrowseMode, query: regionQuery \}\)/);
@@ -319,9 +319,11 @@ test("flow derives eligible providers from selected regions and invalidates stal
 	assert.match(source, /regionCodes\.length === 1[\s\S]*STREAMING_PROVIDER_BROWSE_MODES\.ALL/);
 	assert.match(source, /setProviderBrowseMode\(selectedRegions\.length === 1 \? STREAMING_PROVIDER_BROWSE_MODES\.TOP : STREAMING_PROVIDER_BROWSE_MODES\.ALL\)/);
 	assert.match(source, /setSelectedProvider\(null\);[\s\S]*setProviderQuery\(""\)/);
-	assert.match(source, /function selectProvider\(provider\)[\s\S]*selectedProvider\?\.id !== provider\.id[\s\S]*setSourceTitles\(\{\}\)/);
-	assert.match(source, /function selectRegion\(region\)[\s\S]*setSelectedProvider\(null\);[\s\S]*setSourceTitles\(\{\}\)/);
-	assert.match(source, /onUseDefaultName=\{\(candidateKey\) => \{[\s\S]*delete next\[candidateKey\]/);
+	assert.match(source, /const \[sourceTitleDrafts, setSourceTitleDrafts\] = useState\(\{\}\)/);
+	assert.match(source, /streamingSourceTitlesForProvider\(sourceTitleDrafts, selectedProvider\?\.id\)/);
+	assert.doesNotMatch(source, /setSourceTitles\(\{\}\)/);
+	assert.match(source, /streamingSourceTitleDraftKey\(selectedProvider\?\.id, regionCode, mediaType\)/);
+	assert.match(source, /onUseDefaultName=\{\(candidateKey\) => \{[\s\S]*delete next\[draftKey\]/);
 	assert.doesNotMatch(source, /streamingProviderSupportedRegions/);
 	assert.doesNotMatch(source, /multiSelect|Select multiple|proceedToConfigure\(\[region\]\)/);
 });

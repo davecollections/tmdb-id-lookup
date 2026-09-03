@@ -183,7 +183,7 @@ export function TmdbListSourceFlow({
 
 	function openPreview(list, trigger) {
 		previewTriggerRef.current = trigger;
-		const candidate = Object.freeze({ request: Object.freeze({ kind: "list", tmdbId: list.id, mediaType: "MOVIE", label: list.name || `TMDB list ${list.id}` }) });
+		const candidate = Object.freeze({ request: Object.freeze({ kind: "list", tmdbId: list.id, mediaType: "MOVIE", label: list.sourceTitle }) });
 		setPreview({ status: "loading", candidate, data: null, error: null });
 		previewCoordinatorRef.current.run(({ signal }) => requestSourceTitlePreview(candidate.request, { list: provider }, signal), `list:${list.id}`).then((outcome) => {
 			if (!outcome.accepted) return;

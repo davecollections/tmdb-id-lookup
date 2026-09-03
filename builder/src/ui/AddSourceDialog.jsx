@@ -13,8 +13,10 @@ import {
 	createSourceSubmissionGate,
 	INITIAL_ASYNC_REQUEST_STATE,
 	MOVIE_FRANCHISE_SOURCE_MODE,
+	movieFranchiseTitleDraftKey,
 	parseTmdbCollectionInput,
 	requestSourceTitlePreview,
+	resolveMovieFranchiseTitleDraft,
 	sourceTitlePreviewRequest,
 } from "../source-add/index.js";
 import {
@@ -533,6 +535,7 @@ export function AddSourceDialog({
 	const scrollRef = useRef(null);
 	const inputRef = useRef(null);
 	const titleInputRef = useRef(null);
+	const titleDraftsRef = useRef({});
 	const selectionErrorRef = useRef(null);
 	const lookupCoordinatorRef = useRef(null);
 	const selectionCoordinatorRef = useRef(null);
@@ -629,7 +632,7 @@ export function AddSourceDialog({
 				return;
 			}
 			setSelectedResult(outcome.result.data);
-			setTitle(outcome.result.data.name);
+			setTitle(resolveMovieFranchiseTitleDraft(outcome.result.data, titleDraftsRef.current));
 			setDuplicate(null);
 			setApplyDiagnostic(null);
 			setNavigationState((current) => enterAddSourceReview(
@@ -709,7 +712,7 @@ export function AddSourceDialog({
 
 	function showReview(result) {
 		setSelectedResult(result);
-		setTitle(result.name);
+		setTitle(resolveMovieFranchiseTitleDraft(result, titleDraftsRef.current));
 		clearApprovalAndDiagnostics();
 		setNavigationState((current) => enterAddSourceReview(
 			current,
@@ -957,7 +960,10 @@ export function AddSourceDialog({
 									applyDiagnostic={applyDiagnostic}
 									previewAvailable={previewCandidate !== null}
 									onTitleChange={(event) => {
-										setTitle(event.target.value);
+										const nextTitle = event.target.value;
+										setTitle(nextTitle);
+										const draftKey = movieFranchiseTitleDraftKey(selectedResult);
+										if (draftKey !== null) titleDraftsRef.current = { ...titleDraftsRef.current, [draftKey]: nextTitle };
 										setApplyDiagnostic(null);
 									}}
 									onPreview={openPreview}

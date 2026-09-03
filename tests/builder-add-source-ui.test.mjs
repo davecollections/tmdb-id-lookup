@@ -8,7 +8,13 @@ import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
-import { createAsyncRequestCoordinator } from "../builder/src/source-add/index.js";
+import {
+	buildMovieFranchiseSourceDraft,
+	createAsyncRequestCoordinator,
+	movieFranchiseDuplicateIdentity,
+	movieFranchiseTitleDraftKey,
+	resolveMovieFranchiseTitleDraft,
+} from "../builder/src/source-add/index.js";
 import {
 	lockAddSourceDocumentBody,
 	observeAddSourceViewport,
@@ -708,6 +714,32 @@ test("Search and Review navigation preserves selected result, scroll position, a
 	assert.equal(scrollElement.scrollTop, 428.5);
 	assert.equal(restore.visibilityAdjusted, true);
 	assert.equal(restore.resultVisible, true);
+});
+
+test("Movie-franchise title drafts restore by physical identity without leaking to another result", () => {
+	const bond = detailsResult({ id: 645, name: "James Bond Collection" });
+	const mission = detailsResult({ id: 87359, name: "Mission: Impossible Collection" });
+	const bondKey = movieFranchiseTitleDraftKey(bond);
+	const missionKey = movieFranchiseTitleDraftKey(mission);
+	const titleDrafts = {
+		[bondKey]: "Bond favourites",
+	};
+
+	assert.equal(bondKey, "tmdb|COLLECTION|645|MOVIE");
+	assert.equal(missionKey, "tmdb|COLLECTION|87359|MOVIE");
+	assert.equal(resolveMovieFranchiseTitleDraft(bond, titleDrafts), "Bond favourites");
+	assert.equal(resolveMovieFranchiseTitleDraft(mission, titleDrafts), mission.name);
+	assert.equal(resolveMovieFranchiseTitleDraft(mission, { ...titleDrafts, [missionKey]: "Impossible missions" }), "Impossible missions");
+	assert.equal(resolveMovieFranchiseTitleDraft(bond, { [bondKey]: " \t " }), bond.name);
+
+	const canonical = buildMovieFranchiseSourceDraft(bond, bond.name).draft;
+	const customised = buildMovieFranchiseSourceDraft(bond, titleDrafts[bondKey]).draft;
+	assert.equal(movieFranchiseDuplicateIdentity(customised.editable), movieFranchiseDuplicateIdentity(canonical.editable));
+
+	const dialog = read("builder/src/ui/AddSourceDialog.jsx");
+	assert.match(dialog, /const titleDraftsRef = useRef\(\{\}\)/);
+	assert.match(dialog, /setTitle\(resolveMovieFranchiseTitleDraft\(result, titleDraftsRef\.current\)\)/);
+	assert.match(dialog, /titleDraftsRef\.current = \{ \.\.\.titleDraftsRef\.current, \[draftKey\]: nextTitle \}/);
 });
 
 test("query and page changes clear stale selection state and failed details are focused within Search", () => {

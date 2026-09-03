@@ -20,6 +20,8 @@ import {
 	streamingDuplicateOverrideIdentity,
 	streamingMediaChoiceSupport,
 	streamingSourceCandidateKey,
+	streamingSourceTitleDraftKey,
+	streamingSourceTitlesForProvider,
 	streamingProviderAvailability,
 	streamingProviderCommonAvailability,
 	STREAMING_COMMON_REGION_CODES,
@@ -488,6 +490,44 @@ test("Streaming creation supports independent valid physical-source names and pr
 	assert.equal(buildStreamingSourceDrafts(provider(8), {
 		regionCodes: ["AU"], mediaChoice: "movies", sourceTitles: { "AU|MOVIE": " \t " },
 	}).errors[0].code, "INVALID_STREAMING_SOURCE_TITLE");
+});
+
+test("Streaming title drafts are isolated by provider and restore surviving region/media candidates", () => {
+	const titleDrafts = {
+		[streamingSourceTitleDraftKey(8, "AU", "MOVIE")]: "Netflix AU cinema",
+		[streamingSourceTitleDraftKey(8, "AU", "TV")]: "Netflix AU series",
+		[streamingSourceTitleDraftKey(8, "US", "MOVIE")]: "Netflix US cinema",
+		[streamingSourceTitleDraftKey(9, "AU", "MOVIE")]: "Prime AU cinema",
+	};
+	const netflixTitles = streamingSourceTitlesForProvider(titleDrafts, 8);
+	const primeTitles = streamingSourceTitlesForProvider(titleDrafts, 9);
+
+	assert.deepEqual(netflixTitles, {
+		"AU|MOVIE": "Netflix AU cinema",
+		"AU|TV": "Netflix AU series",
+		"US|MOVIE": "Netflix US cinema",
+	});
+	assert.deepEqual(primeTitles, { "AU|MOVIE": "Prime AU cinema" });
+	assert.equal(streamingSourceTitleDraftKey(0, "AU", "MOVIE"), null);
+	assert.deepEqual(streamingSourceTitlesForProvider({ "8|AU|MOVIE|extra": "No" }, 8), {});
+
+	const unchanged = buildStreamingSourceDrafts(provider(8), {
+		regionCodes: ["AU"], mediaChoice: "both", sourceTitles: netflixTitles,
+	});
+	assert.deepEqual(unchanged.drafts.map((draft) => draft.editable.title), ["Netflix AU cinema", "Netflix AU series"]);
+	const changedRegions = buildStreamingSourceDrafts(provider(8), {
+		regionCodes: ["AU", "US"], mediaChoice: "both", sourceTitles: netflixTitles,
+	});
+	assert.deepEqual(changedRegions.drafts.map((draft) => draft.editable.title), [
+		"Netflix AU cinema",
+		"Netflix AU series",
+		"Netflix US cinema",
+		"Netflix Series (US)",
+	]);
+	const returned = buildStreamingSourceDrafts(provider(8), {
+		regionCodes: ["AU", "US"], mediaChoice: "movies", sourceTitles: netflixTitles,
+	});
+	assert.deepEqual(returned.drafts.map((draft) => draft.editable.title), ["Netflix AU cinema", "Netflix US cinema"]);
 });
 
 test("Streaming insertion validator permits only valid custom names while retaining the configured source contract", () => {

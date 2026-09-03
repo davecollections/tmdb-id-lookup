@@ -37,6 +37,25 @@ function canonicalTmdbId(value) {
 	return isPositiveSafeTmdbId(number) ? number : null;
 }
 
+function movieFranchiseIdentityKey(value) {
+	const tmdbId = canonicalTmdbId(value);
+	return tmdbId === null ? null : `tmdb|COLLECTION|${tmdbId}|MOVIE`;
+}
+
+export function movieFranchiseTitleDraftKey(collection) {
+	return movieFranchiseIdentityKey(collection?.id);
+}
+
+export function resolveMovieFranchiseTitleDraft(collection, titleDrafts = {}) {
+	const key = movieFranchiseTitleDraftKey(collection);
+	const rememberedTitle = key !== null && plainObject(titleDrafts) && Object.hasOwn(titleDrafts, key)
+		? titleDrafts[key]
+		: null;
+	return rememberedTitle !== null && buildMovieFranchiseSourceDraft(collection, rememberedTitle).ok
+		? rememberedTitle
+		: collection?.name ?? "";
+}
+
 export function buildMovieFranchiseSourceDraft(collection, editedTitle = collection?.name) {
 	const tmdbId = collection?.id;
 	const title = canonicalText(editedTitle);
@@ -146,16 +165,16 @@ export function movieFranchiseDuplicateIdentity(editable) {
 	const provider = canonicalText(editable.provider).toLowerCase();
 	const sourceType = canonicalText(editable.tmdbSourceType).toUpperCase();
 	const mediaType = canonicalText(editable.mediaType).toUpperCase();
-	const tmdbId = canonicalTmdbId(editable.tmdbId);
+	const identity = movieFranchiseIdentityKey(editable.tmdbId);
 	if (
 		provider !== "tmdb"
 		|| sourceType !== "COLLECTION"
 		|| mediaType !== "MOVIE"
-		|| tmdbId === null
+		|| identity === null
 	) {
 		return null;
 	}
-	return `tmdb|COLLECTION|${tmdbId}|MOVIE`;
+	return identity;
 }
 
 export function findMovieFranchiseDuplicate(folder, draft) {
