@@ -118,6 +118,8 @@ test("guided Lists starts with empty names, uses concise shared create copy, and
 	assert.match(flow, /aria-invalid=\{requiredNameErrors\.folder/);
 	assert.match(flow, /target\?\.scrollIntoView\?\.\(\{ block: "nearest" \}\)[\s\S]*focusElementWithoutScroll\(target\)/);
 	assert.match(flow, /className="tmdb-list-footer-validation" role="alert"/);
+	assert.match(flow, /standalone \? "Review" : "Review & Appearance"/);
+	assert.match(flow, /standalone \? "Review exact List-ID placement before applying everything atomically\." : "Review names, appearance and exact List-ID placement before creating everything atomically\."/);
 });
 
 test("guided Lists directly reuses standard Collection and Folder presentation controls while Add Source remains container-free", () => {
@@ -128,6 +130,7 @@ test("guided Lists directly reuses standard Collection and Folder presentation c
 	assert.match(flow, /<PresentationSwitch label="Pin collection to top"/);
 	assert.match(flow, /<FolderShapeChoices selectedId=\{options\.folderTileShape\}/);
 	assert.match(flow, /\{!standalone \? <GuidedPresentationControls/);
+	assert.match(flow, /Collection settings stay unchanged\./);
 	assert.doesNotMatch(flow, /focusGlowEnabled/);
 });
 

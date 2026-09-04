@@ -77,7 +77,7 @@ function TitlesPreview({ franchise, onClose }) {
 	const titles = franchise.containedTitles ?? [];
 	return (
 		<NestedPreviewDialog ariaLabelledBy="franchise-preview-title" backdropClassName="franchise-preview-backdrop" backdropProps={{ "data-franchise-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
-				<header><div><p className="panel-kicker">Poster preview</p><h3 id="franchise-preview-title">{franchise.name}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
+				<header><div><p className="panel-kicker">Title preview</p><h3 id="franchise-preview-title">{franchise.name}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
 				<PosterOnlyPreviewGrid items={titles} limit={10} className="franchise-preview-grid" ariaLabel={`${franchise.name} poster preview`} altPrefix="Franchise" />
 		</NestedPreviewDialog>
 	);
@@ -101,7 +101,7 @@ function ReviewStep({ planResult, options, onOptionsChange, onPreview, diagnosti
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every franchise folder in one All tab." showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="franchise-pin-help" controlName="franchisePinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : <>
-				<div className="franchise-inherited-summary"><strong>Parent presentation is inherited</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
+				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
 				<TitleOptions idPrefix="franchise" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 			</>}
 			<p className="decades-defaults-note" data-franchise-artwork-rule="poster-only">Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.</p>

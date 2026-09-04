@@ -106,11 +106,13 @@ export function StudioSearchStep({
 	onChangePage,
 	renderResult = null,
 	resultsHeading = "Choose a studio",
+	stageKicker = null,
 }) {
 	return (
 		<>
 			<section className="add-source-mode" aria-labelledby="studio-mode-title">
 				<div>
+					{stageKicker ? <p className="panel-kicker">{stageKicker}</p> : null}
 					<h3 id="studio-mode-title">Studios · TMDB</h3>
 					<p>Search by studio name, location or TMDB ID.</p>
 				</div>

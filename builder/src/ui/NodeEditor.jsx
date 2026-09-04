@@ -511,7 +511,7 @@ export function NodeEditor({
 						<h2 id={`${prefix}-title`}>{context}</h2>
 					</div>
 					<p>{renameOnly
-						? `Update the title visibility for this ${noun}.`
+						? `Update the title and its visibility for this ${noun}.`
 						: `Update the title and presentation for this ${noun}.`}</p>
 				</div>
 

@@ -114,6 +114,16 @@ function renderSearch({ context = "folder", results = [person()], selection = cr
 	}));
 }
 
+test("guided People uses the approved conceptual stage language while Add Source stays unnumbered", () => {
+	const guided = renderSearch({ context: "hierarchy" });
+	const addSource = renderSearch({ context: "folder" });
+	const source = read("builder/src/ui/PeopleSourceFlow.jsx");
+	assert.ok(guided.includes("Step 1 · Select"));
+	assert.equal(addSource.includes("Step 1 · Select"), false);
+	assert.match(source, /hierarchy \? "Step 2 · Configure" : "Configure"/);
+	assert.match(source, /<p className="panel-kicker">Step 3<\/p><h3[^>]*>Review &amp; Appearance<\/h3>/);
+});
+
 test("source chooser retains the established first five modes before Lists, Genres and Decade", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "People", onCancel() {}, onSelectMode() {} }));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-movie-franchise"'));
@@ -636,7 +646,8 @@ test("People New Folder Review keeps parent presentation read-only while generat
 		applyDiagnostic: null,
 		headingRef: null,
 	}));
-	assert.ok(markup.includes("Inherited Collection options"));
+	assert.ok(markup.includes("Collection settings stay unchanged."));
+	assert.ok(markup.includes("New folders use this Collection’s Rows layout."));
 	assert.ok(markup.includes("parent unchanged"));
 	assert.ok(markup.includes("Title options"));
 	assert.ok(markup.includes("Folder title visibility"));

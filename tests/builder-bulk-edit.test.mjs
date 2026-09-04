@@ -262,7 +262,7 @@ test("an atomic validation failure rolls back the complete combined request", ()
 	assert.equal(controller.getState().revision, before.revision);
 });
 
-test("Global display settings and confirmation markup expose only the approved accessible controls", () => {
+test("Bulk display settings and confirmation markup expose only the approved accessible controls", () => {
 	const controller = createController([completeTree()[0]]);
 	const draft = createBulkEditDraft();
 	const dialog = renderToStaticMarkup(createElement(BulkEditDialog, {
@@ -275,7 +275,7 @@ test("Global display settings and confirmation markup expose only the approved a
 	}));
 	for (const text of [
 		"ALL COLLECTIONS &amp; FOLDERS",
-		"Global display settings",
+		"Bulk display settings",
 		"Changes apply across all Collections and Folders.",
 		"Layout",
 		"Show All tab",
@@ -324,7 +324,7 @@ test("Global display settings and confirmation markup expose only the approved a
 	assert.ok(confirmation.includes('aria-describedby="bulk-title-confirmation-description"'));
 });
 
-test("the Global display settings trigger is singular beside Collections and disabled only for an empty project", () => {
+test("the Bulk display settings trigger is singular beside Collections and disabled only for an empty project", () => {
 	const empty = createController();
 	const emptyMarkup = renderToStaticMarkup(createElement(BuilderWorkspace, {
 		controller: empty,
@@ -332,7 +332,7 @@ test("the Global display settings trigger is singular beside Collections and dis
 	}));
 	assert.equal((emptyMarkup.match(/data-action="open-bulk-edit"/g) ?? []).length, 1);
 	assert.match(emptyMarkup, /data-action="open-bulk-edit"[^>]*aria-haspopup="dialog"[^>]*disabled=""/);
-	assert.match(emptyMarkup, /data-action="open-bulk-edit"[^>]*aria-label="Global display settings"[^>]*title="Global display settings"/);
+	assert.match(emptyMarkup, /data-action="open-bulk-edit"[^>]*aria-label="Bulk display settings"[^>]*title="Bulk display settings"/);
 	const mastheadActions = emptyMarkup.match(/<div class="workspace-header-actions">([\s\S]*?)<\/div>/)?.[1] ?? "";
 	const collectionHeader = emptyMarkup.match(/<header class="panel-header" data-panel-header="collections">([\s\S]*?)<\/header>/)?.[1] ?? "";
 	const folderHeader = emptyMarkup.match(/<header class="panel-header" data-panel-header="folders">([\s\S]*?)<\/header>/)?.[1] ?? "";

@@ -120,7 +120,7 @@ export function BulkEditDialog({
 				<div className="node-editor-heading">
 					<div>
 						<p className="panel-kicker">ALL COLLECTIONS &amp; FOLDERS</p>
-						<h2 id="bulk-edit-title">Global display settings</h2>
+						<h2 id="bulk-edit-title">Bulk display settings</h2>
 					</div>
 					<p id="bulk-edit-description">Changes apply across all Collections and Folders.</p>
 				</div>

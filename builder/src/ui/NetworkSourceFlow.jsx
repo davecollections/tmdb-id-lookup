@@ -100,11 +100,12 @@ export function NetworkSearchStep({
 	onChangePage,
 	resultsHeading = "Choose a Network",
 	renderResult = null,
+	stageKicker = null,
 }) {
 	return (
 		<>
 			<section className="add-source-mode" aria-labelledby="network-mode-title">
-				<div><h3 id="network-mode-title">Networks · TMDB</h3><p>Search by Network name, country, location or TMDB ID.</p></div>
+				<div>{stageKicker ? <p className="panel-kicker">{stageKicker}</p> : null}<h3 id="network-mode-title">Networks · TMDB</h3><p>Search by Network name, country, location or TMDB ID.</p></div>
 			</section>
 			<div className="editor-field add-source-query-field">
 				<label htmlFor="network-source-query">Search Networks</label>

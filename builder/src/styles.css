@@ -4080,6 +4080,10 @@ body.hierarchy-pointer-dragging .builder-shell {
 		gap: 0;
 	}
 
+	.workspace .panel-header {
+		min-height: 77px;
+	}
+
 	.panel-header,
 	.panel-body {
 		padding-right: 12px;
@@ -6125,7 +6129,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 		width: min(920px, 100%);
 	}
 
-	.people-configure-actions {
+	.people-configure-actions,
+	.add-source-override-actions {
 		grid-template-columns: repeat(2, minmax(180px, max-content));
 	}
 }
@@ -9509,10 +9514,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 	padding: 0 12px 12px;
 }
 
-.decades-creation-actions {
-	justify-content: end;
-}
-
 .decade-source-fixed dl {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -9565,13 +9566,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 	.decades-selected-summary span {
 		text-align: left;
-	}
-}
-
-@media (min-width: 900px) {
-	.decades-creation-actions {
-		grid-template-columns: minmax(180px, 320px);
-		justify-content: end;
 	}
 }
 

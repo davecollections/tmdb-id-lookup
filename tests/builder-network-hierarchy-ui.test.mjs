@@ -151,6 +151,10 @@ test("Network hierarchy follows Select to Configure to Appearance with one share
 	assert.match(flow, /useState\("select"\)/);
 	assert.match(flow, /setStep\("configure"\)/);
 	assert.match(flow, /setStep\("appearance"\)/);
+	assert.match(flow, /stageKicker="Step 1 · Select"/);
+	assert.match(networkFlow, /stageKicker = null/);
+	assert.match(flow, /<p className="panel-kicker">Step 2<\/p>[\s\S]*>Configure Networks</);
+	assert.match(flow, /<p className="panel-kicker">Step 3<\/p>[\s\S]*>Appearance</);
 	assert.match(flow, />Configure Networks</);
 	assert.match(flow, />Appearance</);
 	assert.match(flow, /Continue to Appearance/);
@@ -164,6 +168,7 @@ test("Network hierarchy follows Select to Configure to Appearance with one share
 	assert.match(flow, /viewMode:\s*"TABBED_GRID"/);
 	assert.match(flow, /showAllTab:\s*true/);
 	assert.match(flow, /pinToTop:\s*false/);
+	assert.match(flow, /Collection settings stay unchanged\./);
 });
 
 test("poster Preview is explicit, Configure-only, tab-free, and has the exact empty state", () => {
@@ -175,6 +180,7 @@ test("poster Preview is explicit, Configure-only, tab-free, and has the exact em
 	assert.match(preview, /limit=\{10\}/);
 	assert.match(preview, /ariaLabel="Series poster preview"/);
 	assert.match(preview, /emptyMessage="No posters available\."/);
+	assert.match(preview, /<p className="panel-kicker">Title preview<\/p>/);
 	assert.doesNotMatch(preview, /tablist|role="tab"|Movies|mediaMode|mediaTypes/);
 	assert.equal((flow.match(/previewProvider\.getNetworkPreview/g) ?? []).length, 1);
 	assert.doesNotMatch(flow, /prefetch|autoplay|Promise\.all\([^)]*getNetworkPreview/i);

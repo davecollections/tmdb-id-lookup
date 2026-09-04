@@ -402,9 +402,11 @@ test("workspace wiring keeps Genres out of the Folders header and supports respo
 	assert.match(workspace, /const firstFolderInternalId = result\.createdFolderInternalIds\[0\];[\s\S]*controller\.selectNode\(firstFolderInternalId\);[\s\S]*setPendingCreatedFolderFocus\(firstFolderInternalId\);/);
 	assert.doesNotMatch(flow, /fetch\(|XMLHttpRequest|<table|createFoldersWithSources|folder artwork/i);
 	assert.match(flow, /effectiveDestinationMode === "current-folder" && duplicates\.duplicateDrafts\.length > 0/);
+	assert.match(flow, /genre-review-actions\$\{effectiveDestinationMode === "current-folder" && duplicates\.duplicateDrafts\.length > 0 \? " add-source-override-actions" : ""\}/);
 	assert.match(flow, /"No new sources to add"/);
 	assert.doesNotMatch(flow, /Add 0 sources/);
 	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.genre-source-dialog\s*\{[\s\S]*height:\s*auto;/);
+	assert.match(styles, /\.people-configure-actions,\s*\.add-source-override-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(180px, max-content\)\)/);
 	assert.match(styles, /\.genre-secondary-surface\s*\{[\s\S]*position:\s*absolute;[\s\S]*backdrop-filter:/);
 	assert.match(styles, /data-secondary-surface[\s\S]*filter:\s*blur\(1\.5px\)/);
 	assert.match(styles, /\.genre-secondary-surface > \.genre-advanced-subview::\-webkit-scrollbar-thumb[\s\S]*rgb\(70 118 136\)/);
