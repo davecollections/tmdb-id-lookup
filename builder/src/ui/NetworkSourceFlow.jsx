@@ -210,7 +210,7 @@ export function NetworkConfigureActions({ duplicate, isApplying = false, onAddAn
 		<footer className="add-source-actions studio-configure-actions network-configure-actions">
 			{duplicate
 				? <span className="studio-no-missing-sources">No new sources to add</span>
-				: <button className="editor-apply" type="submit" disabled={isApplying}>{isApplying ? "Adding…" : "Add source"}</button>}
+				: <button className="editor-apply" type="submit" disabled={isApplying}>{isApplying ? "Adding…" : "Add 1 source"}</button>}
 			{duplicate ? <button className="editor-cancel studio-add-all" type="button" disabled={isApplying} data-action="add-network-anyway" onClick={onAddAnyway}>Add anyway</button> : null}
 		</footer>
 	);

@@ -16,6 +16,7 @@ import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
+import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
@@ -32,9 +33,6 @@ function statusLabel(status) {
 	return "Ready to create";
 }
 
-function guidedCreateActionLabel(scope) {
-	return scope === "new-collection" ? "Create collection" : "Create folder";
-}
 
 function requiredNamesMessage({ collection, folder }) {
 	if (collection && folder) return "Collection and folder names are required.";

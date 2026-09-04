@@ -242,6 +242,7 @@ test("mounted combined Apply confirms once, preserves the draft on Cancel, and c
 	assert.equal(combined.initial.applyDisabled, true);
 	assert.equal(combined.initial.headingFocused, true);
 	assert.equal(combined.initial.bodyLocked, true);
+	assert.deepEqual(combined.footerOrder, ["apply-bulk-edit", "cancel-bulk-edit"]);
 	assert.equal(combined.tabWrappedToFirst, true);
 	assert.deepEqual(combined.confirmationState, {
 		present: true,

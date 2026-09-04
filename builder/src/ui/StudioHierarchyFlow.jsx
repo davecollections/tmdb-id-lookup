@@ -21,6 +21,7 @@ import {
 import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
+import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
@@ -315,7 +316,7 @@ export function StudioHierarchyFlow({
 
 	const mediaTypes = previewMediaTypes(options.mediaMode);
 	const primaryDisabled = step === "select" ? chosen.length === 0 : step === "configure" ? chosen.length === 0 || isPreparing : !planResult?.ok || planResult.plan.counts.folderCount === 0 || isApplying;
-	const primaryLabel = step === "select" ? `Configure ${chosen.length} Studio${chosen.length === 1 ? "" : "s"}` : step === "configure" ? isPreparing ? "Preparing artwork…" : "Continue to Appearance" : isApplying ? "Creating…" : `Create ${planResult?.ok ? planResult.plan.counts.folderCount : 0} folder${planResult?.ok && planResult.plan.counts.folderCount === 1 ? "" : "s"}`;
+	const primaryLabel = step === "select" ? `Configure ${chosen.length} Studio${chosen.length === 1 ? "" : "s"}` : step === "configure" ? isPreparing ? "Preparing artwork…" : "Continue to Appearance" : isApplying ? "Creating…" : guidedCreateActionLabel(scope);
 	return <>
 		<CreationHeader title="Create with Studios" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Select Studios in folder order." : step === "configure" ? "Choose which Studios, media and sort to create." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-studio-selection" : "back-to-studio-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
 		<form className="add-source-form studio-hierarchy-form" data-studio-hierarchy-stage={step} onSubmit={submit} noValidate>

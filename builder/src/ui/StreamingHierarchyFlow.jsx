@@ -29,6 +29,7 @@ import {
 } from "../source-add/index.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
+import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
@@ -648,7 +649,10 @@ export function StreamingHierarchyFlow({
 	const destinationChoiceRequired = scope === "new-collection" && destinationCandidates.length > 0 && selectedDestination === null;
 	const routedExistingNoChanges = scope === "new-collection" && activeScope === "new-folder" && planResult?.ok && planResult.plan.conflicts.length === 0 && planResult.plan.counts.newSourceCount === 0;
 	const primaryDisabled = catalogueState.status !== "success" || (activeStage === "regions" ? selectedRegions.length === 0 : activeStage === "providers" ? chosen.length === 0 : activeStage === "configure" ? chosen.length === 0 : destinationChoiceRequired || !planResult?.ok || folderTitleErrors.size > 0 || planResult.plan.conflicts.length > 0 || (activeScope === "new-folder" && planResult.plan.counts.newSourceCount === 0 && !routedExistingNoChanges) || isApplying);
-	const primaryLabel = activeStage === "regions" ? `Choose services for ${selectedRegions.length} region${selectedRegions.length === 1 ? "" : "s"}` : activeStage === "providers" ? `Configure ${chosen.length} service${chosen.length === 1 ? "" : "s"}` : activeStage === "configure" ? "Continue to Review" : destinationChoiceRequired ? "Choose a destination" : routedExistingNoChanges ? "Close" : isApplying ? activeScope === "new-folder" ? "Applying…" : "Creating…" : activeScope === "new-collection" ? planResult?.plan.elsewhereEvidence?.overlap === "complete" ? "Create duplicate collection" : `Create ${planResult?.plan.counts.folderCount ?? 0} folder${planResult?.plan.counts.folderCount === 1 ? "" : "s"}` : `Apply ${planResult?.plan.counts.newSourceCount ?? 0} source${planResult?.plan.counts.newSourceCount === 1 ? "" : "s"}`;
+	const changesOnlyNewFolders = activeScope === "new-folder"
+		&& (planResult?.plan.counts.newFolderCount ?? 0) > 0
+		&& (planResult?.plan.counts.existingFolderAdditionCount ?? 0) === 0;
+	const primaryLabel = activeStage === "regions" ? `Choose services for ${selectedRegions.length} region${selectedRegions.length === 1 ? "" : "s"}` : activeStage === "providers" ? `Configure ${chosen.length} service${chosen.length === 1 ? "" : "s"}` : activeStage === "configure" ? "Continue to Review" : destinationChoiceRequired ? "Choose a destination" : routedExistingNoChanges ? "Close" : isApplying ? activeScope === "new-folder" ? "Applying…" : "Creating…" : activeScope === "new-collection" ? planResult?.plan.elsewhereEvidence?.overlap === "complete" ? "Create duplicate collection" : guidedCreateActionLabel(activeScope) : changesOnlyNewFolders ? guidedCreateActionLabel(activeScope) : "Apply changes";
 	const descriptions = { regions: "Choose one or more regions. Search stays inactive until you use it.", providers: "Choose eligible services in folder order.", configure: "Choose one shared Sort and folder grouping, then preview exact sources when useful.", review: "Review the exact creation or change summary before one atomic Apply." };
 	const interactionOverlayOpen = Boolean(preview || duplicateConfirmation);
 

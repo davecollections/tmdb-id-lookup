@@ -503,7 +503,7 @@ export function AddSourcePrimaryAction({
 				? "Adding source…"
 				: duplicate
 					? "Add anyway"
-					: "Add source"}
+					: "Add 1 source"}
 		</button>
 	);
 }

@@ -135,7 +135,7 @@ test("franchise creation keeps one intentional scroll owner and sticky action fo
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.match(flow, /<footer className="add-source-actions">/);
 	assert.match(flow, /Review \$\{chosen\.length\} franchise/);
-	assert.match(flow, /Create \$\{planResult\.ok \? planResult\.plan\.counts\.folderCount/);
+	assert.match(flow, /guidedCreateActionLabel\(scope\)/);
 });
 
 test("responsive styling covers narrow result cards and the shared contained tablet shell boundary", () => {

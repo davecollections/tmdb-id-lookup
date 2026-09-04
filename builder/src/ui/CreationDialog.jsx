@@ -24,7 +24,7 @@ import {
 	observeAddSourceViewport,
 	resolveAddSourceViewportStyle,
 } from "./add-source-modal-lifecycle.js";
-import { creationOptionById, creationOptionSupportsScope, creationOptionsForScope, CREATION_OPTION_IDS } from "./creation-options.js";
+import { creationOptionById, creationOptionSupportsScope, creationOptionsForScope, CREATION_OPTION_IDS, guidedCreateActionLabel } from "./creation-options.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import {
 	DecadesAdvancedHelpSubview,
@@ -700,7 +700,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 			? !planResult.ok
 			: !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying;
 	const primaryLabel = state.step === DECADES_CREATION_STEPS.REVIEW
-		? isApplying ? "Creating…" : planResult.ok ? `Create ${planResult.plan.counts.folderCount} folder${planResult.plan.counts.folderCount === 1 ? "" : "s"}` : "Create"
+		? isApplying ? "Creating…" : planResult.ok ? guidedCreateActionLabel(scope) : "Create"
 		: "Continue";
 	const backAction = state.step === DECADES_CREATION_STEPS.PRESETS
 		? "back-to-creation-launcher"

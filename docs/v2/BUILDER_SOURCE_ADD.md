@@ -96,8 +96,8 @@ Title is deliberately excluded. The selected folder is checked, including compat
 Add Source appears only with a selected folder:
 
 - `Add source` in the Sources header;
-- `Add first source` in an empty Sources panel;
-- `+ Add another source` after a populated source list.
+- `Add source` in an empty Sources panel;
+- `+ Add source` after a populated source list.
 
 Every entry calls one session and renders one body-portalled semantic dialog with explicit stages:
 

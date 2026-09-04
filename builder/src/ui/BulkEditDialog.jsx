@@ -183,15 +183,15 @@ export function BulkEditDialog({
 					</div>
 
 					<div className="node-editor-actions bulk-edit-actions">
-						<button className="editor-cancel" type="button" data-action="cancel-bulk-edit" onClick={onCancel}>Cancel</button>
 						<button
 							className="editor-apply"
 							type="submit"
 							data-action="apply-bulk-edit"
 							disabled={!hasBulkEditChanges(draft)}
 						>
-							Apply Changes
+							Apply changes
 						</button>
+						<button className="editor-cancel" type="button" data-action="cancel-bulk-edit" onClick={onCancel}>Cancel</button>
 					</div>
 				</form>
 			</section>

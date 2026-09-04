@@ -52,6 +52,7 @@ import {
 	resolveAddSourceViewportStyle,
 } from "./add-source-modal-lifecycle.js";
 import { restoreAddSourceSearchView } from "./add-source-navigation-state.js";
+import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 import { handleDialogKeyDown } from "./modal-focus.js";
@@ -1153,10 +1154,10 @@ export function PeopleSourceFlow({
 	const primaryCount = context === "folder" ? quickDuplicates.missingDrafts.length : bulkSourceCount;
 	const primaryLabel = hierarchy
 		? step === PEOPLE_SOURCE_STEPS.REVIEW
-			? isApplying ? "Creating…" : `Create ${hierarchyPlanResult?.plan?.counts.folderCount ?? 0} folder${hierarchyPlanResult?.plan?.counts.folderCount === 1 ? "" : "s"}`
+			? isApplying ? "Creating…" : guidedCreateActionLabel(hierarchyScope)
 			: "Continue"
 		: context === "folder"
-		? quickEntry ? `${promoteSelectedFolder ? "Create" : "Add"} ${quickEntry.person?.name ?? quickEntry.result.name} · ${primaryCount} source${primaryCount === 1 ? "" : "s"}` : "Add person"
+		? quickEntry ? `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}` : "Add person"
 		: `Add ${configuredEntries.length} folder${configuredEntries.length === 1 ? "" : "s"} · ${bulkSourceCount} source${bulkSourceCount === 1 ? "" : "s"}`;
 	const titleId = embedded ? "creation-title" : "people-source-title";
 	const descriptionId = embedded ? "creation-description" : "people-source-description";

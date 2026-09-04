@@ -27,6 +27,7 @@ import {
 import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
+import { guidedCreateActionLabel } from "./creation-options.js";
 import { ChoiceCards } from "./ChoiceCards.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
 import { GenreCatalogueList, genreMediaLabel, GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
@@ -506,7 +507,7 @@ export function GenreHierarchyFlow({
 			? planResult.ok && planResult.plan.counts.folderCount > 0 ? "Continue to Structure" : "No Genre folders ready"
 			: step === "structure"
 				? planResult.ok && planResult.plan.counts.folderCount > 0 ? "Continue to Appearance" : "No Genre folders ready"
-				: isApplying ? "Creating…" : `Create ${planResult.ok ? planResult.plan.counts.folderCount : 0} folder${planResult.ok && planResult.plan.counts.folderCount === 1 ? "" : "s"}`;
+				: isApplying ? "Creating…" : guidedCreateActionLabel(scope);
 	return <>
 		<CreationHeader title="Create with Genres" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Select official TMDB Genres in folder order." : step === "configure" ? "Choose media, sort and Advanced settings, then review exact sources." : step === "structure" ? "Choose how Genre sources are grouped in Nuvio." : "Choose presentation settings and create the hierarchy atomically."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-genre-hierarchy-selection" : step === "structure" ? "back-to-genre-hierarchy-configuration" : "back-to-genre-hierarchy-structure"} backDisabled={isApplying} inactive={Boolean(secondarySurface || preview)} onClose={onCancel} />
 		<form className="add-source-form genre-hierarchy-form" data-genre-hierarchy-stage={step} data-secondary-surface={secondarySurface ?? undefined} onSubmit={submit} noValidate onKeyDown={(event) => { if (secondarySurface && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSecondary(); } }}>

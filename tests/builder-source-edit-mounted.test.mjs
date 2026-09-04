@@ -1859,7 +1859,7 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 			artworkCopyAbsent: true,
 			shapeSelectorAbsent: true,
 			presentationControlsPresent: true,
-			createAction: "Create 2 folders",
+			createAction: "Create collection",
 		}, `${width}px Appearance-only final stage`);
 		assert.deepEqual(result.artwork, { loads: 1, resolves: 2, loadSucceeded: true, shapeSelectorAbsent: true }, `${width}px live artwork batch`);
 		assert.equal(result.oneScrollOwner, true, `${width}px scroll ownership`);
@@ -2287,7 +2287,7 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 		assert.equal(result.review.customNamePreservedAfterBack, true, `${result.width}px logical folder custom name survives Back`);
 		assert.equal(result.review.textOnlyNoteAbsent, true, `${result.width}px no temporary artwork warning`);
 		assert.equal(result.review.providerLogoAbsent, true, `${result.width}px transient logos`);
-		assert.equal(result.review.createAction, "Apply 6 sources", `${result.width}px honest Apply label`);
+		assert.equal(result.review.createAction, "Apply changes", `${result.width}px honest Apply label`);
 		assert.equal(result.applyCalls, 1, `${result.width}px one atomic Apply`);
 		assert.equal(result.preApplyUnchanged, true, `${result.width}px zero mutation before Apply`);
 		assert.equal(result.appliedRevisionDelta, 1, `${result.width}px one revision`);
@@ -2326,7 +2326,7 @@ test("mounted Streaming New Collection offers a zero-overlap imported collection
 		assert.equal(result.review.heading, "What will change", `${result.width}px change heading`);
 		assert.deepEqual(result.review.outcomes, [{ status: "new-folder", text: "CrunchyrollNew folder2 sources will be created" }], `${result.width}px strict folder trust keeps the provider in a new sibling`);
 		assert.equal(result.review.collectionSettings, "Collection settings stay unchangedStreaming Services · Tabs. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.", `${result.width}px existing collection settings boundary`);
-		assert.equal(result.review.applyLabel, "Apply 2 sources", `${result.width}px honest Apply action`);
+		assert.equal(result.review.applyLabel, "Create folder", `${result.width}px honest Create action`);
 		assert.deepEqual(result.layout, {
 			singleInnerScroll: true,
 			oneActiveScrollOwner: true,
@@ -2978,7 +2978,7 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 		reviewEntered: {
 			stage: "review",
 			backAction: "back-to-decades-options",
-			footerLabels: ["Create 4 folders"],
+			footerLabels: ["Create collection"],
 			headingFocused: true,
 			countCards: 3,
 			removedSummariesAbsent: true,

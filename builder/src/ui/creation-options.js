@@ -94,3 +94,7 @@ export function creationOptionSupportsScope(optionId, scope) {
 export function creationOptionsForScope(scope) {
 	return Object.freeze(CREATION_OPTIONS.filter((option) => option.scopes.includes(scope)));
 }
+
+export function guidedCreateActionLabel(scope) {
+	return scope === CREATION_SCOPES.NEW_COLLECTION ? "Create collection" : "Create folder";
+}
