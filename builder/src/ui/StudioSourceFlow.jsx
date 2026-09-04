@@ -74,11 +74,12 @@ export function StudioResultContent({ studio }) {
 	</>;
 }
 
-function StudioResult({ studio, onSelect }) {
+function StudioResult({ studio, selected = false, onSelect }) {
 	return (
 		<button
-			className="add-source-result studio-result"
+			className={`add-source-result studio-result${selected ? " is-selected" : ""}`}
 			type="button"
+			aria-pressed={selected}
 			data-tmdb-studio-result={studio.id}
 			onClick={() => onSelect(studio)}
 		>
@@ -95,12 +96,10 @@ export function StudioSearchStep({
 	searchData,
 	effectiveSearchSort = DEFAULT_STUDIO_SEARCH_SORT,
 	browsing = false,
-	hideZero = false,
 	movieCountFilter = null,
-	showMovieCountFilters = false,
+	selectedStudioId = null,
 	onInputChange,
 	onSortChange = () => {},
-	onHideZeroChange = () => {},
 	onMovieCountFilterChange = () => {},
 	onRetry,
 	onSelect,
@@ -140,17 +139,12 @@ export function StudioSearchStep({
 								: null}
 				</p>
 			</div>
-			<div className={`studio-search-controls${showMovieCountFilters ? " studio-search-controls--hierarchy" : ""}`} aria-label="Studio result controls">
-				{showMovieCountFilters ? <>
-					<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Movie Count filter"><span className="studio-search-control-label">Movie count</span><span className="studio-search-control-buttons">{STUDIO_MOVIE_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={movieCountFilter === option.id} aria-label={`Movie Count ${option.label}`} onClick={() => onMovieCountFilterChange(option.id)}>{option.label}</button>)}</span></div>
-					<button className="studio-search-alpha-override" type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} aria-label="Order Studios A–Z" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
-				</> : <>
-					<div className="studio-search-control-group"><span className="studio-search-control-label">Sort</span><span className="studio-search-control-buttons">
-						<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
-						<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC} onClick={() => onSortChange(STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC)}>Most movies</button>
-					</span></div>
-					<button className="studio-zero-filter" type="button" aria-pressed={hideZero} onClick={onHideZeroChange}>Hide studios with no movies</button>
-				</>}
+			<div className="studio-search-controls studio-search-controls--hierarchy" aria-label="Studio result controls">
+				<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Movie Count filter"><span className="studio-search-control-label">Movie count</span><span className="studio-search-control-buttons">{STUDIO_MOVIE_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={movieCountFilter === option.id} aria-label={`Movie Count ${option.label}`} onClick={() => onMovieCountFilterChange(option.id)}>{option.label}</button>)}</span></div>
+				<div className="studio-search-control-group studio-search-order-controls" role="group" aria-label="Studio result order"><span className="studio-search-control-label">Sort</span><span className="studio-search-control-buttons">
+					<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} aria-label="Order Studios A–Z" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
+					<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC} aria-label="Order Studios by most movies" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC)}>Most movies</button>
+				</span></div>
 			</div>
 			{lookupState.status === "error" ? (
 				<div className="add-source-request-state" role="alert">
@@ -166,7 +160,7 @@ export function StudioSearchStep({
 					</div>
 					{searchData.results.length ? (
 						<div className="add-source-result-list">
-							{searchData.results.map((studio) => renderResult ? renderResult(studio) : <StudioResult key={studio.id} studio={studio} onSelect={onSelect} />)}
+							{searchData.results.map((studio) => renderResult ? renderResult(studio) : <StudioResult key={studio.id} studio={studio} selected={studio.id === selectedStudioId} onSelect={onSelect} />)}
 						</div>
 					) : <p className="add-source-empty-results">{browsing ? "No Studios are available for these filters." : "No Studios matched this search."}</p>}
 					{searchData.totalPages > 1 ? (
@@ -510,7 +504,7 @@ export function StudioSourceFlow({
 					<form className="add-source-form" data-studio-source-form-step={step} onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === STUDIO_SOURCE_STEPS.SEARCH ? (
-								<StudioSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} hideZero={search.hideZero} onInputChange={handleSearchInputChange} onSortChange={toggleSearchSort} onHideZeroChange={search.toggleHideZero} onRetry={search.retrySearch} onSelect={selectStudio} onChangePage={search.setPage} />
+								<StudioSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} selectedStudioId={selectedStudio?.id ?? null} onInputChange={handleSearchInputChange} onSortChange={toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={selectStudio} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<StudioConfigureStep studio={selectedStudio} counts={counts} choices={choices} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionId={titleSortOptionId} onToggle={toggleChoice} onSortChange={(optionId) => { setTitleSortOptionId(optionId); setApplyDiagnostic(null); }} />

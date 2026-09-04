@@ -1796,7 +1796,7 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 			previewAbsent: true,
 			movieCountFilter: true,
 			hideZeroAbsent: true,
-			mostMoviesAbsent: true,
+			mostMoviesPresent: true,
 			alphaOverridePresent: true,
 			requestsBeforeSelection: 0,
 		}, `${width}px Search`);
@@ -1875,14 +1875,18 @@ test("mounted Network hierarchy remains catalogue-backed, request-free before Pr
 		assert.deepEqual(result.search, {
 			focus: { searchFocused: false, autoFocusAttributeAbsent: true, keyboardTargetAbsent: true },
 			filterLabels: ["All", "Exclude 0", "10+", "50+", "100+", "500+"],
+			orderLabels: ["A–Z", "Most series"],
 			allDefault: true,
+			mostSeriesDefault: true,
 			pageSize: 20,
 			countsShown: true,
+			countsDescending: true,
 			knownZeroShownByAll: true,
 			previewAbsent: true,
 			previewCalls: 0,
 		}, `${width}px checked-in Network Search`);
 		assert.equal(result.filters.pageReset, true, `${width}px filter resets pagination`);
+		assert.equal(result.filters.orderPageReset, true, `${width}px order resets pagination`);
 		assert.equal(result.filters.fiveHundredCounts.length, 20, `${width}px 500+ page size`);
 		assert.equal(result.filters.fiveHundredCounts.every((count) => count >= 500), true, `${width}px 500+ catalogue semantics`);
 		assert.equal(result.filters.excludeZeroActive, true, `${width}px Exclude 0 remains selected`);
@@ -1894,6 +1898,14 @@ test("mounted Network hierarchy remains catalogue-backed, request-free before Pr
 			selectionPreservedAcrossFilter: true,
 			filterPreserved: true,
 		}, `${width}px native Network selection`);
+		assert.deepEqual(result.restoration, {
+			query: "",
+			pageTwo: true,
+			filter: true,
+			order: true,
+			selectedCount: 2,
+			scroll: true,
+		}, `${width}px Network discovery state after Configure Back`);
 		assert.deepEqual(result.configure, {
 			rowIds: [2, 18],
 			focusEntered: true,

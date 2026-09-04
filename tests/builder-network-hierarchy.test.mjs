@@ -77,7 +77,7 @@ function planEntries(items, orientation = DEFAULT_NETWORK_ARTWORK_ORIENTATION) {
 	return items.map((item) => ({ network: item, artwork: artwork(item, orientation) }));
 }
 
-test("Network hierarchy catalogue filters expose nullable counts without changing Add Source projection or order", async () => {
+test("Network catalogue filters expose nullable counts while retaining the Most-series discovery order", async () => {
 	const catalogue = normalizeNetworkCatalogue([
 		{ i: 1, n: "Alpha", t: 0 },
 		{ i: 2, n: "Beta", t: 10 },
@@ -87,19 +87,19 @@ test("Network hierarchy catalogue filters expose nullable counts without changin
 		{ i: 6, n: "Unknown", t: -1 },
 	]);
 	const ordinary = searchNetworkCatalogue(catalogue, { kind: "browse" });
-	assert.deepEqual(ordinary.results.map((entry) => entry.name), ["Alpha", "Beta", "Delta", "Epsilon", "Gamma", "Unknown"]);
+	assert.deepEqual(ordinary.results.map((entry) => entry.name), ["Epsilon", "Delta", "Gamma", "Beta", "Alpha", "Unknown"]);
 	assert.ok(ordinary.results.every((entry) => !Object.hasOwn(entry, "seriesCount")));
 	assert.equal(DEFAULT_NETWORK_SERIES_COUNT_FILTER, NETWORK_SERIES_COUNT_FILTERS.ALL);
 	assert.deepEqual(NETWORK_SERIES_COUNT_FILTER_OPTIONS.map((entry) => entry.label), ["All", "Exclude 0", "10+", "50+", "100+", "500+"]);
 	const all = searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.ALL });
-	assert.deepEqual(all.results.map((entry) => entry.seriesCount), [0, 10, 100, 500, 50, null]);
-	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.EXCLUDE_ZERO }).results.map((entry) => entry.id), [2, 4, 5, 3, 6]);
-	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_10 }).results.map((entry) => entry.id), [2, 4, 5, 3]);
-	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_50 }).results.map((entry) => entry.id), [4, 5, 3]);
-	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_100 }).results.map((entry) => entry.id), [4, 5]);
+	assert.deepEqual(all.results.map((entry) => entry.seriesCount), [500, 100, 50, 10, 0, null]);
+	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.EXCLUDE_ZERO }).results.map((entry) => entry.id), [5, 4, 3, 2, 6]);
+	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_10 }).results.map((entry) => entry.id), [5, 4, 3, 2]);
+	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_50 }).results.map((entry) => entry.id), [5, 4, 3]);
+	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_100 }).results.map((entry) => entry.id), [5, 4]);
 	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_500 }).results.map((entry) => entry.id), [5]);
 	assert.equal(networkMatchesSeriesCountFilter(catalogue.byId.get(6), NETWORK_SERIES_COUNT_FILTERS.EXCLUDE_ZERO), true);
-	assert.throws(() => searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: "unsupported" }), /supported Network Series Count filter/);
+	assert.throws(() => searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: "unsupported" }), /supported Network result sort and Series Count filter/);
 });
 
 test("hierarchy source construction uses Series without weakening existing Network draft validation", () => {

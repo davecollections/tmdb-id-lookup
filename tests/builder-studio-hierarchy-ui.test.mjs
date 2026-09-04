@@ -30,7 +30,7 @@ test("Studios is routed through the scope-aware hierarchy launcher and workspace
 });
 
 test("Studio hierarchy reuses the physical catalogue search state and preserves exact Search count wording", () => {
-	assert.match(flow, /useStudioCatalogueSearch\(catalogueProvider, \{ movieCountFilters: true \}\)/);
+	assert.match(flow, /useStudioCatalogueSearch\(catalogueProvider\)/);
 	assert.match(studioFlow, /export function StudioResultContent/);
 	assert.match(studioFlow, /Movie Count: \{movieCount\}/);
 	assert.doesNotMatch(studioFlow.slice(studioFlow.indexOf("function StudioResultContent"), studioFlow.indexOf("function StudioResult", studioFlow.indexOf("function StudioResultContent") + 1)), /Movie Count ·/);
@@ -84,17 +84,18 @@ test("Preview is explicit only in direct Configure rows with lazy Both tabs", ()
 	assert.doesNotMatch(flow, /prefetch|Promise\.all\([^)]*getStudioPreview/);
 });
 
-test("hierarchy Search exposes checked-in Movie count filters while Add Source keeps hide-zero", () => {
-	const hierarchyControls = studioFlow.slice(studioFlow.indexOf("{showMovieCountFilters ? <>"), studioFlow.indexOf("</> : <>", studioFlow.indexOf("{showMovieCountFilters ? <>")));
+test("Add and hierarchy share checked-in Movie count filters and explicit result ordering", () => {
 	assert.match(studioFlow, /Movie count/);
 	for (const label of ["All", "Exclude 0", "10+", "50+", "100+", "500+"]) assert.match(studioCatalogue, new RegExp(`label: "${label.replace("+", "\\+")}"`));
-	assert.match(flow, /showMovieCountFilters/);
+	assert.match(studioFlow, /aria-label="Movie Count filter"/);
+	assert.match(studioFlow, /aria-label="Studio result order"/);
+	assert.match(studioFlow, /Order Studios A–Z/);
+	assert.match(studioFlow, /Order Studios by most movies/);
+	assert.doesNotMatch(studioFlow, /Hide studios with no movies|studio-zero-filter/);
 	assert.match(flow, /onMovieCountFilterChange=\{search\.changeMovieCountFilter\}/);
+	assert.match(flow, /onSortChange=\{search\.toggleSearchSort\}/);
 	assert.match(searchHook, /setPage\(1\)/);
-	assert.match(hierarchyControls, /Order Studios A–Z/);
-	assert.doesNotMatch(hierarchyControls, /Most movies|>Sort</);
-	assert.match(studioFlow, /Hide studios with no movies/);
-	assert.match(studioFlow, />Most movies<\/button>/);
+	assert.doesNotMatch(searchHook, /const \[hideZero|toggleHideZero|movieCountFilters\s*=/);
 });
 
 test("Preview response cache is sort-aware while transient Series knowledge is Company/media keyed", () => {

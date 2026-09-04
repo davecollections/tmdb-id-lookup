@@ -180,7 +180,7 @@ export function StudioHierarchyFlow({
 	const [diagnostic, setDiagnostic] = useState(null);
 	const [isPreparing, setIsPreparing] = useState(false);
 	const [isApplying, setIsApplying] = useState(false);
-	const search = useStudioCatalogueSearch(catalogueProvider, { movieCountFilters: true });
+	const search = useStudioCatalogueSearch(catalogueProvider);
 	const chosen = selectedStudios(selection);
 	const notice = studioSelectionNotice(selection);
 	const scrollRef = useRef(null);
@@ -323,7 +323,7 @@ export function StudioHierarchyFlow({
 				{step === "select" ? <>
 					<div ref={selectHeadingRef} tabIndex={-1} className="studio-hierarchy-focus-target" />
 					{chosen.length ? <section className="people-selected-tray studio-selected-tray"><div className="people-selected-summary"><strong>{chosen.length} Studio{chosen.length === 1 ? "" : "s"} selected</strong><SelectedStudios studios={chosen} knownSeriesCounts={knownSeriesCounts} onRemove={removeStudio} /></div>{notice.visible ? <p className="people-selection-limit" data-large-selection-notice="true" role="status">You’ve selected {notice.count} Studios. Configure may take a little longer, but there is no selection cap.</p> : null}</section> : null}
-					<StudioSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} showMovieCountFilters onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Studios" renderResult={(studio) => <SelectableStudioResult key={studio.id} studio={studio} checked={Boolean(selection.byId[studio.id])} onToggle={toggleStudio} />} />
+					<StudioSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Studios" renderResult={(studio) => <SelectableStudioResult key={studio.id} studio={studio} checked={Boolean(selection.byId[studio.id])} onToggle={toggleStudio} />} />
 				</> : step === "configure" ? <div ref={configureHeadingRef} tabIndex={-1}><ConfigureStep studios={chosen} knownSeriesCounts={knownSeriesCounts} outcomes={configureOutcomes} mediaMode={options.mediaMode} sortOptionId={options.sortOptionId} onMediaChange={(mediaMode) => updateOptions({ mediaMode })} onSortChange={(sortOptionId) => updateOptions({ sortOptionId })} onPreview={openPreview} onRemove={removeStudio} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
 			</div>
 			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled}>{primaryLabel}</button></footer>

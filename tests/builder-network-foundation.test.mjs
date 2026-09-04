@@ -10,12 +10,14 @@ import {
 	createNetworkCatalogueProvider,
 	createNetworkSource,
 	createTmdbNetworkCountProvider,
+	DEFAULT_NETWORK_SEARCH_SORT,
 	DEFAULT_NETWORK_SORT_OPTION_ID,
 	formatNetworkLocation,
 	inspectNetworkSourceDuplicates,
 	networkDuplicateOverrideIdentity,
 	networkSortValue,
 	networkSourceIdentity,
+	NETWORK_SEARCH_SORTS,
 	NETWORK_SORT_OPTIONS,
 	normalizeNetworkCatalogue,
 	normalizeNetworkCatalogueRow,
@@ -97,7 +99,7 @@ test("Network input distinguishes browse, typed search, exact positive IDs, and 
 	}
 });
 
-test("cached Network rows retain a validated internal Series Count while public Add Source results omit it", () => {
+test("cached Network rows retain a validated Series Count for opt-in discovery projection", () => {
 	const row = normalizeNetworkCatalogueRow({ i: 2, n: " ABC ", c: "us", h: "New York City, New York", l: "/abc.png", t: 1616 });
 	assert.deepEqual(row, {
 		id: 2,
@@ -114,29 +116,47 @@ test("cached Network rows retain a validated internal Series Count while public 
 	assert.equal(normalizeNetworkCatalogueRow({ i: 3, n: "Invalid Count", t: -1 }).seriesCount, null);
 	assert.equal(normalizeNetworkCatalogueRow({ i: 7, n: "Sparse" }).logoPath, null);
 	assert.equal(formatNetworkLocation({ country: "US", headquarters: "123 Main Street, Suite 9, New York City, New York 10001" }), "US · New York City, New York");
+	const catalogue = normalizeNetworkCatalogue([{ i: 2, n: "ABC", t: 1616 }]);
+	assert.equal(Object.hasOwn(searchNetworkCatalogue(catalogue, { kind: "browse" }).results[0], "seriesCount"), false);
+	assert.equal(searchNetworkCatalogue(catalogue, { kind: "browse" }, { seriesCountFilter: "all" }).results[0].seriesCount, 1616);
 });
 
-test("empty Network query browses A–Z with deterministic paging and safe clamping", () => {
+test("empty Network query browses by Series Count with deterministic paging and safe clamping", () => {
 	const catalogue = normalizeNetworkCatalogue(compactRows());
 	const page1 = searchNetworkCatalogue(catalogue, { kind: "browse" }, { page: 1, pageSize: 2 });
 	const page99 = searchNetworkCatalogue(catalogue, { kind: "browse" }, { page: 99, pageSize: 2 });
-	assert.deepEqual(page1.results.map((entry) => [entry.name, entry.id]), [["ABC", 2], ["ABC Family", 3]]);
+	assert.deepEqual(page1.results.map((entry) => [entry.name, entry.id]), [["Beta Network", 20], ["Us TV", 8]]);
 	assert.equal(page1.totalResults, 6);
 	assert.equal(page99.page, page99.totalPages);
-	assert.deepEqual(page99.results.map((entry) => entry.name), ["Sparse Network", "Us TV"]);
+	assert.deepEqual(page99.results.map((entry) => entry.name), ["Alpha Network", "Sparse Network"]);
 });
 
-test("typed Network Best Match covers exact name, prefix, contains, country aliases, and location", () => {
+test("typed Network Best Match preserves relevance tiers and uses Series Count only within a tier", () => {
 	const catalogue = normalizeNetworkCatalogue(compactRows());
 	const names = (query) => searchNetworkCatalogue(catalogue, parseNetworkSearchInput(query)).results.map((entry) => entry.name);
+	assert.equal(DEFAULT_NETWORK_SEARCH_SORT, NETWORK_SEARCH_SORTS.BEST_MATCH);
 	assert.deepEqual(names("ABC"), ["ABC", "ABC Family"]);
 	assert.deepEqual(names("family"), ["ABC Family"]);
-	assert.deepEqual(names("US"), ["ABC", "ABC Family"]);
-	assert.deepEqual(names("United States"), ["ABC", "ABC Family"]);
-	assert.deepEqual(names("USA"), ["ABC", "ABC Family"]);
+	assert.deepEqual(names("US"), ["ABC Family", "ABC"]);
+	assert.deepEqual(names("United States"), ["ABC Family", "ABC"]);
+	assert.deepEqual(names("USA"), ["ABC Family", "ABC"]);
 	assert.deepEqual(names("California"), ["ABC Family"]);
 	assert.deepEqual(names("2"), ["ABC"]);
 	assert.equal(names("US").includes("Us TV"), false);
+});
+
+test("Network result orders support A–Z and Most series with known-first deterministic ties", () => {
+	const catalogue = normalizeNetworkCatalogue([
+		{ i: 10, n: "Zero", t: 0 },
+		{ i: 11, n: "Zulu Tie", t: 50 },
+		{ i: 12, n: "Alpha Unknown" },
+		{ i: 13, n: "Alpha Tie", t: 50 },
+		{ i: 14, n: "Zulu Unknown" },
+		{ i: 15, n: "Most", t: 500 },
+	]);
+	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { sort: NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC }).results.map((entry) => entry.id), [15, 13, 11, 10, 12, 14]);
+	assert.deepEqual(searchNetworkCatalogue(catalogue, { kind: "browse" }, { sort: NETWORK_SEARCH_SORTS.NAME_ASC }).results.map((entry) => entry.id), [13, 12, 15, 10, 11, 14]);
+	assert.throws(() => searchNetworkCatalogue(catalogue, { kind: "browse" }, { sort: "most-shows" }), /supported Network result sort/i);
 });
 
 test("canonical numeric Network search ranks exact ID before exact and partial numeric names without duplicates", () => {
@@ -156,20 +176,15 @@ test("canonical numeric Network search ranks exact ID before exact and partial n
 	assert.equal(new Set(results.map((entry) => entry.id)).size, results.length);
 });
 
-test("legacy t never changes Network browse or relevance ordering", () => {
-	const first = normalizeNetworkCatalogue([
-		{ i: 1, n: "Alpha", t: 1 },
-		{ i: 2, n: "Alpine", t: 999999 },
+test("canonical numeric Network search keeps the exact ID first under every result order", () => {
+	const catalogue = normalizeNetworkCatalogue([
+		{ i: 10, n: "10 Digital", t: 1 },
+		{ i: 38, n: "10", t: 10_000 },
+		{ i: 39, n: "101 Network", t: 20_000 },
+		{ i: 40, n: "Channel 10", t: 30_000 },
 	]);
-	const second = normalizeNetworkCatalogue([
-		{ i: 1, n: "Alpha", t: 999999 },
-		{ i: 2, n: "Alpine", t: 0 },
-	]);
-	for (const parsed of [{ kind: "browse" }, parseNetworkSearchInput("Al")]) {
-		assert.deepEqual(
-			searchNetworkCatalogue(first, parsed).results.map((entry) => entry.id),
-			searchNetworkCatalogue(second, parsed).results.map((entry) => entry.id),
-		);
+	for (const sort of Object.values(NETWORK_SEARCH_SORTS)) {
+		assert.equal(searchNetworkCatalogue(catalogue, parseNetworkSearchInput("10"), { sort }).results[0].id, 10, sort);
 	}
 });
 

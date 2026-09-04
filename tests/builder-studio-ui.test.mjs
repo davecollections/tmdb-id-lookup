@@ -55,7 +55,7 @@ function studio(overrides = {}) {
 	};
 }
 
-function renderSearch(results) {
+function renderSearch(results, { selectedStudioId = null } = {}) {
 	const data = { results, page: 1, totalPages: 1, totalResults: results.length };
 	return renderToStaticMarkup(createElement(StudioSearchStep, {
 		input: "pixar",
@@ -64,7 +64,11 @@ function renderSearch(results) {
 		lookupState: { ...INITIAL_ASYNC_REQUEST_STATE, status: "success", data },
 		searchData: data,
 		effectiveSearchSort: "best-match",
+		movieCountFilter: "all",
+		selectedStudioId,
 		onInputChange() {},
+		onSortChange() {},
+		onMovieCountFilterChange() {},
 		onRetry() {},
 		onSelect() {},
 		onChangePage() {},
@@ -180,8 +184,8 @@ test("Studio Configure presents independent counts and compact semantic sort cho
 	assert.match(styles, /\.studio-source-choices label:has\(input:checked\)\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/);
 });
 
-test("Studio search keeps Best Match hidden and exposes only Builder-style overrides and zero toggle", () => {
-	const markup = renderSearch([studio()]);
+test("Studio Add discovery exposes shared Movie Count and result-order controls", () => {
+	const markup = renderSearch([studio()], { selectedStudioId: 3 });
 	const source = read("builder/src/ui/TmdbEntityLogo.jsx");
 	const catalogue = read("builder/src/source-add/studio-catalogue.js");
 	assert.ok(markup.includes("Search by studio name, location or TMDB ID."));
@@ -190,7 +194,10 @@ test("Studio search keeps Best Match hidden and exposes only Builder-style overr
 	assert.equal(markup.includes("Best match"), false);
 	assert.ok(markup.includes(">A–Z</button>"));
 	assert.ok(markup.includes(">Most movies</button>"));
-	assert.ok(markup.includes(">Hide studios with no movies</button>"));
+	assert.ok(markup.includes("Movie count"));
+	for (const label of ["All", "Exclude 0", "10+", "50+", "100+", "500+"]) assert.ok(markup.includes(`>${label}</button>`), label);
+	assert.equal(markup.includes("Hide studios with no movies"), false);
+	assert.match(markup, /<button class="add-source-result studio-result is-selected" type="button" aria-pressed="true" data-tmdb-studio-result="3"/);
 	assert.equal(markup.includes("<select"), false);
 	assert.equal(markup.includes("type=\"checkbox\""), false);
 	for (const forbidden of [
@@ -208,7 +215,7 @@ test("Studio search keeps Best Match hidden and exposes only Builder-style overr
 	]) assert.equal(`${source}\n${catalogue}`.includes(forbidden), false, forbidden);
 });
 
-test("Studio hierarchy Search prioritizes Movie count and exposes only the quiet A–Z override", () => {
+test("Studio guided Search exposes the shared Movie Count and result-order controls", () => {
 	const hierarchy = renderToStaticMarkup(createElement(StudioSearchStep, {
 		input: "",
 		inputRef: null,
@@ -218,14 +225,13 @@ test("Studio hierarchy Search prioritizes Movie count and exposes only the quiet
 		browsing: true,
 		effectiveSearchSort: "movie-count-desc",
 		movieCountFilter: "all",
-		showMovieCountFilters: true,
 		onInputChange() {}, onSortChange() {}, onMovieCountFilterChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
 	}));
 	assert.ok(hierarchy.includes("Movie count"));
 	for (const label of ["All", "Exclude 0", "10+", "50+", "100+", "500+"]) assert.ok(hierarchy.includes(`>${label}</button>`), label);
 	assert.match(hierarchy, /<button(?=[^>]*aria-label="Order Studios A–Z")(?=[^>]*aria-pressed="false")[^>]*>/);
-	assert.equal(hierarchy.includes("Most movies"), false);
-	assert.equal(hierarchy.includes(">Sort<"), false);
+	assert.match(hierarchy, /<button(?=[^>]*aria-label="Order Studios by most movies")(?=[^>]*aria-pressed="true")[^>]*>/);
+	assert.ok(hierarchy.includes(">Sort<"));
 	assert.equal(hierarchy.includes("Best match"), false);
 	const alphabetical = renderToStaticMarkup(createElement(StudioSearchStep, {
 		input: "warner",
@@ -236,7 +242,6 @@ test("Studio hierarchy Search prioritizes Movie count and exposes only the quiet
 		browsing: false,
 		effectiveSearchSort: "name-asc",
 		movieCountFilter: "all",
-		showMovieCountFilters: true,
 		onInputChange() {}, onSortChange() {}, onMovieCountFilterChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
 	}));
 	assert.match(alphabetical, /<button(?=[^>]*aria-label="Order Studios A–Z")(?=[^>]*aria-pressed="true")[^>]*>/);
@@ -251,11 +256,13 @@ test("empty Studio search browses automatically with effective Most movies and n
 		searchData: null,
 		browsing: true,
 		effectiveSearchSort: "movie-count-desc",
-		onInputChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
+		movieCountFilter: "all",
+		onInputChange() {}, onSortChange() {}, onMovieCountFilterChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
 	}));
 	assert.equal(browsing.includes("Browse all studios"), false);
-	assert.match(browsing, /aria-pressed="true">Most movies<\/button>/);
-	assert.match(browsing, /aria-pressed="false">A–Z<\/button>/);
+	assert.match(browsing, /<button(?=[^>]*aria-pressed="true")(?=[^>]*aria-label="Movie Count All")[^>]*>/);
+	assert.match(browsing, /<button(?=[^>]*aria-pressed="true")(?=[^>]*aria-label="Order Studios by most movies")[^>]*>Most movies<\/button>/);
+	assert.match(browsing, /<button(?=[^>]*aria-pressed="false")(?=[^>]*aria-label="Order Studios A–Z")[^>]*>A–Z<\/button>/);
 	const alphabetical = renderToStaticMarkup(createElement(StudioSearchStep, {
 		input: "",
 		inputRef: null,
@@ -264,10 +271,11 @@ test("empty Studio search browses automatically with effective Most movies and n
 		searchData: null,
 		browsing: true,
 		effectiveSearchSort: "name-asc",
-		onInputChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
+		movieCountFilter: "all",
+		onInputChange() {}, onSortChange() {}, onMovieCountFilterChange() {}, onRetry() {}, onSelect() {}, onChangePage() {},
 	}));
-	assert.match(alphabetical, /aria-pressed="true">A–Z<\/button>/);
-	assert.match(alphabetical, /aria-pressed="false">Most movies<\/button>/);
+	assert.match(alphabetical, /<button(?=[^>]*aria-pressed="true")(?=[^>]*aria-label="Order Studios A–Z")[^>]*>A–Z<\/button>/);
+	assert.match(alphabetical, /<button(?=[^>]*aria-pressed="false")(?=[^>]*aria-label="Order Studios by most movies")[^>]*>Most movies<\/button>/);
 	const source = read("builder/src/ui/use-studio-catalogue-search.js");
 	assert.match(source, /const browsing = parsedInput\.kind === "empty"/);
 	assert.match(source, /browsing \? STUDIO_SEARCH_SORTS\.MOVIE_COUNT_DESC : DEFAULT_STUDIO_SEARCH_SORT/);
@@ -542,9 +550,9 @@ test("source-picker return focus and Configure-to-Search state restoration stay 
 	assert.doesNotMatch(people.slice(people.indexOf("setNavigation(returnPeopleToSearch)"), people.indexOf("function beginBulkConfigure")), /setInput|setPage|setLookupState/);
 	assert.match(studios, /setNavigation\(returnStudioToSearch\)/);
 	assert.match(studios, /useStudioCatalogueSearch\(catalogueProvider\)/);
-	assert.match(studioSearch, /const \[searchSortOverride, setSearchSortOverride\][\s\S]*const \[hideZero, setHideZero\][\s\S]*const browsing = parsedInput\.kind === "empty"/);
+	assert.match(studioSearch, /const \[searchSortOverride, setSearchSortOverride\][\s\S]*const \[movieCountFilter, setMovieCountFilter\][\s\S]*const browsing = parsedInput\.kind === "empty"/);
 	assert.match(studioSearch, /setSearchSortOverride\(\(current\) => current === sort \? null : sort\); setPage\(1\)/);
-	assert.match(studioSearch, /setHideZero\(\(current\) => !current\); setPage\(1\)/);
+	assert.match(studioSearch, /setMovieCountFilter\(filterId\); setPage\(1\)/);
 	assert.match(studios, /restoreAddSourceSearchView/);
 	assert.doesNotMatch(workspace, /history\.(?:pushState|replaceState|back)/);
 });
@@ -562,6 +570,13 @@ test("Studio modal remains single-column, tappable, scroll-safe, and footer-safe
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-form\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\) auto[^}]*overflow:\s*hidden/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*z-index:\s*2[^}]*safe-area-inset-bottom/);
+});
+
+test("Studio Add Source uses available desktop width before wrapping discovery controls", () => {
+	const flow = read("builder/src/ui/StudioSourceFlow.jsx");
+	const styles = read("builder/src/styles.css");
+	assert.match(flow, /data-studio-source-form-step=\{step\}/);
+	assert.match(styles, /@media \(min-width: 621px\)[\s\S]*\[data-studio-source-form-step="search"\] \.studio-search-count-controls,[\s\S]*flex-basis:\s*auto/);
 });
 
 test("Workspace routes Studios through explicit providers, atomic apply, focus, and status wiring", () => {

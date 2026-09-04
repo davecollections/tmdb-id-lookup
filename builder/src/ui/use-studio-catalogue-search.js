@@ -9,11 +9,10 @@ import {
 } from "../source-add/index.js";
 export const STUDIO_SEARCH_DEBOUNCE_MS = 250;
 
-export function useStudioCatalogueSearch(catalogueProvider, { movieCountFilters = false } = {}) {
+export function useStudioCatalogueSearch(catalogueProvider) {
 	const [input, setInput] = useState("");
 	const [page, setPage] = useState(1);
 	const [searchSortOverride, setSearchSortOverride] = useState(null);
-	const [hideZero, setHideZero] = useState(false);
 	const [movieCountFilter, setMovieCountFilter] = useState(DEFAULT_STUDIO_MOVIE_COUNT_FILTER);
 	const [retryGeneration, setRetryGeneration] = useState(0);
 	const [lookupState, setLookupState] = useState(INITIAL_ASYNC_REQUEST_STATE);
@@ -27,8 +26,8 @@ export function useStudioCatalogueSearch(catalogueProvider, { movieCountFilters 
 		|| (lookupState.context?.kind === "search" && parsedInput.kind === "search" && lookupState.context.query === parsedInput.query && lookupState.context.page === page)
 		|| (lookupState.context?.kind === "browse" && browsing && parsedInput.kind === "empty" && lookupState.context.page === page)
 	) && lookupState.context?.sort === effectiveSearchSort
-		&& lookupState.context?.hideZero === (movieCountFilters ? false : hideZero)
-		&& lookupState.context?.movieCountFilter === (movieCountFilters ? movieCountFilter : null)
+		&& lookupState.context?.hideZero === false
+		&& lookupState.context?.movieCountFilter === movieCountFilter
 		? lookupState.data
 		: null;
 
@@ -40,16 +39,16 @@ export function useStudioCatalogueSearch(catalogueProvider, { movieCountFilters 
 		const requestInput = browsing && parsedInput.kind === "empty" ? Object.freeze({ kind: "browse" }) : parsedInput;
 		const timer = window.setTimeout(() => {
 			coordinator.run(
-				() => catalogueProvider.searchStudios(requestInput, { page, sort: effectiveSearchSort, hideZero: movieCountFilters ? false : hideZero, movieCountFilter: movieCountFilters ? movieCountFilter : null }),
+				() => catalogueProvider.searchStudios(requestInput, { page, sort: effectiveSearchSort, hideZero: false, movieCountFilter }),
 				requestInput.kind === "exact"
-					? { kind: "exact", id: requestInput.id, page: 1, sort: effectiveSearchSort, hideZero: movieCountFilters ? false : hideZero, movieCountFilter: movieCountFilters ? movieCountFilter : null }
+					? { kind: "exact", id: requestInput.id, page: 1, sort: effectiveSearchSort, hideZero: false, movieCountFilter }
 					: requestInput.kind === "browse"
-						? { kind: "browse", page, sort: effectiveSearchSort, hideZero: movieCountFilters ? false : hideZero, movieCountFilter: movieCountFilters ? movieCountFilter : null }
-						: { kind: "search", query: requestInput.query, page, sort: effectiveSearchSort, hideZero: movieCountFilters ? false : hideZero, movieCountFilter: movieCountFilters ? movieCountFilter : null },
+						? { kind: "browse", page, sort: effectiveSearchSort, hideZero: false, movieCountFilter }
+						: { kind: "search", query: requestInput.query, page, sort: effectiveSearchSort, hideZero: false, movieCountFilter },
 			);
 		}, STUDIO_SEARCH_DEBOUNCE_MS);
 		return () => { window.clearTimeout(timer); coordinator.cancel({ reset: false, notify: false }); };
-	}, [browsing, catalogueProvider, effectiveSearchSort, hideZero, movieCountFilter, movieCountFilters, page, parsedInput, retryGeneration]);
+	}, [browsing, catalogueProvider, effectiveSearchSort, movieCountFilter, page, parsedInput, retryGeneration]);
 
 	useEffect(() => () => lookupCoordinatorRef.current.cancel({ notify: false }), []);
 
@@ -61,11 +60,9 @@ export function useStudioCatalogueSearch(catalogueProvider, { movieCountFilters 
 		searchData,
 		effectiveSearchSort,
 		browsing,
-		hideZero,
 		movieCountFilter,
 		handleInputChange(event) { setInput(event.target.value); setPage(1); },
 		toggleSearchSort(sort) { setSearchSortOverride((current) => current === sort ? null : sort); setPage(1); },
-		toggleHideZero() { setHideZero((current) => !current); setPage(1); },
 		changeMovieCountFilter(filterId) { setMovieCountFilter(filterId); setPage(1); },
 		retrySearch() { setRetryGeneration((value) => value + 1); },
 		setPage,
