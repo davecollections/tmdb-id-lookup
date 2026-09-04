@@ -24,13 +24,13 @@ export const DECADES_DISPLAY_ORDERS = Object.freeze([
 	}),
 	Object.freeze({
 		id: "newest-throughout",
-		label: "Newest throughout",
+		label: "Newest First",
 		decadeOrder: "newest-first",
 		yearOrder: "newest-first",
 	}),
 	Object.freeze({
 		id: "oldest-throughout",
-		label: "Oldest throughout",
+		label: "Oldest First",
 		decadeOrder: "oldest-first",
 		yearOrder: "oldest-first",
 	}),

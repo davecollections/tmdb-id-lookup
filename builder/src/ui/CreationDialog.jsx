@@ -249,11 +249,15 @@ function OrderingPreview({ kind, selectedId, selectedDecadeIds }) {
 	return <span className="decades-order-preview" aria-hidden="true">{entries.map((entry, index) => <i key={`${entry}-${index}`}>{entry}</i>)}</span>;
 }
 
-function DisplayOrderPreview({ decadeOrder, yearOrder, selectedDecadeIds, showDecadeOrder, showYearOrder }) {
+function orderDirectionLabel(order) {
+	return order === "newest-first" ? "Newest → Oldest" : "Oldest → Newest";
+}
+
+function DisplayOrderPreview({ decadeOrder, yearOrder, showDecadeOrder, showYearOrder }) {
 	return (
-		<span className="decades-display-order-preview" aria-hidden="true">
-			{showDecadeOrder ? <span><small>Folders</small><OrderingPreview kind="decades" selectedId={decadeOrder} selectedDecadeIds={selectedDecadeIds} /></span> : null}
-			{showYearOrder ? <span><small>Inside</small><OrderingPreview kind="years" selectedId={yearOrder} /></span> : null}
+		<span className="decades-display-order-preview">
+			{showDecadeOrder ? <span><small>Decade folders</small><b>{orderDirectionLabel(decadeOrder)}</b></span> : null}
+			{showYearOrder ? <span><small>Year sources</small><b>{orderDirectionLabel(yearOrder)}</b></span> : null}
 		</span>
 	);
 }
@@ -368,8 +372,9 @@ function DecadesOrdering({ state, onStateChange }) {
 	const selectedDisplayOrderId = selectedDecadesDisplayOrderId(state);
 	return (
 		<section className="decades-ordering" aria-labelledby="decades-ordering-title">
-			<h4 id="decades-ordering-title">Ordering</h4>
-			{showDecadeOrder || showYearOrder ? <div className="decades-ordering-control"><ChoiceCards legend="Display order" name="decades-display-order" gridClassName="decades-display-order-choices" options={DECADES_DISPLAY_ORDERS.map((option) => ({ ...option, preview: <DisplayOrderPreview decadeOrder={option.decadeOrder} yearOrder={option.yearOrder} selectedDecadeIds={state.selectedDecadeIds} showDecadeOrder={showDecadeOrder} showYearOrder={showYearOrder} /> }))} selectedId={selectedDisplayOrderId} onChange={(displayOrderId) => onStateChange(updateDecadesDisplayOrder(state, displayOrderId))} /></div> : null}
+			<h4 id="decades-ordering-title">Decade &amp; Year order</h4>
+			<p className="studio-configure-helper">Choose how Decade folders are ordered on Home and how Year sources are ordered inside each folder.</p>
+			{showDecadeOrder || showYearOrder ? <div className="decades-ordering-control"><ChoiceCards legend="Display order" name="decades-display-order" gridClassName="decades-display-order-choices" options={DECADES_DISPLAY_ORDERS.map((option) => ({ ...option, preview: <DisplayOrderPreview decadeOrder={option.decadeOrder} yearOrder={option.yearOrder} showDecadeOrder={showDecadeOrder} showYearOrder={showYearOrder} /> }))} selectedId={selectedDisplayOrderId} onChange={(displayOrderId) => onStateChange(updateDecadesDisplayOrder(state, displayOrderId))} /></div> : null}
 			{showSourceGrouping ? <div className="decades-ordering-control"><ChoiceCards legend="Source grouping" helper="Controls how Movie and Series sources are arranged inside mixed-media Decade folders." name="decades-source-grouping" options={DECADES_SOURCE_GROUPINGS.map((option) => ({ ...option, preview: <OrderingPreview kind="sources" selectedId={option.id} /> }))} selectedId={state.sourceGrouping} onChange={(sourceGrouping) => onStateChange(Object.freeze({ ...state, sourceGrouping }))} /></div> : null}
 		</section>
 	);

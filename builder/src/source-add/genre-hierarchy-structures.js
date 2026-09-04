@@ -4,10 +4,10 @@ import { buildGenreFolderEditable } from "./genre-folder-artwork.js";
 import { groupGenreSourceDrafts, inspectGenreFolderPlan } from "./genre-source.js";
 
 export const GENRE_HIERARCHY_STRUCTURES = Object.freeze([
-	Object.freeze({ id: "genre-folders", label: "Genre folders", description: "One folder for each Genre, with Movies and Series together." }),
-	Object.freeze({ id: "media-folders", label: "Media folders", description: "One Movies folder and one Series folder, with Genres inside each." }),
-	Object.freeze({ id: "separate-media-genre-folders", label: "Separate Movie & Series Genre folders", description: "Create a separate folder for every Movie and Series Genre." }),
-	Object.freeze({ id: "separate-media-collections", label: "Separate Movie & Series collections", description: "Create one collection for Movie Genres and another for Series Genres." }),
+	Object.freeze({ id: "genre-folders", label: "Genre folders", description: "One folder card for each Genre, with its available Movies and Series sources together inside." }),
+	Object.freeze({ id: "media-folders", label: "Movies & Series folders", description: "Create Movies and Series folder cards as needed, with Genre sources inside each." }),
+	Object.freeze({ id: "separate-media-genre-folders", label: "Separate Movie & Series Genre folders", description: "Create separate folder cards for each Movie and Series Genre." }),
+	Object.freeze({ id: "separate-media-collections", label: "Separate Movie & Series collections", description: "Create one Home collection for Movie Genres and another for Series Genres." }),
 ]);
 export const DEFAULT_GENRE_HIERARCHY_STRUCTURE = "genre-folders";
 export const DEFAULT_GENRE_HIERARCHY_COLLECTION_TITLES = Object.freeze({ movies: "Movie Genres", series: "Series Genres" });
