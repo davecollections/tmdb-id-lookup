@@ -4549,7 +4549,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8165,2nd Try TV,5,,US,,https://www.themoviedb.org/network/8165
 8166,Shortcha,15,,KR,,https://www.themoviedb.org/network/8166
 8168,Scratch,1,"Boston, Massachusetts",,,https://www.themoviedb.org/network/8168
-8169,OF.TV,1,,,,https://www.themoviedb.org/network/8169
 8171,TVNZ,1,,,,https://www.themoviedb.org/network/8171
 8172,Pixid,2,"2F, Nonhyeon-ro 76-gil 24, Gangnam-gu, Seoul, Republic of Korea",KR,,https://www.themoviedb.org/network/8172
 8175,Butterfly+,0,,,,https://www.themoviedb.org/network/8175
@@ -4867,8 +4866,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8603,prima+,0,,,,https://www.themoviedb.org/network/8603
 8606,Mobile Animate,1,,JP,,https://www.themoviedb.org/network/8606
 8607,Animate TV,2,,JP,,https://www.themoviedb.org/network/8607
-8608,OFTV,1,,,,https://www.themoviedb.org/network/8608
-8609,OFTV,1,,,,https://www.themoviedb.org/network/8609
 8610,Vision Video,1,,,,https://www.themoviedb.org/network/8610
 8611,sukaharja.site,1,,,,https://www.themoviedb.org/network/8611
 8612,WBOC,1,,,,https://www.themoviedb.org/network/8612
@@ -5592,4 +5589,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9461,IRIB Nahal,1,"Tehran, Tehran Province",IR,,https://www.themoviedb.org/network/9461
 9462,Law&Crime,1,,,,https://www.themoviedb.org/network/9462
 9463,רגע TV,1,,IL,,https://www.themoviedb.org/network/9463
-9464,Kocoro TV,0,"Tabasco, México",,https://www.kocoro.tv,https://www.themoviedb.org/network/9464
+9464,Kocoro TV,0,"Tabasco, México",,,https://www.themoviedb.org/network/9464
+9465,MNC Media (ID),1,,,,https://www.themoviedb.org/network/9465
+9466,NHK,0,,,,https://www.themoviedb.org/network/9466
