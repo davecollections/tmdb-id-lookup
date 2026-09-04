@@ -8968,7 +8968,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .decades-display-order-preview > span {
 	display: grid;
-	grid-template-columns: 42px minmax(0, 1fr);
+	grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
 	align-items: center;
 	gap: 6px;
 }
@@ -8977,6 +8977,13 @@ body.hierarchy-pointer-dragging .builder-shell {
 	color: var(--quiet);
 	font-size: 0.54rem;
 	font-weight: 750;
+}
+
+.decades-display-order-preview b {
+	color: var(--muted);
+	font-size: 0.58rem;
+	font-weight: 800;
+	line-height: 1.3;
 }
 
 .decades-display-order-preview .decades-order-preview {

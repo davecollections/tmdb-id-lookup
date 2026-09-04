@@ -156,15 +156,15 @@ test("Configure reuses semantic pills and explains fixed-media Genres while Appe
 test("Structure presents plain-language plan-derived choices without changing composite boundaries", () => {
 	const structure = flowSource.slice(flowSource.indexOf("function StructureChoicePreview"), flowSource.indexOf("function AppearanceStep"));
 	assert.match(structure, /Step 3/);
-	assert.match(structure, /Choose how the configured Genres are organised in Nuvio\./);
+	assert.match(structure, /Choose how Genre folders are arranged within collections on your Nuvio Home screen\./);
 	assert.doesNotMatch(structure, />Genre hierarchy</);
 	assert.match(structure, /legend="Structure options" hideLegend/);
 	assert.match(choiceCardsSource, /hideLegend \? "visually-hidden"/);
 	assert.match(structure, /GENRE_HIERARCHY_STRUCTURES/);
-	assert.match(structureSource, /label: "Genre folders", description: "One folder for each Genre, with Movies and Series together\."/);
-	assert.match(structureSource, /label: "Media folders", description: "One Movies folder and one Series folder, with Genres inside each\."/);
-	assert.match(structureSource, /label: "Separate Movie & Series Genre folders", description: "Create a separate folder for every Movie and Series Genre\."/);
-	assert.match(structureSource, /label: "Separate Movie & Series collections", description: "Create one collection for Movie Genres and another for Series Genres\."/);
+	assert.match(structureSource, /label: "Genre folders", description: "One folder card for each Genre, with its available Movies and Series sources together inside\."/);
+	assert.match(structureSource, /label: "Movies & Series folders", description: "Create Movies and Series folder cards as needed, with Genre sources inside each\."/);
+	assert.match(structureSource, /label: "Separate Movie & Series Genre folders", description: "Create separate folder cards for each Movie and Series Genre\."/);
+	assert.match(structureSource, /label: "Separate Movie & Series collections", description: "Create one Home collection for Movie Genres and another for Series Genres\."/);
 	assert.match(structure, /GENRE_STRUCTURE_PREVIEWS/);
 	assert.match(structure, /StructureChoicePreview/);
 	assert.match(structure, /genre-structure-wireframe/);
@@ -178,7 +178,7 @@ test("Structure presents plain-language plan-derived choices without changing co
 	assert.doesNotMatch(structure, /counts\.sourceCount/);
 	assert.doesNotMatch(structure, /Movies → Action|Action → Movies|Movie Genres → Action/);
 	assert.match(structure, /Where should combined Series genres go\?/);
-	assert.match(structure, /Some Series genres combine categories that Movies keep separate\. You can keep them in their own folder or place them with the matching Movie genres\./);
+	assert.match(structure, /TMDB groups some Series genres separately from Movies\. Choose whether those Series sources get their own folders or are added to the matching Movie Genre folder\(s\)\./);
 	assert.doesNotMatch(structure, /Optional placement|Composite Series Genres|self-describing Series source/);
 	assert.match(structureSource, /label: "Keep its own folder"/);
 	assert.doesNotMatch(structureSource, /label: "Create its own folder"/);

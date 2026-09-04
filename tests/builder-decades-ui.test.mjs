@@ -671,8 +671,9 @@ test("structure, ordering, and shared presentation choices render schematic prev
 	assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 3);
 	assert.equal((markup.match(/type="checkbox" checked=""/g) ?? []).length, 2);
 	assert.doesNotMatch(contentChoicesMarkup, /choice-card-input|visually-hidden|data-selected|selection-indicator|selection-state|✓/);
-	for (const marker of ['data-structure-preview="separate"', 'data-structure-preview="mixed"', "Movie Decades", "TV Decades", "Display order", "Source grouping", "Folders", "Inside"]) assert.ok(markup.includes(marker), marker);
-	for (const label of ["Newest Decades, Oldest Years", "Newest throughout", "Oldest throughout"]) assert.ok(markup.includes(`>${label}<`), label);
+	for (const marker of ['data-structure-preview="separate"', 'data-structure-preview="mixed"', "Movie Decades", "TV Decades", "Decade &amp; Year order", "Choose how Decade folders are ordered on Home and how Year sources are ordered inside each folder.", "Display order", "Source grouping", "Decade folders", "Year sources"]) assert.ok(markup.includes(marker), marker);
+	for (const label of ["Newest Decades, Oldest Years", "Newest First", "Oldest First"]) assert.ok(markup.includes(`>${label}<`), label);
+	for (const direction of ["Newest → Oldest", "Oldest → Newest"]) assert.ok(markup.includes(direction), direction);
 	assert.equal((markup.match(/name="decades-display-order"/g) ?? []).length, 3);
 	assert.match(markup, /name="decades-display-order" checked="" value="newest-decades-oldest-years"/);
 	assert.equal(markup.includes("Oldest Decades, Newest Years"), false);
@@ -711,7 +712,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	collectionState = updateDecadesCreationMedia(collectionState, "both");
 	collectionState = { ...collectionState, step: DECADES_CREATION_STEPS.OPTIONS };
 	const options = renderToStaticMarkup(createElement(DecadesOptionsStep, { state: collectionState, onStateChange() {} }));
-	for (const text of ["Configure Decades", "Media", "Sort titles by", "Collection structure", "Decade overview", "Individual years", "Genre breakdown", "Ordering", "Display order", "Advanced options"]) assert.ok(options.includes(text), text);
+	for (const text of ["Configure Decades", "Media", "Sort titles by", "Collection structure", "Decade overview", "Individual years", "Genre breakdown", "Decade &amp; Year order", "Display order", "Advanced options"]) assert.ok(options.includes(text), text);
 	assert.ok(options.includes("Add one source covering the complete Decade, such as All 2000s."));
 	assert.ok(options.includes("Add Genre sources to all selected Decades, or customise each Decade."));
 	assert.equal(options.includes("Future-year sources may remain empty"), false);

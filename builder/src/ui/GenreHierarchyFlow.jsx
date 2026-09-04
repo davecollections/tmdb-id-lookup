@@ -234,10 +234,10 @@ function StructureStep({ structurePlans, compositeChoices, options, headingRef, 
 		.map((option) => ({ ...option, preview: <StructureChoicePreview structure={option.id} planResult={structurePlans.get(option.id)} /> }));
 	return <section className="genre-hierarchy-structure" aria-labelledby="genre-hierarchy-structure-title">
 		<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="genre-hierarchy-structure-title" ref={headingRef} tabIndex={-1}>Structure</h3></div></div>
-		<p className="studio-configure-helper">Choose how the configured Genres are organised in Nuvio.</p>
+		<p className="studio-configure-helper">Choose how Genre folders are arranged within collections on your Nuvio Home screen.</p>
 		<ChoiceCards legend="Structure options" hideLegend name="genre-hierarchy-structure" options={choices} selectedId={options.structure} onChange={onStructureChange} gridClassName="genre-structure-choice-grid" />
 		{options.structure === "genre-folders" && compositeChoices.length ? <section className="genre-composite-placement" aria-labelledby="genre-composite-placement-title">
-			<div><h4 id="genre-composite-placement-title">Where should combined Series genres go?</h4><p>Some Series genres combine categories that Movies keep separate. You can keep them in their own folder or place them with the matching Movie genres.</p></div>
+			<div><h4 id="genre-composite-placement-title">Where should combined Series genres go?</h4><p>TMDB groups some Series genres separately from Movies. Choose whether those Series sources get their own folders or are added to the matching Movie Genre folder(s).</p></div>
 			{compositeChoices.map((composite) => <div className="genre-composite-control" key={composite.genreName}>
 				<SemanticSortChoices options={composite.choices} selectedId={composite.choices.some((choice) => choice.id === options.compositePlacements[composite.genreName]) ? options.compositePlacements[composite.genreName] : "standalone"} name={`genre-composite-${composite.genreName}`} legend={composite.genreName} onChange={(placement) => onCompositeChange(composite.genreName, placement)} />
 				{composite.blockedMessage ? <p className="genre-fixed-media-note">{composite.blockedMessage} Keep its own folder remains available.</p> : null}
