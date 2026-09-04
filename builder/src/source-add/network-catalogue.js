@@ -10,6 +10,12 @@ import {
 
 export const NETWORK_SEARCH_PAGE_SIZE = 20;
 export const NETWORK_CATALOGUE_PATH = "../data/tv-networks.min.json";
+export const NETWORK_SEARCH_SORTS = Object.freeze({
+	BEST_MATCH: "best-match",
+	SERIES_COUNT_DESC: "series-count-desc",
+	NAME_ASC: "name-asc",
+});
+export const DEFAULT_NETWORK_SEARCH_SORT = NETWORK_SEARCH_SORTS.BEST_MATCH;
 export const NETWORK_SERIES_COUNT_FILTERS = Object.freeze({
 	ALL: "all",
 	EXCLUDE_ZERO: "exclude-zero",
@@ -30,6 +36,7 @@ export const DEFAULT_NETWORK_SERIES_COUNT_FILTER = NETWORK_SERIES_COUNT_FILTERS.
 
 const decimalIdPattern = /^\d+$/;
 const numericLikePattern = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
+const supportedSearchSorts = new Set(Object.values(NETWORK_SEARCH_SORTS));
 const supportedSeriesCountFilters = new Set(Object.values(NETWORK_SERIES_COUNT_FILTERS));
 const seriesCountThresholds = new Map([
 	[NETWORK_SERIES_COUNT_FILTERS.AT_LEAST_10, 10],
@@ -60,6 +67,14 @@ function compareText(left, right) {
 
 function compareNetworks(left, right) {
 	return compareText(left.searchName, right.searchName) || left.id - right.id || compareText(left.name, right.name);
+}
+
+function compareSeriesCounts(left, right) {
+	const leftValid = left.seriesCount !== null;
+	const rightValid = right.seriesCount !== null;
+	if (leftValid !== rightValid) return leftValid ? -1 : 1;
+	if (leftValid && left.seriesCount !== right.seriesCount) return right.seriesCount - left.seriesCount;
+	return compareNetworks(left, right);
 }
 
 function matchNetwork(network, query, countryCodeQuery) {
@@ -150,6 +165,7 @@ export function normalizeNetworkCatalogue(value) {
 export function searchNetworkCatalogue(catalogue, parsedInput, {
 	page = 1,
 	pageSize = NETWORK_SEARCH_PAGE_SIZE,
+	sort = DEFAULT_NETWORK_SEARCH_SORT,
 	seriesCountFilter = null,
 } = {}) {
 	if (
@@ -161,8 +177,8 @@ export function searchNetworkCatalogue(catalogue, parsedInput, {
 	if (!Number.isSafeInteger(page) || page <= 0 || !Number.isSafeInteger(pageSize) || pageSize <= 0) {
 		throw new TypeError("Network result pages and page sizes must be positive safe integers.");
 	}
-	if (seriesCountFilter !== null && !supportedSeriesCountFilters.has(seriesCountFilter)) {
-		throw new TypeError("Choose a supported Network Series Count filter.");
+	if (!supportedSearchSorts.has(sort) || (seriesCountFilter !== null && !supportedSeriesCountFilters.has(seriesCountFilter))) {
+		throw new TypeError("Choose a supported Network result sort and Series Count filter.");
 	}
 
 	let rankedMatches;
@@ -191,7 +207,16 @@ export function searchNetworkCatalogue(catalogue, parsedInput, {
 	if (seriesCountFilter !== null) {
 		rankedMatches = rankedMatches.filter(({ network }) => networkMatchesSeriesCountFilter(network, seriesCountFilter));
 	}
-	rankedMatches.sort((left, right) => left.tier - right.tier || compareNetworks(left.network, right.network));
+	rankedMatches.sort((left, right) => {
+		if (parsedInput?.kind === "exact" && left.tier !== right.tier) return left.tier - right.tier;
+		if (sort === NETWORK_SEARCH_SORTS.BEST_MATCH) {
+			return left.tier - right.tier || compareSeriesCounts(left.network, right.network);
+		}
+		if (sort === NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC) {
+			return compareSeriesCounts(left.network, right.network);
+		}
+		return compareNetworks(left.network, right.network);
+	});
 	const matches = rankedMatches.map(({ network }) => network);
 	const totalResults = matches.length;
 	const totalPages = Math.max(1, Math.ceil(totalResults / pageSize));
@@ -253,7 +278,7 @@ export function createNetworkCatalogueProvider({ fetchImpl = globalThis.fetch, c
 		return result;
 	}
 
-	async function searchNetworks(input, { page = 1, seriesCountFilter = null } = {}) {
+	async function searchNetworks(input, { page = 1, sort = DEFAULT_NETWORK_SEARCH_SORT, seriesCountFilter = null } = {}) {
 		const parsedInput = typeof input === "string" ? parseNetworkSearchInput(input) : input;
 		if (
 			!parsedInput
@@ -265,7 +290,7 @@ export function createNetworkCatalogueProvider({ fetchImpl = globalThis.fetch, c
 		const loaded = await loadCatalogue();
 		if (!loaded.ok) return loaded;
 		try {
-			return { ok: true, data: searchNetworkCatalogue(loaded.data, parsedInput, { page, seriesCountFilter }) };
+			return { ok: true, data: searchNetworkCatalogue(loaded.data, parsedInput, { page, sort, seriesCountFilter }) };
 		} catch {
 			return providerError("invalid-request", "Choose a valid Network result page.", { retryable: false });
 		}

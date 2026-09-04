@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	createAsyncRequestCoordinator,
 	DEFAULT_NETWORK_SERIES_COUNT_FILTER,
+	DEFAULT_NETWORK_SEARCH_SORT,
 	INITIAL_ASYNC_REQUEST_STATE,
+	NETWORK_SEARCH_SORTS,
 	parseNetworkSearchInput,
 } from "../source-add/index.js";
 
@@ -11,6 +13,7 @@ export const NETWORK_SEARCH_DEBOUNCE_MS = 250;
 export function useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilters = false } = {}) {
 	const [input, setInput] = useState("");
 	const [page, setPage] = useState(1);
+	const [searchSortOverride, setSearchSortOverride] = useState(null);
 	const [seriesCountFilter, setSeriesCountFilter] = useState(DEFAULT_NETWORK_SERIES_COUNT_FILTER);
 	const [retryGeneration, setRetryGeneration] = useState(0);
 	const [lookupState, setLookupState] = useState(INITIAL_ASYNC_REQUEST_STATE);
@@ -19,12 +22,14 @@ export function useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilter
 
 	const parsedInput = useMemo(() => parseNetworkSearchInput(input), [input]);
 	const browsing = parsedInput.kind === "empty";
+	const effectiveSearchSort = searchSortOverride ?? (browsing ? NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC : DEFAULT_NETWORK_SEARCH_SORT);
 	const activeFilter = seriesCountFilters ? seriesCountFilter : null;
 	const searchData = lookupState.status === "success" && (
 		(lookupState.context?.kind === "exact" && parsedInput.kind === "exact" && lookupState.context.id === parsedInput.id)
 		|| (lookupState.context?.kind === "search" && parsedInput.kind === "search" && lookupState.context.query === parsedInput.query && lookupState.context.page === page)
 		|| (lookupState.context?.kind === "browse" && browsing && lookupState.context.page === page)
-	) && lookupState.context?.seriesCountFilter === activeFilter
+	) && lookupState.context?.sort === effectiveSearchSort
+		&& lookupState.context?.seriesCountFilter === activeFilter
 		? lookupState.data
 		: null;
 
@@ -35,18 +40,18 @@ export function useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilter
 		if (parsedInput.kind === "invalid" || (parsedInput.kind === "search" && !parsedInput.eligible)) return undefined;
 		const requestInput = browsing ? Object.freeze({ kind: "browse" }) : parsedInput;
 		const timer = window.setTimeout(() => {
-			const options = activeFilter === null ? { page } : { page, seriesCountFilter: activeFilter };
+			const options = activeFilter === null ? { page, sort: effectiveSearchSort } : { page, sort: effectiveSearchSort, seriesCountFilter: activeFilter };
 			coordinator.run(
 				() => catalogueProvider.searchNetworks(requestInput, options),
 				requestInput.kind === "exact"
-					? { kind: "exact", id: requestInput.id, page: 1, seriesCountFilter: activeFilter }
+					? { kind: "exact", id: requestInput.id, page: 1, sort: effectiveSearchSort, seriesCountFilter: activeFilter }
 					: requestInput.kind === "browse"
-						? { kind: "browse", page, seriesCountFilter: activeFilter }
-						: { kind: "search", query: requestInput.query, page, seriesCountFilter: activeFilter },
+						? { kind: "browse", page, sort: effectiveSearchSort, seriesCountFilter: activeFilter }
+						: { kind: "search", query: requestInput.query, page, sort: effectiveSearchSort, seriesCountFilter: activeFilter },
 			);
 		}, NETWORK_SEARCH_DEBOUNCE_MS);
 		return () => { window.clearTimeout(timer); coordinator.cancel({ reset: false, notify: false }); };
-	}, [activeFilter, browsing, catalogueProvider, page, parsedInput, retryGeneration]);
+	}, [activeFilter, browsing, catalogueProvider, effectiveSearchSort, page, parsedInput, retryGeneration]);
 
 	useEffect(() => () => lookupCoordinatorRef.current.cancel({ notify: false }), []);
 
@@ -56,9 +61,11 @@ export function useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilter
 		parsedInput,
 		lookupState,
 		searchData,
+		effectiveSearchSort,
 		browsing,
 		seriesCountFilter,
 		handleInputChange(event) { setInput(event.target.value); setPage(1); },
+		toggleSearchSort(sort) { setSearchSortOverride((current) => current === sort ? null : sort); setPage(1); },
 		changeSeriesCountFilter(filterId) { setSeriesCountFilter(filterId); setPage(1); },
 		retrySearch() { setRetryGeneration((value) => value + 1); },
 		setPage,

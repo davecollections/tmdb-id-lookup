@@ -75,10 +75,13 @@ function renderSearch({ hierarchy }) {
 		parsedInput: { kind: "empty", message: null },
 		lookupState: { ...INITIAL_ASYNC_REQUEST_STATE, status: "success", data },
 		searchData: data,
+		effectiveSearchSort: "series-count-desc",
 		browsing: true,
-		seriesCountFilter: hierarchy ? "all" : null,
-		showSeriesCountFilters: hierarchy,
+		seriesCountFilter: "all",
+		showSeriesCountFilters: true,
+		selectedNetworkId: hierarchy ? null : 2,
 		onInputChange() {},
+		onSortChange() {},
 		onSeriesCountFilterChange() {},
 		onRetry() {},
 		onSelect() {},
@@ -105,7 +108,7 @@ test("Networks remains ordered immediately before Genres in both hierarchy scope
 	assert.match(creationOptions, /id:\s*CREATION_OPTION_IDS\.NETWORKS,[\s\S]*scopes:\s*BOTH_SCOPES/);
 });
 
-test("hierarchy Search alone exposes the exact Series Count filters and count wording", () => {
+test("Add and hierarchy Search expose the same Series Count and result-order controls", () => {
 	const hierarchyMarkup = renderSearch({ hierarchy: true });
 	assert.deepEqual(
 		[...hierarchyMarkup.matchAll(/<button[^>]*aria-label="Series Count ([^"]+)"/g)].map((match) => match[1]),
@@ -114,16 +117,31 @@ test("hierarchy Search alone exposes the exact Series Count filters and count wo
 	assert.ok(hierarchyMarkup.includes("Series Count: 0"));
 	assert.ok(hierarchyMarkup.includes("Series Count: Unknown"));
 	assert.ok(hierarchyMarkup.includes("Select Networks"));
+	assert.ok(hierarchyMarkup.includes(">A–Z</button>"));
+	assert.ok(hierarchyMarkup.includes(">Most series</button>"));
 
 	const addSourceMarkup = renderSearch({ hierarchy: false });
-	assert.equal(addSourceMarkup.includes("Series Count:"), false);
-	assert.equal(addSourceMarkup.includes('aria-label="Series Count filter"'), false);
+	assert.ok(addSourceMarkup.includes("Series Count: 0"));
+	assert.ok(addSourceMarkup.includes("Series Count: Unknown"));
+	assert.deepEqual(
+		[...addSourceMarkup.matchAll(/<button[^>]*aria-label="Series Count ([^"]+)"/g)].map((match) => match[1]),
+		["All", "Exclude 0", "10+", "50+", "100+", "500+"],
+	);
+	assert.ok(addSourceMarkup.includes(">A–Z</button>"));
+	assert.ok(addSourceMarkup.includes(">Most series</button>"));
+	assert.match(addSourceMarkup, /data-tmdb-network-result="2"/);
+	assert.match(networkFlow, /useNetworkCatalogueSearch\(catalogueProvider, \{ seriesCountFilters: true \}\)/);
+	assert.match(networkFlow, /seriesCountFilter=\{search\.seriesCountFilter\} showSeriesCountFilters/);
 	assert.match(flow, /showSeriesCountFilters/);
+	assert.match(networkFlow, /effectiveSearchSort=\{search\.effectiveSearchSort\}/);
+	assert.match(networkFlow, /onSortChange=\{search\.toggleSearchSort\}/);
+	assert.match(flow, /effectiveSearchSort=\{search\.effectiveSearchSort\}/);
+	assert.match(flow, /onSortChange=\{search\.toggleSearchSort\}/);
 	assert.match(flow, /onSeriesCountFilterChange=\{search\.changeSeriesCountFilter\}/);
 	assert.match(searchHook, /changeSeriesCountFilter\(filterId\)\s*\{\s*setSeriesCountFilter\(filterId\);\s*setPage\(1\)/);
+	assert.match(searchHook, /toggleSearchSort\(sort\)\s*\{[\s\S]*setPage\(1\)/);
 	const addSourceResult = networkFlow.slice(networkFlow.indexOf("function NetworkResult("), networkFlow.indexOf("export function NetworkSearchStep"));
-	assert.match(addSourceResult, /<NetworkResultContent network=\{network\} \/>/);
-	assert.doesNotMatch(addSourceResult, /showSeriesCount/);
+	assert.match(addSourceResult, /<NetworkResultContent network=\{network\} showSeriesCount=\{showSeriesCount\}/);
 	for (const label of ["All", "Exclude 0", "10+", "50+", "100+", "500+"]) {
 		assert.match(catalogue, new RegExp(`label: "${label.replace("+", "\\+")}"`));
 	}

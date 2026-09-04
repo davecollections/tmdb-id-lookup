@@ -5527,10 +5527,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
-.studio-search-controls .studio-zero-filter {
-	margin-left: auto;
-}
-
 .studio-search-controls--hierarchy {
 	align-items: flex-end;
 }
@@ -5544,10 +5540,16 @@ body.hierarchy-pointer-dragging .builder-shell {
 	padding-top: 10px;
 }
 
-.studio-search-controls--hierarchy .studio-search-alpha-override {
-	flex: 0 0 auto;
+.studio-search-controls--hierarchy .studio-search-order-controls {
+	flex: 0 1 auto;
 	margin-left: auto;
-	background: transparent;
+}
+
+@media (min-width: 621px) {
+	[data-studio-source-form-step="search"] .studio-search-count-controls,
+	[data-network-source-form-step="search"] .studio-search-count-controls {
+		flex-basis: auto;
+	}
 }
 
 .studio-configure-focus-target:focus {
@@ -6305,10 +6307,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.studio-source-choices label {
 		min-height: 60px;
 		padding: 9px;
-	}
-
-	.studio-search-controls .studio-zero-filter {
-		margin-left: 0;
 	}
 
 	.studio-configure-actions {
@@ -8667,7 +8665,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 		gap: 9px;
 	}
 
-	.studio-search-controls--hierarchy .studio-search-alpha-override {
+	.studio-search-controls--hierarchy .studio-search-order-controls {
 		margin-left: 0;
 	}
 }

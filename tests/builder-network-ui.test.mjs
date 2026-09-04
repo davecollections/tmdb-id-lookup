@@ -45,11 +45,12 @@ function network(overrides = {}) {
 		headquarters: "New York City, New York",
 		location: "US · New York City, New York",
 		logoPath: "/abc.png",
+		seriesCount: 42,
 		...overrides,
 	};
 }
 
-function renderSearch(results, { input = "abc", browsing = false, page = 1, totalPages = 1 } = {}) {
+function renderSearch(results, { input = "abc", browsing = false, page = 1, totalPages = 1, selectedNetworkId = null, effectiveSearchSort = browsing ? "series-count-desc" : "best-match" } = {}) {
 	const data = { results, page, totalPages, totalResults: results.length };
 	return renderToStaticMarkup(createElement(NetworkSearchStep, {
 		input,
@@ -57,8 +58,14 @@ function renderSearch(results, { input = "abc", browsing = false, page = 1, tota
 		parsedInput: input ? { kind: "search", query: input, eligible: true, message: null } : { kind: "empty", message: null },
 		lookupState: { ...INITIAL_ASYNC_REQUEST_STATE, status: "success", data },
 		searchData: data,
+		effectiveSearchSort,
 		browsing,
+		seriesCountFilter: "all",
+		showSeriesCountFilters: true,
+		selectedNetworkId,
 		onInputChange() {},
+		onSortChange() {},
+		onSeriesCountFilterChange() {},
 		onRetry() {},
 		onSelect() {},
 		onChangePage() {},
@@ -92,38 +99,53 @@ test("Add Source picker exposes Networks with product wording and no internal so
 	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 8);
 });
 
-test("Network result cards show only logo, identity, location, and quiet TMDB ID", () => {
+test("Network Add discovery shows exact Series Count filters, count metadata, and selected semantics", () => {
 	const markup = renderSearch([
 		network({ legacyCount: 987654 }),
-		network({ id: 7, name: "Sparse Network", country: "", headquarters: "", location: "", logoPath: null }),
-	]);
+		network({ id: 7, name: "Sparse Network", country: "", headquarters: "", location: "", logoPath: null, seriesCount: null }),
+	], { selectedNetworkId: 2 });
 	assert.ok(markup.includes("ABC"));
 	assert.ok(markup.includes("US · New York City, New York"));
 	assert.ok(markup.includes("TMDB 2"));
 	assert.ok(markup.includes("Sparse Network logo unavailable"));
 	assert.ok(markup.includes(">No logo<"));
-	assert.equal(markup.includes("Series Count"), false);
+	assert.ok(markup.includes("Series Count: 42"));
+	assert.ok(markup.includes("Series Count: Unknown"));
+	assert.deepEqual(
+		[...markup.matchAll(/<button[^>]*aria-label="Series Count ([^"]+)"/g)].map((match) => match[1]),
+		["All", "Exclude 0", "10+", "50+", "100+", "500+"],
+	);
+	assert.ok(markup.includes(">A–Z</button>"));
+	assert.ok(markup.includes(">Most series</button>"));
+	assert.equal(markup.includes("Most shows"), false);
+	assert.match(markup, /<button class="add-source-result studio-result network-result is-selected" type="button" aria-pressed="true" data-tmdb-network-result="2"/);
 	assert.equal(markup.includes("987654"), false);
-	assert.equal(markup.includes("Most series"), false);
 	assert.equal(markup.includes("legacyCount"), false);
 });
 
-test("Network search auto-browses A–Z and keeps typed Best Match implicit", () => {
+test("Network search auto-browses by Most series and keeps typed Best Match implicit", () => {
 	const browse = renderSearch([], { input: "", browsing: true });
 	const typed = renderSearch([network()]);
 	for (const markup of [browse, typed]) {
 		assert.equal(markup.includes("Browse all Networks"), false);
 		assert.equal(markup.includes("Best Match"), false);
-		assert.equal(markup.includes("Most series"), false);
 		assert.equal(markup.includes("Hide Networks"), false);
 		assert.equal(markup.includes("<select"), false);
 	}
 	assert.ok(browse.includes("No Networks are available."));
+	assert.match(browse, /<button(?=[^>]*aria-pressed="true")(?=[^>]*aria-label="Order Networks by most series")[^>]*>Most series<\/button>/);
+	assert.match(browse, /<button(?=[^>]*aria-pressed="false")(?=[^>]*aria-label="Order Networks A–Z")[^>]*>A–Z<\/button>/);
+	assert.match(typed, /<button(?=[^>]*aria-pressed="false")(?=[^>]*aria-label="Order Networks by most series")[^>]*>Most series<\/button>/);
+	assert.match(typed, /<button(?=[^>]*aria-pressed="false")(?=[^>]*aria-label="Order Networks A–Z")[^>]*>A–Z<\/button>/);
 	assert.ok(typed.includes("Search by Network name, country, location or TMDB ID."));
 	assert.ok(typed.includes("Choose a Network"));
 	const flow = read("builder/src/ui/NetworkSourceFlow.jsx");
 	const searchStep = flow.slice(flow.indexOf("export function NetworkSearchStep"), flow.indexOf("function networkCountText"));
 	assert.doesNotMatch(searchStep, /getNetworkCount|discover\/tv|with_networks/);
+	const hook = read("builder/src/ui/use-network-catalogue-search.js");
+	assert.match(hook, /browsing \? NETWORK_SEARCH_SORTS\.SERIES_COUNT_DESC : DEFAULT_NETWORK_SEARCH_SORT/);
+	assert.match(hook, /current === sort \? null : sort/);
+	assert.match(hook, /toggleSearchSort\(sort\)[\s\S]*setPage\(1\)/);
 });
 
 test("Network Configure presents fixed Series identity, live count, TMDB link, and four semantic sorts", () => {
@@ -242,6 +264,7 @@ test("Network flow reuses proven mobile dialog controls at every required width"
 	assert.match(styles, /\.studio-configure-actions \.studio-add-all\s*\{[^}]*min-height:\s*44px/);
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /\.add-source-actions\s*\{[^}]*safe-area-inset-bottom/);
+	assert.match(styles, /@media \(min-width: 621px\)[\s\S]*\[data-network-source-form-step="search"\] \.studio-search-count-controls[\s\S]*flex-basis:\s*auto/);
 });
 
 test("Workspace routes Network providers through one atomic Add path and Source Edit", () => {

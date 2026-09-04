@@ -4,11 +4,13 @@ import {
 	buildNetworkSourceDraft,
 	createAsyncRequestCoordinator,
 	createSourceSubmissionGate,
+	DEFAULT_NETWORK_SEARCH_SORT,
 	DEFAULT_NETWORK_SORT_OPTION_ID,
 	formatNetworkLocation,
 	inspectNetworkSourceDuplicates,
 	networkDuplicateOverrideIdentity,
 	NETWORK_SERIES_COUNT_FILTER_OPTIONS,
+	NETWORK_SEARCH_SORTS,
 	NETWORK_SOURCE_MODE,
 	requestSourceTitlePreview,
 	sourceTitlePreviewProviderAvailable,
@@ -65,15 +67,16 @@ export function NetworkResultContent({ network, showSeriesCount = false }) {
 	</>;
 }
 
-function NetworkResult({ network, onSelect }) {
+function NetworkResult({ network, selected = false, showSeriesCount = false, onSelect }) {
 	return (
 		<button
-			className="add-source-result studio-result network-result"
+			className={`add-source-result studio-result network-result${selected ? " is-selected" : ""}`}
 			type="button"
+			aria-pressed={selected}
 			data-tmdb-network-result={network.id}
 			onClick={() => onSelect(network)}
 		>
-			<NetworkResultContent network={network} />
+			<NetworkResultContent network={network} showSeriesCount={showSeriesCount} />
 		</button>
 	);
 }
@@ -84,10 +87,13 @@ export function NetworkSearchStep({
 	parsedInput,
 	lookupState,
 	searchData,
+	effectiveSearchSort = DEFAULT_NETWORK_SEARCH_SORT,
 	browsing = false,
 	seriesCountFilter = null,
 	showSeriesCountFilters = false,
+	selectedNetworkId = null,
 	onInputChange,
+	onSortChange = () => {},
 	onSeriesCountFilterChange = () => {},
 	onRetry,
 	onSelect,
@@ -113,7 +119,7 @@ export function NetworkSearchStep({
 					aria-describedby="network-source-query-help network-source-query-status"
 					onChange={onInputChange}
 				/>
-				<p className="editor-field-help" id="network-source-query-help">Empty search browses Networks A–Z. Names, countries and headquarters are searchable.</p>
+				<p className="editor-field-help" id="network-source-query-help">Empty search browses Networks by Most series. Names, countries and headquarters are searchable.</p>
 				<p id="network-source-query-status" className={parsedInput.kind === "invalid" ? "editor-field-error" : "editor-field-status"} role={parsedInput.kind === "invalid" ? "alert" : "status"}>
 					{parsedInput.kind === "invalid"
 						? parsedInput.message
@@ -127,6 +133,13 @@ export function NetworkSearchStep({
 					<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Series Count filter">
 						<span className="studio-search-control-label">Series count</span>
 						<span className="studio-search-control-buttons">{NETWORK_SERIES_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={seriesCountFilter === option.id} aria-label={`Series Count ${option.label}`} onClick={() => onSeriesCountFilterChange(option.id)}>{option.label}</button>)}</span>
+					</div>
+					<div className="studio-search-control-group studio-search-order-controls" role="group" aria-label="Network result order">
+						<span className="studio-search-control-label">Sort</span>
+						<span className="studio-search-control-buttons">
+							<button type="button" aria-pressed={effectiveSearchSort === NETWORK_SEARCH_SORTS.NAME_ASC} aria-label="Order Networks A–Z" onClick={() => onSortChange(NETWORK_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
+							<button type="button" aria-pressed={effectiveSearchSort === NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC} aria-label="Order Networks by most series" onClick={() => onSortChange(NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC)}>Most series</button>
+						</span>
 					</div>
 				</div>
 			) : null}
@@ -144,7 +157,7 @@ export function NetworkSearchStep({
 					</div>
 					{searchData.results.length ? (
 						<div className="add-source-result-list">
-							{searchData.results.map((network) => renderResult ? renderResult(network) : <NetworkResult key={network.id} network={network} onSelect={onSelect} />)}
+							{searchData.results.map((network) => renderResult ? renderResult(network) : <NetworkResult key={network.id} network={network} selected={network.id === selectedNetworkId} showSeriesCount={showSeriesCountFilters} onSelect={onSelect} />)}
 						</div>
 					) : <p className="add-source-empty-results">{browsing ? "No Networks are available." : "No Networks matched this search."}</p>}
 					{searchData.totalPages > 1 ? (
@@ -224,7 +237,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 	if (!previewCoordinatorRef.current) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 
-	const search = useNetworkCatalogueSearch(catalogueProvider);
+	const search = useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilters: true });
 	const duplicateReview = selectedNetwork
 		? inspectNetworkSourceDuplicates(project, folder?.internalId ?? null, selectedNetwork.id)
 		: { destination: [], elsewhere: [] };
@@ -364,7 +377,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 					<form className="add-source-form" data-network-source-form-step={step} onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll">
 							{step === NETWORK_SOURCE_STEPS.SEARCH ? (
-								<NetworkSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} browsing={search.browsing} onInputChange={handleSearchInputChange} onRetry={search.retrySearch} onSelect={selectNetwork} onChangePage={search.setPage} />
+								<NetworkSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters selectedNetworkId={selectedNetwork?.id ?? null} onInputChange={handleSearchInputChange} onSortChange={search.toggleSearchSort} onSeriesCountFilterChange={search.changeSeriesCountFilter} onRetry={search.retrySearch} onSelect={selectNetwork} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<NetworkConfigureStep network={selectedNetwork} count={count} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionId={sortOptionId} onSortChange={(optionId) => { setSortOptionId(optionId); setApplyDiagnostic(null); }} />

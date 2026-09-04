@@ -125,6 +125,106 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 });
 
+const ENTITY_SELECTION_CONTEXTS = Object.freeze(["add", "newCollection", "newFolder"]);
+const ENTITY_SELECTION_AXES = Object.freeze([
+	"universe",
+	"locate",
+	"filtersAndCounts",
+	"resultOrder",
+	"paging",
+	"selection",
+	"summaryRemoval",
+	"statePreservation",
+	"duplicateFeedback",
+	"outputIsolation",
+]);
+
+function entitySelection(definition) {
+	return Object.freeze(definition);
+}
+
+function selectionContexts(add, guided) {
+	return Object.freeze({ add, newCollection: guided, newFolder: guided });
+}
+
+// This is deliberately separate from FAMILY_CAPABILITIES: these entries describe how a physical
+// candidate is found and selected, not how the resulting Source is configured or edited.
+const FAMILY_ENTITY_SELECTION_CAPABILITIES = Object.freeze({
+	franchise: selectionContexts(
+		entitySelection({ universe: "TMDB movie collections", locate: "title search, exact positive ID, exact HTTPS TMDB URL", filtersAndCounts: "no candidate filter; title count after resolution", resultOrder: "TMDB result order", paging: "TMDB pages", selection: "single", summaryRemoval: "Configure identity", statePreservation: "query, page, selection, scroll and focus on in-flow Back", duplicateFeedback: "Configure/review", outputIsolation: "collection ID only; discovery state excluded" }),
+		entitySelection({ universe: "TMDB movie collections", locate: "title search, exact positive ID, exact HTTPS TMDB URL", filtersAndCounts: "no candidate filter; title count after resolution", resultOrder: "TMDB result order", paging: "TMDB pages", selection: "ordered uncapped multiple", summaryRemoval: "selected count, disclosure and removal", statePreservation: "query, page, ordered selection, scroll and focus on in-flow Back", duplicateFeedback: "hierarchy review", outputIsolation: "collection IDs in insertion order; discovery state excluded" }),
+	),
+	lists: (() => {
+		const shared = entitySelection({ universe: "public TMDB lists", locate: "ordered batch of positive IDs or public TMDB URLs", filtersAndCounts: "resolved item count and creator; no candidate filter", resultOrder: "input order", paging: "not applicable", selection: "ordered uncapped multiple", summaryRemoval: "resolved rows and removal", statePreservation: "input, resolutions and selection on in-flow Back", duplicateFeedback: "review", outputIsolation: "list IDs in input order; discovery state excluded" });
+		return selectionContexts(shared, shared);
+	})(),
+	people: selectionContexts(
+		entitySelection({ universe: "TMDB people", locate: "name search, exact positive ID, exact TMDB URL", filtersAndCounts: "known-for context; no candidate filter", resultOrder: "TMDB result order", paging: "TMDB pages", selection: "single", summaryRemoval: "Configure identity", statePreservation: "query, page, selection, scroll and focus on in-flow Back", duplicateFeedback: "after role/media configuration", outputIsolation: "person ID and configured role/media only" }),
+		entitySelection({ universe: "TMDB people", locate: "name search, exact positive ID, exact TMDB URL", filtersAndCounts: "known-for context; no candidate filter", resultOrder: "TMDB result order", paging: "TMDB pages", selection: "ordered uncapped multiple", summaryRemoval: "selected count, disclosure and removal", statePreservation: "query, page, ordered selection, scroll and focus on in-flow Back", duplicateFeedback: "after role/media configuration", outputIsolation: "person IDs in insertion order; discovery state excluded" }),
+	),
+	studio: selectionContexts(
+		entitySelection({ universe: "checked-in TMDB companies", locate: "browse, name/parent/country/location search, exact positive ID", filtersAndCounts: "Movie Count cards; All, Exclude 0, 10+, 50+, 100+, 500+", resultOrder: "browse Most movies; typed Best Match; explicit A–Z or Most movies", paging: "20 per page after filtering", selection: "single", summaryRemoval: "Configure identity", statePreservation: "query, filter, order, page, selection, scroll and focus on in-flow Back", duplicateFeedback: "Configure", outputIsolation: "Company ID/media only; discovery count/filter/order excluded" }),
+		entitySelection({ universe: "checked-in TMDB companies", locate: "browse, name/parent/country/location search, exact positive ID", filtersAndCounts: "Movie Count cards; All, Exclude 0, 10+, 50+, 100+, 500+", resultOrder: "browse Most movies; typed Best Match; explicit A–Z or Most movies", paging: "20 per page after filtering", selection: "ordered uncapped multiple", summaryRemoval: "selected count, disclosure and removal", statePreservation: "query, filter, order, page, ordered selection, scroll and focus on in-flow Back", duplicateFeedback: "hierarchy plan", outputIsolation: "Company IDs in insertion order; discovery count/filter/order excluded" }),
+	),
+	network: selectionContexts(
+		entitySelection({ universe: "checked-in TMDB TV networks", locate: "browse, name/country/location search, exact-ID-first positive numeric input", filtersAndCounts: "Series Count cards; All, Exclude 0, 10+, 50+, 100+, 500+", resultOrder: "browse Most series; typed Best Match; explicit A–Z or Most series", paging: "20 per page after filtering", selection: "single", summaryRemoval: "Configure identity", statePreservation: "query, filter, order, page, selection, scroll and focus on in-flow Back", duplicateFeedback: "Configure", outputIsolation: "Network ID/fixed Series only; discovery count/filter/order excluded" }),
+		entitySelection({ universe: "checked-in TMDB TV networks", locate: "browse, name/country/location search, exact-ID-first positive numeric input", filtersAndCounts: "Series Count cards; All, Exclude 0, 10+, 50+, 100+, 500+", resultOrder: "browse Most series; typed Best Match; explicit A–Z or Most series", paging: "20 per page after filtering", selection: "ordered uncapped multiple", summaryRemoval: "selected count, disclosure and removal", statePreservation: "query, filter, order, page, ordered selection, scroll and focus on in-flow Back", duplicateFeedback: "hierarchy plan", outputIsolation: "Network IDs in insertion order; discovery count/filter/order excluded" }),
+	),
+	streaming: selectionContexts(
+		entitySelection({ universe: "TMDB watch regions and providers", locate: "region search/Common/A–Z, provider name or exact ID", filtersAndCounts: "regions and media determine eligible providers; visible result counts", resultOrder: "Top providers or A–Z according to region scope", paging: "not applicable", selection: "ordered multiple regions and one provider", summaryRemoval: "region selections and Configure identity", statePreservation: "regions, provider query/order, media and selection on in-flow Back", duplicateFeedback: "review", outputIsolation: "provider/region/media candidates only; browse state excluded" }),
+		entitySelection({ universe: "TMDB watch regions and providers", locate: "region search/Common/A–Z, provider name or exact ID", filtersAndCounts: "regions and media determine eligible providers; visible result counts", resultOrder: "Top providers or A–Z according to region scope", paging: "not applicable", selection: "ordered multiple regions and ordered uncapped providers", summaryRemoval: "selected count, disclosure and removal", statePreservation: "regions, provider query/order, media and ordered selection on in-flow Back", duplicateFeedback: "hierarchy review", outputIsolation: "provider IDs in insertion order; browse state excluded" }),
+	),
+	genre: (() => {
+		const shared = entitySelection({ universe: "27 official local TMDB genre concepts", locate: "A–Z browse and name search", filtersAndCounts: "selected count; Select all and Clear all", resultOrder: "fixed A–Z catalogue; manual insertion order", paging: "not applicable", selection: "ordered uncapped multiple", summaryRemoval: "selected count plus context-appropriate removal", statePreservation: "query and ordered selection on in-flow Back", duplicateFeedback: "configure/review", outputIsolation: "genre IDs/media in insertion order; query excluded" });
+		return selectionContexts(shared, shared);
+	})(),
+	decade: selectionContexts(
+		entitySelection({ universe: "eight fixed decade presets", locate: "preset choice plus whole-decade or individual-year selection", filtersAndCounts: "optional eligible Genres; Select all and Clear", resultOrder: "fixed decade/year chronology", paging: "not applicable", selection: "single decade with ordered period/Genre candidates", summaryRemoval: "compact configured selection", statePreservation: "active source session", duplicateFeedback: "configure/review", outputIsolation: "period/Genre/media candidates only; presentation excluded" }),
+		entitySelection({ universe: "eight fixed decade presets", locate: "preset choice followed by overview, years or Genre breakdown", filtersAndCounts: "selected count; Select all and Clear all", resultOrder: "fixed decade/year chronology", paging: "not applicable", selection: "ordered multiple decades", summaryRemoval: "selected count and direct preset toggles", statePreservation: "ordered selection on in-flow Back", duplicateFeedback: "hierarchy review", outputIsolation: "decade candidates in selection order; presentation excluded" }),
+	),
+});
+
+test("all eight native families have a complete three-context entity-selection contract", () => {
+	assert.deepEqual(Object.keys(FAMILY_ENTITY_SELECTION_CAPABILITIES), ["franchise", "lists", "people", "studio", "network", "streaming", "genre", "decade"]);
+	for (const [family, definition] of Object.entries(FAMILY_ENTITY_SELECTION_CAPABILITIES)) {
+		assert.deepEqual(Object.keys(definition), ENTITY_SELECTION_CONTEXTS, `${family} entity-selection contexts`);
+		assert.strictEqual(definition.newCollection, definition.newFolder, `${family} guided scopes share discovery semantics`);
+		for (const contextId of ENTITY_SELECTION_CONTEXTS) {
+			const entry = definition[contextId];
+			assert.deepEqual(Object.keys(entry), ENTITY_SELECTION_AXES, `${family}.${contextId} entity-selection axes`);
+			for (const axis of ENTITY_SELECTION_AXES) assert.ok(typeof entry[axis] === "string" && entry[axis].length > 0, `${family}.${contextId}.${axis}`);
+		}
+	}
+});
+
+test("Studio and Network candidate controls have Add and guided parity with semantic wiring evidence", () => {
+	for (const family of ["studio", "network"]) {
+		const definition = FAMILY_ENTITY_SELECTION_CAPABILITIES[family];
+		for (const axis of ["universe", "locate", "filtersAndCounts", "resultOrder", "paging"]) {
+			assert.equal(definition.add[axis], definition.newCollection[axis], `${family}.${axis}`);
+		}
+	}
+	const evidence = [
+		["builder/src/ui/NetworkSourceFlow.jsx", "useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilters: true })", "network.add.filter-state"],
+		["builder/src/ui/NetworkSourceFlow.jsx", "seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters", "network.add.controls"],
+		["builder/src/ui/NetworkSourceFlow.jsx", 'aria-label="Network result order"', "network.shared.order"],
+		["builder/src/ui/NetworkHierarchyFlow.jsx", "seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters", "network.guided.controls"],
+		["builder/src/ui/NetworkHierarchyFlow.jsx", "onSortChange={search.toggleSearchSort}", "network.guided.order"],
+		["builder/src/ui/StudioSourceFlow.jsx", 'aria-label="Movie Count filter"', "studio.shared.filters"],
+		["builder/src/ui/StudioSourceFlow.jsx", 'aria-label="Studio result order"', "studio.shared.order"],
+		["builder/src/ui/StudioHierarchyFlow.jsx", "onMovieCountFilterChange={search.changeMovieCountFilter}", "studio.guided.controls"],
+	];
+	for (const [file, token, label] of evidence) {
+		assertSemanticEvidence(fs.readFileSync(path.join(rootDir, file), "utf8"), token, label);
+	}
+});
+
+test("the entity-selection evidence guard fails when confirmed parity wiring is omitted", () => {
+	const source = fs.readFileSync(path.join(rootDir, "builder/src/ui/NetworkSourceFlow.jsx"), "utf8");
+	const token = "seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters";
+	assert.throws(() => assertSemanticEvidence(source.replace(token, ""), token, "network.add.controls"), /lost UI evidence/);
+});
+
 test("all eight native source families have a complete cross-context capability contract backed by semantic UI evidence", () => {
 	assert.deepEqual(Object.keys(FAMILY_CAPABILITIES), ["franchise", "lists", "people", "studio", "network", "streaming", "genre", "decade"]);
 	const usedStatuses = new Set();

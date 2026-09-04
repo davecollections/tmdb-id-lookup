@@ -2191,7 +2191,7 @@ async function runStudioHierarchyScenario() {
 			previewAbsent: selectedCards.every((card) => !card.textContent.includes("Preview") && card.querySelector('button[aria-haspopup="dialog"]') === null),
 			movieCountFilter: buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "100+")?.getAttribute("aria-pressed") === "true",
 			hideZeroAbsent: buttonContaining(dialog, "Hide studios with no movies") === null,
-			mostMoviesAbsent: buttonContaining(dialog, "Most movies") === null,
+			mostMoviesPresent: dialog.querySelector('button[aria-label="Order Studios by most movies"]') !== null,
 			alphaOverridePresent: dialog.querySelector('button[aria-label="Order Studios A–Z"]') !== null,
 			requestsBeforeSelection: requests.length,
 		};
@@ -3991,13 +3991,20 @@ async function runNetworkHierarchyScenario() {
 		);
 		const filterGroup = required(dialog.querySelector('[role="group"][aria-label="Series Count filter"]'), "Series Count filters");
 		const filterButtons = [...filterGroup.querySelectorAll("button")];
+		const orderGroup = required(dialog.querySelector('[role="group"][aria-label="Network result order"]'), "result order controls");
+		const orderButtons = [...orderGroup.querySelectorAll("button")];
+		const alphabetical = required(buttonContaining(orderGroup, "A–Z"), "A–Z result order");
+		const mostSeries = required(buttonContaining(orderGroup, "Most series"), "Most series result order");
 		const allCounts = initialCards.map(seriesCount);
 		const search = {
 			focus: initialSearchFocus,
 			filterLabels: filterButtons.map((button) => button.textContent.trim()),
+			orderLabels: orderButtons.map((button) => button.textContent.trim()),
 			allDefault: filterButtons[0]?.getAttribute("aria-pressed") === "true",
+			mostSeriesDefault: mostSeries.getAttribute("aria-pressed") === "true" && alphabetical.getAttribute("aria-pressed") === "false",
 			pageSize: initialCards.length,
 			countsShown: allCounts.every((count) => Number.isSafeInteger(count) && count >= 0),
+			countsDescending: allCounts.every((count, index) => index === 0 || allCounts[index - 1] >= count),
 			knownZeroShownByAll: allCounts.includes(0),
 			previewAbsent: dialog.querySelector('[data-network-preview-backdrop="true"]') === null,
 			previewCalls,
@@ -4008,6 +4015,13 @@ async function runNetworkHierarchyScenario() {
 			() => dialog.querySelector("#network-results-title")?.parentElement?.parentElement?.textContent.includes("Page 2 of"),
 			{ label: "Network browse page 2" },
 		);
+		await clickAndSettle(alphabetical);
+		await waitForMountedCondition(
+			() => alphabetical.getAttribute("aria-pressed") === "true"
+				&& dialog.querySelector("#network-results-title")?.parentElement?.parentElement?.textContent.includes("Page 1 of"),
+			{ label: "A–Z Network order and page reset" },
+		);
+		search.knownZeroShownByAll = [...dialog.querySelectorAll("[data-tmdb-network-result]")].map(seriesCount).includes(0);
 		const fiveHundred = required(buttonContaining(filterGroup, "500+"), "500+ Series Count filter");
 		await clickAndSettle(fiveHundred);
 		const thresholdCards = await waitForMountedCondition(
@@ -4049,6 +4063,24 @@ async function runNetworkHierarchyScenario() {
 			() => dialog.querySelectorAll(".network-selected-disclosure li").length === 2,
 			{ label: "second native Network selection" },
 		);
+		await act(async () => {
+			setInputValue(query, "");
+			await afterCommittedEffects();
+		});
+		await waitForMountedCondition(
+			() => dialog.querySelectorAll("[data-tmdb-network-result]").length === 20
+				&& alphabetical.getAttribute("aria-pressed") === "true"
+				&& excludeZero.getAttribute("aria-pressed") === "true",
+			{ label: "restored A–Z filtered Network browse" },
+		);
+		await clickAndSettle(required(buttonContaining(dialog.querySelector('[aria-label="Network search result pages"]'), "Next page"), "restoration Next page action"));
+		await waitForMountedCondition(
+			() => dialog.querySelector("#network-results-title")?.parentElement?.parentElement?.textContent.includes("Page 2 of"),
+			{ label: "Network restoration page 2" },
+		);
+		const selectScroll = required(dialog.querySelector(".add-source-scroll"), "Select scroll owner");
+		selectScroll.scrollTop = Math.min(180, selectScroll.scrollHeight - selectScroll.clientHeight);
+		const expectedSearchScrollTop = selectScroll.scrollTop;
 		const selectLayout = stageLayout(dialog);
 		const selection = {
 			selectedCount: dialog.querySelectorAll(".network-selected-disclosure li").length,
@@ -4060,7 +4092,32 @@ async function runNetworkHierarchyScenario() {
 		};
 
 		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Networks"), "Configure action"));
-		const configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
+		let configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
+		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-network-selection"]'), "Back to Network selection"));
+		const restoration = await waitForMountedCondition(() => {
+			const restoredQuery = dialog.querySelector("#network-source-query");
+			const restoredFilterGroup = dialog.querySelector('[role="group"][aria-label="Series Count filter"]');
+			const restoredOrderGroup = dialog.querySelector('[role="group"][aria-label="Network result order"]');
+			const restoredScroll = dialog.querySelector(".add-source-scroll");
+			const state = {
+				query: restoredQuery?.value,
+				pageTwo: dialog.querySelector("#network-results-title")?.parentElement?.parentElement?.textContent.includes("Page 2 of") === true,
+				filter: buttonContaining(restoredFilterGroup, "Exclude 0")?.getAttribute("aria-pressed") === "true",
+				order: buttonContaining(restoredOrderGroup, "A–Z")?.getAttribute("aria-pressed") === "true",
+				selectedCount: dialog.querySelectorAll(".network-selected-disclosure li").length,
+				scroll: restoredScroll !== null && Math.abs(restoredScroll.scrollTop - expectedSearchScrollTop) <= 1,
+			};
+			return state.query === ""
+				&& state.pageTwo
+				&& state.filter
+				&& state.order
+				&& state.selectedCount === 2
+				&& state.scroll
+				? state
+				: null;
+		}, { label: "restored Network Search state" });
+		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Networks"), "restored Configure action"));
+		configure = required(dialog.querySelector(".network-hierarchy-configure"), "restored Configure stage");
 		const configureRows = [...configure.querySelectorAll(".network-configure-row")];
 		const configureLayout = stageLayout(dialog);
 		const configureState = {
@@ -4116,10 +4173,12 @@ async function runNetworkHierarchyScenario() {
 			search,
 			filters: {
 				pageReset: true,
+				orderPageReset: true,
 				fiveHundredCounts: thresholdCards.map(seriesCount),
 				excludeZeroActive: selection.filterPreserved,
 			},
 			selection,
+			restoration,
 			configure: configureState,
 			appearance: appearanceState,
 			artwork: {
