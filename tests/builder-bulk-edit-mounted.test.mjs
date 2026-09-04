@@ -216,8 +216,18 @@ async function runMountedPage() {
 			await new Promise((resolve) => setTimeout(resolve, 50));
 			brandingLayouts.push(await evaluate(resources.pageConnection, "window.__measureBuilderBrandingLayout()"));
 		}
+		const workspaceHeaderLayouts = [];
+		for (const width of [393, 900, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
+				width,
+				height: width === 393 ? 852 : 900,
+				deviceScaleFactor: 1,
+				mobile: width === 393,
+			});
+			workspaceHeaderLayouts.push(await evaluate(resources.pageConnection, "window.__runWorkspaceHeaderGeometryScenario()"));
+		}
 
-		return { results: mounted.results, keyboard, layouts, brandingLayouts };
+		return { results: mounted.results, keyboard, layouts, brandingLayouts, workspaceHeaderLayouts };
 	}, () => cleanupMountedBrowser({
 		browserExecutable: resources.browserExecutable,
 		browserProcess: resources.browserProcess,
@@ -327,7 +337,7 @@ test("mounted pill radios support keyboard navigation with an explicit non-color
 	});
 });
 
-test("mounted Global display settings stays labelled, single-scroll, wrapped, reachable, and overflow-free at every required width", () => {
+test("mounted Bulk display settings stays labelled, single-scroll, wrapped, reachable, and overflow-free at every required width", () => {
 	assert.deepEqual(mounted.layouts.map(({ width }) => width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const layout of mounted.layouts) {
 		assert.equal(layout.documentOverflow, false, `document overflow at ${layout.width}px`);
@@ -344,8 +354,8 @@ test("mounted Global display settings stays labelled, single-scroll, wrapped, re
 		assert.equal(layout.triggerSurfaceWidth, 34);
 		assert.equal(layout.triggerSurfaceHeight, 34);
 		assert.equal(layout.triggerHasPopup, "dialog");
-		assert.equal(layout.triggerLabel, "Global display settings");
-		assert.equal(layout.triggerTitle, "Global display settings");
+		assert.equal(layout.triggerLabel, "Bulk display settings");
+		assert.equal(layout.triggerTitle, "Bulk display settings");
 		assert.equal(layout.triggerInCollectionsHeader, true);
 		assert.equal(layout.triggerInFoldersHeader, false);
 		assert.equal(layout.triggerInMasthead, false);
@@ -387,4 +397,35 @@ test("mounted product heading stays exact, stacked, contained, and navigation-sa
 		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits"], `header actions at ${label}`);
 		assert.equal(layout.headerActionsContained, true, `header action containment at ${label}`);
 	}
+});
+
+test("mounted Workspace header dividers stay aligned independently of conditional Add actions", () => {
+	assert.deepEqual(mounted.workspaceHeaderLayouts.map(({ width }) => width), [393, 900, 1280]);
+	for (const layout of mounted.workspaceHeaderLayouts) {
+		assert.deepEqual(layout.states.map(({ name }) => name), ["empty", "collection-selected", "folder-selected"]);
+		for (const state of layout.states) {
+			assert.equal(state.noClipping, true, `${layout.width}px ${state.name} header clipping`);
+			assert.equal(state.noHorizontalOverflow, true, `${layout.width}px ${state.name} horizontal overflow`);
+			assert.equal(state.focusableHeaderButtonsWork, true, `${layout.width}px ${state.name} header focus`);
+		}
+		assert.deepEqual(layout.states.map(({ rows }) => rows.map(({ actions }) => actions)), [
+			[["New collection"], [], []],
+			[["New collection"], ["New folder"], []],
+			[["New collection"], ["New folder"], ["Add source"]],
+		], `${layout.width}px conditional Add actions`);
+		if (layout.width >= 900) {
+			for (const state of layout.states) {
+				assert.deepEqual(state.visiblePanels, ["collections", "folders", "sources"], `${layout.width}px ${state.name} desktop columns`);
+			}
+		} else {
+			assert.deepEqual(layout.states.map(({ visiblePanels }) => visiblePanels), [["collections"], ["folders"], ["sources"]], "393px stacked progression");
+		}
+	}
+	assert.deepEqual(mounted.workspaceHeaderLayouts.filter(({ width }) => width >= 900).map((layout) => ({
+		width: layout.width,
+		spreads: layout.states.map(({ bottomSpread }) => bottomSpread),
+	})), [
+		{ width: 900, spreads: [0, 0, 0] },
+		{ width: 1280, spreads: [0, 0, 0] },
+	], "desktop divider alignment for empty, collection-selected, and folder-selected states");
 });

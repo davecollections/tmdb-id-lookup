@@ -2434,8 +2434,8 @@ export function BuilderWorkspace({
 									className="presentation-settings-trigger"
 									type="button"
 									data-action="open-bulk-edit"
-									aria-label="Global display settings"
-									title="Global display settings"
+									aria-label="Bulk display settings"
+									title="Bulk display settings"
 									aria-haspopup="dialog"
 									disabled={hierarchyInteractionLocked || !currentBulkEditAvailability.hasCollections}
 									onClick={openBulkEdit}
@@ -2652,7 +2652,7 @@ export function BuilderWorkspace({
 										</button>
 									)}
 								>
-									Add a supported TMDB source to begin.
+									Add a source to begin.
 								</EmptyState>
 							)}
 						</div>

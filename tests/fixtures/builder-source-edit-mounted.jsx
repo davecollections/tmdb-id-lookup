@@ -4,6 +4,7 @@ import { createBuilderController } from "../../builder/src/application/index.js"
 import {
 	applyGenreHierarchyPlan,
 	applyStreamingHierarchyPlan,
+	buildDecadeSourceBundleDrafts,
 	buildTmdbPosterUrl,
 	createPeopleManifestClient,
 	createNetworkCatalogueProvider,
@@ -3269,6 +3270,9 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		const initialDestinationRadios = [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')];
 		const initialNewDestination = required(review.querySelector("[data-streaming-destination-new]"), "New Collection destination card");
 		const initialDestination = {
+			stageKicker: review.querySelector(".add-source-section-heading .panel-kicker")?.textContent.trim() ?? null,
+			heading: review.querySelector("#streaming-hierarchy-review-title")?.textContent.trim() ?? null,
+			headerDescription: dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 			candidateCards: [...review.querySelectorAll("[data-streaming-destination-candidate]")].map((label) => ({
 				label: label.querySelector("strong")?.textContent.trim() ?? null,
 				delta: label.querySelector("small")?.textContent.trim() ?? null,
@@ -3331,6 +3335,9 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		const folderHiddenHelpRemovedOnHomeOnly = review.querySelector("#streaming-folder-titles-hidden-help") === null;
 		const titleVisibility = { collectionHidden, collectionHiddenHelp, collectionRestored, collectionHiddenHelpRemoved, latestCollectionRestored, folderHidden, folderHiddenHelp, folderHomeOnlyRestored, folderHiddenHelpRemovedOnHomeOnly, planningLabelsRetained };
 		const newCollectionDraftState = {
+			stageKicker: review.querySelector(".add-source-section-heading .panel-kicker")?.textContent.trim() ?? null,
+			heading: review.querySelector("#streaming-hierarchy-review-title")?.textContent.trim() ?? null,
+			headerDescription: dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 			collectionNameVisible: review.querySelector("#streaming-collection-name") !== null,
 			folderNameCount: Number(review.querySelector(".streaming-folder-names")?.dataset.streamingFolderNameCount),
 			apple: newAppleName.value,
@@ -5003,6 +5010,21 @@ async function runDecadesActionLayoutScenario() {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
 	}
+	function footerLayout(dialog) {
+		const footer = required(dialog.querySelector(".decades-creation-actions"), "Decades action footer");
+		const primary = required(footer.querySelector(".editor-apply"), "Decades primary action");
+		const footerRect = footer.getBoundingClientRect();
+		const primaryRect = primary.getBoundingClientRect();
+		const footerStyle = getComputedStyle(footer);
+		const contentLeft = footerRect.left + Number.parseFloat(footerStyle.paddingLeft);
+		const contentRight = footerRect.right - Number.parseFloat(footerStyle.paddingRight);
+		return {
+			leftAligned: Math.abs(primaryRect.left - contentLeft) <= 1,
+			widthPreserved: window.innerWidth <= 620
+				? Math.abs(primaryRect.right - contentRight) <= 1
+				: primaryRect.width >= 180 && primaryRect.width <= 321,
+		};
+	}
 	const controller = createController();
 	const host = document.createElement("div");
 	document.body.append(host);
@@ -5022,9 +5044,14 @@ async function runDecadesActionLayoutScenario() {
 	});
 	try {
 		const dialog = document.querySelector('[data-creation-dialog="true"]');
+		const selectFooter = footerLayout(dialog);
 		await clickAndSettle(dialog.querySelector('[data-decade-preset="1980s"]'));
 		await clickAndSettle(dialog.querySelector('[data-decade-preset="2000s"]'));
 		await clickAndSettle(dialog.querySelector(".decades-creation-actions .editor-apply"));
+		const configureFooter = footerLayout(dialog);
+		await clickAndSettle(dialog.querySelector(".decades-creation-actions .editor-apply"));
+		const reviewFooter = footerLayout(dialog);
+		await clickAndSettle(required(dialog.querySelector('header [data-action="back-to-decades-options"]'), "Back to Configure Decades"));
 		const back = dialog.querySelector('header [data-action="back-to-decades-presets"]');
 		const footer = dialog.querySelector(".decades-creation-actions");
 		const primary = footer.querySelector(".editor-apply");
@@ -5083,6 +5110,7 @@ async function runDecadesActionLayoutScenario() {
 		}).length;
 		return {
 			width: window.innerWidth,
+			stageFooterLayout: { select: selectFooter, configure: configureFooter, review: reviewFooter },
 			topBackVisible: backRect.width > 0 && backRect.height >= 44,
 			footerOnlyPrimary: footer.querySelectorAll("button").length === 1 && !footer.textContent.includes("Back"),
 			primaryReachable: primaryRect.width > 0 && primaryRect.height >= 44 && primaryRect.left >= 0 && primaryRect.right <= window.innerWidth,
@@ -6086,8 +6114,8 @@ async function runDecadeSourceLayoutScenario() {
 		const selectAllDisabled = buttonContaining(genreFieldset, "Select all")?.disabled === true;
 		const clearEnabled = buttonContaining(genreFieldset, "Clear")?.disabled === false;
 		const footer = required(dialog.querySelector(".decade-source-actions"), "Decade Add Source footer");
-		const cancel = required(buttonContaining(footer, "Cancel"), "Cancel action");
 		const save = required(buttonContaining(footer, "Add 54 sources"), "Add action");
+		const footerLabels = [...footer.querySelectorAll("button")].map((button) => button.textContent.trim());
 		const preview = required(buttonContaining(dialog, "Preview titles"), "Preview titles action");
 		const viewport = window.visualViewport;
 		const viewportBounds = {
@@ -6132,7 +6160,9 @@ async function runDecadeSourceLayoutScenario() {
 		await clickAndSettle(required(buttonContaining(genreFieldset, "Clear"), "Clear Genre sources"));
 		const clearedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
 		const clearedReviewSourceCount = dialog.querySelectorAll(".decade-source-review-list li").length;
-		await clickAndSettle(required(buttonContaining(restoredFooter, "Cancel"), "restored Cancel action"));
+		const restoredFooterLabels = [...restoredFooter.querySelectorAll("button")].map((button) => button.textContent.trim());
+		const footerCancelAbsent = buttonContaining(restoredFooter, "Cancel") === null;
+		await clickAndSettle(required(dialog.querySelector(".add-source-close-action"), "Close Add Decade source"));
 		return {
 			width: window.innerWidth,
 			modeId: dialog.dataset.sourceMode,
@@ -6163,6 +6193,9 @@ async function runDecadeSourceLayoutScenario() {
 			selectedGenreCount,
 			selectAllDisabled,
 			clearEnabled,
+			footerLabels,
+			restoredFooterLabels,
+			footerCancelAbsent,
 			clearedGenreCount,
 			clearedReviewSourceCount,
 			initialReviewSourceCount,
@@ -6179,6 +6212,66 @@ async function runDecadeSourceLayoutScenario() {
 			secondaryFocusRestored,
 			cancelCalls,
 			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
+		};
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+	}
+}
+
+async function runDecadeSourceOverlapFooterScenario(existingDraftCount) {
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const controller = createController();
+	const collection = controller.createCollection({ editable: { title: "Collection" } });
+	const folderResult = controller.createFolder(collection.createdInternalId, { editable: { title: "Decade picks" } });
+	const built = buildDecadeSourceBundleDrafts();
+	if (!built.ok) throw new Error("Default Decade Add Source drafts did not build.");
+	for (const draft of built.drafts.slice(0, existingDraftCount)) controller.createSource(folderResult.createdInternalId, draft);
+	const project = controller.getState().project;
+	const folder = project.collections[0].folders[0];
+	await act(async () => {
+		root.render(createElement(DecadeSourceFlow, {
+			project,
+			folder,
+			previewProvider: null,
+			onBack() {},
+			onCancel() {},
+			onApply() { throw new Error("Overlap footer verification must not save."); },
+		}));
+		await afterCommittedEffects();
+	});
+	try {
+		const dialog = document.querySelector('.decade-source-dialog[data-source-mode="tmdb-decade"]');
+		const footer = dialog?.querySelector(".decade-source-actions");
+		if (!dialog || !footer) throw new Error("Decade overlap footer was not rendered.");
+		const buttons = [...footer.querySelectorAll("button")];
+		const rects = buttons.map((button) => {
+			const rect = button.getBoundingClientRect();
+			return {
+				label: button.textContent.trim(),
+				disabled: button.disabled,
+				left: rect.left,
+				right: rect.right,
+				top: rect.top,
+				width: rect.width,
+			};
+		});
+		const dialogRect = dialog.getBoundingClientRect();
+		const footerRect = footer.getBoundingClientRect();
+		return {
+			width: window.innerWidth,
+			existingDraftCount,
+			labels: rects.map((entry) => entry.label),
+			disabled: rects.map((entry) => entry.disabled),
+			beside: rects.length < 2 || Math.abs(rects[0].top - rects[1].top) < 1,
+			buttonWidths: rects.map((entry) => entry.width),
+			ordered: rects.every((entry, index) => index === 0 || entry.top > rects[index - 1].top || entry.left >= rects[index - 1].right - 1),
+			overrideLayout: footer.classList.contains("add-source-override-actions"),
+			headerBeforeFooter: [...dialog.querySelectorAll("button")].indexOf(dialog.querySelector('[data-action="back-to-source-types"]')) < [...dialog.querySelectorAll("button")].indexOf(buttons[0]) && [...dialog.querySelectorAll("button")].indexOf(dialog.querySelector(".add-source-close-action")) < [...dialog.querySelectorAll("button")].indexOf(buttons[0]),
+			sticky: Math.abs(dialogRect.bottom - footerRect.bottom) < 2,
+			noHorizontalOverflow: dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth,
 		};
 	} finally {
 		await act(async () => root.unmount());
@@ -7254,6 +7347,8 @@ async function runTmdbListLayoutScenario() {
 		const reviewScroll = requiredElement(dialog.querySelector(".add-source-scroll"), "TMDB List review scroll owner");
 		const reviewRows = [...dialog.querySelectorAll(".tmdb-list-review-item")];
 		const reviewCountLabel = dialog.querySelector("#tmdb-list-review-title")?.textContent.trim() ?? null;
+		const reviewStageKicker = dialog.querySelector(".tmdb-list-review .panel-kicker")?.textContent.trim() ?? null;
+		const reviewHeaderDescription = dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null;
 		reviewScroll.scrollTop = reviewScroll.scrollHeight;
 		await act(async () => afterCommittedEffects());
 		const reviewOwners = [dialog, ...dialog.querySelectorAll("*")].filter((element) => {
@@ -7273,6 +7368,8 @@ async function runTmdbListLayoutScenario() {
 		const backPreservedSelection = dialog.querySelectorAll(".tmdb-list-selected-items li").length === 20;
 		const backPreviewAvailable = Boolean(dialog.querySelector(".tmdb-list-selected-items button"));
 		const review = {
+			stageKicker: reviewStageKicker,
+			headerDescription: reviewHeaderDescription,
 			count: reviewRows.length,
 			countLabel: reviewCountLabel,
 			actionCopy: reviewActionCopy,
@@ -7368,6 +7465,8 @@ async function runTmdbListLayoutScenario() {
 			const actionContentHeight = action.getBoundingClientRect().height - Number.parseFloat(actionStyle.paddingTop) - Number.parseFloat(actionStyle.paddingBottom);
 			const result = {
 				scope,
+				stageKicker: surface.querySelector(".tmdb-list-review .panel-kicker")?.textContent.trim() ?? null,
+				headerDescription: surface.closest(".creation-dialog")?.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 				selectedCount: ids.length,
 				namesInitiallyEmpty,
 				collectionNamePresent: Boolean(collectionInput),
@@ -7724,6 +7823,7 @@ window.__runSourceEditLivePreviewScenario = runSourceEditLivePreviewScenario;
 window.__runAddSourceLivePreviewParityScenario = runAddSourceLivePreviewParityScenario;
 window.__runDecadesLivePreviewScenario = runDecadesLivePreviewScenario;
 window.__runDecadeSourceLayoutScenario = runDecadeSourceLayoutScenario;
+window.__runDecadeSourceOverlapFooterScenario = runDecadeSourceOverlapFooterScenario;
 window.__prepareDecadeSourceGenreKeyboardScenario = prepareDecadeSourceGenreKeyboardScenario;
 window.__finishDecadeSourceGenreKeyboardScenario = finishDecadeSourceGenreKeyboardScenario;
 window.__runDecadeSourceLivePreviewScenario = runDecadeSourceLivePreviewScenario;

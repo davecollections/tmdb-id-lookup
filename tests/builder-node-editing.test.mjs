@@ -1966,6 +1966,7 @@ test("quick rename renders only title, invisibility, diagnostics, and actions", 
 	});
 	assert.ok(markup.includes('data-editor-mode="rename"'));
 	assert.ok(markup.includes(">Rename collection</h2>"));
+	assert.ok(markup.includes("Update the title and its visibility for this collection."));
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.equal(markup.includes("How sources appear in this collection"), false);
 	assert.equal(markup.includes("Include an All tab"), false);
@@ -1979,6 +1980,7 @@ test("quick rename renders only title, invisibility, diagnostics, and actions", 
 		mode: "rename",
 	});
 	assert.ok(markup.includes(">Rename folder</h2>"));
+	assert.ok(markup.includes("Update the title and its visibility for this folder."));
 	assert.ok(markup.includes("Hide folder title everywhere in Nuvio"));
 	assert.equal(markup.includes("Folder title visibility"), false);
 	assert.equal(markup.includes("Tile shape"), false);

@@ -64,12 +64,17 @@ test("review exposes shared title and layout controls with fixed Poster artwork 
 	assert.match(flow, /<HierarchyCollectionPresentationControls/);
 	assert.doesNotMatch(flow, /<FolderShapeChoices|Folder artwork shape|franchise-folder-shape/);
 	assert.match(flow, /<PresentationSwitch/);
-	assert.match(flow, /Parent presentation is inherited/);
+	assert.match(flow, /Collection settings stay unchanged\./);
 	assert.match(flow, /data-franchise-artwork-rule="poster-only"/);
 	assert.equal(artworkGuidance, "Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.");
 	assert.doesNotMatch(artworkGuidance, /\bPOSTER\b/);
 	assert.doesNotMatch(artworkGuidance, /tileShape|coverImageUrl|emoji|w\d+|fallback|mechanic/i);
 	assert.doesNotMatch(flow, /other orientation|landscape\/backdrop|backdrop.*alternate/i);
+});
+
+test("content Preview uses the shared Title preview kicker", () => {
+	assert.match(flow, /<p className="panel-kicker">Title preview<\/p>/);
+	assert.doesNotMatch(flow, /Poster preview/);
 });
 
 test("shared hierarchy Layout keeps Show All separate with deliberate spacing", () => {

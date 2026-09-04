@@ -60,6 +60,10 @@ test("Select keeps its disclosure while Configure owns direct selected Studio ro
 	assert.match(flow, /className="studio-configure-remove"/);
 	assert.match(flow, /No Studios selected\. Go Back to Select/);
 	assert.match(flow, /there is no selection cap/);
+	assert.match(flow, /stageKicker="Step 1 · Select"/);
+	assert.match(flow, /<p className="panel-kicker">Step 2<\/p>[\s\S]*>Configure Studios</);
+	assert.match(flow, /<p className="panel-kicker">Step 3<\/p>[\s\S]*>Appearance</);
+	assert.match(studioFlow, /stageKicker = null/);
 	assert.doesNotMatch(flow.slice(flow.indexOf("function ConfigureStep"), flow.indexOf("function AppearanceStep")), /View selected Studios/);
 });
 
@@ -128,6 +132,7 @@ test("Appearance exposes presentation decisions without artwork controls or Stud
 	assert.match(appearance, /Collection name/);
 	assert.match(appearance, /Collection layout/);
 	assert.match(appearance, /Pin collection to top/);
+	assert.match(appearance, /Collection settings stay unchanged\./);
 	assert.doesNotMatch(appearance, /Artwork|Landscape|representativeArtwork|studio-appearance-artwork|FolderShapeChoices|studio-folder-shape/);
 	assert.doesNotMatch(appearance, /Preview titles|onPreview|onRemove|studio-review-list|StudioLogo|movieCount|knownSeriesCounts/);
 	assert.match(flow, /: "Choose presentation settings\."/);

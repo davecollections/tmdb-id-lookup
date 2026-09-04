@@ -369,6 +369,8 @@ test("source empty state exposes the approved selected-folder Add Source actions
 	controller.selectNode(folder.createdInternalId);
 	const markup = renderWorkspace(controller);
 	assert.ok(markup.includes("No sources in this folder yet"));
+	assert.ok(markup.includes("Add a source to begin."));
+	assert.equal(markup.includes("Add a supported TMDB source to begin."), false);
 	assert.ok(markup.includes('data-action="add-source"'));
 	assert.ok(markup.includes('data-action="add-source-empty"'));
 	assert.ok(markup.includes("Add source"));

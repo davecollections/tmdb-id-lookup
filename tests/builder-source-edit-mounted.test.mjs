@@ -205,6 +205,7 @@ async function runMountedPage() {
 				const addSourceLivePreviewParityWidths = [];
 				const decadesLivePreviewWidths = [];
 				const decadeSourceLayoutWidths = [];
+				const decadeSourceOverlapFooterWidths = [];
 				const decadeSourceLivePreviewWidths = [];
 				let decadeSourceGenreKeyboard = null;
 				let sourceChooserKeyboard = null;
@@ -248,6 +249,15 @@ async function runMountedPage() {
 					});
 					if (decadeSourceLayoutEvaluation.exceptionDetails) throw new Error(decadeSourceLayoutEvaluation.exceptionDetails.exception?.description ?? decadeSourceLayoutEvaluation.exceptionDetails.text);
 					decadeSourceLayoutWidths.push(decadeSourceLayoutEvaluation.result?.value);
+					if ([393, 900, 1280].includes(width)) {
+						const decadeSourceOverlapFooterEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
+							expression: "(async () => ({ partial: await window.__runDecadeSourceOverlapFooterScenario(1), complete: await window.__runDecadeSourceOverlapFooterScenario(2) }))()",
+							awaitPromise: true,
+							returnByValue: true,
+						});
+						if (decadeSourceOverlapFooterEvaluation.exceptionDetails) throw new Error(decadeSourceOverlapFooterEvaluation.exceptionDetails.exception?.description ?? decadeSourceOverlapFooterEvaluation.exceptionDetails.text);
+						decadeSourceOverlapFooterWidths.push(decadeSourceOverlapFooterEvaluation.result?.value);
+					}
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleConfigureLayoutScenario()",
 						awaitPromise: true,
@@ -568,7 +578,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1329,6 +1339,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			caretVisible: true,
 		}, `${label} selection`);
 		assert.deepEqual(result.review, {
+			stageKicker: "Review",
+			headerDescription: "Review exact List-ID placement before applying everything atomically.",
 			count: 20,
 			countLabel: "20 sources will be added",
 			actionCopy: "Add 20 sources",
@@ -1350,6 +1362,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.equal(result.backPreviewAvailable, true, `${label} Back restores Choose Preview`);
 		assert.deepEqual(result.guidedNewCollection, {
 			scope: "new-collection",
+			stageKicker: "Review & Appearance",
+			headerDescription: "Review names, appearance and exact List-ID placement before creating everything atomically.",
 			selectedCount: 4,
 			namesInitiallyEmpty: true,
 			collectionNamePresent: true,
@@ -1392,6 +1406,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.ok(result.guidedNewCollection.actionLineCount <= 2, `${label} New Collection action wrapping`);
 		assert.deepEqual(result.guidedNewFolder, {
 			scope: "new-folder",
+			stageKicker: "Review & Appearance",
+			headerDescription: "Review names, appearance and exact List-ID placement before creating everything atomically.",
 			selectedCount: 1,
 			namesInitiallyEmpty: true,
 			collectionNamePresent: false,
@@ -2233,6 +2249,15 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 			{ label: "Streaming Services · Collection 2", delta: "1 of 8 sources already here · 7 will be added", contents: "Currently: 1 folder · 1 source" },
 			{ label: "Streaming Services · Collection 3", delta: "1 of 8 sources already here · 7 will be added", contents: "Currently: 1 folder · 1 source" },
 		], `${result.width}px candidates ranked by overlap`);
+		assert.deepEqual({
+			stageKicker: result.review.initialDestination.stageKicker,
+			heading: result.review.initialDestination.heading,
+			headerDescription: result.review.initialDestination.headerDescription,
+		}, {
+			stageKicker: "Step 3",
+			heading: "Choose destination",
+			headerDescription: "Choose where these Streaming sources should go.",
+		}, `${result.width}px unresolved destination stage language`);
 		assert.equal(result.review.initialDestination.helper, "Choose an existing collection to add only what is missing, or create a new collection instead.", `${result.width}px plain destination helper`);
 		assert.deepEqual(result.review.initialDestination.newOption, {
 			label: "Create new collection instead",
@@ -2246,6 +2271,9 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 		assert.match(result.review.initialDestination.overlapText, /Apple movies · in Streaming Services · Collection 2/);
 		assert.match(result.review.initialDestination.overlapText, /Dekkoo movies · in Streaming Services · Collection 3/);
 		assert.deepEqual(result.review.newCollectionDraftState, {
+			stageKicker: "Step 3",
+			heading: "Review & Appearance",
+			headerDescription: "Review the exact creation or change summary before one atomic Apply.",
 			collectionNameVisible: true,
 			folderNameCount: 2,
 			apple: "Curated Apple New",
@@ -2325,7 +2353,7 @@ test("mounted Streaming New Collection offers a zero-overlap imported collection
 		assert.deepEqual(result.review.planTotals, [0, 1, 2], `${result.width}px new sibling-only delta`);
 		assert.equal(result.review.heading, "What will change", `${result.width}px change heading`);
 		assert.deepEqual(result.review.outcomes, [{ status: "new-folder", text: "CrunchyrollNew folder2 sources will be created" }], `${result.width}px strict folder trust keeps the provider in a new sibling`);
-		assert.equal(result.review.collectionSettings, "Collection settings stay unchangedStreaming Services · Tabs. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.", `${result.width}px existing collection settings boundary`);
+		assert.equal(result.review.collectionSettings, "Collection settings stay unchanged.Streaming Services · Tabs. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.", `${result.width}px existing collection settings boundary`);
 		assert.equal(result.review.applyLabel, "Create folder", `${result.width}px honest Create action`);
 		assert.deepEqual(result.layout, {
 			singleInnerScroll: true,
@@ -2654,14 +2682,17 @@ test("mounted Decade Add Source stays compact, accessible, and contained at ever
 		assert.equal(result.intendedScrollOwnerCount, 1, `${result.width}px one intended vertical scroll owner`);
 		assert.equal(result.intendedScrollOwnerIsInner, true, `${result.width}px inner form owns scrolling`);
 		assert.equal(result.dialogWithinViewport, true, `${result.width}px editor viewport containment`);
-		assert.equal(result.footerReachable, true, `${result.width}px Save/Cancel footer reachable`);
+		assert.equal(result.footerReachable, true, `${result.width}px Add footer reachable`);
 		assert.equal(result.previewSecondary, true, `${result.width}px Preview remains secondary to Save`);
 		assert.equal(result.bodyLocked, true, `${result.width}px underlying document locked`);
 		assert.equal(result.pageNoHorizontalOverflow, true, `${result.width}px no page horizontal overflow`);
 		assert.deepEqual(result.secondary, { contained: true, headingFocused: true, outerInert: true, noHorizontalOverflow: true }, `${result.width}px Advanced exclusions surface`);
 		assert.equal(result.secondaryFocusRestored, true, `${result.width}px Advanced trigger focus restoration`);
-		assert.equal(result.cancelCalls, 1, `${result.width}px ordinary Cancel action`);
-		assert.equal(result.noMutation, true, `${result.width}px detached editor and Cancel`);
+		assert.deepEqual(result.footerLabels, ["Add 54 sources"], `${result.width}px normal footer has only its primary Add action`);
+		assert.deepEqual(result.restoredFooterLabels, ["Add 6 sources"], `${result.width}px restored normal footer has only its primary Add action`);
+		assert.equal(result.footerCancelAbsent, true, `${result.width}px redundant footer Cancel absent`);
+		assert.equal(result.cancelCalls, 1, `${result.width}px header Close retains safe dismissal`);
+		assert.equal(result.noMutation, true, `${result.width}px detached editor and Close`);
 	}
 	assert.deepEqual(mountedResults.decadeSourceGenreKeyboard, {
 		checkedBefore: false,
@@ -2674,6 +2705,22 @@ test("mounted Decade Add Source stays compact, accessible, and contained at ever
 		selectedVisualChanged: true,
 		noMutation: true,
 	}, "393px trusted keyboard Space toggles the real hidden Genre checkbox and visible pill state");
+	assert.deepEqual(mountedResults.decadeSourceOverlapFooterWidths.map((entry) => entry.partial.width), [393, 900, 1280]);
+	for (const { partial, complete } of mountedResults.decadeSourceOverlapFooterWidths) {
+		assert.deepEqual(partial.labels, ["Add 1 source", "Add all anyway"], `${partial.width}px partial-overlap actions`);
+		assert.deepEqual(partial.disabled, [false, false], `${partial.width}px partial-overlap enablement`);
+		assert.deepEqual(complete.labels, ["Add 0 sources", "Add all anyway"], `${complete.width}px complete-overlap actions`);
+		assert.deepEqual(complete.disabled, [true, false], `${complete.width}px complete-overlap enablement`);
+		for (const evidence of [partial, complete]) {
+			assert.equal(evidence.overrideLayout, true, `${evidence.width}px duplicate override layout`);
+			assert.equal(evidence.headerBeforeFooter, true, `${evidence.width}px Back and Close precede footer actions`);
+			assert.equal(evidence.ordered, true, `${evidence.width}px primary remains before override`);
+			assert.equal(evidence.sticky, true, `${evidence.width}px footer remains sticky`);
+			assert.equal(evidence.noHorizontalOverflow, true, `${evidence.width}px overlap footer has no horizontal overflow`);
+			assert.equal(evidence.beside, evidence.width >= 900, `${evidence.width}px actions stack only at narrow mobile`);
+			assert.equal(evidence.buttonWidths.every((buttonWidth) => evidence.width >= 900 ? buttonWidth >= 180 && buttonWidth < 320 : buttonWidth > 300), true, `${evidence.width}px button widths remain usable`);
+		}
+	}
 });
 
 test("mounted Decade Add Source Preview exposes a recoverable error and Retry without mutation", () => {
@@ -3020,6 +3067,11 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 test("mounted Decades options and compact Preview actions remain stable at every required width", () => {
 	assert.deepEqual(mountedResults.decadesActionWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.decadesActionWidths) {
+		assert.deepEqual(result.stageFooterLayout, {
+			select: { leftAligned: true, widthPreserved: true },
+			configure: { leftAligned: true, widthPreserved: true },
+			review: { leftAligned: true, widthPreserved: true },
+		}, `${result.width}px Decades guided footer alignment`);
 		assert.equal(result.topBackVisible, true, `${result.width}px Back`);
 		assert.equal(result.footerOnlyPrimary, true, `${result.width}px footer`);
 		assert.equal(result.primaryReachable, true, `${result.width}px primary`);

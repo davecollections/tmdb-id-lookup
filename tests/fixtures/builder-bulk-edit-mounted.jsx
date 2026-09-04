@@ -392,12 +392,81 @@ function measureBrandingLayout() {
 	};
 }
 
+function measureWorkspaceHeaderState(name) {
+	const workspace = document.querySelector(".workspace");
+	const rows = [...workspace.querySelectorAll(":scope > .workspace-panel > .panel-header")].map((header) => {
+		const rect = header.getBoundingClientRect();
+		return {
+			panel: header.dataset.panelHeader,
+			top: rect.top,
+			bottom: rect.bottom,
+			height: rect.height,
+			visible: rect.width > 0 && rect.height > 0,
+			clipped: header.scrollWidth > header.clientWidth + 1 || header.scrollHeight > header.clientHeight + 1,
+			actions: [...header.querySelectorAll(".panel-header-actions .primary-action")].map((button) => (button.getAttribute("aria-label") ?? button.textContent.trim()).replace(/^\+/, "")),
+		};
+	});
+	const visibleRows = rows.filter((row) => row.visible);
+	const focusableHeaderButtons = [...workspace.querySelectorAll('.panel-header button:not(:disabled)')].filter((button) => {
+		const rect = button.getBoundingClientRect();
+		return rect.width > 0 && rect.height > 0;
+	});
+	const focusResults = focusableHeaderButtons.map((button) => {
+		button.focus({ preventScroll: true });
+		return document.activeElement === button;
+	});
+	return {
+		name,
+		width: window.innerWidth,
+		rows,
+		visiblePanels: visibleRows.map((row) => row.panel),
+		bottomSpread: visibleRows.length > 1
+			? Math.max(...visibleRows.map((row) => row.bottom)) - Math.min(...visibleRows.map((row) => row.bottom))
+			: 0,
+		noClipping: visibleRows.every((row) => !row.clipped),
+		noHorizontalOverflow: workspace.scrollWidth <= workspace.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth,
+		focusableHeaderLabels: focusableHeaderButtons.map((button) => (button.getAttribute("aria-label") ?? button.textContent.trim()).replace(/^\+/, "")),
+		focusableHeaderButtonsWork: focusResults.every(Boolean),
+	};
+}
+
+let activeLayoutUnmount = null;
+
+async function runWorkspaceHeaderGeometryScenario() {
+	if (activeLayoutUnmount) {
+		await activeLayoutUnmount();
+		activeLayoutUnmount = null;
+	}
+	const controller = createController();
+	const unmount = await mountWorkspace(controller);
+	try {
+		const empty = measureWorkspaceHeaderState("empty");
+		let collectionResult;
+		await act(async () => {
+			collectionResult = controller.createCollection({ editable: { title: "Collection" } });
+			controller.selectNode(collectionResult.createdInternalId);
+			await afterCommittedEffects();
+		});
+		const collectionSelected = measureWorkspaceHeaderState("collection-selected");
+		await act(async () => {
+			const folderResult = controller.createFolder(collectionResult.createdInternalId, { editable: { title: "Folder" } });
+			controller.selectNode(folderResult.createdInternalId);
+			await afterCommittedEffects();
+		});
+		const folderSelected = measureWorkspaceHeaderState("folder-selected");
+		return { width: window.innerWidth, states: [empty, collectionSelected, folderSelected] };
+	} finally {
+		await unmount();
+	}
+}
+
 async function leaveLayoutScenarioMounted() {
 	const tracked = instrumentController(createController(visibleTree()));
-	await mountWorkspace(tracked.proxy);
+	activeLayoutUnmount = await mountWorkspace(tracked.proxy);
 	await click(document.querySelector('[data-action="open-bulk-edit"]'));
 	window.__measureBuilderBulkEditLayout = measureLayout;
 	window.__measureBuilderBrandingLayout = measureBrandingLayout;
+	window.__runWorkspaceHeaderGeometryScenario = runWorkspaceHeaderGeometryScenario;
 }
 
 window.__builderBulkEditMounted = { status: "running" };

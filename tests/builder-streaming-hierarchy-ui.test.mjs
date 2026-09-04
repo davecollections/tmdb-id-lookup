@@ -100,13 +100,16 @@ test("server rendering is request-free and starts on the unfocused region stage"
 	assert.doesNotMatch(flow, /autoFocus/);
 });
 
-test("the flow uses Choose, Configure, and Review & Appearance with one global media and Sort choice", () => {
-	assert.match(flow, /Step 1 · Choose/);
+test("the flow groups regions and services under Select, then uses Configure and conditional Step 3 headings", () => {
+	assert.match(flow, /stageKicker="Step 1 · Select"/);
+	assert.match(flow, /Step 1 · Select/);
 	assert.match(flow, /Choose Streaming services/);
 	assert.match(flow, /Step 2/);
 	assert.match(flow, /Configure Streaming services/);
 	assert.match(flow, /Step 3/);
 	assert.match(flow, /Review &amp; Appearance/);
+	assert.match(flow, /choiceRequired \? "Choose destination"/);
+	assert.match(flow, /review: destinationChoiceRequired \? "Choose where these Streaming sources should go\."/);
 	assert.equal((flow.match(/name="streaming-hierarchy-media"/g) ?? []).length, 1);
 	assert.equal((flow.match(/name="streaming-hierarchy-sort"/g) ?? []).length, 1);
 	assert.match(flow, /regions\.length > 1 \? <SemanticSortChoices[^>]+name="streaming-hierarchy-grouping"/);

@@ -225,6 +225,7 @@ export function PeopleSearchStep({
 		<>
 			<section className="add-source-mode" aria-labelledby="people-mode-title">
 				<div>
+					{context === "hierarchy" ? <p className="panel-kicker">Step 1 · Select</p> : null}
 					<h3 ref={headingRef} id="people-mode-title" tabIndex={-1}>People · TMDB</h3>
 					<p>{context === "folder" ? "Choose a person, then add their sources to this folder." : "Choose people in the order their folders should be created."}</p>
 				</div>
@@ -599,7 +600,7 @@ export function PeopleReviewStep({
 				<>
 					<div className="decades-destination-summary"><strong>Destination</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle}</span><small>{inheritedPeopleCollectionSummary(plan.destination)} · parent unchanged</small></div>
 					{titleOptions}
-					<div className="decades-inherited-presentation" data-people-inherited-presentation="true"><strong>Inherited Collection options</strong><span>{inheritedPeopleCollectionSummary(plan.destination)}</span><small>The parent collection is not changed.</small></div>
+					<div className="decades-inherited-presentation" data-people-inherited-presentation="true"><strong>Collection settings stay unchanged.</strong><span>{inheritedPeopleCollectionSummary(plan.destination)}</span><small>New folders use this Collection’s {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"} layout.</small></div>
 				</>
 			)}
 			<PeopleFolderAppearance tileShape={folderTileShape} onTileShapeChange={onFolderTileShapeChange} />
@@ -1229,7 +1230,7 @@ export function PeopleSourceFlow({
 								<PeopleSearchStep context={context} headingRef={searchHeadingRef} input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} selection={selection} loadingPersonId={loadingPersonId} selectionError={selectionError} onInputChange={handleInputChange} onRetryLookup={() => setRetryGeneration((value) => value + 1)} onActivateResult={activateResult} onChangePage={setPage} onRemoveSelected={removePerson} />
 							) : step === PEOPLE_SOURCE_STEPS.CONFIGURE ? (
 								<section ref={configureRef} className="people-configure" aria-labelledby="people-configure-title" tabIndex={-1}>
-									<div className="add-source-section-heading"><div><p className="panel-kicker">Configure</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`}</h3></div></div>
+									<div className="add-source-section-heading"><div><p className="panel-kicker">{hierarchy ? "Step 2 · Configure" : "Configure"}</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`}</h3></div></div>
 									{multiContext ? <PeopleConfigurationModeControls mode={configurationMode} sharedCombinations={sharedCombinations} onModeChange={changeConfigurationMode} onToggleShared={(combinationId) => toggleCombination(null, combinationId)} /> : null}
 									{hierarchy || context === "folder" ? <PeopleSourceSortChoices context={hierarchy ? "guided" : "add"} selectedId={sortOptionId} onChange={(nextSortOptionId) => { setSortOptionId(nextSortOptionId); setApplyDiagnostic(null); }} /> : null}
 									{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}
