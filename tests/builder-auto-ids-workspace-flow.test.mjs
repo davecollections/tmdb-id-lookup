@@ -354,10 +354,12 @@ test("confirmation markup associates its description and locks only workspace co
 
 test("collection and folder empty states expose real creation buttons", () => {
 	const controller = makeController();
-	assert.ok(renderWorkspace(controller).includes('data-action="create-collection-empty"'));
+	const collectionMarkup = renderWorkspace(controller);
+	assert.ok(openingTag(collectionMarkup, 'data-action="create-collection-empty"').includes('aria-label="New collection"'));
 	const collection = controller.createCollection({ editable: { title: "C" } });
 	controller.selectNode(collection.createdInternalId);
-	assert.ok(renderWorkspace(controller).includes('data-action="create-folder-empty"'));
+	const folderMarkup = renderWorkspace(controller);
+	assert.ok(openingTag(folderMarkup, 'data-action="create-folder-empty"').includes('aria-label="New folder"'));
 });
 
 test("source empty state exposes the approved selected-folder Add Source actions", () => {
@@ -369,7 +371,7 @@ test("source empty state exposes the approved selected-folder Add Source actions
 	assert.ok(markup.includes("No sources in this folder yet"));
 	assert.ok(markup.includes('data-action="add-source"'));
 	assert.ok(markup.includes('data-action="add-source-empty"'));
-	assert.ok(markup.includes("Add first source"));
+	assert.ok(markup.includes("Add source"));
 	assert.equal(markup.includes("empty-state-mark"), false);
 	assert.equal(markup.includes('data-action="create-source'), false);
 });

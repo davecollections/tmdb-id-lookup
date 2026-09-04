@@ -109,7 +109,7 @@ test("Review exposes independent source names, neutral duplicate status, Origina
 test("guided Lists starts with empty names, uses concise shared create copy, and validates required containers in the footer", () => {
 	assert.match(flow, /useState\(""\)[\s\S]*useState\(""\)/);
 	assert.doesNotMatch(flow, /useState\("TMDB Lists"\)|useState\("Lists"\)|useState\("My Lists"\)/);
-	assert.match(flow, /scope === "new-collection" \? "Create collection" : "Create folder"/);
+	assert.match(flow, /guidedCreateActionLabel\(scope\)/);
 	assert.doesNotMatch(flow, /Create collection with 1 folder|Create 1 folder with/);
 	assert.match(flow, /Collection and folder names are required\./);
 	assert.match(flow, /Collection name is required\./);

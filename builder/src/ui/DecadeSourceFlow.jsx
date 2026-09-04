@@ -151,7 +151,7 @@ function DecadeSourceReview({ drafts, duplicates, sortOptionId }) {
 				const label = status === "destination-duplicate" ? "Already in this folder" : status === "elsewhere" ? "Exists elsewhere" : "Ready to add";
 				return <li key={`${draft.editable.title}-${draft.editable.mediaType}-${index}`}><div><strong>{draft.editable.title}</strong><span>{mediaLabel(draft.editable.mediaType)} · {sortLabel}</span></div><span data-status={status}>{label}</span></li>;
 			})}</ul>
-			{duplicateCount > 0 ? <p className="genre-attention-note" role="status">{duplicateCount === drafts.length ? `All ${drafts.length} configured sources already exist in this folder. Use Save all anyway only if you intentionally want duplicate sources.` : `${drafts.length} configured: ${duplicateCount} already ${duplicateCount === 1 ? "exists" : "exist"} here. Normal Save will add ${missingCount} new source${missingCount === 1 ? "" : "s"}.`}</p> : null}
+			{duplicateCount > 0 ? <p className="genre-attention-note" role="status">{duplicateCount === drafts.length ? `All ${drafts.length} configured sources already exist in this folder. Use Add all anyway only if you intentionally want duplicate sources.` : `${drafts.length} configured: ${duplicateCount} already ${duplicateCount === 1 ? "exists" : "exist"} here. Normal Add will add ${missingCount} new source${missingCount === 1 ? "" : "s"}.`}</p> : null}
 			<SourceElsewhereNotice occurrences={duplicates.elsewhere} heading={duplicates.elsewhere.length === 1 ? "A matching Decade source exists elsewhere" : "Matching Decade sources exist elsewhere"} action={duplicates.elsewhere.length === 1 ? "You can still add it here." : "You can still add them here."} />
 		</section>
 	);
@@ -312,7 +312,7 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 	}
 
 	const saveCount = duplicates.missingDrafts.length;
-	const saveLabel = isApplying ? "Saving…" : saveCount === 1 ? "Save 1 source" : `Save ${saveCount} sources`;
+	const saveLabel = isApplying ? "Adding…" : saveCount === 1 ? "Add 1 source" : `Add ${saveCount} sources`;
 	const content = (
 		<div className="add-source-portal decade-source-portal" data-add-source-portal="true">
 			<div className="settings-modal-backdrop add-source-backdrop" style={viewportStyle ?? undefined}>
@@ -347,7 +347,7 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 							</section>
 						</div>
 						{secondarySurface ? <div className="genre-secondary-surface" data-surface={secondarySurface}>{secondarySurface === "ordinary-exclusions" ? <DecadeBundleExclusionSubview selectedGenreNames={built.ok ? built.configuration.genreNames : genreNames} selectionByContext={exclusionSelectionByContext} contextId={exclusionContextId} selection={activeExclusionSelection} mediaMode={mediaMode} onContextChange={setExclusionContextId} onToggle={(name) => setAdvanced((current) => updateExclusionsForContext(current, exclusionContextId, activeExclusionSelection.includes(name) ? activeExclusionSelection.filter((entry) => entry !== name) : [...activeExclusionSelection, name]))} onSelectAll={() => setAdvanced((current) => updateExclusionsForContext(current, exclusionContextId, exclusionOptions(mediaMode, activeIncludedGenre).map((concept) => concept.name)))} onClearAll={() => setAdvanced((current) => updateExclusionsForContext(current, exclusionContextId, []))} onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : <DecadesAdvancedHelpSubview onDone={closeSecondary} focusRef={secondaryHeadingRef} />}</div> : null}
-						{!secondarySurface ? <footer className="add-source-actions decade-source-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}><button className="editor-cancel" type="button" disabled={isApplying} onClick={onCancel}>Cancel</button><button className="editor-apply" type="submit" disabled={isApplying || !built.ok || saveCount === 0}>{saveLabel}</button>{duplicates.duplicateDrafts.length > 0 ? <button className="editor-cancel people-add-all" type="button" disabled={isApplying || !built.ok} onClick={() => save(true)}>{drafts.length === 1 ? "Save anyway" : "Save all anyway"}</button> : null}</footer> : null}
+						{!secondarySurface ? <footer className="add-source-actions decade-source-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}><button className="editor-apply" type="submit" disabled={isApplying || !built.ok || saveCount === 0}>{saveLabel}</button>{duplicates.duplicateDrafts.length > 0 ? <button className="editor-cancel people-add-all" type="button" disabled={isApplying || !built.ok} onClick={() => save(true)}>{drafts.length === 1 ? "Add anyway" : "Add all anyway"}</button> : null}<button className="editor-cancel" type="button" disabled={isApplying} onClick={onCancel}>Cancel</button></footer> : null}
 					</form>
 				</section>
 			</div>

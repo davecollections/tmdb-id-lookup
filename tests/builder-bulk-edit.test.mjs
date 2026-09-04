@@ -285,8 +285,9 @@ test("Global display settings and confirmation markup expose only the approved a
 		"Hide on home only",
 		"Focus GIF",
 		"Controls whether folder Focus GIFs are shown.",
-		"Apply Changes",
+		"Apply changes",
 	]) assert.ok(dialog.includes(text), text);
+	assert.ok(dialog.indexOf('data-action="apply-bulk-edit"') < dialog.indexOf('data-action="cancel-bulk-edit"'));
 	assert.equal((dialog.match(/No change/g) ?? []).length, 6);
 	assert.equal((dialog.match(/type="radio"/g) ?? []).length, 18);
 	assert.equal((dialog.match(/checked=""/g) ?? []).length, 6);

@@ -155,8 +155,10 @@ async function combinedConfirmationScenario() {
 		await choose("focusArtwork", "HIDE");
 
 		const apply = document.querySelector('[data-action="apply-bulk-edit"]');
-		apply.focus();
-		await pressKey(apply, "Tab");
+		const cancel = document.querySelector('[data-action="cancel-bulk-edit"]');
+		const footerOrder = [...document.querySelectorAll(".bulk-edit-actions button")].map((button) => button.dataset.action);
+		cancel.focus();
+		await pressKey(cancel, "Tab");
 		const tabWrappedToFirst = document.activeElement === document.querySelector('[data-bulk-edit-field="layout"] input[value="NO_CHANGE"]');
 		await click(apply);
 		const confirmation = document.querySelector('[data-bulk-title-confirmation="true"]');
@@ -211,6 +213,7 @@ async function combinedConfirmationScenario() {
 
 		return {
 			initial,
+			footerOrder,
 			tabWrappedToFirst,
 			confirmationState,
 			choicesAfterCancel,

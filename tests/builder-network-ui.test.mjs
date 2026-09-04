@@ -181,7 +181,7 @@ test("Network count zero and failure remain informative and never block Add", ()
 	assert.equal(unavailable.includes(notice), false);
 	assert.equal(unavailable.includes("Retry"), false);
 	const actions = renderToStaticMarkup(createElement(NetworkConfigureActions, { duplicate: false, onAddAnyway() {} }));
-	assert.ok(actions.includes(">Add source</button>"));
+	assert.ok(actions.includes(">Add 1 source</button>"));
 	assert.equal(actions.includes("disabled"), false);
 });
 

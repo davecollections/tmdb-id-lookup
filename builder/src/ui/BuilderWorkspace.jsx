@@ -196,6 +196,7 @@ function HierarchyAddAction({
 	registerAction,
 	actionName = `create-${noun}-after-list`,
 }) {
+	const label = noun === "collection" ? "New collection" : noun === "folder" ? "New folder" : "Add source";
 	return (
 		<button
 			ref={registerAction}
@@ -206,7 +207,7 @@ function HierarchyAddAction({
 			onClick={onClick}
 		>
 			<span aria-hidden="true">+</span>
-			Add another {noun}
+			{label}
 		</button>
 	);
 }
@@ -2475,7 +2476,7 @@ export function BuilderWorkspace({
 								<EmptyState
 									title="Start your first collection"
 									action={(
-										<button ref={collectionEmptyAddRef} className="empty-state-action" type="button" data-action="create-collection-empty" disabled={hierarchyInteractionLocked} onClick={createCollection} aria-label="Create first collection">
+										<button ref={collectionEmptyAddRef} className="empty-state-action" type="button" data-action="create-collection-empty" disabled={hierarchyInteractionLocked} onClick={createCollection} aria-label="New collection">
 											<span aria-hidden="true">+</span>
 										</button>
 									)}
@@ -2558,7 +2559,7 @@ export function BuilderWorkspace({
 								<EmptyState
 									title="No folders yet"
 									action={(
-										<button ref={folderEmptyAddRef} className="empty-state-action" type="button" data-action="create-folder-empty" disabled={hierarchyInteractionLocked} onClick={createFolder} aria-label="Create first folder">
+										<button ref={folderEmptyAddRef} className="empty-state-action" type="button" data-action="create-folder-empty" disabled={hierarchyInteractionLocked} onClick={createFolder} aria-label="New folder">
 											<span aria-hidden="true">+</span>
 										</button>
 									)}
@@ -2647,7 +2648,7 @@ export function BuilderWorkspace({
 											onClick={(event) => openAddSource(event.currentTarget)}
 										>
 											<span aria-hidden="true">+</span>
-											Add first source
+											Add source
 										</button>
 									)}
 								>

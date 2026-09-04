@@ -568,10 +568,8 @@ test("populated lists keep top actions, append bottom Add rows, and expose sourc
 	}
 	assert.ok(markup.includes("New collection"));
 	assert.ok(markup.includes("New folder"));
-	assert.ok(markup.includes("Add another collection"));
-	assert.ok(markup.includes("Add another folder"));
 	assert.ok(markup.includes("Add source"));
-	assert.ok(markup.includes("Add another source"));
+	assert.equal(markup.includes("Add another"), false);
 	assert.equal(markup.includes("add-source-empty"), false);
 
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");

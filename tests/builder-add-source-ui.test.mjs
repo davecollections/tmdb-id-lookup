@@ -215,7 +215,7 @@ test("selected empty folder exposes shared Add actions and an intentional inline
 	assert.equal((markup.match(/data-action="add-source"/g) ?? []).length, 1);
 	assert.equal((markup.match(/data-action="add-source-empty"/g) ?? []).length, 1);
 	assert.equal(markup.includes('data-action="add-source-after-list"'), false);
-	assert.ok(markup.includes("Add first source"));
+	assert.ok(markup.includes("Add source"));
 	assert.equal((markup.match(/class="panel-title-inline-count mobile-only"/g) ?? []).length, 3);
 	assert.ok(markup.includes('class="panel-title-inline-count mobile-only"> · 0</span>'));
 	assert.equal((markup.match(/panel-count panel-count-desktop-only/g) ?? []).length, 3);
@@ -228,7 +228,8 @@ test("selected populated folder exposes header and trailing Add entry points", (
 	assert.equal((markup.match(/data-action="add-source"/g) ?? []).length, 1);
 	assert.equal((markup.match(/data-action="add-source-after-list"/g) ?? []).length, 1);
 	assert.equal(markup.includes('data-action="add-source-empty"'), false);
-	assert.ok(markup.indexOf("Existing") < markup.indexOf("Add another source"));
+	assert.ok(markup.indexOf("Existing") < markup.lastIndexOf("Add source"));
+	assert.equal(markup.includes("Add another source"), false);
 	assert.ok(markup.includes('class="panel-title-inline-count mobile-only"> · 1</span>'));
 });
 
@@ -632,6 +633,7 @@ test("primary action states are visually and semantically distinct", () => {
 	}));
 	assert.ok(openingTag(disabled, 'data-action="apply-add-source"').includes("disabled"));
 	assert.ok(openingTag(disabled, 'data-action="apply-add-source"').includes('aria-disabled="true"'));
+	assert.ok(disabled.includes("Add 1 source"));
 
 	const loading = renderToStaticMarkup(createElement(AddSourcePrimaryAction, {
 		disabled: true,

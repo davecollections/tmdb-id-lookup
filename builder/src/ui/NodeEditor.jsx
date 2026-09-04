@@ -591,7 +591,7 @@ export function NodeEditor({
 					</div>
 
 					<div className="node-editor-actions">
-						<button className="editor-apply" type="submit" data-action="apply-node-edit">Apply</button>
+						<button className="editor-apply" type="submit" data-action="apply-node-edit">Save changes</button>
 						<button className="editor-cancel" type="button" data-action="cancel-node-edit" onClick={onCancel}>Cancel</button>
 					</div>
 				</form>

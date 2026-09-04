@@ -15,6 +15,7 @@ import {
 import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
+import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
@@ -251,7 +252,7 @@ export function FranchiseSourceFlow({
 					{searchData ? <section className="add-source-results"><div className="add-source-section-heading"><div><p className="panel-kicker">TMDB results</p><h3>Select franchises</h3></div>{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}</div>{searchData.results.length ? <div className="add-source-result-list">{searchData.results.map((result) => <FranchiseResult key={result.id} result={result} checked={Boolean(selection.byId[result.id])} loading={loadingId === result.id || (selectionState.status === "loading" && selectionState.context?.id === result.id)} onActivate={activate} />)}</div> : <p className="add-source-empty-results">No TMDB collections matched this search.</p>}{searchData.totalPages > 1 ? <nav className="add-source-pagination"><button type="button" disabled={searchData.page <= 1} onClick={() => setPage(searchData.page - 1)}>Previous page</button><button type="button" disabled={searchData.page >= searchData.totalPages} onClick={() => setPage(searchData.page + 1)}>Next page</button></nav> : null}</section> : null}
 				</> : <div ref={reviewHeadingRef} tabIndex={-1}><ReviewStep planResult={planResult} options={options} onOptionsChange={updateOptions} onPreview={openPreview} diagnostic={diagnostic} /></div>}
 			</div>
-			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying}>{step === "select" ? `Review ${chosen.length} franchise${chosen.length === 1 ? "" : "s"}` : isApplying ? "Creating…" : `Create ${planResult.ok ? planResult.plan.counts.folderCount : 0} folder${planResult.ok && planResult.plan.counts.folderCount === 1 ? "" : "s"}`}</button></footer>
+			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying}>{step === "select" ? `Review ${chosen.length} franchise${chosen.length === 1 ? "" : "s"}` : isApplying ? "Creating…" : guidedCreateActionLabel(scope)}</button></footer>
 		</form>
 		{preview ? <TitlesPreview franchise={preview} onClose={closePreview} /> : null}
 	</>;

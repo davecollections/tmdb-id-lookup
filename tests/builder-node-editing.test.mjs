@@ -2712,13 +2712,14 @@ test("settings modal makes the workspace inert and disables every background act
 	assert.equal(markup.includes("Hierarchy navigation is paused"), false);
 });
 
-test("Apply and Cancel remain enabled while hierarchy controls are locked", () => {
+test("Save changes and Cancel remain enabled while hierarchy controls are locked", () => {
 	const controller = importTree();
 	const collection = controller.getState().project.collections[0];
 	controller.selectNode(collection.internalId);
 	const markup = renderWorkspace(controller, { draft: createNodeEditorDraft(collection) });
 	assert.equal(openingTag(markup, 'data-action="apply-node-edit"').includes("disabled"), false);
 	assert.equal(openingTag(markup, 'data-action="cancel-node-edit"').includes("disabled"), false);
+	assert.ok(markup.indexOf("Save changes") < markup.indexOf("Cancel"));
 });
 
 test("styles keep card actions touch-safe and responsive while the modal stays bounded and motion-safe", () => {

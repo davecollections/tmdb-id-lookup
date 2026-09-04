@@ -90,7 +90,8 @@ test("Decade Add Source server markup is one compact canonical editor in the app
 	assert.match(markup, /2 sources configured/);
 	assert.match(markup, /All 2020s Movies/);
 	assert.match(markup, /All 2020s Series/);
-	assert.match(markup, /Save 2 sources/);
+	assert.match(markup, /Add 2 sources/);
+	assert.ok(markup.indexOf("Add 2 sources") < markup.indexOf("Cancel"));
 	for (const forbidden of ["Decade sample", "Period sample", "custom date", "Artwork", "Source name"]) assert.equal(markup.includes(forbidden), false);
 });
 

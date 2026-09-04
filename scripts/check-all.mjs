@@ -69,6 +69,7 @@ runNode(["--test", path.join("tests", "builder-people-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-hierarchy.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-people-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-capability-contract.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-action-language.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-choice-presentation-contract.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-franchise-hierarchy.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-franchise-ui.test.mjs")]);

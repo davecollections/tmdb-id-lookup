@@ -2043,7 +2043,7 @@ async function runFranchiseReviewScenario() {
 			metadataPresent: reviewDetails.querySelector(".franchise-review-details > small")?.textContent.includes(`TMDB ${franchiseIds[0]} · Movie · Collection · TMDB order`) === true,
 			duplicateExplanationPresent: reviewDetails.querySelector(".source-elsewhere-note")?.textContent.includes("This franchise source exists elsewhere") === true,
 		};
-		const createButton = required(buttonContaining(dialog, "Create 2 folders"), "Create action");
+		const createButton = required(buttonContaining(dialog, "Create collection"), "Create action");
 		const createRect = createButton.getBoundingClientRect();
 		return {
 			width: window.innerWidth,
@@ -2351,7 +2351,7 @@ async function runStudioHierarchyScenario() {
 				&& appearance.querySelector('input[name="studio-collection-layout"]') !== null
 				&& appearance.querySelector('input[data-editor-control="studioShowAllTab"]') !== null
 				&& appearance.querySelector('input[data-editor-control="studioPinToTop"]') !== null,
-			createAction: buttonContaining(dialog, "Create 2 folders")?.textContent.trim(),
+			createAction: buttonContaining(dialog, "Create collection")?.textContent.trim(),
 		};
 		const scrollOwners = [...dialog.querySelectorAll("*")].filter((element) => {
 			const overflowY = getComputedStyle(element).overflowY;
@@ -3387,10 +3387,10 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 			customNamePreservedAfterBack,
 			textOnlyNoteAbsent: !review.textContent.includes("Generated folders are text-only") && !review.textContent.includes("Provider logos are used only while choosing and reviewing services"),
 			providerLogoAbsent: review.querySelector("img") === null,
-			createAction: buttonContaining(dialog, "Apply 6 sources")?.textContent.trim() ?? null,
+			createAction: buttonContaining(dialog, "Apply changes")?.textContent.trim() ?? null,
 		};
 		const reviewLayout = stageLayout(dialog);
-		await clickAndSettle(required(buttonContaining(dialog, "Apply 6 sources"), "Apply six sources action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Apply changes"), "Apply changes action"));
 		const appliedCollection = controller.getState().project.collections.find((collection) => collection.internalId === collectionResult.createdInternalId);
 		const secondaryCollectionAfter = controller.getState().project.collections.find((collection) => collection.internalId === secondaryCollectionResult.createdInternalId);
 		const tertiaryCollectionAfter = controller.getState().project.collections.find((collection) => collection.internalId === tertiaryCollectionResult.createdInternalId);
@@ -3561,7 +3561,7 @@ async function runStreamingAffinityDestinationScenario() {
 			planTotals: [...review.querySelectorAll(".decades-plan-totals strong")].map((node) => Number(node.textContent)),
 			outcomes: [...review.querySelectorAll(".streaming-review-row")].map((row) => ({ status: row.dataset.placementStatus, text: row.textContent.replace(/\s+/g, " ").trim() })),
 			collectionSettings: review.querySelector(".franchise-inherited-summary")?.textContent.replace(/\s+/g, " ").trim() ?? null,
-			applyLabel: buttonContaining(dialog, "Apply 2 sources")?.textContent.trim() ?? null,
+			applyLabel: buttonContaining(dialog, "Create folder")?.textContent.trim() ?? null,
 		};
 		const layout = stageLayout(dialog);
 		const preApply = {
@@ -3569,7 +3569,7 @@ async function runStreamingAffinityDestinationScenario() {
 			serializedUnchanged: serializedValue(controller) === initialSerializedValue,
 			applyCalls,
 		};
-		await clickAndSettle(required(buttonContaining(dialog, "Apply 2 sources"), "Apply action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Create folder"), "Create folder action"));
 
 		const appliedRevisionDelta = controller.getState().revision - initialRevision;
 		const appliedCollection = controller.getState().project.collections[0];
@@ -4137,7 +4137,7 @@ async function runNetworkHierarchyScenario() {
 		const appearance = await waitForMountedCondition(
 			() => {
 				const stage = dialog.querySelector(".network-hierarchy-appearance");
-				const action = buttonContaining(dialog, "Create 2 folders");
+				const action = buttonContaining(dialog, "Create collection");
 				return stage && action && !action.disabled && !stage.textContent.includes("Preparing folder artwork") ? stage : null;
 			},
 			{ label: "production Network Poster artwork preparation", timeoutMs: 20_000 },
@@ -4155,7 +4155,7 @@ async function runNetworkHierarchyScenario() {
 		await waitForMountedCondition(
 			() => landscape.checked === true
 				&& !appearance.textContent.includes("Preparing folder artwork")
-				&& buttonContaining(dialog, "Create 2 folders")?.disabled === false
+				&& buttonContaining(dialog, "Create collection")?.disabled === false
 				&& artworkResolves === 4,
 			{ label: "production Network Landscape artwork preparation", timeoutMs: 20_000 },
 		);
@@ -4310,7 +4310,7 @@ async function runNetworkDeferredArtworkScenario() {
 		const appearance = await waitForMountedCondition(
 			() => {
 				const stage = dialog.querySelector(".network-hierarchy-appearance");
-				return stage && buttonContaining(dialog, "Create 1 folder")?.disabled === false ? stage : null;
+				return stage && buttonContaining(dialog, "Create collection")?.disabled === false ? stage : null;
 			},
 			{ label: "unchanged deferred Network snapshot", timeoutMs: 20_000 },
 		);
@@ -4391,7 +4391,7 @@ async function runStudioScaleScenario() {
 		const afterAppearance = previewRequests;
 		const totals = [...dialog.querySelectorAll(".decades-plan-totals strong")].map((element) => Number(element.textContent));
 		const appearanceRows = dialog.querySelectorAll(".studio-configure-row, .studio-review-list details").length;
-		await clickAndSettle(required(buttonContaining(dialog, "Create 100 folders"), `Create action with totals ${totals.join("/")}`));
+		await clickAndSettle(required(buttonContaining(dialog, "Create collection"), `Create action with totals ${totals.join("/")}`));
 		return {
 			cards: cards.length,
 			selectedCount,
@@ -4682,7 +4682,7 @@ async function runPeopleConfigureLayoutScenario() {
 		await clickAndSettle(required(buttonContaining(dialog, "Continue"), "Continue back to Review"));
 		appearance.backReviewPreserved = dialog.querySelector('input[name="people-folder-shape"][value="LANDSCAPE"]')?.checked === true;
 		appearance.folderTitleBackReviewPreserved = dialog.querySelector('input[name="people-folder-title-visibility"][value="HIDE_EVERYWHERE"]')?.checked === true;
-		const createButton = buttonContaining(dialog, "Create 2 folders");
+		const createButton = buttonContaining(dialog, "Create collection");
 		const createRect = createButton?.getBoundingClientRect();
 		appearance.createReachable = Boolean(createRect && createRect.top >= -1 && createRect.bottom <= window.innerHeight + 1 && createRect.height >= 44);
 		appearance.noDeadEditor = dialog.querySelector(".people-folder-artwork-editor") === null;
@@ -6087,7 +6087,7 @@ async function runDecadeSourceLayoutScenario() {
 		const clearEnabled = buttonContaining(genreFieldset, "Clear")?.disabled === false;
 		const footer = required(dialog.querySelector(".decade-source-actions"), "Decade Add Source footer");
 		const cancel = required(buttonContaining(footer, "Cancel"), "Cancel action");
-		const save = required(buttonContaining(footer, "Save 54 sources"), "Save action");
+		const save = required(buttonContaining(footer, "Add 54 sources"), "Add action");
 		const preview = required(buttonContaining(dialog, "Preview titles"), "Preview titles action");
 		const viewport = window.visualViewport;
 		const viewportBounds = {
