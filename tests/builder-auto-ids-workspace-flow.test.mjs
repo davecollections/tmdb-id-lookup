@@ -187,13 +187,14 @@ test("workspace hides imported generated and internal hierarchy IDs", () => {
 	for (const hidden of ["IMPORTED-UUID", "nuvio-1", folder.internalId]) assert.equal(markup.includes(hidden), false);
 });
 
-test("source TMDB metadata remains visible while collection and folder IDs stay hidden", () => {
+test("source kind remains visible while numeric TMDB and hierarchy IDs stay hidden", () => {
 	const controller = makeController();
 	controller.importValue([{ id: "C-ID", title: "C", folders: [{ id: "F-ID", title: "F", sources: [{ provider: "tmdb", tmdbSourceType: "LIST", tmdbId: "777", mediaType: "MOVIE" }] }] }]);
 	const source = controller.getState().project.collections[0].folders[0].sources[0];
 	controller.selectNode(source.internalId);
 	const markup = renderWorkspace(controller);
-	assert.ok(markup.includes("777"));
+	assert.equal(markup.includes("777"), false);
+	assert.ok(markup.includes(">List</span>"));
 	assert.equal(markup.includes("C-ID"), false);
 	assert.equal(markup.includes("F-ID"), false);
 });

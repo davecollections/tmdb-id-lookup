@@ -2,6 +2,7 @@ import {
 	isInvisibleNuvioTitle,
 	isValidVisibleNuvioTitle,
 } from "../nuvio/titles.js";
+import { sourceCardDetails } from "./source-details.js";
 import { canEditSource } from "../source-edit/index.js";
 import { buildSiblingMovements } from "./hierarchy-reordering.js";
 
@@ -40,10 +41,6 @@ function displayValue(value) {
 
 function detail(label, value) {
 	return value === null || value === undefined ? null : { label, value: displayValue(value) };
-}
-
-function metadata(key, value) {
-	return value === null || value === undefined ? null : { key, value: displayValue(value) };
 }
 
 function compactDetails(details) {
@@ -162,7 +159,7 @@ function buildFolder(folder, selectedInternalId) {
 	};
 }
 
-function sourceTitle(source) {
+function sourceTitle(source, fallback) {
 	if (isInvisibleNuvioTitle(source.editable.title)) {
 		return nodeTitle(source.editable.title, "source");
 	}
@@ -175,16 +172,7 @@ function sourceTitle(source) {
 			accessibleName: title,
 		};
 	}
-	let text;
-	if (source.category === "native-tmdb") {
-		text = nonBlankText(source.editable.tmdbSourceType) ?? "TMDB source";
-	} else if (source.category === "addon") {
-		text = nonBlankText(source.editable.catalogId)
-			?? nonBlankText(source.editable.addonId)
-			?? "Addon source";
-	} else {
-		text = "Preserved source";
-	}
+	const text = fallback;
 	return {
 		text,
 		hidden: false,
@@ -200,30 +188,9 @@ function sourceCategoryLabel(category) {
 	}[category] ?? "Preserved source";
 }
 
-function sourceMetadata(source) {
+function buildSource(source, selectedInternalId, sourceDetails = sourceCardDetails(source)) {
 	const editable = source.editable;
-	if (source.category === "native-tmdb") {
-		return compactDetails([
-			metadata("tmdb-id", presentValue(editable.tmdbId)),
-			metadata("media-type", presentValue(editable.mediaType)),
-			metadata("sort", presentValue(editable.sortBy)),
-		]);
-	}
-	if (source.category === "addon") {
-		return compactDetails([
-			metadata("addon-id", presentValue(editable.addonId)),
-			metadata("addon-type", presentValue(editable.type)),
-			metadata("genre", presentValue(editable.genre)),
-		]);
-	}
-	return compactDetails([
-		metadata("provider", presentValue(editable.provider)),
-	]);
-}
-
-function buildSource(source, selectedInternalId) {
-	const editable = source.editable;
-	const title = sourceTitle(source);
+	const title = sourceTitle(source, sourceDetails.fallback);
 	return {
 		internalId: source.internalId,
 		title: title.text,
@@ -232,7 +199,8 @@ function buildSource(source, selectedInternalId) {
 		category: source.category,
 		categoryLabel: sourceCategoryLabel(source.category),
 		editSupported: canEditSource(source),
-		metadata: sourceMetadata(source),
+		metadata: sourceDetails.metadata,
+		metadataDescription: sourceDetails.metadata.map((entry) => entry.value).join(", "),
 		selected: source.internalId === selectedInternalId,
 		details: compactDetails([
 			detail("Category", sourceCategoryLabel(source.category)),
@@ -248,6 +216,26 @@ function buildSource(source, selectedInternalId) {
 		]),
 		note: source.category === "opaque" ? "Preserved imported source" : null,
 	};
+}
+
+// Only reveal a catalog hidden behind a friendly origin when sibling cards collide.
+function sourceDetailsForFolder(sources) {
+	const details = new Map();
+	const groups = new Map();
+	for (const source of sources) {
+		const summary = sourceCardDetails(source);
+		details.set(source.internalId, summary);
+		if (source.category !== "addon") continue;
+		const key = JSON.stringify([sourceTitle(source, summary.fallback).text, summary.metadata.map((entry) => entry.value)]);
+		const group = groups.get(key) ?? [];
+		group.push(source);
+		groups.set(key, group);
+	}
+	for (const group of groups.values()) {
+		if (new Set(group.map((source) => nonBlankText(source.editable.catalogId)).filter(Boolean)).size < 2) continue;
+		for (const source of group) details.set(source.internalId, sourceCardDetails(source, { includeCatalogId: true }));
+	}
+	return details;
 }
 
 function withMovement(entry, viewNode) {
@@ -296,10 +284,11 @@ export function buildBuilderViewModel(state) {
 	const selectedFolderNode = selectedCollectionNode && selectedFolder
 		? selectedCollectionNode.folders.find((folder) => folder.internalId === selectedFolder.internalId)
 		: null;
+	const sourceDetails = sourceDetailsForFolder(selectedFolderNode?.sources ?? []);
 	const sources = selectedFolderNode
 		? buildSiblingMovements(selectedFolderNode.sources).map((entry) => withMovement(
 			entry,
-			buildSource(entry.node, state.selection.sourceInternalId),
+			buildSource(entry.node, state.selection.sourceInternalId, sourceDetails.get(entry.node.internalId)),
 		))
 		: [];
 	const selectedSource = sources.find((source) => source.selected) ?? null;

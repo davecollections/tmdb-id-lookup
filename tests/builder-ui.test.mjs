@@ -320,8 +320,8 @@ test("view model uses explicit source categories and safe human-readable summari
 	controller.selectNode(folder.sources[2].internalId);
 	const view = buildBuilderViewModel(controller.getState());
 	assert.deepEqual(view.sources.map((source) => source.category), ["native-tmdb", "addon", "opaque"]);
-	assert.deepEqual(view.sources.map((source) => source.title), ["LIST", "catalog", "Preserved source"]);
-	assert.equal(view.sources[0].metadata.some((entry) => entry.value === "123"), true);
+	assert.deepEqual(view.sources.map((source) => source.title), ["TMDB List source", "catalog", "Preserved source"]);
+	assert.equal(view.sources[0].metadata.some((entry) => entry.value === "List"), true);
 	assert.equal(view.sources[1].metadata.some((entry) => entry.value === "example.addon"), true);
 	assert.equal(view.sources[2].categoryLabel, "Preserved source");
 	assert.equal(view.selectedSource.note, "Preserved imported source");
@@ -376,8 +376,8 @@ test("repeated source metadata values retain semantic keys without React warning
 	assert.deepEqual(view.sources.map((source) => source.title), ["Repeated metadata", "Second source"]);
 	assert.deepEqual(view.sources[0].metadata, [
 		{ key: "addon-id", value: "movie" },
-		{ key: "addon-type", value: "movie" },
-		{ key: "genre", value: "movie" },
+		{ key: "catalog-id", value: "Catalog: catalog" },
+		{ key: "addon-type", value: "Movies" },
 	]);
 	assert.equal(new Set(view.sources[0].metadata.map((entry) => entry.key)).size, 3);
 
@@ -399,7 +399,7 @@ test("repeated source metadata values retain semantic keys without React warning
 		false,
 		reactErrors.join("\n"),
 	);
-	assert.equal((markup.match(/>movie<\/span>/g) ?? []).length, 3);
+	assert.equal((markup.match(/>movie<\/span>/g) ?? []).length, 1);
 	assert.ok(markup.indexOf("Repeated metadata") < markup.indexOf("Second source"));
 });
 
