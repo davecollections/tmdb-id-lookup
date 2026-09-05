@@ -583,6 +583,7 @@ function SourceList({ sources, actionProps }) {
 									data-source-category={source.category}
 									aria-pressed={source.selected}
 									aria-label={source.titleHidden ? source.accessibleName : undefined}
+									aria-describedby={source.titleHidden && source.metadata.length > 0 ? `source-details-${source.internalId}` : undefined}
 									disabled={actionProps.navigationLocked}
 									onClick={() => actionProps.onSelect(source.internalId)}
 									onDoubleClick={(event) => {
@@ -599,11 +600,12 @@ function SourceList({ sources, actionProps }) {
 										</span>
 										{source.titleHidden ? <span className="hidden-title-badge">Invisible in Nuvio</span> : null}
 										{source.metadata.length > 0 ? (
-											<span className="node-meta">
+											<span className="node-meta" aria-hidden={source.titleHidden ? true : undefined}>
 												{source.metadata.map((entry) => <span key={entry.key}>{entry.value}</span>)}
 											</span>
 										) : null}
 									</span>
+									{source.titleHidden && source.metadata.length > 0 ? <span className="visually-hidden" id={`source-details-${source.internalId}`}>{source.metadataDescription}</span> : null}
 									{source.selected ? <span className="visually-hidden">Selected</span> : null}
 								</button>
 								<HierarchyActionsMenu

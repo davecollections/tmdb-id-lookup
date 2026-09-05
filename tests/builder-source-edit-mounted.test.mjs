@@ -63,6 +63,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 
 async function runMountedPage() {
 	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
+	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
 	const devToolsStartupMs = resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS);
 	const resources = {
 		browserExecutable: null,
@@ -170,7 +171,7 @@ async function runMountedPage() {
 		await resources.pageConnection.command("Runtime.enable");
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -180,6 +181,47 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				// Reuse the mounted Workspace and browser lifecycle for Source-only details.
+				for (const width of [393, 900, 1280]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 1100, deviceScaleFactor: 1, mobile: width === 393 });
+					const evaluatedDetails = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__prepareSourceDetailsScenario()", awaitPromise: true, returnByValue: true });
+					if (evaluatedDetails.exceptionDetails) throw new Error(evaluatedDetails.exceptionDetails.exception?.description ?? evaluatedDetails.exceptionDetails.text);
+					const details = evaluatedDetails.result.value;
+					assert.equal(details.unchanged, true);
+					assert.equal(details.documentOverflow, false, width + "px document overflow");
+					assert.equal(details.cards.length, 8);
+					for (const card of details.cards) {
+						assert.equal(card.overflow, false, width + "px " + card.title);
+						assert.equal(card.minHeight, "74px");
+						assert.equal(card.paddingTop, "10px");
+						assert.equal(card.paddingBottom, "10px");
+						assert.equal(card.wrap, "wrap");
+						assert.equal(card.clamp, "none");
+						assert.ok(card.values.length <= 3);
+						assert.equal(/\b(?:31|1001|123)\b/.test(card.values.join(" ")), false);
+					}
+					assert.deepEqual(details.cards[2].values, ["List", "Original order"]);
+					assert.deepEqual(details.cards[4].values, ["movie", "Catalog: catalog", "Movies"]);
+					assert.equal(details.cards[3].description, "List, Other sorting");
+					assert.deepEqual(details.cards[6].values, ["AIO Metadata", "Trakt", "Movies"]);
+					assert.deepEqual(details.cards[7].values, ["Trakt"]);
+					const accessibility = await resources.pageConnection.command("Accessibility.getFullAXTree");
+					const hidden = accessibility.nodes.find((node) => node.role?.value === "button" && node.name?.value === "Source with hidden Nuvio title");
+					assert.equal(hidden?.description?.value, "List, Other sorting");
+					const visible = accessibility.nodes.find((node) => node.role?.value === "button" && node.name?.value?.startsWith("My favourites"));
+					assert.ok(visible?.name?.value.includes("Acting movies"));
+					assert.equal(visible?.name?.value.includes("31"), false);
+					assert.equal(visible?.description, undefined);
+					if (process.env.TMDB_SOURCE_DETAILS_SCREENSHOTS) {
+						await fsPromises.mkdir(process.env.TMDB_SOURCE_DETAILS_SCREENSHOTS, { recursive: true });
+						const screenshot = await resources.pageConnection.command("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
+						await fsPromises.writeFile(path.join(process.env.TMDB_SOURCE_DETAILS_SCREENSHOTS, "source-details-" + width + ".png"), Buffer.from(screenshot.data, "base64"));
+					}
+					await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishSourceDetailsScenario()", awaitPromise: true });
+				}
+
+				result.results.sourceDetailsVerified = true;
+				if (sourceDetailsOnly) return result.results;
 				const sourceChooserWidths = [];
 				const sourceChooserTabletPortraitWidths = [];
 				const tmdbListLayoutWidths = [];
@@ -591,7 +633,7 @@ async function runMountedPage() {
 			`Mounted browser required process-tree fallback after graceful shutdown failed: ${execution.cleanupReport.browser.gracefulError?.message ?? "unknown error"}`,
 		);
 	}
-	if (process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
+	if (!sourceDetailsOnly && process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
 		console.log(`MOUNTED_BROWSER_DIAGNOSTICS ${JSON.stringify({
 			browserExecutable: execution.cleanupReport.browserExecutable,
 			debugPort: resources.debugPort,
@@ -714,6 +756,10 @@ function assertRequiredNameFailure(result) {
 	assert.equal(result.serializedUnchanged, true);
 	assert.equal(result.label, "Source name");
 }
+
+test("mounted Workspace Source details remain compact, accessible and naturally wrapped", () => {
+	assert.equal(mountedResults.sourceDetailsVerified, true);
+});
 
 test("mounted People validation focuses Source name after rendering and performs zero mutation", () => {
 	assertRequiredNameFailure(mountedResults.peopleRequiredName);

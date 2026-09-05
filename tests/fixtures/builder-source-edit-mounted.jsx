@@ -1429,6 +1429,49 @@ function MountedWorkspace({ controller }) {
 	});
 }
 
+// Imported Source-card presentation only; no external catalogue or Preview is exercised.
+async function prepareSourceDetailsScenario() {
+	const controller = createController();
+	const native = (title, tmdbSourceType, tmdbId, mediaType, sortBy, filters = {}) => ({ title, provider: "tmdb", tmdbSourceType, tmdbId, mediaType, sortBy, filters });
+	controller.importValue([{ id: "details", title: "Source details review", folders: [{ id: "details-folder", title: "Representative sources", sources: [
+		native("My favourites", "PERSON", 31, "MOVIE", "popularity.desc"),
+		native("Eighties", "DISCOVER", null, "TV", "popularity.desc", { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31", withGenres: "35" }),
+		native("", "LIST", 1001, "MOVIE", "original"),
+		native("\u200e", "LIST", 123, "MOVIE", "added.desc"),
+		{ provider: "addon", title: "Catalog picks", addonId: "movie", type: "movie", catalogId: "catalog", genre: "movie" },
+		{ provider: "addon", title: "Long identifiers", addonId: "example.long." + "identifier".repeat(7), type: "series", catalogId: "trending-series-" + "catalog".repeat(7), genre: "Drama" },
+		{ provider: "addon", title: "AIO picks", addonId: "aio-metadata", type: "movie", catalogId: "trakt.recommendations.movies", genre: "None" },
+		{ provider: "trakt", title: "Imported picks", type: "movie", catalogId: "owner-list" },
+	] }] }]);
+	controller.selectNode(controller.getState().project.collections[0].folders[0].internalId);
+	const before = JSON.stringify(controller.getState());
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	await act(async () => { root.render(createElement(MountedWorkspace, { controller })); await afterCommittedEffects(); });
+	window.__finishSourceDetailsScenario = async () => { await act(async () => root.unmount()); host.remove(); };
+	const buttons = [...host.querySelectorAll('button[data-node-type="source"]')];
+	return {
+		width: window.innerWidth,
+		unchanged: JSON.stringify(controller.getState()) === before,
+		documentOverflow: document.documentElement.scrollWidth > window.innerWidth,
+		cards: buttons.map((button) => {
+			const meta = button.querySelector(".node-meta");
+			const css = getComputedStyle(button);
+			const metaCss = getComputedStyle(meta);
+			return {
+				title: button.querySelector(".node-title").textContent,
+				values: [...meta.children].map((entry) => entry.textContent),
+				overflow: button.scrollWidth > button.clientWidth + 1 || meta.scrollWidth > meta.clientWidth + 1,
+				minHeight: css.minHeight, paddingTop: css.paddingTop, paddingBottom: css.paddingBottom,
+				wrap: metaCss.flexWrap, clamp: metaCss.webkitLineClamp,
+				description: button.getAttribute("aria-describedby") ? document.getElementById(button.getAttribute("aria-describedby"))?.textContent : null,
+			};
+		}),
+	};
+}
+window.__prepareSourceDetailsScenario = prepareSourceDetailsScenario;
+
 async function runBlankCreationScenario() {
 	const controller = createController();
 	const host = document.createElement("div");
@@ -7833,7 +7876,7 @@ window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-runMountedRegressions().then(
+(new URLSearchParams(window.location.search).has("source-details-only") ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {
