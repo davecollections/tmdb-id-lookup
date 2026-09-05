@@ -11,6 +11,7 @@ import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
+import { mountedReactOptimizeDeps } from "./helpers/mounted-react-vite.mjs";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
@@ -90,6 +91,7 @@ async function runMountedPage() {
 			appType: "spa",
 			logLevel: "silent",
 			plugins: [react()],
+			optimizeDeps: mountedReactOptimizeDeps(["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html"]),
 			define: {
 				__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl),
 				__TMDB_STUDIO_MOCK_COUNTS__: "false",
@@ -150,6 +152,15 @@ async function runMountedPage() {
 		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 30000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
+		await resources.pageConnection.command("Page.addScriptToEvaluateOnNewDocument", { source: `
+			window.__mountedErrors = [];
+			addEventListener('error', event => window.__mountedErrors.push(event.message));
+			addEventListener('unhandledrejection', event => window.__mountedErrors.push(String(event.reason)));
+			for (const level of ['warn', 'error']) {
+				const original = console[level].bind(console);
+				console[level] = (...args) => { window.__mountedErrors.push(args.map(String).join(' ')); original(...args); };
+			}
+		` });
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
 			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-bulk-edit-mounted.html`,
@@ -163,7 +174,7 @@ async function runMountedPage() {
 			await new Promise((resolve) => setTimeout(resolve, 50));
 		}
 		const mounted = await evaluate(resources.pageConnection, "window.__builderBulkEditMounted ?? null");
-		if (mounted?.status !== "complete") throw new Error("Mounted Bulk Edit regressions timed out.");
+		if (mounted?.status !== "complete") throw new Error(`Mounted Bulk Edit regressions timed out: ${JSON.stringify(await evaluate(resources.pageConnection, "window.__mountedErrors"))}`);
 
 		await evaluate(resources.pageConnection, `document.querySelector('[data-bulk-edit-field="layout"] input[value="NO_CHANGE"]').focus()`);
 		await resources.pageConnection.command("Input.dispatchKeyEvent", {
@@ -227,7 +238,55 @@ async function runMountedPage() {
 			workspaceHeaderLayouts.push(await evaluate(resources.pageConnection, "window.__runWorkspaceHeaderGeometryScenario()"));
 		}
 
-		return { results: mounted.results, keyboard, layouts, brandingLayouts, workspaceHeaderLayouts };
+		// Reuse this browser/Vite lifecycle for local export through the real Builder.
+		await resources.pageConnection.command("Page.navigate", { url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-export-collections-mounted.html` });
+		const exportDeadline = Date.now() + 30000;
+		while (Date.now() < exportDeadline && !await evaluate(resources.pageConnection, "window.exportFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
+		const exportResults = [];
+		for (const width of [393, 900, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width === 393 });
+			exportResults.push(await evaluate(resources.pageConnection, "window.runExportScenario()"));
+		}
+		const exportEditors = await evaluate(resources.pageConnection, "window.runExportEditorCases()");
+		const exportFeedback = await evaluate(resources.pageConnection, "window.runExportFeedbackCases()");
+		const exportWarnings = await evaluate(resources.pageConnection, "window.runExportWarningCases()");
+		const exportLarge = await evaluate(resources.pageConnection, "window.runExportLargeCase()");
+		await evaluate(resources.pageConnection, "window.prepareExportCase()");
+		await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "active" }] });
+		await evaluate(resources.pageConnection, 'document.querySelector(".export-import-instructions button").focus()');
+		await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+		await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+		await evaluate(resources.pageConnection, 'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+		assert.deepEqual(await evaluate(resources.pageConnection, `(() => { const button = document.querySelector('.export-import-instructions button'); return { forcedColours: matchMedia('(forced-colors: active)').matches, expanded: button.getAttribute('aria-expanded'), focused: document.activeElement === button, border: getComputedStyle(button).borderStyle, outline: getComputedStyle(button).outlineStyle, contained: document.querySelector('[data-export-collections]').scrollWidth <= document.querySelector('[data-export-collections]').clientWidth + 1 }; })()`), { forcedColours: true, expanded: "true", focused: true, border: "solid", outline: "solid", contained: true }, "Import disclosure works with native keyboard focus and forced colours");
+		for (const expected of ["https://nuvio.tv/", "https://developer.themoviedb.org/docs/getting-started", "download-collections-json"]) {
+			await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+			await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+			assert.equal(await evaluate(resources.pageConnection, 'document.activeElement.href || document.activeElement.dataset.action'), expected, "Instructions keep natural link and action keyboard order");
+		}
+		for (const backward of [false, true]) {
+			await evaluate(resources.pageConnection, `(() => { const controls = [...document.querySelector('[data-export-collections]').querySelectorAll('button, a[href], [tabindex]')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
+			await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: backward ? 8 : 0 });
+			await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+			assert.equal(await evaluate(resources.pageConnection, 'Boolean(document.activeElement.closest("[data-export-collections]"))'), true, "Export traps native Tab at both boundaries");
+		}
+		await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+		await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		assert.equal(await evaluate(resources.pageConnection, 'document.activeElement === document.querySelector("[data-action=open-export-collections]") && !document.querySelector("[data-export-collections]") && document.body.style.position !== "fixed"'), true, "Escape releases modal and restores entry focus");
+		await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [] });
+		const exportErrors = await evaluate(resources.pageConnection, "window.__mountedErrors");
+		if (process.env.EXPORT_SCREENSHOT_DIR) {
+			await fsPromises.mkdir(process.env.EXPORT_SCREENSHOT_DIR, { recursive: true });
+			for (const width of [393, 900, 1280]) {
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width === 393 });
+				for (const state of ["workspace", "ready", "errors", "warnings", "instructions", "instructions-end"]) {
+					await evaluate(resources.pageConnection, `window.prepareExportScreenshot(${JSON.stringify(state)})`);
+					const screenshot = await resources.pageConnection.command("Page.captureScreenshot", { format: "png" });
+					await fsPromises.writeFile(path.join(process.env.EXPORT_SCREENSHOT_DIR, `export-${state}-${width}.png`), Buffer.from(screenshot.data, "base64"));
+				}
+			}
+		}
+		return { results: mounted.results, keyboard, layouts, brandingLayouts, workspaceHeaderLayouts, exportResults, exportEditors, exportFeedback, exportWarnings, exportLarge, exportErrors };
 	}, () => cleanupMountedBrowser({
 		browserExecutable: resources.browserExecutable,
 		browserProcess: resources.browserProcess,
@@ -244,6 +303,32 @@ async function runMountedPage() {
 let mounted;
 before(async () => {
 	mounted = await runMountedPage();
+});
+
+test("compact export, accurate totals, exact delivery and responsive entry work at owner widths", () => {
+	assert.deepEqual(mounted.exportErrors, []);
+	assert.deepEqual(mounted.exportResults.map((result) => result.width), [393, 900, 1280]);
+	for (const result of mounted.exportResults) { assert.equal(result.passed, true); assert.equal(result.requests, 0); assert.equal(result.overflow, false); }
+});
+
+test("blocking diagnostics reuse editors and return with fresh validation and counts", () => {
+	assert.equal(mounted.exportEditors.passed, true);
+	assert.equal(mounted.exportEditors.requests, 0);
+});
+
+test("large projects open compact export with accurate counts and no requests", () => {
+	assert.equal(mounted.exportLarge.passed, true);
+	assert.deepEqual(mounted.exportLarge.counts, { collections: 24, folders: 600, sources: 1200 });
+	assert.equal(mounted.exportLarge.requests, 0);
+	console.log("Large export measurement:", JSON.stringify(mounted.exportLarge));
+});
+
+test("export success feedback expires deterministically while failures stay actionable", () => {
+	assert.deepEqual(mounted.exportFeedback, { passed: true, timeoutMs: 4000, requests: 0 });
+});
+
+test("export maps real warning reasons and safely presents unknown future warnings", () => {
+	assert.deepEqual(mounted.exportWarnings, { passed: true, requests: 0 });
 });
 
 test("mounted combined Apply confirms once, preserves the draft on Cancel, and commits atomically on Continue", () => {
@@ -394,7 +479,7 @@ test("mounted product heading stays exact, stacked, contained, and navigation-sa
 		assert.equal(layout.documentOverflow, false, `document overflow at ${label}`);
 		assert.equal(layout.subtitle, "Built for Nuvio collections", `subtitle at ${label}`);
 		assert.equal(layout.oldProductTitlePresent, false, `old title at ${label}`);
-		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits"], `header actions at ${label}`);
+		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits", "Export collections"], `header actions at ${label}`);
 		assert.equal(layout.headerActionsContained, true, `header action containment at ${label}`);
 	}
 });

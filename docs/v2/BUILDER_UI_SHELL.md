@@ -1,5 +1,7 @@
 # Builder UI Shell and Hierarchy Navigator
 
+The local issue [#194](https://github.com/davecollections/tmdb-id-lookup/issues/194) implementation adds **Export collections** beneath the first-row Back/help controls once a Collection contains a Folder with a Source. The compact responsive modal shows totals, filename and diagnostics with primary Download JSON and secondary Copy JSON. It subscribes to the controller, suspends for existing diagnostic editors, and restores focus on return or Close. See [`BUILDER_EXPORT.md`](./BUILDER_EXPORT.md) for preparation, delivery and preservation details.
+
 Status: current Builder shell includes eight-family selected-folder Add Source and guided hierarchy creation through issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170) / merged [PR #171](https://github.com/davecollections/tmdb-id-lookup/pull/171), shared live reversible title behavior through issue [#172](https://github.com/davecollections/tmdb-id-lookup/issues/172) / merged [PR #173](https://github.com/davecollections/tmdb-id-lookup/pull/173), and the local uncommitted selectable-choice presentation contract tracked by issue [#178](https://github.com/davecollections/tmdb-id-lookup/issues/178)
 
 Last reviewed: 2026-09-03

@@ -1834,7 +1834,7 @@ test("modal restores exact Edit focus, initializes Title once, and retains safe 
 		"utf8",
 	);
 	assert.match(workspaceSource, /editRestoreFocusRef\.current = trigger/);
-	assert.match(workspaceSource, /if \(mode !== "rename"\) \{[\s\S]*setMobileLevelOverride/);
+	assert.match(workspaceSource, /if \(mode !== "rename" && !exportOpen\) \{[\s\S]*setMobileLevelOverride/);
 	assert.equal((workspaceSource.match(/target\.focus\?\.\(\)/g) ?? []).length, 1);
 	assert.match(editorSource, /initializeTitleInput\(titleInputRef\.current/);
 	assert.match(editorSource, /draft\.original\.title\.supported[\s\S]*isValidVisibleNuvioTitle\(draft\.values\.title\)[\s\S]*!titleHiddenEverywhere/);

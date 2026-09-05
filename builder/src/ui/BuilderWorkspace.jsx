@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { ExportCollectionsDialog } from "./ExportCollectionsDialog.jsx";
+import { hasExportableStructure } from "./export-collections.js";
 import builderMark from "../assets/builder-mark.svg";
 import {
 	applyPeopleHierarchyPlan,
@@ -94,6 +96,7 @@ import { DecadeSourceFlow } from "./DecadeSourceFlow.jsx";
 import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
 import {
+	createNodeEditorDraft,
 	updateNodeEditorField,
 	updateNodeEditorTileShape,
 } from "./node-editor.js";
@@ -729,6 +732,9 @@ export function BuilderWorkspace({
 	peopleManifestClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
+	const [exportOpen, setExportOpen] = useState(false);
+	const exportTriggerRef = useRef(null);
+	const workspaceScrollRef = useRef(0);
 	const desktopViewport = useBuilderDesktopViewport();
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const [editorMode, setEditorMode] = useState(initialEditorMode);
@@ -895,7 +901,7 @@ export function BuilderWorkspace({
 	const bulkEditLocked = bulkEditDraft !== null;
 	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
-	const hierarchyInteractionLocked = navigationLocked || actionsMenuInternalId !== null;
+	const hierarchyInteractionLocked = navigationLocked || exportOpen || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
 	const currentBulkEditAvailability = bulkEditAvailability(state.project);
 
@@ -942,8 +948,28 @@ export function BuilderWorkspace({
 		if (editorDraft !== null || editRestoreFocusRef.current === null) return;
 		const target = editRestoreFocusRef.current;
 		editRestoreFocusRef.current = null;
-		target.focus?.();
+		if (!exportOpen) target.focus?.();
 	}, [editorDraft]);
+
+	function openExport() {
+		if (!hasExportableStructure(state.project) || hierarchyInteractionLocked) return;
+		workspaceScrollRef.current = window.scrollY;
+		setExportOpen(true);
+	}
+
+	function closeExport() {
+		setExportOpen(false);
+		requestAnimationFrame(() => {
+			window.scrollTo({ top: workspaceScrollRef.current, behavior: "instant" });
+			focusElementWithoutScroll(exportTriggerRef.current ?? returnHomeButtonRef.current);
+		});
+	}
+
+	function editFromExport(internalId, trigger) {
+		const node = findEditableNode(state.project, internalId);
+		if (node) openEditor(internalId, trigger);
+		else openSourceEditor(internalId, trigger);
+	}
 
 	useEffect(() => {
 		if (returnConfirmationOpen) stayButtonRef.current?.focus();
@@ -1169,12 +1195,12 @@ export function BuilderWorkspace({
 		if (navigationLocked || pointerInteractionLocked()) return;
 		const node = findEditableNode(state.project, internalId);
 		if (!node) return;
-		const draft = createTargetedNodeEditorDraft(controller, node);
+		const draft = exportOpen ? createNodeEditorDraft(node) : createTargetedNodeEditorDraft(controller, node);
 		if (!draft) return;
 		setKeyboardReorderInternalId(null);
 		setActionsMenuInternalId(null);
 		setCreatedCardTarget(null);
-		if (mode !== "rename") {
+		if (mode !== "rename" && !exportOpen) {
 			setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
 		}
 		editRestoreFocusRef.current = trigger;
@@ -1220,14 +1246,14 @@ export function BuilderWorkspace({
 				const { collectionInternalId, folderInternalId } = sourceEdit.session;
 				sourceEditRestoreFocusRef.current = null;
 				setSourceEdit(null);
-				setPendingSourceEditFallback({ collectionInternalId, folderInternalId });
+				if (!exportOpen) setPendingSourceEditFallback({ collectionInternalId, folderInternalId });
 			}
 			return result;
 		}
 
 		sourceEditRestoreFocusRef.current = null;
 		setSourceEdit(null);
-		setPendingEditedSourceFocus(result.updatedInternalId);
+		if (!exportOpen) setPendingEditedSourceFocus(result.updatedInternalId);
 		setSourceEditStatusText("");
 		queueMicrotask(() => {
 			setSourceEditStatusText(result.changed
@@ -2313,11 +2339,12 @@ export function BuilderWorkspace({
 			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
 			data-bulk-edit-open={bulkEditLocked ? "true" : undefined}
 		>
+			{exportOpen ? <ExportCollectionsDialog controller={controller} locked={modalLocked} onClose={closeExport} onEdit={editFromExport} /> : null}
 			<div
 				className="workspace-underlay"
 				data-workspace-underlay="true"
-				inert={modalLocked || undefined}
-				aria-hidden={modalLocked ? "true" : undefined}
+				inert={modalLocked || exportOpen || undefined}
+				aria-hidden={modalLocked || exportOpen ? "true" : undefined}
 			>
 				<header className="app-header">
 					<div className="brand-lockup">
@@ -2332,6 +2359,7 @@ export function BuilderWorkspace({
 						</div>
 					</div>
 					<div className="workspace-header-actions">
+						<div className="workspace-header-navigation">
 						<button
 							ref={returnHomeButtonRef}
 							className="builder-home-action"
@@ -2354,6 +2382,8 @@ export function BuilderWorkspace({
 						>
 							<span aria-hidden="true">?</span>
 						</button>
+						</div>
+						{hasExportableStructure(state.project) ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export collections</button> : null}
 					</div>
 				</header>
 
@@ -2723,7 +2753,7 @@ export function BuilderWorkspace({
 					diagnostics={editorDiagnostics}
 					titleInputRef={titleInputRef}
 					mode={editorMode}
-					folderArtworkSuggestionContext={{
+					folderArtworkSuggestionContext={exportOpen ? null : {
 						folder: editorTarget,
 						peopleManifestClient: peopleManifestClientRef.current,
 						peopleProvider: peopleProviderRef.current,
@@ -2848,6 +2878,7 @@ export function BuilderWorkspace({
 			) : null}
 			{sourceEdit ? (
 				<SourceEditorDialog
+					localOnly={exportOpen}
 					provider={sourceProviderRef.current}
 					listProvider={listProviderRef.current}
 					peopleProvider={peopleProviderRef.current}

@@ -56,7 +56,7 @@ export function initializeTitleInput(input, {
 	};
 }
 
-export function handleDialogKeyDown(event, dialog, onCancel) {
+export function handleDialogKeyDown(event, dialog, onCancel, { includeControl = () => true } = {}) {
 	if (event.key === "Escape") {
 		event.preventDefault();
 		onCancel();
@@ -67,7 +67,7 @@ export function handleDialogKeyDown(event, dialog, onCancel) {
 		return "ignored";
 	}
 
-	const controls = [...(dialog?.querySelectorAll?.(focusableSelector) ?? [])];
+	const controls = [...(dialog?.querySelectorAll?.(focusableSelector) ?? [])].filter(includeControl);
 	if (controls.length === 0) {
 		event.preventDefault();
 		dialog?.focus?.();
