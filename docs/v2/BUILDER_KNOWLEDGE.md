@@ -2,7 +2,13 @@
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-09-03
+Last reviewed: 2026-09-06
+
+## 2026-09-06 — Nuvio desktop Source round trips (#196; local owner review)
+
+Nuvio desktop exports can expand unused Source and filter fields to explicit null values. Issue [#196](https://github.com/davecollections/tmdb-id-lookup/issues/196) corrects Genre and Decade/Year optional-filter readers and draft hydration, and accepts empty or all-null TMDB List filters. The three owner-supplied profiles each retain 4 Collections, 51 Folders and 197 Sources; all 35 Genre and 162 Decade/Year Sources now retain their editors in the local implementation. The List case is a synthetic regression, not a supplied client export. The warning screenshots were from a different custom collection; this task does not change warnings.
+
+Only absent/null optional values gain this interpretation. Valid zero values retain their meaning; required identities, meaningful unsupported or malformed values, and non-object filters keep their safeguards. Provider-led classification, comparison identities and serialization remain unchanged. Import, opening/Cancel, untouched no-op Save, and title/sort-only edits preserve the established imported-data contract. Intentionally changing Advanced settings may replace recognized filters with compact settings, omitting unused known nulls while preserving unknown fields, unrelated compatibility properties and raw snapshots. See [Source editing](./BUILDER_SOURCE_EDITING.md#desktop-round-trip-preservation).
 
 This is a living record of confirmed v2/Nuvio findings, current decisions, unsupported behaviour, and open questions. GitHub issues remain the source of truth for implementation scope. See [`BUILDER_PRODUCT_PLAN.md`](./BUILDER_PRODUCT_PLAN.md) for durable product direction, [`BUILDER_HIERARCHY_CREATION.md`](./BUILDER_HIERARCHY_CREATION.md) for the shared hierarchy-family standard, and [`PROJECT_WORKFLOW.md`](./PROJECT_WORKFLOW.md) for the Dave/ChatGPT/Codex process.
 

@@ -47,7 +47,7 @@ function canonicalText(value) {
 }
 
 function validRating(value) {
-	return value === undefined || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10);
+	return value === undefined || value === null || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10);
 }
 
 function inspectEffectiveDecadeSource(value, identity) {
@@ -73,12 +73,12 @@ function inspectEffectiveDecadeSource(value, identity) {
 		&& typeof value.filters.voteAverageLte === "number"
 		&& value.filters.voteAverageGte > value.filters.voteAverageLte
 	) return null;
-	if (value.filters.voteCountGte !== undefined && (!Number.isSafeInteger(value.filters.voteCountGte) || value.filters.voteCountGte < 0)) return null;
-	if (value.filters.withOriginalLanguage !== undefined && (typeof value.filters.withOriginalLanguage !== "string" || !/^[a-z]{2}$/.test(value.filters.withOriginalLanguage))) return null;
-	if (value.filters.withOriginCountry !== undefined && (typeof value.filters.withOriginCountry !== "string" || !/^[A-Z]{2}$/.test(value.filters.withOriginCountry))) return null;
+	if (value.filters.voteCountGte !== undefined && value.filters.voteCountGte !== null && (!Number.isSafeInteger(value.filters.voteCountGte) || value.filters.voteCountGte < 0)) return null;
+	if (value.filters.withOriginalLanguage !== undefined && value.filters.withOriginalLanguage !== null && (typeof value.filters.withOriginalLanguage !== "string" || !/^[a-z]{2}$/.test(value.filters.withOriginalLanguage))) return null;
+	if (value.filters.withOriginCountry !== undefined && value.filters.withOriginCountry !== null && (typeof value.filters.withOriginCountry !== "string" || !/^[A-Z]{2}$/.test(value.filters.withOriginCountry))) return null;
 
 	let genre = null;
-	if (value.filters.withGenres !== undefined) {
+	if (value.filters.withGenres !== undefined && value.filters.withGenres !== null) {
 		if (typeof value.filters.withGenres !== "string" || !/^[1-9]\d*$/.test(value.filters.withGenres)) return null;
 		const genreId = Number(value.filters.withGenres);
 		if (!Number.isSafeInteger(genreId)) return null;
@@ -88,7 +88,7 @@ function inspectEffectiveDecadeSource(value, identity) {
 	}
 
 	const excludedGenres = [];
-	if (value.filters.withoutGenres !== undefined) {
+	if (value.filters.withoutGenres !== undefined && value.filters.withoutGenres !== null) {
 		if (typeof value.filters.withoutGenres !== "string" || !/^[1-9]\d*(,[1-9]\d*)*$/.test(value.filters.withoutGenres)) return null;
 		for (const token of value.filters.withoutGenres.split(",")) {
 			const reference = officialGenreReference(mediaType, Number(token));

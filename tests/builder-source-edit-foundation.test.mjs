@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { desktopExpandedSource, roundTripSourceCases } from "./fixtures/nuvio-desktop-round-trip.mjs";
+import { discoverSourceNodeIdentity } from "../builder/src/nuvio/discover.js";
 
 import { createBuilderController } from "../builder/src/application/index.js";
 import {
@@ -1032,4 +1034,164 @@ test("an edited People sort remains exact through export and a second cycle", ()
 	const second = serialize(cycled);
 	assert.deepEqual(second.value, first.value);
 	assert.equal(second.json, first.json);
+});
+
+for (const { name, editorId, source: compact } of roundTripSourceCases) {
+	test(`desktop round trip: ${name} preserves import, hydration, no-op and intentional edits`, () => {
+		for (const route of ["compact", "account-manager", "desktop"]) {
+			const controller = createController();
+			const source = route === "desktop" ? desktopExpandedSource(compact) : structuredClone(compact);
+			if (route === "desktop") {
+				source.unknownNull = null;
+				source.filters.unknownNull = null;
+			}
+			const folder = importFolder(controller, [
+				{ provider: "community", title: "Before", keep: { value: false } },
+				source,
+				{ provider: "community", title: "After", keep: [0, null] },
+			], route === "account-manager" ? { focusGifEnabled: false } : {});
+			const before = serialize(controller);
+			const project = controller.getState().project;
+			const node = folder.sources[1];
+			const identity = editorId === "tmdb-list" ? sourceEditorFor(node).identity(node.editable) : discoverSourceNodeIdentity(node).key;
+			assert.equal(node.category, "native-tmdb");
+			assert.equal(sourceEditorFor(node)?.id, editorId, route);
+			assert.deepEqual(before.value[0].folders[0].sources[1], source);
+			const opened = sessionFor(controller, 1);
+			assert.equal(controller.getState().project, project, "opening/abandoning the draft does not mutate");
+			if (opened.draft.advanced) {
+				for (const key of ["minimumRating", "maximumRating", "minimumVotes", "originalLanguage", "originCountry"]) assert.equal(opened.draft.advanced[key], "", key);
+				assert.equal(JSON.stringify(opened.draft).includes('"null"'), false);
+			}
+			const noop = saveSourceEdit(controller, opened.session, opened.draft);
+			assert.equal(noop.ok, true);
+			assert.equal(noop.changed, false);
+			assert.equal(controller.getState().project, project);
+			assert.equal(serialize(controller).json, before.json);
+
+			const titleSave = saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Intentional title"));
+			assert.equal(titleSave.ok, true);
+			assert.deepEqual(titleSave.patch, { title: "Intentional title" });
+			assert.deepEqual(serialize(controller).value[0].folders[0].sources[1], { ...source, title: "Intentional title" });
+			if (editorId !== "tmdb-list") {
+				const sortOpen = sessionFor(controller, 1);
+				const sortSave = saveSourceEdit(controller, sortOpen.session, { ...sortOpen.draft, sortBy: "vote_average.desc", sortOptionId: "top-rated", sortTouched: true });
+				assert.equal(sortSave.ok, true, JSON.stringify(sortSave.errors));
+				assert.deepEqual(sortSave.patch, { sortBy: "vote_average.desc" });
+				assert.deepEqual(serialize(controller).value[0].folders[0].sources[1], { ...source, title: "Intentional title", sortBy: "vote_average.desc" });
+
+				const advancedOpen = sessionFor(controller, 1);
+				const revision = controller.getState().revision;
+				const changed = saveSourceEdit(controller, advancedOpen.session, { ...advancedOpen.draft, advancedTouched: true, advanced: { ...advancedOpen.draft.advanced, minimumRating: "0", minimumVotes: "0" } });
+				assert.equal(changed.ok, true, JSON.stringify(changed.errors));
+				assert.equal(controller.getState().revision, revision + 1);
+				assert.deepEqual(Object.keys(changed.patch), ["filters"]);
+				const after = serialize(controller).value[0].folders[0];
+				assert.deepEqual(after.sources[1].filters, { ...(route === "desktop" ? { unknownNull: null } : {}), ...compact.filters, voteAverageGte: 0, voteCountGte: 0 });
+				assert.deepEqual({ ...after.sources[1], filters: source.filters }, { ...source, title: "Intentional title", sortBy: "vote_average.desc" });
+				assert.deepEqual(after.sources[0], before.value[0].folders[0].sources[0]);
+				assert.deepEqual(after.sources[2], before.value[0].folders[0].sources[2]);
+				const reopened = sessionFor(controller, 1);
+				assert.equal(reopened.draft.advanced.minimumRating, "0");
+				assert.equal(reopened.draft.advanced.minimumVotes, "0");
+			}
+			const finalNode = controller.getState().project.collections[0].folders[0].sources[1];
+			assert.equal(finalNode.internalId, node.internalId);
+			assert.deepEqual(finalNode.rawImported, source);
+			assert.equal(sourceEditorFor(finalNode).id, editorId);
+			assert.deepEqual(controller.getState().project.collections.map((c) => [c.internalId, c.editable.id, c.folders.map((f) => [f.internalId, f.editable.id, f.sources.map((s) => s.internalId)])]), project.collections.map((c) => [c.internalId, c.editable.id, c.folders.map((f) => [f.internalId, f.editable.id, f.sources.map((s) => s.internalId)])]));
+			if (editorId === "tmdb-list") assert.equal(sourceEditorFor(finalNode).identity(finalNode.editable), identity);
+			const second = createController();
+			assert.equal(second.importValue(serialize(controller).value).ok, true);
+			assert.deepEqual(serialize(second).value, serialize(controller).value);
+		}
+	});
+}
+
+test("desktop round trip: required identities and meaningful malformed values remain unsupported", () => {
+	for (const entry of roundTripSourceCases) {
+		const expanded = desktopExpandedSource(entry.source);
+		const invalid = [
+			{ ...expanded, provider: "addon" },
+			{ ...expanded, provider: null },
+			{ ...expanded, provider: "community" },
+			{ ...expanded, tmdbSourceType: null },
+			{ ...expanded, tmdbSourceType: "UNKNOWN" },
+			{ ...expanded, mediaType: null },
+			{ ...expanded, mediaType: "invalid" },
+			...[[1], null, false, ""].map((filters) => ({ ...expanded, filters })),
+			...[false, 0, "", " ", "bad", [], {}].map((value) => ({ ...expanded, filters: { ...expanded.filters, futureFilter: value } })).filter((source) => !["", " "].includes(source.filters.futureFilter) || entry.editorId === "tmdb-list"),
+		];
+		if (entry.editorId === "tmdb-list") {
+			for (const tmdbId of [null, 0, -1, "abc", 2_147_483_648]) invalid.push({ ...expanded, tmdbId });
+			invalid.push({ ...expanded, sortBy: "popularity.desc" }, { ...expanded, mediaType: "TV" });
+			for (const value of [false, 0, "", " ", "28", [], {}]) invalid.push({ ...expanded, filters: { withGenres: value } });
+		} else {
+			for (const key of ["addonId", "catalogId", "type"]) invalid.push({ ...expanded, [key]: "meaningful" });
+			invalid.push({ ...expanded, tmdbId: 5 }, { ...expanded, sortBy: "unsupported" });
+			const fields = ["voteAverageGte", "voteAverageLte", "voteCountGte", "withoutGenres"];
+			if (entry.editorId === "decade") fields.push("withOriginalLanguage", "withOriginCountry");
+			for (const field of fields) for (const value of [false, "", " ", "bad", [], {}]) {
+				// An empty language/country is already accepted by the Genre fallback for a dated Genre.
+				if (value === "" && expanded.filters.withGenres !== null && ["withOriginalLanguage", "withOriginCountry"].includes(field)) continue;
+				invalid.push({ ...expanded, filters: { ...expanded.filters, [field]: value } });
+			}
+			if (entry.editorId === "genre") {
+				for (const field of ["withGenres", "releaseDateGte", "releaseDateLte"]) for (const value of [false, 0, "", " ", "bad", [], {}]) invalid.push({ ...expanded, filters: { ...expanded.filters, [field]: value } });
+				invalid.push({ ...expanded, filters: { ...expanded.filters, withGenres: null } });
+			} else {
+				invalid.push({ ...expanded, filters: { ...expanded.filters, releaseDateGte: "1984-02-01", releaseDateLte: "1984-12-31", withGenres: null } });
+			}
+		}
+		for (const source of invalid) {
+			const controller = createController();
+			const node = importFolder(controller, [source]).sources[0];
+			assert.equal(canEditSource(node), false, entry.name + " " + JSON.stringify(source));
+			assert.deepEqual(node.rawImported, source);
+		}
+	}
+});
+
+test("desktop round trip: provider, blocking-export and other-family contracts remain unchanged", () => {
+	const controller = createController();
+	const untouched = [collectionSource(), peopleSource(), peopleSource({ tmdbSourceType: "DIRECTOR", mediaType: "TV" }), studioSource(), studioSource({ mediaType: "TV" }), { ...studioSource(), tmdbSourceType: "NETWORK", mediaType: "TV" }, streamingSource()];
+	const folder = importFolder(controller, untouched.map(desktopExpandedSource));
+	assert.deepEqual(folder.sources.map((node) => sourceEditorFor(node)?.id), ["movie-collection", "people", "people", "studio", "studio", "network", "streaming"]);
+	assert.deepEqual(serialize(controller).value[0].folders[0].sources, untouched.map(desktopExpandedSource));
+	for (const [source, category, errorCode] of [
+		[{ provider: "addon", addonId: "example", catalogId: "catalog", type: "movie" }, "addon", null],
+		[{ provider: "addon", addonId: null, catalogId: "", type: null }, "addon", "INCOMPLETE_ADDON_SOURCE"],
+		[{ provider: "community", addonId: "example", catalogId: "catalog", type: "movie", future: { keep: false } }, "opaque", null],
+		[{ ...roundTripSourceCases[0].source, mediaType: "invalid" }, "native-tmdb", "INVALID_NATIVE_MEDIA_TYPE"],
+		[{ ...roundTripSourceCases[0].source, filters: [] }, "native-tmdb", "INVALID_NATIVE_FILTERS"],
+	]) {
+		const c = createController();
+		const node = importFolder(c, [source]).sources[0];
+		assert.equal(node.category, category);
+		assert.equal(canEditSource(node), false);
+		const output = c.serializeProject();
+		assert.equal(output.ok, errorCode === null);
+		if (errorCode) assert.ok(output.errors.some((e) => e.code === errorCode));
+		else {
+			assert.deepEqual(output.value[0].folders[0].sources[0], source);
+			assert.equal(output.value[0].folders[0].catalogSources.length, category === "addon" ? 1 : 0);
+			assert.equal(output.warnings.some((e) => e.code === "OPAQUE_SOURCE_PRESERVED"), category === "opaque");
+		}
+	}
+});
+
+test("desktop round trip: duplicate and stale Advanced saves do not mutate", () => {
+	for (const entry of roundTripSourceCases.filter((entry) => entry.editorId !== "tmdb-list")) {
+		const c = createController();
+		importFolder(c, [desktopExpandedSource(entry.source), { ...entry.source, filters: { ...entry.source.filters, voteCountGte: 100 } }]);
+		const opened = sessionFor(c);
+		const before = serialize(c).json;
+		const rejected = saveSourceEdit(c, opened.session, { ...opened.draft, advancedTouched: true, advanced: { ...opened.draft.advanced, minimumVotes: "100" } });
+		assert.equal(rejected.errors[0].code, "SOURCE_EDIT_DUPLICATE_IDENTITY", entry.name);
+		assert.equal(serialize(c).json, before);
+		c.updateNode(opened.source.internalId, { title: "Changed outside editor" });
+		const staleBefore = serialize(c).json;
+		assert.equal(saveSourceEdit(c, opened.session, opened.draft).errors[0].code, "SOURCE_EDIT_PROJECT_STALE");
+		assert.equal(serialize(c).json, staleBefore);
+	}
 });

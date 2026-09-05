@@ -1,6 +1,8 @@
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
+import { desktopExpandedSource, roundTripSourceCases } from "./nuvio-desktop-round-trip.mjs";
+import { createCollectionExportPayload } from "../../builder/src/ui/export-collections.js";
 import {
 	applyGenreHierarchyPlan,
 	applyStreamingHierarchyPlan,
@@ -1471,6 +1473,58 @@ async function prepareSourceDetailsScenario() {
 	};
 }
 window.__prepareSourceDetailsScenario = prepareSourceDetailsScenario;
+
+// Local import/editor behavior only. Record and forward any unexpected fetch; never synthesize a response.
+async function runDesktopRoundTripScenario() {
+	const controller = createController();
+	const folder = importSources(controller, roundTripSourceCases.map(({ source }) => desktopExpandedSource(source)));
+	controller.selectNode(folder.internalId);
+	const project = controller.getState().project;
+	const before = serializedValue(controller);
+	const requests = [];
+	const originalFetch = window.fetch;
+	window.fetch = (...args) => { requests.push(String(args[0])); return originalFetch(...args); };
+	const consoleErrors = [];
+	const originalConsoleError = console.error;
+	console.error = (...args) => { consoleErrors.push(args.map(String).join(" ")); originalConsoleError(...args); };
+	const host = document.createElement("div");
+	document.body.append(host);
+	const root = createRoot(host);
+	const cases = [];
+	try {
+		await act(async () => { root.render(createElement(MountedWorkspace, { controller })); await afterCommittedEffects(); });
+		for (const [index, entry] of roundTripSourceCases.entries()) {
+			const result = { name: entry.name, expectedAdapter: entry.editorId };
+			for (const action of ["cancel", "save"]) {
+				const trigger = host.querySelectorAll('[data-action="open-source-actions"]')[index];
+				await act(async () => { trigger.scrollIntoView({ block: "center" }); await afterCommittedEffects(); });
+				await clickAndSettle(trigger);
+				const edit = document.querySelector('[data-actions-menu="source"]:not([hidden]) [data-action="edit-source"]');
+				if (!edit) throw new Error(`${entry.name} has no Edit source action`);
+				result.editBeforeDelete = edit.nextElementSibling?.dataset.action === "delete-source";
+				await clickAndSettle(edit);
+				const dialog = document.querySelector('[data-source-edit-modal="true"]');
+				if (!dialog) throw new Error(`${entry.name} editor did not open`);
+				result.adapter = dialog.dataset.sourceEditAdapter;
+				result.noNullControls = [...dialog.querySelectorAll("input, select, textarea")].every((input) => input.value !== "null");
+				result.emptyNumericControls = [...dialog.querySelectorAll('input[type="number"]')].every((input) => input.value === "");
+				result.noOverflow = dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth;
+				await clickAndSettle(dialog.querySelector(`[data-action="${action}-source-edit"]`));
+				result[`${action}Closed`] = document.querySelector('[data-source-edit-modal="true"]') === null;
+				result[`${action}Unchanged`] = controller.getState().project === project && serializedValue(controller) === before;
+			}
+			cases.push(result);
+		}
+		const exported = createCollectionExportPayload(controller)();
+		return { width: window.innerWidth, cases, requests, consoleErrors, exportOk: exported.ok, exportWarnings: exported.warnings.length, exportUnchanged: JSON.stringify(exported.collections) === before, unchanged: controller.getState().project === project };
+	} finally {
+		await act(async () => root.unmount());
+		host.remove();
+		window.fetch = originalFetch;
+		console.error = originalConsoleError;
+	}
+}
+window.__runDesktopRoundTripScenario = runDesktopRoundTripScenario;
 
 async function runBlankCreationScenario() {
 	const controller = createController();
@@ -7876,7 +7930,7 @@ window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-(new URLSearchParams(window.location.search).has("source-details-only") ? Promise.resolve({}) : runMountedRegressions()).then(
+(["source-details-only", "source-round-trip-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {

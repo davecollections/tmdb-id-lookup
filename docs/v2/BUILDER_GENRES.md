@@ -2,7 +2,9 @@
 
 ## 1. Status and scope
 
-Last reviewed: 2026-09-04
+Last reviewed: 2026-09-06
+
+Issue [#196](https://github.com/davecollections/tmdb-id-lookup/issues/196), in local owner review, allows otherwise valid Movie/Series Genre imports to retain Edit when unused optional filters contain null placeholders from Nuvio desktop. Those controls open empty, not as the text "null". Required official Genre/media identity, supported sort, malformed-value safeguards and field-specific blank handling remain unchanged. Importing/opening does not rewrite a Source; an intentional Advanced edit may replace unused known null placeholders with compact settings under the [Source editing preservation contract](./BUILDER_SOURCE_EDITING.md#desktop-round-trip-preservation).
 
 Issue [#110](https://github.com/davecollections/tmdb-id-lookup/issues/110) is closed/completed through merged [PR #111](https://github.com/davecollections/tmdb-id-lookup/pull/111) after desktop and physical-iPhone owner acceptance. It implements official TMDB Genres as a focused consumer of [`BUILDER_DISCOVER_CORE.md`](./BUILDER_DISCOVER_CORE.md):
 

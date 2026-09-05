@@ -65,6 +65,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 async function runMountedPage() {
 	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
+	const roundTripOnly = process.env.TMDB_SOURCE_ROUND_TRIP_ONLY === "1";
 	const devToolsStartupMs = resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS);
 	const resources = {
 		browserExecutable: null,
@@ -173,7 +174,7 @@ async function runMountedPage() {
 		await resources.pageConnection.command("Runtime.enable");
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -183,6 +184,16 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (!sourceDetailsOnly) {
+					result.results.desktopRoundTripWidths = [];
+					for (const width of [360, 384, 393, 402, 412, 900]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: width < 900 });
+						const evaluated = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runDesktopRoundTripScenario()", awaitPromise: true, returnByValue: true });
+						if (evaluated.exceptionDetails) throw new Error(evaluated.exceptionDetails.exception?.description ?? evaluated.exceptionDetails.text);
+						result.results.desktopRoundTripWidths.push(evaluated.result.value);
+					}
+					if (roundTripOnly) return result.results;
+				}
 				// Reuse the mounted Workspace and browser lifecycle for Source-only details.
 				for (const width of [393, 900, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 1100, deviceScaleFactor: 1, mobile: width === 393 });
@@ -635,7 +646,7 @@ async function runMountedPage() {
 			`Mounted browser required process-tree fallback after graceful shutdown failed: ${execution.cleanupReport.browser.gracefulError?.message ?? "unknown error"}`,
 		);
 	}
-	if (!sourceDetailsOnly && process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
+	if (!sourceDetailsOnly && !roundTripOnly && process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
 		console.log(`MOUNTED_BROWSER_DIAGNOSTICS ${JSON.stringify({
 			browserExecutable: execution.cleanupReport.browserExecutable,
 			debugPort: resources.debugPort,
@@ -761,6 +772,23 @@ function assertRequiredNameFailure(result) {
 
 test("mounted Workspace Source details remain compact, accessible and naturally wrapped", () => {
 	assert.equal(mountedResults.sourceDetailsVerified, true);
+});
+
+test("mounted desktop round trip restores Genre, Decade and List Edit without requests or no-op mutation", () => {
+	assert.deepEqual(mountedResults.desktopRoundTripWidths.map((entry) => entry.width), [360, 384, 393, 402, 412, 900]);
+	for (const result of mountedResults.desktopRoundTripWidths) {
+		assert.deepEqual(result.requests, [], `${result.width}px requests`);
+		assert.deepEqual(result.consoleErrors, [], `${result.width}px console errors`);
+		assert.equal(result.exportOk, true);
+		assert.equal(result.exportWarnings, 0);
+		assert.equal(result.exportUnchanged, true);
+		assert.equal(result.unchanged, true);
+		assert.equal(result.cases.length, 15);
+		for (const entry of result.cases) {
+			assert.equal(entry.adapter, entry.expectedAdapter, entry.name);
+			for (const key of ["editBeforeDelete", "noNullControls", "emptyNumericControls", "noOverflow", "cancelClosed", "cancelUnchanged", "saveClosed", "saveUnchanged"]) assert.equal(entry[key], true, `${result.width}px ${entry.name}: ${key}`);
+		}
+	}
 });
 
 test("mounted People validation focuses Source name after rendering and performs zero mutation", () => {

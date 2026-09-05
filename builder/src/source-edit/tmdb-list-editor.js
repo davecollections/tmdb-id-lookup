@@ -1,4 +1,5 @@
 import { canonicalPositiveId, diagnostic, isPlainObject, validateTouchedSourceTitle } from "./source-edit-utils.js";
+import { resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
 
 export const TMDB_LIST_SOURCE_EDITOR_ID = "tmdb-list";
 
@@ -14,7 +15,7 @@ export function tmdbListEditIdentity(editable) {
 		&& mediaType === "MOVIE"
 		&& editable.sortBy === "original"
 		&& isPlainObject(filters)
-		&& Object.keys(filters).length === 0
+		&& Object.values(filters).every((value) => value === null)
 		&& id !== null
 		&& id <= 2_147_483_647
 		? `tmdb|LIST|${id}|MOVIE`
@@ -38,7 +39,11 @@ export const tmdbListSourceEditor = Object.freeze({
 	label: "TMDB List",
 	ownedFields: Object.freeze(["title"]),
 	duplicateMessage: "This folder already contains that TMDB List source.",
-	canEdit(source) { return source?.nodeType === "source" && source.category === "native-tmdb" && tmdbListEditIdentity(source.editable) !== null; },
+	canEdit(source) {
+		// Inspect the preserved filter overlay too: unknown non-null filters are not an empty List configuration.
+		const effective = resolveEffectiveDiscoverSource(source);
+		return effective.ok && tmdbListEditIdentity(effective.value) !== null;
+	},
 	identity: tmdbListEditIdentity,
 	readInitialState,
 	validateDraft,

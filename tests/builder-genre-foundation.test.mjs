@@ -266,6 +266,21 @@ test("advanced filter recognition is lossless and fails closed on unsupported sh
 	assert.equal(readGenreAdvancedFilters({ ...filters, withKeywords: "42" }, { mediaType: "MOVIE", includedGenre: "Comedy" }), null);
 });
 
+test("Genre optional readers accept null without admitting blank numeric/date fields or falsy malformed codes", () => {
+	const options = { mediaType: "MOVIE", includedGenre: "Comedy" };
+	const empty = readGenreAdvancedFilters({ withGenres: "35" }, options);
+	for (const field of ["releaseDateGte", "releaseDateLte", "voteAverageGte", "voteAverageLte", "voteCountGte", "withoutGenres", "withOriginalLanguage", "withOriginCountry"]) {
+		assert.deepEqual(readGenreAdvancedFilters({ withGenres: "35", [field]: null }, options), empty, field);
+		assert.equal(readGenreAdvancedFilters({ withGenres: "35", [field]: false }, options), null, field);
+		assert.equal(readGenreAdvancedFilters({ withGenres: "35", [field]: " " }, options), null, field);
+		if (!["withOriginalLanguage", "withOriginCountry"].includes(field)) assert.equal(readGenreAdvancedFilters({ withGenres: "35", [field]: "" }, options), null, field);
+	}
+	const zeros = readGenreAdvancedFilters({ withGenres: "35", voteAverageGte: 0, voteAverageLte: 0, voteCountGte: 0 }, options);
+	assert.equal(zeros.minimumRating, "0");
+	assert.equal(zeros.maximumRating, "0");
+	assert.equal(zeros.minimumVotes, "0");
+});
+
 test("Genre draft validation rejects reorder, compound identity and unreviewed filter changes", () => {
 	const options = { genres: ["Comedy", "Action & Adventure"], advanced: fullAdvanced() };
 	const drafts = buildGenreSourceDrafts(options.genres, options).drafts;

@@ -2,6 +2,8 @@
 
 ## 1. Status and boundary
 
+Issue [#196](https://github.com/davecollections/tmdb-id-lookup/issues/196), in local owner review, preserves Edit for otherwise valid Movie/Series Decade, Year and early-period Sources whose unused optional filters are expanded to null by Nuvio desktop. Optional Genre, rating, vote, language, country and exclusion controls read those nulls as inactive; zero ratings/votes remain zero. Canonical periods, required media and meaningful malformed values retain their safeguards. Import, opening and untouched no-op Save do not rewrite the Source. Intentional Advanced editing may omit unused known null filters while preserving unknown data and raw snapshots; see [Source editing](./BUILDER_SOURCE_EDITING.md#desktop-round-trip-preservation).
+
 Status: deterministic foundation merged through issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112) / PR [#114](https://github.com/davecollections/tmdb-id-lookup/pull/114), with the visible owner-reviewed flow merged through issue [#113](https://github.com/davecollections/tmdb-id-lookup/issues/113) / PR [#115](https://github.com/davecollections/tmdb-id-lookup/pull/115). No current-client Decades hierarchy import/export result is claimed.
 
 Issue #112 provides the deterministic, non-UI Decades foundation consumed by the later visible issue #113.

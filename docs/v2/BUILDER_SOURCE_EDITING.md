@@ -2,7 +2,7 @@
 
 Status: merged foundation through issue [#78](https://github.com/davecollections/tmdb-id-lookup/issues/78) / PR [#79](https://github.com/davecollections/tmdb-id-lookup/pull/79); extended through Studio #92 / PR #93, Network #98 / PR #99, Streaming #104 / PR #105, official Genre #110 / PR #111, canonical Decade #113 / PR #115, and title-only TMDB Lists #170 / PR #171. Issue #158 added current-draft title Preview to the first seven adapters; issue #170 completed the eighth adapter after Worker deployment, live acceptance, owner review, publication, and merge.
 
-Last reviewed: 2026-09-03
+Last reviewed: 2026-09-06
 
 ## Scope
 
@@ -15,9 +15,9 @@ The current narrow source-editing surface edits one existing physical source in 
 - simple native TMDB Streaming `DISCOVER` Movie/TV sources with one uppercase Region, one positive Provider ID, and no other meaningful filter or unknown data.
 - native TMDB Genre `DISCOVER` Movie/TV sources with exactly one official media-correct positive `withGenres` ID and only the losslessly representable issue #110 year, rating, vote, language, country, and comma-separated official exclusion filters.
 - canonical native TMDB Decade-period `DISCOVER` Movie/TV sources classified by issue #112, optionally with one official media-correct included Genre and only the approved rating, vote, language, country, and comma-separated official exclusion filters.
-- native TMDB List sources with canonical positive signed-32-bit identity `tmdb|LIST|<list id>|MOVIE`, `sortBy: original`, and explicit empty filters.
+- native TMDB List sources with canonical positive signed-32-bit identity `tmdb|LIST|<list id>|MOVIE`, `sortBy: original`, and an explicit filters object that is empty or contains only null placeholders.
 
-Addon-backed, opaque/community, Discover shapes outside the recognized simple Streaming, official single-Genre, or canonical Decade-period boundaries, differently configured/incomplete Lists, incomplete Company/Network, and other unsupported native source shapes remain readable, movable, preservable, and removable, but do not expose Edit. Unknown imported fields remain preserved and do not prevent title-only editing when the recognized List fields are canonical. The editor never treats several sources as one logical bundle.
+Addon-backed, opaque/community, Discover shapes outside the recognized simple Streaming, official single-Genre, or canonical Decade-period boundaries, differently configured/incomplete Lists, incomplete Company/Network, and other unsupported native source shapes remain readable, movable, preservable, and removable, but do not expose Edit. Unknown top-level List metadata remains preserved and does not prevent title-only editing when the recognized List fields are valid; non-null imported List filters remain unsupported. The editor never treats several sources as one logical bundle.
 
 ## Architecture
 
@@ -34,7 +34,7 @@ Source editing is framework-independent under `builder/src/source-edit/`:
 - `streaming-editor.js` recognizes only simple Streaming-shaped DISCOVER nodes, owns title/sort validation and difference-only patches, and delegates functional identity to DISCOVER Core;
 - `genre-editor.js` recognizes only official media-correct single-Genre DISCOVER nodes whose approved filters are losslessly representable, owns title/sort/filter validation and difference-only patches, and delegates functional identity to DISCOVER Core;
 - `decade-editor.js` recognizes only canonical issue #112 Decade periods, owns title/sort/nonstructural-filter validation and difference-only patches, rebuilds its candidate through the shared one-period Decade composition helper, and keeps period/media/included-Genre structure fixed;
-- `tmdb-list-editor.js` recognizes only canonical `LIST`/`MOVIE`/`original`/empty-filter sources, owns title only, and keeps List ID plus all functional configuration fixed;
+- `tmdb-list-editor.js` recognizes only `LIST`/`MOVIE`/`original` sources with empty or all-null filters, including the preserved filter overlay, owns title only, and keeps List ID plus all functional configuration fixed;
 - `source-edit-actions.js` binds the exact physical source, performs stale-state and duplicate checks, and delegates a real change to `controller.updateNode()` exactly once;
 - `source-edit-utils.js` contains shared canonicalisation, title validation, and safe-label helpers.
 
@@ -47,7 +47,7 @@ Issue #118's `nuvio-people-assets` manifest is a creation-time canonical-name/ca
 | Source | Editable | Fixed and preserved |
 | --- | --- | --- |
 | Movie Collection | title; TMDB collection identity selected through the existing collection search/details boundary | provider, source type, media type, sort, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
-| TMDB List | display title only | List TMDB ID, provider, `LIST`, canonical source-level `MOVIE`, `original`, empty filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
+| TMDB List | display title only | List TMDB ID, provider, `LIST`, canonical source-level `MOVIE`, `original`, empty/all-null filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | People | title; one of Acting Movies, Acting Series, Directed Movies, or Directed Series; evidenced sort order | person TMDB ID, provider, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | Studio Movie/Series | display title and evidenced media-correct sort order | Studio TMDB ID, provider, `COMPANY`, `MOVIE`/`TV`, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | Network Series | display title and evidenced TV sort order | Network TMDB ID, provider, `NETWORK`, `TV`, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
@@ -91,6 +91,12 @@ Duplicate identity is evaluated only inside the destination folder and excludes 
 Cancel, validation failure, duplicate rejection, stale-state rejection, and an unchanged save perform zero controller mutation calls and advance no project revision. A real edit builds only changed owned fields and calls `controller.updateNode(sourceInternalId, patch)` once, producing one content revision.
 
 The existing preservation-first controller/domain/serializer path remains authoritative. Source and folder order, raw IDs, compact or verbose imported representation, unknown/community fields, null/default fields, untouched sort/filter values, addon compatibility projections, collection/folder presentation, and unrelated sources remain untouched. Serialization continues to overlay recognised edited fields onto imported raw snapshots and emits no builder `internalId`, title-management mode, count state, or source-edit state.
+
+## Desktop round-trip preservation
+
+Nuvio desktop may add unused properties with null values. Issue [#196](https://github.com/davecollections/tmdb-id-lookup/issues/196) lets otherwise valid Genre and Decade/Year Sources read optional null filters as inactive, and lets valid TMDB Lists use empty or all-null filters. Required identity fields and non-object filters remain invalid. Meaningful malformed/unsupported values still prevent editing; empty strings and whitespace do not gain a general exception. Genre and Decade editors open from stored values without a request until explicit Preview.
+
+Importing, opening/Cancel and an untouched no-op Save preserve the established imported-data contract. Title-only and sort-only edits retain unrelated filter and compatibility values. Intentionally changing Advanced settings uses the existing replacement of recognized filters with compact settings, so unused known null placeholders may disappear. Unknown fields, unrelated top-level compatibility properties, source ordering/IDs and preserved raw snapshots remain protected. This does not promise identical bytes after an intentional settings change. List title editing never replaces filters.
 
 ## UI and accessibility
 
