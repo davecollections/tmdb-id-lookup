@@ -52,7 +52,7 @@ function friendlyChoice(value, labels) {
 	return labels[value.toUpperCase()] ?? null;
 }
 
-function nodeTitle(value, noun) {
+export function nodeTitle(value, noun) {
 	if (isInvisibleNuvioTitle(value)) {
 		const capitalizedNoun = noun[0].toUpperCase() + noun.slice(1);
 		return {

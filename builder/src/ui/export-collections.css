@@ -1,0 +1,66 @@
+.app-header .workspace-header-actions { grid-template-columns: auto; justify-items: end; }
+.workspace-header-navigation { display: flex; align-items: center; gap: 9px; }
+.export-entry-action { justify-self: end; min-height: 44px; padding: 9px 17px; border: 1px solid #65aabe; border-radius: 11px; color: #def8ff; background: #203d4b; box-shadow: inset 0 1px 0 rgb(222 248 255 / 15%); font-weight: 750; }
+.export-entry-action:hover:not(:disabled) { background: #2b5060; }
+.export-collections-portal[hidden] { display: none !important; }
+.settings-modal-backdrop.export-collections-backdrop { padding: 24px; align-items: center; justify-items: center; background: rgb(1 8 14 / 65%); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.export-collections-dialog { width: min(660px, 100%); max-height: 100%; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--panel-deep); box-shadow: var(--shadow); color: var(--text); }
+.export-collections-dialog h2, .export-collections-dialog h3, .export-collections-dialog h4, .export-collections-dialog p { margin: 0; }
+.export-collections-dialog p { overflow-wrap: anywhere; line-height: 1.55; }
+.export-collections-dialog button { min-height: 44px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 9px 14px; font: inherit; color: var(--text); background: var(--elevated); cursor: pointer; }
+.export-collections-dialog button:hover:not(:disabled) { background: var(--elevated-hover); }
+.export-collections-dialog button:disabled { opacity: .45; cursor: default; }
+.export-collections-dialog :focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 3px; }
+.export-collections-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+.export-collections-header h2 { font-size: 1.3rem; }
+.export-collections-summary { display: grid; gap: 16px; padding: 20px 22px 14px; }
+.export-collections-summary h3 { font-size: 1.05rem; }
+.export-problem-status { color: var(--coral); }
+.export-collections-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.export-collections-totals > div { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; }
+.export-collections-totals dt, .export-muted, .export-filename { color: var(--muted); font-size: .82rem; }
+.export-collections-totals dd { margin: 5px 0 0; font-size: 1.4rem; font-weight: 700; }
+.export-collections-content { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 2px 22px 16px; scroll-padding-block: 12px; }
+.export-diagnostics { padding: 12px 14px; border: 1px solid var(--amber); border-radius: 10px; margin-bottom: 14px; }
+.export-diagnostics.errors { border-color: var(--coral); }
+.export-diagnostics summary { min-height: 44px; align-content: center; cursor: pointer; line-height: 1.5; }
+.export-diagnostics ul { margin: 10px 0 12px; padding-left: 18px; }
+.export-diagnostics li + li { margin-top: 14px; }
+.export-diagnostics button { margin-top: 7px; text-align: left; overflow-wrap: anywhere; max-width: 100%; }
+.export-warning-group { display: grid; gap: 8px; margin-top: 16px; }
+.export-warning-group + .export-warning-group { padding-top: 16px; border-top: 1px solid var(--border); }
+.export-warning-group button { justify-self: start; }
+.export-warning-location { margin-top: 12px; }
+.export-warning-location li + li { margin-top: 4px; }
+.export-import-instructions { font-size: .86rem; }
+.export-import-instructions button { text-align: left; }
+.export-import-guide:not([hidden]) { display: grid; gap: 16px; margin-top: 16px; }
+.export-import-guide h4 { font-size: 1rem; }
+.export-import-guide h5 { font-size: .92rem; margin: 0; }
+.export-import-guide a { color: var(--cyan-bright); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.export-import-section { min-width: 0; }
+.export-import-clarification { margin-top: 14px !important; color: var(--muted); }
+.export-import-enrichment { padding: 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--elevated); }
+.export-import-instructions ol { padding-left: 24px; margin: 12px 0 0; line-height: 1.55; }
+.export-import-instructions li + li { margin-top: 8px; }
+.export-collections-footer { padding: 16px 22px 12px; border-top: 1px solid var(--border); }
+.export-collections-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.export-collections-actions .editor-apply { border-color: var(--cyan-bright); background: #124155; }
+.export-feedback { min-height: 1.55em; margin-top: 9px !important; font-size: .86rem; }
+@media (min-width: 900px) { .app-header:has(.workspace-header-actions) { grid-template-columns: minmax(0, 1fr) auto; } }
+@media (max-width: 599px) {
+	.settings-modal-backdrop.export-collections-backdrop { padding: max(12px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom)); }
+	.export-collections-header { padding: 14px; }
+	.export-collections-header h2 { font-size: 1.15rem; }
+	.export-collections-summary { padding: 16px 14px 12px; gap: 12px; }
+	.export-collections-content { padding-inline: 14px; }
+	.export-collections-footer { padding: 14px 14px 10px; }
+	.export-collections-totals { gap: 8px; }
+	.export-collections-totals > div { padding-inline: 8px; }
+}
+@media (forced-colors: active) {
+	.export-collections-dialog, .export-collections-dialog button, .export-entry-action, .export-diagnostics { border-color: CanvasText; }
+	.export-import-enrichment { border-color: CanvasText; }
+	.export-import-guide a { color: LinkText; }
+	.export-collections-dialog button:disabled { color: GrayText; opacity: 1; }
+}

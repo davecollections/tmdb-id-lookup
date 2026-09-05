@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import test, { before } from "node:test";
 import { fileURLToPath } from "node:url";
+import { mountedReactOptimizeDeps } from "./helpers/mounted-react-vite.mjs";
 
 import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
@@ -158,6 +159,7 @@ async function runMountedPage() {
 			appType: "spa",
 			logLevel: "silent",
 			plugins: [react()],
+			optimizeDeps: mountedReactOptimizeDeps(["tests/fixtures/builder-folder-card-artwork-mounted.html"]),
 			define: {
 				__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl),
 				__TMDB_STUDIO_MOCK_COUNTS__: "false",

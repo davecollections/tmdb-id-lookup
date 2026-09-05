@@ -55,6 +55,7 @@ runNode(["--test", path.join("tests", "builder-presentation-updates.test.mjs")])
 runNode(["--test", path.join("tests", "builder-bulk-edit.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-welcome-import.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-ui.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-export-collections.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-details.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-folder-card-artwork.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-folder-artwork-suggestions.test.mjs")]);

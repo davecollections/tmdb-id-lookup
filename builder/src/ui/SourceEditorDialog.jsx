@@ -220,7 +220,7 @@ export function PeopleEditorFields({
 							<span>
 								<strong>{combination.role === "directing" ? "Directing" : "Acting"} · {combination.media === "series" ? "Series" : "Movies"}</strong>
 							</span>
-							<em data-count-state={countState.status}>{peopleEditCountLabel(countState, combination.countKey)}</em>
+							<em data-count-state={countState.status}>{countState.status === "not-requested" ? "Not requested" : peopleEditCountLabel(countState, combination.countKey)}</em>
 						</label>
 					);
 				})}
@@ -252,6 +252,7 @@ export function PeopleEditorFields({
 }
 
 function studioCountText(count, mediaType) {
+	if (count?.status === "not-requested") return { text: "Not requested", state: "not-requested" };
 	if (count?.status === "ready") {
 		const noun = mediaType === "TV" ? "series" : `movie${count.count === 1 ? "" : "s"}`;
 		return {
@@ -299,7 +300,7 @@ export function StudioEditorFields({
 
 export function NetworkEditorFields({ draft, network, countState, sortRef, titleField = null, onSortChange }) {
 	const selectedSortId = draft.sortOptionId ?? networkSortOptionId(draft.sortBy);
-	const count = countState?.status === "ready"
+	const count = countState?.status === "not-requested" ? { text: "Not requested", state: "not-requested" } : countState?.status === "ready"
 		? { text: `Series Count: ${countState.count.toLocaleString("en")}`, state: countState.count === 0 ? "zero" : "ready" }
 		: countState?.status === "unavailable"
 			? { text: "Count unavailable", state: "unavailable" }
@@ -404,7 +405,7 @@ export function SourceEditErrorPanel({ result, alertRef = null }) {
 	);
 }
 
-function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose, onUseSelectedName }) {
+function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose, onUseSelectedName, localOnly = false }) {
 	const collectionName = draft.selectedCollectionName ?? session.openingTitle;
 	return (
 		<section className="source-edit-options" aria-labelledby="source-edit-options-title">
@@ -421,11 +422,12 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 					: "Current source title; no canonical TMDB name was fetched."}</small>
 			</p>
 			<div className="source-edit-option-actions">
-				<button ref={chooseButtonRef} type="button" onClick={onChoose}>Choose another franchise</button>
+				<button ref={chooseButtonRef} type="button" disabled={localOnly} onClick={onChoose}>Choose another franchise</button>
 				{draft.selectedCollectionName ? (
 					<button type="button" onClick={onUseSelectedName}>Use selected collection name</button>
 				) : null}
 			</div>
+			{localOnly ? <p className="editor-field-help">Franchise lookup is available from the Builder.</p> : null}
 		</section>
 	);
 }
@@ -443,6 +445,7 @@ function SourceEditTitlePreview({ preview, onClose, onRetry }) {
 }
 
 export function SourceEditorDialog({
+	localOnly = false,
 	provider,
 	listProvider,
 	peopleProvider,
@@ -464,6 +467,13 @@ export function SourceEditorDialog({
 	onCancel,
 	onSave,
 }) {
+	if (localOnly) {
+		provider = listProvider = peopleProvider = networkPreviewProvider = networkCatalogueProvider = networkCountProvider = null;
+		genrePreviewProvider = streamingCatalogueProvider = streamingPreviewProvider = studioCatalogueProvider = studioCountProvider = studioPreviewProvider = decadePreviewProvider = null;
+		initialPeopleCountState = { status: "not-requested" };
+		initialStudioCountState = { movie: { status: "not-requested" }, series: { status: "not-requested" } };
+		initialNetworkCountState = { status: "not-requested" };
+	}
 	const adapter = sourceEditorById(session.adapterId);
 	const [draft, setDraft] = useState(initialDraft);
 	const [stage, setStage] = useState("edit");
@@ -987,6 +997,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === MOVIE_COLLECTION_SOURCE_EDITOR_ID ? (
 										<MovieCollectionEditorFields
+											localOnly={localOnly}
 											draft={draft}
 											session={session}
 											chooseButtonRef={chooseButtonRef}
@@ -997,10 +1008,10 @@ export function SourceEditorDialog({
 											}}
 										/>
 									) : null}
-									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
+									{localOnly ? null : <div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
 										<button type="button" aria-haspopup="dialog" data-action="preview-source-edit" disabled={!previewAvailable || submitting} onClick={openPreview}>Preview titles</button>
 										{previewGuidance ? <p className="editor-field-help" role="status">{previewGuidance}</p> : null}
-									</div>
+									</div>}
 								</>
 							)}
 						</div>

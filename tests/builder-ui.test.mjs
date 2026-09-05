@@ -663,15 +663,20 @@ test("production UI keeps local Builder and approved attribution assets while ex
 	assert.match(source, /tmdb-logo-square\.svg/);
 	assert.match(source, /justwatch-mark-gold\.svg/);
 	assert.doesNotMatch(source, /from\s+["']node:/);
-	assert.doesNotMatch(source, /\b(?:localStorage|indexedDB|fetch|showOpenFilePicker|showSaveFilePicker|Blob|File|createObjectURL)\b/);
+	assert.doesNotMatch(source, /\b(?:localStorage|indexedDB)\b/);
+	// Import instructions may say “fetch” or “From File”; these are not API calls.
+	assert.doesNotMatch(source, /\b(?:fetch|showOpenFilePicker|showSaveFilePicker|new\s+File)\s*(?:\?\.)?\(/);
+	assert.match(read("builder/src/ui/export-collections.js"), /new Blob\(\[payload\.json\]/);
 	assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
 	assert.doesNotMatch(source, /react-router|ReactRouter/i);
-	assert.deepEqual([...source.matchAll(/https?:\/\/[^"']+/g)].map((match) => match[0]), [
+	assert.deepEqual([...new Set([...source.matchAll(/https?:\/\/[^\s"'<>)}]+/g)].map((match) => match[0]))].sort(), [
 		"https://www.themoviedb.org/",
 		"https://www.justwatch.com/",
 		"https://github.com/davecollections",
 		"https://github.com/davecollections/tmdb-id-lookup/issues/new/choose",
-	]);
+		"https://nuvio.tv/",
+		"https://developer.themoviedb.org/docs/getting-started",
+	].sort());
 });
 
 test("styles provide mobile protection, touch sizing, focus, desktop panels, and reduced motion", () => {

@@ -393,7 +393,9 @@ Owner-supplied current Nuvio evidence confirms collection-level `focusGlowEnable
 
 Nuvio client import behaviour can be destructive or can change by client and version. Instructions must therefore remain dated and updateable, warn before replacement, and distinguish observed behaviour from assumptions.
 
-## 15. Review, export, and installation journey
+## 15. Export and installation journey
+
+**Local implementation — issue [#194](https://github.com/davecollections/tmdb-id-lookup/issues/194):** The Builder remains the sole editing, arrangement and reordering interface. **Export collections** opens a compact modal with current totals, validation, preservation warnings, the local-date filename, Download JSON and Copy JSON. Existing diagnostic editors return with current validation/counts. A visual Nuvio preview is deferred and should be reconsidered only after shared on-demand title-preview work exists and users demonstrate demand; no follow-up visual-preview issue is created now. Future **Send to Nuvio** should reuse canonical prepared Collection data where compatible, without assuming delivery scope or the account API envelope. Unauthenticated Download remains an independent fallback. See [`BUILDER_EXPORT.md`](./BUILDER_EXPORT.md).
 
 **Confirmed direction**
 
@@ -408,7 +410,7 @@ The intended journey is:
 7. follow current, evidence-backed Nuvio import guidance;
 8. later, optionally Send to Nuvio through a verified integration.
 
-Review should disclose external dependencies and what will be added or replaced. Manual export must remain available after any future connection feature.
+Export discloses preservation warnings and blocking problems without changing the draft. Manual Download remains independently available after any future account connection feature.
 
 ## 16. Optional future Nuvio connection
 
