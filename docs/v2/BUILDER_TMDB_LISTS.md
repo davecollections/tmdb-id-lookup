@@ -2,7 +2,9 @@
 
 Status: complete through issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170) / merged [PR #171](https://github.com/davecollections/tmdb-id-lookup/pull/171) at `3e1ceace849d137e17ddfedb8637bc147f511285`; the reviewed Worker bytes were manually deployed, bounded live production-path and current-Nuvio gates passed, owner review completed, and Pages publication succeeded
 
-Last reviewed: 2026-09-02
+Last reviewed: 2026-09-06
+
+Issue [#196](https://github.com/davecollections/tmdb-id-lookup/issues/196), in local owner review, treats an imported List filters object containing only null placeholders as empty for Source Edit eligibility. The List ID, `LIST`/`MOVIE`/`original` requirements remain fixed. Any non-null filter value, including an unknown preserved filter, stays outside the editor contract; non-object filters remain invalid. Import, opening/Cancel, no-op and title-only Save preserve those placeholders and unknown top-level metadata. Creation still emits `{}` filters and request/output behavior is unchanged. This List case is synthetic regression evidence; the supplied desktop exports demonstrate Genre/Year Sources.
 
 ## Product contract
 
@@ -54,7 +56,7 @@ The LIST-only subtitle is derived from the usable loaded sample and the provider
 
 ## Source Edit
 
-A complete supported native `LIST`/`MOVIE` source with `sortBy: "original"` and empty filters is registered through the existing fail-closed source-editor adapter registry. Edit owns only Source name, repeats the Nuvio/customisation helper, describes the fixed sort as **Original order**, and presents the numeric List ID as a safe new-tab link to `https://www.themoviedb.org/list/<id>`. List ID, provider, source type, canonical media configuration, filters, category, raw imported values, unknown fields, and physical identity stay fixed. Preview uses the same List provider/cache and mixed **Titles** presentation. Unknown imported fields remain preserved and do not prevent a canonical List source from receiving a title-only edit; incomplete, differently configured, filtered, or otherwise unsupported List shapes remain preservable and Delete-only. Other source editors retain their existing identity presentation.
+A complete supported native `LIST`/`MOVIE` source with `sortBy: "original"` and empty or all-null filters is registered through the existing fail-closed source-editor adapter registry. Edit owns only Source name, repeats the Nuvio/customisation helper, describes the fixed sort as **Original order**, and presents the numeric List ID as a safe new-tab link to `https://www.themoviedb.org/list/<id>`. List ID, provider, source type, canonical media configuration, filters, category, raw imported values, unknown fields, and physical identity stay fixed. Preview uses the same List provider/cache and mixed **Titles** presentation. Unknown imported fields remain preserved and do not prevent a canonical List source from receiving a title-only edit; incomplete, differently configured, meaningfully filtered, or otherwise unsupported List shapes remain preservable and Delete-only. Other source editors retain their existing identity presentation.
 
 ## Worker deployment gate
 

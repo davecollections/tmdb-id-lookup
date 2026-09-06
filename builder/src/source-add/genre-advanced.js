@@ -270,7 +270,7 @@ export function compileGenreAdvancedFilters(value, {
 }
 
 function exactYear(value, suffix) {
-	if (value === undefined) return "";
+	if (value === undefined || value === null) return "";
 	if (typeof value !== "string") return null;
 	const match = new RegExp(`^(\\d{4})-${suffix}$`).exec(value);
 	if (!match) return null;
@@ -285,20 +285,20 @@ export function readGenreAdvancedFilters(filters, { mediaType, includedGenre } =
 	const yearFrom = exactYear(filters.releaseDateGte, "01-01");
 	const yearTo = exactYear(filters.releaseDateLte, "12-31");
 	if (yearFrom === null || yearTo === null) return null;
-	const rating = (value) => value === undefined ? "" : typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10 ? String(value) : null;
+	const rating = (value) => value === undefined || value === null ? "" : typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10 ? String(value) : null;
 	const minimumRating = rating(filters.voteAverageGte);
 	const maximumRating = rating(filters.voteAverageLte);
 	if (minimumRating === null || maximumRating === null) return null;
-	const minimumVotes = filters.voteCountGte === undefined
+	const minimumVotes = filters.voteCountGte === undefined || filters.voteCountGte === null
 		? ""
 		: Number.isSafeInteger(filters.voteCountGte) && filters.voteCountGte >= 0 ? String(filters.voteCountGte) : null;
 	if (minimumVotes === null) return null;
-	const originalLanguage = filters.withOriginalLanguage === undefined ? "" : filters.withOriginalLanguage;
-	const originCountry = filters.withOriginCountry === undefined ? "" : filters.withOriginCountry;
-	if ((originalLanguage && (typeof originalLanguage !== "string" || !/^[a-z]{2}$/.test(originalLanguage)))
-		|| (originCountry && (typeof originCountry !== "string" || !/^[A-Z]{2}$/.test(originCountry)))) return null;
+	const originalLanguage = filters.withOriginalLanguage ?? "";
+	const originCountry = filters.withOriginCountry ?? "";
+	if ((originalLanguage !== "" && (typeof originalLanguage !== "string" || !/^[a-z]{2}$/.test(originalLanguage)))
+		|| (originCountry !== "" && (typeof originCountry !== "string" || !/^[A-Z]{2}$/.test(originCountry)))) return null;
 	const excludedGenreNames = [];
-	if (filters.withoutGenres !== undefined) {
+	if (filters.withoutGenres !== undefined && filters.withoutGenres !== null) {
 		if (typeof filters.withoutGenres !== "string" || !/^[1-9]\d*(,[1-9]\d*)*$/.test(filters.withoutGenres)) return null;
 		for (const token of filters.withoutGenres.split(",")) {
 			const reference = officialGenreReference(mediaType, Number(token));

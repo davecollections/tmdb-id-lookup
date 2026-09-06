@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import test, { after } from "node:test";
+import { desktopExpandedSource, roundTripSourceCases } from "./fixtures/nuvio-desktop-round-trip.mjs";
 import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
@@ -90,6 +91,19 @@ function controllerFor(sources) {
 	controller.selectNode(controller.getState().project.collections[0].folders[0].internalId);
 	return controller;
 }
+
+test("desktop round trip: family details and Workspace Edit eligibility survive null expansion", () => {
+	for (const { name, source } of roundTripSourceCases) {
+		const compact = controllerFor([source]);
+		const expanded = controllerFor([desktopExpandedSource(source)]);
+		const before = JSON.stringify(expanded.getState());
+		const originalView = buildBuilderViewModel(compact.getState()).sources[0];
+		const view = buildBuilderViewModel(expanded.getState()).sources[0];
+		assert.equal(view.editSupported, true, name);
+		assert.deepEqual(view.metadata, originalView.metadata, name);
+		assert.equal(JSON.stringify(expanded.getState()), before);
+	}
+});
 
 test("names remain independent of metadata and existing hidden/format-only title semantics remain intact", () => {
 	const names = ["Custom display name", "", "   ", "\u200e", "\u200e\u200e", "\u200b"];

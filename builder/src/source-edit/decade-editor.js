@@ -159,9 +159,9 @@ function readInitialState(source) {
 		sortOptionId: inspected?.sortOptionId ?? null,
 		sortTouched: false,
 		advanced: Object.freeze({
-			minimumRating: inspected?.value?.filters?.voteAverageGte === undefined ? "" : String(inspected.value.filters.voteAverageGte),
-			maximumRating: inspected?.value?.filters?.voteAverageLte === undefined ? "" : String(inspected.value.filters.voteAverageLte),
-			minimumVotes: inspected?.value?.filters?.voteCountGte === undefined ? "" : String(inspected.value.filters.voteCountGte),
+			minimumRating: String(inspected?.value?.filters?.voteAverageGte ?? ""),
+			maximumRating: String(inspected?.value?.filters?.voteAverageLte ?? ""),
+			minimumVotes: String(inspected?.value?.filters?.voteCountGte ?? ""),
 			originalLanguage: inspected?.value?.filters?.withOriginalLanguage ?? "",
 			originCountry: inspected?.value?.filters?.withOriginCountry ?? "",
 			ordinaryExcludedGenres: Object.freeze(genreName === null ? excludedNames : []),
