@@ -4203,7 +4203,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7658,Mnet (JP),2,,JP,,https://www.themoviedb.org/network/7658
 7661,RTL Play,36,"Brussels, Belgium",BE,,https://www.themoviedb.org/network/7661
 7662,央视4K超高清频道（废弃）,0,,,,https://www.themoviedb.org/network/7662
-7663,Toei Tokyo,1,,,,https://www.themoviedb.org/network/7663
 7665,BUMP,18,,JP,,https://www.themoviedb.org/network/7665
 7666,Star Crime (PT),0,,,,https://www.themoviedb.org/network/7666
 7668,Sitio de Memoria Circular de Morelia,1,,,,https://www.themoviedb.org/network/7668
@@ -5601,3 +5600,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9480,ZEE5,1,,,,https://www.themoviedb.org/network/9480
 9481,Ракурс,1,,,,https://www.themoviedb.org/network/9481
 9482,Adrian150 TV,1,"Umán, Yucatán, México",MX,,https://www.themoviedb.org/network/9482
+9483,Flixxo,2,,,,https://www.themoviedb.org/network/9483
+9484,tele quebec,0,,,,https://www.themoviedb.org/network/9484
+9485,stellajean,1,,,,https://www.themoviedb.org/network/9485
+9486,Plus TV (CY),2,,,,https://www.themoviedb.org/network/9486
