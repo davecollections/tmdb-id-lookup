@@ -1,0 +1,32 @@
+{
+  "schema_version": 2,
+  "reservation_id": "34670363131-1-keyword-export",
+  "utc_date": "2026-09-12",
+  "workflow": "Refresh TMDB Keyword Catalogue",
+  "run_id": "34670363131",
+  "run_attempt": "1",
+  "job": "keyword-export",
+  "planned_month": "2026-09",
+  "planned_utc_date": "2026-09-12",
+  "bucket": "general",
+  "allocations": {
+    "keyword-export": 1
+  },
+  "bindings": {
+    "keyword-export": {
+      "request_class": "keyword-export",
+      "target_dimension": "keyword-id-name",
+      "approved_allowance": 1
+    }
+  },
+  "total_allowance": 1,
+  "projected_daily_total": 4051,
+  "preferred_daily_limit": 90000,
+  "absolute_daily_limit": 100000,
+  "fixed_genre_commitment": 36,
+  "protected_audit_commitment": 14,
+  "protected_repair_commitment": 4000,
+  "preferred_override_used": false,
+  "override_reason": null,
+  "created_at": "2026-09-12T03:26:29.382Z"
+}
