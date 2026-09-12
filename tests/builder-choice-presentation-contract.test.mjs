@@ -27,6 +27,7 @@ const FAMILY_CHOICE_EVIDENCE = Object.freeze({
 	[CREATION_OPTION_IDS.NETWORKS]: Object.freeze({ file: "builder/src/ui/NetworkHierarchyFlow.jsx", token: "network-result-selectable" }),
 	[CREATION_OPTION_IDS.GENRES]: Object.freeze({ file: "builder/src/ui/GenreCatalogueSelector.jsx", token: "genre-catalogue-choice" }),
 	[CREATION_OPTION_IDS.STREAMING_SERVICES]: Object.freeze({ file: "builder/src/ui/StreamingHierarchyFlow.jsx", token: "streaming-provider-selectable" }),
+	[CREATION_OPTION_IDS.ADVANCED_DISCOVER]: Object.freeze({ file: "builder/src/ui/AdvancedDiscoverFlow.jsx", token: "SemanticSortChoices" }),
 });
 
 test("every guided family has explicit choice-presentation evidence", () => {
@@ -131,4 +132,18 @@ test("selected choices use structural card treatment without selection rails or 
 		assert.doesNotMatch(rule[2], /border-(?:left|inline-start)|inset \d+px 0 0/, rule[1].trim());
 	}
 	assert.match(styles, /\.studio-elsewhere-note\s*\{[^}]*border: 1px solid rgb\(67 207 238 \/ 24%\)/);
+});
+
+test("Discover inherits the Builder creation shell and fields without blanket visual overrides", () => {
+ const flow = read("builder/src/ui/AdvancedDiscoverFlow.jsx");
+ const controls = read("builder/src/ui/AdvancedDiscoverControls.jsx");
+ const styles = read("builder/src/ui/advanced-discover.css");
+ assert.match(flow, /<CreationHeader title=\{editing/);
+ assert.match(flow, /className="add-source-dialog creation-dialog discover-dialog"/);
+ assert.match(flow, /className="panel-kicker">Step/);
+ assert.match(flow, /<legend>Collection layout<\/legend>/);
+ assert.match(flow, /className="editor-settings-section discover-folder-artwork"/);
+ assert.match(controls, /role="group" aria-labelledby=\{uid \+ "-heading"\}/);
+ assert.doesNotMatch(styles, /\.discover-dialog\s*(?:h2|h3|button\s*[:,{]|input\s*[:,{]|select\s*[{])/);
+ assert.doesNotMatch(styles, /\.discover-step\s*[{]|min-height:\s*44px;\s*width:\s*auto;\s*padding:\s*7px 12px/);
 });

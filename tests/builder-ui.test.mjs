@@ -505,6 +505,7 @@ test("desktop draft folder creation uses unchanged defaults, selects, and advanc
 		title: "Untitled Folder 2",
 		tileShape: "POSTER",
 		hideTitle: true,
+		focusGifEnabled: false,
 	});
 	assert.equal(controller.getState().selection.folderInternalId, created.internalId);
 	assert.equal(buildBuilderViewModel(controller.getState()).activeMobileLevel, "sources");

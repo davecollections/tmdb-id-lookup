@@ -102,7 +102,7 @@ export function sourceTitlePreviewRequest(kind, sourceDraft, { person = null } =
 			}),
 		});
 	}
-	if (kind === "genre" || kind === "decade") {
+	if (kind === "genre" || kind === "decade" || kind === "advanced-discover") {
 		return Object.freeze({ ...common, sourceDraft });
 	}
 	return null;
@@ -116,6 +116,7 @@ export function sourceTitlePreviewProviderAvailable(request, providers) {
 	if (request.kind === "studio") return typeof providers.studio?.getStudioPreview === "function";
 	if (request.kind === "network") return typeof providers.network?.getNetworkPreview === "function";
 	if (request.kind === "streaming") return typeof providers.streaming?.getStreamingPreview === "function";
+	if (request.kind === "advanced-discover") return typeof providers["advanced-discover"]?.getAdvancedDiscoverPreview === "function";
 	if (request.kind === "genre") return typeof providers.genre?.getGenrePreview === "function";
 	if (request.kind === "decade") return typeof providers.decade?.getDecadePreview === "function";
 	return false;
@@ -152,6 +153,7 @@ export async function requestSourceTitlePreview(request, providers, signal) {
 	if (request.kind === "studio") return providers.studio.getStudioPreview(request.tmdbId, { mediaType: request.mediaType, sortBy: request.sortBy, signal });
 	if (request.kind === "network") return providers.network.getNetworkPreview(request.tmdbId, { sortBy: request.sortBy, signal });
 	if (request.kind === "streaming") return providers.streaming.getStreamingPreview(request.sourceNode, { signal });
+	if (request.kind === "advanced-discover") return providers["advanced-discover"].getAdvancedDiscoverPreview(request.sourceDraft, { signal });
 	if (request.kind === "genre") return providers.genre.getGenrePreview(request.sourceDraft, { signal });
 	if (request.kind === "decade") return providers.decade.getDecadePreview(request.sourceDraft, { signal });
 	return failure("This source type cannot be previewed.");

@@ -55,7 +55,7 @@ for (const relativeFile of trackedFiles) {
 
 fs.cpSync(builderDistDir, builderStageDir, { recursive: true });
 
-execFileSync(process.execPath, [path.join(rootDir, "scripts", "validate-pages-site.mjs")], {
+execFileSync(process.execPath, [path.join(rootDir, "scripts", "validate-pages-site.mjs"), ...(process.argv.includes("--code-only") ? ["--code-only"] : [])], {
 	cwd: rootDir,
 	stdio: "inherit",
 });

@@ -60,7 +60,7 @@ function renderFlow(existingDraftCount = 0) {
 	}));
 }
 
-test("ordinary Add Source exposes TMDB Lists and singular Decade last in the established chooser", () => {
+test("ordinary Add Source exposes TMDB Lists and singular Decade in its retained position in the established chooser", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "Decades", onCancel() {}, onSelectMode() {} }));
 	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), [
 		"tmdb-movie-franchise",
@@ -71,6 +71,7 @@ test("ordinary Add Source exposes TMDB Lists and singular Decade last in the est
 		"tmdb-streaming-services",
 		"tmdb-genres",
 		"tmdb-decade",
+		"advanced-discover",
 	]);
 	assert.match(markup, /<strong>Decade<\/strong>/);
 	assert.doesNotMatch(markup, /<strong>Decades<\/strong>/);

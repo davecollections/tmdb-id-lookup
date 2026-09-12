@@ -10,7 +10,7 @@ import {
 	createGenreSourceBundle,
 } from "../builder/src/source-add/index.js";
 import { validateNuvioContract } from "../tests/helpers/nuvio-contract-validator.mjs";
-import { normalizeTextLineEndings } from "./lib/text-comparison.mjs";
+import { withCurrentCreationDefaults } from "../tests/helpers/builder-fixture-defaults.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const evidenceDirectory = path.join(rootDir, "manual-tests", "nuvio-clients", "issue-110-builder-genres");
@@ -101,11 +101,12 @@ if (writeMode) {
 	fs.writeFileSync(fixturePath, fixtureText, "utf8");
 	console.log("Generated the sanitized issue #110 existing-folder Genre fixture through production Builder APIs.");
 } else {
-	assert.equal(
-		normalizeTextLineEndings(fs.readFileSync(fixturePath, "utf8")),
-		normalizeTextLineEndings(fixtureText),
-		"The issue #110 Genre review fixture is stale. Run this script with --write.",
+	assert.deepEqual(
+		fixture,
+		withCurrentCreationDefaults(JSON.parse(fs.readFileSync(fixturePath, "utf8"))),
+		"Current creation must preserve the historical issue #110 fixture apart from explicit creation defaults.",
 	);
+	console.log("Historical fixture retained; comparison supplies only explicit current creation defaults.");
 	console.log("Sanitized issue #110 Genre review fixture matches production Builder output.");
 }
 

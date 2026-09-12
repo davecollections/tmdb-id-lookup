@@ -6,9 +6,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "maintenance/tmdb-request-budget/**"
 
   workflow_run:
     workflows:
+      - Refresh TMDB Keyword Catalogue
       - Update TMDB Genre Counts
       - Monthly TMDB Company Refresh
       - Monthly TMDB Network Refresh
@@ -20,6 +23,7 @@ on:
       - completed
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -56,6 +60,11 @@ jobs:
 
       - name: Install builder dependencies
         run: npm ci --prefix builder
+
+      - name: Restore validated keyword data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/restore-tmdb-keyword-catalogue.mjs
 
       - name: Build builder
         run: npm run build --prefix builder

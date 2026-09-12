@@ -1,3 +1,5 @@
+import { NEW_COLLECTION_DEFAULTS, NEW_FOLDER_DEFAULTS } from "../domain/node-defaults.js";
+
 function nextAvailableTitle(titles, baseTitle) {
 	const existingTitles = new Set(titles.filter((title) => typeof title === "string"));
 	let number = 1;
@@ -27,11 +29,8 @@ export function createDraftCollection(controller, { selectCreated = true } = {})
 	);
 	const result = controller.createCollection({
 		editable: {
+			...NEW_COLLECTION_DEFAULTS,
 			title,
-			pinToTop: false,
-			focusGlowEnabled: true,
-			viewMode: "TABBED_GRID",
-			showAllTab: true,
 		},
 	});
 
@@ -48,9 +47,8 @@ export function createDraftFolder(controller, collectionInternalId, { selectCrea
 	);
 	const result = controller.createFolder(collectionInternalId, {
 		editable: {
+			...NEW_FOLDER_DEFAULTS,
 			title,
-			tileShape: "POSTER",
-			hideTitle: true,
 		},
 	});
 

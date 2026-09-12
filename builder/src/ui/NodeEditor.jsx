@@ -80,8 +80,8 @@ function BooleanStatus({ original, label, replacementPending, statusId }) {
 	return (
 		<p className="editor-field-status" id={statusId}>
 			{original.status === "absent"
-				? `No imported ${label} preference is set. It will stay absent unless you use this switch.`
-				: `The imported ${label} preference cannot be shown safely and will be preserved unless you use this switch.`}
+				? `No imported ${label} preference is set. Choose On or Off to save one.`
+				: `The imported ${label} preference cannot be shown safely. Choose On or Off only to replace it.`}
 		</p>
 	);
 }
@@ -153,6 +153,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 					describedBy={allTabDescriptionIds}
 					controlName="showAllTab"
 					checked={draft.values.showAllTab}
+					preservedLabel={!draft.original.showAllTab.supported && !allTabReplacementPending ? draft.original.showAllTab.status === "absent" ? "Not set (client default)" : "Imported setting (preserved)" : null}
 					onChange={(checked) => onChange("showAllTab", checked)}
 				/>
 				<BooleanStatus
@@ -171,6 +172,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 					describedBy={pinDescriptionIds}
 					controlName="pinToTop"
 					checked={draft.values.pinToTop}
+					preservedLabel={!draft.original.pinToTop.supported && !pinReplacementPending ? draft.original.pinToTop.status === "absent" ? "Not set (client default)" : "Imported setting (preserved)" : null}
 					onChange={(checked) => onChange("pinToTop", checked)}
 				/>
 				<BooleanStatus

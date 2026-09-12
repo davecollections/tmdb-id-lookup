@@ -1,3 +1,4 @@
+import { synchronizeDiscoverMirrors } from "./discover-imported-filters.js";
 import { cloneJsonValue } from "../domain/index.js";
 import { DISCOVER_FILTER_FIELDS } from "./known-fields.js";
 
@@ -82,6 +83,7 @@ export function overlayFilters(output, editable, rawImported) {
 		}
 	}
 
+	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "DISCOVER") synchronizeDiscoverMirrors(rawFilters, rawImported, editable);
 	setOwn(output, "filters", rawFilters);
 	return output;
 }

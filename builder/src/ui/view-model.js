@@ -3,7 +3,8 @@ import {
 	isValidVisibleNuvioTitle,
 } from "../nuvio/titles.js";
 import { sourceCardDetails } from "./source-details.js";
-import { canEditSource } from "../source-edit/index.js";
+import { inspectEditableAdvancedDiscover } from "../source-edit/advanced-discover-editor.js";
+import { sourceEditorFor } from "../source-edit/index.js";
 import { buildSiblingMovements } from "./hierarchy-reordering.js";
 
 const folderArtworkFields = Object.freeze([
@@ -189,6 +190,7 @@ function sourceCategoryLabel(category) {
 }
 
 function buildSource(source, selectedInternalId, sourceDetails = sourceCardDetails(source)) {
+ const sourceEditor = sourceEditorFor(source);
 	const editable = source.editable;
 	const title = sourceTitle(source, sourceDetails.fallback);
 	return {
@@ -198,7 +200,8 @@ function buildSource(source, selectedInternalId, sourceDetails = sourceCardDetai
 		accessibleName: title.accessibleName,
 		category: source.category,
 		categoryLabel: sourceCategoryLabel(source.category),
-		editSupported: canEditSource(source),
+		editSupported: sourceEditor !== null,
+		advancedEditSupported: sourceEditor?.id !== "advanced-discover" && inspectEditableAdvancedDiscover(source) !== null,
 		metadata: sourceDetails.metadata,
 		metadataDescription: sourceDetails.metadata.map((entry) => entry.value).join(", "),
 		selected: source.internalId === selectedInternalId,

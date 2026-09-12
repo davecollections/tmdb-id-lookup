@@ -24,6 +24,7 @@ export function PresentationSwitch({
 	describedBy = descriptionId,
 	controlName,
 	onChange,
+	preservedLabel = null,
 }) {
 	return (
 		<label className="editor-switch">
@@ -31,7 +32,17 @@ export function PresentationSwitch({
 				<strong>{label}</strong>
 				<small id={descriptionId}>{description}</small>
 			</span>
-			<input
+			{preservedLabel ? <select
+				aria-label={label}
+				aria-describedby={describedBy || undefined}
+				data-editor-control={controlName}
+				value=""
+				onChange={(event) => onChange(event.target.value === "true")}
+			>
+				<option value="" disabled>{preservedLabel}</option>
+				<option value="true">On</option>
+				<option value="false">Off</option>
+			</select> : <><input
 				type="checkbox"
 				role="switch"
 				data-editor-control={controlName}
@@ -39,7 +50,7 @@ export function PresentationSwitch({
 				aria-describedby={describedBy || undefined}
 				onChange={(event) => onChange(event.target.checked)}
 			/>
-			<span className="editor-switch-control" aria-hidden="true" />
+			<span className="editor-switch-control" aria-hidden="true" /></>}
 		</label>
 	);
 }

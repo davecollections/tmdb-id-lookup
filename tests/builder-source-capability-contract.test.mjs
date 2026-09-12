@@ -27,6 +27,13 @@ function assertSemanticEvidence(source, token, label) {
 // This is deliberately a test-owned contract, not a second production registry. "Fixed" source names
 // record today's generated-name behavior; whether those names should become editable remains a product decision.
 const FAMILY_CAPABILITIES = Object.freeze({
+ discover: Object.freeze({
+  ids: Object.freeze({ add: "advanced-discover", guided: "advanced-discover", edit: "advanced-discover" }),
+  add: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, { media: "DISCOVER_MEDIA_OPTIONS", sort: "Sources to create", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", physicalIdentity: "compileAdvancedDiscover" }),
+  guided: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, { media: "DISCOVER_MEDIA_OPTIONS", sort: "Sources to create", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", physicalIdentity: "compileAdvancedDiscover" }),
+  edit: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, { sort: "Sort titles by", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", sourceName: ">Source name</" }),
+ }),
+
 	franchise: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-movie-franchise", guided: "franchises", edit: "movie-collection" }),
 		add: context("builder/src/ui/AddSourceDialog.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
@@ -226,7 +233,7 @@ test("the entity-selection evidence guard fails when confirmed parity wiring is 
 });
 
 test("all eight native source families have a complete cross-context capability contract backed by semantic UI evidence", () => {
-	assert.deepEqual(Object.keys(FAMILY_CAPABILITIES), ["franchise", "lists", "people", "studio", "network", "streaming", "genre", "decade"]);
+	assert.deepEqual(Object.keys(FAMILY_CAPABILITIES), ["discover", "franchise", "lists", "people", "studio", "network", "streaming", "genre", "decade"]);
 	const usedStatuses = new Set();
 	for (const [family, definition] of Object.entries(FAMILY_CAPABILITIES)) {
 		for (const contextId of CONTEXTS) {

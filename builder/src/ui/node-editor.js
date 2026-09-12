@@ -51,7 +51,7 @@ function fieldPresence(node, field) {
 	const rawSnapshot = isPlainObject(node.rawImported) ? node.rawImported : null;
 	const importedFieldExists = rawSnapshot !== null && Object.hasOwn(rawSnapshot, field);
 	const hasField = hasRawSnapshot
-		? importedFieldExists || (typeof currentValue === "string" && currentValue.length > 0)
+		? importedFieldExists || (Object.hasOwn(editable, field) && !(["id", "title"].includes(field) && currentValue === ""))
 		: Object.hasOwn(editable, field);
 
 	return { currentValue, hasField };

@@ -56,6 +56,7 @@ const expectedModes = Object.freeze([
 	["tmdb-streaming-services", "Streaming", "streaming-services", "Add a streaming service."],
 	["tmdb-genres", "Genres", "genres", "Add movies or series by genre."],
 	["tmdb-decade", "Decade", "decades", "Add movies or series by decade or year."],
+	["advanced-discover", "Discover", "genres", "Find titles with keywords and filters."],
 ]);
 
 const expectedCreationOptions = Object.freeze([
@@ -68,21 +69,22 @@ const expectedCreationOptions = Object.freeze([
 	["networks", "Networks", "networks", "Build from TV networks."],
 	["genres", "Genres", "genres", "Build by genre."],
 	["streaming-services", "Streaming", "streaming-services", "Build from streaming services."],
+	["advanced-discover", "Discover", "genres", "Build from keywords and filters."],
 ]);
 
-test("Add Source registry exposes eight ordered TMDB families with approved compact card metadata", () => {
+test("Add Source registry exposes nine ordered TMDB families with approved compact card metadata", () => {
 	assert.deepEqual(AVAILABLE_SOURCE_MODES.map((mode) => [mode.id, mode.label, mode.icon, mode.description]), expectedModes);
-	assert.equal(AVAILABLE_SOURCE_MODES.length, 8);
+	assert.equal(AVAILABLE_SOURCE_MODES.length, 9);
 	assert.equal(AVAILABLE_SOURCE_MODES.every((mode) => mode.providerLabel === "TMDB" && mode.category === "native-tmdb"), true);
-	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 8);
+	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 9);
 });
 
 test("Add Source renders immediate-action launcher cards with unchanged helpers and no blanket provider disclosure", () => {
 	const markup = renderSourceChooser();
 	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), expectedModes.map(([id]) => id));
-	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 8);
-	assert.equal((markup.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, 8);
-	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 8);
+	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 9);
+	assert.equal((markup.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, 9);
+	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 9);
 	assert.match(markup, /<ul class="add-source-scroll source-mode-list" aria-label="Source families">/);
 	assert.match(markup, /Choose what you want to add\./);
 	assert.doesNotMatch(markup, /All available source families use (?:<strong>)?TMDB/);
@@ -106,7 +108,8 @@ test("Add Source renders immediate-action launcher cards with unchanged helpers 
 
 test("every Add Source card retains its exact existing destination flow", () => {
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
-	const whitelist = workspace.match(/!\[(MOVIE_FRANCHISE_SOURCE_MODE_ID,[\s\S]*?DECADE_SOURCE_MODE_ID)\]\.includes\(modeId\)/)?.[1] ?? "";
+	assert.match(workspace, /visibleAddSourceSession\.modeId === "advanced-discover"[\s\S]*?<AdvancedDiscoverFlow/);
+	const whitelist = workspace.match(/!\["advanced-discover", (MOVIE_FRANCHISE_SOURCE_MODE_ID,[\s\S]*?DECADE_SOURCE_MODE_ID)\]\.includes\(modeId\)/)?.[1] ?? "";
 	assert.deepEqual([...whitelist.matchAll(/([A-Z_]+SOURCE_MODE_ID)/g)].map((match) => match[1]), [
 		"MOVIE_FRANCHISE_SOURCE_MODE_ID",
 		"TMDB_LIST_SOURCE_MODE_ID",

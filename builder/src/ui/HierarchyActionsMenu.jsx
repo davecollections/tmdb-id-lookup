@@ -65,6 +65,7 @@ export function HierarchyActionsMenu({
 	onClose,
 	onEdit = null,
 	editLabel = "Edit",
+	onAdvancedEdit = null,
 	onDelete,
 	registerTrigger,
 }) {
@@ -184,6 +185,7 @@ export function HierarchyActionsMenu({
 					{editLabel}
 				</button>
 			) : null}
+			{onAdvancedEdit ? <button type="button" role="menuitem" tabIndex={-1} disabled={disabled || !open} onClick={() => runAction(onAdvancedEdit)}>Edit Discover</button> : null}
 			<button
 				className="hierarchy-menu-delete"
 				type="button"

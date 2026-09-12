@@ -119,10 +119,11 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		CREATION_OPTION_IDS.NETWORKS,
 		CREATION_OPTION_IDS.GENRES,
 		CREATION_OPTION_IDS.STREAMING_SERVICES,
+		CREATION_OPTION_IDS.ADVANCED_DISCOVER,
 	]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
 	assert.equal(CREATION_OPTIONS[0].label, "Blank");
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "lists", "studios", "networks", "genres", "streaming-services"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "lists", "studios", "networks", "genres", "streaming-services", "genres"]);
 	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), [
 		"Start manually.",
 		"Build by decade or year.",
@@ -133,6 +134,7 @@ test("the shared creation registry keeps Blank first and leaves a stable future-
 		"Build from TV networks.",
 		"Build by genre.",
 		"Build from streaming services.",
+		"Build from keywords and filters.",
 	]);
 	assert.equal(CREATION_OPTIONS.every((option) => option.description === undefined), true);
 });

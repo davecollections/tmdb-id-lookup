@@ -1,0 +1,382 @@
+{
+  "keywords": [
+    [
+      275172,
+      "sharks"
+    ],
+    [
+      15097,
+      "shark"
+    ],
+    [
+      33519,
+      "courtroom"
+    ],
+    [
+      11038,
+      "trial"
+    ],
+    [
+      222517,
+      "legal drama"
+    ],
+    [
+      207317,
+      "christmas"
+    ],
+    [
+      210024,
+      "anime"
+    ],
+    [
+      355622,
+      "bollywood"
+    ],
+    [
+      9715,
+      "superhero"
+    ],
+    [
+      362673,
+      "superheroes"
+    ],
+    [
+      10617,
+      "disaster"
+    ],
+    [
+      214780,
+      "courtroom drama"
+    ],
+    [
+      9826,
+      "murder"
+    ],
+    [
+      259426,
+      "dumb blonde"
+    ],
+    [
+      273439,
+      "aliens"
+    ],
+    [
+      9951,
+      "alien"
+    ],
+    [
+      4379,
+      "time travel"
+    ],
+    [
+      9672,
+      "based on true story"
+    ],
+    [
+      10051,
+      "heist"
+    ],
+    [
+      5248,
+      "female friendship"
+    ],
+    [
+      377854,
+      "talking animals"
+    ],
+    [
+      267848,
+      "talking animal"
+    ],
+    [
+      378084,
+      "artificial intelligence"
+    ],
+    [
+      377415,
+      "ai"
+    ],
+    [
+      310,
+      "artificial intelligence (a.i.)"
+    ],
+    [
+      163053,
+      "found footage"
+    ],
+    [
+      161176,
+      "space opera"
+    ],
+    [
+      10714,
+      "serial killer"
+    ],
+    [
+      322995,
+      "werewolves"
+    ],
+    [
+      12564,
+      "werewolf"
+    ],
+    [
+      12570,
+      "whodunit"
+    ],
+    [
+      6054,
+      "friendship"
+    ],
+    [
+      186466,
+      "christmas horror"
+    ],
+    [
+      12332,
+      "apocalypse"
+    ]
+  ],
+  "examples": [
+    {
+      "id": 1,
+      "input": "Movies about sharks",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 2,
+      "input": "Shows about legal proceedings",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 3,
+      "input": "Christmas movies",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 4,
+      "input": "Anime",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 5,
+      "input": "Bollywood",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 6,
+      "input": "Superhero or disaster movies",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 7,
+      "input": "Courtroom dramas without murder",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 8,
+      "input": "Shows about dumb blondes",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 9,
+      "input": "Sharks and aliens",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 10,
+      "input": "Sharks or aliens",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 11,
+      "input": "Movies about shraks",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 12,
+      "input": "Time-travel movies",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 13,
+      "input": "Movies about time travelling",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 14,
+      "input": "Films based on a true story",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 15,
+      "input": "Documentary movies",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 16,
+      "input": "Documentary series",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 17,
+      "input": "Comedy movies without horror",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 18,
+      "input": "Shark movies from 1990 to 1999",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 19,
+      "input": "Anime series after 2010",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 20,
+      "input": "Christmas movies before 1990",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 21,
+      "input": "1990s heist movies",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 22,
+      "input": "Movies about female friendship",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 23,
+      "input": "Movies about talking animals",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 24,
+      "input": "Movies about artificial intelligence",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 25,
+      "input": "AI movies",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 26,
+      "input": "Movies about found footage",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 27,
+      "input": "Movies about space opera",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 28,
+      "input": "Movies about serial killers",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 29,
+      "input": "Movies about werewolves",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 30,
+      "input": "Movies about whodunit",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 31,
+      "input": "Movies about friendship and heists",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 32,
+      "input": "Shark movies without aliens",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 33,
+      "input": "Sharks or aliens and time travel",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 34,
+      "input": "(sharks or aliens) and time travel",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 35,
+      "input": "Movies about sharks not aliens",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 36,
+      "input": "Christmas movies without animal harm",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 37,
+      "input": "Feel-good shows with clever characters",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 38,
+      "input": "Movies in French about heists",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 39,
+      "input": "Movies under 90 minutes",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 40,
+      "input": "Movies with Tom Hanks",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 41,
+      "input": "Movies and series about sharks",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 42,
+      "input": "Horror movies and series",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 43,
+      "input": "Shark movies from 2020 to 1990",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 44,
+      "input": "Christmas horror movies",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 45,
+      "input": "Trial movies",
+      "expectedStatus": "exact named interpretation"
+    },
+    {
+      "id": 46,
+      "input": "qzxvplm",
+      "expectedStatus": "failed interpretation"
+    },
+    {
+      "id": 47,
+      "input": "Movies about the end of the world",
+      "expectedStatus": "suggestions requiring choice"
+    },
+    {
+      "id": 48,
+      "input": "Movies rated above 7 with at least 100 votes",
+      "expectedStatus": "failed interpretation"
+    }
+  ]
+}

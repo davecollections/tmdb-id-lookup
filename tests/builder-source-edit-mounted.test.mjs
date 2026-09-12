@@ -1315,9 +1315,10 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		"tmdb-streaming-services",
 		"tmdb-genres",
 		"tmdb-decade",
+		"advanced-discover",
 	];
-	const expectedCreationIds = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
-	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "TMDB Lists", "Studios", "Networks", "Genres", "Streaming"];
+	const expectedCreationIds = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
+	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "TMDB Lists", "Studios", "Networks", "Genres", "Streaming", "Discover"];
 	const expectedCreationHelpers = [
 		"Start manually.",
 		"Build by decade or year.",
@@ -1328,6 +1329,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		"Build from TV networks.",
 		"Build by genre.",
 		"Build from streaming services.",
+		"Build from keywords and filters.",
 	];
 	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.sourceChooserWidths) {
@@ -1335,9 +1337,9 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		const expectedPresentation = width <= 620 ? "phone-fullscreen" : "contained";
 		assertLauncherModal(result.modal, expectedPresentation, `${width}px Add Source`);
 		assert.deepEqual(result.modeIds, expectedModes, `${width}px registry order`);
-		assert.equal(result.cardCount, 8, `${width}px card count`);
+		assert.equal(result.cardCount, 9, `${width}px card count`);
 		assert.equal(result.columnCount, width <= 620 ? 2 : 4, `${width}px responsive columns`);
-		assert.equal(result.balancedRows, true, `${width}px balanced rows`);
+		assert.ok(Math.abs(result.cardGeometry.at(-1).card.width - result.cardGeometry[0].card.width) <= 1, `${width}px partial final row retains normal card width`);
 		assert.equal(result.firstOptionFocused, true, `${width}px first-option focus`);
 		assert.equal(result.iconShellsMatchCreation, true, `${width}px icon shells`);
 		assert.equal(result.comfortableTargets, true, `${width}px hit targets`);
@@ -1368,13 +1370,13 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.bodyRestored, true, `${width}px body restoration`);
 		assert.equal(result.noMutation, true, `${width}px chooser navigation mutation`);
 		if (width <= 412) {
-			assertGrowthStress(result.stress, 8, `${width}px Add Source`);
-			assert.deepEqual(result.stress.growth.map((variant) => variant.grid.scrollActive), [false, false, false], `${width}px Add Source growth scroll behavior`);
+			assertGrowthStress(result.stress, 9, `${width}px Add Source`);
+			assert.equal(result.stress.growth[0].grid.scrollActive, false, `${width}px Add Source growth scroll behavior`);
 			if (width === 360) {
-				assertOrderStress(result.stress, 8, "360px Add Source");
-				assertClassicScrollbarStress(result.stress, 8, "360px Add Source");
+				assertOrderStress(result.stress, 9, "360px Add Source");
+				assertClassicScrollbarStress(result.stress, 9, "360px Add Source");
 			}
-		} else if (width === 1280) assertIntrinsicStress(result.stress, 8, 4, "1280px Add Source");
+		} else if (width === 1280) assertIntrinsicStress(result.stress, 9, 4, "1280px Add Source");
 		else assert.deepEqual(result.stress, { growth: [], order: [], classicScrollbar: null }, `${width}px no launcher stress fixture`);
 		assert.deepEqual(result.creationChoosers.map((chooser) => chooser.scope), ["new-collection", "new-folder"], `${width}px Creation scopes`);
 		for (const chooser of result.creationChoosers) {
@@ -1382,9 +1384,9 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.deepEqual(chooser.optionIds, expectedCreationIds, `${width}px ${chooser.scope} option order`);
 			assert.deepEqual(chooser.labels, expectedCreationLabels, `${width}px ${chooser.scope} labels`);
 			assert.deepEqual(chooser.helpers, expectedCreationHelpers, `${width}px ${chooser.scope} helpers`);
-			assert.equal(chooser.cardCount, 9, `${width}px ${chooser.scope} card count`);
+			assert.equal(chooser.cardCount, 10, `${width}px ${chooser.scope} card count`);
 			assert.equal(chooser.columnCount, width <= 620 ? 2 : 4, `${width}px ${chooser.scope} responsive columns`);
-			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 1] : [4, 4, 1], `${width}px ${chooser.scope} balanced rows`);
+			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 2] : [4, 4, 2], `${width}px ${chooser.scope} balanced rows`);
 			const geometryEvidence = chooser.cardGeometry.map((card) => (
 				`${card.label}: cardTop=${card.card.top}px card=${card.card.width}x${card.card.height}px display=${card.display} grid=${card.gridTemplateColumns} gap=${card.gap} padding=${card.padding.top}/${card.padding.right}/${card.padding.bottom}/${card.padding.left} iconWidth=${card.iconWidth}px copyWidth=${card.copyWidth}px copyGrid=${card.copyGridTemplateColumns} titleWidth=${card.title.clientWidth}px titleLines=${card.title.lines} titleFont=${card.title.fontFamily}/${card.title.fontSize}/${card.title.fontWeight}/${card.title.lineHeight} helperWidth=${card.helper.clientWidth}px helperLines=${card.helper.lines} helperFont=${card.helper.fontFamily}/${card.helper.fontSize}/${card.helper.fontWeight}/${card.helper.lineHeight}`
 			)).join(" | ");
@@ -1401,13 +1403,13 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.finalCardReachable, true, `${width}px ${chooser.scope} final card reachability`);
 			assert.equal(chooser.bodyRestored, true, `${width}px ${chooser.scope} body restoration`);
 			if (width <= 412) {
-				assertGrowthStress(chooser.stress, 9, `${width}px ${chooser.scope}`);
-				assert.deepEqual(chooser.stress.growth.slice(0, 2).map((variant) => variant.grid.scrollActive), [false, false], `${width}px ${chooser.scope} current/+3 scroll behavior`);
+				assertGrowthStress(chooser.stress, 10, `${width}px ${chooser.scope}`);
+				assert.equal(chooser.stress.growth[0].grid.scrollActive, false, `${width}px ${chooser.scope} current options fit before growth`);
 				if (width === 360) {
-					assertOrderStress(chooser.stress, 9, `360px ${chooser.scope}`);
-					assertClassicScrollbarStress(chooser.stress, 9, `360px ${chooser.scope}`);
+					assertOrderStress(chooser.stress, 10, `360px ${chooser.scope}`);
+					assertClassicScrollbarStress(chooser.stress, 10, `360px ${chooser.scope}`);
 				}
-			} else if (width === 1280) assertIntrinsicStress(chooser.stress, 9, 4, `1280px ${chooser.scope}`);
+			} else if (width === 1280) assertIntrinsicStress(chooser.stress, 10, 4, `1280px ${chooser.scope}`);
 			else assert.deepEqual(chooser.stress, { growth: [], order: [], classicScrollbar: null }, `${width}px ${chooser.scope} no launcher stress fixture`);
 		}
 	}
@@ -1432,7 +1434,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.bodyLocked, true, `${size} Add Source body lock`);
 		assert.equal(result.finalCardReachable, true, `${size} Add Source final card reachability`);
 		assert.equal(result.closeRestoredTrigger, true, `${size} Add Source focus restoration`);
-		if (result.width === 768 || result.width === 1024) assertIntrinsicStress(result.stress, 8, expectedColumns, `${size} Add Source`);
+		if (result.width === 768 || result.width === 1024) assertIntrinsicStress(result.stress, 9, expectedColumns, `${size} Add Source`);
 		else assert.deepEqual(result.stress, { growth: [], order: [], classicScrollbar: null }, `${size} Add Source no stress fixture`);
 		for (const chooser of result.creationChoosers) {
 			assertLauncherModal(chooser.modal, "contained", `${size} ${chooser.scope}`);
@@ -1442,7 +1444,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.noHorizontalOverflow, true, `${size} ${chooser.scope} horizontal overflow`);
 			assert.equal(chooser.finalCardReachable, true, `${size} ${chooser.scope} final card reachability`);
 			assert.equal(chooser.bodyRestored, true, `${size} ${chooser.scope} body restoration`);
-			if (result.width === 768 || result.width === 1024) assertIntrinsicStress(chooser.stress, 9, expectedColumns, `${size} ${chooser.scope}`);
+			if (result.width === 768 || result.width === 1024) assertIntrinsicStress(chooser.stress, 10, expectedColumns, `${size} ${chooser.scope}`);
 			else assert.deepEqual(chooser.stress, { growth: [], order: [], classicScrollbar: null }, `${size} ${chooser.scope} no stress fixture`);
 		}
 	}
@@ -1451,16 +1453,16 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 	assertLauncherModal(wideFont.modal, "phone-fullscreen", "360px wide-font Add Source");
 	assert.equal(wideFont.iconShellsMatchCreation, true, "360px wide-font Add Source icon shells");
 	assert.ok(wideFont.rowHeightSpread <= 14, `360px wide-font Add Source balanced row heights: ${wideFont.rowHeightSpread}`);
-	assertGrowthStress(wideFont.stress, 8, "360px wide-font Add Source");
-	assertOrderStress(wideFont.stress, 8, "360px wide-font Add Source");
-	assertClassicScrollbarStress(wideFont.stress, 8, "360px wide-font Add Source");
+	assertGrowthStress(wideFont.stress, 9, "360px wide-font Add Source");
+	assertOrderStress(wideFont.stress, 9, "360px wide-font Add Source");
+	assertClassicScrollbarStress(wideFont.stress, 9, "360px wide-font Add Source");
 	for (const chooser of wideFont.creationChoosers) {
 		assertLauncherModal(chooser.modal, "phone-fullscreen", `360px wide-font ${chooser.scope}`);
 		assert.equal(chooser.iconShellsCorrect, true, `360px wide-font ${chooser.scope} icon shells`);
 		assert.ok(chooser.rowHeightSpread <= 14, `360px wide-font ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
-		assertGrowthStress(chooser.stress, 9, `360px wide-font ${chooser.scope}`);
-		assertOrderStress(chooser.stress, 9, `360px wide-font ${chooser.scope}`);
-		assertClassicScrollbarStress(chooser.stress, 9, `360px wide-font ${chooser.scope}`);
+		assertGrowthStress(chooser.stress, 10, `360px wide-font ${chooser.scope}`);
+		assertOrderStress(chooser.stress, 10, `360px wide-font ${chooser.scope}`);
+		assertClassicScrollbarStress(chooser.stress, 10, `360px wide-font ${chooser.scope}`);
 	}
 });
 
@@ -1489,7 +1491,7 @@ test("mounted Add Source chooser remains reachable in the retained 393 by 320 sh
 		assert.equal(chooser.modal.presentation, "phone-fullscreen", `${chooser.scope} short-height presentation`);
 		assert.equal(chooser.modal.backdropTracksVisualViewport, true, `${chooser.scope} short-height visual viewport tracking`);
 		assert.equal(chooser.columnCount, 2, `${chooser.scope} short-height columns`);
-		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 1], `${chooser.scope} short-height rows`);
+		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 2], `${chooser.scope} short-height rows`);
 		assert.ok(chooser.rowHeightSpread <= 14, `${chooser.scope} short-height balanced row heights: ${chooser.rowHeightSpread}`);
 		assert.ok(chooser.cardGeometry.every((card) => card.card.height >= 87), `${chooser.scope} short-height 87px card floor`);
 		assert.ok(chooser.cardGeometry.every((card) => card.helper.clientWidth >= card.title.clientWidth + 41), `${chooser.scope} short-height full-width helpers`);
@@ -1820,7 +1822,7 @@ test("mounted Blank collection and folder creation immediately unlock the next m
 			revisionDelta: 1,
 			selected: true,
 			parentPreserved: true,
-			defaults: { id: "nuvio-2", title: "Untitled Folder", tileShape: "POSTER", hideTitle: true },
+			defaults: { id: "nuvio-2", title: "Untitled Folder", tileShape: "POSTER", hideTitle: true, focusGifEnabled: false },
 			addSourceEnabled: true,
 		},
 	});

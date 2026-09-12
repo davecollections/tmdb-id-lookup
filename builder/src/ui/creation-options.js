@@ -1,5 +1,6 @@
 export const CREATION_OPTION_IDS = Object.freeze({
 	BLANK: "blank",
+	ADVANCED_DISCOVER: "advanced-discover",
 	DECADES: "decades",
 	PEOPLE: "people",
 	FRANCHISES: "franchises",
@@ -81,6 +82,7 @@ export const CREATION_OPTIONS = Object.freeze([
 		supportingText: "Build from streaming services.",
 		scopes: BOTH_SCOPES,
 	}),
+	Object.freeze({ id: CREATION_OPTION_IDS.ADVANCED_DISCOVER, label: "Discover", icon: "genres", supportingText: "Build from keywords and filters.", scopes: BOTH_SCOPES }),
 ]);
 
 export function creationOptionById(optionId) {

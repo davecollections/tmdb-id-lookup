@@ -99,7 +99,7 @@ function renderSearch({ hierarchy }) {
 }
 
 test("Networks remains ordered immediately before Genres in both hierarchy scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services"];
+	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.ok(markup.includes(`data-creation-scope="${scope}"`));

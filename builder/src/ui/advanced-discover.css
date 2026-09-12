@@ -1,0 +1,212 @@
+/* Shared creation shell, fields, presentation and artwork styles are inherited.
+   Only Discover's filter groups, retained choices and two-action footer differ. */
+.discover-dialog .discover-scroll { overflow-x: hidden; }
+.discover-stage, .discover-details, .discover-appearance, .discover-review,
+.discover-folder-artwork { display: grid; min-width: 0; align-content: start; gap: 12px; }
+.discover-dialog .discover-fixed-media h3 { margin: 0 0 7px; font-size: .75rem; }
+.discover-dialog .discover-fixed-media p { margin: 0; font-size: .8rem; }
+.discover-dialog .discover-picker { min-width: 0; margin: 0; }
+.discover-dialog .discover-source-settings { gap: 14px; }
+.discover-dialog .discover-source-settings > .semantic-sort-choices { min-width: 0; }
+.discover-dialog .discover-mode, .discover-dialog .discover-operator,
+.discover-dialog .discover-genre-pills { display: flex; flex-wrap: wrap; gap: 7px; }
+.discover-dialog .discover-operator-label { flex-basis: 100%; color: var(--muted); font-size: .66rem; line-height: 1.45; }
+.discover-dialog .discover-genre-media { margin-left: 6px; font-size: .6rem; font-weight: 400; }
+/* Pressed buttons use the measured shared SemanticSortChoices pill treatment.
+   Genre state keeps the same metrics and adds a solid/dashed distinction. */
+.discover-dialog .discover-mode button,
+.discover-dialog .discover-operator button,
+.discover-dialog .discover-genre-pills button {
+ display: inline-flex; align-items: center; justify-content: center;
+ flex: 0 0 auto; width: auto; max-width: 100%; min-height: 36px;
+ padding: 7px 12px; color: var(--text); font: inherit; font-size: .68rem; font-weight: 800;
+ background: rgb(11 35 48 / 72%); border: 1px solid var(--border); border-radius: 999px;
+ white-space: normal; overflow-wrap: anywhere; cursor: pointer;
+}
+.discover-dialog .discover-mode button[aria-pressed="true"],
+.discover-dialog .discover-operator button[aria-pressed="true"] {
+ color: #e9fbff; background: rgb(1 180 228 / 12%); border-color: rgb(98 225 255 / 56%);
+ box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
+}
+.discover-dialog .discover-genre-pills button[data-chosen="true"],
+.discover-dialog .semantic-sort-choices label[data-selected]:has(input[name="discover-sort"]),
+.discover-dialog .discover-chips li,
+.discover-dialog .discover-dropdown li[aria-selected="true"],
+.discover-dialog select[data-watch-region] {
+ color: #e8fff1; background: rgb(69 176 119 / 14%); border-color: rgb(132 220 166 / 62%);
+ box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
+}
+.discover-dialog .discover-genre-pills button[data-excluded],
+.discover-dialog .discover-chips li[data-excluded],
+.discover-dialog .discover-dropdown li[data-excluded] {
+ color: #ffe8e5; background: rgb(221 102 99 / 13%); border-color: rgb(255 154 145 / 62%); border-style: dashed;
+}
+.discover-dialog .semantic-sort-choices label:has(input:disabled) { opacity: .5; cursor: default; }
+.discover-dialog .discover-mode button:focus-visible,
+.discover-dialog .discover-operator button:focus-visible,
+.discover-dialog .discover-genre-pills button:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 2px; }
+.discover-dialog .discover-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 7px; margin: 0; padding: 0; }
+.discover-dialog .discover-chips li {
+ display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; padding-left: 10px;
+ font-size: .72rem; border-width: 1px; border-style: solid; border-radius: 9px; overflow-wrap: anywhere;
+}
+.discover-dialog .discover-chips li[data-excluded] { border-style: dashed; }
+.discover-dialog .discover-chips button {
+ flex-shrink: 0; min-width: 44px; min-height: 44px; padding: 7px;
+ color: inherit; font: inherit; font-size: 1rem;
+ background: transparent; border: 0; border-radius: 8px; cursor: pointer;
+}
+.discover-dialog .discover-autocomplete { min-width: 0; }
+.discover-dialog .discover-dropdown {
+ position: relative;
+ margin-top: 7px; border: 1px solid var(--border-strong); border-radius: 10px;
+ background: rgb(5 17 25 / 98%); overflow: hidden;
+}
+.discover-dialog .discover-dropdown p { padding: 10px 12px; margin: 0; font-size: .72rem; }
+.discover-dialog .discover-dropdown ul {
+ position: relative; max-height: 13rem; overflow-y: auto; overscroll-behavior: contain;
+ list-style: none; padding: 0; margin: 0;
+}
+.discover-dialog .discover-dropdown li {
+ display: flex; min-height: 48px; align-items: center; gap: 10px; padding: 8px 12px;
+ font-size: .8rem; cursor: pointer; border: 1px solid transparent;
+}
+.discover-dialog .discover-dropdown li:hover:not([aria-selected="true"]) {
+ background: rgb(1 180 228 / 12%); border-color: rgb(98 225 255 / 56%);
+}
+.discover-dialog .discover-dropdown li[data-active] { outline: 2px solid var(--cyan-bright); outline-offset: -3px; }
+.discover-dialog .discover-dropdown ul:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: -2px; }
+.discover-dialog .discover-dropdown li > .discover-selected-remove { flex: 0 0 auto; font-size: 1rem; padding: 0 5px; }
+.discover-dialog .discover-dropdown li > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.discover-dialog .discover-dropdown li small { display: block; color: var(--muted); font-size: .66rem; }
+.discover-dialog .discover-dropdown img { width: 40px; height: 32px; object-fit: contain; }
+.discover-dialog .discover-dropdown li > .discover-entity-logo { flex: 0 0 56px; }
+.discover-dialog .discover-entity-logo .studio-logo-tile { width: 56px; height: 42px; padding: 6px; border-radius: 7px; }
+.discover-dialog .discover-entity-logo img { width: 100%; height: 100%; filter: drop-shadow(0 0 1px #344751); }
+/* Focus-revealed fallback stays in keyboard/accessibility order without reserving
+   a button row in the ordinary touch scroller. Errors also retain visible Retry. */
+.discover-dialog .discover-dropdown .discover-load-more {
+ position: absolute; width: 1px; height: 1px; min-height: 0; margin: -1px; padding: 0;
+ clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0;
+}
+.discover-dialog .discover-dropdown .discover-load-more:focus {
+ right: 8px; bottom: 6px; width: auto; height: auto; min-height: 44px; margin: 0; padding: 7px 12px;
+ clip-path: none; background: #132c3a; outline: 2px solid var(--cyan-bright); outline-offset: -2px; z-index: 1;
+}
+.discover-dialog .discover-browse-status { flex-shrink: 0; min-height: 1.5em; padding: 3px 12px; font-size: .68rem; color: var(--muted); }
+.discover-dialog .discover-panel-selection { margin: 0; padding: 4px 0; font-size: .75rem; line-height: 1.4; color: var(--muted); }
+.discover-dialog .discover-panel-selection p { margin: 0; }
+.discover-dialog .discover-selection-switch { min-height: 44px; padding: 4px; background: transparent; border: 0; color: var(--cyan-bright); font: inherit; text-decoration: underline; cursor: pointer; }
+.discover-dialog .discover-selection-switch:focus-visible, .discover-dialog .discover-chips button:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: -2px; }
+.discover-dialog .discover-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.discover-dialog .discover-field-grid > .editor-field { min-width: 0; }
+/* Native date controls can grow an intrinsic inline size after receiving a value.
+   Constrain the input itself, with a separately reserved clear-control column. */
+.discover-dialog .discover-clearable-value {
+ display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center;
+ width: 100%; min-width: 0; box-sizing: border-box;
+ background: rgb(5 17 25 / 90%); border: 1px solid var(--border-strong); border-radius: 10px;
+}
+.discover-dialog .discover-clearable-value input {
+ display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 48px;
+ inline-size: 100%; min-inline-size: 0; max-inline-size: 100%;
+ padding: 11px 12px; color: var(--text); font: inherit; text-align: left; color-scheme: dark;
+ background: transparent; border: 0; border-radius: 9px;
+}
+.discover-dialog .discover-clearable-value input::-webkit-date-and-time-value { min-width: 0; text-align: left; }
+.discover-dialog .discover-clearable-value input::-webkit-datetime-edit { min-width: 0; padding: 0; text-align: left; }
+.discover-dialog .discover-clear-value {
+ width: 44px; height: 44px; padding: 0; color: var(--muted); font: inherit; font-size: 1.2rem;
+ background: transparent; border: 0; border-radius: 8px; cursor: pointer;
+}
+.discover-dialog .discover-clear-value[data-empty] { visibility: hidden; }
+.discover-dialog .discover-clear-value:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: -3px; }
+.discover-dialog .discover-field-error { margin: 0; color: #ffe7e4; font-size: .72rem; line-height: 1.5; }
+.discover-dialog .discover-filter-rows { display: grid; gap: 10px; margin: 0; font-size: .78rem; line-height: 1.5; }
+.discover-dialog .discover-filter-rows > div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 6px 16px; }
+.discover-dialog .discover-filter-rows dt { color: var(--muted); }
+.discover-dialog .discover-filter-rows dd { margin: 0; overflow-wrap: anywhere; }
+.discover-dialog .discover-review-media { display: grid; gap: 10px; }
+.discover-dialog .discover-review-media + .discover-review-media { margin-top: 16px; }
+.discover-dialog .discover-review-media h5 { margin: 0; font-size: .82rem; }
+.discover-dialog .add-source-heading-support { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.discover-dialog .add-source-heading-support .add-source-heading-description { margin: 0; }
+.discover-dialog .discover-help-action { flex-shrink: 0; }
+.discover-dialog .discover-notice {
+ padding: 12px 13px; border: 1px solid rgb(98 225 255 / 26%); border-radius: 11px;
+ background: rgb(1 180 228 / 8%); color: var(--text); font-size: .78rem; line-height: 1.5; overflow-wrap: anywhere;
+}
+.discover-dialog .discover-notice[role="alert"] { border-color: rgb(255 142 134 / 28%); background: rgb(255 142 134 / 8%); }
+.discover-dialog .discover-notice ul { padding-left: 18px; margin: 0; }
+.discover-dialog .discover-topic-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.discover-dialog .secondary-action { min-height: 44px; font: inherit; font-size: .74rem; font-weight: 800; }
+.discover-dialog .discover-folder-artwork > .secondary-action { justify-self: start; }
+.discover-dialog .discover-review-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.discover-dialog .discover-review h4 { margin: 0; font-size: .88rem; overflow-wrap: anywhere; }
+.discover-dialog .discover-review-heading .secondary-action { flex-shrink: 0; }
+.discover-dialog .discover-output-total { margin: 0; font-size: .88rem; font-weight: 800; }
+.discover-dialog .discover-review ul { list-style: none; padding: 0; margin: 0; }
+.discover-dialog .discover-review li { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.discover-dialog .discover-review li:first-child { padding-top: 0; }
+.discover-dialog .discover-review li:last-child { padding-bottom: 0; border-bottom: 0; }
+.discover-dialog .discover-review-artwork { display: flex; flex-wrap: wrap; gap: 10px; }
+.discover-dialog .discover-review-artwork > p { flex-basis: 100%; }
+.discover-dialog .discover-review-artwork figure { margin: 0; max-width: 130px; color: var(--muted); font-size: .7rem; }
+.discover-dialog .discover-review-artwork img { width: 100%; height: 100px; object-fit: contain; }
+.discover-dialog .discover-actions { grid-template-columns: minmax(0, 1fr) max-content; align-items: center; gap: 10px; }
+.discover-dialog .discover-preview-action { padding: 10px; white-space: nowrap; }
+@media (max-width: 620px) {
+ .discover-dialog .discover-field-grid { grid-template-columns: minmax(0, 1fr); }
+ .discover-dialog .discover-filter-rows > div { grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr); gap: 6px 12px; }
+}
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
+ .discover-dialog .discover-actions { grid-template-columns: minmax(180px, 320px) max-content; justify-content: space-between; }
+}
+@media (forced-colors: active) {
+ .discover-dialog .discover-mode button[aria-pressed="true"],
+ .discover-dialog .discover-operator button[aria-pressed="true"],
+ .discover-dialog .discover-genre-pills button[data-chosen="true"] { outline: 2px solid Highlight; outline-offset: -4px; }
+ .discover-dialog .discover-dropdown li[data-active] { outline: 2px solid Highlight; outline-offset: -3px; }
+}
+
+/* Dedicated secondary surfaces reuse the viewport observer, focus trap and
+   Genre help/Done patterns; their content has one scroll owner. */
+.discover-dialog .discover-picker-launch { display: none; width: 100%; text-align: left; justify-content: space-between; }
+.discover-dialog .add-source-section-heading { gap: 10px; flex-wrap: wrap; }
+.discover-selection-backdrop, .discover-help-backdrop { padding: 20px; overflow: hidden; overscroll-behavior: none; }
+.discover-selection-dialog, .discover-help-dialog { margin: 0; width: min(100%, 720px); max-height: 100%; min-height: 0; overflow: hidden; }
+.discover-selection-dialog { height: 100%; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.discover-help-dialog { display: flex; flex-direction: column; }
+.discover-selection-dialog > header, .discover-help-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.discover-selection-dialog > header h3, .discover-help-dialog > header h3 { margin: 0; font-size: 1rem; }
+.discover-selection-dialog .discover-panel-search { padding: 10px 16px; }
+.discover-selection-dialog .discover-panel-search input { font-size: 16px; }
+.discover-selection-dialog .discover-dropdown { display: flex; flex-direction: column; min-height: 0; margin: 0 16px; border-radius: 10px; }
+.discover-selection-dialog .discover-dropdown ul { flex: 1; min-height: 0; max-height: none; overflow-y: auto; touch-action: pan-y; }
+.discover-selection-dialog .discover-dropdown li { min-height: 56px; }
+.discover-selection-dialog .discover-panel-selection { padding: 4px 16px; }
+.discover-help-scroll { padding: 16px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.discover-help-scroll section { margin-top: 18px; }
+.discover-help-scroll h4 { margin: 0 0 8px; font-size: .9rem; }
+.discover-help-scroll .discover-help-quick-start { margin-top: 0; }
+.discover-help-scroll .discover-help-quick-start > p:first-of-type { margin-top: 0; }
+.discover-help-scroll .discover-help-disclosure { margin-top: 18px; }
+.discover-help-scroll .discover-help-disclosure > :not(summary) { margin: 14px; }
+.discover-help-scroll .discover-help-disclosure > summary:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 2px; }
+.discover-help-scroll p, .discover-help-scroll li { font-size: .8rem; line-height: 1.6; }
+.discover-help-scroll ol { padding-left: 22px; }
+.discover-help-scroll li + li { margin-top: 8px; }
+@media (max-width: 900px) {
+ .discover-dialog .discover-picker-launch { display: flex; min-height: 48px; align-items: center; }
+ .discover-dialog .discover-desktop-search { display: none; }
+ .discover-selection-backdrop, .discover-help-backdrop { padding: 0; background: #07141e; }
+ .discover-selection-dialog, .discover-help-dialog { width: 100%; height: 100%; max-width: none; max-height: none; border-radius: 0; border: 0; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); background: #07141e; }
+ .discover-help-scroll dl div { grid-template-columns: minmax(0, 1fr); }
+}
+@media (forced-colors: active) {
+ .discover-dialog .discover-dropdown li[aria-selected="true"],
+ .discover-dialog .discover-chips li,
+ .discover-dialog select[data-watch-region],
+ .discover-dialog .semantic-sort-choices label[data-selected]:has(input[name="discover-sort"]) { outline: 2px solid Highlight; outline-offset: -4px; }
+ .discover-dialog .discover-dropdown li[data-active] { outline-offset: -7px; }
+}

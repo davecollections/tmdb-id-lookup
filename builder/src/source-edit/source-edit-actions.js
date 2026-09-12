@@ -53,7 +53,7 @@ function sourceIdentity(adapter, source) {
 		: adapter.identity(source?.editable);
 }
 
-export function createSourceEditSession(project, sourceInternalId) {
+export function createSourceEditSession(project, sourceInternalId, editorId = null) {
 	const anywhere = findSourceAnywhere(project, sourceInternalId);
 	if (anywhere === null) {
 		return failure(
@@ -62,7 +62,8 @@ export function createSourceEditSession(project, sourceInternalId) {
 			"This source is no longer available.",
 		);
 	}
-	const adapter = sourceEditorFor(anywhere.source);
+	const requested = editorId ? sourceEditorById(editorId) : null;
+	const adapter = editorId ? (requested?.canEdit(anywhere.source) ? requested : null) : sourceEditorFor(anywhere.source);
 	if (adapter === null) {
 		return failure(
 			"SOURCE_EDIT_UNSUPPORTED",
@@ -79,6 +80,7 @@ export function createSourceEditSession(project, sourceInternalId) {
 		sourceIndex: anywhere.sourceIndex,
 		sourceCategory: anywhere.source.category,
 		adapterId: adapter.id,
+		explicitAdapter: editorId !== null,
 		originalIdentity,
 		folderTitle: safeFolderTitle(anywhere.folder),
 		openingTitle: safeSourceEditTitle(
@@ -246,7 +248,7 @@ export function saveSourceEdit(controller, session, draft) {
 		);
 	}
 	const adapter = sourceEditorById(session.adapterId);
-	const currentAdapter = sourceEditorFor(exact.source);
+	const currentAdapter = session.explicitAdapter ? (adapter?.canEdit(exact.source) ? adapter : null) : sourceEditorFor(exact.source);
 	if (
 		adapter === null
 		|| currentAdapter?.id !== session.adapterId

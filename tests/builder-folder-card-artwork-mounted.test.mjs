@@ -915,7 +915,8 @@ test("mounted exact-identity blank-only assistance uses live authorities and pre
 	assert.deepEqual(peopleBlank.actions.map((entry) => entry.text), Array(4).fill("Use curated artwork"));
 	assert.deepEqual(peopleBlank.requests, []);
 	assert.equal(peopleBlank.coverValue, "");
-	assert.equal(peopleBlank.focusEnabled, false);
+	assert.equal(peopleBlank.focusEnabled, null);
+	assert.equal(peopleBlank.focusPreservedLabel, "Not set (client default)");
 
 	assert.deepEqual(peopleCustom.fields, ["titleLogoUrl", "focusGifUrl"]);
 	assert.deepEqual(peopleCustom.actions.map((entry) => entry.text), Array(2).fill("Use curated artwork"));

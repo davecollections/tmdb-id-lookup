@@ -1,4 +1,5 @@
 import { createInternalId, defaultInternalIdFactory } from "./internal-ids.js";
+import { NEW_COLLECTION_DEFAULTS, NEW_FOLDER_DEFAULTS } from "./node-defaults.js";
 
 export const NODE_TYPES = Object.freeze({
 	PROJECT: "project",
@@ -154,6 +155,7 @@ export function createCollection({ idFactory = defaultInternalIdFactory, editabl
 		editable: {
 			id: "",
 			title: "",
+			...(rawImported === undefined ? NEW_COLLECTION_DEFAULTS : {}),
 			...cloneEditable(editable),
 		},
 		folders: [],
@@ -174,6 +176,7 @@ export function createFolder({ idFactory = defaultInternalIdFactory, editable = 
 		editable: {
 			id: "",
 			title: "",
+			...(rawImported === undefined ? NEW_FOLDER_DEFAULTS : {}),
 			...cloneEditable(editable),
 		},
 		sources: [],

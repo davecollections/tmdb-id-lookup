@@ -96,7 +96,7 @@ test("Add Source picker exposes Networks with product wording and no internal so
 	assert.ok(markup.includes("<strong>Networks</strong>"));
 	assert.ok(markup.includes("Add series from a TV network."));
 	assert.equal(markup.includes("NETWORK"), false);
-	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 8);
+	assert.equal((markup.match(/class="source-mode-option"/g) ?? []).length, 9);
 });
 
 test("Network Add discovery shows exact Series Count filters, count metadata, and selected semantics", () => {
@@ -270,7 +270,7 @@ test("Network flow reuses proven mobile dialog controls at every required width"
 test("Workspace routes Network providers through one atomic Add path and Source Edit", () => {
 	const source = read("builder/src/ui/BuilderWorkspace.jsx");
 	assert.match(source, /NETWORK_SOURCE_MODE_ID/);
-	assert.match(source, /\[MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID\]\.includes\(modeId\)/);
+	assert.match(source, /\["advanced-discover", MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID\]\.includes\(modeId\)/);
 	assert.match(source, /<NetworkSourceFlow/);
 	assert.match(source, /catalogueProvider=\{networkCatalogueProviderRef\.current\}/);
 	assert.match(source, /countProvider=\{networkCountProviderRef\.current\}/);

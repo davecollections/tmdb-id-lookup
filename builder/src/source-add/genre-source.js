@@ -66,7 +66,8 @@ export function isPristineGeneratedUntitledFolder(folder) {
 		&& !Object.hasOwn(folder, "rawImported")
 		&& Array.isArray(folder.sources)
 		&& folder.sources.length === 0
-		&& sameKeys(editable, PRISTINE_UNTITLED_FOLDER_EDITABLE_KEYS)
+		&& sameKeys(editable, [...PRISTINE_UNTITLED_FOLDER_EDITABLE_KEYS, ...(Object.hasOwn(editable, "focusGifEnabled") ? ["focusGifEnabled"] : [])])
+		&& (editable.focusGifEnabled === undefined || editable.focusGifEnabled === false)
 		&& typeof editable.id === "string"
 		&& editable.id.trim() === editable.id
 		&& editable.id.length > 0

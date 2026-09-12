@@ -195,7 +195,10 @@ test("Streaming Edit recognition fails closed for compound, filtered, unknown an
 		streamingSource({ sortBy: { unsafe: true } }),
 	]);
 	assert.equal(sourceEditorFor(folder.sources[0]).id, STREAMING_SOURCE_EDITOR_ID);
-	for (let index = 1; index < folder.sources.length; index += 1) assert.equal(canEditSource(folder.sources[index]), false, index);
+	for (let index = 1; index < folder.sources.length; index += 1) {
+		assert.notEqual(sourceEditorFor(folder.sources[index])?.id, STREAMING_SOURCE_EDITOR_ID, index);
+		assert.equal(canEditSource(folder.sources[index]), ![11, 12, 14].includes(index), index);
+	}
 });
 
 test("Streaming Edit changes only title and semantic sort while fixed identity and raw null evidence survive", () => {
@@ -1148,7 +1151,7 @@ test("desktop round trip: required identities and meaningful malformed values re
 		for (const source of invalid) {
 			const controller = createController();
 			const node = importFolder(controller, [source]).sources[0];
-			assert.equal(canEditSource(node), false, entry.name + " " + JSON.stringify(source));
+			assert.ok(sourceEditorFor(node) === null || sourceEditorFor(node).id === "advanced-discover", entry.name + " remains rejected by the narrower family editor: " + JSON.stringify(source));
 			assert.deepEqual(node.rawImported, source);
 		}
 	}
