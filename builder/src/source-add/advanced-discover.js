@@ -120,13 +120,13 @@ export function deriveAdvancedDiscoverFilters(draft, mediaType) {
  }
  return { ...validateAdvancedFilters(filters, mediaType), information };
 }
-export function compileAdvancedDiscover(draft, { preview = false } = {}) {
+export function compileAdvancedDiscover(draft) {
  const errors = [];
  if (draft?.providerContextReview) errors.push(error("withWatchProviders", "Review retained providers for the new media or region."));
  if (draft?.unresolved?.length) errors.push(error("topic", "Resolve or explicitly remove the remaining wording before continuing."));
  const mediaTypes = discoverMediaTypes(draft?.mediaMode);
  if (!mediaTypes.length) errors.push(error("mediaMode", "Choose Movies, Series or Both."));
- const sortIds = preview ? DISCOVER_SORT_OPTIONS.map((o) => o.id) : draft?.sortOptionIds;
+ const sortIds = draft?.sortOptionIds;
  if (!Array.isArray(sortIds) || !sortIds.length || new Set(sortIds).size !== sortIds.length || sortIds.some((id) => !DISCOVER_SORT_OPTIONS.some((o) => o.id === id))) errors.push(error("sort", "Choose at least one supported Source order."));
  const drafts = [];
  for (const mediaType of mediaTypes) {

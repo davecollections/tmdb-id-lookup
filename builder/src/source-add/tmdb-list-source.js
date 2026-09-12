@@ -3,6 +3,50 @@ import { isCanonicalTmdbListId } from "./tmdb-list-input.js";
 import { TMDB_LIST_SOURCE_MODE } from "./source-modes.js";
 
 const EDITABLE_KEYS = Object.freeze(["filters", "mediaType", "provider", "sortBy", "title", "tmdbId", "tmdbSourceType"]);
+// List-specific evidence: docs/v2/BUILDER_TMDB_LISTS.md. Creation remains fixed to original.
+export const TMDB_LIST_EDIT_SORT_OPTIONS = Object.freeze([
+	Object.freeze({ id: "original", value: "original", label: "List order" }),
+	Object.freeze({ id: "recent", value: "primary_release_date.desc", label: "Recent" }),
+	Object.freeze({ id: "top-rated", value: "vote_average.desc", label: "Top rated" }),
+	Object.freeze({ id: "most-voted", value: "vote_count.desc", label: "Most voted" }),
+]);
+
+export function tmdbListEditSortOptionId(sortBy) {
+	// Both date spellings reach the List resolver; never normalize an untouched import.
+	if (sortBy === "first_air_date.desc") return "recent";
+	return TMDB_LIST_EDIT_SORT_OPTIONS.find((option) => option.value === sortBy)?.id ?? null;
+}
+
+export function buildTmdbListTitlePreview(list, sortBy) {
+	const results = [...(list.items ?? [])];
+	const optionId = sortBy === undefined ? "original" : tmdbListEditSortOptionId(sortBy);
+	const option = TMDB_LIST_EDIT_SORT_OPTIONS.find((entry) => entry.id === optionId);
+	let orderingLabel = "List order";
+	let orderingNote;
+	// Creation requests omit sortBy and retain List order.
+	if (sortBy !== undefined) {
+		if (!option) {
+			orderingNote = `Preview can’t reproduce ‘${sortBy}’; your saved sort will be kept.`;
+		} else if (optionId !== "original") {
+			const hasDate = (item) => typeof item.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item.date);
+			const complete = results.every((item) => optionId === "most-voted"
+				? Number.isSafeInteger(item.voteCount) && item.voteCount >= 0
+				: hasDate(item) && (optionId !== "top-rated" || (Number.isFinite(item.voteAverage) && item.voteAverage >= 0 && item.voteAverage <= 10)));
+			if (complete) {
+				// Mobile's List date/rating tie policy; vote ties retain response order.
+				// People Preview has different role filtering, tie rules and a ten-item cap.
+				results.sort((left, right) => optionId === "most-voted" ? right.voteCount - left.voteCount
+					: optionId === "top-rated" ? right.voteAverage - left.voteAverage || right.date.localeCompare(left.date)
+						: right.date.localeCompare(left.date));
+				orderingLabel = option.label;
+			} else {
+				orderingNote = `Preview lacks the data needed for ${option.label}; your saved sort will be kept.`;
+			}
+		}
+	}
+	return Object.freeze({ results: Object.freeze(results), totalResults: list.itemCount, mediaType: "MIXED", orderingLabel, ...(orderingNote ? { orderingNote } : {}) });
+}
+
 function plainObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function diagnostic(code, path, message) { return Object.freeze({ code, path, message }); }
 function text(value) { return typeof value === "string" ? value.trim() : ""; }

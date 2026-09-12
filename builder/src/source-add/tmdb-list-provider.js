@@ -25,13 +25,18 @@ function normalizeCreator(value) {
 }
 function normalizeItem(item, position) {
 	if (!plainObject(item) || !Number.isSafeInteger(item.id) || item.id <= 0) return null;
+	// Optional ordering metadata must not turn a valid List sample into a request error.
+	const ordering = {
+		voteAverage: Number.isFinite(item.vote_average) && item.vote_average >= 0 && item.vote_average <= 10 ? item.vote_average : null,
+		voteCount: Number.isSafeInteger(item.vote_count) && item.vote_count >= 0 ? item.vote_count : null,
+	};
 	if (item.media_type === "movie") {
 		const title = text(item.title) || text(item.original_title);
-		return title ? Object.freeze({ id: item.id, title, date: text(item.release_date) || null, releaseYear: year(item.release_date), posterPath: normalizeTmdbPosterPath(item.poster_path), mediaType: "MOVIE", position }) : null;
+		return title ? Object.freeze({ id: item.id, title, date: text(item.release_date) || null, releaseYear: year(item.release_date), posterPath: normalizeTmdbPosterPath(item.poster_path), mediaType: "MOVIE", position, ...ordering }) : null;
 	}
 	if (item.media_type === "tv") {
 		const title = text(item.name) || text(item.original_name);
-		return title ? Object.freeze({ id: item.id, title, date: text(item.first_air_date) || null, releaseYear: year(item.first_air_date), posterPath: normalizeTmdbPosterPath(item.poster_path), mediaType: "TV", position }) : null;
+		return title ? Object.freeze({ id: item.id, title, date: text(item.first_air_date) || null, releaseYear: year(item.first_air_date), posterPath: normalizeTmdbPosterPath(item.poster_path), mediaType: "TV", position, ...ordering }) : null;
 	}
 	return null;
 }
@@ -39,7 +44,7 @@ function normalizeItem(item, position) {
 export function normalizeTmdbListResponse(value, expectedId = null) {
 	if (!plainObject(value) || !isCanonicalTmdbListId(value.id) || (expectedId !== null && value.id !== expectedId) || !Array.isArray(value.items)) return null;
 	const itemCount = Number.isSafeInteger(value.item_count) && value.item_count >= 0 ? value.item_count : null;
-	if (itemCount === null) return null;
+	if (value.item_count != null && itemCount === null) return null;
 	const items = value.items.map(normalizeItem);
 	if (items.some((item) => item === null)) return null;
 	return Object.freeze({

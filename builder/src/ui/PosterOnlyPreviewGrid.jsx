@@ -19,14 +19,15 @@ export function PosterOnlyPreviewGrid({
 	ariaLabel = "Title poster preview",
 	altPrefix = "Title",
 	emptyMessage = "No posters available.",
+	renderSummary,
 }) {
 	const [failedSources, setFailedSources] = useState(() => new Set());
 	const candidates = posterCandidates(items, size).filter((candidate) => !failedSources.has(candidate.source));
 	const visible = displayAll ? candidates : candidates.slice(0, limit);
 	if (visible.length === 0) {
-		return <p className="add-source-empty-results preview-posters-empty" data-preview-empty-state="true">{emptyMessage}</p>;
+		return <>{renderSummary?.(0)}{emptyMessage ? <p className="add-source-empty-results preview-posters-empty" data-preview-empty-state="true">{emptyMessage}</p> : null}</>;
 	}
-	return (
+	return (<>{renderSummary?.(visible.length)}
 		<div
 			className={`poster-only-preview-grid dingo-scrollbar${className ? ` ${className}` : ""}`}
 			data-preview-poster-only="true"
@@ -47,6 +48,6 @@ export function PosterOnlyPreviewGrid({
 					return next;
 				})}
 			/>) }
-		</div>
+		</div></>
 	);
 }

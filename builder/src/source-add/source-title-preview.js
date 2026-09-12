@@ -3,6 +3,7 @@ import { studioSourceVariantKey } from "./studio-source.js";
 import { networkSourceVariantKey } from "./network-source.js";
 import { DISCOVER_SORT_OPTIONS, discoverSourceIdentity } from "../nuvio/discover.js";
 import { sourceDraftSortId, sourceSortLabel } from "./source-sort-variants.js";
+import { buildTmdbListTitlePreview } from "./tmdb-list-source.js";
 
 export function sourcePreviewVariantKey(draft) {
 	return peopleSourceVariantKey(draft) ?? studioSourceVariantKey(draft) ?? networkSourceVariantKey(draft) ?? discoverSourceIdentity(draft?.editable).key;
@@ -56,16 +57,21 @@ function failure(message) {
 	});
 }
 
-export function listSourceTitlePreviewSummary(data) {
+export function listSourceTitlePreviewSummary(data, displayedCount = data?.results?.length ?? 0) {
 	const loadedCount = Array.isArray(data?.results) ? data.results.length : 0;
-	if (loadedCount === 0) return null;
+	const shownCount = Math.min(loadedCount, Math.max(0, displayedCount));
 	const totalCount = Number.isSafeInteger(data?.totalResults) && data.totalResults >= loadedCount
 		? data.totalResults
 		: null;
-	const titleLabel = loadedCount === 1 ? "title" : "titles";
-	if (totalCount === loadedCount) return `Showing all ${loadedCount} ${titleLabel}`;
-	if (totalCount !== null) return `Showing ${loadedCount} of ${totalCount} titles`;
-	return `Showing ${loadedCount} ${titleLabel}`;
+	if (loadedCount === 0 && totalCount === 0) return "This list is currently empty.";
+	if (loadedCount === 0 && totalCount === null) return "No titles returned.";
+	const complete = totalCount === loadedCount && shownCount === loadedCount;
+	const titleLabel = shownCount === 1 ? "title" : "titles";
+	const summary = complete ? `All ${shownCount} ${titleLabel}`
+		: totalCount !== null ? `Showing ${shownCount} of ${totalCount} titles` : `Showing ${shownCount} ${titleLabel}`;
+	const order = shownCount > 0 && data?.orderingLabel
+		? ` · ${data.orderingLabel}${!complete && data.orderingLabel !== "List order" ? " within this preview" : ""}` : "";
+	return summary + order;
 }
 
 export function sourceTitlePreviewRequest(kind, sourceDraft, { person = null } = {}) {
@@ -126,7 +132,7 @@ export async function requestSourceTitlePreview(request, providers, signal) {
 	if (request.kind === "list") {
 		const result = await providers.list.getList(request.tmdbId, { signal });
 		if (!result?.ok) return result;
-		return Object.freeze({ ok: true, data: Object.freeze({ results: Object.freeze([...(result.data.items ?? [])]), totalResults: result.data.itemCount, mediaType: "MIXED" }) });
+		return Object.freeze({ ok: true, data: buildTmdbListTitlePreview(result.data, request.sortBy) });
 	}
 	if (request.kind === "collection") {
 		const result = await providers.collection.getCollection(request.tmdbId, { signal });

@@ -31,6 +31,9 @@ import {
 	INITIAL_STUDIO_EDIT_COUNT_STATE,
 	DECADE_SOURCE_EDITOR_ID,
 	TMDB_LIST_SOURCE_EDITOR_ID,
+	TMDB_LIST_EDIT_SORT_OPTIONS,
+	tmdbListEditSortOptionId,
+	updateTmdbListSourceSort,
 	decadeEditSortValue,
 	GENRE_SOURCE_EDITOR_ID,
 	genreDefaultSourceName,
@@ -151,6 +154,23 @@ function PeopleSourceIdentity({ draft }) {
 		<p className="source-edit-people-identity" aria-label={`TMDB person ${draft.tmdbId}`}>
 			TMDB person <strong>{draft.tmdbId}</strong>
 		</p>
+	);
+}
+
+export function TmdbListEditorFields({ draft, sortRef, onSortChange }) {
+	const selectedSortId = tmdbListEditSortOptionId(draft.sortBy);
+	return (
+		<section className="source-edit-options" aria-label="List sorting">
+			{selectedSortId === null ? <p id="tmdb-list-imported-sort" className="studio-imported-sort-note">This imported list uses ‘{draft.originalSortBy}’. Choose another sort to change it, or leave it unchanged to keep the original.</p> : null}
+			<SemanticSortChoices
+				options={TMDB_LIST_EDIT_SORT_OPTIONS}
+				selectedId={selectedSortId}
+				name="tmdb-list-edit-sort"
+				firstInputRef={sortRef}
+				fieldsetProps={{ "aria-describedby": selectedSortId === null ? "tmdb-list-imported-sort" : undefined }}
+				onChange={onSortChange}
+			/>
+		</section>
 	);
 }
 
@@ -532,6 +552,7 @@ export function SourceEditorDialog({
 	const streamingSortRef = useRef(null);
 	const decadeSortRef = useRef(null);
 	const genreSortRef = useRef(null);
+	const tmdbListSortRef = useRef(null);
 	const genreSecondaryHeadingRef = useRef(null);
 	const genreSecondaryReturnFocusRef = useRef(null);
 	const pickerInputRef = useRef(null);
@@ -695,7 +716,7 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const sortRef = peopleSortRef.current ? peopleSortRef : networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
+		const sortRef = tmdbListSortRef.current ? tmdbListSortRef : peopleSortRef.current ? peopleSortRef : networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
 		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
@@ -848,7 +869,7 @@ export function SourceEditorDialog({
 										: session.adapterId === PEOPLE_SOURCE_EDITOR_ID
 											? "Update this People source role, media, name and title order."
 										: session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID
-											? "Update this TMDB List source name. List ID and media configuration stay fixed; titles use Original order."
+											? "Update this TMDB List source name and title order."
 									: "Change only the supported fields for this physical source."}
 						</p>
 					</header>
@@ -896,6 +917,12 @@ export function SourceEditorDialog({
 												clearFieldDiagnostic("title");
 											}}
 										/> : null}
+									{session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? (
+										<TmdbListEditorFields draft={draft} sortRef={tmdbListSortRef} onSortChange={(optionId) => {
+											setDraft((current) => updateTmdbListSourceSort(current, optionId));
+											clearFieldDiagnostic("sort");
+										}} />
+									) : null}
 									{session.adapterId === PEOPLE_SOURCE_EDITOR_ID ? (
 										<PeopleEditorFields
 											draft={draft}

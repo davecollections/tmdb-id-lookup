@@ -6080,6 +6080,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 	line-height: 1.4;
 }
 
+#tmdb-list-imported-sort {
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+
 .studio-no-missing-sources {
 	align-self: center;
 	color: var(--quiet);
@@ -8396,6 +8401,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 .tmdb-list-preview-modal {
 	height: min(calc(60cqi + 100px), 556px, calc(100dvh - 32px), 100%);
 	grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.tmdb-list-preview-ordering {
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
 }
 
 .tmdb-list-preview-grid {

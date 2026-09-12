@@ -1125,12 +1125,11 @@ test("desktop round trip: required identities and meaningful malformed values re
 			{ ...expanded, mediaType: null },
 			{ ...expanded, mediaType: "invalid" },
 			...[[1], null, false, ""].map((filters) => ({ ...expanded, filters })),
-			...[false, 0, "", " ", "bad", [], {}].map((value) => ({ ...expanded, filters: { ...expanded.filters, futureFilter: value } })).filter((source) => !["", " "].includes(source.filters.futureFilter) || entry.editorId === "tmdb-list"),
+			...[false, 0, "bad", [], {}].map((value) => ({ ...expanded, filters: { ...expanded.filters, futureFilter: value } })).filter(() => entry.editorId !== "tmdb-list"),
 		];
 		if (entry.editorId === "tmdb-list") {
 			for (const tmdbId of [null, 0, -1, "abc", 2_147_483_648]) invalid.push({ ...expanded, tmdbId });
-			invalid.push({ ...expanded, sortBy: "popularity.desc" }, { ...expanded, mediaType: "TV" });
-			for (const value of [false, 0, "", " ", "28", [], {}]) invalid.push({ ...expanded, filters: { withGenres: value } });
+			invalid.push({ ...expanded, sortBy: {} }, { ...expanded, mediaType: "TV" });
 		} else {
 			for (const key of ["addonId", "catalogId", "type"]) invalid.push({ ...expanded, [key]: "meaningful" });
 			invalid.push({ ...expanded, tmdbId: 5 }, { ...expanded, sortBy: "unsupported" });

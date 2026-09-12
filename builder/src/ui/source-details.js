@@ -7,6 +7,7 @@ import { inspectSimpleStreamingSourceNode } from "../source-add/streaming-classi
 import { PEOPLE_MEDIA, PEOPLE_SOURCE_SORT_OPTIONS } from "../source-add/person-source.js";
 import { STUDIO_SORT_OPTIONS } from "../source-add/studio-source.js";
 import { NETWORK_SORT_OPTIONS } from "../source-add/network-source.js";
+import { TMDB_LIST_EDIT_SORT_OPTIONS, tmdbListEditSortOptionId } from "../source-add/tmdb-list-source.js";
 
 const text = (value) => typeof value === "string" ? value.trim() : "";
 const meaningful = (value) => value !== null && value !== undefined && (typeof value !== "string" || text(value) !== "");
@@ -26,8 +27,11 @@ function entityId(value) {
 }
 
 function sortLabel(value, type, media) {
+	if (type === "LIST") {
+		if (value === undefined || value === null) return null;
+		return TMDB_LIST_EDIT_SORT_OPTIONS.find((option) => option.id === tmdbListEditSortOptionId(value))?.label ?? "Imported sort";
+	}
 	if (!meaningful(value)) return null;
-	if (type === "LIST") return value === "original" ? "Original order" : "Other sorting";
 	if (type === "COLLECTION") return value === "original" ? "TMDB order" : "Other sorting";
 	if (type === "NETWORK") return (media === "TV" ? NETWORK_SORT_OPTIONS.find((option) => option.value === value)?.label : null) ?? "Other sorting";
 	const options = type === "COMPANY" ? STUDIO_SORT_OPTIONS

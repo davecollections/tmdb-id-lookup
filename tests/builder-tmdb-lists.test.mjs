@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 
 import { createBuilderController } from "../builder/src/application/index.js";
 import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
+import { serializeNuvioProject } from "../builder/src/serialize/index.js";
 import {
 	applyTmdbListHierarchyPlan,
 	buildTmdbEntityPageUrl,
@@ -27,7 +29,11 @@ import {
 	createSourceEditSession,
 	prepareSourceEditPreview,
 	saveSourceEdit,
+	sourceEditorFor,
 	TMDB_LIST_SOURCE_EDITOR_ID,
+	TMDB_LIST_EDIT_SORT_OPTIONS,
+	tmdbListEditSortOptionId,
+	updateTmdbListSourceSort,
 	updateSourceEditTitle,
 } from "../builder/src/source-edit/index.js";
 
@@ -97,8 +103,8 @@ test("TMDB List metadata normalizer preserves mixed item order and rejects malfo
 		creator: "Dave",
 		posterPath: "/list.jpg",
 		items: [
-			{ id: 10, title: "Movie", date: "2020-01-02", releaseYear: 2020, posterPath: "/movie.jpg", mediaType: "MOVIE", position: 0 },
-			{ id: 11, title: "Series", date: "2021-03-04", releaseYear: 2021, posterPath: "/series.jpg", mediaType: "TV", position: 1 },
+			{ id: 10, title: "Movie", date: "2020-01-02", releaseYear: 2020, posterPath: "/movie.jpg", mediaType: "MOVIE", position: 0, voteAverage: null, voteCount: null },
+			{ id: 11, title: "Series", date: "2021-03-04", releaseYear: 2021, posterPath: "/series.jpg", mediaType: "TV", position: 1, voteAverage: null, voteCount: null },
 		],
 	});
 	assert.equal(normalizeTmdbListResponse({ ...responseBody(), id: 124 }, 123), null);
@@ -109,12 +115,27 @@ test("TMDB List metadata normalizer preserves mixed item order and rejects malfo
 
 test("TMDB List Preview summaries distinguish complete, partial, unknown-total, and empty samples truthfully", () => {
 	const results = Array.from({ length: 20 }, (_, index) => ({ id: index + 1 }));
-	assert.equal(listSourceTitlePreviewSummary({ results: results.slice(0, 1), totalResults: 1 }), "Showing all 1 title");
-	assert.equal(listSourceTitlePreviewSummary({ results: results.slice(0, 8), totalResults: 8 }), "Showing all 8 titles");
+	assert.equal(listSourceTitlePreviewSummary({ results: results.slice(0, 1), totalResults: 1 }), "All 1 title");
+	assert.equal(listSourceTitlePreviewSummary({ results: results.slice(0, 8), totalResults: 8 }), "All 8 titles");
 	assert.equal(listSourceTitlePreviewSummary({ results, totalResults: 124 }), "Showing 20 of 124 titles");
 	assert.equal(listSourceTitlePreviewSummary({ results: results.slice(0, 7), totalResults: null }), "Showing 7 titles");
 	assert.equal(listSourceTitlePreviewSummary({ results: results.slice(0, 7), totalResults: 3 }), "Showing 7 titles");
-	assert.equal(listSourceTitlePreviewSummary({ results: [], totalResults: 0 }), null);
+	assert.equal(listSourceTitlePreviewSummary({ results: [], totalResults: 0 }), "This list is currently empty.");
+});
+test("List summaries describe represented titles, known completeness and actual Preview ordering", () => {
+	const results = Array.from({ length: 20 }, (_, id) => ({ id }));
+	const data = { results, totalResults: 20, orderingLabel: "Top rated" };
+	assert.equal(listSourceTitlePreviewSummary(data), "All 20 titles · Top rated");
+	assert.equal(listSourceTitlePreviewSummary({ ...data, totalResults: 44 }), "Showing 20 of 44 titles · Top rated within this preview");
+	assert.equal(listSourceTitlePreviewSummary(data, 18), "Showing 18 of 20 titles · Top rated within this preview");
+	assert.equal(listSourceTitlePreviewSummary(data, 0), "Showing 0 of 20 titles");
+	assert.equal(listSourceTitlePreviewSummary({ ...data, totalResults: null }), "Showing 20 titles · Top rated within this preview");
+	assert.equal(listSourceTitlePreviewSummary({ ...data, totalResults: 3 }), "Showing 20 titles · Top rated within this preview");
+	assert.equal(listSourceTitlePreviewSummary({ ...data, orderingLabel: "List order", totalResults: 44 }), "Showing 20 of 44 titles · List order");
+	assert.equal(listSourceTitlePreviewSummary({ results: [], totalResults: null }), "No titles returned.");
+	assert.equal(listSourceTitlePreviewSummary({ results: [], totalResults: 44 }), "Showing 0 of 44 titles");
+	for (const item_count of [null, undefined]) assert.equal(normalizeTmdbListResponse({ ...responseBody(), item_count }).itemCount, null);
+	for (const item_count of [-1, "44", 1.5]) assert.equal(normalizeTmdbListResponse({ ...responseBody(), item_count }), null);
 });
 
 test("TMDB List provider uses the exact Worker request, coalesces in-flight work, and caches successful empty lists", async () => {
@@ -384,7 +405,9 @@ test("TMDB List Source Edit changes title only and previews mixed titles through
 	const draft = updateSourceEditTitle(opened.draft, "Renamed list");
 	const prepared = prepareSourceEditPreview(opened.session, draft);
 	assert.equal(prepared.request.kind, "list");
-	const preview = await requestSourceTitlePreview(prepared.request, { list: { getList: async () => ({ ok: true, data: list(9) }) } });
+	assert.equal(prepared.request.tmdbId, 9);
+	assert.equal(prepared.candidateSource.editable.tmdbId, "9");
+	const preview = await requestSourceTitlePreview(prepared.request, { list: { getList: async (id) => { assert.equal(id, 9); return { ok: true, data: list(9) }; } } });
 	assert.deepEqual(preview.data.results.map((item) => item.mediaType), ["MOVIE", "TV"]);
 	const saved = saveSourceEdit(controller, opened.session, draft);
 	assert.equal(saved.ok, true);
@@ -392,4 +415,195 @@ test("TMDB List Source Edit changes title only and previews mixed titles through
 	assert.equal(output.title, "Renamed list");
 	assert.equal(output.tmdbId, "9");
 	assert.deepEqual(output.community, { keep: true });
+});
+
+test("List Preview sorts the complete fetched sample, reuses the List cache and leaves responses unchanged", async () => {
+	const body = responseBody(8687275);
+	body.items = Array.from({ length: 14 }, (_, index) => ({ id: index + 1, media_type: index % 2 ? "tv" : "movie", title: `Movie ${index}`, name: `Series ${index}`, release_date: `2020-01-${String(index + 1).padStart(2, "0")}`, first_air_date: `2020-01-${String(index + 1).padStart(2, "0")}`, vote_average: index / 2, vote_count: index, poster_path: null }));
+	body.item_count = 100;
+	const calls = [];
+	const provider = createTmdbListProvider({ baseUrl: "https://worker.example", fetchImpl: async (url) => { calls.push(url); return new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }); } });
+	const before = structuredClone((await provider.getList(8687275)).data);
+	for (const sortBy of ["vote_average.desc", "original", "primary_release_date.desc", "vote_count.desc", "first_air_date.desc", "Owner.MixedCase", "popularity.desc", "", " original ", "original"]) {
+		const request = Object.freeze({ kind: "list", tmdbId: 8687275, sortBy });
+		const result = await requestSourceTitlePreview(request, { list: provider });
+		assert.equal(result.ok, true);
+		const ranked = ["vote_average.desc", "primary_release_date.desc", "vote_count.desc", "first_air_date.desc"].includes(sortBy);
+		assert.deepEqual(result.data.results.map((item) => item.id), ranked ? [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+		assert.equal(result.data.totalResults, 100);
+		assert.equal(request.sortBy, sortBy);
+		assert.equal(result.data.orderingLabel, ranked ? TMDB_LIST_EDIT_SORT_OPTIONS.find((option) => option.id === tmdbListEditSortOptionId(sortBy)).label : "List order");
+		assert.equal(result.data.orderingNote, ranked || sortBy === "original" ? undefined : `Preview can’t reproduce ‘${sortBy}’; your saved sort will be kept.`);
+	}
+	assert.deepEqual((await provider.getList(8687275)).data, before);
+	assert.deepEqual(calls, ["https://worker.example/3/list/8687275?language=en-US&page=1"]);
+	const creation = await requestSourceTitlePreview({ kind: "list", tmdbId: 8687275 }, { list: provider });
+	assert.deepEqual(creation.data.results, before.items);
+	assert.equal(Object.hasOwn(creation.data, "orderingNote"), false);
+});
+
+test("List Preview uses List date and rating ties, stable vote ties, and neutral incomplete-data fallback", async () => {
+	const items = Object.freeze([
+		Object.freeze({ id: 1, date: "2020-02-01", voteAverage: 8, voteCount: 100 }),
+		Object.freeze({ id: 2, date: "2021-01-01", voteAverage: 8, voteCount: 100 }),
+		Object.freeze({ id: 3, date: "2020-02-01", voteAverage: 8, voteCount: 100 }),
+	]);
+	const provider = { getList: async () => ({ ok: true, data: { items, itemCount: 3 } }) };
+	for (const [sortBy, ids] of [["original", [1, 2, 3]], ["primary_release_date.desc", [2, 1, 3]], ["vote_average.desc", [2, 1, 3]], ["vote_count.desc", [1, 2, 3]]]) {
+		const result = await requestSourceTitlePreview({ kind: "list", tmdbId: 1, sortBy }, { list: provider });
+		assert.deepEqual(result.data.results.map((item) => item.id), ids);
+	}
+	for (const [field, invalid, sortBy] of [["vote_average", null, "vote_average.desc"], ["vote_average", "8", "vote_average.desc"], ["vote_average", 11, "vote_average.desc"], ["vote_count", -1, "vote_count.desc"], ["vote_count", 1.5, "vote_count.desc"], ["release_date", "", "primary_release_date.desc"]]) {
+		const body = responseBody(1);
+		body.items.forEach((item) => Object.assign(item, { vote_average: 8, vote_count: 100 }));
+		body.items[0][field] = invalid;
+		const data = normalizeTmdbListResponse(body, 1);
+		assert.ok(data, "optional sorting data must not invalidate identity or titles");
+		const result = await requestSourceTitlePreview({ kind: "list", tmdbId: 1, sortBy }, { list: { getList: async () => ({ ok: true, data }) } });
+		assert.equal(result.ok, true);
+		assert.deepEqual(result.data.results, data.items);
+		assert.equal(result.data.orderingLabel, "List order");
+		assert.match(result.data.orderingNote, /Preview lacks the data needed/);
+	}
+	for (const kind of ["not-found", "invalid-request", "invalid-response", "network", "rate-limit"]) {
+		const failure = { ok: false, error: { kind, message: "Request failed" } };
+		assert.equal(await requestSourceTitlePreview({ kind: "list", tmdbId: 1, sortBy: "Owner.MixedCase" }, { list: { getList: async () => failure } }), failure);
+	}
+});
+
+test("imported List sorts, populated filters and aliases remain exact through no-op, title-only, cancellation and replacement", () => {
+	for (const sortBy of ["vote_average.desc", "Owner.MixedCase", " original ", "", "first_air_date.desc", "popularity.desc"]) {
+		for (const filters of [
+			{}, { withGenres: null, futureFilter: null },
+			{ "vote_count.gte": 100, voteCountGte: 100 },
+			{ "vote_count.gte": 100, voteCountGte: 10 },
+			{ "vote_count.gte": "0100", voteCountGte: 100, withOriginalLanguage: "fr|es", withGenres: false, unknown: { ordered: [null, false, 0, "", { keep: true }] } },
+			{ "vote_count.gte": false, voteCountGte: [1, "2"], withGenres: {}, unknown: " " },
+		]) {
+			const controller = app();
+			const importedSource = { id: "source-owner-id", provider: "tmdb", title: "The Headliner: Pedro Pascal", name: "The Headliner", genre: "All", tmdbSourceType: "LIST", tmdbId: "8687275", mediaType: "MOVIE", sortBy, filters, community: { ordered: [3, 1, 2] } };
+			assert.equal(controller.importValue([{ id: "c", title: "Spotlight", community: { keep: true }, folders: [{ id: "f", title: "The Headliner", hideTitle: true, coverImageUrl: "https://example.com/owner.png", sources: [importedSource, { ...importedSource, id: "sibling", tmdbId: "8687276" }] }] }]).ok, true);
+			const initial = controller.getState();
+			const source = initial.project.collections[0].folders[0].sources[0];
+			const before = controller.stringifyProject().value;
+			assert.deepEqual(before[0].folders[0].sources[0], importedSource);
+			const opened = createSourceEditSession(initial.project, source.internalId);
+			assert.equal(opened.ok, true, JSON.stringify({ sortBy, filters }));
+			assert.equal(opened.draft.sortBy, sortBy);
+			assert.equal(opened.draft.sortTouched, false);
+			// Opening, preparing Preview and discarding a changed draft do not apply changes.
+			const preview = prepareSourceEditPreview(opened.session, opened.draft);
+			assert.equal(preview.previewable, true);
+			assert.equal(preview.request.hasImportedFilters, Object.values(filters).some((value) => value !== null));
+			assert.equal(Object.hasOwn(preview.request, "filters"), false);
+			assert.deepEqual(preview.candidateSource.rawImported.filters, filters);
+			updateTmdbListSourceSort(updateSourceEditTitle(opened.draft, "Discarded"), "original");
+			assert.equal(controller.getState().project, initial.project);
+			const unchanged = saveSourceEdit(controller, opened.session, opened.draft);
+			assert.equal(unchanged.ok, true);
+			assert.equal(unchanged.changed, false);
+			assert.equal(controller.getState().revision, initial.revision);
+			assert.deepEqual(controller.stringifyProject().value, before);
+			const renamed = saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Custom name"));
+			assert.deepEqual(renamed.patch, { title: "Custom name" });
+			const expected = structuredClone(before);
+			expected[0].folders[0].sources[0].title = "Custom name";
+			assert.deepEqual(controller.stringifyProject().value, expected);
+			let current = createSourceEditSession(controller.getState().project, source.internalId);
+			for (const option of TMDB_LIST_EDIT_SORT_OPTIONS) {
+				const saved = saveSourceEdit(controller, current.session, updateTmdbListSourceSort(current.draft, option.id));
+				assert.equal(saved.ok, true);
+				assert.deepEqual(saved.patch, expected[0].folders[0].sources[0].sortBy === option.value ? {} : { sortBy: option.value });
+				expected[0].folders[0].sources[0].sortBy = option.value;
+				assert.deepEqual(controller.stringifyProject().value, expected);
+				const edited = controller.getState().project.collections[0].folders[0].sources[0];
+				assert.equal(edited.internalId, source.internalId);
+				assert.deepEqual(edited.rawImported, source.rawImported);
+				current = createSourceEditSession(controller.getState().project, source.internalId);
+				assert.equal(saveSourceEdit(controller, current.session, current.draft).changed, false);
+			}
+		}
+	}
+});
+
+test("List Edit offers only evidenced page-local sorts, rejects touched unknown values and keeps identity fixed", () => {
+	assert.deepEqual(TMDB_LIST_EDIT_SORT_OPTIONS.map(({ label, value }) => [label, value]), [["List order", "original"], ["Recent", "primary_release_date.desc"], ["Top rated", "vote_average.desc"], ["Most voted", "vote_count.desc"]]);
+	assert.equal(tmdbListEditSortOptionId("first_air_date.desc"), "recent");
+	assert.equal(tmdbListEditSortOptionId("popularity.desc"), null);
+	const controller = app();
+	controller.importValue([{ id: "c", title: "C", folders: [{ id: "f", title: "F", sources: [{ provider: "tmdb", title: "List", tmdbSourceType: "LIST", tmdbId: "8687275", mediaType: "MOVIE", sortBy: "Owner.MixedCase", filters: {} }] }] }]);
+	const initial = controller.getState();
+	const source = initial.project.collections[0].folders[0].sources[0];
+	const opened = createSourceEditSession(initial.project, source.internalId);
+	for (const draft of [{ ...opened.draft, sortTouched: true }, updateTmdbListSourceSort(opened.draft, "popularity.desc"), { ...opened.draft, tmdbId: 9 }]) {
+		assert.equal(saveSourceEdit(controller, opened.session, draft).validationFailed, true);
+		assert.equal(controller.getState().project, initial.project);
+	}
+	for (const option of TMDB_LIST_EDIT_SORT_OPTIONS) {
+		const preview = prepareSourceEditPreview(opened.session, updateTmdbListSourceSort(opened.draft, option.id));
+		assert.equal(preview.previewable, true);
+		assert.equal(preview.request.sortBy, option.value);
+	}
+	assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, true);
+	controller.updateNode(source.internalId, { title: "Changed elsewhere" });
+	assert.equal(saveSourceEdit(controller, opened.session, updateTmdbListSourceSort(opened.draft, "original")).conflict, true);
+});
+
+test("List preservation eligibility retains identity and raw/editable filter-object safeguards", () => {
+	const input = { provider: "tmdb", title: "List", tmdbSourceType: "LIST", tmdbId: 8659014, mediaType: "MOVIE", sortBy: "vote_average.desc", filters: { "vote_count.gte": 100, voteCountGte: 100 } };
+	for (const filters of [null, false, 0, "", [], [100]]) {
+		const controller = app();
+		controller.importValue([{ title: "C", folders: [{ title: "F", sources: [{ ...input, filters }] }] }]);
+		const source = controller.getState().project.collections[0].folders[0].sources[0];
+		assert.equal(sourceEditorFor(source), null);
+		assert.equal(sourceEditorFor({ ...source, editable: { ...source.editable, filters: {} } }), null, "a valid editable object must not conceal malformed raw filters");
+		assert.deepEqual(source.rawImported.filters, filters);
+	}
+});
+
+test("original import audit: all 339 populated-filter Lists open and preserve; 48 Discover cases remain blocked", { skip: !process.env.TMDB_LIST_IMPORT_FILE }, (t) => {
+	const original = JSON.parse(fs.readFileSync(process.env.TMDB_LIST_IMPORT_FILE, "utf8"));
+	const audit = app();
+	assert.equal(audit.importValue(original).ok, true);
+	const rows = audit.getState().project.collections.flatMap((collection, ci) => collection.folders.flatMap((folder, fi) => folder.sources.map((source, si) => ({ collection, folder, source, ci, fi, si }))));
+	const native = rows.filter(({ source }) => source.category === "native-tmdb");
+	const lists = native.filter(({ source }) => source.editable.tmdbSourceType === "LIST");
+	const restored = lists.filter(({ source }) => Object.values(source.rawImported.filters).some((value) => value !== null));
+	const blocked = native.filter(({ source }) => !sourceEditorFor(source));
+	assert.equal(rows.length, 3070);
+	assert.equal(native.length, 2796);
+	assert.equal(lists.length, 504);
+	assert.equal(restored.length, 339);
+	assert.ok(lists.every(({ source }) => sourceEditorFor(source)?.id === TMDB_LIST_SOURCE_EDITOR_ID));
+	assert.equal(blocked.length, 48);
+	assert.ok(blocked.every(({ collection, source }) => collection.editable.title === "International Cinema" && source.editable.tmdbSourceType === "DISCOVER" && source.editable.filters.withOriginalLanguage.includes("|") && source.editable.filters.withOriginCountry.includes("|")));
+	const blockedFolders = Object.fromEntries([...new Set(blocked.map(({ folder }) => folder.editable.title))].map((title) => [title, blocked.filter(({ folder }) => folder.editable.title === title).length]));
+	assert.equal(Object.keys(blockedFolders).length, 8);
+	assert.ok(Object.values(blockedFolders).every((count) => count === 6));
+	const before = serializeNuvioProject(audit.getState().project).value;
+	for (const { ci, fi, si } of lists) assert.deepEqual(before[ci].folders[fi].sources[si], original[ci].folders[fi].sources[si]);
+	for (const action of ["unchanged", "title", "replace", "cancel"]) {
+		const controller = app();
+		assert.equal(controller.importValue(original).ok, true);
+		const initial = controller.getState();
+		const expected = structuredClone(before);
+		for (const { ci, fi, si } of restored) {
+			const source = controller.getState().project.collections[ci].folders[fi].sources[si];
+			const opened = createSourceEditSession(controller.getState().project, source.internalId);
+			assert.equal(opened.ok, true);
+			let draft = opened.draft;
+			if (action === "title" || action === "cancel") draft = updateSourceEditTitle(draft, "Preservation audit");
+			if (action === "replace" || action === "cancel") draft = updateTmdbListSourceSort(draft, "most-voted");
+			const preview = prepareSourceEditPreview(opened.session, draft);
+			assert.equal(preview.previewable, true);
+			assert.equal(preview.request.hasImportedFilters, true);
+			if (action !== "cancel") assert.equal(saveSourceEdit(controller, opened.session, draft).ok, true);
+			if (action === "title") expected[ci].folders[fi].sources[si].title = "Preservation audit";
+			if (action === "replace") expected[ci].folders[fi].sources[si].sortBy = "vote_count.desc";
+			assert.deepEqual(controller.getState().project.collections[ci].folders[fi].sources[si].rawImported, source.rawImported);
+		}
+		assert.deepEqual(serializeNuvioProject(controller.getState().project).value, expected, action);
+		if (action === "unchanged" || action === "cancel") assert.equal(controller.getState().project, initial.project);
+	}
+	t.diagnostic(JSON.stringify({ total: rows.length, excludedNonTmdb: rows.length - native.length, editableTmdb: native.length - blocked.length, editableLists: lists.length, restoredLists: restored.length, remainingBlockedDiscover: blockedFolders, preservationActionsPerRestoredList: 4 }));
 });

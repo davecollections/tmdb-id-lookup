@@ -38,7 +38,6 @@ export function SourceTitlePreviewDialog({
 	const closeRef = useRef(null);
 	const listPreview = preview.candidate.request.kind === "list";
 	const label = listPreview ? "Titles" : mediaLabel(preview.candidate.request.mediaType);
-	const listSummary = listPreview && preview.status === "ready" ? listSourceTitlePreviewSummary(preview.data) : null;
 	return (
 		<NestedPreviewDialog
 			ariaLabelledBy={titleId}
@@ -55,15 +54,16 @@ export function SourceTitlePreviewDialog({
 				{context ? <p className="studio-preview-single-media">{context}{preview.status === "ready" && Number.isSafeInteger(preview.data?.totalResults) ? ` · ${preview.data.totalResults.toLocaleString("en")} titles` : ""}</p> : null}
 				{selectorGroups.length > 0 ? (
 					<SourcePreviewSelectors groups={selectorGroups} />
-				) : listPreview ? (
-					<div className="source-title-preview-context">
-						<p className="studio-preview-single-media">{label}</p>
-						{listSummary ? <p className="source-title-preview-summary" role="status">{listSummary}</p> : null}
-					</div>
-				) : <p className="studio-preview-single-media">{label}</p>}
+				) : !listPreview ? <p className="studio-preview-single-media">{label}</p> : null}
 				{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing preview…</p> : null}
 				{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This title preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-				{preview.status === "ready" ? <PosterOnlyPreviewGrid items={preview.data?.results ?? []} limit={10} displayAll={listPreview} className={`franchise-preview-grid studio-preview-grid source-edit-preview-grid${listPreview ? " tmdb-list-preview-grid" : ""}`} ariaLabel={`${label} poster preview`} altPrefix={label} emptyMessage={listPreview && preview.data?.totalResults === 0 ? "This list is currently empty." : "No posters available."} /> : null}
+				{preview.status === "ready" ? <PosterOnlyPreviewGrid items={preview.data?.results ?? []} limit={10} displayAll={listPreview} className={`franchise-preview-grid studio-preview-grid source-edit-preview-grid${listPreview ? " tmdb-list-preview-grid" : ""}`} ariaLabel={`${label} poster preview`} altPrefix={label} emptyMessage={listPreview && preview.data?.results?.length === 0 ? null : "No posters available."}
+					renderSummary={listPreview ? (displayedCount) => <div className="source-title-preview-context">
+						<p className="source-title-preview-summary" role="status">{listSourceTitlePreviewSummary(preview.data, displayedCount)}</p>
+						{preview.data?.orderingNote ? <p className="source-title-preview-summary tmdb-list-preview-ordering">{preview.data.orderingNote}</p> : null}
+						{preview.candidate.request.hasImportedFilters ? <p className="source-title-preview-summary tmdb-list-preview-filters">Imported filters aren’t applied in Preview. Your saved settings will be kept.</p> : null}
+					</div> : undefined}
+				/> : null}
 			</SourcePreviewContent>
 		</NestedPreviewDialog>
 	);

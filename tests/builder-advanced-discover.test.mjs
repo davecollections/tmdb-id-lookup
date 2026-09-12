@@ -222,8 +222,40 @@ test("creation produces the ordered scalar media/sort product; Preview does not 
  const draft = { ...createAdvancedDiscoverDraft(), mediaMode: "both", sortOptionIds: ["popular", "recent", "top-rated", "most-votes"] };
  assert.equal(compileAdvancedDiscover(draft).drafts.length, 8);
  const one = { ...draft, sortOptionIds: ["recent"] }, before = structuredClone(one);
- assert.equal(compileAdvancedDiscover(one, { preview: true }).drafts.length, 8);
+ assert.equal(compileAdvancedDiscover(one).drafts.length, 2);
  assert.deepEqual(one, before);
+});
+test("Discover Preview candidates contain only selected media/orders and current effective filters", () => {
+ for (const mediaMode of ["movies", "series", "both"]) for (const sortOptionIds of [["recent"], ["top-rated", "most-votes"]]) {
+  const draft = { ...createAdvancedDiscoverDraft(), mediaMode, sortOptionIds, filters: { withGenres: "16", voteCountGte: "100", releaseDateGte: "2020-01-01", ...(mediaMode !== "movies" ? { withNetworks: "213" } : {}) } };
+  const before = structuredClone(draft), built = compileAdvancedDiscover(draft);
+  assert.equal(built.ok, true);
+  assert.equal(built.drafts.length, sortOptionIds.length * (mediaMode === "both" ? 2 : 1));
+  for (const candidate of built.drafts) {
+   const query = advancedDiscoverQuery(candidate);
+   assert.ok(mediaMode === "both" || query.mediaType === (mediaMode === "movies" ? "MOVIE" : "TV"));
+   assert.equal(query.queryParameters[query.mediaType === "TV" ? "first_air_date.gte" : "primary_release_date.gte"], "2020-01-01");
+   assert.equal(query.queryParameters["vote_count.gte"], "100");
+   assert.equal(query.queryParameters.with_networks, query.mediaType === "TV" ? "213" : undefined);
+  }
+  assert.deepEqual(draft, before);
+ }
+ assert.deepEqual(compileAdvancedDiscover({ ...createAdvancedDiscoverDraft(), sortOptionIds: [] }).drafts, []);
+});
+test("imported and Builder-created Discover editing Preview uses unsaved scalar sort/filters without mutation", () => {
+ for (const imported of [false, true]) for (const mediaMode of ["movies", "series"]) {
+  const originalDraft = { ...createAdvancedDiscoverDraft(), mediaMode, filters: { voteCountGte: 10 }, sortOptionIds: ["recent"] };
+  const raw = { ...compileAdvancedDiscover(originalDraft).drafts[0].editable, id: "preserved", filters: { voteCountGte: 10, "vote_count.gte": 10 }, extra: { keep: true } };
+  const c = controllerWithFolder(imported ? [raw] : []);
+  if (!imported) assert.equal(applyAdvancedDiscoverPlan(c, createAdvancedDiscoverPlan(c.getState().project, options(c, "add-source", originalDraft)).plan).ok, true);
+  const opened = openAdvanced(c), before = c.stringifyProject().json;
+  const draft = { ...opened.draft, sortOptionIds: ["top-rated"], sortTouched: true, filters: { ...opened.draft.filters, voteCountGte: 100, voteAverageGte: 7 }, touchedFilters: ["voteCountGte", "voteAverageGte"] };
+  assert.equal(discoverEditorPreviewBlocked(draft), false);
+  const frozen = structuredClone(draft), candidates = compileAdvancedDiscover(draft).drafts;
+  assert.equal(candidates.length, 1);
+  assert.deepEqual(advancedDiscoverQuery(candidates[0]), { mediaType: mediaMode === "movies" ? "MOVIE" : "TV", queryParameters: { include_adult: "false", sort_by: "vote_average.desc", "vote_count.gte": "100", "vote_average.gte": "7" } });
+  assert.deepEqual(draft, frozen); assert.equal(c.stringifyProject().json, before);
+ }
 });
 for (const scope of ["add-source", "new-folder", "new-collection"]) test("atomic creation in " + scope + " and stale plan protection", () => {
  const c = controllerWithFolder();

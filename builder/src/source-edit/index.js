@@ -18,6 +18,9 @@ export {
 } from "./movie-collection-editor.js";
 export {
 	TMDB_LIST_SOURCE_EDITOR_ID,
+	TMDB_LIST_EDIT_SORT_OPTIONS,
+	tmdbListEditSortOptionId,
+	updateTmdbListSourceSort,
 	tmdbListEditIdentity,
 	tmdbListSourceEditor,
 } from "./tmdb-list-editor.js";

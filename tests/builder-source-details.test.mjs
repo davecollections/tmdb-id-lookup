@@ -30,8 +30,8 @@ for (const [media, label] of [["MOVIE", "Movies"], ["TV", "Series"]]) {
 cases.push(
 	["Network", native("NETWORK", "TV", { tmdbId: 1004 }), "Network · Series · Popular", "Network source"],
 	["Franchise", native("COLLECTION", "MOVIE", { tmdbId: 1002, sortBy: "original" }), "Movie franchise · TMDB order", "Movie franchise source"],
-	["List mixed contents cannot be inferred", native("LIST", "MOVIE", { tmdbId: "1001", sortBy: "original" }), "List · Original order", "TMDB List source"],
-	["List unknown sort", native("LIST", "MOVIE", { tmdbId: 123, sortBy: "added.desc" }), "List · Other sorting", "TMDB List source"],
+	["List mixed contents cannot be inferred", native("LIST", "MOVIE", { tmdbId: "1001", sortBy: "original" }), "List · List order", "TMDB List source"],
+	["List unknown sort", native("LIST", "MOVIE", { tmdbId: 123, sortBy: "added.desc" }), "List · Imported sort", "TMDB List source"],
 	["Advanced Genre", native("DISCOVER", "MOVIE", { sortBy: "vote_average.desc", filters: { withGenres: "35", voteCountGte: 250 } }), "Comedy movies · Top rated · Additional settings", "Genre source"],
 	["Keyword", native("DISCOVER", "MOVIE", { filters: { withKeywords: "15097" } }), "Discover · Popular movies · Additional settings", "TMDB Discover source"],
 	["Missing optional values", native("COMPANY", undefined, { mediaType: null, sortBy: " ", tmdbId: null }), "Studio", "Studio source"],
@@ -59,6 +59,15 @@ test("family sort tables are media-specific, missing sorts are omitted, unknown 
 	assert.match(summary(native("COMPANY", "MOVIE", { sortBy: "vote_count.desc" })), /Most voted/);
 	assert.match(summary(native("PERSON", "MOVIE", { sortBy: "vote_count.desc" })), /Most voted/);
 	assert.match(summary(native("COMPANY", "future-media")), /Other media type/);
+});
+
+test("List cards share editor sort labels, retain imported aliases, and never expose unknown values", () => {
+	for (const [sortBy, label] of [["original", "List order"], ["primary_release_date.desc", "Recent"], ["first_air_date.desc", "Recent"], ["vote_average.desc", "Top rated"], ["vote_count.desc", "Most voted"], ["Owner.MixedCase", "Imported sort"], ["popularity.desc", "Imported sort"], ["", "Imported sort"], [" original ", "Imported sort"]]) {
+		const node = native("LIST", "MOVIE", { tmdbId: 8659014, sortBy, filters: { voteCountGte: 100 } });
+		const before = structuredClone(node);
+		assert.equal(summary(node), `List · ${label} · Additional settings`);
+		assert.deepEqual(node, before);
+	}
 });
 
 test("preserved raw filters and fields cannot be mistaken for a fully recognized Genre", () => {
@@ -145,7 +154,7 @@ test("hidden Sources have one comma-separated description; visible Sources retai
 	assert.match(buttons[1], /aria-label="Source with hidden Nuvio title"/);
 	assert.match(buttons[1], /aria-describedby="source-details-details-\d+"/);
 	assert.match(buttons[1], /class="node-meta" aria-hidden="true"/);
-	assert.equal((buttons[1].match(/List, Original order/g) ?? []).length, 1);
+	assert.equal((buttons[1].match(/List, List order/g) ?? []).length, 1);
 	assert.equal(html.includes("MOVIE"), false);
 });
 
