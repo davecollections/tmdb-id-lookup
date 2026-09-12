@@ -1,7 +1,14 @@
 import { canonicalPositiveId, diagnostic, isPlainObject, validateTouchedSourceTitle } from "./source-edit-utils.js";
 import { resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
+import { TMDB_LIST_EDIT_SORT_OPTIONS, tmdbListEditSortOptionId } from "../source-add/tmdb-list-source.js";
+export { TMDB_LIST_EDIT_SORT_OPTIONS, tmdbListEditSortOptionId } from "../source-add/tmdb-list-source.js";
 
 export const TMDB_LIST_SOURCE_EDITOR_ID = "tmdb-list";
+
+export function updateTmdbListSourceSort(draft, optionId) {
+	const option = TMDB_LIST_EDIT_SORT_OPTIONS.find((entry) => entry.id === optionId);
+	return Object.freeze({ ...draft, sortBy: option?.value ?? null, sortTouched: true });
+}
 
 export function tmdbListEditIdentity(editable) {
 	if (!isPlainObject(editable)) return null;
@@ -13,9 +20,8 @@ export function tmdbListEditIdentity(editable) {
 	return provider === "tmdb"
 		&& sourceType === "LIST"
 		&& mediaType === "MOVIE"
-		&& editable.sortBy === "original"
+		&& typeof editable.sortBy === "string"
 		&& isPlainObject(filters)
-		&& Object.values(filters).every((value) => value === null)
 		&& id !== null
 		&& id <= 2_147_483_647
 		? `tmdb|LIST|${id}|MOVIE`
@@ -23,24 +29,37 @@ export function tmdbListEditIdentity(editable) {
 }
 
 function readInitialState(source) {
-	return Object.freeze({ title: typeof source.editable.title === "string" ? source.editable.title : "", titleTouched: false, tmdbId: canonicalPositiveId(source.editable.tmdbId) });
+	return Object.freeze({
+		title: typeof source.editable.title === "string" ? source.editable.title : "",
+		titleTouched: false,
+		tmdbId: canonicalPositiveId(source.editable.tmdbId),
+		sortBy: source.editable.sortBy,
+		originalSortBy: source.editable.sortBy,
+		sortTouched: false,
+	});
 }
-function validateDraft({ draft }) {
+function validateDraft({ draft, source }) {
 	const errors = [...validateTouchedSourceTitle(draft)];
 	if (canonicalPositiveId(draft?.tmdbId) === null || draft.tmdbId > 2_147_483_647) errors.push(diagnostic("SOURCE_EDIT_TMDB_LIST_ID_INVALID", "$sourceEdit.tmdbId", "This TMDB List ID is not valid."));
+	if (canonicalPositiveId(draft?.tmdbId) !== canonicalPositiveId(source?.editable?.tmdbId)) errors.push(diagnostic("SOURCE_EDIT_TMDB_LIST_ID_FIXED", "$sourceEdit.tmdbId", "The List identity cannot be changed in this editor."));
+	if (draft?.sortTouched && tmdbListEditSortOptionId(draft.sortBy) === null) errors.push(diagnostic("SOURCE_EDIT_TMDB_LIST_SORT_UNSUPPORTED", "$sourceEdit.sortBy", "Choose a supported List sort order."));
 	return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }
 function buildPatch({ source, draft }) {
-	return draft.titleTouched && draft.title !== source.editable.title ? Object.freeze({ title: draft.title }) : Object.freeze({});
+	const patch = {};
+	if (draft.titleTouched && draft.title !== source.editable.title) patch.title = draft.title;
+	if (draft.sortTouched && draft.sortBy !== source.editable.sortBy) patch.sortBy = draft.sortBy;
+	return Object.freeze(patch);
 }
 
 export const tmdbListSourceEditor = Object.freeze({
 	id: TMDB_LIST_SOURCE_EDITOR_ID,
 	label: "TMDB List",
-	ownedFields: Object.freeze(["title"]),
+	ownedFields: Object.freeze(["title", "sortBy"]),
 	duplicateMessage: "This folder already contains that TMDB List source.",
 	canEdit(source) {
-		// Inspect the preserved filter overlay too: unknown non-null filters are not an empty List configuration.
+		// Filters are preserved settings, not editable Discover criteria. Retain object-shape safeguards.
+		if (source?.rawImported && Object.hasOwn(source.rawImported, "filters") && !isPlainObject(source.rawImported.filters)) return false;
 		const effective = resolveEffectiveDiscoverSource(source);
 		return effective.ok && tmdbListEditIdentity(effective.value) !== null;
 	},

@@ -17,6 +17,11 @@ const nestedPreviewDialog = read("builder/src/ui/NestedPreviewDialog.jsx");
 const posterGrid = read("builder/src/ui/PosterOnlyPreviewGrid.jsx");
 const styles = read("builder/src/styles.css");
 
+test("unknown List totals remain honest on both creation summaries without adding settings", () => {
+	assert.equal(flow.split('list.itemCount === null ? "Count unavailable"').length - 1, 2);
+	assert.doesNotMatch(flow, /TMDB_LIST_EDIT_SORT_OPTIONS|tmdb-list-edit-sort/);
+});
+
 test("TMDB Lists is available from Add Source, New Collection, and New Folder through registered flows", () => {
 	assert.match(sourceModes, /label: "TMDB lists"[\s\S]*description: "Add one or more public TMDB lists\."/);
 	assert.match(workspace, /visibleAddSourceSession\.modeId === TMDB_LIST_SOURCE_MODE_ID[\s\S]*<TmdbListSourceFlow/);
@@ -54,9 +59,11 @@ test("list resolution and Preview use only the injected provider and the shared 
 	assert.match(flow, /requestSourceTitlePreview\(candidate\.request, \{ list: provider \}/);
 	assert.match(flow, /<SourceTitlePreviewDialog/);
 	assert.match(previewDialog, /const listPreview = preview\.candidate\.request\.kind === "list"/);
-	assert.match(previewDialog, /listSourceTitlePreviewSummary\(preview\.data\)/);
+	assert.match(previewDialog, /listSourceTitlePreviewSummary\(preview\.data, displayedCount\)/);
 	assert.match(previewDialog, /displayAll=\{listPreview\}/);
-	assert.match(previewDialog, /This list is currently empty\./);
+	assert.match(previewDialog, /renderSummary=\{listPreview/);
+	assert.match(posterGrid, /renderSummary\?\.\(visible\.length\)/);
+	assert.doesNotMatch(editorDialog, /tmdb-list-sort-help|Nuvio applies Recent/);
 	assert.match(posterGrid, /displayAll \? candidates : candidates\.slice\(0, limit\)/);
 	assert.doesNotMatch(posterGrid, /onScroll=|onWheel=|onTouchEnd=|revealState|revealMore/);
 	assert.doesNotMatch(previewDialog, /page\s*2|Load more|fetch\(/i);
@@ -134,10 +141,12 @@ test("guided Lists directly reuses standard Collection and Folder presentation c
 	assert.doesNotMatch(flow, /focusGlowEnabled/);
 });
 
-test("TMDB List Source Edit is fail-closed, title-only, and uses the injected List preview provider", () => {
+test("TMDB List Source Edit preserves imports, offers edit-only sorting and uses the injected List preview provider", () => {
 	assert.match(sourceEditors, /tmdbListSourceEditor/);
 	assert.match(editorDialog, /TMDB_LIST_SOURCE_EDITOR_ID/);
-	assert.match(editorDialog, /titles use Original order/);
+	assert.match(editorDialog, /<TmdbListEditorFields/);
+	assert.match(editorDialog, /This imported list uses/);
+	assert.doesNotMatch(flow, /TMDB_LIST_EDIT_SORT_OPTIONS|tmdb-list-edit-sort/);
 	assert.match(editorDialog, />Preview titles<\/button>/);
 	assert.match(editorDialog, /list: listProvider/);
 	assert.match(editorDialog, /<TmdbEntityLink entityType="list"[\s\S]*linkText=\{String\(draft\.tmdbId\)\}/);

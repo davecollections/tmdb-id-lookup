@@ -90,13 +90,18 @@ export function prepareSourceEditPreview(session, draft) {
 	const candidateSource = detachedCandidate(exact.source, patch);
 
 	switch (session.adapterId) {
-		case TMDB_LIST_SOURCE_EDITOR_ID:
+		case TMDB_LIST_SOURCE_EDITOR_ID: {
+			const effective = resolveEffectiveDiscoverSource(candidateSource);
+			if (!effective.ok) return freezeFailure(FIX_CURRENT_FIELDS_GUIDANCE);
 			return ready(candidateSource, {
 				kind: "list",
-				tmdbId: candidateSource.editable.tmdbId,
+				tmdbId: draft.tmdbId,
+				sortBy: candidateSource.editable.sortBy,
+				hasImportedFilters: Object.values(effective.value.filters).some((value) => value !== null),
 				mediaType: "MOVIE",
 				label: draft.title,
 			});
+		}
 		case MOVIE_COLLECTION_SOURCE_EDITOR_ID:
 			return ready(candidateSource, {
 				kind: "collection",

@@ -1,8 +1,10 @@
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
 import { runNativeSourceVariantsScenario } from "./builder-native-source-variants-mounted.jsx";
+import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
+import { serializeNuvioProject } from "../../builder/src/serialize/index.js";
 import { desktopExpandedSource, roundTripSourceCases } from "./nuvio-desktop-round-trip.mjs";
 import { createCollectionExportPayload } from "../../builder/src/ui/export-collections.js";
 import {
@@ -419,12 +421,13 @@ function inputContaining(container, text) {
 	return [...container.querySelectorAll("label")].find((label) => label.textContent.includes(text))?.querySelector("input") ?? null;
 }
 
-async function withMountedEditor({ controller, session, draft, run }) {
+async function withMountedEditor({ controller, session, draft, listProvider, run }) {
 	const host = document.createElement("div");
 	document.body.append(host);
 	const root = createRoot(host);
 	let updateCalls = 0;
 	let submittedDraft = null;
+	let cancelCalls = 0;
 	const saveController = {
 		getState: () => controller.getState(),
 		updateNode(...args) {
@@ -436,9 +439,10 @@ async function withMountedEditor({ controller, session, draft, run }) {
 		root.render(createElement(SourceEditorDialog, {
 			provider: {},
 			peopleProvider: {},
+			listProvider,
 			session,
 			initialDraft: draft,
-			onCancel() {},
+			onCancel() { cancelCalls += 1; },
 			onSave(nextDraft) {
 				submittedDraft = nextDraft;
 				return saveSourceEdit(saveController, session, nextDraft);
@@ -450,6 +454,7 @@ async function withMountedEditor({ controller, session, draft, run }) {
 		return await run({
 			getUpdateCalls: () => updateCalls,
 			getSubmittedDraft: () => submittedDraft,
+			getCancelCalls: () => cancelCalls,
 		});
 	} finally {
 		await act(async () => root.unmount());
@@ -7272,6 +7277,124 @@ async function runSourceChooserLayoutScenario({
 	}
 }
 
+async function runTmdbListImportedSortScenario(supplied = null) {
+	// Local imported structure; all Preview titles, sorting metadata and posters use the live production path.
+	const requestStart = liveTmdbListRequests.length;
+	const profile = supplied ?? [{ id: "collection-SPOTLIGHTS", title: "Spotlight", folders: [{ id: "folder-SPOTHEAD", title: "The Headliner", sources: [{ title: "The Headliner: Pedro Pascal", name: "The Headliner", genre: "All", provider: "tmdb", mediaType: "MOVIE", tmdbSourceType: "LIST", tmdbId: "8687275", sortBy: "vote_average.desc", filters: {} }] }] }];
+	if (!supplied) profile[0].folders.push({ id: "anne", title: "Anne Hathaway", sources: [{ id: "src-RWXSYWZO", title: "Top Rated Movies", name: "Top Rated Movies", genre: "Top Rated Movies", provider: "tmdb", mediaType: "MOVIE", tmdbSourceType: "LIST", tmdbId: 8659014, sortBy: "vote_average.desc", filters: { "vote_count.gte": 100, voteCountGte: 100 } }] });
+	const cases = [];
+	for (const variant of ["Headliner", "Anne Hathaway", "conflicting filters"]) for (const action of ["unchanged", "title", "replace", "cancel"]) {
+		const unfamiliar = variant === "conflicting filters";
+		const controller = createController();
+		const input = structuredClone(profile);
+		const importedSource = input.flatMap((collection) => collection.folders).flatMap((folder) => folder.sources ?? []).find((source) => variant === "Anne Hathaway" ? source.id === "src-RWXSYWZO" : source.title === "The Headliner: Pedro Pascal");
+		if (!importedSource || importedSource.sortBy !== "vote_average.desc") throw new Error(`The supplied ${variant} List regression case is missing.`);
+		if (unfamiliar) {
+			importedSource.sortBy = "Owner.MixedCase/" + "long-".repeat(30);
+			importedSource.filters = { "vote_count.gte": "0100", voteCountGte: 10, withOriginalLanguage: "fr|es", unknown: { ordered: [false, 0, null, "", { keep: true }] } };
+		}
+		if (!controller.importValue(input).ok) throw new Error("List regression import failed.");
+		const initial = controller.getState();
+		const matchesImportedSource = (node) => node.title === importedSource.title && node.tmdbId === importedSource.tmdbId;
+		const source = initial.project.collections.flatMap((collection) => collection.folders).flatMap((folder) => folder.sources).find((node) => matchesImportedSource(node.editable));
+		const opened = openEdit(controller, source);
+		const before = JSON.stringify(serializeNuvioProject(initial.project).value);
+		const expected = JSON.parse(before);
+		const expectedSource = expected.flatMap((collection) => collection.folders).flatMap((folder) => folder.sources ?? []).find(matchesImportedSource);
+		if (Object.keys(expectedSource.filters).length !== Object.keys(importedSource.filters).length || Object.entries(importedSource.filters).some(([key, value]) => JSON.stringify(expectedSource.filters[key]) !== JSON.stringify(value))) throw new Error("Import changed List filters.");
+		const result = await withMountedEditor({ controller, session: opened.session, draft: opened.draft, listProvider: liveTmdbListProvider, async run({ getUpdateCalls, getCancelCalls, getSubmittedDraft }) {
+			const dialog = requiredElement(document.querySelector('[data-source-edit-adapter="tmdb-list"]'), "List editor");
+			const radios = [...dialog.querySelectorAll('input[name="tmdb-list-edit-sort"]')];
+			const note = dialog.querySelector("#tmdb-list-imported-sort");
+			const selected = radios.filter((radio) => radio.checked).map((radio) => radio.value);
+			const sortGroup = radios[0].closest("fieldset");
+			const scroll = dialog.querySelector(".source-edit-scroll");
+			const startingGeometry = dialog.getBoundingClientRect();
+			const startingScrollY = window.scrollY;
+			radios.at(-1).focus();
+			await afterCommittedEffects();
+			const focusedGeometry = dialog.getBoundingClientRect();
+			const evidence = {
+				variant, unfamiliar, action,
+				selected,
+				correctNote: unfamiliar ? note?.textContent === `This imported list uses ‘${importedSource.sortBy}’. Choose another sort to change it, or leave it unchanged to keep the original.` : note === null,
+				noError: !dialog.querySelector('[role="alert"], [aria-invalid="true"]'),
+				options: radios.map((radio) => radio.closest("label").textContent.trim()),
+				accessibleHelp: (sortGroup.getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean).every((id) => document.getElementById(id)),
+				noTechnicalSortHelp: !dialog.textContent.includes("within each fetched page"),
+				oneScrollOwner: dialog.querySelectorAll(".source-edit-scroll").length === 1,
+				noOverflow: dialog.scrollWidth <= dialog.clientWidth + 1 && scroll.scrollWidth <= scroll.clientWidth + 1 && sortGroup.scrollWidth <= sortGroup.clientWidth + 1,
+				focusStable: document.activeElement === radios.at(-1) && window.scrollY === startingScrollY && Math.abs(startingGeometry.top - focusedGeometry.top) <= 1,
+				footerReachable: dialog.querySelector(".add-source-actions").getBoundingClientRect().bottom <= window.innerHeight + 1,
+			};
+			const previews = [];
+			async function checkPreview(sortBy) {
+				const trigger = requiredElement(dialog.querySelector('[data-action="preview-source-edit"]:not(:disabled)'), "enabled imported List Preview");
+				const selectionBefore = radios.filter((radio) => radio.checked).map((radio) => radio.value).join();
+				const titleBefore = dialog.querySelector("#source-edit-title-input").value;
+				await clickAndSettle(trigger);
+				const modal = await waitForMountedCondition(() => {
+					const modal = document.querySelector(".tmdb-list-preview-modal");
+					const error = modal?.querySelector('[role="alert"]');
+					if (error) throw new Error(`Live ${variant} Preview request failed: ${error.textContent}`);
+					return modal?.querySelector(".source-title-preview-summary") ? modal : null;
+				}, { label: "live imported Headliner Preview", timeoutMs: 30_000 });
+				const loaded = await liveTmdbListProvider.getList(Number(importedSource.tmdbId));
+				if (!loaded.ok || !loaded.data.items.length) throw new Error("Live Headliner sample is unavailable.");
+				const expectedItems = [...loaded.data.items];
+				if (sortBy === "vote_average.desc") expectedItems.sort((a, b) => b.voteAverage - a.voteAverage || b.date.localeCompare(a.date));
+				if (sortBy === "primary_release_date.desc") expectedItems.sort((a, b) => b.date.localeCompare(a.date));
+				if (sortBy === "vote_count.desc") expectedItems.sort((a, b) => b.voteCount - a.voteCount);
+				const expectedPosters = expectedItems.map((item) => buildTmdbPosterUrl(item.posterPath, "w342")).filter(Boolean);
+				const grid = requiredElement(modal.querySelector(".tmdb-list-preview-grid"), "live Headliner posters");
+				await waitForMountedCondition(() => [...grid.querySelectorAll("img")].filter(visibleElement).every((image) => image.complete && image.naturalWidth > 0), { label: "live Headliner images", timeoutMs: 30_000 });
+				const note = modal.querySelector(".tmdb-list-preview-ordering")?.textContent;
+				const ranked = ["vote_average.desc", "primary_release_date.desc", "vote_count.desc"].includes(sortBy);
+				const count = expectedPosters.length;
+				const complete = count === loaded.data.itemCount;
+				const label = sortBy === "vote_average.desc" ? "Top rated" : sortBy === "primary_release_date.desc" ? "Recent" : sortBy === "vote_count.desc" ? "Most voted" : "List order";
+				const expectedSummary = `${complete ? `All ${count} titles` : `Showing ${count} of ${loaded.data.itemCount} titles`} · ${label}${ranked && !complete ? " within this preview" : ""}`;
+				const geometry = tmdbListPreviewGeometry(modal, grid);
+				const contained = geometry.gridInlineContained && geometry.closeReachable && geometry.verticalScrollOnly && grid.clientHeight > 0;
+				const ordered = JSON.stringify([...grid.querySelectorAll("img")].map((image) => image.src)) === JSON.stringify(expectedPosters);
+				const requestsBeforeClose = liveTmdbListRequests.length;
+				if (window.capture204Preview && action === "unchanged" && innerWidth === 393 && innerHeight === 800) await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `list-${variant.replaceAll(" ", "-")}-preview` })); });
+				await clickAndSettle(modal.querySelector("header button"));
+				if (window.capture204Preview && action === "unchanged" && innerWidth === 393 && innerHeight === 800) await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `list-${variant.replaceAll(" ", "-")}-editor` })); });
+				previews.push({ sortBy, ordered, loadedCount: loaded.data.items.length,
+					filtersExplained: variant === "Headliner" ? !modal.querySelector(".tmdb-list-preview-filters") : modal.querySelector(".tmdb-list-preview-filters")?.textContent === "Imported filters aren’t applied in Preview. Your saved settings will be kept.",
+					neutral: !modal.querySelector('[role="alert"]'),
+					explained: modal.querySelector(".source-title-preview-summary").textContent === expectedSummary && !modal.querySelector(".studio-preview-single-media") && note === (ranked || sortBy === "original" ? undefined : `Preview can’t reproduce ‘${sortBy}’; your saved sort will be kept.`),
+					contained,
+					preserved: selectionBefore === radios.filter((radio) => radio.checked).map((radio) => radio.value).join() && titleBefore === dialog.querySelector("#source-edit-title-input").value && JSON.stringify(serializeNuvioProject(controller.getState().project).value) === before && controller.getState().revision === initial.revision,
+					focusRestored: document.activeElement === trigger,
+					requests: requestsBeforeClose,
+				});
+			}
+			await checkPreview(importedSource.sortBy);
+			if (action === "cancel") {
+				for (const [id, value] of [["original", "original"], ["recent", "primary_release_date.desc"], ["top-rated", "vote_average.desc"], ["most-voted", "vote_count.desc"], ["original", "original"]]) {
+					await clickAndSettle(radios.find((radio) => radio.value === id));
+					await checkPreview(value);
+				}
+			}
+			if (action === "title" || action === "cancel") await act(async () => { setInputValue(dialog.querySelector("#source-edit-title-input"), "Edited Headliner"); });
+			if (action === "replace" || action === "cancel") await act(async () => { radios.find((radio) => radio.value === "original").click(); });
+			if (action === "title" || action === "replace") await checkPreview(action === "replace" ? "original" : importedSource.sortBy);
+			await act(async () => {
+				dialog.querySelector(`[data-action="${action === "cancel" ? "cancel" : "save"}-source-edit"]`).click();
+				await afterCommittedEffects();
+			});
+			if (action === "title") expectedSource.title = "Edited Headliner";
+			if (action === "replace") expectedSource.sortBy = "original";
+			const updated = controller.getState().project.collections.flatMap((collection) => collection.folders).flatMap((folder) => folder.sources).find((node) => node.internalId === source.internalId);
+			return { ...evidence, previews, draftSortPreserved: action === "cancel" ? getSubmittedDraft() === null : getSubmittedDraft()?.sortBy === expectedSource.sortBy, completedWithoutError: !dialog.querySelector('[role="alert"]'), updates: getUpdateCalls(), cancels: getCancelCalls(), exactExport: JSON.stringify(serializeNuvioProject(controller.getState().project).value) === JSON.stringify(expected), rawPreserved: JSON.stringify(updated.rawImported) === JSON.stringify(source.rawImported), revisionDelta: controller.getState().revision - initial.revision };
+		} });
+		cases.push(result);
+	}
+	return { width: innerWidth, height: innerHeight, supplied: supplied !== null, cases, requests: liveTmdbListRequests.slice(requestStart) };
+}
+
 async function runTmdbListLayoutScenario() {
 	const host = document.createElement("div");
 	document.body.append(host);
@@ -7448,7 +7571,7 @@ async function runTmdbListLayoutScenario() {
 		);
 		const previewRect = preview.getBoundingClientRect();
 		const previewWithinViewport = previewRect.left >= -1 && previewRect.top >= -1 && previewRect.right <= window.innerWidth + 1 && previewRect.bottom <= window.innerHeight + 1;
-		const genericTitlesLabel = preview.querySelector(".studio-preview-single-media")?.textContent.trim() === "Titles";
+		const noRedundantTitlesLabel = preview.querySelector(".studio-preview-single-media") === null;
 		const nestedBodyLocked = document.body.style.position === "fixed";
 		await clickAndSettle(requiredElement(preview.querySelector("header button"), "TMDB List Preview Close"));
 		const previewFocusRestored = document.activeElement === previewTrigger;
@@ -7656,7 +7779,7 @@ async function runTmdbListLayoutScenario() {
 			selection,
 			review,
 			focusContained,
-			genericTitlesLabel,
+			noRedundantTitlesLabel,
 			previewWithinViewport,
 			nestedBodyLocked,
 			previewFocusRestored,
@@ -7810,7 +7933,7 @@ async function runTmdbListLivePreviewScenario() {
 			height: window.innerHeight,
 			requestCountBeforeResolve,
 			requestsAfterResolve,
-			requestPaths: [...liveTmdbListRequests],
+			requestPaths: liveTmdbListRequests.slice(requestCountBeforeResolve),
 			initialMusicals,
 			wheelGeometry,
 			touchGeometry,
@@ -7910,6 +8033,7 @@ async function runMountedRegressions() {
 }
 
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
+window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
 window.__builderSourceEditMounted = { status: "running" };
@@ -7943,11 +8067,12 @@ window.__finishDecadeSourceGenreKeyboardScenario = finishDecadeSourceGenreKeyboa
 window.__runDecadeSourceLivePreviewScenario = runDecadeSourceLivePreviewScenario;
 window.__runSourceChooserLayoutScenario = runSourceChooserLayoutScenario;
 window.__runTmdbListLayoutScenario = runTmdbListLayoutScenario;
+window.__runTmdbListImportedSortScenario = runTmdbListImportedSortScenario;
 window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-(["source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
+(["discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {

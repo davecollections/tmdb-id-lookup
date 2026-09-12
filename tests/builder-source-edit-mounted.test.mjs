@@ -66,6 +66,8 @@ async function runMountedPage() {
 	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
 	const roundTripOnly = process.env.TMDB_SOURCE_ROUND_TRIP_ONLY === "1";
+	const listEditOnly = process.env.TMDB_LIST_EDIT_ONLY === "1";
+	const discoverPreviewOnly = process.env.TMDB_DISCOVER_PREVIEW_ONLY === "1";
 	const wordingOnly = process.env.TMDB_SOURCE_SORT_WORDING_ONLY === "1";
 	const sourceLevelOnly = process.env.TMDB_NATIVE_SOURCE_LEVEL_ONLY === "1";
 	const noticeStyleOnly = process.env.TMDB_NOTICE_STYLE_ONLY === "1";
@@ -177,9 +179,21 @@ async function runMountedPage() {
 		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
+		if (process.env.TMDB_204_SCREENSHOTS) {
+			await fsPromises.mkdir(process.env.TMDB_204_SCREENSHOTS, { recursive: true });
+			resources.pageConnection.onEvent((message) => {
+				if (message.method !== "Runtime.bindingCalled" || message.params.name !== "capture204Preview") return;
+				const name = JSON.parse(message.params.payload).name;
+				if (!/^[a-zA-Z0-9-]+$/.test(name)) throw new Error("Invalid screenshot name.");
+				resources.pageConnection.command("Page.captureScreenshot", { format: "png" })
+					.then(({ data }) => fsPromises.writeFile(path.join(process.env.TMDB_204_SCREENSHOTS, name + ".png"), Buffer.from(data, "base64")))
+					.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish204Capture()" }));
+			});
+			await resources.pageConnection.command("Runtime.addBinding", { name: "capture204Preview" });
+		}
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -189,6 +203,30 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (discoverPreviewOnly || (!listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+					result.results.discoverPreviewCases = [];
+					for (const [width, height] of [[360, 800], [384, 800], [393, 852], [402, 800], [412, 800], [1280, 900]]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
+						for (const scope of ["add-source", "new-collection", "new-folder", "edit-imported", "edit-created"]) {
+							const mediaMode = scope.startsWith("edit-") ? width === 1280 ? "series" : "movies" : scope === "add-source" ? "both" : scope === "new-folder" ? "series" : "movies";
+							const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runDiscoverPreviewScenario(" + JSON.stringify({ scope, mediaMode }) + ")", awaitPromise: true, returnByValue: true });
+							if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+							result.results.discoverPreviewCases.push(checked.result.value);
+						}
+					}
+					if (discoverPreviewOnly) return result.results;
+				}
+				if (listEditOnly || (!nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly)) {
+					const supplied = process.env.TMDB_LIST_IMPORT_FILE ? JSON.parse(await fsPromises.readFile(process.env.TMDB_LIST_IMPORT_FILE, "utf8")) : null;
+					result.results.listImportedSortWidths = [];
+					for (const [width, height] of [[360, 800], [384, 800], [393, 800], [402, 800], [412, 800], [900, 900], [1280, 900], [393, 320]]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
+						const evaluated = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runTmdbListImportedSortScenario(" + JSON.stringify(supplied) + ")", awaitPromise: true, returnByValue: true });
+						if (evaluated.exceptionDetails) throw new Error(evaluated.exceptionDetails.exception?.description ?? evaluated.exceptionDetails.text);
+						result.results.listImportedSortWidths.push(evaluated.result.value);
+					}
+					if (listEditOnly) return result.results;
+				}
 				if (nativeVariantsOnly) {
 					const captures = [];
 					resources.pageConnection.onEvent((message) => {
@@ -304,14 +342,14 @@ async function runMountedPage() {
 						assert.ok(card.values.length <= 3);
 						assert.equal(/\b(?:31|1001|123)\b/.test(card.values.join(" ")), false);
 					}
-					assert.deepEqual(details.cards[2].values, ["List", "Original order"]);
+					assert.deepEqual(details.cards[2].values, ["List", "List order"]);
 					assert.deepEqual(details.cards[4].values, ["movie", "Catalog: catalog", "Movies"]);
-					assert.equal(details.cards[3].description, "List, Other sorting");
+					assert.equal(details.cards[3].description, "List, Imported sort");
 					assert.deepEqual(details.cards[6].values, ["AIO Metadata", "Trakt", "Movies"]);
 					assert.deepEqual(details.cards[7].values, ["Trakt"]);
 					const accessibility = await resources.pageConnection.command("Accessibility.getFullAXTree");
 					const hidden = accessibility.nodes.find((node) => node.role?.value === "button" && node.name?.value === "Source with hidden Nuvio title");
-					assert.equal(hidden?.description?.value, "List, Other sorting");
+					assert.equal(hidden?.description?.value, "List, Imported sort");
 					const visible = accessibility.nodes.find((node) => node.role?.value === "button" && node.name?.value?.startsWith("My favourites"));
 					assert.ok(visible?.name?.value.includes("Acting movies"));
 					assert.equal(visible?.name?.value.includes("31"), false);
@@ -899,6 +937,46 @@ function assertRequiredNameFailure(result) {
 
 test("mounted Workspace Source details remain compact, accessible and naturally wrapped", () => {
 	assert.equal(mountedResults.sourceDetailsVerified, true);
+});
+
+test("mounted imported List sorting preserves the complete export through Save and Cancel", () => {
+	assert.deepEqual(mountedResults.listImportedSortWidths.map(({ width, height }) => [width, height]), [[360, 800], [384, 800], [393, 800], [402, 800], [412, 800], [900, 900], [1280, 900], [393, 320]]);
+	assert.deepEqual(mountedResults.listImportedSortWidths.flatMap((entry) => entry.requests), ["/3/list/8687275?language=en-US&page=1", "/3/list/8659014?language=en-US&page=1"]);
+	for (const result of mountedResults.listImportedSortWidths) {
+		assert.equal(result.supplied, Boolean(process.env.TMDB_LIST_IMPORT_FILE));
+		assert.equal(result.cases.length, 12);
+		for (const entry of result.cases) {
+			const label = `${result.width}x${result.height} ${entry.variant} ${entry.action}`;
+			assert.deepEqual(entry.options, ["List order", "Recent", "Top rated", "Most voted"], label);
+			assert.deepEqual(entry.selected, entry.unfamiliar ? [] : ["top-rated"], label);
+			for (const key of ["correctNote", "noError", "completedWithoutError", "accessibleHelp", "noTechnicalSortHelp", "oneScrollOwner", "noOverflow", "focusStable", "footerReachable", "exactExport", "rawPreserved", "draftSortPreserved"]) assert.equal(entry[key], true, `${label} ${key}`);
+			assert.equal(entry.previews.length, entry.action === "cancel" ? 6 : entry.action === "unchanged" ? 1 : 2, label);
+			assert.equal(new Set(entry.previews.map((preview) => preview.requests)).size, 1, `${label} cache reuse`);
+			for (const preview of entry.previews) {
+				for (const key of ["ordered", "neutral", "explained", "filtersExplained", "contained", "preserved", "focusRestored"]) assert.equal(preview[key], true, `${label} ${preview.sortBy} ${key}`);
+				assert.ok(preview.loadedCount > 0, label);
+			}
+			const changed = ["title", "replace"].includes(entry.action) ? 1 : 0;
+			assert.equal(entry.updates, changed, label);
+			assert.equal(entry.revisionDelta, changed, label);
+			assert.equal(entry.cancels, entry.action === "cancel" ? 1 : 0, label);
+		}
+	}
+});
+
+test("mounted Discover Preview follows current creation/edit drafts after switching and reopening", () => {
+	assert.equal(mountedResults.discoverPreviewCases.length, 30);
+	for (const result of mountedResults.discoverPreviewCases) {
+		assert.equal(result.preserved, true, `${result.scope}: preserved`);
+		assert.equal(result.cancelled, true, `${result.scope}: cancelled`);
+		assert.ok(result.previews.some((preview) => preview.changed));
+		for (const preview of result.previews) {
+			assert.equal(preview.resultsMatch, true);
+			for (const key of ["withinViewport", "closeReachable", "gridNoHorizontalScroll", "pageNoHorizontalOverflow", "bodyLocked"]) assert.equal(preview.geometry[key], true, `${result.width} ${result.scope}: ${key}`);
+			assert.ok(preview.geometry.activeScrollOwnerCount <= 1);
+		}
+	}
+	console.log("DISCOVER_PREVIEW_LIVE " + JSON.stringify(mountedResults.discoverPreviewCases));
 });
 
 test("mounted desktop round trip restores Genre, Decade and List Edit without requests or no-op mutation", () => {
@@ -1559,7 +1637,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			noContainerPresentation: true,
 		}, `${label} review`);
 		assert.equal(result.focusContained, true, `${label} focus containment`);
-		assert.equal(result.genericTitlesLabel, true, `${label} generic Titles label`);
+		assert.equal(result.noRedundantTitlesLabel, true, `${label} no redundant Titles label`);
 		assert.equal(result.previewWithinViewport, true, `${label} nested Preview bounds`);
 		assert.equal(result.nestedBodyLocked, true, `${label} nested Preview body lock`);
 		assert.equal(result.previewFocusRestored, true, `${label} Preview focus restoration`);
@@ -1687,7 +1765,7 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		const expectedColumns = result.width <= 620 ? 3 : 5;
 		assert.ok([0, 2].includes(result.requestsAfterResolve - result.requestCountBeforeResolve), `${label} resolve uses cache or two exact live requests`);
 		assert.equal(result.initialMusicals.title, "Musicals", `${label} live long-list title`);
-		assert.equal(result.initialMusicals.subtitle, "Showing 20 of 124 titles", `${label} truthful partial subtitle`);
+		assert.equal(result.initialMusicals.subtitle, "Showing 20 of 124 titles · List order", `${label} truthful partial subtitle`);
 		assert.equal(result.initialMusicals.rendered, 20, `${label} complete page-one sample rendered at open`);
 		assert.equal(result.initialMusicals.loaded, 20, `${label} twenty page-one titles loaded`);
 		assert.equal(result.initialMusicals.completeSample, true, `${label} complete-sample presentation`);
@@ -1750,7 +1828,7 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		assert.equal(result.reopenStartsAtTop, true, `${label} reopen returns to top`);
 		assert.equal(result.requestsAfterReopen, result.requestsAfterResolve, `${label} reopen cache`);
 		assert.equal(result.completeSmallList.title, "Top 10 Netflix Movies", `${label} complete-list title`);
-		assert.equal(result.completeSmallList.subtitle, "Showing all 10 titles", `${label} truthful complete-list subtitle`);
+		assert.equal(result.completeSmallList.subtitle, "All 10 titles · List order", `${label} truthful complete-list subtitle`);
 		assert.equal(result.completeSmallList.rendered, 10, `${label} complete ten-title sample`);
 		assert.equal(result.completeSmallList.loaded, 10, `${label} complete ten-title loaded count`);
 		assert.equal(result.completeSmallList.completeSample, true, `${label} complete ten-title marker`);

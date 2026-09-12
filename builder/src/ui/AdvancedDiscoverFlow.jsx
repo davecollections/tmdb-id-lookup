@@ -28,12 +28,6 @@ import "./advanced-discover.css";
 const layoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const pageLabels = { filters: "Filters", appearance: "Appearance", artwork: "Artwork", review: "Review" };
 const folderVisibilityLabels = { SHOW_EVERYWHERE: "Shown everywhere", HIDE_HOME_SCREEN: "Hidden on home screen only", HIDE_EVERYWHERE: "Hidden everywhere" };
-function previewDrafts(draft) {
- const medias = draft.mediaMode === "series" ? ["series", "movies"] : ["movies", "series"];
- const all = draft.mediaMode === "both" ? compileAdvancedDiscover(draft, { preview: true }).drafts : medias.flatMap((mediaMode) => compileAdvancedDiscover({ ...draft, mediaMode }, { preview: true }).drafts);
- const primarySort = draft.sortOptionIds?.[0] ?? "popular";
- return all.sort((a, b) => Number(b.editable.mediaType === (draft.mediaMode === "series" ? "TV" : "MOVIE") && b.editable.sortBy === DISCOVER_SORT_OPTIONS.find((s) => s.id === primarySort)?.values[b.editable.mediaType]) - Number(a.editable.mediaType === (draft.mediaMode === "series" ? "TV" : "MOVIE") && a.editable.sortBy === DISCOVER_SORT_OPTIONS.find((s) => s.id === primarySort)?.values[a.editable.mediaType]));
-}
 function DiscoverFilterReview({ draft }) {
  const groups = draft.mediaMode === "both" ? discoverMediaTypes(draft.mediaMode).map((mediaType) => {
   const effective = deriveAdvancedDiscoverFilters(draft, mediaType);
@@ -76,7 +70,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  const filterErrors = discoverMediaTypes(draft.mediaMode).flatMap((media) => deriveAdvancedDiscoverFilters(draft, media).errors);
  if (draft.providerContextReview) filterErrors.push({ path: "$discover.withWatchProviders", message: "Review retained providers for the new media or region." });
  const editValid = !filterErrors.length && (!draft.titleTouched || Boolean(draft.title?.trim()));
- const candidates = !draft.previewBlocked && (!editing || draft.sortOptionIds.length) && !filterErrors.length ? previewDrafts(draft) : [];
+ const candidates = !draft.previewBlocked && !filterErrors.length ? built.drafts : [];
  const duplicates = inspectDiscoverDuplicates(project, folderInternalId, built.drafts);
  const overrideIdentity = discoverDuplicateOverrideIdentity(folderInternalId, built.drafts);
  const override = !editing && scope === "add-source" && duplicateConsent === overrideIdentity;
