@@ -1,0 +1,94 @@
+name: Refresh TMDB Keyword Catalogue
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 8 * * 0'
+# Weekly Sunday 08:30 UTC; eligible only after this workflow reaches main.
+# The initial manual run bootstraps the artifact needed by Pages publication.
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reserve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: tmdb-request-budget
+      cancel-in-progress: false
+    outputs:
+      path: ${{ steps.reserve.outputs.reservation_path }}
+      id: ${{ steps.reserve.outputs.reservation_id }}
+      sha: ${{ steps.reserve.outputs.reservation_sha256 }}
+      date: ${{ steps.reserve.outputs.utc_date }}
+      month: ${{ steps.reserve.outputs.planned_month }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Bind the one-export allowance
+        run: |
+          echo "RESERVATION_PLANNED_MONTH=$(date -u +%Y-%m)" >> "$GITHUB_ENV"
+          echo "RESERVATION_PLANNED_UTC_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+      - id: reserve
+        env:
+          RESERVATION_JOB: keyword-export
+          REQUEST_ALLOCATIONS_JSON: '{"keyword-export":1}'
+          REQUEST_BINDINGS_JSON: '{"keyword-export":{"request_class":"keyword-export","target_dimension":"keyword-id-name","approved_allowance":1}}'
+        run: node scripts/reserve-tmdb-request-budget.mjs
+      - uses: ./.github/actions/commit-maintenance-state
+        with:
+          message: Reserve keyword export request
+          paths: ${{ steps.reserve.outputs.reservation_path }}
+
+  refresh:
+    needs: reserve
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: tmdb-keyword-catalogue
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore last valid catalogue for delta validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/restore-tmdb-keyword-catalogue.mjs --optional
+      - name: Download and validate one public export
+        env:
+          TMDB_RESERVATION_PATH: ${{ needs.reserve.outputs.path }}
+          TMDB_RESERVATION_ID: ${{ needs.reserve.outputs.id }}
+          TMDB_RESERVATION_SHA256: ${{ needs.reserve.outputs.sha }}
+          TMDB_RESERVATION_UTC_DATE: ${{ needs.reserve.outputs.date }}
+          COUNT_MONTH: ${{ needs.reserve.outputs.month }}
+          TMDB_REQUEST_CLASS: keyword-export
+          TMDB_TARGET_DIMENSION: keyword-id-name
+          TMDB_APPROVED_ALLOWANCE: "1"
+          TMDB_USAGE_PATH: keyword-request-usage.json
+        run: node scripts/prepare-tmdb-keyword-catalogue.mjs
+      - name: Validate ready-to-publish data
+        run: node scripts/validate-tmdb-keyword-catalogue.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tmdb-keyword-catalogue
+          path: builder/public/data/discover/
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: keyword-request-usage
+          path: keyword-request-usage.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+const AdvancedDiscoverFlow = lazy(() => import("./AdvancedDiscoverFlow.jsx"));
 import { SourcePreviewSelectors, SourcePreviewContent } from "./SourceTitlePreviewDialog.jsx";
 import { sourcePreviewVariantGroups, sourcePreviewContext, sourcePreviewVariantKey } from "../source-add/source-title-preview.js";
 import { resolveDecadesPreviewRequest } from "../source-add/decades-preview.js";
@@ -773,6 +775,7 @@ export function CreationDialog({
 	onApplyGenres,
 	onApplyStreaming,
 	onApplyTmdbLists,
+	onApplyAdvancedDiscover,
 	collectionProvider,
 	listProvider,
 	peopleProvider,
@@ -816,9 +819,10 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.TMDB_LISTS, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.ADVANCED_DISCOVER, CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.TMDB_LISTS, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
+	if (optionId === CREATION_OPTION_IDS.ADVANCED_DISCOVER) return <Suspense fallback={<p role="status">Opening Discover…</p>}><AdvancedDiscoverFlow bodyLockManaged scope={scope} project={project} projectRevision={projectRevision} collectionInternalId={destinationCollectionInternalId} studioProvider={studioCatalogueProvider} networkProvider={networkCatalogueProvider} streamingProvider={streamingCatalogueProvider} onBack={() => setOptionId(null)} onCancel={onCancel} onApply={onApplyAdvancedDiscover} /></Suspense>;
 	const launcher = optionId === null;
 	const content = (
 		<div className="add-source-portal creation-portal" data-creation-portal="true" data-mobile-surface="opaque">

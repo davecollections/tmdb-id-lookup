@@ -6,6 +6,7 @@ export function CreationHeader({
 	backAction = null,
 	backDisabled = false,
 	inactive = false,
+	actions = null,
 	onClose,
 }) {
 	return (
@@ -17,7 +18,7 @@ export function CreationHeader({
 				<div><h2 id="creation-title">{title}</h2>{context ? <p>{context}</p> : null}</div>
 				<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close creation flow" disabled={backDisabled} onClick={onClose}>Close</button>
 			</div>
-			<p id="creation-description" className="add-source-heading-description">{description}</p>
+			{actions ? <div className="add-source-heading-support"><p id="creation-description" className="add-source-heading-description">{description}</p>{actions}</div> : <p id="creation-description" className="add-source-heading-description">{description}</p>}
 		</header>
 	);
 }

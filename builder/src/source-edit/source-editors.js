@@ -7,6 +7,8 @@ import { studioSourceEditor } from "./studio-editor.js";
 import { streamingSourceEditor } from "./streaming-editor.js";
 import { tmdbListSourceEditor } from "./tmdb-list-editor.js";
 
+import { advancedDiscoverSourceEditor } from "./advanced-discover-editor.js";
+
 export const SOURCE_EDITORS = Object.freeze([
 	movieCollectionSourceEditor,
 	tmdbListSourceEditor,
@@ -16,6 +18,7 @@ export const SOURCE_EDITORS = Object.freeze([
 	decadeSourceEditor,
 	genreSourceEditor,
 	streamingSourceEditor,
+	advancedDiscoverSourceEditor,
 ]);
 
 export function sourceEditorFor(source) {

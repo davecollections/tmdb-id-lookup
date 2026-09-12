@@ -38,8 +38,10 @@ jobs:
       - name: Build builder
         run: npm run build --prefix builder
 
-      - name: Prepare combined Pages artifact
-        run: node scripts/prepare-pages-site.mjs
+      # Generated data is bootstrapped after merge. This workflow never deploys;
+      # deploy-pages.yml restores and strictly validates the catalogue separately.
+      - name: Prepare combined artifact for code review
+        run: node scripts/prepare-pages-site.mjs --code-only
 
       - name: Validate combined Pages artifact
-        run: node scripts/validate-pages-site.mjs
+        run: node scripts/validate-pages-site.mjs --code-only

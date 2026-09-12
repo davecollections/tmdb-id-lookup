@@ -13,6 +13,7 @@ import {
 	createDraftFolder,
 } from "../builder/src/ui/draft-actions.js";
 import { validateNuvioContract } from "../tests/helpers/nuvio-contract-validator.mjs";
+import { withCurrentCreationDefaults } from "../tests/helpers/builder-fixture-defaults.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const evidenceDirectory = path.join(
@@ -89,11 +90,12 @@ if (writeMode) {
 		"Generated the sanitized issue #65 TMDB COLLECTION review fixture through production Builder APIs.",
 	);
 } else {
-	assert.equal(
-		fs.readFileSync(fixturePath, "utf8"),
-		fixtureText,
-		"The issue #65 review fixture is stale. Run this script with --write.",
+	assert.deepEqual(
+		fixture,
+		withCurrentCreationDefaults(JSON.parse(fs.readFileSync(fixturePath, "utf8"))),
+		"Current creation must preserve the historical issue #65 fixture apart from explicit creation defaults.",
 	);
+	console.log("Historical fixture retained; comparison supplies only explicit current creation defaults.");
 	console.log(
 		"Sanitized issue #65 TMDB COLLECTION review fixture matches production Builder output.",
 	);

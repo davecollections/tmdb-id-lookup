@@ -161,13 +161,14 @@ test("returns only stable public diagnostic fields and no partial output", () =>
 	assertAtomicFailure(result, "COLLECTION_ID_REQUIRED");
 });
 
-test("emits compact required structure for new collection and folder nodes", () => {
+test("emits required structure and effective presentation defaults for new collection and folder nodes", () => {
 	const result = serializeNuvioProject(newProject());
 	assert.equal(result.ok, true);
 	assert.deepEqual(result.value, [{
 		id: "collection",
 		title: "Collection",
-		folders: [{ id: "folder", title: "Folder", sources: [], catalogSources: [] }],
+		viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false, focusGlowEnabled: true,
+		folders: [{ id: "folder", title: "Folder", tileShape: "POSTER", hideTitle: true, focusGifEnabled: false, sources: [], catalogSources: [] }],
 	}]);
 });
 

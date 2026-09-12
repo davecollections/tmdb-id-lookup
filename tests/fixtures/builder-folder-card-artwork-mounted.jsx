@@ -841,8 +841,11 @@ async function exerciseOrdinaryVideoVisibility() {
 		const hiddenOnOpen = document.querySelector('[data-editor-field="heroVideoUrl"]') === null
 			&& document.querySelector(".folder-artwork-preview-button") === null
 			&& document.querySelector("video") === null;
-		const focusSwitch = document.querySelector('[data-editor-field="focusGifEnabled"] input');
-		focusSwitch.click();
+		const focusChoice = document.querySelector('[data-editor-control="focusGifEnabled"]');
+		if (focusChoice.tagName === "SELECT") {
+			focusChoice.value = "true";
+			focusChoice.dispatchEvent(new Event("change", { bubbles: true }));
+		} else focusChoice.click();
 		await afterCommittedEffects();
 		document.querySelector('[data-action="apply-node-edit"]').click();
 		await afterCommittedEffects();
@@ -1132,7 +1135,8 @@ async function inspectSuggestionFolder(title, expectedState, expectedImageCount)
 		})),
 		coverValue: editor.querySelector('[data-editor-field="coverImageUrl"] input').value,
 		heroPreservedStatus: editor.querySelector('[data-editor-field="heroBackdropUrl"] .editor-field-status')?.textContent.trim() ?? null,
-		focusEnabled: editor.querySelector('[data-editor-control="focusGifEnabled"]')?.checked,
+		focusEnabled: editor.querySelector('[data-editor-control="focusGifEnabled"]')?.checked ?? null,
+		focusPreservedLabel: editor.querySelector('select[data-editor-control="focusGifEnabled"] option:checked')?.textContent ?? null,
 		suggestionFailureAbsent: editor.querySelector(".folder-artwork-suggestion .folder-artwork-preview-status") === null,
 	};
 	await cancelFolderSettings();

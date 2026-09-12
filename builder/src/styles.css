@@ -1256,6 +1256,7 @@ body.settings-modal-open {
 .editor-field input[type="text"],
 .editor-field input[type="url"],
 .editor-field select,
+.editor-switch select,
 .editor-field textarea {
 	width: 100%;
 	min-width: 0;
@@ -1639,6 +1640,10 @@ body.settings-modal-open {
 	width: 1px;
 	height: 1px;
 	opacity: 0;
+}
+
+.editor-switch select {
+	grid-column: 1 / -1;
 }
 
 .editor-switch-control {

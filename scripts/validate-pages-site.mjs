@@ -47,6 +47,11 @@ const issue38EvidenceFiles = [
 const issue38OwnerExportSha256 = "6390428217959af42572038fdd818def5fc9136a98285b6e879504826a0aa7bc";
 const configuredTmdbProxyOrigin = extractTmdbProxyBaseUrl(fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8"));
 const failures = [];
+try {
+ const { readBuildKeywordBundle } = await import("./lib/tmdb-keyword-catalogue.mjs");
+ const catalogue = await readBuildKeywordBundle(path.join(stagedBuilderDir, "data/discover"), { codeOnly: process.argv.includes("--code-only") });
+ if (!catalogue) console.log("Code-only validation: generated keyword catalogue is absent. This artifact is not ready for publication.");
+} catch (error) { failures.push("Keyword catalogue: " + error.message); }
 
 function listFiles(directory) {
 	return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

@@ -1,3 +1,4 @@
+import { inspectDiscoverMirrors } from "./discover-imported-filters.js";
 import { SOURCE_CATEGORIES } from "../domain/index.js";
 import {
 	cloneRawObject,
@@ -64,10 +65,11 @@ export const DISCOVER_FILTER_DESCRIPTORS = Object.freeze([
 	descriptor("withoutKeywords", "string", "id-expression", bothMedia("without_keywords")),
 	descriptor("withCompanies", "string", "id-expression", bothMedia("with_companies"), { multiValue: "comma-AND-or-pipe-OR" }),
 	descriptor("withoutCompanies", "string", "id-expression", bothMedia("without_companies")),
-	descriptor("withNetworks", "string", "single-id", Object.freeze({
+	descriptor("withNetworks", "string", "id-expression", Object.freeze({
 		MOVIE: Object.freeze({ applicable: false, portable: false, requestParameter: null }),
 		TV: Object.freeze({ applicable: true, portable: true, requestParameter: "with_networks" }),
 	}), {
+		multiValue: "comma-AND-or-pipe-OR",
 		clientDivergence: "Desktop/Mobile forward an undocumented Movie parameter; TV/Web omit it.",
 	}),
 	descriptor("year", "integer", "year", bothMedia("year", "first_air_date_year")),
@@ -249,7 +251,9 @@ export function discoverSourceIdentity(source) {
 	}
 	const sortBy = effectiveDiscoverSort(source.sortBy);
 	if (sortBy === null) return nonComparableIdentity("NON_STRING_DISCOVER_SORT", "A DISCOVER sort must be a string, null, or absent.");
-	const filters = canonicalizeDiscoverFiltersForComparison(Object.hasOwn(source, "filters") ? source.filters : undefined);
+	const comparableSourceFilters = source.filters && typeof source.filters === "object" && !Array.isArray(source.filters) ? { ...source.filters } : source.filters;
+	for (const alias of inspectDiscoverMirrors(source).equivalent) delete comparableSourceFilters[alias];
+	const filters = canonicalizeDiscoverFiltersForComparison(comparableSourceFilters);
 	if (!filters.comparable) return { comparable: false, key: null, value: null, reasons: filters.reasons };
 
 	const identity = {
@@ -391,7 +395,12 @@ function canonicalFilterValue(value, known) {
 	if (known.valueType === "number") return typeof value === "number" && Number.isFinite(value);
 	if (known.valueType === "integer") return Number.isSafeInteger(value);
 	if (typeof value !== "string" || !value || value !== value.trim()) return false;
-	if (known.semanticType === "id-expression") return strictIdExpression(value);
+	if (known.semanticType === "id-expression") {
+		if (!strictIdExpression(value)) return false;
+		if (known.field !== "withNetworks") return true;
+		const ids = value.split(/[,|]/);
+		return new Set(ids).size === ids.length && ids.every((id) => Number.isSafeInteger(Number(id)) && Number(id) <= 2147483647);
+	}
 	if (known.semanticType === "single-id") return /^[1-9]\d*$/.test(value);
 	return true;
 }

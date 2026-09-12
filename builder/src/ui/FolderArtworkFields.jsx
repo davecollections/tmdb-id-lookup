@@ -206,7 +206,7 @@ function artworkField({ descriptor, values, original, touched, prefix, suggestio
 				<ExactImageUrlField
 					{...common}
 					previewShape={previewShape(preview, values?.tileShape)}
-					previewHidden={field === "focusGifUrl" && values?.focusGifEnabled !== true}
+					previewHidden={field === "focusGifUrl" && values?.focusGifEnabled !== true && !(original?.focusGifEnabled && !original.focusGifEnabled.supported && !touched?.focusGifEnabled)}
 					previewOverlayLabel={field === "focusGifUrl" ? "Hidden in Nuvio" : null}
 					descriptionId={descriptionId}
 				/>
@@ -283,6 +283,7 @@ export function FolderArtworkFields({
 	onChange,
 }) {
 	const missingFocusOrientationNoticeId = `${prefix}-focusGifUrl-orientation-notice`;
+	const focusPreserved = original?.focusGifEnabled && !original.focusGifEnabled.supported && !touched?.focusGifEnabled;
 
 	return (
 		<div
@@ -324,12 +325,15 @@ export function FolderArtworkFields({
 								<div className="editor-switch-field folder-focus-enabled-field is-content-sized" data-editor-field="focusGifEnabled">
 									<PresentationSwitch
 										label="Show Focus GIF"
-										description={values?.focusGifEnabled === true
+										description={focusPreserved
+											? "The imported preference is preserved. Choose On or Off to set it explicitly."
+											: values?.focusGifEnabled === true
 											? "Shown when focused."
 											: "Hidden in Nuvio; the URL is kept."}
 										descriptionId={`${prefix}-focus-enabled-help`}
 										controlName="focusGifEnabled"
 										checked={values?.focusGifEnabled === true}
+										preservedLabel={focusPreserved ? original.focusGifEnabled.status === "absent" ? "Not set (client default)" : "Imported setting (preserved)" : null}
 										onChange={(checked) => onChange("focusGifEnabled", checked)}
 									/>
 								</div>

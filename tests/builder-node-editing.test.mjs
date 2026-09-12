@@ -2503,7 +2503,8 @@ test("unusual imported values show calm replacement guidance without raw values"
 	assert.equal(markup.includes("RAW_ALL"), false);
 	assert.equal(markup.includes("RAW_GLOW"), false);
 	assert.equal(markup.includes("RAW_BACKDROP"), false);
-	assert.equal(markup.includes('value="false"'), false);
+	assert.match(markup, /<option value="" disabled="" selected="">Imported setting \(preserved\)<\/option>/);
+	assert.doesNotMatch(markup, /<option value="false" selected/);
 	assert.ok(markup.includes("will be preserved until you choose Tabs or Rows"));
 	assert.ok(markup.includes("cannot be shown safely"));
 	assert.ok(markup.includes("The current imported value is preserved until this field is edited."));
@@ -2617,7 +2618,7 @@ test("visible boolean guidance clears after replacement while hidden focus glow 
 	const collectionDraft = createNodeEditorDraft(collection);
 	const collectionMarkup = renderWorkspace(controller, { draft: collectionDraft });
 	assert.ok(collectionMarkup.includes(
-		"The imported All tab preference cannot be shown safely and will be preserved unless you use this switch.",
+		"The imported All tab preference cannot be shown safely. Choose On or Off only to replace it.",
 	));
 	assert.equal(collectionMarkup.includes("RAW_ALL_TAB"), false);
 	assert.equal(collectionMarkup.includes("The imported focus glow preference"), false);
@@ -2631,7 +2632,7 @@ test("visible boolean guidance clears after replacement while hidden focus glow 
 	const replacedCollectionMarkup = renderWorkspace(controller, { draft: replacedCollectionDraft });
 	assert.equal(
 		replacedCollectionMarkup.includes(
-			"The imported All tab preference cannot be shown safely and will be preserved unless you use this switch.",
+			"The imported All tab preference cannot be shown safely. Choose On or Off only to replace it.",
 		),
 		false,
 	);
@@ -2663,6 +2664,26 @@ test("visible boolean guidance clears after replacement while hidden focus glow 
 		false,
 	);
 	assert.deepEqual(buildNodeEditorPatch(replacedFolderDraft), { hideTitle: true });
+});
+
+test("Focus GIF imports show preservation rather than a false Off state and become explicit after selection", () => {
+	for (const value of [undefined, "false", 0, null]) {
+		const controller = importTree([{ id: "c", title: "Imported", folders: [{ id: "f", title: "Folder", tileShape: "POSTER", ...(value !== undefined ? { focusGifEnabled: value } : {}), sources: [] }] }]);
+		const folder = controller.getState().project.collections[0].folders[0];
+		controller.selectNode(folder.internalId);
+		const draft = createNodeEditorDraft(folder);
+		const markup = renderWorkspace(controller, { draft });
+		assert.match(openingTag(markup, 'data-editor-control="focusGifEnabled"'), /^<select/);
+		assert.ok(markup.includes(value === undefined ? "Not set (client default)" : "Imported setting (preserved)"));
+		assert.deepEqual(buildNodeEditorPatch(draft), {});
+		for (const enabled of [false, true]) {
+			const selected = updateNodeEditorField(draft, "focusGifEnabled", enabled);
+			const tag = openingTag(renderWorkspace(controller, { draft: selected }), 'data-editor-control="focusGifEnabled"');
+			assert.match(tag, /^<input/);
+			assert.equal(tag.includes('checked=""'), enabled);
+			assert.deepEqual(buildNodeEditorPatch(selected), { focusGifEnabled: enabled });
+		}
+	}
 });
 
 test("unsupported title guidance clears for visible and intentional invisible replacements", () => {

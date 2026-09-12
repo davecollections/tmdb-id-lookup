@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const workerSource = fs.readFileSync(
-	path.join(rootDir, "cloudflare-worker", "tmdb-proxy.js"),
+	process.env.TMDB_WORKER_TEST_SOURCE ?? path.join(rootDir, "cloudflare-worker", "tmdb-proxy.js"),
 	"utf8",
 );
 const workerModuleUrl = `data:text/javascript;base64,${Buffer.from(workerSource).toString("base64")}`;

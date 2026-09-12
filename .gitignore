@@ -1,3 +1,5 @@
 .pages-site/
 builder/dist/
 builder/node_modules/
+
+builder/public/data/discover/

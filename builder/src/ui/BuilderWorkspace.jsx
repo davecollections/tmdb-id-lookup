@@ -107,6 +107,9 @@ import {
 } from "./responsive-viewport.js";
 import { buildBuilderViewModel } from "./view-model.js";
 import { SourceModeDialog } from "./SourceModeDialog.jsx";
+import { lazy, Suspense } from "react";
+import { applyAdvancedDiscoverPlan } from "../source-add/advanced-discover-plan.js";
+const AdvancedDiscoverFlow = lazy(() => import("./AdvancedDiscoverFlow.jsx"));
 import { SourceEditorDialog } from "./SourceEditorDialog.jsx";
 import {
 	completeWorkspaceReturn,
@@ -619,6 +622,7 @@ function SourceList({ sources, actionProps }) {
 									onOpen={actionProps.onOpenActionsMenu}
 									onClose={actionProps.onCloseActionsMenu}
 									onEdit={source.editSupported ? actionProps.onOpenSourceEditor : null}
+									onAdvancedEdit={source.advancedEditSupported ? actionProps.onOpenAdvancedDiscoverEditor : null}
 									editLabel="Edit source"
 									onDelete={actionProps.onRequestDelete}
 									registerTrigger={actionProps.registerActionsTrigger}
@@ -1209,9 +1213,9 @@ export function BuilderWorkspace({
 		setEditorDraft(draft);
 	}
 
-	function openSourceEditor(internalId, trigger) {
+	function openSourceEditor(internalId, trigger, editorId = null) {
 		if (navigationLocked || pointerInteractionLocked()) return;
-		const result = createSourceEditSession(state.project, internalId);
+		const result = createSourceEditSession(state.project, internalId, editorId);
 		if (!result.ok) return;
 		setKeyboardReorderInternalId(null);
 		setActionsMenuInternalId(null);
@@ -1527,6 +1531,26 @@ export function BuilderWorkspace({
 		return result;
 	}
 
+	function applyDiscoverPlan(plan) {
+  if (!creationSession && !visibleAddSourceSession) return { ok: false, errors: [{ message: "This creation session is no longer available." }] };
+  const result = applyAdvancedDiscoverPlan(controller, plan);
+  if (!result.ok) return result;
+  const scope = plan.configuration.scope;
+  if (scope === "add-source") {
+   addSourceRestoreFocusRef.current = null; setAddSourceSession(null);
+   setPendingCreatedSourceFocus(result.createdSourceInternalIds?.[0]);
+   setSourceCreationStatusText("Discover Sources added.");
+  } else {
+   setCreationSession(null); creationRestoreFocusRef.current = null;
+   const nodeType = scope === "new-collection" ? "collection" : "folder";
+   const internalId = scope === "new-collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+   setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+   if (internalId) setCreatedCardTarget({ nodeType, internalId });
+   setCreationStatusText("Discover Sources created.");
+  }
+  return result;
+ }
+
 	function applyTmdbListPlan(plan) {
 		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
 		const result = applyTmdbListHierarchyPlan(controller, plan);
@@ -1634,7 +1658,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| ![MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
+			|| !["advanced-discover", MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -2324,6 +2348,7 @@ export function BuilderWorkspace({
 		onSelect: selectNode,
 		onOpenEditor: openEditor,
 		onOpenSourceEditor: openSourceEditor,
+		onOpenAdvancedDiscoverEditor: (id, trigger) => openSourceEditor(id, trigger, "advanced-discover"),
 		onRequestDelete: requestDeletion,
 		dragState,
 		keyboardReorderInternalId,
@@ -2745,6 +2770,7 @@ export function BuilderWorkspace({
 					onApplyGenres={applyGenrePlan}
 					onApplyStreaming={applyStreamingPlan}
 					onApplyTmdbLists={applyTmdbListPlan}
+					onApplyAdvancedDiscover={applyDiscoverPlan}
 					collectionProvider={sourceProviderRef.current}
 					listProvider={listProviderRef.current}
 					peopleProvider={peopleProviderRef.current}
@@ -2808,7 +2834,9 @@ export function BuilderWorkspace({
 						onCancel={cancelAddSource}
 						onSelectMode={chooseSourceMode}
 					/>
-				) : visibleAddSourceSession.modeId === PEOPLE_SOURCE_MODE_ID ? (
+				) : visibleAddSourceSession.modeId === "advanced-discover" ? (
+     <Suspense fallback={<p role="status">Opening Discover…</p>}><AdvancedDiscoverFlow project={state.project} projectRevision={state.revision} collectionInternalId={addSourceCollection?.internalId} folderInternalId={addSourceFolder?.internalId} studioProvider={studioCatalogueProviderRef.current} networkProvider={networkCatalogueProviderRef.current} streamingProvider={streamingCatalogueProviderRef.current} onBack={returnToSourceModePicker} onCancel={cancelAddSource} onApply={applyDiscoverPlan} /></Suspense>
+    ) : visibleAddSourceSession.modeId === PEOPLE_SOURCE_MODE_ID ? (
 					<PeopleSourceFlow
 						context={visibleAddSourceSession.context}
 						provider={peopleProviderRef.current}
@@ -2890,7 +2918,7 @@ export function BuilderWorkspace({
 					/>
 				)
 			) : null}
-			{sourceEdit ? (
+			{sourceEdit ? (sourceEdit.session.adapterId === "advanced-discover" ? <Suspense fallback={<p role="status">Opening Discover…</p>}><AdvancedDiscoverFlow initialDraft={sourceEdit.draft} collectionInternalId={sourceEdit.session.collectionInternalId} folderInternalId={sourceEdit.session.folderInternalId} project={state.project} projectRevision={state.revision} studioProvider={studioCatalogueProviderRef.current} networkProvider={networkCatalogueProviderRef.current} streamingProvider={streamingCatalogueProviderRef.current} onCancel={cancelSourceEdit} onSave={applySourceEdit} /></Suspense> :
 				<SourceEditorDialog
 					localOnly={exportOpen}
 					provider={sourceProviderRef.current}

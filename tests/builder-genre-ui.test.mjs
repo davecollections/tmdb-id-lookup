@@ -105,6 +105,7 @@ test("Add Source keeps Lists second and exposes Genres and Decade after the esta
 		"tmdb-streaming-services",
 		"tmdb-genres",
 		"tmdb-decade",
+		"advanced-discover",
 	]);
 	assert.ok(markup.includes("<strong>Genres</strong>"));
 	assert.ok(markup.includes("<strong>Decade</strong>"));

@@ -432,7 +432,7 @@ test("owner-style imported collection preserves every existing value while addin
 	for (const [internalId, serialized] of beforeFolders) assert.equal(JSON.stringify(afterCollection.folders.find((folder) => folder.internalId === internalId)), serialized);
 	const { id: newFolderId, ...newFolderEditable } = afterCollection.folders.at(-1).editable;
 	assert.match(newFolderId, /^nuvio-\d+$/);
-	assert.deepEqual(newFolderEditable, { title: "Crunchyroll", tileShape: "POSTER", hideTitle: false });
+	assert.deepEqual(newFolderEditable, { title: "Crunchyroll", tileShape: "POSTER", hideTitle: false, focusGifEnabled: false });
 	assert.deepEqual(afterCollection.folders.at(-1).sources.map((source) => [source.editable.title, source.editable.filters.watchRegion, source.editable.mediaType]), [["Movies (AU)", "AU", "MOVIE"], ["Series (AU)", "AU", "TV"]]);
 	assert.deepEqual(controller.serializeProject().value[0].folders.slice(0, beforeSerializedFolders.length), beforeSerializedFolders);
 });
@@ -581,7 +581,8 @@ test("existing Streaming folder artwork stays exact while new folder artwork rem
 	const [existingFolder, newFolder] = controller.getState().project.collections[0].folders;
 	assert.deepEqual(existingFolder.editable, beforeEditable);
 	for (const [field, value] of Object.entries(artwork)) assert.equal(existingFolder.editable[field], value);
-	for (const field of Object.keys(artwork)) assert.equal(Object.hasOwn(newFolder.editable, field), false, `${field} stays unassigned`);
+	for (const field of Object.keys(artwork).filter(field => field !== "focusGifEnabled")) assert.equal(Object.hasOwn(newFolder.editable, field), false, `${field} stays unassigned`);
+	assert.equal(newFolder.editable.focusGifEnabled, false);
 });
 
 test("complete safe destination is a zero-change plan while deliberate duplicate New Collection remains available", () => {

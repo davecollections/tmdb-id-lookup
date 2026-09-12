@@ -297,7 +297,77 @@ function isAllowedGenreDiscoverRequest(url, entries) {
   return hasAllowedRatingsAndLocale(url);
 }
 
+// Standalone Advanced Discover Preview aliases.
+// Separate Worker routes preserve all existing family allowlists.
+const STANDALONE_DISCOVER_PATHS = new Map([
+  ["/builder/discover/movie", "/3/discover/movie"],
+  ["/builder/discover/tv", "/3/discover/tv"],
+]);
+const STANDALONE_COMMON_PARAMETERS = [
+  "include_adult", "sort_by", "with_genres", "without_genres",
+  "vote_average.gte", "vote_average.lte", "vote_count.gte",
+  "with_original_language", "with_origin_country", "with_keywords",
+  "without_keywords", "with_companies", "without_companies",
+  "watch_region", "with_watch_providers", "without_watch_providers",
+  "with_watch_monetization_types",
+];
+const STANDALONE_ID_EXPRESSIONS = [
+  "with_genres", "without_genres", "with_keywords", "without_keywords",
+  "with_companies", "without_companies", "with_watch_providers",
+  "without_watch_providers",
+];
+const ALL_MONETIZATION_TYPES = "flatrate|free|ads|rent|buy";
+
+function isCanonicalInt32Id(value) {
+  return isCanonicalPositiveSafeInteger(value) && Number(value) <= 2147483647;
+}
+
+function isCanonicalPureIdExpression(value) {
+  if (!value || (value.includes(",") && value.includes("|"))) return false;
+  const ids = value.split(value.includes("|") ? "|" : ",");
+  return ids.every(isCanonicalInt32Id) && new Set(ids).size === ids.length;
+}
+
+function isAllowedStandaloneDiscoverRequest(url) {
+  const upstreamPath = STANDALONE_DISCOVER_PATHS.get(url.pathname);
+  if (!upstreamPath) return false;
+  const movie = upstreamPath === "/3/discover/movie";
+  const datePrefix = movie ? "primary_release_date" : "first_air_date";
+  const yearKey = movie ? "year" : "first_air_date_year";
+  const allowed = new Set([
+    ...STANDALONE_COMMON_PARAMETERS, datePrefix + ".gte", datePrefix + ".lte",
+    yearKey, ...(movie ? [] : ["with_networks"]),
+  ]);
+  const entries = [...url.searchParams.entries()];
+  if (!hasCanonicalAdultPolicy(url) || !hasUniqueParameters(entries) ||
+      entries.some(([key]) => !allowed.has(key))) return false;
+  const query = url.searchParams;
+  if (!COMPANY_DISCOVER_SORTS[upstreamPath].has(query.get("sort_by"))) return false;
+  for (const key of STANDALONE_ID_EXPRESSIONS) {
+    if (query.has(key) && !isCanonicalPureIdExpression(query.get(key))) return false;
+  }
+  if (query.has("with_networks") && !isCanonicalPureIdExpression(query.get("with_networks"))) return false;
+  if (!hasAllowedRatingsAndLocale(url)) return false;
+  if (query.has("vote_count.gte") && Number(query.get("vote_count.gte")) > 2147483647) return false;
+  const year = query.get(yearKey);
+  if (year !== null && !/^[1-9]\d{3}$/.test(year)) return false;
+  const lower = query.get(datePrefix + ".gte"), upper = query.get(datePrefix + ".lte");
+  if ((lower !== null && !isCanonicalDate(lower)) ||
+      (upper !== null && !isCanonicalDate(upper)) ||
+      (lower !== null && upper !== null && lower > upper)) return false;
+  const includedProviders = query.has("with_watch_providers");
+  const excludedProviders = query.has("without_watch_providers");
+  const region = query.get("watch_region");
+  const monetization = query.get("with_watch_monetization_types");
+  if (includedProviders || excludedProviders) {
+    if (!/^[A-Z]{2}$/.test(region || "")) return false;
+  } else if (region !== null) return false;
+  if (includedProviders ? monetization !== ALL_MONETIZATION_TYPES : monetization !== null) return false;
+  return true;
+}
+
 function isAllowedTmdbRequest(url) {
+  if (STANDALONE_DISCOVER_PATHS.has(url.pathname)) return isAllowedStandaloneDiscoverRequest(url);
   const listMatch = /^\/3\/list\/([1-9]\d*)$/.exec(url.pathname);
   if (listMatch) {
     const entries = [...url.searchParams.entries()];
@@ -460,7 +530,8 @@ export default {
       return textResponse("TMDB path not allowed", 403, origin);
     }
 
-    const tmdbUrl = new URL(`https://api.themoviedb.org${url.pathname}`);
+    const upstreamPathname = STANDALONE_DISCOVER_PATHS.get(url.pathname) || url.pathname;
+    const tmdbUrl = new URL(`https://api.themoviedb.org${upstreamPathname}`);
 
     url.searchParams.forEach((value, key) => {
       if (key !== "api_key") {

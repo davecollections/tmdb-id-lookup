@@ -86,6 +86,9 @@ export const TMDB_LIST_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const ADVANCED_DISCOVER_SOURCE_MODE_ID = "advanced-discover";
+export const ADVANCED_DISCOVER_SOURCE_MODE = Object.freeze({ id: ADVANCED_DISCOVER_SOURCE_MODE_ID, label: "Discover", icon: "genres", providerLabel: "TMDB", description: "Find titles with keywords and filters.", category: "native-tmdb" });
+
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	MOVIE_FRANCHISE_SOURCE_MODE,
 	TMDB_LIST_SOURCE_MODE,
@@ -95,4 +98,5 @@ export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	STREAMING_SOURCE_MODE,
 	GENRE_SOURCE_MODE,
 	DECADE_SOURCE_MODE,
+	ADVANCED_DISCOVER_SOURCE_MODE,
 ]);

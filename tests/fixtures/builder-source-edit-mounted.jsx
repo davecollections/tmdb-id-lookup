@@ -1505,7 +1505,8 @@ async function runDesktopRoundTripScenario() {
 				await clickAndSettle(trigger);
 				const edit = document.querySelector('[data-actions-menu="source"]:not([hidden]) [data-action="edit-source"]');
 				if (!edit) throw new Error(`${entry.name} has no Edit source action`);
-				result.editBeforeDelete = edit.nextElementSibling?.dataset.action === "delete-source";
+				const deleteAction = edit.parentElement.querySelector('[data-action="delete-source"]');
+				result.editBeforeDelete = Boolean(deleteAction && (edit.compareDocumentPosition(deleteAction) & Node.DOCUMENT_POSITION_FOLLOWING));
 				await clickAndSettle(edit);
 				const dialog = document.querySelector('[data-source-edit-modal="true"]');
 				if (!dialog) throw new Error(`${entry.name} editor did not open`);
@@ -3529,7 +3530,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 			secondaryCollectionUnchanged: JSON.stringify(secondaryCollectionAfter) === secondaryCollectionBefore,
 			tertiaryCollectionUnchanged: JSON.stringify(tertiaryCollectionAfter) === tertiaryCollectionBefore,
 			existingArtworkPreserved: Object.entries(existingAppleArtwork).every(([field, value]) => appliedExistingFolder.editable[field] === value),
-			newArtworkUnassigned: Object.keys(existingAppleArtwork).every((field) => !Object.hasOwn(appliedNewFolder.editable, field)),
+			newArtworkUnassigned: Object.keys(existingAppleArtwork).filter(field => field !== "focusGifEnabled").every((field) => !Object.hasOwn(appliedNewFolder.editable, field)) && appliedNewFolder.editable.focusGifEnabled === false,
 		};
 	} finally {
 		document.removeEventListener("error", recordFailedPoster, true);
@@ -3706,7 +3707,7 @@ async function runStreamingAffinityDestinationScenario() {
 			newFolder: {
 				title: newFolder?.editable.title ?? null,
 				sources: newFolder?.sources.map((source) => [source.editable.title, source.editable.filters.watchRegion, source.editable.mediaType]) ?? [],
-				artworkUnassigned: ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl", "focusGifEnabled"].every((field) => !Object.hasOwn(newFolder?.editable ?? {}, field)),
+				artworkUnassigned: ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl", "focusGifUrl"].every((field) => !Object.hasOwn(newFolder?.editable ?? {}, field)) && newFolder?.editable.focusGifEnabled === false,
 			},
 		};
 	} finally {
