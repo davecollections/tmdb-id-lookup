@@ -1,0 +1,32 @@
+{
+  "schema_version": 2,
+  "reservation_id": "34692863458-1-audit-export",
+  "utc_date": "2026-09-12",
+  "workflow": "Audit TMDB Export Coverage",
+  "run_id": "34692863458",
+  "run_attempt": "1",
+  "job": "audit-export",
+  "planned_month": "2026-09",
+  "planned_utc_date": "2026-09-12",
+  "bucket": "audit",
+  "allocations": {
+    "audit_export": 14
+  },
+  "bindings": {
+    "audit_export": {
+      "request_class": "audit-export",
+      "target_dimension": "all",
+      "approved_allowance": 14
+    }
+  },
+  "total_allowance": 14,
+  "projected_daily_total": 4051,
+  "preferred_daily_limit": 90000,
+  "absolute_daily_limit": 100000,
+  "fixed_genre_commitment": 36,
+  "protected_audit_commitment": 14,
+  "protected_repair_commitment": 4000,
+  "preferred_override_used": false,
+  "override_reason": null,
+  "created_at": "2026-09-12T12:08:46.178Z"
+}
