@@ -1,0 +1,1092 @@
+[
+  {
+    "id": "p206-c-30",
+    "title": "[P206-C030] ROWS: pin On, glow Off, Show All Off",
+    "folders": [
+      {
+        "id": "p206-f-40",
+        "title": "[P206-F040] GIF On with URL",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S001] GIF On with URL",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "focusGifEnabled": true,
+        "focusGifUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"
+      },
+      {
+        "id": "p206-f-10",
+        "title": "[P206-F010] GIF Off with URL",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S002] GIF Off with URL",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "SQUARE",
+        "hideTitle": true,
+        "focusGifEnabled": false,
+        "focusGifUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"
+      },
+      {
+        "id": "p206-f-30",
+        "title": "[P206-F030] GIF On without URL",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S003] GIF On without URL",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "LANDSCAPE",
+        "hideTitle": true,
+        "focusGifEnabled": true
+      },
+      {
+        "id": "p206-f-20",
+        "title": "[P206-F020] GIF Off without URL",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S004] GIF Off without URL",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "focusGifEnabled": false
+      }
+    ],
+    "viewMode": "ROWS",
+    "pinToTop": true,
+    "focusGlowEnabled": false,
+    "showAllTab": false,
+    "backdropImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/poster/31.webp"
+  },
+  {
+    "id": "p206-c-10",
+    "title": "[P206-C010] Tabbed: false, true and null artwork",
+    "folders": [
+      {
+        "id": "p206-f-80",
+        "title": "[P206-F080] Artwork populated: café & 東京 🎬",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S064] All artwork field control",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "LANDSCAPE",
+        "hideTitle": false,
+        "focusGifEnabled": true,
+        "coverImageUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/poster/31.webp",
+        "heroBackdropUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/poster/31.webp",
+        "titleLogoUrl": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/people/title-logo/1.png",
+        "heroVideoUrl": "https://developer.mozilla.org/shared-assets/videos/flower.mp4",
+        "focusGifUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif",
+        "coverEmoji": "🎬"
+      },
+      {
+        "id": "p206-f-100",
+        "title": "[P206-F100] DISCOVER MOVIE sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S005] DISCOVER MOVIE vote_count.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S006] DISCOVER MOVIE popularity.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S007] DISCOVER MOVIE primary_release_date.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "primary_release_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S008] DISCOVER MOVIE vote_average.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-110",
+        "title": "[P206-F110] DISCOVER TV sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S009] DISCOVER TV vote_count.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S010] DISCOVER TV popularity.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S011] DISCOVER TV first_air_date.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "first_air_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S012] DISCOVER TV vote_average.desc",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-120",
+        "title": "[P206-F120] COMPANY MOVIE sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S013] COMPANY MOVIE vote_count.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 174,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S014] COMPANY MOVIE popularity.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 174,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S015] COMPANY MOVIE primary_release_date.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 174,
+            "mediaType": "MOVIE",
+            "sortBy": "primary_release_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S016] COMPANY MOVIE vote_average.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 174,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-130",
+        "title": "[P206-F130] COMPANY TV sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S017] COMPANY TV vote_count.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 3,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S018] COMPANY TV popularity.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 3,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S019] COMPANY TV first_air_date.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 3,
+            "mediaType": "TV",
+            "sortBy": "first_air_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S020] COMPANY TV vote_average.desc",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 3,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      }
+    ],
+    "viewMode": "TABBED_GRID",
+    "pinToTop": false,
+    "focusGlowEnabled": true,
+    "showAllTab": true,
+    "backdropImageUrl": null
+  },
+  {
+    "id": "p206-c-50",
+    "title": "[P206-C050] ROWS: empty backdrop and null folder artwork",
+    "folders": [
+      {
+        "id": "p206-f-50",
+        "title": "[P206-F050] All nullable artwork explicitly null",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S065] Null folder artwork control",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "SQUARE",
+        "focusGifEnabled": false,
+        "catalogSources": [],
+        "coverImageUrl": null,
+        "heroBackdropUrl": null,
+        "titleLogoUrl": null,
+        "heroVideoUrl": null,
+        "focusGifUrl": null,
+        "coverEmoji": null
+      },
+      {
+        "id": "p206-f-140",
+        "title": "[P206-F140] NETWORK TV sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S021] NETWORK TV vote_count.desc",
+            "tmdbSourceType": "NETWORK",
+            "tmdbId": 213,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S022] NETWORK TV popularity.desc",
+            "tmdbSourceType": "NETWORK",
+            "tmdbId": 213,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S023] NETWORK TV first_air_date.desc",
+            "tmdbSourceType": "NETWORK",
+            "tmdbId": 213,
+            "mediaType": "TV",
+            "sortBy": "first_air_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S024] NETWORK TV vote_average.desc",
+            "tmdbSourceType": "NETWORK",
+            "tmdbId": 213,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-150",
+        "title": "[P206-F150] PERSON MOVIE sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S025] PERSON MOVIE vote_count.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S026] PERSON MOVIE popularity.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S027] PERSON MOVIE primary_release_date.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "primary_release_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S028] PERSON MOVIE vote_average.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-160",
+        "title": "[P206-F160] PERSON TV sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S029] PERSON TV vote_count.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S030] PERSON TV popularity.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S031] PERSON TV first_air_date.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "first_air_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S032] PERSON TV vote_average.desc",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-170",
+        "title": "[P206-F170] DIRECTOR MOVIE sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S033] DIRECTOR MOVIE vote_count.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S034] DIRECTOR MOVIE popularity.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S035] DIRECTOR MOVIE primary_release_date.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "MOVIE",
+            "sortBy": "primary_release_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S036] DIRECTOR MOVIE vote_average.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-180",
+        "title": "[P206-F180] DIRECTOR TV sorts",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S037] DIRECTOR TV vote_count.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S038] DIRECTOR TV popularity.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S039] DIRECTOR TV first_air_date.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "TV",
+            "sortBy": "first_air_date.desc",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S040] DIRECTOR TV vote_average.desc",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {}
+          }
+        ]
+      }
+    ],
+    "viewMode": "ROWS",
+    "pinToTop": false,
+    "focusGlowEnabled": false,
+    "showAllTab": true,
+    "backdropImageUrl": ""
+  },
+  {
+    "id": "p206-c-20",
+    "title": "[P206-C020] Tabbed: pin On, glow On, absent backdrop",
+    "folders": [
+      {
+        "id": "p206-f-190",
+        "title": "[P206-F190] List order and imported List filters",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S041] LIST original",
+            "tmdbSourceType": "LIST",
+            "tmdbId": 8659014,
+            "mediaType": "MOVIE",
+            "sortBy": "original",
+            "filters": {}
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S042] LIST vote_count.desc",
+            "tmdbSourceType": "LIST",
+            "tmdbId": "8659014",
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withGenres": "18"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S043] LIST vote_average.desc",
+            "tmdbSourceType": "LIST",
+            "tmdbId": 8659014,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withGenres": "18"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S044] LIST primary_release_date.desc",
+            "tmdbSourceType": "LIST",
+            "tmdbId": "8659014",
+            "mediaType": "MOVIE",
+            "sortBy": "primary_release_date.desc",
+            "filters": {
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withGenres": "18"
+            }
+          }
+        ]
+      },
+      {
+        "id": "p206-f-200",
+        "title": "[P206-F200] Native movie Collection",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S045] Toy Story Collection List order",
+            "tmdbSourceType": "COLLECTION",
+            "tmdbId": 10194,
+            "mediaType": "MOVIE",
+            "sortBy": "original",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-90",
+        "title": "[P206-F090] Duplicate copies and a distinct vote setting",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S060] Identical copies, no distinct content",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 174,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S060] Identical copies, no distinct content",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": 174,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S061] Distinct votes must survive",
+            "tmdbSourceType": "COMPANY",
+            "tmdbId": "174",
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "p206-f-210",
+        "title": "[P206-F210] Addon sources and matching catalogSources",
+        "sources": [
+          {
+            "provider": "addon",
+            "title": "[P206-S062] Cinemeta movie",
+            "addonId": "com.linvo.cinemeta",
+            "type": "movie",
+            "catalogId": "top",
+            "genre": ""
+          },
+          {
+            "provider": "addon",
+            "title": "[P206-S063] Cinemeta series",
+            "addonId": "com.linvo.cinemeta",
+            "type": "series",
+            "catalogId": "top",
+            "genre": ""
+          }
+        ],
+        "catalogSources": [
+          {
+            "title": "[P206-S062] Cinemeta movie",
+            "addonId": "com.linvo.cinemeta",
+            "type": "movie",
+            "catalogId": "top",
+            "genre": ""
+          },
+          {
+            "title": "[P206-S063] Cinemeta series",
+            "addonId": "com.linvo.cinemeta",
+            "type": "series",
+            "catalogId": "top",
+            "genre": ""
+          }
+        ]
+      }
+    ],
+    "viewMode": "TABBED_GRID",
+    "pinToTop": true,
+    "focusGlowEnabled": true,
+    "showAllTab": false
+  },
+  {
+    "id": "p206-c-60",
+    "title": "[P206-C060] Absent collection defaults; explicit empty folder artwork",
+    "folders": [
+      {
+        "id": "p206-f-60",
+        "title": "[P206-F060] All artwork explicitly empty",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S066] Empty folder artwork control",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ],
+        "tileShape": "POSTER",
+        "hideTitle": false,
+        "focusGifEnabled": false,
+        "coverImageUrl": "",
+        "heroBackdropUrl": "",
+        "titleLogoUrl": "",
+        "heroVideoUrl": "",
+        "focusGifUrl": "",
+        "coverEmoji": ""
+      },
+      {
+        "id": "p206-f-220",
+        "title": "[P206-F220] MOVIE full filters and matching aliases",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S046] MOVIE canonical full filters",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "28|12",
+              "withoutGenres": "27,53",
+              "releaseDateGte": "2000-01-01",
+              "releaseDateLte": "2025-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.5,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "US",
+              "withKeywords": "180547|818",
+              "withoutKeywords": "155030,9715",
+              "withCompanies": "174|3",
+              "withoutCompanies": "2,420",
+              "year": 2020,
+              "watchRegion": "AU",
+              "withWatchProviders": "8|337",
+              "withoutWatchProviders": "9,350"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S047] MOVIE matching aliases",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "28|12",
+              "withoutGenres": "27,53",
+              "releaseDateGte": "2000-01-01",
+              "releaseDateLte": "2025-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.5,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "US",
+              "withKeywords": "180547|818",
+              "withoutKeywords": "155030,9715",
+              "withCompanies": "174|3",
+              "withoutCompanies": "2,420",
+              "year": 2020,
+              "watchRegion": "AU",
+              "withWatchProviders": "8|337",
+              "withoutWatchProviders": "9,350",
+              "with_genres": "28|12",
+              "without_genres": "27,53",
+              "with_keywords": "180547|818",
+              "without_keywords": "155030,9715",
+              "with_companies": "174|3",
+              "without_companies": "2,420",
+              "with_watch_providers": "8|337",
+              "without_watch_providers": "9,350",
+              "watch_region": "AU",
+              "with_original_language": "en",
+              "with_origin_country": "US",
+              "vote_count.gte": 100,
+              "vote_average.gte": 6.5,
+              "vote_average.lte": 9.5,
+              "primary_release_date.gte": "2000-01-01",
+              "primary_release_date.lte": "2025-12-31",
+              "sortBy": "vote_count.desc"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S048] MOVIE included AND expressions",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": "28,12",
+              "withKeywords": "180547,818",
+              "withCompanies": "174,3",
+              "withWatchProviders": "8,337",
+              "watchRegion": "US"
+            }
+          }
+        ]
+      },
+      {
+        "id": "p206-f-230",
+        "title": "[P206-F230] TV full filters and matching aliases",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S049] TV canonical full filters",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "18|10765",
+              "withoutGenres": "10764,10767",
+              "releaseDateGte": "2000-01-01",
+              "releaseDateLte": "2025-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.5,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "US",
+              "withKeywords": "180547|818",
+              "withoutKeywords": "155030,9715",
+              "withCompanies": "174|3",
+              "withoutCompanies": "2,420",
+              "withNetworks": "213",
+              "year": 2020,
+              "watchRegion": "AU",
+              "withWatchProviders": "8|337",
+              "withoutWatchProviders": "9,350"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S050] TV matching aliases",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "18|10765",
+              "withoutGenres": "10764,10767",
+              "releaseDateGte": "2000-01-01",
+              "releaseDateLte": "2025-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.5,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "US",
+              "withKeywords": "180547|818",
+              "withoutKeywords": "155030,9715",
+              "withCompanies": "174|3",
+              "withoutCompanies": "2,420",
+              "withNetworks": "213",
+              "year": 2020,
+              "watchRegion": "AU",
+              "withWatchProviders": "8|337",
+              "withoutWatchProviders": "9,350",
+              "with_genres": "18|10765",
+              "without_genres": "10764,10767",
+              "with_keywords": "180547|818",
+              "without_keywords": "155030,9715",
+              "with_companies": "174|3",
+              "without_companies": "2,420",
+              "with_networks": "213",
+              "with_watch_providers": "8|337",
+              "without_watch_providers": "9,350",
+              "watch_region": "AU",
+              "with_original_language": "en",
+              "with_origin_country": "US",
+              "vote_count.gte": 100,
+              "vote_average.gte": 6.5,
+              "vote_average.lte": 9.5,
+              "first_air_date.gte": "2000-01-01",
+              "first_air_date.lte": "2025-12-31",
+              "first_air_date_year": 2020,
+              "sortBy": "vote_count.desc"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S051] TV included AND expressions",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": "18,10765",
+              "withKeywords": "180547,818",
+              "withCompanies": "174,3",
+              "withWatchProviders": "8,337",
+              "watchRegion": "US"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "p206-c-40",
+    "title": "[P206-C040] Filters and absent folder defaults",
+    "folders": [
+      {
+        "id": "p206-f-70",
+        "title": "[P206-F070] Absent presentation settings",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S067] Absent folder settings control",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "popularity.desc",
+            "filters": {}
+          }
+        ]
+      },
+      {
+        "id": "p206-f-240",
+        "title": "[P206-F240] Absent null empty zero and uncertain expressions",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "[P206-S052] Explicit null filter fields",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": null,
+              "withoutGenres": null,
+              "releaseDateGte": null,
+              "releaseDateLte": null,
+              "voteAverageGte": null,
+              "voteAverageLte": null,
+              "voteCountGte": null,
+              "withOriginalLanguage": null,
+              "withOriginCountry": null,
+              "withKeywords": null,
+              "withoutKeywords": null,
+              "withCompanies": null,
+              "withoutCompanies": null,
+              "withNetworks": null,
+              "year": null,
+              "watchRegion": null,
+              "withWatchProviders": null,
+              "withoutWatchProviders": null
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S053] Empty string filter fields",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": "",
+              "withoutGenres": "",
+              "releaseDateGte": "",
+              "releaseDateLte": "",
+              "withOriginalLanguage": "",
+              "withOriginCountry": "",
+              "withKeywords": "",
+              "withoutKeywords": "",
+              "withCompanies": "",
+              "withoutCompanies": "",
+              "withNetworks": "",
+              "watchRegion": "",
+              "withWatchProviders": "",
+              "withoutWatchProviders": ""
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S054] Absent optional source fields",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE"
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S055] Explicit numeric zeros",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteAverageGte": 0,
+              "voteAverageLte": 0,
+              "voteCountGte": 0
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S056] Compound locale and network probe",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "TV",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withOriginalLanguage": "es|pt",
+              "withOriginCountry": "US|CA",
+              "withNetworks": "213|49"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S057] Conflicting alias probe",
+            "tmdbSourceType": "DISCOVER",
+            "tmdbId": null,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "voteCountGte": 100,
+              "vote_count.gte": 101,
+              "unfamiliarPreservationField": "P206 keep this literal value"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S058] PERSON imported filters",
+            "tmdbSourceType": "PERSON",
+            "tmdbId": 31,
+            "mediaType": "TV",
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "withGenres": "18|10765",
+              "withoutGenres": "10764,10767",
+              "releaseDateGte": "2000-01-01",
+              "releaseDateLte": "2025-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.5,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "US",
+              "withKeywords": "180547|818",
+              "withoutKeywords": "155030,9715",
+              "withCompanies": "174|3",
+              "withoutCompanies": "2,420",
+              "withNetworks": "213",
+              "year": 2020,
+              "watchRegion": "AU",
+              "withWatchProviders": "8|337",
+              "withoutWatchProviders": "9,350"
+            }
+          },
+          {
+            "provider": "tmdb",
+            "title": "[P206-S059] DIRECTOR imported filters",
+            "tmdbSourceType": "DIRECTOR",
+            "tmdbId": 488,
+            "mediaType": "MOVIE",
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "28|12",
+              "withoutGenres": "27,53",
+              "releaseDateGte": "2000-01-01",
+              "releaseDateLte": "2025-12-31",
+              "voteAverageGte": 6.5,
+              "voteAverageLte": 9.5,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "en",
+              "withOriginCountry": "US",
+              "withKeywords": "180547|818",
+              "withoutKeywords": "155030,9715",
+              "withCompanies": "174|3",
+              "withoutCompanies": "2,420",
+              "year": 2020,
+              "watchRegion": "AU",
+              "withWatchProviders": "8|337",
+              "withoutWatchProviders": "9,350"
+            }
+          }
+        ]
+      }
+    ],
+    "viewMode": "TABBED_GRID",
+    "pinToTop": false,
+    "focusGlowEnabled": false,
+    "showAllTab": false
+  }
+]

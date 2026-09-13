@@ -1,0 +1,162 @@
+[
+  {
+    "id": "206-20260913-people-votes",
+    "title": "206 Native People vote test",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": false,
+    "folders": [
+      {
+        "id": "206-20260913-people-PERSON-MOVIE-0",
+        "title": "206 Acting MOVIE votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Acting MOVIE votes 0",
+            "tmdbSourceType": "PERSON",
+            "mediaType": "MOVIE",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-PERSON-MOVIE-2147483647",
+        "title": "206 Acting MOVIE votes 2147483647",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Acting MOVIE votes 2147483647",
+            "tmdbSourceType": "PERSON",
+            "mediaType": "MOVIE",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 2147483647
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-PERSON-TV-0",
+        "title": "206 Acting TV votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Acting TV votes 0",
+            "tmdbSourceType": "PERSON",
+            "mediaType": "TV",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-PERSON-TV-2147483647",
+        "title": "206 Acting TV votes 2147483647",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Acting TV votes 2147483647",
+            "tmdbSourceType": "PERSON",
+            "mediaType": "TV",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 2147483647
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-DIRECTOR-MOVIE-0",
+        "title": "206 Directing MOVIE votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Directing MOVIE votes 0",
+            "tmdbSourceType": "DIRECTOR",
+            "mediaType": "MOVIE",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-DIRECTOR-MOVIE-2147483647",
+        "title": "206 Directing MOVIE votes 2147483647",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Directing MOVIE votes 2147483647",
+            "tmdbSourceType": "DIRECTOR",
+            "mediaType": "MOVIE",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 2147483647
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-DIRECTOR-TV-0",
+        "title": "206 Directing TV votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Directing TV votes 0",
+            "tmdbSourceType": "DIRECTOR",
+            "mediaType": "TV",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-people-DIRECTOR-TV-2147483647",
+        "title": "206 Directing TV votes 2147483647",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Directing TV votes 2147483647",
+            "tmdbSourceType": "DIRECTOR",
+            "mediaType": "TV",
+            "tmdbId": 31,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 2147483647
+            }
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

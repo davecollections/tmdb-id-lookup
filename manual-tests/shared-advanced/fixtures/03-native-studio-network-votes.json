@@ -1,0 +1,124 @@
+[
+  {
+    "id": "206-20260913-native-votes",
+    "title": "206 Native Studio Network votes",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": false,
+    "folders": [
+      {
+        "id": "206-20260913-native-COMPANY-MOVIE-0",
+        "title": "206 COMPANY 174 MOVIE votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 COMPANY 174 MOVIE votes 0",
+            "tmdbSourceType": "COMPANY",
+            "mediaType": "MOVIE",
+            "tmdbId": 174,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-native-COMPANY-MOVIE-100",
+        "title": "206 COMPANY 174 MOVIE votes 100",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 COMPANY 174 MOVIE votes 100",
+            "tmdbSourceType": "COMPANY",
+            "mediaType": "MOVIE",
+            "tmdbId": 174,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-native-COMPANY-TV-0",
+        "title": "206 COMPANY 3 TV votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 COMPANY 3 TV votes 0",
+            "tmdbSourceType": "COMPANY",
+            "mediaType": "TV",
+            "tmdbId": 3,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-native-COMPANY-TV-100",
+        "title": "206 COMPANY 3 TV votes 100",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 COMPANY 3 TV votes 100",
+            "tmdbSourceType": "COMPANY",
+            "mediaType": "TV",
+            "tmdbId": 3,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-native-NETWORK-TV-0",
+        "title": "206 NETWORK 213 TV votes 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 NETWORK 213 TV votes 0",
+            "tmdbSourceType": "NETWORK",
+            "mediaType": "TV",
+            "tmdbId": 213,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 0
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-native-NETWORK-TV-100",
+        "title": "206 NETWORK 213 TV votes 100",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 NETWORK 213 TV votes 100",
+            "tmdbSourceType": "NETWORK",
+            "mediaType": "TV",
+            "tmdbId": 213,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

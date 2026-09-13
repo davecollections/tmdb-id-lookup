@@ -1,0 +1,131 @@
+[
+  {
+    "id": "206-20260913-round-trip",
+    "title": "206 Unchanged round trip",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": false,
+    "folders": [
+      {
+        "id": "206-20260913-family-movie",
+        "title": "206 Family Movie Most voted",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Family Movie Most voted",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "10751",
+              "withOriginalLanguage": "en"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-reality-tv",
+        "title": "206 Reality Series Most voted",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Reality Series Most voted",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "withGenres": "10764",
+              "withOriginalLanguage": "en"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-movie-control",
+        "title": "206 Movie Top rated control",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Movie Top rated control",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-series-control",
+        "title": "206 Series Top rated control",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Series Top rated control",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-list-alias",
+        "title": "206 List alias preservation",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 List Top rated aliases",
+            "tmdbSourceType": "LIST",
+            "mediaType": "MOVIE",
+            "tmdbId": 8659014,
+            "sortBy": "vote_average.desc",
+            "filters": {
+              "voteCountGte": 100,
+              "vote_count.gte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-folder-probes",
+        "title": "206 Folder unsupported-key probes",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 Folder schema probe",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "popularity.desc",
+            "filters": {
+              "withGenres": "10751"
+            }
+          }
+        ],
+        "catalogSources": [],
+        "focusGlowEnabled": true,
+        "pinToTop": true
+      }
+    ],
+    "focusGlowEnabled": true,
+    "pinToTop": true
+  }
+]

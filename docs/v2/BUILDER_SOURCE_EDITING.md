@@ -2,7 +2,7 @@
 
 ## Imported TMDB List sorting - 2026-09-12
 
-Issue [#204](https://github.com/davecollections/tmdb-id-lookup/issues/204) extends the existing List editor to preserve unfamiliar string sorts and offer deliberate replacement with List order, Recent, Top rated or Most voted. Every otherwise valid imported string sort can open Preview: recognized choices order the fetched sample locally, while unfamiliar sorts retain List order with a neutral explanation. The existing List response/cache is sufficient; no Worker change is needed. Preview never changes the draft or exported source. Creation stays fixed. See [List-specific evidence, exact preservation and sample ordering](./BUILDER_TMDB_LISTS.md#source-edit). Changes remain local for owner review.
+Issue [#204](https://github.com/davecollections/tmdb-id-lookup/issues/204) extends the existing List editor to preserve unfamiliar string sorts and offer deliberate replacement with List order, Recent, Top rated or Most voted. Every otherwise valid imported string sort can open Preview: recognized choices order the fetched sample locally, while unfamiliar sorts retain List order with a neutral explanation. The existing List response/cache is sufficient; no Worker change is needed. Preview never changes the draft or exported source. Creation stays fixed. See [List-specific evidence, exact preservation and sample ordering](./BUILDER_TMDB_LISTS.md#source-edit). Completed through merged [PR #205](https://github.com/davecollections/tmdb-id-lookup/pull/205), published at `efe9966ebb04392dbc540f131ff19790d1c1e8ca`, with owner review and cleanup complete. New shared Advanced capabilities are assessed separately in [#206](./SHARED_ADVANCED_ASSESSMENT.md).
 
 ## Current native variants checkpoint - 2026-09-10
 

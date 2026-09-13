@@ -37,6 +37,8 @@ runNode(["--test", path.join("tests", "cloudflare-worker.test.mjs")]);
 runNode(["--test", path.join("tests", "artwork-runtime.test.mjs")]);
 runNode(["--test", path.join("tests", "cached-nuvio-export.test.mjs")]);
 runNode(["--test", path.join("tests", "nuvio-contracts.test.mjs")]);
+runNode(["--test", path.join("tests", "shared-advanced-investigation.test.mjs"), path.join("tests", "collection-preservation.test.mjs")]);
+runNode([path.join("manual-tests", "collection-preservation", "generate-pack.mjs"), "--check"]);
 runNode(["--test", path.join("tests", "builder-compatibility-corpus.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-reordering-client-evidence.test.mjs")]);
 runNode(["--test", path.join("tests", "tmdb-discover-compatibility.test.mjs")]);
