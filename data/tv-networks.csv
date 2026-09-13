@@ -3635,7 +3635,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 6811,Khanal 1,0,,GS,,https://www.themoviedb.org/network/6811
 6813,Abstract Theatre,0,,,,https://www.themoviedb.org/network/6813
 6816,STAR Pravah,5,"Mumbai, Maharashtra, India",IN,,https://www.themoviedb.org/network/6816
-6818,The Daily Wire,1,,,,https://www.themoviedb.org/network/6818
 6819,AKT,15,,JP,,https://www.themoviedb.org/network/6819
 6821,Toyama Television,15,,JP,,https://www.themoviedb.org/network/6821
 6822,TV Kumamoto,13,,JP,,https://www.themoviedb.org/network/6822
@@ -3838,7 +3837,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7122,Diva,1,"Marina Bay, Downtown Core, Singapore",,,https://www.themoviedb.org/network/7122
 7123,KIX,1,"Kwun Tong, Hong Kong",,,https://www.themoviedb.org/network/7123
 7126,RTR-Planeta,1,"Moscow, Russia",RU,,https://www.themoviedb.org/network/7126
-7128,The Daily Wire,0,,,,https://www.themoviedb.org/network/7128
 7132,RTL+ (HU),9,,,,https://www.themoviedb.org/network/7132
 7133,Cartoon Network Asia,3,,,,https://www.themoviedb.org/network/7133
 7134,Green TV Entertainment,23,,PK,,https://www.themoviedb.org/network/7134
@@ -5603,5 +5601,8 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9484,tele quebec,0,,,,https://www.themoviedb.org/network/9484
 9485,stellajean,1,,,,https://www.themoviedb.org/network/9485
 9486,Plus TV (CY),2,,,,https://www.themoviedb.org/network/9486
-9487,OceanVeil,1,"5900 Balcones Drive Suite 100 Austin, TX 78731",US,https://oceanveil.net,https://www.themoviedb.org/network/9487
+9487,OceanVeil,1,"5900 Balcones Drive Suite 100 Austin, TX 78731",US,,https://www.themoviedb.org/network/9487
 9488,Plim Plim TV (AR),1,,AR,,https://www.themoviedb.org/network/9488
+9489,Combate,1,"Rio de Janeiro, RJ",BR,https://ge.globo.com/combate/,https://www.themoviedb.org/network/9489
+9490,TV Ciudad (UY),1,,,,https://www.themoviedb.org/network/9490
+9491,Canal 5 (UY),1,,,,https://www.themoviedb.org/network/9491
