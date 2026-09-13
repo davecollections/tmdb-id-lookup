@@ -1,0 +1,10 @@
+# Only the authored master, manifest and blank run log belong in Git.
+*.json
+!206-collection-preservation-master.json
+!case-manifest.json
+!run-log-template.json
+*.png
+*.jpg
+*.jpeg
+*.zip
+results/

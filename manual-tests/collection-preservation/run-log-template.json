@@ -1,0 +1,53 @@
+{
+  "masterSha256": "fdefa732786fdfebc63b297048b8ef5d75981d719c3fdeeb26cf2db10fa3d4b2",
+  "routes": {
+    "nuvio.tv": {
+      "status": "Not tested",
+      "exportFile": null,
+      "version": "",
+      "startedAt": "",
+      "exportedAt": "",
+      "importMethod": "",
+      "exportMethod": "",
+      "syncActivity": "",
+      "isolation": "",
+      "notes": ""
+    },
+    "Desktop": {
+      "status": "Not tested",
+      "exportFile": null,
+      "version": "",
+      "startedAt": "",
+      "exportedAt": "",
+      "importMethod": "",
+      "exportMethod": "",
+      "syncActivity": "",
+      "isolation": "",
+      "notes": ""
+    },
+    "TV normal import": {
+      "status": "Not tested",
+      "exportFile": null,
+      "version": "",
+      "startedAt": "",
+      "exportedAt": "",
+      "importMethod": "",
+      "exportMethod": "",
+      "syncActivity": "",
+      "isolation": "",
+      "notes": ""
+    },
+    "TV Manage from phone": {
+      "status": "Not tested",
+      "exportFile": null,
+      "version": "",
+      "startedAt": "",
+      "exportedAt": "",
+      "importMethod": "",
+      "exportMethod": "",
+      "syncActivity": "",
+      "isolation": "",
+      "notes": ""
+    }
+  }
+}
