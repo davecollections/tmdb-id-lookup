@@ -1,5 +1,7 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+Current product status and all future priorities are owned by the [Product Plan canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates). Investigation #206 / PR #207 and Studio Minimum votes #208 / PR #209 are complete and merged; Studio is owner-approved and published at `1cafa19168d23538d8ba416ed75cc52d3005ccb9` with no Worker change. See the [current checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-09-13) and [Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208). Dated investigation and implementation checkpoints below retain their historical evidence and do not define the current queue.
+
 ## Shared Advanced investigation - 2026-09-13
 
 September input-version correction: the original is 2,619,074 bytes with SHA-256 `e3baaefbb0de52639f5a7789a02989f74e9aa4827c6863a402dd50fc838818a7`. Its 18 collections and the verified export all use `ROWS`; the earlier layout-change finding is withdrawn. A separate 2,619,200-byte TABBED_GRID input version was used initially. Both versions are preserved without attribution; [comparison and acquisition provenance](./SHARED_ADVANCED_ASSESSMENT.md#september-round-trip-investigation) identify the corrected evidence.
@@ -10,7 +12,7 @@ The separate [saved-JSON preservation pack](../../manual-tests/collection-preser
 
 ## Imported TMDB List editing - 2026-09-12
 
-The owner-authorized #204 preservation correction also accepts populated imported List filter objects. The editor owns only title/sort and does not validate those preserved settings as Discover criteria. Matching or conflicting `vote_count.gte` / `voteCountGte` aliases, unknown keys and original value types remain exact through open/Cancel, unchanged Save, title edits and sort replacement. Non-object filters and invalid source identities remain blocked. Preview explicitly says imported filters are not applied; its request carries only a notice flag, not filter values. List cards use the same recognized sort definitions as Edit and label unfamiliar values **Imported sort**. The original-import regression covers all 339 previously blocked Lists and keeps the separate 48 compound-language/country Discover cases blocked. Shared Advanced options, People behavior and compound language/country support remain separate [plan follow-ups](./BUILDER_PRODUCT_PLAN.md#priorities-after-202204).
+The owner-authorized #204 preservation correction also accepts populated imported List filter objects. The editor owns only title/sort and does not validate those preserved settings as Discover criteria. Matching or conflicting `vote_count.gte` / `voteCountGte` aliases, unknown keys and original value types remain exact through open/Cancel, unchanged Save, title edits and sort replacement. Non-object filters and invalid source identities remain blocked. Preview explicitly says imported filters are not applied; its request carries only a notice flag, not filter values. List cards use the same recognized sort definitions as Edit and label unfamiliar values **Imported sort**. The original-import regression covers all 339 previously blocked Lists and keeps the separate 48 compound-language/country Discover cases blocked. Shared Advanced options, People behavior and compound language/country support remain separate [plan follow-ups](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates).
 
 Issue [#204](https://github.com/davecollections/tmdb-id-lookup/issues/204), completed through merged [PR #205](https://github.com/davecollections/tmdb-id-lookup/pull/205) and published at `efe9966ebb04392dbc540f131ff19790d1c1e8ca`, removes the List editor's `original`-only eligibility restriction for otherwise valid string sorts. The matching supplied Spotlight export's Headliner List `8687275` uses `vote_average.desc`. The existing editor preserves unfamiliar values, offers deliberate List-specific sort replacement, and retains exact no-op/title-only/Cancel behavior through the existing minimal patch mechanism. Preview accepts all otherwise valid string sorts: recognized choices order the complete fetched sample, while unfamiliar values retain List order with a neutral explanation. The production response already contains required rating/vote/date metadata; sorting reuses the List-ID cache and never changes the draft/export. Creation stays fixed at `original`. See [TMDB Lists](./BUILDER_TMDB_LISTS.md#source-edit) for pinned Nuvio evidence, sample ordering, missing-data fallback and unchanged identity/filter boundaries. The later owner-review expansion is confined to Discover Preview: it compiles only the current draft’s selected media/orders and effective per-media filters. Edit has one physical source combination, while creation offers only selected combinations; redundant selectors remain hidden. Unsaved changes and reopening use the shared request coordinator/cache without mutating the draft. List summaries now distinguish complete from partial represented samples and retain only conditional fallback/filter notices. Worker, grouping, MDBList, v1, dependencies and List creation settings remain unchanged.
 
@@ -20,7 +22,7 @@ Issue [#200](https://github.com/davecollections/tmdb-id-lookup/issues/200) compl
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-09-06
+Last reviewed: 2026-09-13
 
 
 ## 2026-09-07 - Multiple creation sorts (#198; approved for publication)
@@ -832,7 +834,7 @@ The API documents addon and plugin sync as full-replace operations too. Plugin-r
 
 ## 16. Roadmap checkpoint
 
-The current dependency-aware sequence is:
+Historical foundation sequence, retained for evidence only. The [canonical Product Plan roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) supersedes its pending-work wording, including Bulk display settings, Discover and export; do not maintain a second roadmap here:
 
 1. product/workflow recovery — complete;
 2. collection/folder presentation settings and owner-review corrections — integrated and complete;
