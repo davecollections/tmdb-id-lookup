@@ -1,3 +1,4 @@
+import { studioPreviewQuery } from "../source-add/studio-advanced.js";
 import {
 	discoverSortOptionId,
 	resolveEffectiveDiscoverSource,
@@ -134,11 +135,14 @@ export function prepareSourceEditPreview(session, draft) {
 				candidateSource.editable.mediaType,
 			);
 			if (sortOptionId === null) return freezeFailure(SUPPORTED_SORT_GUIDANCE);
+			const effective = resolveEffectiveDiscoverSource(candidateSource);
+			if (!effective.ok || !studioPreviewQuery(draft.tmdbId, { mediaType: draft.mediaType, sortBy: candidateSource.editable.sortBy, filters: effective.value.filters })) return freezeFailure("These imported Studio filters cannot be previewed exactly. They will be preserved when you save.");
 			return ready(candidateSource, {
 				kind: "studio",
-				tmdbId: candidateSource.editable.tmdbId,
-				mediaType: candidateSource.editable.mediaType,
+				tmdbId: draft.tmdbId,
+				mediaType: draft.mediaType,
 				sortBy: candidateSource.editable.sortBy,
+				filters: effective.value.filters ?? {},
 				label: draft.title,
 			});
 		}

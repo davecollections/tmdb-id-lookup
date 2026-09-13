@@ -427,7 +427,7 @@ test("Studio editor opens the fixed Studio identity with count, TMDB link, sort,
 	assert.equal(catalogueCalls.length, 0);
 	assert.equal(countCalls.length, 0);
 	assert.ok(markup.includes('data-source-edit-adapter="studio"'));
-	assert.ok(markup.includes("Update this Studio source name and title order."));
+	assert.ok(markup.includes("Update this Studio source name, title order and Minimum votes."));
 	assert.ok(markup.includes("Movies source"));
 	assert.ok(markup.includes("Pixar"));
 	assert.ok(markup.includes('href="https://www.themoviedb.org/company/3"'));

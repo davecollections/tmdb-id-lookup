@@ -1,3 +1,4 @@
+import { studioComparisonFilters, validateStudioAdvancedFilters } from "./studio-advanced.js";
 import { STUDIO_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeSourceDuplicates, isSourceVariantTitle, nativeSourceVariantKey, sourceVariantTitle } from "./native-source-variants.js";
@@ -142,10 +143,13 @@ export function buildStudioSourceDrafts(studio, {
 	sortOptionId = null,
 	sortOptionIds,
 	sortBy = null,
+	filters = {},
 	titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY,
 } = {}) {
 	const name = canonicalText(studio?.name);
 	const errors = [];
+	const advanced = validateStudioAdvancedFilters(filters);
+	errors.push(...advanced.errors);
 	if (
 		!Number.isSafeInteger(studio?.id)
 		|| studio.id <= 0
@@ -179,7 +183,7 @@ export function buildStudioSourceDrafts(studio, {
 				title: sourceVariantTitle(studioSourceTitle(name, option.mediaType, titleMode), sort, STUDIO_SORT_OPTIONS, sorts.length > 1),
 				sortBy: studioSortValue(sort, option.mediaType),
 				tmdbId: studio.id,
-				filters: {},
+				filters: { ...advanced.filters },
 				provider: "tmdb",
 				mediaType: option.mediaType,
 				tmdbSourceType: "COMPANY",
@@ -212,7 +216,8 @@ export function validateStudioSourceDraft(draft, { studio = null, titleMode = ST
 		errors.push(diagnostic("MISMATCHED_STUDIO_SOURCE", path, "The Studio source must match the selected cached Studio."));
 	}
 	if (!isSupportedStudioSort(editable.sortBy, editable.mediaType)) errors.push(diagnostic("INVALID_STUDIO_SORT", `${path}.editable.sortBy`, "Choose a supported Studio sort order for this media type."));
-	if (!plainObject(editable.filters) || Object.keys(editable.filters).length !== 0) errors.push(diagnostic("INVALID_STUDIO_FILTERS", `${path}.editable.filters`, "Studio source filters must be an explicit empty object."));
+	const advanced = validateStudioAdvancedFilters(editable.filters, editable.mediaType);
+	if (!plainObject(editable.filters) || !advanced.ok || JSON.stringify(advanced.filters) !== JSON.stringify(editable.filters)) errors.push(diagnostic("INVALID_STUDIO_FILTERS", `${path}.editable.filters`, "Studio sources require supported canonical Minimum votes settings."));
 	return { ok: errors.length === 0, errors };
 }
 
@@ -242,7 +247,7 @@ export function studioSourceIdentity(editable) {
 }
 
 export function studioSourceVariantKey(source) {
-	return nativeSourceVariantKey(source, studioSourceIdentity, STUDIO_SORT_OPTIONS);
+	return nativeSourceVariantKey(source, studioSourceIdentity, STUDIO_SORT_OPTIONS, studioComparisonFilters);
 }
 
 function findCollectionAndFolder(project, folderInternalId) {

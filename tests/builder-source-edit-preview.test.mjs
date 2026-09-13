@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { touchDiscoverFilters } from "../builder/src/source-add/advanced-discover.js";
+import { studioPreviewQuery } from "../builder/src/source-add/studio-advanced.js";
 
 import { createBuilderController } from "../builder/src/application/index.js";
 import {
@@ -44,6 +46,25 @@ function openedAt(controller, index) {
 	assert.equal(opened.ok, true);
 	return opened;
 }
+
+test("Studio Preview projects the current effective native draft, fixed Studio and supported imported filters without mutation", () => {
+ for (const mediaType of ["MOVIE", "TV"]) {
+  const source = { ...sources[2], mediaType, filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", withCompanies: "999", voteAverageGte: 5 } };
+  const app = createProject([source]), opened = openedAt(app, 0), before = app.stringifyProject().json;
+  for (const value of ["100", "0", "", "200"]) {
+   const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
+   const result = prepareSourceEditPreview(opened.session, draft);
+   assert.equal(result.previewable, true, JSON.stringify(result));
+   assert.equal(result.candidateSource.editable.tmdbSourceType, "COMPANY");
+   const query = studioPreviewQuery(result.request.tmdbId, result.request);
+   assert.equal(query.queryParameters.with_companies, "3");
+   assert.equal(query.queryParameters.without_companies, "174");
+   assert.equal(query.queryParameters["vote_average.gte"], "5");
+   assert.equal(query.queryParameters["vote_count.gte"], value || undefined);
+   assert.equal(app.stringifyProject().json, before);
+  }
+ }
+});
 
 test("Source Edit preview materializes the current detached draft for all eight adapters without mutating the project", () => {
 	const controller = createProject(sources);

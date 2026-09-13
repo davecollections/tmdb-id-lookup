@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { desktopExpandedSource, roundTripSourceCases } from "./fixtures/nuvio-desktop-round-trip.mjs";
 import { discoverSourceNodeIdentity } from "../builder/src/nuvio/discover.js";
+import { touchDiscoverFilters } from "../builder/src/source-add/advanced-discover.js";
+import { prepareSourceEditPreview } from "../builder/src/source-edit/source-edit-preview.js";
 
 import { createBuilderController } from "../builder/src/application/index.js";
 import {
@@ -87,6 +89,66 @@ function studioSource(overrides = {}) {
 		...overrides,
 	};
 }
+
+for (const mediaType of ["MOVIE", "TV"]) for (const filters of [
+ {}, { voteCountGte: 0 }, { voteCountGte: "100", withoutCompanies: "174", voteAverageGte: null },
+ { voteCountGte: 100, "vote_count.gte": "100", unknown: { keep: [0, false] }, withoutKeywords: "123" },
+ { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { voteCountGte: "odd" },
+]) {
+ test(`Studio ${mediaType} preserves imported settings through unchanged/title-only saves: ${JSON.stringify(filters)}`, () => {
+  const app = createController();
+  const source = studioSource({ id: "original", mediaType, filters, extra: { keep: true } });
+  importFolder(app, [source, { ...source, id: "sibling" }], { hideTitle: true, ownerFolder: "keep" });
+  const before = app.stringifyProject().json, revision = app.getState().revision;
+  const opened = sessionFor(app);
+  const noOp = saveSourceEdit(app, opened.session, opened.draft);
+  assert.equal(noOp.ok, true);
+  assert.equal(app.getState().revision, revision);
+  assert.equal(app.stringifyProject().json, before);
+  const renamed = saveSourceEdit(app, opened.session, updateSourceEditTitle(opened.draft, "Renamed"));
+  assert.equal(renamed.ok, true);
+  const expected = JSON.parse(before);
+  expected[0].folders[0].sources[0].title = "Renamed";
+  assert.deepEqual(JSON.parse(app.stringifyProject().json), expected);
+ });
+}
+test("Studio intentional threshold edits clear only owned native/mirror fields, survive repeated saves and preserve unknown filters", () => {
+ const app = createController();
+ importFolder(app, [studioSource({ filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", voteAverageGte: null, ownerFilter: { keep: false } }, ownerSource: 7 })]);
+ const original = JSON.parse(app.stringifyProject().json);
+ for (const value of ["0", "", "100", ""]) {
+  const opened = sessionFor(app), revision = app.getState().revision;
+  const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
+  const preview = prepareSourceEditPreview(opened.session, draft);
+  assert.equal(preview.previewable, false, "unknown imported filter is not silently omitted");
+  assert.equal(saveSourceEdit(app, opened.session, draft).ok, true);
+  assert.equal(app.getState().revision, revision + 1);
+  const actual = JSON.parse(app.stringifyProject().json);
+  const filters = actual[0].folders[0].sources[0].filters;
+  assert.deepEqual(filters.ownerFilter, { keep: false });
+  assert.equal(filters.withoutCompanies, "174");
+  assert.equal(filters.voteAverageGte, null);
+  assert.equal(filters.voteCountGte, value === "" ? undefined : Number(value));
+  assert.equal(filters["vote_count.gte"], value === "" ? undefined : Number(value));
+  const expected = structuredClone(original);
+  expected[0].folders[0].sources[0].filters = filters;
+  assert.deepEqual(actual, expected);
+ }
+});
+test("Studio functional threshold edit rejects exact siblings, accepts other thresholds and rejects stale sessions", () => {
+ const app = createController();
+ importFolder(app, [studioSource({ filters: { voteCountGte: 100 } }), studioSource({ filters: { voteCountGte: "0" } })]);
+ const opened = sessionFor(app), original = app.stringifyProject().json;
+ const draft = (value) => touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
+ assert.equal(saveSourceEdit(app, opened.session, draft("0")).ok, false);
+ assert.equal(app.stringifyProject().json, original);
+ for (const invalid of ["-1", "2147483648", "1.5", "abc"]) assert.equal(saveSourceEdit(app, opened.session, draft(invalid)).ok, false);
+ assert.equal(app.stringifyProject().json, original);
+ assert.equal(saveSourceEdit(app, opened.session, draft("200")).ok, true);
+ const after = app.stringifyProject().json;
+ assert.equal(saveSourceEdit(app, opened.session, draft("300")).ok, false);
+ assert.equal(app.stringifyProject().json, after);
+});
 
 function streamingSource(overrides = {}) {
 	return {
@@ -541,6 +603,9 @@ test("Studio editor locks COMPANY identity/media while exposing title and correc
 	assert.equal(opened.session.adapterId, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(opened.session.originalIdentity, "tmdb|COMPANY|3|MOVIE");
 	assert.deepEqual(opened.draft, {
+		filters: {},
+		touchedFilters: [],
+		minimumVotesEditable: true,
 		title: "Pixar",
 		titleTouched: false,
 		studioName: "Pixar",
@@ -551,7 +616,7 @@ test("Studio editor locks COMPANY identity/media while exposing title and correc
 		sortOptionId: "top-rated",
 		sortTouched: false,
 	});
-	assert.deepEqual(sourceEditorFor(opened.source).ownedFields, ["title", "sortBy"]);
+	assert.deepEqual(sourceEditorFor(opened.source).ownedFields, ["title", "sortBy", "filters"]);
 });
 
 test("Studio Edit saves one title/sort patch and round-trips without changing identity or inserting", () => {

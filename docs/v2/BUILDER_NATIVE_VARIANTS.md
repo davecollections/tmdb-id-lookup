@@ -1,5 +1,7 @@
 # Native People, Studio and Network variants
 
+Studio [#208](./BUILDER_STUDIOS.md#shared-minimum-votes-208-local-owner-review) adds optional Minimum votes to all creation contexts and the scalar physical editor. Its effective threshold participates in existing candidate, placement, plan, Preview and exact-duplicate handling. Supported numeric/string thresholds and matching minimum mirrors compare equivalently; explicit zero remains distinct from unset. Other native fields and family semantics are unchanged. This is a local owner-review implementation, with no Worker change or publication.
+
 Issue [#200](https://github.com/davecollections/tmdb-id-lookup/issues/200), implemented on 2026-09-08 and refined through 2026-09-10. The revised flow and notice treatment passed owner review on 2026-09-10. Publication preparation is authorized; merge and client ranking acceptance remain separate.
 
 This is the current contract for the three native families in ordinary Add Source, guided New Collection and guided New Folder, covering nine entry contexts. It supersedes historical single-sort, structural-only duplicate and guided Preview wrapper descriptions in the focused family documents.

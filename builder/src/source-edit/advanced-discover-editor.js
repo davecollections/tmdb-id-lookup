@@ -1,4 +1,4 @@
-import { discoverImportedMirrors, inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
+import { patchTouchedDiscoverFilters, inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
 import { DISCOVER_EDIT_READINESS, DISCOVER_FILTER_DESCRIPTORS, discoverSortOptionId, discoverSortValue, discoverSourceNodeIdentity, inspectDiscoverSourceNode, resolveEffectiveDiscoverSource, effectiveDiscoverSort } from "../nuvio/discover.js";
 import { createAdvancedDiscoverDraft, validateAdvancedFilters } from "../source-add/advanced-discover.js";
 import { validateTouchedSourceTitle } from "./source-edit-utils.js";
@@ -39,16 +39,7 @@ function buildPatch({ draft, source }) {
  const sort = discoverSortValue(draft.sortOptionIds[0], draft.mediaType);
  if (draft.sortTouched && sort !== original.sortBy) patch.sortBy = sort;
  const validated = validateAdvancedFilters(draft.filters, draft.mediaType);
- const filters = { ...source.editable.filters };
- if (Object.hasOwn(patch, "sortBy") && Object.hasOwn(original.filters, "sortBy")) filters.sortBy = sort;
- for (const key of draft.touchedFilters) {
-  if (JSON.stringify(validated.filters[key]) !== JSON.stringify(original.filters[key])) {
-   for (const [alias, native] of Object.entries(discoverImportedMirrors(original.mediaType))) if (native === key && Object.hasOwn(original.filters, alias)) filters[alias] = validated.filters[key] ?? null;
-  }
-  if (Object.hasOwn(validated.filters, key)) filters[key] = validated.filters[key]; else delete filters[key];
- }
- if (JSON.stringify(filters) !== JSON.stringify(source.editable.filters)) patch.filters = filters;
- return patch;
+ return { ...patch, ...patchTouchedDiscoverFilters(source, original, validated.filters, draft.touchedFilters, patch) };
 }
 export const advancedDiscoverSourceEditor = Object.freeze({
  id: "advanced-discover", label: "Discover", ownedFields: ["title", "sortBy", "filters"],

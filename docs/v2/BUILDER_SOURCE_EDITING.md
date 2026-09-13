@@ -1,5 +1,9 @@
 # Native Source Editing
 
+## Studio Minimum votes (#208, local owner review)
+
+The Studio adapter additionally owns optional Minimum votes through the existing shared Discover field and touched-filter patch pipeline. See the [current Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208-local-owner-review) for unset/zero, clearing, alias/import preservation and exact current-draft Preview. Only that setting and its existing mirror can change on a deliberate filter edit. The existing physical identity, scalar sorting, duplicate/no-op, stale-session and atomic controller contracts remain unchanged. Unsupported imported settings remain preserved; exact Preview blocks when their effect cannot be represented.
+
 ## Imported TMDB List sorting - 2026-09-12
 
 Issue [#204](https://github.com/davecollections/tmdb-id-lookup/issues/204) extends the existing List editor to preserve unfamiliar string sorts and offer deliberate replacement with List order, Recent, Top rated or Most voted. Every otherwise valid imported string sort can open Preview: recognized choices order the fetched sample locally, while unfamiliar sorts retain List order with a neutral explanation. The existing List response/cache is sufficient; no Worker change is needed. Preview never changes the draft or exported source. Creation stays fixed. See [List-specific evidence, exact preservation and sample ordering](./BUILDER_TMDB_LISTS.md#source-edit). Completed through merged [PR #205](https://github.com/davecollections/tmdb-id-lookup/pull/205), published at `efe9966ebb04392dbc540f131ff19790d1c1e8ca`, with owner review and cleanup complete. New shared Advanced capabilities are assessed separately in [#206](./SHARED_ADVANCED_ASSESSMENT.md).
@@ -57,7 +61,7 @@ Issue #118's `nuvio-people-assets` manifest is a creation-time canonical-name/ca
 | Movie Collection | title; TMDB collection identity selected through the existing collection search/details boundary | provider, source type, media type, sort, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | TMDB List | display title and evidenced List sort; unfamiliar imports preserved until deliberately replaced | List TMDB ID, provider, `LIST`, canonical source-level `MOVIE`, every imported filter key/value/type, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | People | title; one of Acting Movies, Acting Series, Directed Movies, or Directed Series; evidenced sort order | person TMDB ID, provider, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
-| Studio Movie/Series | display title and evidenced media-correct sort order | Studio TMDB ID, provider, `COMPANY`, `MOVIE`/`TV`, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
+| Studio Movie/Series | display title, evidenced media-correct sort order and optional Minimum votes | Studio TMDB ID, provider, `COMPANY`, `MOVIE`/`TV`, unrelated filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | Network Series | display title and evidenced TV sort order | Network TMDB ID, provider, `NETWORK`, `TV`, filters, category, raw snapshot, unknown fields, Nuvio-facing source ID |
 | Streaming Movie/Series | display title and one of four DISCOVER semantic sorts | Provider ID, Region, `DISCOVER`, `MOVIE`/`TV`, filters, category, raw snapshot, preserved non-meaningful extras, Nuvio-facing source ID |
 | Official Genre Movie/Series | display title, one of four DISCOVER semantic sorts, and approved year/rating/vote/language/country/Genre-exclusion filters | official included Genre ID, media, provider, `DISCOVER`, category, raw snapshot, unknown fields, Nuvio-facing source ID |

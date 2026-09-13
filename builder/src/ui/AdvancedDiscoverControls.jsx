@@ -1,3 +1,5 @@
+import { DiscoverFieldError, DiscoverValueField } from "./DiscoverValueField.jsx";
+export { DiscoverFieldError } from "./DiscoverValueField.jsx";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { TmdbEntityLogo } from "./TmdbEntityLogo.jsx";
 import { searchStudioCatalogue } from "../source-add/studio-catalogue.js";
@@ -13,10 +15,7 @@ import { discoverSelectionLabel } from "../source-add/discover-selection-labels.
 export function DiscoverNotice({ children, error = false }) {
  return <div className="discover-notice" role={error ? "alert" : "status"}>{children}</div>;
 }
-export function DiscoverFieldError({ field, errors = [] }) {
- const messages = [...new Set(errors.filter((e) => e.path?.endsWith("." + field)).map((e) => e.message))];
- return messages.length ? <p id={"discover-error-" + field} className="discover-field-error" role="alert">{messages.join(" ")}</p> : null;
-}
+
 export function DiscoverOperator({ draft, field, onChange }) {
  return <div className="discover-operator" role="group" aria-label={"Included " + DISCOVER_FIELD_LABELS[field].toLowerCase() + " matching"}>
  <span className="discover-operator-label">Applies to all included {DISCOVER_FIELD_LABELS[field].toLowerCase()}. {field !== "withNetworks" ? "Exclusions are separate." : null}</span>
@@ -238,22 +237,6 @@ function SelectField({ field, draft, onChange, options, errors, helper = null })
  const value = draft.filters[field] ?? "";
  const all = value && !options.some((o) => o.code === value) ? [{ code: value, label: "Saved: " + value }, ...options] : options;
  return <div className="editor-field"><label htmlFor={"discover-field-" + field}>{DISCOVER_FIELD_LABELS[field]}</label><select id={"discover-field-" + field} data-watch-region={field === "watchRegion" && value !== "" || undefined} aria-describedby={"discover-error-" + field} value={value} onChange={(e) => onChange({ ...draft, filters: { ...draft.filters, [field]: e.target.value } })}><option value="">Any</option>{all.map((o) => <option key={o.code} value={o.code}>{o.label ?? o.name}</option>)}</select>{helper ? <p className="editor-field-help">{helper}</p> : null}<DiscoverFieldError field={field} errors={errors} /></div>;
-}
-function DiscoverValueField({ field, draft, onChange, errors }) {
- const labelRef = useRef(null);
- const date = field.startsWith("release"), value = draft.filters[field] ?? "";
- const clearable = date || field === "year";
- const update = (value) => onChange({ ...draft, filters: { ...draft.filters, [field]: value } });
- return <div className="editor-field">
-  <label ref={labelRef} tabIndex={-1} htmlFor={"discover-field-" + field}>{DISCOVER_FIELD_LABELS[field]}</label>
-  <div className={clearable ? "discover-clearable-value" : undefined}>
-  <input id={"discover-field-" + field} type={date ? "date" : "text"} inputMode={date ? undefined : field.startsWith("voteAverage") ? "decimal" : "numeric"} value={value}
-   aria-describedby={"discover-error-" + field} onChange={(e) => update(e.target.value)} />
-   {clearable ? <button type="button" className="discover-clear-value" aria-label={"Clear " + DISCOVER_FIELD_LABELS[field].toLowerCase()} disabled={value === ""} data-empty={value === "" || undefined}
-    onClick={() => { update(""); labelRef.current?.focus({ preventScroll: true }); }}>×</button> : null}
-  </div>
-  <DiscoverFieldError field={field} errors={errors} />
- </div>;
 }
 
 export function DiscoverDetailedControls({ draft, onChange, studioProvider, networkProvider, streamingProvider, namedCodes = null, errors = [], ...panelProps }) {

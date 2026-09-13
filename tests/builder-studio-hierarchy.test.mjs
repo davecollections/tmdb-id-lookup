@@ -62,6 +62,45 @@ function previewPayload(mediaType, totalResults = 12) {
 	};
 }
 
+for (const scope of ["new-collection", "new-folder"]) for (const minimum of [undefined, 0, 100]) {
+ test(`${scope} atomically applies Studio minimum ${minimum} to selected Both/sort sources and revalidates the setting`, () => {
+  const app = controller();
+  assert.equal(app.importValue([{ id: "c", title: "Existing", folders: [] }]).ok, true);
+  const state = app.getState();
+  const item = studio(3);
+  const options = { scope, projectRevision: state.revision, studios: planEntries([item]), mediaMode: "both", sortOptionIds: ["recent", "top-rated", "most-votes"], filters: minimum === undefined ? {} : { voteCountGte: minimum }, ...(scope === "new-folder" ? { destinationCollectionInternalId: state.project.collections[0].internalId } : {}) };
+  const result = createStudioHierarchyPlan(state.project, options);
+  assert.equal(result.ok, true);
+  assert.equal(app.getState().project, state.project);
+  assert.equal(validateStudioHierarchyPlan({ ...result.plan, configuration: { ...result.plan.configuration, filters: { voteCountGte: 999 } } }, { project: state.project, projectRevision: state.revision }).ok, false);
+  assert.equal(applyStudioHierarchyPlan(app, result.plan).ok, true);
+  assert.equal(app.getState().revision, state.revision + 1);
+  const folders = app.getState().project.collections.flatMap((collection) => collection.folders);
+  assert.equal(folders.length, 1);
+  assert.equal(folders[0].sources.length, 6);
+  for (const source of folders[0].sources) assert.deepEqual(source.editable.filters, options.filters);
+  const exported = JSON.parse(app.stringifyProject().json);
+  for (const folder of exported.flatMap((collection) => collection.folders)) {
+   assert.deepEqual(folder.catalogSources ?? [], []);
+   for (const source of folder.sources) { assert.equal(source.tmdbSourceType, "COMPANY"); assert.deepEqual(source.filters, options.filters); }
+  }
+ });
+}
+test("Studio Preview complete query cache distinguishes absent/zero/100, media, sort and preserved supported filters", async () => {
+ const urls = [];
+ const provider = createTmdbStudioPreviewProvider({ baseUrl: "https://worker.example", fetchImpl: async (input) => { urls.push(new URL(input)); return jsonResponse(previewPayload(new URL(input).pathname.endsWith("/tv") ? "TV" : "MOVIE")); } });
+ for (const mediaType of ["MOVIE", "TV"]) for (const sortOptionId of ["popular", "recent", "top-rated", "most-votes"]) for (const filters of [{}, { voteCountGte: 0 }, { voteCountGte: 100 }, { voteCountGte: 100, withoutCompanies: "174" }]) {
+  const options = { mediaType, sortOptionId, filters };
+  assert.equal((await provider.getStudioPreview(3, options)).ok, true);
+  assert.equal((await provider.getStudioPreview(3, options)).fromCache, true);
+ }
+ assert.equal(urls.length, 32);
+ assert.equal(new Set(urls.map(String)).size, 32);
+ assert.ok(urls.every((url) => url.pathname.startsWith("/builder/discover/") && url.searchParams.get("include_adult") === "false" && url.searchParams.get("with_companies") === "3"));
+ for (const filters of [{ custom: true }, { voteCountGte: -1 }, { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { withoutCompanies: "3" }]) assert.equal((await provider.getStudioPreview(3, { mediaType: "MOVIE", sortOptionId: "popular", filters })).ok, false);
+ assert.equal(urls.length, 32);
+});
+
 test("Studio hierarchy is registered in New Collection and New Folder scopes", () => {
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.STUDIOS, scope), true);

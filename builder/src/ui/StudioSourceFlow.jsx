@@ -1,3 +1,4 @@
+import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceVariantReview } from "./SourceVariantReview.jsx";
 import {
@@ -207,6 +208,8 @@ export function StudioConfigureStep({
 	sortOptionIds = [DEFAULT_STUDIO_SORT_OPTION_ID],
 	onToggle,
 	onSortChange = () => {},
+	advanced = { filters: {} },
+	onAdvancedChange = () => {},
 }) {
 	return (
 		<section className="studio-configure" aria-labelledby="studio-configure-title">
@@ -248,6 +251,7 @@ export function StudioConfigureStep({
 			</fieldset>
 			<StudioDuplicateNotice duplicateReview={duplicateReview} />
 			<StudioSortChoices selectedIds={sortOptionIds} name="studio-configure-sort" onChange={onSortChange} />
+			<StudioAdvancedOptions draft={advanced} onChange={onAdvancedChange} />
 			<StudioElsewhereNotice occurrences={duplicateReview.elsewhere} />
 		</section>
 	);
@@ -287,6 +291,7 @@ export function StudioSourceFlow({
 	const [counts, setCounts] = useState(INITIAL_COUNTS);
 	const [choices, setChoices] = useState([]);
 	const [titleSortOptionIds, setTitleSortOptionIds] = useState([DEFAULT_STUDIO_SORT_OPTION_ID]);
+	const [advanced, setAdvanced] = useState({ filters: {} });
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
 	const titlePreview = useSourceTitlePreview("studio", { studio: previewProvider });
@@ -301,7 +306,7 @@ export function StudioSourceFlow({
 	if (!countCoordinatorRef.current) countCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 
-	const draftResult = selectedStudio ? buildStudioSourceDrafts(selectedStudio, { choices, sortOptionIds: titleSortOptionIds }) : { ok: false, drafts: [], errors: [] };
+	const draftResult = selectedStudio ? buildStudioSourceDrafts(selectedStudio, { choices, sortOptionIds: titleSortOptionIds, filters: advanced.filters }) : { ok: false, drafts: [], errors: [] };
 	const duplicateReview = inspectStudioSourceDuplicates(project, folder?.internalId ?? null, draftResult.ok ? draftResult.drafts : []);
 	const step = navigation.step;
 
@@ -435,7 +440,7 @@ export function StudioSourceFlow({
 								<StudioSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} selectedStudioId={selectedStudio?.id ?? null} onInputChange={handleSearchInputChange} onSortChange={toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={selectStudio} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
-									<StudioConfigureStep studio={selectedStudio} counts={counts} choices={choices} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionIds={titleSortOptionIds} onToggle={toggleChoice} onSortChange={(optionId) => { setTitleSortOptionIds(optionId); setApplyDiagnostic(null); }} />
+									<StudioConfigureStep studio={selectedStudio} counts={counts} choices={choices} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionIds={titleSortOptionIds} onToggle={toggleChoice} onSortChange={(optionId) => { setTitleSortOptionIds(optionId); setApplyDiagnostic(null); }} advanced={advanced} onAdvancedChange={(next) => { setAdvanced(next); setApplyDiagnostic(null); }} />
 									<SourceVariantReview drafts={draftResult.drafts} review={duplicateReview} variantKey={studioSourceVariantKey} />
 									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-studio" disabled={!previewAvailable || isApplying} onClick={(event) => titlePreview.open(draftResult.drafts, { trigger: event.currentTarget, label: selectedStudio.name })}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Choose a valid source configuration to preview.</p> : null}</div>
 								</div>

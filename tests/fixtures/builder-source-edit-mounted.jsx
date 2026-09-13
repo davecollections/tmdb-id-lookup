@@ -1,5 +1,5 @@
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
-import { runNativeSourceVariantsScenario } from "./builder-native-source-variants-mounted.jsx";
+import { runNativeSourceVariantsScenario, runStudioMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
 import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
@@ -8034,6 +8034,7 @@ async function runMountedRegressions() {
 
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
 window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
 window.__builderSourceEditMounted = { status: "running" };
@@ -8072,7 +8073,7 @@ window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-(["discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
+(["studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {
