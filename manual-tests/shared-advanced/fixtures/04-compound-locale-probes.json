@@ -1,0 +1,346 @@
+[
+  {
+    "id": "206-20260913-locale-probes",
+    "title": "206 Compound locale investigation",
+    "viewMode": "TABBED_GRID",
+    "showAllTab": false,
+    "folders": [
+      {
+        "id": "206-20260913-locale-MOVIE-0",
+        "title": "206 MOVIE locale case 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 0",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-1",
+        "title": "206 MOVIE locale case 1",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 1",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "es"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-2",
+        "title": "206 MOVIE locale case 2",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 2",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "pt"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-3",
+        "title": "206 MOVIE locale case 3",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 3",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "es|pt"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-4",
+        "title": "206 MOVIE locale case 4",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 4",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginCountry": "US"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-5",
+        "title": "206 MOVIE locale case 5",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 5",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginCountry": "CA"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-6",
+        "title": "206 MOVIE locale case 6",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 6",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginCountry": "US|CA"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-MOVIE-7",
+        "title": "206 MOVIE locale case 7",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 MOVIE locale case 7",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "MOVIE",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "es|pt",
+              "withOriginCountry": "US|CA"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-0",
+        "title": "206 TV locale case 0",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 0",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-1",
+        "title": "206 TV locale case 1",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 1",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "es"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-2",
+        "title": "206 TV locale case 2",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 2",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "pt"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-3",
+        "title": "206 TV locale case 3",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 3",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "es|pt"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-4",
+        "title": "206 TV locale case 4",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 4",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginCountry": "US"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-5",
+        "title": "206 TV locale case 5",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 5",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginCountry": "CA"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-6",
+        "title": "206 TV locale case 6",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 6",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginCountry": "US|CA"
+            }
+          }
+        ],
+        "catalogSources": []
+      },
+      {
+        "id": "206-20260913-locale-TV-7",
+        "title": "206 TV locale case 7",
+        "tileShape": "POSTER",
+        "sources": [
+          {
+            "provider": "tmdb",
+            "title": "206 TV locale case 7",
+            "tmdbSourceType": "DISCOVER",
+            "mediaType": "TV",
+            "tmdbId": null,
+            "sortBy": "vote_count.desc",
+            "filters": {
+              "year": 2025,
+              "voteCountGte": 100,
+              "withOriginalLanguage": "es|pt",
+              "withOriginCountry": "US|CA"
+            }
+          }
+        ],
+        "catalogSources": []
+      }
+    ]
+  }
+]

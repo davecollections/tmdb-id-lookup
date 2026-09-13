@@ -1,0 +1,47 @@
+# Proposed issue: Shared Studio minimum votes across creation and editing
+
+Prepared for review after the owner accepted investigation [#206](https://github.com/davecollections/tmdb-id-lookup/issues/206). This is an issue draft, not runtime implementation or an opened follow-up issue. Use a dedicated implementation branch from verified updated main after the focused issue/scope is approved; retain the investigation PR as its evidence source.
+
+## Problem and resulting behavior
+
+Native Studio Top rated sources can legitimately return highly rated titles with very few votes. Users need an explicit **Minimum votes** choice, while the current Studio creation and editing surfaces do not expose one and their Preview projections omit imported filters.
+
+Add one optional Minimum votes setting shared by **New Collection, New Folder, Add Source and Edit Source** for native Studios. Leave it unset by default. A selected value such as 100 must describe the same current draft in Preview, exported JSON, exact source comparison and duplicate detection. Keep the existing selected Movie/Series and scalar-sort combinations, grouping and destination behavior.
+
+## Scope and reuse
+
+- Place the control in the existing default-collapsed Advanced options pattern. Reuse Discover numeric controls, field descriptors, validation and errors; extract or extend the existing shared owner only where a second consumer requires it. Avoid a second validator, settings store, Preview dialog, requester or plan pipeline.
+- Accept a nonnegative integer within the evidenced Nuvio int32 range. Unset is not an implicit threshold; explicit zero must not disappear through truthiness checks. Clearing a deliberately edited minimum removes only the owned threshold representation. Do not populate 100, another hidden minimum or a filter object merely by opening Advanced.
+- Preserve native `tmdb` / `COMPANY`, Studio ID and per-source media identity. Use the existing Movie/Series sort contract, including the user's Most voted choice. Do not convert exported sources into `DISCOVER`, add native sources to `catalogSources`, or broaden the defining Studio constraint.
+- Reuse the existing native candidate, variant identity, hierarchy plan, source-editor session and minimal controller patch mechanisms. Title-only/unchanged Save, opening, Cancel and unrelated edits preserve untouched imported fields, unknown keys, aliases, original value types, presentation, IDs and order. Use the existing effective-filter/touched-field rules for a deliberate minimum edit; retain safe handling of conflicting or unsupported imported filters without silently normalizing or dropping them.
+- Apply the shared creation value to the exact selected Studio/media/sort candidates across New Collection, New Folder and Add Source. Edit Source changes one physical source with its existing stale-target, no-op and atomic mutation guards. Keep current append-only/mixed hierarchy placement and ambiguity resolution behavior.
+- Include effective current-draft filters in Preview request projection and complete-query cache identity. Reuse the production Discover requester/provider through a thin native adapter that adds the fixed Studio ID to a detached query. Preview must not mutate source type, stored data or choices, and must not imply unsupported imported fields are being applied.
+- Drive exported `filters.voteCountGte`, candidate review and exact duplicate detection from the same validated effective draft. Different supported thresholds remain different configured variants; functional edits reject exact siblings under existing rules, while unchanged/title-only preservation beside imported duplicates remains possible. Preserve established semantic equivalence rules when deciding how unset and explicit zero compare, and test both stored representations.
+
+Relevant reuse owners are mapped in [the accepted assessment](./SHARED_ADVANCED_ASSESSMENT.md#reuse-map-and-justified-extensions): `AdvancedDiscoverControls`, `advanced-discover.js`, Nuvio field/alias helpers, native source constructors and variant plans, source-editor adapters, current-draft Preview projections, and the shared request coordinator/cache. Inspect their current implementations before coding.
+
+## Accepted evidence and limits
+
+- The supplied `03-native-studio-network-votes.json` is 3,369 bytes, SHA-256 `fa83e9044974ceace4aaec3998acfdd47772c91d1f4ad20aa01f8af7b7055aa0`. Website export `nuvio-collections-profile-4-2026-09-13 (1).json` is 3,794 bytes, SHA-256 `ad1747d0826b85de14d33a315c7a9814f9dc006f8792fb489f36a2ab9be15217`.
+- Owner route: **nuvio.tv Collections import/export, then view in Nuvio Desktop 0.1.23-alpha (23)**, based on Nuvio 0.4.14. All six complete source objects survived website export unchanged, including numeric 0/100 thresholds, `vote_average.desc`, media and native IDs. Only 14 absent presentation fields gained false defaults.
+- Six result screenshots show differing 0/100 results for Studio Movies (COMPANY 174), Studio Series (COMPANY 3) and Networks (213). Studio Series at 100 displays Win or Lose, Dream Productions, Cars on the Road, Dug Days and Pixar Popcorn. This supports filter application in the tested Desktop build.
+- No Desktop import/export occurred. Screenshots do not audit each title's vote count, prove complete Movie/Network result sets or establish other clients' behavior. The displayed version does not identify the installed binary's exact commit. Keep these limits separate from the pinned native source and dated production endpoint evidence.
+- The earlier Most voted website test is separate: it confirms saved Movie/Series fallback rewrites. Builder must continue exporting the selected `vote_count.desc`. The corrected full September comparison has ROWS in all 18 original and exported collections; its withdrawn layout-change finding must not return.
+
+Raw owner exports, screenshots and full-library comparisons remain outside Git in the private [#206 review handoff](https://drive.google.com/drive/folders/1xH2jirnBXZ-KRobbLNZ9-fKWBnrAD37u). Public Git contains only the small authored input recipe and scoped findings. See [Studio/Network observations and provenance](./SHARED_ADVANCED_ASSESSMENT.md#owner-studionetwork-evidence---13-september-2026).
+
+## Worker and production boundary
+
+**No Worker change is expected.** Existing `/builder/discover/movie` and `/builder/discover/tv` routes were exercised with native-entity constraints and minimum votes through the production integration. Reuse those bounded routes; keep legacy native-family routes, CORS, CSP and hosts unchanged. If implementation reveals a missing contract, report it for separate scope approval rather than broadening the Worker. Worker deployment remains the separate owner gate.
+
+## Acceptance
+
+- Verify unset, explicit zero, 100, clearing and invalid/out-of-range values in all four surfaces, for Movies, Series and selected Both/sort combinations. No automatic title request comes from opening Advanced or merely changing its value.
+- Test current-draft Preview after changing, clearing, closing and reopening the minimum: the effective query, response cache key, displayed sample, planned/exported source and duplicate classification agree. Keep the existing partial-sample/count wording and failure/Retry behavior.
+- Cover untouched imported fields, numeric/string/alias edge cases, unrelated filters, unknown-field Preview safety, title-only and unchanged saves, Cancel, stale sessions, exact duplicate rejection, differently configured variants and atomic guided apply. Keep tests in existing pure and mounted suites appropriate to those behaviors.
+- Exercise the approved live production integration for external-service mounted/owner-review cases. Never substitute fabricated titles, counts, artwork or responses. Test mobile widths 360, 384, 393, 402 and 412, desktop and short-height cases with existing focus, one-scroll-owner and selection/notice conventions.
+- Run `scripts/check.cmd`, relevant focused tests, `git diff --check` and status review. Obtain owner review of the implemented behavior before publication. The supplied compatibility evidence is sufficient to start this bounded Studio slice; direct Desktop round-trip, per-title vote audit and wider client testing are not added as pre-start gates.
+
+## Recorded later work
+
+Network/Streaming expansion and shared Genre/Decade consolidation remain later stages, followed by additional supported Advanced fields with family-defining constraints intact. Native People resolvers currently ignore filters; do not expose an ineffective control or convert People into Discover. Compound language/country expressions remain preserved but blocked for structured editing pending field/media semantics and a separately scoped, owner-deployed Worker change. Mixed AND/OR grouping, runtime fields without a Nuvio contract, MDBList, v1 changes and unrelated cleanup are outside this issue.
