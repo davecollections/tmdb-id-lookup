@@ -18,12 +18,14 @@ import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx"
 // Real production-path providers only. Shared caches survive responsive cases.
 const requests = [];
 const warnerResponses = new Map();
+const studioResponses = new Map();
 let responseGate = null;
 async function liveFetch(input, init) {
 	const url = new URL(input instanceof Request ? input.url : input);
 	requests.push(url.pathname + url.search);
 	const gate = responseGate?.matches(url) ? responseGate : null;
 	const response = await fetch(input, init);
+	if (url.searchParams.has("with_companies") && url.searchParams.has("sort_by") && response.ok) studioResponses.set(url.pathname + url.search, await response.clone().json());
 	if (url.searchParams.get("with_companies") === "174" && url.searchParams.has("sort_by")) warnerResponses.set(url.pathname + url.search, await response.clone().json());
 	if (gate) { gate.received = true; await gate.promise; }
 	return response;
@@ -54,6 +56,150 @@ async function entity(family, id) {
 	const value = family === "people" ? result.data : result.data.results.find((entry) => entry.id === id);
 	if (!value) throw new Error("Live catalogue identity missing: " + family + " " + id);
 	return value;
+}
+
+export async function runStudioMinimumVotesScenario(helpers, { scope, mediaType = "MOVIE" }) {
+ const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition: wait } = helpers;
+ const check = (value, message) => { if (!value) throw new Error(`Studio minimum votes ${scope} ${innerWidth}: ${message}`); return value; };
+ const studio = await entity("studio", 3), app = createController(), editing = scope === "edit", guided = scope.startsWith("new-");
+ const seed = { ...buildStudioSourceDrafts(studio, { choices: [mediaType === "TV" ? "studio-series" : "studio-movies"], sortOptionIds: ["top-rated"] }).drafts[0].editable, id: "preserved-studio", filters: { voteCountGte: 0, "vote_count.gte": "0", ...(editing ? { withoutCompanies: "174" } : {}) }, ownerExtra: { keep: [false, 0] } };
+ const folder = importSources(app, editing || scope === "new-folder" ? [seed] : []);
+ app.selectNode(folder.internalId);
+ const initial = app.getState(), before = serializedValue(app);
+ let applied, applyCalls = 0, cancels = 0;
+ const opened = editing ? createSourceEditSession(initial.project, folder.sources[0].internalId) : null;
+ const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
+ const evidence = { scope, width: innerWidth, height: innerHeight, mediaType, previews: [] };
+ const apply = (payload) => {
+  applyCalls += 1;
+  applied = editing ? saveSourceEdit(app, opened.session, payload) : guided ? applyStudioHierarchyPlan(app, payload) : createStudioSourceBundle(app, { ...payload, folderInternalId: folder.internalId });
+  return applied;
+ };
+ const titleRequests = () => requests.filter((url) => url.includes("sort_by=")).length;
+ const findButton = (parent, label) => [...parent.querySelectorAll("button")].find((button) => button.textContent.trim() === label);
+ try {
+  await act(async () => {
+   root.render(editing ? createElement(SourceEditorDialog, { ...providers, session: opened.session, initialDraft: opened.draft, onSave: apply, onCancel() { cancels++; } })
+    : guided ? createElement(CreationDialog, { ...providers, scope, initialOptionId: "studios", project: initial.project, projectRevision: initial.revision, destinationCollectionInternalId: initial.project.collections[0].internalId, destinationCollectionTitle: "Collection", onApplyStudios: apply, onCancel() { cancels++; } })
+     : createElement(StudioSourceFlow, { catalogueProvider: studioCatalogueProvider, countProvider: studioCountProvider, previewProvider: studioPreviewProvider, project: initial.project, folder, onApply: apply, onBack() {}, onCancel() { cancels++; } }));
+   await settle();
+  });
+  const dialog = check(document.querySelector(editing ? '[data-source-edit-modal="true"]' : guided ? '[data-creation-dialog="true"]' : '[data-add-source-modal="true"]'), "dialog missing");
+  if (!editing) {
+   check(document.activeElement?.type !== "search", "browse autofocus");
+   await act(async () => { setInputValue(dialog.querySelector('input[type="search"]'), "3"); await settle(); });
+   await click(await wait(() => dialog.querySelector('[data-tmdb-studio-result="3"]'), { label: "Studio catalogue", timeoutMs: 15000 }));
+   if (guided) await click(dialog.querySelector('button[type="submit"]'));
+   await wait(() => dialog.querySelector('[data-studio-advanced]'), { label: "Studio Configure" });
+   if (guided) await click(dialog.querySelector('input[name="studio-hierarchy-media"][value="both"]'));
+   else for (const input of dialog.querySelectorAll('.studio-source-choices input')) if (!input.checked) await click(input);
+   const sorts = [...dialog.querySelectorAll("fieldset")].find((field) => field.querySelector("legend")?.textContent === "Sources to create");
+   for (const input of sorts.querySelectorAll("input")) if (input.checked !== ["top-rated", "most-votes"].includes(input.value)) await click(input);
+  }
+  const advanced = dialog.querySelector('[data-studio-advanced]');
+  check(advanced && !advanced.open, "Advanced default is expanded");
+  const startRequests = titleRequests();
+  await click(advanced.querySelector("summary"));
+  const input = advanced.querySelector('#discover-field-voteCountGte');
+  check(advanced.querySelector('#discover-help-voteCountGte')?.textContent === "Set the minimum number of TMDB votes a title must have. Higher values exclude titles with fewer votes.", "minimum helper copy differs");
+  check(input.value === (editing ? "0" : ""), "minimum default changed");
+  check(titleRequests() === startRequests && serializedValue(app) === before, "opening Advanced changed data or requested titles");
+  const previewButton = () => dialog.querySelector(editing ? '[data-action="preview-source-edit"]' : guided ? '.studio-configure-row-actions button' : '[data-action="preview-add-studio"]');
+  async function change(value) {
+   const count = titleRequests();
+   await act(async () => { setInputValue(input, value); await settle(); });
+   check(titleRequests() === count, "field change requested titles");
+  }
+  async function preview(minimum, allVariants = false) {
+   const count = titleRequests(), trigger = previewButton(), scroll = dialog.querySelector('.add-source-scroll, .source-edit-scroll');
+   trigger.focus({ preventScroll: true });
+   const scrollTop = scroll?.scrollTop;
+   await click(trigger);
+   const modal = document.querySelector('.source-edit-preview-modal');
+   check(modal, "Preview missing");
+   const tabs = (group) => [...modal.querySelectorAll(`[role="tablist"][aria-label="Preview ${group}"] [role="tab"]`)];
+   check(tabs("media").length === (editing ? 0 : 2), "wrong Preview media options");
+   check(tabs("show").length === (editing ? 0 : 2), "wrong Preview sort options");
+   for (const media of allVariants && !editing ? ["MOVIE", "TV"] : [editing ? mediaType : "MOVIE"]) for (const sortBy of allVariants && !editing ? ["vote_average.desc", "vote_count.desc"] : ["vote_average.desc"]) {
+    const mediaTab = tabs("media").find((tab) => tab.textContent === (media === "TV" ? "Series" : "Movies"));
+    if (mediaTab && mediaTab.getAttribute("aria-selected") !== "true") await click(mediaTab);
+    const sortTab = tabs("show").find((tab) => tab.textContent === (sortBy === "vote_count.desc" ? "Most voted" : "Top rated"));
+    if (sortTab && sortTab.getAttribute("aria-selected") !== "true") await click(sortTab);
+    await wait(() => {
+     const error = modal.querySelector('[role="alert"]');
+     if (error) throw new Error("Live Studio Preview failed: " + error.textContent);
+     return !modal.querySelector('.studio-preview-state');
+    }, { label: "Live Studio filtered Preview", timeoutMs: 20000 });
+    const response = [...studioResponses].find(([path]) => {
+     const url = new URL(path, location.href);
+     return url.pathname === '/builder/discover/' + (media === "TV" ? "tv" : "movie") && url.searchParams.get('with_companies') === "3" && url.searchParams.get('sort_by') === sortBy && url.searchParams.get('vote_count.gte') === (minimum === undefined ? null : String(minimum)) && url.searchParams.get('without_companies') === (editing ? "174" : null);
+    });
+    check(response, "no production response for current draft");
+    const grid = modal.querySelector('.source-edit-preview-grid');
+    check(grid, "real Preview grid missing");
+    const expected = response[1].results.filter((row) => row.poster_path).slice(0, 10).map((row) => row.poster_path);
+    const actual = [...grid.querySelectorAll('img')].map((img) => new URL(img.src).pathname.replace(/^\/t\/p\/w\d+/, ''));
+    check(JSON.stringify(actual) === JSON.stringify(expected), "displayed posters differ from real current response");
+    await wait(() => [...grid.querySelectorAll('img')].every((img) => img.complete && img.naturalWidth > 0), { label: "real Studio image CDN", timeoutMs: 20000 });
+    evidence.previews.push({ query: response[0], resultsMatch: true, geometry: titlePreviewGeometry(modal, grid) });
+   }
+   await click(modal.querySelector('header button'));
+   check(document.activeElement === trigger, "Preview focus not restored");
+   check(scroll?.scrollTop === scrollTop && window.scrollY === 0, "Preview moved outer scroll owner");
+   check(serializedValue(app) === before, "Preview saved data");
+   return titleRequests() - count;
+  }
+  await preview(editing ? 0 : undefined);
+  for (const invalid of ["-1", "1.5", "abc", "2147483648"]) {
+   await change(invalid);
+   check(input.getAttribute('aria-invalid') === "true" && previewButton().disabled, "invalid minimum previewable");
+   if (!editing) check(dialog.querySelector('button[type="submit"]').disabled, "invalid minimum can create");
+  }
+  await change("0"); await preview(0);
+  await change("100"); await preview(100, true);
+  await change("");
+  await click(advanced.querySelector('summary')); await click(advanced.querySelector('summary'));
+  check(input.value === "", "closing Advanced revived threshold");
+  await preview(undefined);
+  check(await preview(undefined) === 0, "reopen missed complete-query cache");
+  await change("100");
+  check(!dialog.querySelector('[data-studio-minimum-votes-summary]'), "configuration repeats the minimum beneath Advanced");
+  check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "horizontal overflow");
+  await click(dialog.querySelector('button[type="submit"]'));
+  if (guided && !applied) {
+   await wait(() => dialog.querySelector('.studio-hierarchy-appearance'), { label: "Studio Appearance", timeoutMs: 20000 });
+   check(dialog.querySelector('[data-studio-minimum-votes-summary]')?.textContent === "Minimum votes: 100", "plan review lost threshold");
+   await click(dialog.querySelector('button[type="submit"]'));
+  }
+  check(applied?.ok && applyCalls === 1 && app.getState().revision === initial.revision + 1, "apply was not one atomic revision");
+  const output = JSON.parse(serializedValue(app)), outputSources = output.flatMap((collection) => collection.folders.flatMap((folder) => folder.sources));
+  const added = editing ? outputSources : outputSources.filter((source) => source.id !== seed.id);
+  check(added.length === (editing ? 1 : 4), "incorrect media/sort source count");
+  check(added.every((source) => source.provider === "tmdb" && source.tmdbSourceType === "COMPANY" && source.tmdbId === 3 && source.filters.voteCountGte === 100), "export differs from Preview/Review");
+  evidence.atomic = true;
+  await act(async () => { root.unmount(); await settle(); }); host.remove();
+  // Opening, Cancel, unchanged and title-only editing retain imported fields exactly.
+  for (const action of ["cancel", "unchanged", "title"]) {
+   const preservationApp = createController(); const preservedFolder = importSources(preservationApp, [{ ...seed, filters: { ...seed.filters, ownerFilter: { keep: true } } }]);
+   const saved = serializedValue(preservationApp), session = createSourceEditSession(preservationApp.getState().project, preservedFolder.sources[0].internalId);
+   const node = document.createElement('div'); document.body.append(node); const editRoot = createRoot(node); let result;
+   try {
+    await act(async () => { editRoot.render(createElement(SourceEditorDialog, { ...providers, session: session.session, initialDraft: session.draft, onSave: (draft) => { result = saveSourceEdit(preservationApp, session.session, draft); return result; }, onCancel() {} })); await settle(); });
+    const edit = document.querySelector('[data-source-edit-modal]');
+    await click(edit.querySelector('[data-studio-advanced] summary'));
+    check(edit.querySelector('[data-action="preview-source-edit"]').disabled, "unknown imported filter Preview not blocked");
+    if (action === "cancel") await click(findButton(edit, "Cancel"));
+    else {
+     if (action === "title") await act(async () => { setInputValue(edit.querySelector('[data-source-edit-field="title"]'), 'Renamed Studio'); await settle(); });
+     await click(edit.querySelector('button[type="submit"]')); check(result?.ok, "preservation Save failed");
+    }
+    const expected = JSON.parse(saved); if (action === "title") expected[0].folders[0].sources[0].title = 'Renamed Studio';
+    check(JSON.stringify(JSON.parse(serializedValue(preservationApp))) === JSON.stringify(expected), action + " altered imported settings");
+   } finally { await act(async () => { editRoot.unmount(); await settle(); }); node.remove(); }
+  }
+  evidence.preservation = true;
+  return evidence;
+ } finally { if (host.isConnected) { await act(async () => { root.unmount(); await settle(); }); host.remove(); } }
 }
 
 export async function runNativeSourceVariantsScenario(helpers, view) {

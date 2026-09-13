@@ -1,3 +1,4 @@
+import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
 import {
 	useEffect,
 	useLayoutEffect,
@@ -287,6 +288,7 @@ function studioCountText(count, mediaType) {
 export function StudioEditorFields({
 	draft,
 	studio,
+	onAdvancedChange,
 	countState,
 	sortRef,
 	onSortChange,
@@ -314,6 +316,7 @@ export function StudioEditorFields({
 			</div>
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<StudioSortChoices selectedId={selectedSortId} name="studio-edit-sort" firstInputRef={sortRef} onChange={(optionId) => onSortChange(studioSortValue(optionId, mediaType), optionId)} />
+			<StudioAdvancedOptions draft={draft} onChange={onAdvancedChange} />
 		</section>
 	);
 }
@@ -857,7 +860,7 @@ export function SourceEditorDialog({
 							{stage === "picker"
 								? "Choose a replacement TMDB movie franchise."
 								: session.adapterId === STUDIO_SOURCE_EDITOR_ID
-									? "Update this Studio source name and title order."
+									? "Update this Studio source name, title order and Minimum votes."
 								: session.adapterId === NETWORK_SOURCE_EDITOR_ID
 										? "Update this Network Series source name and title order."
 										: session.adapterId === STREAMING_SOURCE_EDITOR_ID
@@ -968,6 +971,7 @@ export function SourceEditorDialog({
 										<StudioEditorFields
 											draft={draft}
 											studio={studioIdentity}
+											onAdvancedChange={(next) => { setDraft(next); setFailure(null); }}
 											countState={studioCountState}
 											sortRef={studioSortRef}
 											onSortChange={(sortBy, sortOptionId) => {

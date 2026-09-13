@@ -57,11 +57,12 @@ export function removeUnavailableDiscoverGenres(draft) {
  }
  return { ...draft, filters };
 }
-export function validateAdvancedFilters(filters, mediaType, { allowUnknown = false } = {}) {
+export function validateAdvancedFilters(filters, mediaType, { allowUnknown = false, fields = null } = {}) {
  const errors = [], output = {};
  for (const [field, value] of Object.entries(filters ?? {})) {
   if (!meaningful(value)) continue;
   const descriptor = DISCOVER_FILTER_DESCRIPTORS.find((d) => d.field === field);
+  if (fields && !fields.includes(field)) { errors.push(error(field, "This filter cannot be edited here.")); continue; }
   if (!descriptor) { if (!allowUnknown) errors.push(error(field, "An imported filter cannot be represented by this editor.")); continue; }
   const label = DISCOVER_FIELD_LABELS[field];
   if (!descriptor.media[mediaType]?.applicable) { errors.push(error(field, label + " applies to Series only. Choose Series or remove this filter.")); continue; }
@@ -92,6 +93,11 @@ export function validateAdvancedFilters(filters, mediaType, { allowUnknown = fal
  if (providers && !output.watchRegion) errors.push(error("watchRegion", "Choose a watch region for providers."));
  if (!providers && output.watchRegion) errors.push(error("watchRegion", "Choose a provider or clear the watch region."));
  return { ok: errors.length === 0, filters: output, errors };
+}
+// Keep touched-field tracking identical in the composer and focused family editors.
+export function touchDiscoverFilters(previous, next) {
+ const changed = [...new Set([...Object.keys(previous.filters), ...Object.keys(next.filters)])].filter((key) => JSON.stringify(previous.filters[key]) !== JSON.stringify(next.filters[key]));
+ return { ...next, touchedFilters: [...new Set([...(previous.touchedFilters ?? []), ...changed])] };
 }
 // Both keeps the original selections. Only verified media-specific choices are
 // omitted from a generated Source; malformed expressions and unknown IDs survive

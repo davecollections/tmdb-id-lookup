@@ -33,7 +33,7 @@ const OPTION_KEYS = new Set([
 	"folderDestinations",
 	"scope", "projectRevision", "destinationCollectionInternalId", "collectionTitle",
 	"hideCollectionTitle", "viewMode", "showAllTab", "pinToTop", "folderTitleVisibility",
-	"mediaMode", "sortOptionId", "sortOptionIds", "studios",
+	"mediaMode", "sortOptionId", "sortOptionIds", "studios", "filters",
 ]);
 const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
@@ -68,7 +68,7 @@ function validArtwork(artwork, studioId) {
 	return typeof editable.coverImageUrl === "string" && /^https:\/\//.test(editable.coverImageUrl);
 }
 
-function normalizeStudioEntry(entry, index, { choices, sortOptionIds }, errors) {
+function normalizeStudioEntry(entry, index, { choices, sortOptionIds, filters }, errors) {
 	const studio = entry?.studio;
 	const name = canonicalText(studio?.name);
 	if (!Number.isSafeInteger(studio?.id) || studio.id < 1 || !name || studio.name !== name) {
@@ -82,6 +82,7 @@ function normalizeStudioEntry(entry, index, { choices, sortOptionIds }, errors) 
 	const sourceResult = buildStudioSourceDrafts(studio, {
 		choices,
 		sortOptionIds,
+		filters,
 		titleMode: STUDIO_SOURCE_TITLE_MODES.HIERARCHY,
 	});
 	if (!sourceResult.ok) {
@@ -91,7 +92,7 @@ function normalizeStudioEntry(entry, index, { choices, sortOptionIds }, errors) 
 	return Object.freeze({
 		studio: Object.freeze({ ...studio }),
 		artwork: Object.freeze({ ...entry.artwork, folderEditable: Object.freeze({ ...entry.artwork.folderEditable }) }),
-		drafts: Object.freeze(sourceResult.drafts.map((draft) => Object.freeze({ category: draft.category, editable: Object.freeze({ ...draft.editable, filters: Object.freeze({}) }) }))),
+		drafts: Object.freeze(sourceResult.drafts.map((draft) => Object.freeze({ category: draft.category, editable: Object.freeze({ ...draft.editable, filters: Object.freeze({ ...draft.editable.filters }) }) }))),
 	});
 }
 
@@ -131,7 +132,7 @@ export function createStudioHierarchyPlan(project, options) {
 	if (sortOptionIds === null) errors.push(diagnostic("INVALID_STUDIO_PLAN_SORT", "$studioPlan.sortOptionId", "Choose at least one option."));
 	if (!Array.isArray(options.studios) || options.studios.length < 1) errors.push(diagnostic("STUDIO_PLAN_SELECTION_REQUIRED", "$studioPlan.studios", "Choose at least one Studio."));
 	const entries = Array.isArray(options.studios) && mediaMode !== null
-		? options.studios.map((entry, index) => normalizeStudioEntry(entry, index, { choices: mediaMode.choices, sortOptionIds }, errors)).filter(Boolean)
+		? options.studios.map((entry, index) => normalizeStudioEntry(entry, index, { choices: mediaMode.choices, sortOptionIds, filters: options.filters }, errors)).filter(Boolean)
 		: [];
 	if (new Set(entries.map((entry) => entry.studio.id)).size !== entries.length) errors.push(diagnostic("DUPLICATE_STUDIO_PLAN_SELECTION", "$studioPlan.studios", "Each Studio may appear only once."));
 	const folderTitleVisibility = options.folderTitleVisibility ?? DEFAULT_STUDIO_FOLDER_TITLE_VISIBILITY;
@@ -193,7 +194,7 @@ export function createStudioHierarchyPlan(project, options) {
 	const plan = Object.freeze({
 		planType: STUDIO_HIERARCHY_PLAN_TYPE,
 		captured: Object.freeze({ projectInternalId: project.internalId, projectRevision: options.projectRevision }),
-		configuration: Object.freeze({ folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }), scope, collectionTitle, hideCollectionTitle, viewMode, showAllTab, pinToTop, folderTitleVisibility, folderTileShape: DEFAULT_STUDIO_FOLDER_TILE_SHAPE, mediaMode: mediaMode.id, sortOptionIds, studios: Object.freeze(entries.map((entry) => Object.freeze({ studio: entry.studio, artwork: entry.artwork }))) }),
+		configuration: Object.freeze({ filters: entries[0].drafts[0].editable.filters, folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }), scope, collectionTitle, hideCollectionTitle, viewMode, showAllTab, pinToTop, folderTitleVisibility, folderTileShape: DEFAULT_STUDIO_FOLDER_TILE_SHAPE, mediaMode: mediaMode.id, sortOptionIds, studios: Object.freeze(entries.map((entry) => Object.freeze({ studio: entry.studio, artwork: entry.artwork }))) }),
 		destination,
 		collections,
 		folders,
@@ -220,6 +221,7 @@ function rebuildOptions(plan) {
 		folderTitleVisibility: plan.configuration.folderTitleVisibility,
 		mediaMode: plan.configuration.mediaMode,
 		sortOptionIds: plan.configuration.sortOptionIds,
+		filters: plan.configuration.filters,
 		studios: plan.configuration.studios,
 	};
 }

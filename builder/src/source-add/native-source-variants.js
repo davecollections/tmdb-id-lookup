@@ -6,8 +6,8 @@ const identityFields = new Set(["id", "title", "provider", "tmdbSourceType", "tm
 const inactiveCompatibilityFields = new Set(["addonId", "catalogId", "type", "genre", "sortHow", "traktListId"]);
 
 // Structural identity remains family-owned. This comparison view never changes
-// persisted data, and deliberately does not apply Discover filter normalization.
-export function nativeSourceVariantKey(source, structuralIdentity, sortOptions) {
+// persisted data; supported filter equivalence is a bounded family-owned adapter.
+export function nativeSourceVariantKey(source, structuralIdentity, sortOptions, compareFilters = (filters) => filters) {
 	const effective = resolveEffectiveDiscoverSource({ ...source, nodeType: "source" });
 	if (!effective.ok) return null;
 	const value = effective.value;
@@ -27,7 +27,7 @@ export function nativeSourceVariantKey(source, structuralIdentity, sortOptions) 
 	const sort = supportedSort ? supportedSort.id : { importedSort: sortBy };
 	const filters = Object.hasOwn(value, "filters") ? value.filters : {};
 	if (filters === null || typeof filters !== "object" || Array.isArray(filters)) return null;
-	const comparisonFilters = Object.fromEntries(Object.entries(filters)
+	const comparisonFilters = Object.fromEntries(Object.entries(compareFilters(filters, value))
 		.filter(([field, entry]) => !(knownFilters.has(field) && entry === null)));
 	const extras = Object.fromEntries(Object.entries(value)
 		.filter(([field, entry]) => !identityFields.has(field) && !(inactiveCompatibilityFields.has(field) && entry === null)));

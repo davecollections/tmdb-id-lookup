@@ -35,8 +35,51 @@ import {
 	validateStudioSourceSelection,
 } from "../builder/src/source-add/index.js";
 import { serializeNuvioProject } from "../builder/src/serialize/index.js";
+import { studioSourceVariantKey } from "../builder/src/source-add/studio-source.js";
+import { sourceTitlePreviewRequest } from "../builder/src/source-add/source-title-preview.js";
+import { studioPreviewQuery } from "../builder/src/source-add/studio-advanced.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+for (const minimum of [undefined, "", 0, "0", 100, "100", 2147483647]) {
+ test(`Studio minimum ${JSON.stringify(minimum)} uses one canonical draft for every media/sort, Preview and comparison`, () => {
+  const filters = minimum === undefined ? {} : { voteCountGte: minimum };
+  const built = buildStudioSourceDrafts(studio(), { choices: ["studio-movies", "studio-series"], sortOptionIds: STUDIO_SORT_OPTIONS.map((option) => option.id), filters });
+  assert.equal(built.ok, true);
+  assert.equal(built.drafts.length, 8);
+  const expected = minimum === undefined || minimum === "" ? {} : { voteCountGte: Number(minimum) };
+  for (const draft of built.drafts) {
+   assert.deepEqual(draft.editable.filters, expected);
+   assert.equal(draft.editable.tmdbSourceType, "COMPANY");
+   assert.equal(draft.editable.tmdbId, 3);
+   const request = sourceTitlePreviewRequest("studio", draft);
+   assert.deepEqual(request.filters, expected);
+   const query = studioPreviewQuery(request.tmdbId, request);
+   assert.equal(query.queryParameters.with_companies, "3");
+   assert.equal(query.queryParameters["vote_count.gte"], expected.voteCountGte === undefined ? undefined : String(expected.voteCountGte));
+   assert.equal(query.queryParameters.sort_by, draft.editable.sortBy);
+  }
+ });
+}
+for (const minimum of [-1, "-1", 1.2, "1e2", "abc", " 100 ", true, 2147483648]) {
+ test(`Studio rejects invalid minimum ${JSON.stringify(minimum)} without creating candidates`, () => {
+  const result = buildStudioSourceDrafts(studio(), { choices: ["studio-movies", "studio-series"], filters: { voteCountGte: minimum } });
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.drafts, []);
+  assert.equal(result.errors[0].path, "$discover.voteCountGte");
+ });
+}
+test("Studio exact variants preserve unset versus zero and safely compare numeric/string/matching mirror thresholds", () => {
+ const draft = buildStudioSourceDrafts(studio(), { choices: ["studio-movies"] }).drafts[0];
+ const key = (filters) => studioSourceVariantKey({ ...draft, editable: { ...draft.editable, filters: Object.fromEntries(Object.entries(filters).filter(([key]) => key === "voteCountGte")) }, rawImported: { ...draft.editable, filters } });
+ assert.notEqual(key({}), key({ voteCountGte: 0 }));
+ assert.notEqual(key({ voteCountGte: 0 }), key({ voteCountGte: 100 }));
+ assert.equal(key({ voteCountGte: 100 }), key({ voteCountGte: "100" }));
+ assert.equal(key({ voteCountGte: 100 }), key({ voteCountGte: 100, "vote_count.gte": "100" }));
+ assert.notEqual(key({}), key({ "vote_count.gte": 100 }));
+ assert.notEqual(key({ voteCountGte: 100 }), key({ voteCountGte: 100, "vote_count.gte": 0 }));
+ assert.notEqual(key({ voteCountGte: 100 }), key({ voteCountGte: 100, custom: false }));
+});
 
 function countingIdFactory(prefix = "builder") {
 	let count = 0;

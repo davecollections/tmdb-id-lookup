@@ -84,6 +84,7 @@ export function overlayFilters(output, editable, rawImported) {
 	}
 
 	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "DISCOVER") synchronizeDiscoverMirrors(rawFilters, rawImported, editable);
+	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "COMPANY") synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: ["voteCountGte"], sort: false });
 	setOwn(output, "filters", rawFilters);
 	return output;
 }

@@ -67,6 +67,7 @@ async function runMountedPage() {
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
 	const roundTripOnly = process.env.TMDB_SOURCE_ROUND_TRIP_ONLY === "1";
 	const listEditOnly = process.env.TMDB_LIST_EDIT_ONLY === "1";
+	const studioMinimumVotesOnly = process.env.TMDB_STUDIO_MINIMUM_VOTES_ONLY === "1";
 	const discoverPreviewOnly = process.env.TMDB_DISCOVER_PREVIEW_ONLY === "1";
 	const wordingOnly = process.env.TMDB_SOURCE_SORT_WORDING_ONLY === "1";
 	const sourceLevelOnly = process.env.TMDB_NATIVE_SOURCE_LEVEL_ONLY === "1";
@@ -193,7 +194,7 @@ async function runMountedPage() {
 		}
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -203,6 +204,20 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+                if (studioMinimumVotesOnly || (!discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+                    result.results.studioMinimumVotesCases = [];
+                    const views = studioMinimumVotesOnly ? [[360,800],[384,800],[393,852],[402,800],[412,800],[1280,900],[393,400]] : [[393,852]];
+                    for (const [width,height] of views) {
+                        await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
+                        for (const scope of ["new-collection", "new-folder", "add", "edit"]) {
+                            const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runStudioMinimumVotesScenario(" + JSON.stringify({ scope, mediaType: width === 1280 || height === 400 ? "TV" : "MOVIE" }) + ")", awaitPromise: true, returnByValue: true });
+                            if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+                            result.results.studioMinimumVotesCases.push(checked.result.value);
+                        }
+                    }
+                    if (studioMinimumVotesOnly) return result.results;
+                }
+
 				if (discoverPreviewOnly || (!listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
 					result.results.discoverPreviewCases = [];
 					for (const [width, height] of [[360, 800], [384, 800], [393, 852], [402, 800], [412, 800], [1280, 900]]) {
@@ -2897,9 +2912,10 @@ test("mounted ordinary Add Source Preview reaches exact live parity for six newl
 
 		assert.deepEqual(families.studio.selectorGroups, [{ label: "Media", options: ["Movies", "Series"], selected: "Movies" }]);
 		assert.deepEqual([families.studio.requestCountBeforeOpen, families.studio.requestCountAfterInitial, families.studio.switched.requestCount, families.studio.requestCountFinal], [0, 1, 2, 2]);
-		assert.equal(families.studio.requests[0].startsWith("/3/discover/movie?"), true);
+		assert.equal(families.studio.requests[0].startsWith("/builder/discover/movie?"), true);
 		assert.equal(new URLSearchParams(families.studio.requests[0].split("?")[1]).get("with_companies"), "3");
-		assert.equal(families.studio.requests[1].startsWith("/3/discover/tv?"), true);
+		assert.equal(families.studio.requests[1].startsWith("/builder/discover/tv?"), true);
+		assert.ok(families.studio.requests.every((request) => new URLSearchParams(request.split("?")[1]).get("include_adult") === "false"));
 
 		assert.deepEqual(families.network.selectorGroups, []);
 		assert.deepEqual([families.network.requestCountBeforeOpen, families.network.requestCountAfterInitial, families.network.requestCountFinal], [0, 1, 1]);
@@ -3588,3 +3604,17 @@ test("mounted #198 wording stays scoped to creation, Preview and single-Source e
 	assert.deepEqual(mountedResults.wording.errors, []);
 	console.log("SOURCE_WORDING_MOUNTED " + JSON.stringify(mountedResults.wording));
 });
+
+ test("mounted Studio minimum votes follows the current native draft across all four entry points", () => {
+  assert.equal(mountedResults.studioMinimumVotesCases.length, process.env.TMDB_STUDIO_MINIMUM_VOTES_ONLY === "1" ? 28 : 4);
+  for (const result of mountedResults.studioMinimumVotesCases) {
+   assert.equal(result.atomic, true);
+   assert.equal(result.preservation, true);
+   for (const preview of result.previews) {
+    assert.equal(preview.resultsMatch, true);
+    for (const key of ["withinViewport", "closeReachable", "gridNoHorizontalScroll", "pageNoHorizontalOverflow", "bodyLocked"]) assert.equal(preview.geometry[key], true, result.width + " " + result.scope + " " + key);
+    assert.ok(preview.geometry.activeScrollOwnerCount <= 1);
+   }
+  }
+  console.log("STUDIO_MINIMUM_VOTES_LIVE " + JSON.stringify(mountedResults.studioMinimumVotesCases));
+ });

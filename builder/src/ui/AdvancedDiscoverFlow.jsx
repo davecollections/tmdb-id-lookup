@@ -1,3 +1,4 @@
+import { touchDiscoverFilters } from "../source-add/advanced-discover.js";
 import { DiscoverHelpDialog } from "./DiscoverHelpDialog.jsx";
 import { discoverEditorPreviewBlocked } from "../source-edit/advanced-discover-editor.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -133,8 +134,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  function change(next) {
   if (editing) {
    if (next.mediaMode !== draft.mediaMode) return;
-   const changed = [...new Set([...Object.keys(draft.filters), ...Object.keys(next.filters)])].filter((key) => JSON.stringify(draft.filters[key]) !== JSON.stringify(next.filters[key]));
-   next = { ...next, touchedFilters: [...new Set([...draft.touchedFilters, ...changed])], sortTouched: draft.sortTouched || JSON.stringify(next.sortOptionIds) !== JSON.stringify(draft.sortOptionIds) };
+   next = { ...touchDiscoverFilters(draft, next), sortTouched: draft.sortTouched || JSON.stringify(next.sortOptionIds) !== JSON.stringify(draft.sortOptionIds) };
   }
   if (next.mediaMode !== draft.mediaMode || next.filters.watchRegion !== draft.filters.watchRegion) next = changeDiscoverContext(draft, next);
   setDraft(next); setErrors([]);

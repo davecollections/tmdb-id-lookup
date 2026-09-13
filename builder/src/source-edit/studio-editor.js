@@ -1,3 +1,6 @@
+import { inspectStudioMinimumVotes, STUDIO_ADVANCED_FIELDS, validateStudioAdvancedFilters } from "../source-add/studio-advanced.js";
+import { resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
+import { patchTouchedDiscoverFilters } from "../nuvio/discover-imported-filters.js";
 import {
 	DEFAULT_STUDIO_MOVIE_SORT,
 	isSupportedStudioSort,
@@ -15,7 +18,11 @@ import {
 export const STUDIO_SOURCE_EDITOR_ID = "studio";
 
 function readInitialState(source) {
+	const minimum = inspectStudioMinimumVotes(source);
 	return Object.freeze({
+		filters: minimum.filters,
+		touchedFilters: [],
+		minimumVotesEditable: minimum.editable,
 		title: typeof source.editable.title === "string" ? source.editable.title : "",
 		titleTouched: false,
 		studioName: canonicalText(source.editable.title) || "Studio",
@@ -30,6 +37,12 @@ function readInitialState(source) {
 
 function validateDraft({ draft, source }) {
 	const errors = [...validateTouchedSourceTitle(draft)];
+	const touched = draft?.touchedFilters ?? [];
+	if (!Array.isArray(touched) || touched.some((key) => !STUDIO_ADVANCED_FIELDS.includes(key))) errors.push(diagnostic("SOURCE_EDIT_STUDIO_FILTER_FIXED", "$sourceEdit.filters", "Only Minimum votes can be edited here."));
+	else if (touched.length) {
+		if (!inspectStudioMinimumVotes(source).editable) errors.push(diagnostic("SOURCE_EDIT_STUDIO_FILTER_PRESERVED", "$sourceEdit.filters", "This imported Minimum votes setting must be preserved."));
+		errors.push(...validateStudioAdvancedFilters(draft.filters, draft.mediaType).errors);
+	}
 	if (
 		canonicalPositiveId(draft?.tmdbId) === null
 		|| canonicalPositiveId(draft?.tmdbId) !== canonicalPositiveId(source?.editable?.tmdbId)
@@ -76,17 +89,20 @@ function buildPatch({ source, draft }) {
 	if (draft.sortTouched && draft.sortBy !== source.editable.sortBy) {
 		patch.sortBy = draft.sortBy;
 	}
-	return patch;
+	if (!draft.touchedFilters?.length) return patch;
+	const original = resolveEffectiveDiscoverSource(source).value;
+	const validated = validateStudioAdvancedFilters(draft.filters, draft.mediaType);
+	return { ...patch, ...patchTouchedDiscoverFilters(source, original, validated.filters, draft.touchedFilters) };
 }
 
 export const studioSourceEditor = Object.freeze({
 	id: STUDIO_SOURCE_EDITOR_ID,
 	label: "Studio",
-	ownedFields: Object.freeze(["title", "sortBy"]),
+	ownedFields: Object.freeze(["title", "sortBy", "filters"]),
 	duplicateKey: studioSourceVariantKey,
 	duplicateMessage(draft) {
 		const media = draft?.mediaType === "TV" ? "Series" : "Movies";
-		return `This folder already contains this Studio sorting option for ${media}. Choose another sorting option or cancel your changes.`;
+		return `This folder already contains this Studio sorting option and filters for ${media}. Change the sorting option or Minimum votes, or cancel your changes.`;
 	},
 	canEdit(source) {
 		return source?.nodeType === "source"

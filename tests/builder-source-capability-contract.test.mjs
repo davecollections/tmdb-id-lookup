@@ -72,14 +72,14 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	studio: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-studios", guided: "studios", edit: "studio" }),
-		add: context("builder/src/ui/StudioSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			media: "STUDIO_SOURCE_OPTIONS", sort: "<StudioSortChoices", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-studio-result",
+		add: context("builder/src/ui/StudioSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
+			media: "STUDIO_SOURCE_OPTIONS", sort: "<StudioSortChoices", filtersAdvanced: "<StudioAdvancedOptions", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-studio-result",
 		}),
-		guided: context("builder/src/ui/StudioHierarchyFlow.jsx", { media: C, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			media: "STUDIO_HIERARCHY_MEDIA_MODES", sort: "<StudioSortChoices", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-studio-result",
+		guided: context("builder/src/ui/StudioHierarchyFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
+			media: "STUDIO_HIERARCHY_MEDIA_MODES", sort: "<StudioSortChoices", filtersAdvanced: "<StudioAdvancedOptions", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-studio-result",
 		}),
-		edit: context("builder/src/ui/SourceEditorDialog.jsx", { media: F, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, {
-			sort: "<StudioSortChoices", preview: "<SourceTitlePreviewDialog", sourceName: 'id="source-edit-title-input"',
+		edit: context("builder/src/ui/SourceEditorDialog.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, {
+			sort: "<StudioSortChoices", filtersAdvanced: "<StudioAdvancedOptions", preview: "<SourceTitlePreviewDialog", sourceName: 'id="source-edit-title-input"',
 		}),
 	}),
 	network: Object.freeze({

@@ -36,13 +36,28 @@ export function inspectDiscoverMirrors(source) {
  return { equivalent, unresolved };
 }
 // This is used only after a real native value change. Unknown imported data is untouched.
-export function synchronizeDiscoverMirrors(filters, rawSource, editable) {
+export function synchronizeDiscoverMirrors(filters, rawSource, editable, { fields = null, sort = true } = {}) {
  const raw = rawSource?.filters ?? {};
  for (const [alias, field] of Object.entries(discoverImportedMirrors(editable.mediaType ?? rawSource?.mediaType))) {
+  if (fields && !fields.includes(field)) continue;
   if (!Object.hasOwn(raw, alias) || (!Object.hasOwn(editable.filters ?? {}, alias) && JSON.stringify(raw[field]) === JSON.stringify(editable.filters?.[field]))) continue;
   if (Object.hasOwn(editable.filters ?? {}, field)) filters[alias] = editable.filters[field];
   else delete filters[alias];
  }
- if (Object.hasOwn(raw, "sortBy") && Object.hasOwn(editable, "sortBy") && (Object.hasOwn(editable.filters ?? {}, "sortBy") || rawSource.sortBy !== editable.sortBy)) filters.sortBy = editable.sortBy;
+ if (sort && Object.hasOwn(raw, "sortBy") && Object.hasOwn(editable, "sortBy") && (Object.hasOwn(editable.filters ?? {}, "sortBy") || rawSource.sortBy !== editable.sortBy)) filters.sortBy = editable.sortBy;
  return filters;
+}
+
+// Minimal editable overlay shared by Discover and native field-subset editors.
+// A null mirror is a deliberate removal marker consumed by the effective overlay.
+export function patchTouchedDiscoverFilters(source, original, validatedFilters, touchedFilters, patch = {}) {
+ const filters = { ...source.editable.filters };
+ if (Object.hasOwn(patch, "sortBy") && Object.hasOwn(original.filters ?? {}, "sortBy")) filters.sortBy = patch.sortBy;
+ for (const key of touchedFilters) {
+  if (JSON.stringify(validatedFilters[key]) !== JSON.stringify(original.filters?.[key])) {
+   for (const [alias, native] of Object.entries(discoverImportedMirrors(original.mediaType))) if (native === key && Object.hasOwn(original.filters ?? {}, alias)) filters[alias] = validatedFilters[key] ?? null;
+  }
+  if (Object.hasOwn(validatedFilters, key)) filters[key] = validatedFilters[key]; else delete filters[key];
+ }
+ return JSON.stringify(filters) !== JSON.stringify(source.editable.filters) ? { filters } : {};
 }

@@ -95,7 +95,7 @@ export function sourceTitlePreviewRequest(kind, sourceDraft, { person = null } =
 			: null;
 	}
 	if (kind === "studio" || kind === "network") {
-		return Object.freeze({ ...common, tmdbId: editable.tmdbId, sortBy: editable.sortBy });
+		return Object.freeze({ ...common, tmdbId: editable.tmdbId, sortBy: editable.sortBy, ...(kind === "studio" ? { filters: { ...editable.filters } } : {}) });
 	}
 	if (kind === "streaming") {
 		return Object.freeze({
@@ -156,7 +156,7 @@ export async function requestSourceTitlePreview(request, providers, signal) {
 			? Object.freeze({ ok: true, data: Object.freeze({ results: preview.items, totalResults: preview.totalResults, mediaType: preview.mediaType }) })
 			: Object.freeze({ ok: false, error: Object.freeze({ kind: "invalid-response", message: preview.errors[0]?.message ?? "This People preview could not be prepared.", retryable: false }) });
 	}
-	if (request.kind === "studio") return providers.studio.getStudioPreview(request.tmdbId, { mediaType: request.mediaType, sortBy: request.sortBy, signal });
+	if (request.kind === "studio") return providers.studio.getStudioPreview(request.tmdbId, { mediaType: request.mediaType, sortBy: request.sortBy, filters: request.filters, signal });
 	if (request.kind === "network") return providers.network.getNetworkPreview(request.tmdbId, { sortBy: request.sortBy, signal });
 	if (request.kind === "streaming") return providers.streaming.getStreamingPreview(request.sourceNode, { signal });
 	if (request.kind === "advanced-discover") return providers["advanced-discover"].getAdvancedDiscoverPreview(request.sourceDraft, { signal });
