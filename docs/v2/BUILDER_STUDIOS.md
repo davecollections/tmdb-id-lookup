@@ -1,6 +1,6 @@
 # Builder Studio Sources
 
-## Shared Minimum votes (#208, local owner review)
+## Shared Minimum votes (#208)
 
 New Collection, New Folder, Add Source and Edit Source expose optional **Minimum votes** in default-collapsed **Advanced options**. Unset creates no threshold; explicit zero is retained. The existing Discover numeric field, label, validation and errors accept a nonnegative int32 integer through 2147483647. Opening, collapsing or changing Advanced never requests titles. The shared creation value applies to every selected Studio/media/scalar-sort candidate, including Both and Most voted. Configure keeps the value in its Advanced control without a redundant inline summary; final Appearance/Review still summarizes the validated threshold. The shared helper explains the TMDB vote threshold without displaying the technical maximum. Existing grouping, native `tmdb` / `COMPANY` identity, fixed Studio ID, media, naming, ordering, placement and atomic plan operations remain authoritative.
 
@@ -10,7 +10,7 @@ Physical editing preserves untouched imported filters, aliases, types, unknown d
 
 Studio Preview uses the existing production `/builder/discover/movie` and `/builder/discover/tv` gateway and shared Discover requester/cache. Its detached query fixes `with_companies` to the Studio ID, includes `include_adult=false`, the selected scalar sort and all safely understood effective imported filters. Matching aliases are not additional predicates; alias-only, conflicting, unknown or unsupported meaningful filters block Preview. The stored source remains COMPANY and is never added to `catalogSources`. Query cache identity includes every effective parameter, retaining explicit zero separately from unset. The native comparison helper retains all other native semantics and normalizes only supported Studio minimum numeric/string values and matching mirrors; zero and unset remain distinct configured variants. Conflicting or unknown semantics remain distinct and are never normalized in storage.
 
-The accepted #206/#207 compatibility findings remain sufficient evidence for this slice. No client tests are repeated and no output workaround is added for upstream sort rewrites, missing exclusions or differing defaults. Worker source, legacy routes, CORS, CSP, external hosts, V1 and dependencies are unchanged. Implementation remains uncommitted pending owner review.
+The accepted #206/#207 compatibility findings remain sufficient evidence for this slice. No client tests are repeated and no output workaround is added for upstream sort rewrites, missing exclusions or differing defaults. Worker source, legacy routes, CORS, CSP, external hosts, V1 and dependencies are unchanged.
 
 ## Current native variants checkpoint - 2026-09-10
 

@@ -1,8 +1,8 @@
 # Native Source Editing
 
-## Studio Minimum votes (#208, local owner review)
+## Studio Minimum votes (#208)
 
-The Studio adapter additionally owns optional Minimum votes through the existing shared Discover field and touched-filter patch pipeline. See the [current Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208-local-owner-review) for unset/zero, clearing, alias/import preservation and exact current-draft Preview. Only that setting and its existing mirror can change on a deliberate filter edit. The existing physical identity, scalar sorting, duplicate/no-op, stale-session and atomic controller contracts remain unchanged. Unsupported imported settings remain preserved; exact Preview blocks when their effect cannot be represented.
+The Studio adapter additionally owns optional Minimum votes through the existing shared Discover field and touched-filter patch pipeline. See the [current Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208) for unset/zero, clearing, alias/import preservation and exact current-draft Preview. Only that setting and its existing mirror can change on a deliberate filter edit. The existing physical identity, scalar sorting, duplicate/no-op, stale-session and atomic controller contracts remain unchanged. Unsupported imported settings remain preserved; exact Preview blocks when their effect cannot be represented.
 
 ## Imported TMDB List sorting - 2026-09-12
 
