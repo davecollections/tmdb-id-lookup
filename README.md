@@ -171,9 +171,11 @@ TMDB API requests from the live lookup tools go through the Cloudflare Worker pr
 
 ## Local Checks
 
-Run `scripts\check.cmd` before pushing changes on Windows. This runs the shared validation sequence for frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, unsafe rendering patterns, deterministic Nuvio contract fixtures, and the mounted Builder suite. Mounted checks that exercise TMDB use the production Worker, real TMDB, and real image resources, so an external-service outage is reported as an external failure rather than replaced with fabricated data; see [docs/TESTING.md](docs/TESTING.md).
+`scripts\check.cmd` is the full Windows validation entry point. It runs the shared validation sequence for frontend JavaScript syntax, cached JSON parsing, duplicate HTML IDs, duplicate cached IDs, Nuvio export preset references, genre artwork/count coverage, unsafe rendering patterns, deterministic Nuvio contract fixtures, and the mounted Builder suite. Mounted checks that exercise TMDB use the production Worker, real TMDB, and real image resources, so an external-service outage is reported as an external failure rather than replaced with fabricated data; see [docs/TESTING.md](docs/TESTING.md).
 
-On any platform, the equivalent command is `node scripts/check-all.mjs`. To run only the Nuvio contract suite, use `node --test tests/nuvio-contracts.test.mjs`.
+Use validation proportionate to the change under [docs/TESTING.md](docs/TESTING.md). Run focused checks during implementation and full validation when the change can affect the behavior or contracts that the full suite covers and that regression question remains unanswered. Documentation/copy-only changes that cannot affect runtime behavior may use targeted Markdown, link, wording and Git hygiene checks instead. Do not repeat an expensive local run solely because a new workflow stage was reached; PR CI independently validates the final pushed head.
+
+On any platform, `node scripts/check-all.mjs` runs the equivalent full sequence. To run only the Nuvio contract suite, use `node --test tests/nuvio-contracts.test.mjs`.
 
 Browser-owning test conventions and focused lifecycle checks are documented in [docs/TESTING.md](docs/TESTING.md).
 

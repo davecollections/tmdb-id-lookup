@@ -1,5 +1,20 @@
 # Repository Testing
 
+## Risk-based validation
+
+Run checks when they answer an unanswered question about the change. Choose validation by scope and regression risk, not merely because implementation, push, review or merge has reached another stage.
+
+- During implementation, run focused checks for the changed area and tests introduced or materially affected by the change.
+- Use broader/full validation for code, shared contracts, serialization, runtime, browser behavior or wider changes when it answers a real regression question. For meaningful implementation, the full suite normally runs once around implementation/owner-review readiness when it provides useful evidence; new changes, failures or unresolved concerns may justify more.
+- For documentation/copy-only or bounded maintenance changes that cannot affect application/runtime behavior, use targeted Markdown, practical local link/heading checks, stale-wording searches, formatting review and Git hygiene. Do not run the full application suite or mounted/live-service/Worker checks solely because documentation changed; use them only if the documentation change genuinely needs that evidence.
+- PR CI provides independent validation of the final pushed head. If the reviewed head is unchanged and PR CI passes, do not automatically rerun the full local suite immediately before merge.
+- Keep `git diff --check` and worktree/status checks as lightweight hygiene. Report what was checked and why broader checks were or were not needed.
+- Visual/runtime/manual evidence remains required when the change depends on it. A required live integration check cannot be replaced with synthetic data, silently skipped, or downgraded under this policy. The detailed production-integration boundary and retained evidence below still apply.
+
+`scripts\check.cmd` remains the full Windows repository-validation entry point; `node scripts/check-all.mjs` runs the equivalent full sequence on any platform. Neither is automatically required for every documentation or copy correction.
+
+Current PR/main CI still runs the monolithic validation suite. This local validation policy does not change workflow triggers, split jobs, add path filters, restructure the test runner or weaken CI/live-service requirements. Any future separation of core, build/artifact, live integration and documentation validation needs its own investigation and approved scope.
+
 ## Live external-service boundary
 
 Mounted-browser, integration, end-to-end, owner-review, and live-behaviour tests that exercise an external service must use the approved live service through the production integration path. Do not substitute fabricated titles, counts, response rows, resource or artwork paths, poster paths, URLs, response bodies, fake image/CDN servers, or fake Preview servers merely for determinism, convenience, request minimisation, offline execution, or a green result. When the approved service is unavailable, classify and report the external-service failure instead of manufacturing replacement behaviour.
