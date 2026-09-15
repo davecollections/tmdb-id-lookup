@@ -61,7 +61,7 @@ for (const minimum of [undefined, "", 0, "0", 100, "100", 2147483647]) {
   }
  });
 }
-for (const minimum of [-1, "-1", 1.2, "1e2", "abc", " 100 ", true, 2147483648]) {
+for (const minimum of [-1, "-1", 1.2, [100], {}, "1e2", "abc", " 100 ", true, 2147483648]) {
  test(`Studio rejects invalid minimum ${JSON.stringify(minimum)} without creating candidates`, () => {
   const result = buildStudioSourceDrafts(studio(), { choices: ["studio-movies", "studio-series"], filters: { voteCountGte: minimum } });
   assert.equal(result.ok, false);

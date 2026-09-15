@@ -1,3 +1,4 @@
+import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
 import {
 	useEffect,
@@ -321,7 +322,7 @@ export function StudioEditorFields({
 	);
 }
 
-export function NetworkEditorFields({ draft, network, countState, sortRef, titleField = null, onSortChange }) {
+export function NetworkEditorFields({ draft, network, countState, sortRef, titleField = null, onSortChange, onAdvancedChange }) {
 	const selectedSortId = draft.sortOptionId ?? networkSortOptionId(draft.sortBy);
 	const count = countState?.status === "not-requested" ? { text: "Not requested", state: "not-requested" } : countState?.status === "ready"
 		? { text: `Series Count: ${countState.count.toLocaleString("en")}`, state: countState.count === 0 ? "zero" : "ready" }
@@ -346,6 +347,7 @@ export function NetworkEditorFields({ draft, network, countState, sortRef, title
 			{titleField}
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<NetworkSortChoices selectedId={selectedSortId} name="network-edit-sort" firstInputRef={sortRef} onChange={(optionId) => onSortChange(networkSortValue(optionId), optionId)} />
+			<MinimumVotesAdvancedOptions family="network" draft={draft} onChange={onAdvancedChange} />
 		</section>
 	);
 }
@@ -949,6 +951,7 @@ export function SourceEditorDialog({
 									) : session.adapterId === NETWORK_SOURCE_EDITOR_ID ? (
 										<NetworkEditorFields
 											draft={draft}
+											onAdvancedChange={(next) => { setDraft(next); setFailure(null); }}
 											network={networkIdentity}
 											countState={networkCountState}
 											sortRef={networkSortRef}

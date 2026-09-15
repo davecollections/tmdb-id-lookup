@@ -1,3 +1,5 @@
+import { validateNetworkAdvancedFilters } from "./network-advanced.js";
+import { minimumVotesComparisonFilters } from "./minimum-votes.js";
 import { NETWORK_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeSourceDuplicates, isSourceVariantTitle, nativeSourceVariantKey, sourceVariantTitle } from "./native-source-variants.js";
@@ -49,9 +51,10 @@ export function isSupportedNetworkSort(value) {
 	return typeof value === "string" && networkSortOptionId(value) !== null;
 }
 
-export function buildNetworkSourceDraft(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID } = {}) {
+export function buildNetworkSourceDraft(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID, filters = {} } = {}) {
 	const name = canonicalText(network?.name);
-	const errors = [];
+	const advanced = validateNetworkAdvancedFilters(filters);
+	const errors = [...advanced.errors];
 	if (!Number.isSafeInteger(network?.id) || network.id <= 0 || !name || network.name !== name) {
 		errors.push(diagnostic("INVALID_NETWORK", "$network.network", "A canonical cached Network identity is required."));
 	}
@@ -64,7 +67,7 @@ export function buildNetworkSourceDraft(network, { sortOptionId = DEFAULT_NETWOR
 			title: name,
 			sortBy,
 			tmdbId: network.id,
-			filters: {},
+			filters: { ...advanced.filters },
 			provider: "tmdb",
 			mediaType: "TV",
 			tmdbSourceType: "NETWORK",
@@ -74,9 +77,10 @@ export function buildNetworkSourceDraft(network, { sortOptionId = DEFAULT_NETWOR
 	return { ...validation, draft: validation.ok ? draft : null };
 }
 
-export function buildNetworkHierarchySourceDraft(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID } = {}) {
+export function buildNetworkHierarchySourceDraft(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID, filters = {} } = {}) {
 	const name = canonicalText(network?.name);
-	const errors = [];
+	const advanced = validateNetworkAdvancedFilters(filters);
+	const errors = [...advanced.errors];
 	if (!Number.isSafeInteger(network?.id) || network.id <= 0 || !name || network.name !== name) {
 		errors.push(diagnostic("INVALID_NETWORK_HIERARCHY_NETWORK", "$networkHierarchy.network", "A canonical cached Network identity is required."));
 	}
@@ -89,7 +93,7 @@ export function buildNetworkHierarchySourceDraft(network, { sortOptionId = DEFAU
 			title: NETWORK_HIERARCHY_SOURCE_TITLE,
 			sortBy,
 			tmdbId: network.id,
-			filters: {},
+			filters: { ...advanced.filters },
 			provider: "tmdb",
 			mediaType: "TV",
 			tmdbSourceType: "NETWORK",
@@ -121,7 +125,8 @@ export function validateNetworkSourceDraft(draft, { network = null, path = "$net
 		errors.push(diagnostic("MISMATCHED_NETWORK_SOURCE", path, "The Network source must match the selected cached Network."));
 	}
 	if (!isSupportedNetworkSort(editable.sortBy)) errors.push(diagnostic("INVALID_NETWORK_SORT", `${path}.editable.sortBy`, "Choose a supported Network Series sort order."));
-	if (!plainObject(editable.filters) || Object.keys(editable.filters).length !== 0) errors.push(diagnostic("INVALID_NETWORK_FILTERS", `${path}.editable.filters`, "Network source filters must be an explicit empty object."));
+	const advanced = validateNetworkAdvancedFilters(editable.filters);
+	if (!plainObject(editable.filters) || !advanced.ok || JSON.stringify(advanced.filters) !== JSON.stringify(editable.filters)) errors.push(diagnostic("INVALID_NETWORK_FILTERS", `${path}.editable.filters`, "Network sources require supported canonical Minimum votes settings."));
 	return { ok: errors.length === 0, errors };
 }
 
@@ -139,10 +144,10 @@ export function validateNetworkHierarchySourceDraft(draft, { network = null, pat
 	return { ok: errors.length === 0, errors };
 }
 
-export function buildNetworkSourceDrafts(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID, sortOptionIds, hierarchy = false } = {}) {
+export function buildNetworkSourceDrafts(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID, sortOptionIds, filters = {}, hierarchy = false } = {}) {
 	const sorts = orderedSourceSortIds(sortOptionIds, sortOptionId, NETWORK_SORT_OPTIONS);
 	if (sorts === null || sorts.length === 0) return { ok: false, drafts: [], errors: [diagnostic("UNSUPPORTED_NETWORK_SORT", "$network.sortOptionIds", "Choose at least one option.")] };
-	const results = sorts.map((sort) => (hierarchy ? buildNetworkHierarchySourceDraft : buildNetworkSourceDraft)(network, { sortOptionId: sort }));
+	const results = sorts.map((sort) => (hierarchy ? buildNetworkHierarchySourceDraft : buildNetworkSourceDraft)(network, { sortOptionId: sort, filters }));
 	const errors = results.flatMap((result) => result.errors);
 	if (errors.length) return { ok: false, drafts: [], errors };
 	const drafts = results.map(({ draft }, index) => ({
@@ -165,7 +170,7 @@ export function validateNetworkSourceDrafts(drafts, { network = null, hierarchy 
 }
 
 export function networkSourceVariantKey(source) {
-	return nativeSourceVariantKey(source, networkSourceIdentity, NETWORK_SORT_OPTIONS);
+	return nativeSourceVariantKey(source, networkSourceIdentity, NETWORK_SORT_OPTIONS, minimumVotesComparisonFilters);
 }
 
 export function networkSourceIdentity(editable) {

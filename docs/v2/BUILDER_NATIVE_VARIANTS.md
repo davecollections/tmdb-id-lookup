@@ -1,5 +1,7 @@
 # Native People, Studio and Network variants
 
+Network [#213](./BUILDER_NETWORKS.md#shared-minimum-votes-213-local-owner-review-implementation), currently awaiting owner review, shares the bounded minimum-votes comparison and configured-plan semantics below with Studio; Network remains TV-only and uses the existing standalone TV Discover Preview gateway.
+
 Studio [#208](./BUILDER_STUDIOS.md#shared-minimum-votes-208) adds optional Minimum votes to all creation contexts and the scalar physical editor. Its effective threshold participates in existing candidate, placement, plan, Preview and exact-duplicate handling. Supported numeric/string thresholds and matching minimum mirrors compare equivalently; explicit zero remains distinct from unset. Other native fields and family semantics are unchanged. No Worker change is required.
 
 Issue [#200](https://github.com/davecollections/tmdb-id-lookup/issues/200), implemented on 2026-09-08 and refined through 2026-09-10. The revised flow and notice treatment passed owner review on 2026-09-10. Publication preparation is authorized; merge and client ranking acceptance remain separate.
@@ -45,7 +47,7 @@ This owner-approved 2026-09-09 correction supersedes earlier whole-entity omissi
 
 The three adapters retain **Sort titles by**, one scalar sort and one-source Preview. A functional change into an exact sibling is rejected, excluding the physical node being edited. A no-op or title-only save remains possible beside intentional/imported duplicates. Different valid sorts coexist. Other adapters retain their duplicate protections.
 
-The comparison hook uses the adapter's existing minimal proposed patch over the original source. Stale session/target checks, IDs, order, imported raw snapshots, unknown fields, compatibility data and null placeholders remain protected. Import, open, Cancel and no-op do not normalize source data. Only the intended supported title/sort fields change on a real edit. Serialization policy and structural/internal identity are unchanged.
+The comparison hook uses the adapter's existing minimal proposed patch over the original source. Stale session/target checks, IDs, order, imported raw snapshots, unknown fields, compatibility data and null placeholders remain protected. Import, open, Cancel and no-op do not normalize source data. Only intended supported title/sort fields and, for Studio/Network, deliberately touched Minimum votes representations change on a real edit. Serialization policy and structural/internal identity are unchanged.
 
 ## Exact title Preview
 

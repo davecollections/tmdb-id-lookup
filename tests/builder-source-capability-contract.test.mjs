@@ -84,14 +84,14 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	network: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-networks", guided: "networks", edit: "network" }),
-		add: context("builder/src/ui/NetworkSourceFlow.jsx", { media: F, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			sort: "<NetworkSortChoices", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-network-result",
+		add: context("builder/src/ui/NetworkSourceFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
+			sort: "<NetworkSortChoices", filtersAdvanced: '<MinimumVotesAdvancedOptions family="network"', preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-network-result",
 		}),
-		guided: context("builder/src/ui/NetworkHierarchyFlow.jsx", { media: F, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			sort: "<NetworkSortChoices", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-network-result",
+		guided: context("builder/src/ui/NetworkHierarchyFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
+			sort: "<NetworkSortChoices", filtersAdvanced: '<MinimumVotesAdvancedOptions family="network"', preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-network-result",
 		}),
-		edit: context("builder/src/ui/SourceEditorDialog.jsx", { media: F, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, {
-			sort: "<NetworkSortChoices", preview: "<SourceTitlePreviewDialog", sourceName: 'id="source-edit-title-input"',
+		edit: context("builder/src/ui/SourceEditorDialog.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, {
+			sort: "<NetworkSortChoices", filtersAdvanced: '<MinimumVotesAdvancedOptions family="network"', preview: "<SourceTitlePreviewDialog", sourceName: 'id="source-edit-title-input"',
 		}),
 	}),
 	streaming: Object.freeze({

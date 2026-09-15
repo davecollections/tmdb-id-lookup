@@ -1,4 +1,4 @@
-import { synchronizeDiscoverMirrors } from "./discover-imported-filters.js";
+import { inspectDiscoverMirrors, synchronizeDiscoverMirrors } from "./discover-imported-filters.js";
 import { cloneJsonValue } from "../domain/index.js";
 import { DISCOVER_FILTER_FIELDS } from "./known-fields.js";
 
@@ -84,7 +84,11 @@ export function overlayFilters(output, editable, rawImported) {
 	}
 
 	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "DISCOVER") synchronizeDiscoverMirrors(rawFilters, rawImported, editable);
-	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "COMPANY") synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: ["voteCountGte"], sort: false });
+	if (String(output.provider).toLowerCase() === "tmdb" && ["COMPANY", "NETWORK"].includes(String(output.tmdbSourceType).toUpperCase())) {
+  const ownedMinimum = String(output.tmdbSourceType).toUpperCase() === "COMPANY"
+   || inspectDiscoverMirrors(rawImported ?? {}).equivalent.includes("vote_count.gte");
+  if (ownedMinimum) synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: ["voteCountGte"], sort: false });
+ }
 	setOwn(output, "filters", rawFilters);
 	return output;
 }

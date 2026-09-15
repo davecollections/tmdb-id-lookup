@@ -68,13 +68,15 @@ function importedFolder(id, sources) {
 	return { id, title: "Renamed " + id, hideTitle: true, tileShape: "POSTER", future: { keep: [0, null, false] }, sources: sources.map((draft, index) => ({ ...draft.editable, id: id + "-source-" + index, title: "Custom title " + index, addonId: null })), catalogSources: [] };
 }
 
-for (const family of families) {
-	for (const complete of [false, true]) test(family.name + " reuses one imported folder for missing Sources and leaves full selections unchanged", () => {
+for (const baseFamily of families) for (const minimum of baseFamily.name === "People" ? [undefined] : [undefined, 0, 100]) {
+ const filters = minimum === undefined ? {} : { voteCountGte: minimum };
+ const family = { ...baseFamily, build: (options) => baseFamily.build({ ...options, filters }) };
+	for (const complete of [false, true]) test(family.name + " minimum " + minimum + " reuses one imported folder for missing Sources and leaves full selections unchanged", () => {
 		const app = createBuilderController(), [create, apply] = planFunctions(family);
 		const drafts = family.build({ sortOptionIds: sortIds }).drafts;
 		app.importValue([{ id: "collection", title: "Destination", future: { preserved: true }, folders: [importedFolder("original", complete ? drafts : drafts.slice(0, 1))] }]);
 		const state = app.getState(), collection = state.project.collections[0], original = collection.folders[0];
-		const options = { ...refinementConfig(family, [family.entity], sortIds), scope: "new-folder", destinationCollectionInternalId: collection.internalId, projectRevision: state.revision };
+		const options = { ...(family.name === "People" ? {} : { filters }), ...refinementConfig(family, [family.entity], sortIds), scope: "new-folder", destinationCollectionInternalId: collection.internalId, projectRevision: state.revision };
 		const result = create(state.project, options);
 		assert.equal(result.ok, true, JSON.stringify(result.errors));
 		assert.equal(result.plan.folders.length, 0);
@@ -97,13 +99,13 @@ for (const family of families) {
 		assert.equal(new Set(updated.sources.map((source) => source.internalId)).size, updated.sources.length);
 	});
 
-	test(family.name + " resolves split matches inline, deduplicates across the collection and applies a mixed batch atomically", () => {
+	test(family.name + " minimum " + minimum + " resolves split matches inline, deduplicates across the collection and applies a mixed batch atomically", () => {
 		const app = createBuilderController(), [create, apply] = planFunctions(family);
 		const drafts = family.build({ sortOptionIds: sortIds }).drafts;
 		app.importValue([{ id: "collection", title: "Destination", folders: [importedFolder("first", drafts.slice(0, 1)), importedFolder("second", drafts.slice(1, 2))] }]);
 		const before = app.getState(), collection = before.project.collections[0];
 		const entities = [family.entity, { ...family.entity, id: family.entity.id + 100, name: "Another entity" }];
-		const options = { ...refinementConfig(family, entities, sortIds), scope: "new-folder", destinationCollectionInternalId: collection.internalId, projectRevision: before.revision };
+		const options = { ...(family.name === "People" ? {} : { filters }), ...refinementConfig(family, entities, sortIds), scope: "new-folder", destinationCollectionInternalId: collection.internalId, projectRevision: before.revision };
 		const unresolved = create(before.project, options);
 		assert.equal(unresolved.ok, true);
 		assert.equal(unresolved.plan.counts.unresolvedEntityCount, 1);
@@ -135,13 +137,13 @@ for (const family of families) {
 		assert.equal(remaining.plan.counts.unresolvedEntityCount, 0, "complete split coverage never asks for a destination");
 	});
 
-	test(family.name + " rolls back prepared appends when later new-folder construction fails", () => {
+	test(family.name + " minimum " + minimum + " rolls back prepared appends when later new-folder construction fails", () => {
 		let calls = 0, failAt = Infinity;
 		const app = createBuilderController({ idFactory: () => { calls += 1; if (calls === failAt) throw new Error("late mixed-batch failure"); return `mixed-${calls}`; } });
 		const [create, apply] = planFunctions(family), drafts = family.build({ sortOptionIds: sortIds }).drafts;
 		assert.equal(app.importValue([{ id: "collection", title: "Destination", folders: [importedFolder("original", drafts.slice(0, 1))] }]).ok, true);
 		const before = app.getState(), json = app.stringifyProject().json;
-		const plan = create(before.project, { ...refinementConfig(family, [family.entity, { ...family.entity, id: family.entity.id + 100, name: "New entity" }], sortIds), scope: "new-folder", destinationCollectionInternalId: before.project.collections[0].internalId, projectRevision: before.revision }).plan;
+		const plan = create(before.project, { ...(family.name === "People" ? {} : { filters }), ...refinementConfig(family, [family.entity, { ...family.entity, id: family.entity.id + 100, name: "New entity" }], sortIds), scope: "new-folder", destinationCollectionInternalId: before.project.collections[0].internalId, projectRevision: before.revision }).plan;
 		assert.equal(plan.existingFolderAdditions[0].sources.length, drafts.length - 1);
 		failAt = calls + drafts.length;
 		assert.equal(apply(app, plan).ok, false);
@@ -154,11 +156,11 @@ for (const family of families) {
 		assert.equal(app.getState().revision, before.revision + 1);
 	});
 
-	test(family.name + " keeps meaningful filters distinct and ignores opaque identity claims", () => {
+	test(family.name + " minimum " + minimum + " keeps meaningful filters distinct and ignores opaque identity claims", () => {
 		const app = createBuilderController(), [create] = planFunctions(family), draft = family.build().drafts[0];
 		app.importValue([{ id: "collection", title: "Destination", folders: [importedFolder("filtered", [{ editable: { ...draft.editable, filters: { voteCountGte: 10 } } }])] }]);
 		const state = app.getState(), collection = state.project.collections[0];
-		const options = { ...refinementConfig(family, [family.entity], ["popular"]), scope: "new-folder", destinationCollectionInternalId: collection.internalId, projectRevision: state.revision };
+		const options = { ...(family.name === "People" ? {} : { filters }), ...refinementConfig(family, [family.entity], ["popular"]), scope: "new-folder", destinationCollectionInternalId: collection.internalId, projectRevision: state.revision };
 		const distinct = create(state.project, options);
 		assert.equal(distinct.plan.counts.existing, 0);
 		assert.equal(distinct.plan.existingFolderAdditions.length, 1);

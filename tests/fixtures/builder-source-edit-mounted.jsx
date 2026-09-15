@@ -1,5 +1,5 @@
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
-import { runNativeSourceVariantsScenario, runStudioMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
+import { runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
 import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
@@ -2651,14 +2651,15 @@ async function runNetworkLivePreviewScenario() {
 			networkValues: url.searchParams.getAll("with_networks"),
 			sortValues: url.searchParams.getAll("sort_by"),
 			pageValues: url.searchParams.getAll("page"),
-			exactRequest: url.pathname === "/3/discover/tv"
+			exactRequest: url.pathname === "/builder/discover/tv"
 				&& url.searchParams.getAll("with_networks").length === 1
 				&& url.searchParams.get("with_networks") === String(networkId)
+				&& url.searchParams.get("include_adult") === "false"
 				&& url.searchParams.getAll("sort_by").length === 1
 				&& url.searchParams.get("sort_by") === expectedSort
 				&& url.searchParams.has("page") === false
-				&& [...url.searchParams.keys()].every((key) => key === "with_networks" || key === "sort_by")
-				&& [...url.searchParams.keys()].length === 2,
+				&& [...url.searchParams.keys()].every((key) => key === "with_networks" || key === "sort_by" || key === "include_adult")
+				&& [...url.searchParams.keys()].length === 3,
 			status: request.status,
 			ok: request.ok,
 			contentType: request.contentType,
@@ -8035,6 +8036,7 @@ async function runMountedRegressions() {
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
 window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
 window.__builderSourceEditMounted = { status: "running" };
@@ -8073,7 +8075,7 @@ window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-(["studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
+(["network-minimum-votes-only", "studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {
