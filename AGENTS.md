@@ -57,6 +57,14 @@ Before hierarchy creation or a new hierarchy-family task, also read:
 - Do not add production dependencies without explicit approval.
 - Check the licence before reusing external code. Studying patterns is not permission to copy code.
 
+## Upstream-first Nuvio review
+
+- Before designing or implementing Nuvio-facing behaviour, inspect the relevant current upstream implementation where available: models, import/validation, serialization/preservation, resolver/runtime, editor/UI, and tests. Use upstream Nuvio code as authoritative evidence for the inspected client's contract and behaviour, then implement Dingo's validators and behaviour independently.
+- Inspect relevant NuvioTV, NuvioDesktop, NuvioMobile, and nuvio.tv/web evidence in proportion to the feature and risk of client divergence; every task does not need every client. Record material differences and explicitly decide Dingo's supported contract from the evidence and approved scope.
+- Retain Dingo's preservation-first import/edit/serialization, no silent normalization of unsupported imports, and exact/fail-closed Preview when semantics cannot be represented safely. Emit correct supported Nuvio JSON without reproducing known client bugs, and retain approved Dingo UX/product decisions that intentionally differ.
+- The current Nuvio repositories used as upstream source evidence are GPL-3.0. Verify the specific repository licence before any code reuse. Extract contract facts and expected behaviour as evidence; do not copy substantive implementation code merely because it is available. Copying or adapting substantive GPL code requires deliberate review and acceptance of licensing compatibility and obligations first.
+- This is a proportionate discovery step, with independent implementation tested against the evidence, not a mandatory audit or a new investigation issue for every feature. The existing issue/branch/PR policy remains unchanged; see [the workflow explanation](docs/v2/PROJECT_WORKFLOW.md#upstream-first-nuvio-review).
+
 ## Nuvio source rules
 
 The currently supported native TMDB source types are:
