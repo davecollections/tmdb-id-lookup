@@ -75,6 +75,39 @@ The planning chat recommends effort for each task based on scope and risk.
 
 ## 4. Issue and branch workflow
 
+### Upstream-first Nuvio review
+
+For Nuvio-facing design and implementation, start with the relevant current upstream code where available. It is authoritative evidence of the inspected client's contract and behaviour; Dingo implements its own validators and behaviour from that evidence. Use retained findings as a starting point and check that they still apply to the current implementation.
+
+Inspect the areas that answer the task's contract questions:
+
+- **Models:** fields, types, defaults, and nullability.
+- **Import and validation:** typed decoding, validation rules, and accepted or rejected structures.
+- **Serialization and preservation:** what is emitted, preserved, or ignored.
+- **Resolver/runtime behaviour:** how fields influence requests and results.
+- **Editor/UI behaviour:** how existing values are parsed, exposed, and changed.
+- **Tests:** existing contract and regression expectations.
+
+Choose relevant current clients such as NuvioTV, NuvioDesktop, NuvioMobile, and nuvio.tv/web where source or other evidence is available. Coverage should match the feature and possibility of client divergence; inspecting every client is not required for every task. Keep source revisions or build/version context with findings, following the existing [evidence levels](./BUILDER_KNOWLEDGE.md#2-evidence-levels). State unavailable evidence and unresolved behaviour rather than guessing.
+
+Keep three distinctions clear:
+
+- **Contract evidence:** field names, JSON shape, types, defaults, nullability, and request parameter mappings are primary facts for an independently implemented Dingo contract.
+- **Behavioural evidence:** validation rules, merge/preservation decisions, resolver behaviour, and algorithms explain expected behaviour. Independently implement and test the appropriate Dingo equivalent.
+- **Source code:** availability is not permission to copy substantive implementation. The current Nuvio repositories used as upstream source evidence are GPL-3.0. Verify the specific repository licence before any code reuse. Copying or adapting substantive GPL code requires licensing compatibility and obligations to be deliberately reviewed and accepted first. The default is to inspect source, extract facts, and implement independently.
+
+The practical sequence is:
+
+1. Inspect the relevant upstream contract and behaviour before design.
+2. Identify and record client differences that matter.
+3. Decide Dingo's supported contract from the evidence and approved feature scope; do not silently choose one client when clients disagree.
+4. Implement Dingo's behaviour independently.
+5. Test against the evidence under the existing validation policy.
+
+Dingo retains its deliberate product rules: preservation-first import/edit/serialization, no silent normalization of unsupported imported data, and exact/fail-closed Preview when semantics cannot be represented safely. Correct supported Nuvio JSON takes priority over reproducing known client bugs. Document client differences and retain approved Dingo UX/product decisions where they intentionally differ; upstream behaviour does not require reproducing every client quirk.
+
+This is a standard discovery step, not a heavyweight mandatory audit template or a licensing audit for each task. It does not require a new investigation issue for every small feature or change the issue/branch/PR policy below.
+
 ### Discovery before issues
 
 Dave and the ChatGPT planning/review chat may discuss, compare, investigate, and decide whether repository work is justified before an issue or branch exists. Read-only research does not require either. Roadmap ideas do not automatically become issues merely because they exist.
