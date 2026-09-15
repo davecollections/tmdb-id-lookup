@@ -1,6 +1,6 @@
 # Native People, Studio and Network variants
 
-Network [#213](./BUILDER_NETWORKS.md#shared-minimum-votes-213-local-owner-review-implementation), currently awaiting owner review, shares the bounded minimum-votes comparison and configured-plan semantics below with Studio; Network remains TV-only and uses the existing standalone TV Discover Preview gateway.
+Network [#213](./BUILDER_NETWORKS.md#shared-minimum-votes-213) / [PR #214](https://github.com/davecollections/tmdb-id-lookup/pull/214) shares the bounded minimum-votes comparison and configured-plan semantics below with Studio; Network remains TV-only and uses the existing standalone TV Discover Preview gateway.
 
 Studio [#208](./BUILDER_STUDIOS.md#shared-minimum-votes-208) adds optional Minimum votes to all creation contexts and the scalar physical editor. Its effective threshold participates in existing candidate, placement, plan, Preview and exact-duplicate handling. Supported numeric/string thresholds and matching minimum mirrors compare equivalently; explicit zero remains distinct from unset. Other native fields and family semantics are unchanged. No Worker change is required.
 
