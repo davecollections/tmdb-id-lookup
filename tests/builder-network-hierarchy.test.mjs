@@ -301,3 +301,28 @@ test("a late Network bundle failure rolls back every node and revision", () => {
 	assert.equal(app.getState().project, before.project);
 	assert.equal(app.getState().revision, before.revision);
 });
+
+for (const scope of ["new-collection", "new-folder"]) for (const minimum of [undefined, 0, 100]) {
+ test(`${scope} atomically applies Network minimum ${minimum} to selected Network/sort sources and revalidates the setting`, () => {
+  const app = controller();
+  assert.equal(app.importValue([{ id: "c", title: "Existing", folders: [] }]).ok, true);
+  const state = app.getState();
+  const item = network(3);
+  const options = { scope, projectRevision: state.revision, networks: planEntries([item, network(4)]), sortOptionIds: ["recent", "top-rated", "most-votes"], filters: minimum === undefined ? {} : { voteCountGte: minimum }, ...(scope === "new-folder" ? { destinationCollectionInternalId: state.project.collections[0].internalId } : {}) };
+  const result = createNetworkHierarchyPlan(state.project, options);
+  assert.equal(result.ok, true);
+  assert.equal(app.getState().project, state.project);
+  assert.equal(validateNetworkHierarchyPlan({ ...result.plan, configuration: { ...result.plan.configuration, filters: { voteCountGte: 999 } } }, { project: state.project, projectRevision: state.revision }).ok, false);
+  assert.equal(applyNetworkHierarchyPlan(app, result.plan).ok, true);
+  assert.equal(app.getState().revision, state.revision + 1);
+  const folders = app.getState().project.collections.flatMap((collection) => collection.folders);
+  assert.equal(folders.length, 2);
+  assert.equal(folders[0].sources.length, 3);
+  for (const source of folders[0].sources) assert.deepEqual(source.editable.filters, options.filters);
+  const exported = JSON.parse(app.stringifyProject().json);
+  for (const folder of exported.flatMap((collection) => collection.folders)) {
+   assert.deepEqual(folder.catalogSources ?? [], []);
+   for (const source of folder.sources) { assert.equal(source.tmdbSourceType, "NETWORK"); assert.deepEqual(source.filters, options.filters); }
+  }
+ });
+}

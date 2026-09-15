@@ -1,8 +1,8 @@
 # Native Source Editing
 
-## Studio Minimum votes (#208)
+## Studio and Network Minimum votes (#208, #213)
 
-The Studio adapter additionally owns optional Minimum votes through the existing shared Discover field and touched-filter patch pipeline. See the [current Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208) for unset/zero, clearing, alias/import preservation and exact current-draft Preview. Only that setting and its existing mirror can change on a deliberate filter edit. The existing physical identity, scalar sorting, duplicate/no-op, stale-session and atomic controller contracts remain unchanged. Unsupported imported settings remain preserved; exact Preview blocks when their effect cannot be represented.
+The Studio adapter and the Network adapter ([#213](https://github.com/davecollections/tmdb-id-lookup/issues/213), [PR #214](https://github.com/davecollections/tmdb-id-lookup/pull/214)) additionally own optional Minimum votes through the existing shared Discover field and touched-filter patch pipeline. See the [current Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208) for unset/zero, clearing, alias/import preservation and exact current-draft Preview. Network uses the same touched-field pipeline and owns only that setting and a matching meaningful mirror on a deliberate filter edit; inactive Network null/empty mirrors remain preserved. See the [Network contract](./BUILDER_NETWORKS.md#shared-minimum-votes-213). The existing physical identity, scalar sorting, duplicate/no-op, stale-session and atomic controller contracts remain unchanged. Unsupported imported settings remain preserved; exact Preview blocks when their effect cannot be represented.
 
 ## Imported TMDB List sorting - 2026-09-12
 

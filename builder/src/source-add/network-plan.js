@@ -1,3 +1,4 @@
+import { validateNetworkAdvancedFilters } from "./network-advanced.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeHierarchyPlacement, nativeHierarchyCounts, resolveNativeHierarchyPlacements } from "./native-source-variants.js";
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
@@ -27,6 +28,7 @@ export const DEFAULT_NETWORK_COLLECTION_TITLE = "Networks";
 export const DEFAULT_NETWORK_FOLDER_TITLE_VISIBILITY = "SHOW_EVERYWHERE";
 
 const OPTION_KEYS = new Set([
+	"filters",
 	"folderDestinations",
 	"scope",
 	"projectRevision",
@@ -83,7 +85,7 @@ function validArtwork(artwork, networkId, orientation) {
 	return validHttpsUrl(editable.coverImageUrl);
 }
 
-function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds }, errors) {
+function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds, filters }, errors) {
 	const network = entry?.network;
 	const name = canonicalText(network?.name);
 	if (
@@ -99,7 +101,7 @@ function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds
 		errors.push(diagnostic("INVALID_NETWORK_PLAN_ARTWORK", `$networkPlan.networks[${index}].artwork`, "Each Network folder needs resolved artwork in the requested orientation or the approved fallback."));
 		return null;
 	}
-	const sourceResult = buildNetworkSourceDrafts(network, { sortOptionIds, hierarchy: true });
+	const sourceResult = buildNetworkSourceDrafts(network, { sortOptionIds, filters, hierarchy: true });
 	if (!sourceResult.ok) {
 		errors.push(...sourceResult.errors);
 		return null;
@@ -112,7 +114,7 @@ function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds
 	return Object.freeze({
 		network: Object.freeze({ id: network.id, name }),
 		artwork: Object.freeze({ ...entry.artwork, folderEditable: Object.freeze({ ...entry.artwork.folderEditable }) }),
-		drafts: Object.freeze(sourceResult.drafts.map((draft) => Object.freeze({ category: draft.category, editable: Object.freeze({ ...draft.editable, filters: Object.freeze({}) }) }))),
+		drafts: Object.freeze(sourceResult.drafts.map((draft) => Object.freeze({ category: draft.category, editable: Object.freeze({ ...draft.editable, filters: Object.freeze({ ...draft.editable.filters }) }) }))),
 	});
 }
 
@@ -151,6 +153,9 @@ export function createNetworkHierarchyPlan(project, options) {
 	if (!Number.isSafeInteger(options.projectRevision) || options.projectRevision < 0) {
 		errors.push(diagnostic("INVALID_NETWORK_PLAN_REVISION", "$networkPlan.projectRevision", "Capture the current nonnegative Builder revision."));
 	}
+	const advanced = validateNetworkAdvancedFilters(options.filters);
+	errors.push(...advanced.errors);
+	const filters = advanced.filters;
 	const scope = NETWORK_CREATION_SCOPES.includes(options.scope) ? options.scope : null;
 	if (scope === null) errors.push(diagnostic("INVALID_NETWORK_PLAN_SCOPE", "$networkPlan.scope", "Choose New Collection or New Folder scope."));
 	const artworkOrientation = options.artworkOrientation ?? DEFAULT_NETWORK_ARTWORK_ORIENTATION;
@@ -161,7 +166,7 @@ export function createNetworkHierarchyPlan(project, options) {
 		errors.push(diagnostic("NETWORK_PLAN_SELECTION_REQUIRED", "$networkPlan.networks", "Choose at least one Network."));
 	}
 	const entries = Array.isArray(options.networks) && ARTWORK_ORIENTATIONS.has(artworkOrientation)
-		? options.networks.map((entry, index) => normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds }, errors)).filter(Boolean)
+		? options.networks.map((entry, index) => normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds, filters }, errors)).filter(Boolean)
 		: [];
 	if (new Set(entries.map((entry) => entry.network.id)).size !== entries.length) {
 		errors.push(diagnostic("DUPLICATE_NETWORK_PLAN_SELECTION", "$networkPlan.networks", "Each Network may appear only once."));
@@ -233,7 +238,7 @@ export function createNetworkHierarchyPlan(project, options) {
 	const plan = Object.freeze({
 		planType: NETWORK_HIERARCHY_PLAN_TYPE,
 		captured: Object.freeze({ projectInternalId: project.internalId, projectRevision: options.projectRevision }),
-		configuration: Object.freeze({ folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }),
+		configuration: Object.freeze({ filters: Object.freeze({ ...filters }), folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }),
 			scope,
 			collectionTitle,
 			hideCollectionTitle,
@@ -258,6 +263,7 @@ export function createNetworkHierarchyPlan(project, options) {
 function rebuildOptions(plan) {
 	return {
 		scope: plan.configuration.scope,
+		filters: plan.configuration.filters,
 		folderDestinations: plan.configuration.folderDestinations,
 		projectRevision: plan.captured.projectRevision,
 		...(plan.destination ? { destinationCollectionInternalId: plan.destination.collectionInternalId } : {}),

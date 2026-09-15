@@ -90,14 +90,16 @@ function studioSource(overrides = {}) {
 	};
 }
 
-for (const mediaType of ["MOVIE", "TV"]) for (const filters of [
+for (const [family, tmdbSourceType, mediaType] of [["Studio", "COMPANY", "MOVIE"], ["Studio", "COMPANY", "TV"], ["Network", "NETWORK", "TV"]]) {
+ const nativeSource = (options) => studioSource({ ...options, tmdbSourceType, mediaType });
+for (const filters of [
  {}, { voteCountGte: 0 }, { voteCountGte: "100", withoutCompanies: "174", voteAverageGte: null },
  { voteCountGte: 100, "vote_count.gte": "100", unknown: { keep: [0, false] }, withoutKeywords: "123" },
  { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { voteCountGte: "odd" },
 ]) {
- test(`Studio ${mediaType} preserves imported settings through unchanged/title-only saves: ${JSON.stringify(filters)}`, () => {
+ test(`${family} ${mediaType} preserves imported settings through unchanged/title-only saves: ${JSON.stringify(filters)}`, () => {
   const app = createController();
-  const source = studioSource({ id: "original", mediaType, filters, extra: { keep: true } });
+  const source = nativeSource({ id: "original", mediaType, filters, extra: { keep: true } });
   importFolder(app, [source, { ...source, id: "sibling" }], { hideTitle: true, ownerFolder: "keep" });
   const before = app.stringifyProject().json, revision = app.getState().revision;
   const opened = sessionFor(app);
@@ -112,9 +114,9 @@ for (const mediaType of ["MOVIE", "TV"]) for (const filters of [
   assert.deepEqual(JSON.parse(app.stringifyProject().json), expected);
  });
 }
-test("Studio intentional threshold edits clear only owned native/mirror fields, survive repeated saves and preserve unknown filters", () => {
+test(`${family} intentional threshold edits clear only owned native/mirror fields, survive repeated saves and preserve unknown filters`, () => {
  const app = createController();
- importFolder(app, [studioSource({ filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", voteAverageGte: null, ownerFilter: { keep: false } }, ownerSource: 7 })]);
+ importFolder(app, [nativeSource({ filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", voteAverageGte: null, ownerFilter: { keep: false } }, ownerSource: 7 })]);
  const original = JSON.parse(app.stringifyProject().json);
  for (const value of ["0", "", "100", ""]) {
   const opened = sessionFor(app), revision = app.getState().revision;
@@ -135,9 +137,9 @@ test("Studio intentional threshold edits clear only owned native/mirror fields, 
   assert.deepEqual(actual, expected);
  }
 });
-test("Studio functional threshold edit rejects exact siblings, accepts other thresholds and rejects stale sessions", () => {
+test(`${family} functional threshold edit rejects exact siblings, accepts other thresholds and rejects stale sessions`, () => {
  const app = createController();
- importFolder(app, [studioSource({ filters: { voteCountGte: 100 } }), studioSource({ filters: { voteCountGte: "0" } })]);
+ importFolder(app, [nativeSource({ filters: { voteCountGte: 100 } }), nativeSource({ filters: { voteCountGte: "0" } })]);
  const opened = sessionFor(app), original = app.stringifyProject().json;
  const draft = (value) => touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
  assert.equal(saveSourceEdit(app, opened.session, draft("0")).ok, false);
@@ -149,6 +151,8 @@ test("Studio functional threshold edit rejects exact siblings, accepts other thr
  assert.equal(saveSourceEdit(app, opened.session, draft("300")).ok, false);
  assert.equal(app.stringifyProject().json, after);
 });
+
+}
 
 function streamingSource(overrides = {}) {
 	return {
@@ -946,13 +950,18 @@ test("title-only editing remains allowed for a pre-existing duplicate identity",
 	assert.deepEqual(result.patch, { title: "Renamed" });
 });
 
-test("a changed project object rejects the session and leaves the current document unchanged", () => {
+for (const [family, sourceFactory] of [
+ ["Collection", collectionSource],
+ ["Network minimum", () => studioSource({ tmdbSourceType: "NETWORK", mediaType: "TV", filters: { voteCountGte: 0 } })],
+]) {
+ const editDraft = (draft) => family === "Collection" ? updateSourceEditTitle(draft, "Draft") : touchDiscoverFilters(draft, { ...draft, filters: { voteCountGte: "100" } });
+test(family + " changed project rejects the session and leaves the current document unchanged", () => {
 	const controller = createController();
-	const folder = importFolder(controller, [collectionSource(), peopleSource()]);
+	const folder = importFolder(controller, [sourceFactory(), peopleSource()]);
 	const opened = sessionFor(controller, 0);
 	assert.equal(controller.updateNode(folder.sources[1].internalId, { title: "External change" }).ok, true);
 	const beforeSave = serialize(controller);
-	const result = saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Draft"));
+	const result = saveSourceEdit(controller, opened.session, editDraft(opened.draft));
 	assert.equal(result.ok, false);
 	assert.equal(result.conflict, true);
 	assert.equal(result.closeRequired, false);
@@ -960,15 +969,15 @@ test("a changed project object rejects the session and leaves the current docume
 	assert.equal(serialize(controller).json, beforeSave.json);
 });
 
-test("source and folder deletion close safely without an edit mutation", () => {
+test(family + " source and folder deletion close safely without an edit mutation", () => {
 	for (const target of ["source", "folder"]) {
 		const controller = createController();
-		const folder = importFolder(controller, [collectionSource()]);
+		const folder = importFolder(controller, [sourceFactory()]);
 		const opened = sessionFor(controller);
 		assert.equal(controller.removeNode(target === "source" ? opened.source.internalId : folder.internalId).ok, true);
 		const revision = controller.getState().revision;
 		const beforeSave = serialize(controller);
-		const result = saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Draft"));
+		const result = saveSourceEdit(controller, opened.session, editDraft(opened.draft));
 		assert.equal(result.ok, false, target);
 		assert.equal(result.closeRequired, true, target);
 		assert.equal(controller.getState().revision, revision, target);
@@ -976,9 +985,9 @@ test("source and folder deletion close safely without an edit mutation", () => {
 	}
 });
 
-test("a source moved to another folder is rejected without rebasing", () => {
+test(family + " moved source is rejected without rebasing", () => {
 	const controller = createController();
-	importFolder(controller, [collectionSource({ tmdbId: 100 })]);
+	importFolder(controller, [sourceFactory()]);
 	const opened = sessionFor(controller);
 	const changedProject = structuredClone(opened.session.openingProject);
 	const collection = changedProject.collections[0];
@@ -997,12 +1006,14 @@ test("a source moved to another folder is rejected without rebasing", () => {
 			throw new Error("a moved source must not update");
 		},
 	};
-	const result = saveSourceEdit(fakeController, opened.session, updateSourceEditTitle(opened.draft, "Draft"));
+	const result = saveSourceEdit(fakeController, opened.session, editDraft(opened.draft));
 	assert.equal(result.ok, false);
 	assert.equal(result.conflict, true);
 	assert.equal(result.closeRequired, false);
 	assert.equal(result.errors[0].code, "SOURCE_EDIT_TARGET_MOVED");
 });
+
+}
 
 test("source reordering and external identity change conflict without rebasing", () => {
 	for (const change of ["reorder", "identity"]) {
@@ -1263,4 +1274,30 @@ test("desktop round trip: duplicate and stale Advanced saves do not mutate", () 
 		assert.equal(saveSourceEdit(c, opened.session, opened.draft).errors[0].code, "SOURCE_EDIT_PROJECT_STALE");
 		assert.equal(serialize(c).json, staleBefore);
 	}
+});
+
+test("Network invalid, alias-only and conflicting minima reject deliberate edits without altering imports", () => {
+ for (const filters of [{ "vote_count.gte": 100 }, { voteCountGte: 100, "vote_count.gte": 0 }, { voteCountGte: -1 }, { voteCountGte: "bad" }, { voteCountGte: [100] }, { voteCountGte: 2147483648 }, { voteCountGte: "0", "vote_count.gte": 0 }]) {
+  const app = createController();
+  importFolder(app, [studioSource({ tmdbSourceType: "NETWORK", mediaType: "TV", filters })]);
+  const opened = sessionFor(app), before = app.stringifyProject().json;
+  assert.equal(opened.draft.minimumVotesEditable, false);
+  assert.equal(saveSourceEdit(app, opened.session, touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: "200" } })).ok, false);
+  assert.equal(app.stringifyProject().json, before);
+ }
+});
+
+test("Network minimum edits retain inactive imported mirrors and unrelated nulls", () => {
+ for (const aliasValue of [null, ""]) {
+  const app = createController();
+  importFolder(app, [studioSource({ tmdbSourceType: "NETWORK", mediaType: "TV", filters: { voteCountGte: 100, "vote_count.gte": aliasValue, voteAverageGte: null } })]);
+  for (const value of ["0", "", "100"]) {
+   const opened = sessionFor(app);
+   assert.equal(saveSourceEdit(app, opened.session, touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } })).ok, true);
+   const filters = serialize(app).value[0].folders[0].sources[0].filters;
+   assert.equal(filters["vote_count.gte"], aliasValue);
+   assert.equal(filters.voteAverageGte, null);
+   assert.equal(filters.voteCountGte, value === "" ? undefined : Number(value));
+  }
+ }
 });

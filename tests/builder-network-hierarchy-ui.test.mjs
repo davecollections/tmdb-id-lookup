@@ -183,7 +183,7 @@ test("Network Preview is explicit in Configure, Series-only and exposes exact Sh
 	assert.match(sharedPreview, /No posters available\./);
 	assert.match(previewVariants, /label: "Show"/);
 	assert.doesNotMatch(flow, /previewProvider.getNetworkPreview|prefetch/);
-	assert.match(previewProvider, /requester.getPreview\(networkId, "TV", concreteSort/);
+	assert.match(previewProvider, /requester.getQueryPreview\(query.mediaType, query.queryParameters/);
 });
 
 test("Configure retains Series knowledge while Preview totals belong to the exact active response", () => {

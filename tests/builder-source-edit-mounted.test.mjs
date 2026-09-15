@@ -67,6 +67,7 @@ async function runMountedPage() {
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
 	const roundTripOnly = process.env.TMDB_SOURCE_ROUND_TRIP_ONLY === "1";
 	const listEditOnly = process.env.TMDB_LIST_EDIT_ONLY === "1";
+	const networkMinimumVotesOnly = process.env.TMDB_NETWORK_MINIMUM_VOTES_ONLY === "1";
 	const studioMinimumVotesOnly = process.env.TMDB_STUDIO_MINIMUM_VOTES_ONLY === "1";
 	const discoverPreviewOnly = process.env.TMDB_DISCOVER_PREVIEW_ONLY === "1";
 	const wordingOnly = process.env.TMDB_SOURCE_SORT_WORDING_ONLY === "1";
@@ -194,7 +195,7 @@ async function runMountedPage() {
 		}
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -204,18 +205,20 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
-                if (studioMinimumVotesOnly || (!discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
-                    result.results.studioMinimumVotesCases = [];
-                    const views = studioMinimumVotesOnly ? [[360,800],[384,800],[393,852],[402,800],[412,800],[1280,900],[393,400]] : [[393,852]];
+                for (const family of ["studio", "network"]) {
+                if ((family === "studio" ? studioMinimumVotesOnly : networkMinimumVotesOnly) || (!studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+                    result.results[family + "MinimumVotesCases"] = [];
+                    const views = studioMinimumVotesOnly || networkMinimumVotesOnly ? [[360,800],[384,800],[393,852],[402,800],[412,800],[1280,900],[393,400]] : [[393,852]];
                     for (const [width,height] of views) {
                         await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
                         for (const scope of ["new-collection", "new-folder", "add", "edit"]) {
-                            const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runStudioMinimumVotesScenario(" + JSON.stringify({ scope, mediaType: width === 1280 || height === 400 ? "TV" : "MOVIE" }) + ")", awaitPromise: true, returnByValue: true });
+                            const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__run" + (family === "studio" ? "Studio" : "Network") + "MinimumVotesScenario(" + JSON.stringify({ scope, mediaType: width === 1280 || height === 400 ? "TV" : "MOVIE" }) + ")", awaitPromise: true, returnByValue: true });
                             if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
-                            result.results.studioMinimumVotesCases.push(checked.result.value);
+                            result.results[family + "MinimumVotesCases"].push(checked.result.value);
                         }
                     }
-                    if (studioMinimumVotesOnly) return result.results;
+                    if (studioMinimumVotesOnly || networkMinimumVotesOnly) return result.results;
+                }
                 }
 
 				if (discoverPreviewOnly || (!listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
@@ -2310,11 +2313,11 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 
 		assert.equal(result.popular.requestCount, 1, `${width}px one cold Popular request`);
 		assert.equal(result.popular.request.origin, tmdbProxyBaseUrl, `${width}px production Worker origin`);
-		assert.equal(result.popular.request.pathname, "/3/discover/tv", `${width}px Network TV Discover path`);
+		assert.equal(result.popular.request.pathname, "/builder/discover/tv", `${width}px Network TV Discover path`);
 		assert.deepEqual(result.popular.request.networkValues, ["213"], `${width}px one with_networks identity`);
 		assert.deepEqual(result.popular.request.sortValues, ["popularity.desc"], `${width}px Popular concrete sort`);
 		assert.deepEqual(result.popular.request.pageValues, [], `${width}px no page or page-2 request`);
-		assert.deepEqual(result.popular.request.queryKeys.sort(), ["sort_by", "with_networks"], `${width}px no separate count or extra query`);
+		assert.deepEqual(result.popular.request.queryKeys.sort(), ["include_adult", "sort_by", "with_networks"], `${width}px no separate count or extra query`);
 		assert.equal(result.popular.request.exactRequest, true, `${width}px exact Popular request shape`);
 		assert.equal(result.popular.request.status, 200, `${width}px live Popular Worker status`);
 		assert.equal(result.popular.request.ok, true, `${width}px live Popular Worker response`);
@@ -2919,7 +2922,7 @@ test("mounted ordinary Add Source Preview reaches exact live parity for six newl
 
 		assert.deepEqual(families.network.selectorGroups, []);
 		assert.deepEqual([families.network.requestCountBeforeOpen, families.network.requestCountAfterInitial, families.network.requestCountFinal], [0, 1, 1]);
-		assert.equal(families.network.requests[0].startsWith("/3/discover/tv?"), true);
+		assert.equal(families.network.requests[0].startsWith("/builder/discover/tv?"), true);
 		assert.equal(new URLSearchParams(families.network.requests[0].split("?")[1]).get("with_networks"), "2");
 
 		assert.deepEqual(families.streaming.selectorGroups, [
@@ -3617,4 +3620,18 @@ test("mounted #198 wording stays scoped to creation, Preview and single-Source e
    }
   }
   console.log("STUDIO_MINIMUM_VOTES_LIVE " + JSON.stringify(mountedResults.studioMinimumVotesCases));
+ });
+
+ test("mounted Network minimum votes follows the current native draft across all four entry points", () => {
+  assert.equal(mountedResults.networkMinimumVotesCases.length, process.env.TMDB_NETWORK_MINIMUM_VOTES_ONLY === "1" ? 28 : 4);
+  for (const result of mountedResults.networkMinimumVotesCases) {
+   assert.equal(result.atomic, true);
+   assert.equal(result.preservation, true);
+   for (const preview of result.previews) {
+    assert.equal(preview.resultsMatch, true);
+    for (const key of ["withinViewport", "closeReachable", "gridNoHorizontalScroll", "pageNoHorizontalOverflow", "bodyLocked"]) assert.equal(preview.geometry[key], true, result.width + " " + result.scope + " " + key);
+    assert.ok(preview.geometry.activeScrollOwnerCount <= 1);
+   }
+  }
+  console.log("NETWORK_MINIMUM_VOTES_LIVE " + JSON.stringify(mountedResults.networkMinimumVotesCases));
  });

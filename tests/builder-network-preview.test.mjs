@@ -56,7 +56,7 @@ test("Network Preview requests fixed TV with exact Network sorts and typed succe
 	assert.equal((await provider.getNetworkPreview(18, { sortOptionId: "popular" })).fromCache, false);
 
 	assert.equal(urls.length, 5);
-	assert.ok(urls.every((url) => url.pathname === "/3/discover/tv"));
+	assert.ok(urls.every((url) => url.pathname === "/builder/discover/tv"));
 	assert.ok(urls.every((url) => url.searchParams.get("with_companies") === null));
 	assert.deepEqual(urls.map((url) => url.searchParams.get("with_networks")), ["17", "17", "17", "17", "18"]);
 	assert.deepEqual(urls.map((url) => url.searchParams.get("sort_by")), [
@@ -189,4 +189,22 @@ test("Network Preview suppresses an abort after headers and before JSON completi
 	assert.equal((await pending).error.kind, "aborted");
 	assert.equal((await provider.getNetworkPreview(6, { sortOptionId: "popular" })).fromCache, false);
 	assert.equal(calls, 2);
+});
+
+test("Network complete-query cache separates minimum and other effective predicates", async () => {
+ const urls = [];
+ const provider = createTmdbNetworkPreviewProvider({ baseUrl: "https://worker.example", fetchImpl: async (input) => { urls.push(new URL(input)); return jsonResponse(previewPayload()); } });
+ for (const sortOptionId of ["popular", "recent", "top-rated", "most-votes"]) for (const filters of [{}, { voteCountGte: 0 }, { voteCountGte: 100 }, { voteCountGte: 100, withoutCompanies: "174", voteAverageGte: 5 }, { voteCountGte: 100, withOriginalLanguage: "en" }, { voteCountGte: 100, withOriginCountry: "AU" }]) {
+  const options = { sortOptionId, filters };
+  assert.equal((await provider.getNetworkPreview(213, options)).ok, true);
+  assert.equal((await provider.getNetworkPreview(213, options)).fromCache, true);
+ }
+ assert.equal(urls.length, 24);
+ assert.equal(new Set(urls.map(String)).size, 24);
+ assert.ok(urls.every((url) => url.pathname === "/builder/discover/tv" && url.searchParams.get("include_adult") === "false" && url.searchParams.get("with_networks") === "213"));
+ assert.equal((await provider.getNetworkPreview(213, { sortOptionId: "popular", filters: { voteCountGte: "0", "vote_count.gte": "0", withNetworks: "999", with_networks: "999" } })).fromCache, true);
+ assert.equal((await provider.getNetworkPreview(213, { sortOptionId: "popular", filters: { voteCountGte: "100", withoutCompanies: "174", voteAverageGte: "5" } })).fromCache, true);
+ for (const filters of [{ voteCountGte: [100] }, { voteAverageGte: [5] }, { year: [2020] }, { withOriginalLanguage: ["en"] }, { withOriginCountry: ["AU"] }, { withNetworks: [999] }, { custom: true }, { voteCountGte: -1 }, { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { with_networks: "213" }, { withNetworks: "999", with_networks: "213" }]) assert.equal((await provider.getNetworkPreview(213, { sortOptionId: "popular", filters })).ok, false);
+ assert.equal((await provider.getNetworkPreview(213, { mediaType: "MOVIE", sortOptionId: "popular" })).ok, false);
+ assert.equal(urls.length, 24);
 });

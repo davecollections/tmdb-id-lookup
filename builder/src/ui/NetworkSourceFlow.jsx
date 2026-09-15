@@ -1,3 +1,4 @@
+import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceVariantReview } from "./SourceVariantReview.jsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -179,7 +180,7 @@ function networkCountText(count) {
 	return { text: "Checking Series Count…", state: "checking" };
 }
 
-export function NetworkConfigureStep({ network, count, duplicateReview, applyDiagnostic, sortOptionIds = [DEFAULT_NETWORK_SORT_OPTION_ID], onSortChange }) {
+export function NetworkConfigureStep({ network, count, duplicateReview, applyDiagnostic, sortOptionIds = [DEFAULT_NETWORK_SORT_OPTION_ID], onSortChange, advanced = { filters: {}, mediaType: "TV" }, onAdvancedChange }) {
 	const countDisplay = networkCountText(count);
 	const duplicate = duplicateReview.destination.length > 0;
 	return (
@@ -201,6 +202,7 @@ export function NetworkConfigureStep({ network, count, duplicateReview, applyDia
 			</div>
 			{duplicate ? <p className="studio-duplicate-note network-duplicate-note" role="status" data-network-duplicate-warning="true">Some configured Series sources already exist in this folder. Add includes only missing variants.</p> : null}
 			<NetworkSortChoices selectedIds={sortOptionIds} name="network-configure-sort" onChange={onSortChange} />
+			<MinimumVotesAdvancedOptions family="network" draft={advanced} onChange={onAdvancedChange} />
 			<SourceElsewhereNotice occurrences={duplicateReview.elsewhere} />
 		</section>
 	);
@@ -222,6 +224,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 	const [selectedNetwork, setSelectedNetwork] = useState(null);
 	const [count, setCount] = useState(INITIAL_NETWORK_COUNT);
 	const [sortOptionIds, setSortOptionIds] = useState([DEFAULT_NETWORK_SORT_OPTION_ID]);
+	const [advanced, setAdvanced] = useState({ filters: {}, mediaType: "TV" });
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
 	const titlePreview = useSourceTitlePreview("network", { network: previewProvider });
@@ -237,7 +240,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 
 	const search = useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilters: true });
-	const draftResult = selectedNetwork ? buildNetworkSourceDrafts(selectedNetwork, { sortOptionIds }) : { ok: false, drafts: [], errors: [] };
+	const draftResult = selectedNetwork ? buildNetworkSourceDrafts(selectedNetwork, { sortOptionIds, filters: advanced.filters }) : { ok: false, drafts: [], errors: [] };
 	const duplicateReview = inspectNetworkSourceDuplicates(project, folder?.internalId ?? null, draftResult.ok ? draftResult.drafts : []);
 	const duplicate = duplicateReview.destination.length > 0;
 	const step = navigation.step;
@@ -345,7 +348,7 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 								<NetworkSearchStep input={search.input} inputRef={inputRef} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters selectedNetworkId={selectedNetwork?.id ?? null} onInputChange={handleSearchInputChange} onSortChange={search.toggleSearchSort} onSeriesCountFilterChange={search.changeSeriesCountFilter} onRetry={search.retrySearch} onSelect={selectNetwork} onChangePage={search.setPage} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
-									<NetworkConfigureStep network={selectedNetwork} count={count} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionIds={sortOptionIds} onSortChange={(optionId) => { setSortOptionIds(optionId); setApplyDiagnostic(null); }} />
+									<NetworkConfigureStep advanced={advanced} onAdvancedChange={(next) => { setAdvanced(next); setApplyDiagnostic(null); }} network={selectedNetwork} count={count} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionIds={sortOptionIds} onSortChange={(optionId) => { setSortOptionIds(optionId); setApplyDiagnostic(null); }} />
 									<SourceVariantReview drafts={draftResult.drafts} review={duplicateReview} variantKey={networkSourceVariantKey} />
 									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-network" disabled={!previewAvailable || isApplying} onClick={(event) => titlePreview.open(draftResult.drafts, { trigger: event.currentTarget, label: selectedNetwork.name })}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Preview is unavailable right now.</p> : null}</div>
 								</div>

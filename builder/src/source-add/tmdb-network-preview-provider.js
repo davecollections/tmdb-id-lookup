@@ -1,3 +1,4 @@
+import { networkPreviewQuery } from "./network-advanced.js";
 import { NETWORK_SORT_OPTIONS, networkSortValue } from "./network-source.js";
 import { TMDB_PROXY_BASE_URL } from "./tmdb-collection-provider.js";
 import {
@@ -35,7 +36,7 @@ export function createTmdbNetworkPreviewProvider({
 		fetchImpl,
 		baseUrl,
 		queryParameter: "with_networks",
-		previewPaths: Object.freeze({ TV: "/3/discover/tv" }),
+		previewPaths: Object.freeze({ TV: "/builder/discover/tv" }),
 		entityLabel: "Network",
 		entityType: "NETWORK",
 		forceProxy: TMDB_NETWORK_PREVIEW_LOCAL_MOCK,
@@ -45,15 +46,17 @@ export function createTmdbNetworkPreviewProvider({
 		now,
 	});
 
-	async function getNetworkPreview(networkId, { sortOptionId, sortBy = null, signal } = {}) {
-		if (!Number.isSafeInteger(networkId) || networkId < 1) {
+	async function getNetworkPreview(networkId, { mediaType = "TV", sortOptionId, sortBy = null, filters = {}, signal } = {}) {
+		if (!Number.isSafeInteger(networkId) || networkId < 1 || mediaType !== "TV") {
 			return providerError("invalid-request", "Choose a valid Network and media preview.", { retryable: false });
 		}
 		const concreteSort = sortBy ?? networkSortValue(sortOptionId);
 		if (!NETWORK_SORT_OPTIONS.some((option) => option.value === concreteSort)) {
 			return providerError("invalid-request", "Choose a supported Network preview sort.", { retryable: false });
 		}
-		return requester.getPreview(networkId, "TV", concreteSort, { signal });
+		const query = networkPreviewQuery(networkId, { mediaType, sortBy: concreteSort, filters });
+		return query ? requester.getQueryPreview(query.mediaType, query.queryParameters, { signal })
+			: providerError("invalid-request", "These imported Network filters cannot be previewed exactly.", { retryable: false });
 	}
 
 	return Object.freeze({ getNetworkPreview });

@@ -97,7 +97,7 @@ test("Studio Preview complete query cache distinguishes absent/zero/100, media, 
  assert.equal(urls.length, 32);
  assert.equal(new Set(urls.map(String)).size, 32);
  assert.ok(urls.every((url) => url.pathname.startsWith("/builder/discover/") && url.searchParams.get("include_adult") === "false" && url.searchParams.get("with_companies") === "3"));
- for (const filters of [{ custom: true }, { voteCountGte: -1 }, { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { withoutCompanies: "3" }]) assert.equal((await provider.getStudioPreview(3, { mediaType: "MOVIE", sortOptionId: "popular", filters })).ok, false);
+ for (const filters of [{ voteCountGte: [100] }, { custom: true }, { voteCountGte: -1 }, { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { withoutCompanies: "3" }]) assert.equal((await provider.getStudioPreview(3, { mediaType: "MOVIE", sortOptionId: "popular", filters })).ok, false);
  assert.equal(urls.length, 32);
 });
 

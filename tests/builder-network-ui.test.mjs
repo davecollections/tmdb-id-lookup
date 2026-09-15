@@ -295,3 +295,21 @@ test("Network flow performs no uncontrolled catalogue or count request during se
 	assert.equal(catalogueCalls, 0);
 	assert.equal(countCalls, 0);
 });
+
+test("Network Add and Edit reuse collapsed Minimum votes with shared errors and preservation guidance", async () => {
+ const { MinimumVotesAdvancedOptions } = await vite.ssrLoadModule("/src/ui/MinimumVotesAdvancedOptions.jsx");
+ for (const value of ["", "0", "100", "-1"]) {
+  const markup = renderToStaticMarkup(createElement(MinimumVotesAdvancedOptions, { family: "network", draft: { mediaType: "TV", filters: { voteCountGte: value } }, onChange() {} }));
+  assert.match(markup, /<summary>Advanced options<\/summary>/);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen|autoFocus|autofocus/);
+  assert.match(markup, /inputMode="numeric"/);
+  assert.match(markup, /Minimum votes/);
+  assert.equal(markup.includes('aria-invalid="true"'), value === "-1");
+  assert.equal(markup.includes('role="alert"'), value === "-1");
+ }
+ const preserved = renderToStaticMarkup(createElement(MinimumVotesAdvancedOptions, { family: "network", draft: { filters: {}, minimumVotesEditable: false }, onChange() {} }));
+ assert.match(preserved, /original values will be preserved/);
+ assert.doesNotMatch(preserved, /<input/);
+ assert.match(renderConfigure(), /data-network-advanced="true"/);
+ assert.doesNotMatch(renderConfigure(), /data-network-minimum-votes-summary/);
+});

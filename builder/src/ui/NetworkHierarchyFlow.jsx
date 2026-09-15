@@ -1,3 +1,5 @@
+import { MinimumVotesAdvancedOptions, MinimumVotesSummary } from "./MinimumVotesAdvancedOptions.jsx";
+import { validateMinimumVotesFilters } from "../source-add/minimum-votes.js";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
@@ -71,7 +73,7 @@ function SelectableNetworkResult({ network, checked, onToggle }) {
 	);
 }
 
-function NetworkConfigureRow({ network, exactCount, outcome, onPreview, onRemove, placement }) {
+function NetworkConfigureRow({ network, exactCount, outcome, onPreview, onRemove, placement, previewDisabled }) {
 	const location = network.location || formatNetworkLocation(network);
 	return <article className="studio-configure-row network-configure-row" data-network-id={network.id} data-placement-status={outcome?.status ?? NETWORK_PLACEMENT_STATUSES.READY}>
 		<div className="studio-configure-row-main">
@@ -81,23 +83,25 @@ function NetworkConfigureRow({ network, exactCount, outcome, onPreview, onRemove
 				<span>{configureCountLabel(network, exactCount)}</span>
 				<small>TMDB {network.id}{location ? ` · ${location}` : ""} · Series</small>
 			</div>
-			<div className="studio-configure-row-actions"><button type="button" aria-haspopup="dialog" aria-label={`Preview ${network.name}`} onClick={(event) => onPreview(network, event.currentTarget)}>Preview</button><button className="studio-configure-remove" type="button" aria-label={`Remove ${network.name}`} onClick={() => onRemove(network.id)}>×</button></div>
+			<div className="studio-configure-row-actions"><button type="button" aria-haspopup="dialog" aria-label={`Preview ${network.name}`} disabled={previewDisabled} onClick={(event) => onPreview(network, event.currentTarget)}>Preview</button><button className="studio-configure-remove" type="button" aria-label={`Remove ${network.name}`} onClick={() => onRemove(network.id)}>×</button></div>
 		</div>
 		<NativeFolderPlacementNotice name={network.name} outcome={outcome} onChoose={placement} />
 		{outcome?.elsewhere?.length ? <details className="studio-configure-locations"><summary>View locations</summary><SourceElsewhereNotice occurrences={outcome.elsewhere} heading="This Network exists elsewhere" action="It can still be created here when the destination is clear." /></details> : null}
 	</article>;
 }
 
-function ConfigureStep({ networks, exactCounts, outcomes, sortOptionIds, onSortChange, onPreview, onRemove, headingRef, placement }) {
+function ConfigureStep({ networks, exactCounts, outcomes, sortOptionIds, onSortChange, onPreview, onRemove, headingRef, placement, options, onAdvancedChange }) {
+	const advanced = validateMinimumVotesFilters(options.filters, "TV");
 	return (
 		<section className="studio-hierarchy-configure network-hierarchy-configure" aria-labelledby="network-hierarchy-configure-title">
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="network-hierarchy-configure-title" ref={headingRef} tabIndex={-1}>Configure Networks</h3></div></div>
 			<p className="studio-configure-helper">This sort applies to every selected Network.</p>
 			<NetworkSortChoices selectedIds={sortOptionIds} name="network-hierarchy-sort" onChange={onSortChange} />
+			<MinimumVotesAdvancedOptions family="network" draft={{ ...options, mediaType: "TV" }} onChange={onAdvancedChange} />
 			{placement ? <NativeFolderPlacementSummary counts={placement.counts} /> : null}
 			<section className="studio-configure-selected network-configure-selected" aria-labelledby="network-configure-selected-title">
 				<div className="add-source-section-heading"><div><h4 id="network-configure-selected-title">Selected Networks{networks.length ? ` · ${networks.length}` : ""}</h4></div></div>
-				{networks.length ? <div className="studio-configure-list network-configure-list">{networks.map((network, index) => <NetworkConfigureRow key={network.id} network={network} exactCount={exactCounts[network.id]} outcome={outcomes[index]} onPreview={onPreview} onRemove={onRemove} placement={(folderId) => placement.choose(index, folderId)} />)}</div> : <p className="studio-configure-empty" role="status">No Networks selected. Go Back to Select to choose at least one Network.</p>}
+				{networks.length ? <div className="studio-configure-list network-configure-list">{networks.map((network, index) => <NetworkConfigureRow previewDisabled={!advanced.ok || !sortOptionIds.length} key={network.id} network={network} exactCount={exactCounts[network.id]} outcome={outcomes[index]} onPreview={onPreview} onRemove={onRemove} placement={(folderId) => placement.choose(index, folderId)} />)}</div> : <p className="studio-configure-empty" role="status">No Networks selected. Go Back to Select to choose at least one Network.</p>}
 			</section>
 		</section>
 	);
@@ -112,7 +116,7 @@ function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange,
 	return (
 		<section className="studio-hierarchy-review studio-hierarchy-appearance network-hierarchy-appearance" aria-labelledby="network-hierarchy-appearance-title">
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="network-hierarchy-appearance-title" ref={headingRef} tabIndex={-1}>Appearance</h3></div></div>
-			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
+			{plan ? <><SourceVariantCounts counts={plan.counts} /><MinimumVotesSummary family="network" filters={plan.configuration.filters} /></> : null}
 			{plan?.configuration.scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			{plan?.configuration.scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
 			{options.scope === "new-collection" ? <>
@@ -149,7 +153,7 @@ export function NetworkHierarchyFlow({
 	const [step, setStep] = useState("select");
 	const [selection, setSelection] = useState(createNetworkSelectionState);
 	const [exactCounts, setExactCounts] = useState({});
-	const [options, setOptions] = useState(() => Object.freeze({ scope, destinationCollectionTitle, collectionTitle: "Networks", hideCollectionTitle: false, viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false, folderTitleVisibility: DEFAULT_NETWORK_FOLDER_TITLE_VISIBILITY, artworkOrientation: DEFAULT_NETWORK_ARTWORK_ORIENTATION, sortOptionIds: [DEFAULT_NETWORK_SORT_OPTION_ID] }));
+	const [options, setOptions] = useState(() => Object.freeze({ scope, destinationCollectionTitle, collectionTitle: "Networks", hideCollectionTitle: false, viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false, filters: {}, folderTitleVisibility: DEFAULT_NETWORK_FOLDER_TITLE_VISIBILITY, artworkOrientation: DEFAULT_NETWORK_ARTWORK_ORIENTATION, sortOptionIds: [DEFAULT_NETWORK_SORT_OPTION_ID] }));
 	const [artworkBatch, setArtworkBatch] = useState(null);
 	const titlePreview = useSourceTitlePreview("network", { network: previewProvider });
 	const preview = titlePreview.preview;
@@ -172,9 +176,9 @@ export function NetworkHierarchyFlow({
 	artworkSelectionIdsRef.current = chosenIds;
 
 	const configureEntries = useMemo(() => chosen.map((network) => {
-		const result = buildNetworkSourceDrafts(network, { sortOptionIds: options.sortOptionIds, hierarchy: true });
+		const result = buildNetworkSourceDrafts(network, { sortOptionIds: options.sortOptionIds, filters: options.filters, hierarchy: true });
 		return { network, result, outcome: result.ok ? inspectNetworkHierarchyPlacement(project, result.drafts, { destinationCollectionInternalId: scope === "new-folder" ? destinationCollectionInternalId : null }) : null };
-	}), [chosen, destinationCollectionInternalId, options.sortOptionIds, project, scope]);
+	}), [chosen, destinationCollectionInternalId, options.sortOptionIds, options.filters, project, scope]);
 	const placement = useNativeFolderPlacement(scope === "new-folder" ? destinationCollectionInternalId : null, configureEntries.map((entry) => ({ id: entry.network.id, drafts: entry.result.drafts, outcome: entry.outcome })));
 	const configureOutcomes = placement.outcomes;
 	const configurationValid = configureEntries.length > 0 && configureEntries.every((entry) => entry.result.ok) && (scope !== "new-folder" || (placement.counts?.sourceCount > 0 && placement.counts.unresolvedEntityCount === 0));
@@ -192,6 +196,7 @@ export function NetworkHierarchyFlow({
 		folderTitleVisibility: options.folderTitleVisibility,
 		artworkOrientation: options.artworkOrientation,
 		sortOptionIds: options.sortOptionIds,
+		filters: options.filters,
 		networks: chosen.map((network, index) => ({ network, artwork: resolvedArtworks[index] })),
 	});
 	const appendOnly = scope === "new-folder" && placement.counts?.folderCount === 0;
@@ -349,7 +354,7 @@ export function NetworkHierarchyFlow({
 					<div ref={selectHeadingRef} tabIndex={-1} className="studio-hierarchy-focus-target network-hierarchy-focus-target" />
 					{chosen.length ? <section className="people-selected-tray studio-selected-tray network-selected-tray"><div className="people-selected-summary"><strong>{chosen.length} Network{chosen.length === 1 ? "" : "s"} selected</strong><SelectedNetworks networks={chosen} onRemove={removeNetwork} /></div>{notice.visible ? <p className="people-selection-limit" data-large-selection-notice="true" role="status">You’ve selected {notice.count} Networks. Configure may take a little longer, but there is no selection cap.</p> : null}</section> : null}
 					<NetworkSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onSeriesCountFilterChange={search.changeSeriesCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Networks" stageKicker="Step 1 · Select" renderResult={(network) => <SelectableNetworkResult key={network.id} network={network} checked={Boolean(selection.byId[network.id])} onToggle={toggleNetwork} />} />
-				</> : step === "configure" ? <div inert={isPreparing || undefined} aria-busy={isPreparing ? "true" : undefined}><ConfigureStep networks={chosen} exactCounts={exactCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} sortOptionIds={options.sortOptionIds} onSortChange={changeSort} onPreview={requestPreview} onRemove={removeNetwork} headingRef={configureHeadingRef} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} onArtworkChange={changeArtworkOrientation} diagnostic={diagnostic} headingRef={appearanceHeadingRef} isPreparing={isPreparing} />}
+				</> : step === "configure" ? <div inert={isPreparing || undefined} aria-busy={isPreparing ? "true" : undefined}><ConfigureStep options={options} onAdvancedChange={(next) => updateOptions({ filters: next.filters })} networks={chosen} exactCounts={exactCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} sortOptionIds={options.sortOptionIds} onSortChange={changeSort} onPreview={requestPreview} onRemove={removeNetwork} headingRef={configureHeadingRef} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} onArtworkChange={changeArtworkOrientation} diagnostic={diagnostic} headingRef={appearanceHeadingRef} isPreparing={isPreparing} />}
 			</div>
 			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>
 		</form>

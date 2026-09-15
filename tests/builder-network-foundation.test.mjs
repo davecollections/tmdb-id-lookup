@@ -1,3 +1,6 @@
+import { buildNetworkSourceDrafts, networkSourceVariantKey } from "../builder/src/source-add/network-source.js";
+import { sourceTitlePreviewRequest } from "../builder/src/source-add/source-title-preview.js";
+import { networkPreviewQuery } from "../builder/src/source-add/network-advanced.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -345,4 +348,55 @@ test("Network physical Source Edit changes only title and sort, preserves identi
 	assert.equal(serialized.mediaType, "TV");
 	assert.deepEqual(serialized.filters, {});
 	assert.deepEqual(serialized.unknownSource, { keep: true });
+});
+
+for (const minimum of [undefined, "", 0, "0", 100, "100", 2147483647]) {
+ test(`Network minimum ${JSON.stringify(minimum)} uses one canonical draft for every media/sort, Preview and comparison`, () => {
+  const filters = minimum === undefined ? {} : { voteCountGte: minimum };
+  const built = buildNetworkSourceDrafts(network(), { sortOptionIds: NETWORK_SORT_OPTIONS.map((option) => option.id), filters });
+  assert.equal(built.ok, true);
+  assert.equal(built.drafts.length, 4);
+  const expected = minimum === undefined || minimum === "" ? {} : { voteCountGte: Number(minimum) };
+  for (const draft of built.drafts) {
+   assert.deepEqual(draft.editable.filters, expected);
+   assert.equal(draft.editable.tmdbSourceType, "NETWORK");
+   assert.equal(draft.editable.tmdbId, 2);
+   const request = sourceTitlePreviewRequest("network", draft);
+   assert.deepEqual(request.filters, expected);
+   const query = networkPreviewQuery(request.tmdbId, request);
+   assert.equal(query.queryParameters.with_networks, "2");
+   assert.equal(query.queryParameters["vote_count.gte"], expected.voteCountGte === undefined ? undefined : String(expected.voteCountGte));
+   assert.equal(query.queryParameters.sort_by, draft.editable.sortBy);
+  }
+ });
+}
+for (const minimum of [-1, "-1", 1.2, [100], {}, "1e2", "abc", " 100 ", true, 2147483648]) {
+ test(`Network rejects invalid minimum ${JSON.stringify(minimum)} without creating candidates`, () => {
+  const result = buildNetworkSourceDrafts(network(), { filters: { voteCountGte: minimum } });
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.drafts, []);
+  assert.equal(result.errors[0].path, "$discover.voteCountGte");
+ });
+}
+test("Network exact variants preserve unset versus zero and safely compare numeric/string/matching mirror thresholds", () => {
+ const draft = buildNetworkSourceDrafts(network(), {}).drafts[0];
+ const key = (filters) => networkSourceVariantKey({ ...draft, editable: { ...draft.editable, filters: Object.fromEntries(Object.entries(filters).filter(([key]) => key === "voteCountGte")) }, rawImported: { ...draft.editable, filters } });
+ assert.notEqual(key({}), key({ voteCountGte: 0 }));
+ assert.notEqual(key({ voteCountGte: 0 }), key({ voteCountGte: 100 }));
+ assert.equal(key({ voteCountGte: 100 }), key({ voteCountGte: "100" }));
+ assert.equal(key({ voteCountGte: 100 }), key({ voteCountGte: 100, "vote_count.gte": "100" }));
+ assert.notEqual(key({}), key({ "vote_count.gte": 100 }));
+ assert.notEqual(key({ voteCountGte: 100 }), key({ voteCountGte: 100, "vote_count.gte": 0 }));
+ assert.notEqual(key({ voteCountGte: 100 }), key({ voteCountGte: 100, custom: false }));
+});
+
+
+test("Network creation rejects other filters and noncanonical candidate values", () => {
+ for (const filters of [{ withNetworks: "2" }, { voteAverageGte: 5 }, { "vote_count.gte": 100 }, { voteCountGte: 100, unknown: null }]) {
+  assert.equal(buildNetworkSourceDrafts(network(), { filters }).ok, false);
+ }
+ const draft = buildNetworkSourceDraft(network()).draft;
+ for (const filters of [{ voteCountGte: "100" }, { voteCountGte: -1 }, { voteCountGte: 2147483648 }, { voteCountGte: 1.5 }]) {
+  assert.equal(validateNetworkSourceDraft({ ...draft, editable: { ...draft.editable, filters } }).ok, false);
+ }
 });

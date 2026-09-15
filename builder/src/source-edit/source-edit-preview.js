@@ -1,3 +1,4 @@
+import { networkPreviewQuery } from "../source-add/network-advanced.js";
 import { studioPreviewQuery } from "../source-add/studio-advanced.js";
 import {
 	discoverSortOptionId,
@@ -146,15 +147,19 @@ export function prepareSourceEditPreview(session, draft) {
 				label: draft.title,
 			});
 		}
-		case NETWORK_SOURCE_EDITOR_ID:
+		case NETWORK_SOURCE_EDITOR_ID: {
 			if (networkSortOptionId(candidateSource.editable.sortBy) === null) return freezeFailure(SUPPORTED_SORT_GUIDANCE);
+			const effective = resolveEffectiveDiscoverSource(candidateSource);
+			if (!effective.ok || !networkPreviewQuery(draft.tmdbId, { sortBy: candidateSource.editable.sortBy, filters: effective.value.filters })) return freezeFailure("These imported Network filters cannot be previewed exactly. They will be preserved when you save.");
 			return ready(candidateSource, {
 				kind: "network",
+				filters: effective.value.filters ?? {},
 				tmdbId: candidateSource.editable.tmdbId,
 				mediaType: "TV",
 				sortBy: candidateSource.editable.sortBy,
 				label: draft.title,
 			});
+		}
 		case STREAMING_SOURCE_EDITOR_ID:
 			if (discoverSortOptionId(candidateSource.editable.sortBy, draft.mediaType) === null) return freezeFailure(SUPPORTED_SORT_GUIDANCE);
 			return ready(candidateSource, {

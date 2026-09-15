@@ -1,3 +1,4 @@
+import { networkPreviewQuery } from "../builder/src/source-add/network-advanced.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { touchDiscoverFilters } from "../builder/src/source-add/advanced-discover.js";
@@ -8,6 +9,7 @@ import {
 	choosePeopleSourceCombination,
 	createSourceEditSession,
 	prepareSourceEditPreview,
+	saveSourceEdit,
 	updateDecadeSourceSort,
 	updateGenreSourceSort,
 	updateNetworkSourceSort,
@@ -126,3 +128,118 @@ test("Source Edit preview stays visible-but-disabled for invalid drafts and unto
 	assert.equal(invalid.guidance, "Fix the current source fields before previewing.");
 	assert.ok(invalid.errors.length > 0);
 });
+
+test("Network Preview projects the current effective native draft, fixed Network and supported imported filters without mutation", () => {
+ for (const mediaType of ["TV"]) {
+  const source = { ...sources[3], mediaType, filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", withNetworks: "999", voteAverageGte: 5 } };
+  const app = createProject([source]), opened = openedAt(app, 0), before = app.stringifyProject().json;
+  for (const value of ["100", "0", "", "200"]) {
+   const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
+   const result = prepareSourceEditPreview(opened.session, draft);
+   assert.equal(result.previewable, true, JSON.stringify(result));
+   assert.equal(result.candidateSource.editable.tmdbSourceType, "NETWORK");
+   const query = networkPreviewQuery(result.request.tmdbId, result.request);
+   assert.equal(query.queryParameters.with_networks, "2");
+   assert.equal(query.queryParameters.without_companies, "174");
+   assert.equal(query.queryParameters["vote_average.gte"], "5");
+   assert.equal(query.queryParameters["vote_count.gte"], value || undefined);
+   assert.equal(app.stringifyProject().json, before);
+  }
+ }
+});
+
+
+test("Network imported minimum and fixed-network aliases fail closed before requests", () => {
+ for (const filters of [
+  { "vote_count.gte": 100 }, { voteCountGte: 100, "vote_count.gte": 0 },
+  { voteCountGte: -1 }, { voteCountGte: [100] }, { with_networks: "2" }, { withNetworks: "999", with_networks: "2" },
+  { custom: false }, { voteCountGte: 100, withOriginalLanguage: "en|fr" },
+ ]) {
+  const app = createProject([{ ...sources[3], filters }]), opened = openedAt(app, 0);
+  const before = app.stringifyProject().json;
+  const result = prepareSourceEditPreview(opened.session, opened.draft);
+  assert.equal(result.previewable, false, JSON.stringify(filters));
+  assert.match(result.guidance, /cannot be previewed exactly/);
+  assert.equal(app.stringifyProject().json, before);
+ }
+});
+
+for (const [family, original, previewQuery, inclusionField] of [
+	["Network TV", sources[3], networkPreviewQuery, "withNetworks"],
+	["Studio Movie", sources[2], studioPreviewQuery, "withCompanies"],
+	["Studio TV", { ...sources[2], mediaType: "TV" }, studioPreviewQuery, "withCompanies"],
+]) {
+	for (const [field, value] of [
+		["voteAverageGte", [5]], ["voteAverageLte", [9]], ["year", [2020]],
+		["withOriginalLanguage", ["en"]], ["withOriginCountry", ["AU"]],
+		["releaseDateGte", ["2020-01-01"]], ["withoutCompanies", [174]],
+		["voteAverageLte", { value: 9 }], ["voteAverageGte", true], ["year", false],
+		["withOriginalLanguage", { value: "en" }], ["withoutCompanies", 174],
+		[inclusionField, [999]],
+	]) {
+		test(`${family} preserves imported ${field}=${JSON.stringify(value)} while exact Preview fails closed`, () => {
+			const filters = { voteCountGte: 100, [field]: value };
+			const app = createProject([{ ...original, filters }]);
+			let opened = openedAt(app, 0);
+			const imported = JSON.parse(app.stringifyProject().json);
+			assert.deepEqual(imported[0].folders[0].sources[0].filters, filters);
+			assert.equal(opened.draft.minimumVotesEditable, true);
+			assert.equal(saveSourceEdit(app, opened.session, opened.draft).ok, true);
+			assert.deepEqual(JSON.parse(app.stringifyProject().json), imported);
+			assert.equal(saveSourceEdit(app, opened.session, updateSourceEditTitle(opened.draft, "Renamed")).ok, true);
+			imported[0].folders[0].sources[0].title = "Renamed";
+			assert.deepEqual(JSON.parse(app.stringifyProject().json), imported);
+
+			opened = openedAt(app, 0);
+			const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: "200" } });
+			assert.equal(saveSourceEdit(app, opened.session, draft).ok, true);
+			imported[0].folders[0].sources[0].filters.voteCountGte = 200;
+			assert.deepEqual(JSON.parse(app.stringifyProject().json), imported);
+
+			opened = openedAt(app, 0);
+			const before = structuredClone(app.getState());
+			const preview = prepareSourceEditPreview(opened.session, opened.draft);
+			assert.deepEqual(app.getState(), before, "attempting Preview must not mutate imported source state");
+			assert.equal(preview.previewable, false);
+			assert.equal(preview.request, null);
+			assert.equal(preview.candidateSource, null);
+			assert.match(preview.guidance, /cannot be previewed exactly/);
+			assert.equal(previewQuery(original.tmdbId, { ...original, filters }), null);
+		});
+	}
+	test(`${family} retains exact valid scalar queries, native identity and inactive imported values`, () => {
+		const recentSort = original.mediaType === "TV" ? "first_air_date.desc" : "primary_release_date.desc";
+		for (const sortBy of ["popularity.desc", recentSort, "vote_average.desc", "vote_count.desc"]) {
+			for (const minimum of [undefined, null, "", 0, "0", 100, "100"]) for (const numericStrings of [false, true]) {
+				const filters = {
+					...(minimum === undefined ? {} : { voteCountGte: minimum }),
+					voteAverageGte: numericStrings ? "5" : 5, voteAverageLte: numericStrings ? "9" : 9,
+					year: numericStrings ? "2020" : 2020, withoutCompanies: "174",
+					withOriginalLanguage: "en", withOriginCountry: "AU", releaseDateGte: "2020-01-01",
+					withKeywords: null, withoutGenres: "", [inclusionField]: "999",
+				};
+				const app = createProject([{ ...original, sortBy, filters }]), opened = openedAt(app, 0);
+				const before = structuredClone(app.getState());
+				const preview = prepareSourceEditPreview(opened.session, opened.draft);
+				assert.equal(preview.previewable, true, JSON.stringify(preview));
+				assert.equal(preview.candidateSource.editable.tmdbSourceType, original.tmdbSourceType);
+				assert.equal(preview.candidateSource.editable.tmdbId, original.tmdbId);
+				const expected = { mediaType: original.mediaType, queryParameters: {
+					include_adult: "false", sort_by: sortBy,
+					...(minimum === undefined || minimum === null || minimum === "" ? {} : { "vote_count.gte": String(minimum) }),
+					"vote_average.gte": "5", "vote_average.lte": "9", without_companies: "174",
+					with_original_language: "en", with_origin_country: "AU",
+					[original.mediaType === "TV" ? "first_air_date_year" : "year"]: "2020",
+					[original.mediaType === "TV" ? "first_air_date.gte" : "primary_release_date.gte"]: "2020-01-01",
+					[inclusionField === "withNetworks" ? "with_networks" : "with_companies"]: String(original.tmdbId),
+				} };
+				assert.deepEqual(previewQuery(preview.request.tmdbId, preview.request), expected);
+				const inactive = { ...filters, withoutKeywords: undefined };
+				assert.deepEqual(previewQuery(original.tmdbId, { ...original, sortBy, filters: inactive }), expected);
+				assert.equal(Object.hasOwn(inactive, "withoutKeywords"), true);
+				assert.equal(saveSourceEdit(app, opened.session, opened.draft).ok, true);
+				assert.deepEqual(app.getState(), before);
+			}
+		}
+	});
+}

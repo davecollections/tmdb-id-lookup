@@ -516,7 +516,7 @@ Open-issue inventory checked on 2026-09-13: this documentation issue [#210](http
 
 ### Next
 
-**Shared Advanced options — next product direction.** Continue from the shipped Studio proof by extending suitable shared capabilities to **Networks / Streaming**, then consolidating or reusing existing **Genre / Decade Advanced controls**, before considering additional supported fields. This sequence retains the accepted [assessment](./SHARED_ADVANCED_ASSESSMENT.md#implementation-stages-and-worker-boundary) without repeating its now-completed first slice. The exact next family, field subset and implementation issue are not yet selected.
+**Shared Advanced options — next product direction.** Continue from the shipped Studio proof by extending suitable shared capabilities to **Networks / Streaming**, then consolidating or reusing existing **Genre / Decade Advanced controls**, before considering additional supported fields. This sequence retains the accepted [assessment](./SHARED_ADVANCED_ASSESSMENT.md#implementation-stages-and-worker-boundary) without repeating its now-completed first slice. Network Minimum votes [#213](https://github.com/davecollections/tmdb-id-lookup/issues/213) / [PR #214](https://github.com/davecollections/tmdb-id-lookup/pull/214) implements the shared threshold across Add, both guided scopes and physical Edit. It reuses the existing standalone TV Discover gateway without Worker changes; it does not include hidden NuvioTV defaults. Further family/field selection remains open.
 
 Preserve every family's native identity and defining constraint: Studio ID, Network TV identity, Streaming provider/region, Genre inclusion, and Decade/year period. Reuse shared controls, validation, effective-filter handling and exact current-draft Preview/cache/duplicate behavior, with thin family adapters and accepted per-media Both behavior. Do not add Discover controls to Lists or Franchises merely because imported filters survive. Native People remains separate capability work. Network client-default/Preview parity, including the assessed TV-only hidden status constraint, needs an explicit contract decision if included; the no-Worker result for Studio does not pre-authorize other route changes.
 
@@ -576,7 +576,7 @@ If adoption and continued development justify it, Dingo's may evolve toward a **
 
 | Decision | Why it remains open |
 | --- | --- |
-| Next Shared Advanced slice | Network/Streaming progression is agreed; the exact next family, supported fields, parity scope and issue are not selected. |
+| Next Shared Advanced slice | Network Minimum votes #213 / PR #214 implements the Network threshold slice; subsequent Streaming/Genre/Decade scope and additional fields remain undecided. |
 | MDBList trial | Whether to build lookup/search-only first and its presentation remain undecided; native creation needs a verified Nuvio contract. |
 | Management action semantics | Bulk-delete scope, name sorting, merge identity/conflict outcomes and copy-versus-merge design need focused decisions. |
 | Final public name for the one-click feature | Dave’s 1-Click Setup is the working name; final product copy needs review. |
