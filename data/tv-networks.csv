@@ -5237,7 +5237,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9072,新华社,1,,CN,,https://www.themoviedb.org/network/9072
 9073,央视新闻,1,,CN,,https://www.themoviedb.org/network/9073
 9074,冬奥场馆,1,,,,https://www.themoviedb.org/network/9074
-9075,Kongthup's Channel,2,,,,https://www.themoviedb.org/network/9075
 9076,Время,1,,,,https://www.themoviedb.org/network/9076
 9077,Scary World Tingz,1,,,,https://www.themoviedb.org/network/9077
 9078,Melodie TV,3,,,,https://www.themoviedb.org/network/9078
@@ -5608,6 +5607,13 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9493,ערוץ הכלכלה,1,"Ramat gan, israel",IL,,https://www.themoviedb.org/network/9493
 9494,roblox,1,,,,https://www.themoviedb.org/network/9494
 9495,Viaplay (UK),1,,,,https://www.themoviedb.org/network/9495
-9496,UNLP.TV,1,"La Plata, Buenos Aires, Argentina",AR,https://tv.unlp.edu.ar/,https://www.themoviedb.org/network/9496
-9497,Voyo (BiH),2,,BA,http://www.voyo.ba,https://www.themoviedb.org/network/9497
+9496,UNLP.TV,1,"La Plata, Buenos Aires, Argentina",AR,,https://www.themoviedb.org/network/9496
+9497,Voyo (BiH),2,,BA,,https://www.themoviedb.org/network/9497
 9498,Voyo (SRB),1,,,,https://www.themoviedb.org/network/9498
+9499,Sky Max,0,,,,https://www.themoviedb.org/network/9499
+9500,KOCOWA,1,"Los Angeles, California",US,https://www.kocowa.com,https://www.themoviedb.org/network/9500
+9501,TV Nova,1,,,,https://www.themoviedb.org/network/9501
+9502,tving,0,,,,https://www.themoviedb.org/network/9502
+9503,Relay,0,,,https://pickrelay.com,https://www.themoviedb.org/network/9503
+9504,UnivaleTV,1,,,,https://www.themoviedb.org/network/9504
+9505,原神官网,1,,,,https://www.themoviedb.org/network/9505
