@@ -88,6 +88,10 @@ export function overlayFilters(output, editable, rawImported) {
   const ownedMinimum = String(output.tmdbSourceType).toUpperCase() === "COMPANY"
    || inspectDiscoverMirrors(rawImported ?? {}).equivalent.includes("vote_count.gte");
   if (ownedMinimum) synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: ["voteCountGte"], sort: false });
+  const equivalent = inspectDiscoverMirrors(rawImported ?? {}).equivalent;
+  const ratingFields = [["vote_average.gte", "voteAverageGte"], ["vote_average.lte", "voteAverageLte"]]
+   .filter(([alias]) => equivalent.includes(alias)).map(([, field]) => field);
+  synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: ratingFields, sort: false });
  }
 	setOwn(output, "filters", rawFilters);
 	return output;

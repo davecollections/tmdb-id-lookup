@@ -17,6 +17,8 @@ import { createSourceEditSession, saveSourceEdit, updateSourceEditTitle, updateP
 import { sourcePreviewVariantKey, resolveSourcePreviewDraft, sourcePreviewVariantGroups, sourceTitlePreviewRequest, requestSourceTitlePreview } from "../builder/src/source-add/source-title-preview.js";
 import { desktopExpandedSource } from "./fixtures/nuvio-desktop-round-trip.mjs";
 import { reconcileNativeFolderDestinations } from "../builder/src/source-add/native-source-variants.js";
+import { studioPreviewQuery } from "../builder/src/source-add/studio-advanced.js";
+import { networkPreviewQuery } from "../builder/src/source-add/network-advanced.js";
 
 const sortIds = ["popular", "recent", "top-rated", "most-votes"];
 const labels = ["Popular", "Recent", "Top rated", "Most voted"];
@@ -64,12 +66,92 @@ function planFunctions(family) {
 	return family.name === "People" ? [createPeopleHierarchyPlan, applyPeopleHierarchyPlan] : family.name === "Studio" ? [createStudioHierarchyPlan, applyStudioHierarchyPlan] : [createNetworkHierarchyPlan, applyNetworkHierarchyPlan];
 }
 
+const ratingCases = [
+ {}, { voteAverageGte: 0 }, { voteAverageLte: 10 }, { voteAverageGte: 0, voteAverageLte: 10 },
+ { voteAverageGte: 7 }, { voteAverageLte: 9 }, { voteAverageGte: 7, voteAverageLte: 9 },
+ { voteAverageGte: 7, voteAverageLte: 7 }, { voteAverageGte: "7.250", voteAverageLte: "9.125" },
+ { voteAverageGte: "0.000001", voteAverageLte: "0.000001" },
+ { voteAverageGte: null, voteAverageLte: "" }, { voteAverageGte: "0", voteAverageLte: "10.00", voteCountGte: "100" },
+];
+for (const family of families.filter((family) => family.name !== "People")) {
+ const queryFor = (draft) => (family.name === "Studio" ? studioPreviewQuery : networkPreviewQuery)(draft.editable.tmdbId, draft.editable);
+ for (const filters of ratingCases) test(`${family.name} rating pair ${JSON.stringify(filters)} reaches every candidate, frozen plan, Preview and export`, () => {
+  const expected = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== null && value !== "").map(([key, value]) => [key, Number(value)]));
+  const built = family.build({ filters, sortOptionIds: sortIds });
+  assert.equal(built.ok, true, JSON.stringify(built.errors));
+  assert.equal(built.drafts.length, family.slots * 4);
+  for (const draft of built.drafts) {
+   assert.deepEqual(draft.editable.filters, expected);
+   const query = queryFor(draft).queryParameters;
+   for (const [field, parameter] of [["voteCountGte", "vote_count.gte"], ["voteAverageGte", "vote_average.gte"], ["voteAverageLte", "vote_average.lte"]]) assert.equal(query[parameter], Object.hasOwn(expected, field) ? String(expected[field]) : undefined);
+   assert.equal(query.include_adult, "false");
+  }
+  for (const scope of ["new-collection", "new-folder"]) {
+   const app = createBuilderController(), [create, apply] = planFunctions(family);
+   app.importValue([{ id: "c", title: "Existing", folders: [] }]);
+   const state = app.getState(), before = app.stringifyProject().json;
+   const options = { ...refinementConfig(family, [family.entity, { ...family.entity, id: family.entity.id + 100, name: "Another entity" }], sortIds), filters, scope, ...(scope === "new-collection" ? { collectionTitle: "Ratings" } : { destinationCollectionInternalId: state.project.collections[0].internalId }), projectRevision: state.revision };
+   const result = create(state.project, options);
+   assert.equal(result.ok, true, JSON.stringify(result.errors));
+   assert.deepEqual(result.plan.configuration.filters, expected);
+   assert.ok(Object.isFrozen(result.plan.configuration.filters));
+   const tampered = structuredClone(result.plan);
+   tampered.configuration.filters = { voteAverageGte: 9, voteAverageLte: 8 };
+   assert.equal(apply(app, tampered).ok, false);
+   assert.equal(app.stringifyProject().json, before);
+   assert.equal(apply(app, result.plan).ok, true);
+   assert.equal(app.getState().revision, state.revision + 1);
+   const folders = app.stringifyProject().value.flatMap((collection) => collection.folders);
+   assert.equal(folders.length, 2);
+   for (const folder of folders) {
+    assert.ok(!folder.catalogSources?.length);
+    assert.equal(folder.sources.length, family.slots * 4);
+    for (const source of folder.sources) assert.deepEqual(source.filters, expected);
+   }
+   assert.equal(apply(app, result.plan).ok, false);
+  }
+ });
+ for (const field of ["voteAverageGte", "voteAverageLte"]) for (const value of [[7], [], {}, { value: 7 }, true, false, -1, 11, "07", " 7 ", ".5", "7.", "1e0", "abc", "0.0000001", 1e-7]) {
+  test(`${family.name} rejects unsafe authored ${field}=${JSON.stringify(value)} before creation or requests`, () => {
+   const built = family.build({ filters: { [field]: value }, sortOptionIds: sortIds });
+   assert.equal(built.ok, false);
+   assert.deepEqual(built.drafts, []);
+   assert.ok(built.errors.some((error) => error.path === "$discover." + field));
+   const draft = family.build().drafts[0];
+   assert.equal(queryFor({ ...draft, editable: { ...draft.editable, filters: { [field]: value } } }), null);
+  });
+ }
+ test(`${family.name} rating configured equality preserves presence and unsafe semantics without broadening mirror equivalence`, () => {
+  const draft = family.build().drafts[0];
+  const key = (filters) => {
+   const app = createBuilderController();
+   assert.equal(app.importValue([{ title: "C", folders: [{ title: "F", sources: [{ ...draft.editable, filters }] }] }]).ok, true);
+   return family.key(app.getState().project.collections[0].folders[0].sources[0]);
+  };
+  for (const field of ["voteAverageGte", "voteAverageLte"]) {
+   const alias = field === "voteAverageGte" ? "vote_average.gte" : "vote_average.lte";
+   assert.equal(key({ [field]: 7 }), key({ [field]: "7" }));
+   assert.equal(key({ [field]: 7 }), key({ [field]: "7.0" }));
+   assert.equal(key({ [field]: 7 }), key({ [field]: 7, [alias]: "7" }));
+   for (const value of [[7], {}, true, "07", " 7 "]) assert.notEqual(key({ [field]: 7 }), key({ [field]: value }));
+   for (const filters of [{ [alias]: 7 }, { [field]: 7, [alias]: "7.0" }, { [field]: 7, [alias]: 8 }, { [field]: 7, custom: true }]) assert.notEqual(key({ [field]: 7 }), key(filters));
+   assert.notEqual(key({ [field]: "0.0000001" }), key({ [field]: 1e-7 }));
+  }
+  assert.notEqual(key({}), key({ voteAverageGte: 0 }));
+  assert.notEqual(key({}), key({ voteAverageLte: 10 }));
+  assert.notEqual(key({ voteAverageGte: 7 }), key({ voteAverageLte: 7 }));
+  assert.equal(key({ voteAverageGte: 7, voteAverageLte: 9 }), key({ voteAverageGte: "7.0", voteAverageLte: "9.00" }));
+  assert.notEqual(key({ voteAverageGte: 7, voteAverageLte: 9 }), key({ voteAverageGte: 7.5, voteAverageLte: 9 }));
+  assert.notEqual(key({ voteAverageGte: 9, voteAverageLte: 8 }), key({ voteAverageGte: "9", voteAverageLte: "8" }));
+ });
+}
+
 function importedFolder(id, sources) {
 	return { id, title: "Renamed " + id, hideTitle: true, tileShape: "POSTER", future: { keep: [0, null, false] }, sources: sources.map((draft, index) => ({ ...draft.editable, id: id + "-source-" + index, title: "Custom title " + index, addonId: null })), catalogSources: [] };
 }
 
-for (const baseFamily of families) for (const minimum of baseFamily.name === "People" ? [undefined] : [undefined, 0, 100]) {
- const filters = minimum === undefined ? {} : { voteCountGte: minimum };
+for (const baseFamily of families) for (const filters of baseFamily.name === "People" ? [{}] : [{}, { voteCountGte: 0 }, { voteCountGte: 100 }, { voteAverageGte: 0, voteAverageLte: 10 }, { voteCountGte: 100, voteAverageGte: 7.25, voteAverageLte: 9 }]) {
+ const minimum = JSON.stringify(filters);
  const family = { ...baseFamily, build: (options) => baseFamily.build({ ...options, filters }) };
 	for (const complete of [false, true]) test(family.name + " minimum " + minimum + " reuses one imported folder for missing Sources and leaves full selections unchanged", () => {
 		const app = createBuilderController(), [create, apply] = planFunctions(family);

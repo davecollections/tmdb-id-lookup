@@ -90,6 +90,88 @@ function studioSource(overrides = {}) {
 	};
 }
 
+for (const [tmdbSourceType, mediaType] of [["COMPANY", "MOVIE"], ["COMPANY", "TV"], ["NETWORK", "TV"]]) {
+ const native = (filters) => studioSource({ id: "preserved", tmdbSourceType, mediaType, filters, ownerExtra: { keep: [false, null] } });
+ const changed = (opened, patch) => touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { ...opened.draft.filters, ...patch } });
+ test(`${tmdbSourceType}/${mediaType} deliberate rating edits validate the effective pair and reject malformed or unrepresentable input`, () => {
+  const app = createController(); importFolder(app, [native({ voteAverageGte: "7.0", voteAverageLte: "8.00" })]);
+  const opened = sessionFor(app), before = app.stringifyProject().json;
+  for (const patch of [{ voteAverageGte: "9" }, { voteAverageLte: "6" }, { voteAverageGte: [7] }, { voteAverageLte: { value: 8 } }, { voteAverageGte: false }, { voteAverageGte: "0.0000001" }]) {
+   const draft = changed(opened, patch);
+   assert.equal(prepareSourceEditPreview(opened.session, draft).previewable, false);
+   assert.equal(saveSourceEdit(app, opened.session, draft).ok, false);
+   assert.equal(app.stringifyProject().json, before);
+  }
+  // A caller cannot omit the untouched imported maximum to bypass ordering.
+  const omitted = { ...opened.draft, filters: { voteAverageGte: "9" }, touchedFilters: ["voteAverageGte"] };
+  assert.equal(saveSourceEdit(app, opened.session, omitted).ok, false);
+  assert.equal(prepareSourceEditPreview(opened.session, omitted).previewable, false);
+  const equal = changed(opened, { voteAverageGte: "8" });
+  assert.equal(prepareSourceEditPreview(opened.session, equal).previewable, true);
+  assert.equal(saveSourceEdit(app, opened.session, equal).ok, true);
+  assert.deepEqual(app.stringifyProject().value[0].folders[0].sources[0].filters, { voteAverageGte: 8, voteAverageLte: "8.00" });
+ });
+ test(`${tmdbSourceType}/${mediaType} one-bound edits and clears own only matching mirrors and retain the other bound exactly`, () => {
+  for (const patch of [{ voteAverageGte: "7.5" }, { voteAverageLte: "9.5" }, { voteAverageGte: "" }, { voteAverageLte: "" }, { voteAverageGte: "", voteAverageLte: "" }]) {
+   const filters = { voteCountGte: "100", "vote_count.gte": "100", voteAverageGte: "7.0", "vote_average.gte": "7.0", voteAverageLte: "9.00", "vote_average.lte": "9.00", withoutCompanies: "174", year: null, ownerFilter: { keep: [false] } };
+   const app = createController(); importFolder(app, [native(filters)]);
+   const opened = sessionFor(app), raw = structuredClone(opened.source.rawImported), before = app.stringifyProject().value;
+   assert.equal(saveSourceEdit(app, opened.session, changed(opened, patch)).ok, true);
+   const expected = structuredClone(before);
+   for (const [field, value] of Object.entries(patch)) {
+    const alias = field === "voteAverageGte" ? "vote_average.gte" : "vote_average.lte";
+    if (value === "") { delete expected[0].folders[0].sources[0].filters[field]; delete expected[0].folders[0].sources[0].filters[alias]; }
+    else { expected[0].folders[0].sources[0].filters[field] = Number(value); expected[0].folders[0].sources[0].filters[alias] = Number(value); }
+   }
+   assert.deepEqual(app.stringifyProject().value, expected);
+   assert.deepEqual(app.getState().project.collections[0].folders[0].sources[0].rawImported, raw);
+   const reopened = sessionFor(app), after = app.stringifyProject().json;
+   assert.equal(saveSourceEdit(app, reopened.session, reopened.draft).ok, true);
+   assert.equal(app.stringifyProject().json, after);
+  }
+ });
+ test(`${tmdbSourceType}/${mediaType} inactive rating aliases and untouched nulls survive deliberate edits`, () => {
+  for (const aliasValue of [null, ""]) for (const value of ["0", ""]) {
+   const app = createController(); importFolder(app, [native({ voteAverageGte: 7, "vote_average.gte": aliasValue, voteAverageLte: null, "vote_average.lte": aliasValue })]);
+   const opened = sessionFor(app);
+   assert.equal(saveSourceEdit(app, opened.session, changed(opened, { voteAverageGte: value })).ok, true);
+   assert.deepEqual(app.stringifyProject().value[0].folders[0].sources[0].filters, { ...(value ? { voteAverageGte: 0 } : {}), "vote_average.gte": aliasValue, voteAverageLte: null, "vote_average.lte": aliasValue });
+  }
+ });
+ test(`${tmdbSourceType}/${mediaType} unsafe imported rating semantics preserve no-op, title, sort and unrelated minimum edits`, () => {
+  for (const filters of [{ voteAverageGte: [7] }, { voteAverageLte: {} }, { voteAverageGte: true }, { voteAverageGte: "0.0000001" }, { voteAverageGte: 1e-7 }, { voteAverageGte: 9, voteAverageLte: 8 }, { "vote_average.gte": 7 }, { voteAverageGte: 7, "vote_average.gte": "7.0" }, { voteAverageGte: 7, "vote_average.gte": 8 }]) {
+   for (const action of ["noop", "title", "sort", "votes"]) {
+    const app = createController(); importFolder(app, [native(filters)]);
+    const opened = sessionFor(app), before = app.stringifyProject().value, revision = app.getState().revision;
+    assert.equal(opened.draft.ratingBoundsEditable, false);
+    assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false);
+    assert.equal(saveSourceEdit(app, opened.session, changed(opened, { voteAverageGte: "5" })).ok, false);
+    const draft = action === "title" ? updateSourceEditTitle(opened.draft, "Renamed") : action === "sort" ? { ...opened.draft, sortBy: "vote_count.desc", sortTouched: true } : action === "votes" ? changed(opened, { voteCountGte: "100" }) : opened.draft;
+    assert.equal(saveSourceEdit(app, opened.session, draft).ok, true);
+    const expected = structuredClone(before), source = expected[0].folders[0].sources[0];
+    if (action === "title") source.title = "Renamed";
+    if (action === "sort") source.sortBy = "vote_count.desc";
+    if (action === "votes") source.filters.voteCountGte = 100;
+    assert.deepEqual(app.stringifyProject().value, expected);
+    assert.equal(app.getState().revision, revision + (action === "noop" ? 0 : 1));
+   }
+  }
+ });
+ test(`${tmdbSourceType}/${mediaType} ratings reject exact sibling edits but allow preserved duplicates and distinct boundaries`, () => {
+  const app = createController(); importFolder(app, [native({ voteAverageGte: 7, voteAverageLte: 9 }), { ...native({ voteAverageGte: "7.5", voteAverageLte: "9.0" }), id: "sibling" }]);
+  const opened = sessionFor(app), before = app.stringifyProject().json;
+  assert.equal(saveSourceEdit(app, opened.session, changed(opened, { voteAverageGte: "7.5" })).ok, false);
+  assert.equal(app.stringifyProject().json, before);
+  assert.equal(saveSourceEdit(app, opened.session, changed(opened, { voteAverageGte: "0", voteAverageLte: "10" })).ok, true);
+  assert.equal(saveSourceEdit(app, opened.session, changed(opened, { voteAverageGte: "6" })).ok, false, "stale rating session");
+  const duplicates = createController(); importFolder(duplicates, [native({ voteAverageGte: 7, voteAverageLte: 9 }), { ...native({ voteAverageGte: "7.0", voteAverageLte: "9.00" }), id: "sibling" }]);
+  const duplicateOpen = sessionFor(duplicates), duplicateBefore = duplicates.stringifyProject().json;
+  assert.equal(saveSourceEdit(duplicates, duplicateOpen.session, duplicateOpen.draft).ok, true);
+  assert.equal(duplicates.stringifyProject().json, duplicateBefore);
+  assert.equal(saveSourceEdit(duplicates, duplicateOpen.session, updateSourceEditTitle(duplicateOpen.draft, "Renamed")).ok, true);
+ });
+}
+
 for (const [family, tmdbSourceType, mediaType] of [["Studio", "COMPANY", "MOVIE"], ["Studio", "COMPANY", "TV"], ["Network", "NETWORK", "TV"]]) {
  const nativeSource = (options) => studioSource({ ...options, tmdbSourceType, mediaType });
 for (const filters of [
@@ -610,6 +692,7 @@ test("Studio editor locks COMPANY identity/media while exposing title and correc
 		filters: {},
 		touchedFilters: [],
 		minimumVotesEditable: true,
+		ratingBoundsEditable: true,
 		title: "Pixar",
 		titleTouched: false,
 		studioName: "Pixar",

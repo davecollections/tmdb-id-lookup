@@ -862,9 +862,9 @@ export function SourceEditorDialog({
 							{stage === "picker"
 								? "Choose a replacement TMDB movie franchise."
 								: session.adapterId === STUDIO_SOURCE_EDITOR_ID
-									? "Update this Studio source name, title order and Minimum votes."
+									? "Update this Studio source name, title order and Advanced settings."
 								: session.adapterId === NETWORK_SOURCE_EDITOR_ID
-										? "Update this Network Series source name and title order."
+										? "Update this Network Series source name, title order and Advanced settings."
 										: session.adapterId === STREAMING_SOURCE_EDITOR_ID
 											? "Update this Streaming source name and title order. Provider, region and media stay fixed."
 										: session.adapterId === GENRE_SOURCE_EDITOR_ID

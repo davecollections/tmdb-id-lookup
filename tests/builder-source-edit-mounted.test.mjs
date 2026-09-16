@@ -3608,11 +3608,13 @@ test("mounted #198 wording stays scoped to creation, Preview and single-Source e
 	console.log("SOURCE_WORDING_MOUNTED " + JSON.stringify(mountedResults.wording));
 });
 
- test("mounted Studio minimum votes follows the current native draft across all four entry points", () => {
+ test("mounted Studio minimum votes and rating bounds follow the current native draft across all four entry points", () => {
   assert.equal(mountedResults.studioMinimumVotesCases.length, process.env.TMDB_STUDIO_MINIMUM_VOTES_ONLY === "1" ? 28 : 4);
   for (const result of mountedResults.studioMinimumVotesCases) {
    assert.equal(result.atomic, true);
    assert.equal(result.preservation, true);
+   assert.deepEqual(result.ratings, { boundaries: true, decimals: true, invalid: true, clearing: true, cache: true });
+   assert.ok(result.advancedScrollOwners <= 1);
    for (const preview of result.previews) {
     assert.equal(preview.resultsMatch, true);
     for (const key of ["withinViewport", "closeReachable", "gridNoHorizontalScroll", "pageNoHorizontalOverflow", "bodyLocked"]) assert.equal(preview.geometry[key], true, result.width + " " + result.scope + " " + key);
@@ -3622,11 +3624,13 @@ test("mounted #198 wording stays scoped to creation, Preview and single-Source e
   console.log("STUDIO_MINIMUM_VOTES_LIVE " + JSON.stringify(mountedResults.studioMinimumVotesCases));
  });
 
- test("mounted Network minimum votes follows the current native draft across all four entry points", () => {
+ test("mounted Network minimum votes and rating bounds follow the current native draft across all four entry points", () => {
   assert.equal(mountedResults.networkMinimumVotesCases.length, process.env.TMDB_NETWORK_MINIMUM_VOTES_ONLY === "1" ? 28 : 4);
   for (const result of mountedResults.networkMinimumVotesCases) {
    assert.equal(result.atomic, true);
    assert.equal(result.preservation, true);
+   assert.deepEqual(result.ratings, { boundaries: true, decimals: true, invalid: true, clearing: true, cache: true });
+   assert.ok(result.advancedScrollOwners <= 1);
    for (const preview of result.previews) {
     assert.equal(preview.resultsMatch, true);
     for (const key of ["withinViewport", "closeReachable", "gridNoHorizontalScroll", "pageNoHorizontalOverflow", "bodyLocked"]) assert.equal(preview.geometry[key], true, result.width + " " + result.scope + " " + key);

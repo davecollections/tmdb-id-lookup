@@ -3,11 +3,34 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { buildStudioSourceDrafts, buildNetworkSourceDrafts } from "../builder/src/source-add/index.js";
+import { studioPreviewQuery } from "../builder/src/source-add/studio-advanced.js";
+import { networkPreviewQuery } from "../builder/src/source-add/network-advanced.js";
 const d=path.dirname(fileURLToPath(import.meta.url));
 const text=fs.readFileSync(process.env.TMDB_WORKER_TEST_SOURCE ?? path.join(d,"..","cloudflare-worker","tmdb-proxy.js"),"utf8");
 const module=await import("data:text/javascript;base64,"+Buffer.from(text+"\nexport { isAllowedTmdbRequest };").toString("base64"));
 const validate=(media,fields)=>module.isAllowedTmdbRequest(new URL("https://worker.example/builder/discover/"+media+"?"+new URLSearchParams(fields)));
 const base={include_adult:"false",sort_by:"popularity.desc"};
+test("native Studio/Network authored rating pairs produce requests accepted by the unchanged Worker", () => {
+ const entity = { id: 3, name: "Unit native entity" };
+ const filters = [{}, { voteAverageGte: 0 }, { voteAverageLte: 10 }, { voteAverageGte: "0", voteAverageLte: "10.00" }, { voteAverageGte: "7.250", voteAverageLte: "9.125", voteCountGte: 100 }, { voteAverageGte: "0.000001", voteAverageLte: "0.000001" }];
+ for (const pair of filters) {
+  const studios = buildStudioSourceDrafts(entity, { choices: ["studio-movies", "studio-series"], sortOptionIds: ["popular", "recent", "top-rated", "most-votes"], filters: pair });
+  const networks = buildNetworkSourceDrafts(entity, { sortOptionIds: ["popular", "recent", "top-rated", "most-votes"], filters: pair });
+  assert.equal(studios.ok && networks.ok, true);
+  for (const draft of [...studios.drafts, ...networks.drafts]) {
+   const query = (draft.editable.tmdbSourceType === "COMPANY" ? studioPreviewQuery : networkPreviewQuery)(entity.id, draft.editable);
+   assert.equal(validate(query.mediaType === "TV" ? "tv" : "movie", query.queryParameters), true, JSON.stringify(query));
+  }
+ }
+ for (const field of ["voteAverageGte", "voteAverageLte"]) {
+  const pair = { [field]: "0.0000001" };
+  assert.equal(buildStudioSourceDrafts(entity, { choices: ["studio-movies"], filters: pair }).ok, false);
+  assert.equal(buildNetworkSourceDrafts(entity, { filters: pair }).ok, false);
+  const parameter = field === "voteAverageGte" ? "vote_average.gte" : "vote_average.lte";
+  assert.equal(validate("movie", { ...base, with_companies: "3", [parameter]: String(Number(pair[field])) }), false);
+ }
+});
 const good=[
 ["topic-free baseline", "movie", {}],
 ["filters only", "movie", {"primary_release_date.gte":"1990-01-01","primary_release_date.lte":"1999-12-31",with_original_language:"fr","vote_average.gte":"7"}],
