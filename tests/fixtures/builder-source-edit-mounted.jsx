@@ -1,5 +1,5 @@
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
-import { runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
+import { runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
 import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
@@ -4393,7 +4393,7 @@ async function runNetworkDeferredArtworkScenario() {
 		const configureShell = required(configure.parentElement, "Configure interaction shell");
 		const popular = required(configure.querySelector('input[name="network-hierarchy-sort"][value="popular"]'), "Popular sort");
 		const recent = required(configure.querySelector('input[name="network-hierarchy-sort"][value="recent"]'), "Recent sort");
-		const preview = required(configure.querySelector('button[aria-haspopup="dialog"]'), "Preview action");
+		const preview = required(configure.querySelector('.studio-configure-row-actions button[aria-haspopup="dialog"]'), "Preview action");
 		const remove = required(configure.querySelector(".network-configure-row .studio-configure-remove"), "Remove action");
 		const back = required(dialog.querySelector('[data-action="back-to-network-selection"]'), "Back action");
 		const continueAction = required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action");
@@ -8035,6 +8035,7 @@ async function runMountedRegressions() {
 
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
 window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runNativeSharedAdvancedScenario = (view) => runNativeSharedAdvancedScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);

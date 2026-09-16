@@ -446,7 +446,7 @@ test("Studio editor opens the fixed Studio identity with count, TMDB link, sort,
 	assert.ok(markup.includes('data-action="cancel-source-edit"'));
 	assert.ok(markup.includes("Source name"));
 	assert.ok(markup.includes("Changes how this source appears in Nuvio, not which Studio it represents."));
-	assert.equal(markup.includes("<select"), false);
+	assert.equal((markup.match(/<select/g) ?? []).length, 2);
 });
 
 test("TMDB List editor links only its normalized numeric ID and retains Preview and safe external-link behavior", () => {

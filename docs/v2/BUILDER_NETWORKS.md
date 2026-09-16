@@ -1,5 +1,18 @@
 # V2 Builder Network Sources
 
+## Shared Advanced filters (#218)
+
+[Issue #218](https://github.com/davecollections/tmdb-id-lookup/issues/218) extends the existing collapsed Advanced disclosure in Add Source, New Collection, New Folder and physical Edit with `withOriginalLanguage`, `withOriginCountry`, `withGenres`, `withoutGenres`, `withKeywords`, `withoutKeywords`, `releaseDateGte`, `releaseDateLte` and `year`. Network remains native NETWORK, fixed TMDB ID and Series-only. Existing votes/ratings, sort inventory, naming, artwork, ordering, placement, atomic application and sources-only output remain unchanged.
+
+The [shared Studio contract](./BUILDER_STUDIOS.md#shared-advanced-filters-218) defines locale grammar, included Any/All expressions, comma-list exclusions, date/year validation and preservation boundaries. Network uses the actual TV genre catalogue. Dates map to `first_air_date.gte/lte`; year maps separately to `first_air_date_year`. No hidden current-date upper bound or NuvioTV status default is added.
+
+Multi-Network creation provides genre **Shared genres**, **Using default** and **Custom** contexts through the reused Discover controls and genre context chooser. Customise starts with blank, independent genre rules: an intentional empty Custom override means no genre restriction. Clear selections keeps Custom and resets its rules, Include mode and Match any operator; Use default removes the override and restores the current shared rules. Subsequent shared changes do not affect blank or populated Custom rules. Review shows differing effective rules. Single-Network creation shows direct genre controls; physical Edit has only concrete filters. Keywords and other settings remain shared. Overrides resolve before configured equality and plan construction, are frozen for rebuild/revalidation, and never serialize into Nuvio JSON.
+
+The Advanced threshold controls share one desktop row and stack on mobile. Minimum/Maximum rating use ordinary decimal-entry fields; optional values, validation and explicit 0/10 boundaries remain unchanged. Genre configuration summarises Shared genres counts and Custom/Using default entity counts; inheriting contexts show an entity-specific Customise prompt instead of repeating the rules. Desktop keywords retain removable Include/Exclude chips without a separate selected-only view; mobile retains its dedicated picker and selected-items navigation.
+
+The existing explicit detached Preview sends fixed Network, adult exclusion, sort and the complete effective filter query through the approved TV gateway/cache. Advanced interaction requests no titles. Untouched imported representations and inactive/alias-only/conflicting mirrors remain preserved; coupled edits include stored partners and only touched canonical fields plus equivalent mirrors change. Unsafe effective semantics block exact Preview while preservation-only edits remain available. No Worker change or deployment is required. Other families and provider/region authoring remain outside this feature.
+
+
 ## Shared rating bounds (#216)
 
 [Issue #216](https://github.com/davecollections/tmdb-id-lookup/issues/216) adds **Minimum rating** and **Maximum rating** after Minimum votes in the same default-collapsed Advanced disclosure on Add Source, New Collection, New Folder and physical Edit Source. Network shares the [Studio rating/preservation contract](./BUILDER_STUDIOS.md#shared-rating-bounds-216): optional inclusive 0–10 decimals, minimum ≤ maximum, equal bounds allowed, canonical authored numbers, meaningful explicit 0/10 presence, scalar-shape safety and canonical request representability. No arbitrary precision limit or rounding is introduced.

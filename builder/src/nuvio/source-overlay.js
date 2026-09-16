@@ -1,4 +1,4 @@
-import { inspectDiscoverMirrors, synchronizeDiscoverMirrors } from "./discover-imported-filters.js";
+import { discoverImportedMirrors, inspectDiscoverMirrors, synchronizeDiscoverMirrors } from "./discover-imported-filters.js";
 import { cloneJsonValue } from "../domain/index.js";
 import { DISCOVER_FILTER_FIELDS } from "./known-fields.js";
 
@@ -91,7 +91,7 @@ export function overlayFilters(output, editable, rawImported) {
   const equivalent = inspectDiscoverMirrors(rawImported ?? {}).equivalent;
   const ratingFields = [["vote_average.gte", "voteAverageGte"], ["vote_average.lte", "voteAverageLte"]]
    .filter(([alias]) => equivalent.includes(alias)).map(([, field]) => field);
-  synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: ratingFields, sort: false });
+  synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: [...ratingFields, ...Object.entries(discoverImportedMirrors(editable.mediaType)).filter(([alias, field]) => equivalent.includes(alias) && ["withOriginalLanguage", "withOriginCountry", "withGenres", "withoutGenres", "withKeywords", "withoutKeywords", "releaseDateGte", "releaseDateLte", "year"].includes(field)).map(([, field]) => field)], sort: false });
  }
 	setOwn(output, "filters", rawFilters);
 	return output;

@@ -1,5 +1,12 @@
 # Native People, Studio and Network variants
 
+## Shared Advanced comparison and plans (#218)
+
+Studio/Network comparison includes locale, effective genre and keyword expressions/operators, dates and year alongside existing sort and thresholds. Pure supported inclusion expressions compare independently of ID order while retaining AND/OR; canonical numeric/string years compare equally. Equivalent imported mirrors do not create a second variant, but unknown/conflicting/preservation-only meaningful semantics remain distinct. Comparison never rewrites stored data or changes physical identity.
+
+Creation resolves genre Shared genres/Custom state per entity and actual media before candidate comparison. Changing any shared field, default, override or operator recalculates existing/missing variants. An absent entity key inherits shared rules; an own empty override means Custom with no genre restriction. Clear selections retains that empty override, while Use default removes it. These states compare using their resolved concrete filters. Frozen configuration preserves Studio Both's genre union and detached overrides for existing rebuild, tamper/stale checks and atomic application. Nuvio output has ordinary concrete filters only. Functional edits into exact siblings remain rejected; no-op/title-only duplicate preservation remains allowed. The existing Preview cache uses family, media and the complete sorted effective query. See [Studio](./BUILDER_STUDIOS.md#shared-advanced-filters-218) and [Network](./BUILDER_NETWORKS.md#shared-advanced-filters-218).
+
+
 ## Rating comparison and plans (#216)
 
 Studio/Network configured equality includes both optional rating bounds alongside sort, Minimum votes and remaining meaningful semantics. Supported canonical `7`, `"7"` and `"7.0"` compare equally; Minimum unset differs from 0, Maximum unset differs from 10, minimum-only differs from maximum-only, and 7–9 differs from 7.5–9. Invalid shapes, unrepresentable canonical requests and conflicting meaningful aliases are not normalized into valid equality. Existing mirror equivalence remains unchanged. These projections never rewrite imported storage or alter physical identity.

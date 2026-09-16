@@ -164,7 +164,7 @@ test("Network Configure presents fixed Series identity, live count, TMDB link, a
 	assert.equal(markup.includes("Refresh"), false);
 	assert.equal(markup.includes("Retry"), false);
 	assert.equal(markup.includes("Movie Count"), false);
-	assert.equal(markup.includes("<select"), false);
+	assert.equal((markup.match(/<select/g) ?? []).length, 2);
 });
 
 test("Network count zero and failure remain informative and never block Add", () => {
@@ -323,6 +323,7 @@ test("native Advanced shares rating fields, errors and independent preservation 
   assert.doesNotMatch(markup, /<details[^>]*\sopen|autoFocus|autofocus/);
   assert.match(markup, /Minimum votes[\s\S]*Minimum rating[\s\S]*Maximum rating/);
   assert.equal((markup.match(/inputMode="decimal"/g) ?? []).length, 2);
+  assert.match(markup, /class="native-threshold-fields"/);
   assert.equal(markup.includes('aria-invalid="true"'), invalid);
   assert.equal(markup.includes('role="alert"'), invalid);
  }
@@ -332,4 +333,31 @@ test("native Advanced shares rating fields, errors and independent preservation 
  assert.doesNotMatch(preserved, /<input[^>]*id="discover-field-voteAverage/);
  const summary = renderToStaticMarkup(createElement(MinimumVotesSummary, { family: "network", filters: { voteCountGte: 100, voteAverageGte: 0, voteAverageLte: 10 } }));
  assert.match(summary, /Minimum votes: 100/); assert.match(summary, /Minimum rating: 0/); assert.match(summary, /Maximum rating: 10/);
+});
+
+
+test("native multi-entity genre summary is compact for empty, shared and custom rules", async () => {
+ const { NativeExtraAdvancedControls } = await vite.ssrLoadModule("/src/ui/NativeExtraAdvancedControls.jsx");
+ const entities = [{ id: 49, name: "HBO" }, { id: 213, name: "Netflix" }, { id: 4, name: "BBC" }];
+ const render = (filters, genreOverrides = {}) => renderToStaticMarkup(createElement(NativeExtraAdvancedControls, { draft: { mediaMode: "series", filters, genreOverrides }, entities, expanded: false, onChange() {} }));
+ assert.match(render({}), /Shared genres: No genre restriction/);
+ assert.match(render({}), /0 custom · 3 using default/);
+ const markup = render({ withGenres: "16|18", withoutGenres: "99" }, { 49: { withGenres: "35" } });
+ assert.match(markup, /Shared genres: 2 included · 1 excluded/);
+ assert.match(markup, /1 custom · 2 using default/);
+ assert.doesNotMatch(markup, /Shared genres: Include|Uses default|Customize/);
+ const singular = render({ withGenres: "18", withoutGenres: "99" }, { 49: {}, 213: {} });
+ assert.match(singular, /1 included · 1 excluded/);
+ assert.match(singular, /2 custom · 1 using default/);
+});
+
+
+test("native Review distinguishes inherited, blank Custom and populated Custom genre rules", async () => {
+ const { NativeExtraSummary } = await vite.ssrLoadModule("/src/ui/NativeExtraAdvancedControls.jsx");
+ const markup = renderToStaticMarkup(createElement(NativeExtraSummary, { mediaMode: "movies", filters: { withGenres: "16" }, entities: [{ id: 3, name: "Pixar" }, { id: 174, name: "Warner Bros. Pictures" }, { id: 33, name: "Universal Pictures" }], genreOverrides: { 174: {}, 33: { withGenres: "35" } } }));
+ assert.match(markup, /Shared genres: Animation/);
+ assert.match(markup, /Pixar · Using default/);
+ assert.match(markup, /Warner Bros. Pictures · Custom: No genre restriction/);
+ assert.match(markup, /Universal Pictures · Custom: Comedy/);
+ assert.doesNotMatch(markup, /Batch default/);
 });

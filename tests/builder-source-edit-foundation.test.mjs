@@ -1,3 +1,4 @@
+import { NATIVE_EXTRA_FIELDS } from "../builder/src/source-add/native-shared-advanced.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { desktopExpandedSource, roundTripSourceCases } from "./fixtures/nuvio-desktop-round-trip.mjs";
@@ -689,6 +690,7 @@ test("Studio editor locks COMPANY identity/media while exposing title and correc
 	assert.equal(opened.session.adapterId, STUDIO_SOURCE_EDITOR_ID);
 	assert.equal(opened.session.originalIdentity, "tmdb|COMPANY|3|MOVIE");
 	assert.deepEqual(opened.draft, {
+		extraEditable: Object.fromEntries(NATIVE_EXTRA_FIELDS.map((field) => [field, true])),
 		filters: {},
 		touchedFilters: [],
 		minimumVotesEditable: true,
@@ -1384,3 +1386,46 @@ test("Network minimum edits retain inactive imported mirrors and unrelated nulls
   }
  }
 });
+
+for (const [tmdbSourceType, mediaType] of [["COMPANY", "MOVIE"], ["COMPANY", "TV"], ["NETWORK", "TV"]]) {
+ const native = (filters) => studioSource({ tmdbSourceType, mediaType, filters, id: "keep", unknown: { keep: [null, false] } });
+ const change = (opened, filters) => touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { ...opened.draft.filters, ...filters } });
+ test(tmdbSourceType + "/" + mediaType + " shared edits own only touched equivalent mirrors and preserve raw/untouched values", () => {
+  const dateAlias = mediaType === "TV" ? "first_air_date.gte" : "primary_release_date.gte";
+  for (const clear of [false, true]) {
+   const filters = { withOriginalLanguage: "en", with_original_language: "en", withOriginCountry: "US", with_origin_country: null, withGenres: "35|16", with_genres: "35|16", withoutGenres: "18", withKeywords: "210024,9715", with_keywords: "210024,9715", withoutKeywords: "15097", releaseDateGte: "2020-01-01", [dateAlias]: "2020-01-01", releaseDateLte: "2020-12-31", year: "2020", owner: { keep: true }, voteAverageGte: null };
+   const app = createController(); importFolder(app, [native(filters)]); const opened = sessionFor(app), raw = structuredClone(opened.source.rawImported);
+   assert.equal(saveSourceEdit(app, opened.session, opened.draft).ok, true);
+   assert.deepEqual(app.stringifyProject().value[0].folders[0].sources[0].filters, filters);
+   const patch = { withOriginalLanguage: clear ? "" : "fr", withOriginCountry: clear ? "" : "GB", withGenres: clear ? "" : "16,35", withKeywords: clear ? "" : "9715", releaseDateGte: clear ? "" : "2020-02-29" };
+   assert.equal(saveSourceEdit(app, opened.session, change(opened, patch)).ok, true);
+   const expected = { ...filters };
+   for (const [field, alias] of [["withOriginalLanguage", "with_original_language"], ["withGenres", "with_genres"], ["withKeywords", "with_keywords"], ["releaseDateGte", dateAlias], ["withOriginCountry", null]]) {
+    if (clear) { delete expected[field]; if (alias) delete expected[alias]; } else { expected[field] = patch[field]; if (alias) expected[alias] = patch[field]; }
+   }
+   assert.deepEqual(app.stringifyProject().value[0].folders[0].sources[0].filters, expected);
+   assert.deepEqual(app.getState().project.collections[0].folders[0].sources[0].rawImported, raw);
+   const reopened = sessionFor(app); assert.equal(saveSourceEdit(app, reopened.session, reopened.draft).ok, true);
+   assert.deepEqual(app.stringifyProject().value[0].folders[0].sources[0].filters, expected);
+  }
+ });
+ test(tmdbSourceType + "/" + mediaType + " coupled edits cannot omit stored partners", () => {
+  const app = createController(); importFolder(app, [native({ withGenres: "16", withoutGenres: "18", withKeywords: "9715", withoutKeywords: "15097", releaseDateGte: "2020-01-01", releaseDateLte: "2020-12-31", year: "2020" })]);
+  const opened = sessionFor(app), before = app.stringifyProject().json;
+  for (const filters of [{ withGenres: "18" }, { withKeywords: "15097" }, { releaseDateGte: "2021-01-01" }, { releaseDateLte: "2019-01-01" }, { year: "2021" }]) {
+   const draft = { ...opened.draft, filters, touchedFilters: Object.keys(filters) };
+   assert.equal(saveSourceEdit(app, opened.session, draft).ok, false); assert.equal(prepareSourceEditPreview(opened.session, draft).previewable, false);
+   assert.equal(app.stringifyProject().json, before);
+  }
+ });
+ test(tmdbSourceType + "/" + mediaType + " opaque shared fields retain title/no-op/unrelated edits and block exact Preview", () => {
+  for (const filters of [{ withOriginalLanguage: "en|fr" }, { withOriginCountry: ["US"] }, { with_genres: "16" }, { withGenres: "16", with_genres: "35" }, { withoutGenres: "16|35" }, { withKeywords: "1|2,3" }, { withoutKeywords: "1|2" }, { releaseDateGte: "2021-02-29" }, { year: 2020, releaseDateLte: "2019-12-31" }]) {
+   const app = createController(); importFolder(app, [native(filters)]); const opened = sessionFor(app);
+   assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false, JSON.stringify(filters));
+   assert.equal(saveSourceEdit(app, opened.session, opened.draft).ok, true);
+   const draft = updateSourceEditTitle(change(opened, { voteCountGte: "100" }), "Renamed");
+   assert.equal(saveSourceEdit(app, opened.session, draft).ok, true);
+   assert.deepEqual(app.stringifyProject().value[0].folders[0].sources[0].filters, { ...filters, voteCountGte: 100 });
+  }
+ });
+}

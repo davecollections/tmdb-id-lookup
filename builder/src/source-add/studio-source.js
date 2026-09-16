@@ -1,3 +1,4 @@
+import { deriveNativeAdvancedFilters, resolveNativeGenreFilters } from "./native-shared-advanced.js";
 import { studioComparisonFilters, validateStudioAdvancedFilters } from "./studio-advanced.js";
 import { STUDIO_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
@@ -144,12 +145,13 @@ export function buildStudioSourceDrafts(studio, {
 	sortOptionIds,
 	sortBy = null,
 	filters = {},
+	genreOverrides = {},
 	titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY,
 } = {}) {
 	const name = canonicalText(studio?.name);
 	const errors = [];
-	const advanced = validateStudioAdvancedFilters(filters);
-	errors.push(...advanced.errors);
+	const resolved = resolveNativeGenreFilters(filters, genreOverrides, studio?.id);
+	errors.push(...resolved.errors);
 	if (
 		!Number.isSafeInteger(studio?.id)
 		|| studio.id <= 0
@@ -161,6 +163,9 @@ export function buildStudioSourceDrafts(studio, {
 	const selectedMediaTypes = (Array.isArray(choices) ? choices : [])
 		.map((choice) => optionById.get(choice)?.mediaType)
 		.filter(Boolean);
+	const mediaMode = selectedMediaTypes.length === 2 ? "both" : selectedMediaTypes[0] === "TV" ? "series" : "movies";
+	const advancedByMedia = Object.fromEntries(selectedMediaTypes.map((mediaType) => [mediaType, deriveNativeAdvancedFilters(resolved.filters, mediaType, mediaMode)]));
+	errors.push(...Object.values(advancedByMedia).flatMap((result) => result.errors));
 	const resolvedSortOptionId = sortOptionId
 		?? (sortBy === null
 			? DEFAULT_STUDIO_SORT_OPTION_ID
@@ -183,7 +188,7 @@ export function buildStudioSourceDrafts(studio, {
 				title: sourceVariantTitle(studioSourceTitle(name, option.mediaType, titleMode), sort, STUDIO_SORT_OPTIONS, sorts.length > 1),
 				sortBy: studioSortValue(sort, option.mediaType),
 				tmdbId: studio.id,
-				filters: { ...advanced.filters },
+				filters: { ...advancedByMedia[option.mediaType].filters },
 				provider: "tmdb",
 				mediaType: option.mediaType,
 				tmdbSourceType: "COMPANY",

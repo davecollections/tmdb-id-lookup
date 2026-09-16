@@ -176,9 +176,9 @@ test("Studio Configure presents independent counts and compact semantic sort cho
 	assert.equal((markup.match(/class="visually-hidden choice-card-input" type="checkbox"/g) ?? []).length, 2);
 	assert.doesNotMatch(markup, /selectable-card-indicator|✓/);
 	assert.equal((markup.match(/type="radio"/g) ?? []).length, 0);
-	assert.equal((markup.match(/disabled=""/g) ?? []).length, 0);
+	assert.equal((markup.match(/<input\b[^>]*>/g) ?? []).filter((tag) => tag.includes('type="checkbox"') && tag.includes('disabled=""')).length, 0);
 	assert.equal((markup.match(/checked=""/g) ?? []).length, 2);
-	assert.equal(markup.includes("<select"), false);
+	assert.equal((markup.match(/<select/g) ?? []).length, 2);
 	assert.equal(markup.includes("Movie Count: 136"), false);
 	const styles = read("builder/src/styles.css");
 	assert.match(styles, /\.studio-source-choices label:has\(input:checked\)\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px/);
@@ -403,7 +403,7 @@ test("partial and full Studio duplicate notices name exact identities and expose
 		},
 	});
 	assert.equal(markup.includes("studio-already-added"), false);
-	assert.equal((markup.match(/disabled=""/g) ?? []).length, 0);
+	assert.equal((markup.match(/<input\b[^>]*>/g) ?? []).filter((tag) => tag.includes('type="checkbox"') && tag.includes('disabled=""')).length, 0);
 	assert.ok(markup.includes("1 configured source is already in this folder. Add includes only missing variants."));
 	assert.equal(markup.includes("Already in this folder"), false);
 	assert.ok(markup.includes("This source exists elsewhere"));
@@ -465,7 +465,7 @@ test("Studio elsewhere notice uses display-only hidden title fallbacks and remai
 	const configure = renderConfigure({ duplicateReview: { destination: [], elsewhere: occurrences } });
 	assert.equal(configure.includes("data-studio-duplicate-warning"), false);
 	assert.equal(configure.includes("studio-already-added"), false);
-	assert.equal((configure.match(/disabled=""/g) ?? []).length, 0);
+	assert.equal((configure.match(/<input\b[^>]*>/g) ?? []).filter((tag) => tag.includes('type="checkbox"') && tag.includes('disabled=""')).length, 0);
 	assert.ok(configure.includes("studio-elsewhere-note"));
 	assert.equal(configure.includes("people-elsewhere-note"), false);
 });

@@ -1,3 +1,4 @@
+import { freezeNativeGenreOverrides } from "./native-shared-advanced.js";
 import { validateNetworkAdvancedFilters } from "./network-advanced.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeHierarchyPlacement, nativeHierarchyCounts, resolveNativeHierarchyPlacements } from "./native-source-variants.js";
@@ -28,6 +29,7 @@ export const DEFAULT_NETWORK_COLLECTION_TITLE = "Networks";
 export const DEFAULT_NETWORK_FOLDER_TITLE_VISIBILITY = "SHOW_EVERYWHERE";
 
 const OPTION_KEYS = new Set([
+ "genreOverrides",
 	"filters",
 	"folderDestinations",
 	"scope",
@@ -85,7 +87,7 @@ function validArtwork(artwork, networkId, orientation) {
 	return validHttpsUrl(editable.coverImageUrl);
 }
 
-function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds, filters }, errors) {
+function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds, filters, genreOverrides }, errors) {
 	const network = entry?.network;
 	const name = canonicalText(network?.name);
 	if (
@@ -101,7 +103,7 @@ function normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds
 		errors.push(diagnostic("INVALID_NETWORK_PLAN_ARTWORK", `$networkPlan.networks[${index}].artwork`, "Each Network folder needs resolved artwork in the requested orientation or the approved fallback."));
 		return null;
 	}
-	const sourceResult = buildNetworkSourceDrafts(network, { sortOptionIds, filters, hierarchy: true });
+	const sourceResult = buildNetworkSourceDrafts(network, { sortOptionIds, filters, genreOverrides, hierarchy: true });
 	if (!sourceResult.ok) {
 		errors.push(...sourceResult.errors);
 		return null;
@@ -166,7 +168,7 @@ export function createNetworkHierarchyPlan(project, options) {
 		errors.push(diagnostic("NETWORK_PLAN_SELECTION_REQUIRED", "$networkPlan.networks", "Choose at least one Network."));
 	}
 	const entries = Array.isArray(options.networks) && ARTWORK_ORIENTATIONS.has(artworkOrientation)
-		? options.networks.map((entry, index) => normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds, filters }, errors)).filter(Boolean)
+		? options.networks.map((entry, index) => normalizeNetworkEntry(entry, index, { artworkOrientation, sortOptionIds, filters, genreOverrides: options.genreOverrides }, errors)).filter(Boolean)
 		: [];
 	if (new Set(entries.map((entry) => entry.network.id)).size !== entries.length) {
 		errors.push(diagnostic("DUPLICATE_NETWORK_PLAN_SELECTION", "$networkPlan.networks", "Each Network may appear only once."));
@@ -238,7 +240,7 @@ export function createNetworkHierarchyPlan(project, options) {
 	const plan = Object.freeze({
 		planType: NETWORK_HIERARCHY_PLAN_TYPE,
 		captured: Object.freeze({ projectInternalId: project.internalId, projectRevision: options.projectRevision }),
-		configuration: Object.freeze({ filters: Object.freeze({ ...filters }), folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }),
+		configuration: Object.freeze({ filters: Object.freeze({ ...filters }), genreOverrides: freezeNativeGenreOverrides(options.genreOverrides), folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }),
 			scope,
 			collectionTitle,
 			hideCollectionTitle,
@@ -264,6 +266,7 @@ function rebuildOptions(plan) {
 	return {
 		scope: plan.configuration.scope,
 		filters: plan.configuration.filters,
+		genreOverrides: plan.configuration.genreOverrides,
 		folderDestinations: plan.configuration.folderDestinations,
 		projectRevision: plan.captured.projectRevision,
 		...(plan.destination ? { destinationCollectionInternalId: plan.destination.collectionInternalId } : {}),

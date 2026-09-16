@@ -8656,6 +8656,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	flex-wrap: wrap;
 }
 
+:is(.native-extra-advanced, .native-genre-dialog) .discover-genres .discover-operator button[aria-pressed="true"],
 .studio-preview-tabs button[aria-selected="true"] {
 	color: #e9fbff;
 	background: rgb(1 180 228 / 18%);

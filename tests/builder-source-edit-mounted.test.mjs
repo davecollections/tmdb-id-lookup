@@ -63,6 +63,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const sharedAdvancedOnly = process.env.TMDB_NATIVE_SHARED_ADVANCED_ONLY === "1";
 	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
 	const roundTripOnly = process.env.TMDB_SOURCE_ROUND_TRIP_ONLY === "1";
@@ -195,7 +196,7 @@ async function runMountedPage() {
 		}
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -205,6 +206,25 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+                if (sharedAdvancedOnly || (!studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+                 result.results.sharedAdvancedCases = [];
+                 const cases = ["studio", "network"].flatMap((family) => ["add", "new-collection", "new-folder", "edit"].map((scope, index) => ({ family, scope, width: index === 2 ? 1280 : 393, height: index === 3 ? 400 : index === 2 ? 900 : 852, mediaType: index === 3 ? "TV" : "MOVIE" })));
+                 if (sharedAdvancedOnly) for (const width of [360,384,402,412]) cases.push({ family: "studio", scope: "add", width, height: 800, layoutOnly: true });
+                 for (const view of cases) {
+                  await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
+                  const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runNativeSharedAdvancedScenario(" + JSON.stringify(view) + ")", awaitPromise: true, returnByValue: true });
+                  if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+                  result.results.sharedAdvancedCases.push(checked.result.value);
+                 }
+                 console.log("NATIVE_SHARED_ADVANCED_LIVE " + JSON.stringify(result.results.sharedAdvancedCases));
+                 if (sharedAdvancedOnly) {
+                  await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+                  const deferred = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runNetworkDeferredArtworkScenario()", awaitPromise: true, returnByValue: true });
+                  if (deferred.exceptionDetails) throw new Error(deferred.exceptionDetails.exception?.description ?? deferred.exceptionDetails.text);
+                  result.results.networkDeferredArtwork = deferred.result.value;
+                  return result.results;
+                 }
+                }
                 for (const family of ["studio", "network"]) {
                 if ((family === "studio" ? studioMinimumVotesOnly : networkMinimumVotesOnly) || (!studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
                     result.results[family + "MinimumVotesCases"] = [];
@@ -3639,3 +3659,8 @@ test("mounted #198 wording stays scoped to creation, Preview and single-Source e
   }
   console.log("NETWORK_MINIMUM_VOTES_LIVE " + JSON.stringify(mountedResults.networkMinimumVotesCases));
  });
+
+test("mounted native Shared Advanced combines eight surfaces and responsive disclosure evidence", () => {
+ assert.equal(mountedResults.sharedAdvancedCases.length, process.env.TMDB_NATIVE_SHARED_ADVANCED_ONLY === "1" ? 12 : 8);
+ for (const result of mountedResults.sharedAdvancedCases) { assert.ok(result.sharedAdvanced.noImplicitRequests && result.sharedAdvanced.boundedScroll); if (!result.sharedAdvanced.layoutOnly) assert.ok(result.atomic && result.preservation && result.previews.length); }
+});

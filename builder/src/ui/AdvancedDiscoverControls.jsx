@@ -32,7 +32,7 @@ function SelectionChips({ draft, field, onChange }) {
 }
 // The catalogue adapters share one accessible picker. Entity browsing uses existing providers;
 // keyword matching stays in the existing background worker.
-export function DiscoverNamedPicker({ field, negativeField = null, label = DISCOVER_FIELD_LABELS[field], draft, onChange, search, available = true, browse = false, errors = [], helper = null, activePanel = null, onOpenPanel, onClosePanel }) {
+export function DiscoverNamedPicker({ field, negativeField = null, label = DISCOVER_FIELD_LABELS[field], draft, onChange, search, available = true, browse = false, errors = [], helper = null, activePanel = null, onOpenPanel, onClosePanel, panelClassName = "", desktopSelectionView = true }) {
  const mode = draft.pickerModes?.[field] ?? "include";
  const setMode = (value) => onChange({ ...draft, pickerModes: { ...draft.pickerModes, [field]: value } });
  const [open, setOpen] = useState(false), [active, setActive] = useState(-1), [, renderView] = useState(0);
@@ -49,7 +49,7 @@ export function DiscoverNamedPicker({ field, negativeField = null, label = DISCO
  views.current.set(activeField, view);
  const resultKey = activeField + ":" + query;
  const currentResults = state.key === resultKey && state.search === search;
- const selectedOnly = view.selectedOnly;
+ const selectedOnly = view.selectedOnly && (mobileOpen || desktopSelectionView);
  const resultRows = currentResults ? state.rows : [];
  const rows = selectedOnly ? selected.map((id) => ({ id, name: discoverSelectionLabel(draft, activeField, id) })) : resultRows;
  const waiting = !selectedOnly && (state.loading || (available && (open || mobileOpen) && (browse || query.trim().length >= 2) && !currentResults));
@@ -169,7 +169,7 @@ export function DiscoverNamedPicker({ field, negativeField = null, label = DISCO
   {!selectedOnly ? <div className="discover-browse-status" role="status">{waiting ? resultRows.length ? "Loading more…" : "Loading names…" : browse && currentResults ? rows.length + " of " + state.total + " names" : currentResults && state.total > rows.length ? "Type more to narrow these suggestions." : null}</div> : null}
   {hasMore ? <button ref={moreRef} type="button" className="secondary-action discover-load-more" aria-disabled={waiting}
    onClick={loadNextBatch}>More {label.toLowerCase()}</button> : null}
-  {!mobileOpen ? selectionSummary : null}
+  {!mobileOpen ? desktopSelectionView ? selectionSummary : feedback ? <p id={uid + "-feedback"} className="discover-field-error" role="alert">{feedback}</p> : null : null}
  </div>;
  return <section className="editor-settings-section discover-picker" role="group" aria-labelledby={uid + "-heading"} data-picker={field}
   onBlur={(e) => { if (!mobileOpen && !e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
@@ -188,7 +188,7 @@ export function DiscoverNamedPicker({ field, negativeField = null, label = DISCO
   <DiscoverFieldError field={field} errors={errors} />{negativeField ? <DiscoverFieldError field={negativeField} errors={errors} /> : null}
   {mobileOpen ? <NestedPreviewDialog ariaLabelledBy={uid + "-panel-title"} onClose={closePanel}
    backdropClassName="discover-selection-backdrop" backdropProps={{ onMouseDown: (e) => { if (e.target === e.currentTarget) e.preventDefault(); } }}
-   dialogClassName="add-source-dialog discover-dialog discover-selection-dialog">
+   dialogClassName={"add-source-dialog discover-dialog discover-selection-dialog" + (panelClassName ? " " + panelClassName : "")}>
    <header className="genre-exclusion-root-header"><h3 id={uid + "-panel-title"}>{negativeField ? mode === "exclude" ? "Exclude " : "Include " : ""}{label}</h3>
     <button type="button" className="editor-apply genre-secondary-done" onClick={closePanel}>Done</button></header>
    <div className="discover-panel-search">{selectedOnly ? <p>Selected {label.toLowerCase()} · {mode === "exclude" ? "Exclude" : "Include"}</p> : searchInput(true)}</div>
@@ -200,7 +200,7 @@ export function DiscoverNamedPicker({ field, negativeField = null, label = DISCO
 
 export function DiscoverKeywordControls({ keywordClient, catalogueReady, ...props }) {
  const search = useMemo(() => (query, negative) => keywordClient.autocomplete(query, negative), [keywordClient]);
- return <DiscoverNamedPicker {...props} field="withKeywords" negativeField="withoutKeywords" label="Keywords" search={search} available={catalogueReady} helper="Search keyword names, then select suggestions. Match any needs at least one included keyword; Match all requires every included keyword." />;
+ return <DiscoverNamedPicker {...props} desktopSelectionView={false} field="withKeywords" negativeField="withoutKeywords" label="Keywords" search={search} available={catalogueReady} helper="Search keyword names, then select suggestions. Match any needs at least one included keyword; Match all requires every included keyword." />;
 }
 export function DiscoverGenreControls({ draft, onChange, errors }) {
  const headingRef = useRef(null);
@@ -216,7 +216,7 @@ export function DiscoverGenreControls({ draft, onChange, errors }) {
   return [...new Map(OFFICIAL_GENRE_REFERENCES.filter((g) => medias.includes(g.mediaType)).map((g) => [g.tmdbId, { id: g.tmdbId, name: g.name, only: both && !OFFICIAL_GENRE_REFERENCES.some((other) => other.tmdbId === g.tmdbId && other.mediaType !== g.mediaType) ? g.mediaType === "TV" ? "Series" : "Movies" : null }])).values()];
  }, [draft.mediaMode]);
  return <section className="editor-settings-section discover-genres" aria-label="Genres"><h3 ref={headingRef} tabIndex={-1}>Genres</h3>
-  <div className="discover-mode" role="group" aria-label="Genre action">{["include", "exclude"].map((value) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)}>{value === "include" ? "Include" : "Exclude"}</button>)}</div>
+  <div className="discover-mode" role="group" aria-label="Genre action">{["include", "exclude"].map((value) => <button key={value} type="button" data-mode={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === "include" ? "Include" : "Exclude"}</button>)}</div>
   <DiscoverOperator draft={draft} field="withGenres" onChange={onChange} />
   <div className="discover-genre-pills">{[...genres, ...[...new Set([...discoverExpressionIds(draft.filters.withGenres), ...discoverExpressionIds(draft.filters.withoutGenres)])].filter((id) => !genres.some((g) => g.id === id)).map((id) => ({ id, name: discoverSelectionLabel(draft, "withGenres", id), unavailable: true }))].map((row) => {
    const included = discoverExpressionIds(draft.filters.withGenres).includes(row.id), excluded = discoverExpressionIds(draft.filters.withoutGenres).includes(row.id);
@@ -233,7 +233,7 @@ export function DiscoverGenreControls({ draft, onChange, errors }) {
   <DiscoverFieldError field="withGenres" errors={otherErrors} /><DiscoverFieldError field="withoutGenres" errors={otherErrors} />
  </section>;
 }
-function SelectField({ field, draft, onChange, options, errors, helper = null }) {
+export function DiscoverSelectField({ field, draft, onChange, options, errors, helper = null }) {
  const value = draft.filters[field] ?? "";
  const all = value && !options.some((o) => o.code === value) ? [{ code: value, label: "Saved: " + value }, ...options] : options;
  return <div className="editor-field"><label htmlFor={"discover-field-" + field}>{DISCOVER_FIELD_LABELS[field]}</label><select id={"discover-field-" + field} data-watch-region={field === "watchRegion" && value !== "" || undefined} aria-describedby={"discover-error-" + field} value={value} onChange={(e) => onChange({ ...draft, filters: { ...draft.filters, [field]: e.target.value } })}><option value="">Any</option>{all.map((o) => <option key={o.code} value={o.code}>{o.label ?? o.name}</option>)}</select>{helper ? <p className="editor-field-help">{helper}</p> : null}<DiscoverFieldError field={field} errors={errors} /></div>;
@@ -274,12 +274,12 @@ export function DiscoverDetailedControls({ draft, onChange, studioProvider, netw
  return <div className="discover-details">
   <section className="editor-settings-section"><h3>Release dates</h3><p className="editor-field-help">{draft.mediaMode === "series" ? "Series first-air dates." : draft.mediaMode === "both" ? "Movie release dates and Series first-air dates." : "Movie primary release dates."}</p>{inputs(["releaseDateGte", "releaseDateLte", "year"])}</section>
   <section className="editor-settings-section"><h3>Ratings and votes</h3>{inputs(["voteAverageGte", "voteAverageLte", "voteCountGte"])}</section>
-  <section className="editor-settings-section"><h3>Language and country</h3><div className="discover-field-grid"><SelectField field="withOriginalLanguage" draft={draft} onChange={onChange} options={namedCodes?.languages ?? GENRE_LANGUAGE_OPTIONS} errors={errors} helper="The language a title was originally made in, not its available audio or subtitles." /><SelectField field="withOriginCountry" draft={draft} onChange={onChange} options={namedCodes?.countries ?? GENRE_COUNTRY_OPTIONS} errors={errors} /></div></section>
+  <section className="editor-settings-section"><h3>Language and country</h3><div className="discover-field-grid"><DiscoverSelectField field="withOriginalLanguage" draft={draft} onChange={onChange} options={namedCodes?.languages ?? GENRE_LANGUAGE_OPTIONS} errors={errors} helper="The language a title was originally made in, not its available audio or subtitles." /><DiscoverSelectField field="withOriginCountry" draft={draft} onChange={onChange} options={namedCodes?.countries ?? GENRE_COUNTRY_OPTIONS} errors={errors} /></div></section>
   <DiscoverNamedPicker field="withCompanies" negativeField="withoutCompanies" label="Studios" draft={draft} onChange={onChange} search={studioSearch} browse errors={errors} {...panelProps} />
   {draft.mediaMode !== "movies" || draft.filters.withNetworks ? <DiscoverNamedPicker field="withNetworks" label="Networks" draft={draft} onChange={onChange} search={networkSearch} browse errors={errors} {...panelProps} helper={(draft.mediaMode === "both" ? "Networks apply to Series only. Movies have no network restriction. " : "") + "Match any needs at least one included TV network; Match all requires every included network."} /> : <section className="editor-settings-section" aria-label="Networks"><h3>Networks</h3><p className="editor-field-help">Choose Series or Both to filter by TV network.</p></section>}
   <section className="editor-settings-section discover-providers"><h3>Watch providers and region</h3>
    {streamingError ? <DiscoverNotice error>{streamingError} <button className="secondary-action" type="button" onClick={loadStreaming}>Retry</button></DiscoverNotice> : null}
-   <SelectField field="watchRegion" draft={draft} onChange={onChange} options={streaming?.regions ?? namedCodes?.countries ?? GENRE_COUNTRY_OPTIONS} errors={errors} helper="Provider availability is checked in this region, not where a title was produced." />
+   <DiscoverSelectField field="watchRegion" draft={draft} onChange={onChange} options={streaming?.regions ?? namedCodes?.countries ?? GENRE_COUNTRY_OPTIONS} errors={errors} helper="Provider availability is checked in this region, not where a title was produced." />
    {loading ? <p role="status">Loading providers…</p> : null}
    <>
     {draft.filters.watchRegion || draft.filters.withWatchProviders || draft.filters.withoutWatchProviders ? <DiscoverNamedPicker available={Boolean(streaming && draft.filters.watchRegion)} field="withWatchProviders" negativeField="withoutWatchProviders" label="Providers" draft={draft} onChange={onChange} search={providerSearch} browse errors={errors} {...panelProps} /> : <p>Choose a watch region to browse providers.</p>}
