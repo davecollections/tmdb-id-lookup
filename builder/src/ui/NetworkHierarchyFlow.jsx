@@ -1,5 +1,5 @@
 import { MinimumVotesAdvancedOptions, MinimumVotesSummary } from "./MinimumVotesAdvancedOptions.jsx";
-import { validateMinimumVotesFilters } from "../source-add/minimum-votes.js";
+import { validateNetworkAdvancedFilters } from "../source-add/network-advanced.js";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
@@ -91,7 +91,7 @@ function NetworkConfigureRow({ network, exactCount, outcome, onPreview, onRemove
 }
 
 function ConfigureStep({ networks, exactCounts, outcomes, sortOptionIds, onSortChange, onPreview, onRemove, headingRef, placement, options, onAdvancedChange }) {
-	const advanced = validateMinimumVotesFilters(options.filters, "TV");
+	const advanced = validateNetworkAdvancedFilters(options.filters);
 	return (
 		<section className="studio-hierarchy-configure network-hierarchy-configure" aria-labelledby="network-hierarchy-configure-title">
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="network-hierarchy-configure-title" ref={headingRef} tabIndex={-1}>Configure Networks</h3></div></div>

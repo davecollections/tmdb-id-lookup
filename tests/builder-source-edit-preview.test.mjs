@@ -49,12 +49,35 @@ function openedAt(controller, index) {
 	return opened;
 }
 
+for (const native of [sources[2], { ...sources[2], mediaType: "TV" }, sources[3]]) {
+ for (const field of ["voteAverageGte", "voteAverageLte"]) {
+  test(`${native.tmdbSourceType} ${native.mediaType} ${field} rejects malformed rating containers in imported exact Preview`, () => {
+   for (const value of [[7], [], { value: 7 }, true, false]) {
+    const controller = createProject([{ ...native, filters: { [field]: value } }]);
+    const opened = openedAt(controller, 0), before = controller.stringifyProject().json;
+    assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false);
+    assert.equal(saveSourceEdit(controller, opened.session, opened.draft).ok, true);
+    assert.equal(controller.stringifyProject().json, before);
+   }
+  });
+  test(`${native.tmdbSourceType} ${native.mediaType} ${field} rejects canonical exponent rating requests while preserving imports`, () => {
+   for (const value of ["0.0000001", 0.0000001]) {
+    const controller = createProject([{ ...native, filters: { [field]: value } }]);
+    const opened = openedAt(controller, 0), before = controller.stringifyProject().json;
+    assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false);
+    assert.equal(saveSourceEdit(controller, opened.session, opened.draft).ok, true);
+    assert.equal(controller.stringifyProject().json, before);
+   }
+  });
+ }
+}
+
 test("Studio Preview projects the current effective native draft, fixed Studio and supported imported filters without mutation", () => {
  for (const mediaType of ["MOVIE", "TV"]) {
   const source = { ...sources[2], mediaType, filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", withCompanies: "999", voteAverageGte: 5 } };
   const app = createProject([source]), opened = openedAt(app, 0), before = app.stringifyProject().json;
   for (const value of ["100", "0", "", "200"]) {
-   const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
+   const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { ...opened.draft.filters, voteCountGte: value } });
    const result = prepareSourceEditPreview(opened.session, draft);
    assert.equal(result.previewable, true, JSON.stringify(result));
    assert.equal(result.candidateSource.editable.tmdbSourceType, "COMPANY");
@@ -134,7 +157,7 @@ test("Network Preview projects the current effective native draft, fixed Network
   const source = { ...sources[3], mediaType, filters: { voteCountGte: 100, "vote_count.gte": "100", withoutCompanies: "174", withNetworks: "999", voteAverageGte: 5 } };
   const app = createProject([source]), opened = openedAt(app, 0), before = app.stringifyProject().json;
   for (const value of ["100", "0", "", "200"]) {
-   const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { voteCountGte: value } });
+   const draft = touchDiscoverFilters(opened.draft, { ...opened.draft, filters: { ...opened.draft.filters, voteCountGte: value } });
    const result = prepareSourceEditPreview(opened.session, draft);
    assert.equal(result.previewable, true, JSON.stringify(result));
    assert.equal(result.candidateSource.editable.tmdbSourceType, "NETWORK");

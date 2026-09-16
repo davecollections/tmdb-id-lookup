@@ -309,7 +309,27 @@ test("Network Add and Edit reuse collapsed Minimum votes with shared errors and 
  }
  const preserved = renderToStaticMarkup(createElement(MinimumVotesAdvancedOptions, { family: "network", draft: { filters: {}, minimumVotesEditable: false }, onChange() {} }));
  assert.match(preserved, /original values will be preserved/);
- assert.doesNotMatch(preserved, /<input/);
+ assert.doesNotMatch(preserved, /<input[^>]*id="discover-field-voteCountGte"/);
+ assert.match(preserved, /<input[^>]*id="discover-field-voteAverageGte"/);
  assert.match(renderConfigure(), /data-network-advanced="true"/);
  assert.doesNotMatch(renderConfigure(), /data-network-minimum-votes-summary/);
+});
+
+test("native Advanced shares rating fields, errors and independent preservation guidance", async () => {
+ const { MinimumVotesAdvancedOptions, MinimumVotesSummary } = await vite.ssrLoadModule("/src/ui/MinimumVotesAdvancedOptions.jsx");
+ for (const family of ["studio", "network"]) for (const [filters, invalid] of [[{}, false], [{ voteAverageGte: "0", voteAverageLte: "10" }, false], [{ voteAverageGte: "7.25", voteAverageLte: "7.25" }, false], [{ voteAverageGte: "9", voteAverageLte: "8" }, true], [{ voteAverageGte: "0.0000001" }, true]]) {
+  const markup = renderToStaticMarkup(createElement(MinimumVotesAdvancedOptions, { family, draft: { filters }, onChange() {} }));
+  assert.equal((markup.match(/<details/g) ?? []).length, 1);
+  assert.doesNotMatch(markup, /<details[^>]*\sopen|autoFocus|autofocus/);
+  assert.match(markup, /Minimum votes[\s\S]*Minimum rating[\s\S]*Maximum rating/);
+  assert.equal((markup.match(/inputMode="decimal"/g) ?? []).length, 2);
+  assert.equal(markup.includes('aria-invalid="true"'), invalid);
+  assert.equal(markup.includes('role="alert"'), invalid);
+ }
+ const preserved = renderToStaticMarkup(createElement(MinimumVotesAdvancedOptions, { family: "studio", draft: { filters: {}, ratingBoundsEditable: false }, onChange() {} }));
+ assert.match(preserved, /imported rating settings cannot be edited/);
+ assert.match(preserved, /<input[^>]*id="discover-field-voteCountGte"/);
+ assert.doesNotMatch(preserved, /<input[^>]*id="discover-field-voteAverage/);
+ const summary = renderToStaticMarkup(createElement(MinimumVotesSummary, { family: "network", filters: { voteCountGte: 100, voteAverageGte: 0, voteAverageLte: 10 } }));
+ assert.match(summary, /Minimum votes: 100/); assert.match(summary, /Minimum rating: 0/); assert.match(summary, /Maximum rating: 10/);
 });

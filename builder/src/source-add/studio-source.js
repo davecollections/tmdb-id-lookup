@@ -217,7 +217,7 @@ export function validateStudioSourceDraft(draft, { studio = null, titleMode = ST
 	}
 	if (!isSupportedStudioSort(editable.sortBy, editable.mediaType)) errors.push(diagnostic("INVALID_STUDIO_SORT", `${path}.editable.sortBy`, "Choose a supported Studio sort order for this media type."));
 	const advanced = validateStudioAdvancedFilters(editable.filters, editable.mediaType);
-	if (!plainObject(editable.filters) || !advanced.ok || JSON.stringify(advanced.filters) !== JSON.stringify(editable.filters)) errors.push(diagnostic("INVALID_STUDIO_FILTERS", `${path}.editable.filters`, "Studio sources require supported canonical Minimum votes settings."));
+	if (!plainObject(editable.filters) || !advanced.ok || JSON.stringify(advanced.filters) !== JSON.stringify(editable.filters)) errors.push(diagnostic("INVALID_STUDIO_FILTERS", `${path}.editable.filters`, "Studio sources require supported canonical Advanced settings."));
 	return { ok: errors.length === 0, errors };
 }
 

@@ -1,5 +1,11 @@
 # Native People, Studio and Network variants
 
+## Rating comparison and plans (#216)
+
+Studio/Network configured equality includes both optional rating bounds alongside sort, Minimum votes and remaining meaningful semantics. Supported canonical `7`, `"7"` and `"7.0"` compare equally; Minimum unset differs from 0, Maximum unset differs from 10, minimum-only differs from maximum-only, and 7–9 differs from 7.5–9. Invalid shapes, unrepresentable canonical requests and conflicting meaningful aliases are not normalized into valid equality. Existing mirror equivalence remains unchanged. These projections never rewrite imported storage or alter physical identity.
+
+The shared pair flows through ordinary Add candidates and both hierarchy scopes using existing frozen configuration, placement, rebuild/revalidation and atomic operations. Changing a bound recalculates exact coverage and missing variants. Functional physical edits into an exact sibling are rejected; unchanged/title-only saves beside existing duplicates remain allowed. Touched-field editing preserves the untouched bound's representation. Complete effective queries, including explicit presence, remain Preview cache identity. See [Studio](./BUILDER_STUDIOS.md#shared-rating-bounds-216) and [Network](./BUILDER_NETWORKS.md#shared-rating-bounds-216) for the narrow authored and preservation boundaries.
+
 Network [#213](./BUILDER_NETWORKS.md#shared-minimum-votes-213) / [PR #214](https://github.com/davecollections/tmdb-id-lookup/pull/214) shares the bounded minimum-votes comparison and configured-plan semantics below with Studio; Network remains TV-only and uses the existing standalone TV Discover Preview gateway.
 
 Studio [#208](./BUILDER_STUDIOS.md#shared-minimum-votes-208) adds optional Minimum votes to all creation contexts and the scalar physical editor. Its effective threshold participates in existing candidate, placement, plan, Preview and exact-duplicate handling. Supported numeric/string thresholds and matching minimum mirrors compare equivalently; explicit zero remains distinct from unset. Other native fields and family semantics are unchanged. No Worker change is required.

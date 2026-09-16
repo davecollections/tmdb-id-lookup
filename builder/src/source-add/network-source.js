@@ -1,5 +1,4 @@
-import { validateNetworkAdvancedFilters } from "./network-advanced.js";
-import { minimumVotesComparisonFilters } from "./minimum-votes.js";
+import { validateNetworkAdvancedFilters, networkComparisonFilters } from "./network-advanced.js";
 import { NETWORK_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeSourceDuplicates, isSourceVariantTitle, nativeSourceVariantKey, sourceVariantTitle } from "./native-source-variants.js";
@@ -126,7 +125,7 @@ export function validateNetworkSourceDraft(draft, { network = null, path = "$net
 	}
 	if (!isSupportedNetworkSort(editable.sortBy)) errors.push(diagnostic("INVALID_NETWORK_SORT", `${path}.editable.sortBy`, "Choose a supported Network Series sort order."));
 	const advanced = validateNetworkAdvancedFilters(editable.filters);
-	if (!plainObject(editable.filters) || !advanced.ok || JSON.stringify(advanced.filters) !== JSON.stringify(editable.filters)) errors.push(diagnostic("INVALID_NETWORK_FILTERS", `${path}.editable.filters`, "Network sources require supported canonical Minimum votes settings."));
+	if (!plainObject(editable.filters) || !advanced.ok || JSON.stringify(advanced.filters) !== JSON.stringify(editable.filters)) errors.push(diagnostic("INVALID_NETWORK_FILTERS", `${path}.editable.filters`, "Network sources require supported canonical Advanced settings."));
 	return { ok: errors.length === 0, errors };
 }
 
@@ -170,7 +169,7 @@ export function validateNetworkSourceDrafts(drafts, { network = null, hierarchy 
 }
 
 export function networkSourceVariantKey(source) {
-	return nativeSourceVariantKey(source, networkSourceIdentity, NETWORK_SORT_OPTIONS, minimumVotesComparisonFilters);
+	return nativeSourceVariantKey(source, networkSourceIdentity, NETWORK_SORT_OPTIONS, networkComparisonFilters);
 }
 
 export function networkSourceIdentity(editable) {

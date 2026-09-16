@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createTmdbStudioPreviewProvider } from "../builder/src/source-add/tmdb-studio-preview-provider.js";
 
 import { NETWORK_SORT_OPTIONS } from "../builder/src/source-add/network-source.js";
 import {
@@ -207,4 +208,23 @@ test("Network complete-query cache separates minimum and other effective predica
  for (const filters of [{ voteCountGte: [100] }, { voteAverageGte: [5] }, { year: [2020] }, { withOriginalLanguage: ["en"] }, { withOriginCountry: ["AU"] }, { withNetworks: [999] }, { custom: true }, { voteCountGte: -1 }, { voteCountGte: 100, "vote_count.gte": 0 }, { "vote_count.gte": 100 }, { with_networks: "213" }, { withNetworks: "999", with_networks: "213" }]) assert.equal((await provider.getNetworkPreview(213, { sortOptionId: "popular", filters })).ok, false);
  assert.equal((await provider.getNetworkPreview(213, { mediaType: "MOVIE", sortOptionId: "popular" })).ok, false);
  assert.equal(urls.length, 24);
+});
+
+for (const [family, mediaType] of [["Studio", "MOVIE"], ["Studio", "TV"], ["Network", "TV"]]) test(`${family} ${mediaType} rating cache retains explicit presence, semantic equivalents and the complete query`, async () => {
+ const urls = [];
+ const options = { baseUrl: "https://worker.example", fetchImpl: async (url) => { urls.push(new URL(url)); return jsonResponse({ total_results: 0, results: [] }); } };
+ const provider = family === "Studio" ? createTmdbStudioPreviewProvider(options) : createTmdbNetworkPreviewProvider(options);
+ const get = (filters, sortOptionId = "popular") => (family === "Studio" ? provider.getStudioPreview : provider.getNetworkPreview)(213, { mediaType, sortOptionId, filters });
+ const cases = [{}, { voteAverageGte: 0 }, { voteAverageLte: 10 }, { voteAverageGte: 0, voteAverageLte: 10 }, { voteAverageGte: 7 }, { voteAverageLte: 9 }, { voteAverageGte: 7.25, voteAverageLte: 9.125 }, { voteAverageGte: 7.25, voteAverageLte: 9.125, voteCountGte: 100 }, { voteAverageGte: 7.25, voteAverageLte: 9.125, withoutCompanies: "174" }];
+ for (const filters of cases) {
+  assert.equal((await get(filters)).fromCache, false);
+  assert.equal((await get(filters)).fromCache, true);
+ }
+ assert.equal(urls.length, cases.length);
+ assert.equal(new Set(urls.map(String)).size, cases.length);
+ assert.equal((await get({ voteAverageGte: "7.250", voteAverageLte: "9.1250" })).fromCache, true);
+ assert.equal((await get({ voteAverageGte: 7.25, "vote_average.gte": "7.25", voteAverageLte: 9.125, "vote_average.lte": "9.125" })).fromCache, true);
+ assert.equal((await get(cases[6], "most-votes")).fromCache, false);
+ for (const filters of [{ voteAverageGte: [7.25] }, { voteAverageLte: true }, { voteAverageGte: "0.0000001" }, { voteAverageGte: 1e-7 }, { voteAverageGte: 9, voteAverageLte: 8 }, { "vote_average.gte": 7 }, { voteAverageGte: 7, "vote_average.gte": "7.0" }]) assert.equal((await get(filters)).ok, false);
+ assert.equal(urls.length, cases.length + 1, "unsafe ratings never reached transport");
 });

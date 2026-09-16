@@ -74,7 +74,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
  const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition: wait } = helpers;
  const check = (value, message) => { if (!value) throw new Error(`${family} minimum votes ${scope} ${innerWidth}: ${message}`); return value; };
  const studio = await entity(family, entityId), app = createController(), editing = scope === "edit", guided = scope.startsWith("new-");
- const seed = { ...(isNetwork ? buildNetworkSourceDrafts(studio, { sortOptionIds: ["top-rated"] }) : buildStudioSourceDrafts(studio, { choices: [mediaType === "TV" ? "studio-series" : "studio-movies"], sortOptionIds: ["top-rated"] })).drafts[0].editable, id: "preserved-studio", filters: { voteCountGte: 0, "vote_count.gte": "0", ...(editing ? { withoutCompanies: "174" } : {}) }, ownerExtra: { keep: [false, 0] } };
+ const seed = { ...(isNetwork ? buildNetworkSourceDrafts(studio, { sortOptionIds: ["top-rated"] }) : buildStudioSourceDrafts(studio, { choices: [mediaType === "TV" ? "studio-series" : "studio-movies"], sortOptionIds: ["top-rated"] })).drafts[0].editable, id: "preserved-studio", filters: { voteCountGte: 0, "vote_count.gte": "0", ...(editing ? { withoutCompanies: "174", voteAverageGte: "7.0", "vote_average.gte": "7.0", voteAverageLte: "9.00", "vote_average.lte": "9.00" } : {}) }, ownerExtra: { keep: [false, 0] } };
  const folder = importSources(app, editing || scope === "new-folder" ? [seed] : []);
  app.selectNode(folder.internalId);
  const initial = app.getState(), before = serializedValue(app);
@@ -113,6 +113,11 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
   const startRequests = titleRequests();
   await click(advanced.querySelector("summary"));
   const input = advanced.querySelector('#discover-field-voteCountGte');
+  const minimumRating = advanced.querySelector('#discover-field-voteAverageGte'), maximumRating = advanced.querySelector('#discover-field-voteAverageLte');
+  check(minimumRating && maximumRating, "rating controls missing");
+  check(minimumRating.value === (editing ? "7" : "") && maximumRating.value === (editing ? "9" : ""), "rating defaults differ");
+  check(dialog.querySelectorAll(`[data-${family}-advanced]`).length === 1 && advanced.querySelectorAll('details').length === 0, "ratings created a second disclosure");
+  check([...advanced.querySelectorAll('label')].map((label) => label.textContent).join('|') === 'Minimum votes|Minimum rating|Maximum rating', "Advanced field order differs");
   check(advanced.querySelector('#discover-help-voteCountGte')?.textContent === "Set the minimum number of TMDB votes a title must have. Higher values exclude titles with fewer votes.", "minimum helper copy differs");
   check(input.value === (editing ? "0" : ""), "minimum default changed");
   check(titleRequests() === startRequests && serializedValue(app) === before, "opening Advanced changed data or requested titles");
@@ -122,7 +127,13 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
    await act(async () => { setInputValue(input, value); await settle(); });
    check(titleRequests() === count, "field change requested titles");
   }
+  async function changeRating(field, value) {
+   const count = titleRequests();
+   await act(async () => { setInputValue(field, value); await settle(); });
+   check(titleRequests() === count, "rating change requested titles");
+  }
   async function preview(minimum, allVariants = false) {
+   const ratingPair = [minimumRating, maximumRating].map((field) => field.value === "" ? null : String(Number(field.value)));
    const count = titleRequests(), trigger = previewButton(), scroll = dialog.querySelector('.add-source-scroll, .source-edit-scroll');
    trigger.focus({ preventScroll: true });
    const scrollTop = scroll?.scrollTop;
@@ -144,7 +155,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     }, { label: "Live Studio filtered Preview", timeoutMs: 20000 });
     const response = [...(isNetwork ? networkResponses : studioResponses)].find(([path]) => {
      const url = new URL(path, location.href);
-     return url.pathname === '/builder/discover/' + (media === "TV" ? "tv" : "movie") && url.searchParams.get(isNetwork ? 'with_networks' : 'with_companies') === String(entityId) && url.searchParams.get('sort_by') === sortBy && url.searchParams.get('vote_count.gte') === (minimum === undefined ? null : String(minimum)) && url.searchParams.get('without_companies') === (editing ? "174" : null);
+     return url.pathname === '/builder/discover/' + (media === "TV" ? "tv" : "movie") && url.searchParams.get(isNetwork ? 'with_networks' : 'with_companies') === String(entityId) && url.searchParams.get('sort_by') === sortBy && url.searchParams.get('vote_count.gte') === (minimum === undefined ? null : String(minimum)) && url.searchParams.get('without_companies') === (editing ? "174" : null) && url.searchParams.get('vote_average.gte') === ratingPair[0] && url.searchParams.get('vote_average.lte') === ratingPair[1];
     });
     check(response, "no production response for current draft");
     const grid = modal.querySelector('.source-edit-preview-grid');
@@ -157,9 +168,9 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     check(JSON.stringify(actual) === JSON.stringify(expected), "displayed posters differ from real current response");
     await wait(() => [...grid.querySelectorAll('img')].every((img) => img.complete && img.naturalWidth > 0), { label: "real Studio image CDN", timeoutMs: 20000 });
     evidence.previews.push({ query: response[0], resultsMatch: true, geometry: titlePreviewGeometry(modal, grid) });
-    if (isNetwork && allVariants && (innerWidth === 393 || innerWidth === 1280) && globalThis.capture204Preview) await new Promise((resolve) => {
+    if (allVariants && ratingPair[0] === "7.25" && (innerWidth === 393 || innerWidth === 1280) && globalThis.capture204Preview) await new Promise((resolve) => {
      window.__finish204Capture = resolve;
-     window.capture204Preview(JSON.stringify({ name: `network-${scope}-${innerWidth}-${innerHeight}-${sortBy.replace(/[._]/g, "-")}-preview` }));
+     window.capture204Preview(JSON.stringify({ name: `${family}-${scope}-${innerWidth}-${innerHeight}-${media}-${sortBy.replace(/[._]/g, "-")}-ratings-preview` }));
     });
    }
    await click(modal.querySelector('header button'));
@@ -182,26 +193,54 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
   await preview(undefined);
   check(await preview(undefined) === 0, "reopen missed complete-query cache");
   await change("100");
+  await changeRating(minimumRating, ""); await changeRating(maximumRating, "");
+  await preview(100);
+  await changeRating(minimumRating, "0"); await preview(100);
+  await changeRating(maximumRating, "10"); await preview(100);
+  await changeRating(minimumRating, ""); await preview(100);
+  await changeRating(minimumRating, "7.25"); await changeRating(maximumRating, "9.125"); await preview(100, true);
+  check(await preview(100) === 0, "rating pair missed complete-query cache");
+  await changeRating(maximumRating, "8"); await changeRating(minimumRating, "9");
+  check(minimumRating.getAttribute('aria-invalid') === "true" && previewButton().disabled, "inverted effective pair previewable");
+  await changeRating(maximumRating, "10");
+  for (const invalid of ["-1", "11", "07", " 7 ", ".5", "7.", "1e0", "abc", "0.0000001"]) {
+   await changeRating(minimumRating, invalid);
+   check(minimumRating.getAttribute('aria-invalid') === "true" && previewButton().disabled, "invalid rating previewable");
+   if (!editing) check(dialog.querySelector('button[type="submit"]').disabled, "invalid rating can create");
+  }
+  await changeRating(minimumRating, "7.25"); await changeRating(maximumRating, ""); await preview(100);
+  await changeRating(minimumRating, "");
+  const collapseRequests = titleRequests();
+  await click(advanced.querySelector('summary')); await click(advanced.querySelector('summary'));
+  check(minimumRating.value === "" && maximumRating.value === "" && titleRequests() === collapseRequests, "reopening restored ratings or requested titles");
+  await preview(100);
+  await changeRating(minimumRating, "7.25"); await changeRating(maximumRating, "9.125");
+  evidence.ratings = { boundaries: true, decimals: true, invalid: true, clearing: true, cache: true };
   check(!dialog.querySelector(`[data-${family}-minimum-votes-summary]`), "configuration repeats the minimum beneath Advanced");
-  if (isNetwork && (innerWidth === 393 || innerWidth === 1280) && globalThis.capture204Preview) {
+  check(!dialog.querySelector(`[data-${family}-rating-bounds-summary]`), "configuration repeats the rating summary");
+  if ((innerWidth === 393 || innerWidth === 1280) && globalThis.capture204Preview) {
    input.scrollIntoView({ block: "center" });
    await new Promise((resolve) => {
     window.__finish204Capture = resolve;
-    window.capture204Preview(JSON.stringify({ name: `network-${scope}-${innerWidth}-${innerHeight}-advanced` }));
+    window.capture204Preview(JSON.stringify({ name: `${family}-${scope}-${innerWidth}-${innerHeight}-advanced` }));
    });
   }
   check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "horizontal overflow");
+  const scrollOwners = [...dialog.querySelectorAll('*')].filter((node) => node.getClientRects().length && ['auto', 'scroll'].includes(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1);
+  check(scrollOwners.length <= 1 && window.scrollY === 0, "Advanced has competing scroll owners");
+  evidence.advancedScrollOwners = scrollOwners.length;
   await click(dialog.querySelector('button[type="submit"]'));
   if (guided && !applied) {
    await wait(() => dialog.querySelector('.studio-hierarchy-appearance'), { label: "Studio Appearance", timeoutMs: 20000 });
    check(dialog.querySelector(`[data-${family}-minimum-votes-summary]`)?.textContent === "Minimum votes: 100", "plan review lost threshold");
+   check([...dialog.querySelectorAll(`[data-${family}-rating-bounds-summary]`)].map((node) => node.textContent).join('|') === 'Minimum rating: 7.25|Maximum rating: 9.125', "plan review lost ratings");
    await click(dialog.querySelector('button[type="submit"]'));
   }
   check(applied?.ok && applyCalls === 1 && app.getState().revision === initial.revision + 1, "apply was not one atomic revision");
   const output = JSON.parse(serializedValue(app)), outputSources = output.flatMap((collection) => collection.folders.flatMap((folder) => folder.sources));
   const added = editing ? outputSources : outputSources.filter((source) => source.id !== seed.id);
   check(added.length === (editing ? 1 : isNetwork ? 2 : 4), "incorrect media/sort source count");
-  check(added.every((source) => source.provider === "tmdb" && source.tmdbSourceType === (isNetwork ? "NETWORK" : "COMPANY") && source.tmdbId === entityId && source.filters.voteCountGte === 100), "export differs from Preview/Review");
+  check(added.every((source) => source.provider === "tmdb" && source.tmdbSourceType === (isNetwork ? "NETWORK" : "COMPANY") && source.tmdbId === entityId && source.filters.voteCountGte === 100 && source.filters.voteAverageGte === 7.25 && source.filters.voteAverageLte === 9.125), "export differs from Preview/Review");
   check(output.every((collection) => collection.folders.every((folder) => !(folder.catalogSources?.length))), "native source gained a projection");
   evidence.atomic = true;
   await act(async () => { root.unmount(); await settle(); }); host.remove();
