@@ -68,7 +68,9 @@ export function runNetworkMinimumVotesScenario(helpers, view) {
  return runNativeMinimumVotesScenario(helpers, { ...view, family: "network" });
 }
 
-async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope, mediaType = "MOVIE" }) {
+export function runNativeSharedAdvancedScenario(helpers, view) { return runNativeMinimumVotesScenario(helpers, { ...view, sharedAdvanced: true }); }
+
+async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope, mediaType = "MOVIE", sharedAdvanced = false, layoutOnly = false }) {
  const isNetwork = family === "network", entityId = isNetwork ? 213 : 3;
  if (isNetwork) mediaType = "TV";
  const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition: wait } = helpers;
@@ -101,6 +103,11 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
    check(document.activeElement?.type !== "search", "browse autofocus");
    await act(async () => { setInputValue(dialog.querySelector('input[type="search"]'), String(entityId)); await settle(); });
    await click(await wait(() => dialog.querySelector(`[data-tmdb-${family}-result="${entityId}"]`), { label: "Studio catalogue", timeoutMs: 15000 }));
+   if (guided && sharedAdvanced) {
+    const secondId = isNetwork ? 49 : 174;
+    await act(async () => { setInputValue(dialog.querySelector('input[type="search"]'), String(secondId)); await settle(); });
+    await click(await wait(() => dialog.querySelector('[data-tmdb-' + family + '-result="' + secondId + '"]'), { label: "Second live entity", timeoutMs: 15000 }));
+   }
    if (guided) await click(dialog.querySelector('button[type="submit"]'));
    await wait(() => dialog.querySelector(`[data-${family}-advanced]`), { label: "Studio Configure" });
    if (!isNetwork && guided) await click(dialog.querySelector('input[name="studio-hierarchy-media"][value="both"]'));
@@ -117,7 +124,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
   check(minimumRating && maximumRating, "rating controls missing");
   check(minimumRating.value === (editing ? "7" : "") && maximumRating.value === (editing ? "9" : ""), "rating defaults differ");
   check(dialog.querySelectorAll(`[data-${family}-advanced]`).length === 1 && advanced.querySelectorAll('details').length === 0, "ratings created a second disclosure");
-  check([...advanced.querySelectorAll('label')].map((label) => label.textContent).join('|') === 'Minimum votes|Minimum rating|Maximum rating', "Advanced field order differs");
+  check([...advanced.querySelectorAll('label')].slice(0, 3).map((label) => label.textContent).join('|') === 'Minimum votes|Minimum rating|Maximum rating', "Advanced field order differs");
   check(advanced.querySelector('#discover-help-voteCountGte')?.textContent === "Set the minimum number of TMDB votes a title must have. Higher values exclude titles with fewer votes.", "minimum helper copy differs");
   check(input.value === (editing ? "0" : ""), "minimum default changed");
   check(titleRequests() === startRequests && serializedValue(app) === before, "opening Advanced changed data or requested titles");
@@ -159,16 +166,16 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     });
     check(response, "no production response for current draft");
     const grid = modal.querySelector('.source-edit-preview-grid');
-    check(grid, "real Preview grid missing");
+    check(grid || (sharedAdvanced && response[1].results.every((row) => !row.poster_path) && modal.querySelector("[data-preview-empty-state]")), "real Preview grid/empty state missing");
     if (!editing) check(modal.querySelector('.studio-preview-single-media')?.textContent.includes(response[1].total_results.toLocaleString("en") + " titles"), "active response count differs");
     const exactUrl = new URL(response[0], location.href);
     check(exactUrl.searchParams.get("include_adult") === "false", "missing canonical adult exclusion");
     const expected = response[1].results.filter((row) => row.poster_path).slice(0, 10).map((row) => row.poster_path);
-    const actual = [...grid.querySelectorAll('img')].map((img) => new URL(img.src).pathname.replace(/^\/t\/p\/w\d+/, ''));
+    const actual = [...(grid?.querySelectorAll('img') ?? [])].map((img) => new URL(img.src).pathname.replace(/^\/t\/p\/w\d+/, ''));
     check(JSON.stringify(actual) === JSON.stringify(expected), "displayed posters differ from real current response");
-    await wait(() => [...grid.querySelectorAll('img')].every((img) => img.complete && img.naturalWidth > 0), { label: "real Studio image CDN", timeoutMs: 20000 });
-    evidence.previews.push({ query: response[0], resultsMatch: true, geometry: titlePreviewGeometry(modal, grid) });
-    if (allVariants && ratingPair[0] === "7.25" && (innerWidth === 393 || innerWidth === 1280) && globalThis.capture204Preview) await new Promise((resolve) => {
+    await wait(() => [...(grid?.querySelectorAll('img') ?? [])].every((img) => img.complete && img.naturalWidth > 0), { label: "real Studio image CDN", timeoutMs: 20000 });
+    evidence.previews.push({ query: response[0], resultsMatch: true, geometry: grid ? titlePreviewGeometry(modal, grid) : { empty: true, width: modal.clientWidth, height: modal.clientHeight } });
+    if (allVariants && !sharedAdvanced && ratingPair[0] === "7.25" && (innerWidth === 393 || innerWidth === 1280) && globalThis.capture204Preview) await new Promise((resolve) => {
      window.__finish204Capture = resolve;
      window.capture204Preview(JSON.stringify({ name: `${family}-${scope}-${innerWidth}-${innerHeight}-${media}-${sortBy.replace(/[._]/g, "-")}-ratings-preview` }));
     });
@@ -178,6 +185,200 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
    check(scroll?.scrollTop === scrollTop && window.scrollY === 0, "Preview moved outer scroll owner");
    check(serializedValue(app) === before, "Preview saved data");
    return titleRequests() - count;
+  }
+  if (sharedAdvanced) {
+   async function setField(field, value) {
+    const node = advanced.querySelector('#discover-field-' + field);
+    check(node, field + " control missing");
+    await act(async () => {
+     if (node.tagName === "SELECT") { node.value = value; node.dispatchEvent(new Event("change", { bubbles: true })); }
+     else setInputValue(node, value);
+     await settle();
+    });
+   }
+   const shot = async (suffix) => {
+    if (!globalThis.capture204Preview || layoutOnly || !(family === "studio" && scope === "new-folder" || family === "network" && scope === "add")) return;
+    await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: "shared-advanced-" + family + "-" + scope + "-" + innerWidth + "-" + innerHeight + "-" + suffix })); });
+   };
+   const thresholdControls = [input, minimumRating, maximumRating];
+   const boxes = thresholdControls.map((node) => node.getBoundingClientRect());
+   check(innerWidth > 900 ? boxes.every((box) => Math.abs(box.top - boxes[0].top) < 2 && Math.abs(box.width - boxes[0].width) < 2) : boxes.every((box, index) => !index || box.top >= boxes[index - 1].bottom), "threshold row/stack layout differs");
+   await changeRating(minimumRating, ""); await changeRating(maximumRating, "");
+   check(thresholdControls.every((node) => node.tagName === "INPUT" && node.type === "text"), "thresholds are not ordinary text fields");
+   check(minimumRating.value === "" && maximumRating.value === "", "unset rating changed");
+   check(minimumRating.inputMode === "decimal" && maximumRating.inputMode === "decimal", "rating decimal keyboard lost");
+   check(minimumRating.labels[0].textContent === "Minimum rating" && maximumRating.labels[0].textContent === "Maximum rating", "rating labels missing");
+   await changeRating(minimumRating, "0"); await changeRating(maximumRating, "10");
+   check(minimumRating.value === "0" && maximumRating.value === "10", "explicit rating boundaries lost");
+   await changeRating(minimumRating, "0.000001"); check(!previewButton().disabled, "representable tiny decimal rejected");
+   await changeRating(minimumRating, "0.0000001"); check(minimumRating.getAttribute('aria-invalid') === "true" && previewButton().disabled, "unrepresentable decimal accepted");
+   await changeRating(minimumRating, "9"); await changeRating(maximumRating, "8.5"); check(previewButton().disabled, "inverted pair accepted");
+   await changeRating(minimumRating, "7.25"); check(!previewButton().disabled, "decimal pair rejected");
+   await change("0"); await changeRating(minimumRating, "0"); await changeRating(maximumRating, "10");
+   await setField("withOriginalLanguage", "en"); await setField("withOriginCountry", "US");
+   await setField("releaseDateGte", "2000-01-01"); await setField("releaseDateLte", "2025-12-31"); await setField("year", "2020");
+   let genreRoot = advanced;
+   const genreButton = (name) => [...genreRoot.querySelectorAll('.discover-genre-pills button')].find((node) => node.textContent.startsWith(name));
+   if (guided) {
+    await click(findButton(advanced, "Configure genres"));
+    genreRoot = document.querySelector('.native-genre-dialog'); check(genreRoot, "genre context dialog missing");
+    await click([...genreRoot.querySelectorAll('.genre-context-pane button')].find((node) => node.textContent.includes("Shared genres")));
+   }
+   await click(genreButton(isNetwork ? "Drama" : "Animation"));
+   if (!isNetwork && !editing) await click(genreButton("Action"));
+   await click([...genreRoot.querySelectorAll('[aria-label="Genre action"] button')].find((node) => node.textContent === "Exclude"));
+   await click(genreButton("Documentary"));
+   if (guided) await shot("genres-shared");
+   if (guided) {
+    if (innerWidth <= 900) await click(findButton(genreRoot, "← Contexts"));
+    await click([...genreRoot.querySelectorAll('.genre-context-pane button')].find((node) => node.textContent.includes(isNetwork ? "HBO" : "Warner")));
+    check(genreRoot.textContent.includes("Using default"), "entity did not inherit default");
+    const inheritedName = genreRoot.querySelector('.genre-exclusion-detail-header h5').textContent;
+    check(genreRoot.textContent.includes("Click customise to make changes specific to " + inheritedName + "."), "inherited prompt lacks actual entity");
+    check(!genreRoot.querySelector('.discover-genre-pills') && !genreRoot.textContent.includes("Customise to change this entity only"), "inherited panel repeats full rules");
+    check([...genreRoot.querySelectorAll('.genre-context-pane small')].every((node) => /^(Using default|Custom|No genre restriction|\d+ included · \d+ excluded)$/.test(node.textContent)), "context list repeats expressions");
+    await shot("genres-using-default");
+    const selectContext = async (label) => {
+     if (innerWidth <= 900) await click(findButton(genreRoot, "← Contexts"));
+     await click([...genreRoot.querySelectorAll('.genre-context-pane button')].find((node) => node.querySelector('strong').textContent === label));
+    };
+    const modeButton = (mode) => [...genreRoot.querySelectorAll('[aria-label="Genre action"] button')].find((node) => node.textContent === mode);
+    const selectedNames = () => [...genreRoot.querySelectorAll('.discover-genre-pills button[aria-pressed="true"]')].map((node) => node.textContent);
+    const checkBlank = () => {
+     check(selectedNames().length === 0, "shared genre highlighting leaked into blank Custom");
+     check(modeButton("Include").getAttribute('aria-pressed') === "true" && findButton(genreRoot, "Match any (OR)").getAttribute('aria-pressed') === "true", "blank Custom inherited mode/operator");
+     check(genreRoot.querySelector('.native-genre-inheritance').textContent.includes("Custom") && genreRoot.textContent.includes("No genre restriction") && findButton(genreRoot,"Clear selections"), "blank Custom lost its independent state");
+    };
+    // Shared mode is Exclude and operator AND; neither may enter blank Custom.
+    await selectContext("Shared genres"); await click(findButton(genreRoot,"Match all (AND)"));
+    await selectContext(inheritedName); await click(findButton(genreRoot,"Customise genres")); checkBlank();
+    await shot("genres-custom-blank");
+    await click(genreButton("Comedy")); await click(modeButton("Exclude")); await click(genreButton("Documentary")); await click(findButton(genreRoot,"Match all (AND)"));
+    check(selectedNames().length === 2 && genreButton("Comedy").getAttribute('aria-pressed') === "true" && genreButton("Documentary").dataset.excluded === "true", "Custom selected inherited or incorrect pills");
+    await shot("genres-custom-populated");
+    await selectContext("Shared genres"); await click(modeButton("Include")); await click(genreButton(isNetwork?"Animation":"Drama")); await click(findButton(genreRoot,"Match any (OR)"));
+    await selectContext(inheritedName);
+    check(selectedNames().length === 2 && genreButton(isNetwork?"Animation":"Drama").getAttribute('aria-pressed') === "false" && modeButton("Exclude").getAttribute('aria-pressed') === "true" && findButton(genreRoot,"Match all (AND)").getAttribute('aria-pressed') === "true", "shared changes altered Custom selections/mode/operator");
+    await click(findButton(genreRoot,"Clear selections")); checkBlank(); await shot("genres-custom-cleared");
+    await selectContext("Shared genres"); await click(genreButton(isNetwork?"Animation":"Drama"));
+    await selectContext(inheritedName); checkBlank(); await shot("genres-blank-after-shared-change");
+    await click(findButton(genreRoot,"Use default"));
+    check(!genreRoot.querySelector('.discover-genre-pills') && genreRoot.querySelector('.native-genre-inheritance').textContent.includes("Using default"), "blank Custom did not return to inheritance");
+    await shot("genres-use-default");
+    await click(findButton(genreRoot,"Customise genres")); checkBlank(); await click(genreButton("Comedy"));
+    await click(findButton(genreRoot,"Use default"));
+    check(genreRoot.querySelector('.native-genre-inheritance').textContent.includes("Using default"), "populated Custom did not return to inheritance");
+    await click(findButton(genreRoot,"Customise genres")); checkBlank();
+    if (scope === "new-collection") await click(genreButton("Comedy"));
+    check(genreRoot.scrollWidth <= genreRoot.clientWidth + 1, "genre dialog horizontal overflow");
+    const pane = genreRoot.querySelector('.genre-advanced-subview');
+    check(pane.scrollWidth <= pane.clientWidth + 1, "genre context content horizontal overflow");
+    await shot("genre-context");
+    if (innerWidth <= 900) await click(findButton(genreRoot, "← Contexts"));
+    await click(findButton(genreRoot, "Done"));
+    await wait(() => !document.querySelector('.native-genre-dialog'), { label: "genre context closed" });
+    check(document.activeElement === findButton(advanced, "Configure genres"), "genre focus not restored");
+    const summary = findButton(advanced, "Configure genres").closest('section');
+    check(summary.textContent.includes("Shared genres: " + (isNetwork ? "1" : "2") + " included · 1 excluded") && summary.textContent.includes("1 custom · 1 using default"), "main genre summary is not compact");
+   }
+   const keyword = advanced.querySelector('[data-picker="withKeywords"]');
+   await wait(() => { const error = advanced.querySelector('.discover-notice[role="alert"]'); if (error) throw new Error(error.textContent); return !keyword.querySelector('.discover-picker-launch').disabled; }, { label: "Real keyword catalogue", timeoutMs: 60000 });
+   async function keywordChoice(query, exactId, exclude = false) {
+    if (exclude) { const modeButton = findButton(keyword.querySelector(".discover-mode"), "Exclude"); modeButton.focus({ preventScroll: true }); await click(modeButton); }
+    let search = keyword.querySelector('input');
+    if (innerWidth <= 900) { await click(keyword.querySelector('.discover-picker-launch')); search = document.querySelector('.discover-selection-dialog input'); }
+    await act(async () => { search.focus({ preventScroll: true }); setInputValue(search, ""); await settle(); });
+    await act(async () => { setInputValue(search, query); await settle(); });
+    const choice = await wait(() => document.querySelector('.discover-dropdown [data-tmdb-id="' + exactId + '"]'), { label: "Live catalogue keyword " + query, timeoutMs: 20000 }).catch((error) => { throw new Error(error.message + " Picker state: " + JSON.stringify({ mode: keyword.querySelector('.discover-mode [aria-pressed="true"]')?.textContent, query: search.value, expanded: search.getAttribute("aria-expanded"), focused: document.activeElement === search, content: keyword.textContent, options: [...keyword.querySelectorAll('[role="option"]')].map((node) => node.dataset.tmdbId) })); });
+    await click(choice);
+    const panel = document.querySelector('.discover-selection-dialog');
+    if (panel && query === "friendship") {
+     await click(panel.querySelector(".discover-selection-switch"));
+     const selected = panel.querySelector('[role="option"][aria-selected="true"]');
+     check(selected && getComputedStyle(selected).backgroundColor === "rgba(1, 180, 228, 0.12)", "native keyword selected state is not cyan");
+     await shot("keyword-picker");
+     const selectedList = panel.querySelector('[role="listbox"]'); selectedList.focus({ preventScroll: true });
+     await act(async () => { selectedList.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); await settle(); selectedList.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle(); });
+     check(!panel.querySelector('[role="option"]'), "mobile selected keyword removal failed");
+     await click(panel.querySelector('.discover-selection-switch'));
+     check(panel.querySelector('input') && document.activeElement === panel.querySelector('.discover-selection-switch'), "mobile Back to browsing lost focus/search");
+     await act(async () => { setInputValue(panel.querySelector('input'), query); await settle(); });
+     await click(await wait(() => panel.querySelector('[data-tmdb-id="' + exactId + '"]'), { label: "restore removed keyword" }));
+    }
+    if (panel) { await click(findButton(panel, "Done")); check(document.activeElement === keyword.querySelector('.discover-picker-launch'), "mobile keyword focus not restored"); }
+    else check(!keyword.querySelector('.discover-selection-switch') && !keyword.textContent.includes('View selected'), "desktop keyword still has a selected-only view");
+   }
+   await keywordChoice("friendship", 6054);
+   await keywordChoice("shark", 15097, true);
+   for (const mode of ["Include", "Exclude"]) {
+    await click(findButton(keyword.querySelector('.discover-mode'), mode));
+    check(keyword.querySelectorAll('.discover-chips button').length === 2, "mode switch lost included/excluded chips");
+   }
+   if (innerWidth > 900) {
+    const chips = [...keyword.querySelectorAll('.discover-chips button')];
+    check(chips.every((node) => node.getClientRects().length && node.getAttribute('aria-label').startsWith('Remove ')), "desktop chips not visible/keyboard removable");
+    const keywordInput = keyword.querySelector('input');
+    await act(async () => { setInputValue(keywordInput, 'shark'); keywordInput.focus({ preventScroll: true }); await settle(); });
+    await wait(() => keyword.querySelector('.discover-dropdown [data-tmdb-id="15097"]'), { label: "desktop results with chips" });
+    keywordInput.closest("label").scrollIntoView({ block: "start" }); await shot("keywords-desktop");
+    await click(chips[0]); check(keyword.querySelectorAll('.discover-chips button').length === 1, "desktop included chip not removable");
+    await click(keyword.querySelector('.discover-chips button')); check(!keyword.querySelector('.discover-chips'), "desktop excluded chip not removable");
+    await click(findButton(keyword.querySelector('.discover-mode'), "Include"));
+    await keywordChoice("friendship", 6054); await keywordChoice("shark", 15097, true);
+   }
+   check(titleRequests() === startRequests && serializedValue(app) === before, "Advanced/context controls requested titles or saved data");
+   await setField("year", "1999"); check(previewButton().disabled, "nonoverlapping year previewable"); await setField("year", "2020");
+   await click(advanced.querySelector('summary')); await click(advanced.querySelector('summary'));
+   check(advanced.querySelector('#discover-field-year').value === "2020", "disclosure lost shared settings");
+   advanced.querySelector(".native-threshold-fields").scrollIntoView({ block: "start" });
+   await shot("thresholds-locale-genres");
+   advanced.querySelector('#discover-field-withOriginalLanguage').scrollIntoView({ block: "center" });
+   await shot("locale-genres");
+   advanced.querySelector('#discover-field-releaseDateGte').scrollIntoView({ block: "center" });
+   await shot("keywords-dates");
+   check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "shared Advanced horizontal overflow");
+   const owners = [...dialog.querySelectorAll('*')].filter((node) => node.getClientRects().length && ['auto', 'scroll'].includes(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1);
+   check(owners.length === 1 && window.scrollY === 0, "shared Advanced competing scroll owners");
+   evidence.sharedAdvanced = { noImplicitRequests: true, boundedScroll: true, genreContexts: guided, ordinaryRatingInputs: true, ratingDecimals: true, thresholdLayout: innerWidth > 900 ? "three columns" : "stacked", keywordLayout: innerWidth > 900 ? "inline chips" : "mobile selected-items", layoutOnly };
+   if (layoutOnly) return evidence;
+   await preview(0, !editing);
+   const response = evidence.previews[evidence.previews.length - 1];
+   const url = new URL(response.query, location.href);
+   check(url.searchParams.get('with_original_language') === 'en' && url.searchParams.get('with_origin_country') === 'US', "locale Preview mismatch");
+   check(url.searchParams.get('with_keywords') === '6054' && url.searchParams.get('without_keywords') === '15097', "keyword Preview mismatch");
+   check(url.searchParams.get('without_genres') === '99', "genre Preview mismatch");
+   check(url.searchParams.get(isNetwork || !editing || mediaType === "TV" ? 'first_air_date_year' : 'year') === '2020', "year Preview mismatch");
+   check(await preview(0) === 0, "complete shared query cache missed");
+   await click(dialog.querySelector('button[type="submit"]'));
+   if (guided && !applied) {
+    await wait(() => dialog.querySelector('.studio-hierarchy-appearance'), { label: "Shared Advanced Appearance", timeoutMs: 20000 });
+    const review = dialog.querySelector('.native-advanced-summary')?.textContent;
+    check(review?.includes("Custom: " + (scope === "new-folder" ? "No genre restriction" : "Comedy")) && review.includes("Using default"), "review does not distinguish inherited and Custom rules");
+    await shot("review"); await click(dialog.querySelector('button[type="submit"]'));
+   }
+   check(applied?.ok && applyCalls === 1 && app.getState().revision === initial.revision + 1, "combined apply was not atomic");
+   const output = JSON.parse(serializedValue(app)), sources = output.flatMap((collection) => collection.folders.flatMap((folder) => folder.sources)).filter((source) => editing || source.id !== seed.id);
+   check(sources.length === (editing ? 1 : (isNetwork ? 2 : 4) * (guided ? 2 : 1)), "shared source count mismatch");
+   check(sources.every((source) => source.filters.withKeywords === '6054' && source.filters.withoutKeywords === '15097' && source.filters.year === 2020 && source.filters.withOriginalLanguage === 'en'), "shared export differs from draft");
+   if (guided) for (const source of sources.filter((source) => source.tmdbId === (isNetwork ? 49 : 174))) {
+    check(source.filters.withGenres === (scope === "new-folder" ? undefined : "35") && source.filters.withoutGenres === undefined, "blank/populated Custom export inherited shared genres");
+   }
+   check(!JSON.stringify(output).includes('genreOverrides'), "creation context serialized");
+   const reopened = createController(); check(reopened.importValue(output).ok, "combined export cannot reopen");
+   await act(async () => { root.unmount(); await settle(); }); host.remove();
+   const selected = reopened.getState().project.collections.flatMap((collection) => collection.folders.flatMap((folder) => folder.sources)).find((source) => source.editable.filters?.withKeywords === '6054' && (scope !== "new-folder" || source.editable.tmdbId === (isNetwork ? 49 : 174)));
+   const session = createSourceEditSession(reopened.getState().project, selected.internalId);
+   const node = document.createElement('div'); document.body.append(node); const editRoot = createRoot(node); let saved;
+   try {
+    await act(async () => { editRoot.render(createElement(SourceEditorDialog, { ...providers, session: session.session, initialDraft: session.draft, onSave: (draft) => { saved = saveSourceEdit(reopened, session.session, draft); return saved; }, onCancel() {} })); await settle(); });
+    const edit = document.querySelector('[data-source-edit-modal]'); await click(edit.querySelector('[data-' + family + '-advanced] summary'));
+    check(!findButton(edit, "Configure genres") && !edit.querySelector('.native-genre-inheritance') && edit.querySelector('#discover-field-year').value === "2020", "physical edit reconstructed inheritance or lost year");
+    if (scope === "new-folder") check(!edit.querySelector('.discover-genre-pills button[aria-pressed="true"]'), "blank Custom reopened with inherited genre pills");
+    await click(edit.querySelector('[aria-label="Clear release year"]')); await click(edit.querySelector('button[type="submit"]')); check(saved?.ok, "clear year Save failed");
+    check(reopened.stringifyProject().value.flatMap((c) => c.folders.flatMap((f) => f.sources)).some((source) => source.filters.withKeywords === '6054' && !Object.hasOwn(source.filters, 'year')), "clear year revived after export");
+   } finally { await act(async () => { editRoot.unmount(); await settle(); }); node.remove(); }
+   evidence.atomic = true; evidence.preservation = true;
+   return evidence;
   }
   await preview(editing ? 0 : undefined);
   for (const invalid of ["-1", "1.5", "abc", "2147483648"]) {

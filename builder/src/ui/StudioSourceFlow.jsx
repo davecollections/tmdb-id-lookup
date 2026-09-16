@@ -251,7 +251,7 @@ export function StudioConfigureStep({
 			</fieldset>
 			<StudioDuplicateNotice duplicateReview={duplicateReview} />
 			<StudioSortChoices selectedIds={sortOptionIds} name="studio-configure-sort" onChange={onSortChange} />
-			<StudioAdvancedOptions draft={advanced} onChange={onAdvancedChange} />
+			<StudioAdvancedOptions draft={{ ...advanced, mediaMode: choices.length === 2 ? "both" : choices.includes("studio-series") ? "series" : "movies" }} onChange={onAdvancedChange} />
 			<StudioElsewhereNotice occurrences={duplicateReview.elsewhere} />
 		</section>
 	);

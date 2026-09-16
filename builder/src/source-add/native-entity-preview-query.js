@@ -7,6 +7,7 @@ import { validateRatingBounds } from "./rating-bounds.js";
 export function nativeEntityPreviewQuery(entityId, inclusionField, { mediaType, sortBy, filters = {} } = {}) {
  if (!Number.isSafeInteger(entityId) || entityId < 1 || !["MOVIE", "TV"].includes(mediaType) || !filters || typeof filters !== "object" || Array.isArray(filters)) return null;
  if (!validateRatingBounds(filters, mediaType).ok) return null;
+ if (["withoutGenres", "withoutKeywords"].some((field) => typeof filters[field] === "string" && filters[field].includes("|"))) return null;
  // Imported JSON must have a supported scalar shape before authored validation
  // can coerce it, or native identity replacement can hide an unsafe value.
  for (const { field, valueType } of DISCOVER_FILTER_DESCRIPTORS) {

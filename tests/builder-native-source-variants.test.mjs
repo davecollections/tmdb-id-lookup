@@ -415,3 +415,126 @@ test("People Most voted is vote-first for exact roles/media, counts posterless t
 	const empty = buildPeopleTitlePreview({ ...people, combinedCredits: { cast: [], crew: [] } }, { combinations: ["acting-movies"], sortOptionId: "most-votes" });
 	assert.equal(empty.totalResults, 0); assert.deepEqual(empty.items, []);
 });
+
+// #218 exercises combined native settings without multiplying the surface matrix.
+import { validateNativeAdvancedFilters, customizeNativeGenres, useDefaultNativeGenres, resolveNativeGenreFilters } from "../builder/src/source-add/native-shared-advanced.js";
+const sharedAdvanced = { voteCountGte: "100", voteAverageGte: "5.5", voteAverageLte: "9", withOriginalLanguage: "en", withOriginCountry: "US", withGenres: "16|35", withoutGenres: "18", withKeywords: "9715|210024", withoutKeywords: "15097,10617", releaseDateGte: "2020-02-29", releaseDateLte: "2020-12-31", year: "2020" };
+for (const family of families.filter((family) => family.name !== "People")) {
+ test(family.name + " combined Shared Advanced query, comparison, frozen overrides and atomic export", () => {
+  const [create, apply] = planFunctions(family), app = createBuilderController();
+  app.importValue([{ title: "Existing", folders: [] }]);
+  const state = app.getState(), second = { ...family.entity, id: 174, name: "Second" };
+  const genreOverrides = { [second.id]: { withGenres: "18", withoutGenres: "16" } };
+  const options = { ...refinementConfig(family, [family.entity, second], ["popular", "recent"]), filters: sharedAdvanced, genreOverrides, scope: "new-folder", destinationCollectionInternalId: state.project.collections[0].internalId, projectRevision: state.revision };
+  const result = create(state.project, options);
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.ok(Object.isFrozen(result.plan.configuration.genreOverrides[second.id]));
+  const tampered = structuredClone(result.plan); tampered.configuration.genreOverrides[second.id].withGenres = "35";
+  const before = app.stringifyProject().json;
+  assert.equal(apply(app, tampered).ok, false); assert.equal(app.stringifyProject().json, before);
+  genreOverrides[second.id].withGenres = "35";
+  assert.equal(result.plan.configuration.genreOverrides[second.id].withGenres, "18");
+  assert.equal(apply(app, result.plan).ok, true);
+  assert.equal(app.getState().revision, state.revision + 1);
+  const exported = app.stringifyProject();
+  for (const folder of exported.value[0].folders) for (const source of folder.sources) {
+   const custom = source.tmdbId === second.id;
+   assert.equal(source.filters.withGenres, custom ? "18" : "16|35");
+   assert.equal(source.filters.withoutGenres, custom ? "16" : "18");
+   assert.equal(source.filters.year, 2020); assert.equal(source.filters.withOriginalLanguage, "en");
+   const query = (family.name === "Studio" ? studioPreviewQuery : networkPreviewQuery)(source.tmdbId, source).queryParameters;
+   assert.equal(query.with_genres, source.filters.withGenres);
+   assert.equal(query.without_keywords, "15097,10617"); assert.equal(query.with_keywords, "9715|210024");
+   assert.equal(query.with_original_language, "en"); assert.equal(query.with_origin_country, "US");
+   assert.equal(query[source.mediaType === "TV" ? "first_air_date.gte" : "primary_release_date.gte"], "2020-02-29");
+   assert.equal(query[source.mediaType === "TV" ? "first_air_date_year" : "year"], "2020");
+   assert.equal(query.include_adult, "false");
+   assert.equal(query[source.mediaType === "TV" ? "primary_release_date.lte" : "first_air_date.lte"], undefined);
+   assert.ok(!folder.catalogSources?.length);
+  }
+  assert.doesNotMatch(exported.json, /genreOverrides|Shared genres|Using default/);
+  const reopened = createBuilderController(); assert.equal(reopened.importValue(exported.value).ok, true); assert.deepEqual(reopened.stringifyProject().value, exported.value);
+  assert.equal(apply(app, result.plan).ok, false);
+ });
+ test(family.name + " native comparison normalizes safe expressions and year without normalizing opaque semantics", () => {
+  const draft = family.build({ filters: sharedAdvanced }).drafts[0];
+  const key = (filters) => { const app = createBuilderController(); app.importValue([{ title: "C", folders: [{ title: "F", sources: [{ ...draft.editable, filters }] }] }]); return family.key(app.getState().project.collections[0].folders[0].sources[0]); };
+  const base = { withGenres: "16|35", withKeywords: "9715,210024", year: 2020, withOriginalLanguage: "en" };
+  assert.equal(key(base), key({ ...base, withGenres: "35|16", withKeywords: "210024,9715", year: "2020", with_original_language: "en" }));
+  for (const patch of [{ withGenres: "16,35" }, { year: 2021 }, { withOriginalLanguage: "fr" }, { with_original_language: "fr" }, { withGenres: "16|35,18" }, { owner: true }]) assert.notEqual(key(base), key({ ...base, ...patch }));
+  assert.notEqual(key({ withoutGenres: "16,35" }), key({ withoutGenres: "16|35" }));
+ });
+}
+test("Studio Both derives actual media IDs including an unrestricted medium and keeps the union in plan rebuilds", () => {
+ const build = (filters) => buildStudioSourceDrafts(studio, { choices: ["studio-movies", "studio-series"], filters });
+ const result = build({ ...sharedAdvanced, withGenres: "28|10759", withoutGenres: "10763" });
+ assert.equal(result.ok, true, JSON.stringify(result.errors));
+ assert.equal(result.drafts[0].editable.filters.withGenres, "28"); assert.equal(result.drafts[0].editable.filters.withoutGenres, undefined);
+ assert.equal(result.drafts[1].editable.filters.withGenres, "10759"); assert.equal(result.drafts[1].editable.filters.withoutGenres, "10763");
+ assert.equal(build({ withGenres: "28" }).drafts[1].editable.filters.withGenres, undefined);
+ assert.equal(buildStudioSourceDrafts(studio, { choices: ["studio-series"], filters: { withGenres: "10759" } }).ok, true);
+ const app = createBuilderController(), state = app.getState();
+ const plan = createStudioHierarchyPlan(state.project, { ...refinementConfig(families[1], [studio], ["popular"]), filters: { withGenres: "28|10759" }, scope: "new-collection", projectRevision: state.revision });
+ assert.equal(plan.ok, true); assert.equal(plan.plan.configuration.filters.withGenres, "28|10759");
+ assert.equal(applyStudioHierarchyPlan(app, plan.plan).ok, true);
+ assert.equal(build({ withoutGenres: "28|10759" }).ok, false, "do not make a pipe exclusion editable by reducing it per media");
+});
+test("native Custom starts blank, clearing retains its key and Use default restores current shared genres", () => {
+ const defaults = { withGenres: "16|35", withoutGenres: "18", withOriginalLanguage: "en" };
+ const overrides = customizeNativeGenres({}, 3);
+ assert.deepEqual(overrides, { 3: {} });
+ const changed = { ...defaults, withGenres: "99" };
+ assert.deepEqual(resolveNativeGenreFilters(changed, overrides, 3).filters, { withOriginalLanguage: "en" });
+ assert.equal(resolveNativeGenreFilters(changed, overrides, 2).filters.withGenres, "99");
+ const populated = { ...overrides, 3: { withGenres: "35", withoutGenres: "16" } };
+ assert.deepEqual(resolveNativeGenreFilters(changed, populated, 3).filters, { withGenres: "35", withoutGenres: "16", withOriginalLanguage: "en" });
+ const cleared = customizeNativeGenres(populated, 3);
+ assert.deepEqual(cleared, { 3: {} }); assert.deepEqual(populated[3], { withGenres: "35", withoutGenres: "16" });
+ for (const value of [populated, cleared]) {
+  const inherited = useDefaultNativeGenres(value, 3);
+  assert.equal(Object.hasOwn(inherited, 3), false);
+  assert.deepEqual(resolveNativeGenreFilters(changed, inherited, 3).filters, changed);
+ }
+ for (const invalid of [null, [], { 3: null }, { 3: { year: 2020 } }]) assert.equal(resolveNativeGenreFilters(defaults, invalid, 3).ok, false);
+});
+
+for (const family of families.filter((family) => family.name !== "People")) {
+ for (const scope of ["new-collection", "new-folder"]) test(family.name + " " + scope + " freezes/rebuilds inherited, empty Custom and populated Custom as distinct concrete sources", () => {
+  const [create, apply] = planFunctions(family), app = createBuilderController(); app.importValue([{ title: "Existing", folders: [] }]);
+  const state=app.getState(), blank={...family.entity,id:174,name:"Blank entity"}, populated={...family.entity,id:33,name:"Custom entity"};
+  const overrides={ [blank.id]: {}, [populated.id]: {withGenres:"35"} };
+  const options={...refinementConfig(family,[family.entity,blank,populated],["popular"]),filters:{withGenres:"16",withoutGenres:"99",withOriginalLanguage:"en"},genreOverrides:overrides,scope,projectRevision:state.revision,...(scope==="new-folder"?{destinationCollectionInternalId:state.project.collections[0].internalId}:{collectionTitle:"Genre rules"})};
+  const result=create(state.project,options);assert.equal(result.ok,true,JSON.stringify(result.errors));
+  assert.deepEqual(result.plan.configuration.genreOverrides[blank.id],{});assert.ok(Object.isFrozen(result.plan.configuration.genreOverrides[blank.id]));
+  const tampered=structuredClone(result.plan);delete tampered.configuration.genreOverrides[blank.id];
+  assert.equal(apply(app,tampered).ok,false);assert.equal(app.getState().revision,state.revision);
+  overrides[blank.id].withGenres="18";assert.deepEqual(result.plan.configuration.genreOverrides[blank.id],{});
+  assert.equal(apply(app,result.plan).ok,true);const output=app.stringifyProject();
+  for(const source of output.value.flatMap(c=>c.folders.flatMap(f=>f.sources))) {
+   assert.deepEqual(source.filters,source.tmdbId===blank.id?{withOriginalLanguage:"en"}:source.tmdbId===populated.id?{withOriginalLanguage:"en",withGenres:"35"}:{withOriginalLanguage:"en",withGenres:"16",withoutGenres:"99"});
+  }
+  assert.doesNotMatch(output.json,/genreOverrides|Shared genres|Using default/);
+  const blankSource=app.getState().project.collections.flatMap(c=>c.folders.flatMap(f=>f.sources)).find(s=>s.editable.tmdbId===blank.id);
+  const opened=createSourceEditSession(app.getState().project,blankSource.internalId);assert.equal(opened.ok,true);assert.equal(opened.draft.filters.withGenres,undefined);assert.equal(opened.draft.filters.withoutGenres,undefined);
+ });
+ test(family.name + " missing variants recalculate between shared, empty Custom and populated Custom without changing identity", () => {
+  const [create]=planFunctions(family),app=createBuilderController(),filters={withGenres:"16"};
+  const inherited=family.build({filters,sortOptionIds:["popular"]}).drafts;
+  app.importValue([{title:"C",folders:[{title:family.entity.name,sources:inherited.map(d=>d.editable)}]}]);
+  const state=app.getState();
+  for(const [genreOverrides,missing] of [[{},0],[{[family.entity.id]:{}},family.slots],[{[family.entity.id]:{withGenres:"35"}},family.slots]]) {
+   const candidates=family.build({filters,genreOverrides,sortOptionIds:["popular"]}).drafts;
+   assert.deepEqual(candidates.map(family.identity),inherited.map(family.identity));
+   const plan=create(state.project,{...refinementConfig(family,[family.entity],["popular"]),filters,genreOverrides,scope:"new-folder",destinationCollectionInternalId:state.project.collections[0].internalId,projectRevision:state.revision});
+   assert.equal(plan.ok,true,JSON.stringify(plan.errors));assert.equal(plan.plan.counts.sourceCount,missing);
+  }
+ });
+}
+
+test("native authoring rejects unsafe grammar, conflicts and dates while accepting canonical saved codes without catalogue membership", () => {
+ for (const media of ["MOVIE", "TV"]) {
+  assert.equal(validateNativeAdvancedFilters({ withOriginalLanguage: "zz", withOriginCountry: "ZZ", year: 1000 }, media).ok, true);
+  const invalid = [{ withOriginalLanguage: "EN" }, { withOriginalLanguage: "en|fr" }, { withOriginalLanguage: ["en"] }, { withOriginCountry: "us" }, { withOriginCountry: {} }, { withGenres: "16|35,18" }, { withGenres: "16|16" }, { withGenres: "999999" }, { withoutGenres: "16|35" }, { withGenres: "16", withoutGenres: "16" }, { withKeywords: "01" }, { withKeywords: "2147483648" }, { withKeywords: "9715", withoutKeywords: "9715" }, { withoutKeywords: "9715|15097" }, { releaseDateGte: "2021-02-29" }, { releaseDateGte: "2020-03-01", releaseDateLte: "2020-02-29" }, { year: 999 }, { year: 10000 }, { year: [] }, { year: 2021, releaseDateLte: "2020-12-31" }, { withWatchProviders: "8", watchRegion: "US" }];
+  for (const filters of invalid) assert.equal(validateNativeAdvancedFilters(filters, media).ok, false, JSON.stringify(filters));
+ }
+});

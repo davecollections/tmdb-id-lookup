@@ -1,3 +1,4 @@
+import { freezeNativeGenreOverrides, validateNativeAdvancedDraft } from "./native-shared-advanced.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeHierarchyPlacement, nativeHierarchyCounts, resolveNativeHierarchyPlacements } from "./native-source-variants.js";
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
@@ -30,6 +31,7 @@ export const DEFAULT_STUDIO_COLLECTION_TITLE = "Studios";
 export const DEFAULT_STUDIO_FOLDER_TITLE_VISIBILITY = "SHOW_EVERYWHERE";
 
 const OPTION_KEYS = new Set([
+ "genreOverrides",
 	"folderDestinations",
 	"scope", "projectRevision", "destinationCollectionInternalId", "collectionTitle",
 	"hideCollectionTitle", "viewMode", "showAllTab", "pinToTop", "folderTitleVisibility",
@@ -68,7 +70,7 @@ function validArtwork(artwork, studioId) {
 	return typeof editable.coverImageUrl === "string" && /^https:\/\//.test(editable.coverImageUrl);
 }
 
-function normalizeStudioEntry(entry, index, { choices, sortOptionIds, filters }, errors) {
+function normalizeStudioEntry(entry, index, { choices, sortOptionIds, filters, genreOverrides }, errors) {
 	const studio = entry?.studio;
 	const name = canonicalText(studio?.name);
 	if (!Number.isSafeInteger(studio?.id) || studio.id < 1 || !name || studio.name !== name) {
@@ -82,7 +84,7 @@ function normalizeStudioEntry(entry, index, { choices, sortOptionIds, filters },
 	const sourceResult = buildStudioSourceDrafts(studio, {
 		choices,
 		sortOptionIds,
-		filters,
+		filters, genreOverrides,
 		titleMode: STUDIO_SOURCE_TITLE_MODES.HIERARCHY,
 	});
 	if (!sourceResult.ok) {
@@ -127,12 +129,13 @@ export function createStudioHierarchyPlan(project, options) {
 	const scope = STUDIO_CREATION_SCOPES.includes(options.scope) ? options.scope : null;
 	if (scope === null) errors.push(diagnostic("INVALID_STUDIO_PLAN_SCOPE", "$studioPlan.scope", "Choose New Collection or New Folder scope."));
 	const mediaMode = mediaModeById(options.mediaMode ?? DEFAULT_STUDIO_HIERARCHY_MEDIA_MODE);
+	if (mediaMode) errors.push(...validateNativeAdvancedDraft(options.filters, mediaMode.id).errors);
 	if (mediaMode === null) errors.push(diagnostic("INVALID_STUDIO_PLAN_MEDIA", "$studioPlan.mediaMode", "Choose Movies, Series, or Both."));
 	const sortOptionIds = orderedSourceSortIds(options.sortOptionIds, options.sortOptionId ?? DEFAULT_STUDIO_SORT_OPTION_ID, STUDIO_SORT_OPTIONS);
 	if (sortOptionIds === null) errors.push(diagnostic("INVALID_STUDIO_PLAN_SORT", "$studioPlan.sortOptionId", "Choose at least one option."));
 	if (!Array.isArray(options.studios) || options.studios.length < 1) errors.push(diagnostic("STUDIO_PLAN_SELECTION_REQUIRED", "$studioPlan.studios", "Choose at least one Studio."));
 	const entries = Array.isArray(options.studios) && mediaMode !== null
-		? options.studios.map((entry, index) => normalizeStudioEntry(entry, index, { choices: mediaMode.choices, sortOptionIds, filters: options.filters }, errors)).filter(Boolean)
+		? options.studios.map((entry, index) => normalizeStudioEntry(entry, index, { choices: mediaMode.choices, sortOptionIds, filters: options.filters, genreOverrides: options.genreOverrides }, errors)).filter(Boolean)
 		: [];
 	if (new Set(entries.map((entry) => entry.studio.id)).size !== entries.length) errors.push(diagnostic("DUPLICATE_STUDIO_PLAN_SELECTION", "$studioPlan.studios", "Each Studio may appear only once."));
 	const folderTitleVisibility = options.folderTitleVisibility ?? DEFAULT_STUDIO_FOLDER_TITLE_VISIBILITY;
@@ -194,7 +197,7 @@ export function createStudioHierarchyPlan(project, options) {
 	const plan = Object.freeze({
 		planType: STUDIO_HIERARCHY_PLAN_TYPE,
 		captured: Object.freeze({ projectInternalId: project.internalId, projectRevision: options.projectRevision }),
-		configuration: Object.freeze({ filters: entries[0].drafts[0].editable.filters, folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }), scope, collectionTitle, hideCollectionTitle, viewMode, showAllTab, pinToTop, folderTitleVisibility, folderTileShape: DEFAULT_STUDIO_FOLDER_TILE_SHAPE, mediaMode: mediaMode.id, sortOptionIds, studios: Object.freeze(entries.map((entry) => Object.freeze({ studio: entry.studio, artwork: entry.artwork }))) }),
+		configuration: Object.freeze({ filters: Object.freeze(validateNativeAdvancedDraft(options.filters, mediaMode.id).filters), genreOverrides: freezeNativeGenreOverrides(options.genreOverrides), folderDestinations: Object.freeze({ ...(options.folderDestinations ?? {}) }), scope, collectionTitle, hideCollectionTitle, viewMode, showAllTab, pinToTop, folderTitleVisibility, folderTileShape: DEFAULT_STUDIO_FOLDER_TILE_SHAPE, mediaMode: mediaMode.id, sortOptionIds, studios: Object.freeze(entries.map((entry) => Object.freeze({ studio: entry.studio, artwork: entry.artwork }))) }),
 		destination,
 		collections,
 		folders,
@@ -222,6 +225,7 @@ function rebuildOptions(plan) {
 		mediaMode: plan.configuration.mediaMode,
 		sortOptionIds: plan.configuration.sortOptionIds,
 		filters: plan.configuration.filters,
+		genreOverrides: plan.configuration.genreOverrides,
 		studios: plan.configuration.studios,
 	};
 }

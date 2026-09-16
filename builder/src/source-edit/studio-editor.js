@@ -1,3 +1,4 @@
+import { inspectNativeExtraFilters, validateNativeExtraEdit, ownedNativeExtraMirrorSource } from "../source-add/native-shared-advanced.js";
 import { inspectStudioMinimumVotes, STUDIO_ADVANCED_FIELDS } from "../source-add/studio-advanced.js";
 import { validateMinimumVotesFilters } from "../source-add/minimum-votes.js";
 import { inspectRatingBounds, ownedRatingMirrorSource, RATING_BOUNDS_FIELDS, validateRatingBoundsEdit } from "../source-add/rating-bounds.js";
@@ -22,8 +23,10 @@ export const STUDIO_SOURCE_EDITOR_ID = "studio";
 function readInitialState(source) {
 	const minimum = inspectStudioMinimumVotes(source);
 	const ratings = inspectRatingBounds(source);
+ const extra = inspectNativeExtraFilters(source);
 	return Object.freeze({
-		filters: { ...minimum.filters, ...ratings.filters },
+		filters: { ...minimum.filters, ...ratings.filters, ...extra.filters },
+  extraEditable: extra.editable,
 		touchedFilters: [],
 		minimumVotesEditable: minimum.editable,
 		ratingBoundsEditable: ratings.editable,
@@ -42,13 +45,14 @@ function readInitialState(source) {
 function validateDraft({ draft, source }) {
 	const errors = [...validateTouchedSourceTitle(draft)];
 	const touched = draft?.touchedFilters ?? [];
-	if (!Array.isArray(touched) || touched.some((key) => !STUDIO_ADVANCED_FIELDS.includes(key))) errors.push(diagnostic("SOURCE_EDIT_STUDIO_FILTER_FIXED", "$sourceEdit.filters", "Only Minimum votes and rating bounds can be edited here."));
+	if (!Array.isArray(touched) || touched.some((key) => !STUDIO_ADVANCED_FIELDS.includes(key))) errors.push(diagnostic("SOURCE_EDIT_STUDIO_FILTER_FIXED", "$sourceEdit.filters", "Only supported native Advanced settings can be edited here."));
 	else if (touched.length) {
 		if (touched.includes("voteCountGte")) {
 			if (!inspectStudioMinimumVotes(source).editable) errors.push(diagnostic("SOURCE_EDIT_STUDIO_FILTER_PRESERVED", "$sourceEdit.filters", "This imported Minimum votes setting must be preserved."));
 			errors.push(...validateMinimumVotesFilters({ voteCountGte: draft.filters?.voteCountGte }, draft.mediaType).errors);
 		}
 		if (touched.some((field) => RATING_BOUNDS_FIELDS.includes(field))) errors.push(...validateRatingBoundsEdit(source, draft).errors);
+  errors.push(...validateNativeExtraEdit(source, draft).errors);
 	}
 	if (
 		canonicalPositiveId(draft?.tmdbId) === null
@@ -97,10 +101,10 @@ function buildPatch({ source, draft }) {
 		patch.sortBy = draft.sortBy;
 	}
 	if (!draft.touchedFilters?.length) return patch;
-	const original = ownedRatingMirrorSource(resolveEffectiveDiscoverSource(source).value);
+	const original = ownedNativeExtraMirrorSource(ownedRatingMirrorSource(resolveEffectiveDiscoverSource(source).value));
 	const minimum = validateMinimumVotesFilters({ voteCountGte: draft.filters?.voteCountGte }, draft.mediaType);
 	const ratings = draft.touchedFilters.some((field) => RATING_BOUNDS_FIELDS.includes(field)) ? validateRatingBoundsEdit(source, draft).filters : {};
-	return { ...patch, ...patchTouchedDiscoverFilters(source, original, { ...minimum.filters, ...ratings }, draft.touchedFilters) };
+	return { ...patch, ...patchTouchedDiscoverFilters(source, original, { ...minimum.filters, ...ratings, ...validateNativeExtraEdit(source, draft).filters }, draft.touchedFilters) };
 }
 
 export const studioSourceEditor = Object.freeze({

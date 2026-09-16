@@ -1,0 +1,21 @@
+.native-extra-advanced { display: grid; min-width: 0; gap: 16px; }
+.native-extra-advanced .editor-settings-section { margin: 0; }
+.add-source-dialog.native-genre-dialog { width: min(900px, 100%); max-height: 100%; overflow: hidden; }
+.native-genre-dialog > .genre-advanced-subview { width: 100%; min-height: 0; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 18px; }
+.native-genre-inheritance { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.native-extra-advanced.discover-dialog .discover-chips li,
+.native-extra-advanced.discover-dialog .discover-dropdown li[aria-selected="true"],
+.native-shared-picker.discover-dialog .discover-dropdown li[aria-selected="true"] {
+ color: #e9fbff; background: rgb(1 180 228 / 12%); border-color: rgb(98 225 255 / 56%);
+ box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
+}
+@media (max-width: 900px) { .native-genre-dialog > .genre-advanced-subview { padding: 4px; } .native-extra-advanced.discover-dialog .discover-field-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.native-threshold-fields { display: grid; grid-template-columns: repeat(3, minmax(140px, 1fr)); align-items: start; gap: 12px; }
+.native-threshold-fields > .editor-field { min-width: 0; }
+.native-genre-inheritance { flex-wrap: wrap; }
+.native-genre-inheritance > div { flex: 1 1 220px; }
+@media (max-width: 900px) { .native-threshold-fields { grid-template-columns: minmax(0, 1fr); } }
+
+.native-genre-context-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.native-genre-inheritance > .native-genre-context-actions { flex: 0 1 auto; }

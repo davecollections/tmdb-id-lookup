@@ -392,7 +392,7 @@ test("Network exact variants preserve unset versus zero and safely compare numer
 
 
 test("Network creation rejects other filters and noncanonical candidate values", () => {
- for (const filters of [{ withNetworks: "2" }, { withOriginCountry: "AU" }, { "vote_count.gte": 100 }, { voteCountGte: 100, unknown: null }]) {
+ for (const filters of [{ withNetworks: "2" }, { withOriginCountry: "au" }, { "vote_count.gte": 100 }, { voteCountGte: 100, unknown: null }]) {
   assert.equal(buildNetworkSourceDrafts(network(), { filters }).ok, false);
  }
  const draft = buildNetworkSourceDraft(network()).draft;

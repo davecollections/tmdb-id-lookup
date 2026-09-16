@@ -1,3 +1,4 @@
+import { resolveNativeGenreFilters } from "./native-shared-advanced.js";
 import { validateNetworkAdvancedFilters, networkComparisonFilters } from "./network-advanced.js";
 import { NETWORK_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
@@ -143,10 +144,12 @@ export function validateNetworkHierarchySourceDraft(draft, { network = null, pat
 	return { ok: errors.length === 0, errors };
 }
 
-export function buildNetworkSourceDrafts(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID, sortOptionIds, filters = {}, hierarchy = false } = {}) {
+export function buildNetworkSourceDrafts(network, { sortOptionId = DEFAULT_NETWORK_SORT_OPTION_ID, sortOptionIds, filters = {}, genreOverrides = {}, hierarchy = false } = {}) {
 	const sorts = orderedSourceSortIds(sortOptionIds, sortOptionId, NETWORK_SORT_OPTIONS);
 	if (sorts === null || sorts.length === 0) return { ok: false, drafts: [], errors: [diagnostic("UNSUPPORTED_NETWORK_SORT", "$network.sortOptionIds", "Choose at least one option.")] };
-	const results = sorts.map((sort) => (hierarchy ? buildNetworkHierarchySourceDraft : buildNetworkSourceDraft)(network, { sortOptionId: sort, filters }));
+	const resolved = resolveNativeGenreFilters(filters, genreOverrides, network?.id);
+	if (!resolved.ok) return { ok: false, drafts: [], errors: resolved.errors };
+	const results = sorts.map((sort) => (hierarchy ? buildNetworkHierarchySourceDraft : buildNetworkSourceDraft)(network, { sortOptionId: sort, filters: resolved.filters }));
 	const errors = results.flatMap((result) => result.errors);
 	if (errors.length) return { ok: false, drafts: [], errors };
 	const drafts = results.map(({ draft }, index) => ({

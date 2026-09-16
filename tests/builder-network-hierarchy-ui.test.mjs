@@ -165,7 +165,8 @@ test("Network hierarchy follows Select to Configure to Appearance with shared Se
 	assert.equal((flow.match(/<NetworkSortChoices/g) ?? []).length, 1);
 	assert.doesNotMatch(flow, />Movies?</);
 	assert.doesNotMatch(flow, />Media</);
-	assert.doesNotMatch(flow, /mediaMode|mediaTypes|role="tablist"|role="tab"/);
+ assert.match(flow, /mediaMode=\{"series"\}/);
+	assert.doesNotMatch(flow, /mediaTypes|role="tablist"|role="tab"/);
 	assert.match(flow, /<FolderShapeChoices/);
 	assert.match(flow, /collectionTitle:\s*"Networks"/);
 	assert.match(flow, /viewMode:\s*"TABBED_GRID"/);

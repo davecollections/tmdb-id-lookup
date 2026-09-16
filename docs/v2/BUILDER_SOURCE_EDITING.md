@@ -1,5 +1,14 @@
 # Native Source Editing
 
+## Native Shared Advanced filters (#218)
+
+Studio Movie/TV and Network TV physical editors extend the same Advanced disclosure with the nine [shared fields](./BUILDER_STUDIOS.md#shared-advanced-filters-218). They edit concrete source filters only; creation-time genre defaults and overrides are never reconstructed. Locale fields validate independently; genre, keyword and date/year groups validate coupled effective values, including untouched imported partners. Missing catalogue labels retain valid saved canonical codes.
+
+Opening, Cancel, no-op, title-only and otherwise-supported unrelated edits preserve untouched types, nulls, unknown data, expression separators/order, aliases, rawImported, IDs and presentation/order. An intentional edit owns only touched canonical fields and existing equivalent request aliases under the existing Discover mirror rules. Inactive aliases, alias-only values, conflicts and unsupported expression copies remain preserved. Pipe exclusions are preservation-only and exact native Preview is blocked. Clearing an owned field removes only its canonical/equivalent representations; other fields remain exact.
+
+Detached Preview, minimal patches, configured-sibling rejection, stale-session guards and one atomic controller update remain the existing mechanisms. Preview fails closed for meaningful unsafe effective semantics; the remaining supported edit paths remain available. No Worker or other-family editing change is introduced.
+
+
 ## Studio and Network Minimum votes (#208, #213)
 
 The Studio adapter and the Network adapter ([#213](https://github.com/davecollections/tmdb-id-lookup/issues/213), [PR #214](https://github.com/davecollections/tmdb-id-lookup/pull/214)) additionally own optional Minimum votes through the existing shared Discover field and touched-filter patch pipeline. See the [current Studio contract](./BUILDER_STUDIOS.md#shared-minimum-votes-208) for unset/zero, clearing, alias/import preservation and exact current-draft Preview. Network uses the same touched-field pipeline and owns only that setting and a matching meaningful mirror on a deliberate filter edit; inactive Network null/empty mirrors remain preserved. See the [Network contract](./BUILDER_NETWORKS.md#shared-minimum-votes-213). The existing physical identity, scalar sorting, duplicate/no-op, stale-session and atomic controller contracts remain unchanged. Unsupported imported settings remain preserved; exact Preview blocks when their effect cannot be represented.
