@@ -8808,6 +8808,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .decades-preset-grid button,
+.decades-content-grid button,
 .decades-genre-grid button {
 	display: grid;
 	min-width: 0;
@@ -8826,6 +8827,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .decades-preset-grid button[data-selected="true"],
+.decades-content-grid button[data-selected="true"],
 .decades-genre-grid button[data-selected="true"] {
 	background: rgb(1 180 228 / 10%);
 	border-color: rgb(98 225 255 / 48%);
@@ -8865,8 +8867,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 	font-weight: 850;
 }
 
-.decades-choice-grid label,
-.decades-content-grid label {
+.decades-choice-grid label {
 	display: grid;
 	min-width: 0;
 	min-height: 58px;
@@ -8880,8 +8881,12 @@ body.hierarchy-pointer-dragging .builder-shell {
 	cursor: pointer;
 }
 
-.decades-content-grid label {
-	grid-template-columns: 22px minmax(0, 1fr);
+.decades-content-grid {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.decades-content-grid button:disabled {
+	opacity: 1;
 }
 
 .decades-choice-grid label[data-selected="true"] {
@@ -8890,15 +8895,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
-.decades-content-grid input {
-	width: 18px;
-	height: 18px;
-	margin: 0;
-	accent-color: var(--cyan-bright);
-}
-
 .decades-choice-grid label > span,
-.decades-content-grid label > span {
+.decades-content-grid button > span {
 	display: grid;
 	gap: 3px;
 }
@@ -9670,11 +9668,18 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (forced-colors: active) {
+	.decades-content-grid button[aria-pressed="true"] {
+		border-style: double;
+		border-width: 3px;
+		padding: 9px 11px;
+	}
+
 	label:has(> .choice-card-input:checked),
 	.studio-sort-choices label:has(> input:checked),
 	.genre-catalogue-list button[aria-pressed="true"],
 	.genre-exclusion-picker-list button[aria-pressed="true"],
 	.decades-preset-grid button[aria-pressed="true"],
+	.decades-content-grid button[aria-pressed="true"],
 	.streaming-region-result[aria-pressed="true"],
 	.studio-search-controls button[aria-pressed="true"],
 	.studio-preview-tabs button[aria-selected="true"],
@@ -9683,6 +9688,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 		box-shadow: inset 0 0 0 1px Highlight;
 	}
 
+	.decades-content-grid button:focus-visible,
 	label:has(> .choice-card-input:focus-visible),
 	.studio-sort-choices label:has(> input:focus-visible) {
 		outline-color: Highlight;

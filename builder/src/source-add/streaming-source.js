@@ -2,12 +2,16 @@ import {
 	buildDiscoverSourceDraft,
 	DEFAULT_DISCOVER_SORT_OPTION_ID,
 	DISCOVER_SORT_OPTIONS,
+	DISCOVER_FILTER_DESCRIPTORS,
 	discoverSourceIdentity,
 	discoverSourceNodeIdentity,
 } from "../nuvio/discover.js";
 import { isValidNuvioTitle } from "../nuvio/titles.js";
 import { streamingProviderCommonAvailability } from "./streaming-catalogue.js";
 import { orderedSourceSortIds, sourceDraftSortId, sourceSortLabel, sourceSortSelectionError } from "./source-sort-variants.js";
+import { compileAnchoredDiscoverFilters } from "./advanced-discover.js";
+
+export const STREAMING_ADVANCED_FILTER_FIELDS = Object.freeze(DISCOVER_FILTER_DESCRIPTORS.map((entry) => entry.field).filter((field) => !["watchRegion", "withWatchProviders"].includes(field)));
 
 export const STREAMING_MEDIA_CHOICES = Object.freeze([
 	Object.freeze({ id: "movies", label: "Movies", mediaTypes: Object.freeze(["MOVIE"]) }),
@@ -196,6 +200,7 @@ export function defaultStreamingMediaChoice(provider, regionCodes) {
 }
 
 export function buildStreamingSourceDrafts(provider, {
+	advanced = {},
 	regionCodes,
 	mediaChoice,
 	sortOptionId = DEFAULT_STREAMING_SORT_OPTION_ID,
@@ -204,6 +209,8 @@ export function buildStreamingSourceDrafts(provider, {
 	nameContext = STREAMING_SOURCE_NAME_CONTEXTS.STANDALONE,
 } = {}) {
 	const errors = [];
+	if (!plainObject(advanced)) return Object.freeze({ ok: false, drafts: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_STREAMING_ADVANCED", "$streaming.advanced", "Advanced settings must be an object.")]) });
+	if (advanced.ui?.providerContextReview) errors.push(diagnostic("STREAMING_PROVIDER_CONTEXT_REVIEW", "$streaming.advanced", "Review retained providers for the current media and region."));
 	const id = Number.isSafeInteger(provider?.id) && provider.id > 0 ? provider.id : null;
 	const name = canonicalText(provider?.name);
 	const codes = normalizedSelectedRegionCodes(regionCodes);
@@ -238,6 +245,8 @@ export function buildStreamingSourceDrafts(provider, {
 	for (const code of codes) {
 		for (const sort of sorts) {
 		for (const mediaType of choice.mediaTypes) {
+			const compiled = compileAnchoredDiscoverFilters(advanced.filters === undefined ? {} : advanced.filters, { watchRegion: code, withWatchProviders: String(id) }, mediaChoice, mediaType, STREAMING_ADVANCED_FILTER_FIELDS);
+			if (!compiled.ok) { errors.push(...compiled.errors.map((entry) => ({ ...entry, message: `${name} (${code}): ${entry.message}` }))); continue; }
 			const candidateKey = streamingSourceCandidateKey(code, mediaType, sortOptionIds === undefined ? null : sort);
 			const defaultTitle = defaultStreamingSourceName(name, code, mediaType, { context: nameContext, sortOptionId: sorts.length > 1 ? sort : null });
 			const title = Object.hasOwn(sourceTitles, candidateKey) ? sourceTitles[candidateKey] : defaultTitle;
@@ -253,10 +262,7 @@ export function buildStreamingSourceDrafts(provider, {
 				title: defaultTitle,
 				mediaType,
 				sortOptionId: sort,
-				filters: {
-					watchRegion: code,
-					withWatchProviders: String(id),
-				},
+				filters: compiled.filters,
 			});
 			if (!built.ok) errors.push(...built.errors);
 			else drafts.push(Object.freeze({
@@ -274,6 +280,7 @@ export function buildStreamingSourceDrafts(provider, {
 }
 
 export function validateStreamingSourceDrafts(drafts, {
+	advanced = {},
 	provider,
 	regionCodes,
 	mediaChoice,
@@ -281,7 +288,7 @@ export function validateStreamingSourceDrafts(drafts, {
 	sortOptionIds,
 	nameContext = STREAMING_SOURCE_NAME_CONTEXTS.STANDALONE,
 } = {}) {
-	const expected = buildStreamingSourceDrafts(provider, { regionCodes, mediaChoice, sortOptionId, sortOptionIds, nameContext });
+	const expected = buildStreamingSourceDrafts(provider, { regionCodes, mediaChoice, sortOptionId, sortOptionIds, nameContext, advanced });
 	if (!expected.ok) return Object.freeze({ ok: false, errors: expected.errors });
 	if (!Array.isArray(drafts) || drafts.length !== expected.drafts.length) {
 		return Object.freeze({ ok: false, errors: Object.freeze([
@@ -309,9 +316,7 @@ export function validateStreamingSourceDrafts(drafts, {
 			|| !isValidNuvioTitle(editable.title)
 			|| editable.sortBy !== expectedEditable.sortBy
 			|| !plainObject(editable.filters)
-			|| Object.keys(editable.filters).sort().join("\u0000") !== "watchRegion\u0000withWatchProviders"
-			|| editable.filters.watchRegion !== expectedEditable.filters.watchRegion
-			|| editable.filters.withWatchProviders !== expectedEditable.filters.withWatchProviders
+			|| discoverSourceIdentity(editable).key !== discoverSourceIdentity(expectedEditable).key
 		) {
 			errors.push(diagnostic("INVALID_STREAMING_SOURCE_DRAFT", path, "The Streaming source must match the selected provider, ordered regions and DISCOVER contract."));
 			continue;
@@ -397,6 +402,7 @@ export function streamingDuplicateOverrideIdentity(folderInternalId, drafts) {
 }
 
 export function createStreamingSourceBundle(controller, {
+	advanced = {},
 	folderInternalId,
 	provider,
 	regions,
@@ -413,6 +419,7 @@ export function createStreamingSourceBundle(controller, {
 		return { ok: false, errors: [diagnostic("INVALID_STREAMING_REGIONS", "$streaming.regions", "Choose one or more distinct known Streaming regions.")], warnings: [] };
 	}
 	const validation = validateStreamingSourceDrafts(drafts, {
+		advanced,
 		provider,
 		regionCodes,
 		mediaChoice,

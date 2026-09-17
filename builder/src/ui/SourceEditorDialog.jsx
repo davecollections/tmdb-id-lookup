@@ -1,3 +1,4 @@
+import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
 import {
@@ -14,6 +15,7 @@ import {
 	createAsyncRequestCoordinator,
 	DECADES_SORT_OPTIONS,
 	GENRE_SORT_OPTIONS,
+ GENRE_CONCEPTS,
 	networkSortOptionId,
 	networkSortValue,
 	parseNetworkSearchInput,
@@ -58,6 +60,7 @@ import {
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateStreamingSourceSort,
+ updateStreamingSourceAdvanced,
 	updateDecadeSourceAdvanced,
 	updateDecadeSourceSort,
 	updateGenreSourceAdvanced,
@@ -82,7 +85,7 @@ import { TmdbEntityLink } from "./TmdbEntityLink.jsx";
 import { TmdbKnownZeroNotice } from "./TmdbKnownZeroNotice.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
-import { DecadesAdvancedOptions } from "./DecadesAdvancedOptions.jsx";
+import { DecadesAdvancedOptions, DecadeSingleExclusionSubview, DecadesAdvancedHelpSubview } from "./DecadesAdvancedOptions.jsx";
 import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 import {
 	focusSourceEditAlert,
@@ -352,7 +355,7 @@ export function NetworkEditorFields({ draft, network, countState, sortRef, title
 	);
 }
 
-export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefaultName, onSortChange }) {
+export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefaultName, onSortChange, onAdvancedChange }) {
 	const selectedSortId = draft.sortOptionId;
 	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
 	return (
@@ -367,7 +370,8 @@ export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefa
 			<p className="source-edit-fixed-note">Provider, region and media type stay fixed for this physical source.</p>
 			{providerIdentity.resolved ? <button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button> : null}
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
-			<SemanticSortChoices options={STREAMING_SORT_OPTIONS} selectedId={selectedSortId} name="streaming-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
+			<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={STREAMING_SORT_OPTIONS} selectedId={selectedSortId} name="streaming-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
+            <DiscoverFamilyAdvancedOptions value={draft.advanced} onChange={onAdvancedChange} mediaMode={draft.mediaType === "TV" ? "series" : "movies"} fixedFilters={{ watchRegion: draft.regionCode, withWatchProviders: String(draft.providerId) }} fixedProviderContext={providerIdentity.name + " · " + draft.regionCode + " · provider and region stay fixed"} extraEditable={draft.extraEditable} />
 		</section>
 	);
 }
@@ -386,20 +390,20 @@ export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange,
 			<p className="source-edit-fixed-note">Genre ID and media type stay fixed for this source.</p>
 			<button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button>
 			{draft.sortOptionId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
-			<SemanticSortChoices options={GENRE_SORT_OPTIONS} selectedId={draft.sortOptionId} name="genre-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
+			<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={GENRE_SORT_OPTIONS} selectedId={draft.sortOptionId} name="genre-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
 			<GenreAdvancedOptions
 				value={draft.advanced}
 				includedGenres={[draft.genreName]}
 				sharedMediaChoice={draft.mediaType === "TV" ? "series" : "movies"}
 				onChange={onAdvancedChange}
 				onOpenSecondary={onOpenSecondary}
-				idPrefix="genre-edit-advanced"
+				extraEditable={draft.extraEditable} idPrefix="genre-edit-advanced"
 			/>
 		</section>
 	);
 }
 
-export function DecadeEditorFields({ draft, sortRef, onSortChange, onAdvancedChange }) {
+export function DecadeEditorFields({ draft, sortRef, onSortChange, onAdvancedChange, onOpenSecondary }) {
 	const mediaMode = draft.mediaType === "TV" ? "series" : "movies";
 	return (
 		<>
@@ -413,11 +417,19 @@ export function DecadeEditorFields({ draft, sortRef, onSortChange, onAdvancedCha
 				<p className="source-edit-fixed-note">Period dates, media and the included Genre stay fixed. Use the Decades creation flow to build a different structure.</p>
 			</section>
 			<div ref={sortRef} tabIndex={-1}>
-				<SemanticSortChoices options={DECADES_SORT_OPTIONS} selectedId={draft.sortOptionId} name="decade-edit-sort" legend="Sort titles by" onChange={onSortChange} />
+				<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={DECADES_SORT_OPTIONS} selectedId={draft.sortOptionId} name="decade-edit-sort" legend="Sort titles by" onChange={onSortChange} />
 			</div>
-			<DecadesAdvancedOptions value={draft.advanced} mediaMode={mediaMode} includedGenres={draft.genreName ? [draft.genreName] : []} onChange={onAdvancedChange} idPrefix="decade-edit-advanced" />
+			<DecadesAdvancedOptions onOpenSecondary={onOpenSecondary} extraEditable={draft.extraEditable} exclusionSummary={(draft.genreName ? draft.advanced.exclusionsByGenre?.[draft.genreName] : draft.advanced.ordinaryExcludedGenres)?.join(", ") || "No exclusions"} value={draft.advanced} mediaMode={mediaMode} includedGenres={draft.genreName ? [draft.genreName] : []} onChange={onAdvancedChange} idPrefix="decade-edit-advanced" />
 		</>
 	);
+}
+
+function DecadeEditorSecondarySurface({ surface, draft, onChange, onDone, focusRef }) {
+ if (surface === "advanced-help") return <DecadesAdvancedHelpSubview onDone={onDone} focusRef={focusRef} />;
+ const selection = draft.genreName ? draft.advanced.exclusionsByGenre?.[draft.genreName] ?? [] : draft.advanced.ordinaryExcludedGenres ?? [];
+ const update = (names) => onChange({ ...draft.advanced, ...(draft.genreName ? { exclusionsByGenre: { ...draft.advanced.exclusionsByGenre, [draft.genreName]: names } } : { ordinaryExcludedGenres: names }) });
+ const available = GENRE_CONCEPTS.filter((genre) => genre.name !== draft.genreName && (draft.mediaType === "TV" ? genre.tvId !== null : genre.movieId !== null)).map((genre) => genre.name);
+ return <DecadeSingleExclusionSubview selection={selection} includedGenre={draft.genreName} mediaMode={draft.mediaType === "TV" ? "series" : "movies"} onToggle={(name) => update(selection.includes(name) ? selection.filter((entry) => entry !== name) : [...selection, name])} onSelectAll={() => update(available)} onClearAll={() => update([])} onDone={onDone} focusRef={focusRef} />;
 }
 
 export function SourceEditErrorPanel({ result, alertRef = null }) {
@@ -984,6 +996,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === STREAMING_SOURCE_EDITOR_ID ? (
 										<StreamingEditorFields
+                                            onAdvancedChange={(advanced) => { setDraft((current) => updateStreamingSourceAdvanced(current, advanced)); setFailure(null); }}
 											draft={draft}
 											providerIdentity={streamingProviderIdentity}
 											sortRef={streamingSortRef}
@@ -999,6 +1012,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === DECADE_SOURCE_EDITOR_ID ? (
 										<DecadeEditorFields
+                                            onOpenSecondary={openGenreSecondarySurface}
 											draft={draft}
 											sortRef={decadeSortRef}
 											onSortChange={(optionId) => {
@@ -1049,7 +1063,7 @@ export function SourceEditorDialog({
 								</>
 							)}
 						</div>
-						{genreSecondarySurface ? <div className="genre-secondary-surface" data-surface={genreSecondarySurface}><GenreAdvancedSecondarySurface surface={genreSecondarySurface} value={draft.advanced} includedGenres={[draft.genreName]} sharedMediaChoice={draft.mediaType === "TV" ? "series" : "movies"} onChange={(advanced) => { setDraft((current) => updateGenreSourceAdvanced(current, advanced)); setFailure(null); }} onDone={closeGenreSecondarySurface} focusRef={genreSecondaryHeadingRef} /></div> : null}
+						{genreSecondarySurface ? <div className="genre-secondary-surface" data-surface={genreSecondarySurface}>{session.adapterId === DECADE_SOURCE_EDITOR_ID ? <DecadeEditorSecondarySurface surface={genreSecondarySurface} draft={draft} onChange={(advanced) => { setDraft((current) => updateDecadeSourceAdvanced(current, advanced)); setFailure(null); }} onDone={closeGenreSecondarySurface} focusRef={genreSecondaryHeadingRef} /> : <GenreAdvancedSecondarySurface surface={genreSecondarySurface} value={draft.advanced} includedGenres={[draft.genreName]} sharedMediaChoice={draft.mediaType === "TV" ? "series" : "movies"} onChange={(advanced) => { setDraft((current) => updateGenreSourceAdvanced(current, advanced)); setFailure(null); }} onDone={closeGenreSecondarySurface} focusRef={genreSecondaryHeadingRef} />}</div> : null}
 						{!genreSecondarySurface ? <footer className="add-source-actions source-edit-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 							{stage === "edit" ? (
 								<button className="editor-apply" type="submit" data-action="save-source-edit" disabled={submitting}>

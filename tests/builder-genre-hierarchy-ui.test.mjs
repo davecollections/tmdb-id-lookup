@@ -205,10 +205,8 @@ test("Genre Preview uses exact drafts, lazy media tabs, shared nested shell, and
 	assert.match(flowSource, /createAsyncRequestCoordinator/);
 	assert.match(flowSource, /focusElementWithoutScroll\(trigger\)/);
 	assert.doesNotMatch(flowSource, /prefetch|Promise\.all\([^)]*getGenrePreview/);
-	assert.match(previewProvider, /discoverFilterDescriptor/);
-	assert.match(previewProvider, /source\.filters/);
-	assert.match(previewProvider, /include_adult:\s*"false"/);
-	assert.match(previewProvider, /withoutGenres/);
+	assert.match(previewProvider, /exactDiscoverPreviewQuery/);
+	assert.match(previewProvider, /\/builder\/discover\/movie/);
 	assert.match(previewRequester, /getQueryPreview/);
 	assert.match(previewRequester, /queryIdentity\(entries\)/);
 	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);

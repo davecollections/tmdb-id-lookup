@@ -18,6 +18,7 @@ import {
 } from "./decades-catalogue.js";
 import { equalDecadesStructures } from "./decades-structural.js";
 import { GENRE_CONCEPTS, officialGenreConcept } from "./genre-catalogue.js";
+import { compileAnchoredDiscoverFilters, DISCOVER_CATALOGUE_FILTER_FIELDS } from "./advanced-discover.js";
 
 export const DECADES_MEDIA_MODES = Object.freeze([
 	Object.freeze({ id: "movies", label: "Movies", mediaTypes: Object.freeze(["MOVIE"]) }),
@@ -53,6 +54,7 @@ export const DEFAULT_DECADES_CONTENT = Object.freeze({
 });
 
 export const DECADES_ADVANCED_FILTER_FIELDS = Object.freeze([
+	...DISCOVER_CATALOGUE_FILTER_FIELDS,
 	"voteAverageGte",
 	"voteAverageLte",
 	"voteCountGte",
@@ -88,6 +90,8 @@ const CONFIGURATION_KEYS = new Set([
 ]);
 const CONTENT_KEYS = new Set(Object.keys(DEFAULT_DECADES_CONTENT));
 const ADVANCED_KEYS = new Set([
+	"filters",
+	"ui",
 	"minimumRating",
 	"maximumRating",
 	"minimumVotes",
@@ -232,6 +236,7 @@ function normalizeChoice(value, choices, fallback, path, message, errors) {
 
 function normalizeAdvanced(value, genreNames, genreNamesByDecade, selectedDecadeIds, errors) {
 	const supplied = value ?? {};
+	if (supplied.ui?.providerContextReview) errors.push(diagnostic("DECADES_PROVIDER_CONTEXT_REVIEW", "$decades.advanced.watchRegion", "Review retained providers for the current media and region."));
 	if (!hasOnlyKeys(supplied, ADVANCED_KEYS)) {
 		errors.push(diagnostic("UNSUPPORTED_DECADES_ADVANCED_FIELD", "$decades.advanced", "Decades Advanced settings contain an unsupported field."));
 	}
@@ -242,7 +247,7 @@ function normalizeAdvanced(value, genreNames, genreNamesByDecade, selectedDecade
 		path: "$decades.advanced.maximumRating", label: "Maximum rating", minimum: 0, maximum: 10,
 	}, errors);
 	const minimumVotes = optionalNumber(supplied.minimumVotes, {
-		path: "$decades.advanced.minimumVotes", label: "Minimum votes", minimum: 0, maximum: Number.MAX_SAFE_INTEGER, integer: true,
+		path: "$decades.advanced.minimumVotes", label: "Minimum votes", minimum: 0, maximum: 2147483647, integer: true,
 	}, errors);
 	if (minimumRating !== null && maximumRating !== null && minimumRating > maximumRating) {
 		errors.push(diagnostic("INVALID_DECADES_ADVANCED_RATING_RANGE", "$decades.advanced.maximumRating", "Maximum rating must be the same as or higher than Minimum rating."));
@@ -329,6 +334,7 @@ function normalizeAdvanced(value, genreNames, genreNamesByDecade, selectedDecade
 	}
 	return Object.freeze({
 		minimumRating,
+		...(Object.hasOwn(supplied, "filters") ? { filters: plainObject(supplied.filters) ? Object.freeze({ ...supplied.filters }) : supplied.filters } : {}),
 		maximumRating,
 		minimumVotes,
 		originalLanguage,
@@ -572,18 +578,20 @@ export function buildCanonicalDecadePeriodDrafts({
 	for (const mediaType of media.mediaTypes) {
 		const includedGenreId = genre === null ? null : mediaType === "MOVIE" ? genre.movieId : genre.tvId;
 		if (genre !== null && includedGenreId === null) continue;
-		const excludedIds = exclusionIds(excludedNames, mediaType).filter((tmdbId) => tmdbId !== includedGenreId);
+		const excludedIds = exclusionIds(excludedNames, mediaType);
+		const compiled = compileAnchoredDiscoverFilters(normalizedAdvanced.filters === undefined ? {} : normalizedAdvanced.filters, {
+			...period.filters,
+			...(includedGenreId !== null ? { withGenres: String(includedGenreId) } : {}),
+			...baseFilters,
+			...(excludedIds.length > 0 ? { withoutGenres: excludedIds.join(",") } : {}),
+		}, mediaMode, mediaType, DISCOVER_CATALOGUE_FILTER_FIELDS);
+		if (!compiled.ok) { errors.push(...compiled.errors); continue; }
 		const title = defaultDecadeSourceTitle(period, mediaType, genre?.name ?? null);
 		const result = buildEntry({
 			title,
 			mediaType,
 			sortOptionId,
-			filters: {
-				...period.filters,
-				...(includedGenreId !== null ? { withGenres: String(includedGenreId) } : {}),
-				...baseFilters,
-				...(excludedIds.length > 0 ? { withoutGenres: excludedIds.join(",") } : {}),
-			},
+			filters: compiled.filters,
 			contentKind: decadeSourceContentKind(period, genre?.name ?? null),
 			period,
 			genreName: genre?.name ?? null,
@@ -620,6 +628,7 @@ function buildDecadePeriodSortVariants(options, sorts) {
 
 function logicalSourceAdvanced(advanced, genreName) {
 	return Object.freeze({
+		...(Object.hasOwn(advanced, "filters") ? { filters: advanced.filters } : {}),
 		minimumRating: advanced.minimumRating,
 		maximumRating: advanced.maximumRating,
 		minimumVotes: advanced.minimumVotes,
@@ -937,6 +946,7 @@ export function buildDecadesSourceDrafts(value) {
 		const ordinaryExcludedGenres = configuration.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? configuration.advanced.ordinaryExcludedGenres;
 		const exclusionsByGenre = configuration.advanced.exclusionsByGenreByDecade?.[decadeId] ?? configuration.advanced.exclusionsByGenre;
 		const ordinaryAdvanced = {
+			...(Object.hasOwn(configuration.advanced, "filters") ? { filters: configuration.advanced.filters } : {}),
 			minimumRating: configuration.advanced.minimumRating,
 			maximumRating: configuration.advanced.maximumRating,
 			minimumVotes: configuration.advanced.minimumVotes,

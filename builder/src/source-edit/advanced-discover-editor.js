@@ -1,7 +1,8 @@
+import { DISCOVER_ADVANCED_GROUPS, inspectNativeExtraFilters, validateNativeExtraEdit, ownedNativeExtraMirrorSource } from "../source-add/native-shared-advanced.js";
 import { patchTouchedDiscoverFilters, inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
 import { DISCOVER_EDIT_READINESS, DISCOVER_FILTER_DESCRIPTORS, discoverSortOptionId, discoverSortValue, discoverSourceNodeIdentity, inspectDiscoverSourceNode, resolveEffectiveDiscoverSource, effectiveDiscoverSort } from "../nuvio/discover.js";
 import { createAdvancedDiscoverDraft, validateAdvancedFilters } from "../source-add/advanced-discover.js";
-import { validateTouchedSourceTitle } from "./source-edit-utils.js";
+import { validateTouchedSourceTitle, discoverSortIsPreservationOnly } from "./source-edit-utils.js";
 const known = new Set(DISCOVER_FILTER_DESCRIPTORS.map((d) => d.field));
 export function inspectEditableAdvancedDiscover(source) {
  const inspection = inspectDiscoverSourceNode(source);
@@ -19,12 +20,15 @@ export function inspectEditableAdvancedDiscover(source) {
 function readInitialState(source) {
  const inspected = inspectEditableAdvancedDiscover(source);
  return { ...createAdvancedDiscoverDraft(), mediaMode: inspected.value.mediaType === "TV" ? "series" : "movies", mediaType: inspected.value.mediaType, title: typeof inspected.value.title === "string" ? inspected.value.title : "", titleTouched: false,
+ extraEditable: inspectNativeExtraFilters(source, DISCOVER_ADVANCED_GROUPS).editable, sortEditable: !discoverSortIsPreservationOnly(inspected.value),
  filters: inspected.filters, operators: Object.fromEntries(Object.entries(inspected.filters).filter(([key]) => key.startsWith("with") && !key.startsWith("without")).map(([key, value]) => [key, String(value).includes(",") ? "," : "|"])), touchedFilters: [], sortOptionIds: [discoverSortOptionId(effectiveDiscoverSort(inspected.value.sortBy), inspected.value.mediaType)].filter(Boolean), sortTouched: false, originalSortBy: inspected.value.sortBy,
  previewBlocked: inspected.previewBlocked, previewSource: source, preservedFields: Object.keys(inspected.value.filters).filter((k) => !known.has(k)) };
 }
 function validateDraft({ draft, source }) {
  const original = inspectEditableAdvancedDiscover(source);
  const errors = [...validateTouchedSourceTitle(draft)];
+ if (Array.isArray(draft.touchedFilters)) errors.push(...validateNativeExtraEdit(source, draft, DISCOVER_ADVANCED_GROUPS).errors);
+ if (draft.sortTouched && discoverSortIsPreservationOnly(original?.value)) errors.push({ message: "The conflicting imported order must be preserved." });
  if (!original || draft.mediaType !== original.value.mediaType || draft.mediaMode !== (draft.mediaType === "TV" ? "series" : "movies")) errors.push({ message: "The Source media cannot change." });
  if (draft.sortTouched && (draft.sortOptionIds?.length !== 1 || !discoverSortValue(draft.sortOptionIds[0], draft.mediaType))) errors.push({ message: "Choose one supported Source order." });
  if (draft.unresolved?.length) errors.push({ message: "Resolve or remove the remaining wording." });
@@ -39,10 +43,10 @@ function buildPatch({ draft, source }) {
  const sort = discoverSortValue(draft.sortOptionIds[0], draft.mediaType);
  if (draft.sortTouched && sort !== original.sortBy) patch.sortBy = sort;
  const validated = validateAdvancedFilters(draft.filters, draft.mediaType);
- return { ...patch, ...patchTouchedDiscoverFilters(source, original, validated.filters, draft.touchedFilters, patch) };
+ return { ...patch, ...patchTouchedDiscoverFilters(source, ownedNativeExtraMirrorSource(original, [...known]), validated.filters, draft.touchedFilters, patch) };
 }
 export const advancedDiscoverSourceEditor = Object.freeze({
- id: "advanced-discover", label: "Discover", ownedFields: ["title", "sortBy", "filters"],
+ id: "advanced-discover", label: "Full Discover", ownedFields: ["title", "sortBy", "filters"],
  canEdit: (source) => inspectEditableAdvancedDiscover(source) !== null,
  sourceIdentity: (source) => discoverSourceNodeIdentity(source).key,
  duplicateKey: (source) => discoverSourceNodeIdentity(source).key,

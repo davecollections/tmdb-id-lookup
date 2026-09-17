@@ -847,7 +847,7 @@ test("mixed provider and opaque Streaming evidence fail closed", () => {
 		if (kind === "mixed-provider") addDrafts(controller, folder.createdInternalId, draftsFor(disney, ["AU"], "movies"));
 		else controller.createSource(folder.createdInternalId, {
 			category: "native-tmdb",
-			editable: { title: "Advanced Streaming", provider: "tmdb", tmdbSourceType: "DISCOVER", mediaType: "MOVIE", sortBy: "popularity.desc", tmdbId: null, filters: { watchRegion: "AU", withWatchProviders: "8", withGenres: "28" } },
+			editable: { title: "Opaque Streaming", provider: "tmdb", tmdbSourceType: "DISCOVER", mediaType: "MOVIE", sortBy: "popularity.desc", tmdbId: null, filters: { watchRegion: "AU", withWatchProviders: "8|9", withGenres: "28" } },
 		});
 		const result = createStreamingHierarchyPlan(controller.getState().project, existingScopeOptions(controller, collection.createdInternalId, { providers: [netflix] }));
 		assert.equal(result.ok, true, kind);

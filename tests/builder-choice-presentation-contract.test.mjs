@@ -99,20 +99,21 @@ test("compact retained choices use state styling and complete pressed semantics 
 	const genres = read("builder/src/ui/GenreCatalogueSelector.jsx");
 	const streaming = read("builder/src/ui/StreamingSourceFlow.jsx");
 	assert.match(decades, /data-decade-preset=\{preset\.id\}[^>]*aria-pressed=\{selected\}/);
-	assert.match(exclusions, /data-selected=\{selected \? "true" : undefined\} aria-pressed=\{selected\}/);
+	assert.match(exclusions, /<FamilyGenreRulePills semantics="exclude"/);
+	assert.match(read("builder/src/ui/GenreRuleControls.jsx"), /aria-pressed=\{included \|\| excluded\} data-chosen=\{included \|\| excluded \|\| undefined\} data-excluded=\{excluded \|\| undefined\}/);
 	assert.match(genres, /data-genre-name=\{concept\.name\}[^>]*aria-pressed=\{selected\}/);
 	assert.match(streaming, /data-streaming-region=\{region\.code\}[^>]*aria-pressed=\{selected\}/);
 	for (const source of [decades, exclusions, genres, streaming]) assert.doesNotMatch(source, /✓|\{selected \? "✓" : "\+"\}/);
 });
 
-test("independent Decade booleans remain conventional visible checkboxes", () => {
+test("Decade content uses independent pressed cards with the final-selection guard", () => {
 	const source = read("builder/src/ui/CreationDialog.jsx");
 	const contentChoices = source.slice(source.indexOf("function ContentChoices"), source.indexOf("function StructurePreview"));
-	assert.equal((contentChoices.match(/type="checkbox"/g) ?? []).length, 1);
-	assert.doesNotMatch(contentChoices, /choice-card-input|visually-hidden|data-selected/);
+	assert.match(contentChoices, /<button[^>]*type="button"[^>]*aria-pressed=\{selected\}[^>]*disabled=\{selected && selectedCount === 1\}/);
+	assert.doesNotMatch(contentChoices, /type="checkbox"|choice-card-input|visually-hidden|selection-indicator|✓/);
 	const styles = read("builder/src/styles.css");
-	assert.match(styles, /\.decades-content-grid input\s*\{[\s\S]*accent-color: var\(--cyan-bright\)/);
-	assert.doesNotMatch(styles, /\.decades-content-grid label\[data-selected="true"\]/);
+	assert.match(styles, /\.decades-content-grid button\[data-selected="true"\][^{]*\{[^}]*background: rgb\(1 180 228 \/ 10%\)[^}]*box-shadow: inset/);
+	assert.match(styles, /@media \(forced-colors: active\)[\s\S]*\.decades-content-grid button\[aria-pressed="true"\][^{]*\{[^}]*box-shadow: inset/);
 });
 
 test("selected choices use structural card treatment without selection rails or green alternatives", () => {

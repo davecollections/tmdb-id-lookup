@@ -4,6 +4,7 @@ import { sourceEditorById, sourceEditorFor } from "./source-editors.js";
 import { PEOPLE_SOURCE_SORT_OPTIONS } from "./people-editor.js";
 import {
 	canonicalPositiveId,
+	changedFamilyAdvancedFields,
 	diagnostic,
 	safeSourceEditTitle,
 } from "./source-edit-utils.js";
@@ -155,7 +156,7 @@ export function updateDecadeSourceSort(draft, sortBy, sortOptionId = null) {
 }
 
 export function updateDecadeSourceAdvanced(draft, advanced) {
-	return Object.freeze({ ...draft, advanced, advancedTouched: true });
+	return updateFamilySourceAdvanced(draft, advanced);
 }
 
 export function updateGenreSourceSort(draft, sortBy, sortOptionId = null) {
@@ -163,7 +164,14 @@ export function updateGenreSourceSort(draft, sortBy, sortOptionId = null) {
 }
 
 export function updateGenreSourceAdvanced(draft, advanced) {
-	return Object.freeze({ ...draft, advanced, advancedTouched: true });
+	return updateFamilySourceAdvanced(draft, advanced);
+}
+
+export function updateStreamingSourceAdvanced(draft, advanced) { return updateFamilySourceAdvanced(draft, advanced); }
+
+function updateFamilySourceAdvanced(draft, advanced) {
+	const changed = changedFamilyAdvancedFields(draft.advanced, advanced);
+	return Object.freeze({ ...draft, advanced, advancedTouched: true, touchedFilters: Object.freeze([...new Set([...(draft.touchedFilters ?? []), ...changed])]) });
 }
 
 export function chooseMovieCollection(draft, collection) {

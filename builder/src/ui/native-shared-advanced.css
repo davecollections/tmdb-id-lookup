@@ -18,4 +18,6 @@
 @media (max-width: 900px) { .native-threshold-fields { grid-template-columns: minmax(0, 1fr); } }
 
 .native-genre-context-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.genre-secondary-surface > .genre-advanced-subview.family-genre-rules { width: min(900px, 100%); box-sizing: border-box; }
+.family-genre-rules .discover-genres { margin: 0; }
 .native-genre-inheritance > .native-genre-context-actions { flex: 0 1 auto; }

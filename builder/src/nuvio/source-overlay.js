@@ -83,7 +83,11 @@ export function overlayFilters(output, editable, rawImported) {
 		}
 	}
 
-	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "DISCOVER") synchronizeDiscoverMirrors(rawFilters, rawImported, editable);
+	if (String(output.provider).toLowerCase() === "tmdb" && String(output.tmdbSourceType).toUpperCase() === "DISCOVER") {
+		const equivalent = inspectDiscoverMirrors(rawImported ?? {}).equivalent;
+		const mirrors = discoverImportedMirrors(editable.mediaType ?? rawImported?.mediaType);
+		synchronizeDiscoverMirrors(rawFilters, rawImported, editable, { fields: equivalent.map((alias) => mirrors[alias]).filter(Boolean), sort: equivalent.includes("sortBy") });
+	}
 	if (String(output.provider).toLowerCase() === "tmdb" && ["COMPANY", "NETWORK"].includes(String(output.tmdbSourceType).toUpperCase())) {
   const ownedMinimum = String(output.tmdbSourceType).toUpperCase() === "COMPANY"
    || inspectDiscoverMirrors(rawImported ?? {}).equivalent.includes("vote_count.gte");

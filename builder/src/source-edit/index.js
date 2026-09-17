@@ -65,6 +65,7 @@ export {
 	updateNetworkSourceSort,
 	updateStudioSourceSort,
 	updateStreamingSourceSort,
+ updateStreamingSourceAdvanced,
 	updateDecadeSourceAdvanced,
 	updateDecadeSourceSort,
 	updateGenreSourceAdvanced,

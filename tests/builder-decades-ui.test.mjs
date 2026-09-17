@@ -370,8 +370,8 @@ test("shared and individual Decade exclusions remain independent and removing a 
 	state = toggleDecadePreset(state, "1980s");
 	assert.deepEqual(state.selectedDecadeIds, ["1990s"]);
 	assert.deepEqual(Object.keys(state.genreNamesByDecade), ["1990s"]);
-	assert.deepEqual(Object.keys(state.advanced.ordinaryExcludedGenresByDecade), ["1990s"]);
-	assert.deepEqual(Object.keys(state.advanced.exclusionsByGenreByDecade), ["1990s"]);
+	assert.deepEqual(Object.keys(state.advanced.ordinaryExcludedGenresByDecade), []);
+	assert.deepEqual(Object.keys(state.advanced.exclusionsByGenreByDecade), []);
 	assert.equal(state.genreContextId, "all");
 	assert.deepEqual(decadesOrdinaryExclusionsForContext(state, "1990s"), ["Comedy"]);
 
@@ -541,7 +541,7 @@ test("Options keeps selected Decades editable and keeps the Genre catalogue in i
 	assert.ok(genreSurface.includes("1980s"));
 	assert.ok(genreSurface.includes("1990s"));
 	assert.equal(genreSurface.includes("decades-genre-contexts"), false);
-	assert.equal((genreSurface.match(/class="genre-catalogue-list"/g) ?? []).length, 1);
+	assert.equal((genreSurface.match(/class="discover-genre-pills"/g) ?? []).length, 1);
 	assert.ok(genreSurface.includes("Genre source exclusions"));
 	assert.ok(genreSurface.includes("Optionally exclude Genres from the Genre sources selected above."));
 	assert.equal(genreSurface.includes("Choose Genres in this context first"), false);
@@ -670,9 +670,10 @@ test("structure, ordering, and shared presentation choices render schematic prev
 	state = { ...state, layout: "mixed-collection", content: { wholeDecade: true, individualYears: true, genreBreakdown: false } };
 	const markup = renderToStaticMarkup(createElement(DecadesOptionsStep, { state, onStateChange() {} }));
 	const contentChoicesMarkup = markup.slice(markup.indexOf('<div class="decades-content-grid">'), markup.indexOf("</fieldset>", markup.indexOf('<div class="decades-content-grid">')));
-	assert.equal((contentChoicesMarkup.match(/type="checkbox"/g) ?? []).length, 3);
-	assert.equal((contentChoicesMarkup.match(/type="checkbox" checked=""/g) ?? []).length, 2);
-	assert.doesNotMatch(contentChoicesMarkup, /choice-card-input|visually-hidden|data-selected|selection-indicator|selection-state|✓/);
+	assert.equal((contentChoicesMarkup.match(/type="button"/g) ?? []).length, 3);
+	assert.equal((contentChoicesMarkup.match(/aria-pressed="true"/g) ?? []).length, 2);
+	assert.equal((contentChoicesMarkup.match(/aria-pressed="false"/g) ?? []).length, 1);
+	assert.doesNotMatch(contentChoicesMarkup, /type="checkbox"|choice-card-input|visually-hidden|selection-indicator|selection-state|✓/);
 	for (const marker of ['data-structure-preview="separate"', 'data-structure-preview="mixed"', "Movie Decades", "TV Decades", "Decade &amp; Year order", "Choose how Decade folders are ordered on Home and how Year sources are ordered inside each folder.", "Display order", "Source grouping", "Decade folders", "Year sources"]) assert.ok(markup.includes(marker), marker);
 	for (const label of ["Newest Decades, Oldest Years", "Newest First", "Oldest First"]) assert.ok(markup.includes(`>${label}<`), label);
 	for (const direction of ["Newest → Oldest", "Oldest → Newest"]) assert.ok(markup.includes(direction), direction);
@@ -721,7 +722,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	assert.equal(options.includes("popular Genre"), false);
 	assert.equal((options.match(/class="studio-sort-choices semantic-sort-choices"/g) ?? []).length, 2);
 	for (const label of ["Movies", "Series", "Both", "Popular", "Recent", "Top rated", "Most voted"]) assert.ok(options.includes(`>${label}<`), label);
-	assert.match(options, /type="checkbox" disabled="" checked=""/);
+	assert.match(options, /data-decade-content="individualYears" data-selected="true" aria-pressed="true" disabled=""/);
 	for (const obsolete of ["All years combined", "Whole decade", "Through current year", "Current year only", "Full decade", "Collection appearance", "Decade folder appearance", "Collection options", "Decade folder options", "Source sorting and filters"]) assert.equal(options.includes(obsolete), false, obsolete);
 	assert.ok(options.indexOf('name="decades-media"') < options.indexOf('name="decades-sort"'));
 	assert.match(options, /name="decades-media" checked="" value="both"/);

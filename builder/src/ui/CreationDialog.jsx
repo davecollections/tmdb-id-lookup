@@ -1,3 +1,4 @@
+import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { lazy, Suspense } from "react";
 const AdvancedDiscoverFlow = lazy(() => import("./AdvancedDiscoverFlow.jsx"));
 import { SourcePreviewSelectors, SourcePreviewContent } from "./SourceTitlePreviewDialog.jsx";
@@ -36,6 +37,7 @@ import {
 	DecadesAdvancedHelpSubview,
 	DecadesAdvancedOptions,
 	DecadesOrdinaryExclusionSubview,
+ DecadesExclusionInheritance,
 } from "./DecadesAdvancedOptions.jsx";
 import {
 	buildDecadesCreationPlan,
@@ -52,6 +54,8 @@ import {
 	selectAllDecadePresets,
 	setDecadesGenresForContext,
 	setDecadesGenreExclusionsForContext,
+ setDecadesExclusionInheritance,
+ includedDecadesGenreNames,
 	setDecadesOrdinaryExclusionsForContext,
 	toggleDecadePreset,
 	toggleDecadesGenre,
@@ -59,7 +63,8 @@ import {
 	updateDecadesCreationMedia,
 } from "./decades-creation-state.js";
 import { GenreExclusionSubview } from "./GenreAdvancedOptions.jsx";
-import { GenreCatalogueList, GenreContextCatalogueSubview, GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
+import { GenreContextCatalogueSubview, GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
+import { FamilyGenreRulePills, GenreRuleCard } from "./GenreRuleControls.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { LauncherOptionCard } from "./LauncherOptionCard.jsx";
 import { handleDialogKeyDown } from "./modal-focus.js";
@@ -212,15 +217,17 @@ function ContentChoices({ state, onChange }) {
 			<div className="decades-content-grid">
 				{options.map((option) => {
 					const selected = state.content[option.id];
-					return <label key={option.id}>
-						<input
-							type="checkbox"
-							checked={selected}
+					return <button
+							key={option.id}
+							type="button"
+							data-decade-content={option.id}
+							data-selected={selected ? "true" : undefined}
+							aria-pressed={selected}
 							disabled={selected && selectedCount === 1}
-							onChange={(event) => onChange(Object.freeze({ ...state.content, [option.id]: event.target.checked }))}
-						/>
+							onClick={() => onChange(Object.freeze({ ...state.content, [option.id]: !selected }))}
+						>
 						<span><strong>{option.label}</strong><small>{option.description}</small></span>
-					</label>;
+					</button>;
 				})}
 			</div>
 		</fieldset>
@@ -288,13 +295,16 @@ function DecadesGenreChoices({ state, onStateChange, onOpenExclusions }) {
 	const selection = decadesGenreSelectionForContext(state, contextId);
 	return (
 		<>
+			<GenreRuleCard>
 			<GenreSelectionToolbar
 				selectionCount={selection.length}
 				totalCount={available.length}
 				onSelectAll={() => onStateChange(setDecadesGenresForContext(state, available.map((concept) => concept.name), contextId))}
 				onClearAll={() => onStateChange(setDecadesGenresForContext(state, [], contextId))}
 			/>
-			<GenreCatalogueList concepts={available} selection={selection} onChoose={(genreName) => onStateChange(toggleDecadesGenre(state, genreName, contextId))} />
+			<FamilyGenreRulePills semantics="include" concepts={available} selection={selection} onChoose={(genreName) => onStateChange(toggleDecadesGenre(state, genreName, contextId))} />
+			<p className="editor-field-help">Each selected Genre creates a separate source.</p>
+			</GenreRuleCard>
 			<div className="genre-advanced-compact-actions">
 				<div><strong>Genre source exclusions</strong><span>Optionally exclude Genres from the Genre sources selected above.</span></div>
 				<button type="button" className="secondary-action" disabled={selection.length === 0} onClick={(event) => onOpenExclusions(event.currentTarget)}>Configure</button>
@@ -349,20 +359,19 @@ export function DecadesGenreConfigurationSubview({ state, onStateChange, onOpenE
 			ariaDescribedBy={!valid ? "decades-genres-error" : undefined}
 			ariaInvalid={!valid}
 			backLabel="Back to Decades"
-			className="decades-genre-subview"
+			className="discover-dialog family-genre-rules decades-genre-subview"
 			contexts={contexts}
 			contextTitle="Genre contexts"
-			detailGuidance="Choose Genres to include in the generated sources for this context."
-			detailTitle={(context) => `Genres for ${context.label}`}
+			detailTitle={(context) => context.label}
 			emptyText="Then choose Genres to include in its generated sources."
 			emptyTitle="Choose a context on the left"
 			focusRef={focusRef}
-			guidance="Use one shared Genre selection or customise individual Decades."
+			guidance="Choose Genres for all selected Decades at once, or change the selection for an individual Decade."
 			kicker="Configure Decades"
 			onContextChange={(genreContextId) => onStateChange(Object.freeze({ ...state, genreContextId }))}
 			onDone={onDone}
 			statusContent={!valid ? <p id="decades-genres-error" className="decades-genre-validation" role="alert">Choose at least one Genre for every selected Decade. Still needed: {missingLabels.join(", ")}.</p> : null}
-			title="Configure Genres"
+			title="Genre rules"
 			titleId="decades-genre-configuration-title"
 		>
 			<DecadesGenreChoices state={state} onStateChange={onStateChange} onOpenExclusions={onOpenExclusions} />
@@ -438,13 +447,9 @@ function TitlesAndVisibility({ state, onStateChange }) {
 }
 
 function ordinaryExclusionSummary(state) {
-	const selections = state.selectedDecadeIds.map((decadeId) => state.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? state.advanced.ordinaryExcludedGenres ?? []);
-	const configuredCount = selections.filter((names) => names.length > 0).length;
-	if (configuredCount === 0) return "No Genre exclusions configured";
-	const shared = decadesOrdinaryExclusionsForContext(state, "all");
-	const sameEverywhere = selections.every((names) => JSON.stringify(names) === JSON.stringify(selections[0]));
-	if (sameEverywhere) return `${shared.length} excluded on all selected Decades`;
-	return `Configured for ${configuredCount} Decade${configuredCount === 1 ? "" : "s"}`;
+	const customCount = state.selectedDecadeIds.filter((decadeId) => Object.hasOwn(state.advanced.ordinaryExcludedGenresByDecade ?? {}, decadeId)).length;
+	const sharedCount = (state.advanced.ordinaryExcludedGenres ?? []).length;
+	return `Shared: ${sharedCount} excluded · ${customCount} Custom · ${state.selectedDecadeIds.length - customCount} Using default`;
 }
 
 export function DecadesPreviewGroup({ group, previewAvailable, onPreview }) {
@@ -510,7 +515,7 @@ export function DecadesOptionsStep({ state, headingRef, previewGroups = [], prev
 			<ContentChoices state={state} onChange={(content) => onStateChange(Object.freeze({ ...state, content }))} />
 			{state.content.genreBreakdown ? <DecadesGenreSummary state={state} onConfigure={(trigger) => onOpenSecondary("genres", trigger)} /> : null}
 			<DecadesOrdering state={state} onStateChange={onStateChange} />
-			<DecadesAdvancedOptions value={state.advanced} exclusionSummary={ordinaryExclusionSummary(state)} onChange={(advanced) => onStateChange(Object.freeze({ ...state, advanced }))} onOpenSecondary={onOpenSecondary} />
+			<DecadesAdvancedOptions mediaMode={state.mediaMode} value={state.advanced} exclusionSummary={ordinaryExclusionSummary(state)} onChange={(advanced) => onStateChange(Object.freeze({ ...state, advanced }))} onOpenSecondary={onOpenSecondary} />
 			<DecadesPreviewCatalogue groups={previewGroups} previewAvailable={previewAvailable} onPreview={onPreview} />
 		</section>
 	);
@@ -560,6 +565,7 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 	const occurrences = plan.outcomes.flatMap((outcome) => outcome.occurrences ?? []);
 	return (
 		<section className="decades-step decades-review-step" aria-labelledby="decades-review-title">
+   <DiscoverFamilyAdvancedSummary legacy value={state.advanced} mediaMode={state.mediaMode} />
 			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="decades-review-title" ref={headingRef} tabIndex={-1}>Review &amp; Appearance</h3></div></div>
 			<div className="decades-plan-totals" data-plan-scope={state.scope} aria-label="Plan totals">
 				{state.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection{plan.counts.collectionCount === 1 ? "" : "s"}</span></div> : null}
@@ -744,8 +750,8 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 					else closeSecondary();
 				}}>
 					{secondarySurface === "genres" ? <DecadesGenreConfigurationSubview state={state} onStateChange={(next) => { setState(next); setApplyDiagnostic(null); }} onOpenExclusions={(trigger) => openSecondary("genre-exclusions", trigger)} onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
-					{secondarySurface === "genre-exclusions" ? <GenreExclusionSubview advanced={{ exclusionsByGenre: decadesGenreExclusionsForContext(state) }} includedGenres={decadesGenreSelectionForContext(state)} sharedMediaChoice={state.mediaMode} onChange={(advanced) => setState((current) => setDecadesGenreExclusionsForContext(current, advanced.exclusionsByGenre, current.genreContextId))} onDone={returnToGenreSurface} focusRef={secondaryHeadingRef} /> : null}
-					{secondarySurface === "ordinary-exclusions" ? <DecadesOrdinaryExclusionSubview selectedDecadeIds={state.selectedDecadeIds} selectionByDecade={Object.fromEntries(state.selectedDecadeIds.map((decadeId) => [decadeId, state.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? []]))} sharedSelection={decadesOrdinaryExclusionsForContext(state, "all")} contextId={state.genreContextId} selection={decadesOrdinaryExclusionsForContext(state)} mediaMode={state.mediaMode} onContextChange={(genreContextId) => setState((current) => Object.freeze({ ...current, genreContextId }))} onToggle={(genreName) => setState((current) => { const names = decadesOrdinaryExclusionsForContext(current); return setDecadesOrdinaryExclusionsForContext(current, names.includes(genreName) ? names.filter((name) => name !== genreName) : [...names, genreName]); })} onSelectAll={() => setState((current) => setDecadesOrdinaryExclusionsForContext(current, GENRE_CONCEPTS.filter((concept) => current.mediaMode === "movies" ? concept.movieId !== null : current.mediaMode === "series" ? concept.tvId !== null : concept.movieId !== null || concept.tvId !== null).map((concept) => concept.name)))} onClearAll={() => setState((current) => setDecadesOrdinaryExclusionsForContext(current, []))} onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
+					{secondarySurface === "genre-exclusions" ? <GenreExclusionSubview advanced={{ exclusionsByGenre: decadesGenreExclusionsForContext(state) }} includedGenres={state.genreContextId === "all" ? includedDecadesGenreNames(state) : decadesGenreSelectionForContext(state)} contextActions={<DecadesExclusionInheritance wholeMap contextId={state.genreContextId} custom={Object.hasOwn(state.advanced.exclusionsByGenreByDecade, state.genreContextId)} onChange={(useDefault) => setState((current) => setDecadesExclusionInheritance(current, current.genreContextId, "genres", useDefault))} />} readOnly={state.genreContextId !== "all" && !Object.hasOwn(state.advanced.exclusionsByGenreByDecade, state.genreContextId)} sharedMediaChoice={state.mediaMode} onChange={(advanced) => setState((current) => setDecadesGenreExclusionsForContext(current, advanced.exclusionsByGenre, current.genreContextId))} onDone={returnToGenreSurface} focusRef={secondaryHeadingRef} /> : null}
+					{secondarySurface === "ordinary-exclusions" ? <DecadesOrdinaryExclusionSubview selectedDecadeIds={state.selectedDecadeIds} selectionByDecade={state.advanced.ordinaryExcludedGenresByDecade} onInheritanceChange={(useDefault) => setState((current) => setDecadesExclusionInheritance(current, current.genreContextId, "ordinary", useDefault))} sharedSelection={decadesOrdinaryExclusionsForContext(state, "all")} contextId={state.genreContextId} selection={decadesOrdinaryExclusionsForContext(state)} mediaMode={state.mediaMode} onContextChange={(genreContextId) => setState((current) => Object.freeze({ ...current, genreContextId }))} onToggle={(genreName) => setState((current) => { const names = decadesOrdinaryExclusionsForContext(current); return setDecadesOrdinaryExclusionsForContext(current, names.includes(genreName) ? names.filter((name) => name !== genreName) : [...names, genreName]); })} onSelectAll={() => setState((current) => setDecadesOrdinaryExclusionsForContext(current, GENRE_CONCEPTS.filter((concept) => current.mediaMode === "movies" ? concept.movieId !== null : current.mediaMode === "series" ? concept.tvId !== null : concept.movieId !== null || concept.tvId !== null).map((concept) => concept.name)))} onClearAll={() => setState((current) => setDecadesOrdinaryExclusionsForContext(current, []))} onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
 					{secondarySurface === "advanced-help" ? <DecadesAdvancedHelpSubview onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
 				</div> : null}
 				{!secondarySurface ? <footer className="add-source-actions decades-creation-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>

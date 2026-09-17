@@ -17,8 +17,8 @@ export function DiscoverValueField({ field, draft, onChange, errors = [] }) {
   <label ref={labelRef} tabIndex={-1} htmlFor={"discover-field-" + field}>{DISCOVER_FIELD_LABELS[field]}</label>
   <div className={clearable ? "discover-clearable-value" : undefined}>
   <input id={"discover-field-" + field} type={date ? "date" : "text"} inputMode={date ? undefined : field.startsWith("voteAverage") ? "decimal" : "numeric"} value={value}
-   aria-invalid={invalid || undefined} aria-describedby={describedBy} onChange={(e) => update(e.target.value)} />
-   {clearable ? <button type="button" className="discover-clear-value" aria-label={"Clear " + DISCOVER_FIELD_LABELS[field].toLowerCase()} disabled={value === ""} data-empty={value === "" || undefined}
+   disabled={draft.extraEditable?.[field] === false} aria-invalid={invalid || undefined} aria-describedby={describedBy} onChange={(e) => update(e.target.value)} />
+   {clearable ? <button type="button" className="discover-clear-value" aria-label={"Clear " + DISCOVER_FIELD_LABELS[field].toLowerCase()} disabled={value === "" || draft.extraEditable?.[field] === false} data-empty={value === "" || undefined}
     onClick={() => { update(""); labelRef.current?.focus({ preventScroll: true }); }}>×</button> : null}
   </div>
   {field === "voteCountGte" ? <p id="discover-help-voteCountGte" className="editor-field-help">Set the minimum number of TMDB votes a title must have. Higher values exclude titles with fewer votes.</p> : null}

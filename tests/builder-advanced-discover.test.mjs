@@ -441,25 +441,22 @@ test("changing media/region retains providers until reviewed; incompatible genre
 });
 
 import { discoverEditorPreviewBlocked } from "../builder/src/source-edit/advanced-discover-editor.js";
-test("a mirror corrected by editing never reappears after later reverting the native value", () => {
+test("conflicting imported keyword mirrors remain preservation-only across repeated saves", () => {
  const raw = mirroredSource(); raw.filters.without_keywords = "818";
- const c = controllerWithFolder([raw]); let opened = openAdvanced(c);
- let draft = { ...opened.draft, filters: { ...opened.draft.filters, withoutKeywords: "9663" }, touchedFilters: ["withoutKeywords"] };
- assert.equal(discoverEditorPreviewBlocked(draft), false);
- assert.equal(saveSourceEdit(c, opened.session, draft).ok, true);
- opened = openAdvanced(c); draft = { ...opened.draft, filters: { ...opened.draft.filters, withoutKeywords: "9716" }, touchedFilters: ["withoutKeywords"] };
- assert.equal(saveSourceEdit(c, opened.session, draft).ok, true);
- assert.equal(c.serializeProject().value[0].folders[0].sources[0].filters.without_keywords, "9716");
- opened = openAdvanced(c); assert.equal(opened.draft.previewBlocked, false);
+ const c = controllerWithFolder([raw]); const opened = openAdvanced(c), before = c.serializeProject().value;
+ const draft = { ...opened.draft, filters: { ...opened.draft.filters, withoutKeywords: "9663" }, touchedFilters: ["withoutKeywords"] };
+ assert.equal(discoverEditorPreviewBlocked(draft), true);
+ assert.equal(opened.draft.extraEditable.withoutKeywords, false);
+ assert.equal(saveSourceEdit(c, opened.session, draft).ok, false);
+ assert.deepEqual(c.serializeProject().value, before);
  assert.equal(saveSourceEdit(c, opened.session, opened.draft).changed, false);
 });
-test("mirrored sort stays corrected through repeated saves back to the original native sort", () => {
+test("conflicting mirrored sort is preserved rather than silently repaired", () => {
  const raw = mirroredSource(); raw.filters.sortBy = "vote_count.desc";
- const c = controllerWithFolder([raw]); let opened = openAdvanced(c);
- assert.equal(saveSourceEdit(c, opened.session, { ...opened.draft, sortTouched: true, sortOptionIds: ["popular"] }).ok, true);
- opened = openAdvanced(c);
- assert.equal(saveSourceEdit(c, opened.session, { ...opened.draft, sortTouched: true, sortOptionIds: ["recent"] }).ok, true);
- assert.equal(c.serializeProject().value[0].folders[0].sources[0].filters.sortBy, "primary_release_date.desc");
+ const c = controllerWithFolder([raw]), opened = openAdvanced(c), before = c.serializeProject().value;
+ assert.equal(opened.draft.sortEditable, false);
+ for (const sort of ["popular", "recent"]) assert.equal(saveSourceEdit(c, opened.session, { ...opened.draft, sortTouched: true, sortOptionIds: [sort] }).ok, false);
+ assert.deepEqual(c.serializeProject().value, before);
 });
 
 import { advancedDiscoverFolders } from "../builder/src/source-add/advanced-discover-plan.js";
@@ -577,7 +574,8 @@ test("date edits retain unrelated and opposite-media imported settings", () => {
  const raw = { ...mirroredSource(), filters: { releaseDateGte: "2020-01-01", "primary_release_date.gte": "2010-01-01", "first_air_date.gte": "2005-01-01", futureSetting: { preserve: true } } };
  const c = controllerWithFolder([raw]), opened = openAdvanced(c);
  assert.equal(opened.draft.previewBlocked, true);
- assert.equal(saveSourceEdit(c, opened.session, { ...opened.draft, filters: {}, touchedFilters: ["releaseDateGte"] }).ok, true);
+ assert.equal(opened.draft.extraEditable.releaseDateGte, false);
+ assert.equal(saveSourceEdit(c, opened.session, { ...opened.draft, filters: {}, touchedFilters: ["releaseDateGte"] }).ok, false);
  const filters = c.serializeProject().value[0].folders[0].sources[0].filters;
- assert.deepEqual(filters, { "first_air_date.gte": "2005-01-01", futureSetting: { preserve: true } });
+ assert.deepEqual(filters, raw.filters);
 });

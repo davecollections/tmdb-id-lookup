@@ -70,7 +70,7 @@ export function runNetworkMinimumVotesScenario(helpers, view) {
 
 export function runNativeSharedAdvancedScenario(helpers, view) { return runNativeMinimumVotesScenario(helpers, { ...view, sharedAdvanced: true }); }
 
-async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope, mediaType = "MOVIE", sharedAdvanced = false, layoutOnly = false }) {
+async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope, mediaType = "MOVIE", sharedAdvanced = false, layoutOnly = false, captureGenreRules = false }) {
  const isNetwork = family === "network", entityId = isNetwork ? 213 : 3;
  if (isNetwork) mediaType = "TV";
  const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition: wait } = helpers;
@@ -197,7 +197,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     });
    }
    const shot = async (suffix) => {
-    if (!globalThis.capture204Preview || layoutOnly || !(family === "studio" && scope === "new-folder" || family === "network" && scope === "add")) return;
+    if (!globalThis.capture204Preview || layoutOnly && (!captureGenreRules || suffix !== "genres-shared") || !(family === "studio" && scope === "new-folder" || family === "network" && scope === "add")) return;
     await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: "shared-advanced-" + family + "-" + scope + "-" + innerWidth + "-" + innerHeight + "-" + suffix })); });
    };
    const thresholdControls = [input, minimumRating, maximumRating];
@@ -374,7 +374,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     const edit = document.querySelector('[data-source-edit-modal]'); await click(edit.querySelector('[data-' + family + '-advanced] summary'));
     check(!findButton(edit, "Configure genres") && !edit.querySelector('.native-genre-inheritance') && edit.querySelector('#discover-field-year').value === "2020", "physical edit reconstructed inheritance or lost year");
     if (scope === "new-folder") check(!edit.querySelector('.discover-genre-pills button[aria-pressed="true"]'), "blank Custom reopened with inherited genre pills");
-    await click(edit.querySelector('[aria-label="Clear release year"]')); await click(edit.querySelector('button[type="submit"]')); check(saved?.ok, "clear year Save failed");
+    await click(edit.querySelector('[aria-label="Clear year"]')); await click(edit.querySelector('button[type="submit"]')); check(saved?.ok, "clear year Save failed");
     check(reopened.stringifyProject().value.flatMap((c) => c.folders.flatMap((f) => f.sources)).some((source) => source.filters.withKeywords === '6054' && !Object.hasOwn(source.filters, 'year')), "clear year revived after export");
    } finally { await act(async () => { editRoot.unmount(); await settle(); }); node.remove(); }
    evidence.atomic = true; evidence.preservation = true;

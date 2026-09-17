@@ -38,6 +38,7 @@ export const STREAMING_HIERARCHY_PLACEMENT_STATUSES = Object.freeze({
 });
 
 const optionKeys = new Set([
+	"advanced",
 	"scope",
 	"projectRevision",
 	"destinationCollectionInternalId",
@@ -216,6 +217,7 @@ function desiredFolders(providers, regions, configuration, errors) {
 		: STREAMING_SOURCE_NAME_CONTEXTS.GROUPED_BY_SERVICE;
 	for (const provider of providers) {
 		const built = buildStreamingSourceDrafts(provider, {
+			advanced: configuration.advanced,
 			regionCodes,
 			mediaChoice: configuration.mediaChoice,
 			sortOptionId: configuration.sortOptionId,
@@ -413,7 +415,10 @@ export function createStreamingHierarchyPlan(project, options) {
 	}
 	if (errors.length > 0) return Object.freeze({ ok: false, plan: null, errors: Object.freeze(errors) });
 
+	if (options.advanced !== undefined && (!plainObject(options.advanced) || !plainObject(options.advanced.filters))) return Object.freeze({ ok: false, plan: null, errors: Object.freeze([diagnostic("INVALID_STREAMING_ADVANCED", "$streamingHierarchy.advanced", "Advanced filters must be an object.")]) });
+	if (options.advanced?.ui?.providerContextReview) return Object.freeze({ ok: false, plan: null, errors: Object.freeze([diagnostic("STREAMING_PROVIDER_CONTEXT_REVIEW", "$streamingHierarchy.advanced", "Review retained providers for the current media and region.")]) });
 	const planningConfiguration = Object.freeze({
+		...(options.advanced === undefined ? {} : { advanced: Object.freeze({ filters: Object.freeze({ ...options.advanced.filters }) }) }),
 		scope,
 		collectionTitle,
 		hideCollectionTitle,
@@ -513,6 +518,7 @@ export function createStreamingHierarchyPlan(project, options) {
 
 function existingDestinationOptions(configuration, projectRevision, collectionInternalId) {
 	return {
+		advanced: configuration.advanced,
 		scope: "new-folder",
 		projectRevision,
 		destinationCollectionInternalId: collectionInternalId,
@@ -530,6 +536,7 @@ function existingDestinationOptions(configuration, projectRevision, collectionIn
 export function inspectStreamingHierarchyDestinationCandidates(project, options) {
 	if (!plainObject(options)) return Object.freeze({ ok: false, candidates: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_STREAMING_HIERARCHY_DESTINATION_OPTIONS", "$streamingHierarchy.destinations", "Streaming destination discovery requires the current hierarchy configuration.")]) });
 	const probe = createStreamingHierarchyPlan(project, {
+		advanced: options.advanced,
 		scope: "new-collection",
 		projectRevision: options.projectRevision,
 		collectionTitle: "Streaming Services",
@@ -605,6 +612,7 @@ function rebuildOptions(plan) {
 		groupingMode: plan.configuration.groupingMode,
 		regions: plan.configuration.regions,
 		mediaChoice: plan.configuration.mediaChoice,
+		advanced: plan.configuration.advanced,
 		sortOptionId: plan.configuration.sortOptionId,
 		sortOptionIds: plan.configuration.sortOptionIds,
 		providers: plan.configuration.providers,

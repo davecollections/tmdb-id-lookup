@@ -89,17 +89,6 @@ function pruneGenreExclusionMap(sourceExclusions, includedGenreNames, mediaMode)
 	return Object.freeze(exclusionsByGenre);
 }
 
-function contextDecadeIds(state, contextId) {
-	return contextId === "all"
-		? state.selectedDecadeIds
-		: state.selectedDecadeIds.includes(contextId) ? [contextId] : [];
-}
-
-function sharedOrderedNames(nameLists) {
-	if (nameLists.length === 0) return Object.freeze([]);
-	return Object.freeze(orderedGenreNames(nameLists[0].filter((name) => nameLists.slice(1).every((names) => names.includes(name)))));
-}
-
 function ordinaryExclusionsForDecade(state, decadeId) {
 	return state.advanced.ordinaryExcludedGenresByDecade?.[decadeId]
 		?? state.advanced.ordinaryExcludedGenres
@@ -113,53 +102,31 @@ function genreExclusionsForDecade(state, decadeId) {
 }
 
 export function decadesOrdinaryExclusionsForContext(state, contextId = state.genreContextId) {
-	const decadeIds = contextDecadeIds(state, contextId);
-	return contextId === "all"
-		? sharedOrderedNames(decadeIds.map((decadeId) => ordinaryExclusionsForDecade(state, decadeId)))
-		: Object.freeze([...(decadeIds[0] ? ordinaryExclusionsForDecade(state, decadeIds[0]) : [])]);
+ return Object.freeze([...(contextId === "all" ? state.advanced.ordinaryExcludedGenres ?? [] : ordinaryExclusionsForDecade(state, contextId))]);
 }
 
 export function decadesGenreExclusionsForContext(state, contextId = state.genreContextId) {
-	const decadeIds = contextDecadeIds(state, contextId);
-	const includedGenreNames = contextId === "all"
-		? sharedDecadesGenreNames(state)
-		: state.genreNamesByDecade[decadeIds[0]] ?? Object.freeze([]);
-	const result = {};
-	for (const genreName of includedGenreNames) {
-		const names = contextId === "all"
-			? sharedOrderedNames(decadeIds.map((decadeId) => genreExclusionsForDecade(state, decadeId)[genreName] ?? []))
-			: genreExclusionsForDecade(state, decadeIds[0])[genreName] ?? [];
-		if (names.length > 0) result[genreName] = Object.freeze([...names]);
-	}
-	return Object.freeze(result);
+ return contextId === "all" ? state.advanced.exclusionsByGenre ?? {} : genreExclusionsForDecade(state, contextId);
+}
+
+export function setDecadesExclusionInheritance(state, contextId, kind, useDefault = false) {
+ if (contextId === "all" || !state.selectedDecadeIds.includes(contextId)) return state;
+ const field = kind === "ordinary" ? "ordinaryExcludedGenresByDecade" : "exclusionsByGenreByDecade";
+ const overrides = { ...state.advanced[field] };
+ if (useDefault) delete overrides[contextId]; else overrides[contextId] = Object.freeze(kind === "ordinary" ? [] : {});
+ return Object.freeze({ ...state, advanced: Object.freeze({ ...state.advanced, [field]: Object.freeze(overrides) }) });
 }
 
 function reconcileAdvancedExclusions(state, selectedDecadeIds) {
-	const sharedOrdinary = decadesOrdinaryExclusionsForContext(state, "all");
-	const sharedByGenre = decadesGenreExclusionsForContext(state, "all");
-	const ordinaryExcludedGenresByDecade = {};
-	const exclusionsByGenreByDecade = {};
-	for (const decadeId of selectedDecadeIds) {
-		ordinaryExcludedGenresByDecade[decadeId] = Object.freeze([...(state.advanced.ordinaryExcludedGenresByDecade?.[decadeId] ?? sharedOrdinary)]);
-		exclusionsByGenreByDecade[decadeId] = Object.freeze({ ...(state.advanced.exclusionsByGenreByDecade?.[decadeId] ?? sharedByGenre) });
-	}
-	return Object.freeze({
-		...state.advanced,
-		ordinaryExcludedGenresByDecade: Object.freeze(ordinaryExcludedGenresByDecade),
-		exclusionsByGenreByDecade: Object.freeze(exclusionsByGenreByDecade),
-	});
+ const retain = (map) => Object.freeze(Object.fromEntries(Object.entries(map ?? {}).filter(([id]) => selectedDecadeIds.includes(id))));
+ return Object.freeze({ ...state.advanced,
+  ordinaryExcludedGenresByDecade: retain(state.advanced.ordinaryExcludedGenresByDecade),
+  exclusionsByGenreByDecade: retain(state.advanced.exclusionsByGenreByDecade),
+ });
 }
 
 function prunePerDecadeGenreExclusions(advanced, genreNamesByDecade, mediaMode) {
-	const exclusionsByGenreByDecade = {};
-	for (const [decadeId, includedGenreNames] of Object.entries(genreNamesByDecade)) {
-		exclusionsByGenreByDecade[decadeId] = pruneGenreExclusionMap(
-			advanced.exclusionsByGenreByDecade?.[decadeId] ?? advanced.exclusionsByGenre ?? {},
-			includedGenreNames,
-			mediaMode,
-		);
-	}
-	return Object.freeze(exclusionsByGenreByDecade);
+ return Object.freeze(Object.fromEntries(Object.entries(genreNamesByDecade).filter(([id]) => Object.hasOwn(advanced.exclusionsByGenreByDecade ?? {}, id)).map(([id, names]) => [id, pruneGenreExclusionMap(advanced.exclusionsByGenreByDecade[id], names, mediaMode)])));
 }
 
 function reconcileGenreSelections(state, selectedDecadeIds) {
@@ -299,7 +266,7 @@ export function updateDecadesCreationMedia(state, mediaMode) {
 	const genreNames = genreUnion(genreNamesByDecade);
 	const ordinaryExcludedGenresByDecade = {};
 	for (const decadeId of state.selectedDecadeIds) {
-		ordinaryExcludedGenresByDecade[decadeId] = Object.freeze(pruneNames(ordinaryExclusionsForDecade(state, decadeId), allowed));
+		if (Object.hasOwn(state.advanced.ordinaryExcludedGenresByDecade ?? {}, decadeId)) ordinaryExcludedGenresByDecade[decadeId] = Object.freeze(pruneNames(ordinaryExclusionsForDecade(state, decadeId), allowed));
 	}
 	return Object.freeze({
 		...state,
@@ -369,40 +336,16 @@ export function setDecadesGenresForContext(state, genreNames, contextId = state.
 }
 
 export function setDecadesOrdinaryExclusionsForContext(state, genreNames, contextId = state.genreContextId) {
-	const allowed = compatibleGenreNames(state.mediaMode);
-	const names = Object.freeze(orderedGenreNames(pruneNames(genreNames, allowed)));
-	const ordinaryExcludedGenresByDecade = { ...(state.advanced.ordinaryExcludedGenresByDecade ?? {}) };
-	for (const decadeId of contextDecadeIds(state, contextId)) ordinaryExcludedGenresByDecade[decadeId] = names;
-	return Object.freeze({
-		...state,
-		advanced: Object.freeze({
-			...state.advanced,
-			ordinaryExcludedGenresByDecade: Object.freeze(ordinaryExcludedGenresByDecade),
-		}),
-	});
+ const names = Object.freeze(orderedGenreNames(pruneNames(genreNames, compatibleGenreNames(state.mediaMode))));
+ const patch = contextId === "all" ? { ordinaryExcludedGenres: names } : { ordinaryExcludedGenresByDecade: Object.freeze({ ...state.advanced.ordinaryExcludedGenresByDecade, [contextId]: names }) };
+ return Object.freeze({ ...state, advanced: Object.freeze({ ...state.advanced, ...patch }) });
 }
 
 export function setDecadesGenreExclusionsForContext(state, exclusionsByGenre, contextId = state.genreContextId) {
-	const exclusionsByGenreByDecade = { ...(state.advanced.exclusionsByGenreByDecade ?? {}) };
-	const targetIds = contextDecadeIds(state, contextId);
-	const sharedOwners = contextId === "all" ? sharedDecadesGenreNames(state) : null;
-	for (const decadeId of targetIds) {
-		const owners = sharedOwners ?? state.genreNamesByDecade[decadeId] ?? [];
-		const current = { ...genreExclusionsForDecade(state, decadeId) };
-		for (const owner of owners) {
-			const pruned = pruneGenreExclusionMap({ [owner]: exclusionsByGenre?.[owner] ?? [] }, [owner], state.mediaMode)[owner] ?? [];
-			if (pruned.length > 0) current[owner] = pruned;
-			else delete current[owner];
-		}
-		exclusionsByGenreByDecade[decadeId] = Object.freeze(current);
-	}
-	return Object.freeze({
-		...state,
-		advanced: Object.freeze({
-			...state.advanced,
-			exclusionsByGenreByDecade: Object.freeze(exclusionsByGenreByDecade),
-		}),
-	});
+ const owners = contextId === "all" ? includedDecadesGenreNames(state) : state.genreNamesByDecade[contextId] ?? [];
+ const value = pruneGenreExclusionMap(exclusionsByGenre, owners, state.mediaMode);
+ const patch = contextId === "all" ? { exclusionsByGenre: value } : { exclusionsByGenreByDecade: Object.freeze({ ...state.advanced.exclusionsByGenreByDecade, [contextId]: value }) };
+ return Object.freeze({ ...state, advanced: Object.freeze({ ...state.advanced, ...patch }) });
 }
 
 export function selectedCurrentDecade(state) {

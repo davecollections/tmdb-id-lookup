@@ -7,6 +7,7 @@ import {
 } from "../nuvio/discover.js";
 import { classifyCanonicalDecadePeriod } from "./decades-catalogue.js";
 import { officialGenreReference } from "./genre-catalogue.js";
+import { DISCOVER_CATALOGUE_FILTER_FIELDS, validateAdvancedFilters } from "./advanced-discover.js";
 
 const knownSourceFields = new Set([
 	"filters",
@@ -19,6 +20,7 @@ const knownSourceFields = new Set([
 ]);
 
 const allowedFilterFields = new Set([
+	...DISCOVER_CATALOGUE_FILTER_FIELDS,
 	"releaseDateGte",
 	"releaseDateLte",
 	"voteAverageGte",
@@ -66,6 +68,7 @@ function inspectEffectiveDecadeSource(value, identity) {
 		if (!allowedFilterFields.has(field) && meaningful(fieldValue)) return null;
 	}
 	const period = classifyCanonicalDecadePeriod(value.filters);
+	if (!validateAdvancedFilters(value.filters, mediaType).ok) return null;
 	if (period === null || discoverSortOptionId(effectiveDiscoverSort(value.sortBy), mediaType) === null) return null;
 	if (!validRating(value.filters.voteAverageGte) || !validRating(value.filters.voteAverageLte)) return null;
 	if (

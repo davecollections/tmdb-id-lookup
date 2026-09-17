@@ -230,7 +230,7 @@ test("Configure uses the shared strict-common result and includes generated dupl
 	assert.ok(markup.includes("AU · Popular Series"));
 	assert.ok(markup.includes("Already exists"));
 	assert.ok(markup.includes("This source exists elsewhere"));
-	assert.equal(markup.includes("JustWatch"), false);
+	assert.equal(markup.includes("JustWatch via TMDB"), true);
 });
 
 test("Configure exposes compact independent source-name editing with defaults and inline validation", () => {

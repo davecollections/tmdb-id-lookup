@@ -1,3 +1,4 @@
+import { exactDiscoverPreviewQuery } from "../source-add/advanced-discover.js";
 import { networkPreviewQuery } from "../source-add/network-advanced.js";
 import { studioPreviewQuery } from "../source-add/studio-advanced.js";
 import {
@@ -161,7 +162,8 @@ export function prepareSourceEditPreview(session, draft) {
 			});
 		}
 		case STREAMING_SOURCE_EDITOR_ID:
-			if (discoverSortOptionId(candidateSource.editable.sortBy, draft.mediaType) === null) return freezeFailure(SUPPORTED_SORT_GUIDANCE);
+			if (!exactDiscoverPreviewQuery(discoverDraft(candidateSource))) return freezeFailure("These imported filters cannot be previewed exactly. They will be preserved when you save.");
+            if (discoverSortOptionId(candidateSource.editable.sortBy, draft.mediaType) === null) return freezeFailure(SUPPORTED_SORT_GUIDANCE);
 			return ready(candidateSource, {
 				kind: "streaming",
 				sourceNode: candidateSource,
@@ -171,7 +173,7 @@ export function prepareSourceEditPreview(session, draft) {
 		case GENRE_SOURCE_EDITOR_ID:
 		case DECADE_SOURCE_EDITOR_ID: {
 			const sourceDraft = discoverDraft(candidateSource);
-			if (sourceDraft === null) return freezeFailure(FIX_CURRENT_FIELDS_GUIDANCE);
+			if (sourceDraft === null || !exactDiscoverPreviewQuery(sourceDraft)) return freezeFailure("These imported filters cannot be previewed exactly. They will be preserved when you save.");
 			return ready(candidateSource, {
 				kind: session.adapterId,
 				sourceDraft,

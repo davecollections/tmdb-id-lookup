@@ -24,7 +24,8 @@ import {
 	DecadesAdvancedOptions,
 } from "./DecadesAdvancedOptions.jsx";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
-import { GenreCatalogueList, GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
+import { GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
+import { FamilyGenreRulePills, GenreRuleCard } from "./GenreRuleControls.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
@@ -336,15 +337,16 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 								<SemanticSortChoices options={DECADES_SORT_OPTIONS} selectedIds={sortOptionIds} helper="Choose one or more options. Movies and Series get separate sources." name="decade-source-sort" validationMessageId="decade-source-sort-error" legend="Sources to create" onChange={(value) => { setSortOptionIds(value); setDiagnostic(null); }} fieldsetProps={{ "data-decade-source-control": "sort" }} />
 								<SemanticSortChoices options={decadeOptions} selectedId={decadeId} name="decade-source-decade" legend="Decade" onChange={changeDecade} fieldsetProps={{ "data-decade-source-control": "decade" }} />
 								<DecadePeriodChoices options={yearOptions} selectedIds={periodIds} helper={selectedPreset.id === "1950s-and-earlier" ? "Choose the whole period or any individual years." : "Choose the whole decade or any individual years."} onToggle={togglePeriod} />
-								<fieldset className="decade-source-genre-sources" data-decade-source-control="genres">
-									<legend>Genre sources <span>· optional</span></legend>
+								<div className="decade-source-genre-sources discover-dialog" data-decade-source-control="genres">
+									<GenreRuleCard title="Genre sources · optional">
 									<p className="editor-field-help">Select Genres to add separate genre sources alongside the main decade or year source.</p>
 									{mediaMode === "both" ? <p className="editor-field-help decade-source-genre-eligibility">With Both selected, only Genres available for Movies and Series are shown.</p> : null}
 									<GenreSelectionToolbar selectionCount={genreNames.length} totalCount={genreOptions.length} onSelectAll={() => setSelectedGenres(genreOptions.map((concept) => concept.name))} onClearAll={() => setSelectedGenres([])} clearLabel="Clear" disableSelectAllWhenComplete />
-									<GenreCatalogueList concepts={genreOptions} selection={genreNames} onChoose={toggleGenre} selectionControl="checkbox" className="decade-source-genre-pill-list" showMedia={false} />
+									<FamilyGenreRulePills semantics="include" concepts={genreOptions} selection={genreNames} onChoose={toggleGenre} showMedia={false} />
 									{reconciliationNotice ? <p className="genre-fixed-media-note" role="status">{reconciliationNotice}</p> : null}
-								</fieldset>
-								<DecadesAdvancedOptions value={advanced} exclusionSummary={exclusionCount === 0 ? "No Genre exclusions configured" : `${exclusionCount} Genre exclusion${exclusionCount === 1 ? "" : "s"} configured across generated source choices`} onChange={(value) => { setAdvanced(reconcileAdvanced(value, mediaMode, genreNames)); setDiagnostic(null); }} onOpenSecondary={openSecondary} idPrefix="decade-source-advanced" />
+									</GenreRuleCard>
+								</div>
+								<DecadesAdvancedOptions mediaMode={mediaMode} value={advanced} exclusionSummary={exclusionCount === 0 ? "No Genre exclusions configured" : `${exclusionCount} Genre exclusion${exclusionCount === 1 ? "" : "s"} configured across generated source choices`} onChange={(value) => { setAdvanced(reconcileAdvanced(value, mediaMode, genreNames)); setDiagnostic(null); }} onOpenSecondary={openSecondary} idPrefix="decade-source-advanced" />
 								{built.errors.length > 0 ? <ul className="genre-advanced-errors" role="alert">{built.errors.map((error) => <li id={error.code === "INVALID_DECADE_SOURCE_SORT" ? "decade-source-sort-error" : undefined} key={`${error.code}-${error.path}-${error.message}`}>{error.message}</li>)}</ul> : null}
 								{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 								<DecadeSourceReview drafts={drafts} duplicates={duplicates} sortOptionIds={sortOptionIds} />

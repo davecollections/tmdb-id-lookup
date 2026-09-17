@@ -70,10 +70,10 @@ test("List cards share editor sort labels, retain imported aliases, and never ex
 	}
 });
 
-test("preserved raw filters and fields cannot be mistaken for a fully recognized Genre", () => {
+test("recognized Genre anchors retain the additional-settings notice for preserved raw data", () => {
 	const node = native("DISCOVER", "MOVIE", { filters: { withGenres: "35" } });
 	node.rawImported = { ...node.editable, filters: { withGenres: "35", futureFilter: "private-token" }, futureSetting: false };
-	assert.equal(summary(node), "Discover · Popular movies · Additional settings");
+	assert.equal(summary(node), "Comedy movies · Popular · Additional settings");
 	assert.equal(summary(node).includes("private-token"), false);
 	assert.match(summary(native("DISCOVER", "MOVIE", { filters: { withGenres: {} } })), /Additional settings/);
 });

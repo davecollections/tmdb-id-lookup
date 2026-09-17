@@ -169,7 +169,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
   if (event.key === "Escape" && page !== "filters" && !preview.preview) { event.preventDefault(); event.stopPropagation(); back(); return; }
   handleDialogKeyDown(event, dialogRef.current, onCancel);
  }}>
- <CreationHeader title={editing ? "Edit Discover" : "Create with Discover"} context={contextLabel + (destinationLabel ? " - " + destinationLabel : "")} description={instructions[page]} onBack={back} backDisabled={busy} inactive={secondaryActive} onClose={onCancel}
+ <CreationHeader title={editing ? "Edit Full Discover" : "Create with Discover"} context={contextLabel + (destinationLabel ? " - " + destinationLabel : "")} description={instructions[page]} onBack={back} backDisabled={busy} inactive={secondaryActive} onClose={onCancel}
   actions={<button type="button" className="add-source-header-action discover-help-action" aria-label="How to use Discover" aria-haspopup="dialog" disabled={busy} onClick={(e) => openSecondary("help", e.currentTarget)}>How to use</button>} />
  <form className="add-source-form" onSubmit={submit} noValidate inert={preview.preview ? true : undefined}>
  <div ref={scrollRef} className="add-source-scroll discover-scroll">
@@ -178,16 +178,19 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  {page === "filters" ? <>
   <section className="editor-settings-section discover-source-settings" aria-label="Media and Source orders">
   {editing ? <section className="discover-fixed-media"><h3>Media</h3><p>{draft.mediaType === "TV" ? "Series" : "Movies"}</p></section> : <SemanticSortChoices options={DISCOVER_MEDIA_OPTIONS} selectedId={draft.mediaMode} name="discover-media" legend="Media" onChange={(mediaMode) => change({ ...draft, mediaMode })} />}
-  <SemanticSortChoices options={DISCOVER_SORT_OPTIONS} {...(editing ? { selectedId: draft.sortOptionIds[0], onChange: (id) => change({ ...draft, sortOptionIds: [id] }) } : { selectedIds: draft.sortOptionIds, onChange: (sortOptionIds) => change({ ...draft, sortOptionIds }) })} helper={editing ? null : "Choose one or more options. Each option creates a separate source."} legend={editing ? "Sort titles by" : "Sources to create"} name="discover-sort" />
+  <SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={DISCOVER_SORT_OPTIONS} {...(editing ? { selectedId: draft.sortOptionIds[0], onChange: (id) => change({ ...draft, sortOptionIds: [id] }) } : { selectedIds: draft.sortOptionIds, onChange: (sortOptionIds) => change({ ...draft, sortOptionIds }) })} helper={editing ? null : "Choose one or more options. Each option creates a separate source."} legend={editing ? "Sort titles by" : "Sources to create"} name="discover-sort" />
   {!editing && draft.mediaMode === "both" ? <p className="editor-field-help">Movies and Series use separate sources.</p> : null}
   {!editing && !draft.sortOptionIds.length ? <p className="discover-field-error" role="alert">Choose at least one Source order.</p> : null}
   {editing && !draft.sortOptionIds.length ? <DiscoverNotice>The imported order is preserved until you choose another. Preview needs a supported order.</DiscoverNotice> : null}
   </section>
+  <DiscoverDetailedControls draft={draft} onChange={change} studioProvider={studioProvider} networkProvider={networkProvider} streamingProvider={streamingProvider} namedCodes={namedCodes} errors={filterErrors} {...panelProps}>
+  <DiscoverGenreControls draft={draft} onChange={change} errors={filterErrors} />
   <DiscoverKeywordControls draft={draft} onChange={change} keywordClient={client} catalogueReady={catalogue.status === "ready"} errors={filterErrors} {...panelProps} />
   {catalogue.status === "loading" ? <p role="status">Loading keyword names… Other filters are available.</p> : catalogue.status === "error" ? <DiscoverNotice error>{catalogue.error} <button className="secondary-action" type="button" onClick={() => loadCatalogue(true)}>Retry</button></DiscoverNotice> : catalogue.stale ? <DiscoverNotice>Using saved keyword names from {catalogue.sourceDate} while refresh is unavailable.</DiscoverNotice> : null}
   {nameWarning ? <DiscoverNotice>{nameWarning}</DiscoverNotice> : null}
-  <DiscoverGenreControls draft={draft} onChange={change} errors={filterErrors} />
-  <DiscoverDetailedControls draft={draft} onChange={change} studioProvider={studioProvider} networkProvider={networkProvider} streamingProvider={streamingProvider} namedCodes={namedCodes} errors={filterErrors} {...panelProps} />
+
+
+  </DiscoverDetailedControls>
   {editing ? <div className="editor-field"><label htmlFor="discover-source-name">Source name</label><input id="discover-source-name" type="text" value={draft.title} onChange={(e) => change({ ...draft, title: e.target.value, titleTouched: true })} />{draft.titleTouched && !draft.title?.trim() ? <span className="discover-field-error" role="alert">Enter a Source name.</span> : null}</div> : scope === "add-source" ? <div className="editor-field"><label htmlFor="discover-source-name">Source name</label><input id="discover-source-name" type="text" value={draft.name} onChange={(e) => change({ ...draft, name: e.target.value, nameMode: "custom" })} /></div> : null}
   {draft.previewBlocked ? <DiscoverNotice>Some imported settings disagree or are not supported here. They are preserved, but an exact Preview is unavailable.</DiscoverNotice> : null}
  </> : page === "appearance" ? <>

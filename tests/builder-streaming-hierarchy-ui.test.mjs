@@ -403,7 +403,8 @@ test("Preview is exact, lazy, conditional, bounded, cache-backed, focus-safe, an
 	assert.match(previewProvider, /createTmdbDiscoverPreviewRequester/);
 	assert.match(previewProvider, /cacheTtlMs = TMDB_STREAMING_PREVIEW_CACHE_TTL_MS/);
 	assert.match(previewProvider, /cacheMaxEntries = TMDB_STREAMING_PREVIEW_CACHE_MAX_ENTRIES/);
-	assert.match(previewProvider, /include_adult:\s*"false"/);
+	assert.match(previewProvider, /exactDiscoverPreviewQuery/);
+	assert.match(previewProvider, /\/builder\/discover\/movie/);
 	assert.match(posterGrid, /slice\(0, limit\)/);
 });
 

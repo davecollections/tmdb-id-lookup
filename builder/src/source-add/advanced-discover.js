@@ -1,5 +1,6 @@
 import { buildDiscoverSourceDraft, DISCOVER_FILTER_DESCRIPTORS, DISCOVER_SORT_OPTIONS, discoverSortOptionId, discoverSourceIdentity } from "../nuvio/discover.js";
 import { officialGenreReference } from "./genre-catalogue.js";
+import { inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
 
 export const ADVANCED_DISCOVER_ID = "advanced-discover";
 export const DISCOVER_MEDIA_OPTIONS = Object.freeze([
@@ -16,7 +17,7 @@ export const DISCOVER_FIELD_LABELS = Object.freeze({
  withGenres: "Genres", withoutGenres: "Excluded genres", withKeywords: "Keywords", withoutKeywords: "Excluded keywords",
  withCompanies: "Studios", withoutCompanies: "Excluded studios", withNetworks: "TV networks",
  withWatchProviders: "Providers", withoutWatchProviders: "Excluded providers", watchRegion: "Watch region",
- releaseDateGte: "From date", releaseDateLte: "Through date", year: "Release year",
+ releaseDateGte: "From date", releaseDateLte: "Through date", year: "Year",
  voteAverageGte: "Minimum rating", voteAverageLte: "Maximum rating", voteCountGte: "Minimum votes",
  withOriginalLanguage: "Original language", withOriginCountry: "Origin country",
 });
@@ -24,6 +25,27 @@ const MAX_ID = 2147483647;
 const idFields = DISCOVER_FILTER_DESCRIPTORS.filter((d) => ["id-expression", "single-id"].includes(d.semanticType)).map((d) => d.field);
 const meaningful = (value) => value !== undefined && value !== null && value !== "";
 const error = (field, message) => ({ code: "INVALID_ADVANCED_DISCOVER", path: "$discover." + field, message });
+export const DISCOVER_CATALOGUE_FILTER_FIELDS = Object.freeze([
+ "withKeywords", "withoutKeywords", "withCompanies", "withoutCompanies", "withNetworks",
+ "watchRegion", "withWatchProviders", "withoutWatchProviders",
+]);
+
+// Family adapters supply their concrete anchors after deriving optional media filters.
+// Reject attempted anchor writes, including blank values, rather than hiding them.
+export function compileAnchoredDiscoverFilters(optional, fixed, mediaMode, mediaType, fields) {
+ if (optional === null || typeof optional !== "object" || Array.isArray(optional)) return { ok: false, filters: {}, errors: [error("filters", "Advanced filters must be an object.")] };
+ const errors = [];
+ for (const [field, value] of Object.entries(optional)) {
+  if (!fields.includes(field) || Object.hasOwn(fixed, field)) errors.push(error(field, "This setting is fixed by the selected source."));
+  if (field.startsWith("without") && meaningful(value) && (typeof value !== "string" || value.includes("|"))) errors.push(error(field, "Choose individual exclusions; exclusion matching cannot be changed here."));
+ }
+ // Derivation precedes coupling validation: fixed provider/region and period values
+ // must participate in overlap checks with the optional settings.
+ const derived = deriveAdvancedDiscoverFilters({ filters: { ...optional, ...fixed }, mediaMode }, mediaType);
+ errors.push(...derived.errors);
+ for (const [field, value] of Object.entries(fixed)) if (JSON.stringify(derived.filters[field]) !== JSON.stringify(value)) errors.push(error(field, "The selected source identity cannot be removed or changed."));
+ return { ...derived, ok: errors.length === 0, errors };
+}
 export function createAdvancedDiscoverDraft() {
  return { topic: "", name: "", nameMode: "auto", operators: {}, searches: {}, mediaMode: "movies", sortOptionIds: ["popular"], filters: {}, labels: {}, unresolved: [] };
 }
@@ -59,12 +81,14 @@ export function removeUnavailableDiscoverGenres(draft) {
 }
 export function validateAdvancedFilters(filters, mediaType, { allowUnknown = false, fields = null } = {}) {
  const errors = [], output = {};
+ if (filters === null || typeof filters !== "object" || Array.isArray(filters)) return { ok: false, filters: {}, errors: [error("filters", "Filters must be an object.")] };
  for (const [field, value] of Object.entries(filters ?? {})) {
   if (!meaningful(value)) continue;
   const descriptor = DISCOVER_FILTER_DESCRIPTORS.find((d) => d.field === field);
   if (fields && !fields.includes(field)) { errors.push(error(field, "This filter cannot be edited here.")); continue; }
   if (!descriptor) { if (!allowUnknown) errors.push(error(field, "An imported filter cannot be represented by this editor.")); continue; }
   const label = DISCOVER_FIELD_LABELS[field];
+  if (!["string", "number"].includes(typeof value)) { errors.push(error(field, "Review " + label.toLowerCase() + ".")); continue; }
   if (!descriptor.media[mediaType]?.applicable) { errors.push(error(field, label + " applies to Series only. Choose Series or remove this filter.")); continue; }
   let valid = true, parsed = value;
   if (idFields.includes(field)) valid = validDiscoverExpression(value);
@@ -74,7 +98,7 @@ export function validateAdvancedFilters(filters, mediaType, { allowUnknown = fal
   } else if (["rating", "vote-count", "year"].includes(descriptor.semanticType)) {
    valid = /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(String(value));
    parsed = Number(value);
-   if (descriptor.semanticType === "rating") valid &&= Number.isFinite(parsed) && parsed >= 0 && parsed <= 10;
+   if (descriptor.semanticType === "rating") valid &&= Number.isFinite(parsed) && parsed >= 0 && parsed <= 10 && /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(String(parsed));
    else valid &&= Number.isSafeInteger(parsed) && parsed >= (field === "year" ? 1000 : 0) && parsed <= (field === "year" ? 9999 : MAX_ID);
   } else valid = (field === "withOriginalLanguage" ? /^[a-z]{2}$/ : /^[A-Z]{2}$/).test(value);
   if (!valid) errors.push(error(field, "Review " + label.toLowerCase() + "."));
@@ -156,6 +180,24 @@ export function advancedDiscoverQuery(sourceDraft) {
  for (const [field, value] of Object.entries(result.filters)) queryParameters[DISCOVER_FILTER_DESCRIPTORS.find((d) => d.field === field).media[source.mediaType].requestParameter] = String(value);
  if (result.filters.withWatchProviders) queryParameters.with_watch_monetization_types = "flatrate|free|ads|rent|buy";
  return { mediaType: source.mediaType, queryParameters };
+}
+
+// Inspect raw effective semantics before materialising a detached family query.
+// Equivalent request-style mirrors can be removed only after this inspection.
+export function exactDiscoverPreviewQuery(sourceDraft) {
+ const source = sourceDraft?.editable, filters = source?.filters;
+ if (!filters || typeof filters !== "object" || Array.isArray(filters)) return null;
+ for (const { field, valueType } of DISCOVER_FILTER_DESCRIPTORS) {
+  const value = filters[field];
+  if (!meaningful(value)) continue;
+  if (valueType === "string" ? typeof value !== "string" : !["string", "number"].includes(typeof value)) return null;
+  if (field.startsWith("without") && value.includes("|")) return null;
+ }
+ const mirrors = inspectDiscoverMirrors(source);
+ if (mirrors.unresolved.length) return null;
+ const canonical = { ...filters };
+ for (const alias of mirrors.equivalent) delete canonical[alias];
+ return advancedDiscoverQuery({ ...sourceDraft, editable: { ...source, filters: canonical } });
 }
 export function setDiscoverSelection(draft, field, entry, { remove = false, operator } = {}) {
  if (!remove && discoverSelectionConflict(draft, field, entry.id)) return draft;
