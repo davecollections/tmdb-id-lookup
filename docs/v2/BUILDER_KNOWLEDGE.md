@@ -1,5 +1,13 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Genre artwork and authored Square (#222)
+
+Issue [#222](https://github.com/davecollections/tmdb-id-lookup/issues/222) replaces built-in retired Genre JPG references with the static shared [31-identity/eight-role WebP contract](./BUILDER_GENRES.md#guided-new-collection--new-folder-hierarchy). V1 Genre and V2 Genre creation use Poster/Square/Landscape; generic V2 folder authoring and physical Edit accept Square. Specialized People/Network creation retains Poster/Landscape; Decades artwork integration is deferred. Historical URLs and unknown imported fields remain preserved.
+
+**Confirmed from current Nuvio source code (2026-09-17):** TV `6c79883bdab1b02672c526a6c709f47762f46b9b` models Square and the four artwork fields, validates serialized shape values and round-trips the fields. Mobile `95347544858e31d8cf36569a3b154961276ed46e` and Desktop `48e1ca3a8eb21708031d6dc9c690d6098e07133a` retain the same fields and map case-insensitive square to Square. TV defaults an absent shape to Square, while Mobile/Desktop default to poster; Dingo emits the explicit authored shape. All three default missing focus enablement to true, so Dingo retains its explicit false generated default and never infers enablement from a URL. GPL-3.0 licences were verified; no substantive upstream implementation was copied. Source inspection and browser asset loading do not establish installed Nuvio-client rendering.
+
+The current authoring contract supersedes historical Square-preservation-only notes below.
+
 ## Native Studio/Network rating contract (#216)
 
 **Confirmed from current Nuvio source code:** the accepted [#216 investigation](https://github.com/davecollections/tmdb-id-lookup/issues/216) pins NuvioTV `0db79b6c54e3c33789c17532c97c4b059b667269`, Desktop `ab4fadd97d5658682530721c15bd2877bb39552c` and Mobile `9bc77bc48e0cc4958006657f129190169d831e33`. All declare nullable Double `voteAverageGte` / `voteAverageLte`; COMPANY Movie/TV and NETWORK TV resolvers forward them to `vote_average.gte` / `vote_average.lte`. Native editors expose these controls for Discover, while the persisted native Company/Network contract supports them. Dingo's native authoring is an intentional UI extension supported by that contract. The investigation verified GPL-3.0 licences; implementation is independent and copies no substantive upstream code.

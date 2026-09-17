@@ -73,59 +73,23 @@ export function CollectionTitleVisibilitySwitch({
 	);
 }
 
-export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, posterLabel = "Poster" }) {
-	const posterSelected = isSelected(selectedId, "POSTER");
-	const landscapeSelected = isSelected(selectedId, "LANDSCAPE");
+export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, posterLabel = "Poster", supportedShapes = ["POSTER", "SQUARE", "LANDSCAPE"] }) {
+	const options = [
+		{ id: "POSTER", label: posterLabel, description: "Tall artwork for poster-style folders." },
+		{ id: "SQUARE", label: "Square", description: "Square artwork for compact folder tiles." },
+		{ id: "LANDSCAPE", label: "Landscape", description: "Wide artwork for horizontal folders." },
+	].filter((option) => supportedShapes.includes(option.id));
 	return (
 		<div className="editor-choice-grid editor-shape-choice-grid" data-control-presentation="visual-cards">
-			<label
-				className={`editor-choice editor-shape-choice${posterSelected ? " is-selected" : ""}`}
-				htmlFor={`${idPrefix}-poster-shape`}
-				onClick={(event) => {
-					if (event.target.closest("input")) return;
-					onChange("POSTER");
-				}}
-			>
-				<input
-					className="visually-hidden choice-card-input"
-					id={`${idPrefix}-poster-shape`}
-					type="radio"
-					name={name}
-					value="POSTER"
-					data-editor-choice="poster"
-					checked={posterSelected}
-					onChange={() => onChange("POSTER")}
-				/>
-				<span className="shape-preview is-poster" aria-hidden="true" />
-				<span>
-					<strong>{posterLabel}</strong>
-					<small>Tall artwork for poster-style folders.</small>
-				</span>
-			</label>
-			<label
-				className={`editor-choice editor-shape-choice${landscapeSelected ? " is-selected" : ""}`}
-				htmlFor={`${idPrefix}-landscape-shape`}
-				onClick={(event) => {
-					if (event.target.closest("input")) return;
-					onChange("LANDSCAPE");
-				}}
-			>
-				<input
-					className="visually-hidden choice-card-input"
-					id={`${idPrefix}-landscape-shape`}
-					type="radio"
-					name={name}
-					value="LANDSCAPE"
-					data-editor-choice="landscape"
-					checked={landscapeSelected}
-					onChange={() => onChange("LANDSCAPE")}
-				/>
-				<span className="shape-preview is-landscape" aria-hidden="true" />
-				<span>
-					<strong>Landscape</strong>
-					<small>Wide artwork for horizontal folders.</small>
-				</span>
-			</label>
+			{options.map((option) => {
+				const shape = option.id.toLowerCase();
+				const selected = isSelected(selectedId, option.id);
+				return <label key={option.id} className={`editor-choice editor-shape-choice${selected ? " is-selected" : ""}`} htmlFor={`${idPrefix}-${shape}-shape`}>
+					<input className="visually-hidden choice-card-input" id={`${idPrefix}-${shape}-shape`} type="radio" name={name} value={option.id} data-editor-choice={shape} checked={selected} onChange={() => onChange(option.id)} />
+					<span className={`shape-preview is-${shape}`} aria-hidden="true" />
+					<span><strong>{option.label}</strong><small>{option.description}</small></span>
+				</label>;
+			})}
 		</div>
 	);
 }

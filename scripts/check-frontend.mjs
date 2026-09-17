@@ -1,3 +1,4 @@
+import { GENRE_ARTWORK_SHAPES, resolveGenreArtwork } from "../js/genre-artwork.mjs";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -71,7 +72,7 @@ function checkUnsafeFrontendPatterns() {
 }
 
 function checkCollectionCoverAssetPaths() {
-	const exporterFiles = ["js/genre-nuvio-export.js", "js/bulk-people-nuvio-export.js"];
+	const exporterFiles = ["js/genre-artwork.mjs", "js/bulk-people-nuvio-export.js"];
 	const obsoletePaths = ["assets/collection%20covers/", "assets/collection covers/"];
 	const canonicalPath = "assets/collection_covers/";
 
@@ -330,7 +331,6 @@ function checkNuvioExportSanity() {
 	const companyIds = new Set(readJson("data/companies.min.json").map((company) => String(company.i)));
 	const networkIds = new Set(readJson("data/tv-networks.min.json").map((network) => String(network.i)));
 	const cachedExportSource = readText("js/cached-nuvio-export.js");
-	const genreExportSource = readText("js/genre-nuvio-export.js");
 	const genreRows = parseCsvFile("data/genres.csv");
 	const genreCounts = readJson("data/genre-counts.json").counts || {};
 
@@ -341,17 +341,13 @@ function checkNuvioExportSanity() {
 	assertIdsExist(networkPresetIds, networkIds, "Network selection presets");
 
 	const genreNames = new Set(genreRows.map((row) => row.name));
-	const posterNames = new Set(getObjectKeys(getConstObjectBlock(genreExportSource, "genrePosterArtworkFiles", "js/genre-nuvio-export.js")));
-	const wideNames = new Set(getObjectKeys(getConstObjectBlock(genreExportSource, "genreWideArtworkNames", "js/genre-nuvio-export.js")));
-	const missingPosterNames = [...genreNames].filter((name) => !posterNames.has(name));
-	const missingWideNames = [...genreNames].filter((name) => !wideNames.has(name));
-
-	if (missingPosterNames.length) {
-		failures.push(`Genre poster artwork map missing: ${missingPosterNames.join(", ")}`);
-	}
-
-	if (missingWideNames.length) {
-		failures.push(`Genre wide artwork map missing: ${missingWideNames.join(", ")}`);
+	for (const name of genreNames) {
+		for (const shape of GENRE_ARTWORK_SHAPES) {
+			const artwork = resolveGenreArtwork(name, shape);
+			if (!artwork || Object.values(artwork).some((url) => !url.endsWith(".webp"))) {
+				failures.push(`Genre artwork missing: ${name} / ${shape}`);
+			}
+		}
 	}
 
 	for (const row of genreRows) {

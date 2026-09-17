@@ -40,7 +40,7 @@ const PLAN_OPTION_KEYS = new Set([
 	"source",
 ]);
 const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
-const FOLDER_TILE_SHAPES = new Set(["POSTER", "LANDSCAPE"]);
+const FOLDER_TILE_SHAPES = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 
 function diagnostic(code, path, message) {
@@ -367,7 +367,7 @@ export function createDecadesHierarchyPlan(project, options) {
 	const folderTitleVisibility = options.folderTitleVisibility ?? "SHOW_EVERYWHERE";
 	let collectionTitles = Object.freeze({});
 	let destinationCollection = null;
-	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_DECADES_FOLDER_TILE_SHAPE", "$decadesPlan.folderTileShape", "Decade folders must use the existing Poster or Landscape value."));
+	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_DECADES_FOLDER_TILE_SHAPE", "$decadesPlan.folderTileShape", "Decade folders must use the existing Poster, Square or Landscape value."));
 	if (!FOLDER_TITLE_VISIBILITIES.has(folderTitleVisibility)) errors.push(diagnostic("INVALID_DECADES_FOLDER_TITLE_VISIBILITY", "$decadesPlan.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
 	if (scope === "new-collection" && sourcePlan.ok) {
 		if (sourcePlan.configuration.mediaMode === "both") {

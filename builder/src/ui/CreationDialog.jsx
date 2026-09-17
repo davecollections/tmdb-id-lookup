@@ -164,7 +164,7 @@ function collectionAppearanceSummary({ viewMode, showAllTab, pinToTop }) {
 }
 
 function folderAppearanceSummary({ folderTileShape }) {
-	return folderTileShape === "LANDSCAPE" ? "Landscape" : "Poster";
+	return folderTileShape === "LANDSCAPE" ? "Landscape" : folderTileShape === "SQUARE" ? "Square" : "Poster";
 }
 
 function inheritedCollectionAppearanceSummary(presentation) {

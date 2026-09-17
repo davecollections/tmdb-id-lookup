@@ -163,15 +163,18 @@ test("all 27 Genre concepts can safely expand to the deterministic maximum of 35
 	assert.equal(buildGenreSourceDrafts(GENRE_CONCEPTS.slice().reverse()).ok, true);
 });
 
-test("Genre folder artwork reuses the published V1 wide mapping with a deterministic fallback", () => {
+test("Genre folder artwork reuses the shared canonical WebP mapping with a deterministic fallback", () => {
 	assert.equal(
 		genreWideArtworkUrl("Action & Adventure"),
-		"https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/wide/action_and_adventure%20wide.jpg",
+		"https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/landscape.webp",
 	);
 	assert.deepEqual(buildGenreFolderEditable("Comedy"), {
 		title: "Comedy",
 		tileShape: "LANDSCAPE",
-		coverImageUrl: "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/wide/comedy%20wide.jpg",
+		coverImageUrl: "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/landscape.webp",
+		focusGifUrl: "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/landscape-focus.webp",
+		heroBackdropUrl: "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/hero.webp",
+		titleLogoUrl: "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/title-logo.webp",
 		hideTitle: true,
 		coverEmoji: "",
 	});

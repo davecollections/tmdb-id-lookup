@@ -108,7 +108,7 @@ function ConfigureStep({ networks, exactCounts, outcomes, sortOptionIds, onSortC
 }
 
 function ArtworkChoices({ options, onArtworkChange, disabled }) {
-	return <fieldset className="editor-field editor-choice-field" disabled={disabled}><legend>Folder artwork</legend><FolderShapeChoices selectedId={options.artworkOrientation} name="network-folder-artwork" idPrefix="network-hierarchy" onChange={onArtworkChange} /></fieldset>;
+	return <fieldset className="editor-field editor-choice-field" disabled={disabled}><legend>Folder artwork</legend><FolderShapeChoices supportedShapes={["POSTER", "LANDSCAPE"]} selectedId={options.artworkOrientation} name="network-folder-artwork" idPrefix="network-hierarchy" onChange={onArtworkChange} /></fieldset>;
 }
 
 function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange, diagnostic, headingRef, isPreparing }) {

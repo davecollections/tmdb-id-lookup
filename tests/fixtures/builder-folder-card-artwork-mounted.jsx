@@ -18,6 +18,13 @@ import "../../builder/src/styles.css";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+const imageFailures = [];
+document.addEventListener("error", (event) => {
+	if (!(event.target instanceof HTMLImageElement)) return;
+	const image = event.target;
+	imageFailures.push({ url: image.currentSrc || image.src, identity: image.closest('[data-hierarchy-card="folder"]')?.querySelector('.node-title')?.textContent ?? null, role: image.closest('[data-artwork-preview], [data-artwork-suggestion-preview]')?.dataset ?? "thumbnail", viewport: window.innerWidth });
+}, true);
+
 const DATA_ARTWORK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 const BROKEN_ARTWORK = "/tests/fixtures/missing-folder-card-artwork.webp";
 const ARTWORK_BASE_URL = new URL(window.location.href).searchParams.get("artworkBaseUrl");
@@ -137,7 +144,7 @@ const imported = controller.importValue([{
 		{ id: "none", title: "No artwork", tileShape: "POSTER", sources: [] },
 		{ id: "blank", title: "Blank artwork", tileShape: "POSTER", coverImageUrl: "   ", sources: [] },
 		{ id: "broken", title: "Broken artwork", tileShape: "POSTER", coverImageUrl: BROKEN_ARTWORK, sources: [] },
-		{ id: "unknown", title: "Unsupported shape", tileShape: "SQUARE", coverImageUrl: DATA_ARTWORK, sources: [] },
+		{ id: "unknown", title: "Unsupported shape", tileShape: "FUTURE_SHAPE", coverImageUrl: DATA_ARTWORK, sources: [] },
 		{ id: "hidden", title: "\u200E", tileShape: "POSTER", coverImageUrl: DATA_ARTWORK, sources: [] },
 		{ id: "long", title: "A deliberately long Folder title that must remain readable beside assigned Landscape artwork", tileShape: "LANDSCAPE", coverImageUrl: DATA_ARTWORK, sources: [] },
 		{ id: "arbitrary-origin", title: "Arbitrary origin artwork", tileShape: "LANDSCAPE", coverImageUrl: `${ARTWORK_BASE_URL}/hotlink-sensitive.gif`, sources: [] },
@@ -995,6 +1002,7 @@ async function measureLayout() {
 		selectedState,
 		hiddenAccessibleName: hidden.querySelector(".node-button")?.getAttribute("aria-label"),
 		imageCount: allImages.length,
+		imageFailures: imageFailures.map((failure) => ({ ...failure, role: typeof failure.role === "object" ? { ...failure.role } : failure.role })),
 		allImagesLazy: allImages.every((image) => image.getAttribute("loading") === "lazy"),
 		allImagesAsync: allImages.every((image) => image.getAttribute("decoding") === "async"),
 		allImagesDecorative: allImages.every((image) => image.getAttribute("alt") === ""),
@@ -1093,7 +1101,11 @@ async function settleSuggestedImages(expectedCount) {
 		image.scrollIntoView({ block: "center" });
 		await afterCommittedEffects();
 	}
-	await waitForCondition(() => images.every((image) => image.complete && image.naturalWidth > 0), 20_000);
+	try {
+		await waitForCondition(() => images.every((image) => image.complete && image.naturalWidth > 0), 20_000);
+	} catch (error) {
+		throw new Error(`Suggested artwork failed at ${window.innerWidth}px: ${JSON.stringify(images.filter((image) => !image.complete || !image.naturalWidth).map((image) => ({ url: image.currentSrc || image.src, role: image.closest('[data-artwork-suggestion-preview]')?.dataset.artworkSuggestionPreview })))}; ${error.message}`);
+	}
 	return images;
 }
 
@@ -1153,7 +1165,7 @@ async function inspectSuggestionStates() {
 		["People — blank with curated artwork", "ready", 4],
 		["People — existing custom artwork", "ready", 2],
 		["Network — existing TMDB fallback", "ready", 0],
-		["Genre — curated already assigned", "ready", 0],
+		["Genre — curated already assigned", "ready", 3],
 		["Missing curated asset — requestable", "ready", 3],
 		["Studio — supported orientation", "ready", 1],
 		["Ambiguous — no action", "none", 0],

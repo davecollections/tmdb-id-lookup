@@ -1,0 +1,316 @@
+{
+  "source": "https://raw.githubusercontent.com/davecollections/nuvio-assets/0f911db07e47d610d05cd3fdb7c3889e6423a3ad/assets/collection_covers/genre/manifest.json",
+  "manifestSha256": "be4bc364f1b8b9fffde56078548c79ceb2b4b8d437d48db05a6a02d09022c089",
+  "sets": {
+    "Science Fiction": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/science-fiction/title-logo.webp"
+    },
+    "Horror": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/horror/title-logo.webp"
+    },
+    "Romance": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/romance/title-logo.webp"
+    },
+    "Action": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action/title-logo.webp"
+    },
+    "Action & Adventure": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/action-and-adventure/title-logo.webp"
+    },
+    "Adventure": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/adventure/title-logo.webp"
+    },
+    "Animation": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/animation/title-logo.webp"
+    },
+    "Comedy": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/comedy/title-logo.webp"
+    },
+    "Crime": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/crime/title-logo.webp"
+    },
+    "Disaster": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/disaster/title-logo.webp"
+    },
+    "Documentary": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/documentary/title-logo.webp"
+    },
+    "Drama": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/drama/title-logo.webp"
+    },
+    "Family": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/family/title-logo.webp"
+    },
+    "Fantasy": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/fantasy/title-logo.webp"
+    },
+    "History": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/history/title-logo.webp"
+    },
+    "Kids": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/kids/title-logo.webp"
+    },
+    "Music": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/music/title-logo.webp"
+    },
+    "Musicals": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/musicals/title-logo.webp"
+    },
+    "Mystery": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/mystery/title-logo.webp"
+    },
+    "News": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/news/title-logo.webp"
+    },
+    "Queer": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/queer/title-logo.webp"
+    },
+    "Reality": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/reality/title-logo.webp"
+    },
+    "Rom Com": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/rom-com/title-logo.webp"
+    },
+    "Sci-Fi & Fantasy": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/sci-fi-and-fantasy/title-logo.webp"
+    },
+    "Soap": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/soap/title-logo.webp"
+    },
+    "Talk": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/talk/title-logo.webp"
+    },
+    "Thriller": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/thriller/title-logo.webp"
+    },
+    "TV Movie": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/tv-movie/title-logo.webp"
+    },
+    "War": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war/title-logo.webp"
+    },
+    "War & Politics": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/war-and-politics/title-logo.webp"
+    },
+    "Western": {
+      "landscape": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/landscape.webp",
+      "focus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/landscape-focus.webp",
+      "square": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/square.webp",
+      "squareFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/square-focus.webp",
+      "poster": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/poster.webp",
+      "posterFocus": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/poster-focus.webp",
+      "hero": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/hero.webp",
+      "titleLogo": "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/western/title-logo.webp"
+    }
+  }
+}

@@ -13,7 +13,7 @@ import {
 
 const editableNodeTypes = new Set(["collection", "folder"]);
 const collectionLayoutValues = new Set(["TABBED_GRID", "ROWS"]);
-const folderShapeValues = new Set(["POSTER", "LANDSCAPE"]);
+const folderShapeValues = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 const folderTitleVisibilityValues = new Set([
 	"SHOW_EVERYWHERE",
 	"HIDE_HOME_SCREEN",
@@ -176,7 +176,7 @@ export function createNodeEditorDraft(node) {
 		node,
 		"tileShape",
 		folderShapeValues,
-		"SQUARE",
+		"FOLLOW_LAYOUT",
 	);
 	const hideTitle = originalBooleanField(node, "hideTitle");
 	const artwork = Object.fromEntries(FOLDER_ARTWORK_TEXT_FIELD_NAMES.map((field) => [field, originalTextField(node, field)]));
@@ -497,6 +497,6 @@ export function folderSiblingTileShapeNotice({
 
 	const consensusShape = otherShapes[0];
 	if (consensusShape === currentDraftShape) return null;
-	const label = consensusShape === "POSTER" ? "Poster" : "Landscape";
+	const label = consensusShape === "POSTER" ? "Poster" : consensusShape === "SQUARE" ? "Square" : "Landscape";
 	return `Other folders in this collection use ${label} tiles.`;
 }

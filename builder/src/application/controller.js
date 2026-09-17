@@ -74,7 +74,7 @@ const stringPresentationFields = new Set([
 	"focusGifUrl",
 ]);
 const collectionViewModes = new Set(["TABBED_GRID", "ROWS"]);
-const folderTileShapes = new Set(["POSTER", "LANDSCAPE"]);
+const folderTileShapes = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 
 /**
  * @typedef {{code: string, path: string, message: string}} Diagnostic

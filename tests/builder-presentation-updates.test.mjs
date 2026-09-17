@@ -291,7 +291,7 @@ test("presentation values are strict while the intentional invisible title remai
 		["collection", collectionA, "showAllTab", "false"],
 		["collection", collectionA, "pinToTop", null],
 		["collection", collectionA, "backdropImageUrl", undefined],
-		["folder", folderA, "tileShape", "SQUARE"],
+		["folder", folderA, "tileShape", "FUTURE"],
 		["folder", folderA, "hideTitle", 0],
 		["folder", folderA, "focusGifEnabled", null],
 		["folder", folderA, "coverImageUrl", false],

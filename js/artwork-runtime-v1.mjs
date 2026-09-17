@@ -1,3 +1,4 @@
+import { resolveGenreArtwork } from "./genre-artwork.mjs";
 import {
 	ARTWORK_ENTITY_TYPES,
 	ARTWORK_ORIENTATIONS,
@@ -52,4 +53,5 @@ export function installV1ArtworkRuntimeBridge(target = globalThis, bridge = crea
 
 if (typeof window !== "undefined" && window.document) {
 	installV1ArtworkRuntimeBridge(window);
+	Object.defineProperty(window, "nuvioGenreArtwork", { value: resolveGenreArtwork });
 }
