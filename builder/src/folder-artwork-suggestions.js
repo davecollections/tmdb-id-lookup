@@ -4,6 +4,7 @@ import {
 	ARTWORK_RESULT_STATUSES,
 	expectedArtworkPath,
 } from "../../js/artwork-runtime.mjs";
+import { DECADES_ARTWORK_SHAPES, resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "./source-add/decades-folder-artwork.js";
 import { GENRE_ARTWORK_SHAPES, resolveGenreArtwork } from "./source-add/genre-folder-artwork.js";
 import { GENRE_COMPOSITE_PLACEMENT_RULES } from "./source-add/genre-hierarchy-structures.js";
 import { networkSourceIdentity } from "./source-add/network-source.js";
@@ -19,6 +20,7 @@ export const FOLDER_ARTWORK_AUTHORITIES = Object.freeze({
 	STUDIO: "studio",
 	NETWORK: "network",
 	GENRE: "genre",
+	DECADES: "decades",
 });
 
 export const FOLDER_ARTWORK_CLASSIFICATIONS = Object.freeze({
@@ -40,6 +42,7 @@ const REQUEST_REPOSITORIES = Object.freeze({
 	[FOLDER_ARTWORK_AUTHORITIES.STUDIO]: "davecollections/nuvio-assets",
 	[FOLDER_ARTWORK_AUTHORITIES.NETWORK]: "davecollections/nuvio-assets",
 	[FOLDER_ARTWORK_AUTHORITIES.GENRE]: "davecollections/nuvio-assets",
+	[FOLDER_ARTWORK_AUTHORITIES.DECADES]: "davecollections/nuvio-assets",
 });
 
 const AUTHORITY_LABELS = Object.freeze({
@@ -135,6 +138,11 @@ export function resolveFolderArtworkIdentity(folder) {
 	const networkId = exactSharedTmdbId(sources, networkSourceIdentity);
 	if (networkId !== null) {
 		return Object.freeze({ authority: FOLDER_ARTWORK_AUTHORITIES.NETWORK, tmdbId: networkId, key: `network:${networkId}` });
+	}
+
+	const decade = resolveDecadesArtworkIdentity(sources);
+	if (decade !== null) {
+		return Object.freeze({ authority: FOLDER_ARTWORK_AUTHORITIES.DECADES, ...decade, key: `decades:${decade.decadeId}:${decade.variant}` });
 	}
 
 	const genreName = exactGenreConcept(sources);
@@ -364,6 +372,19 @@ export function loadGenreSuggestions(identity) {
 	});
 }
 
+function loadDecadesSuggestions(identity) {
+	const curated = emptyCuratedFields();
+	for (const tileShape of DECADES_ARTWORK_SHAPES) {
+		const artwork = resolveDecadesArtwork(identity.decadeId, identity.variant, tileShape);
+		if (artwork === null) continue;
+		curated.coverImageUrl[tileShape] = artwork.coverImageUrl;
+		curated.focusGifUrl[tileShape] = artwork.focusGifUrl;
+		curated.heroBackdropUrl = artwork.heroBackdropUrl;
+		curated.titleLogoUrl = artwork.titleLogoUrl;
+	}
+	return freezeSuggestionSet(identity, curated, { repository: REQUEST_REPOSITORIES[identity.authority] });
+}
+
 export async function loadFolderArtworkSuggestions({
 	folder,
 	peopleManifestClient = null,
@@ -383,6 +404,7 @@ export async function loadFolderArtworkSuggestions({
 	if (identity.authority === FOLDER_ARTWORK_AUTHORITIES.NETWORK) {
 		return loadNetworkSuggestions(identity, artworkRuntimeClient, networkCatalogueProvider);
 	}
+	if (identity.authority === FOLDER_ARTWORK_AUTHORITIES.DECADES) return loadDecadesSuggestions(identity);
 	return loadGenreSuggestions(identity);
 }
 

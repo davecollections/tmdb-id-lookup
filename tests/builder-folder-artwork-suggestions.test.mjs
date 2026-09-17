@@ -1,3 +1,4 @@
+import { buildCanonicalDecadePeriodDrafts } from "../builder/src/source-add/decades-source.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -178,17 +179,13 @@ test("Genre identity reuses official concepts and the existing composite placeme
 	}])), null);
 });
 
-test("unsupported Franchise, Decade, and Streaming source families produce no identity or suggestion", async () => {
+test("unsupported Franchise and Streaming source families produce no identity or suggestion", async () => {
 	const franchise = buildMovieFranchiseSourceDraft({ id: 123, name: "Official Collection" }).draft;
-	const decade = {
-		category: "native-tmdb",
-		editable: { title: "1980s", provider: "tmdb", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "MOVIE", sortBy: "popularity.desc", filters: { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31" } },
-	};
 	const streaming = {
 		category: "native-tmdb",
 		editable: { title: "Netflix", provider: "tmdb", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "TV", sortBy: "popularity.desc", filters: { watchRegion: "AU", withWatchProviders: "8" } },
 	};
-	for (const draft of [franchise, decade, streaming]) {
+	for (const draft of [franchise, streaming]) {
 		const candidateFolder = folder(sourcesFromDrafts([draft]));
 		assert.equal(resolveFolderArtworkIdentity(candidateFolder), null);
 		assert.equal(await loadFolderArtworkSuggestions({ folder: candidateFolder }), null);
@@ -936,4 +933,36 @@ test("issue #142 owner-review project round-trips exact artwork, identities, sib
 		...collection,
 		folders: collection.folders.map(({ catalogSources, ...entry }) => entry),
 	})), reviewValue);
+});
+
+
+test("Decades suggestions recognize renamed canonical period bundles, including rich filters and reopened nulls", async () => {
+	for (const [periodIds, decadeId] of [[["before-1950", "year-1950", "year-1959", "1950s-and-earlier"], "1950s-and-earlier"], [["year-1980", "year-1989", "1980s"], "1980s"]]) {
+		const drafts = periodIds.flatMap((periodId) => [null, "Comedy"].flatMap((genreName) => buildCanonicalDecadePeriodDrafts({ periodId, genreName, mediaMode: "both", sortOptionIds: ["popular", "recent"], advanced: { filters: { withKeywords: "15097|9715", withCompanies: "3", withNetworks: "213", watchRegion: "AU", withWatchProviders: "8" } } }).drafts));
+		const controller = createBuilderController();
+		assert.equal(controller.importValue([{ id: "c", title: "Renamed collection", folders: [{ id: "f", title: "Renamed folder", sources: drafts.map((d) => ({ ...d.editable, title: "Renamed source", filters: { year: null, ...d.editable.filters } })) }] }]).ok, true);
+		const candidate = controller.getState().project.collections[0].folders[0];
+		const before = controller.serializeProject().value;
+		assert.deepEqual(resolveFolderArtworkIdentity(candidate), { authority: "decades", decadeId, variant: "mixed", key: `decades:${decadeId}:mixed` });
+		assert.ok(await loadFolderArtworkSuggestions({ folder: candidate }));
+		assert.deepEqual(controller.serializeProject().value, before);
+	}
+});
+
+test("Decades artwork declines every ambiguous or unsupported effective source without widening classification", async () => {
+	const draft = buildCanonicalDecadePeriodDrafts({ periodId: "1980s", mediaMode: "movies" }).drafts[0];
+	const source = sourcesFromDrafts([draft])[0];
+	const changed = (patch) => ({ ...source, editable: { ...source.editable, filters: { ...source.editable.filters, ...patch } } });
+	const otherDecade = sourcesFromDrafts(buildCanonicalDecadePeriodDrafts({ periodId: "year-1990", mediaMode: "movies" }).drafts)[0];
+	for (const sources of [[], [source, otherDecade], [source, { ...source, category: "opaque" }], [source, { ...source, category: "addon" }],
+		[source, sourcesFromDrafts(studioDrafts())[0]], [changed({ releaseDateGte: "1982-02-01" })], [changed({ withGenres: "35|18" })],
+		[changed({ year: 1982 })], [changed({ withKeywords: { unknown: true } })],
+		[{ ...source, rawImported: { ...source.editable, filters: { ...source.editable.filters, "primary_release_date.gte": "1990-01-01" } } }],
+		[{ ...source, rawImported: { ...source.editable, filters: { ...source.editable.filters, futureRule: 1 } } }],
+		[{ ...source, rawImported: { ...source.editable, futureRule: 1 } }],
+	]) {
+		const candidate = folder(sources, { title: "1980s", coverImageUrl: "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/decades/1980s/movies/poster.webp" });
+		assert.equal(resolveFolderArtworkIdentity(candidate), null);
+		assert.equal(await loadFolderArtworkSuggestions({ folder: candidate }), null);
+	}
 });

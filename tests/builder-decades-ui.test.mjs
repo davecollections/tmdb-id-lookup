@@ -10,6 +10,7 @@ import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
 import { discoverSourceIdentity } from "../builder/src/nuvio/discover.js";
 import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
+import { resolveDecadesArtwork } from "../builder/src/source-add/decades-folder-artwork.js";
 import {
 	applyDecadesHierarchyPlan,
 	buildDecadesPreviewGroups,
@@ -891,7 +892,7 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 		showAllTab: true,
 	});
 	assert.equal(plan.plan.configuration.showAllTab, true);
-	assert.deepEqual(plan.plan.collections[0].folders[0].editable, { title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true });
+	assert.deepEqual(plan.plan.collections[0].folders[0].editable, { ...resolveDecadesArtwork("2020s", "mixed", "LANDSCAPE"), title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true });
 });
 
 test("canonical Decade sources select the Decade editor before Genre and retain fixed structure on save", () => {

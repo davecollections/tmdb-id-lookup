@@ -1,3 +1,4 @@
+import { resolveDecadesArtwork } from "../builder/src/source-add/decades-folder-artwork.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -74,7 +75,7 @@ test("New Collection Movies and Series plans use deterministic names, folders, s
 		assert.equal(result.plan.collections[0].editable.title, title);
 		assert.equal(result.plan.collections[0].editable.viewMode, "ROWS");
 		assert.equal(result.plan.collections[0].editable.showAllTab, true);
-		assert.deepEqual(result.plan.collections[0].folders[0].editable, { title: "1980s", tileShape: "POSTER", hideTitle: false });
+		assert.deepEqual(result.plan.collections[0].folders[0].editable, { ...resolveDecadesArtwork("1980s", mediaMode), title: "1980s", tileShape: "POSTER", hideTitle: false });
 		assert.equal(result.plan.collections[0].folders[0].sources[0].draft.editable.title, sourceTitle);
 	}
 });
@@ -125,8 +126,8 @@ test("New Collection applies one selected collection and folder appearance confi
 			showAllTab: false,
 		});
 		assert.deepEqual(collection.folders.map((folder) => folder.editable), [
-			{ title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true },
-			{ title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true },
+			{ ...resolveDecadesArtwork("1980s", collection.role, "LANDSCAPE"), title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true },
+			{ ...resolveDecadesArtwork("1990s", collection.role, "LANDSCAPE"), title: NUVIO_INVISIBLE_TITLE, tileShape: "LANDSCAPE", hideTitle: true },
 		]);
 	}
 	const applied = applyDecadesHierarchyPlan(current, result.plan);
