@@ -5611,9 +5611,11 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9497,Voyo (BiH),2,,BA,,https://www.themoviedb.org/network/9497
 9498,Voyo (SRB),1,,,,https://www.themoviedb.org/network/9498
 9499,Sky Max,0,,,,https://www.themoviedb.org/network/9499
-9500,KOCOWA,1,"Los Angeles, California",US,https://www.kocowa.com,https://www.themoviedb.org/network/9500
+9500,KOCOWA,1,"Los Angeles, California",US,,https://www.themoviedb.org/network/9500
 9501,TV Nova,1,,,,https://www.themoviedb.org/network/9501
 9502,tving,0,,,,https://www.themoviedb.org/network/9502
-9503,Relay,0,,,https://pickrelay.com,https://www.themoviedb.org/network/9503
+9503,Relay,0,,,,https://www.themoviedb.org/network/9503
 9504,UnivaleTV,1,,,,https://www.themoviedb.org/network/9504
 9505,原神官网,1,,,,https://www.themoviedb.org/network/9505
+9506,Charana TV,0,"Colombo, Western Province",LK,https://www.charanatv.lk,https://www.themoviedb.org/network/9506
+9507,VTV8,1,,VN,,https://www.themoviedb.org/network/9507

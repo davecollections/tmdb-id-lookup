@@ -4,104 +4,85 @@
     "mode": "collect",
     "status": "completed",
     "reason": null,
-    "source_audit_date": "2026-09-16T13:28:49.416Z",
+    "source_audit_date": "2026-09-17T13:25:08.124Z",
     "audit_freshness": {
-      "audited_at": "2026-09-16T13:28:49.416Z",
-      "age_hours": 0.013340833333333333,
+      "audited_at": "2026-09-17T13:25:08.124Z",
+      "age_hours": 0.011237777777777777,
       "max_age_hours": 36,
       "export_month": "2026-09",
-      "export_fingerprint": "sha256:5146e81dfba1f8398aac8da2801ab45ea4c8df075872c2afc565777a768aa121"
+      "export_fingerprint": "sha256:aa26e3249d585391535631217f942967fa3cc0ed8d35cdbce396215c96f05dfc"
     },
     "month": "2026-09",
-    "export_fingerprint": "sha256:5146e81dfba1f8398aac8da2801ab45ea4c8df075872c2afc565777a768aa121",
+    "export_fingerprint": "sha256:aa26e3249d585391535631217f942967fa3cc0ed8d35cdbce396215c96f05dfc",
     "parser_semantic_version": "1.0.0",
     "binding_error": null,
     "max_repair_ids": 200,
     "cap": {
       "maximum": 200,
-      "requested": 8,
+      "requested": 2,
       "exceeded": false
     },
-    "requested_repair_count": 8,
+    "requested_repair_count": 2,
     "missing_requested": [
-      9499,
-      9500,
-      9501,
-      9502,
-      9503,
-      9504,
-      9505
+      9506,
+      9507
     ],
-    "missing_requested_count": 7,
-    "extra_requested": [
-      9075
-    ],
-    "extra_requested_count": 1,
+    "missing_requested_count": 2,
+    "extra_requested": [],
+    "extra_requested_count": 0,
     "processed_missing": [
-      9499,
-      9500,
-      9501,
-      9502,
-      9503,
-      9504,
-      9505
+      9506,
+      9507
     ],
-    "processed_missing_count": 7,
-    "processed_repair_count": 8,
+    "processed_missing_count": 2,
+    "processed_repair_count": 2,
     "added": [
-      9499,
-      9500,
-      9501,
-      9502,
-      9503,
-      9504,
-      9505
+      9506,
+      9507
     ],
-    "added_count": 7,
-    "removed": [
-      9075
-    ],
-    "removed_count": 1,
+    "added_count": 2,
+    "removed": [],
+    "removed_count": 0,
     "not_found": [],
     "not_found_count": 0,
     "failed": [],
     "failed_count": 0,
     "request_plan": {
-      "details_requests": 7,
-      "discover_requests": 7,
-      "base_requests": 14
+      "details_requests": 2,
+      "discover_requests": 2,
+      "base_requests": 4
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "35102190345-1-cache-repair",
-      "reservation_sha256": "f3b6da3ccc934f742553b1690a72040d8ccef7b8e40ba1be62e643cce3fa7574",
-      "utc_date": "2026-09-16",
+      "reservation_id": "35226953789-1-cache-repair",
+      "reservation_sha256": "a256057b63f1ae41138b8bcf399e9c05a9bbe40c4236857c0c643e03f704c45c",
+      "utc_date": "2026-09-17",
       "planned_month": "2026-09",
       "workflow": "Daily Capped Repair Cache From Audit",
-      "run_id": "35102190345",
+      "run_id": "35226953789",
       "run_attempt": "1",
       "job": "repair-network",
       "allocation_key": "network_repair",
       "request_class": "network-repair",
       "target_dimension": "network-series",
       "allowance": 2000,
-      "attempts_used": 14,
-      "unused_allowance": 1986,
-      "first_attempt_at": "2026-09-16T13:29:37.461Z",
-      "last_attempt_at": "2026-09-16T13:29:39.529Z",
+      "attempts_used": 4,
+      "unused_allowance": 1996,
+      "first_attempt_at": "2026-09-17T13:25:48.624Z",
+      "last_attempt_at": "2026-09-17T13:25:49.243Z",
       "by_host": {
-        "api.themoviedb.org": 14,
+        "api.themoviedb.org": 4,
         "files.tmdb.org": 0
       },
       "by_status_or_outcome": {
-        "200": 14
+        "200": 4
       },
       "retries": 0
     },
-    "total_cached": 5618,
+    "total_cached": 5620,
     "skipped": false,
-    "started_at": "2026-09-16T13:29:37.442Z",
-    "finished_at": "2026-09-16T13:29:39.766Z",
+    "started_at": "2026-09-17T13:25:48.579Z",
+    "finished_at": "2026-09-17T13:25:49.477Z",
     "network_count_retry": {
       "candidates": 0,
       "selected": 0,

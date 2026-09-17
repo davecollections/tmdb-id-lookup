@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "reservation_id": "35226953789-1-cache-repair",
+  "reservation_sha256": "a256057b63f1ae41138b8bcf399e9c05a9bbe40c4236857c0c643e03f704c45c",
+  "utc_date": "2026-09-17",
+  "planned_month": "2026-09",
+  "workflow": "Daily Capped Repair Cache From Audit",
+  "run_id": "35226953789",
+  "run_attempt": "1",
+  "job": "repair-network",
+  "allocation_key": "network_repair",
+  "request_class": "network-repair",
+  "target_dimension": "network-series",
+  "allowance": 2000,
+  "attempts_used": 4,
+  "unused_allowance": 1996,
+  "first_attempt_at": "2026-09-17T13:25:48.624Z",
+  "last_attempt_at": "2026-09-17T13:25:49.243Z",
+  "by_host": {
+    "api.themoviedb.org": 4,
+    "files.tmdb.org": 0
+  },
+  "by_status_or_outcome": {
+    "200": 4
+  },
+  "retries": 0,
+  "month": "2026-09",
+  "dimension": "network-series",
+  "target_fingerprint": "sha256:aa26e3249d585391535631217f942967fa3cc0ed8d35cdbce396215c96f05dfc"
+}
