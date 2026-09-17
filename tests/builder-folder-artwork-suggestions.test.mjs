@@ -355,7 +355,7 @@ test("Genre suggestions use the existing exact static artwork authority", async 
 	});
 	assert.equal(folderArtworkSuggestionForField(suggestionSet, "coverImageUrl", "POSTER"), genreArtworkUrl("Comedy", "POSTER"));
 	assert.equal(folderArtworkSuggestionForField(suggestionSet, "coverImageUrl", "LANDSCAPE"), genreArtworkUrl("Comedy", "LANDSCAPE"));
-	assert.equal(folderArtworkSuggestionForField(suggestionSet, "heroBackdropUrl", "LANDSCAPE"), null);
+	assert.match(folderArtworkSuggestionForField(suggestionSet, "heroBackdropUrl", "LANDSCAPE"), /genre\/comedy\/hero\.webp$/);
 });
 
 test("classification is exact per resolved authority and treats arbitrary TMDB URLs conservatively", async () => {
@@ -711,7 +711,7 @@ test("sibling shape notice requires explicit touch and one exact saved sibling c
 	assert.equal(folderSiblingTileShapeNotice({ ...base, currentDraftShape: "POSTER", siblingFolders: [sibling("a", "POSTER")] }), null);
 	assert.equal(folderSiblingTileShapeNotice({ ...base, siblingFolders: [sibling("a", "POSTER"), sibling("b", "LANDSCAPE")] }), null);
 	assert.equal(folderSiblingTileShapeNotice({ ...base, siblingFolders: [sibling(currentFolderInternalId, "POSTER")] }), null);
-	assert.equal(folderSiblingTileShapeNotice({ ...base, siblingFolders: [sibling("a", "SQUARE")] }), null);
+	assert.equal(folderSiblingTileShapeNotice({ ...base, siblingFolders: [sibling("a", "SQUARE")] }), "Other folders in this collection use Square tiles.");
 });
 
 test("automatic Tile and Focus counterpart switching stays draft-only, Cancel restores saved data, and Apply saves all fields once", async () => {

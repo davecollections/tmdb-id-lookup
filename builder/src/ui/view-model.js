@@ -82,6 +82,7 @@ function assignedTileArtworkUrl(value) {
 function tileArtworkShape(value) {
 	if (typeof value !== "string") return "unknown";
 	const normalized = value.toUpperCase();
+	if (normalized === "SQUARE") return "square";
 	if (normalized === "POSTER") return "poster";
 	if (normalized === "LANDSCAPE") return "landscape";
 	return "unknown";
@@ -128,6 +129,7 @@ function buildFolder(folder, selectedInternalId) {
 	const tileArtworkUrl = assignedTileArtworkUrl(folder.editable.coverImageUrl);
 	const tileShape = friendlyChoice(folder.editable.tileShape, {
 		POSTER: "Poster",
+		SQUARE: "Square",
 		LANDSCAPE: "Landscape",
 	});
 	const hideTitle = supportedBoolean(folder.editable.hideTitle);

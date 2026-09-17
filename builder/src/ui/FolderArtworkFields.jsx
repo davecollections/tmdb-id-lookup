@@ -12,6 +12,7 @@ import { ExactImageUrlField } from "./ExactImageUrlField.jsx";
 function previewShape(preview, tileShape) {
 	if (preview === "backdrop") return "wide";
 	if (preview === "logo") return "logo";
+	if (tileShape === "SQUARE") return "square";
 	if (tileShape === "POSTER") return "poster";
 	if (tileShape === "LANDSCAPE") return "landscape";
 	return "unknown";

@@ -2107,6 +2107,13 @@ details.nuvio-modal-section[open] {
 	object-position: center;
 }
 
+.genre-export-preview .genre-preview-square {
+	width: 180px;
+	height: 180px;
+	aspect-ratio: 1;
+	object-fit: contain;
+}
+
 .genre-export-preview .genre-preview-landscape {
 	width: 240px;
 	height: auto;

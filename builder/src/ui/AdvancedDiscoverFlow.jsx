@@ -44,7 +44,7 @@ function ArtworkSummary({ artwork }) {
  const fields = [["coverImageUrl", "Tile"], ["heroBackdropUrl", "Backdrop"], ["titleLogoUrl", "Title logo"], ["focusGifUrl", artwork.focusGifEnabled ? "Focus GIF (shown)" : "Focus GIF (hidden)"]];
  const chosen = fields.filter(([field]) => artwork[field]?.trim());
  return <div className="discover-review-artwork">
-  <p className="editor-field-help">{artwork.tileShape === "LANDSCAPE" ? "Landscape" : "Poster"} · Focus GIF: {artwork.focusGifEnabled ? "On" : "Off"}{artwork.focusGifEnabled && !artwork.focusGifUrl?.trim() ? " (no URL)" : ""}</p>
+  <p className="editor-field-help">{artwork.tileShape === "LANDSCAPE" ? "Landscape" : artwork.tileShape === "SQUARE" ? "Square" : "Poster"} · Focus GIF: {artwork.focusGifEnabled ? "On" : "Off"}{artwork.focusGifEnabled && !artwork.focusGifUrl?.trim() ? " (no URL)" : ""}</p>
   {chosen.map(([field, label]) => <figure key={field}><img src={artwork[field]} alt={label + " artwork"} referrerPolicy="no-referrer" loading="lazy" /><figcaption>{label}</figcaption></figure>)}
  </div>;
 }

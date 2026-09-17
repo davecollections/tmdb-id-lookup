@@ -129,7 +129,7 @@ test("Genre hierarchy applies every canonical Folder title outcome independently
 		assert.equal(editable.title, title);
 		assert.equal(editable.hideTitle, hideTitle);
 		assert.equal(editable.tileShape, "LANDSCAPE");
-		assert.match(editable.coverImageUrl, /genre\/wide\/comedy%20wide\.jpg$/);
+		assert.match(editable.coverImageUrl, /genre\/comedy\/landscape\.webp$/);
 	}
 });
 
@@ -155,14 +155,15 @@ test("all 27 official Genre concepts have explicit published Landscape and Poste
 	for (const concept of GENRE_CONCEPTS) {
 		const landscapeUrl = genreArtworkUrl(concept.name, "LANDSCAPE");
 		const posterUrl = genreArtworkUrl(concept.name, "POSTER");
-		assert.match(landscapeUrl, /\/genre\/wide\/.+\.jpg$/i, `${concept.name} Landscape`);
-		assert.match(posterUrl, /\/genre\/vertical\/.+\.jpg$/i, `${concept.name} Poster`);
+		assert.match(landscapeUrl, /\/genre\/[^/]+\/landscape\.webp$/i, `${concept.name} Landscape`);
+		assert.match(posterUrl, /\/genre\/[^/]+\/poster\.webp$/i, `${concept.name} Poster`);
 		assert.equal(buildGenreFolderEditable(concept.name).tileShape, "LANDSCAPE", `${concept.name} Add Source default`);
 	}
-	assert.match(genreArtworkUrl("Action & Adventure", "POSTER"), /\/action_and_adventure\.jpg$/);
-	assert.match(genreArtworkUrl("Sci-Fi & Fantasy", "POSTER"), /\/sci-fi_and_fantasy\.jpg$/);
-	assert.match(genreArtworkUrl("Science Fiction", "POSTER"), /\/Sci-Fi\.jpg$/);
-	assert.equal(genreArtworkUrl("Musicals", "POSTER"), null, "asset-only concepts do not expand the official catalogue");
+	assert.match(genreArtworkUrl("Action & Adventure", "POSTER"), /\/action-and-adventure\/poster\.webp$/);
+	assert.match(genreArtworkUrl("Sci-Fi & Fantasy", "POSTER"), /\/sci-fi-and-fantasy\/poster\.webp$/);
+	assert.match(genreArtworkUrl("Science Fiction", "POSTER"), /\/science-fiction\/poster\.webp$/);
+	assert.match(genreArtworkUrl("Musicals", "POSTER"), /musicals\/poster\.webp$/);
+	assert.equal(GENRE_CONCEPTS.some((concept) => concept.name === "Musicals"), false, "artwork does not expand the official catalogue");
 });
 
 test("Poster is one batch-safe hierarchy choice while Add Source remains Landscape", () => {
@@ -178,11 +179,11 @@ test("Poster is one batch-safe hierarchy choice while Add Source remains Landsca
 	assert.equal(result.plan.configuration.folderTileShape, "POSTER");
 	for (const folder of result.plan.collections[0].folders) {
 		assert.equal(folder.editable.tileShape, "POSTER");
-		assert.match(folder.editable.coverImageUrl, /\/genre\/vertical\/.+\.jpg$/i);
+		assert.match(folder.editable.coverImageUrl, /\/genre\/[^/]+\/poster\.webp$/i);
 	}
 	assert.equal(buildGenreFolderEditable("Science Fiction").tileShape, "LANDSCAPE");
-	assert.match(buildGenreFolderEditable("Science Fiction").coverImageUrl, /\/genre\/wide\/science%20fiction%20wide\.jpg$/);
-	assert.equal(createGenreHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, genres: ["Horror"], folderTileShape: "SQUARE" }).ok, false);
+	assert.match(buildGenreFolderEditable("Science Fiction").coverImageUrl, /\/genre\/science-fiction\/landscape\.webp$/);
+	assert.equal(createGenreHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, genres: ["Horror"], folderTileShape: "SQUARE" }).ok, true);
 });
 
 test("Rows preserves the compatibility All-tab value while Tabs retains its explicit choice", () => {

@@ -151,7 +151,7 @@ export function createGenreHierarchyPlan(project, options) {
 		errors.push(diagnostic("INVALID_GENRE_HIERARCHY_FOLDER_TITLE_VISIBILITY", "$genreHierarchy.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
 	}
 	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) {
-		errors.push(diagnostic("INVALID_GENRE_HIERARCHY_FOLDER_TILE_SHAPE", "$genreHierarchy.folderTileShape", "Choose Poster or Landscape Genre artwork."));
+		errors.push(diagnostic("INVALID_GENRE_HIERARCHY_FOLDER_TILE_SHAPE", "$genreHierarchy.folderTileShape", "Choose Poster, Square or Landscape Genre artwork."));
 	}
 	if (structure === "media-folders") folderTitleVisibility = "SHOW_EVERYWHERE";
 

@@ -1,64 +1,4 @@
 const genreBackdropImageUrl = "https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/backdrops/genre/genre%20hero%20backdrop.jpg";
-const genrePosterArtworkFiles = {
-	Action: "Action",
-	"Action & Adventure": "action_and_adventure",
-	Adventure: "Adventure",
-	Animation: "Animation",
-	Comedy: "Comedy",
-	Crime: "crime",
-	Documentary: "Documentary",
-	Drama: "Drama",
-	Family: "family",
-	Fantasy: "Fantasy",
-	History: "history",
-	Horror: "Horror",
-	Kids: "kids",
-	Music: "Music",
-	Musicals: "Musical",
-	Mystery: "Mystery",
-	News: "news",
-	Reality: "reality",
-	Romance: "Romance",
-	"Science Fiction": "Sci-Fi",
-	"Sci-Fi & Fantasy": "sci-fi_and_fantasy",
-	Soap: "soap",
-	Talk: "talk",
-	Thriller: "Thriller",
-	"TV Movie": "tv movie",
-	War: "War",
-	"War & Politics": "war_and_politics",
-	Western: "Western",
-};
-const genreWideArtworkNames = {
-	Action: "action wide",
-	"Action & Adventure": "action_and_adventure wide",
-	Adventure: "adventure wide",
-	Animation: "animation wide",
-	Comedy: "comedy wide",
-	Crime: "crime wide",
-	Documentary: "documentary wide",
-	Drama: "drama wide",
-	Family: "family wide",
-	Fantasy: "fantasy wide",
-	History: "history wide",
-	Horror: "horror wide",
-	Kids: "kids wide",
-	Music: "music wide",
-	Musicals: "musicals wide",
-	Mystery: "mystery wide",
-	News: "news wide",
-	Reality: "reality wide",
-	Romance: "romance wide",
-	"Science Fiction": "science fiction wide",
-	"Sci-Fi & Fantasy": "sci-fi_and_fantasy wide",
-	Soap: "soap wide",
-	Talk: "talk wide",
-	Thriller: "thriller wide",
-	"TV Movie": "tv movie wide",
-	War: "war wide",
-	"War & Politics": "war_and_politics wide",
-	Western: "western wide",
-};
 const genreSpecialMergeRules = {
 	"Action & Adventure": ["Action", "Adventure"],
 	"Sci-Fi & Fantasy": ["Science Fiction", "Fantasy"],
@@ -69,23 +9,8 @@ const genreCuratedListSort = "vote_average.desc";
 const genreDefaultCollectionNames = new Set(["Genres", "Movie Genre", "TV Series Genre"]);
 let genreNuvioExportCache = null;
 
-function getGenreArtworkName(genreName, tileShape) {
-	const map = tileShape === "LANDSCAPE" ? genreWideArtworkNames : genrePosterArtworkFiles;
-
-	return map[genreName] || "";
-}
-
 function getGenreArtworkUrl(genreName, tileShape) {
-	const artworkName = getGenreArtworkName(genreName, tileShape);
-
-	if (!artworkName) {
-		return "";
-	}
-
-	const encodedName = encodeURIComponent(artworkName).replace(/%20/g, "%20");
-	const artworkFolder = tileShape === "LANDSCAPE" ? "wide" : "vertical";
-
-	return `https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/${artworkFolder}/${encodedName}.jpg`;
+	return window.nuvioGenreArtwork(genreName, tileShape)?.coverImageUrl ?? "";
 }
 
 function getGenreNuvioOptions() {
@@ -316,7 +241,8 @@ function createGenreNuvioJson() {
 	const folders = [...folderMap.entries()]
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([folderName, sources]) => {
-			const coverImageUrl = getGenreArtworkUrl(folderName, options.tileShape);
+			const artwork = window.nuvioGenreArtwork(folderName, options.tileShape);
+			const coverImageUrl = artwork?.coverImageUrl ?? "";
 
 			return {
 				id: idFactory.create("folder"),
@@ -325,13 +251,13 @@ function createGenreNuvioJson() {
 				hideTitle: Boolean(coverImageUrl),
 				tileShape: options.tileShape,
 				coverEmoji: coverImageUrl ? "" : "\uD83C\uDFAC",
-				focusGifUrl: "",
+				focusGifUrl: artwork?.focusGifUrl ?? "",
 				heroVideoUrl: "",
-				titleLogoUrl: "",
+				titleLogoUrl: artwork?.titleLogoUrl ?? "",
 				coverImageUrl,
 				catalogSources: [],
 				focusGifEnabled: false,
-				heroBackdropUrl: "",
+				heroBackdropUrl: artwork?.heroBackdropUrl ?? "",
 			};
 		});
 
@@ -357,10 +283,11 @@ function updateGenreArtworkPreview() {
 	const firstFolderName = [...folderMap.keys()].find((folderName) => getGenreArtworkUrl(folderName, options.tileShape));
 	const artworkUrl = firstFolderName ? getGenreArtworkUrl(firstFolderName, options.tileShape) : "";
 
-	modal.classList.toggle("genre-modal-poster", options.tileShape !== "LANDSCAPE");
+	modal.classList.toggle("genre-modal-poster", options.tileShape === "POSTER");
 	modal.classList.toggle("genre-modal-wide", options.tileShape === "LANDSCAPE");
 	preview.classList.toggle("genre-preview-landscape", options.tileShape === "LANDSCAPE");
-	preview.classList.toggle("genre-preview-poster", options.tileShape !== "LANDSCAPE");
+	preview.classList.toggle("genre-preview-poster", options.tileShape === "POSTER");
+	preview.classList.toggle("genre-preview-square", options.tileShape === "SQUARE");
 	preview.hidden = !artworkUrl;
 	preview.src = artworkUrl;
 }

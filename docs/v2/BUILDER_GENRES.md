@@ -62,7 +62,7 @@ Every generated source is native TMDB `DISCOVER`, has explicit `tmdbId: null`, o
 
 **Add all to this folder** is the default because the flow begins from that folder's Add Source action. It is the only destination for one selected Genre; destination controls appear only for multi-Genre selections. It uses one `controller.addSourcesToFolder` call for missing or explicitly approved candidates and never changes the folder's title, artwork, tile shape, hidden-title state, emoji, order, or other presentation.
 
-**One folder per genre** creates one sibling folder for each ready Genre inside the selected folder's parent collection. The two destination cards are compact title-only choices; the section heading supplies their context. A paired Genre's Movie and Series sources stay together in that one folder. Each generated folder uses the exact Genre title, `LANDSCAPE`, and the existing published V1 wide Genre artwork mapping with `hideTitle: true`. An unmapped future Genre falls back to a visible title plus 🎬. Artwork lookup is static and non-blocking. One `controller.createFoldersWithSources` call creates every approved folder and source atomically.
+**One folder per genre** creates one sibling folder for each ready Genre inside the selected folder's parent collection. The two destination cards are compact title-only choices; the section heading supplies their context. A paired Genre's Movie and Series sources stay together in that one folder. Each generated folder uses the exact Genre title, `LANDSCAPE`, and the shared canonical Landscape WebP artwork mapping with `hideTitle: true`. An unmapped future Genre falls back to a visible title plus 🎬. Artwork lookup is static and non-blocking. One `controller.createFoldersWithSources` call creates every approved folder and source atomically.
 
 Folder mode has one deliberately narrow startup cleanup. If the destination is the original generated `Untitled Folder`, it is removed in the same successful controller transaction as the final planned Genre folders. The predicate requires the exact generated blank-folder shape: direct child of the destination collection, empty, non-imported, exact default title/ID/presentation keys and values, and no custom artwork, emoji, hero, or extra editable field. Renamed, restyled, populated, imported, and otherwise customized folders are preserved. If final duplicate planning produces no new folders, the placeholder is preserved and no content revision advances. This is not a generic merge/copy or folder-promotion primitive.
 
@@ -85,41 +85,19 @@ Each Structure option uses the established visual-choice-card language: first-ti
 
 Only Genre folders exposes the focused V1 product precedent: `Action & Adventure` may stay standalone or target selected Action/Adventure folders, `Sci-Fi & Fantasy` may target selected Science Fiction/Fantasy folders, and `War & Politics` may target selected War. Merged sources become self-describing (`Action & Adventure Series`, etc.). **Add to both** deliberately plans two ordinary Source nodes with the same functional recipe under the two selected target folders; it is not a global identity relaxation. In New Folder, a target must itself be created in the reviewed atomic plan. An already represented/omitted target is unavailable with an explanation because the current controller cannot atomically append there while creating other bundles; standalone remains safe.
 
-Duplicate semantics follow Structure. Genre folders retains complete/partial logical-folder omission. Separate Movie & Series Genre folders omits only the exact physical source/folder. Movies & Series folders performs exact per-source omission and creates only nonempty aggregate folders, with the omission surfaced in plan outcomes. New Collection matches remain informational/addable. New Folder preserves the parent presentation and existing Untitled folders byte-for-byte. Appearance defaults to a visible `Genres` collection using Tabs, Show All on, Pin off, **Landscape** Genre artwork, and **Hide on home screen only** titles where folders represent canonical Genres. Poster/Landscape remains one batch-safe choice; Movies & Series folders use only its tile shape and safe fallback.
+Duplicate semantics follow Structure. Genre folders retains complete/partial logical-folder omission. Separate Movie & Series Genre folders omits only the exact physical source/folder. Movies & Series folders performs exact per-source omission and creates only nonempty aggregate folders, with the omission surfaced in plan outcomes. New Collection matches remain informational/addable. New Folder preserves the parent presentation and existing Untitled folders byte-for-byte. Appearance defaults to a visible `Genres` collection using Tabs, Show All on, Pin off, **Landscape** Genre artwork, and **Hide on home screen only** titles where folders represent canonical Genres. Poster/Square/Landscape remains one batch-safe choice; Movies & Series folders use only its tile shape and safe fallback.
 
-The official 27-concept artwork mapping is explicit because filenames are not mechanically canonical:
+The static shared mapping in `js/genre-artwork.mjs` is derived from the [published Genre manifest](https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/genre/manifest.json), pinned to release `0f911db07e47d610d05cd3fdb7c3889e6423a3ad`. Its 31 exact name-to-slug identities supply 248 WebP assets without a runtime manifest request. Source catalogue membership remains the same 27 official concepts; artwork-only Disaster, Musicals, Queer and Rom Com do not add source choices. Music/Musicals, Science Fiction/Sci-Fi & Fantasy, Action/Action & Adventure and War/War & Politics remain distinct.
 
-| Canonical Genre | Landscape filename stem | Poster filename stem |
+| Shape | Cover | Focus |
 | --- | --- | --- |
-| Action | `action wide` | `Action` |
-| Action & Adventure | `action_and_adventure wide` | `action_and_adventure` |
-| Adventure | `adventure wide` | `Adventure` |
-| Animation | `animation wide` | `Animation` |
-| Comedy | `comedy wide` | `Comedy` |
-| Crime | `crime wide` | `crime` |
-| Documentary | `documentary wide` | `Documentary` |
-| Drama | `drama wide` | `Drama` |
-| Family | `family wide` | `family` |
-| Fantasy | `fantasy wide` | `Fantasy` |
-| History | `history wide` | `history` |
-| Horror | `horror wide` | `Horror` |
-| Kids | `kids wide` | `kids` |
-| Music | `music wide` | `Music` |
-| Mystery | `mystery wide` | `Mystery` |
-| News | `news wide` | `news` |
-| Reality | `reality wide` | `reality` |
-| Romance | `romance wide` | `Romance` |
-| Sci-Fi & Fantasy | `sci-fi_and_fantasy wide` | `sci-fi_and_fantasy` |
-| Science Fiction | `science fiction wide` | `Sci-Fi` |
-| Soap | `soap wide` | `soap` |
-| Talk | `talk wide` | `talk` |
-| Thriller | `thriller wide` | `Thriller` |
-| TV Movie | `tv movie wide` | `tv movie` |
-| War | `war wide` | `War` |
-| War & Politics | `war_and_politics wide` | `war_and_politics` |
-| Western | `western wide` | `Western` |
+| Poster | `poster.webp` | `poster-focus.webp` |
+| Square | `square.webp` | `square-focus.webp` |
+| Landscape | `landscape.webp` | `landscape-focus.webp` (manifest role `focus`) |
 
-Asset-only names such as Musicals, Disaster, Queer, and Rom Com do not expand the official catalogue.
+Every shape uses the same `hero.webp` and `title-logo.webp` through `heroBackdropUrl` and `titleLogoUrl`. `focusGifUrl` accepts static WebP without enabling focus; generated folders retain the explicit disabled default. Unknown names produce no invented URL. The existing suggestion architecture exposes all eight roles. Shape changes replace each recognized curated cover/focus field independently, leaving custom fields, hero/logo, unknown imported data and focus enablement intact. Exact Genre/media identity also recognizes multiple configured sort variants without changing Source identity or duplicate rules.
+
+Retired JPGs are not restored or aliased. Historical imported/custom URLs remain untouched by shape changes; regeneration or a deliberate artwork edit is required to replace them. New V1/V2 generated Genre folder artwork uses canonical WebP URLs only.
 
 **Preview titles** is explicit and never requested automatically. The exact current physical source draft is the authority: media, Genre ID, concrete sort, all effective authored Advanced values, and that included Genre's compiled `withoutGenres` exclusions are translated through the DISCOVER Core descriptors into media-correct TMDB query parameters. Every outgoing Preview request also explicitly includes canonical `include_adult=false`; this is a Preview transport requirement and does not invent a persisted Nuvio source filter. A paired Genre opens one modal with lazy Movies and Series views; only the initial view is requested until the user switches. Single-media Genres have no pointless tab. Results reuse the global poster-only maximum of 10 at every viewport, phone 5×2 layout, exact `No posters available.` empty state, loading, recoverable error/Retry, Close, and centred focus-contained geometry/restoration. The five-minute bounded success cache uses the complete canonical functional query, including the changed adult-required contract, so any filter, exclusion, media, or sort change produces a distinct identity; errors, aborts, timeouts, malformed responses, and stale completions never cache.
 

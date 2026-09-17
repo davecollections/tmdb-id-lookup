@@ -9,7 +9,7 @@ export const DEFAULT_TMDB_LIST_FOLDER_TITLE_VISIBILITY = "HIDE_HOME_SCREEN";
 export const DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE = "POSTER";
 const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
-const FOLDER_TILE_SHAPES = new Set(["POSTER", "LANDSCAPE"]);
+const FOLDER_TILE_SHAPES = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 function diagnostic(code, path, message) { return Object.freeze({ code, path, message }); }
 function text(value) { return typeof value === "string" ? value.trim() : ""; }
 function plainObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
@@ -31,7 +31,7 @@ export function createTmdbListHierarchyPlan(project, options) {
 	const folderTitleVisibility = options.folderTitleVisibility ?? DEFAULT_TMDB_LIST_FOLDER_TITLE_VISIBILITY;
 	const folderTileShape = options.folderTileShape ?? DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE;
 	if (!FOLDER_TITLE_VISIBILITIES.has(folderTitleVisibility)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE_VISIBILITY", "$tmdbListPlan.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
-	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TILE_SHAPE", "$tmdbListPlan.folderTileShape", "Choose the existing Poster or Landscape folder tile shape."));
+	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TILE_SHAPE", "$tmdbListPlan.folderTileShape", "Choose the existing Poster, Square or Landscape folder tile shape."));
 	if (typeof options.folderTitle !== "string" || (folderTitleVisibility !== "HIDE_EVERYWHERE" && (!isValidVisibleNuvioTitle(options.folderTitle) || options.folderTitle !== text(options.folderTitle)))) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE", "$tmdbListPlan.folderTitle", "Enter a visible folder name."));
 	let hideCollectionTitle = null;
 	let viewMode = null;

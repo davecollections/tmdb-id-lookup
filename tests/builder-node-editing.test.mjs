@@ -566,7 +566,7 @@ test("unusual imported Folder visual values remain opaque until their own fields
 	assert.equal(output.coverImageUrl, null);
 });
 
-test("Follow Layout and Square are preservation-only until deliberate replacement", () => {
+test("Follow Layout is preserved while imported Square is a supported untouched choice", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Collection",
@@ -585,10 +585,10 @@ test("Follow Layout and Square are preservation-only until deliberate replacemen
 
 	assert.equal(collectionDraft.values.viewMode, "");
 	assert.equal(collectionDraft.original.viewMode.status, "preserved");
-	assert.equal(folderDraft.values.tileShape, "");
-	assert.equal(folderDraft.original.tileShape.status, "preserved");
+	assert.equal(folderDraft.values.tileShape, "SQUARE");
+	assert.equal(folderDraft.original.tileShape.status, "supported");
 	assert.equal(JSON.stringify(collectionDraft).includes("FOLLOW_LAYOUT"), false);
-	assert.equal(JSON.stringify(folderDraft).includes("SQUARE"), false);
+	assert.equal(JSON.stringify(folderDraft).includes("SQUARE"), true);
 	assert.deepEqual(buildNodeEditorPatch(changedDraft(collection, { title: "Renamed" })), { title: "Renamed" });
 	assert.deepEqual(
 		buildNodeEditorPatch(updateNodeEditorField(collectionDraft, "viewMode", "ROWS")),
@@ -2256,9 +2256,9 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.equal((markup.match(/data-control-presentation="visual-cards"/g) ?? []).length, 1);
 	const shapeFieldset = markedElement(markup, 'data-editor-field="tileShape"', "fieldset");
 	assert.equal((shapeFieldset.match(/<legend>Tile shape<\/legend>/g) ?? []).length, 1);
-	assert.equal((shapeFieldset.match(/name="node-editor-folder-shape"/g) ?? []).length, 2);
-	assert.equal((shapeFieldset.match(/type="radio"/g) ?? []).length, 2);
-	assert.equal((shapeFieldset.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 2);
+	assert.equal((shapeFieldset.match(/name="node-editor-folder-shape"/g) ?? []).length, 3);
+	assert.equal((shapeFieldset.match(/type="radio"/g) ?? []).length, 3);
+	assert.equal((shapeFieldset.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 3);
 	assert.ok(shapeFieldset.includes('for="node-editor-folder-poster-shape"'));
 	assert.ok(shapeFieldset.includes('id="node-editor-folder-poster-shape"'));
 	assert.ok(shapeFieldset.includes('for="node-editor-folder-landscape-shape"'));
@@ -2375,8 +2375,8 @@ test("folder settings render exact draft artwork previews with safe media defaul
 	const squareFolder = squareController.getState().project.collections[0].folders[0];
 	squareController.selectNode(squareFolder.internalId);
 	const squareMarkup = renderWorkspace(squareController, { draft: createNodeEditorDraft(squareFolder) });
-	assert.ok(openingTag(squareMarkup, 'data-artwork-preview="coverImageUrl"').includes('data-artwork-preview-shape="unknown"'));
-	assert.ok(openingTag(squareMarkup, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-shape="unknown"'));
+	assert.ok(openingTag(squareMarkup, 'data-artwork-preview="coverImageUrl"').includes('data-artwork-preview-shape="square"'));
+	assert.ok(openingTag(squareMarkup, 'data-artwork-preview="focusGifUrl"').includes('data-artwork-preview-shape="square"'));
 });
 
 test("Backdrop Video is opening-state compatibility UI and remains hidden for absent, blank, and unsupported values", () => {
@@ -2548,7 +2548,7 @@ test("Rows keeps the saved All-tab preference enabled, editable, and independent
 	});
 });
 
-test("Follow Layout and Square render bounded replacement guidance and no normal option", () => {
+test("Follow Layout retains replacement guidance and Square renders as a normal checked choice", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Imported collection",
@@ -2586,8 +2586,9 @@ test("Follow Layout and Square render bounded replacement guidance and no normal
 	controller.selectNode(folder.internalId);
 	const folderDraft = createNodeEditorDraft(folder);
 	const folderMarkup = renderWorkspace(controller, { draft: folderDraft });
-	assert.ok(folderMarkup.includes("This imported Square shape is being preserved."));
-	assert.equal(folderMarkup.includes('value="SQUARE"'), false);
+	assert.equal(folderMarkup.includes("This imported Square shape is being preserved."), false);
+	assert.ok(openingTag(folderMarkup, 'data-editor-choice="square"').includes("checked"));
+	assert.equal(folderMarkup.includes('value="SQUARE"'), true);
 	const replacedFolderDraft = updateNodeEditorField(folderDraft, "tileShape", "LANDSCAPE");
 	const replacedFolderMarkup = renderWorkspace(controller, { draft: replacedFolderDraft });
 	assert.equal(

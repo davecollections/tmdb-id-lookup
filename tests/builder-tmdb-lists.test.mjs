@@ -313,7 +313,7 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 	for (const invalid of [
 		{ viewMode: "FOLLOW_LAYOUT" },
 		{ folderTitleVisibility: "HIDDEN" },
-		{ folderTileShape: "SQUARE" },
+		{ folderTileShape: "FUTURE" },
 	]) assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", folderTitle: "Folder", lists: [list(33)], ...invalid }).ok, false);
 });
 
