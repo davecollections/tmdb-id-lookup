@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
+import { collectPagesAssetReferences } from "./pages-asset-references.mjs";
 import { isPagesPublicFilePath, normalizePagesPublicPath, pagesPublicPathContract } from "./pages-public-paths.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -19,7 +20,6 @@ const requiredFiles = [
 	"js/artwork-runtime-v1.mjs",
 	"builder/index.html",
 ];
-const assetExtension = /\.(?:avif|css|gif|ico|jpe?g|js|png|svg|webp|woff2?)(?:[?#].*)?$/i;
 const repositoryOnlyPrefixes = [
 	".github/",
 	"builder/src/",
@@ -163,14 +163,7 @@ if (fs.statSync(stagedBuilderDir, { throwIfNoEntry: false })?.isDirectory()) {
 
 	for (const file of textFiles) {
 		const source = fs.readFileSync(file, "utf8");
-		const references = [
-			...[...source.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map((match) => match[1]),
-			...[...source.matchAll(/url\(["']?([^"')]+)["']?\)/g)].map((match) => match[1]),
-			...[...source.matchAll(/["'`](\.\.?\/[^"'`\s]+)["'`]/g)].map((match) => match[1]),
-			...[...source.matchAll(/["'`]([^"'`:/?#\s]+\.(?:avif|css|gif|ico|jpe?g|js|png|svg|webp|woff2?)(?:[?#][^"'`\s]*)?)["'`]/gi)].map(
-				(match) => match[1],
-			),
-		].filter((reference) => assetExtension.test(reference));
+		const references = collectPagesAssetReferences(source);
 
 		for (const reference of references) {
 			assetReferences.push({ file, reference });
