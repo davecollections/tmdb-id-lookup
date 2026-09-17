@@ -39,7 +39,7 @@ export function createAdvancedDiscoverPlan(project, options) {
   folders = advancedDiscoverFolders(config, drafts);
   for (const entry of folders) {
    if (!isValidVisibleNuvioTitle(entry.title) || entry.title !== entry.title.trim()) return fail("Enter a name for each folder.");
-   if (!["POSTER", "LANDSCAPE"].includes(entry.artwork.tileShape) || artworkFields.some((field) => entry.artwork[field] !== undefined && typeof entry.artwork[field] !== "string") || entry.artwork.focusGifEnabled !== undefined && typeof entry.artwork.focusGifEnabled !== "boolean") return fail("Choose supported folder artwork.");
+   if (!["POSTER", "SQUARE", "LANDSCAPE"].includes(entry.artwork.tileShape) || artworkFields.some((field) => entry.artwork[field] !== undefined && typeof entry.artwork[field] !== "string") || entry.artwork.focusGifEnabled !== undefined && typeof entry.artwork.focusGifEnabled !== "boolean") return fail("Choose supported folder artwork.");
    entry.editable = {
     title: appearance.folderTitleVisibility === "HIDE_EVERYWHERE" ? NUVIO_INVISIBLE_TITLE : entry.title,
     tileShape: entry.artwork.tileShape,

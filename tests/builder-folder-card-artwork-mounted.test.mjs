@@ -500,7 +500,7 @@ test("mounted blank, absent, and broken artwork use the exact text-only card wit
 		brokenUrl: "/tests/fixtures/missing-folder-card-artwork.webp",
 		blankUrl: "   ",
 		absentHasField: false,
-		unsupportedShape: "SQUARE",
+		unsupportedShape: "FUTURE_SHAPE",
 		projectUnchanged: true,
 		serializedUnchanged: true,
 		revisionUnchanged: true,
@@ -516,7 +516,7 @@ test("mounted selected and hidden-title Folder cards retain accessible non-colou
 
 test("mounted 100-plus Folder list uses native lazy/async images without workspace fetches", () => {
 	for (const result of mountedResults.widths) {
-		assert.equal(result.imageCount, 111, `${result.width}px image count`);
+		assert.equal(result.imageCount, 111, `${result.width}px folder-thumbnail scenario; failed artwork: ${JSON.stringify(result.imageFailures)}`);
 		assert.equal(result.allImagesLazy, true, `${result.width}px lazy`);
 		assert.equal(result.allImagesAsync, true, `${result.width}px async`);
 		assert.equal(result.allImagesDecorative, true, `${result.width}px decorative`);
@@ -929,8 +929,8 @@ test("mounted exact-identity blank-only assistance uses live authorities and pre
 	assert.equal(networkFallback.coverValue, "https://image.tmdb.org/t/p/w500/2uy2ZWcplrSObIyt4x0Y9rkG6qO.png");
 
 	assert.equal(genreCurated.state, "ready");
-	assert.deepEqual(genreCurated.fields, []);
-	assert.match(genreCurated.coverValue, /\/genre\/vertical\/Comedy\.jpg$/);
+	assert.deepEqual(genreCurated.fields, ["heroBackdropUrl", "titleLogoUrl", "focusGifUrl"]);
+	assert.match(genreCurated.coverValue, /\/genre\/comedy\/poster\.webp$/);
 	assert.deepEqual(genreCurated.requests, []);
 
 	assert.deepEqual(peopleRequest.fields, ["coverImageUrl", "heroBackdropUrl", "titleLogoUrl"]);

@@ -48,7 +48,7 @@ test("single-choice cards retain hidden native radios and card-level focus", () 
 	const expectedInputs = Object.freeze({
 		"builder/src/ui/ChoiceCards.jsx": 1,
 		"builder/src/ui/CollectionPresentationChoices.jsx": 2,
-		"builder/src/ui/PresentationControls.jsx": 3,
+		"builder/src/ui/PresentationControls.jsx": 2,
 		"builder/src/ui/PeopleSourceFlow.jsx": 1,
 		"builder/src/ui/SourceEditorDialog.jsx": 1,
 		"builder/src/ui/GenreSourceFlow.jsx": 1,

@@ -54,15 +54,15 @@ function ChoiceStatus({ original, kind, replacementPending, statusId }) {
 	if (original.status === "preserved") {
 		message = isLayout
 			? "This imported Follow Layout setting is being preserved. Choose Tabs or Rows only if you want to replace it."
-			: "This imported Square shape is being preserved. Choose Poster or Landscape only if you want to replace it.";
+			: "This imported Follow Layout shape is being preserved. Choose Poster, Square or Landscape only if you want to replace it.";
 	} else if (original.status === "absent") {
 		message = isLayout
 			? "No imported layout choice is set. Choose Tabs or Rows only if you want to add one."
-			: "No imported tile shape is set. Choose Poster or Landscape only if you want to add one.";
+			: "No imported tile shape is set. Choose Poster, Square or Landscape only if you want to add one.";
 	} else {
 		message = isLayout
 			? "The imported layout is not offered here and will be preserved until you choose Tabs or Rows."
-			: "The imported tile shape is not offered here and will be preserved until you choose Poster or Landscape.";
+			: "The imported tile shape is not offered here and will be preserved until you choose Poster, Square or Landscape.";
 	}
 
 	return (
@@ -189,7 +189,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 function FolderPresentationFields({ draft, prefix, missingTileOrientationNotice, siblingNotice, suggestionSet, onChange }) {
 	const posterSelected = isSelected(draft.values.tileShape, "POSTER");
 	const landscapeSelected = isSelected(draft.values.tileShape, "LANDSCAPE");
-	const shapeReplacementPending = draft.touched.tileShape && (posterSelected || landscapeSelected);
+	const shapeReplacementPending = draft.touched.tileShape && (posterSelected || landscapeSelected || isSelected(draft.values.tileShape, "SQUARE"));
 	const missingTileOrientationNoticeId = `${prefix}-shape-curated-orientation-notice`;
 	const siblingNoticeId = `${prefix}-shape-sibling-notice`;
 	const describedBy = [

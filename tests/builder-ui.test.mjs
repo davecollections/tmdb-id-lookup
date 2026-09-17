@@ -193,7 +193,7 @@ test("view model presents only supported collection and folder settings with fri
 		folders: [{
 			id: "unsupported-folder",
 			title: "Unsupported folder",
-			tileShape: "SQUARE",
+			tileShape: "FUTURE_SHAPE",
 			hideTitle: "RAW_HIDE",
 			sources: [],
 		}],

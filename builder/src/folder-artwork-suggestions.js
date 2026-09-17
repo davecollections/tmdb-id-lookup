@@ -4,7 +4,7 @@ import {
 	ARTWORK_RESULT_STATUSES,
 	expectedArtworkPath,
 } from "../../js/artwork-runtime.mjs";
-import { genreArtworkUrl } from "./source-add/genre-folder-artwork.js";
+import { GENRE_ARTWORK_SHAPES, resolveGenreArtwork } from "./source-add/genre-folder-artwork.js";
 import { GENRE_COMPOSITE_PLACEMENT_RULES } from "./source-add/genre-hierarchy-structures.js";
 import { networkSourceIdentity } from "./source-add/network-source.js";
 import { resolvePersonFolderArtwork } from "./source-add/person-folder-artwork.js";
@@ -96,7 +96,10 @@ function exactSharedTmdbId(sources, identityForSource) {
 }
 
 function exactGenreConcept(sources) {
-	const inspected = sources.map((source) => inspectEditableGenreSource(source));
+	const allInspected = sources.map((source) => inspectEditableGenreSource(source));
+	if (allInspected.some((entry) => entry === null)) return null;
+	// Multiple configured sources can share one exact Genre/media artwork identity.
+	const inspected = [...new Map(allInspected.map((entry) => [`${entry.genreName}\u0000${entry.mediaType}`, entry])).values()];
 	if (inspected.some((entry) => entry === null)) return null;
 
 	const pairs = inspected.map((entry) => `${entry.genreName}\u0000${entry.mediaType}`);
@@ -345,11 +348,15 @@ async function loadNetworkSuggestions(identity, artworkRuntimeClient, networkCat
 	});
 }
 
-function loadGenreSuggestions(identity) {
+export function loadGenreSuggestions(identity) {
 	const curated = emptyCuratedFields();
-	for (const tileShape of ["POSTER", "LANDSCAPE"]) {
-		const url = genreArtworkUrl(identity.genreName, tileShape);
-		if (url !== null) curated.coverImageUrl[tileShape] = url;
+	for (const tileShape of GENRE_ARTWORK_SHAPES) {
+		const artwork = resolveGenreArtwork(identity.genreName, tileShape);
+		if (artwork === null) continue;
+		curated.coverImageUrl[tileShape] = artwork.coverImageUrl;
+		curated.focusGifUrl[tileShape] = artwork.focusGifUrl;
+		curated.heroBackdropUrl = artwork.heroBackdropUrl;
+		curated.titleLogoUrl = artwork.titleLogoUrl;
 	}
 	return freezeSuggestionSet(identity, curated, {
 		canonicalName: identity.genreName,
@@ -516,14 +523,14 @@ export function missingCuratedFolderTileOrientationNotice({
 	requestedShape,
 	shapeTouched = false,
 } = {}) {
-	if (!shapeTouched || !["POSTER", "LANDSCAPE"].includes(requestedShape)) return null;
+	if (!shapeTouched || !["POSTER", "SQUARE", "LANDSCAPE"].includes(requestedShape)) return null;
 	const transition = planCuratedFolderTileShapeTransition({
 		suggestionSet,
 		currentTileUrl,
 		requestedShape,
 	});
 	if (!transition.missingRequestedOrientation) return null;
-	const label = requestedShape === "POSTER" ? "Poster" : "Landscape";
+	const label = requestedShape === "POSTER" ? "Poster" : requestedShape === "SQUARE" ? "Square" : "Landscape";
 	return `Curated ${label} artwork isn't available for this folder, so the current tile artwork will be kept.`;
 }
 
@@ -533,13 +540,13 @@ export function missingCuratedFolderFocusOrientationNotice({
 	requestedShape,
 	shapeTouched = false,
 } = {}) {
-	if (!shapeTouched || !["POSTER", "LANDSCAPE"].includes(requestedShape)) return null;
+	if (!shapeTouched || !["POSTER", "SQUARE", "LANDSCAPE"].includes(requestedShape)) return null;
 	const transition = planCuratedFolderFocusShapeTransition({
 		suggestionSet,
 		currentFocusUrl,
 		requestedShape,
 	});
 	if (!transition.missingRequestedOrientation) return null;
-	const label = requestedShape === "POSTER" ? "Poster" : "Landscape";
+	const label = requestedShape === "POSTER" ? "Poster" : requestedShape === "SQUARE" ? "Square" : "Landscape";
 	return `Curated ${label} focus artwork isn't available for this folder, so the current focus artwork will be kept.`;
 }

@@ -463,7 +463,7 @@ export function PeopleFolderAppearance({
 			<fieldset className="editor-field editor-choice-field people-folder-shape-field">
 				<legend>Folder tile shape</legend>
 				<p className="editor-field-help">One shape applies to every generated People folder.</p>
-				<FolderShapeChoices selectedId={tileShape} name="people-folder-shape" idPrefix="people-folder" posterLabel="Poster (recommended)" onChange={onTileShapeChange} />
+				<FolderShapeChoices supportedShapes={["POSTER", "LANDSCAPE"]} selectedId={tileShape} name="people-folder-shape" idPrefix="people-folder" posterLabel="Poster (recommended)" onChange={onTileShapeChange} />
 			</fieldset>
 			<p className="editor-field-help people-folder-artwork-note">Each person’s Hero, Title Logo and Focus artwork will use the canonical People defaults. To customise artwork links later, edit that person’s folder.</p>
 		</section>

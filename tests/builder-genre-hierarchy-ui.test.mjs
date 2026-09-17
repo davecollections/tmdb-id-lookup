@@ -147,8 +147,8 @@ test("Configure reuses semantic pills and explains fixed-media Genres while Appe
 	assert.match(appearance, /Artwork shape/);
 	assert.match(appearance, /<FolderShapeChoices/);
 	assert.match(appearance, /safe Movies\/Series folder fallback/);
-	assert.match(appearance, /vertical/);
-	assert.match(appearance, /wide/);
+	assert.match(appearance, /folderTileShape.toLowerCase\(\)/);
+	assert.match(appearance, /SQUARE/);
 	assert.doesNotMatch(appearance, /fixed Landscape tiles|artwork URL|focus/);
 	assert.doesNotMatch(appearance, /GenreConfigureRow|onRemove|GenreAdvancedOptions/);
 });

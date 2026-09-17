@@ -75,7 +75,7 @@ function importArtworkFolders(controller) {
 			{
 				id: "unsupported-shape",
 				title: "Unsupported shape",
-				tileShape: "SQUARE",
+				tileShape: "FUTURE_SHAPE",
 				coverImageUrl: "https://example.test/unknown-shape.webp",
 				sources: [],
 			},
