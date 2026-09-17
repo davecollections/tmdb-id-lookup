@@ -3765,6 +3765,8 @@ test("mounted family Advanced combines twelve surfaces and responsive disclosure
  for (const result of mountedResults.familyAdvancedCases) {
   assert.ok(result.noImplicitRequests && result.boundedScroll && result.focusRestored);
   if (!result.layoutOnly) assert.ok(result.atomic && result.preservation && result.previews.length);
+  if (!result.layoutOnly && result.scope.startsWith("new-") && ["genre", "decade"].includes(result.family)) assert.equal(result.creationShape, "SQUARE");
+  if (!result.layoutOnly && result.family === "genre" && result.scope === "new-folder") { assert.deepEqual(result.artworkShapes.map(entry => entry.shape), ["POSTER", "LANDSCAPE", "SQUARE"]); assert.ok(result.artworkShapes.every(entry => entry.loaded)); }
  }
 });
 

@@ -32,6 +32,7 @@ import {
 	createPeopleSourceBundle,
 	TMDB_PROXY_BASE_URL,
 } from "../../builder/src/source-add/index.js";
+import { resolveGenreArtwork } from "../../js/genre-artwork.mjs";
 import { sourceEditorFor } from "../../builder/src/source-edit/source-editors.js";
 import {
 	chooseMovieCollection,
@@ -8283,7 +8284,19 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   const cached = document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal');
   await wait(() => !cached.querySelector('.studio-preview-state'), { label: "cached Preview" }); check(requests.length === count, "complete query cache missed"); await click(button(cached, "Close"));
   await click(dialog.querySelector('button[type="submit"]'));
-  for (let stage = 0; !applied && stage < 3; stage++) { await settle(); const submit = dialog.querySelector('button[type="submit"]'); check(submit && !submit.disabled, "Review cannot apply: " + dialog.textContent.slice(-1400)); await click(submit); }
+  for (let stage = 0; !applied && stage < 3; stage++) {
+   await settle();
+   if (guided && ["genre", "decade"].includes(family)) {
+    const shape = dialog.querySelector('input[name="' + (family === "genre" ? 'genre-hierarchy-folder-shape' : 'decades-folder-shape') + '"][value="SQUARE"]');
+    if (shape) {
+     const disclosure = shape.closest('details'); if (disclosure && !disclosure.open) await click(disclosure.querySelector('summary'));
+     await click(shape); check(shape.checked, "Square creation selection failed"); evidence.creationShape = "SQUARE";
+     check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Square creation overflow");
+     shape.closest('fieldset').scrollIntoView({ block: 'center' }); await shot("square-appearance");
+    }
+   }
+   const submit = dialog.querySelector('button[type="submit"]'); check(submit && !submit.disabled, "Review cannot apply: " + dialog.textContent.slice(-1400)); await click(submit);
+  }
   check(applied?.ok && applyCalls === 1, "atomic apply failed: " + JSON.stringify(applied));
   check(controller.getState().revision === initial.revision + 1, "apply used more than one transaction");
   const exported = controller.stringifyProject(); check(exported.ok, "export failed");
@@ -8292,6 +8305,45 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   const authored = sources.filter((source) => source.editable.filters?.withKeywords === "6054"); check(authored.length, "combined filters absent after reopen");
   check(authored.every((source) => source.editable.filters.voteCountGte === 0 && source.editable.filters.withoutCompanies === "3" && source.editable.filters.withoutWatchProviders === String(excludedService.id) && source.editable.filters.year == null), "cleared/combined filters changed on reopen");
   if (editing) check(JSON.stringify(authored[0].rawImported.ownerExtra) === JSON.stringify(seed.ownerExtra), "unknown imported source field lost");
+  if (guided && ["genre", "decade"].includes(family)) {
+   const generated = reopened.getState().project.collections.flatMap(collection => collection.folders).filter(folder => folder.sources.some(source => source.editable.filters?.withKeywords === "6054"));
+   check(evidence.creationShape === "SQUARE" && generated.every(folder => folder.editable.tileShape === "SQUARE"), "Square lost through plan/export/reopen");
+   if (family === "decade") check(generated.every(folder => ["coverImageUrl", "focusGifUrl", "heroBackdropUrl", "titleLogoUrl"].every(field => !folder.editable[field])), "Decades unexpectedly acquired artwork");
+   if (family === "genre" && scope === "new-folder") {
+    const beforeFolderEdit = serializedValue(reopened), target = generated[0];
+    const parent = reopened.getState().project.collections.find(collection => collection.folders.includes(target));
+    reopened.selectNode(parent.internalId);
+    await act(async () => { root.render(createElement(MountedWorkspace, { controller: reopened })); await settle(); });
+    const card = check([...host.querySelectorAll('[data-hierarchy-card="folder"]')].find(card => card.querySelector('.node-title')?.textContent.trim() === target.editable.title), "rich Genre folder card");
+    card.scrollIntoView({ block: "center", behavior: "instant" }); await settle();
+    await wait(() => [...card.querySelectorAll("img")].every(image => image.complete && image.naturalWidth > 0), { label: "real rich Genre folder thumbnail", timeoutMs: 30000 });
+    await settle();
+    await click(check(card.querySelector('[data-action="open-folder-actions"]'), "Folder actions trigger"));
+    await click(check(document.querySelector('[data-actions-menu="folder"]:not([hidden]) [data-action="edit-folder"]'), "Folder Edit action"));
+    const editor = check(document.querySelector('[data-node-editor="folder"]'), "physical Folder Edit");
+    await wait(() => editor.querySelector('[data-folder-artwork-suggestions="ready"]'), { label: "rich Genre artwork suggestions" });
+    evidence.artworkShapes = [];
+    for (const shape of ["POSTER", "LANDSCAPE", "SQUARE"]) {
+     const choice = editor.querySelector('input[name="node-editor-folder-shape"][value="' + shape + '"]');
+     await click(check(choice, "physical shape radio: " + shape)); check(choice.checked, "physical shape selection");
+     const expected = resolveGenreArtwork("Comedy", shape);
+     for (const [field, url] of Object.entries(expected)) {
+      const input = check(editor.querySelector('[data-editor-field="' + field + '"] input'), field);
+      await wait(() => input.value === url, { label: field + " canonical role" });
+      const image = check(editor.querySelector('[data-artwork-preview="' + field + '"] img'), field + " preview");
+      image.scrollIntoView({ block: "center" });
+      await wait(() => image.getAttribute("src") === url && image.complete && image.naturalWidth > 0, { label: "real canonical Genre " + field, timeoutMs: 30000 });
+     }
+     check(!editor.querySelector('[data-editor-field="focusGifEnabled"] input').checked, "shape transition enabled focus");
+     check(serializedValue(reopened) === beforeFolderEdit, "Folder Edit changed saved data before Apply");
+     check(editor.scrollWidth <= editor.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Folder Edit overflow");
+     evidence.artworkShapes.push({ shape, loaded: true, ...expected });
+     choice.closest('fieldset').scrollIntoView({ block: "center" }); await shot("folder-edit-" + shape.toLowerCase());
+    }
+    await click(check(editor.querySelector('[data-action="cancel-node-edit"]'), "Folder Edit Cancel"));
+    check(serializedValue(reopened) === beforeFolderEdit, "Folder Edit Cancel changed rich source or artwork");
+   }
+  }
   evidence.atomic = true; evidence.preservation = true; evidence.reopenedEditors = authored.map((source) => sourceEditorFor(source)?.id); evidence.sourceCount = authored.length;
   return evidence;
  } finally { await act(async () => root.unmount()); host.remove(); }
