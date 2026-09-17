@@ -768,7 +768,12 @@ async function runGenreCreationSecondaryScenario() {
 		await clickAndSettle(buttonContaining(includedPane, "Horror"));
 		await clickAndSettle(buttonContaining(document.querySelector(".genre-source-dialog .discover-genre-pills"), "Comedy"));
 		await clickAndSettle(document.querySelector(".genre-source-dialog .genre-exclusion-mobile-back"));
-		pickerState.backPreservedValue = buttonContaining(includedPane, "Horror")?.textContent.includes("Comedy excluded") ?? false;
+		const backSummaryUpdated = buttonContaining(includedPane, "Horror")?.querySelector("small")?.textContent.trim() === "1 excluded";
+		await clickAndSettle(buttonContaining(includedPane, "Horror"));
+		const comedyStillSelected = document.querySelector('.genre-source-dialog .discover-genre-pills [data-genre-name="Comedy"]')?.getAttribute("aria-pressed") === "true";
+		if (!comedyStillSelected) throw new Error("Comedy exclusion was not preserved after reopening Horror.");
+		pickerState.backPreservedValue = backSummaryUpdated && comedyStillSelected;
+		await clickAndSettle(document.querySelector(".genre-source-dialog .genre-exclusion-mobile-back"));
 		await clickAndSettle(document.querySelector(".genre-source-dialog .genre-secondary-done"));
 		pickerState.mainSummaryUpdated = document.querySelector(".genre-source-dialog .genre-advanced-compact-actions")?.textContent.includes("Exclusions configured for 1 genre") ?? false;
 		pickerState.focusRestored = document.activeElement === exclusionTrigger;
