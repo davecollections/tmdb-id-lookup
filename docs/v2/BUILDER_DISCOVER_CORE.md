@@ -1,5 +1,9 @@
 # V2 DISCOVER Core contract
 
+## Preservation of equivalent mirrors (#220)
+
+The source overlay synchronizes only imported mirrors proven equivalent to their canonical field before editing. Conflicting, inactive or unrelated aliases are not silently normalized by a touched canonical field. Family adapters patch only their touched fields and validate coupled groups against effective untouched partners. Exact Preview inspects unresolved aliases before constructing canonical request fields. The supported Nuvio schema remains unchanged.
+
 ## 1. Status and purpose
 
 Issue [#100](https://github.com/davecollections/tmdb-id-lookup/issues/100) established a thin, internal, non-user-facing V2 contract for native Nuvio/TMDB `DISCOVER` sources. Issue [#106](https://github.com/davecollections/tmdb-id-lookup/issues/106) updates that Core from its original 14-field milestone to the current 18-field persisted contract.

@@ -380,7 +380,7 @@ test("canonical period classification is exact, title-independent and fail-close
 	for (const invalidTmdbId of ["", "   ", "123", 0, false, {}, []]) {
 		assert.equal(inspectCanonicalDecadeSource({ ...rich, tmdbId: invalidTmdbId }), null);
 	}
-	assert.equal(inspectCanonicalDecadeSource({ ...rich, filters: { ...rich.filters, withKeywords: "15097" } }), null);
+	assert.equal(inspectCanonicalDecadeSource({ ...rich, filters: { ...rich.filters, withKeywords: "15097" } }).period.id, "1980s");
 	assert.equal(inspectCanonicalDecadeSource({ ...rich, filters: { ...rich.filters, withGenres: "27,35" } }), null);
 });
 

@@ -1,3 +1,4 @@
+import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -275,6 +276,7 @@ function generatedMediaLabel(mediaType) {
 }
 
 export function StreamingConfigureStep({
+ advanced = { filters: {} }, onAdvancedChange, advancedErrors = [],
 	provider,
 	regions,
 	mediaChoice,
@@ -331,6 +333,8 @@ export function StreamingConfigureStep({
 			</fieldset>
 			{sortOptionIds?.length === 0 ? <p id="streaming-configure-sort-error" role="alert" className="editor-field-error">Choose at least one option.</p> : null}
 			<SemanticSortChoices options={STREAMING_SORT_OPTIONS} selectedIds={sortOptionIds} helper="Choose one or more options. Movies and Series get separate sources." name="streaming-configure-sort" validationMessageId="streaming-configure-sort-error" legend="Sources to create" onChange={onSortChange} />
+			<DiscoverFamilyAdvancedOptions value={advanced} onChange={onAdvancedChange} mediaMode={mediaChoice} fixedFilters={{ watchRegion: regionCodes[0], withWatchProviders: String(provider.id) }} fixedProviderContext={provider.name + " · " + regionCodes.join(" · ") + " · provider and regions stay fixed"} />
+            {advancedErrors.length ? <div role="alert" className="editor-diagnostics">{advancedErrors.map((error, index) => <p key={index}>{error.message}</p>)}</div> : null}
 			{summary.length ? (
 				<section className="streaming-generated-summary" aria-labelledby="streaming-generated-summary-title">
 					<div><div><p className="panel-kicker">Generated sources</p><h4 id="streaming-generated-summary-title">{summary.length} source{summary.length === 1 ? "" : "s"} configured</h4></div><span>{missingCount} to add</span></div>
@@ -398,6 +402,7 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 	const [selectedProvider, setSelectedProvider] = useState(null);
 	const [selectedRegions, setSelectedRegions] = useState([]);
 	const [mediaChoice, setMediaChoice] = useState(null);
+	const [advanced, setAdvanced] = useState({ filters: {} });
 	const [sortOptionIds, setSortOptionIds] = useState([DEFAULT_STREAMING_SORT_OPTION_ID]);
 	const soleSortBeforeEmptyRef = useRef(null);
 	const [sourceTitleDrafts, setSourceTitleDrafts] = useState({});
@@ -438,10 +443,10 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 	}, [catalogue, effectiveProviderBrowseMode, providerQuery, selectedRegions]);
 	const regions = useMemo(() => browseStreamingRegions(catalogue?.regions ?? [], { mode: regionBrowseMode, query: regionQuery }), [catalogue, regionBrowseMode, regionQuery]);
 	const baseDraftResult = selectedProvider && regionCodes.length && mediaChoice
-		? buildStreamingSourceDrafts(selectedProvider, { regionCodes, mediaChoice, sortOptionIds })
+		? buildStreamingSourceDrafts(selectedProvider, { advanced, regionCodes, mediaChoice, sortOptionIds })
 		: { ok: false, drafts: [], errors: [] };
 	const draftResult = selectedProvider && regionCodes.length && mediaChoice
-		? buildStreamingSourceDrafts(selectedProvider, { regionCodes, mediaChoice, sortOptionIds, sourceTitles })
+		? buildStreamingSourceDrafts(selectedProvider, { advanced, regionCodes, mediaChoice, sortOptionIds, sourceTitles })
 		: { ok: false, drafts: [], errors: [] };
 	const duplicateReview = baseDraftResult.ok
 		? inspectStreamingSourceDuplicates(project, folder?.internalId ?? null, baseDraftResult.drafts)
@@ -476,8 +481,8 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 
 	useEffect(() => {
 		if (catalogueState.status !== "success") return;
-		if (step === STREAMING_SOURCE_STEPS.REGION && navigation.restoreRegionCode === null) focusElementWithoutScroll(regionQueryRef.current);
-		if (step === STREAMING_SOURCE_STEPS.PROVIDER && navigation.restoreProviderId === null) focusElementWithoutScroll(providerQueryRef.current);
+		if ((step === STREAMING_SOURCE_STEPS.REGION && navigation.restoreRegionCode === null)
+			|| (step === STREAMING_SOURCE_STEPS.PROVIDER && navigation.restoreProviderId === null)) focusElementWithoutScroll(dialogRef.current);
 	}, [catalogueState.status, navigation.restoreProviderId, navigation.restoreRegionCode, step]);
 
 	useEffect(() => {
@@ -554,6 +559,7 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 				provider: selectedProvider,
 				regions: selectedRegions,
 				catalogueRegions: catalogue.regions,
+                advanced,
 				mediaChoice,
 				sortOptionIds,
 				drafts: draftResult.drafts,
@@ -657,8 +663,8 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 								<StreamingProviderStep browseMode={effectiveProviderBrowseMode} query={providerQuery} queryRef={providerQueryRef} providers={providers} selectedRegions={selectedRegions} onBrowseModeChange={setProviderBrowseMode} onQueryChange={(event) => setProviderQuery(event.target.value)} onSelect={selectProvider} />
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
-									<StreamingConfigureStep provider={selectedProvider} regions={selectedRegions} mediaChoice={mediaChoice} sortOptionIds={sortOptionIds} drafts={baseDraftResult.drafts} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} expandedCandidateKey={expandedCandidateKey} sourceTitles={sourceTitles} titleErrors={titleErrors} onMediaChange={(choiceId) => {
-										const next = buildStreamingSourceDrafts(selectedProvider, { regionCodes, mediaChoice: choiceId, sortOptionIds });
+									<StreamingConfigureStep advanced={advanced} onAdvancedChange={setAdvanced} advancedErrors={baseDraftResult.errors} provider={selectedProvider} regions={selectedRegions} mediaChoice={mediaChoice} sortOptionIds={sortOptionIds} drafts={baseDraftResult.drafts} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} expandedCandidateKey={expandedCandidateKey} sourceTitles={sourceTitles} titleErrors={titleErrors} onMediaChange={(choiceId) => {
+										const next = buildStreamingSourceDrafts(selectedProvider, { advanced, regionCodes, mediaChoice: choiceId, sortOptionIds });
 										setMediaChoice(choiceId);
 										if (expandedCandidateKey && !next.drafts.some((draft) => streamingSourceCandidateKey(draft.editable.filters.watchRegion, draft.editable.mediaType, sourceDraftSortId(draft)) === expandedCandidateKey)) setExpandedCandidateKey(null);
 										setApplyDiagnostic(null);

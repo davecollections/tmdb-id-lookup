@@ -85,8 +85,8 @@ test("Genre Preview derives the exact media-correct TMDB query from the reviewed
 	});
 	assert.equal((await provider.getGenrePreview(movie)).ok, true);
 	assert.equal((await provider.getGenrePreview(series)).ok, true);
-	assert.equal(urls[0].pathname, "/3/discover/movie");
-	assert.equal(urls[1].pathname, "/3/discover/tv");
+	assert.equal(urls[0].pathname, "/builder/discover/movie");
+	assert.equal(urls[1].pathname, "/builder/discover/tv");
 	for (const [key, value] of Object.entries(genrePreviewQueryFromDraft(movie).queryParameters)) assert.equal(urls[0].searchParams.get(key), value);
 	for (const [key, value] of Object.entries(genrePreviewQueryFromDraft(series).queryParameters)) assert.equal(urls[1].searchParams.get(key), value);
 });

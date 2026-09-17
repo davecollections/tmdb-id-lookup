@@ -12,6 +12,12 @@ export const NATIVE_EXTRA_GROUPS = Object.freeze([
 export const NATIVE_EXTRA_FIELDS = Object.freeze(NATIVE_EXTRA_GROUPS.flat());
 export const NATIVE_ADVANCED_FIELDS = Object.freeze(["voteCountGte", "voteAverageGte", "voteAverageLte", ...NATIVE_EXTRA_FIELDS]);
 export const NATIVE_GENRE_FIELDS = NATIVE_EXTRA_GROUPS[2];
+export const DISCOVER_ADVANCED_GROUPS = Object.freeze([
+ Object.freeze(["voteCountGte"]), Object.freeze(["voteAverageGte", "voteAverageLte"]),
+ ...NATIVE_EXTRA_GROUPS,
+ Object.freeze(["withCompanies", "withoutCompanies"]), Object.freeze(["withNetworks"]),
+ Object.freeze(["watchRegion", "withWatchProviders", "withoutWatchProviders"]),
+]);
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const pick = (value, fields) => Object.fromEntries(fields.filter((field) => Object.hasOwn(value ?? {}, field)).map((field) => [field, value[field]]));
 const error = (field, message) => ({ code: "INVALID_NATIVE_ADVANCED", path: "$discover." + field, message });
@@ -19,9 +25,11 @@ const error = (field, message) => ({ code: "INVALID_NATIVE_ADVANCED", path: "$di
 // The existing Discover validator owns grammar and coupled-field semantics.
 function validateGroup(filters, mediaType, fields) {
  const values = pick(filters, fields);
+ if (fields.includes("voteAverageGte")) return validateRatingBounds(values, mediaType);
+ if (fields.includes("voteCountGte")) return validateMinimumVotesFilters(values, mediaType);
  const errors = Object.entries(values).flatMap(([field, value]) => {
   if (value === undefined || value === null || value === "") return [];
-  if (field === "year" ? !["string", "number"].includes(typeof value) : typeof value !== "string") return [error(field, "This setting must use a supported scalar value.")];
+  if (field === "year" || field.startsWith("vote") ? !["string", "number"].includes(typeof value) : typeof value !== "string") return [error(field, "This setting must use a supported scalar value.")];
   if (field.startsWith("without") && value.includes("|")) return [error(field, "These imported exclusions must be preserved; new exclusions use a comma list.")];
   return [];
  });
@@ -52,10 +60,10 @@ export function deriveNativeAdvancedFilters(filters = {}, mediaType, mediaMode) 
  return { ...validated, ok: !errors.length, errors, information: derived.information };
 }
 
-export function inspectNativeExtraFilters(source) {
+export function inspectNativeExtraFilters(source, groups = NATIVE_EXTRA_GROUPS) {
  const effective = resolveEffectiveDiscoverSource(source);
  const editable = {}, filters = {};
- for (const fields of NATIVE_EXTRA_GROUPS) {
+ for (const fields of groups) {
   const value = effective.ok ? effective.value : null;
   const result = value ? validateGroup(value.filters, value.mediaType.trim().toUpperCase(), fields) : { ok: false, filters: {} };
   const safe = result.ok && !inspectDiscoverMirrors(value).unresolved.some((entry) => fields.includes(entry.field));
@@ -65,10 +73,10 @@ export function inspectNativeExtraFilters(source) {
  return { filters, editable };
 }
 
-export function validateNativeExtraEdit(source, draft) {
- const effective = resolveEffectiveDiscoverSource(source), inspected = inspectNativeExtraFilters(source);
+export function validateNativeExtraEdit(source, draft, groups = NATIVE_EXTRA_GROUPS) {
+ const effective = resolveEffectiveDiscoverSource(source), inspected = inspectNativeExtraFilters(source, groups);
  const filters = {}, errors = [];
- for (const fields of NATIVE_EXTRA_GROUPS) {
+ for (const fields of groups) {
   if (!fields.some((field) => draft.touchedFilters.includes(field))) continue;
   if (!effective.ok || fields.some((field) => !inspected.editable[field])) { errors.push(error(fields[0], "These imported settings must be preserved.")); continue; }
   const values = pick(effective.value.filters, fields);
@@ -81,10 +89,10 @@ export function validateNativeExtraEdit(source, draft) {
  return { ok: !errors.length, filters, errors };
 }
 
-export function ownedNativeExtraMirrorSource(original) {
+export function ownedNativeExtraMirrorSource(original, fields = NATIVE_EXTRA_FIELDS) {
  const filters = { ...original.filters }, equivalent = inspectDiscoverMirrors(original).equivalent;
  for (const [alias, field] of Object.entries(discoverImportedMirrors(original.mediaType))) {
-  if (NATIVE_EXTRA_FIELDS.includes(field) && !equivalent.includes(alias)) delete filters[alias];
+  if (fields.includes(field) && !equivalent.includes(alias)) delete filters[alias];
  }
  return { ...original, filters };
 }

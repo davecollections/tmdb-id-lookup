@@ -345,7 +345,8 @@ test("Streaming Edit recognition fails closed for compound, filtered, unknown an
 	]);
 	assert.equal(sourceEditorFor(folder.sources[0]).id, STREAMING_SOURCE_EDITOR_ID);
 	for (let index = 1; index < folder.sources.length; index += 1) {
-		assert.notEqual(sourceEditorFor(folder.sources[index])?.id, STREAMING_SOURCE_EDITOR_ID, index);
+		if ([3, 4, 5, 6, 7, 8, 10, 13].includes(index)) assert.equal(sourceEditorFor(folder.sources[index])?.id, STREAMING_SOURCE_EDITOR_ID, index);
+        else assert.notEqual(sourceEditorFor(folder.sources[index])?.id, STREAMING_SOURCE_EDITOR_ID, index);
 		assert.equal(canEditSource(folder.sources[index]), ![11, 12, 14].includes(index), index);
 	}
 });
@@ -1253,7 +1254,7 @@ for (const { name, editorId, source: compact } of roundTripSourceCases) {
 				assert.equal(controller.getState().revision, revision + 1);
 				assert.deepEqual(Object.keys(changed.patch), ["filters"]);
 				const after = serialize(controller).value[0].folders[0];
-				assert.deepEqual(after.sources[1].filters, { ...(route === "desktop" ? { unknownNull: null } : {}), ...compact.filters, voteAverageGte: 0, voteCountGte: 0 });
+				assert.deepEqual(after.sources[1].filters, { ...source.filters, voteAverageGte: 0, voteCountGte: 0 });
 				assert.deepEqual({ ...after.sources[1], filters: source.filters }, { ...source, title: "Intentional title", sortBy: "vote_average.desc" });
 				assert.deepEqual(after.sources[0], before.value[0].folders[0].sources[0]);
 				assert.deepEqual(after.sources[2], before.value[0].folders[0].sources[2]);
@@ -1311,7 +1312,12 @@ test("desktop round trip: required identities and meaningful malformed values re
 		for (const source of invalid) {
 			const controller = createController();
 			const node = importFolder(controller, [source]).sources[0];
-			assert.ok(sourceEditorFor(node) === null || sourceEditorFor(node).id === "advanced-discover", entry.name + " remains rejected by the narrower family editor: " + JSON.stringify(source));
+			const adapter = sourceEditorFor(node);
+            if (adapter && adapter.id !== "advanced-discover") {
+                const draft = adapter.readInitialState(node);
+                assert.deepEqual(adapter.buildPatch({ source: node, draft }), {}, "Unsafe optional imports must survive opening without a patch");
+                if ((adapter.id === "genre" ? ["withGenres"] : adapter.id === "decade" ? ["withGenres", "releaseDateGte", "releaseDateLte"] : []).some((field) => source.filters?.[field] != null && typeof source.filters[field] !== "string")) assert.fail("Malformed defining anchor was accepted");
+            }
 			assert.deepEqual(node.rawImported, source);
 		}
 	}

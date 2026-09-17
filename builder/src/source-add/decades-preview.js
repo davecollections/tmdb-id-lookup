@@ -43,6 +43,7 @@ export function decadesRepresentativeItems(items) {
 function representativeAdvanced(configuration, decadeId) {
 	const advanced = configuration.advanced;
 	return Object.freeze({
+		filters: advanced.filters,
 		minimumRating: advanced.minimumRating,
 		maximumRating: advanced.maximumRating,
 		minimumVotes: advanced.minimumVotes,

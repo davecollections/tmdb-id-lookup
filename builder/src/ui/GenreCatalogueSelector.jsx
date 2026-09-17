@@ -45,6 +45,7 @@ export function GenreContextCatalogueSubview({
 	onDone,
 	onReturnToContexts,
 	statusContent = null,
+	showSingleContextHeading = false,
 	title,
 	titleId,
 }) {
@@ -130,14 +131,14 @@ export function GenreContextCatalogueSubview({
 			</header>
 			<p className="genre-subview-guidance">{guidance}</p>
 			{statusContent}
-			<div className="genre-exclusion-layout genre-context-catalogue-layout" data-mobile-view={mobileDetail ? "picker" : "genres"}>
+			<div className="genre-exclusion-layout genre-context-catalogue-layout" data-mobile-view={mobileDetail || (!multiple && showSingleContextHeading) ? "picker" : "genres"}>
 				{multiple ? <section className="genre-included-genre-pane genre-context-pane" aria-labelledby={contextTitleId}>
 					<h5 id={contextTitleId}>{contextTitle}</h5>
 					<ul>{contexts.map((context) => <li key={context.id}><button type="button" aria-pressed={activeContextId === context.id} aria-controls={choiceTitleId} data-selected={activeContextId === context.id ? "true" : undefined} onClick={() => enterContext(context.id)}><span><strong>{context.label}</strong><small>{context.summary}</small></span><span aria-hidden="true">›</span></button></li>)}</ul>
 				</section> : null}
 				<section id={choiceTitleId} className="genre-exclusion-choice-pane genre-context-choice-pane" aria-labelledby={`${choiceTitleId}-heading`}>
 					{activeContext ? <>
-						{multiple ? <header className="genre-exclusion-detail-header"><button type="button" className="genre-exclusion-mobile-back" onClick={returnToContexts}><span aria-hidden="true">←</span> {backLabel}</button><h5 id={`${choiceTitleId}-heading`} ref={detailHeadingRef} tabIndex={-1}>{detailTitle(activeContext)}</h5></header> : <span id={`${choiceTitleId}-heading`} className="visually-hidden">{detailTitle(activeContext)}</span>}
+						{multiple || showSingleContextHeading ? <header className="genre-exclusion-detail-header">{multiple ? <button type="button" className="genre-exclusion-mobile-back" onClick={returnToContexts}><span aria-hidden="true">←</span> {backLabel}</button> : null}<h5 id={`${choiceTitleId}-heading`} ref={detailHeadingRef} tabIndex={-1}>{detailTitle(activeContext)}</h5></header> : <span id={`${choiceTitleId}-heading`} className="visually-hidden">{detailTitle(activeContext)}</span>}
 						{multiple && detailGuidance ? <p className="genre-subview-guidance genre-exclusion-detail-guidance">{detailGuidance}</p> : null}
 						{children}
 					</> : <div className="genre-exclusion-empty"><h5 id={`${choiceTitleId}-heading`}>{emptyTitle}</h5><span>{emptyText}</span></div>}
@@ -167,7 +168,7 @@ export function GenreSelectionToolbar({
 	);
 }
 
-export function GenreCatalogueList({ concepts, selection, onChoose, selectionControl = "button", className = "", showMedia = true }) {
+export function GenreCatalogueList({ concepts, selection, onChoose, selectionControl = "button", className = "", showMedia = true, semantics }) {
 	if (concepts.length === 0) {
 		return <div className="add-source-empty"><strong>No Genres found</strong><span>Clear the search or try another name.</span></div>;
 	}
@@ -178,7 +179,7 @@ export function GenreCatalogueList({ concepts, selection, onChoose, selectionCon
 				if (selectionControl === "checkbox") {
 					return (
 						<li key={concept.name}>
-							<label className={`genre-catalogue-choice${selected ? " is-selected" : ""}`} data-genre-name={concept.name} data-selected={selected ? "true" : undefined}>
+							<label className={`genre-catalogue-choice${selected ? " is-selected" : ""}`} data-genre-semantics={semantics} data-genre-name={concept.name} data-selected={selected ? "true" : undefined}>
 								<input className="visually-hidden choice-card-input" type="checkbox" checked={selected} onChange={() => onChoose(concept.name)} />
 								<span><strong>{concept.name}</strong>{showMedia ? <small>{genreMediaLabel(concept)}</small> : null}</span>
 							</label>
@@ -187,7 +188,7 @@ export function GenreCatalogueList({ concepts, selection, onChoose, selectionCon
 				}
 				return (
 					<li key={concept.name}>
-						<button type="button" data-genre-name={concept.name} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onChoose(concept.name)}>
+						<button type="button" data-genre-semantics={semantics} data-genre-name={concept.name} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onChoose(concept.name)}>
 							<span><strong>{concept.name}</strong>{showMedia ? <small>{genreMediaLabel(concept)}</small> : null}</span>
 						</button>
 					</li>

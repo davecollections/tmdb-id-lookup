@@ -9,6 +9,10 @@ import { desktopExpandedSource, roundTripSourceCases } from "./nuvio-desktop-rou
 import { createCollectionExportPayload } from "../../builder/src/ui/export-collections.js";
 import {
 	applyGenreHierarchyPlan,
+	applyDecadesHierarchyPlan,
+	createGenreSourceBundle,
+	createDecadeSourceBundle,
+	createStreamingSourceBundle,
 	applyStreamingHierarchyPlan,
 	buildDecadeSourceBundleDrafts,
 	buildTmdbPosterUrl,
@@ -28,6 +32,8 @@ import {
 	createPeopleSourceBundle,
 	TMDB_PROXY_BASE_URL,
 } from "../../builder/src/source-add/index.js";
+import { resolveGenreArtwork } from "../../js/genre-artwork.mjs";
+import { sourceEditorFor } from "../../builder/src/source-edit/source-editors.js";
 import {
 	chooseMovieCollection,
 	createSourceEditSession,
@@ -421,6 +427,10 @@ function inputContaining(container, text) {
 	return [...container.querySelectorAll("label")].find((label) => label.textContent.includes(text))?.querySelector("input") ?? null;
 }
 
+function decadeContentChoice(container, text) {
+	return buttonContaining(container.querySelector(".decades-content-grid"), text);
+}
+
 async function withMountedEditor({ controller, session, draft, listProvider, run }) {
 	const host = document.createElement("div");
 	document.body.append(host);
@@ -650,7 +660,7 @@ async function runGenreEditSecondaryScenario() {
 
 			const exclusionTrigger = document.querySelector(".source-edit-dialog .genre-advanced-compact-actions .secondary-action");
 			await clickAndSettle(exclusionTrigger);
-			const picker = document.querySelector(".source-edit-dialog .genre-exclusion-picker-list");
+			const picker = document.querySelector(".source-edit-dialog .discover-genre-pills");
 			const selfButton = buttonContaining(picker, "Comedy");
 			const horrorButton = buttonContaining(picker, "Horror");
 			const exclusionState = {
@@ -728,7 +738,7 @@ async function runGenreCreationSecondaryScenario() {
 		const rootDone = document.querySelector(".genre-source-dialog .genre-secondary-done");
 		const rootDoneVisible = rootDone?.getClientRects().length > 0;
 		await clickAndSettle(buttonContaining(includedPane, "Horror"));
-		const picker = document.querySelector(".genre-source-dialog .genre-exclusion-picker-list");
+		const picker = document.querySelector(".genre-source-dialog .discover-genre-pills");
 		const selfButton = buttonContaining(picker, "Horror");
 		const comedyButton = buttonContaining(picker, "Comedy");
 		const detailHeader = document.querySelector(".genre-source-dialog .genre-exclusion-detail-header");
@@ -756,9 +766,14 @@ async function runGenreCreationSecondaryScenario() {
 		pickerState.browserBackReturnedToRoot = layout?.dataset.mobileView === "genres";
 		pickerState.rootDoneReturnedAfterBrowserBack = rootDone?.getClientRects().length > 0;
 		await clickAndSettle(buttonContaining(includedPane, "Horror"));
-		await clickAndSettle(buttonContaining(document.querySelector(".genre-source-dialog .genre-exclusion-picker-list"), "Comedy"));
+		await clickAndSettle(buttonContaining(document.querySelector(".genre-source-dialog .discover-genre-pills"), "Comedy"));
 		await clickAndSettle(document.querySelector(".genre-source-dialog .genre-exclusion-mobile-back"));
-		pickerState.backPreservedValue = buttonContaining(includedPane, "Horror")?.textContent.includes("Comedy excluded") ?? false;
+		const backSummaryUpdated = buttonContaining(includedPane, "Horror")?.querySelector("small")?.textContent.trim() === "1 excluded";
+		await clickAndSettle(buttonContaining(includedPane, "Horror"));
+		const comedyStillSelected = document.querySelector('.genre-source-dialog .discover-genre-pills [data-genre-name="Comedy"]')?.getAttribute("aria-pressed") === "true";
+		if (!comedyStillSelected) throw new Error("Comedy exclusion was not preserved after reopening Horror.");
+		pickerState.backPreservedValue = backSummaryUpdated && comedyStillSelected;
+		await clickAndSettle(document.querySelector(".genre-source-dialog .genre-exclusion-mobile-back"));
 		await clickAndSettle(document.querySelector(".genre-source-dialog .genre-secondary-done"));
 		pickerState.mainSummaryUpdated = document.querySelector(".genre-source-dialog .genre-advanced-compact-actions")?.textContent.includes("Exclusions configured for 1 genre") ?? false;
 		pickerState.focusRestored = document.activeElement === exclusionTrigger;
@@ -3089,15 +3104,15 @@ async function runGenreLivePreviewScenario() {
 		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-sort"][value="popular"]'), "Deselect Popular source choice"));
 		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-sort"][value="recent"]'), "Recent sort choice"));
 		await clickAndSettle(required(dialog.querySelector(".genre-advanced-options > summary"), "Advanced options summary"));
-		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-year-from"), "2020");
-		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-year-to"), "2026");
-		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-rating-min"), "6");
-		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-rating-max"), "9");
-		await updateInput(dialog.querySelector("#genre-hierarchy-advanced-votes-min"), "100");
-		await updateSelect(dialog.querySelector("#genre-hierarchy-advanced-language"), "en");
-		await updateSelect(dialog.querySelector("#genre-hierarchy-advanced-country"), "US");
+		await updateInput(dialog.querySelector("#discover-field-releaseDateGte"), "2020-01-01");
+		await updateInput(dialog.querySelector("#discover-field-releaseDateLte"), "2026-12-31");
+		await updateInput(dialog.querySelector("#discover-field-voteAverageGte"), "6");
+		await updateInput(dialog.querySelector("#discover-field-voteAverageLte"), "9");
+		await updateInput(dialog.querySelector("#discover-field-voteCountGte"), "100");
+		await updateSelect(dialog.querySelector("#discover-field-withOriginalLanguage"), "en");
+		await updateSelect(dialog.querySelector("#discover-field-withOriginCountry"), "US");
 		await clickAndSettle(required(buttonContaining(dialog.querySelector(".genre-advanced-compact-actions"), "Choose"), "exclusion picker action"));
-		await clickAndSettle(required(buttonContaining(dialog.querySelector(".genre-exclusion-picker-list"), "Family"), "Family exclusion"));
+		await clickAndSettle(required(buttonContaining(dialog.querySelector(".discover-genre-pills"), "Family"), "Family exclusion"));
 		await clickAndSettle(required(dialog.querySelector(".genre-secondary-done"), "exclusion Done action"));
 
 		previewTrigger = required(dialog.querySelector('.genre-hierarchy-configure-row[data-genre-name="Animation"] button[aria-haspopup="dialog"]'), "filtered Animation Preview trigger");
@@ -4975,7 +4990,7 @@ async function runDecadesNavigationScenario() {
 		await clickAndSettle(dialog().querySelector('input[name="decades-media"][value="both"]'));
 		await clickAndSettle(dialog().querySelector('input[name="decades-display-order"][value="newest-throughout"]'));
 		await clickAndSettle(dialog().querySelector('input[name="decades-sort"][value="recent"]'));
-		await clickAndSettle(inputContaining(dialog(), "Genre breakdown"));
+		await clickAndSettle(decadeContentChoice(dialog(), "Genre breakdown"));
 		const genreConfigureTrigger = dialog().querySelector(".decades-genre-summary .secondary-action");
 		await clickAndSettle(genreConfigureTrigger);
 		const genreSecondary = {
@@ -5017,7 +5032,7 @@ async function runDecadesNavigationScenario() {
 		await clickAndSettle(footerButtons()[0]);
 		const optionsDraftPreserved = {
 			mediaBoth: dialog().querySelector('input[name="decades-media"][value="both"]')?.checked === true,
-			individualYears: inputContaining(dialog(), "Individual years")?.checked === true,
+			individualYears: decadeContentChoice(dialog(), "Individual years")?.getAttribute("aria-pressed") === "true",
 			newestThroughoutDisplayOrder: dialog().querySelector('input[name="decades-display-order"][value="newest-throughout"]')?.checked === true,
 			redundantChronologyAbsent: dialog().querySelector('input[name="decades-folder-order"], input[name="decades-year-order"]') === null,
 			recentSort: dialog().querySelector('input[name="decades-sort"][value="recent"]')?.checked === true,
@@ -5068,7 +5083,7 @@ async function runDecadesNavigationScenario() {
 		const reviewBack = {
 			stage: stage(),
 			mediaBoth: dialog().querySelector('input[name="decades-media"][value="both"]')?.checked === true,
-			individualYears: inputContaining(dialog(), "Individual years")?.checked === true,
+			individualYears: decadeContentChoice(dialog(), "Individual years")?.getAttribute("aria-pressed") === "true",
 			newestThroughoutDisplayOrder: dialog().querySelector('input[name="decades-display-order"][value="newest-throughout"]')?.checked === true,
 			recentSort: dialog().querySelector('input[name="decades-sort"][value="recent"]')?.checked === true,
 			appearanceAbsent: dialog().querySelector('input[name="decades-view"]') === null && dialog().querySelector('input[name="decades-folder-shape"]') === null,
@@ -5120,7 +5135,8 @@ async function runDecadesNavigationScenario() {
 	}
 }
 
-async function runDecadesActionLayoutScenario() {
+async function runDecadesActionLayoutScenario({ contentCardsOnly = false, capture = false, keyboard = false } = {}) {
+	let keepMountedForKeyboard = false;
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
@@ -5164,6 +5180,58 @@ async function runDecadesActionLayoutScenario() {
 		await clickAndSettle(dialog.querySelector('[data-decade-preset="2000s"]'));
 		await clickAndSettle(dialog.querySelector(".decades-creation-actions .editor-apply"));
 		const configureFooter = footerLayout(dialog);
+		if (contentCardsOnly) {
+			const check = (condition, message) => { if (!condition) throw new Error(message); };
+			const grid = dialog.querySelector(".decades-content-grid");
+			const cards = [...grid.querySelectorAll("button")];
+			const [overview, years, genres] = cards;
+			const pressed = () => cards.map(card => card.getAttribute("aria-pressed") === "true");
+			const initial = pressed();
+			check(JSON.stringify(initial) === "[false,true,false]", "Individual years only default");
+			check(years.disabled && !overview.disabled && !genres.disabled, "final selected content guard");
+			await clickAndSettle(years);
+			check(years.getAttribute("aria-pressed") === "true", "sole selection changed");
+			check(!grid.querySelector("input, [data-selection-indicator]"), "obsolete content checkbox or marker");
+			const rows = new Set(cards.map(card => Math.round(card.getBoundingClientRect().top))).size;
+			const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").length;
+			check(columns === (innerWidth > 900 ? 3 : innerWidth > 620 ? 2 : 1), "responsive content columns: " + columns);
+			check(cards.every(card => card.getBoundingClientRect().height >= 44 && card.scrollWidth <= card.clientWidth), "readable full-card targets");
+			const selectedStyle = getComputedStyle(years), neutralStyle = getComputedStyle(overview);
+			if (matchMedia("(forced-colors: active)").matches) check(selectedStyle.borderStyle === "double" && neutralStyle.borderStyle === "solid", "forced-colours structural selection");
+			else {
+				check(selectedStyle.boxShadow.includes("inset"), "structural selected inset");
+				check(selectedStyle.backgroundColor !== neutralStyle.backgroundColor && selectedStyle.borderColor !== neutralStyle.borderColor, "selected cyan treatment");
+			}
+			async function shot(name) {
+				if (!capture || !globalThis.capture204Preview) return;
+				grid.parentElement.scrollIntoView({ block: "center" });
+				await afterCommittedEffects();
+				await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: "decades-content-" + innerWidth + "-" + name })); });
+			}
+			if (innerWidth > 900) await shot("default");
+			// Descendants are part of the same native button click target.
+			await clickAndSettle(overview.querySelector("small"));
+			await clickAndSettle(genres.querySelector("strong"));
+			check(pressed().every(Boolean) && cards.every(card => !card.disabled), "independent multiselect");
+			await shot(innerWidth > 900 ? "all-selected" : "stacked");
+			check(document.documentElement.scrollWidth <= innerWidth && dialog.scrollWidth <= dialog.clientWidth && grid.scrollWidth <= grid.clientWidth, "horizontal overflow");
+			check(dialog.querySelector(".decades-genre-validation") && dialog.querySelector(".decades-creation-actions .editor-apply").disabled, "required Genre validation");
+			await clickAndSettle(genres); await clickAndSettle(overview);
+			check(JSON.stringify(pressed()) === JSON.stringify(initial) && years.disabled, "default restoration and final-selection guard");
+			check(!dialog.querySelector(".decades-genre-validation") && !dialog.querySelector(".decades-creation-actions .editor-apply").disabled, "restored content validation");
+			const evidence = { width: innerWidth, rows, columns, defaultSelection: initial, allSelected: true, finalSelectionGuard: true, validationPreserved: true, noOverflow: true, noMutation: controller.getState().revision === 0 };
+			if (keyboard) {
+				keepMountedForKeyboard = true;
+				overview.focus({ preventScroll: true });
+				window.__checkDecadesContentKeyboard = async ({ finish = false } = {}) => {
+					await afterCommittedEffects();
+					const result = { pressed: overview.getAttribute("aria-pressed") === "true", focused: document.activeElement === overview, focusVisible: overview.matches(":focus-visible") && getComputedStyle(overview).outlineStyle !== "none" };
+					if (finish) { await shot("keyboard-selected"); await act(async () => root.unmount()); host.remove(); delete window.__checkDecadesContentKeyboard; }
+					return result;
+				};
+			}
+			return evidence;
+		}
 		await clickAndSettle(dialog.querySelector(".decades-creation-actions .editor-apply"));
 		const reviewFooter = footerLayout(dialog);
 		await clickAndSettle(required(dialog.querySelector('header [data-action="back-to-decades-options"]'), "Back to Configure Decades"));
@@ -5173,23 +5241,24 @@ async function runDecadesActionLayoutScenario() {
 		const primaryRect = primary.getBoundingClientRect();
 		const backRect = back.getBoundingClientRect();
 		const headingFocused = document.activeElement?.id === "decades-options-title";
-		const contentInputs = [...dialog.querySelectorAll('.decades-content-grid input[type="checkbox"]')];
-		const selectedContentCard = contentInputs.find((input) => input.checked)?.closest("label");
-		const unselectedContentInput = contentInputs.find((input) => !input.checked);
-		const unselectedContentCard = unselectedContentInput?.closest("label");
-		const selectedContentStyle = selectedContentCard ? getComputedStyle(selectedContentCard) : null;
-		const unselectedContentStyle = unselectedContentCard ? getComputedStyle(unselectedContentCard) : null;
-		unselectedContentInput.focus({ preventScroll: true });
+		const contentCards = [...dialog.querySelectorAll('.decades-content-grid button[aria-pressed]')];
+		const selectedContentCard = contentCards.find((card) => card.getAttribute("aria-pressed") === "true");
+		const unselectedContentCard = contentCards.find((card) => card.getAttribute("aria-pressed") === "false");
+		const selectedContentStyle = getComputedStyle(selectedContentCard);
+		const unselectedContentStyle = getComputedStyle(unselectedContentCard);
+		const selectedCardTreatment = selectedContentStyle.backgroundColor !== unselectedContentStyle.backgroundColor
+			&& selectedContentStyle.borderColor !== unselectedContentStyle.borderColor && selectedContentStyle.boxShadow.includes("inset");
+		unselectedContentCard.focus({ preventScroll: true });
 		await afterCommittedEffects();
-		const unselectedContentFocusable = document.activeElement === unselectedContentInput;
-		await clickAndSettle(unselectedContentInput);
-		const contentToggleSelected = unselectedContentInput.checked === true;
-		await clickAndSettle(unselectedContentInput);
-		const contentToggleRestored = unselectedContentInput.checked === false;
-		const wholeDecadeInput = required(inputContaining(dialog, "Decade overview"), "Decade overview content choice");
-		const individualYearsInput = required(inputContaining(dialog, "Individual years"), "Individual years content choice");
-		if (!wholeDecadeInput.checked) await clickAndSettle(wholeDecadeInput);
-		if (!individualYearsInput.checked) await clickAndSettle(individualYearsInput);
+		const unselectedContentFocusable = document.activeElement === unselectedContentCard;
+		await clickAndSettle(unselectedContentCard);
+		const contentToggleSelected = unselectedContentCard.getAttribute("aria-pressed") === "true";
+		await clickAndSettle(unselectedContentCard);
+		const contentToggleRestored = unselectedContentCard.getAttribute("aria-pressed") === "false";
+		const wholeDecadeInput = required(decadeContentChoice(dialog, "Decade overview"), "Decade overview content choice");
+		const individualYearsInput = required(decadeContentChoice(dialog, "Individual years"), "Individual years content choice");
+		if (wholeDecadeInput.getAttribute("aria-pressed") !== "true") await clickAndSettle(wholeDecadeInput);
+		if (individualYearsInput.getAttribute("aria-pressed") !== "true") await clickAndSettle(individualYearsInput);
 		const previewCatalogue = required(dialog.querySelector(".decades-preview-catalogue"), "Decades Preview catalogue");
 		const previewRowsDeferred = previewCatalogue.querySelector(".decades-preview-group") === null;
 		await clickAndSettle(required(previewCatalogue.querySelector(":scope > summary"), "Decades Preview catalogue summary"));
@@ -5244,12 +5313,10 @@ async function runDecadesActionLayoutScenario() {
 			displayOrderChoices: dialog.querySelectorAll('input[name="decades-display-order"]').length,
 			defaultDisplayOrder: dialog.querySelector('input[name="decades-display-order"][value="newest-decades-oldest-years"]')?.checked === true,
 			contentSelection: {
-				nativeCheckboxes: contentInputs.length,
-				allVisible: contentInputs.every((input) => !input.classList.contains("visually-hidden") && input.getBoundingClientRect().width >= 16),
+				pressedCards: contentCards.length,
+				allVisible: contentCards.every((card) => card.getBoundingClientRect().height >= 44),
 				markersAbsent: dialog.querySelector('.decades-content-grid [data-selection-indicator], .decades-content-grid .selectable-card-indicator') === null,
-				neutralCardTreatment: selectedContentStyle?.backgroundColor === unselectedContentStyle?.backgroundColor
-					&& selectedContentStyle?.borderColor === unselectedContentStyle?.borderColor
-					&& selectedContentStyle?.boxShadow === unselectedContentStyle?.boxShadow,
+				selectedCardTreatment,
 				unselectedFocusable: unselectedContentFocusable,
 				toggleSelected: contentToggleSelected,
 				toggleRestored: contentToggleRestored,
@@ -5258,8 +5325,7 @@ async function runDecadesActionLayoutScenario() {
 			oldChronologyAbsent: dialog.querySelector('input[name="decades-folder-order"], input[name="decades-year-order"]') === null,
 		};
 	} finally {
-		await act(async () => root.unmount());
-		host.remove();
+		if (!keepMountedForKeyboard) { await act(async () => root.unmount()); host.remove(); }
 	}
 }
 
@@ -5286,7 +5352,7 @@ async function runDecadesGenreLayoutScenario() {
 		const dialog = document.querySelector('[data-creation-dialog="true"]');
 		await clickAndSettle(buttonContaining(dialog.querySelector(".decades-step"), "Select all"));
 		await clickAndSettle(dialog.querySelector(".decades-creation-actions .editor-apply"));
-		await clickAndSettle(inputContaining(dialog, "Genre breakdown"));
+		await clickAndSettle(decadeContentChoice(dialog, "Genre breakdown"));
 		const configureTrigger = dialog.querySelector(".decades-genre-summary .secondary-action");
 		await clickAndSettle(configureTrigger);
 		const surface = dialog.querySelector('[data-surface="genres"]');
@@ -5311,7 +5377,7 @@ async function runDecadesGenreLayoutScenario() {
 			contextCount: contextButtons.length,
 			contextLabels: contextButtons.map((button) => button.querySelector("strong")?.textContent.trim()),
 			contextPaneVisible: visible(contextPane),
-			catalogueVisible: visible(panel.querySelector(".genre-catalogue-list")),
+			catalogueVisible: visible(panel.querySelector(".discover-genre-pills")),
 			activeAll: allButton.getAttribute("aria-pressed") === "true",
 			rootFocused: document.activeElement?.id === "decades-genre-configuration-title",
 			validationVisible: visible(panel.querySelector("#decades-genres-error")) && panel.getAttribute("aria-invalid") === "true",
@@ -5323,7 +5389,7 @@ async function runDecadesGenreLayoutScenario() {
 				return rect.left >= paneRect.left - 1 && rect.right <= paneRect.right + 1;
 			}),
 			twoPane: !isMobile && paneRect.right <= choiceRect.left && panelRect.width < surface.getBoundingClientRect().width,
-			boundedBorder: getComputedStyle(surface).borderTopWidth === "0px" && getComputedStyle(panel).borderTopWidth !== "0px" && panelRect.width <= 820,
+			boundedBorder: getComputedStyle(surface).borderTopWidth === "0px" && getComputedStyle(panel).borderTopWidth !== "0px" && panelRect.width <= 900,
 			mobileRootOnly: isMobile ? visible(contextPane) && !visible(choicePane) : null,
 			doneReachable: visible(panel.querySelector(".genre-secondary-done")) && panel.querySelector(".genre-secondary-done").getBoundingClientRect().height >= 44,
 			safeAreaPadding: isMobile ? parseFloat(getComputedStyle(surface).paddingBottom) >= 12 : null,
@@ -5331,7 +5397,7 @@ async function runDecadesGenreLayoutScenario() {
 		};
 
 		if (isMobile) await clickAndSettle(allButton);
-		const activeCatalogue = panel.querySelector(".genre-catalogue-list");
+		const activeCatalogue = panel.querySelector(".discover-genre-pills");
 		const detail = {
 			catalogueVisible: visible(activeCatalogue),
 			contextPaneHidden: isMobile ? !visible(contextPane) : null,
@@ -5348,8 +5414,8 @@ async function runDecadesGenreLayoutScenario() {
 		const backPreservedSharedSelection = isMobile ? document.activeElement?.id === "decades-genre-configuration-title" : true;
 
 		await clickAndSettle(firstDecadeButton);
-		const firstCatalogue = panel.querySelector(".genre-catalogue-list");
-		const switchedContext = panel.querySelector(".genre-exclusion-detail-header h5")?.textContent.trim() === "Genres for 1950s & Earlier";
+		const firstCatalogue = panel.querySelector(".discover-genre-pills");
+		const switchedContext = panel.querySelector(".genre-exclusion-detail-header h5")?.textContent.trim() === "1950s & Earlier";
 		const sharedSelectionPreserved = firstCatalogue.querySelector('[data-genre-name="Action"]')?.getAttribute("aria-pressed") === "true";
 		await clickAndSettle(firstCatalogue.querySelector('[data-genre-name="Adventure"]'));
 		const individualCountUpdated = firstDecadeButton.querySelector("small")?.textContent.trim() === "2 selected";
@@ -5358,7 +5424,7 @@ async function runDecadesGenreLayoutScenario() {
 		await clickAndSettle(buttonContaining(panel.querySelector(".genre-selection-toolbar"), "Clear all"));
 		const clearAllWorked = panel.querySelector(".genre-selection-toolbar > span")?.textContent.trim() === "0 of 27 selected";
 		const validationReturned = panel.querySelector("#decades-genres-error")?.textContent.includes("1950s & Earlier") === true;
-		await clickAndSettle(panel.querySelector('.genre-catalogue-list [data-genre-name="Adventure"]'));
+		await clickAndSettle(panel.querySelector('.discover-genre-pills [data-genre-name="Adventure"]'));
 		if (isMobile) await clickAndSettle(panel.querySelector(".genre-exclusion-mobile-back"));
 
 		lastDecadeButton.scrollIntoView({ block: "nearest" });
@@ -5369,7 +5435,7 @@ async function runDecadesGenreLayoutScenario() {
 			&& lastDecadeButton.getBoundingClientRect().right <= contextPane.getBoundingClientRect().right + 1;
 		await clickAndSettle(lastDecadeButton);
 		const lastContextActive = lastDecadeButton.getAttribute("aria-pressed") === "true";
-		const lastContextPreserved = panel.querySelector('.genre-catalogue-list [data-genre-name="Action"]')?.getAttribute("aria-pressed") === "true";
+		const lastContextPreserved = panel.querySelector('.discover-genre-pills [data-genre-name="Action"]')?.getAttribute("aria-pressed") === "true";
 		if (isMobile) await clickAndSettle(panel.querySelector(".genre-exclusion-mobile-back"));
 		const contextValuesPreserved = firstDecadeButton.querySelector("small")?.textContent.trim() === "1 selected"
 			&& lastDecadeButton.querySelector("small")?.textContent.trim() === "1 selected";
@@ -5449,7 +5515,7 @@ async function runDecadesExclusionLayoutScenario() {
 			contextCount: contextButtons.length,
 			contextLabels: contextButtons.map((button) => button.querySelector("strong")?.textContent.trim()),
 			contextPaneVisible: visible(contextPane),
-			catalogueVisible: visible(panel.querySelector(".genre-catalogue-list")),
+			catalogueVisible: visible(panel.querySelector(".discover-genre-pills")),
 			activeAll: allButton.getAttribute("aria-pressed") === "true",
 			rootFocused: document.activeElement?.id === "decades-exclusion-title",
 			noHorizontalStrip: panel.querySelector(".decades-genre-contexts") === null,
@@ -5459,7 +5525,7 @@ async function runDecadesExclusionLayoutScenario() {
 				return rect.left >= paneRect.left - 1 && rect.right <= paneRect.right + 1;
 			}),
 			twoPane: !isMobile && paneRect.right <= choiceRect.left && panelRect.width < surface.getBoundingClientRect().width,
-			boundedBorder: getComputedStyle(surface).borderTopWidth === "0px" && getComputedStyle(panel).borderTopWidth !== "0px" && panelRect.width <= 820,
+			boundedBorder: getComputedStyle(surface).borderTopWidth === "0px" && getComputedStyle(panel).borderTopWidth !== "0px" && panelRect.width <= 900,
 			mobileRootOnly: isMobile ? visible(contextPane) && !visible(choicePane) : null,
 			doneReachable: visible(panel.querySelector(".genre-secondary-done")) && panel.querySelector(".genre-secondary-done").getBoundingClientRect().height >= 44,
 			safeAreaPadding: isMobile ? parseFloat(getComputedStyle(surface).paddingBottom) >= 12 : null,
@@ -5467,7 +5533,7 @@ async function runDecadesExclusionLayoutScenario() {
 		};
 
 		if (isMobile) await clickAndSettle(allButton);
-		const activeCatalogue = panel.querySelector(".genre-catalogue-list");
+		const activeCatalogue = panel.querySelector(".discover-genre-pills");
 		const detail = {
 			catalogueVisible: visible(activeCatalogue),
 			contextPaneHidden: isMobile ? !visible(contextPane) : null,
@@ -5479,18 +5545,20 @@ async function runDecadesExclusionLayoutScenario() {
 		await clickAndSettle(activeCatalogue.querySelector('[data-genre-name="Action"]'));
 		if (isMobile) await clickAndSettle(panel.querySelector(".genre-exclusion-mobile-back"));
 		const sharedCountUpdated = allButton.querySelector("small")?.textContent.trim() === "1 shared exclusion";
-		const sharedAppliedToEveryDecade = contextButtons.slice(1).every((button) => button.querySelector("small")?.textContent.trim() === "1 excluded");
+		const sharedAppliedToEveryDecade = contextButtons.slice(1).every((button) => button.querySelector("small")?.textContent.trim() === "Using default");
 
 		await clickAndSettle(firstDecadeButton);
-		const firstCatalogue = panel.querySelector(".genre-catalogue-list");
-		const sharedSelectionPreserved = firstCatalogue.querySelector('[data-genre-name="Action"]')?.getAttribute("aria-pressed") === "true";
+		const sharedSelectionPreserved = panel.querySelector(".native-genre-inheritance")?.textContent.includes("Using default") && panel.querySelector(".discover-genre-pills") === null;
+		await clickAndSettle(buttonContaining(panel, "Customise genres"));
+		const firstCatalogue = panel.querySelector(".discover-genre-pills");
+		const customiseStartsBlank = firstCatalogue.querySelector('[data-genre-name="Action"]')?.getAttribute("aria-pressed") === "false";
 		await clickAndSettle(firstCatalogue.querySelector('[data-genre-name="Adventure"]'));
-		const individualCountUpdated = panel.querySelector(".genre-selection-toolbar > span")?.textContent.trim() === "2 of 27 selected";
+		const individualCountUpdated = panel.querySelector(".genre-selection-toolbar > span")?.textContent.trim() === "1 of 27 selected";
 		await clickAndSettle(buttonContaining(panel.querySelector(".genre-selection-toolbar"), "Select all"));
 		const selectAllWorked = panel.querySelector(".genre-selection-toolbar > span")?.textContent.trim() === "27 of 27 selected";
 		await clickAndSettle(buttonContaining(panel.querySelector(".genre-selection-toolbar"), "Clear all"));
 		const clearAllWorked = panel.querySelector(".genre-selection-toolbar > span")?.textContent.trim() === "0 of 27 selected";
-		await clickAndSettle(panel.querySelector('.genre-catalogue-list [data-genre-name="Adventure"]'));
+		await clickAndSettle(panel.querySelector('.discover-genre-pills [data-genre-name="Adventure"]'));
 		if (isMobile) await clickAndSettle(panel.querySelector(".genre-exclusion-mobile-back"));
 
 		lastDecadeButton.scrollIntoView({ block: "nearest" });
@@ -5501,10 +5569,10 @@ async function runDecadesExclusionLayoutScenario() {
 			&& lastDecadeButton.getBoundingClientRect().right <= contextPane.getBoundingClientRect().right + 1;
 		await clickAndSettle(lastDecadeButton);
 		const lastContextActive = lastDecadeButton.getAttribute("aria-pressed") === "true";
-		const lastContextPreserved = panel.querySelector('.genre-catalogue-list [data-genre-name="Action"]')?.getAttribute("aria-pressed") === "true";
+		const lastContextPreserved = panel.querySelector(".native-genre-inheritance")?.textContent.includes("Using default") && panel.querySelector(".discover-genre-pills") === null;
 		if (isMobile) await clickAndSettle(panel.querySelector(".genre-exclusion-mobile-back"));
-		const contextValuesPreserved = firstDecadeButton.querySelector("small")?.textContent.trim() === "1 excluded"
-			&& lastDecadeButton.querySelector("small")?.textContent.trim() === "1 excluded";
+		const contextValuesPreserved = firstDecadeButton.querySelector("small")?.textContent.trim() === "Custom · 1 excluded"
+			&& lastDecadeButton.querySelector("small")?.textContent.trim() === "Using default";
 		const done = panel.querySelector(".genre-secondary-done");
 		await clickAndSettle(done);
 		return {
@@ -5513,6 +5581,7 @@ async function runDecadesExclusionLayoutScenario() {
 			sharedCountUpdated,
 			sharedAppliedToEveryDecade,
 			sharedSelectionPreserved,
+			customiseStartsBlank,
 			individualCountUpdated,
 			selectAllWorked,
 			clearAllWorked,
@@ -5980,10 +6049,10 @@ async function runDecadesLivePreviewScenario() {
 		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "Decades creation dialog");
 		await clickAndSettle(required(dialog.querySelector('[data-decade-preset="1980s"]'), "1980s preset"));
 		await clickAndSettle(required(dialog.querySelector(".decades-creation-actions button"), "Decades Continue"));
-		const wholeDecadeChoice = required(inputContaining(dialog, "Decade overview"), "Decade overview content choice");
-		const individualYearsChoice = required(inputContaining(dialog, "Individual years"), "Individual years content choice");
-		if (!wholeDecadeChoice.checked) await clickAndSettle(wholeDecadeChoice);
-		if (!individualYearsChoice.checked) await clickAndSettle(individualYearsChoice);
+		const wholeDecadeChoice = required(decadeContentChoice(dialog, "Decade overview"), "Decade overview content choice");
+		const individualYearsChoice = required(decadeContentChoice(dialog, "Individual years"), "Individual years content choice");
+		if (wholeDecadeChoice.getAttribute("aria-pressed") !== "true") await clickAndSettle(wholeDecadeChoice);
+		if (individualYearsChoice.getAttribute("aria-pressed") !== "true") await clickAndSettle(individualYearsChoice);
 		const catalogue = required(dialog.querySelector(".decades-preview-catalogue"), "Decades Preview catalogue");
 		const lightweightClosed = !catalogue.open
 			&& catalogue.querySelector(".decades-preview-group") === null
@@ -6088,7 +6157,7 @@ async function runDecadesLivePreviewScenario() {
 		await clickAndSettle(required(dialog.querySelector('[data-decade-preset="1980s"]'), "selected 1980s preset"));
 		await clickAndSettle(required(dialog.querySelector('[data-decade-preset="2020s"]'), "2020s preset"));
 		await clickAndSettle(required(dialog.querySelector(".decades-creation-actions button"), "Decades Continue for current decade"));
-		const individualYearsPersisted = inputContaining(dialog, "Individual years")?.checked === true;
+		const individualYearsPersisted = decadeContentChoice(dialog, "Individual years")?.getAttribute("aria-pressed") === "true";
 		const currentCatalogue = required(dialog.querySelector(".decades-preview-catalogue"), "current Decades Preview catalogue");
 		await clickAndSettle(required(currentCatalogue.querySelector(":scope > summary"), "current Preview catalogue summary"));
 		const currentGroup = required(currentCatalogue.querySelector(".decades-preview-group"), "2020s Preview group");
@@ -6181,7 +6250,7 @@ async function runDecadeSourceLayoutScenario() {
 		const sortFieldset = fieldset("Sources to create");
 		const decadeFieldset = fieldset("Decade");
 		let yearFieldset = fieldset("Year");
-		const genreFieldset = fieldset("Genre sources");
+		const genreFieldset = required(dialog.querySelector('[data-decade-source-control="genres"]'), "Genre sources card");
 		const initialYearLabels = [...yearFieldset.querySelectorAll("label")].map((entry) => entry.textContent.trim());
 		const initialYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
 		await clickAndSettle(required(decadeFieldset.querySelector('input[value="1980s"]'), "1980s Decade choice"));
@@ -6216,17 +6285,17 @@ async function runDecadeSourceLayoutScenario() {
 		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-2025"]'), "2025 Year choice"));
 		const futureMultiSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
 		const genreIndicatorsAbsent = genreFieldset.querySelectorAll(".selectable-card-indicator").length === 0;
-		const firstGenreInput = required(genreFieldset.querySelector('input[type="checkbox"]'), "first Genre checkbox");
-		const firstGenreLabel = required(firstGenreInput.closest("label"), "first Genre label");
+		const firstGenreInput = required(genreFieldset.querySelector(".discover-genre-pills button"), "first Genre pill");
+		const firstGenreLabel = firstGenreInput;
 		const unselectedGenreStyle = getComputedStyle(firstGenreLabel);
 		const unselectedGenreVisual = { background: unselectedGenreStyle.backgroundColor, border: unselectedGenreStyle.borderColor };
 		firstGenreInput.focus({ preventScroll: true });
-		const genreFocusVisible = document.activeElement === firstGenreInput && getComputedStyle(firstGenreLabel).outlineStyle !== "none";
+		const genreFocusable = document.activeElement === firstGenreInput;
 		await clickAndSettle(firstGenreInput);
 		const selectedGenreStyle = getComputedStyle(firstGenreLabel);
 		const selectedGenreVisual = { background: selectedGenreStyle.backgroundColor, border: selectedGenreStyle.borderColor };
 		await clickAndSettle(required(buttonContaining(genreFieldset, "Select all"), "Select all Genre sources"));
-		const selectedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
+		const selectedGenreCount = genreFieldset.querySelectorAll('.discover-genre-pills button[aria-pressed="true"]').length;
 		const selectAllDisabled = buttonContaining(genreFieldset, "Select all")?.disabled === true;
 		const clearEnabled = buttonContaining(genreFieldset, "Clear")?.disabled === false;
 		const footer = required(dialog.querySelector(".decade-source-actions"), "Decade Add Source footer");
@@ -6274,7 +6343,7 @@ async function runDecadeSourceLayoutScenario() {
 		);
 		const secondaryFocusRestored = document.activeElement === configure;
 		await clickAndSettle(required(buttonContaining(genreFieldset, "Clear"), "Clear Genre sources"));
-		const clearedGenreCount = genreFieldset.querySelectorAll('input[type="checkbox"]:checked').length;
+		const clearedGenreCount = genreFieldset.querySelectorAll('.discover-genre-pills button[aria-pressed="true"]').length;
 		const clearedReviewSourceCount = dialog.querySelectorAll(".decade-source-review-list li").length;
 		const restoredFooterLabels = [...restoredFooter.querySelectorAll("button")].map((button) => button.textContent.trim());
 		const footerCancelAbsent = buttonContaining(restoredFooter, "Cancel") === null;
@@ -6302,10 +6371,10 @@ async function runDecadeSourceLayoutScenario() {
 			radioSemantics: [...mediaFieldset.querySelectorAll("input"), ...decadeFieldset.querySelectorAll("input")].every((input) => input.type === "radio" && input.getBoundingClientRect().width <= 1),
 			sortCheckboxSemantics: [...sortFieldset.querySelectorAll("input")].every((input) => input.type === "checkbox" && input.getBoundingClientRect().width <= 1),
 			yearCheckboxSemantics: [...yearFieldset.querySelectorAll("input")].every((input) => input.type === "checkbox" && input.getBoundingClientRect().width <= 1),
-			genreChoiceCount: genreFieldset.querySelectorAll('input[type="checkbox"]').length,
-			genreCheckboxSemantics: [...genreFieldset.querySelectorAll('input[type="checkbox"]')].every((input) => input.getBoundingClientRect().width <= 1),
+			genreChoiceCount: genreFieldset.querySelectorAll(".discover-genre-pills button").length,
+			genrePillSemantics: [...genreFieldset.querySelectorAll(".discover-genre-pills button")].every((input) => input.type === "button" && input.hasAttribute("aria-pressed")),
 			genreIndicatorsAbsent,
-			genreFocusVisible,
+			genreFocusable,
 			genreVisualStateChanged: unselectedGenreVisual.background !== selectedGenreVisual.background || unselectedGenreVisual.border !== selectedGenreVisual.border,
 			selectedGenreCount,
 			selectAllDisabled,
@@ -6419,22 +6488,22 @@ async function prepareDecadeSourceGenreKeyboardScenario() {
 		}));
 		await afterCommittedEffects();
 	});
-	const input = document.querySelector('.decade-source-dialog [data-decade-source-control="genres"] input[type="checkbox"]');
-	const label = input?.closest("label");
+	const input = document.querySelector('.decade-source-dialog [data-decade-source-control="genres"] .discover-genre-pills button');
+	const label = input;
 	if (!input || !label) {
 		await act(async () => root.unmount());
 		host.remove();
-		throw new Error("Decade Genre keyboard checkbox was not rendered.");
+		throw new Error("Decade Genre keyboard pill was not rendered.");
 	}
 	const style = getComputedStyle(label);
 	const unselectedVisual = { background: style.backgroundColor, border: style.borderColor };
 	input.focus({ preventScroll: true });
 	decadeSourceGenreKeyboardSession = { host, root, controller, input, label, revisionBefore, serializedBefore, unselectedVisual };
 	return {
-		checkedBefore: input.checked,
+		checkedBefore: input.getAttribute("aria-pressed") === "true",
 		focused: document.activeElement === input,
 		inputType: input.type,
-		hiddenNativeControl: input.getBoundingClientRect().width <= 1,
+		visiblePill: input.getBoundingClientRect().width > 1,
 		focusVisible: getComputedStyle(label).outlineStyle !== "none",
 	};
 }
@@ -6448,8 +6517,9 @@ async function finishDecadeSourceGenreKeyboardScenario() {
 		const style = getComputedStyle(session.label);
 		const selectedVisual = { background: style.backgroundColor, border: style.borderColor };
 		return {
-			checkedAfterSpace: session.input.checked,
-			selectedStateExposed: session.label.dataset.selected === "true",
+			checkedAfterSpace: session.input.getAttribute("aria-pressed") === "true",
+			focusVisible: document.activeElement === session.input && getComputedStyle(session.input).outlineStyle !== "none",
+			selectedStateExposed: session.label.dataset.chosen === "true",
 			selectedVisualChanged: session.unselectedVisual.background !== selectedVisual.background || session.unselectedVisual.border !== selectedVisual.border,
 			noMutation: session.controller.getState().revision === session.revisionBefore && serializedValue(session.controller) === session.serializedBefore,
 		};
@@ -6565,11 +6635,11 @@ async function runDecadeSourceLivePreviewScenario() {
 		await clickAndSettle(required(yearFieldset.querySelector('input[value="year-1985"]'), "1985 Year choice"));
 		const configuredYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
 		const genreFieldset = required(dialog.querySelector('[data-decade-source-control="genres"]'), "Genre sources fieldset");
-		await clickAndSettle(required(genreFieldset.querySelector('[data-genre-name="Comedy"] input'), "Comedy Genre source"));
+		await clickAndSettle(required(genreFieldset.querySelector('[data-genre-name="Comedy"]'), "Comedy Genre source"));
 		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Advanced options");
 		await clickAndSettle(required(advanced.querySelector(":scope > summary"), "Advanced summary"));
 		await act(async () => {
-			setInputValue(required(dialog.querySelector("#decade-source-advanced-rating-min"), "Minimum rating"), "5");
+			setInputValue(required(dialog.querySelector("#discover-field-voteAverageGte"), "Minimum rating"), "5");
 			await afterCommittedEffects();
 		});
 		const requestsBeforeExplicitPreview = requests.length;
@@ -8036,6 +8106,253 @@ async function runMountedRegressions() {
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
 window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSharedAdvancedScenario = (view) => runNativeSharedAdvancedScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+
+// #220 uses the existing mounted shell, controller, live providers and screenshot
+// binding. No external response or artwork is replaced by fixture data.
+window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false }) => {
+ const check = (value, message) => { if (!value) throw new Error(`${family}/${scope}/${innerWidth}: ${message}`); return value; };
+ const click = clickAndSettle, wait = waitForMountedCondition, settle = afterCommittedEffects;
+ const button = (root, text) => [...root.querySelectorAll("button")].find((element) => element.textContent.trim() === text);
+ const catalogueResult = await liveStreamingCatalogueProvider.loadCatalogue();
+ if (catalogueResult) check(catalogueResult.ok, catalogueResult.error?.message);
+ const service = catalogueResult.data.providers.find((entry) => entry.id === 8);
+ const excludedService = check(catalogueResult.data.providers.find((entry) => entry.name === "Amazon Prime Video" && Object.hasOwn(entry.moviePriorities, "AU") && Object.hasOwn(entry.tvPriorities, "AU")), "live excluded provider missing");
+ if (family === "streaming") check(service, "live Netflix catalogue identity missing");
+ const requests = [];
+ const fetchImpl = async (input, init) => {
+  const response = await fetch(input, init);
+  const url = new URL(input instanceof Request ? input.url : input);
+  if (url.pathname.startsWith("/builder/discover/")) requests.push({ url: url.toString(), status: response.status, body: await response.clone().json() });
+  return response;
+ };
+ const previewProvider = family === "genre" ? createTmdbGenrePreviewProvider({ fetchImpl }) : family === "decade" ? createTmdbDecadesPreviewProvider({ fetchImpl }) : createTmdbStreamingPreviewProvider({ fetchImpl });
+ const controller = createController(), editing = scope === "edit", guided = scope.startsWith("new-");
+ const fixed = family === "genre" ? { withGenres: "35" } : family === "decade" ? { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31", withGenres: "35" } : { watchRegion: "AU", withWatchProviders: String(service.id) };
+ const seed = { title: family === "streaming" ? service.name : family === "genre" ? "Comedy" : "1980s Comedy", provider: "tmdb", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType: "TV", sortBy: "popularity.desc", filters: { ...fixed, voteCountGte: null, voteAverageLte: null }, ownerExtra: { keep: [false, 0] } };
+ const folder = importSources(controller, editing ? [seed] : []);
+ controller.selectNode(folder.internalId);
+ const initial = controller.getState(), before = serializedValue(controller);
+ const opened = editing ? createSourceEditSession(initial.project, folder.sources[0].internalId) : null;
+ check(!editing || opened.ok, "physical editor did not open");
+ let applied, applyCalls = 0;
+ const apply = (payload) => {
+  applyCalls++;
+  applied = editing ? saveSourceEdit(controller, opened.session, payload) : guided ? ({ genre: applyGenreHierarchyPlan, decade: applyDecadesHierarchyPlan, streaming: applyStreamingHierarchyPlan })[family](controller, payload) : ({ genre: createGenreSourceBundle, decade: createDecadeSourceBundle, streaming: createStreamingSourceBundle })[family](controller, { ...payload, folderInternalId: folder.internalId });
+  return applied;
+ };
+ const providerProps = { genrePreviewProvider: family === "genre" ? previewProvider : null, decadePreviewProvider: family === "decade" ? previewProvider : null, streamingPreviewProvider: family === "streaming" ? previewProvider : null, streamingCatalogueProvider: liveStreamingCatalogueProvider };
+ const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
+ const evidence = { family, scope, width: innerWidth, height: innerHeight, previews: [], screenshots: [], layoutOnly };
+ async function shot(name) {
+  if (!globalThis.capture204Preview || (!layoutOnly && !["new-folder", "edit"].includes(scope))) return;
+  const file = `family-advanced-${family}-${scope}-${innerWidth}-${innerHeight}-${name}`;
+  await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: file })); }); evidence.screenshots.push(file + ".png");
+ }
+ try {
+  await act(async () => {
+   root.render(editing ? createElement(SourceEditorDialog, { ...providerProps, session: opened.session, initialDraft: opened.draft, onSave: apply, onCancel() {} }) : guided ? createElement(CreationDialog, { ...providerProps, scope, initialOptionId: family === "genre" ? "genres" : family === "decade" ? "decades" : "streaming-services", project: initial.project, projectRevision: initial.revision, currentYear: 2026, destinationCollectionInternalId: initial.project.collections[0].internalId, destinationCollectionTitle: "Collection", onApplyGenres: apply, onApplyDecades: apply, onApplyStreaming: apply, onCancel() {} }) : createElement(family === "genre" ? GenreSourceFlow : family === "decade" ? DecadeSourceFlow : StreamingSourceFlow, { project: initial.project, folder, previewProvider, catalogueProvider: liveStreamingCatalogueProvider, onApply: apply, onCancel() {}, onBack() {} }));
+   await settle();
+  });
+  const dialog = check(document.querySelector('.add-source-dialog[role="dialog"]'), "dialog missing");
+  check(document.activeElement?.type !== "search", "browse Search was autofocused");
+  if (!editing && family === "genre") {
+   await click(check(dialog.querySelector('[data-genre-name="Comedy"]'), "Comedy choice"));
+   await click(dialog.querySelector('button[type="submit"]'));
+  }
+  if (!editing && family === "decade") {
+   if (guided) {
+    await click(dialog.querySelector('[data-decade-preset="1980s"]')); await click(dialog.querySelector('[data-decade-preset="1990s"]'));
+    await click(dialog.querySelector('button[type="submit"]'));
+    const whole = decadeContentChoice(dialog, "Decade overview"), years = decadeContentChoice(dialog, "Individual years"), genres = decadeContentChoice(dialog, "Genre breakdown");
+    if (whole.getAttribute("aria-pressed") !== "true") await click(whole); if (years.getAttribute("aria-pressed") === "true") await click(years); if (genres.getAttribute("aria-pressed") !== "true") await click(genres);
+    await click(check(dialog.querySelector(".decades-genre-summary button"), "structural Genres launcher"));
+    const secondary = dialog.querySelector('.genre-secondary-surface');
+    const all = [...secondary.querySelectorAll('.genre-context-pane button')].find((entry) => entry.textContent.includes("All selected")); if (all) await click(all);
+    await click(check(secondary.querySelector('[data-genre-name="Comedy"]'), "structural Comedy")); await shot("structural-genres");
+    if (innerWidth <= 900) { const back = secondary.querySelector('.genre-exclusion-mobile-back'); if (back) await click(back); }
+    await click(button(secondary, "Done"));
+   } else {
+    await click(dialog.querySelector('input[name="decade-source-decade"][value="1980s"]'));
+    await click(dialog.querySelector('[data-decade-source-control="genres"] [data-genre-name="Comedy"]'));
+   }
+  }
+  if (!editing && family === "streaming") {
+   await click(await wait(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "live AU region", timeoutMs: 30000 }));
+   if (guided) await click(dialog.querySelector('[data-streaming-region="US"]'));
+   await click(guided ? dialog.querySelector('button[type="submit"]') : dialog.querySelector('.streaming-region-actions .editor-apply'));
+   const search = dialog.querySelector('input[type="search"]');
+   await act(async () => { setInputValue(search, String(service.id)); await settle(); });
+   await click(await wait(() => dialog.querySelector(`[data-streaming-provider="${service.id}"]`), { label: "live Netflix selection" }));
+   if (guided) await click(dialog.querySelector('button[type="submit"]'));
+  }
+  const advanced = check(await wait(() => dialog.querySelector('.genre-advanced-options'), { label: "family Advanced" }), "Advanced missing");
+  check(!advanced.open && dialog.querySelectorAll('.genre-advanced-options').length === 1, "Advanced is not one collapsed disclosure");
+  await click(advanced.querySelector('summary'));
+  const fields = ["voteCountGte", "voteAverageGte", "voteAverageLte"].map((field) => check(advanced.querySelector('#discover-field-' + field), field));
+  const boxes = fields.map((field) => field.getBoundingClientRect());
+  check(innerWidth > 900 ? boxes.every((box) => Math.abs(box.top - boxes[0].top) < 2) : boxes.every((box, index) => !index || box.top >= boxes[index - 1].bottom), "threshold row/stack");
+  check(fields.map((field) => field.labels[0].textContent).join("|") === "Minimum votes|Minimum rating|Maximum rating", "threshold order");
+  async function field(name, value) {
+   const input = check(advanced.querySelector('#discover-field-' + name), name);
+   await act(async () => { if (input.tagName === "SELECT") { input.value = value; input.dispatchEvent(new Event("change", { bubbles: true })); } else setInputValue(input, value); await settle(); });
+  }
+  await field("voteCountGte", "0"); await field("voteAverageGte", "0"); await field("voteAverageLte", "10");
+  await field("withOriginalLanguage", "en"); await field("withOriginCountry", "US");
+  if (family !== "decade") { await field("releaseDateGte", "1970-01-02"); await field("releaseDateLte", "2026-09-17"); await field("year", "2020"); await click(advanced.querySelector('[aria-label="Clear year"]')); check(advanced.querySelector('#discover-field-year').value === "", "Year clear failed"); }
+  else check(!advanced.querySelector('#discover-field-releaseDateGte, #discover-field-year'), "Decade period editable");
+  if (family === "decade" && (guided || editing)) {
+   const launcher = advanced.querySelector('.genre-advanced-compact-actions button'); await click(launcher);
+   const secondary = check(dialog.querySelector('.genre-secondary-surface'), "physical/guided exclusion surface");
+   async function context(name) {
+    const back = secondary.querySelector('.genre-exclusion-mobile-back');
+    if (innerWidth <= 900 && secondary.querySelector('[data-mobile-detail="true"]')) { await click(back); await wait(() => !secondary.querySelector('[data-mobile-detail="true"]'), { label: "exclusion contexts" }); }
+    await click(check([...secondary.querySelectorAll('.genre-context-pane button')].find(entry => entry.querySelector('strong')?.textContent === name), name + " context"));
+   }
+   if (guided) {
+    await context("Shared exclusions"); await click(secondary.querySelector('[data-genre-name="Documentary"]'));
+    await context("1980s"); check(!secondary.querySelector('[data-genre-name="Documentary"]'), "inherited exclusions editable");
+    await click(button(secondary, "Customise genres")); check(secondary.querySelector('[data-genre-name="Documentary"]').getAttribute('aria-pressed') === "false", "Customise copied Shared");
+    await click(secondary.querySelector('[data-genre-name="Documentary"]')); await click(button(secondary, "Clear selections")); check(button(secondary, "Use default"), "Clear lost Custom");
+    await click(button(secondary, "Use default")); check(button(secondary, "Customise genres"), "Use default did not restore inheritance"); await click(button(secondary, "Customise genres"));
+    await context("Shared exclusions"); await click(secondary.querySelector('[data-genre-name="Horror"]'));
+    await context("1980s"); check(secondary.querySelector('[data-genre-name="Horror"]').getAttribute('aria-pressed') === "false", "Shared changed blank Custom");
+    await shot("blank-custom"); evidence.inheritance = true;
+    if (innerWidth <= 900) { await click(secondary.querySelector('.genre-exclusion-mobile-back')); await wait(() => !secondary.querySelector('[data-mobile-detail="true"]'), { label: "return exclusion contexts" }); }
+   } else {
+    await click(secondary.querySelector('[data-genre-name="Documentary"]'));
+    check(secondary.querySelector('[data-genre-name="Documentary"]').getAttribute('aria-pressed') === "true", "physical exclusion did not select");
+    await shot("exclusions"); evidence.physicalExclusions = true;
+   }
+   await click(button(secondary, "Done")); await wait(() => !dialog.querySelector('.genre-secondary-surface'), { label: "exclusion close" }); check(document.activeElement === launcher, "exclusion focus restoration");
+   const help = advanced.querySelector('.genre-advanced-help-action'); await click(help); const helpSurface = dialog.querySelector('.genre-secondary-surface'); check(helpSurface.textContent.includes("Decade dates stay fixed"), "Decade help wiring"); await click(button(helpSurface, "Done")); check(document.activeElement === help, "help focus restoration");
+  }
+  if (family === "streaming") {
+   await click([...advanced.querySelectorAll('.discover-genre-pills button')].find((entry) => entry.textContent.startsWith("Comedy")));
+   await click(button(advanced.querySelector('[aria-label="Genre action"]'), "Exclude"));
+   await click([...advanced.querySelectorAll('.discover-genre-pills button')].find((entry) => entry.textContent.startsWith("Documentary")));
+   const included = advanced.querySelector('.discover-genre-pills button[data-chosen]:not([data-excluded])'), excluded = advanced.querySelector('.discover-genre-pills button[data-excluded]');
+   check(getComputedStyle(excluded).borderStyle === "dashed" && getComputedStyle(included).borderStyle !== "dashed", "Genre states lack non-hue distinction");
+   evidence.forcedColors = matchMedia("(forced-colors: active)").matches;
+   if (evidence.forcedColors) check(getComputedStyle(included).outlineStyle !== "none", "forced-colour selected outline");
+   advanced.querySelector(".discover-genres").scrollIntoView({ block: "start" }); await shot(evidence.forcedColors ? "genres-forced-colours" : "genres");
+  }
+  async function choice(key, query, id, exclude = false, conflict = false) {
+   const picker = check(advanced.querySelector(`[data-picker="${key}"]`), key + " picker");
+   await wait(() => !picker.querySelector('.discover-picker-launch').disabled, { label: key + " catalogue", timeoutMs: 60000 });
+   if (exclude && picker.querySelector('.discover-mode')) await click(button(picker.querySelector('.discover-mode'), "Exclude"));
+   let search = picker.querySelector('input');
+   if (innerWidth <= 900) { await click(picker.querySelector('.discover-picker-launch')); search = document.querySelector('.discover-selection-dialog input'); }
+   await act(async () => { search.focus({ preventScroll: true }); setInputValue(search, query); await settle(); });
+   const area = document.querySelector('.discover-selection-dialog') ?? picker;
+   let chosen;
+   try { chosen = await wait(() => area.querySelector(`[data-tmdb-id="${id}"]`), { label: key + " live choice", timeoutMs: 30000 }); }
+   catch (error) { throw new Error(error.message + " " + area.textContent); }
+   const owner = dialog.querySelector(".add-source-scroll"), scrollTop = owner?.scrollTop;
+   await act(async () => { search.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true })); await settle(); });
+   check(owner?.scrollTop === scrollTop && window.scrollY === 0, "picker keyboard moved outer scroll"); evidence.keyboardStable = true;
+   await click(chosen);
+   if (conflict) { check(area.textContent.includes("required service and cannot be excluded"), "required service exclusion had no explanation"); evidence.requiredProviderConflict = true; }
+   const panel = document.querySelector('.discover-selection-dialog'); if (panel) { await click(button(panel, "Done")); check(document.activeElement === picker.querySelector('.discover-picker-launch'), "picker focus not restored"); }
+  }
+  await choice("withKeywords", "friendship", 6054);
+  await choice("withKeywords", "shark", 15097, true);
+  await choice("withCompanies", "Pixar", 3, true);
+  if (family !== "streaming") await field("watchRegion", "AU");
+  if (family === "streaming") await choice("withWatchProviders", service.name, service.id, true, true);
+  await choice("withWatchProviders", excludedService.name, excludedService.id, true);
+  check(requests.length === 0 && serializedValue(controller) === before, "Advanced issued titles or saved data");
+  await click(advanced.querySelector('summary')); await click(advanced.querySelector('summary'));
+  check(advanced.querySelector('#discover-field-voteCountGte').value === "0", "disclosure lost explicit zero");
+  fields[0].closest(".native-threshold-fields").scrollIntoView({ block: "start" }); await shot("thresholds");
+  const owners = [...dialog.querySelectorAll('*')].filter((element) => element.getClientRects().length && ['auto', 'scroll'].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
+  check(owners.length <= 1 && window.scrollY === 0 && dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Advanced overflow or competing scroll owners");
+  evidence.noImplicitRequests = true; evidence.boundedScroll = true; evidence.focusRestored = true;
+  if (layoutOnly) return evidence;
+  if (guided && family === "decade") { const catalogue = dialog.querySelector('.decades-preview-catalogue'); await click(catalogue.querySelector('summary')); }
+  const trigger = editing ? dialog.querySelector('[data-action="preview-source-edit"]') : [...dialog.querySelectorAll('button')].find((element) => element.textContent.trim() === "Preview titles");
+  check(trigger && !trigger.disabled, "current draft Preview unavailable: " + dialog.textContent.slice(-1600));
+  trigger.focus({ preventScroll: true }); await click(trigger);
+  const modal = check(document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal'), "Preview modal missing");
+  await wait(() => { const error = modal.querySelector('[role="alert"]'); if (error) throw new Error("Production Preview failed: " + error.textContent); return requests.length && !modal.querySelector('.studio-preview-state'); }, { label: "live combined-filter Preview", timeoutMs: 30000 });
+  const first = requests.at(-1); check(first.status === 200, "production response status");
+  const query = new URL(first.url).searchParams;
+  for (const [key, value] of Object.entries({ include_adult: "false", "vote_count.gte": "0", "vote_average.gte": "0", "vote_average.lte": "10", with_original_language: "en", with_origin_country: "US", with_keywords: "6054", without_keywords: "15097", without_companies: "3", without_watch_providers: String(excludedService.id), watch_region: "AU" })) check(query.get(key) === value, key + " query mismatch: " + first.url);
+  const images = [...modal.querySelectorAll('img')];
+  await wait(() => images.every((image) => image.complete && image.naturalWidth > 0), { label: "real TMDB Preview artwork", timeoutMs: 30000 });
+  const posters = requests.flatMap((request) => request.body.results.filter((row) => row.poster_path).map((row) => row.poster_path));
+  check(images.every((image) => new URL(image.src).origin === "https://image.tmdb.org" && posters.some((poster) => new URL(image.src).pathname.endsWith(poster))), "artwork differs from live response");
+  check(images.length || modal.querySelector('[data-preview-empty-state]'), "missing real posters or exact empty state");
+  evidence.previews.push({ url: first.url, status: first.status, totalResults: first.body.total_results, imageCount: images.length });
+  await shot("preview"); await click(button(modal, "Close"));
+  check(document.activeElement === trigger && serializedValue(controller) === before, "Preview changed data or lost focus");
+  const count = requests.length; await click(trigger);
+  const cached = document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal');
+  await wait(() => !cached.querySelector('.studio-preview-state'), { label: "cached Preview" }); check(requests.length === count, "complete query cache missed"); await click(button(cached, "Close"));
+  await click(dialog.querySelector('button[type="submit"]'));
+  for (let stage = 0; !applied && stage < 3; stage++) {
+   await settle();
+   if (guided && ["genre", "decade"].includes(family)) {
+    const shape = dialog.querySelector('input[name="' + (family === "genre" ? 'genre-hierarchy-folder-shape' : 'decades-folder-shape') + '"][value="SQUARE"]');
+    if (shape) {
+     const disclosure = shape.closest('details'); if (disclosure && !disclosure.open) await click(disclosure.querySelector('summary'));
+     await click(shape); check(shape.checked, "Square creation selection failed"); evidence.creationShape = "SQUARE";
+     check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Square creation overflow");
+     shape.closest('fieldset').scrollIntoView({ block: 'center' }); await shot("square-appearance");
+    }
+   }
+   const submit = dialog.querySelector('button[type="submit"]'); check(submit && !submit.disabled, "Review cannot apply: " + dialog.textContent.slice(-1400)); await click(submit);
+  }
+  check(applied?.ok && applyCalls === 1, "atomic apply failed: " + JSON.stringify(applied));
+  check(controller.getState().revision === initial.revision + 1, "apply used more than one transaction");
+  const exported = controller.stringifyProject(); check(exported.ok, "export failed");
+  const reopened = createController(); check(reopened.importValue(exported.value).ok, "reopen failed"); const ordered = (value) => Array.isArray(value) ? value.map(ordered) : value && typeof value === "object" ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, ordered(value[key])])) : value; check(JSON.stringify(ordered(reopened.serializeProject().value)) === JSON.stringify(ordered(exported.value)), "export/reopen changed values or array order");
+  const sources = reopened.getState().project.collections.flatMap((collection) => collection.folders.flatMap((folder) => folder.sources));
+  const authored = sources.filter((source) => source.editable.filters?.withKeywords === "6054"); check(authored.length, "combined filters absent after reopen");
+  check(authored.every((source) => source.editable.filters.voteCountGte === 0 && source.editable.filters.withoutCompanies === "3" && source.editable.filters.withoutWatchProviders === String(excludedService.id) && source.editable.filters.year == null), "cleared/combined filters changed on reopen");
+  if (editing) check(JSON.stringify(authored[0].rawImported.ownerExtra) === JSON.stringify(seed.ownerExtra), "unknown imported source field lost");
+  if (guided && ["genre", "decade"].includes(family)) {
+   const generated = reopened.getState().project.collections.flatMap(collection => collection.folders).filter(folder => folder.sources.some(source => source.editable.filters?.withKeywords === "6054"));
+   check(evidence.creationShape === "SQUARE" && generated.every(folder => folder.editable.tileShape === "SQUARE"), "Square lost through plan/export/reopen");
+   if (family === "decade") check(generated.every(folder => ["coverImageUrl", "focusGifUrl", "heroBackdropUrl", "titleLogoUrl"].every(field => !folder.editable[field])), "Decades unexpectedly acquired artwork");
+   if (family === "genre" && scope === "new-folder") {
+    const beforeFolderEdit = serializedValue(reopened), target = generated[0];
+    const parent = reopened.getState().project.collections.find(collection => collection.folders.includes(target));
+    reopened.selectNode(parent.internalId);
+    await act(async () => { root.render(createElement(MountedWorkspace, { controller: reopened })); await settle(); });
+    const card = check([...host.querySelectorAll('[data-hierarchy-card="folder"]')].find(card => card.querySelector('.node-title')?.textContent.trim() === target.editable.title), "rich Genre folder card");
+    card.scrollIntoView({ block: "center", behavior: "instant" }); await settle();
+    await wait(() => [...card.querySelectorAll("img")].every(image => image.complete && image.naturalWidth > 0), { label: "real rich Genre folder thumbnail", timeoutMs: 30000 });
+    await settle();
+    await click(check(card.querySelector('[data-action="open-folder-actions"]'), "Folder actions trigger"));
+    await click(check(document.querySelector('[data-actions-menu="folder"]:not([hidden]) [data-action="edit-folder"]'), "Folder Edit action"));
+    const editor = check(document.querySelector('[data-node-editor="folder"]'), "physical Folder Edit");
+    await wait(() => editor.querySelector('[data-folder-artwork-suggestions="ready"]'), { label: "rich Genre artwork suggestions" });
+    evidence.artworkShapes = [];
+    for (const shape of ["POSTER", "LANDSCAPE", "SQUARE"]) {
+     const choice = editor.querySelector('input[name="node-editor-folder-shape"][value="' + shape + '"]');
+     await click(check(choice, "physical shape radio: " + shape)); check(choice.checked, "physical shape selection");
+     const expected = resolveGenreArtwork("Comedy", shape);
+     for (const [field, url] of Object.entries(expected)) {
+      const input = check(editor.querySelector('[data-editor-field="' + field + '"] input'), field);
+      await wait(() => input.value === url, { label: field + " canonical role" });
+      const image = check(editor.querySelector('[data-artwork-preview="' + field + '"] img'), field + " preview");
+      image.scrollIntoView({ block: "center" });
+      await wait(() => image.getAttribute("src") === url && image.complete && image.naturalWidth > 0, { label: "real canonical Genre " + field, timeoutMs: 30000 });
+     }
+     check(!editor.querySelector('[data-editor-field="focusGifEnabled"] input').checked, "shape transition enabled focus");
+     check(serializedValue(reopened) === beforeFolderEdit, "Folder Edit changed saved data before Apply");
+     check(editor.scrollWidth <= editor.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Folder Edit overflow");
+     evidence.artworkShapes.push({ shape, loaded: true, ...expected });
+     choice.closest('fieldset').scrollIntoView({ block: "center" }); await shot("folder-edit-" + shape.toLowerCase());
+    }
+    await click(check(editor.querySelector('[data-action="cancel-node-edit"]'), "Folder Edit Cancel"));
+    check(serializedValue(reopened) === beforeFolderEdit, "Folder Edit Cancel changed rich source or artwork");
+   }
+  }
+  evidence.atomic = true; evidence.preservation = true; evidence.reopenedEditors = authored.map((source) => sourceEditorFor(source)?.id); evidence.sourceCount = authored.length;
+  return evidence;
+ } finally { await act(async () => root.unmount()); host.remove(); }
+};
 window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
@@ -8085,3 +8402,121 @@ window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenar
 		};
 	},
 );
+
+
+// Focused #220 presentation review through existing production creation surfaces.
+// Local official Genre choices need no service substitute; no Preview is requested.
+window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedColors = false }) => {
+ const check = (value, message) => { if (!value) throw new Error('Genre rules ' + innerWidth + ': ' + message); return value; };
+ const click = clickAndSettle, settle = afterCommittedEffects;
+ const button = (scope, label) => check([...scope.querySelectorAll('button')].find(node => node.textContent.trim() === label), label);
+ const visible = node => Boolean(node && node.getClientRects().length && getComputedStyle(node).display !== 'none');
+ const evidence = { width: innerWidth, forcedColors, screenshots: [], states: [], focusRestored: true, noMutation: true };
+ let host, root, controller, folder, dialog, before;
+ async function mount(family) {
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  controller = createController(); folder = importSources(controller, []); controller.selectNode(folder.internalId);
+  before = serializedValue(controller); const state = controller.getState();
+  await act(async () => { root.render(family === 'decades' ? createElement(CreationDialog, { scope: 'new-collection', initialOptionId: 'decades', currentYear: 2026, project: state.project, projectRevision: state.revision, onCancel() {}, onApplyDecades() { throw new Error('Presentation must not apply'); } }) : createElement(family === 'inline' ? DecadeSourceFlow : GenreSourceFlow, { project: state.project, folder, onCancel() {}, onBack() {}, onApply() { throw new Error('Presentation must not apply'); } })); await settle(); });
+  dialog = check(document.querySelector('.add-source-dialog[role="dialog"]'), 'dialog');
+ }
+ async function unmount() { check(serializedValue(controller) === before, 'presentation changed project'); await act(async () => { root.unmount(); await settle(); }); host.remove(); }
+ const panel = () => check(dialog.querySelector('.genre-secondary-surface .genre-advanced-subview'), 'Genre rules surface');
+ const pill = name => check(panel().querySelector('[data-genre-name="' + name + '"]'), name + ' pill');
+ async function contexts() {
+  if (innerWidth <= 900 && panel().dataset.mobileDetail === 'true') {
+   await click(panel().querySelector('.genre-exclusion-mobile-back'));
+   await waitForMountedCondition(() => panel().dataset.mobileDetail !== 'true', { label: 'Genre contexts return' });
+  }
+ }
+ async function context(name) {
+  await contexts(); await click(check([...panel().querySelectorAll('.genre-context-pane button')].find(node => node.querySelector('strong')?.textContent === name), name + ' context'));
+  if (innerWidth <= 900) check(document.activeElement === panel().querySelector('.genre-exclusion-detail-header h5'), 'detail heading focus');
+ }
+ async function shot(name, { excluded = null, included = null, editable = true } = {}) {
+  const pane = panel(); const card = pane.querySelector('.discover-genres');
+  if (editable) {
+   check(visible(card) && visible(card.querySelector('.discover-genre-pills')), name + ' card hidden');
+   check(!card.querySelector('.discover-mode, .discover-operator'), name + ' invented modes/operator');
+   if (excluded !== null) check(card.querySelectorAll('[data-excluded]').length === excluded, name + ' exclusions count');
+   if (included !== null) check(card.querySelectorAll('[data-chosen]:not([data-excluded])').length === included, name + ' inclusions count');
+   for (const node of card.querySelectorAll('[data-chosen]')) {
+    check(getComputedStyle(node).borderStyle === (node.hasAttribute('data-excluded') ? 'dashed' : 'solid'), 'semantic non-colour border');
+    if (forcedColors) check(getComputedStyle(node).outlineStyle !== 'none', 'forced-colours selection outline');
+   }
+  } else check(!pane.querySelector('.discover-genre-pills'), 'Using default catalogue is editable');
+  check(pane.scrollWidth <= pane.clientWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, name + ' horizontal overflow');
+  const owners = [dialog, ...dialog.querySelectorAll('*')].filter(node => !node.closest('[inert]') && visible(node) && ['auto','scroll'].includes(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1);
+  check(owners.length <= 1 && scrollY === 0, name + ' competing scroll owners: ' + owners.map(node => node.className).join(', '));
+  evidence.states.push(name);
+  if (globalThis.capture204Preview && (!compact || forcedColors)) {
+   pane.scrollTop = 0;
+   const file = 'genre-rules-' + innerWidth + '-' + (forcedColors ? 'forced-colours-' : '') + name;
+   await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: file })); }); evidence.screenshots.push(file + '.png');
+  }
+ }
+ async function done(trigger) {
+  await contexts(); await click(button(panel(), 'Done'));
+  await waitForMountedCondition(() => !dialog.querySelector('.genre-secondary-surface'), { label: 'Genre rules closed' });
+  check(document.activeElement === trigger, 'launcher focus restoration');
+ }
+ try {
+  for (const names of compact ? [['Comedy']] : [['Comedy','Animation','Drama'], ['Comedy']]) {
+   await mount('genre');
+   for (const name of names) await click(dialog.querySelector('[data-genre-name="' + name + '"]'));
+   await click(dialog.querySelector('button[type="submit"]'));
+   await click(dialog.querySelector('.genre-advanced-options summary'));
+   const trigger = dialog.querySelector('.genre-advanced-compact-actions button'); await click(trigger);
+   if (names.length > 1) {
+    if (innerWidth <= 900 && globalThis.capture204Preview) {
+     await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: 'genre-rules-' + innerWidth + '-genre-contexts' })); }); evidence.screenshots.push('genre-rules-' + innerWidth + '-genre-contexts.png');
+    }
+    await context('Comedy');
+   } else check(!panel().querySelector('.genre-context-pane') && visible(panel().querySelector('.genre-context-choice-pane')), 'single Genre added navigation');
+   check(!panel().querySelector('[data-genre-name="Comedy"]'), 'self exclusion');
+   await click(pill('Documentary')); await click(pill('Horror'));
+   await shot(names.length > 1 ? 'genre-multiple' : 'genre-single', { excluded: 2 });
+   await done(trigger); await unmount();
+  }
+  if (compact) return evidence;
+  await mount('decades');
+  await click(dialog.querySelector('[data-decade-preset="1980s"]')); await click(dialog.querySelector('[data-decade-preset="1990s"]'));
+  await click(dialog.querySelector('button[type="submit"]'));
+  const genres = decadeContentChoice(dialog, 'Genre breakdown'); if (genres.getAttribute("aria-pressed") !== "true") await click(genres);
+  const structuralTrigger = dialog.querySelector('.decades-genre-summary button'); await click(structuralTrigger);
+  await context('All selected Decades'); await click(pill('Comedy')); await click(pill('Animation'));
+  await shot('decades-structural', { included: 2 });
+  const generatedTrigger = panel().querySelector('.genre-advanced-compact-actions button'); await click(generatedTrigger);
+  await context('Comedy'); await click(pill('Documentary')); await click(pill('Horror'));
+  await shot('decades-generated-shared', { excluded: 2 });
+  await contexts(); await click(button(panel(), 'Done'));
+  await waitForMountedCondition(() => dialog.querySelector('.decades-genre-subview'), { label: 'structural return' });
+  check(document.activeElement === panel().querySelector('#decades-genre-configuration-title'), 'generated exclusions return heading focus');
+  await context('1980s'); await click(panel().querySelector('.genre-advanced-compact-actions button'));
+  await context('Comedy'); await shot('decades-generated-default', { editable: false });
+  await click(button(panel(), 'Customise genres')); check(!panel().querySelector('[data-excluded]'), 'whole-map Custom copied Shared');
+  await click(pill('Drama')); await shot('decades-generated-custom', { excluded: 1 });
+  await context('Animation'); check(!panel().querySelector('[data-excluded]'), 'generated leaf ownership mixed');
+  await click(button(panel(), 'Clear selections')); await context('Comedy'); check(!panel().querySelector('[data-excluded]'), 'clear did not reset whole map');
+  await click(button(panel(), 'Use default')); check(!panel().querySelector('.discover-genre-pills'), 'whole-map Use default');
+  await contexts(); await click(button(panel(), 'Done')); await waitForMountedCondition(() => dialog.querySelector('.decades-genre-subview'), { label: 'structural return' });
+  await done(structuralTrigger);
+  await click(dialog.querySelector('.genre-advanced-options summary'));
+  const ordinaryTrigger = dialog.querySelector('.genre-advanced-options .genre-advanced-compact-actions button'); await click(ordinaryTrigger);
+  await context('Shared exclusions'); await click(pill('Documentary')); await click(pill('Horror'));
+  await shot('decades-shared', { excluded: 2 });
+  await context('1980s'); await shot('decades-using-default', { editable: false });
+  check(panel().textContent.includes('Click customise to make changes specific to 1980s.'), 'actual Decade prompt');
+  await click(button(panel(), 'Customise genres')); await shot('decades-custom-blank', { excluded: 0 });
+  await click(pill('Drama')); await click(pill('Family')); await shot('decades-custom-populated', { excluded: 2 });
+  await context('Shared exclusions'); await click(pill('Crime')); await context('1980s'); check(pill('Crime').getAttribute('aria-pressed') === 'false', 'Shared changed Custom');
+  await click(button(panel(), 'Clear selections')); check(button(panel(), 'Use default') && !panel().querySelector('[data-excluded]'), 'Clear lost blank Custom');
+  await click(button(panel(), 'Use default')); check(!panel().querySelector('.discover-genre-pills'), 'Use default left editable controls');
+  await done(ordinaryTrigger); await unmount();
+  await mount('inline'); const inlineCard = dialog.querySelector('[data-decade-source-control="genres"]');
+  await click(inlineCard.querySelector('[data-genre-name="Comedy"]')); await click(inlineCard.querySelector('[data-genre-name="Animation"]'));
+  check(inlineCard.querySelectorAll('[data-chosen]').length === 2 && !inlineCard.querySelector('.discover-operator'), 'inline structural pills');
+  await unmount();
+  return evidence;
+ } finally { if (host?.isConnected) { await act(async () => root.unmount()); host.remove(); } }
+};

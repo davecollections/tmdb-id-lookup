@@ -264,9 +264,9 @@ test("advanced filter recognition is lossless and fails closed on unsupported sh
 		readGenreAdvancedFilters(filters, { mediaType: "MOVIE", includedGenre: "Comedy" }),
 		fullAdvanced({ exclusionsByGenre: { Comedy: ["Documentary", "Horror"] } }),
 	);
-	assert.equal(readGenreAdvancedFilters({ ...filters, releaseDateGte: "2001-02-01" }, { mediaType: "MOVIE", includedGenre: "Comedy" }), null);
+	assert.equal(readGenreAdvancedFilters({ ...filters, releaseDateGte: "2001-02-01" }, { mediaType: "MOVIE", includedGenre: "Comedy" }).filters.releaseDateGte, "2001-02-01");
 	assert.equal(readGenreAdvancedFilters({ ...filters, withoutGenres: "99|27" }, { mediaType: "MOVIE", includedGenre: "Comedy" }), null);
-	assert.equal(readGenreAdvancedFilters({ ...filters, withKeywords: "42" }, { mediaType: "MOVIE", includedGenre: "Comedy" }), null);
+	assert.equal(readGenreAdvancedFilters({ ...filters, withKeywords: "42" }, { mediaType: "MOVIE", includedGenre: "Comedy" }).filters.withKeywords, "42");
 });
 
 test("Genre optional readers accept null without admitting blank numeric/date fields or falsy malformed codes", () => {
@@ -542,9 +542,9 @@ test("Genre Source Edit recognizes all approved filters and fails closed on unsu
 	assert.equal(sourceEditorFor(node)?.id, GENRE_SOURCE_EDITOR_ID);
 	for (const mutation of [
 		(value) => { value.filters.withGenres = "35,28"; },
-		(value) => { value.filters.withKeywords = "42"; },
-		(value) => { value.filters.releaseDateGte = "2001-02-01"; },
-		(value) => { value.filters.withoutGenres = "99|27"; },
+
+
+
 		(value) => { value.sortBy = "revenue.desc"; },
 	]) {
 		const changed = structuredClone(editable);

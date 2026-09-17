@@ -1,7 +1,11 @@
+import { discoverSortIsPreservationOnly } from "./source-edit-utils.js";
+import { DECADES_ADVANCED_FILTER_FIELDS } from "../source-add/decades-source.js";
+import { familyAdvancedTouchedFields } from "./source-edit-utils.js";
 import {
 	discoverSortValue,
 	discoverSourceIdentity,
 	discoverSourceNodeIdentity,
+	resolveEffectiveDiscoverSource,
 } from "../nuvio/discover.js";
 import {
 	inspectCanonicalDecadeSource,
@@ -9,6 +13,9 @@ import {
 } from "../source-add/decades-classification.js";
 import { buildCanonicalDecadePeriodDrafts } from "../source-add/decades-source.js";
 import { GENRE_CONCEPTS, officialGenreConcept } from "../source-add/genre-catalogue.js";
+import { DISCOVER_CATALOGUE_FILTER_FIELDS } from "../source-add/advanced-discover.js";
+import { DISCOVER_ADVANCED_GROUPS, inspectNativeExtraFilters, validateNativeExtraEdit, ownedNativeExtraMirrorSource } from "../source-add/native-shared-advanced.js";
+import { patchTouchedDiscoverFilters, inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
 import {
 	diagnostic,
 	validateTouchedSourceTitle,
@@ -16,8 +23,22 @@ import {
 
 export const DECADE_SOURCE_EDITOR_ID = "decade";
 
+export function inspectEditableDecadeSource(source) {
+	const effective = resolveEffectiveDiscoverSource(source);
+	if (!effective.ok) return null;
+	const value = effective.value, filters = value.filters;
+	if (!filters || (filters.year !== undefined && filters.year !== null && filters.year !== "")) return null;
+	if (inspectDiscoverMirrors(value).unresolved.some((entry) => ["withGenres", "releaseDateGte", "releaseDateLte"].includes(entry.field))) return null;
+	const fixed = Object.fromEntries(["withGenres", "releaseDateGte", "releaseDateLte"].filter((field) => Object.hasOwn(filters, field)).map((field) => [field, filters[field]]));
+	const anchor = inspectCanonicalDecadeSource({ provider: value.provider, tmdbSourceType: value.tmdbSourceType, tmdbId: value.tmdbId, mediaType: value.mediaType, sortBy: value.sortBy, filters: fixed });
+	if (!anchor) return null;
+	const safe = inspectNativeExtraFilters(source, DISCOVER_ADVANCED_GROUPS);
+	const excludedGenres = (safe.filters.withoutGenres ?? "").split(",").filter(Boolean).map((id) => ({ ...GENRE_CONCEPTS.find((genre) => (anchor.mediaType === "TV" ? genre.tvId : genre.movieId) === Number(id)), tmdbId: Number(id) }));
+	return { ...anchor, value, safeFilters: safe.filters, extraEditable: safe.editable, excludedGenres };
+}
+
 function inputText(value) {
-	return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+	return value === undefined || value === null ? "" : typeof value === "string" || typeof value === "number" ? String(value).trim() : "invalid";
 }
 
 function parseRating(value, field, label, errors) {
@@ -49,7 +70,7 @@ function exclusionNames(draft) {
 
 function compileCandidate({ source, draft }) {
 	const errors = [...validateTouchedSourceTitle(draft)];
-	const inspected = source ? inspectCanonicalDecadeSourceNode(source) : null;
+	const inspected = source ? inspectEditableDecadeSource(source) : null;
 	if (
 		(source && inspected === null)
 		|| (inspected && (
@@ -110,6 +131,7 @@ function compileCandidate({ source, draft }) {
 		genreName: draft.genreName,
 		sortOptionId: draft.sortOptionId,
 		advanced: {
+			...(Object.hasOwn(draft.advanced, "filters") ? { filters: draft.advanced.filters } : {}),
 			minimumRating,
 			maximumRating,
 			minimumVotes,
@@ -143,7 +165,7 @@ function compileCandidate({ source, draft }) {
 }
 
 function readInitialState(source) {
-	const inspected = inspectCanonicalDecadeSourceNode(source);
+	const inspected = inspectEditableDecadeSource(source);
 	const excludedNames = inspected?.excludedGenres.map((entry) => entry.name) ?? [];
 	const genreName = inspected?.genre?.name ?? null;
 	return Object.freeze({
@@ -158,22 +180,30 @@ function readInitialState(source) {
 		sortBy: inspected?.value?.sortBy,
 		sortOptionId: inspected?.sortOptionId ?? null,
 		sortTouched: false,
+		sortEditable: !discoverSortIsPreservationOnly(inspected?.value),
 		advanced: Object.freeze({
-			minimumRating: String(inspected?.value?.filters?.voteAverageGte ?? ""),
-			maximumRating: String(inspected?.value?.filters?.voteAverageLte ?? ""),
-			minimumVotes: String(inspected?.value?.filters?.voteCountGte ?? ""),
-			originalLanguage: inspected?.value?.filters?.withOriginalLanguage ?? "",
-			originCountry: inspected?.value?.filters?.withOriginCountry ?? "",
+			filters: Object.freeze(Object.fromEntries(Object.entries(inspected?.safeFilters ?? {}).filter(([field]) => DISCOVER_CATALOGUE_FILTER_FIELDS.includes(field)))),
+			minimumRating: String(inspected?.safeFilters?.voteAverageGte ?? ""),
+			maximumRating: String(inspected?.safeFilters?.voteAverageLte ?? ""),
+			minimumVotes: String(inspected?.safeFilters?.voteCountGte ?? ""),
+			originalLanguage: inspected?.safeFilters?.withOriginalLanguage ?? "",
+			originCountry: inspected?.safeFilters?.withOriginCountry ?? "",
 			ordinaryExcludedGenres: Object.freeze(genreName === null ? excludedNames : []),
 			exclusionsByGenre: Object.freeze(genreName === null ? {} : { [genreName]: Object.freeze(excludedNames) }),
 		}),
 		advancedTouched: false,
+		touchedFilters: Object.freeze([]),
+		extraEditable: inspected?.extraEditable,
 	});
 }
 
 function validateDraft({ draft, source }) {
+ if (!draft?.advanced || typeof draft.advanced !== "object" || Array.isArray(draft.advanced) || (draft.touchedFilters !== undefined && (!Array.isArray(draft.touchedFilters) || draft.touchedFilters.some((field) => !DECADES_ADVANCED_FILTER_FIELDS.includes(field))))) return { ok: false, errors: [diagnostic("SOURCE_EDIT_ADVANCED_FIXED", "$sourceEdit.filters", "Only supported optional filters can be changed here.")] };
 	const compiled = compileCandidate({ draft, source });
-	return Object.freeze({ ok: compiled.ok, errors: compiled.errors });
+	const errors = [...compiled.errors];
+	if (draft.sortTouched && discoverSortIsPreservationOnly(inspectEditableDecadeSource(source)?.value)) errors.push(diagnostic("SOURCE_EDIT_SORT_PRESERVED", "$sourceEdit.sortBy", "The conflicting imported order must be preserved."));
+	if (compiled.ok) errors.push(...validateNativeExtraEdit(source, { ...draft, filters: compiled.candidate.filters, touchedFilters: familyAdvancedTouchedFields(draft, readInitialState(source).advanced) }, DISCOVER_ADVANCED_GROUPS).errors);
+	return Object.freeze({ ok: !errors.length, errors: Object.freeze(errors) });
 }
 
 function draftIdentity({ draft }) {
@@ -186,11 +216,11 @@ function draftIdentity({ draft }) {
 function buildPatch({ source, draft }) {
 	const compiled = compileCandidate({ source, draft });
 	if (!compiled.ok) return {};
-	const inspected = inspectCanonicalDecadeSourceNode(source);
+	const inspected = inspectEditableDecadeSource(source);
 	const patch = {};
 	if (draft.titleTouched && draft.title !== inspected.value.title) patch.title = draft.title;
 	if (draft.sortTouched && compiled.candidate.sortBy !== inspected.value.sortBy) patch.sortBy = compiled.candidate.sortBy;
-	if (draft.advancedTouched && JSON.stringify(compiled.candidate.filters) !== JSON.stringify(inspected.value.filters)) patch.filters = compiled.candidate.filters;
+	if (draft.advancedTouched) Object.assign(patch, patchTouchedDiscoverFilters(source, ownedNativeExtraMirrorSource(inspected.value, DISCOVER_ADVANCED_GROUPS.flat()), compiled.candidate.filters, familyAdvancedTouchedFields(draft, readInitialState(source).advanced), patch));
 	return patch;
 }
 
@@ -202,7 +232,7 @@ export const decadeSourceEditor = Object.freeze({
 		return "This folder already contains this Decade period, media, sort and filter combination. Change the options or cancel your changes.";
 	},
 	canEdit(source) {
-		return inspectCanonicalDecadeSourceNode(source) !== null;
+		return inspectEditableDecadeSource(source) !== null;
 	},
 	identity(editable) {
 		const identity = discoverSourceIdentity(editable);
@@ -212,6 +242,7 @@ export const decadeSourceEditor = Object.freeze({
 		const identity = discoverSourceNodeIdentity(source);
 		return identity.comparable ? identity.key : null;
 	},
+	duplicateKey(source) { const identity = discoverSourceNodeIdentity(source); return identity.comparable ? identity.key : null; },
 	readInitialState,
 	validateDraft,
 	draftIdentity,

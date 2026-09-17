@@ -182,7 +182,7 @@ test("multi-Genre configure offers destination choices, removable summaries and 
 	assert.equal(markup.includes("data-attention"), false);
 	assert.equal(markup.includes("genre-elsewhere-note"), false);
 	assert.ok(markup.includes("source-elsewhere-note"));
-	for (const field of ["From year", "To year", "Minimum rating", "Maximum rating", "Minimum votes", "Original language", "Origin country"]) assert.ok(markup.includes(field), field);
+	for (const field of ["From date", "Through date", "Minimum rating", "Maximum rating", "Minimum votes", "Original language", "Origin country"]) assert.ok(markup.includes(field), field);
 	assert.equal((markup.match(/name="genre-destination"/g) ?? []).length, 2);
 	assert.match(markup, /name="genre-destination" checked="" value="current-folder"/);
 	for (const removed of ["Add every selected Genre source", "Create a separate folder for every selected Genre", "This choice only affects genres that are available for both.", "? What do these options do?"]) assert.equal(markup.includes(removed), false, removed);
@@ -276,8 +276,9 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onChange() {},
 		onOpenSecondary() {},
 	}));
-	for (const placeholder of ["1980", "1999", "7.0", "250"]) assert.ok(main.includes(`placeholder="${placeholder}"`));
-	assert.equal((main.match(/class="genre-number-input"/g) ?? []).length, 5);
+	for (const field of ["voteCountGte", "voteAverageGte", "voteAverageLte", "releaseDateGte", "releaseDateLte", "year"]) assert.ok(main.includes(`id="discover-field-${field}"`));
+	assert.equal((main.match(/type="date"/g) ?? []).length, 2);
+ assert.ok(main.includes("native-threshold-fields"));
 	assert.ok(main.includes("Horror"));
 	assert.ok(main.includes(">Choose<"));
 	assert.ok(main.includes(">What do these options do?</button>"));
@@ -291,16 +292,21 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onChange() {},
 		onDone() {},
 	}));
-	assert.ok(exclusions.includes("Exclude from Comedy"));
-	assert.ok(exclusions.includes("Choose a Genre, then select Genres to exclude from that source."));
+	assert.ok(exclusions.includes("Genre rules"));
+	assert.ok(exclusions.includes(">Comedy</h5>"));
+	assert.ok(exclusions.includes("Excluded genres"));
+	assert.ok(exclusions.includes('data-mobile-view="picker"'));
+	assert.equal(exclusions.includes("discover-mode"), false);
+	assert.equal(exclusions.includes("discover-operator"), false);
+	assert.ok(exclusions.includes("The defining Genre stays fixed. Choose compatible Genres to exclude from each source."));
 	assert.equal(exclusions.includes("Choose what you want left out of this genre’s results."), false);
 	assert.ok(exclusions.includes('data-multiple-genres="false"'));
 	assert.equal(exclusions.includes("genre-included-genre-pane"), false);
-	assert.equal(exclusions.includes("<strong>Comedy</strong>"), false);
-	for (const tvOnly of ["Action &amp; Adventure", "Kids", "News", "Reality", "Soap", "Talk", "War &amp; Politics"]) assert.equal(exclusions.includes(`<strong>${tvOnly}</strong>`), false, tvOnly);
-	assert.ok(exclusions.includes("<strong>Horror</strong>"));
+	assert.equal(exclusions.includes('data-genre-name="Comedy"'), false);
+	for (const tvOnly of ["Action &amp; Adventure", "Kids", "News", "Reality", "Soap", "Talk", "War &amp; Politics"]) assert.equal(exclusions.includes(`data-genre-name="${tvOnly}"`), false, tvOnly);
+	assert.ok(exclusions.includes('data-genre-name="Horror"'));
 	assert.equal(exclusions.includes("disabled="), false);
-	assert.equal((exclusions.match(/data-selected=/g) ?? []).length, 1);
+	assert.equal((exclusions.match(/data-excluded=/g) ?? []).length, 1);
 	assert.equal(exclusions.includes('type="checkbox"'), false);
 	assert.equal(exclusions.includes("media-correct"), false);
 
@@ -311,9 +317,9 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onChange() {},
 		onDone() {},
 	}));
-	assert.equal(seriesExclusions.includes("<strong>Action &amp; Adventure</strong>"), false);
-	for (const movieOnly of ["Action", "Adventure", "Fantasy", "Horror", "History", "Music", "Romance", "Thriller", "War"]) assert.equal(seriesExclusions.includes(`<strong>${movieOnly}</strong>`), false, movieOnly);
-	assert.ok(seriesExclusions.includes("<strong>News</strong>"));
+	assert.equal(seriesExclusions.includes('data-genre-name="Action &amp; Adventure"'), false);
+	for (const movieOnly of ["Action", "Adventure", "Fantasy", "Horror", "History", "Music", "Romance", "Thriller", "War"]) assert.equal(seriesExclusions.includes(`data-genre-name="${movieOnly}"`), false, movieOnly);
+	assert.ok(seriesExclusions.includes('data-genre-name="News"'));
 
 	const dualExclusions = renderToStaticMarkup(createElement(GenreExclusionSubview, {
 		advanced: emptyGenreAdvancedState(),
@@ -322,9 +328,9 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onChange() {},
 		onDone() {},
 	}));
-	assert.equal(dualExclusions.includes("<strong>Animation</strong>"), false);
-	assert.ok(dualExclusions.includes("<strong>Kids</strong>"));
-	assert.ok(dualExclusions.includes("<strong>Western</strong>"));
+	assert.equal(dualExclusions.includes('data-genre-name="Animation"'), false);
+	assert.ok(dualExclusions.includes('data-genre-name="Kids"'));
+	assert.ok(dualExclusions.includes('data-genre-name="Western"'));
 
 	const multi = renderToStaticMarkup(createElement(GenreExclusionSubview, {
 		advanced: createGenreAdvancedState({ exclusionsByGenre: { Comedy: ["Horror"], Horror: ["Comedy"] } }),
@@ -333,17 +339,16 @@ test("advanced controls use compact inputs and separate exclusion and help subvi
 		onChange() {},
 		onDone() {},
 	}));
-	assert.ok(multi.includes("Choose a Genre, then select Genres to exclude from that source."));
+	assert.ok(multi.includes("The defining Genre stays fixed. Choose compatible Genres to exclude from each source."));
 	assert.ok(multi.includes("Then select Genres to exclude from that source."));
 	assert.equal(multi.includes("Choose a genre on the left"), false);
-	assert.ok(multi.includes("Horror excluded"));
-	assert.ok(multi.includes("Comedy excluded"));
+	assert.equal((multi.match(/1 excluded/g) ?? []).length, 2);
 	assert.equal(multi.includes("media-correct"), false);
 	assert.ok(multi.includes("Done"));
 	assert.equal(multi.includes("Back to Genres"), false);
 
 	const help = renderToStaticMarkup(createElement(GenreAdvancedHelpSubview, { onDone() {} }));
-	for (const label of ["What do these options do?", "From year", "Original language", "Origin country", "Want even more control?", "Advanced Discover will let you combine extra filters"]) assert.ok(help.includes(label), label);
+	for (const label of ["What do these options do?", "From date", "Original language", "Origin country", "Additional filters", "Use Keywords, Studios, TV Networks"]) assert.ok(help.includes(label), label);
 	assert.equal(help.includes("<a "), false);
 });
 
@@ -386,7 +391,8 @@ test("Genre Source Edit shares the advanced controls while Genre identity and me
 	assert.ok(markup.includes("Use default name"));
 	assert.ok(markup.includes("Advanced options"));
 	assert.ok(markup.includes("What do these options do?"));
-	assert.equal((markup.match(/class="genre-number-input"/g) ?? []).length, 5);
+	assert.equal((markup.match(/type="date"/g) ?? []).length, 2);
+ assert.ok(markup.includes("native-threshold-fields"));
 	assert.equal(markup.includes("? What do these options do?"), false);
 	assert.equal(markup.includes("physical source"), false);
 	for (const label of ["Popular", "Recent", "Top rated", "Most voted"]) assert.ok(markup.includes(`>${label}<`), label);

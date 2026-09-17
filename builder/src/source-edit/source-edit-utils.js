@@ -1,4 +1,9 @@
 import { isValidNuvioTitle } from "../nuvio/titles.js";
+import { inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
+
+export function discoverSortIsPreservationOnly(value) {
+	return inspectDiscoverMirrors(value ?? {}).unresolved.some((entry) => entry.field === "sortBy");
+}
 
 export function diagnostic(code, path, message) {
 	return Object.freeze({ code, path, message });
@@ -39,4 +44,15 @@ export function validateTouchedSourceTitle(draft, path = "$sourceEdit.title") {
 export function safeSourceEditTitle(value, fallback) {
 	const title = canonicalText(value);
 	return title || fallback;
+}
+
+export function changedFamilyAdvancedFields(previous, next) {
+	const fields = { minimumVotes: "voteCountGte", minimumRating: "voteAverageGte", maximumRating: "voteAverageLte", originalLanguage: "withOriginalLanguage", originCountry: "withOriginCountry", yearFrom: "releaseDateGte", yearTo: "releaseDateLte", exclusionsByGenre: "withoutGenres", ordinaryExcludedGenres: "withoutGenres" };
+	const changed = Object.entries(fields).filter(([key]) => JSON.stringify(previous?.[key]) !== JSON.stringify(next?.[key])).map(([, field]) => field);
+	for (const field of new Set([...Object.keys(previous?.filters ?? {}), ...Object.keys(next?.filters ?? {})])) if (JSON.stringify(previous?.filters?.[field]) !== JSON.stringify(next?.filters?.[field])) changed.push(field);
+	return [...new Set(changed)];
+}
+
+export function familyAdvancedTouchedFields(draft, originalAdvanced) {
+	return [...new Set([...(Array.isArray(draft.touchedFilters) ? draft.touchedFilters : []), ...changedFamilyAdvancedFields(originalAdvanced, draft.advanced)])];
 }

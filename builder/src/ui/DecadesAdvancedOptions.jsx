@@ -1,14 +1,15 @@
+import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import {
 	DECADE_PRESETS,
 	GENRE_CONCEPTS,
-	GENRE_COUNTRY_OPTIONS,
-	GENRE_LANGUAGE_OPTIONS,
 } from "../source-add/index.js";
 import {
-	GenreCatalogueList,
 	GenreContextCatalogueSubview,
 	GenreSelectionToolbar,
 } from "./GenreCatalogueSelector.jsx";
+import { FamilyGenreRulePills, GenreRuleCard } from "./GenreRuleControls.jsx";
+import "./advanced-discover.css";
+import "./native-shared-advanced.css";
 
 const DECADES_ADVANCED_HELP = Object.freeze([
 	Object.freeze({ label: "Minimum rating", description: "Include titles at or above this TMDB user rating." }),
@@ -30,12 +31,12 @@ function optionIsAvailable(concept, mediaMode) {
 export function DecadeSingleExclusionSubview({ selection, mediaMode, includedGenre = null, onToggle, onSelectAll, onClearAll, onDone, focusRef }) {
 	const available = GENRE_CONCEPTS.filter((concept) => optionIsAvailable(concept, mediaMode) && concept.name !== includedGenre);
 	return (
-		<section className="genre-advanced-subview decades-exclusion-subview decade-source-exclusion-subview" aria-labelledby="decade-source-exclusion-title">
-			<header><div><p className="panel-kicker">Advanced options</p><h4 id="decade-source-exclusion-title" tabIndex={-1} ref={focusRef}>Genre exclusions</h4></div><button type="button" className="editor-apply genre-secondary-done" onClick={onDone}>Done</button></header>
-			<p className="genre-advanced-secondary-guidance">Choose official Genres to leave out of this Decade configuration. Each generated media source receives only compatible exclusions.</p>
+		<GenreContextCatalogueSubview className="discover-dialog family-genre-rules decades-exclusion-subview decade-source-exclusion-subview" title="Genre rules" titleId="decade-source-exclusion-title" contexts={[{ id: "source", label: includedGenre ?? "Main source" }]} activeContextId="source" detailTitle={(context) => context.label} showSingleContextHeading focusRef={focusRef} onDone={onDone} guidance="Choose official Genres to leave out of this Decade configuration. Each generated media source receives only compatible exclusions.">
+			<GenreRuleCard title="Excluded genres">
 			<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
-			<GenreCatalogueList concepts={available} selection={selection} onChoose={onToggle} />
-		</section>
+			<FamilyGenreRulePills semantics="exclude" concepts={available} selection={selection} onChoose={onToggle} />
+			</GenreRuleCard>
+		</GenreContextCatalogueSubview>
 	);
 }
 
@@ -54,32 +55,37 @@ export function DecadeBundleExclusionSubview({ selectedGenreNames, selectionByCo
 		<GenreContextCatalogueSubview
 			activeContextId={contextId}
 			backLabel="Back to sources"
-			className="decade-source-exclusion-subview"
+			className="discover-dialog family-genre-rules decade-source-exclusion-subview"
+			showSingleContextHeading
 			contexts={contexts}
 			contextTitle="Generated source contexts"
 			detailGuidance="Each generated media source receives only compatible exclusions."
-			detailTitle={(context) => `Exclude from ${context.label}`}
+			detailTitle={(context) => context.label}
 			emptyText="Then choose Genres to leave out of it."
 			emptyTitle="Choose a generated source on the left"
 			focusRef={focusRef}
 			guidance="Configure the main source and each selected Genre source independently."
 			onContextChange={onContextChange}
 			onDone={onDone}
-			title="Genre exclusions"
+			title="Genre rules"
 			titleId="decade-source-exclusion-title"
 		>
-			<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
-			<GenreCatalogueList concepts={available} selection={selection} onChoose={onToggle} />
+			<GenreRuleCard title="Excluded genres">
+				<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
+				<FamilyGenreRulePills semantics="exclude" concepts={available} selection={selection} onChoose={onToggle} />
+			</GenreRuleCard>
 		</GenreContextCatalogueSubview>
 	);
 }
 
-export function DecadesOrdinaryExclusionSubview({ selectedDecadeIds, selectionByDecade, sharedSelection, contextId, selection, mediaMode, onContextChange, onToggle, onSelectAll, onClearAll, onDone, focusRef }) {
+export function DecadesOrdinaryExclusionSubview({ selectedDecadeIds, selectionByDecade, sharedSelection, contextId, selection, mediaMode, onContextChange, onToggle, onSelectAll, onClearAll, onDone, focusRef, onInheritanceChange }) {
+ const custom = Object.hasOwn(selectionByDecade, contextId);
+ const editable = contextId === "all" || custom;
 	const available = GENRE_CONCEPTS.filter((concept) => optionIsAvailable(concept, mediaMode));
 	const contexts = [
 		{
 			id: "all",
-			label: "All selected Decades",
+			label: "Shared exclusions",
 			summary: `${sharedSelection.length} shared exclusion${sharedSelection.length === 1 ? "" : "s"}`,
 		},
 		...selectedDecadeIds.map((decadeId) => {
@@ -88,7 +94,7 @@ export function DecadesOrdinaryExclusionSubview({ selectedDecadeIds, selectionBy
 			return {
 				id: decadeId,
 				label: preset?.label ?? decadeId,
-				summary: `${count} excluded`,
+				summary: Object.hasOwn(selectionByDecade, decadeId) ? `Custom · ${count} excluded` : "Using default",
 			};
 		}),
 	];
@@ -96,22 +102,24 @@ export function DecadesOrdinaryExclusionSubview({ selectedDecadeIds, selectionBy
 		<GenreContextCatalogueSubview
 			activeContextId={contextId}
 			backLabel="Back to Decades"
-			className="decades-exclusion-subview"
+			className="discover-dialog family-genre-rules decades-exclusion-subview"
 			contexts={contexts}
-			contextTitle="Exclusion contexts"
-			detailGuidance="Choose Genres to leave out of Decade overview and individual-year sources for this context."
-			detailTitle={(context) => `Exclude from ${context.label}`}
+			contextTitle="Shared exclusions and selected Decades"
+			detailTitle={(context) => context.label}
 			emptyText="Then choose Genres to leave out of its generated sources."
 			emptyTitle="Choose a context on the left"
 			focusRef={focusRef}
 			guidance="Choose Genres to leave out of Decade overview and individual-year sources. Use one shared selection or customise a Decade."
 			onContextChange={onContextChange}
 			onDone={onDone}
-			title="Genre exclusions"
+			title="Genre rules"
 			titleId="decades-exclusion-title"
 		>
-			<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
-			<GenreCatalogueList concepts={available} selection={selection} onChoose={onToggle} />
+			<DecadesExclusionInheritance contextId={contextId} custom={custom} onChange={onInheritanceChange} />
+			{editable ? <GenreRuleCard title="Excluded genres">
+				<GenreSelectionToolbar selectionCount={selection.length} totalCount={available.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
+				<FamilyGenreRulePills semantics="exclude" concepts={available} selection={selection} onChoose={onToggle} />
+			</GenreRuleCard> : null}
 		</GenreContextCatalogueSubview>
 	);
 }
@@ -126,47 +134,15 @@ export function DecadesAdvancedHelpSubview({ onDone, focusRef }) {
 	);
 }
 
-export function DecadesAdvancedOptions({ value, onChange, exclusionSummary, onOpenSecondary, idPrefix = "decades-advanced" }) {
-	const update = (field, nextValue) => onChange(Object.freeze({ ...value, [field]: nextValue }));
-	return (
-		<details className="genre-advanced-options decades-advanced-options" data-decades-advanced="true">
-			<summary>Advanced options</summary>
-			<div className="genre-advanced-content">
-				<div className="genre-advanced-callout">
-					<strong>Fine-tune generated sources</strong>
-					<span>Leave an option blank if it should not affect results. Decade dates stay fixed.</span>
-				</div>
-				<div className="genre-advanced-grid decades-advanced-grid">
-					<div className="editor-field genre-advanced-field">
-						<label htmlFor={`${idPrefix}-rating-min`}>Minimum rating</label>
-						<input id={`${idPrefix}-rating-min`} className="genre-number-input" type="number" inputMode="decimal" min="0" max="10" step="0.1" placeholder="7.0" value={value.minimumRating} onChange={(event) => update("minimumRating", event.target.value)} />
-					</div>
-					<div className="editor-field genre-advanced-field">
-						<label htmlFor={`${idPrefix}-rating-max`}>Maximum rating</label>
-						<input id={`${idPrefix}-rating-max`} className="genre-number-input" type="number" inputMode="decimal" min="0" max="10" step="0.1" value={value.maximumRating} onChange={(event) => update("maximumRating", event.target.value)} />
-					</div>
-					<div className="editor-field genre-advanced-field">
-						<label htmlFor={`${idPrefix}-votes-min`}>Minimum votes</label>
-						<input id={`${idPrefix}-votes-min`} className="genre-number-input" type="number" inputMode="numeric" min="0" step="1" placeholder="250" value={value.minimumVotes} onChange={(event) => update("minimumVotes", event.target.value)} />
-					</div>
-					<div className="editor-field genre-advanced-field">
-						<label htmlFor={`${idPrefix}-language`}>Original language</label>
-						<select id={`${idPrefix}-language`} value={value.originalLanguage} onChange={(event) => update("originalLanguage", event.target.value)}>
-							<option value="">Any language</option>
-							{GENRE_LANGUAGE_OPTIONS.map((entry) => <option key={entry.code} value={entry.code}>{entry.label} ({entry.code})</option>)}
-						</select>
-					</div>
-					<div className="editor-field genre-advanced-field">
-						<label htmlFor={`${idPrefix}-country`}>Origin country</label>
-						<select id={`${idPrefix}-country`} value={value.originCountry} onChange={(event) => update("originCountry", event.target.value)}>
-							<option value="">Any country</option>
-							{GENRE_COUNTRY_OPTIONS.map((entry) => <option key={entry.code} value={entry.code}>{entry.label} ({entry.code})</option>)}
-						</select>
-					</div>
-				</div>
-				<div className="genre-advanced-compact-actions"><div><strong>Genre exclusions</strong><span>{exclusionSummary}</span></div><button type="button" className="secondary-action" onClick={(event) => onOpenSecondary("ordinary-exclusions", event.currentTarget)}>Configure</button></div>
-				<button type="button" className="genre-advanced-help-action" onClick={(event) => onOpenSecondary("advanced-help", event.currentTarget)}>What do these options do?</button>
-			</div>
-		</details>
-	);
+export function DecadesAdvancedOptions({ value, onChange, mediaMode = "both", exclusionSummary, onOpenSecondary, extraEditable }) {
+ const genres = extraEditable?.withoutGenres === false ? <p className="editor-field-help">Imported Genre exclusions are preserved.</p> : <div className="genre-advanced-compact-actions"><div><strong>Genre exclusions</strong><span>{exclusionSummary}</span></div><button type="button" className="secondary-action" onClick={(event) => onOpenSecondary("ordinary-exclusions", event.currentTarget)}>Configure</button></div>;
+ return <DiscoverFamilyAdvancedOptions value={value} onChange={onChange} mediaMode={mediaMode} legacy dates={false} genreControls={genres} extraEditable={extraEditable} className="decades-advanced-options">
+  <p className="editor-field-help">Decade dates stay fixed.</p>
+  <button type="button" className="genre-advanced-help-action" onClick={(event) => onOpenSecondary("advanced-help", event.currentTarget)}>What do these options do?</button>
+ </DiscoverFamilyAdvancedOptions>;
+}
+
+export function DecadesExclusionInheritance({ contextId, custom, onChange, wholeMap = false }) {
+	const label = DECADE_PRESETS.find((entry) => entry.id === contextId)?.label ?? contextId;
+	return contextId === "all" ? <p className="editor-field-help">{wholeMap ? "Shared exclusions · " : ""}Changes apply to Decades using the default.{wholeMap ? " Each defining Genre keeps its own exclusions." : ""}</p> : <div className="native-genre-inheritance"><div>{wholeMap ? <strong>{label} · All Genre sources</strong> : null}<p className="editor-field-help">{custom ? "Custom" : "Using default"}</p>{!custom ? <p className="editor-field-help">Click customise to make changes specific to {label}.</p> : null}{wholeMap ? <p className="editor-field-help">Default or Custom applies to the complete set of Genre-source exclusions for this Decade.</p> : null}</div><div className="native-genre-context-actions"><button type="button" className="secondary-action" onClick={() => onChange(custom)}>{custom ? "Use default" : "Customise genres"}</button>{custom ? <button type="button" className="secondary-action" onClick={() => onChange(false)}>Clear selections</button> : null}</div></div>;
 }

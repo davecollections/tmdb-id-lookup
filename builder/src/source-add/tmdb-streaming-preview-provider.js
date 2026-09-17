@@ -1,8 +1,5 @@
-import {
-	discoverFilterDescriptor,
-	discoverSortOptionId,
-} from "../nuvio/discover.js";
-import { inspectSimpleStreamingSourceNode } from "./streaming-classification.js";
+import { exactDiscoverPreviewQuery } from "./advanced-discover.js";
+import { resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
 import { TMDB_PROXY_BASE_URL } from "./tmdb-collection-provider.js";
 import {
 	createTmdbDiscoverPreviewRequester,
@@ -21,19 +18,9 @@ function providerError(kind, message, { status = 0, retryable = true } = {}) {
 }
 
 export function streamingPreviewQueryFromSource(sourceNode) {
-	const inspected = inspectSimpleStreamingSourceNode(sourceNode);
-	if (inspected === null || discoverSortOptionId(inspected.value.sortBy, inspected.mediaType) === null) return null;
-	const queryParameters = { include_adult: "false", sort_by: inspected.value.sortBy };
-	for (const [field, value] of Object.entries(inspected.value.filters)) {
-		const descriptor = discoverFilterDescriptor(field);
-		const media = descriptor?.media?.[inspected.mediaType];
-		if (!media?.applicable || !media.portable || typeof media.requestParameter !== "string") return null;
-		queryParameters[media.requestParameter] = String(value);
-	}
-	return Object.freeze({
-		mediaType: inspected.mediaType,
-		queryParameters: Object.freeze(queryParameters),
-	});
+ const effective = resolveEffectiveDiscoverSource(sourceNode);
+ if (!effective.ok || !/^[1-9]\d*$/.test(effective.value.filters?.withWatchProviders) || !/^[A-Z]{2}$/.test(effective.value.filters?.watchRegion)) return null;
+ return exactDiscoverPreviewQuery({ category: sourceNode.category, editable: effective.value });
 }
 
 export function normalizeTmdbStreamingPreviewResponse(value, mediaType) {
@@ -51,7 +38,7 @@ export function createTmdbStreamingPreviewProvider({
 	const requester = createTmdbDiscoverPreviewRequester({
 		fetchImpl,
 		baseUrl,
-		previewPaths: Object.freeze({ MOVIE: "/3/discover/movie", TV: "/3/discover/tv" }),
+		previewPaths: Object.freeze({ MOVIE: "/builder/discover/movie", TV: "/builder/discover/tv" }),
 		entityLabel: "Streaming",
 		entityType: "STREAMING",
 		timeoutMs,

@@ -6,10 +6,13 @@ import test from "node:test";
 import { GENRE_ARTWORK_SLUGS, GENRE_ARTWORK_SHAPES, genreArtworkRoleUrl, resolveGenreArtwork } from "../js/genre-artwork.mjs";
 import { createBuilderController } from "../builder/src/application/index.js";
 import { buildGenreSourceDrafts, createGenreHierarchyPlan, applyGenreHierarchyPlan, GENRE_CONCEPTS } from "../builder/src/source-add/index.js";
-import { loadFolderArtworkSuggestions, folderArtworkSuggestionForField } from "../builder/src/folder-artwork-suggestions.js";
+import { loadFolderArtworkSuggestions, folderArtworkSuggestionForField, resolveFolderArtworkIdentity } from "../builder/src/folder-artwork-suggestions.js";
 import { createNodeEditorDraft, updateNodeEditorTileShape, buildNodeEditorPatch } from "../builder/src/ui/node-editor.js";
 import { applyNodeEditorDraft } from "../builder/src/ui/node-editor-actions.js";
 import { advancedDiscoverArtworkSuggestions } from "../builder/src/source-add/advanced-discover-artwork.js";
+
+import { createSourceEditSession, saveSourceEdit, updateGenreSourceAdvanced, sourceEditorFor } from "../builder/src/source-edit/index.js";
+import { createDecadesHierarchyPlan, applyDecadesHierarchyPlan } from "../builder/src/source-add/decades-plan.js";
 
 const contract = JSON.parse(fs.readFileSync(new URL("./fixtures/genre-artwork-contract.json", import.meta.url), "utf8"));
 const roles = { POSTER: ["poster", "posterFocus"], SQUARE: ["square", "squareFocus"], LANDSCAPE: ["landscape", "focus"] };
@@ -120,4 +123,125 @@ test("generic Square needs no curated asset; unknown shapes preserve until expli
  for(const tileShape of ["FOLLOW_LAYOUT","FUTURE",{raw:true}]) { const draft=createNodeEditorDraft({nodeType:"folder",internalId:"f",editable:{title:"Imported",tileShape},sources:[]}); assert.deepEqual(buildNodeEditorPatch(draft),{}); assert.deepEqual(buildNodeEditorPatch(updateNodeEditorTileShape(draft,"SQUARE",null)),{tileShape:"SQUARE"}); }
  const set=advancedDiscoverArtworkSuggestions({mediaMode:"movies",filters:{withGenres:"35"}});
  for(const shape of GENRE_ARTWORK_SHAPES) assert.equal(folderArtworkSuggestionForField(set,"focusGifUrl",shape),resolveGenreArtwork("Comedy",shape).focusGifUrl);
+});
+
+
+const richGenreFilters = {
+ withKeywords: "6054|15097", withoutKeywords: "210024", withCompanies: "3|174", withoutCompanies: "2",
+ withNetworks: "213", releaseDateGte: "2001-02-03", releaseDateLte: "2004-05-06", year: "2003",
+};
+
+function importGenreFolder(controller, sources, artwork = {}) {
+ const result = controller.importValue([{ id: "c", title: "Collection", folders: [{
+  id: "f", title: "Renamed folder", tileShape: "LANDSCAPE", ...resolveGenreArtwork("Comedy"),
+  focusGifEnabled: false, ...artwork, sources,
+ }] }]);
+ assert.equal(result.ok, true, JSON.stringify(result.errors));
+ return controller.getState().project.collections[0].folders[0];
+}
+
+test("rich Genre filters and repeated configured variants retain one canonical artwork identity", async () => {
+ for (const providerFilters of [{}, { watchRegion: "AU", withWatchProviders: "8", withoutWatchProviders: "9" }]) {
+  const controller = app();
+  const built = buildGenreSourceDrafts(["Comedy"], { sharedMediaChoice: "both", sortOptionIds: ["popular", "recent"], advanced: { filters: { ...richGenreFilters, ...providerFilters } } });
+  assert.equal(built.ok, true, JSON.stringify(built.errors));
+  const folder = importGenreFolder(controller, built.drafts.map(draft => draft.editable));
+  const before = json(controller.serializeProject().value);
+  assert.equal(folder.sources.length, 4);
+  assert.deepEqual(resolveFolderArtworkIdentity(folder), { authority: "genre", genreName: "Comedy", key: "genre:Comedy" });
+  for (const source of folder.sources) {
+   assert.equal(sourceEditorFor(source)?.id, providerFilters.withWatchProviders ? "advanced-discover" : "genre", "editor routing remains separate from artwork identity");
+   assert.equal(source.editable.filters.withNetworks, source.editable.mediaType === "TV" ? "213" : undefined);
+  }
+  const suggestions = await loadFolderArtworkSuggestions({ folder });
+  for (const shape of GENRE_ARTWORK_SHAPES) for (const [field, url] of Object.entries(resolveGenreArtwork("Comedy", shape))) assert.equal(folderArtworkSuggestionForField(suggestions, field, shape), url);
+  assert.deepEqual(json(controller.serializeProject().value), before);
+ }
+});
+
+test("ambiguous Genre anchors and conflicting mirrors never authorize curated artwork replacement", async () => {
+ const built = buildGenreSourceDrafts(["Comedy"], { sharedMediaChoice: "both", advanced: { filters: richGenreFilters } });
+ assert.equal(built.ok, true, JSON.stringify(built.errors));
+ const base = built.drafts.find(draft => draft.editable.mediaType === "MOVIE").editable;
+ for (const filters of [
+  { ...base.filters, withGenres: "35|18" },
+  { ...base.filters, withGenres: "999999" },
+  { ...base.filters, withGenres: { preserved: true } },
+  { ...base.filters, with_genres: "18" },
+ ]) {
+  const controller = app();
+  const folder = importGenreFolder(controller, [{ ...base, filters }]);
+  const before = json(controller.serializeProject().value);
+  assert.equal(resolveFolderArtworkIdentity(folder), null);
+  const suggestions = await loadFolderArtworkSuggestions({ folder });
+  assert.equal(suggestions, null);
+  const draft = updateNodeEditorTileShape(createNodeEditorDraft(folder), "SQUARE", suggestions);
+  assert.deepEqual(buildNodeEditorPatch(draft), { tileShape: "SQUARE" });
+  assert.equal(applyNodeEditorDraft(controller, draft).ok, true);
+  const expected = structuredClone(before); expected[0].folders[0].tileShape = "SQUARE";
+  assert.deepEqual(json(controller.serializeProject().value), expected);
+ }
+});
+
+test("rich Genre source editing and all shape transitions independently preserve custom artwork and focus state", async () => {
+ const built = buildGenreSourceDrafts(["Comedy"], { sharedMediaChoice: "both", advanced: { filters: richGenreFilters } });
+ assert.equal(built.ok, true);
+ const artworkFields = ["coverImageUrl", "focusGifUrl", "heroBackdropUrl", "titleLogoUrl"];
+ for (const focusGifEnabled of [false, true]) for (const customField of [null, ...artworkFields]) {
+  const controller = app();
+  const custom = customField ? { [customField]: "https://custom.example/owner-artwork.webp" } : {};
+  let folder = importGenreFolder(controller, built.drafts.map(draft => draft.editable), { ...custom, focusGifEnabled, ownerExtra: { keep: [false, 0] } });
+  const before = json(controller.serializeProject().value);
+  const opened = createSourceEditSession(controller.getState().project, folder.sources[0].internalId);
+  assert.equal(opened.ok, true);
+  const changed = updateGenreSourceAdvanced(opened.draft, { ...opened.draft.advanced, minimumVotes: "12" });
+  assert.equal(saveSourceEdit(controller, opened.session, changed).ok, true);
+  const afterEdit = json(controller.serializeProject().value);
+  const expected = structuredClone(before); expected[0].folders[0].sources[0].filters.voteCountGte = 12;
+  assert.deepEqual(afterEdit, expected, "source editing changes only the touched filter");
+  folder = controller.getState().project.collections[0].folders[0];
+  const suggestions = await loadFolderArtworkSuggestions({ folder });
+  let draft = createNodeEditorDraft(folder);
+  for (const shape of ["POSTER", "SQUARE", "LANDSCAPE"]) {
+   draft = updateNodeEditorTileShape(draft, shape, suggestions);
+   for (const field of artworkFields) assert.equal(draft.values[field], custom[field] ?? resolveGenreArtwork("Comedy", shape)[field]);
+   assert.equal(draft.values.focusGifEnabled, focusGifEnabled);
+   assert.deepEqual(json(controller.serializeProject().value), afterEdit, "shape changes remain draft-only");
+  }
+  draft = updateNodeEditorTileShape(draft, "SQUARE", suggestions);
+  assert.equal(applyNodeEditorDraft(controller, draft).ok, true);
+  const output = json(controller.serializeProject().value);
+  const saved = output[0].folders[0];
+  for (const field of artworkFields) assert.equal(saved[field], custom[field] ?? resolveGenreArtwork("Comedy", "SQUARE")[field]);
+  assert.equal(saved.focusGifEnabled, focusGifEnabled);
+  assert.deepEqual(saved.sources, afterEdit[0].folders[0].sources);
+  assert.deepEqual(saved.ownerExtra, { keep: [false, 0] });
+  const reopened = app(); assert.equal(reopened.importValue(output).ok, true);
+  assert.deepEqual(json(reopened.serializeProject().value), output);
+ }
+});
+
+test("rich Decades Advanced composes with Square without acquiring Genre artwork", async () => {
+ for (const scope of ["new-collection", "new-folder"]) {
+  const controller = app();
+  const parent = controller.createCollection({ editable: { title: "Existing" } }).createdInternalId;
+  const result = createDecadesHierarchyPlan(controller.getState().project, {
+   scope, projectRevision: controller.getState().revision, folderTileShape: "SQUARE",
+   ...(scope === "new-folder" ? { destinationCollectionInternalId: parent } : {}),
+   source: { selectedDecadeIds: ["1980s"], mediaMode: "both", content: { wholeDecade: true, individualYears: true, genreBreakdown: true }, currentYear: 2026, genreNames: ["Comedy"],
+    advanced: { filters: { withKeywords: "6054", withCompanies: "3", withNetworks: "213", watchRegion: "AU", withWatchProviders: "8" } } },
+  });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.equal(applyDecadesHierarchyPlan(controller, result.plan).ok, true);
+  const folders = controller.getState().project.collections.flatMap(collection => collection.folders);
+  assert.ok(folders.length);
+  for (const folder of folders) {
+   assert.equal(folder.editable.tileShape, "SQUARE");
+   for (const field of ["coverImageUrl", "focusGifUrl", "heroBackdropUrl", "titleLogoUrl"]) assert.ok(!folder.editable[field], field);
+   assert.equal(await loadFolderArtworkSuggestions({ folder }), null);
+   for (const source of folder.sources) { assert.equal(source.editable.filters.withKeywords, "6054"); assert.equal(source.editable.filters.year, undefined); }
+  }
+  const output = json(controller.serializeProject().value), reopened = app();
+  assert.equal(reopened.importValue(output).ok, true); assert.deepEqual(json(reopened.serializeProject().value), output);
+ }
 });

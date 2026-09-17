@@ -3,6 +3,8 @@ import {
 	isCanonicalDiscoverFilterValue,
 	resolveEffectiveDiscoverSource,
 } from "../nuvio/discover.js";
+import { DISCOVER_FILTER_DESCRIPTORS } from "../nuvio/discover.js";
+import { validateAdvancedFilters } from "./advanced-discover.js";
 
 const knownSourceFields = new Set([
 	"filters",
@@ -13,7 +15,7 @@ const knownSourceFields = new Set([
 	"tmdbId",
 	"tmdbSourceType",
 ]);
-const streamingFilterFields = new Set(["watchRegion", "withWatchProviders"]);
+const streamingFilterFields = new Set(DISCOVER_FILTER_DESCRIPTORS.map((entry) => entry.field));
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -45,6 +47,8 @@ export function inspectSimpleStreamingSourceNode(source) {
 		if (!streamingFilterFields.has(field) && meaningful(fieldValue)) return null;
 	}
 	const regionCode = value.filters.watchRegion;
+	if (!validateAdvancedFilters(value.filters, mediaType).ok) return null;
+	if (Object.entries(value.filters).some(([field, entry]) => meaningful(entry) && (!isCanonicalDiscoverFilterValue(field, entry) || (field.startsWith("without") && entry.includes("|"))))) return null;
 	const providerValue = value.filters.withWatchProviders;
 	if (typeof regionCode !== "string" || !/^[A-Z]{2}$/.test(regionCode)) return null;
 	if (typeof providerValue !== "string" || !/^[1-9]\d*$/.test(providerValue)) return null;

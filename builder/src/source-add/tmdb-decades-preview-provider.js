@@ -1,5 +1,5 @@
-import { discoverFilterDescriptor } from "../nuvio/discover.js";
-import { inspectCanonicalDecadeSource } from "./decades-classification.js";
+import { exactDiscoverPreviewQuery } from "./advanced-discover.js";
+import { classifyCanonicalDecadePeriod } from "./decades-catalogue.js";
 import { TMDB_PROXY_BASE_URL } from "./tmdb-collection-provider.js";
 import {
 	createTmdbDiscoverPreviewRequester,
@@ -18,20 +18,8 @@ function providerError(kind, message, { status = 0, retryable = true } = {}) {
 }
 
 export function decadePreviewQueryFromDraft(draft) {
-	const source = draft?.editable;
-	const inspected = draft?.category === "native-tmdb" ? inspectCanonicalDecadeSource(source) : null;
-	if (inspected === null) return null;
-	const queryParameters = { include_adult: "false", sort_by: source.sortBy };
-	for (const [field, value] of Object.entries(source.filters)) {
-		const descriptor = discoverFilterDescriptor(field);
-		const media = descriptor?.media?.[source.mediaType];
-		if (!media?.applicable || !media.portable || typeof media.requestParameter !== "string") return null;
-		queryParameters[media.requestParameter] = String(value);
-	}
-	return Object.freeze({
-		mediaType: source.mediaType,
-		queryParameters: Object.freeze(queryParameters),
-	});
+ if (!classifyCanonicalDecadePeriod(draft?.editable?.filters ?? {})) return null;
+ return exactDiscoverPreviewQuery(draft);
 }
 
 export function normalizeTmdbDecadesPreviewResponse(value, mediaType) {
@@ -49,7 +37,7 @@ export function createTmdbDecadesPreviewProvider({
 	const requester = createTmdbDiscoverPreviewRequester({
 		fetchImpl,
 		baseUrl,
-		previewPaths: Object.freeze({ MOVIE: "/3/discover/movie", TV: "/3/discover/tv" }),
+		previewPaths: Object.freeze({ MOVIE: "/builder/discover/movie", TV: "/builder/discover/tv" }),
 		entityLabel: "Decade",
 		entityType: "DECADE",
 		timeoutMs,

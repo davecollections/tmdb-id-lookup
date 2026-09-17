@@ -1,3 +1,6 @@
+import { discoverSortIsPreservationOnly } from "./source-edit-utils.js";
+import { GENRE_ADVANCED_FILTER_FIELDS } from "../source-add/genre-advanced.js";
+import { familyAdvancedTouchedFields } from "./source-edit-utils.js";
 import {
 	discoverSortOptionId,
 	discoverSortValue,
@@ -13,6 +16,8 @@ import {
 import { inspectCanonicalDecadeSourceNode } from "../source-add/decades-classification.js";
 import { officialGenreReference } from "../source-add/genre-catalogue.js";
 import { genreSourceTitle } from "../source-add/genre-source.js";
+import { DISCOVER_ADVANCED_GROUPS, inspectNativeExtraFilters, validateNativeExtraEdit, ownedNativeExtraMirrorSource } from "../source-add/native-shared-advanced.js";
+import { patchTouchedDiscoverFilters, inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
 import {
 	canonicalText,
 	diagnostic,
@@ -61,20 +66,19 @@ export function inspectEditableGenreSource(source) {
 	if (provider !== "tmdb" || sourceType !== "DISCOVER" || !["MOVIE", "TV"].includes(mediaType)) return null;
 	const canonicalTmdbId = !Object.hasOwn(value, "tmdbId") || value.tmdbId === null;
 	if (!canonicalTmdbId || !isPlainObject(value.filters)) return null;
-	for (const [field, fieldValue] of Object.entries(value)) {
-		if (!knownSourceFields.has(field) && meaningful(fieldValue)) return null;
-	}
+	if (inspectDiscoverMirrors(value).unresolved.some((entry) => entry.field === "withGenres")) return null;
 	const genreValue = value.filters.withGenres;
 	if (typeof genreValue !== "string" || !/^[1-9]\d*$/.test(genreValue)) return null;
 	const genreId = Number(genreValue);
 	if (!Number.isSafeInteger(genreId)) return null;
 	const reference = officialGenreReference(mediaType, genreId);
 	if (reference === null) return null;
-	const advanced = readGenreAdvancedFilters(value.filters, { mediaType, includedGenre: reference.name });
+	const safe = inspectNativeExtraFilters(source, DISCOVER_ADVANCED_GROUPS);
+	const advanced = readGenreAdvancedFilters({ ...safe.filters, withGenres: genreValue }, { mediaType, includedGenre: reference.name });
 	if (advanced === null || discoverSortOptionId(effectiveDiscoverSort(value.sortBy), mediaType) === null) return null;
 	const identity = discoverSourceNodeIdentity(source);
-	if (!identity.comparable) return null;
 	return Object.freeze({
+		extraEditable: safe.editable,
 		value,
 		identity: identity.key,
 		genreId,
@@ -93,15 +97,19 @@ function readInitialState(source) {
 		genreName: inspected?.genreName ?? null,
 		mediaType: inspected?.mediaType ?? null,
 		advanced: inspected?.advanced ?? null,
+		extraEditable: inspected?.extraEditable,
+		touchedFilters: Object.freeze([]),
 		advancedTouched: false,
 		sortBy: inspected?.value?.sortBy,
 		originalSortBy: inspected?.value?.sortBy,
 		sortOptionId: discoverSortOptionId(effectiveDiscoverSort(inspected?.value?.sortBy), inspected?.mediaType),
 		sortTouched: false,
+		sortEditable: !discoverSortIsPreservationOnly(inspected?.value),
 	});
 }
 
 function validateDraft({ draft, source }) {
+ if (!draft?.advanced || typeof draft.advanced !== "object" || Array.isArray(draft.advanced) || (draft.touchedFilters !== undefined && (!Array.isArray(draft.touchedFilters) || draft.touchedFilters.some((field) => !GENRE_ADVANCED_FILTER_FIELDS.includes(field))))) return { ok: false, errors: [diagnostic("SOURCE_EDIT_ADVANCED_FIXED", "$sourceEdit.filters", "Only supported optional filters can be changed here.")] };
 	const errors = [...validateTouchedSourceTitle(draft)];
 	const inspected = inspectEditableGenreSource(source);
 	if (
@@ -116,6 +124,7 @@ function validateDraft({ draft, source }) {
 			"The Genre and media type cannot be changed in this editor.",
 		));
 	}
+	if (draft.sortTouched && discoverSortIsPreservationOnly(inspected?.value)) errors.push(diagnostic("SOURCE_EDIT_SORT_PRESERVED", "$sourceEdit.sortBy", "The conflicting imported order must be preserved."));
 	const selectedSort = discoverSortValue(draft?.sortOptionId, draft?.mediaType);
 	if (draft?.sortTouched && (selectedSort === null || selectedSort !== draft.sortBy)) {
 		errors.push(diagnostic(
@@ -126,6 +135,7 @@ function validateDraft({ draft, source }) {
 	}
 	const filters = buildEditableFilters(draft);
 	if (!filters.ok) errors.push(...filters.errors.map((entry) => Object.freeze({ ...entry, path: entry.path.replace("$genres", "$sourceEdit") })));
+	if (filters.ok) errors.push(...validateNativeExtraEdit(source, { ...draft, filters: filters.filters, touchedFilters: familyAdvancedTouchedFields(draft, readInitialState(source).advanced) }, DISCOVER_ADVANCED_GROUPS).errors);
 	return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }
 
@@ -150,7 +160,7 @@ function buildPatch({ source, draft }) {
 	if (draft.sortTouched && draft.sortBy !== current.sortBy) patch.sortBy = draft.sortBy;
 	if (draft.advancedTouched) {
 		const compiled = buildEditableFilters(draft);
-		if (compiled.ok && JSON.stringify(compiled.filters) !== JSON.stringify(current.filters)) patch.filters = compiled.filters;
+		if (compiled.ok) Object.assign(patch, patchTouchedDiscoverFilters(source, ownedNativeExtraMirrorSource(current, DISCOVER_ADVANCED_GROUPS.flat()), compiled.filters, familyAdvancedTouchedFields(draft, readInitialState(source).advanced), patch));
 	}
 	return patch;
 }
@@ -173,6 +183,7 @@ export const genreSourceEditor = Object.freeze({
 		const identity = discoverSourceNodeIdentity(source);
 		return identity.comparable ? identity.key : null;
 	},
+	duplicateKey(source) { const identity = discoverSourceNodeIdentity(source); return identity.comparable ? identity.key : null; },
 	readInitialState,
 	validateDraft,
 	draftIdentity,

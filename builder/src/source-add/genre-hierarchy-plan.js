@@ -233,7 +233,7 @@ export function createGenreHierarchyPlan(project, options) {
 		sharedMediaChoice,
 		sortOptionId,
 		...(sortOptionIds === undefined ? {} : { sortOptionIds }),
-		advanced,
+		advanced: createGenreAdvancedState({ ...advanced, ui: undefined }),
 		compositePlacements,
 		effectiveMedia,
 		destinationCollectionInternalId: destinationCollection?.internalId ?? null,

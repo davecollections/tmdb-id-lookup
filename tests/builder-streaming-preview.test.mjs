@@ -28,7 +28,7 @@ function response(value) {
 	return new Response(JSON.stringify(value), { status: 200, headers: { "Content-Type": "application/json" } });
 }
 
-test("Streaming Preview derives only the exact simple provider, region, media and sort query", () => {
+test("Streaming Preview derives the exact provider, region, media, sort and monetization query", () => {
 	assert.deepEqual(streamingPreviewQueryFromSource(source()), {
 		mediaType: "MOVIE",
 		queryParameters: {
@@ -36,16 +36,17 @@ test("Streaming Preview derives only the exact simple provider, region, media an
 			sort_by: "popularity.desc",
 			watch_region: "AU",
 			with_watch_providers: "8",
+            with_watch_monetization_types: "flatrate|free|ads|rent|buy",
 		},
 	});
 	assert.deepEqual(streamingPreviewQueryFromSource(source({ mediaType: "TV", sortBy: "first_air_date.desc" })), {
 		mediaType: "TV",
-		queryParameters: { include_adult: "false", sort_by: "first_air_date.desc", watch_region: "AU", with_watch_providers: "8" },
+		queryParameters: { include_adult: "false", sort_by: "first_air_date.desc", watch_region: "AU", with_watch_providers: "8", with_watch_monetization_types: "flatrate|free|ads|rent|buy" },
 	});
 	for (const invalid of [
 		source({ sortBy: "community.special" }),
 		source({ filters: { watchRegion: "AU", withWatchProviders: "8|9" } }),
-		source({ filters: { watchRegion: "AU", withWatchProviders: "8", withGenres: "35" } }),
+
 		source({ filters: { watchRegion: "au", withWatchProviders: "8" } }),
 	]) assert.equal(streamingPreviewQueryFromSource(invalid), null);
 });
@@ -66,7 +67,7 @@ test("Streaming Preview caches successful zero, normalizes posters, and does not
 		baseUrl: "https://worker.example",
 		fetchImpl: async (url) => {
 			calls += 1;
-			assert.equal(new URL(url).pathname, "/3/discover/movie");
+			assert.equal(new URL(url).pathname, "/builder/discover/movie");
 			return response({ total_results: 1, results: [{ id: 10, title: "Movie", release_date: "2024-01-02", poster_path: "/poster.jpg" }] });
 		},
 	});

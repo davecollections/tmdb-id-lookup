@@ -66,3 +66,15 @@ node --test tests/builder-source-edit-mounted.test.mjs
 $env:TMDB_MOUNTED_BROWSER_DIAGNOSTICS = "1"
 node --test tests/builder-source-edit-mounted.test.mjs
 ```
+
+### Genre, Decades and Streaming combined Advanced acceptance
+
+Use the existing source-edit mounted harness for the twelve Add/New Collection/New Folder/Edit combinations, plus the phone width sweep and forced colours. This exercises real catalogue files, the production Worker, live TMDB results and real images; it must not intercept or fabricate external responses.
+
+```powershell
+$env:TMDB_FAMILY_ADVANCED_ONLY = "1"
+node --test --test-name-pattern="mounted family Advanced" tests/builder-source-edit-mounted.test.mjs
+Remove-Item Env:TMDB_FAMILY_ADVANCED_ONLY
+```
+
+The optional existing `TMDB_204_SCREENSHOTS` setting captures private PNG evidence into a directory outside Git. The default broad runner includes the twelve functional combinations and `builder-family-advanced.test.mjs`; the focused command adds the responsive/forced-colour cases.

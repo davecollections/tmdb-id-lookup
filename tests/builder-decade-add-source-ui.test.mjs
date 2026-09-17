@@ -105,10 +105,10 @@ test("Decade Add Source server markup is one compact canonical editor in the app
 	assert.match(markup, /Movies/);
 	assert.match(markup, /Series/);
 	assert.match(markup, /Both/);
-	assert.match(markup, /Genre sources <span>· optional<\/span>/);
+	assert.match(markup, /Genre sources · optional/);
 	assert.match(markup, /Select Genres to add separate genre sources alongside the main decade or year source/);
 	assert.match(markup, /With Both selected, only Genres available for Movies and Series are shown/);
-	assert.equal((markup.match(/class="visually-hidden choice-card-input" type="checkbox"/g) ?? []).length, 8);
+	assert.equal((markup.match(/data-genre-name=/g) ?? []).length, 8);
 	assert.doesNotMatch(markup, /selection-indicator|selectable-card-indicator|✓/);
 	assert.match(markup, />Select all<\/button>/);
 	assert.match(markup, />Clear<\/button>/);
@@ -148,7 +148,7 @@ test("Decade Add Source directly reuses shared sort, Advanced, Preview, duplicat
 	assert.match(flow, /<SemanticSortChoices options=\{DECADES_SORT_OPTIONS\}/);
 	assert.match(flow, /<SemanticSortChoices options=\{decadeOptions\}/);
 	assert.match(flow, /<DecadePeriodChoices options=\{yearOptions\}/);
-	assert.match(flow, /<GenreCatalogueList[^>]*selectionControl="checkbox"/);
+	assert.match(flow, /<FamilyGenreRulePills semantics="include"/);
 	assert.doesNotMatch(flow, /showSelectionIndicator/);
 	assert.match(flow, /<GenreSelectionToolbar[\s\S]*?clearLabel="Clear"/);
 	assert.match(flow, /buildDecadeSourceBundleDrafts/);
@@ -177,10 +177,10 @@ test("Decade Add Source responsive styles cover the required mobile/desktop boun
 	assert.match(styles, /\.add-source-scroll\s*\{[^}]*overflow-y:\s*auto/);
 	assert.match(styles, /@media \(max-width: 900px\)[\s\S]*\.decade-source-dialog\s*\{[^}]*width:\s*100%/);
 	assert.match(styles, /@media \(min-width: 900px\), \(min-width: 621px\) and \(min-height: 601px\)[\s\S]*\.decade-source-dialog[\s\S]*height:\s*auto/);
-	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.decade-source-exclusion-subview \.genre-catalogue-list/);
-	assert.match(styles, /\.genre-catalogue-list\.decade-source-genre-pill-list\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
-	assert.match(styles, /\.decade-source-genre-pill-list \.genre-catalogue-choice\s*\{[^}]*border-radius:\s*999px/);
-	assert.match(styles, /\.decade-source-genre-pill-list \.genre-catalogue-choice\s*\{[^}]*grid-template-columns:\s*auto/);
-	assert.match(styles, /\.decade-source-genre-pill-list \.genre-catalogue-choice:focus-within/);
+	assert.match(read("builder/src/ui/advanced-discover.css"), /\.discover-genre-pills button/);
+	const genreStyles = read("builder/src/ui/advanced-discover.css");
+	assert.match(genreStyles, /\.discover-genre-pills\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
+	assert.match(genreStyles, /\.discover-genre-pills button\s*\{[^}]*border-radius:\s*999px/);
+	assert.match(genreStyles, /\.discover-genre-pills button:focus-visible/);
 	assert.match(styles, /\.decade-add-preview-dimension[\s\S]*grid-template-columns:\s*auto minmax\(0, 1fr\)/);
 });

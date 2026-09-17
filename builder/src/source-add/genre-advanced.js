@@ -3,8 +3,11 @@ import {
 	officialGenreConcept,
 	officialGenreReference,
 } from "./genre-catalogue.js";
+import { compileAnchoredDiscoverFilters, DISCOVER_CATALOGUE_FILTER_FIELDS, validateAdvancedFilters } from "./advanced-discover.js";
 
 export const GENRE_ADVANCED_FILTER_FIELDS = Object.freeze([
+	...DISCOVER_CATALOGUE_FILTER_FIELDS,
+	"year",
 	"releaseDateGte",
 	"releaseDateLte",
 	"voteAverageGte",
@@ -16,7 +19,7 @@ export const GENRE_ADVANCED_FILTER_FIELDS = Object.freeze([
 ]);
 
 export const GENRE_ADVANCED_HELP = Object.freeze([
-	Object.freeze({ field: "year", label: "From year / To year", description: "Choose the years you want titles to come from. Use both for a range, such as 1980 to 1999. Use only From year for titles from that year onwards, or only To year for titles from that year and earlier." }),
+	Object.freeze({ field: "year", label: "From date / Through date / Year", description: "Choose exact Movie release dates or Series first-air dates. Year must overlap any selected date range." }),
 	Object.freeze({ field: "minimumRating", label: "Minimum rating", description: "Only include titles with at least this TMDB user rating. For example, 7 keeps titles rated 7 out of 10 or higher." }),
 	Object.freeze({ field: "maximumRating", label: "Maximum rating", description: "Only include titles rated up to this TMDB user rating. Most people can leave this blank, but it can help when looking for things like lower-rated cult movies." }),
 	Object.freeze({ field: "votes", label: "Minimum votes", description: "Helps avoid ratings based on only a few people. A higher number means more TMDB users have rated the title." }),
@@ -63,7 +66,7 @@ function diagnostic(code, path, message) {
 }
 
 function inputText(value) {
-	return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+	return value === undefined || value === null ? "" : typeof value === "string" || typeof value === "number" ? String(value).trim() : "invalid";
 }
 
 function plainObject(value) {
@@ -113,7 +116,10 @@ function normalizeExclusionsByGenre(value) {
 }
 
 export function createGenreAdvancedState(value = {}) {
+	if (!plainObject(value)) return createGenreAdvancedState({ filters: false });
 	return Object.freeze({
+		...(Object.hasOwn(value ?? {}, "filters") ? { filters: plainObject(value.filters) ? Object.freeze({ ...value.filters }) : value.filters } : {}),
+		...(value?.ui ? { ui: value.ui } : {}),
 		yearFrom: inputText(value?.yearFrom),
 		yearTo: inputText(value?.yearTo),
 		minimumRating: inputText(value?.minimumRating),
@@ -132,6 +138,7 @@ export function emptyGenreAdvancedState() {
 export function genreAdvancedOptionIsEmpty(value) {
 	const advanced = createGenreAdvancedState(value);
 	return !advanced.yearFrom && !advanced.yearTo && !advanced.minimumRating && !advanced.maximumRating
+		&& Object.values(advanced.filters ?? {}).every((entry) => entry === "" || entry === null || entry === undefined)
 		&& !advanced.minimumVotes && !advanced.originalLanguage && !advanced.originCountry
 		&& Object.values(advanced.exclusionsByGenre).every((names) => names.length === 0);
 }
@@ -194,12 +201,13 @@ export function pruneGenreExclusionConfiguration(value, includedGenres) {
 export function validateGenreAdvancedOptions(value, { includedGenres = [], sharedMediaChoice = "both" } = {}) {
 	const advanced = createGenreAdvancedState(value);
 	const errors = [];
+	if (value?.ui?.providerContextReview) errors.push(diagnostic("GENRE_PROVIDER_CONTEXT_REVIEW", "$genres.advanced.watchRegion", "Review retained providers for the current media and region."));
 	const selectedNames = canonicalGenreNames(includedGenres);
 	const yearFrom = parseOptionalInteger(advanced.yearFrom, { field: "yearFrom", label: "From year", minimum: 1000, maximum: 9999 });
 	const yearTo = parseOptionalInteger(advanced.yearTo, { field: "yearTo", label: "To year", minimum: 1000, maximum: 9999 });
 	const minimumRating = parseOptionalRating(advanced.minimumRating, "minimumRating", "Minimum rating");
 	const maximumRating = parseOptionalRating(advanced.maximumRating, "maximumRating", "Maximum rating");
-	const minimumVotes = parseOptionalInteger(advanced.minimumVotes, { field: "minimumVotes", label: "Minimum votes", minimum: 0 });
+	const minimumVotes = parseOptionalInteger(advanced.minimumVotes, { field: "minimumVotes", label: "Minimum votes", minimum: 0, maximum: 2147483647 });
 	for (const parsed of [yearFrom, yearTo, minimumRating, maximumRating, minimumVotes]) if (parsed.error) errors.push(parsed.error);
 	if (!yearFrom.error && !yearTo.error && yearFrom.value !== null && yearTo.value !== null && yearFrom.value > yearTo.value) {
 		errors.push(diagnostic("INVALID_GENRE_ADVANCED_YEAR_RANGE", "$genres.advanced.yearTo", "To year must be the same as or later than From year."));
@@ -240,6 +248,11 @@ export function validateGenreAdvancedOptions(value, { includedGenres = [], share
 	});
 }
 
+export function genreAdvancedMediaMode(includedGenres, sharedMediaChoice = "both") {
+	const media = new Set([...generatedIdentities(selectedConcepts(includedGenres), sharedMediaChoice)].map((identity) => identity.split("|")[0]));
+	return media.size > 1 ? "both" : media.has("TV") ? "series" : "movies";
+}
+
 export function compileGenreAdvancedFilters(value, {
 	mediaType,
 	includedGenre,
@@ -266,7 +279,13 @@ export function compileGenreAdvancedFilters(value, {
 		.map((concept) => mediaType === "MOVIE" ? concept.movieId : concept.tvId)
 		.filter((tmdbId) => tmdbId !== null);
 	if (excludedIds.length > 0) filters.withoutGenres = excludedIds.join(",");
-	return Object.freeze({ ok: true, filters: Object.freeze(filters), errors: Object.freeze([]) });
+	const optional = advanced.filters === undefined ? {} : advanced.filters;
+	const definingId = mediaType === "MOVIE" ? officialGenreConcept(includedGenre)?.movieId : officialGenreConcept(includedGenre)?.tvId;
+	const compiled = compileAnchoredDiscoverFilters(optional, { ...filters, withGenres: String(definingId) }, genreAdvancedMediaMode(includedGenres, sharedMediaChoice), mediaType, [...DISCOVER_CATALOGUE_FILTER_FIELDS, "releaseDateGte", "releaseDateLte", "year"]);
+	// Exact dates deliberately replace legacy whole-year edges when authored.
+	if (!compiled.ok) return Object.freeze({ ok: false, filters: null, errors: Object.freeze(compiled.errors) });
+	const { withGenres, ...result } = compiled.filters;
+	return Object.freeze({ ok: true, filters: Object.freeze(result), errors: Object.freeze([]) });
 }
 
 function exactYear(value, suffix) {
@@ -282,9 +301,10 @@ export function readGenreAdvancedFilters(filters, { mediaType, includedGenre } =
 	if (filters === null || typeof filters !== "object" || Array.isArray(filters)) return null;
 	const allowed = new Set(["withGenres", ...GENRE_ADVANCED_FILTER_FIELDS]);
 	if (Object.entries(filters).some(([field, value]) => !allowed.has(field) && value !== null && value !== undefined && value !== "")) return null;
-	const yearFrom = exactYear(filters.releaseDateGte, "01-01");
-	const yearTo = exactYear(filters.releaseDateLte, "12-31");
-	if (yearFrom === null || yearTo === null) return null;
+	if (!validateAdvancedFilters(filters, mediaType).ok) return null;
+	if (["releaseDateGte", "releaseDateLte"].some((field) => filters[field] === "")) return null;
+	const yearFrom = exactYear(filters.releaseDateGte, "01-01") ?? "";
+	const yearTo = exactYear(filters.releaseDateLte, "12-31") ?? "";
 	const rating = (value) => value === undefined || value === null ? "" : typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10 ? String(value) : null;
 	const minimumRating = rating(filters.voteAverageGte);
 	const maximumRating = rating(filters.voteAverageLte);
@@ -306,7 +326,9 @@ export function readGenreAdvancedFilters(filters, { mediaType, includedGenre } =
 			excludedGenreNames.push(reference.name);
 		}
 	}
+	const extraFilters = Object.fromEntries(Object.entries(filters).filter(([field, entry]) => entry !== null && entry !== undefined && (DISCOVER_CATALOGUE_FILTER_FIELDS.includes(field) || field === "year" || (field === "releaseDateGte" && !yearFrom) || (field === "releaseDateLte" && !yearTo))));
 	const advanced = createGenreAdvancedState({
+		...(Object.keys(extraFilters).length ? { filters: extraFilters } : {}),
 		yearFrom,
 		yearTo,
 		minimumRating,

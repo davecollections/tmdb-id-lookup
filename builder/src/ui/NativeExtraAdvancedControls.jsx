@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { DiscoverGenreControls, DiscoverKeywordControls, DiscoverNotice, DiscoverSelectField } from "./AdvancedDiscoverControls.jsx";
+import { DiscoverDetailedControls, DiscoverGenreControls, DiscoverKeywordControls, DiscoverNotice, DiscoverSelectField } from "./AdvancedDiscoverControls.jsx";
 import { DiscoverValueField } from "./DiscoverValueField.jsx";
 import { GenreContextCatalogueSubview } from "./GenreCatalogueSelector.jsx";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
@@ -11,6 +11,9 @@ import { keywordCatalogueClient } from "../source-add/keyword-catalogue-client.j
 import { discoverFilterRows } from "../source-add/discover-selection-labels.js";
 import { NATIVE_EXTRA_FIELDS, NATIVE_GENRE_FIELDS, customizeNativeGenres, resolveNativeGenreFilters, useDefaultNativeGenres, validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
 import "./native-shared-advanced.css";
+import { createStudioCatalogueProvider } from "../source-add/studio-catalogue.js";
+import { createNetworkCatalogueProvider } from "../source-add/network-catalogue.js";
+import { createStreamingCatalogueProvider } from "../source-add/streaming-catalogue.js";
 
 const genresOnly = (filters) => Object.fromEntries(NATIVE_GENRE_FIELDS.filter((field) => Object.hasOwn(filters, field) && filters[field] !== "" && filters[field] != null).map((field) => [field, filters[field]]));
 function genreSummary(draft, filters = draft.filters) {
@@ -36,17 +39,20 @@ export function NativeExtraSummary({ filters, mediaMode = "movies", labels = {},
 
 // Native composition: the catalogues, controls and context navigation remain shared
 // with Discover and Decades; only the ephemeral default/override adapter is new.
-export function NativeExtraAdvancedControls({ draft, onChange, entities = [], expanded }) {
+export function NativeExtraAdvancedControls({ draft, onChange, entities = [], expanded, thresholds = false, dateControls = true, genreControls, catalogueControls = false, fixedProviderContext = null }) {
  const root = useRef(null), returnTarget = useRef(null), latest = useRef({ draft, onChange });
  latest.current = { draft, onChange };
  const client = useMemo(() => keywordCatalogueClient(), []);
+ const studioProvider = useMemo(() => createStudioCatalogueProvider(), []);
+ const networkProvider = useMemo(() => createNetworkCatalogueProvider(), []);
+ const streamingProvider = useMemo(() => createStreamingCatalogueProvider(), []);
  const [codes, setCodes] = useState(null), [catalogue, setCatalogue] = useState({ status: "idle" });
  const [panel, setPanel] = useState(null), [context, setContext] = useState("default"), [genreUi, setGenreUi] = useState({});
  const [attempt, setAttempt] = useState(0);
  const titleId = useId();
  const mediaMode = draft.mediaMode ?? (draft.mediaType === "TV" ? "series" : "movies");
  const value = { ...draft, mediaMode, labels: draft.labels ?? {} };
- const errors = validateNativeAdvancedDraft(value.filters, mediaMode).errors;
+ const errors = catalogueControls ? (mediaMode === "both" ? ["MOVIE", "TV"] : [mediaMode === "series" ? "TV" : "MOVIE"]).flatMap((media) => deriveAdvancedDiscoverFilters(value, media).errors) : validateNativeAdvancedDraft(value.filters, mediaMode).errors;
  const allowed = (field) => draft.extraEditable?.[field] !== false;
  const preserved = (label) => <p className="editor-field-help">These imported {label} settings cannot be edited here. Their original values will be preserved.</p>;
  useEffect(() => {
@@ -100,12 +106,14 @@ export function NativeExtraAdvancedControls({ draft, onChange, entities = [], ex
  }
  const controls = <DiscoverGenreControls draft={genreDraft} onChange={changeGenres} errors={validateNativeAdvancedDraft(effective, mediaMode).errors} />;
  return <div ref={root} className="native-extra-advanced discover-dialog">
+  {thresholds ? <div className="native-threshold-fields">{["voteCountGte", "voteAverageGte", "voteAverageLte"].map((field) => allowed(field) ? <DiscoverValueField key={field} field={field} draft={value} onChange={onChange} errors={errors} /> : <div key={field}>{preserved("rating/vote")}</div>)}</div> : null}
   <div className="discover-field-grid">{[["withOriginalLanguage", codes?.languages ?? GENRE_LANGUAGE_OPTIONS], ["withOriginCountry", codes?.countries ?? GENRE_COUNTRY_OPTIONS]].map(([field, options]) => allowed(field) ? <DiscoverSelectField key={field} field={field} options={options} draft={value} onChange={onChange} errors={errors} /> : <div key={field}>{preserved(field === "withOriginalLanguage" ? "language" : "country")}</div>)}</div>
-  {allowed("withGenres") ? entities.length > 1 ? <section className="editor-settings-section"><h3>Genres</h3><p className="editor-field-help">Shared genres: {compactGenreSummary(value.filters)}</p><p className="editor-field-help">{customCount} custom · {entities.length - customCount} using default</p><button type="button" className="secondary-action" aria-haspopup="dialog" onClick={(e) => openPanel("genres", e.currentTarget)}>Configure genres</button></section> : controls : preserved("genre")}
+  {genreControls !== undefined ? genreControls : allowed("withGenres") ? entities.length > 1 ? <section className="editor-settings-section"><h3>Genres</h3><p className="editor-field-help">Shared genres: {compactGenreSummary(value.filters)}</p><p className="editor-field-help">{customCount} custom · {entities.length - customCount} using default</p><button type="button" className="secondary-action" aria-haspopup="dialog" onClick={(e) => openPanel("genres", e.currentTarget)}>Configure genres</button></section> : controls : preserved("genre")}
   {allowed("withKeywords") ? <><DiscoverKeywordControls panelClassName="native-shared-picker" draft={value} onChange={onChange} errors={errors} keywordClient={client} catalogueReady={catalogue.status === "ready"} activePanel={panel} onOpenPanel={openPanel} onClosePanel={() => setPanel(null)} />
    {catalogue.status === "error" ? <DiscoverNotice error>{catalogue.error} <button className="secondary-action" type="button" onClick={() => setAttempt((value) => value + 1)}>Retry keyword names</button></DiscoverNotice> : null}
   </> : preserved("keyword")}
-  {allowed("year") ? <section className="editor-settings-section"><h3>Dates</h3><p className="editor-field-help">{mediaMode === "both" ? "Movie release dates/year and Series first-air dates/year." : mediaMode === "series" ? "Series first-air dates and year." : "Movie release dates and year."} Year must overlap the date range.</p><div className="discover-field-grid">{["releaseDateGte", "releaseDateLte", "year"].map((field) => <DiscoverValueField key={field} field={field} draft={value} onChange={onChange} errors={errors} />)}</div></section> : preserved("date/year")}
+  {dateControls ? allowed("year") ? <section className="editor-settings-section"><h3>Dates</h3><p className="editor-field-help">{mediaMode === "both" ? "Movie release dates/year and Series first-air dates/year." : mediaMode === "series" ? "Series first-air dates and year." : "Movie release dates and year."} Year must overlap the date range.</p><div className="discover-field-grid">{["releaseDateGte", "releaseDateLte", "year"].map((field) => <DiscoverValueField key={field} field={field} draft={value} onChange={onChange} errors={errors} />)}</div></section> : preserved("date/year") : null}
+  {catalogueControls ? <DiscoverDetailedControls draft={value} onChange={onChange} studioProvider={studioProvider} networkProvider={networkProvider} streamingProvider={streamingProvider} namedCodes={codes} errors={errors} cataloguesOnly fixedProviderContext={fixedProviderContext} activePanel={panel} onOpenPanel={openPanel} onClosePanel={() => setPanel(null)} panelClassName="native-shared-picker" /> : null}
   {panel === "genres" ? <NestedPreviewDialog ariaLabelledBy={titleId} onClose={() => setPanel(null)} dialogClassName="add-source-dialog discover-dialog native-genre-dialog">
    <GenreContextCatalogueSubview contexts={contexts} activeContextId={activeContext} onContextChange={setContext} title="Genre rules" titleId={titleId} contextTitle="Shared genres and selected entities" detailTitle={(entry) => entry.label} backLabel="Contexts" guidance="Choose shared genres, then customise individual entities when needed." emptyTitle="Choose a context" emptyText="Select Shared genres or an entity." onDone={() => setPanel(null)}>
     {activeContext !== "default" ? <div className="native-genre-inheritance"><div><p className="editor-field-help">{custom ? "Custom" : "Using default"}</p>{!custom ? <p className="editor-field-help">Click customise to make changes specific to {contexts.find((entry) => entry.id === activeContext).label}.</p> : null}</div><div className="native-genre-context-actions"><button type="button" className="secondary-action" onClick={() => resetGenreContext(custom)}>{custom ? "Use default" : "Customise genres"}</button>{custom ? <button type="button" className="secondary-action" onClick={() => resetGenreContext()}>Clear selections</button> : null}</div></div> : null}

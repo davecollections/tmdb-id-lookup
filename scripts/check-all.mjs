@@ -95,6 +95,7 @@ runNode(["--test", path.join("tests", "builder-network-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-network-hierarchy-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-preview.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-family-advanced.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-hierarchy.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-streaming-hierarchy-ui.test.mjs")]);
