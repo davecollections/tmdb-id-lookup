@@ -1,3 +1,4 @@
+import { resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "../builder/src/source-add/decades-folder-artwork.js";
 import { buildBuilderViewModel } from "../builder/src/ui/view-model.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -237,8 +238,10 @@ test("rich Decades Advanced composes with Square without acquiring Genre artwork
   assert.ok(folders.length);
   for (const folder of folders) {
    assert.equal(folder.editable.tileShape, "SQUARE");
-   for (const field of ["coverImageUrl", "focusGifUrl", "heroBackdropUrl", "titleLogoUrl"]) assert.ok(!folder.editable[field], field);
-   assert.equal(await loadFolderArtworkSuggestions({ folder }), null);
+   const identity = resolveDecadesArtworkIdentity(folder.sources);
+   assert.ok(identity);
+   for (const [field, url] of Object.entries(resolveDecadesArtwork(identity.decadeId, identity.variant, "SQUARE"))) assert.equal(folder.editable[field], url);
+   assert.equal((await loadFolderArtworkSuggestions({ folder })).identity.authority, "decades");
    for (const source of folder.sources) { assert.equal(source.editable.filters.withKeywords, "6054"); assert.equal(source.editable.filters.year, undefined); }
   }
   const output = json(controller.serializeProject().value), reopened = app();

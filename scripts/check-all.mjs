@@ -37,6 +37,7 @@ runNode(["--test", path.join("tests", "pages-asset-references.test.mjs")]);
 runNode(["--test", path.join("tests", "cloudflare-worker.test.mjs")]);
 runNode(["--test", path.join("tests", "artwork-runtime.test.mjs")]);
 runNode(["--test", path.join("tests", "genre-artwork.test.mjs")]);
+runNode(["--test", path.join("tests", "decades-artwork.test.mjs")]);
 runNode(["--test", path.join("tests", "cached-nuvio-export.test.mjs")]);
 runNode(["--test", path.join("tests", "nuvio-contracts.test.mjs")]);
 runNode(["--test", path.join("tests", "shared-advanced-investigation.test.mjs"), path.join("tests", "collection-preservation.test.mjs")]);

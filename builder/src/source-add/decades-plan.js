@@ -1,3 +1,4 @@
+import { resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "./decades-folder-artwork.js";
 import { discoverSourceIdentity, discoverSourceNodeIdentity } from "../nuvio/discover.js";
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { buildDecadesSourceDrafts } from "./decades-source.js";
@@ -219,8 +220,11 @@ function collectionEditable(title, { viewMode, showAllTab, pinToTop, hideCollect
 	});
 }
 
-function folderEditable(title, { folderTileShape, folderTitleVisibility }) {
+function folderEditable(title, sources, { folderTileShape, folderTitleVisibility }) {
+	const identity = resolveDecadesArtworkIdentity(sources.map((entry) => ({ nodeType: "source", ...entry.draft })));
+	const artwork = identity === null ? null : resolveDecadesArtwork(identity.decadeId, identity.variant, folderTileShape);
 	return Object.freeze({
+		...artwork,
 		title: folderTitleVisibility === "HIDE_EVERYWHERE" ? NUVIO_INVISIBLE_TITLE : title,
 		tileShape: folderTileShape,
 		hideTitle: folderTitleVisibility !== "SHOW_EVERYWHERE",
@@ -285,7 +289,7 @@ function buildNewCollectionPlan(project, sourcePlan, {
 			const sources = sourceGroupsFor(sourcePlan, decadeId, mediaTypes);
 			return Object.freeze({
 				decadeId,
-				editable: folderEditable(group.decadeLabel, { folderTileShape, folderTitleVisibility }),
+				editable: folderEditable(group.decadeLabel, sources, { folderTileShape, folderTitleVisibility }),
 				sources: Object.freeze(sources),
 				outcome: outcomeForFolder(project, sources),
 			});
@@ -313,7 +317,7 @@ function buildNewFolderPlan(project, sourcePlan, destinationCollection, { folder
 			.map((folder) => Object.freeze({ folderInternalId: folder.internalId, folderTitle: folder.editable.title }));
 		return Object.freeze({
 			decadeId,
-			editable: folderEditable(group.decadeLabel, { folderTileShape, folderTitleVisibility }),
+			editable: folderEditable(group.decadeLabel, sources, { folderTileShape, folderTitleVisibility }),
 			sources: Object.freeze(sources),
 			outcome,
 			titleCollisions: Object.freeze(titleMatches),

@@ -1,3 +1,4 @@
+import { DECADES_ARTWORK_KEYS, resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "../../builder/src/source-add/decades-folder-artwork.js";
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
 import { runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
 import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
@@ -8103,6 +8104,128 @@ async function runMountedRegressions() {
 	};
 }
 
+// #224 extends the existing mounted harness. All image responses come from
+// the real published URLs; the live manifest independently verifies the projection.
+let liveDecadesArtworkManifest;
+async function runDecadesArtworkScenario({ scope, mediaMode, decadeId, initialShape, layoutOnly = false, focusEnabled = false }) {
+	const check = (value, message) => { if (!value) throw new Error(`Decades artwork/${scope}/${mediaMode}/${innerWidth}: ${message}`); return value; };
+	const click = clickAndSettle, wait = waitForMountedCondition, settle = afterCommittedEffects;
+	liveDecadesArtworkManifest ??= fetch("https://raw.githubusercontent.com/davecollections/nuvio-assets/main/assets/collection_covers/decades/manifest.json").then(async (response) => { check(response.ok, "live manifest HTTP " + response.status); return response.json(); });
+	const manifest = await liveDecadesArtworkManifest;
+	check(manifest.schemaVersion === 2 && manifest.kind === "decade-artwork", "manifest contract");
+	const shapeRoles = { POSTER: ["poster", "posterFocus"], SQUARE: ["square", "squareFocus"], LANDSCAPE: ["landscape", "focus"] };
+	function expectedArtwork(id, variant, shape) {
+		const asset = manifest.decades[DECADES_ARTWORK_KEYS[id]][variant], [cover, focus] = shapeRoles[shape];
+		return { coverImageUrl: asset[cover].url, focusGifUrl: asset[focus].url, heroBackdropUrl: asset.hero.url, titleLogoUrl: asset.titleLogo.url };
+	}
+	let mappingCount = 0;
+	for (const id of Object.keys(DECADES_ARTWORK_KEYS)) for (const variant of ["movies", "series", "mixed"]) for (const shape of Object.keys(shapeRoles)) {
+		check(JSON.stringify(resolveDecadesArtwork(id, variant, shape)) === JSON.stringify(expectedArtwork(id, variant, shape)), "live manifest URL parity"); mappingCount++;
+	}
+	const controller = createController();
+	const parentId = scope === "new-folder" ? controller.createCollection({ editable: { title: "Existing parent", viewMode: "ROWS" } }).createdInternalId : null;
+	const initial = controller.getState(), parentBefore = parentId ? JSON.stringify(initial.project.collections[0].editable) : null;
+	const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
+	const evidence = { scope, mediaMode, decadeId, initialShape, width: innerWidth, height: innerHeight, layoutOnly, mappingCount, shapes: [] };
+	async function shot(name) {
+		if (!globalThis.capture204Preview) return;
+		await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `decades-artwork-${mediaMode}-${innerWidth}-${name}` })); });
+	}
+	try {
+		let applied;
+		await act(async () => { root.render(createElement(CreationDialog, { scope, initialOptionId: "decades", project: initial.project, projectRevision: initial.revision, currentYear: 2026,
+			destinationCollectionInternalId: parentId, destinationCollectionTitle: "Existing parent", onCancel() {}, onApplyDecades(plan) { applied = applyDecadesHierarchyPlan(controller, plan); return applied; } })); await settle(); });
+		const dialog = check(document.querySelector('[data-creation-dialog="true"]'), "guided creation");
+		await click(check(dialog.querySelector(`[data-decade-preset="${decadeId}"]`), "decade choice"));
+		await click(dialog.querySelector('button[type="submit"]'));
+		await click(check(dialog.querySelector(`input[name="decades-media"][value="${mediaMode}"]`), "media choice"));
+		if (scope === "new-collection" && mediaMode === "both") await click(dialog.querySelector('input[name="decades-layout"][value="mixed-collection"]'));
+		await click(decadeContentChoice(dialog, "Decade overview")); // Keep default individual years too.
+		await click(dialog.querySelector('button[type="submit"]'));
+		const appearance = check(dialog.querySelector('input[name="decades-folder-shape"]')?.closest("details"), "Folder Appearance");
+		if (!appearance.open) await click(appearance.querySelector("summary"));
+		await click(check(dialog.querySelector(`input[name="decades-folder-shape"][value="${initialShape}"]`), "creation shape"));
+		check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "creation overflow");
+		check(controller.getState().revision === initial.revision, "creation mutated before Apply");
+		await shot("creation");
+		if (layoutOnly) return evidence;
+		await click(dialog.querySelector('button[type="submit"]'));
+		check(applied?.ok, "atomic apply: " + JSON.stringify(applied?.errors));
+		check(controller.getState().revision === initial.revision + 1, "creation revision");
+		if (parentId) check(JSON.stringify(controller.getState().project.collections[0].editable) === parentBefore, "parent changed");
+		const createdFolder = controller.getState().project.collections.flatMap((c) => c.folders)[0];
+		const variant = mediaMode === "both" ? "mixed" : mediaMode;
+		const initialArtwork = expectedArtwork(decadeId, variant, initialShape);
+		for (const [field, url] of Object.entries(initialArtwork)) check(createdFolder.editable[field] === url, "initial " + field);
+		check(createdFolder.editable.focusGifEnabled === false && createdFolder.editable.hideTitle === false, "creation defaults");
+		const output = controller.serializeProject().value;
+		output[0].folders[0].title = "Renamed Decades folder";
+		output[0].folders[0].focusGifEnabled = focusEnabled;
+		output[0].folders[0].ownerArtworkSentinel = { preserved: true };
+		const reopened = createController(); check(reopened.importValue(output).ok, "reopen");
+		check(serializedValue(reopened) === JSON.stringify(output), "exact reopen");
+		const target = reopened.getState().project.collections[0].folders[0];
+		const sourceBefore = JSON.stringify(target.sources), savedBefore = serializedValue(reopened);
+		reopened.selectNode(reopened.getState().project.collections[0].internalId);
+		await act(async () => { root.render(createElement(MountedWorkspace, { controller: reopened })); await settle(); });
+		async function openFolder() {
+			const card = check([...host.querySelectorAll('[data-hierarchy-card="folder"]')].find((c) => c.querySelector('.node-title')?.textContent.trim() === "Renamed Decades folder"), "renamed Folder card");
+			card.scrollIntoView({ block: "center", behavior: "instant" }); await settle();
+			await wait(() => [...card.querySelectorAll("img")].every((image) => image.complete && image.naturalWidth > 0), { label: "real initial Decades tile", timeoutMs: 30000 });
+			await click(check(card.querySelector('[data-action="open-folder-actions"]'), "Folder actions"));
+			await click(check(document.querySelector('[data-actions-menu="folder"]:not([hidden]) [data-action="edit-folder"]'), "physical Folder Edit"));
+			const editor = check(document.querySelector('[data-node-editor="folder"]'), "Folder Edit");
+			await wait(() => editor.querySelector('[data-folder-artwork-suggestions="ready"]'), { label: "Decades suggestions after reopen" });
+			return editor;
+		}
+		const inputFor = (editor, field) => check(editor.querySelector(`[data-editor-field="${field}"] input`), field);
+		async function checkImages(editor, artwork) {
+			for (const [field, url] of Object.entries(artwork)) {
+				await wait(() => inputFor(editor, field).value === url, { label: field + " URL" });
+				const image = check(editor.querySelector(`[data-artwork-preview="${field}"] img`), field + " preview");
+				image.scrollIntoView({ block: "center" });
+				await wait(() => image.getAttribute("src") === url && image.complete && image.naturalWidth > 0, { label: "real published " + field, timeoutMs: 30000 });
+			}
+		}
+		let editor = await openFolder();
+		await checkImages(editor, initialArtwork);
+		for (const shape of ["POSTER", "SQUARE", "LANDSCAPE"]) {
+			const radio = check(editor.querySelector(`input[name="node-editor-folder-shape"][value="${shape}"]`), shape + " radio");
+			await click(radio); check(radio.checked, "checked shape");
+			await checkImages(editor, expectedArtwork(decadeId, variant, shape));
+			check(inputFor(editor, "focusGifEnabled").checked === focusEnabled, "focus state changed");
+			check(serializedValue(reopened) === savedBefore, "draft mutated saved project");
+			check(editor.scrollWidth <= editor.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Folder Edit overflow");
+			evidence.shapes.push(shape);
+			radio.closest("fieldset").scrollIntoView({ block: "center" }); await shot(shape.toLowerCase());
+		}
+		await click(editor.querySelector('[data-action="cancel-node-edit"]'));
+		check(serializedValue(reopened) === savedBefore, "Cancel mutated saved project");
+		editor = await openFolder();
+		// Published artwork for a different identity acts as a real custom URL.
+		const custom = expectedArtwork(decadeId === "1990s" ? "2000s" : "1990s", "movies", "POSTER");
+		for (const [field, url] of Object.entries(custom)) await act(async () => { setInputValue(inputFor(editor, field), url); await settle(); });
+		for (const shape of ["SQUARE", "LANDSCAPE"]) {
+			await click(editor.querySelector(`input[name="node-editor-folder-shape"][value="${shape}"]`));
+			await checkImages(editor, custom);
+			check(inputFor(editor, "focusGifEnabled").checked === focusEnabled, "custom focus state changed");
+		}
+		const revision = reopened.getState().revision;
+		await click(editor.querySelector('[data-action="apply-node-edit"]'));
+		check(reopened.getState().revision === revision + 1, "one Folder Apply revision");
+		const saved = reopened.getState().project.collections[0].folders[0];
+		for (const [field, url] of Object.entries(custom)) check(saved.editable[field] === url, "saved custom " + field);
+		check(saved.editable.focusGifEnabled === focusEnabled && JSON.stringify(saved.sources) === sourceBefore, "saved focus/sources changed");
+		const finalOutput = reopened.serializeProject().value, finalReopen = createController();
+		check(finalReopen.importValue(finalOutput).ok && serializedValue(finalReopen) === JSON.stringify(finalOutput), "custom export/reopen");
+		check(finalOutput[0].folders[0].ownerArtworkSentinel.preserved, "unknown field preservation");
+		evidence.variant = variant; evidence.focusEnabled = focusEnabled; evidence.sourceCount = saved.sources.length;
+		evidence.creation = true; evidence.reopen = true; evidence.renamed = true; evidence.customPreserved = true; evidence.focusPreserved = true;
+		return evidence;
+	} finally { await act(async () => { root.unmount(); await settle(); }); host.remove(); }
+}
+window.__runDecadesArtworkScenario = runDecadesArtworkScenario;
+
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
 window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSharedAdvancedScenario = (view) => runNativeSharedAdvancedScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
@@ -8313,7 +8436,10 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   if (guided && ["genre", "decade"].includes(family)) {
    const generated = reopened.getState().project.collections.flatMap(collection => collection.folders).filter(folder => folder.sources.some(source => source.editable.filters?.withKeywords === "6054"));
    check(evidence.creationShape === "SQUARE" && generated.every(folder => folder.editable.tileShape === "SQUARE"), "Square lost through plan/export/reopen");
-   if (family === "decade") check(generated.every(folder => ["coverImageUrl", "focusGifUrl", "heroBackdropUrl", "titleLogoUrl"].every(field => !folder.editable[field])), "Decades unexpectedly acquired artwork");
+   if (family === "decade") check(generated.every(folder => {
+    const identity = resolveDecadesArtworkIdentity(folder.sources);
+    return identity && Object.entries(resolveDecadesArtwork(identity.decadeId, identity.variant, "SQUARE")).every(([field, url]) => folder.editable[field] === url);
+   }), "rich Decades canonical artwork");
    if (family === "genre" && scope === "new-folder") {
     const beforeFolderEdit = serializedValue(reopened), target = generated[0];
     const parent = reopened.getState().project.collections.find(collection => collection.folders.includes(target));

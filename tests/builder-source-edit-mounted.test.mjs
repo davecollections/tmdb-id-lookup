@@ -63,6 +63,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const decadesArtworkOnly = process.env.TMDB_DECADES_ARTWORK_ONLY === "1";
 	const contentCardsOnly = process.env.TMDB_DECADES_CONTENT_ONLY === "1";
 	const genreRulesOnly = process.env.TMDB_GENRE_RULES_ONLY === "1";
 	const familyAdvancedOnly = process.env.TMDB_FAMILY_ADVANCED_ONLY === "1";
@@ -209,7 +210,7 @@ async function runMountedPage() {
 		}
 		const address = resources.vite.httpServer.address();
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -219,6 +220,23 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (decadesArtworkOnly || (!contentCardsOnly && !genreRulesOnly && !familyAdvancedOnly && !sharedAdvancedOnly && !studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+					result.results.decadesArtworkCases = [];
+					const cases = [
+						{ width: 393, height: 852, scope: "new-collection", mediaMode: "movies", decadeId: "1950s-and-earlier", initialShape: "POSTER" },
+						{ width: 1280, height: 900, scope: "new-collection", mediaMode: "series", decadeId: "2020s", initialShape: "SQUARE", focusEnabled: true },
+						{ width: 393, height: 400, scope: "new-folder", mediaMode: "both", decadeId: "1980s", initialShape: "LANDSCAPE" },
+					];
+					if (decadesArtworkOnly) for (const width of [360,384,402,412]) cases.push({ width, height: 800, scope: "new-collection", mediaMode: "both", decadeId: "1980s", initialShape: "SQUARE", layoutOnly: true });
+					for (const view of cases) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runDecadesArtworkScenario(" + JSON.stringify(view) + ")", awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						result.results.decadesArtworkCases.push(checked.result.value);
+					}
+					console.log("DECADES_ARTWORK_LIVE " + JSON.stringify(result.results.decadesArtworkCases));
+					if (decadesArtworkOnly) return result.results;
+				}
 				if (contentCardsOnly) {
 					result.results.contentCards = [];
 					for (const view of [{ width: 1280, capture: true, keyboard: true }, { width: 393, capture: true }, ...[768,360,384,402,412].map(width => ({ width })), { width: 393, forcedColors: true }]) {
@@ -3802,4 +3820,20 @@ test("mounted Genre rules share family presentation and preserve the live Studio
 		}
 	}
 	assert.deepEqual(mountedResults.genreRulesKeyboard, { checkedBefore: false, focused: true, inputType: "button", visiblePill: true, focusVisible: true, checkedAfterSpace: true, selectedStateExposed: true, selectedVisualChanged: true, noMutation: true });
+});
+
+
+test("mounted Decades artwork uses live canonical assets across creation, renamed reopen, shapes and preservation", () => {
+	const cases = mountedResults.decadesArtworkCases;
+	assert.ok(cases?.length >= 3);
+	assert.ok(cases.every((entry) => entry.mappingCount === 72));
+	const journeys = cases.filter((entry) => !entry.layoutOnly);
+	assert.deepEqual(journeys.map((entry) => entry.variant), ["movies", "series", "mixed"]);
+	assert.deepEqual(journeys.map((entry) => entry.focusEnabled), [false, true, false]);
+	for (const entry of journeys) {
+		assert.deepEqual(entry.shapes, ["POSTER", "SQUARE", "LANDSCAPE"]);
+		for (const property of ["creation", "reopen", "renamed", "customPreserved", "focusPreserved"]) assert.equal(entry[property], true, property);
+		assert.ok(entry.sourceCount > 1);
+	}
+	if (process.env.TMDB_DECADES_ARTWORK_ONLY === "1") assert.deepEqual([...new Set(cases.map((entry) => entry.width))].sort((a, b) => a - b), [360,384,393,402,412,1280]);
 });
