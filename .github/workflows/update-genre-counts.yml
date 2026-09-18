@@ -19,12 +19,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
+          package-manager-cache: false
 
       - name: Update genre counts
         env:
@@ -32,7 +33,7 @@ jobs:
         run: node scripts/update-genre-counts.js
 
       - name: Commit updated genre counts
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Update TMDB genre count cache
           file_pattern: data/genre-counts.json
