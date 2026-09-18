@@ -29,7 +29,7 @@ import { FamilyGenreRulePills, GenreRuleCard } from "./GenreRuleControls.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
-import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
+import { TitlePreviewResults } from "./TitlePreviewResults.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourcePreviewSelectors, SourcePreviewContent } from "./SourceTitlePreviewDialog.jsx";
 import { resolveSourcePreviewDraft, sourcePreviewVariantGroups, sourcePreviewVariantKey, sourcePreviewContext } from "../source-add/source-title-preview.js";
@@ -127,7 +127,7 @@ function DecadeSourcePreview({ preview, onChangePeriod, onChangeLogicalSource, o
 			onClose={onClose}
 		>
 			<header><div><p className="panel-kicker">Title preview</p><h3 id="decade-add-preview-title">{preview.periodGroup.selectorLabel}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
-			<SourcePreviewContent>
+			<SourcePreviewContent resetKey={preview.draft}>
 				{hasDimensions ? <div className="decade-add-preview-dimensions">
 					{hasYearSelector ? <PreviewDimension label="Year" ariaLabel="Preview year" className="decade-add-preview-year-selector" choices={preview.periodGroups} selectedKey={preview.periodGroup.key} onChange={onChangePeriod} /> : null}
 					{hasSourceSelector ? <PreviewDimension label="Source" ariaLabel="Preview source" className="decade-add-preview-source-selector" choices={preview.periodGroup.logicalSources} selectedKey={preview.logicalSource.key} onChange={onChangeLogicalSource} /> : null}
@@ -137,7 +137,7 @@ function DecadeSourcePreview({ preview, onChangePeriod, onChangeLogicalSource, o
 					<p className="studio-preview-single-media">{preview.draft.editable.title} · {sourcePreviewContext(preview.draft)}</p>
 					{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing {activeMedia.toLowerCase()} preview…</p> : null}
 					{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This Decade preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-					{preview.status === "ready" ? <PosterOnlyPreviewGrid items={preview.data?.results ?? []} limit={10} className="franchise-preview-grid studio-preview-grid decades-preview-grid decade-add-preview-grid" ariaLabel={`${activeMedia} poster preview`} altPrefix={activeMedia} emptyMessage="No posters available." /> : null}
+					{preview.status === "ready" ? <TitlePreviewResults data={preview.data} className="franchise-preview-grid studio-preview-grid decades-preview-grid decade-add-preview-grid" ariaLabel={`${activeMedia} poster preview`} altPrefix={activeMedia} /> : null}
 				</div>
 			</SourcePreviewContent>
 		</NestedPreviewDialog>

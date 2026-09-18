@@ -36,7 +36,7 @@ import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
-import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
+import { TitlePreviewResults } from "./TitlePreviewResults.jsx";
 import { HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
@@ -159,7 +159,7 @@ function StreamingTitlePreview({ preview, regions, mediaTypes, onChangeRegion, o
 				<p className="studio-preview-single-media">{preview.provider.name} · {preview.regionCode} · {sourcePreviewContext(preview.draft)}</p>
 				{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing {activeMedia.toLowerCase()} preview for {activeRegion.code}…</p> : null}
 				{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This Streaming preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-				{preview.status === "ready" ? <PosterOnlyPreviewGrid items={preview.data?.results ?? []} limit={10} className="franchise-preview-grid studio-preview-grid streaming-hierarchy-preview-grid" ariaLabel={`${preview.provider.name} ${activeMedia} ${activeRegion.code} poster preview`} altPrefix={activeMedia} /> : null}
+				{preview.status === "ready" ? <TitlePreviewResults data={preview.data} className="franchise-preview-grid studio-preview-grid streaming-hierarchy-preview-grid" ariaLabel={`${preview.provider.name} ${activeMedia} ${activeRegion.code} poster preview`} altPrefix={activeMedia} /> : null}
 			</SourcePreviewContent>
 		</NestedPreviewDialog>
 	);

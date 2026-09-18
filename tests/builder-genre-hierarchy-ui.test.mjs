@@ -200,8 +200,8 @@ test("Genre Preview uses exact drafts, lazy media tabs, shared nested shell, and
 	assert.match(flowSource, /requestPreview\(group, group\.drafts\[0\], trigger\)/);
 	assert.match(flowSource, /sourcePreviewVariantGroups\(preview\.group\.drafts/);
 	assert.match(flowSource, /<NestedPreviewDialog/);
-	assert.match(flowSource, /<PosterOnlyPreviewGrid items=\{items\} limit=\{10\}/);
-	assert.match(flowSource, /No posters available\./);
+	assert.match(flowSource, /<TitlePreviewResults data=\{preview.data\}/);
+	assert.match(fs.readFileSync(path.join(rootDir, "builder/src/source-add/title-preview-results.js"), "utf8"), /No posters available\./);
 	assert.match(flowSource, /createAsyncRequestCoordinator/);
 	assert.match(flowSource, /focusElementWithoutScroll\(trigger\)/);
 	assert.doesNotMatch(flowSource, /prefetch|Promise\.all\([^)]*getGenrePreview/);

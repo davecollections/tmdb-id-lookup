@@ -180,8 +180,8 @@ test("Network Preview is explicit in Configure, Series-only and exposes exact Sh
 	assert.match(configure, /aria-haspopup="dialog"/);
 	assert.match(configure, />Preview<\/button>/);
 	assert.match(flow, /titlePreview.open\(entry.result.drafts/);
-	assert.match(sharedPreview, /<PosterOnlyPreviewGrid[^\n]*limit=\{10\}/);
-	assert.match(sharedPreview, /No posters available\./);
+	assert.match(sharedPreview, /<TitlePreviewResults data=\{preview.data\}/);
+	assert.match(read("builder/src/source-add/title-preview-results.js"), /No posters available\./);
 	assert.match(previewVariants, /label: "Show"/);
 	assert.doesNotMatch(flow, /previewProvider.getNetworkPreview|prefetch/);
 	assert.match(previewProvider, /requester.getQueryPreview\(query.mediaType, query.queryParameters/);
@@ -191,7 +191,7 @@ test("Configure retains Series knowledge while Preview totals belong to the exac
 	const countLabel = flow.slice(flow.indexOf("function configureCountLabel"), flow.indexOf("function SelectedNetworks"));
 	assert.match(countLabel, /exactCount === undefined \? network\?\.seriesCount : exactCount/);
 	assert.match(flow, /preview\?\.status === "ready".*setExactCounts/);
-	assert.match(sharedPreview, /preview.status === "ready" && Number.isSafeInteger\(preview.data\?\.totalResults\)/);
+	assert.match(read("builder/src/ui/TitlePreviewResults.jsx"), /titlePreviewSummary\(represented, displayedCount\)/);
 	assert.doesNotMatch(flow.slice(flow.indexOf("const planResult"), flow.indexOf("const configureEntries")), /exactCounts|totalResults/);
 });
 
@@ -232,7 +232,7 @@ test("Select uses accessible full-card checkboxes, stable focus, and one scroll 
 	assert.doesNotMatch(networkFlow, /autoFocus/);
 });
 
-test("required responsive owner widths use the same 10-poster maximum", () => {
+test("required responsive owner widths use the same shared result window", () => {
 	const widths = [360, 384, 393, 402, 412, 899, 900, 901, 1280];
 	assert.deepEqual(widths.filter((width) => width <= 520), [360, 384, 393, 402, 412]);
 	assert.deepEqual(widths.filter((width) => width >= 900), [900, 901, 1280]);
@@ -244,7 +244,7 @@ test("required responsive owner widths use the same 10-poster maximum", () => {
 	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(3/);
 	assert.match(posterGrid, /slice\(0, limit\)/);
-	assert.match(sharedPreview, /<PosterOnlyPreviewGrid[^\n]*limit=\{10\}/);
+	assert.match(sharedPreview, /<TitlePreviewResults data=\{preview.data\}/);
 });
 
 test("workspace owns the Network providers and applies one atomic hierarchy plan", () => {

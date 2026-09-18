@@ -2,6 +2,7 @@ import { DECADES_ARTWORK_KEYS, resolveDecadesArtwork, resolveDecadesArtworkIdent
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
 import { runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
 import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
+import { runPreviewPagesScenario } from "./builder-preview-pages-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
@@ -271,7 +272,8 @@ function tmdbListPreviewGeometry(preview, grid) {
 		scale: viewport?.scale ?? 1,
 	};
 	const previewRect = preview.getBoundingClientRect();
-	const gridRect = grid.getBoundingClientRect();
+	const scrollBody = preview.querySelector(".source-sort-preview-content");
+	const gridRect = scrollBody.getBoundingClientRect();
 	const backdropRect = preview.closest("[data-nested-modal-backdrop]")?.getBoundingClientRect() ?? null;
 	const outerDialogRect = document.querySelector(".tmdb-list-dialog")?.getBoundingClientRect() ?? null;
 	const headerRect = preview.querySelector("header")?.getBoundingClientRect() ?? null;
@@ -280,8 +282,8 @@ function tmdbListPreviewGeometry(preview, grid) {
 	const imageRects = images.map((image) => image.getBoundingClientRect());
 	const firstPosterRect = imageRects[0] ?? null;
 	const lastPosterRect = imageRects.at(-1) ?? null;
-	const gridStyle = getComputedStyle(grid);
-	const scrollbarThumbStyle = getComputedStyle(grid, "::-webkit-scrollbar-thumb");
+	const gridStyle = getComputedStyle(scrollBody);
+	const scrollbarThumbStyle = getComputedStyle(scrollBody, "::-webkit-scrollbar-thumb");
 	const activeScrollOwners = [preview, ...preview.querySelectorAll("*")].filter((element) => {
 		const overflowY = getComputedStyle(element).overflowY;
 		return (overflowY === "auto" || overflowY === "scroll") && element.scrollHeight > element.clientHeight + 1;
@@ -298,19 +300,19 @@ function tmdbListPreviewGeometry(preview, grid) {
 		modalHeight: previewRect.height,
 		headerTop: headerRect?.top ?? null,
 		headerBottom: headerRect?.bottom ?? null,
-		gridClientWidth: grid.clientWidth,
-		gridScrollWidth: grid.scrollWidth,
-		gridClientHeight: grid.clientHeight,
-		gridScrollHeight: grid.scrollHeight,
-		gridScrollTop: grid.scrollTop,
-		gridScrollLeft: grid.scrollLeft,
-		atVerticalScrollEnd: grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 2,
+		gridClientWidth: scrollBody.clientWidth,
+		gridScrollWidth: scrollBody.scrollWidth,
+		gridClientHeight: scrollBody.clientHeight,
+		gridScrollHeight: scrollBody.scrollHeight,
+		gridScrollTop: scrollBody.scrollTop,
+		gridScrollLeft: scrollBody.scrollLeft,
+		atVerticalScrollEnd: scrollBody.scrollTop + scrollBody.clientHeight >= scrollBody.scrollHeight - 2,
 		posterCount: images.length,
 		columns: new Set(imageRects.map((rect) => Math.round(rect.left))).size,
 		posterWidth: firstPosterRect?.width ?? 0,
 		posterHeight: firstPosterRect?.height ?? 0,
-		verticalScrollable: grid.scrollHeight > grid.clientHeight + 1 && gridStyle.overflowY === "auto",
-		verticalScrollOnly: grid.scrollWidth <= grid.clientWidth + 1 && gridStyle.overflowX === "hidden",
+		verticalScrollable: scrollBody.scrollHeight > scrollBody.clientHeight + 1 && gridStyle.overflowY === "auto",
+		verticalScrollOnly: scrollBody.scrollWidth <= scrollBody.clientWidth + 1 && gridStyle.overflowX === "hidden",
 		lastPosterReachable: lastPosterRect !== null
 			&& lastPosterRect.bottom >= gridRect.top + 1
 			&& lastPosterRect.top <= gridRect.bottom - 1,
@@ -335,8 +337,8 @@ function tmdbListPreviewGeometry(preview, grid) {
 			&& outerDialogRect.bottom <= viewportBounds.bottom + 1,
 		safeHorizontalMargins: previewRect.left - viewportBounds.left >= 15
 			&& viewportBounds.right - previewRect.right >= 15,
-		oneScrollOwner: activeScrollOwners.length === 1 && activeScrollOwners[0] === grid,
-		dingoScrollbarClass: grid.classList.contains("dingo-scrollbar"),
+		oneScrollOwner: activeScrollOwners.length === 1 && activeScrollOwners[0] === scrollBody,
+		dingoScrollbarClass: scrollBody.classList.contains("dingo-scrollbar"),
 		scrollbarColor: gridStyle.scrollbarColor,
 		scrollbarWidth: gridStyle.scrollbarWidth,
 		scrollbarThumbBackground: scrollbarThumbStyle.backgroundColor,
@@ -353,6 +355,15 @@ function genuineTmdbPosterImages(images) {
 		const url = new URL(image.currentSrc || image.src);
 		return url.origin === "https://image.tmdb.org" && url.pathname.startsWith("/t/p/");
 	});
+}
+
+function previewImageReady(image) {
+ const body = image.closest(".source-sort-preview-content");
+ if (body) {
+  const frame = body.getBoundingClientRect(), rect = image.getBoundingClientRect();
+  if (rect.bottom <= frame.top || rect.top >= frame.bottom) return true;
+ }
+ return image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
 }
 
 async function waitForReadyPosterGrid({
@@ -395,9 +406,9 @@ async function waitForReadyPosterGrid({
 			};
 			const previewReady = previewElement?.dataset.previewStatus === undefined
 				|| previewElement.dataset.previewStatus === "ready";
-			if (!previewReady || !grid || visibleImages.length !== expectedVisibleCount) return null;
+			if (!previewReady || !grid || (expectedVisibleCount === null ? visibleImages.length < 1 || visibleImages.length > 100 : visibleImages.length !== expectedVisibleCount)) return null;
 			if (expectedSelectedTab !== null && selectedTab?.textContent.trim() !== expectedSelectedTab) return null;
-			if (visibleImages.some((image) => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
+			if (visibleImages.some((image) => !previewImageReady(image))) return null;
 			return { preview: previewElement, grid, images, visibleImages };
 		}, { label, timeoutMs });
 	} catch (error) {
@@ -1976,7 +1987,7 @@ async function runFranchiseReviewScenario() {
 		if (element === null || element === undefined) throw new Error(`Mounted Franchise ${label} is missing.`);
 		return element;
 	}
-	const expectedPosterCount = 10;
+	const expectedPosterCount = null;
 	const selectedNames = new Map();
 	async function selectExactCollection(dialog, query, id, expectedSelectionCount) {
 		await act(async () => {
@@ -2060,7 +2071,7 @@ async function runFranchiseReviewScenario() {
 		const selectOpenPosition = outerPosition(dialog, scrollElement);
 		const selectPosterState = {
 			posterCount: selectReadyPosters.visibleImages.length,
-			postersReady: selectReadyPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			postersReady: selectReadyPosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			genuineTmdbSources: genuineTmdbPosterImages(selectReadyPosters.visibleImages),
 			geometry: titlePreviewGeometry(selectLayer.preview, selectReadyPosters.grid),
 			posterOnly: [...selectLayer.preview.querySelectorAll(".franchise-preview-grid > *")].every((item) => item.tagName === "IMG"),
@@ -2140,7 +2151,7 @@ async function runFranchiseReviewScenario() {
 		const reviewClose = required(reviewLayer.preview.querySelector("header button"), "Review preview Close action");
 		const reviewPosterState = {
 			posterCount: reviewReadyPosters.visibleImages.length,
-			postersReady: reviewReadyPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			postersReady: reviewReadyPosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			genuineTmdbSources: genuineTmdbPosterImages(reviewReadyPosters.visibleImages),
 			geometry: titlePreviewGeometry(reviewLayer.preview, reviewReadyPosters.grid),
 			posterOnly: [...reviewLayer.preview.querySelectorAll(".franchise-preview-grid > *")].every((item) => item.tagName === "IMG"),
@@ -2268,7 +2279,7 @@ async function runStudioHierarchyScenario() {
 		if (element === null || element === undefined) throw new Error(`Mounted Studio ${label} is missing.`);
 		return element;
 	}
-	const expectedPosterCount = 10;
+	const expectedPosterCount = null;
 	const selectedCards = [];
 	async function selectExactStudio(dialog, id, expectedSelectionCount) {
 		const query = required(dialog.querySelector("#studio-source-query"), "Studio search query");
@@ -2373,12 +2384,12 @@ async function runStudioHierarchyScenario() {
 			requests: requests.length,
 			moviePopularRequest: requests[0]?.includes("with_companies=3") === true && requests[0]?.includes("sort_by=popularity.desc") === true,
 			visiblePosters: readyPopularMoviePosters.visibleImages.length,
-			postersReady: readyPopularMoviePosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			postersReady: readyPopularMoviePosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			genuineTmdbSources: genuineTmdbPosterImages(readyPopularMoviePosters.visibleImages),
 			posterOnly: [...configurePreviewModal.querySelectorAll(".studio-preview-grid > *")].every((item) => item.tagName === "IMG"),
 			captionsAbsent: configurePreviewModal.querySelector(".studio-preview-grid figcaption, .studio-preview-grid article, .studio-preview-grid small") === null,
 			missingCardsAbsent: !configurePreviewModal.textContent.includes("No poster"),
-			countWithMedia: /Movies · [\d,]+/.test(configurePreviewModal.textContent),
+			countWithMedia: /Showing/.test(configurePreviewModal.querySelector(".source-title-preview-summary")?.textContent ?? ""),
 			focusEntered: document.activeElement === configurePreviewModal.querySelector("header button"),
 			sharedLayer: configurePreviewModal.closest(".nested-modal-backdrop")?.dataset.nestedModalBackdrop === "true",
 			modalSemantics: configurePreviewModal.getAttribute("role") === "dialog" && configurePreviewModal.getAttribute("aria-modal") === "true",
@@ -2409,8 +2420,8 @@ async function runStudioHierarchyScenario() {
 		const lazySeries = {
 			unopenedMadeNoRequest: bothMovieRequests === configureMoviePreview.requests,
 			explicitTabAddedOne: requests.length === bothMovieRequests + 1,
-			countInPreview: /Series · [\d,]+/.test(document.querySelector(".studio-preview-modal")?.textContent ?? ""),
-			postersReady: readyPopularSeriesPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			countInPreview: /Showing/.test(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? ""),
+			postersReady: readyPopularSeriesPosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			genuineTmdbSources: genuineTmdbPosterImages(readyPopularSeriesPosters.visibleImages),
 		};
 		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Series Preview close"));
@@ -2437,8 +2448,8 @@ async function runStudioHierarchyScenario() {
 		});
 		const recentSeriesAddedOne = requests.length === 4
 			&& requests.at(-1)?.includes("sort_by=first_air_date.desc") === true
-			&& /Series · [\d,]+/.test(document.querySelector(".studio-preview-modal")?.textContent ?? "")
-			&& readyRecentSeriesPosters.visibleImages.length === expectedPosterCount;
+			&& /Showing/.test(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? "")
+			&& readyRecentSeriesPosters.visibleImages.length > 0 && readyRecentSeriesPosters.visibleImages.length <= 100;
 		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Recent Preview close"));
 		const recentSeriesCountRetained = /Series · [\d,]+/.test(configure.textContent);
 		await clickAndSettle(required(configure.querySelector('input[name="studio-hierarchy-sort"][value="recent"]'), "Clear Recent sort"));
@@ -2452,8 +2463,8 @@ async function runStudioHierarchyScenario() {
 			label: `Restored live Studio Popular Movies Preview at ${window.innerWidth}px`,
 		});
 		const previousSortCacheHit = requests.length === 4
-			&& /Movies · [\d,]+/.test(document.querySelector(".studio-preview-modal")?.textContent ?? "")
-			&& restoredPopularMoviePosters.visibleImages.length === expectedPosterCount;
+			&& /Showing/.test(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? "")
+			&& restoredPopularMoviePosters.visibleImages.length === readyPopularMoviePosters.visibleImages.length;
 		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "restored Preview close"));
 
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Appearance action"));
@@ -2691,7 +2702,7 @@ async function runNetworkLivePreviewScenario() {
 		);
 	}
 	async function waitForLivePosterGrid(modal, request, label) {
-		const maxVisibleCount = 10;
+		const maxVisibleCount = 100;
 		const candidateSources = safePosterPaths(request)
 			.map((posterPath) => buildTmdbPosterUrl(posterPath, "w342"))
 			.filter(Boolean);
@@ -2815,7 +2826,7 @@ async function runNetworkLivePreviewScenario() {
 				&& dialog.scrollWidth <= dialog.clientWidth
 				&& popularReady.modal.scrollWidth <= popularReady.modal.clientWidth,
 		};
-		const popularModalCount = popularReady.modal.querySelector(".studio-preview-single-media")?.textContent.trim() ?? null;
+		const popularModalCount = popularReady.modal.querySelector(".source-title-preview-summary")?.textContent.trim() ?? null;
 		await clickAndSettle(required(popularReady.modal.querySelector("header button"), "Popular Preview Close action"));
 		const popularCountLines = countLines(row);
 		const popularClose = {
@@ -2853,7 +2864,7 @@ async function runNetworkLivePreviewScenario() {
 		await clickAndSettle(previewTrigger);
 		const recentRequest = await waitForRequest(1, "Live Network Recent Worker request");
 		const recentReady = await waitForPreview(recentRequest, `Live Network Recent Preview at ${window.innerWidth}px`);
-		const recentModalCount = recentReady.modal.querySelector(".studio-preview-single-media")?.textContent.trim() ?? null;
+		const recentModalCount = recentReady.modal.querySelector(".source-title-preview-summary")?.textContent.trim() ?? null;
 		const responseSequencesDiffer = JSON.stringify(safePosterPaths(popularRequest)) !== JSON.stringify(safePosterPaths(recentRequest));
 		const previousSortNotShown = recentReady.evidence.exactResponseOrder;
 		await clickAndSettle(required(recentReady.modal.querySelector("header button"), "Recent Preview Close action"));
@@ -2935,6 +2946,14 @@ async function runNetworkLivePreviewScenario() {
 }
 
 async function runGenreLivePreviewScenario() {
+	function truthfulCountShown(preview, request) {
+		const line = preview.countLine ?? "";
+		// Broad reported totals exceed TMDB's documented 500 accessible pages.
+		// Live presentation must describe the loaded window without certifying that total.
+		return request.totalResults > 20
+			? /^20 titles loaded\. Preview shows up to 100 titles\./.test(line)
+			: line === `Showing ${request.totalResults} of ${request.totalResults} titles.`;
+	}
 	const requests = [];
 	const failedImageSources = new Set();
 	const previewProvider = createTmdbGenrePreviewProvider({ fetchImpl: recordingNetworkPreviewFetch(requests) });
@@ -2998,7 +3017,7 @@ async function runGenreLivePreviewScenario() {
 		const responsePosterPaths = safePosterPaths(request);
 		if (responsePosterPaths.length === 0) throw new Error(`${label} returned no usable real TMDB poster_path values: ${JSON.stringify(request)}`);
 		const candidateSources = responsePosterPaths.map((posterPath) => buildTmdbPosterUrl(posterPath, "w342")).filter(Boolean);
-		const maximumVisibleCount = 10;
+		const maximumVisibleCount = 100;
 		let diagnostic = null;
 		try {
 			return await waitForMountedCondition(() => {
@@ -3020,7 +3039,7 @@ async function runGenreLivePreviewScenario() {
 				if (visibleSources.some((source, index) => source !== expectedSources[index])) return null;
 				if (visibleImages.some((image) => {
 					const rect = image.getBoundingClientRect();
-					return !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0 || image.clientWidth <= 0 || image.clientHeight <= 0 || rect.width <= 0 || rect.height <= 0;
+					return !previewImageReady(image) || image.clientWidth <= 0 || image.clientHeight <= 0 || rect.width <= 0 || rect.height <= 0;
 				})) return null;
 				return {
 					modal,
@@ -3035,7 +3054,7 @@ async function runGenreLivePreviewScenario() {
 					genuineTmdbSources: genuineTmdbPosterImages(visibleImages),
 					posterOnly: [...grid.children].every((child) => child.tagName === "IMG"),
 					captionsAbsent: grid.querySelector("figcaption, article, small, p, span") === null && grid.textContent.trim() === "",
-					countLine: modal.querySelector(".studio-preview-single-media")?.textContent.trim() ?? null,
+					countLine: modal.querySelector(".source-title-preview-summary")?.textContent.trim() ?? null,
 				};
 			}, { label, timeoutMs: 30_000 });
 		} catch (error) {
@@ -3082,7 +3101,7 @@ async function runGenreLivePreviewScenario() {
 		const sharedBeforeSwitch = {
 			requestCount: requests.length,
 			movieSelected: movieTab.getAttribute("aria-selected") === "true",
-			movieCountShown: movieReady.countLine?.includes(Number(movieRequest.totalResults).toLocaleString("en")) ?? false,
+			movieCountShown: truthfulCountShown(movieReady, movieRequest),
 			seriesDeferred: seriesTab.textContent.trim() === "Series",
 		};
 
@@ -3093,7 +3112,7 @@ async function runGenreLivePreviewScenario() {
 		const sharedAfterSwitch = {
 			requestCount: requests.length,
 			seriesSelected: seriesTab.getAttribute("aria-selected") === "true",
-			seriesCountShown: seriesReady.countLine?.includes(Number(seriesRequest.totalResults).toLocaleString("en")) ?? false,
+			seriesCountShown: truthfulCountShown(seriesReady, seriesRequest),
 		};
 		await clickAndSettle(required(seriesReady.modal.querySelector("header button"), "shared Preview Close action"));
 		const sharedClose = {
@@ -3123,7 +3142,7 @@ async function runGenreLivePreviewScenario() {
 		const filteredReady = await waitForPreview(filteredRequest, `Live filtered Genre Movie Preview at ${window.innerWidth}px`);
 		const singleMedia = {
 			tabsAbsent: filteredReady.modal.querySelector('[aria-label="Preview media"]') === null,
-			countShown: filteredReady.countLine?.includes(Number(filteredRequest.totalResults).toLocaleString("en")) ?? false,
+			countShown: truthfulCountShown(filteredReady, filteredRequest),
 		};
 		await clickAndSettle(required(filteredReady.modal.querySelector("header button"), "filtered Preview Close action"));
 
@@ -3239,9 +3258,9 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 	}
 	function responsePosterSources(request) {
 		return (request?.results ?? [])
+			.slice(0, 100)
 			.map((item) => buildTmdbPosterUrl(item.posterPath, "w342"))
-			.filter(Boolean)
-			.slice(0, 10);
+			.filter(Boolean);
 	}
 	async function waitForRequest(index, label) {
 		return waitForMountedCondition(() => requests[index] ?? null, { label, timeoutMs: 20_000 });
@@ -3273,7 +3292,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 				posterSources: visibleSources,
 				expectedSources,
 				exactResponseOrder: JSON.stringify(visibleSources) === JSON.stringify(expectedSources),
-				postersReady: ready.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+				postersReady: ready.visibleImages.every((image) => previewImageReady(image)),
 				genuineTmdbSources: genuineTmdbPosterImages(ready.visibleImages),
 				posterOnly: [...ready.grid.children].every((child) => child.tagName === "IMG"),
 				geometry: titlePreviewGeometry(modal, ready.grid),
@@ -4703,7 +4722,7 @@ async function runPeopleConfigureLayoutScenario() {
 		const previewTrigger = firstRow.querySelector(".people-bulk-actions button:first-child");
 		const requestsBeforePreview = requests.length;
 		await clickAndSettle(required(previewTrigger, "first Preview titles action"));
-		const expectedPosterCount = 10;
+		const expectedPosterCount = null;
 		const readyMoviePosters = await waitForReadyPosterGrid({
 			preview: ".source-edit-preview-modal",
 			gridSelector: ".source-edit-preview-grid",
@@ -4739,8 +4758,8 @@ async function runPeopleConfigureLayoutScenario() {
 			seriesActive: seriesMovieTab.getAttribute("aria-selected") === "false" && currentSeriesTab.getAttribute("aria-selected") === "true",
 			moviePosterCount,
 			seriesPosterCount: readySeriesPosters.visibleImages.length,
-			seriesCount: /Series · [\d,]+/.test(preview.textContent),
-			seriesPostersReady: readySeriesPosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			seriesCount: /Showing/.test(preview.querySelector(".source-title-preview-summary")?.textContent ?? ""),
+			seriesPostersReady: readySeriesPosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			seriesGenuineTmdbSources: genuineTmdbPosterImages(readySeriesPosters.visibleImages),
 			noCombinedTotal: !preview.textContent.includes("Movies + Series") && !preview.textContent.includes("Combined"),
 			noAdditionalRequests: requests.length === requestsBeforePreview,
@@ -4759,7 +4778,7 @@ async function runPeopleConfigureLayoutScenario() {
 			modalSurface: preview.getAttribute("role") === "dialog" && preview.getAttribute("aria-modal") === "true",
 			outsidePeopleRow: preview.closest(".people-bulk-row") === null,
 			posterCount: restoredMoviePosters.visibleImages.length,
-			postersReady: restoredMoviePosters.visibleImages.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && visibleElement(image)),
+			postersReady: restoredMoviePosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			genuineTmdbSources: genuineTmdbPosterImages(restoredMoviePosters.visibleImages),
 			gridColumns: getComputedStyle(previewGrid).gridTemplateColumns.split(" ").filter(Boolean).length,
 			geometry: titlePreviewGeometry(preview, previewGrid),
@@ -5643,9 +5662,9 @@ async function ordinaryAddPreviewEvidence({ dialog, trigger, requests, selectorL
 			const images = grid ? [...grid.querySelectorAll(":scope > img")] : [];
 			const visibleImages = images.filter(visibleElement);
 			const selectedTab = preview?.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim() ?? null;
-			if (!grid || visibleImages.length < 1 || visibleImages.length > 10) return null;
+			if (!grid || visibleImages.length < 1 || visibleImages.length > 100) return null;
 			if (expectedSelectedTab !== null && selectedTab !== expectedSelectedTab) return null;
-			if (visibleImages.some((image) => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
+			if (visibleImages.some((image) => !previewImageReady(image))) return null;
 			return { preview, grid, images, visibleImages };
 		}, { label, timeoutMs: 30_000 });
 	}
@@ -5930,7 +5949,7 @@ async function runSourceEditLivePreviewScenario() {
 		const requestFreeBeforeOpen = requests.length === 0;
 		trigger.focus({ preventScroll: true });
 		await clickAndSettle(trigger);
-		const expectedVisibleCount = 10;
+		const expectedVisibleCount = null;
 		const ready = await waitForReadyPosterGrid({
 			preview: ".source-edit-preview-modal",
 			gridSelector: ".source-edit-preview-grid",
@@ -5985,7 +6004,45 @@ async function runSourceEditLivePreviewScenario() {
 	}
 }
 
-async function runDecadesLivePreviewScenario() {
+// Measure actual clipping ancestors, then leave the body scrolled to exercise
+// resetting the next choice. These checks use the existing live scenarios.
+async function recordDecadesBoundary(modal, label, records) {
+	if (!records) return;
+	const body = modal.querySelector(".source-sort-preview-content");
+	const header = modal.querySelector("header");
+	const close = header.querySelector("button");
+	const rows = [...modal.querySelectorAll('[role="tablist"]')].map((row) => ({
+		label: row.getAttribute("aria-label"), height: row.clientHeight,
+		buttons: [...row.querySelectorAll("button")].map((button) => {
+			const box = button.getBoundingClientRect();
+			let visible = box.top >= body.getBoundingClientRect().top - 1 && box.bottom <= body.getBoundingClientRect().bottom + 1;
+			for (let parent = button.parentElement; parent !== modal; parent = parent.parentElement) {
+				if (getComputedStyle(parent).overflowY !== "visible") {
+					const clip = parent.getBoundingClientRect();
+					visible &&= box.top >= clip.top - 1 && box.bottom <= clip.bottom + 1;
+				}
+			}
+			return { label: button.textContent, top: box.top, height: box.height, visible };
+		}),
+	}));
+	const scrollOwners = [...modal.querySelectorAll("*")].filter((element) => ["auto", "scroll"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
+	const record = { label, rows, controlsVisible: rows.every((row) => row.buttons.every((button) => button.visible)),
+		scrollTop: body.scrollTop, headerBottom: header.getBoundingClientRect().bottom, bodyTop: body.getBoundingClientRect().top,
+		tracks: getComputedStyle(body).gridTemplateRows, posters: modal.querySelectorAll(".poster-only-preview-grid img").length,
+		summary: modal.querySelector(".source-title-preview-summary")?.textContent ?? null,
+		oneBodyOwner: scrollOwners.length === 1 && scrollOwners[0] === body,
+	};
+	if (globalThis.capture204Preview && ["sample", "exact-year", "exact-add"].includes(label)) await new Promise((resolve) => {
+		window.__finish204Capture = resolve; capture204Preview(JSON.stringify({ name: `preview-226-decades-${label}-${innerWidth}` }));
+	});
+	const closeTop = close.getBoundingClientRect().top;
+	await act(async () => { body.scrollTop = 80; body.dispatchEvent(new Event("scroll", { bubbles: true })); await afterCommittedEffects(); });
+	record.closeFixed = closeTop === close.getBoundingClientRect().top && closeTop >= 0;
+	records.push(record);
+}
+
+async function runDecadesLivePreviewScenario({ correctionReview = false } = {}) {
+	const boundaries = correctionReview ? [] : null;
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
@@ -6020,7 +6077,7 @@ async function runDecadesLivePreviewScenario() {
 			const state = preview.querySelector(".studio-preview-state");
 			if (state !== null || (!grid && !empty)) return null;
 			const images = grid ? [...grid.querySelectorAll(":scope > img")].filter(visibleElement) : [];
-			if (images.some((image) => !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0)) return null;
+			if (images.some((image) => !previewImageReady(image))) return null;
 			return { grid, images, empty: empty !== null };
 		}, { label, timeoutMs: 30_000 });
 	}
@@ -6073,6 +6130,7 @@ async function runDecadesLivePreviewScenario() {
 		await clickAndSettle(trigger);
 		const expectedSampleCount = 10;
 		const movieReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedSampleCount, label: "live 1980s Decade sample Movies Preview" });
+		await recordDecadesBoundary(movieReady.preview, "sample", boundaries);
 		const modal = movieReady.preview;
 		const olderMovieSampleRequests = [...requests];
 		const olderSelector = sourceSelectorEvidence(modal);
@@ -6081,6 +6139,7 @@ async function runDecadesLivePreviewScenario() {
 		const seriesTab = required(buttonContaining(modal.querySelector('[role="tablist"][aria-label="Preview media"]'), "Series"), "Decades Series tab");
 		await clickAndSettle(seriesTab);
 		const seriesReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedSampleCount, label: "live 1980s Decade sample Series Preview" });
+		await recordDecadesBoundary(seriesReady.preview, "sample-series", boundaries);
 		const olderSeriesSampleRequests = requests.slice(olderMovieSampleRequests.length);
 		const seriesModal = seriesReady.preview;
 		const seriesSelected = selectedMedia(seriesModal) === "Series";
@@ -6088,8 +6147,9 @@ async function runDecadesLivePreviewScenario() {
 		const allChoice = required(buttonContaining(seriesModal.querySelector(".decades-preview-source-selector"), "All 1980s"), `All 1980s source choice (${sourceSelectorEvidence(seriesModal).labels.join(", ")})`);
 		const beforeAllSeries = requests.length;
 		await clickAndSettle(allChoice);
-		const expectedExactCount = 10;
+		const expectedExactCount = null;
 		const allSeriesReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedExactCount, label: "live exact All 1980s Series Preview" });
+		await recordDecadesBoundary(allSeriesReady.preview, "exact-period-series", boundaries);
 		const allSeriesModal = allSeriesReady.preview;
 		const allSeriesRequests = requests.slice(beforeAllSeries);
 		const exactHelperAbsent = allSeriesModal.querySelector(".decades-preview-sample-helper") === null;
@@ -6098,12 +6158,14 @@ async function runDecadesLivePreviewScenario() {
 		const beforeAllMovies = requests.length;
 		await clickAndSettle(required(buttonContaining(allSeriesModal.querySelector('[role="tablist"][aria-label="Preview media"]'), "Movies"), "All 1980s Movies tab"));
 		const allMoviesReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedExactCount, label: "live exact All 1980s Movies Preview" });
+		await recordDecadesBoundary(allMoviesReady.preview, "exact-period-movies", boundaries);
 		const allMoviesModal = allMoviesReady.preview;
 		const allMovieRequests = requests.slice(beforeAllMovies);
 
 		const beforeCachedYear = requests.length;
 		await clickAndSettle(required(buttonContaining(allMoviesModal.querySelector(".decades-preview-source-selector"), "1984"), "1984 exact source choice"));
 		const exactYearReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedExactCount, label: "cached exact 1984 Movies Preview" });
+		await recordDecadesBoundary(exactYearReady.preview, "exact-year", boundaries);
 		const exactYearModal = exactYearReady.preview;
 		const exactYearReusedSampleCache = requests.length === beforeCachedYear
 			&& sourceSelectorEvidence(exactYearModal).selected === "1984"
@@ -6112,11 +6174,13 @@ async function runDecadesLivePreviewScenario() {
 		const beforeReturnToSample = requests.length;
 		await clickAndSettle(required(buttonContaining(exactYearModal.querySelector(".decades-preview-source-selector"), "Decade sample"), "Decade sample source choice"));
 		const restoredSampleReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedSampleCount, label: "cached restored 1980s sample Movies Preview" });
+		await recordDecadesBoundary(restoredSampleReady.preview, "restored-sample", boundaries);
 		const restoredSampleModal = restoredSampleReady.preview;
 		const sampleCacheReused = requests.length === beforeReturnToSample
 			&& sourceSelectorEvidence(restoredSampleModal).selected === "Decade sample"
 			&& restoredSampleModal.querySelector(".decades-preview-sample-helper") !== null;
 		const openEvidence = {
+			boundaries,
 			width: window.innerWidth,
 			lightweightClosed,
 			compactOlderGroup,
@@ -6172,6 +6236,7 @@ async function runDecadesLivePreviewScenario() {
 		await clickAndSettle(currentTrigger);
 		const expectedCurrentSampleCount = 7;
 		const currentReady = await waitForReadyPosterGrid({ preview: ".decades-preview-modal", gridSelector: ".decades-preview-grid", expectedVisibleCount: expectedCurrentSampleCount, label: "live current 2020s sample Movies Preview" });
+		await recordDecadesBoundary(currentReady.preview, "current-decade-sample", boundaries);
 		const currentModal = currentReady.preview;
 		const currentSampleRequests = requests.slice(beforeCurrentSample);
 		const currentSelector = sourceSelectorEvidence(currentModal);
@@ -6582,7 +6647,7 @@ async function runDecadeSourcePreviewErrorScenario() {
 			calls,
 			errorMessage,
 			redundantSelectors,
-			retryRecovered: empty.textContent.includes("No posters available."),
+			retryRecovered: empty.textContent.includes("No titles found."),
 			closed: document.querySelector(".decade-add-preview-modal") === null,
 			exactFocusRestored: document.activeElement === trigger,
 			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
@@ -6593,7 +6658,8 @@ async function runDecadeSourcePreviewErrorScenario() {
 	}
 }
 
-async function runDecadeSourceLivePreviewScenario() {
+async function runDecadeSourceLivePreviewScenario({ correctionReview = false } = {}) {
+	const boundaries = correctionReview ? [] : null;
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
 		return element;
@@ -6643,11 +6709,13 @@ async function runDecadeSourceLivePreviewScenario() {
 			setInputValue(required(dialog.querySelector("#discover-field-voteAverageGte"), "Minimum rating"), "5");
 			await afterCommittedEffects();
 		});
+		if (correctionReview) await clickAndSettle(required(dialog.querySelector('input[name="decade-source-sort"][value="top-rated"]'), "Top rated source"));
 		const requestsBeforeExplicitPreview = requests.length;
 		const trigger = required(buttonContaining(dialog, "Preview titles"), "multi-Year Preview titles action");
 		trigger.focus({ preventScroll: true });
 		await clickAndSettle(trigger);
-		const initialReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1981 general Movie Add Source Preview", timeoutMs: 30_000 });
+		const initialReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact 1981 general Movie Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(initialReady.preview, "exact-add", boundaries);
 		const modal = initialReady.preview;
 		const yearSelector = required(modal.querySelector('[role="tablist"][aria-label="Preview year"]'), "Year Preview selector");
 		const sourceSelector = required(modal.querySelector('[role="tablist"][aria-label="Preview source"]'), "Source Preview selector");
@@ -6665,24 +6733,35 @@ async function runDecadeSourceLivePreviewScenario() {
 		const oneInitialRequest = requests.length === 1;
 		const noFlattenedCartesianSelector = ![...modal.querySelectorAll('[role="tablist"] button')].some((button) => /1981\s+(Comedy|General)|1985\s+(Comedy|General)|1988\s+(Comedy|General)/.test(button.textContent));
 		await clickAndSettle(required(buttonContaining(mediaSelector, "Series"), "Series Preview tab"));
-		const seriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1981 general Series Add Source Preview", timeoutMs: 30_000 });
+		const seriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact 1981 general Series Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(seriesReady.preview, "add-media", boundaries);
 		const seriesRequestedLazily = requests.length === 2;
 		await clickAndSettle(required(buttonContaining(sourceSelector, "Comedy"), "Comedy Source Preview choice"));
-		const comedySeriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1981 Comedy Series Add Source Preview", timeoutMs: 30_000 });
+		const comedySeriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact 1981 Comedy Series Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(comedySeriesReady.preview, "add-source", boundaries);
 		const sourceRequestedLazily = requests.length === 3;
 		await clickAndSettle(required(buttonContaining(yearSelector, "1985"), "1985 Year Preview choice"));
-		const secondYearSeriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1985 Comedy Series Add Source Preview", timeoutMs: 30_000 });
+		const secondYearSeriesReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact 1985 Comedy Series Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(secondYearSeriesReady.preview, "add-year", boundaries);
 		const yearRequestedLazily = requests.length === 4;
 		await clickAndSettle(required(buttonContaining(mediaSelector, "Movies"), "Movies Preview tab"));
-		const secondYearMovieReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1985 Comedy Movie Add Source Preview", timeoutMs: 30_000 });
+		const secondYearMovieReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact 1985 Comedy Movie Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(secondYearMovieReady.preview, "add-year-movies", boundaries);
 		const secondMediaRequestedLazily = requests.length === 5;
 		await clickAndSettle(required(buttonContaining(sourceSelector, "General"), "General Source Preview choice"));
-		const secondYearGeneralReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "live exact 1985 general Movie Add Source Preview", timeoutMs: 30_000 });
+		const secondYearGeneralReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact 1985 general Movie Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(secondYearGeneralReady.preview, "add-general", boundaries);
 		const generalRequestedLazily = requests.length === 6;
 		const beforeCacheRevisit = requests.length;
 		await clickAndSettle(required(buttonContaining(yearSelector, "1981"), "cached 1981 Year Preview choice"));
-		const cachedReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: 10, label: "cached exact 1981 general Movie Add Source Preview", timeoutMs: 30_000 });
+		const cachedReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "cached exact 1981 general Movie Add Source Preview", timeoutMs: 30_000 });
+		await recordDecadesBoundary(cachedReady.preview, "add-cached", boundaries);
 		const cacheReused = requests.length === beforeCacheRevisit;
+		if (correctionReview) {
+			await clickAndSettle(required(buttonContaining(modal.querySelector('[aria-label="Preview show"]'), "Top rated"), "Top rated Preview choice"));
+			const showReady = await waitForReadyPosterGrid({ preview: ".decade-add-preview-modal", gridSelector: ".decade-add-preview-grid", expectedVisibleCount: null, label: "live exact year Top rated Preview" });
+			await recordDecadesBoundary(showReady.preview, "add-show", boundaries);
+		}
 		const selectors = [yearSelector, sourceSelector, mediaSelector];
 		const selectorOneLine = selectors.every((selector) => new Set([...selector.querySelectorAll(":scope > button")].map((button) => Math.round(button.getBoundingClientRect().top))).size === 1);
 		const modalRect = cachedReady.preview.getBoundingClientRect();
@@ -6694,7 +6773,7 @@ async function runDecadeSourceLivePreviewScenario() {
 			count: ready.visibleImages.length,
 			genuine: genuineTmdbPosterImages(ready.visibleImages),
 		}));
-		const geometry = titlePreviewGeometry(cachedReady.preview, cachedReady.grid);
+		const geometry = titlePreviewGeometry(cachedReady.preview, cachedReady.preview.querySelector(".decade-add-preview-grid"));
 		const outerInert = dialog.querySelector(".add-source-scroll")?.inert === true && dialog.querySelector(".decade-source-actions")?.inert === true;
 		const focusContained = cachedReady.preview.contains(document.activeElement);
 		const noRepresentativeSample = !cachedReady.preview.textContent.includes("sample");
@@ -6702,6 +6781,7 @@ async function runDecadeSourceLivePreviewScenario() {
 		await clickAndSettle(required(cachedReady.preview.querySelector("header button"), "multi-Year Preview Close"));
 		const focusRestored = document.activeElement === trigger;
 		return {
+			boundaries,
 			width: window.innerWidth,
 			requestsBeforeExplicitPreview,
 			configuredYearSelection,
@@ -7422,10 +7502,10 @@ async function runTmdbListImportedSortScenario(supplied = null) {
 				await waitForMountedCondition(() => [...grid.querySelectorAll("img")].filter(visibleElement).every((image) => image.complete && image.naturalWidth > 0), { label: "live Headliner images", timeoutMs: 30_000 });
 				const note = modal.querySelector(".tmdb-list-preview-ordering")?.textContent;
 				const ranked = ["vote_average.desc", "primary_release_date.desc", "vote_count.desc"].includes(sortBy);
-				const count = expectedPosters.length;
+				const count = loaded.data.items.length;
 				const complete = count === loaded.data.itemCount;
 				const label = sortBy === "vote_average.desc" ? "Top rated" : sortBy === "primary_release_date.desc" ? "Recent" : sortBy === "vote_count.desc" ? "Most voted" : "List order";
-				const expectedSummary = `${complete ? `All ${count} titles` : `Showing ${count} of ${loaded.data.itemCount} titles`} · ${label}${ranked && !complete ? " within this preview" : ""}`;
+				const expectedSummary = `${complete ? `Showing ${count} of ${count} titles.` : `${count} titles loaded.${ranked || sortBy === "original" ? " Preview shows up to 100 titles." : ""}`} · ${label}${ranked ? " within each page" : ""}`;
 				const geometry = tmdbListPreviewGeometry(modal, grid);
 				const contained = geometry.gridInlineContained && geometry.closeReachable && geometry.verticalScrollOnly && grid.clientHeight > 0;
 				const ordered = JSON.stringify([...grid.querySelectorAll("img")].map((image) => image.src)) === JSON.stringify(expectedPosters);
@@ -7876,7 +7956,9 @@ async function runTmdbListLayoutScenario() {
 	}
 }
 
-async function runTmdbListLivePreviewScenario() {
+async function runTmdbListLivePreviewScenario({ pagingPresentation = false } = {}) {
+	const listRequests = pagingPresentation ? [] : liveTmdbListRequests;
+	const listProvider = pagingPresentation ? createTmdbListProvider({ fetchImpl: recordingFetch(listRequests) }) : liveTmdbListProvider;
 	const host = document.createElement("div");
 	document.body.append(host);
 	const root = createRoot(host);
@@ -7889,7 +7971,7 @@ async function runTmdbListLivePreviewScenario() {
 			project: initialState.project,
 			projectRevision: initialState.revision,
 			folder,
-			provider: liveTmdbListProvider,
+			provider: listProvider,
 			onBack() {},
 			onCancel() {},
 			onApply() { throw new Error("Live TMDB List Preview QA must not apply sources."); },
@@ -7900,7 +7982,7 @@ async function runTmdbListLivePreviewScenario() {
 	try {
 		const dialog = required(document.querySelector(".tmdb-list-dialog"), "dialog");
 		const textarea = required(dialog.querySelector("textarea"), "input");
-		const requestCountBeforeResolve = liveTmdbListRequests.length;
+		const requestCountBeforeResolve = listRequests.length;
 		await act(async () => {
 			setTextareaValue(textarea, "5916\n8679739");
 			await afterCommittedEffects();
@@ -7913,7 +7995,7 @@ async function runTmdbListLivePreviewScenario() {
 			},
 			{ label: "live TMDB List 5916 and 8679739 selection", timeoutMs: 30_000 },
 		);
-		const requestsAfterResolve = liveTmdbListRequests.length;
+		const requestsAfterResolve = listRequests.length;
 		const musicalsRow = required(selected.find((row) => row.querySelector("strong")?.textContent.trim() === "Musicals"), "Musicals row");
 		const topTenRow = required(selected.find((row) => row.querySelector("strong")?.textContent.trim() === "Top 10 Netflix Movies"), "Top 10 row");
 		const musicalsTrigger = required(musicalsRow.querySelector("button"), "Musicals Preview action");
@@ -7926,6 +8008,53 @@ async function runTmdbListLivePreviewScenario() {
 			},
 			{ label: "live Musicals complete page-one Preview", timeoutMs: 30_000 },
 		);
+		if (pagingPresentation) {
+			const { modal } = preview, body = modal.querySelector(".source-sort-preview-content");
+			const check = (value, message) => { if (!value) throw new Error("Live Preview paging: " + message); };
+			let frames = 0, visibleLoadMoreFrames = 0, frame;
+			const sampleFrame = () => {
+				frames++;
+				const button = modal.querySelector(".title-preview-more button");
+				if (button?.textContent === "Load more titles" && getComputedStyle(button).clip === "auto") visibleLoadMoreFrames++;
+				frame = requestAnimationFrame(sampleFrame);
+			};
+			frame = requestAnimationFrame(sampleFrame);
+			try {
+				body.focus({ preventScroll: true });
+				for (let page = 2; page <= 5; page++) {
+					const countBefore = listRequests.length;
+					await act(async () => {
+						body.scrollTop = 0; body.dispatchEvent(new Event("scroll", { bubbles: true }));
+						body.dispatchEvent(new WheelEvent("wheel", { deltaY: 800, bubbles: true }));
+						body.scrollTop = body.scrollHeight; body.dispatchEvent(new Event("scroll", { bubbles: true }));
+						await afterCommittedEffects();
+					});
+					await waitForMountedCondition(() => {
+						const error = modal.querySelector('[role="alert"]');
+						if (error) throw new Error(`Production next-page request failed: ${error.textContent}`);
+						return page === 5 ? modal.querySelector(".title-preview-end") : modal.querySelector(".source-title-preview-summary")?.textContent.startsWith(`${page * 20} titles loaded.`);
+					}, { label: `live List page ${page}`, timeoutMs: 30_000 });
+					await act(afterCommittedEffects);
+					check(listRequests.length === countBefore + 1, "exactly one next page per deliberate scroll");
+				}
+				const end = modal.querySelector(".title-preview-end"), style = getComputedStyle(end);
+				const endMarkerPlain = end.tagName === "P" && end.textContent === "End of preview" && !end.hasAttribute("tabindex")
+					&& !modal.querySelector(".title-preview-more button") && style.borderTopWidth === "0px" && style.backgroundColor === "rgba(0, 0, 0, 0)" && style.cursor !== "pointer";
+				check(endMarkerPlain, "quiet non-interactive end marker");
+				const countAtEnd = listRequests.length;
+				await act(async () => { end.click(); body.scrollTop = body.scrollHeight; body.dispatchEvent(new WheelEvent("wheel", { deltaY: 800, bubbles: true })); body.dispatchEvent(new Event("scroll", { bubbles: true })); await afterCommittedEffects(); });
+				await waitForMountedCondition(() => [...modal.querySelectorAll(".poster-only-preview-grid img")].every(previewImageReady), { label: "genuine live end-of-preview posters", timeoutMs: 30_000 });
+				if (globalThis.capture204Preview) await new Promise((resolve) => { window.__finish204Capture = resolve; capture204Preview(JSON.stringify({ name: `preview-226-live-end-${innerWidth}` })); });
+				const evidence = { width: innerWidth, frames, visibleLoadMoreFrames, endMarkerPlain,
+					pages: listRequests.filter((request) => request.startsWith("/3/list/5916?")).map((request) => Number(new URL(request, TMDB_PROXY_BASE_URL).searchParams.get("page"))),
+					requestPaths: [...listRequests], noExtraRequests: listRequests.length === countAtEnd,
+					status: modal.querySelector(".source-title-preview-summary").textContent, posterCount: modal.querySelectorAll(".poster-only-preview-grid img").length,
+					noMutation: controller.getState().revision === initialState.revision && serializedValue(controller) === serializedBefore,
+				};
+				await clickAndSettle(modal.querySelector("header button"));
+				return { ...evidence, focusRestored: document.activeElement === musicalsTrigger };
+			} finally { cancelAnimationFrame(frame); }
+		}
 		const initialGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
 		const initialMusicals = {
 			title: preview.modal.querySelector("h3")?.textContent.trim() ?? null,
@@ -7933,26 +8062,27 @@ async function runTmdbListLivePreviewScenario() {
 			rendered: Number(preview.grid.dataset.previewPosterCount),
 			loaded: Number(preview.grid.dataset.previewLoadedCount),
 			completeSample: preview.grid.dataset.previewCompleteSample === "true",
-			requests: liveTmdbListRequests.length,
+			requests: listRequests.length,
 			bodyLocked: document.body.style.position === "fixed",
-			noLoadMore: !preview.modal.textContent.includes("Load more"),
+			loadMoreAvailable: preview.modal.textContent.includes("Load more titles"),
 			geometry: initialGeometry,
 		};
 		await act(async () => {
-			preview.grid.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: 160 }));
+			// Predeployment live acceptance remains page one. Deliberate next-page
+			// gestures are exercised by the isolated local paging scenario.
 			await afterCommittedEffects();
 		});
-		const wheelGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
+		const beforeScrollGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
 		await act(async () => {
-			preview.grid.scrollTop = Math.min(80, preview.grid.scrollHeight - preview.grid.clientHeight);
-			preview.grid.dispatchEvent(new Event("touchmove", { bubbles: true }));
-			preview.grid.dispatchEvent(new Event("scroll", { bubbles: true }));
+			preview.modal.querySelector(".source-sort-preview-content").scrollTop = Math.min(80, preview.modal.querySelector(".source-sort-preview-content").scrollHeight - preview.modal.querySelector(".source-sort-preview-content").clientHeight);
+
+			preview.modal.querySelector(".source-sort-preview-content").dispatchEvent(new Event("scroll", { bubbles: true }));
 			await afterCommittedEffects();
 		});
-		const touchGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
+		const midScrollGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
 		await act(async () => {
-			preview.grid.scrollTop = preview.grid.scrollHeight;
-			preview.grid.dispatchEvent(new Event("scroll", { bubbles: true }));
+			preview.modal.querySelector(".source-sort-preview-content").scrollTop = preview.modal.querySelector(".source-sort-preview-content").scrollHeight;
+			preview.modal.querySelector(".source-sort-preview-content").dispatchEvent(new Event("scroll", { bubbles: true }));
 			await afterCommittedEffects();
 		});
 		const bottomGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
@@ -7960,7 +8090,7 @@ async function runTmdbListLivePreviewScenario() {
 			rendered: Number(preview.grid.dataset.previewPosterCount),
 			loaded: Number(preview.grid.dataset.previewLoadedCount),
 			completeSample: preview.grid.dataset.previewCompleteSample === "true",
-			requests: liveTmdbListRequests.length,
+			requests: listRequests.length,
 			geometry: bottomGeometry,
 		};
 		await clickAndSettle(required(preview.modal.querySelector("header button"), "Musicals Close action"));
@@ -7970,8 +8100,8 @@ async function runTmdbListLivePreviewScenario() {
 			() => document.querySelector('[data-tmdb-list-preview-dialog="true"] [data-preview-complete-sample="true"][data-preview-poster-count="20"]'),
 			{ label: "cached Musicals Preview reopen" },
 		);
-		const reopenStartsAtTop = reopened.scrollTop === 0;
-		const requestsAfterReopen = liveTmdbListRequests.length;
+		const reopenStartsAtTop = reopened.closest(".source-sort-preview-content").scrollTop === 0;
+		const requestsAfterReopen = listRequests.length;
 		await clickAndSettle(required(reopened.closest('[data-tmdb-list-preview-dialog="true"]').querySelector("header button"), "reopened Musicals Close action"));
 
 		const topTenTrigger = required(topTenRow.querySelector("button"), "Top 10 Preview action");
@@ -7998,17 +8128,17 @@ async function runTmdbListLivePreviewScenario() {
 			smallPreview.grid.dispatchEvent(new Event("scroll", { bubbles: true }));
 			await afterCommittedEffects();
 		});
-		const requestsAfterSmallScroll = liveTmdbListRequests.length;
+		const requestsAfterSmallScroll = listRequests.length;
 		await clickAndSettle(required(smallPreview.modal.querySelector("header button"), "Top 10 Close action"));
 		return {
 			width: window.innerWidth,
 			height: window.innerHeight,
 			requestCountBeforeResolve,
 			requestsAfterResolve,
-			requestPaths: liveTmdbListRequests.slice(requestCountBeforeResolve),
+			requestPaths: listRequests.slice(requestCountBeforeResolve),
 			initialMusicals,
-			wheelGeometry,
-			touchGeometry,
+			beforeScrollGeometry,
+			midScrollGeometry,
 			scrolledMusicals,
 			focusRestored,
 			reopenStartsAtTop,
@@ -8484,6 +8614,7 @@ window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenar
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
 window.__builderSourceEditMounted = { status: "running" };
+window.__runPreviewPagesScenario = (view) => runPreviewPagesScenario({ createController, importSources, openEdit, withMountedEditor, clickAndSettle, afterCommittedEffects, setInputValue, serializedValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runGenreToolbarScenario = runGenreToolbarScenario;
 window.__runGenreHierarchyScenario = runGenreHierarchyScenario;
 window.__runGenreNewFolderSummaryScenario = runGenreNewFolderSummaryScenario;
@@ -8519,7 +8650,7 @@ window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-(["network-minimum-votes-only", "studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
+(["preview-pages-only", "network-minimum-votes-only", "studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {

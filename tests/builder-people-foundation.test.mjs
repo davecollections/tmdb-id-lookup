@@ -328,9 +328,9 @@ test("poster-only People previews separate media, combine selected roles, dedupl
 	const popularMovies = buildPeopleTitlePreview(person, { combinations, sortOptionId: "popular", limit: 10, mediaType: "MOVIE" });
 	assert.equal(popularMovies.mediaType, "MOVIE");
 	assert.equal(popularMovies.totalResults, 3);
-	assert.deepEqual(popularMovies.items.map((item) => item.id), [4, 1]);
-	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "recent", limit: 10, mediaType: "MOVIE" }).items.map((item) => item.id), [4, 1]);
-	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "top-rated", limit: 10, mediaType: "MOVIE" }).items.map((item) => item.id), [4, 1]);
+	assert.deepEqual(popularMovies.items.map((item) => item.id), [3, 4, 1]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "recent", limit: 10, mediaType: "MOVIE" }).items.map((item) => item.id), [4, 1, 3]);
+	assert.deepEqual(buildPeopleTitlePreview(person, { combinations, sortOptionId: "top-rated", limit: 10, mediaType: "MOVIE" }).items.map((item) => item.id), [4, 1, 3]);
 	const popularSeries = buildPeopleTitlePreview(person, { combinations, sortOptionId: "popular", limit: 10, mediaType: "TV" });
 	assert.equal(popularSeries.mediaType, "TV");
 	assert.equal(popularSeries.totalResults, 2);
@@ -341,10 +341,10 @@ test("poster-only People previews separate media, combine selected roles, dedupl
 	assert.equal(buildPeopleTitlePreview({ id: 31, combinedCredits: null }, { combinations, limit: 5 }).ok, false);
 	assert.deepEqual(buildPeopleTitlePreview(person, { combinations: [], limit: 5 }), { ok: true, mediaType: null, totalResults: 0, items: [], errors: [] });
 	assert.equal(buildPeopleTitlePreview(person, { combinations: ["acting-movies"], mediaType: "TV", limit: 5 }).ok, false);
-	assert.equal(peopleTitlePreviewLimit(360), 10);
-	assert.equal(peopleTitlePreviewLimit(520), 10);
-	assert.equal(peopleTitlePreviewLimit(521), 10);
-	assert.equal(peopleTitlePreviewLimit(1440), 10);
+	assert.equal(peopleTitlePreviewLimit(360), 100);
+	assert.equal(peopleTitlePreviewLimit(520), 100);
+	assert.equal(peopleTitlePreviewLimit(521), 100);
+	assert.equal(peopleTitlePreviewLimit(1440), 100);
 	const manyCredits = normalizePersonCombinedCredits({
 		cast: Array.from({ length: 12 }, (_, index) => ({
 			id: index + 100,

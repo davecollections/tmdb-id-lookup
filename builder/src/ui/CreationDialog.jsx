@@ -88,6 +88,7 @@ import { StreamingHierarchyFlow } from "./StreamingHierarchyFlow.jsx";
 import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
+import { TitlePreviewResults } from "./TitlePreviewResults.jsx";
 
 const DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID = "decades-hidden-collection-titles-help";
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -485,7 +486,7 @@ export function DecadesTitlePreview({ preview, onChangeChoice, onChangeRequest, 
 	return (
 		<NestedPreviewDialog ariaLabelledBy="decades-preview-title" backdropClassName="franchise-preview-backdrop studio-preview-backdrop decades-preview-backdrop" backdropProps={{ "data-decades-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal studio-preview-modal decades-preview-modal source-sort-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
 			<header><div><p className="panel-kicker">Title preview</p><h3 id="decades-preview-title">{preview.group.decadeLabel}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
-			<SourcePreviewContent>
+			<SourcePreviewContent resetKey={preview.request}>
 				<div className="studio-preview-tabs decades-preview-source-selector" role="tablist" aria-label="Preview source">{preview.group.choices.map((choice) => <button key={choice.key} type="button" role="tab" aria-selected={choice.key === preview.choice.key} onClick={() => onChangeChoice(choice)}>{choice.selectorLabel}</button>)}</div>
 				<div className="decades-preview-content">
 					{sampleSelected ? <p className="decades-preview-sample-helper">{preview.choice.helper}</p> : null}
@@ -493,7 +494,9 @@ export function DecadesTitlePreview({ preview, onChangeChoice, onChangeRequest, 
 					<p className="studio-preview-single-media">{preview.choice.label} · {sourcePreviewContext(preview.request.draft ?? preview.request.drafts[0])}</p>
 					{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing {activeMedia.toLowerCase()} preview…</p> : null}
 					{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This Decade preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-					{preview.status === "ready" ? <PosterOnlyPreviewGrid items={items} limit={10} className="franchise-preview-grid studio-preview-grid decades-preview-grid" ariaLabel={`${activeMedia} poster preview`} altPrefix={activeMedia} emptyMessage="No posters available." /> : null}
+					{preview.status === "ready" ? sampleSelected
+						? <PosterOnlyPreviewGrid items={items} limit={10} className="franchise-preview-grid studio-preview-grid decades-preview-grid" ariaLabel={`${activeMedia} poster preview`} altPrefix={activeMedia} emptyMessage="No posters available." />
+						: <TitlePreviewResults data={preview.data} className="franchise-preview-grid studio-preview-grid decades-preview-grid" ariaLabel={`${activeMedia} poster preview`} altPrefix={activeMedia} /> : null}
 				</div>
 			</SourcePreviewContent>
 		</NestedPreviewDialog>

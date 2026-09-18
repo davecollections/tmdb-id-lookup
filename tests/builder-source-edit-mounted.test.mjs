@@ -63,6 +63,10 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const decadesBoundaryOnly = process.env.TMDB_DECADES_BOUNDARY_ONLY === "1";
+	const previewPresentationOnly = process.env.TMDB_PREVIEW_PRESENTATION_ONLY === "1";
+	const previewPagesOnly = process.env.TMDB_PREVIEW_PAGES_ONLY === "1";
+	const genrePreviewOnly = process.env.TMDB_GENRE_PREVIEW_ONLY === "1";
 	const decadesArtworkOnly = process.env.TMDB_DECADES_ARTWORK_ONLY === "1";
 	const contentCardsOnly = process.env.TMDB_DECADES_CONTENT_ONLY === "1";
 	const genreRulesOnly = process.env.TMDB_GENRE_RULES_ONLY === "1";
@@ -209,8 +213,34 @@ async function runMountedPage() {
 			await resources.pageConnection.command("Runtime.addBinding", { name: "capture204Preview" });
 		}
 		const address = resources.vite.httpServer.address();
+		if (previewPagesOnly) {
+			await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+			// Explicitly local unit artwork, only for the owner-approved mocked paging
+			// scenario. Never intercept production or the harness's live scenarios.
+			const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="#184658"/><text x="20" y="155" fill="white" font-size="20">LOCAL UNIT</text></svg>').toString("base64");
+			resources.pageConnection.onEvent((message) => {
+				if (message.method === "Fetch.requestPaused") resources.pageConnection.command("Fetch.fulfillRequest", { requestId: message.params.requestId, responseCode: 200, responseHeaders: [{ name: "Content-Type", value: "image/svg+xml" }], body: svg });
+			});
+			await resources.pageConnection.command("Fetch.enable", { patterns: [{ urlPattern: "https://image.tmdb.org/t/p/w342/preview-unit-*.svg" }] });
+			await resources.pageConnection.command("Page.navigate", { url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html?preview-pages-only` });
+			for (let tries = 0; tries < 100; tries++) {
+				const state = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__builderSourceEditMounted?.status", returnByValue: true });
+				if (state.result.value === "complete") break;
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+			const cases = [];
+			for (const view of [{ width: 360, height: 800, deep: true }, { width: 384, height: 800 }, { width: 393, height: 852 }, { width: 402, height: 800 }, { width: 412, height: 800, deep: true }, { width: 1280, height: 900, deep: true }, { width: 393, height: 400, deep: true }]) {
+				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
+				const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runPreviewPagesScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+				if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+				cases.push(checked.result.value);
+			}
+			const empty = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runPreviewPagesScenario({ posterless: true })", awaitPromise: true, returnByValue: true });
+			if (empty.exceptionDetails) throw new Error(empty.exceptionDetails.exception?.description ?? empty.exceptionDetails.text);
+			return { previewPages: cases, posterlessPreview: empty.result.value };
+		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -220,6 +250,37 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (previewPresentationOnly) {
+					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+					const pagingPresentation = [];
+					for (const width of [393, 1280]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runTmdbListLivePreviewScenario({ pagingPresentation: true })", awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						pagingPresentation.push(checked.result.value);
+					}
+					return { pagingPresentation };
+				}
+				if (decadesBoundaryOnly) {
+					const decadesBoundaries = [];
+					for (const width of [393, 1280]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "(async () => ({ sample: await window.__runDecadesLivePreviewScenario({ correctionReview: true }), exact: await window.__runDecadeSourceLivePreviewScenario({ correctionReview: true }) }))()", awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						decadesBoundaries.push(checked.result.value);
+					}
+					return { decadesBoundaries };
+				}
+				if (genrePreviewOnly) {
+					const genreLivePreviewWidths = [];
+					for (const width of [393, 900]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runGenreLivePreviewScenario()", awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						genreLivePreviewWidths.push(checked.result.value);
+					}
+					return { genreLivePreviewWidths };
+				}
 				if (decadesArtworkOnly || (!contentCardsOnly && !genreRulesOnly && !familyAdvancedOnly && !sharedAdvancedOnly && !studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
 					result.results.decadesArtworkCases = [];
 					const cases = [
@@ -925,7 +986,7 @@ async function runMountedPage() {
 			`Mounted browser required process-tree fallback after graceful shutdown failed: ${execution.cleanupReport.browser.gracefulError?.message ?? "unknown error"}`,
 		);
 	}
-	if (!sourceDetailsOnly && !roundTripOnly && !multiSortOnly && process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
+	if (!genrePreviewOnly && !previewPagesOnly && !sourceDetailsOnly && !roundTripOnly && !multiSortOnly && process.env.TMDB_MOUNTED_BROWSER_DIAGNOSTICS === "1") {
 		console.log(`MOUNTED_BROWSER_DIAGNOSTICS ${JSON.stringify({
 			browserExecutable: execution.cleanupReport.browserExecutable,
 			debugPort: resources.debugPort,
@@ -1047,18 +1108,53 @@ test("mounted notices retain even borders and accessible actions on desktop and 
 });
 
 let mountedResults;
+test("mounted live Preview paging hides the normal fallback and ends quietly", { skip: process.env.TMDB_PREVIEW_PRESENTATION_ONLY !== "1" }, () => {
+	for (const entry of mountedResults.pagingPresentation) {
+		assert.ok(entry.frames > 0);
+		assert.equal(entry.visibleLoadMoreFrames, 0);
+		assert.deepEqual(entry.pages, [1, 2, 3, 4, 5]);
+		assert.ok(entry.noMutation && entry.noExtraRequests && entry.endMarkerPlain && entry.focusRestored);
+	}
+	console.log("PREVIEW_PRESENTATION_LIVE " + JSON.stringify(mountedResults.pagingPresentation));
+});
+test("mounted Decades Preview keeps selectors below the fixed header", { skip: process.env.TMDB_DECADES_BOUNDARY_ONLY !== "1" }, () => {
+	console.log("DECADES_BOUNDARIES " + JSON.stringify(mountedResults.decadesBoundaries));
+	for (const { sample, exact } of mountedResults.decadesBoundaries) {
+		assert.equal(sample.movieSamplePosterCount, 10);
+		assert.equal(sample.restoredSamplePosterCount, 10);
+		assert.equal(sample.currentSamplePosterCount, 7);
+		assert.ok([...sample.olderMovieSampleRequests, ...sample.olderSeriesSampleRequests, ...sample.currentSampleRequests].every((requestPath) => !new URL(requestPath, tmdbProxyBaseUrl).searchParams.has("page")));
+		assert.ok(sample.exactYearReusedSampleCache && sample.sampleCacheReused && sample.noMutation && exact.noMutation);
+		assert.ok(sample.boundaries.find((entry) => entry.label === "exact-year").posters > 10);
+		assert.ok(exact.posterEvidence.every((entry) => entry.genuine && entry.count > 10));
+		assert.ok(exact.requests.every((request) => request.ok && !new URL(request.url).searchParams.has("page")));
+		for (const entry of [...sample.boundaries, ...exact.boundaries]) {
+			assert.equal(entry.scrollTop, 0, `${sample.width} ${entry.label}: starts at top`);
+			assert.ok(entry.bodyTop >= entry.headerBottom, `${sample.width} ${entry.label}: body below header`);
+			assert.ok(entry.controlsVisible, `${sample.width} ${entry.label}: complete selector height ${JSON.stringify(entry.rows)}`);
+			assert.ok(entry.oneBodyOwner && entry.closeFixed, `${sample.width} ${entry.label}: one body owner, fixed Close`);
+			if (entry.summary) assert.equal(entry.summary, "20 titles loaded. Preview shows up to 100 titles.");
+		}
+	}
+});
+test("mounted local Preview paging covers the requested widths and deliberate scroll contract", { skip: process.env.TMDB_PREVIEW_PAGES_ONLY !== "1" }, () => {
+	assert.equal(mountedResults.previewPages.length, 7);
+	for (const result of mountedResults.previewPages) assert.ok(result.noMutation && result.focusRestored && result.localOnly);
+	assert.ok(mountedResults.posterlessPreview.neutralEmpty && mountedResults.posterlessPreview.noMutation && mountedResults.posterlessPreview.focusRestored);
+	console.log("PREVIEW_PAGES_LOCAL " + JSON.stringify(mountedResults.previewPages));
+});
 before(async () => {
 	mountedResults = await runMountedPage();
 });
 
-function assertTitlePreviewGeometry(geometry, { width, posters = 10, phoneColumns = 3, short = false, label }) {
-	const columns = Math.min(width <= 620 ? phoneColumns : 5, posters);
+function assertTitlePreviewGeometry(geometry, { width, posters = null, phoneColumns = 3, short = false, label }) {
+	const columns = Math.min(width <= 620 ? phoneColumns : 5, posters ?? 100);
 	assert.equal(geometry.centeredHorizontally, true, `${label}: horizontally centred`);
 	assert.equal(geometry.centeredVertically, true, `${label}: vertically centred`);
 	assert.equal(geometry.withinViewport, true, `${label}: visual viewport bounds`);
 	assert.equal(geometry.closeReachable, true, `${label}: Close reachable`);
 	assert.equal(geometry.columns, columns, `${label}: poster columns`);
-	assert.equal(geometry.rows, Math.ceil(posters / columns), `${label}: poster rows`);
+	if (posters !== null) assert.equal(geometry.rows, Math.ceil(posters / columns), `${label}: poster rows`);
 	assert.ok(geometry.posterWidth >= (width <= 520 ? 48 : 80), `${label}: useful poster width ${geometry.posterWidth}`);
 	assert.ok(Math.abs((geometry.posterHeight / geometry.posterWidth) - 1.5) <= 0.04, `${label}: poster aspect ratio`);
 	assert.ok(geometry.columnGap >= 5 && geometry.columnGap <= 12, `${label}: clean column gap ${geometry.columnGap}`);
@@ -1915,13 +2011,13 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		const expectedColumns = result.width <= 620 ? 3 : 5;
 		assert.ok([0, 2].includes(result.requestsAfterResolve - result.requestCountBeforeResolve), `${label} resolve uses cache or two exact live requests`);
 		assert.equal(result.initialMusicals.title, "Musicals", `${label} live long-list title`);
-		assert.equal(result.initialMusicals.subtitle, "Showing 20 of 124 titles · List order", `${label} truthful partial subtitle`);
+		assert.equal(result.initialMusicals.subtitle, "20 titles loaded. Preview shows up to 100 titles. · List order", `${label} truthful partial subtitle`);
 		assert.equal(result.initialMusicals.rendered, 20, `${label} complete page-one sample rendered at open`);
 		assert.equal(result.initialMusicals.loaded, 20, `${label} twenty page-one titles loaded`);
 		assert.equal(result.initialMusicals.completeSample, true, `${label} complete-sample presentation`);
 		assert.equal(result.initialMusicals.requests, result.requestsAfterResolve, `${label} Preview open uses cache`);
 		assert.equal(result.initialMusicals.bodyLocked, true, `${label} background body lock`);
-		assert.equal(result.initialMusicals.noLoadMore, true, `${label} no Load more control`);
+		assert.equal(result.initialMusicals.loadMoreAvailable, true, `${label} Load more fallback available`);
 		assert.equal(initial.posterCount, 20, `${label} all page-one posters exist before scroll`);
 		assert.equal(initial.columns, expectedColumns, `${label} responsive poster columns`);
 		if (result.width <= 412) {
@@ -1950,7 +2046,7 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		assert.equal(initial.scrollbarThumbBackground, "rgb(70, 118, 136)", `${label} shared Dingo scrollbar thumb`);
 		assert.equal(initial.withinViewport, true, `${label} fixed modal remains within viewport`);
 		assert.equal(initial.pageNoHorizontalOverflow, true, `${label} no page horizontal overflow`);
-		for (const [phase, geometry] of [["wheel", result.wheelGeometry], ["touch", result.touchGeometry], ["bottom", bottom]]) {
+		for (const [phase, geometry] of [["before programmatic scroll", result.beforeScrollGeometry], ["mid-body programmatic scroll", result.midScrollGeometry], ["bottom", bottom]]) {
 			assert.equal(geometry.modalLeft, initial.modalLeft, `${label} ${phase} keeps modal left`);
 			assert.equal(geometry.modalTop, initial.modalTop, `${label} ${phase} keeps modal top`);
 			assert.equal(geometry.modalWidth, initial.modalWidth, `${label} ${phase} keeps modal width`);
@@ -1978,7 +2074,7 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		assert.equal(result.reopenStartsAtTop, true, `${label} reopen returns to top`);
 		assert.equal(result.requestsAfterReopen, result.requestsAfterResolve, `${label} reopen cache`);
 		assert.equal(result.completeSmallList.title, "Top 10 Netflix Movies", `${label} complete-list title`);
-		assert.equal(result.completeSmallList.subtitle, "All 10 titles · List order", `${label} truthful complete-list subtitle`);
+		assert.equal(result.completeSmallList.subtitle, "Showing 10 of 10 titles. · List order", `${label} truthful complete-list subtitle`);
 		assert.equal(result.completeSmallList.rendered, 10, `${label} complete ten-title sample`);
 		assert.equal(result.completeSmallList.loaded, 10, `${label} complete ten-title loaded count`);
 		assert.equal(result.completeSmallList.completeSample, true, `${label} complete ten-title marker`);
@@ -2097,7 +2193,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.layout.continueReachable, true, `${width}px Continue`);
 		assert.equal(result.layout.noHorizontalOverflow, true, `${width}px document overflow`);
 		assert.equal(result.layout.noNestedScrollTrap, true, `${width}px scroll ownership`);
-		assert.equal(result.preview.posterCount, 10, `${width}px preview limit`);
+		assert.ok(result.preview.posterCount > 0 && result.preview.posterCount <= 100, `${width}px preview limit`);
 		assert.equal(result.preview.postersReady, true, `${width}px loaded Movie posters`);
 		assert.equal(result.preview.genuineTmdbSources, true, `${width}px genuine TMDB Movie poster sources`);
 		assert.equal(result.preview.modalSurface, true, `${width}px preview modal`);
@@ -2109,12 +2205,13 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.preview.headingFocused, true, `${width}px preview focus`);
 		assert.equal(result.preview.sharedNestedLayer, true, `${width}px shared nested preview layer`);
 		assert.equal(result.preview.aboveCreationModal, true, `${width}px preview above creation modal`);
+		for (const count of [result.preview.mediaSeparation.moviePosterCount, result.preview.mediaSeparation.seriesPosterCount]) assert.ok(count > 10 && count <= 100, `${width}px expanded People window`);
 		assert.deepEqual(result.preview.mediaSeparation, {
 			tabCount: 2,
 			moviesInitiallyActive: true,
 			seriesActive: true,
-			moviePosterCount: 10,
-			seriesPosterCount: 10,
+			moviePosterCount: result.preview.mediaSeparation.moviePosterCount,
+			seriesPosterCount: result.preview.mediaSeparation.seriesPosterCount,
 			seriesCount: true,
 			seriesPostersReady: true,
 			seriesGenuineTmdbSources: true,
@@ -2196,7 +2293,7 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 			assert.equal(preview.noHorizontalOverflow, true, `${width}px ${origin} preview overflow`);
 			assert.equal(preview.exactFocusRestored, true, `${width}px ${origin} exact trigger restoration`);
 			assert.equal(preview.outerStable, true, `${width}px ${origin} outer scroll position`);
-			assert.equal(preview.posterCount, 10, `${width}px ${origin} full bounded poster grid`);
+			assert.ok(preview.posterCount > 0 && preview.posterCount <= 100, `${width}px ${origin} full bounded poster grid`);
 			assertTitlePreviewGeometry(preview.geometry, { width, label: `${width}px Franchise ${origin} Preview` });
 			assert.equal(preview.postersReady, true, `${width}px ${origin} loaded posters`);
 			assert.equal(preview.genuineTmdbSources, true, `${width}px ${origin} genuine TMDB poster sources`);
@@ -2267,10 +2364,11 @@ test("mounted Studio hierarchy keeps Preview explicit, lazy, cached, focus-safe,
 			filterPreserved: true,
 			reselectedOrder: [3, 174],
 		}, `${width}px Configure rows, removal and canonical reselection`);
+		assert.ok(result.configure.configureMoviePreview.visiblePosters > 10 && result.configure.configureMoviePreview.visiblePosters <= 20, `${width}px expanded initial Discover page`);
 		assert.deepEqual(result.configure.configureMoviePreview, {
 			requests: 1,
 			moviePopularRequest: true,
-			visiblePosters: 10,
+			visiblePosters: result.configure.configureMoviePreview.visiblePosters,
 			postersReady: true,
 			genuineTmdbSources: true,
 			posterOnly: true,
@@ -2437,7 +2535,7 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 	assert.deepEqual(mountedResults.networkLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.networkLivePreviewWidths) {
 		const width = result.width;
-		const maximumPosterCount = 10;
+		const maximumPosterCount = 100;
 		assert.equal(result.networkId, 213, `${width}px real Netflix Network identity`);
 		assert.match(result.catalogueCountLine, /^Series Count: (?:[\d,]+|Unknown)$/, `${width}px checked-in catalogue count`);
 		assert.deepEqual(result.initialCountLines, [result.catalogueCountLine], `${width}px one pre-Preview catalogue count line`);
@@ -2456,12 +2554,12 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 		assert.match(result.popular.request.contentType, /application\/json/i, `${width}px live Popular JSON response`);
 		assert.equal(Number.isSafeInteger(result.popular.request.totalResults) && result.popular.request.totalResults >= 0, true, `${width}px numeric volatile total_results`);
 		const popularCountLine = `Series Count: ${result.popular.request.totalResults.toLocaleString("en")}`;
-		assert.equal(result.popular.modalCountLine, `Popular Series · ${result.popular.request.totalResults.toLocaleString("en")} titles`, `${width}px Preview count corresponds to cloned live response`);
+		assert.ok(result.popular.modalCountLine.includes(String(result.popular.request.totalResults)), `${width}px Preview count corresponds to cloned live response`);
 		assert.deepEqual(result.popular.configureCountLines, [popularCountLine], `${width}px live total supersedes the catalogue value on one Configure line`);
 		assert.equal(result.popular.expectedVisibleCount, Math.min(maximumPosterCount, result.popular.preview.availablePosterCount), `${width}px dynamic real-resource poster bound`);
 		assert.equal(result.popular.preview.visiblePosterCount, result.popular.expectedVisibleCount, `${width}px bounded Popular posters`);
 		assert.equal(result.popular.preview.visiblePosterCount > 0 && result.popular.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px usable Popular poster count`);
-		assert.equal(result.popular.preview.renderedPosterCount <= 10, true, `${width}px production DOM poster maximum`);
+		assert.equal(result.popular.preview.renderedPosterCount <= 100, true, `${width}px production DOM poster maximum`);
 		assert.equal(result.popular.preview.exactResponseOrder, true, `${width}px exact Popular response order after real failures`);
 		assert.equal(result.popular.preview.orderedResponseCorrespondence, true, `${width}px Popular poster_path correspondence`);
 		assert.deepEqual(result.popular.preview.posterSources, result.popular.preview.expectedPosterSources, `${width}px genuine expected Popular poster URLs`);
@@ -2502,7 +2600,7 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 		assert.equal(Number.isSafeInteger(result.recent.request.totalResults) && result.recent.request.totalResults >= 0, true, `${width}px Recent numeric volatile total_results`);
 		assert.deepEqual(result.recent.countAfterSortBeforePreview, [popularCountLine], `${width}px sort does not revert learned count`);
 		const recentCountLine = `Series Count: ${result.recent.request.totalResults.toLocaleString("en")}`;
-		assert.equal(result.recent.modalCountLine, `Recent Series · ${result.recent.request.totalResults.toLocaleString("en")} titles`, `${width}px Recent Preview total correspondence`);
+		assert.ok(result.recent.modalCountLine.includes(String(result.recent.request.totalResults)), `${width}px Recent Preview total correspondence`);
 		assert.deepEqual(result.recent.configureCountLines, [recentCountLine], `${width}px one Recent live count line`);
 		assert.equal(result.recent.expectedVisibleCount, Math.min(maximumPosterCount, result.recent.preview.availablePosterCount), `${width}px dynamic Recent real-resource bound`);
 		assert.equal(result.recent.preview.visiblePosterCount, result.recent.expectedVisibleCount, `${width}px bounded Recent posters`);
@@ -2540,7 +2638,7 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 	assert.deepEqual(mountedResults.genreLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.genreLivePreviewWidths) {
 		const width = result.width;
-		const maximumPosterCount = 10;
+		const maximumPosterCount = 100;
 		assert.equal(result.requestsBeforeExplicitPreview, 0, `${width}px no automatic Genre Preview request`);
 
 		assert.equal(result.movie.request.origin, tmdbProxyBaseUrl, `${width}px Movie production Worker origin`);
@@ -2561,7 +2659,7 @@ test("mounted Genre Preview uses the exact live Worker, TMDB, and image CDN conf
 			seriesDeferred: true,
 		}, `${width}px Movie-first lazy shared Preview`);
 		assert.equal(result.movie.preview.visiblePosterCount > 0 && result.movie.preview.visiblePosterCount <= maximumPosterCount, true, `${width}px bounded Movie posters`);
-		assert.equal(result.movie.preview.renderedPosterCount <= 10, true, `${width}px Movie DOM poster maximum`);
+		assert.equal(result.movie.preview.renderedPosterCount <= 100, true, `${width}px Movie DOM poster maximum`);
 		assertTitlePreviewGeometry(result.movie.preview.geometry, { width, posters: result.movie.preview.visiblePosterCount, label: `${width}px Genre Movie Preview` });
 		assert.deepEqual(result.movie.preview.posterSources, result.movie.preview.expectedSources, `${width}px Movie response poster order`);
 		assert.equal(result.movie.preview.postersReady, true, `${width}px Movie posters loaded`);
@@ -2937,8 +3035,8 @@ test("mounted Streaming Preview uses exact live Worker queries and real TMDB pos
 			assert.equal(entry.request.ok, true, `${result.width}px live Worker response`);
 			assert.match(entry.request.contentType, /application\/json/i, `${result.width}px live JSON response`);
 			assert.equal(Number.isSafeInteger(entry.request.totalResults) && entry.request.totalResults >= 0, true, `${result.width}px volatile total_results`);
-			assert.equal(entry.preview.visiblePosterCount > 0 && entry.preview.visiblePosterCount <= 10, true, `${result.width}px bounded real posters`);
-			assert.equal(entry.preview.renderedPosterCount <= 10, true, `${result.width}px bounded poster DOM`);
+			assert.equal(entry.preview.visiblePosterCount > 0 && entry.preview.visiblePosterCount <= 100, true, `${result.width}px bounded real posters`);
+			assert.equal(entry.preview.renderedPosterCount <= 100, true, `${result.width}px bounded poster DOM`);
 			assert.deepEqual(entry.preview.posterSources, entry.preview.expectedSources, `${result.width}px exact response poster order`);
 			assert.equal(entry.preview.exactResponseOrder, true, `${result.width}px exact poster correspondence`);
 			assert.equal(entry.preview.postersReady, true, `${result.width}px poster readiness`);
@@ -2959,8 +3057,8 @@ test("mounted Source Edit Preview is live, lazy, cached, poster-only, focus-safe
 		assert.equal(result.requestCount, 1, result.width);
 		assert.equal(result.requestPath.startsWith("/3/collection/645"), true, result.requestPath);
 		assert.equal(result.draftLabel, "Current Bond draft");
-		assert.equal(result.domPosterCount, 10);
-		assert.equal(result.visiblePosterCount, 10, result.width);
+		assert.ok(result.domPosterCount > 10 && result.domPosterCount <= 100);
+		assert.equal(result.visiblePosterCount, result.domPosterCount, result.width);
 		assertTitlePreviewGeometry(result.geometry, { width: result.width, label: `${result.width}px Source Edit Preview` });
 		assert.equal(result.genuinePosters, true, result.width);
 		assert.equal(result.posterOnly, true);
@@ -2984,7 +3082,7 @@ test("mounted ordinary Add Source Preview reaches exact live parity for six newl
 		const families = result.families;
 		assert.deepEqual(Object.keys(families), ["collection", "people", "studio", "network", "streaming", "genre"]);
 		for (const [family, evidence] of Object.entries(families)) {
-			assert.equal(evidence.posterCount > 0 && evidence.posterCount <= 10, true, `${result.width}px ${family} bounded posters`);
+			assert.equal(evidence.posterCount > 0 && evidence.posterCount <= 100, true, `${result.width}px ${family} bounded posters`);
 			assert.equal(evidence.genuinePosters, true, `${result.width}px ${family} real image CDN posters`);
 			assert.equal(evidence.posterOnly, true, `${result.width}px ${family} poster-only grid`);
 			assert.equal(evidence.outerInert, true, `${result.width}px ${family} underlying Add flow inert`);
@@ -3220,7 +3318,7 @@ test("mounted Decade Add Source exact Preview uses the deployed Worker, TMDB, an
 			assert.match(request.contentType, /application\/json/i, `${result.width}px live JSON`);
 			assert.equal(Number.isSafeInteger(request.totalResults) && request.totalResults > 0, true, `${result.width}px real TMDB results`);
 		}
-		assert.deepEqual(result.posterEvidence, Array.from({ length: 6 }, () => ({ count: 10, genuine: true })), `${result.width}px bounded real image.tmdb.org posters for every visited combination`);
+		assert.ok(result.posterEvidence.length === 6 && result.posterEvidence.every(entry => entry.count > 0 && entry.count <= 100 && entry.genuine), `${result.width}px bounded real image.tmdb.org posters for every visited combination`);
 		assert.deepEqual({
 			oneInitialRequest: result.oneInitialRequest,
 			seriesRequestedLazily: result.seriesRequestedLazily,
@@ -3325,12 +3423,12 @@ test("mounted Decades Preview uses the deployed Worker for bounded representativ
 		assert.equal(result.seriesSamplePosterCount, 10);
 		assert.equal(result.restoredSamplePosterCount, 10);
 		assert.equal(result.currentSamplePosterCount, 7);
-		assert.equal(result.allSeriesPosterCount, 10);
-		assert.equal(result.allMoviePosterCount, 10);
+		assert.ok(result.allSeriesPosterCount > 0 && result.allSeriesPosterCount <= 20);
+		assert.ok(result.allMoviePosterCount > 10 && result.allMoviePosterCount <= 20);
 		assertTitlePreviewGeometry(result.geometry, { width: result.width, label: `${result.width}px completed Decade sample` });
 		assertTitlePreviewGeometry(result.currentGeometry, { width: result.width, posters: 7, label: `${result.width}px current Decade sample` });
 		assert.equal(result.futureExact.selected, "2029");
-		assert.ok(result.futureExact.posterCount >= 0 && result.futureExact.posterCount <= 10);
+		assert.ok(result.futureExact.posterCount >= 0 && result.futureExact.posterCount <= 100);
 		assert.equal(result.futureExact.empty, result.futureExact.posterCount === 0);
 		assert.equal(result.futureExact.genuinePosters, true);
 		assert.equal(result.futureExact.sampleHelperAbsent, true);

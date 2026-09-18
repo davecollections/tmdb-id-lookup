@@ -80,7 +80,7 @@ export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode }) 
 				});
 				if (!match) throw new Error("No live response matches the current draft: " + JSON.stringify(query));
 				const grid = modal.querySelector(".source-edit-preview-grid");
-				const expectedPosters = match[1].results.filter((row) => row.poster_path).slice(0, 10).map((row) => row.poster_path);
+				const expectedPosters = match[1].results.slice(0, 100).filter((row) => row.poster_path).map((row) => row.poster_path);
 				const actualPosters = [...grid.querySelectorAll("img")].map((image) => new URL(image.src).pathname.replace(/^\/t\/p\/w\d+/, ""));
 				if (JSON.stringify(actualPosters) !== JSON.stringify(expectedPosters)) throw new Error("Preview retained stale titles or ordering.");
 				evidence.previews.push({ changed, mediaType, sortId, query: match[0], resultsMatch: true, geometry: titlePreviewGeometry(modal, grid) });

@@ -35,7 +35,7 @@ import { GenreCatalogueList, genreMediaLabel, GenreSelectionToolbar } from "./Ge
 import { toggleGenreSelection } from "./GenreSourceFlow.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
-import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
+import { TitlePreviewResults } from "./TitlePreviewResults.jsx";
 import { FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
@@ -87,10 +87,6 @@ function mediaLabel(mediaType) {
 	return mediaType === "TV" ? "Series" : "Movies";
 }
 
-function formatCount(value) {
-	return Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString("en") : null;
-}
-
 function fixedMediaNotice(genres, sharedMediaChoice) {
 	const affected = sharedMediaChoice === "movies"
 		? genres.filter((concept) => concept.movieId === null)
@@ -109,16 +105,15 @@ function GenreTitlePreview({ preview, knownPreviewCounts, onChangeDraft, onClose
 	const dialogRef = useRef(null);
 	const closeRef = useRef(null);
 	const activeLabel = mediaLabel(preview.draft.editable.mediaType);
-	const items = preview.data?.results ?? [];
 	return (
 		<NestedPreviewDialog ariaLabelledBy="genre-preview-title" backdropClassName="franchise-preview-backdrop studio-preview-backdrop genre-preview-backdrop" backdropProps={{ "data-genre-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal studio-preview-modal genre-preview-modal source-sort-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
 			<header><div><p className="panel-kicker">Title preview</p><h3 id="genre-preview-title">{preview.group.concept.name}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
 			<SourcePreviewContent>
 				<SourcePreviewSelectors groups={sourcePreviewVariantGroups(preview.group.drafts, preview.draft, onChangeDraft)} />
-				<p className="studio-preview-single-media">{sourcePreviewContext(preview.draft)}{preview.status === "ready" && formatCount(preview.data?.totalResults) !== null ? ` · ${formatCount(preview.data.totalResults)}` : ""}</p>
+				<p className="studio-preview-single-media">{sourcePreviewContext(preview.draft)}</p>
 				{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing {activeLabel.toLowerCase()} preview…</p> : null}
 				{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This Genre preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-				{preview.status === "ready" ? <PosterOnlyPreviewGrid items={items} limit={10} className="franchise-preview-grid studio-preview-grid genre-preview-grid" ariaLabel={`${activeLabel} poster preview`} altPrefix={activeLabel} emptyMessage="No posters available." /> : null}
+				{preview.status === "ready" ? <TitlePreviewResults data={preview.data} className="franchise-preview-grid studio-preview-grid genre-preview-grid" ariaLabel={`${activeLabel} poster preview`} altPrefix={activeLabel} /> : null}
 			</SourcePreviewContent>
 		</NestedPreviewDialog>
 	);

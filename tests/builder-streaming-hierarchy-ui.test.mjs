@@ -397,7 +397,7 @@ test("Preview is exact, lazy, conditional, bounded, cache-backed, focus-safe, an
 	assert.match(flow, /sourcePreviewVariantGroups\(preview\.drafts/);
 	assert.match(flow, /role="tablist" aria-label="Preview region"/);
 	assert.match(flow, /<SourcePreviewSelectors/);
-	assert.match(flow, /<PosterOnlyPreviewGrid[^>]+limit=\{10\}/);
+	assert.match(flow, /<TitlePreviewResults data=\{preview.data\}/);
 	assert.match(flow, /previewCoordinatorRef\.current\.cancel/);
 	assert.match(flow, /queueMicrotask\(\(\) => focusElementWithoutScroll\(trigger\)\)/);
 	assert.match(previewProvider, /createTmdbDiscoverPreviewRequester/);

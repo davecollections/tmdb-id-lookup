@@ -49,6 +49,15 @@ function openedAt(controller, index) {
 	return opened;
 }
 
+test("imported Collection ordering stays preserved and unavailable for exact Preview", () => {
+ for (const sortBy of ["popularity.desc", "primary_release_date.desc", "vote_average.desc", "owner-order"]) {
+  const controller = createProject([{ ...sources[0], sortBy }]);
+  const opened = openedAt(controller, 0), before = controller.stringifyProject().json;
+  assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false);
+  assert.equal(controller.stringifyProject().json, before);
+ }
+});
+
 for (const native of [sources[2], { ...sources[2], mediaType: "TV" }, sources[3]]) {
  for (const field of ["voteAverageGte", "voteAverageLte"]) {
   test(`${native.tmdbSourceType} ${native.mediaType} ${field} rejects malformed rating containers in imported exact Preview`, () => {

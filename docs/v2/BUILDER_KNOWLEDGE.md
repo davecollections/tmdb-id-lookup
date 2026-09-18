@@ -1,5 +1,7 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Worker deployment and live page-2 acceptance are pending owner authorization. Earlier checkpoint limits below are historical where superseded by that contract.
+
 ## Genre artwork and authored Square (#222)
 
 Issue [#222](https://github.com/davecollections/tmdb-id-lookup/issues/222) replaces built-in retired Genre JPG references with the static shared [31-identity/eight-role WebP contract](./BUILDER_GENRES.md#guided-new-collection--new-folder-hierarchy). V1 Genre and V2 Genre creation use Poster/Square/Landscape; generic V2 folder authoring and physical Edit accept Square. Specialized People/Network creation retains Poster/Landscape; Decades artwork integration is deferred. Historical URLs and unknown imported fields remain preserved.

@@ -64,7 +64,7 @@ export function createTmdbDecadesPreviewProvider({
 		const outcomes = await Promise.all(queries.map((query) => requester.getQueryPreview(
 			query.mediaType,
 			query.queryParameters,
-			{ signal },
+			{ signal, paging: false },
 		)));
 		const failure = outcomes.find((outcome) => !outcome.ok);
 		if (failure) return failure;

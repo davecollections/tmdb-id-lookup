@@ -119,7 +119,7 @@ The Worker only proxies the TMDB paths the frontend needs:
 
 * Person search, details, and combined credits
 * Official movie collection search and details
-* Exact public TMDB List details using only `/3/list/{canonical positive signed-32-bit ID}?language=en-US&page=1`
+* Exact public TMDB List details using only `/3/list/{canonical positive signed-32-bit ID}?language=en-US&page={1..5}`
 * Movie search, details, and keywords
 * TV search, details, and keywords
 * Keyword search
@@ -159,7 +159,7 @@ exactly one canonical `with_networks` value and either no other parameter or one
 family-specific.
 
 The TMDB List path requires a canonical positive decimal pathname ID no greater
-than `2147483647`, exactly one `language=en-US`, and exactly one `page=1`.
+than `2147483647`, exactly one `language=en-US`, and exactly one canonical `page=1..5`.
 Missing, duplicated, changed, noncanonical, overflowing, or additional values
 fail closed. Query parameter order may vary. Browser Origin rules remain
 authoritative; the People/Watch Provider service token does not authorize List
@@ -250,3 +250,7 @@ separate explicit owner authorization; do not deploy these routes implicitly as
 part of ordinary implementation, commit, push, PR, or local testing work.
 
 If a frontend feature needs a new TMDB endpoint, prepare and test the appropriate narrow tracked allowlist change, report the exact handoff identities and evidence, then stop for separately authorised owner deployment.
+
+## Preview paging owner-review change (#226)
+
+The tracked source permits optional canonical `page=1..5` on `/builder/discover/movie` and `/builder/discover/tv`; omission retains page-one behavior. The exact List route retains `language=en-US` and requires one canonical page from 1 through 5. Duplicate, zero, negative, fractional, exponent, whitespace, padded and greater-than-five values are rejected. No other route, filter, legacy Discover branch, origin, authentication, upstream host or response behavior changes. This change is **not deployed** by editing this repository. See [the shared Preview contract](../docs/v2/BUILDER_TITLE_PREVIEW.md); complete-source owner deployment and live page-2 acceptance remain separately authorized gates.

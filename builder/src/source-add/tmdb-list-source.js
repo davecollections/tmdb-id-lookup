@@ -34,7 +34,7 @@ export function buildTmdbListTitlePreview(list, sortBy) {
 				: hasDate(item) && (optionId !== "top-rated" || (Number.isFinite(item.voteAverage) && item.voteAverage >= 0 && item.voteAverage <= 10)));
 			if (complete) {
 				// Mobile's List date/rating tie policy; vote ties retain response order.
-				// People Preview has different role filtering, tie rules and a ten-item cap.
+				// People Preview has different role filtering and tie rules over complete credits.
 				results.sort((left, right) => optionId === "most-voted" ? right.voteCount - left.voteCount
 					: optionId === "top-rated" ? right.voteAverage - left.voteAverage || right.date.localeCompare(left.date)
 						: right.date.localeCompare(left.date));

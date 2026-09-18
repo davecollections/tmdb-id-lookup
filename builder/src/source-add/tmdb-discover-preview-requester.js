@@ -1,5 +1,6 @@
 import { parseCanonicalHttpsOrigin } from "../../worker-origin.js";
-import { cloneResponseData, createBoundedResponseCache } from "./bounded-response-cache.js";
+import { createPreviewPageCache, pagedTitlePreview } from "./preview-page-cache.js";
+import { previewPagination } from "./title-preview-results.js";
 import { createTmdbLocalPreviewFetch } from "./tmdb-local-preview-proxy.js";
 import { normalizeTmdbPosterPath } from "./tmdb-image.js";
 
@@ -63,7 +64,7 @@ function normalizePreviewItem(value, mediaType) {
 	});
 }
 
-export function normalizeTmdbDiscoverPreviewResponse(value, mediaType) {
+export function normalizeTmdbDiscoverPreviewResponse(value, mediaType, expectedPage = 1) {
 	if (
 		!plainObject(value)
 		|| !["MOVIE", "TV"].includes(mediaType)
@@ -72,8 +73,9 @@ export function normalizeTmdbDiscoverPreviewResponse(value, mediaType) {
 		|| !Array.isArray(value.results)
 	) return null;
 	const results = value.results.map((entry) => normalizePreviewItem(entry, mediaType));
-	if (results.some((entry) => entry === null)) return null;
-	return Object.freeze({ totalResults: value.total_results, mediaType, results: Object.freeze(results) });
+	const pagination = previewPagination(value, expectedPage);
+	if (pagination === null || results.some((entry) => entry === null)) return null;
+	return Object.freeze({ totalResults: value.total_results, mediaType, results: Object.freeze(results), ...pagination });
 }
 
 function configuredBaseUrl(value) {
@@ -115,46 +117,43 @@ export function createTmdbDiscoverPreviewRequester({
 	const requestFetch = fetchImpl === undefined
 		? createTmdbLocalPreviewFetch({ workerBaseUrl: workerBaseUrl.origin, forceProxy })
 		: fetchImpl;
-	const cache = createBoundedResponseCache({ ttlMs: cacheTtlMs, maxEntries: cacheMaxEntries, now });
+	const cache = createPreviewPageCache({ ttlMs: cacheTtlMs, maxEntries: cacheMaxEntries, now });
 
-	async function requestPreview(mediaType, queryEntries, cacheKey, { signal } = {}) {
-		if (signal?.aborted) return providerError("aborted", `The superseded ${entityLabel} preview was cancelled.`, { retryable: false });
-		const cached = cache.get(cacheKey);
-		if (cached !== null) return Object.freeze({ ok: true, data: cached, fromCache: true });
-
+	async function requestPage(mediaType, queryEntries, page, signal) {
 		const url = new URL(previewPaths[mediaType], workerBaseUrl);
 		for (const [key, value] of queryEntries) url.searchParams.set(key, value);
+		if (page > 1) url.searchParams.set("page", String(page));
 		const controller = new AbortController();
 		const unlink = linkAbortSignal(signal, controller);
 		let timeoutTriggered = false;
 		const timeout = setTimeout(() => { timeoutTriggered = true; controller.abort(); }, timeoutMs);
-		let response;
+		let readingBody = false;
 		try {
-			response = await requestFetch(url.toString(), { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal });
+			const response = await requestFetch(url.toString(), { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal });
+			if (response.status === 429) return providerError("rate-limit", "TMDB is receiving too many requests. Wait a moment and try again.", { status: 429 });
+			if (!response.ok) return providerError("provider", `TMDB could not prepare this ${entityLabel} preview. Try again.`, { status: response.status });
+			const contentType = response.headers?.get?.("content-type");
+			if (contentType && !contentType.toLowerCase().includes("application/json")) return providerError("invalid-response", `TMDB returned an unexpected ${entityLabel} preview. Try again.`);
+			readingBody = true;
+			const value = await response.json();
+			if (timeoutTriggered) return providerError("timeout", "TMDB took too long to prepare this preview. Try again.");
+			if (controller.signal.aborted) return providerError("aborted", "The superseded Preview was cancelled.", { retryable: false });
+			const data = normalizeTmdbDiscoverPreviewResponse(value, mediaType, page);
+			return data === null ? providerError("invalid-response", `TMDB returned an unexpected ${entityLabel} preview. Try again.`) : { ok: true, data, fromCache: false };
 		} catch {
-			clearTimeout(timeout);
-			unlink();
 			if (signal?.aborted) return providerError("aborted", `The superseded ${entityLabel} preview was cancelled.`, { retryable: false });
 			if (timeoutTriggered) return providerError("timeout", "TMDB took too long to prepare this preview. Try again.");
+			if (readingBody) return providerError("invalid-response", `TMDB returned an unexpected ${entityLabel} preview. Try again.`);
 			return providerError("network", "TMDB could not be reached. Check your connection and try again.");
+		} finally {
+			clearTimeout(timeout);
+			unlink();
 		}
-		clearTimeout(timeout);
-		unlink();
-		if (controller.signal.aborted) return providerError("aborted", `The superseded ${entityLabel} preview was cancelled.`, { retryable: false });
-		if (response.status === 429) return providerError("rate-limit", "TMDB is receiving too many requests. Wait a moment and try again.", { status: 429 });
-		if (!response.ok) return providerError("provider", `TMDB could not prepare this ${entityLabel} preview. Try again.`, { status: response.status });
-		const contentType = response.headers?.get?.("content-type");
-		if (contentType && !contentType.toLowerCase().includes("application/json")) return providerError("invalid-response", `TMDB returned an unexpected ${entityLabel} preview. Try again.`);
-		let value;
-		try { value = await response.json(); } catch {
-			if (signal?.aborted || controller.signal.aborted) return providerError("aborted", `The superseded ${entityLabel} preview was cancelled.`, { retryable: false });
-			return providerError("invalid-response", `TMDB returned an unexpected ${entityLabel} preview. Try again.`);
-		}
-		if (signal?.aborted || controller.signal.aborted) return providerError("aborted", `The superseded ${entityLabel} preview was cancelled.`, { retryable: false });
-		const data = normalizeTmdbDiscoverPreviewResponse(value, mediaType);
-		if (data === null) return providerError("invalid-response", `TMDB returned an unexpected ${entityLabel} preview. Try again.`);
-		cache.set(cacheKey, data);
-		return Object.freeze({ ok: true, data: cloneResponseData(data), fromCache: false });
+	}
+
+	async function requestPreview(mediaType, entries, key, { signal, paging = true } = {}) {
+		const result = await cache.open(key, (page, requestSignal) => requestPage(mediaType, entries, page, requestSignal), { signal });
+		return result.ok ? { ok: true, fromCache: result.fromCache, data: pagedTitlePreview(result.chain, undefined, { paging }) } : result;
 	}
 
 	async function getPreview(entityId, mediaType, sortBy, { signal } = {}) {
@@ -177,12 +176,12 @@ export function createTmdbDiscoverPreviewRequester({
 		return requestPreview(mediaType, entries, cacheKey, { signal });
 	}
 
-	async function getQueryPreview(mediaType, queryParameters, { signal } = {}) {
+	async function getQueryPreview(mediaType, queryParameters, { signal, paging = true } = {}) {
 		const entries = canonicalQueryEntries(queryParameters);
-		if (typeof previewPaths[mediaType] !== "string" || entries === null) {
+		if (typeof previewPaths[mediaType] !== "string" || entries === null || Object.hasOwn(queryParameters, "page")) {
 			return providerError("invalid-request", `Choose a valid ${entityLabel} and media preview.`, { retryable: false });
 		}
-		return requestPreview(mediaType, entries, `${entityType}:${mediaType}:${queryIdentity(entries)}`, { signal });
+		return requestPreview(mediaType, entries, `${entityType}:${mediaType}:${queryIdentity(entries)}`, { signal, paging });
 	}
 
 	return Object.freeze({ getPreview, getQueryPreview });

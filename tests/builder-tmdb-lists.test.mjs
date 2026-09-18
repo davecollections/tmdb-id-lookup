@@ -430,7 +430,7 @@ test("List Preview sorts the complete fetched sample, reuses the List cache and 
 		assert.equal(result.ok, true);
 		const ranked = ["vote_average.desc", "primary_release_date.desc", "vote_count.desc", "first_air_date.desc"].includes(sortBy);
 		assert.deepEqual(result.data.results.map((item) => item.id), ranked ? [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
-		assert.equal(result.data.totalResults, 100);
+		assert.equal(result.data.totalResults, null, "missing pagination cannot establish the List total");
 		assert.equal(request.sortBy, sortBy);
 		assert.equal(result.data.orderingLabel, ranked ? TMDB_LIST_EDIT_SORT_OPTIONS.find((option) => option.id === tmdbListEditSortOptionId(sortBy)).label : "List order");
 		assert.equal(result.data.orderingNote, ranked || sortBy === "original" ? undefined : `Preview can’t reproduce ‘${sortBy}’; your saved sort will be kept.`);

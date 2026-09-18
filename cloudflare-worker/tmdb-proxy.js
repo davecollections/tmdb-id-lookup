@@ -304,6 +304,7 @@ const STANDALONE_DISCOVER_PATHS = new Map([
   ["/builder/discover/tv", "/3/discover/tv"],
 ]);
 const STANDALONE_COMMON_PARAMETERS = [
+  "page",
   "include_adult", "sort_by", "with_genres", "without_genres",
   "vote_average.gte", "vote_average.lte", "vote_count.gte",
   "with_original_language", "with_origin_country", "with_keywords",
@@ -342,6 +343,7 @@ function isAllowedStandaloneDiscoverRequest(url) {
   if (!hasCanonicalAdultPolicy(url) || !hasUniqueParameters(entries) ||
       entries.some(([key]) => !allowed.has(key))) return false;
   const query = url.searchParams;
+  if (query.has("page") && !/^[1-5]$/.test(query.get("page"))) return false;
   if (!COMPANY_DISCOVER_SORTS[upstreamPath].has(query.get("sort_by"))) return false;
   for (const key of STANDALONE_ID_EXPRESSIONS) {
     if (query.has(key) && !isCanonicalPureIdExpression(query.get(key))) return false;
@@ -377,7 +379,7 @@ function isAllowedTmdbRequest(url) {
       entries.length === 2 &&
       hasUniqueParameters(entries) &&
       url.searchParams.get("language") === "en-US" &&
-      url.searchParams.get("page") === "1" &&
+      /^[1-5]$/.test(url.searchParams.get("page") || "") &&
       entries.every(([key]) => key === "language" || key === "page")
     );
   }

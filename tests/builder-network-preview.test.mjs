@@ -152,10 +152,11 @@ test("Network Preview aborts superseded work without caching it", async () => {
 	});
 	const controller = new AbortController();
 	const pending = provider.getNetworkPreview(4, { sortOptionId: "popular", signal: controller.signal });
+	await Promise.resolve();
 	controller.abort();
 	const aborted = await pending;
 	assert.equal(aborted.error.kind, "aborted");
-	assert.equal(aborted.error.message, "The superseded Network preview was cancelled.");
+	assert.equal(aborted.error.message, "The superseded Preview was cancelled.");
 	assert.equal((await provider.getNetworkPreview(4, { sortOptionId: "popular" })).fromCache, false);
 	assert.equal(calls, 2);
 });

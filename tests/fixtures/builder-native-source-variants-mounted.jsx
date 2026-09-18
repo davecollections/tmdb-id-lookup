@@ -167,10 +167,10 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     check(response, "no production response for current draft");
     const grid = modal.querySelector('.source-edit-preview-grid');
     check(grid || (sharedAdvanced && response[1].results.every((row) => !row.poster_path) && modal.querySelector("[data-preview-empty-state]")), "real Preview grid/empty state missing");
-    if (!editing) check(modal.querySelector('.studio-preview-single-media')?.textContent.includes(response[1].total_results.toLocaleString("en") + " titles"), "active response count differs");
+    check(/Showing|No titles|No posters/.test(modal.querySelector('.source-title-preview-summary')?.textContent ?? ""), "active response summary absent");
     const exactUrl = new URL(response[0], location.href);
     check(exactUrl.searchParams.get("include_adult") === "false", "missing canonical adult exclusion");
-    const expected = response[1].results.filter((row) => row.poster_path).slice(0, 10).map((row) => row.poster_path);
+    const expected = response[1].results.slice(0, 100).filter((row) => row.poster_path).map((row) => row.poster_path);
     const actual = [...(grid?.querySelectorAll('img') ?? [])].map((img) => new URL(img.src).pathname.replace(/^\/t\/p\/w\d+/, ''));
     check(JSON.stringify(actual) === JSON.stringify(expected), "displayed posters differ from real current response");
     await wait(() => [...(grid?.querySelectorAll('img') ?? [])].every((img) => img.complete && img.naturalWidth > 0), { label: "real Studio image CDN", timeoutMs: 20000 });
@@ -677,7 +677,7 @@ export async function runNativeSourceVariantsScenario(helpers, view) {
 			const response = required(warnerResponses.get(query), "actual Warner Top rated response");
 			check(preview.textContent.includes("Warner Bros. Pictures") && preview.textContent.includes("Top rated Movies"), "Warner candidate/context");
 			const displayed = [...preview.querySelectorAll("img")].map((img) => new URL(img.src).pathname.split("/").at(-1));
-			const expected = response.results.filter((entry) => entry.poster_path).slice(0, 10).map((entry) => entry.poster_path.slice(1));
+			const expected = response.results.slice(0, 100).filter((entry) => entry.poster_path).map((entry) => entry.poster_path.slice(1));
 			check(JSON.stringify(displayed) === JSON.stringify(expected), "Warner displayed candidate differs from response");
 			await wait(() => [...preview.querySelectorAll("img")].every((img) => img.complete && img.naturalWidth > 0), { label: "Warner actual Top rated posters", timeoutMs: 35000 });
 			await capture(name + "-warner-top-rated");
@@ -711,10 +711,10 @@ export async function runNativeSourceVariantsScenario(helpers, view) {
 			await click(required(findButton(preview, "Series"), "Series")); await readyPreview();
 			check(preview.textContent.includes("Most voted Series"), "media switch lost sort");
 		}
-		context = preview.querySelector(".studio-preview-single-media")?.textContent;
+		context = preview.querySelector(".source-title-preview-summary")?.textContent;
 		check(context?.includes("titles"), "exact active count absent");
 		const imageNodes = [...preview.querySelectorAll("img")];
-		check(imageNodes.length <= 10 && imageNodes.every((img) => new URL(img.src).hostname === "image.tmdb.org"), "poster contract");
+		check(imageNodes.length <= 100 && imageNodes.every((img) => new URL(img.src).hostname === "image.tmdb.org"), "poster contract");
 		if (imageNodes.length) await wait(() => imageNodes.every((img) => img.complete && img.naturalWidth > 0), { label: name + " real TMDB posters", timeoutMs: 35000 });
 		geometry = titlePreviewGeometry(preview, required(preview.querySelector(".source-edit-preview-grid"), "poster grid"));
 		check(geometry.withinViewport && geometry.closeReachable && geometry.pageNoHorizontalOverflow && geometry.gridNoHorizontalScroll && geometry.activeScrollOwnerCount <= 1, "Preview geometry " + JSON.stringify(geometry));

@@ -11,6 +11,18 @@ const text=fs.readFileSync(process.env.TMDB_WORKER_TEST_SOURCE ?? path.join(d,".
 const module=await import("data:text/javascript;base64,"+Buffer.from(text+"\nexport { isAllowedTmdbRequest };").toString("base64"));
 const validate=(media,fields)=>module.isAllowedTmdbRequest(new URL("https://worker.example/builder/discover/"+media+"?"+new URLSearchParams(fields)));
 const base={include_adult:"false",sort_by:"popularity.desc"};
+test("Preview routes accept only canonical pages 1–5 and leave legacy Discover paging closed", () => {
+ for (const media of ["movie", "tv"]) {
+  assert.equal(validate(media, base), true);
+  for (const page of ["1", "2", "3", "4", "5"]) assert.equal(validate(media, { ...base, page }), true);
+  for (const page of ["", "0", "-1", "1.0", "1.5", "1e0", " 1", "1 ", "01", "+1", "6", "999", "NaN", "one"]) assert.equal(validate(media, { ...base, page }), false, page);
+  assert.equal(module.isAllowedTmdbRequest(new URL(`https://worker.example/builder/discover/${media}?include_adult=false&sort_by=popularity.desc&page=1&page=2`)), false);
+  assert.equal(module.isAllowedTmdbRequest(new URL(`https://worker.example/3/discover/${media}?with_companies=3&sort_by=popularity.desc&page=2`)), false);
+ }
+ for (const page of ["1", "2", "3", "4", "5"]) assert.equal(module.isAllowedTmdbRequest(new URL(`https://worker.example/3/list/9?language=en-US&page=${page}`)), true);
+ for (const page of ["", "0", "-1", "1.0", "1.5", "1e0", " 1", "1 ", "01", "+1", "6", "999", "NaN", "one"]) assert.equal(module.isAllowedTmdbRequest(new URL("https://worker.example/3/list/9?" + new URLSearchParams({ language: "en-US", page }))), false, page);
+ for (const query of ["language=en-US", "language=en-US&page=1&page=2", "language=en-US&page=2&sort_by=original", "language=fr-FR&page=2"]) assert.equal(module.isAllowedTmdbRequest(new URL(`https://worker.example/3/list/9?${query}`)), false);
+});
 test("native Studio/Network authored rating pairs produce requests accepted by the unchanged Worker", () => {
  const entity = { id: 3, name: "Unit native entity" };
  const filters = [{}, { voteAverageGte: 0 }, { voteAverageLte: 10 }, { voteAverageGte: "0", voteAverageLte: "10.00" }, { voteAverageGte: "7.250", voteAverageLte: "9.125", voteCountGte: 100 }, { voteAverageGte: "0.000001", voteAverageLte: "0.000001" }];
@@ -60,7 +72,7 @@ const bad=[
 ["wrong media date",{"first_air_date.gte":"2000-01-01"}],["bad date",{"primary_release_date.gte":"2025-02-29"}],["reverse dates",{"primary_release_date.gte":"2026-01-01","primary_release_date.lte":"2025-01-01"}],
 ["wrong media sort",{sort_by:"first_air_date.desc"}],["unsupported sort",{sort_by:"revenue.desc"}],["rating precision form",{"vote_average.gte":"7.00"}],["rating over 10",{"vote_average.lte":"11"}],["reverse rating",{"vote_average.gte":"8","vote_average.lte":"6"}],
 ["negative votes",{"vote_count.gte":"-1"}],["overflow votes",{"vote_count.gte":"2147483648"}],["year zero",{year:"0000"}],["float year",{year:"2000.5"}],["bad language",{with_original_language:"eng"}],["bad country",{with_origin_country:"au"}],
-["paging",{page:"2"}],["API key",{api_key:"not-a-secret"}],["append",{append_to_response:"keywords"}],["adult true",{include_adult:"true"}],
+["paging beyond five",{page:"6"}],["API key",{api_key:"not-a-secret"}],["append",{append_to_response:"keywords"}],["adult true",{include_adult:"true"}],
 ];
 for(const [label,fields]of bad)test("reject "+label,()=>assert.equal(validate("movie",{...base,...fields}),false));
 test("Network expressions reject malformed values, exclusions and wrong routes",()=>{

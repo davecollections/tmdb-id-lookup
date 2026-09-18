@@ -14,6 +14,7 @@ export function PosterOnlyPreviewGrid({
 	items,
 	limit = 10,
 	displayAll = false,
+	embedded = false,
 	size = "w342",
 	className = "",
 	ariaLabel = "Title poster preview",
@@ -35,7 +36,7 @@ export function PosterOnlyPreviewGrid({
 			data-preview-loaded-count={candidates.length}
 			data-preview-complete-sample={displayAll ? "true" : undefined}
 			aria-label={ariaLabel}
-			tabIndex={displayAll ? 0 : undefined}
+			tabIndex={displayAll && !embedded ? 0 : undefined}
 		>
 			{visible.map((candidate, index) => <img
 				key={`${candidate.source}|${candidate.index}`}

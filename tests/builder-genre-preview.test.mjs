@@ -190,6 +190,7 @@ test("malformed, timeout, abort, and stale-after-headers Genre Preview outcomes 
 	});
 	const controller = new AbortController();
 	const pending = aborting.getGenrePreview(draft, { signal: controller.signal });
+	await Promise.resolve();
 	controller.abort();
 	assert.equal((await pending).error.kind, "aborted");
 	assert.equal((await aborting.getGenrePreview(draft)).fromCache, false);

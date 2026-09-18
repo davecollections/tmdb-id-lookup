@@ -121,7 +121,8 @@ test("title preview is a bounded poster-only body portal with explicit Close and
 	assert.match(nestedDialog, /aria-modal="true"/);
 	assert.match(nestedDialog, /nested-modal-backdrop/);
 	assert.match(nestedDialog, /handleDialogKeyDown/);
-	assert.match(preview, /<PosterOnlyPreviewGrid items=\{titles\} limit=\{10\}/);
+	assert.match(preview, /completeTitlePreview\(titles\)/);
+	assert.match(preview, /<TitlePreviewResults data=\{previewData\}/);
 	assert.doesNotMatch(preview, /movie\.title|movie\.releaseYear|No poster|preview does not change/i);
 	assert.match(posterGrid, /slice\(0, limit\)/);
 	assert.match(posterGrid, /No posters available\./);

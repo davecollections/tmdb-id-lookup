@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
+import { accumulateTitlePreviewPages, completeTitlePreview } from "../builder/src/source-add/title-preview-results.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import {
 	addSelectedPerson,
@@ -310,19 +311,42 @@ test("shared People title Preview limits posters, distinguishes title totals and
 	const ready = render("ready");
 	assert.ok(ready.includes('role="dialog"'));
 	assert.ok(ready.includes('aria-modal="true"'));
-	assert.equal((ready.match(/<img/g) ?? []).length, 10);
-	assert.ok(ready.includes("Acting · Most voted Movies · 18 titles"));
+	assert.equal((ready.match(/<img/g) ?? []).length, 14);
+	assert.ok(ready.includes("Acting · Most voted Movies"));
+	assert.ok(ready.includes("14 titles loaded."));
 	assert.ok(ready.includes(">Close<"));
 	const loading = render("loading", []);
 	assert.ok(loading.includes("Preparing preview"));
 	assert.equal(loading.includes("18 titles"), false);
 	assert.equal(loading.includes("<img"), false);
-	assert.equal((render("ready", [{ id: 1, posterPath: null }, { id: 2, posterPath: "invalid" }, items[0]]).match(/<img/g) ?? []).length, 1);
-	assert.ok(render("ready", []).includes("No posters available."));
+	assert.equal((render("ready", [{ id: 3, posterPath: null }, { id: 2, posterPath: "invalid" }, items[0]]).match(/<img/g) ?? []).length, 1);
+	assert.ok(render("ready", []).includes("No titles found."));
 	const failed = render("error", [], { message: "Preview unavailable." });
 	assert.ok(failed.includes('role="alert"'));
 	assert.ok(failed.includes("Preview unavailable."));
 	assert.ok(failed.includes(">Retry<"));
+});
+
+test("shared title Preview renders ceiling, complete and empty copy without exposing extra pages", () => {
+	const items = Array.from({ length: 186 }, (_, index) => ({ id: index + 1, posterPath: index % 3 ? `/copy-unit-${index}.jpg` : null }));
+	const cases = [
+		{ data: accumulateTitlePreviewPages([{ results: items.slice(0, 20), totalResults: 186, page: 1, totalPages: 10 }]), copy: "20 titles loaded. Preview shows up to 100 titles." },
+		{ data: completeTitlePreview(items), copy: "Preview shows up to 100 titles." },
+		{ data: completeTitlePreview(items.slice(0, 18)), copy: "Showing 18 of 18 titles." },
+		{ data: completeTitlePreview(items.slice(0, 100)), copy: "Showing 100 of 100 titles." },
+		{ data: completeTitlePreview([]), copy: "No titles found." },
+		{ data: completeTitlePreview([{ id: 1, posterPath: null }]), copy: "No posters available." },
+	];
+	// Narrow static rendering only: no service requests or live catalogue claims.
+	for (const kind of ["discover", "people", "collection", "list"]) for (const { data, copy } of cases) {
+		const markup = renderToStaticMarkup(createElement(SourceTitlePreviewDialog, {
+			preview: { status: "ready", candidate: { request: { kind, mediaType: "MOVIE", label: "Copy state" } }, data },
+			onClose() {}, onRetry() {},
+		}));
+		assert.ok(markup.includes(`>${copy}</p>`), `${kind}: ${copy}`);
+		assert.doesNotMatch(markup, /first 100|100 of 186|poster unavailable|posters unavailable/);
+		if (!data.canLoadMore) assert.doesNotMatch(markup, />Load more titles</);
+	}
 });
 
 test("selection loading and failure are distinct announced states", () => {

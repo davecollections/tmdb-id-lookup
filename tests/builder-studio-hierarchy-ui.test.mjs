@@ -146,10 +146,10 @@ test("Appearance exposes presentation decisions without artwork controls or Stud
 	assert.doesNotMatch(flow, /Review &amp; Appearance|Continue to Review/);
 });
 
-test("Studio hierarchy has one scroll owner, sticky actions, and 10-poster Preview presentation everywhere", () => {
+test("Studio hierarchy has one scroll owner, sticky actions, and shared expanded Preview", () => {
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.match(flow, /<footer className="add-source-actions">/);
-	assert.match(sharedPreview, /<PosterOnlyPreviewGrid[^\n]*limit=\{10\}/);
+	assert.match(sharedPreview, /<TitlePreviewResults data=\{preview.data\}/);
 	assert.doesNotMatch(styles, /\.studio-preview-grid img:nth-child\(n \+ 6\)/);
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.franchise-preview-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(3/);
 	assert.match(styles, /\.nested-modal-backdrop\s*\{[\s\S]*z-index:\s*var\(--layer-nested-modal\)/);

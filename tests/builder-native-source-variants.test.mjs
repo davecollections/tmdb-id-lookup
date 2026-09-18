@@ -409,8 +409,8 @@ test("People Most voted is vote-first for exact roles/media, counts posterless t
 		const preview = await requestSourceTitlePreview(sourceTitlePreviewRequest("people", draft, { person }), { people: { getPerson() { throw new Error("Loaded credits should be reused"); } } });
 		assert.equal(preview.ok, true);
 		assert.equal(preview.data.totalResults, combination.startsWith("acting") ? 12 : 11);
-		assert.equal(preview.data.results.length, 10);
-		assert.equal(preview.data.results[0].id, 11);
+		assert.equal(preview.data.results.length, combination.startsWith("acting") ? 12 : 11);
+		assert.equal(preview.data.results[0].id, 12, "posterless identity retains its ordered position");
 	}
 	const empty = buildPeopleTitlePreview({ ...people, combinedCredits: { cast: [], crew: [] } }, { combinations: ["acting-movies"], sortOptionId: "most-votes" });
 	assert.equal(empty.totalResults, 0); assert.deepEqual(empty.items, []);
