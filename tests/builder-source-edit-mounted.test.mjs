@@ -2532,6 +2532,15 @@ test("mounted Network hierarchy locks Configure while deferred production artwor
 });
 
 test("mounted Network Preview uses the live Worker, TMDB, and image CDN with transient count, cache, sort, and focus safety", () => {
+	function expectedFirstPageSummary({ request, preview }) {
+		const count = request.resultCount;
+		if (count === 0) return "No titles found.";
+		if (preview.visiblePosterCount === 0) return "No posters available.";
+		const titles = count === 1 ? "title" : "titles";
+		return count === request.totalResults
+			? `Showing ${count} of ${count} ${titles}.`
+			: `${count} ${titles} loaded. Preview shows up to 100 titles.`;
+	}
 	assert.deepEqual(mountedResults.networkLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.networkLivePreviewWidths) {
 		const width = result.width;
@@ -2554,7 +2563,7 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 		assert.match(result.popular.request.contentType, /application\/json/i, `${width}px live Popular JSON response`);
 		assert.equal(Number.isSafeInteger(result.popular.request.totalResults) && result.popular.request.totalResults >= 0, true, `${width}px numeric volatile total_results`);
 		const popularCountLine = `Series Count: ${result.popular.request.totalResults.toLocaleString("en")}`;
-		assert.ok(result.popular.modalCountLine.includes(String(result.popular.request.totalResults)), `${width}px Preview count corresponds to cloned live response`);
+		assert.equal(result.popular.modalCountLine, expectedFirstPageSummary(result.popular), `${width}px approved Popular Preview summary matches the cloned live page`);
 		assert.deepEqual(result.popular.configureCountLines, [popularCountLine], `${width}px live total supersedes the catalogue value on one Configure line`);
 		assert.equal(result.popular.expectedVisibleCount, Math.min(maximumPosterCount, result.popular.preview.availablePosterCount), `${width}px dynamic real-resource poster bound`);
 		assert.equal(result.popular.preview.visiblePosterCount, result.popular.expectedVisibleCount, `${width}px bounded Popular posters`);
@@ -2600,7 +2609,7 @@ test("mounted Network Preview uses the live Worker, TMDB, and image CDN with tra
 		assert.equal(Number.isSafeInteger(result.recent.request.totalResults) && result.recent.request.totalResults >= 0, true, `${width}px Recent numeric volatile total_results`);
 		assert.deepEqual(result.recent.countAfterSortBeforePreview, [popularCountLine], `${width}px sort does not revert learned count`);
 		const recentCountLine = `Series Count: ${result.recent.request.totalResults.toLocaleString("en")}`;
-		assert.ok(result.recent.modalCountLine.includes(String(result.recent.request.totalResults)), `${width}px Recent Preview total correspondence`);
+		assert.equal(result.recent.modalCountLine, expectedFirstPageSummary(result.recent), `${width}px approved Recent Preview summary matches the cloned live page`);
 		assert.deepEqual(result.recent.configureCountLines, [recentCountLine], `${width}px one Recent live count line`);
 		assert.equal(result.recent.expectedVisibleCount, Math.min(maximumPosterCount, result.recent.preview.availablePosterCount), `${width}px dynamic Recent real-resource bound`);
 		assert.equal(result.recent.preview.visiblePosterCount, result.recent.expectedVisibleCount, `${width}px bounded Recent posters`);

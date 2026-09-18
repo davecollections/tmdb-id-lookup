@@ -15,6 +15,14 @@ import { StudioSourceFlow } from "../../builder/src/ui/StudioSourceFlow.jsx";
 import { NetworkSourceFlow } from "../../builder/src/ui/NetworkSourceFlow.jsx";
 import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx";
 
+// Assert the complete approved copy independently of the production formatter.
+export function matchesTitlePreviewSummary(summary) {
+	if (["Preview shows up to 100 titles.", "No titles found.", "No posters available."].includes(summary)) return true;
+	const counted = summary.match(/^([1-9]\d?) (title|titles) loaded\. Preview shows up to 100 titles\.$/)
+		?? summary.match(/^Showing ([1-9]\d?|100) of \1 (title|titles)\.$/);
+	return Boolean(counted && counted[2] === (Number(counted[1]) === 1 ? "title" : "titles"));
+}
+
 // Real production-path providers only. Shared caches survive responsive cases.
 const requests = [];
 const warnerResponses = new Map();
@@ -167,7 +175,8 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     check(response, "no production response for current draft");
     const grid = modal.querySelector('.source-edit-preview-grid');
     check(grid || (sharedAdvanced && response[1].results.every((row) => !row.poster_path) && modal.querySelector("[data-preview-empty-state]")), "real Preview grid/empty state missing");
-    check(/Showing|No titles|No posters/.test(modal.querySelector('.source-title-preview-summary')?.textContent ?? ""), "active response summary absent");
+    const summary = modal.querySelector('.source-title-preview-summary')?.textContent ?? "";
+    check(matchesTitlePreviewSummary(summary), "active response summary differs from approved copy: " + JSON.stringify(summary));
     const exactUrl = new URL(response[0], location.href);
     check(exactUrl.searchParams.get("include_adult") === "false", "missing canonical adult exclusion");
     const expected = response[1].results.slice(0, 100).filter((row) => row.poster_path).map((row) => row.poster_path);

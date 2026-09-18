@@ -1,6 +1,6 @@
 import { DECADES_ARTWORK_KEYS, resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "../../builder/src/source-add/decades-folder-artwork.js";
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
-import { runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
+import { matchesTitlePreviewSummary, runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
 import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
 import { runPreviewPagesScenario } from "./builder-preview-pages-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
@@ -2389,7 +2389,7 @@ async function runStudioHierarchyScenario() {
 			posterOnly: [...configurePreviewModal.querySelectorAll(".studio-preview-grid > *")].every((item) => item.tagName === "IMG"),
 			captionsAbsent: configurePreviewModal.querySelector(".studio-preview-grid figcaption, .studio-preview-grid article, .studio-preview-grid small") === null,
 			missingCardsAbsent: !configurePreviewModal.textContent.includes("No poster"),
-			countWithMedia: /Showing/.test(configurePreviewModal.querySelector(".source-title-preview-summary")?.textContent ?? ""),
+			countWithMedia: matchesTitlePreviewSummary(configurePreviewModal.querySelector(".source-title-preview-summary")?.textContent ?? ""),
 			focusEntered: document.activeElement === configurePreviewModal.querySelector("header button"),
 			sharedLayer: configurePreviewModal.closest(".nested-modal-backdrop")?.dataset.nestedModalBackdrop === "true",
 			modalSemantics: configurePreviewModal.getAttribute("role") === "dialog" && configurePreviewModal.getAttribute("aria-modal") === "true",
@@ -2420,7 +2420,7 @@ async function runStudioHierarchyScenario() {
 		const lazySeries = {
 			unopenedMadeNoRequest: bothMovieRequests === configureMoviePreview.requests,
 			explicitTabAddedOne: requests.length === bothMovieRequests + 1,
-			countInPreview: /Showing/.test(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? ""),
+			countInPreview: matchesTitlePreviewSummary(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? ""),
 			postersReady: readyPopularSeriesPosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			genuineTmdbSources: genuineTmdbPosterImages(readyPopularSeriesPosters.visibleImages),
 		};
@@ -2448,7 +2448,7 @@ async function runStudioHierarchyScenario() {
 		});
 		const recentSeriesAddedOne = requests.length === 4
 			&& requests.at(-1)?.includes("sort_by=first_air_date.desc") === true
-			&& /Showing/.test(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? "")
+			&& matchesTitlePreviewSummary(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? "")
 			&& readyRecentSeriesPosters.visibleImages.length > 0 && readyRecentSeriesPosters.visibleImages.length <= 100;
 		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "Recent Preview close"));
 		const recentSeriesCountRetained = /Series · [\d,]+/.test(configure.textContent);
@@ -2463,7 +2463,7 @@ async function runStudioHierarchyScenario() {
 			label: `Restored live Studio Popular Movies Preview at ${window.innerWidth}px`,
 		});
 		const previousSortCacheHit = requests.length === 4
-			&& /Showing/.test(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? "")
+			&& matchesTitlePreviewSummary(document.querySelector(".studio-preview-modal .source-title-preview-summary")?.textContent ?? "")
 			&& restoredPopularMoviePosters.visibleImages.length === readyPopularMoviePosters.visibleImages.length;
 		await clickAndSettle(required(document.querySelector(".studio-preview-modal header button"), "restored Preview close"));
 
@@ -2693,6 +2693,7 @@ async function runNetworkLivePreviewScenario() {
 			cloneInspected: request.cloneInspected,
 			originalBodyUnusedBeforeReturn: request.originalBodyUnusedBeforeReturn,
 			totalResults: request.totalResults,
+			resultCount: request.results.length,
 		};
 	}
 	async function waitForRequest(index, label) {
@@ -4758,7 +4759,7 @@ async function runPeopleConfigureLayoutScenario() {
 			seriesActive: seriesMovieTab.getAttribute("aria-selected") === "false" && currentSeriesTab.getAttribute("aria-selected") === "true",
 			moviePosterCount,
 			seriesPosterCount: readySeriesPosters.visibleImages.length,
-			seriesCount: /Showing/.test(preview.querySelector(".source-title-preview-summary")?.textContent ?? ""),
+			seriesCount: matchesTitlePreviewSummary(preview.querySelector(".source-title-preview-summary")?.textContent ?? ""),
 			seriesPostersReady: readySeriesPosters.visibleImages.every((image) => previewImageReady(image) && visibleElement(image)),
 			seriesGenuineTmdbSources: genuineTmdbPosterImages(readySeriesPosters.visibleImages),
 			noCombinedTotal: !preview.textContent.includes("Movies + Series") && !preview.textContent.includes("Combined"),
