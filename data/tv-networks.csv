@@ -5441,7 +5441,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9313,Samsung TV Network,1,,,,https://www.themoviedb.org/network/9313
 9314,SCTV,3,"thành phố Hồ Chí Minh, Việt Nam",VN,,https://www.themoviedb.org/network/9314
 9315,We The Studios,1,"Orlando,FL ",US,,https://www.themoviedb.org/network/9315
-9316,MSNBC,0,,,,https://www.themoviedb.org/network/9316
 9317,ITN Productions,1,,,,https://www.themoviedb.org/network/9317
 9318,IWTV Live,1,,,,https://www.themoviedb.org/network/9318
 9319,Кухня ТВ,1,,,,https://www.themoviedb.org/network/9319
@@ -5562,7 +5561,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9446,crave,0,,,,https://www.themoviedb.org/network/9446
 9447,赋分,0,,,,https://www.themoviedb.org/network/9447
 9448,中央广播电视总台4K超高清频道,1,,,,https://www.themoviedb.org/network/9448
-9449,YouTube,2,,,,https://www.themoviedb.org/network/9449
 9450,MiniShorts,0,Singapore,SG,,https://www.themoviedb.org/network/9450
 9451,oneplay,0,,,,https://www.themoviedb.org/network/9451
 9452,masreya media,0,,,,https://www.themoviedb.org/network/9452
@@ -5617,5 +5615,9 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9503,Relay,0,,,,https://www.themoviedb.org/network/9503
 9504,UnivaleTV,1,,,,https://www.themoviedb.org/network/9504
 9505,原神官网,1,,,,https://www.themoviedb.org/network/9505
-9506,Charana TV,0,"Colombo, Western Province",LK,https://www.charanatv.lk,https://www.themoviedb.org/network/9506
+9506,Charana TV,0,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9506
 9507,VTV8,1,,VN,,https://www.themoviedb.org/network/9507
+9508,MSNBC.com,1,,US,,https://www.themoviedb.org/network/9508
+9509,MS.NOW,1,,US,,https://www.themoviedb.org/network/9509
+9510,Channel 20,1,,,,https://www.themoviedb.org/network/9510
+9511,Dokix,1,,,,https://www.themoviedb.org/network/9511
