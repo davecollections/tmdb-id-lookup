@@ -4,6 +4,7 @@ import { networkSourceVariantKey } from "./network-source.js";
 import { DISCOVER_SORT_OPTIONS, discoverSourceIdentity } from "../nuvio/discover.js";
 import { sourceDraftSortId, sourceSortLabel } from "./source-sort-variants.js";
 import { buildTmdbListTitlePreview } from "./tmdb-list-source.js";
+import { completeTitlePreview } from "./title-preview-results.js";
 
 export function sourcePreviewVariantKey(draft) {
 	return peopleSourceVariantKey(draft) ?? studioSourceVariantKey(draft) ?? networkSourceVariantKey(draft) ?? discoverSourceIdentity(draft?.editable).key;
@@ -130,6 +131,7 @@ export function sourceTitlePreviewProviderAvailable(request, providers) {
 
 export async function requestSourceTitlePreview(request, providers, signal) {
 	if (request.kind === "list") {
+		if (providers.list.getListPreview) return providers.list.getListPreview(request.tmdbId, { sortBy: request.sortBy, signal });
 		const result = await providers.list.getList(request.tmdbId, { signal });
 		if (!result?.ok) return result;
 		return Object.freeze({ ok: true, data: buildTmdbListTitlePreview(result.data, request.sortBy) });
@@ -137,11 +139,7 @@ export async function requestSourceTitlePreview(request, providers, signal) {
 	if (request.kind === "collection") {
 		const result = await providers.collection.getCollection(request.tmdbId, { signal });
 		if (!result?.ok) return result;
-		return Object.freeze({ ok: true, data: Object.freeze({
-			results: Object.freeze([...(result.data.containedTitles ?? [])]),
-			totalResults: result.data.movieCount ?? result.data.containedTitles?.length ?? 0,
-			mediaType: "MOVIE",
-		}) });
+		return Object.freeze({ ok: true, data: completeTitlePreview(result.data.containedTitles ?? [], result.data.movieCount ?? result.data.containedTitles?.length ?? 0, "MOVIE") });
 	}
 	if (request.kind === "people") {
 		const result = request.person ? { ok: true, data: request.person } : await providers.people.getPerson(request.tmdbId, { signal });
@@ -149,11 +147,11 @@ export async function requestSourceTitlePreview(request, providers, signal) {
 		const preview = buildPeopleTitlePreview(result.data, {
 			combinations: [request.combinationId],
 			sortOptionId: request.sortOptionId,
-			limit: 10,
+			limit: 100,
 			mediaType: request.mediaType,
 		});
 		return preview.ok
-			? Object.freeze({ ok: true, data: Object.freeze({ results: preview.items, totalResults: preview.totalResults, mediaType: preview.mediaType }) })
+			? Object.freeze({ ok: true, data: completeTitlePreview(preview.items, preview.totalResults, preview.mediaType) })
 			: Object.freeze({ ok: false, error: Object.freeze({ kind: "invalid-response", message: preview.errors[0]?.message ?? "This People preview could not be prepared.", retryable: false }) });
 	}
 	if (request.kind === "studio") return providers.studio.getStudioPreview(request.tmdbId, { mediaType: request.mediaType, sortBy: request.sortBy, filters: request.filters, signal });

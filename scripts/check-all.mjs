@@ -115,6 +115,7 @@ runNode(["--test", path.join("tests", "builder-tmdb-lists-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "v1-company-search-compatibility.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-foundation.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-preview.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-title-preview-pages.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-add-source-preview-parity.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-source-edit-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-bulk-edit-mounted.test.mjs")]);

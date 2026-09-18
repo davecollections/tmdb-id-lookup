@@ -1,5 +1,7 @@
 # V2 Builder Network Sources
 
+Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Worker deployment and live page-2 acceptance are pending owner authorization. Earlier checkpoint limits below are historical where superseded by that contract.
+
 ## Shared Advanced filters (#218)
 
 [Issue #218](https://github.com/davecollections/tmdb-id-lookup/issues/218) extends the existing collapsed Advanced disclosure in Add Source, New Collection, New Folder and physical Edit with `withOriginalLanguage`, `withOriginCountry`, `withGenres`, `withoutGenres`, `withKeywords`, `withoutKeywords`, `releaseDateGte`, `releaseDateLte` and `year`. Network remains native NETWORK, fixed TMDB ID and Series-only. Existing votes/ratings, sort inventory, naming, artwork, ordering, placement, atomic application and sources-only output remain unchanged.

@@ -15,6 +15,7 @@ const editorDialog = read("builder/src/ui/SourceEditorDialog.jsx");
 const previewDialog = read("builder/src/ui/SourceTitlePreviewDialog.jsx");
 const nestedPreviewDialog = read("builder/src/ui/NestedPreviewDialog.jsx");
 const posterGrid = read("builder/src/ui/PosterOnlyPreviewGrid.jsx");
+const results = read("builder/src/ui/TitlePreviewResults.jsx");
 const styles = read("builder/src/styles.css");
 
 test("unknown List totals remain honest on both creation summaries without adding settings", () => {
@@ -59,9 +60,9 @@ test("list resolution and Preview use only the injected provider and the shared 
 	assert.match(flow, /requestSourceTitlePreview\(candidate\.request, \{ list: provider \}/);
 	assert.match(flow, /<SourceTitlePreviewDialog/);
 	assert.match(previewDialog, /const listPreview = preview\.candidate\.request\.kind === "list"/);
-	assert.match(previewDialog, /listSourceTitlePreviewSummary\(preview\.data, displayedCount\)/);
-	assert.match(previewDialog, /displayAll=\{listPreview\}/);
-	assert.match(previewDialog, /renderSummary=\{listPreview/);
+	assert.match(previewDialog, /<TitlePreviewResults data=\{preview.data\} listPreview=\{listPreview\}/);
+	assert.match(results, /titlePreviewSummary\(represented, displayedCount\)/);
+	assert.match(results, /displayAll embedded/);
 	assert.match(posterGrid, /renderSummary\?\.\(visible\.length\)/);
 	assert.doesNotMatch(editorDialog, /tmdb-list-sort-help|Nuvio applies Recent/);
 	assert.match(posterGrid, /displayAll \? candidates : candidates\.slice\(0, limit\)/);
@@ -70,14 +71,13 @@ test("list resolution and Preview use only the injected provider and the shared 
 	assert.doesNotMatch(flow, /\bfetch\(|XMLHttpRequest|createTmdbListProvider/);
 });
 
-test("only TMDB Lists displays the complete loaded page-one sample while shared families retain the ten-poster cap", () => {
-	assert.match(previewDialog, /displayAll=\{listPreview\}/);
+test("TMDB Lists shares the bounded result window, summary and body scroll owner", () => {
+	assert.match(previewDialog, /<SourcePreviewContent>/);
 	assert.match(posterGrid, /data-preview-complete-sample=\{displayAll \? "true" : undefined\}/);
 	assert.match(posterGrid, /displayAll \? candidates : candidates\.slice\(0, limit\)/);
 	assert.match(styles, /\.source-title-preview-summary\s*\{[\s\S]*color:\s*var\(--muted\)/);
 	assert.match(previewDialog, /tmdb-list-preview-modal/);
-	assert.match(styles, /\.tmdb-list-preview-modal\s*\{[\s\S]*height:\s*min\(calc\(60cqi \+ 100px\), 556px, calc\(100dvh - 32px\), 100%\)[\s\S]*grid-template-rows:\s*auto auto minmax\(0, 1fr\)/);
-	assert.match(styles, /\.tmdb-list-preview-grid\s*\{[\s\S]*height:\s*100%/);
+	assert.match(styles, /\.franchise-preview-modal\.source-sort-preview-modal\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0, 1fr\)/);
 	assert.doesNotMatch(styles, /\.tmdb-list-preview-grid\[data-preview-progressive=/);
 });
 

@@ -309,12 +309,12 @@ test("Studio Preview provider uses one response for count and titles with sort-a
 	const recent = await provider.getStudioPreview(3, { mediaType: "MOVIE", sortOptionId: "recent" });
 	const previous = await provider.getStudioPreview(3, { mediaType: "MOVIE", sortOptionId: "popular" });
 	const series = await provider.getStudioPreview(3, { mediaType: "TV", sortOptionId: "popular" });
-	assert.equal(first.data.totalResults, 136);
+	assert.equal(first.data.totalResults, null, "missing pagination leaves the total unknown");
 	assert.equal(first.data.results.length, 2);
 	assert.equal(cached.fromCache, true);
 	assert.equal(previous.fromCache, true);
 	assert.equal(recent.fromCache, false);
-	assert.equal(series.data.totalResults, 1_742);
+	assert.equal(series.data.totalResults, null);
 	assert.equal(urls.length, 3);
 	assert.deepEqual(urls.map((url) => url.searchParams.get("sort_by")), ["popularity.desc", "primary_release_date.desc", "popularity.desc"]);
 });
@@ -368,6 +368,7 @@ test("aborted Preview work is suppressed and never cached", async () => {
 	});
 	const controller = new AbortController();
 	const pending = provider.getStudioPreview(4, { mediaType: "MOVIE", sortOptionId: "popular", signal: controller.signal });
+	await Promise.resolve();
 	controller.abort();
 	assert.equal((await pending).error.kind, "aborted");
 	assert.equal((await provider.getStudioPreview(4, { mediaType: "MOVIE", sortOptionId: "popular" })).fromCache, false);

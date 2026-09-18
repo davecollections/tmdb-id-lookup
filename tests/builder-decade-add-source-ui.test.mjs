@@ -161,7 +161,7 @@ test("Decade Add Source directly reuses shared sort, Advanced, Preview, duplicat
 	assert.match(flow, /ariaLabel="Preview source"/);
 	assert.match(flow, /<SourcePreviewSelectors groups=\{sourcePreviewVariantGroups\(preview\.logicalSource\.drafts, preview\.draft, onChangeDraft\)\}/);
 	assert.doesNotMatch(flow, /preview\.logicalSources\.map/);
-	assert.match(flow, /<PosterOnlyPreviewGrid[^>]*limit=\{10\}/);
+	assert.match(flow, /<TitlePreviewResults data=\{preview.data\}/);
 	assert.match(flow, /inspectDecadeSourceDuplicates/);
 	assert.match(flow, /inert=\{secondarySurface \|\| preview \|\| undefined\}/);
 	assert.match(workspace, /visibleAddSourceSession\.modeId === DECADE_SOURCE_MODE_ID/);

@@ -18,7 +18,9 @@ import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
-import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
+import { TitlePreviewResults } from "./TitlePreviewResults.jsx";
+import { SourcePreviewContent } from "./SourcePreviewContent.jsx";
+import { completeTitlePreview } from "../source-add/title-preview-results.js";
 import { HiddenTitleFieldHelp, PresentationSwitch, TitleOptions } from "./PresentationControls.jsx";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
@@ -75,10 +77,11 @@ function TitlesPreview({ franchise, onClose }) {
 	const dialogRef = useRef(null);
 	const closeRef = useRef(null);
 	const titles = franchise.containedTitles ?? [];
+	const previewData = useMemo(() => completeTitlePreview(titles), [titles]);
 	return (
-		<NestedPreviewDialog ariaLabelledBy="franchise-preview-title" backdropClassName="franchise-preview-backdrop" backdropProps={{ "data-franchise-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
+		<NestedPreviewDialog ariaLabelledBy="franchise-preview-title" backdropClassName="franchise-preview-backdrop" backdropProps={{ "data-franchise-preview-backdrop": "true" }} dialogClassName="franchise-preview-modal source-sort-preview-modal" dialogRef={dialogRef} initialFocusRef={closeRef} onClose={onClose}>
 				<header><div><p className="panel-kicker">Title preview</p><h3 id="franchise-preview-title">{franchise.name}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
-				<PosterOnlyPreviewGrid items={titles} limit={10} className="franchise-preview-grid" ariaLabel={`${franchise.name} poster preview`} altPrefix="Franchise" />
+				<SourcePreviewContent><TitlePreviewResults data={previewData} className="franchise-preview-grid" ariaLabel={`${franchise.name} poster preview`} altPrefix="Franchise" /></SourcePreviewContent>
 		</NestedPreviewDialog>
 	);
 }

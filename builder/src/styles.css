@@ -8358,7 +8358,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 	line-height: 1.5;
 }
 
-.franchise-preview-modal > header button {
+.franchise-preview-modal > header button,
+.title-preview-more button {
 	flex: 0 0 auto;
 	min-width: 64px;
 	min-height: 44px;
@@ -9717,20 +9718,46 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 /* Multiple Preview dimensions share one body scroll owner below Close. */
-.studio-preview-modal.source-sort-preview-modal {
+.franchise-preview-modal.source-sort-preview-modal {
 	grid-template-rows: auto minmax(0, 1fr);
+	height: min(620px, calc(100dvh - 32px), 100%);
 }
 .source-sort-preview-content {
 	display: grid;
+	/* Keep controls at their content height; the body owns vertical overflow. */
+	grid-auto-rows: max-content;
 	gap: 12px;
 	min-width: 0;
 	min-height: 0;
 	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	overflow-anchor: none;
 	align-content: start;
 }
 .source-sort-preview-content .decades-preview-content,
-.source-sort-preview-content .studio-preview-grid {
+.source-sort-preview-content .franchise-preview-grid {
 	min-height: auto;
 	max-height: none;
+	height: auto;
 	overflow: visible;
+}
+.source-sort-preview-content:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: -2px; }
+.title-preview-more { position: relative; display: grid; gap: 8px; padding: 4px; }
+.title-preview-more button { min-height: 44px; justify-self: start; padding: 8px 12px; }
+.title-preview-more button[aria-disabled="true"] { opacity: .65; cursor: default; }
+.title-preview-more p { color: var(--muted); font-size: .75rem; }
+.title-preview-more button[data-fallback-hidden="true"]:not(:focus) {
+	/* The established visually-hidden pattern, revealed by keyboard focus. */
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	min-width: 0;
+	min-height: 0;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }

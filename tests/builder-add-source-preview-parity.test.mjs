@@ -368,5 +368,5 @@ test("ordinary Add Source flows expose the shared dialog while Decade remains on
 	assert.doesNotMatch(files.decade, /<SourceTitlePreviewDialog/);
 	assert.match(files.decade, /<SourcePreviewSelectors/);
 	assert.match(files.decade, /NestedPreviewDialog/);
-	assert.match(files.decade, /PosterOnlyPreviewGrid/);
+	assert.match(files.decade, /TitlePreviewResults/);
 });

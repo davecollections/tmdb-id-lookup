@@ -190,7 +190,7 @@ test("TMDB List details reject missing, duplicate, malformed, noncanonical, over
 			"/3/list/1/?language=en-US&page=1",
 			"/3/list/1/edit?language=en-US&page=1",
 			"/3/list/1?language=en&page=1",
-			"/3/list/1?language=en-US&page=2",
+			"/3/list/1?language=en-US&page=6",
 			"/3/list/1?language=en-US&page=01",
 			"/3/list/1?language=en-US&page=1&page=1",
 			"/3/list/1?language=en-US&language=en-US&page=1",

@@ -106,6 +106,7 @@ export function prepareSourceEditPreview(session, draft) {
 			});
 		}
 		case MOVIE_COLLECTION_SOURCE_EDITOR_ID:
+			if (candidateSource.editable.sortBy !== "original") return freezeFailure("This imported Collection ordering cannot be previewed exactly. Your saved settings will be kept.");
 			return ready(candidateSource, {
 				kind: "collection",
 				tmdbId: draft.tmdbId,

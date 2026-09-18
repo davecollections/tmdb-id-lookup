@@ -169,7 +169,7 @@ export function isVerifiedPeopleSort(value, mediaType) {
 }
 
 export function peopleTitlePreviewLimit() {
-	return 10;
+	return 100;
 }
 
 export function peoplePreviewMediaTypes(combinations) {
@@ -278,7 +278,7 @@ function comparePreviewCredits(left, right, sortOptionId) {
 export function buildPeopleTitlePreview(person, {
 	combinations,
 	sortOptionId = DEFAULT_PEOPLE_SOURCE_SORT_OPTION_ID,
-	limit = 10,
+	limit = 100,
 	mediaType = null,
 } = {}) {
 	const selectionValidation = validatePeopleCombinationSelection(combinations, { allowEmpty: true });
@@ -286,8 +286,8 @@ export function buildPeopleTitlePreview(person, {
 	if (!sortOptionById.has(sortOptionId)) {
 		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_SORT", "$people.preview.sortOptionId", "Choose a supported People sort order.")]) });
 	}
-	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 10) {
-		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_LIMIT", "$people.preview.limit", "People title previews must contain one to ten posters.")]) });
+	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("INVALID_PEOPLE_PREVIEW_LIMIT", "$people.preview.limit", "People title previews must contain one to 100 titles.")]) });
 	}
 	if (!plainObject(person?.combinedCredits) || !Array.isArray(person.combinedCredits.cast) || !Array.isArray(person.combinedCredits.crew)) {
 		return Object.freeze({ ok: false, mediaType: null, totalResults: 0, items: Object.freeze([]), errors: Object.freeze([diagnostic("PEOPLE_PREVIEW_UNAVAILABLE", "$people.preview.credits", "Title preview data is unavailable for this person.")]) });
@@ -313,7 +313,6 @@ export function buildPeopleTitlePreview(person, {
 			if (combination.role === "directing" && canonicalText(credit.job).toLowerCase() !== "director") continue;
 			const identity = `${credit.mediaType}|${credit.id}`;
 			titleIdentities.add(identity);
-			if (typeof credit.posterPath !== "string") continue;
 			if (byIdentity.has(identity)) continue;
 			byIdentity.set(identity, Object.freeze({
 				identity,
