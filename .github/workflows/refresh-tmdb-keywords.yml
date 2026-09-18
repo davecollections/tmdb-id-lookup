@@ -26,12 +26,13 @@ jobs:
       date: ${{ steps.reserve.outputs.utc_date }}
       month: ${{ steps.reserve.outputs.planned_month }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Bind the one-export allowance
         run: |
           echo "RESERVATION_PLANNED_MONTH=$(date -u +%Y-%m)" >> "$GITHUB_ENV"
@@ -55,12 +56,13 @@ jobs:
       group: tmdb-keyword-catalogue
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Restore last valid catalogue for delta validation
         env:
           GH_TOKEN: ${{ github.token }}
@@ -79,13 +81,13 @@ jobs:
         run: node scripts/prepare-tmdb-keyword-catalogue.mjs
       - name: Validate ready-to-publish data
         run: node scripts/validate-tmdb-keyword-catalogue.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tmdb-keyword-catalogue
           path: builder/public/data/discover/
           if-no-files-found: error
           retention-days: 30
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: keyword-request-usage

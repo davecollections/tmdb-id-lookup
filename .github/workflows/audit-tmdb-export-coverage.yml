@@ -60,12 +60,13 @@ jobs:
       reservation_sha256: ${{ steps.reserve.outputs.reservation_sha256 }}
       utc_date: ${{ steps.reserve.outputs.utc_date }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - id: reserve
         env:
           RESERVATION_BUCKET: audit
@@ -92,12 +93,13 @@ jobs:
       group: tmdb-catalogue-audit
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Run TMDB export coverage audit
         env:
           DATASET: ${{ needs.plan-audit.outputs.dataset }}
@@ -112,7 +114,7 @@ jobs:
           TMDB_APPROVED_ALLOWANCE: ${{ needs.plan-audit.outputs.allowance }}
         run: node scripts/audit-tmdb-export-coverage.mjs
       - name: Report audit issues
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');

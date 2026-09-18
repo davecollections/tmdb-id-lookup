@@ -49,10 +49,11 @@ jobs:
       requires_requests: ${{ steps.plan.outputs.requires_requests }}
       skip: ${{ steps.plan.outputs.skip }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - id: plan
         env:
           CATALOGUE_RUN_KIND: network-series
@@ -78,10 +79,10 @@ jobs:
       reservation_sha256: ${{ steps.reserve.outputs.reservation_sha256 }}
       utc_date: ${{ steps.reserve.outputs.utc_date }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { ref: main }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, package-manager-cache: false }
       - id: reserve
         env:
           RESERVATION_JOB: network-series
@@ -106,12 +107,12 @@ jobs:
       group: tmdb-catalogue-network
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, package-manager-cache: false }
       - name: Refresh Network catalogue and legacy Series totals
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
@@ -149,10 +150,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Validate Network catalogue configuration without requests
         env:
           MODE: validate

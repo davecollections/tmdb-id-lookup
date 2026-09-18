@@ -49,10 +49,11 @@ jobs:
       requires_requests: ${{ steps.plan.outputs.requires_requests }}
       skip: ${{ steps.plan.outputs.skip }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - id: plan
         env:
           CATALOGUE_RUN_KIND: company-movie
@@ -78,12 +79,13 @@ jobs:
       reservation_sha256: ${{ steps.reserve.outputs.reservation_sha256 }}
       utc_date: ${{ steps.reserve.outputs.utc_date }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - id: reserve
         env:
           RESERVATION_JOB: company-movie
@@ -108,13 +110,14 @@ jobs:
       group: tmdb-catalogue-company
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Refresh Company catalogue and legacy Movie totals
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
@@ -152,10 +155,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
       - name: Validate Company catalogue configuration without requests
         env:
           MODE: validate

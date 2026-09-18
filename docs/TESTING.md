@@ -15,6 +15,14 @@ Run checks when they answer an unanswered question about the change. Choose vali
 
 Current PR/main CI still runs the monolithic validation suite. This local validation policy does not change workflow triggers, split jobs, add path filters, restructure the test runner or weaken CI/live-service requirements. Any future separation of core, build/artifact, live integration and documentation validation needs its own investigation and approved scope.
 
+## GitHub Actions runtime maintenance (#228)
+
+External JavaScript Actions use Node 24 implementations, independently of the Node version installed for repository scripts. All explicitly configured workflow scripts use Node 22, including the genre-count update; the export-audit planning job continues to use the runner-provided Node. Jobs without package caching explicitly set `package-manager-cache: false`, while Nuvio validation and Pages retain their existing npm caches. Pages uses `upload-pages-artifact@v5` with `include-hidden-files: true` to preserve the previous packaging behavior inside the validated staging boundary.
+
+For Action/runtime-only changes, parse the workflow YAML, compare workflow structure and inputs against the baseline, and run focused maintenance, request-budget, keyword-artifact, Pages-boundary and genre-reference checks. Natural PR CI provides hosted validation; observe Pages and scheduled maintenance through their ordinary runs instead of dispatching collection jobs or consuming extra TMDB budget solely to prove a version update.
+
+Nuvio validation retains its pull-request, main-push and manual triggers. CI deduplication and maintenance-validation architecture remain deferred: maintenance commits made with `GITHUB_TOKEN` do not trigger push-based Nuvio validation, and Pages still uses its existing independent push and maintenance-completion triggers. The runtime upgrade does not close that coverage gap.
+
 ## Live external-service boundary
 
 Mounted-browser, integration, end-to-end, owner-review, and live-behaviour tests that exercise an external service must use the approved live service through the production integration path. Do not substitute fabricated titles, counts, response rows, resource or artwork paths, poster paths, URLs, response bodies, fake image/CDN servers, or fake Preview servers merely for determinism, convenience, request minimisation, offline execution, or a green result. When the approved service is unavailable, classify and report the external-service failure instead of manufacturing replacement behaviour.

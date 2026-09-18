@@ -143,7 +143,7 @@ test("ordinary catalogue, audit, repair, and Pages redeployment routes remain", 
 		assert.doesNotMatch(workflow, /sample_ids|network-bootstrap|\bretry\b|\bpublish\b/);
 	}
 	assert.match(audit, /audit-tmdb-export-coverage\.mjs/);
-	assert.match(audit, /actions\/github-script@v7/);
+	assert.match(audit, /actions\/github-script@v9/);
 	assert.match(audit, /TMDB Cache Audit Reports/);
 	assert.match(auditScript, /companies\.min\.json/);
 	assert.match(auditScript, /tv-networks\.min\.json/);
