@@ -382,3 +382,123 @@ window.verifyPresentationClosed = () => {
 	assert(fetches.length === 0, "Presentation makes no data requests");
 	return true;
 };
+
+// #236 exercises only local imported hierarchy navigation, with no external requests.
+let topOpeningState;
+let topOpeningLevel;
+let topScrollCalls;
+let topFocusCalls;
+let restoreTopInstrumentation;
+const topButton = () => $('button[aria-label="Back to top"]');
+async function scrollPage(top) {
+	window.scrollTo({ top, behavior: "instant" });
+	await frame();
+}
+function assertTopStatePreserved() {
+	assert(controller.getState() === topOpeningState, "Selection, project, revision and all controller state remain identical");
+	assert($('.workspace').dataset.mobileLevel === topOpeningLevel, "Mobile level remains unchanged");
+	assert(fetches.length === 0, "Workspace navigation makes no external requests");
+}
+window.prepareBackToTopCase = async (level = "folders") => {
+	const value = project(70);
+	value[0].title = "Large local library";
+	value[0].folders[69].sources = Array.from({ length: 40 }, (_, index) => ({
+		...value[0].folders[69].sources[0], title: `Local source ${index + 1}`,
+	}));
+	value.push(...Array.from({ length: 23 }, (_, index) => ({ id: `local-collection-${index}`, title: `Local collection ${index + 2}`, folders: [] })));
+	const collection = await mount(value);
+	if (level === "collections") controller.clearSelection();
+	else controller.selectNode(level === "folders" ? collection.internalId : collection.folders[69].internalId);
+	await frame();
+	if (level === "sources") {
+		const source = $$('.source-button').at(-1);
+		source.scrollIntoView({ block: "center", behavior: "instant" });
+		await click(source);
+		assert(source.getAttribute("aria-pressed") === "true", "Deep Source is selected before returning to top");
+	}
+	topOpeningState = controller.getState();
+	topOpeningLevel = $('.workspace').dataset.mobileLevel;
+	await scrollPage(0);
+	assert(!topButton(), "Back to top is absent at page top");
+	assert(document.scrollingElement === document.documentElement, "Document/window is the scroll owner");
+	assert($$('.workspace-panel, .panel-body, .node-list, .source-list').every((el) => el.scrollTop === 0 && !/auto|scroll/.test(getComputedStyle(el).overflowY)), "No independently scrolling workspace columns");
+	await scrollPage(innerHeight - 1);
+	assert(!topButton(), "Hidden just below one viewport threshold");
+	await scrollPage(innerHeight);
+	assert(topButton(), "Visible at one viewport threshold");
+	await scrollPage(innerHeight + 160);
+	assert($$('button[aria-label="Back to top"]').length === 1, "One workspace control");
+	assertTopStatePreserved();
+	return window.measureBackToTop();
+};
+window.measureBackToTop = () => {
+	const button = topButton();
+	assert(button?.closest('.workspace-underlay'), "Native button is inside the existing underlay");
+	assert(button.textContent.trim() === "↑ Top" && button.type === "button", "Exact visible and native-button treatment");
+	const rect = button.getBoundingClientRect();
+	const css = getComputedStyle(button);
+	assert(css.position === "fixed", "Fixed to the window");
+	assert(rect.width >= 48 && rect.height >= 48, "Comfortable phone tap target");
+	assert(rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth - 15 && rect.bottom <= innerHeight - 15, "Lower-right control stays inside viewport margins");
+	assert(Math.abs(innerWidth - rect.right - parseFloat(css.right)) < 1 && Math.abs(innerHeight - rect.bottom - parseFloat(css.bottom)) < 1, "Fixed offsets match viewport geometry");
+	assert(document.documentElement.scrollWidth <= innerWidth, "No horizontal overflow");
+	return { width: innerWidth, height: innerHeight, level: topOpeningLevel, threshold: innerHeight, buttonWidth: rect.width, buttonHeight: rect.height, right: innerWidth - rect.right, bottom: innerHeight - rect.bottom };
+};
+window.beginBackToTopActivation = () => {
+	const heading = $('.builder-product-title');
+	const originalScroll = window.scrollTo;
+	const originalFocus = heading.focus;
+	topScrollCalls = [];
+	topFocusCalls = [];
+	window.scrollTo = function (options) {
+		originalScroll.call(window, options);
+		topScrollCalls.push({ options, yAfterCall: scrollY });
+	};
+	heading.focus = function (options) {
+		const before = scrollY;
+		originalFocus.call(heading, options);
+		topFocusCalls.push({ options, before, after: scrollY });
+	};
+	restoreTopInstrumentation = () => { window.scrollTo = originalScroll; heading.focus = originalFocus; };
+	const button = topButton();
+	button.focus({ preventScroll: true });
+	const rect = button.getBoundingClientRect();
+	return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+};
+window.finishBackToTopActivation = async (reduced) => {
+	try {
+		const deadline = performance.now() + 4000;
+		while (scrollY > 0 && performance.now() < deadline) await frame();
+		await frame();
+		assert(scrollY === 0 && !topButton(), `Activation returns window to top and hides button: ${JSON.stringify({ width: innerWidth, y: scrollY, visible: Boolean(topButton()), calls: topScrollCalls, focus: topFocusCalls, active: document.activeElement?.outerHTML })}`);
+		assert(document.activeElement === $('.builder-product-title'), "Top Builder heading receives focus");
+		assert(topFocusCalls.length === 1 && topFocusCalls[0].options.preventScroll && topFocusCalls[0].before === topFocusCalls[0].after, "Focus causes no extra scroll");
+		assert(topScrollCalls.length === 1 && topScrollCalls[0].options.top === 0, "Exactly one page scroll request");
+		assert(topScrollCalls[0].options.behavior === (reduced ? "auto" : "smooth"), "Respects the current reduced-motion preference");
+		assert(reduced ? topScrollCalls[0].yAfterCall === 0 : topScrollCalls[0].yAfterCall > 0, "Reduced motion is immediate; normal mode actually animates");
+		assertTopStatePreserved();
+		return { passed: true, reduced, level: topOpeningLevel };
+	} finally { restoreTopInstrumentation(); }
+};
+window.openBackToTopModal = async (exporting = false) => {
+	await scrollPage(innerHeight + 160);
+	const floating = topButton();
+	const rect = floating.getBoundingClientRect();
+	await click($(exporting ? '[data-action="open-export-collections"]' : '[data-action="open-bulk-edit"]'));
+	const underlay = $('.workspace-underlay');
+	assert(underlay.inert && underlay.getAttribute("aria-hidden") === "true" && getComputedStyle(underlay).pointerEvents === "none", "Modal makes floating-control underlay inert and hidden from accessibility");
+	assert(!topButton() || topButton().disabled, "Any retained floating control is disabled");
+	floating.focus({ preventScroll: true });
+	assert(document.activeElement !== floating && document.activeElement.closest('[role="dialog"]'), "Floating control cannot steal modal focus");
+	assert(!document.elementFromPoint(rect.left + 5, rect.top + 5)?.closest('.workspace-back-to-top'), "Modal layer covers floating-control position");
+	assertTopStatePreserved();
+	return true;
+};
+window.closeBackToTopModal = async (exporting = false) => {
+	assert(document.activeElement.closest('[role="dialog"]'), "Native Tab stays inside modal");
+	await click($(exporting ? '[aria-label="Close Export collections"]' : '[data-action="cancel-bulk-edit"]'));
+	await scrollPage(innerHeight + 160);
+	assert(!$('.workspace-underlay').inert && topButton() && !topButton().disabled, "Control works again after modal closes");
+	assertTopStatePreserved();
+	return true;
+};

@@ -160,7 +160,7 @@ test("welcome forms are labelled, described, semantic, and ID-safe", () => {
 test("explicit workspace rendering retains the shell with corrected branding", () => {
 	const markup = render(createController(), { initialScreen: "workspace" });
 	assert.match(markup, /<main[^>]+data-builder-shell="true"/);
-	assert.match(markup, /<h1 class="builder-product-title"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
+	assert.match(markup, /<h1 class="builder-product-title" tabindex="-1"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
 	assert.equal(markup.includes("TMDB Collection Builder"), false);
 	assert.ok(markup.includes("Built for Nuvio collections"));
 	assert.ok(markup.includes("New collection"));

@@ -233,6 +233,7 @@ a,
 	-webkit-tap-highlight-color: transparent;
 }
 
+.workspace-underlay .builder-product-title:focus-visible,
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -841,6 +842,27 @@ h1 {
 .workspace {
 	display: grid;
 	margin-top: 12px;
+}
+
+.workspace-back-to-top {
+	position: fixed;
+	z-index: 20;
+	right: calc(16px + env(safe-area-inset-right, 0px));
+	bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+	min-width: 80px;
+	min-height: 48px;
+	padding: 10px 16px;
+	color: var(--cyan-bright);
+	font-weight: 750;
+	background: var(--elevated);
+	border: 1px solid var(--border-strong);
+	border-radius: 14px;
+	box-shadow: var(--shadow);
+	cursor: pointer;
+}
+
+.workspace-back-to-top:hover:not(:disabled) {
+	background: var(--elevated-hover);
 }
 
 .presentation-settings-trigger {

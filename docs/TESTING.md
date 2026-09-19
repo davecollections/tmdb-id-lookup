@@ -1,5 +1,11 @@
 # Repository Testing
 
+## Builder Back to top (#236)
+
+Set `BUILDER_BACK_TO_TOP_ONLY=1` and run `node --test --test-name-pattern="mounted Back to top" tests/builder-bulk-edit-mounted.test.mjs`. The existing mounted browser/Collection fixture checks the real workspace at 360/384/393/402/412/1280px, including a 70-Folder Collection and a 40-Source Folder. It covers window scroll ownership, threshold visibility, native pointer/keyboard activation, actual smooth/immediate motion, focus without extra scrolling, unchanged controller state/mobile level, and ordinary/Export modal inert protection. These project-local checks make no external requests. Optional `BUILDER_BACK_TO_TOP_SCREENSHOT_DIR` writes phone/desktop evidence outside Git.
+
+Run `node --test tests/builder-ui.test.mjs tests/builder-hierarchy-menu-placement.test.mjs tests/builder-welcome-import.test.mjs` for the focused shell and reused motion/focus-helper regressions, plus `npm run build --prefix builder` and Git hygiene. A full suite is unnecessary for this bounded workspace-only control.
+
 ## Collection Folder management (#232)
 
 `tests/builder-collection-folder-management.test.mjs` owns bounded remove/permutation validation, rollback, one-revision/no-op behavior, selection recovery, surviving-object/raw preservation, 70/200-folder scale, actual-V1 comparator parity, People eligibility, shape consensus, atomic Collection/child settings, authority failure, stale sessions and reopened curated URLs. The ordinary artwork suite additionally verifies the shared patch helper across existing family authorities. Run affected domain/controller/presentation/editor/hierarchy/artwork tests while changing these seams.

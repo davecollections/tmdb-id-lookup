@@ -112,9 +112,10 @@ test("empty shell renders the product header, navigation, and start action", () 
 	assert.match(markup, /data-panel="collections"/);
 	assert.equal(markup.includes("Back to TMDB ID Lookup"), false);
 	assert.equal(markup.includes("TMDB Collection Builder"), false);
-	assert.match(markup, /<h1 class="builder-product-title"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
+	assert.match(markup, /<h1 class="builder-product-title" tabindex="-1"><span>Dingo(?:'|&#x27;)s<\/span><span>Collection Builder<\/span><\/h1>/);
 	assert.equal((markup.match(/data-action="open-about-credits"/g) ?? []).length, 1);
 	assert.equal((markup.match(/<h1/g) ?? []).length, 1);
+	assert.doesNotMatch(markup, /aria-label="Back to top"/, "Floating navigation starts hidden");
 });
 
 test("empty shell omits old placeholder and deferred controls", () => {
