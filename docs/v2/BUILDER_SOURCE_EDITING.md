@@ -1,6 +1,6 @@
 # Native Source Editing
 
-Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Worker deployment and live page-2 acceptance are pending owner authorization. Earlier checkpoint limits below are historical where superseded by that contract.
+Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Implemented and merged through #226 / PR #227. Earlier checkpoint limits below are historical where superseded by that contract.
 
 ## Genre, Decades and Streaming Advanced (#220)
 
