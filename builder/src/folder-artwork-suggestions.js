@@ -539,6 +539,18 @@ export function planCuratedFolderFocusShapeTransition({
 	});
 }
 
+// Shared by ordinary Folder settings and the one-shot Collection operation.
+// Only exact published current URLs may transition; Tile and Focus are independent.
+export function planCuratedFolderShapePatch(editable, requestedShape, suggestionSet) {
+	const patch = {};
+	if (typeof editable.tileShape !== "string" || editable.tileShape.toUpperCase() !== requestedShape) patch.tileShape = requestedShape;
+	const tile = planCuratedFolderTileShapeTransition({ suggestionSet, currentTileUrl: editable.coverImageUrl, requestedShape });
+	const focus = planCuratedFolderFocusShapeTransition({ suggestionSet, currentFocusUrl: editable.focusGifUrl, requestedShape });
+	if (tile.replacementTileUrl !== null && tile.replacementTileUrl !== editable.coverImageUrl) patch.coverImageUrl = tile.replacementTileUrl;
+	if (focus.replacementFocusUrl !== null && focus.replacementFocusUrl !== editable.focusGifUrl) patch.focusGifUrl = focus.replacementFocusUrl;
+	return patch;
+}
+
 export function missingCuratedFolderTileOrientationNotice({
 	suggestionSet,
 	currentTileUrl,

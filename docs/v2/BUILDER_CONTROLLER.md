@@ -1,5 +1,13 @@
 # Builder Application Controller
 
+## Collection Folder operations (#232)
+
+`removeFolders(collectionInternalId, folderInternalIds)` validates one unambiguous Collection and a dense, unique array of existing direct-child Folder IDs before removal. Empty input is a successful no-op. A valid batch removes complete owned subtrees with one domain replacement and one content revision/notification. Unaffected selection remains exact; selected removed Folders or Sources recover to the next surviving original sibling, then previous, then parent, skipping all removed siblings in that same commit. Failure changes no content/revision.
+
+`reorderFolders(collectionInternalId, orderedFolderInternalIds)` requires a dense, unique, complete permutation of the current direct-child Folder IDs. Missing, extra, cross-Collection, duplicate, ambiguous or non-Folder targets fail atomically. Existing Folder objects are reordered once; identical order (including an empty Collection) is a successful no-op. Selection and ordinary `moveNode` remain unchanged. These are narrow operations, not loops around `removeNode`/`moveNode` or a generic transaction API.
+
+Collection settings reuses `applyPresentationUpdates` for simultaneous Collection and existing-child shape/artwork patches; see [the session and stale-state contract](./BUILDER_NODE_EDITING.md#collection-folder-management-232-local-owner-review).
+
 Status: implemented for issue [#39](https://github.com/davecollections/tmdb-id-lookup/issues/39), with bounded atomic hierarchy extensions through issue [#112](https://github.com/davecollections/tmdb-id-lookup/issues/112)
 
 Last reviewed: 2026-08-20
@@ -82,6 +90,8 @@ controller.createCollectionsWithFoldersAndSources(options)
 controller.updateNode(internalId, editablePatch)
 controller.moveNode(internalId, targetIndex)
 controller.removeNode(internalId)
+controller.removeFolders(collectionInternalId, folderInternalIds)
+controller.reorderFolders(collectionInternalId, orderedFolderInternalIds)
 
 controller.applyLegacyAddonProjectionMigration()
 

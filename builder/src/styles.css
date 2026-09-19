@@ -1753,6 +1753,125 @@ body.settings-modal-open {
 	box-shadow: var(--shadow);
 }
 
+.collection-folders-dialog.is-remove {
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.collection-folders-dialog.is-sort {
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	max-width: 460px;
+}
+
+.collection-folders-dialog .add-source-heading {
+	gap: 4px;
+	padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+}
+
+.collection-folders-dialog .add-source-heading p {
+	margin: 0;
+	font-size: 0.85rem;
+}
+
+.collection-folders-dialog .collection-folders-scroll {
+	padding: 10px 16px;
+}
+
+.collection-folders-controls {
+	display: grid;
+	gap: 8px;
+	padding: 0 16px 10px;
+	border-bottom: 1px solid var(--border);
+}
+
+.collection-folders-body {
+	display: contents;
+}
+
+.collection-folders-controls .genre-selection-toolbar {
+	flex-wrap: wrap;
+	padding: 0;
+	background: none;
+	border: 0;
+}
+
+.collection-folders-controls .genre-selection-toolbar > span {
+	flex: 0 1 auto;
+}
+
+.collection-folders-controls .genre-selection-actions {
+	width: auto;
+}
+
+.collection-folders-controls .genre-selection-actions button {
+	flex: none;
+	white-space: nowrap;
+}
+
+.collection-folder-list {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 5px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.collection-folder-list .genre-catalogue-choice {
+	min-height: 48px;
+	padding: 6px 10px;
+	gap: 0;
+	overflow-wrap: anywhere;
+}
+
+.collection-folder-list .genre-catalogue-choice > span:last-child {
+	gap: 1px;
+}
+
+.collection-folders-actions {
+	gap: 8px;
+}
+
+.collection-folders-dialog .collection-folders-actions {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+}
+
+.collection-folders-actions .editor-diagnostics {
+	grid-column: 1 / -1;
+}
+
+.collection-folders-actions .collection-folders-delete {
+	color: #fff0ee;
+	background: #812f32;
+	border-color: #eaa39c;
+}
+
+.collection-folders-actions .collection-folders-delete:disabled {
+	opacity: 0.45;
+}
+
+@media (forced-colors: active) {
+	.collection-folders-actions .collection-folders-delete {
+		color: ButtonText;
+		background: ButtonFace;
+		border: 1px solid ButtonText;
+	}
+}
+
+@media (max-height: 540px) {
+	.collection-folders-dialog .add-source-heading {
+		gap: 3px;
+		padding-block: max(8px, env(safe-area-inset-top)) 8px;
+	}
+	.collection-folders-controls {
+		gap: 4px;
+		padding-bottom: 4px;
+	}
+	.collection-folders-controls .genre-attention-note {
+		padding: 6px 10px;
+	}
+}
+
 .add-source-dialog:focus {
 	outline: none;
 }
@@ -9801,3 +9920,38 @@ body.hierarchy-pointer-dragging .builder-shell {
 .creation-stage-intro > h3 { margin: 0; color: var(--text); font-size: .96rem; line-height: 1.35; overflow-wrap: anywhere; }
 .creation-stage-intro > h3:focus { outline: none; }
 .creation-stage-intro > .creation-stage-description { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
+
+@media (min-width: 900px) {
+	.collection-folders-dialog.is-remove {
+		max-width: 560px;
+		height: min(680px, 85dvh);
+	}
+}
+
+/* Simple Sort keeps the existing modal lifecycle with compact geometry at every width. */
+.add-source-portal.collection-folders-sort-portal {
+	background: transparent;
+}
+
+.settings-modal-backdrop.collection-folders-sort-backdrop {
+	align-items: center;
+	justify-items: center;
+	padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+
+.collection-folders-dialog.is-sort {
+	height: auto;
+	max-height: min(85dvh, 100%);
+	border: 1px solid var(--border-strong);
+	border-radius: 18px;
+	box-shadow: var(--shadow);
+}
+
+@media (max-width: 899.98px) {
+	.settings-modal-backdrop.collection-folders-sort-backdrop {
+		background: rgb(0 8 13 / 88%);
+	}
+	.collection-folders-dialog.is-sort .semantic-sort-choice-row label {
+		min-height: 44px;
+	}
+}

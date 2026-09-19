@@ -87,6 +87,8 @@ import {
 import { HierarchyActionsMenu } from "./HierarchyActionsMenu.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NodeEditor } from "./NodeEditor.jsx";
+import { CollectionFoldersDialog } from "./CollectionFoldersDialog.jsx";
+import { applyCollectionFolderShape, collectionFolderShape, sortedFolderIds } from "./collection-folder-management.js";
 import { NetworkSourceFlow } from "./NetworkSourceFlow.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
@@ -332,6 +334,8 @@ function HierarchyCard({
 	onOpenEditor,
 	enableDoubleClickEdit,
 	onRequestDelete,
+	onSortFolders,
+	onRemoveFolders,
 	dragState,
 	keyboardReorderInternalId,
 	registerHierarchyCard,
@@ -395,6 +399,8 @@ function HierarchyCard({
 						onClose={onCloseActionsMenu}
 						onEdit={onOpenEditor}
 						onDelete={onRequestDelete}
+						onSortFolders={noun === "collection" ? onSortFolders : null}
+						onRemoveFolders={noun === "collection" ? onRemoveFolders : null}
 						registerTrigger={registerActionsTrigger}
 					/>
 				</div>
@@ -741,6 +747,19 @@ export function BuilderWorkspace({
 	const workspaceScrollRef = useRef(0);
 	const desktopViewport = useBuilderDesktopViewport();
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
+	const collectionEditorSessionRef = useRef(null);
+	const currentEditorDraftRef = useRef(editorDraft);
+	currentEditorDraftRef.current = editorDraft;
+	const [collectionShape, setCollectionShape] = useState(null);
+	const collectionShapeRef = useRef(collectionShape);
+	collectionShapeRef.current = collectionShape;
+	const [collectionShapeTouched, setCollectionShapeTouched] = useState(false);
+	const [editorPreparing, setEditorPreparing] = useState(false);
+	const editorPreparingRef = useRef(false);
+	const [collectionFoldersSession, setCollectionFoldersSession] = useState(null);
+	const [collectionFoldersError, setCollectionFoldersError] = useState(null);
+	const collectionFoldersTriggerRef = useRef(null);
+	const [restoreCollectionFoldersFocus, setRestoreCollectionFoldersFocus] = useState(false);
 	const [editorMode, setEditorMode] = useState(initialEditorMode);
 	const [editorDiagnostics, setEditorDiagnostics] = useState(initialEditorDiagnostics);
 	const [returnDiagnostic, setReturnDiagnostic] = useState(null);
@@ -903,7 +922,7 @@ export function BuilderWorkspace({
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
 	const bulkEditLocked = bulkEditDraft !== null;
-	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked;
+	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || exportOpen || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -954,6 +973,13 @@ export function BuilderWorkspace({
 		editRestoreFocusRef.current = null;
 		if (!exportOpen) target.focus?.();
 	}, [editorDraft]);
+
+	useEffect(() => {
+		if (!restoreCollectionFoldersFocus) return;
+		setRestoreCollectionFoldersFocus(false);
+		focusElementWithoutScroll(collectionFoldersTriggerRef.current);
+		collectionFoldersTriggerRef.current = null;
+	}, [restoreCollectionFoldersFocus]);
 
 	function openExport() {
 		if (!hasExportableStructure(state.project) || hierarchyInteractionLocked) return;
@@ -1208,6 +1234,12 @@ export function BuilderWorkspace({
 			setMobileLevelOverride(node.nodeType === "folder" ? "folders" : "collections");
 		}
 		editRestoreFocusRef.current = trigger;
+		collectionEditorSessionRef.current = node.nodeType === "collection" && mode !== "rename"
+			? { project: controller.getState().project, collection: node } : null;
+		setCollectionShape(node.nodeType === "collection" ? collectionFolderShape(node) : null);
+		setCollectionShapeTouched(false);
+		editorPreparingRef.current = false;
+		setEditorPreparing(false);
 		setEditorMode(mode);
 		setEditorDiagnostics([]);
 		setEditorDraft(draft);
@@ -1269,6 +1301,7 @@ export function BuilderWorkspace({
 
 	function closeEditor() {
 		if (!visibleEditorDraft) return;
+		collectionEditorSessionRef.current = null;
 		setEditorDiagnostics([]);
 		setEditorDraft(null);
 		setEditorMode("settings");
@@ -1364,17 +1397,89 @@ export function BuilderWorkspace({
 		finishBulkEdit(bulkEditConfirmation.updates);
 	}
 
-	function handleEditorSubmit(event) {
+	async function handleEditorSubmit(event) {
 		event.preventDefault();
-		if (!visibleEditorDraft) return;
+		if (!visibleEditorDraft || editorPreparingRef.current) return;
+		const session = collectionEditorSessionRef.current;
+		let result;
+		if (collectionShapeTouched && session !== null) {
+			editorPreparingRef.current = true;
+			setEditorPreparing(true);
+			result = await applyCollectionFolderShape(controller, visibleEditorDraft, session, collectionShape, {
+				peopleManifestClient: peopleManifestClientRef.current,
+				artworkRuntimeClient: studioArtworkRuntimeClientRef.current,
+				isActive: () => collectionEditorSessionRef.current === session && currentEditorDraftRef.current === visibleEditorDraft && collectionShapeRef.current === collectionShape,
+			});
+			if (collectionEditorSessionRef.current !== session) return;
+			editorPreparingRef.current = false;
+			setEditorPreparing(false);
+		} else {
+			result = applyNodeEditorDraft(controller, visibleEditorDraft);
+		}
 
-		const result = applyNodeEditorDraft(controller, visibleEditorDraft);
 		if (result.diagnostics.length > 0) {
 			setEditorDiagnostics(result.diagnostics);
-			queueMicrotask(() => titleInputRef.current?.focus());
+			if (result.diagnostics.some((entry) => entry.path === "$ui.editor.title")) queueMicrotask(() => titleInputRef.current?.focus());
 			return;
 		}
 		if (result.ok) closeEditor();
+	}
+
+	function openCollectionFolders(mode, internalId, trigger) {
+		if (navigationLocked || pointerInteractionLocked()) return;
+		const project = controller.getState().project;
+		const collection = project.collections.find((node) => node.internalId === internalId);
+		if (!collection || collection.folders.length < (mode === "sort" ? 2 : 1)) return;
+		if (controller.getState().selection.collectionInternalId !== internalId) controller.selectNode(internalId);
+		if (!desktopViewport) setMobileLevelOverride("collections");
+		collectionFoldersTriggerRef.current = trigger;
+		setKeyboardReorderInternalId(null);
+		setCollectionFoldersError(null);
+		setCollectionFoldersSession({ mode, project, collection });
+	}
+
+	function closeCollectionFolders() {
+		setCollectionFoldersSession(null);
+		setCollectionFoldersError(null);
+		if (!desktopViewport) setMobileLevelOverride("collections");
+		setRestoreCollectionFoldersFocus(true);
+	}
+
+	function applyCollectionFolders(value) {
+		const session = collectionFoldersSession;
+		if (!session) return;
+		const before = controller.getState();
+		if (before.project !== session.project) {
+			setCollectionFoldersError("This collection or project changed. Close and reopen this dialog before applying.");
+			return;
+		}
+		const result = session.mode === "remove"
+			? controller.removeFolders(session.collection.internalId, value)
+			: controller.reorderFolders(session.collection.internalId, sortedFolderIds(session.collection, value));
+		if (!result.ok) {
+			setCollectionFoldersError("The folders could not be changed. Close and reopen this dialog to try again.");
+			return;
+		}
+		setCollectionFoldersSession(null);
+		if (session.mode === "sort") {
+			if (!desktopViewport) setMobileLevelOverride("collections");
+			setRestoreCollectionFoldersFocus(true);
+			setMovementStatusText("Folders sorted.");
+			return;
+		}
+		const after = controller.getState();
+		const collection = after.project.collections.find((node) => node.internalId === session.collection.internalId);
+		const folderId = after.selection.folderInternalId;
+		const selectedCollectionId = after.selection.collectionInternalId;
+		const removed = new Set(value);
+		const anchor = session.collection.folders.findIndex((folder) => removed.has(folder.internalId));
+		const nearest = session.collection.folders.slice(anchor + 1).find((folder) => !removed.has(folder.internalId))
+			?? session.collection.folders.slice(0, anchor).reverse().find((folder) => !removed.has(folder.internalId));
+		const focusId = folderId ?? (selectedCollectionId !== collection.internalId ? selectedCollectionId : nearest?.internalId);
+		if (selectedCollectionId === collection.internalId) setMobileLevelOverride("folders");
+		setPendingDeleteFocus(focusId ? { kind: "node", nodeType: folderId || selectedCollectionId === collection.internalId ? "folder" : "collection", internalId: focusId } : { kind: "fallback", action: "create-folder-empty", parentInternalId: collection.internalId });
+		collectionFoldersTriggerRef.current = null;
+		setDeleteStatusText(`Deleted ${value.length} ${value.length === 1 ? "folder" : "folders"}.`);
 	}
 
 	function resetAndReturnHome() {
@@ -2350,6 +2455,8 @@ export function BuilderWorkspace({
 		onOpenSourceEditor: openSourceEditor,
 		onOpenAdvancedDiscoverEditor: (id, trigger) => openSourceEditor(id, trigger, "advanced-discover"),
 		onRequestDelete: requestDeletion,
+		onSortFolders: (id, trigger) => openCollectionFolders("sort", id, trigger),
+		onRemoveFolders: (id, trigger) => openCollectionFolders("remove", id, trigger),
 		dragState,
 		keyboardReorderInternalId,
 		onPointerDown: beginPointerReorder,
@@ -2505,8 +2612,8 @@ export function BuilderWorkspace({
 									className="presentation-settings-trigger"
 									type="button"
 									data-action="open-bulk-edit"
-									aria-label="Bulk display settings"
-									title="Bulk display settings"
+									aria-label="Global display settings"
+									title="Global display settings"
 									aria-haspopup="dialog"
 									disabled={hierarchyInteractionLocked || !currentBulkEditAvailability.hasCollections}
 									onClick={openBulkEdit}
@@ -2793,6 +2900,12 @@ export function BuilderWorkspace({
 					diagnostics={editorDiagnostics}
 					titleInputRef={titleInputRef}
 					mode={editorMode}
+					preparing={editorPreparing}
+					collectionFolderSettings={collectionEditorSessionRef.current ? {
+						count: collectionEditorSessionRef.current.collection.folders.length,
+						shape: collectionShape,
+						onChange: (shape) => { setCollectionShape(shape); setCollectionShapeTouched(true); },
+					} : null}
 					folderArtworkSuggestionContext={exportOpen ? null : {
 						folder: editorTarget,
 						peopleManifestClient: peopleManifestClientRef.current,
@@ -2819,6 +2932,7 @@ export function BuilderWorkspace({
 					onCancel={closeEditor}
 				/>
 			) : null}
+			{collectionFoldersSession ? <CollectionFoldersDialog collection={collectionFoldersSession.collection} mode={collectionFoldersSession.mode} error={collectionFoldersError} onApply={applyCollectionFolders} onCancel={closeCollectionFolders} /> : null}
 			{deleteConfirmation ? (
 				<DeleteConfirmation
 					impact={deleteConfirmation}

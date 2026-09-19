@@ -18,6 +18,7 @@ import {
 	missingCuratedFolderTileOrientationNotice,
 	planCuratedFolderFocusShapeTransition,
 	planCuratedFolderTileShapeTransition,
+	planCuratedFolderShapePatch,
 	resolveFolderArtworkIdentity,
 } from "../builder/src/folder-artwork-suggestions.js";
 import {
@@ -107,6 +108,29 @@ function missingRuntimeClient() {
 		}),
 	});
 }
+
+test("collection shape planner retains each existing family's exact orientation and field boundaries", async () => {
+	const decades = buildCanonicalDecadePeriodDrafts({ periodId: "1990s", mediaMode: "movies" });
+	const examples = [
+		["people", folder(sourcesFromDrafts(peopleDrafts())), ["POSTER", "LANDSCAPE"]],
+		["studio", folder(sourcesFromDrafts(studioDrafts())), ["LANDSCAPE"]],
+		["network", folder(sourcesFromDrafts([networkDraft()])), ["POSTER", "LANDSCAPE"]],
+		["genre", folder(sourcesFromDrafts(buildGenreSourceDrafts(["Comedy"]).drafts)), ["POSTER", "SQUARE", "LANDSCAPE"]],
+		["decades", folder(sourcesFromDrafts(decades.drafts)), ["POSTER", "SQUARE", "LANDSCAPE"]],
+	];
+	for (const [family, node, supported] of examples) {
+		const suggestionSet = await loadFolderArtworkSuggestions({ folder: node, peopleManifestClient: manifestClient(), artworkRuntimeClient: runtimeClient() });
+		assert.ok(suggestionSet, family);
+		const initialShape = supported[0];
+		const editable = { tileShape: initialShape, coverImageUrl: suggestionSet.curated.coverImageUrl[initialShape], focusGifUrl: suggestionSet.curated.focusGifUrl[initialShape] ?? "https://custom.example/focus.gif", heroBackdropUrl: "https://custom.example/hero.webp", titleLogoUrl: "https://custom.example/logo.png", focusGifEnabled: false };
+		for (const requested of ["POSTER", "SQUARE", "LANDSCAPE"]) {
+			const patch = planCuratedFolderShapePatch(editable, requested, suggestionSet);
+			assert.equal(patch.coverImageUrl ?? editable.coverImageUrl, supported.includes(requested) ? suggestionSet.curated.coverImageUrl[requested] : editable.coverImageUrl, `${family} ${requested}`);
+			assert.equal(patch.focusGifUrl ?? editable.focusGifUrl, suggestionSet.curated.focusGifUrl[requested] ?? editable.focusGifUrl, `${family} Focus ${requested}`);
+			assert.ok(Object.keys(patch).every((field) => ["tileShape", "coverImageUrl", "focusGifUrl"].includes(field)));
+		}
+	}
+});
 
 function catalogueProvider(entity) {
 	return Object.freeze({

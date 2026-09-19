@@ -1,5 +1,11 @@
 # Shared artwork runtime lookup
 
+## Collection shape transitions (#232)
+
+The one-time existing-child shape operation in Collection settings reuses `resolveFolderArtworkIdentity`, `loadFolderArtworkSuggestions` and the ordinary Tile/Focus transition planners through `planCuratedFolderShapePatch`. Exact current curated URLs may transition independently to published counterparts; all other URLs remain exact. Existing workspace manifest/runtime caches are reused, equal identities share preparation, and catalogue/person enrichment providers are not passed. No new authority, request-image lookup, generated path or artwork request is introduced. Unavailable authority returns preservation-only patches and does not block shape application.
+
+Genre/Decades retain published Poster/Square/Landscape and corresponding Focus. People retains published Poster/Landscape and only evidenced Focus; Networks retains Poster/Landscape Tile with no new Focus authority; Studio retains Landscape-only artwork when another shape is selected. Franchise, Lists, Streaming and generic/custom/opaque folders gain no cross-orientation authority. Export/reopened/imported URLs remain transitionable only when the existing source identity and exact published URL prove recognition. No provenance field is stored. Ordinary Folder settings keeps its existing notices; Collection settings adds no per-item warning or conversion report.
+
 Status: shared `nuvio-assets` runtime is active for V1 Company/Network and V2 Studio/Network hierarchy; active V2 People resolution moved to `nuvio-people-assets` in issue #118
 
 Last reviewed: 2026-08-22
