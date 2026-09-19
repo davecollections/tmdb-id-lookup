@@ -101,12 +101,12 @@ test("server rendering is request-free and starts on the unfocused region stage"
 });
 
 test("the flow groups regions and services under Select, then uses Configure and conditional Step 3 headings", () => {
-	assert.match(flow, /stageKicker="Step 1 · Select"/);
-	assert.match(flow, /Step 1 · Select/);
+	assert.match(flow, /<StreamingRegionStep[^>]*guided/);
+	assert.match(flow, /<CreationStageIntro step=\{1\} phase="Select"/);
 	assert.match(flow, /Choose Streaming services/);
-	assert.match(flow, /Step 2/);
+	assert.match(flow, /<CreationStageIntro step=\{2\} phase="Configure"/);
 	assert.match(flow, /Configure Streaming services/);
-	assert.match(flow, /Step 3/);
+	assert.match(flow, /<CreationStageIntro step=\{3\} phase="Review"/);
 	assert.match(flow, /Review &amp; Appearance/);
 	assert.match(flow, /choiceRequired \? "Choose destination"/);
 	assert.match(flow, /review: destinationChoiceRequired \? "Choose where these Streaming sources should go\."/);

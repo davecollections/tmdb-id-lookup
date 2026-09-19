@@ -723,7 +723,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	assert.equal(options.includes("popular Genre"), false);
 	assert.equal((options.match(/class="studio-sort-choices semantic-sort-choices"/g) ?? []).length, 2);
 	for (const label of ["Movies", "Series", "Both", "Popular", "Recent", "Top rated", "Most voted"]) assert.ok(options.includes(`>${label}<`), label);
-	assert.match(options, /data-decade-content="individualYears" data-selected="true" aria-pressed="true" disabled=""/);
+	assert.match(options, /data-decade-content="individualYears" data-selected="true"[^>]*aria-pressed="true" disabled=""/);
 	for (const obsolete of ["All years combined", "Whole decade", "Through current year", "Current year only", "Full decade", "Collection appearance", "Decade folder appearance", "Collection options", "Decade folder options", "Source sorting and filters"]) assert.equal(options.includes(obsolete), false, obsolete);
 	assert.ok(options.indexOf('name="decades-media"') < options.indexOf('name="decades-sort"'));
 	assert.match(options, /name="decades-media" checked="" value="both"/);

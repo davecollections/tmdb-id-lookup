@@ -1,5 +1,6 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
+import { assertSelectionAppearance } from "./builder-guided-presentation-mounted.jsx";
 import {
 	createTmdbPersonProvider, createPeopleManifestClient, createStudioCatalogueProvider, createNetworkCatalogueProvider,
 	createTmdbStudioCountProvider, createTmdbNetworkCountProvider, createTmdbStudioPreviewProvider, createTmdbNetworkPreviewProvider,
@@ -78,7 +79,7 @@ export function runNetworkMinimumVotesScenario(helpers, view) {
 
 export function runNativeSharedAdvancedScenario(helpers, view) { return runNativeMinimumVotesScenario(helpers, { ...view, sharedAdvanced: true }); }
 
-async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope, mediaType = "MOVIE", sharedAdvanced = false, layoutOnly = false, captureGenreRules = false }) {
+async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope, mediaType = "MOVIE", sharedAdvanced = false, layoutOnly = false, captureGenreRules = false, semanticReview = false }) {
  const isNetwork = family === "network", entityId = isNetwork ? 213 : 3;
  if (isNetwork) mediaType = "TV";
  const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition: wait } = helpers;
@@ -206,6 +207,18 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     });
    }
    const shot = async (suffix) => {
+    if (semanticReview) {
+     const surface = document.querySelector('.discover-selection-dialog, .native-genre-dialog') ?? advanced;
+     for (const node of surface.querySelectorAll('[data-selection-semantics][aria-pressed="true"], [data-selection-semantics][aria-selected="true"], .discover-chips li')) {
+      await assertSelectionAppearance(node, node.dataset.selectionSemantics ?? (node.hasAttribute('data-excluded') ? 'exclude' : 'include'), { wait });
+     }
+     for (const node of surface.querySelectorAll('.discover-operator [aria-pressed="true"]')) await assertSelectionAppearance(node, 'single', { wait });
+     for (const node of surface.querySelectorAll('.discover-mode [aria-pressed="false"]')) await assertSelectionAppearance(node, 'neutral', { wait });
+     if (globalThis.capture204Preview && ['genres-shared', 'genres-custom-blank', 'genres-custom-populated', 'keyword-picker', 'keyword-exclusion-picker', 'keywords-desktop'].includes(suffix)) {
+      await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `issue-230-correction-${family}-${scope}-${innerWidth}-${suffix}` })); });
+     }
+     return;
+    }
     if (!globalThis.capture204Preview || layoutOnly && (!captureGenreRules || suffix !== "genres-shared") || !(family === "studio" && scope === "new-folder" || family === "network" && scope === "add")) return;
     await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: "shared-advanced-" + family + "-" + scope + "-" + innerWidth + "-" + innerHeight + "-" + suffix })); });
    };
@@ -237,7 +250,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
    if (!isNetwork && !editing) await click(genreButton("Action"));
    await click([...genreRoot.querySelectorAll('[aria-label="Genre action"] button')].find((node) => node.textContent === "Exclude"));
    await click(genreButton("Documentary"));
-   if (guided) await shot("genres-shared");
+   if (guided || semanticReview) await shot("genres-shared");
    if (guided) {
     if (innerWidth <= 900) await click(findButton(genreRoot, "← Contexts"));
     await click([...genreRoot.querySelectorAll('.genre-context-pane button')].find((node) => node.textContent.includes(isNetwork ? "HBO" : "Warner")));
@@ -301,11 +314,11 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
     const choice = await wait(() => document.querySelector('.discover-dropdown [data-tmdb-id="' + exactId + '"]'), { label: "Live catalogue keyword " + query, timeoutMs: 20000 }).catch((error) => { throw new Error(error.message + " Picker state: " + JSON.stringify({ mode: keyword.querySelector('.discover-mode [aria-pressed="true"]')?.textContent, query: search.value, expanded: search.getAttribute("aria-expanded"), focused: document.activeElement === search, content: keyword.textContent, options: [...keyword.querySelectorAll('[role="option"]')].map((node) => node.dataset.tmdbId) })); });
     await click(choice);
     const panel = document.querySelector('.discover-selection-dialog');
-    if (panel && query === "friendship") {
+    if (panel && (query === "friendship" || semanticReview && exclude)) {
      await click(panel.querySelector(".discover-selection-switch"));
      const selected = panel.querySelector('[role="option"][aria-selected="true"]');
-     check(selected && getComputedStyle(selected).backgroundColor === "rgba(1, 180, 228, 0.12)", "native keyword selected state is not cyan");
-     await shot("keyword-picker");
+     await assertSelectionAppearance(selected, exclude ? 'exclude' : 'include', { wait });
+     await shot(exclude ? "keyword-exclusion-picker" : "keyword-picker");
      const selectedList = panel.querySelector('[role="listbox"]'); selectedList.focus({ preventScroll: true });
      await act(async () => { selectedList.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); await settle(); selectedList.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle(); });
      check(!panel.querySelector('[role="option"]'), "mobile selected keyword removal failed");
@@ -349,7 +362,7 @@ async function runNativeMinimumVotesScenario(helpers, { family = "studio", scope
    const owners = [...dialog.querySelectorAll('*')].filter((node) => node.getClientRects().length && ['auto', 'scroll'].includes(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1);
    check(owners.length === 1 && window.scrollY === 0, "shared Advanced competing scroll owners");
    evidence.sharedAdvanced = { noImplicitRequests: true, boundedScroll: true, genreContexts: guided, ordinaryRatingInputs: true, ratingDecimals: true, thresholdLayout: innerWidth > 900 ? "three columns" : "stacked", keywordLayout: innerWidth > 900 ? "inline chips" : "mobile selected-items", layoutOnly };
-   if (layoutOnly) return evidence;
+   if (layoutOnly) return { ...evidence, semanticPresentation: semanticReview, noMutation: serializedValue(app) === before };
    await preview(0, !editing);
    const response = evidence.previews[evidence.previews.length - 1];
    const url = new URL(response.query, location.href);

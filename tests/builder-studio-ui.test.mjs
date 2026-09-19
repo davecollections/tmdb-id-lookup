@@ -197,7 +197,7 @@ test("Studio Add discovery exposes shared Movie Count and result-order controls"
 	assert.ok(markup.includes("Movie count"));
 	for (const label of ["All", "Exclude 0", "10+", "50+", "100+", "500+"]) assert.ok(markup.includes(`>${label}</button>`), label);
 	assert.equal(markup.includes("Hide studios with no movies"), false);
-	assert.match(markup, /<button class="add-source-result studio-result is-selected" type="button" aria-pressed="true" data-tmdb-studio-result="3"/);
+	assert.match(markup, /<button data-selection-mode="single" class="add-source-result studio-result is-selected" type="button" aria-pressed="true" data-tmdb-studio-result="3"/);
 	assert.equal(markup.includes("<select"), false);
 	assert.equal(markup.includes("type=\"checkbox\""), false);
 	for (const forbidden of [

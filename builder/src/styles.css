@@ -64,8 +64,8 @@
 }
 
 .genre-catalogue-list button[data-selected="true"] {
-	background: rgb(1 180 228 / 11%);
-	border-color: rgb(98 225 255 / 52%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 11%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 52%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -86,8 +86,8 @@
 }
 
 .genre-catalogue-choice.is-selected {
-	background: rgb(1 180 228 / 11%);
-	border-color: rgb(98 225 255 / 52%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 11%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 52%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -1371,8 +1371,8 @@ body.settings-modal-open {
 }
 
 .editor-compact-radio.is-selected {
-	background: rgb(1 180 228 / 10%);
-	border-color: rgb(98 225 255 / 60%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 10%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 60%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -1418,8 +1418,8 @@ body.settings-modal-open {
 }
 
 .editor-choice.is-selected {
-	background: rgb(1 180 228 / 10%);
-	border-color: rgb(98 225 255 / 60%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 10%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 60%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -2056,8 +2056,8 @@ body.settings-modal-open {
 }
 
 .add-source-result.is-selected {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -2335,8 +2335,8 @@ body.settings-modal-open {
 }
 
 .source-edit-combination:has(input:checked) {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -2659,8 +2659,8 @@ body.settings-modal-open {
 
 .people-choice-group label:has(input:checked),
 .people-destination-group > label:has(input:checked) {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -4348,8 +4348,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-result-selectable.is-selected {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -4868,8 +4868,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-combination-group label:has(input:checked) {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -4963,8 +4963,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-configuration-mode label:has(input:checked) {
-	background: rgb(1 180 228 / 11%);
-	border-color: rgb(98 225 255 / 54%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 11%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 54%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -5047,9 +5047,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .people-combination-group.is-pills .people-source-pill:has(input:checked) {
-	color: #f4ffff;
-	background: rgb(1 180 228 / 14%);
-	border-color: rgb(98 225 255 / 62%);
+	color: var(--choice-selected-text, #f4ffff);
+	background: var(--choice-selected-background, rgb(1 180 228 / 14%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 62%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -5468,11 +5468,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 .streaming-region-result:hover,
 .streaming-region-result:focus-visible,
 .streaming-region-result[data-selected="true"] {
-	border-color: rgb(98 225 255 / 52%);
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 52%));
 }
 
 .streaming-region-result[data-selected="true"] {
-	background: rgb(1 180 228 / 12%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -5560,9 +5560,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .studio-search-controls button[aria-pressed="true"] {
-	color: #e9fbff;
-	background: rgb(1 180 228 / 16%);
-	border-color: rgb(98 225 255 / 58%);
+	color: var(--choice-selected-text, #e9fbff);
+	background: var(--choice-selected-background, rgb(1 180 228 / 16%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 58%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -5741,8 +5741,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .studio-source-choices label:has(input:checked) {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -6064,9 +6064,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .studio-sort-choices label[data-selected="true"] {
-	color: #e9fbff;
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	color: var(--choice-selected-text, #e9fbff);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -6963,8 +6963,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .genre-included-genre-pane button[data-selected="true"] {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 52%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 52%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -7070,8 +7070,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .genre-exclusion-picker-list button[data-selected="true"] {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 52%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 52%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -7384,8 +7384,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .genre-structure-choice-grid > label[data-selected="true"] {
-	background: rgb(1 180 228 / 10%);
-	border-color: rgb(98 225 255 / 60%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 10%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 60%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -7434,8 +7434,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .genre-structure-choice-grid > label[data-selected="true"] .genre-structure-wireframe {
-	background: rgb(1 180 228 / 7%);
-	border-color: rgb(98 225 255 / 42%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 7%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 42%));
 	box-shadow: inset 0 0 12px rgb(1 180 228 / 8%);
 }
 
@@ -8161,8 +8161,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .franchise-result-selectable.is-selected {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -8476,8 +8476,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .studio-result-selectable.is-selected {
-	background: rgb(1 180 228 / 12%);
-	border-color: rgb(98 225 255 / 56%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 56%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -8675,9 +8675,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 :is(.native-extra-advanced, .native-genre-dialog) .discover-genres .discover-operator button[aria-pressed="true"],
 .studio-preview-tabs button[aria-selected="true"] {
-	color: #e9fbff;
-	background: rgb(1 180 228 / 18%);
-	border-color: rgb(98 225 255 / 58%);
+	color: var(--choice-selected-text, #e9fbff);
+	background: var(--choice-selected-background, rgb(1 180 228 / 18%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 58%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -8846,8 +8846,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 .decades-preset-grid button[data-selected="true"],
 .decades-content-grid button[data-selected="true"],
 .decades-genre-grid button[data-selected="true"] {
-	background: rgb(1 180 228 / 10%);
-	border-color: rgb(98 225 255 / 48%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 10%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 48%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -8907,8 +8907,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 .decades-choice-grid label[data-selected="true"] {
-	background: rgb(1 180 228 / 9%);
-	border-color: rgb(98 225 255 / 42%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 9%));
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 42%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -9467,11 +9467,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 .streaming-destination-list > label:hover,
 .streaming-destination-list > label:focus-within,
 .streaming-destination-list > label[data-selected="true"] {
-	border-color: rgb(98 225 255 / 52%);
+	border-color: var(--choice-selected-border, rgb(98 225 255 / 52%));
 }
 
 .streaming-destination-list > label[data-selected="true"] {
-	background: rgb(1 180 228 / 12%);
+	background: var(--choice-selected-background, rgb(1 180 228 / 12%));
 	box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
 
@@ -9685,36 +9685,18 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (forced-colors: active) {
-	.decades-content-grid button[aria-pressed="true"] {
-		border-style: double;
-		border-width: 3px;
-		padding: 9px 11px;
-	}
-
-	label:has(> .choice-card-input:checked),
-	.studio-sort-choices label:has(> input:checked),
-	.genre-catalogue-list button[aria-pressed="true"],
-	.genre-exclusion-picker-list button[aria-pressed="true"],
-	.decades-preset-grid button[aria-pressed="true"],
-	.decades-content-grid button[aria-pressed="true"],
-	.streaming-region-result[aria-pressed="true"],
-	.studio-search-controls button[aria-pressed="true"],
-	.studio-preview-tabs button[aria-selected="true"],
-	.hierarchy-card-main.is-selected {
-		border-color: Highlight;
-		box-shadow: inset 0 0 0 1px Highlight;
-	}
-
-	.decades-content-grid button:focus-visible,
-	label:has(> .choice-card-input:focus-visible),
-	.studio-sort-choices label:has(> input:focus-visible) {
-		outline-color: Highlight;
-	}
-
-	.editor-shape-choice.is-selected > .shape-preview {
-		border-color: Highlight;
-		box-shadow: inset 0 0 0 1px Highlight;
-	}
+ :is([data-selection-mode], label:has(> .choice-card-input), .studio-sort-choices label, .studio-preview-tabs button, .hierarchy-card-main) { position: relative; }
+ :is([data-selection-mode]:is(.is-selected, [data-selected="true"], [aria-pressed="true"], [aria-selected="true"], :has(> input:checked)), label:has(> .choice-card-input:checked), .studio-sort-choices label:has(> input:checked), .studio-preview-tabs button[aria-selected="true"], .hierarchy-card-main.is-selected) {
+  border-color: Highlight;
+ }
+ :is([data-selection-mode]:is(.is-selected, [data-selected="true"], [aria-pressed="true"], [aria-selected="true"], :has(> input:checked)), label:has(> .choice-card-input:checked), .studio-sort-choices label:has(> input:checked), .studio-preview-tabs button[aria-selected="true"], .hierarchy-card-main.is-selected)::after {
+  content: ""; position: absolute; inset: 3px; pointer-events: none;
+  border: 1px solid Highlight; border-radius: inherit;
+ }
+ [data-selection-mode]:focus-visible,
+ label:has(> .choice-card-input:focus-visible),
+ .studio-sort-choices label:has(> input:focus-visible) { outline: 3px solid Highlight; outline-offset: 2px; }
+ .editor-shape-choice.is-selected > .shape-preview { border-color: Highlight; }
 }
 
 /* Multiple Preview dimensions share one body scroll owner below Close. */
@@ -9761,3 +9743,61 @@ body.hierarchy-pointer-dragging .builder-shell {
 	white-space: nowrap;
 	border: 0;
 }
+
+/* Shared selection semantics (#230). These tokens are separate from success UI. */
+:root {
+ --selection-include-background: rgb(69 176 119 / 14%);
+ --selection-include-border: rgb(132 220 166 / 62%);
+ --selection-include-text: #e8fff1;
+ --selection-multiple-background: rgb(69 176 119 / 14%);
+ --selection-multiple-border: rgb(132 220 166 / 62%);
+ --selection-multiple-text: #e8fff1;
+ --selection-single-background: rgb(1 180 228 / 12%);
+ --selection-single-border: rgb(98 225 255 / 56%);
+ --selection-single-text: #e9fbff;
+ --selection-exclude-background: rgb(221 102 99 / 13%);
+ --selection-exclude-border: rgb(255 154 145 / 62%);
+ --selection-exclude-text: #ffe8e5;
+}
+[data-selection-mode] { position: relative; }
+[data-selection-mode="multiple"] {
+ --choice-selected-background: var(--selection-multiple-background);
+ --choice-selected-border: var(--selection-multiple-border);
+ --choice-selected-text: var(--selection-multiple-text);
+}
+[data-selection-mode="single"] {
+ --choice-selected-background: var(--selection-single-background);
+ --choice-selected-border: var(--selection-single-border);
+ --choice-selected-text: var(--selection-single-text);
+}
+/* Include/Exclude meaning takes precedence over ordinary cardinality. */
+[data-selection-semantics="include"] {
+ --choice-selected-background: var(--selection-include-background);
+ --choice-selected-border: var(--selection-include-border);
+ --choice-selected-text: var(--selection-include-text);
+}
+[data-selection-semantics="exclude"] {
+ --choice-selected-background: var(--selection-exclude-background);
+ --choice-selected-border: var(--selection-exclude-border);
+ --choice-selected-text: var(--selection-exclude-text);
+}
+[data-selection-mode]:is(.is-selected, [data-selected="true"], [aria-pressed="true"], [aria-selected="true"], :has(> input:checked)) {
+ color: var(--choice-selected-text);
+ background: var(--choice-selected-background);
+ border-color: var(--choice-selected-border);
+ box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
+}
+/* Outrank control base border shorthands, including the shared Advanced pills. */
+[data-selection-mode][data-selection-semantics="exclude"]:is(.is-selected, [data-selected="true"], [aria-pressed="true"], [aria-selected="true"], :has(> input:checked)) { border-style: dashed; }
+/* An already selected last-required choice remains visibly selected when its removal is disabled. */
+[data-selection-mode]:is(:disabled:not([aria-pressed="true"]), :has(> input:disabled)) {
+ --choice-selected-background: rgb(137 155 166 / 10%);
+ --choice-selected-border: rgb(137 155 166 / 35%);
+ --choice-selected-text: var(--muted);
+}
+
+.creation-stage-intro { display: grid; flex-shrink: 0; min-width: 0; gap: 4px; }
+.creation-stage-intro > .panel-kicker { margin: 0; }
+.creation-stage-intro > h3 { margin: 0; color: var(--text); font-size: .96rem; line-height: 1.35; overflow-wrap: anywhere; }
+.creation-stage-intro > h3:focus { outline: none; }
+.creation-stage-intro > .creation-stage-description { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }

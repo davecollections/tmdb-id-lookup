@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { touchDiscoverFilters } from "../source-add/advanced-discover.js";
 import { DiscoverHelpDialog } from "./DiscoverHelpDialog.jsx";
 import { discoverEditorPreviewBlocked } from "../source-edit/advanced-discover-editor.js";
@@ -174,7 +175,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  <form className="add-source-form" onSubmit={submit} noValidate inert={preview.preview ? true : undefined}>
  <div ref={scrollRef} className="add-source-scroll discover-scroll">
  <section className="discover-stage" aria-labelledby="discover-step-title">
- <div className="add-source-section-heading"><div><p className="panel-kicker">Step {pages.indexOf(page) + 1}</p><h3 ref={headingRef} id="discover-step-title" tabIndex={-1}>{pageLabels[page]}</h3></div></div>
+ <CreationStageIntro step={pages.indexOf(page) + 1} phase={pageLabels[page]} title={pageLabels[page]} headingRef={headingRef} headingId="discover-step-title" tabIndex={-1} />
  {page === "filters" ? <>
   <section className="editor-settings-section discover-source-settings" aria-label="Media and Source orders">
   {editing ? <section className="discover-fixed-media"><h3>Media</h3><p>{draft.mediaType === "TV" ? "Series" : "Movies"}</p></section> : <SemanticSortChoices options={DISCOVER_MEDIA_OPTIONS} selectedId={draft.mediaMode} name="discover-media" legend="Media" onChange={(mediaMode) => change({ ...draft, mediaMode })} />}

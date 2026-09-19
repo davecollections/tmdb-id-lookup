@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
 import { StudioAdvancedOptions, StudioMinimumVotesSummary } from "./StudioAdvancedOptions.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
@@ -69,7 +70,7 @@ function SelectedStudios({ studios, knownSeriesCounts, onRemove }) {
 
 function SelectableStudioResult({ studio, checked, onToggle }) {
 	return (
-		<label key={studio.id} className={`add-source-result studio-result studio-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-studio-result={studio.id}>
+		<label key={studio.id} className={`add-source-result studio-result studio-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-studio-result={studio.id} data-selection-mode="multiple">
 			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onToggle(studio)} />
 			<StudioResultContent studio={studio} />
 		</label>
@@ -92,7 +93,7 @@ function ConfigureStep({ studios, knownSeriesCounts, outcomes, mediaMode, sortOp
 	const advanced = validateNativeAdvancedDraft(options.filters, mediaMode);
 	return (
 		<section className="studio-hierarchy-configure" aria-labelledby="studio-hierarchy-configure-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="studio-hierarchy-configure-title" tabIndex={-1}>Configure Studios</h3></div></div>
+			<CreationStageIntro step={2} phase="Configure" title="Configure Studios" headingId="studio-hierarchy-configure-title" tabIndex={-1} />
 			<p className="studio-configure-helper">These choices apply to every selected Studio.</p>
 			<SemanticSortChoices options={STUDIO_HIERARCHY_MEDIA_MODES} selectedId={mediaMode} name="studio-hierarchy-media" legend="Media" onChange={onMediaChange} />
 			<StudioSortChoices selectedIds={sortOptionIds} name="studio-hierarchy-sort" onChange={onSortChange} />
@@ -108,7 +109,7 @@ function AppearanceStep({ planResult, options, onOptionsChange, diagnostic, head
 	const plan = planResult.plan;
 	return (
 		<section className="studio-hierarchy-review studio-hierarchy-appearance" aria-labelledby="studio-hierarchy-appearance-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="studio-hierarchy-appearance-title" ref={headingRef} tabIndex={-1}>Appearance</h3></div></div>
+			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="studio-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
 			<SourceVariantCounts counts={plan.counts} />
 			<StudioMinimumVotesSummary filters={plan.configuration.filters} mediaMode={plan.configuration.mediaMode} genreOverrides={plan.configuration.genreOverrides} labels={options.labels} entities={plan.configuration.studios.map((entry) => entry.studio)} />
 			{plan.configuration.scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
@@ -277,9 +278,9 @@ export function StudioHierarchyFlow({
 		<form className="add-source-form studio-hierarchy-form" data-studio-hierarchy-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
-					<div ref={selectHeadingRef} tabIndex={-1} className="studio-hierarchy-focus-target" />
+					<CreationStageIntro step={1} phase="Select" title="Studios · TMDB" description="Search by studio name, location or TMDB ID." headingId="studio-mode-title" headingRef={selectHeadingRef} tabIndex={-1} />
 					{chosen.length ? <section className="people-selected-tray studio-selected-tray"><div className="people-selected-summary"><strong>{chosen.length} Studio{chosen.length === 1 ? "" : "s"} selected</strong><SelectedStudios studios={chosen} knownSeriesCounts={knownSeriesCounts} onRemove={removeStudio} /></div>{notice.visible ? <p className="people-selection-limit" data-large-selection-notice="true" role="status">You’ve selected {notice.count} Studios. Configure may take a little longer, but there is no selection cap.</p> : null}</section> : null}
-					<StudioSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Studios" stageKicker="Step 1 · Select" renderResult={(studio) => <SelectableStudioResult key={studio.id} studio={studio} checked={Boolean(selection.byId[studio.id])} onToggle={toggleStudio} />} />
+					<StudioSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Studios" showIntro={false} renderResult={(studio) => <SelectableStudioResult key={studio.id} studio={studio} checked={Boolean(selection.byId[studio.id])} onToggle={toggleStudio} />} />
 				</> : step === "configure" ? <div ref={configureHeadingRef} tabIndex={-1}><ConfigureStep studios={chosen} knownSeriesCounts={knownSeriesCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} mediaMode={options.mediaMode} sortOptionIds={options.sortOptionIds} onMediaChange={(mediaMode) => updateOptions({ mediaMode })} onSortChange={(sortOptionIds) => updateOptions({ sortOptionIds })} onPreview={openPreview} onRemove={removeStudio} options={options} onAdvancedChange={updateOptions} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
 			</div>
 			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>

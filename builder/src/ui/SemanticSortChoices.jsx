@@ -32,7 +32,7 @@ export function SemanticSortChoices({
 			{helper ? <p id={helperId} className="semantic-sort-helper">{helper}</p> : null}
 			<div className="studio-sort-choice-row semantic-sort-choice-row">
 				{options.map((option, index) => (
-					<label key={option.id} data-selected={isSelected(option.id) ? "true" : undefined}>
+					<label key={option.id} data-selection-mode={multiple ? "multiple" : "single"} data-selected={isSelected(option.id) ? "true" : undefined}>
 						<input
 							ref={index === 0 ? firstInputRef : undefined}
 							type={multiple ? "checkbox" : "radio"}

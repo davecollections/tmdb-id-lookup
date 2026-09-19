@@ -10,7 +10,7 @@ export function CollectionPresentationChoices({ selectedId, name, onChange }) {
 	const rowsSelected = isSelected(selectedId, "ROWS");
 	return (
 		<div className="editor-choice-grid">
-			<label className={`editor-choice editor-layout-choice${tabsSelected ? " is-selected" : ""}`}>
+			<label className={`editor-choice editor-layout-choice${tabsSelected ? " is-selected" : ""}`} data-selection-mode="single">
 				<input
 					className="visually-hidden choice-card-input"
 					type="radio"
@@ -35,7 +35,7 @@ export function CollectionPresentationChoices({ selectedId, name, onChange }) {
 					</span>
 				</span>
 			</label>
-			<label className={`editor-choice editor-layout-choice${rowsSelected ? " is-selected" : ""}`}>
+			<label className={`editor-choice editor-layout-choice${rowsSelected ? " is-selected" : ""}`} data-selection-mode="single">
 				<input
 					className="visually-hidden choice-card-input"
 					type="radio"

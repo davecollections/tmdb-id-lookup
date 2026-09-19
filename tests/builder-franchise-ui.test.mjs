@@ -20,7 +20,7 @@ test("Franchises is a guided New Collection and New Folder option with a two-sta
 	assert.match(dialog, /<FranchiseSourceFlow/);
 	assert.match(flow, /useState\("select"\)/);
 	assert.match(flow, /setStep\("review"\)/);
-	assert.match(flow, /Review &amp; Appearance/);
+	assert.match(flow, /title="Review & Appearance"/);
 	assert.doesNotMatch(flow, /setStep\("configure"\)|data-franchise-stage="configure"/i);
 });
 

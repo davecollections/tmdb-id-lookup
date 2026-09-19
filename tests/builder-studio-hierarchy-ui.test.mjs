@@ -63,10 +63,10 @@ test("Select keeps its disclosure while Configure owns direct selected Studio ro
 	assert.match(flow, /className="studio-configure-remove"/);
 	assert.match(flow, /No Studios selected\. Go Back to Select/);
 	assert.match(flow, /there is no selection cap/);
-	assert.match(flow, /stageKicker="Step 1 · Select"/);
-	assert.match(flow, /<p className="panel-kicker">Step 2<\/p>[\s\S]*>Configure Studios</);
-	assert.match(flow, /<p className="panel-kicker">Step 3<\/p>[\s\S]*>Appearance</);
-	assert.match(studioFlow, /stageKicker = null/);
+	assert.match(flow, /<CreationStageIntro step=\{1\} phase="Select"/);
+	assert.match(flow, /<CreationStageIntro step=\{2\} phase="Configure" title="Configure Studios"/);
+	assert.match(flow, /<CreationStageIntro step=\{3\} phase="Appearance" title="Appearance"/);
+	assert.match(studioFlow, /showIntro = true/);
 	assert.doesNotMatch(flow.slice(flow.indexOf("function ConfigureStep"), flow.indexOf("function AppearanceStep")), /View selected Studios/);
 });
 
@@ -131,7 +131,7 @@ test("Appearance exposes presentation decisions without artwork controls or Stud
 	assert.match(flow, /<HierarchyCollectionPresentationControls/);
 	assert.match(flow, /<PresentationSwitch/);
 	const appearance = flow.slice(flow.indexOf("function AppearanceStep"), flow.indexOf("export function StudioHierarchyFlow"));
-	assert.match(appearance, />Appearance</);
+	assert.match(appearance, /title="Appearance"/);
 	assert.match(appearance, /Plan totals/);
 	assert.match(appearance, /Collection name/);
 	assert.match(appearance, /Collection layout/);

@@ -94,7 +94,7 @@ function DecadePeriodChoices({ options, selectedIds, helper, onToggle }) {
 			<legend>Year</legend>
 			<p className="semantic-sort-helper">{helper}</p>
 			<div className="studio-sort-choice-row semantic-sort-choice-row">
-				{options.map((option) => <label key={option.id} data-selected={selectedIds.includes(option.id) ? "true" : undefined}>
+				{options.map((option) => <label key={option.id} data-selected={selectedIds.includes(option.id) ? "true" : undefined} data-selection-mode="multiple">
 					<input type="checkbox" name="decade-source-year" value={option.id} checked={selectedIds.includes(option.id)} onChange={() => onToggle(option.id)} />
 					<span>{option.label}</span>
 				</label>)}

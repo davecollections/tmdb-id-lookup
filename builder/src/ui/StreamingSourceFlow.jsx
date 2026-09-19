@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -183,8 +184,8 @@ export function StreamingProviderStep({
 			</div>
 			{singleRegion ? (
 				<div className="studio-search-controls streaming-provider-browse" aria-label="Provider browse mode">
-					<button type="button" aria-pressed={browseMode === STREAMING_PROVIDER_BROWSE_MODES.TOP} onClick={() => onBrowseModeChange(STREAMING_PROVIDER_BROWSE_MODES.TOP)}>Top providers</button>
-					<button type="button" aria-pressed={browseMode === STREAMING_PROVIDER_BROWSE_MODES.ALL} onClick={() => onBrowseModeChange(STREAMING_PROVIDER_BROWSE_MODES.ALL)}>A–Z</button>
+					<button data-selection-mode="single" type="button" aria-pressed={browseMode === STREAMING_PROVIDER_BROWSE_MODES.TOP} onClick={() => onBrowseModeChange(STREAMING_PROVIDER_BROWSE_MODES.TOP)}>Top providers</button>
+					<button data-selection-mode="single" type="button" aria-pressed={browseMode === STREAMING_PROVIDER_BROWSE_MODES.ALL} onClick={() => onBrowseModeChange(STREAMING_PROVIDER_BROWSE_MODES.ALL)}>A–Z</button>
 				</div>
 			) : null}
 			<section className="add-source-results" aria-labelledby="streaming-provider-results-title">
@@ -212,7 +213,7 @@ function RegionIdentity({ region }) {
 
 function RegionResult({ region, selected, onSelect }) {
 	return (
-		<button className="streaming-region-result" type="button" data-streaming-region={region.code} data-selected={selected ? "true" : "false"} aria-pressed={selected} onClick={() => onSelect(region)}>
+		<button className="streaming-region-result" data-selection-mode="multiple" type="button" data-streaming-region={region.code} data-selected={selected ? "true" : "false"} aria-pressed={selected} onClick={() => onSelect(region)}>
 			<RegionIdentity region={region} />
 		</button>
 	);
@@ -221,7 +222,7 @@ function RegionResult({ region, selected, onSelect }) {
 export function StreamingRegionStep({
 	heading = "Choose regions",
 	description = "Select one or more regions, then choose a provider available across them.",
-	stageKicker = null,
+	guided = false,
 	browseMode,
 	query,
 	queryRef,
@@ -235,21 +236,19 @@ export function StreamingRegionStep({
 	const selectedCodes = new Set(selectedRegions.map((region) => region.code));
 	return (
 		<>
-			<section className="add-source-mode" aria-labelledby="streaming-region-mode-title">
-				<div>{stageKicker ? <p className="panel-kicker">{stageKicker}</p> : null}<h3 id="streaming-region-mode-title">{heading}</h3><p>{description}</p></div>
-			</section>
+			{guided ? <CreationStageIntro step={1} phase="Select" title={heading} description={description} headingId="streaming-region-mode-title" /> : <section className="add-source-mode" aria-labelledby="streaming-region-mode-title"><div><h3 id="streaming-region-mode-title">{heading}</h3><p>{description}</p></div></section>}
 			<div className="editor-field add-source-query-field">
 				<label htmlFor="streaming-region-query">Search regions</label>
 				<input ref={queryRef} id="streaming-region-query" type="search" value={query} autoComplete="off" spellCheck="false" onChange={onQueryChange} />
 				<p className="editor-field-help">Search by region name or two-letter code. Selections remain active while filtering.</p>
 			</div>
 			<div className="studio-search-controls streaming-region-browse" aria-label="Region browse mode">
-				<button type="button" aria-pressed={browseMode === STREAMING_REGION_BROWSE_MODES.COMMON} onClick={() => onBrowseModeChange(STREAMING_REGION_BROWSE_MODES.COMMON)}>Common</button>
-				<button type="button" aria-pressed={browseMode === STREAMING_REGION_BROWSE_MODES.ALL} onClick={() => onBrowseModeChange(STREAMING_REGION_BROWSE_MODES.ALL)}>A–Z</button>
+				<button data-selection-mode="single" type="button" aria-pressed={browseMode === STREAMING_REGION_BROWSE_MODES.COMMON} onClick={() => onBrowseModeChange(STREAMING_REGION_BROWSE_MODES.COMMON)}>Common</button>
+				<button data-selection-mode="single" type="button" aria-pressed={browseMode === STREAMING_REGION_BROWSE_MODES.ALL} onClick={() => onBrowseModeChange(STREAMING_REGION_BROWSE_MODES.ALL)}>A–Z</button>
 			</div>
 			<section className="add-source-results" aria-labelledby="streaming-region-results-title">
 				<div className="add-source-section-heading">
-					<div><p className="panel-kicker">{searching ? "Search results" : browseMode === STREAMING_REGION_BROWSE_MODES.COMMON ? "Common regions" : "Regions A–Z"}</p><h3 id="streaming-region-results-title">Choose regions</h3></div>
+					<div><p className="panel-kicker">{searching ? "Search results" : browseMode === STREAMING_REGION_BROWSE_MODES.COMMON ? "Common regions" : "Regions A–Z"}</p><h3 id="streaming-region-results-title">{guided ? "Available regions" : "Choose regions"}</h3></div>
 					<span>{regions.length}</span>
 				</div>
 				{regions.length ? (
@@ -323,7 +322,7 @@ export function StreamingConfigureStep({
 							? regions.length === 1 ? `Available in ${regions[0].code}` : `Available in all ${regions.length} regions`
 							: regions.length === 1 ? `Not available in ${regions[0].code}` : "Not available in every selected region";
 						return (
-							<label key={choice.id} data-source-supported={supported ? "true" : "false"}>
+							<label key={choice.id} data-source-supported={supported ? "true" : "false"} data-selection-mode="single">
 								<input className="visually-hidden choice-card-input" type="radio" name="streaming-media-choice" value={choice.id} checked={mediaChoice === choice.id} disabled={!supported} onChange={() => onMediaChange(choice.id)} />
 								<span><strong>{choice.label}</strong><small>{availabilityCopy}</small></span>
 							</label>

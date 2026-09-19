@@ -1,3 +1,7 @@
+// Match main.jsx: shared styles load before component/lazy styles. Reversing this
+// order hides cascade regressions that occur in the actual Builder preview.
+import "../../builder/src/styles.css";
+import { assertSelectionAppearance, runGuidedPresentationScenario } from "./builder-guided-presentation-mounted.jsx";
 import { DECADES_ARTWORK_KEYS, resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "../../builder/src/source-add/decades-folder-artwork.js";
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
 import { matchesTitlePreviewSummary, runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
@@ -53,7 +57,6 @@ import { TmdbListSourceFlow } from "../../builder/src/ui/TmdbListSourceFlow.jsx"
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
 import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
 import { createArtworkRuntimeClient } from "../../js/artwork-runtime.mjs";
-import "../../builder/src/styles.css";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -3419,7 +3422,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		const initialDestinationRadios = [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')];
 		const initialNewDestination = required(review.querySelector("[data-streaming-destination-new]"), "New Collection destination card");
 		const initialDestination = {
-			stageKicker: review.querySelector(".add-source-section-heading .panel-kicker")?.textContent.trim() ?? null,
+			stageKicker: review.querySelector(".creation-stage-intro .panel-kicker")?.textContent.trim() ?? null,
 			heading: review.querySelector("#streaming-hierarchy-review-title")?.textContent.trim() ?? null,
 			headerDescription: dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 			candidateCards: [...review.querySelectorAll("[data-streaming-destination-candidate]")].map((label) => ({
@@ -3484,7 +3487,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		const folderHiddenHelpRemovedOnHomeOnly = review.querySelector("#streaming-folder-titles-hidden-help") === null;
 		const titleVisibility = { collectionHidden, collectionHiddenHelp, collectionRestored, collectionHiddenHelpRemoved, latestCollectionRestored, folderHidden, folderHiddenHelp, folderHomeOnlyRestored, folderHiddenHelpRemovedOnHomeOnly, planningLabelsRetained };
 		const newCollectionDraftState = {
-			stageKicker: review.querySelector(".add-source-section-heading .panel-kicker")?.textContent.trim() ?? null,
+			stageKicker: review.querySelector(".creation-stage-intro .panel-kicker")?.textContent.trim() ?? null,
 			heading: review.querySelector("#streaming-hierarchy-review-title")?.textContent.trim() ?? null,
 			headerDescription: dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 			collectionNameVisible: review.querySelector("#streaming-collection-name") !== null,
@@ -7852,7 +7855,8 @@ async function runTmdbListLayoutScenario() {
 			const actionContentHeight = action.getBoundingClientRect().height - Number.parseFloat(actionStyle.paddingTop) - Number.parseFloat(actionStyle.paddingBottom);
 			const result = {
 				scope,
-				stageKicker: surface.querySelector(".tmdb-list-review .panel-kicker")?.textContent.trim() ?? null,
+				stageKicker: surface.querySelector(".tmdb-list-review .creation-stage-intro .panel-kicker")?.textContent.trim() ?? null,
+				stageTitle: surface.querySelector(".tmdb-list-review .creation-stage-intro h3")?.textContent.trim() ?? null,
 				headerDescription: surface.closest(".creation-dialog")?.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 				selectedCount: ids.length,
 				namesInitiallyEmpty,
@@ -8358,7 +8362,7 @@ async function runDecadesArtworkScenario({ scope, mediaMode, decadeId, initialSh
 window.__runDecadesArtworkScenario = runDecadesArtworkScenario;
 
 window.__runExpandedDecadesScenario = () => runExpandedDecadesScenario({ createController, afterCommittedEffects });
-window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runDiscoverPreviewScenario = (view) => runDiscoverPreviewScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, setSelectValue, titlePreviewGeometry, waitForMountedCondition, streamingProvider: liveStreamingCatalogueProvider }, view);
 window.__runNativeSharedAdvancedScenario = (view) => runNativeSharedAdvancedScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 
 // #220 uses the existing mounted shell, controller, live providers and screenshot
@@ -8614,6 +8618,7 @@ window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario
 window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
+window.__runGuidedPresentationScenario = (view) => runGuidedPresentationScenario({ createController, clickAndSettle, afterCommittedEffects, setInputValue, setTextareaValue, setSelectValue, waitForMountedCondition, serializedValue }, view);
 window.__builderSourceEditMounted = { status: "running" };
 window.__runPreviewPagesScenario = (view) => runPreviewPagesScenario({ createController, importSources, openEdit, withMountedEditor, clickAndSettle, afterCommittedEffects, setInputValue, serializedValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runGenreToolbarScenario = runGenreToolbarScenario;
@@ -8664,7 +8669,7 @@ window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenar
 
 // Focused #220 presentation review through existing production creation surfaces.
 // Local official Genre choices need no service substitute; no Preview is requested.
-window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedColors = false }) => {
+window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedColors = false, semanticReview = false }) => {
  const check = (value, message) => { if (!value) throw new Error('Genre rules ' + innerWidth + ': ' + message); return value; };
  const click = clickAndSettle, settle = afterCommittedEffects;
  const button = (scope, label) => check([...scope.querySelectorAll('button')].find(node => node.textContent.trim() === label), label);
@@ -8675,7 +8680,7 @@ window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedCol
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   controller = createController(); folder = importSources(controller, []); controller.selectNode(folder.internalId);
   before = serializedValue(controller); const state = controller.getState();
-  await act(async () => { root.render(family === 'decades' ? createElement(CreationDialog, { scope: 'new-collection', initialOptionId: 'decades', currentYear: 2026, project: state.project, projectRevision: state.revision, onCancel() {}, onApplyDecades() { throw new Error('Presentation must not apply'); } }) : createElement(family === 'inline' ? DecadeSourceFlow : GenreSourceFlow, { project: state.project, folder, onCancel() {}, onBack() {}, onApply() { throw new Error('Presentation must not apply'); } })); await settle(); });
+  await act(async () => { root.render(family === 'decades' || semanticReview && family === 'genre' ? createElement(CreationDialog, { scope: 'new-collection', initialOptionId: family === 'decades' ? 'decades' : 'genres', currentYear: 2026, project: state.project, projectRevision: state.revision, onCancel() {}, onApplyDecades() { throw new Error('Presentation must not apply'); }, onApplyGenres() { throw new Error('Presentation must not apply'); } }) : createElement(family === 'inline' ? DecadeSourceFlow : GenreSourceFlow, { project: state.project, folder, onCancel() {}, onBack() {}, onApply() { throw new Error('Presentation must not apply'); } })); await settle(); });
   dialog = check(document.querySelector('.add-source-dialog[role="dialog"]'), 'dialog');
  }
  async function unmount() { check(serializedValue(controller) === before, 'presentation changed project'); await act(async () => { root.unmount(); await settle(); }); host.remove(); }
@@ -8699,8 +8704,7 @@ window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedCol
    if (excluded !== null) check(card.querySelectorAll('[data-excluded]').length === excluded, name + ' exclusions count');
    if (included !== null) check(card.querySelectorAll('[data-chosen]:not([data-excluded])').length === included, name + ' inclusions count');
    for (const node of card.querySelectorAll('[data-chosen]')) {
-    check(getComputedStyle(node).borderStyle === (node.hasAttribute('data-excluded') ? 'dashed' : 'solid'), 'semantic non-colour border');
-    if (forcedColors) check(getComputedStyle(node).outlineStyle !== 'none', 'forced-colours selection outline');
+    await assertSelectionAppearance(node, node.hasAttribute('data-excluded') ? 'exclude' : 'include', { wait: waitForMountedCondition, forcedColors });
    }
   } else check(!pane.querySelector('.discover-genre-pills'), 'Using default catalogue is editable');
   check(pane.scrollWidth <= pane.clientWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, name + ' horizontal overflow');
@@ -8719,7 +8723,7 @@ window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedCol
   check(document.activeElement === trigger, 'launcher focus restoration');
  }
  try {
-  for (const names of compact ? [['Comedy']] : [['Comedy','Animation','Drama'], ['Comedy']]) {
+  for (const names of compact ? [['Comedy']] : semanticReview ? [['Comedy','Animation','Drama']] : [['Comedy','Animation','Drama'], ['Comedy']]) {
    await mount('genre');
    for (const name of names) await click(dialog.querySelector('[data-genre-name="' + name + '"]'));
    await click(dialog.querySelector('button[type="submit"]'));
@@ -8739,6 +8743,7 @@ window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedCol
   if (compact) return evidence;
   await mount('decades');
   await click(dialog.querySelector('[data-decade-preset="1980s"]')); await click(dialog.querySelector('[data-decade-preset="1990s"]'));
+  await assertSelectionAppearance(dialog.querySelector('[data-decade-preset="1980s"]'), 'multiple', { wait: waitForMountedCondition, forcedColors });
   await click(dialog.querySelector('button[type="submit"]'));
   const genres = decadeContentChoice(dialog, 'Genre breakdown'); if (genres.getAttribute("aria-pressed") !== "true") await click(genres);
   const structuralTrigger = dialog.querySelector('.decades-genre-summary button'); await click(structuralTrigger);

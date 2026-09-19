@@ -157,7 +157,7 @@ function ResultButton({
 	onSelect,
 }) {
 	return (
-		<button
+		<button data-selection-mode="single"
 			className={`add-source-result${selected ? " is-selected" : ""}${loading ? " is-loading" : ""}`}
 			type="button"
 			data-tmdb-collection-result={result.id}
