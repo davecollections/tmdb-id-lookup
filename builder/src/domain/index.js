@@ -14,6 +14,8 @@ export {
 	insertChild,
 	moveNode,
 	removeNode,
+	removeFolders,
+	reorderFolders,
 	traverseProject,
 	updateEditableValues,
 	updateEditableValuesMany,

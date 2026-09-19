@@ -354,6 +354,8 @@ export function NodeEditor({
 	mode = "settings",
 	folderArtworkSuggestionContext = null,
 	folderSiblings = [],
+	collectionFolderSettings = null,
+	preparing = false,
 	onChange,
 	onSubmit,
 	onCancel,
@@ -395,6 +397,7 @@ export function NodeEditor({
 		: null;
 	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
+	const diagnosticsRef = useRef(null);
 	const initializedTitleTargetRef = useRef(null);
 	const titleHiddenEverywhere = draft.nodeType === "collection"
 		? draft.values.hideNuvioTitle
@@ -444,6 +447,10 @@ export function NodeEditor({
 		document.body.classList.add("settings-modal-open");
 		return () => document.body.classList.remove("settings-modal-open");
 	}, []);
+
+	useEffect(() => {
+		if (diagnostics.some((entry) => entry.path === "$ui.editor.folderShape")) diagnosticsRef.current?.focus();
+	}, [diagnostics]);
 
 	function describedBy(diagnostic) {
 		const ids = [`${prefix}-title-help`];
@@ -535,6 +542,15 @@ export function NodeEditor({
 							<SettingsSection prefix={prefix} slug="display" title="Display">
 								<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
 								<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+								{collectionFolderSettings ? <fieldset className="editor-field editor-choice-field" data-editor-field="folderShape">
+									<legend>Folder tile shape</legend>
+									{collectionFolderSettings.count === 0 ? <p className="editor-field-help">There are no folders in this collection yet.</p> : <>
+										{!collectionFolderSettings.shape ? <p className="editor-field-help">Mixed / not set</p> : null}
+										<FolderShapeChoices selectedId={collectionFolderSettings.shape} name={`${prefix}-folder-shape`} idPrefix={`${prefix}-folders`} onChange={collectionFolderSettings.onChange} />
+										<p className="editor-field-help">Applies to the folders currently in this collection.</p>
+										<p className="editor-field-help">Matching Dingo artwork is updated automatically when available.</p>
+									</>}
+								</fieldset> : null}
 							</SettingsSection>
 							<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
 								<CollectionArtworkField
@@ -577,7 +593,7 @@ export function NodeEditor({
 						</>
 					)}
 
-					<div className="editor-diagnostics" role="alert" aria-atomic="true">
+					<div className="editor-diagnostics" role="alert" ref={diagnosticsRef} tabIndex={-1} aria-atomic="true">
 						{diagnostics.length > 0 ? (
 							<ul>
 								{diagnostics.map((entry) => (
@@ -593,7 +609,7 @@ export function NodeEditor({
 					</div>
 
 					<div className="node-editor-actions">
-						<button className="editor-apply" type="submit" data-action="apply-node-edit">Save changes</button>
+						<button className="editor-apply" type="submit" data-action="apply-node-edit" disabled={preparing}>{preparing ? "Preparing changes…" : "Save changes"}</button>
 						<button className="editor-cancel" type="button" data-action="cancel-node-edit" onClick={onCancel}>Cancel</button>
 					</div>
 				</form>

@@ -387,7 +387,9 @@ test("menu component keeps shared actions programmatic, clickable, and viewport-
 	assert.match(menu, /window\.visualViewport\?\.addEventListener\(\s*"scroll"/);
 	assert.match(menu, /document\.addEventListener\("pointerdown"/);
 	assert.match(menu, /event\.key === "Escape"/);
-	assert.equal((menu.match(/tabIndex=\{-1\}/g) ?? []).length, 3);
+	assert.equal((menu.match(/tabIndex=\{-1\}/g) ?? []).length, 5);
+	assert.match(menu, /onClick=\{\(\) => runAction\(onSortFolders\)\}/);
+	assert.match(menu, /onClick=\{\(\) => runAction\(onRemoveFolders\)\}/);
 	assert.match(menu, /onAdvancedEdit \? <button[^>]+onClick=\{\(\) => runAction\(onAdvancedEdit\)\}/);
 	assert.match(menu, /onClick=\{\(\) => runAction\(onEdit\)\}/);
 	assert.match(menu, /onClick=\{\(\) => runAction\(onDelete\)\}/);

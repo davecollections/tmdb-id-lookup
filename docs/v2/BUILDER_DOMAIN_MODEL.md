@@ -88,8 +88,11 @@ When imported folder JSON contains `catalogSources`, it can remain untouched wit
 - data handling and factories: `cloneJsonValue`, `createEmptyProject`, `createCollection`, `createFolder`, `createSource`;
 - inspection: `traverseProject`, `findNodeByInternalId`, `checkInternalIdUniqueness`;
 - immutable editing: `updateEditableValues`, `insertChild`, `moveNode`, `removeNode`.
+- bounded atomic editing: `updateEditableValuesMany`, `removeFolders`, `reorderFolders`.
 
 `insertChild` enforces the project → collection → folder → source hierarchy and accepts an optional insertion index. `moveNode` moves within the existing sibling array. `removeNode` removes a non-root node. Each successful editing operation returns new changed nodes and arrays without modifying its input.
+
+`removeFolders` validates the complete dense unique direct-child request before filtering a Collection's folder array once. `reorderFolders` additionally requires an exact complete permutation and reuses the existing Folder objects in that order. Both reject missing/ambiguous/cross-Collection/non-Folder IDs; empty removal and unchanged order return the input project. Surviving subtrees, raw snapshots (including imported addon projections), unknown fields and unrelated Collections remain untouched. Neither operation scrubs raw import evidence or constructs replacement Sources.
 
 ## Deliberately unimplemented
 

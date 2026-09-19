@@ -226,6 +226,52 @@ export function removeNode(project, internalId) {
 	}));
 }
 
+// Resolve the whole request before constructing a replacement. Surviving folders,
+// including their raw imported subtrees, remain the exact same objects.
+function requireCollectionFolders(project, collectionInternalId, folderInternalIds) {
+	const location = requireUniqueLocation(project, collectionInternalId);
+	if (location.node.nodeType !== NODE_TYPES.COLLECTION) throw new TypeError("Expected a collection");
+	if (!Array.isArray(folderInternalIds)) throw new TypeError("Folder IDs must be an array");
+	const requested = new Set();
+	const occurrences = new Map();
+	for (const node of traverseProject(project)) {
+		occurrences.set(node.internalId, (occurrences.get(node.internalId) ?? 0) + 1);
+	}
+	const children = new Map(location.node.folders.map((folder) => [folder.internalId, folder]));
+	for (let index = 0; index < folderInternalIds.length; index += 1) {
+		const id = folderInternalIds[index];
+		if (!Object.hasOwn(folderInternalIds, index) || typeof id !== "string" || id.length === 0 || requested.has(id)) {
+			throw new TypeError("Folder IDs must be dense and unique");
+		}
+		if (occurrences.get(id) !== 1 || children.get(id)?.nodeType !== NODE_TYPES.FOLDER) {
+			throw new RangeError("Every target must be one unambiguous direct child folder of this collection");
+		}
+		requested.add(id);
+	}
+	return { collection: location.node, requested, children };
+}
+
+export function removeFolders(project, collectionInternalId, folderInternalIds) {
+	const { requested } = requireCollectionFolders(project, collectionInternalId, folderInternalIds);
+	if (requested.size === 0) return project;
+	return replaceUniqueNode(project, collectionInternalId, (collection) => ({
+		...collection,
+		folders: collection.folders.filter((folder) => !requested.has(folder.internalId)),
+	}));
+}
+
+export function reorderFolders(project, collectionInternalId, orderedFolderInternalIds) {
+	const { collection, children } = requireCollectionFolders(project, collectionInternalId, orderedFolderInternalIds);
+	if (orderedFolderInternalIds.length !== collection.folders.length) {
+		throw new RangeError("Folder order must include every direct child exactly once");
+	}
+	if (collection.folders.every((folder, index) => folder.internalId === orderedFolderInternalIds[index])) return project;
+	return replaceUniqueNode(project, collectionInternalId, (current) => ({
+		...current,
+		folders: orderedFolderInternalIds.map((id) => children.get(id)),
+	}));
+}
+
 /**
  * @param {object} node
  * @param {(node: object) => void} visitor

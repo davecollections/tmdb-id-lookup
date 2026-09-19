@@ -10,6 +10,8 @@ import {
 	moveNode as moveDomainNode,
 	NODE_TYPES,
 	removeNode as removeDomainNode,
+	removeFolders as removeDomainFolders,
+	reorderFolders as reorderDomainFolders,
 	SOURCE_CATEGORIES,
 	traverseProject,
 	updateEditableValues,
@@ -1276,6 +1278,53 @@ export function createBuilderController(options = {}) {
 		return actionResult(true);
 	}
 
+	function removeFolders(collectionInternalId, folderInternalIds) {
+		let project;
+		try {
+			project = removeDomainFolders(state.project, collectionInternalId, folderInternalIds);
+		} catch {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				"$controller.removeFolders",
+				"Choose unique existing folders from this collection. No folders were removed.",
+			);
+		}
+		if (project === state.project) {
+			clearSuccessfulOperationDiagnostics({}, { incrementRevision: false });
+			return actionResult(true);
+		}
+		let selection = state.selection;
+		if (selection.collectionInternalId === collectionInternalId && folderInternalIds.includes(selection.folderInternalId)) {
+			const collection = state.project.collections.find((entry) => entry.internalId === collectionInternalId);
+			const removed = new Set(folderInternalIds);
+			const index = collection.folders.findIndex((folder) => folder.internalId === selection.folderInternalId);
+			const survivor = collection.folders.slice(index + 1).find((folder) => !removed.has(folder.internalId))
+				?? collection.folders.slice(0, index).reverse().find((folder) => !removed.has(folder.internalId));
+			selection = { collectionInternalId, folderInternalId: survivor?.internalId ?? null, sourceInternalId: null };
+		}
+		commitProjectEdit(project, selection);
+		return actionResult(true);
+	}
+
+	function reorderFolders(collectionInternalId, orderedFolderInternalIds) {
+		let project;
+		try {
+			project = reorderDomainFolders(state.project, collectionInternalId, orderedFolderInternalIds);
+		} catch {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				"$controller.reorderFolders",
+				"The folder order must contain every folder in this collection exactly once. Nothing was reordered.",
+			);
+		}
+		if (project === state.project) {
+			clearSuccessfulOperationDiagnostics({}, { incrementRevision: false });
+			return actionResult(true);
+		}
+		commitProjectEdit(project);
+		return actionResult(true);
+	}
+
 	function commitProjectEdit(project, selection = state.selection) {
 		let diagnostics = replaceDiagnosticScope(state.diagnostics, "operation", [], []);
 		diagnostics = replaceDiagnosticScope(diagnostics, "export", [], []);
@@ -1430,6 +1479,8 @@ export function createBuilderController(options = {}) {
 		applyPresentationUpdates,
 		moveNode,
 		removeNode,
+		removeFolders,
+		reorderFolders,
 		applyLegacyAddonProjectionMigration,
 		serializeProject,
 		stringifyProject,

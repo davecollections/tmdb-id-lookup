@@ -7,8 +7,7 @@ import {
 } from "../nuvio/titles.js";
 import { FOLDER_ARTWORK_TEXT_FIELD_NAMES } from "../nuvio/folder-artwork-fields.js";
 import {
-	planCuratedFolderFocusShapeTransition,
-	planCuratedFolderTileShapeTransition,
+	planCuratedFolderShapePatch,
 } from "../folder-artwork-suggestions.js";
 
 const editableNodeTypes = new Set(["collection", "folder"]);
@@ -444,30 +443,12 @@ export function updateNodeEditorTileShape(draft, requestedShape, suggestionSet, 
 		|| (shapeAlreadySelected && !recheckCurrentShape)
 	) return draft;
 
-	const tileTransition = planCuratedFolderTileShapeTransition({
-		suggestionSet,
-		currentTileUrl: draft.values.coverImageUrl,
-		requestedShape,
-	});
-	const focusTransition = planCuratedFolderFocusShapeTransition({
-		suggestionSet,
-		currentFocusUrl: draft.values.focusGifUrl,
-		requestedShape,
-	});
+	const patch = planCuratedFolderShapePatch(draft.values, requestedShape, suggestionSet);
 	let next = shapeAlreadySelected
 		? draft
 		: updateNodeEditorField(draft, "tileShape", requestedShape);
-	if (
-		tileTransition.replacementTileUrl !== null
-		&& tileTransition.replacementTileUrl !== draft.values.coverImageUrl
-	) {
-		next = updateNodeEditorField(next, "coverImageUrl", tileTransition.replacementTileUrl);
-	}
-	if (
-		focusTransition.replacementFocusUrl !== null
-		&& focusTransition.replacementFocusUrl !== draft.values.focusGifUrl
-	) {
-		next = updateNodeEditorField(next, "focusGifUrl", focusTransition.replacementFocusUrl);
+	for (const field of ["coverImageUrl", "focusGifUrl"]) {
+		if (Object.hasOwn(patch, field)) next = updateNodeEditorField(next, field, patch[field]);
 	}
 	return next;
 }

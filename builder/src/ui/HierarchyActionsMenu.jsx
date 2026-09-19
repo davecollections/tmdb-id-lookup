@@ -66,6 +66,8 @@ export function HierarchyActionsMenu({
 	onEdit = null,
 	editLabel = "Edit",
 	onAdvancedEdit = null,
+	onSortFolders = null,
+	onRemoveFolders = null,
 	onDelete,
 	registerTrigger,
 }) {
@@ -186,6 +188,8 @@ export function HierarchyActionsMenu({
 				</button>
 			) : null}
 			{onAdvancedEdit ? <button type="button" role="menuitem" tabIndex={-1} disabled={disabled || !open} onClick={() => runAction(onAdvancedEdit)}>Edit Discover</button> : null}
+			{onSortFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="sort-folders" disabled={disabled || !open || node.folderCount < 2} onClick={() => runAction(onSortFolders)}>Sort folders</button> : null}
+			{onRemoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="remove-folders" disabled={disabled || !open || node.folderCount === 0} onClick={() => runAction(onRemoveFolders)}>Remove folders</button> : null}
 			<button
 				className="hierarchy-menu-delete"
 				type="button"
@@ -195,7 +199,7 @@ export function HierarchyActionsMenu({
 				disabled={disabled || !open}
 				onClick={() => runAction(onDelete)}
 			>
-				Delete
+				{noun === "collection" ? "Delete collection" : "Delete"}
 			</button>
 		</div>
 	);
