@@ -1,6 +1,10 @@
 # Builder Collection and Folder Editing
 
-## Collection Folder management (#232, local owner review)
+<a id="collection-folder-management-232-local-owner-review"></a>
+
+## Collection Folder management (#232)
+
+Implemented and merged through [PR #233](https://github.com/davecollections/tmdb-id-lookup/pull/233).
 
 The Collection menu is **Edit → Sort folders → Remove folders → Delete collection**. Sort is disabled below two folders; Remove is disabled for an empty Collection. The mobile selected-context pencil still opens rename-only settings.
 
@@ -84,7 +88,7 @@ Canonical new or replacement values are:
 
 ```text
 viewMode: TABBED_GRID | ROWS
-tileShape: POSTER | LANDSCAPE
+tileShape: POSTER | SQUARE | LANDSCAPE
 pinToTop: boolean
 showAllTab: boolean
 focusGlowEnabled: boolean
@@ -203,7 +207,7 @@ The ordinary rename path is the modal Title field. Initial focus enters that Tit
 
 ## Accessibility and responsive behavior
 
-The modal keeps the single page-level `h1` and adds a logical `h2`; Collection and Folder settings sections use subordinate `h3` headings and Folder Artwork's internal groups use `h4`. It retains `role="dialog"`, `aria-modal="true"`, and a collection/folder-specific accessible name. Title and artwork labels use `htmlFor`; presentation choices use semantic fieldsets, legends, native radio buttons, and native checkboxes with `role="switch"`. Decorative image previews have empty alternatives, are hidden from the accessibility tree, and add no focus targets; video playback is reachable only through the labelled opt-in button and native controls. The Folder visibility group is compact without changing native arrow-key radio behavior. Tile-shape cards expose their labels and checked state through their native radios, and selected styling includes both the radio/check mark and colour treatment. Focus enters the dialog, Tab/Shift+Tab remain contained, Escape safely cancels, and backdrop clicks never discard the draft. Referenced descriptions are unique, Cancel is `type="button"`, Enter may submit the form, disabled state is visible without relying only on colour, focus outlines remain strong, and controls meet the mobile tap-target boundary.
+The modal keeps the single page-level `h1` and adds a logical `h2`; Collection and Folder settings sections use subordinate `h3` headings and Folder Artwork's internal groups use `h4`. It retains `role="dialog"`, `aria-modal="true"`, and a collection/folder-specific accessible name. Title and artwork labels use `htmlFor`; presentation choices use semantic fieldsets, legends, native radio buttons, and native checkboxes with `role="switch"`. Decorative image previews have empty alternatives, are hidden from the accessibility tree, and add no focus targets; video playback is reachable only through the labelled opt-in button and native controls. The Folder visibility group is compact without changing native arrow-key radio behavior. Tile-shape cards expose their labels and checked state through their native radios, and selected styling uses the shared surface, even border and structural inset while visually hiding the native radio and preserving its semantics and full-card focus. Focus enters the dialog, Tab/Shift+Tab remain contained, Escape safely cancels, and backdrop clicks never discard the draft. Referenced descriptions are unique, Cancel is `type="button"`, Enter may submit the form, disabled state is visible without relying only on colour, focus outlines remain strong, and controls meet the mobile tap-target boundary.
 
 The form is one DOM instance at all widths. It is full or near-full-screen at narrow widths and centred with a sensible maximum width, bounded height, and one intentional editor scroll owner on desktop. Image fields stack on narrow screens and may place their bounded preview beside the input at wider widths. Heading and actions remain reachable, body scrolling is locked while open, the backdrop has a dark non-blur fallback, and supported browsers add restrained blur. Edit actions are always visible on touch, keyboard, and desktop layouts with 46px targets; the selectable card column can shrink without horizontal overflow or obscuring its title/metadata. Mounted coverage measures 360, 384, 393, 402, 412, 899, 900, 901, and 1280px. The targeted hierarchy level remains visible through Apply or Cancel, while the desktop workspace remains three panels. Reduced-motion behavior remains unchanged.
 
@@ -233,6 +237,6 @@ Labels, semantics, and native disabled state remain the primary test surface.
 
 ## Deliberate exclusions and later work
 
-The historical issue #53/#69 editing scope did not add project-title editing; emoji or artwork controls; source editing; Add Source expansion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; additional TMDB or addon providers; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #118 later added the first existing known Folder artwork fields, issue #136 completes that same preservation-first Folder editor with exact draft previews plus compatibility-only editing of an existing supported nonblank `heroVideoUrl`, and issue #138 adds only the existing Collection `backdropImageUrl` with the shared exact image/GIF preview. The modal still does not provide an ordinary video add option, curated suggestions, identity inference, automatic artwork assignment or replacement, orientation detection, sibling warnings, Collection workspace thumbnails, focus-glow UI, bulk editing, new schema, proxying, or downloads. Issue #78 plus later family extensions separately added fail-closed physical Source Edit. Bulk presentation settings remain a separate focused issue.
+The historical issue #53/#69 editing scope did not add project-title editing; emoji or artwork controls; source editing; Add Source expansion; bulk settings; export/download/copy JSON; persistence/autosave/undo; migration controls; additional TMDB or addon providers; routing; authentication; templates; Quick Setup; recipes; language support; Ultra MAX; AIO Metadata; account-manager conversion; Trakt; v1 or Worker changes; CSP/CORS changes; dependencies; lockfile/workflow/Pages allowlist changes; or unrelated cleanup. Issue #118 later added the first existing known Folder artwork fields, issue #136 completes that same preservation-first Folder editor with exact draft previews plus compatibility-only editing of an existing supported nonblank `heroVideoUrl`, and issue #138 adds only the existing Collection `backdropImageUrl` with the shared exact image/GIF preview. The modal still does not provide an ordinary video add option, curated suggestions, identity inference, automatic artwork assignment or replacement, orientation detection, sibling warnings, Collection workspace thumbnails, focus-glow UI, bulk editing, new schema, proxying, or downloads. Issue #78 plus later family extensions separately added fail-closed physical Source Edit. Global display settings subsequently merged through #154 / PR #155, and the Collection-scoped shape/removal/sorting operations above through #232 / PR #233. The preceding exclusion list records the earlier editing scope, not current product availability.
 
 Issue #69's focused validation and owner UI/flow review completed before the settings polish merged through PR #70.

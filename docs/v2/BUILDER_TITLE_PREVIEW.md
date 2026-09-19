@@ -1,6 +1,6 @@
 # Shared TMDB title Preview
 
-Issue [#226 — Expand supported TMDB title Preview up to 100 source results](https://github.com/davecollections/tmdb-id-lookup/issues/226). Owner-approved implementation. The owner has deployed the reviewed Worker and performed production review; the subsequent frontend presentation refinements remain awaiting owner review. This contract supersedes earlier ten-poster and List-page-one descriptions in historical checkpoints.
+Issue [#226 — Expand supported TMDB title Preview up to 100 source results](https://github.com/davecollections/tmdb-id-lookup/issues/226). Implemented and merged through [PR #227](https://github.com/davecollections/tmdb-id-lookup/pull/227). The retained deployment and validation evidence below describes completed implementation work; this documentation reconciliation does not reopen those gates. This contract supersedes earlier ten-poster and List-page-one descriptions in historical checkpoints.
 
 ## Supported families
 

@@ -1,6 +1,6 @@
 # Builder Franchise hierarchy creation
 
-Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Worker deployment and live page-2 acceptance are pending owner authorization. Earlier checkpoint limits below are historical where superseded by that contract.
+Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Implemented and merged through #226 / PR #227. Earlier checkpoint limits below are historical where superseded by that contract.
 
 Status: implementation and owner review complete, merged through issue [#122](https://github.com/davecollections/tmdb-id-lookup/issues/122) / PR [#123](https://github.com/davecollections/tmdb-id-lookup/pull/123); no current-client Franchise hierarchy result is claimed
 
