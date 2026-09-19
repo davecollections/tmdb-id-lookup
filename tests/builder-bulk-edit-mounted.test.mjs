@@ -25,6 +25,7 @@ import {
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builderModules = path.join(rootDir, "builder", "node_modules");
 const collectionCorrectionOnly = process.env.COLLECTION_FOLDERS_CORRECTION_ONLY === "1";
+const backToTopOnly = process.env.BUILDER_BACK_TO_TOP_ONLY === "1";
 const presentationOnly = process.env.BUILDER_MANAGEMENT_PRESENTATION_ONLY === "1";
 const ownerCollectionImport = process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH
 	? JSON.parse(fs.readFileSync(process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH, "utf8")) : null;
@@ -114,6 +115,50 @@ async function runManagementPresentation(connection) {
 	return { layouts, terminology, errors: await evaluate(connection, "window.__mountedErrors") };
 }
 
+async function runBackToTopChecks(connection) {
+	const results = [];
+	const screenshots = process.env.BUILDER_BACK_TO_TOP_SCREENSHOT_DIR;
+	if (screenshots) await fsPromises.mkdir(screenshots, { recursive: true });
+	async function capture(name) {
+		if (!screenshots) return;
+		const shot = await connection.command("Page.captureScreenshot", { format: "png" });
+		await fsPromises.writeFile(path.join(screenshots, `${name}.png`), Buffer.from(shot.data, "base64"));
+	}
+	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+	for (const width of [360, 384, 393, 402, 412, 1280]) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width, height: width < 900 ? 852 : 900, deviceScaleFactor: 1, mobile: width < 900 });
+		const cases = [{ level: "folders", reduced: false }];
+		if ([393, 1280].includes(width)) cases.push({ level: "collections", reduced: false }, { level: "sources", reduced: false }, { level: "sources", reduced: true });
+		for (const { level, reduced } of cases) {
+			await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduced ? "reduce" : "no-preference" }] });
+			const layout = await evaluate(connection, `window.prepareBackToTopCase(${JSON.stringify(level)})`);
+			if ([393, 1280].includes(width) && !reduced) await capture(`back-to-top-${level}-${width}`);
+			const point = await evaluate(connection, "window.beginBackToTopActivation()");
+			if (level === "sources" && !reduced) {
+				await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+				await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+			} else {
+				await connection.command("Input.dispatchMouseEvent", { type: "mousePressed", ...point, button: "left", buttons: 1, clickCount: 1 });
+				await connection.command("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", buttons: 0, clickCount: 1 });
+			}
+			results.push({ ...layout, ...await evaluate(connection, `window.finishBackToTopActivation(${reduced})`) });
+			if (level === "folders" && [393, 1280].includes(width)) {
+				await capture(`back-to-top-returned-${width}`);
+				for (const exporting of [false, true]) {
+					assert.equal(await evaluate(connection, `window.openBackToTopModal(${exporting})`), true);
+					if (!exporting) await capture(`back-to-top-modal-${width}`);
+					await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+					await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+					assert.equal(await evaluate(connection, `window.closeBackToTopModal(${exporting})`), true);
+				}
+			}
+		}
+	}
+	await connection.command("Emulation.setEmulatedMedia", { features: [] });
+	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: false });
+	return { results, errors: await evaluate(connection, "window.__mountedErrors") };
+}
+
 async function runMountedPage() {
 	const resources = {
 		browserExecutable: null,
@@ -127,7 +172,7 @@ async function runMountedPage() {
 		viteCacheDir: null,
 	};
 	const execution = await runWithLifecycleCleanup(async () => {
-		const optimizeDeps = mountedReactOptimizeDeps(collectionCorrectionOnly || presentationOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
+		const optimizeDeps = mountedReactOptimizeDeps(collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
 		optimizeDeps.include.push("react/jsx-dev-runtime");
 		optimizeDeps.needsInterop.push("react/jsx-dev-runtime");
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-bulk-edit-vite-"));
@@ -218,7 +263,7 @@ async function runMountedPage() {
 		` });
 		const address = resources.vite.httpServer.address();
 		let unrelatedResults = {};
-		if (!collectionCorrectionOnly && !presentationOnly) {
+		if (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly) {
 		await resources.pageConnection.command("Page.navigate", {
 			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-bulk-edit-mounted.html`,
 		});
@@ -353,6 +398,8 @@ async function runMountedPage() {
 		const collectionDeadline = Date.now() + 30000;
 		while (Date.now() < collectionDeadline && !await evaluate(resources.pageConnection, "window.collectionFoldersFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
 		assert.equal(await evaluate(resources.pageConnection, "window.collectionFoldersFixtureReady === true"), true, `Collection fixture loaded: ${JSON.stringify({ fixtureErrors, page: await evaluate(resources.pageConnection, "({ errors: window.__mountedErrors, page: document.body.innerText })") })}`);
+		const backToTop = !collectionCorrectionOnly && !presentationOnly ? await runBackToTopChecks(resources.pageConnection) : null;
+		if (backToTopOnly) return { backToTop };
 		const presentation = await runManagementPresentation(resources.pageConnection);
 		if (presentationOnly) return { presentation };
 		const collectionManagement = [];
@@ -417,7 +464,7 @@ async function runMountedPage() {
 				}
 			}
 		}
-		return { ...unrelatedResults, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
+		return { ...unrelatedResults, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
 	}, () => cleanupMountedBrowser({
 		browserExecutable: resources.browserExecutable,
 		browserProcess: resources.browserProcess,
@@ -431,12 +478,19 @@ async function runMountedPage() {
 	return execution.value;
 }
 
+test("mounted Back to top preserves workspace state, motion, modal safety and phone/desktop geometry", { skip: collectionCorrectionOnly || presentationOnly }, () => {
+	assert.equal(mounted.backToTop.results.length, 12);
+	assert.ok(mounted.backToTop.results.every((result) => result.passed));
+	assert.deepEqual(mounted.backToTop.errors, []);
+	console.log("Back to top:", JSON.stringify(mounted.backToTop.results));
+});
+
 let mounted;
 before(async () => {
 	mounted = await runMountedPage();
 });
 
-test("Sort folders stays compact on phones and Global display settings retains accessible operation", () => {
+test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: backToTopOnly }, () => {
 	assert.equal(mounted.presentation.layouts.length, 12);
 	assert.ok(mounted.presentation.layouts.every((layout) => layout.modalWidth <= 460 && layout.footer));
 	assert.deepEqual(mounted.presentation.terminology.map(({ width }) => width), [393, 1280]);
@@ -445,14 +499,14 @@ test("Sort folders stays compact on phones and Global display settings retains a
 	console.log("Management presentation:", JSON.stringify(mounted.presentation));
 });
 
-test("collection Folder management preserves atomic edits and responsive retained selection", { skip: presentationOnly }, () => {
+test("collection Folder management preserves atomic edits and responsive retained selection", { skip: presentationOnly || backToTopOnly }, () => {
 	assert.equal(mounted.collectionManagement.length, (collectionCorrectionOnly ? 9 : 24) + (ownerCollectionImport ? 2 : 0));
 	assert.ok(mounted.collectionManagement.every((result) => result.passed));
 	assert.deepEqual(mounted.collectionErrors, []);
 	if (collectionCorrectionOnly) console.log("Focused management correction:", JSON.stringify(mounted.collectionManagement));
 });
 
-const unrelatedTest = collectionCorrectionOnly || presentationOnly ? test.skip : test;
+const unrelatedTest = collectionCorrectionOnly || presentationOnly || backToTopOnly ? test.skip : test;
 
 unrelatedTest("compact export, accurate totals, exact delivery and responsive entry work at owner widths", () => {
 	assert.deepEqual(mounted.exportErrors, []);

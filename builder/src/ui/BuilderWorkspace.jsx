@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { WorkspaceBackToTop } from "./WorkspaceBackToTop.jsx";
 import { ExportCollectionsDialog } from "./ExportCollectionsDialog.jsx";
 import { hasExportableStructure } from "./export-collections.js";
 import builderMark from "../assets/builder-mark.svg";
@@ -745,6 +746,7 @@ export function BuilderWorkspace({
 	const [exportOpen, setExportOpen] = useState(false);
 	const exportTriggerRef = useRef(null);
 	const workspaceScrollRef = useRef(0);
+	const workspaceHeadingRef = useRef(null);
 	const desktopViewport = useBuilderDesktopViewport();
 	const [editorDraft, setEditorDraft] = useState(initialEditorDraft);
 	const collectionEditorSessionRef = useRef(null);
@@ -2492,12 +2494,13 @@ export function BuilderWorkspace({
 				inert={modalLocked || exportOpen || undefined}
 				aria-hidden={modalLocked || exportOpen ? "true" : undefined}
 			>
+				<WorkspaceBackToTop headingRef={workspaceHeadingRef} disabled={hierarchyInteractionLocked} />
 				<header className="app-header">
 					<div className="brand-lockup">
 						<img className="builder-mark" src={builderMark} alt="" width="56" height="56" />
 						<div>
 							<p className="preview-label">Development preview</p>
-							<h1 className="builder-product-title">
+							<h1 ref={workspaceHeadingRef} className="builder-product-title" tabIndex={-1}>
 								<span>Dingo's</span>
 								<span>Collection Builder</span>
 							</h1>
