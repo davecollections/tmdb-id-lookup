@@ -1967,7 +1967,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.equal(result.backPreviewAvailable, true, `${label} Back restores Choose Preview`);
 		assert.deepEqual(result.guidedNewCollection, {
 			scope: "new-collection",
-			stageKicker: "Review & Appearance",
+			stageKicker: "Step 2 · Review",
+			stageTitle: "Review & Appearance",
 			headerDescription: "Review names, appearance and exact List-ID placement before creating everything atomically.",
 			selectedCount: 4,
 			namesInitiallyEmpty: true,
@@ -2011,7 +2012,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.ok(result.guidedNewCollection.actionLineCount <= 2, `${label} New Collection action wrapping`);
 		assert.deepEqual(result.guidedNewFolder, {
 			scope: "new-folder",
-			stageKicker: "Review & Appearance",
+			stageKicker: "Step 2 · Review",
+			stageTitle: "Review & Appearance",
 			headerDescription: "Review names, appearance and exact List-ID placement before creating everything atomically.",
 			selectedCount: 1,
 			namesInitiallyEmpty: true,
@@ -2870,7 +2872,7 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 			heading: result.review.initialDestination.heading,
 			headerDescription: result.review.initialDestination.headerDescription,
 		}, {
-			stageKicker: "Step 3",
+			stageKicker: "Step 3 · Review",
 			heading: "Choose destination",
 			headerDescription: "Choose where these Streaming sources should go.",
 		}, `${result.width}px unresolved destination stage language`);
@@ -2887,7 +2889,7 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 		assert.match(result.review.initialDestination.overlapText, /Apple movies · in Streaming Services · Collection 2/);
 		assert.match(result.review.initialDestination.overlapText, /Dekkoo movies · in Streaming Services · Collection 3/);
 		assert.deepEqual(result.review.newCollectionDraftState, {
-			stageKicker: "Step 3",
+			stageKicker: "Step 3 · Review",
 			heading: "Review & Appearance",
 			headerDescription: "Review the exact creation or change summary before one atomic Apply.",
 			collectionNameVisible: true,

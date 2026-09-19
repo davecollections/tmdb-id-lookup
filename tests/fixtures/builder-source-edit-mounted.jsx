@@ -3422,7 +3422,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		const initialDestinationRadios = [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')];
 		const initialNewDestination = required(review.querySelector("[data-streaming-destination-new]"), "New Collection destination card");
 		const initialDestination = {
-			stageKicker: review.querySelector(".add-source-section-heading .panel-kicker")?.textContent.trim() ?? null,
+			stageKicker: review.querySelector(".creation-stage-intro .panel-kicker")?.textContent.trim() ?? null,
 			heading: review.querySelector("#streaming-hierarchy-review-title")?.textContent.trim() ?? null,
 			headerDescription: dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 			candidateCards: [...review.querySelectorAll("[data-streaming-destination-candidate]")].map((label) => ({
@@ -3487,7 +3487,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		const folderHiddenHelpRemovedOnHomeOnly = review.querySelector("#streaming-folder-titles-hidden-help") === null;
 		const titleVisibility = { collectionHidden, collectionHiddenHelp, collectionRestored, collectionHiddenHelpRemoved, latestCollectionRestored, folderHidden, folderHiddenHelp, folderHomeOnlyRestored, folderHiddenHelpRemovedOnHomeOnly, planningLabelsRetained };
 		const newCollectionDraftState = {
-			stageKicker: review.querySelector(".add-source-section-heading .panel-kicker")?.textContent.trim() ?? null,
+			stageKicker: review.querySelector(".creation-stage-intro .panel-kicker")?.textContent.trim() ?? null,
 			heading: review.querySelector("#streaming-hierarchy-review-title")?.textContent.trim() ?? null,
 			headerDescription: dialog.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 			collectionNameVisible: review.querySelector("#streaming-collection-name") !== null,
@@ -7855,7 +7855,8 @@ async function runTmdbListLayoutScenario() {
 			const actionContentHeight = action.getBoundingClientRect().height - Number.parseFloat(actionStyle.paddingTop) - Number.parseFloat(actionStyle.paddingBottom);
 			const result = {
 				scope,
-				stageKicker: surface.querySelector(".tmdb-list-review .panel-kicker")?.textContent.trim() ?? null,
+				stageKicker: surface.querySelector(".tmdb-list-review .creation-stage-intro .panel-kicker")?.textContent.trim() ?? null,
+				stageTitle: surface.querySelector(".tmdb-list-review .creation-stage-intro h3")?.textContent.trim() ?? null,
 				headerDescription: surface.closest(".creation-dialog")?.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 				selectedCount: ids.length,
 				namesInitiallyEmpty,
