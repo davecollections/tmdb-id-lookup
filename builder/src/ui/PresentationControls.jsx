@@ -84,7 +84,7 @@ export function FolderShapeChoices({ selectedId, name, idPrefix, onChange, poste
 			{options.map((option) => {
 				const shape = option.id.toLowerCase();
 				const selected = isSelected(selectedId, option.id);
-				return <label key={option.id} className={`editor-choice editor-shape-choice${selected ? " is-selected" : ""}`} htmlFor={`${idPrefix}-${shape}-shape`}>
+				return <label key={option.id} className={`editor-choice editor-shape-choice${selected ? " is-selected" : ""}`} htmlFor={`${idPrefix}-${shape}-shape`} data-selection-mode="single">
 					<input className="visually-hidden choice-card-input" id={`${idPrefix}-${shape}-shape`} type="radio" name={name} value={option.id} data-editor-choice={shape} checked={selected} onChange={() => onChange(option.id)} />
 					<span className={`shape-preview is-${shape}`} aria-hidden="true" />
 					<span><strong>{option.label}</strong><small>{option.description}</small></span>
@@ -103,7 +103,7 @@ export function FolderTitleVisibilityChoices({ selectedId, name, onChange }) {
 	return (
 		<div className="editor-compact-radio-grid" data-control-presentation="compact-radios">
 			{options.map((option) => (
-				<label key={option.id} className={`editor-compact-radio${selectedId === option.id ? " is-selected" : ""}`}>
+				<label key={option.id} className={`editor-compact-radio${selectedId === option.id ? " is-selected" : ""}`} data-selection-mode="single">
 					<input
 						className="visually-hidden choice-card-input"
 						type="radio"

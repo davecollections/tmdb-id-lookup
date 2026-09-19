@@ -23,8 +23,8 @@ function recordLiveDiscover() {
 
 // All titles, counts and posters come from the shared production-path requester.
 // This thin scenario reuses the source-editor mounted browser and lifecycle helpers.
-export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode }) {
-	const { createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition } = helpers;
+export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode, presentationOnly = false }) {
+	const { createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, setSelectValue, titlePreviewGeometry, waitForMountedCondition, streamingProvider } = helpers;
 	recordLiveDiscover();
 	const controller = createController(), folder = importSources(controller, []);
 	const initial = controller.getState(), collection = initial.project.collections[0];
@@ -49,8 +49,38 @@ export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode }) 
 	const forbidden = () => { throw new Error("Preview must not apply or save the draft."); };
 	const evidence = { scope, mediaMode, width: innerWidth, height: innerHeight, previews: [] };
 	try {
-		await act(async () => { root.render(createElement(AdvancedDiscoverFlow, { scope: editing ? "add-source" : scope, ...controller.getState(), projectRevision: controller.getState().revision, collectionInternalId: collection.internalId, folderInternalId: folder.internalId, initialDraft: draft, onCancel: () => { cancels += 1; }, onApply: forbidden, ...(editing ? { onSave: forbidden } : {}) })); await afterCommittedEffects(); });
+		await act(async () => { root.render(createElement(AdvancedDiscoverFlow, { scope: editing ? "add-source" : scope, ...controller.getState(), projectRevision: controller.getState().revision, collectionInternalId: collection.internalId, folderInternalId: folder.internalId, initialDraft: draft, streamingProvider, onCancel: () => { cancels += 1; }, onApply: forbidden, ...(editing ? { onSave: forbidden } : {}) })); await afterCommittedEffects(); });
 		const dialog = document.querySelector(".discover-dialog");
+		if (presentationOnly) {
+			const sort = dialog.querySelector('input[name="discover-sort"]:checked');
+			if (sort?.type !== "radio" || sort.parentElement.dataset.selectionMode !== "single") throw new Error("Physical Discover sort lost single-choice semantics.");
+			await waitForMountedCondition(() => getComputedStyle(sort.parentElement).backgroundColor === "rgba(1, 180, 228, 0.12)", { label: "scalar Discover sort uses cyan" });
+			if (globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `issue-230-discover-edit-${innerWidth}-sort` })); });
+			const region = await waitForMountedCondition(() => dialog.querySelector('#discover-field-watchRegion option[value="AU"]')?.parentElement, { label: "official watch-region option" });
+			await act(async () => { setSelectValue(region, "AU"); await afterCommittedEffects(); });
+			await waitForMountedCondition(() => getComputedStyle(region).backgroundColor === "rgba(1, 180, 228, 0.12)", { label: "watch region uses cyan" });
+			await waitForMountedCondition(() => {
+				const providers = dialog.querySelector(".discover-providers");
+				const error = providers?.querySelector('.discover-notice[role="alert"]');
+				if (error) throw new Error("Live provider catalogue failed: " + error.textContent);
+				return providers?.querySelector('.discover-picker-launch:not(:disabled)');
+			}, { label: "live provider catalogue ready for AU", timeoutMs: 30000 });
+			const picker = dialog.querySelector('[data-picker="withWatchProviders"]');
+			if (innerWidth <= 900) await clickAndSettle(picker.querySelector(".discover-picker-launch"));
+			else await act(async () => { picker.querySelector('input[type="search"]').focus(); await afterCommittedEffects(); });
+			const option = await waitForMountedCondition(() => document.querySelector('[aria-label="Streaming providers suggestions"] [role="option"]'), { label: "actual AU provider result", timeoutMs: 30000 });
+			await clickAndSettle(option);
+			const panel = document.querySelector(".discover-selection-dialog");
+			if (panel) await clickAndSettle(panel.querySelector(".genre-secondary-done"));
+			if (dialog.querySelector('.discover-providers [role="alert"]')) throw new Error("Provider selection left an invalid review state.");
+			const owner = dialog.querySelector(".add-source-scroll");
+			owner.scrollTop += region.getBoundingClientRect().top - owner.getBoundingClientRect().top - 80;
+			await afterCommittedEffects();
+			if (globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `issue-230-discover-edit-${innerWidth}-watch-region` })); });
+			await clickAndSettle(dialog.querySelector('[aria-label="Close creation flow"]'));
+			if (serializedValue(controller) !== snapshot || cancels !== 1) throw new Error("Discover presentation changed saved project.");
+			return { width: innerWidth, scalarSortCyan: true, watchRegionCyan: true, liveProviderReady: true, noMutation: true };
+		}
 		const selected = () => [...dialog.querySelectorAll('input[name="discover-sort"]:checked, input[name="discover-media"]:checked')].map((input) => input.value);
 		const fields = () => ["voteCountGte", "voteAverageGte", "releaseDateGte"].map((key) => dialog.querySelector("#discover-field-" + key)?.value);
 		async function inspectPreview(expected, changed = false) {

@@ -232,7 +232,7 @@ export function PeopleEditorFields({
 				{PEOPLE_SOURCE_COMBINATIONS.map((combination, index) => {
 					const selected = draft.combinationId === combination.id;
 					return (
-						<label key={combination.id} className="source-edit-combination" data-selected={selected ? "true" : undefined}>
+						<label key={combination.id} className="source-edit-combination" data-selected={selected ? "true" : undefined} data-selection-mode="single">
 							<input
 								ref={index === 0 ? combinationRef : undefined}
 								className="visually-hidden choice-card-input"

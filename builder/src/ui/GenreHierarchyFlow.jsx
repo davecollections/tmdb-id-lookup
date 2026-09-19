@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -58,7 +59,7 @@ function SelectStep({ query, selection, genres, headingRef, onQueryChange, onCle
 	const concepts = searchGenreConcepts(query);
 	return (
 		<section className="genre-hierarchy-select genre-browse-step" aria-labelledby="genre-hierarchy-select-title">
-			<div className="add-source-section-heading genre-browse-heading"><div><p className="panel-kicker">Step 1</p><h3 id="genre-hierarchy-select-title" ref={headingRef} tabIndex={-1}>Select Genres</h3></div></div>
+			<CreationStageIntro step={1} phase="Select" title="Select Genres" headingId="genre-hierarchy-select-title" headingRef={headingRef} tabIndex={-1} />
 			<p className="studio-configure-helper">Choose official TMDB Genres in the folder order you want.</p>
 			{genres.length ? <section className="people-selected-tray genre-hierarchy-selected-tray"><div className="people-selected-summary"><strong>{genres.length} Genre{genres.length === 1 ? "" : "s"} selected</strong><RemovableSelectionSummary items={selectionItems(genres)} onRemove={onRemove} ariaLabel="Selected Genres" disclosureLabel="View selected Genres" alwaysDisclose showDisclosureCount={false} /></div></section> : null}
 			<GenreSelectionToolbar selectionCount={selection.length} totalCount={GENRE_CONCEPTS.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
@@ -154,7 +155,7 @@ function ConfigureStep({
 	const mediaNotice = fixedMediaNotice(genres, sharedMediaChoice);
 	return (
 		<section className="genre-hierarchy-configure" aria-labelledby="genre-hierarchy-configure-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="genre-hierarchy-configure-title" ref={headingRef} tabIndex={-1}>Configure Genres</h3></div></div>
+			<CreationStageIntro step={2} phase="Configure" title="Configure Genres" headingId="genre-hierarchy-configure-title" headingRef={headingRef} tabIndex={-1} />
 			<section className="genre-hierarchy-configuration-surface" aria-labelledby="genre-hierarchy-content-settings-title">
 				<div><p className="panel-kicker">Shared content settings</p><h4 id="genre-hierarchy-content-settings-title">Configure every selected Genre</h4><p>These settings are applied to the configured Genre sources below.</p></div>
 				{hasShared ? <div className="genre-hierarchy-configuration-control"><SemanticSortChoices options={GENRE_MEDIA_CHOICES} selectedId={sharedMediaChoice} name="genre-hierarchy-media" legend="Media" helper="Applies to Genres available in both Movies and Series." onChange={onSharedMediaChange} />{mediaNotice ? <p className="genre-fixed-media-note" role="status">{mediaNotice}</p> : null}</div> : null}
@@ -230,7 +231,7 @@ function StructureStep({ structurePlans, compositeChoices, options, headingRef, 
 		.filter((option) => structurePlans.has(option.id))
 		.map((option) => ({ ...option, preview: <StructureChoicePreview structure={option.id} planResult={structurePlans.get(option.id)} /> }));
 	return <section className="genre-hierarchy-structure" aria-labelledby="genre-hierarchy-structure-title">
-		<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="genre-hierarchy-structure-title" ref={headingRef} tabIndex={-1}>Structure</h3></div></div>
+		<CreationStageIntro step={3} phase="Structure" title="Structure" headingId="genre-hierarchy-structure-title" headingRef={headingRef} tabIndex={-1} />
 		<p className="studio-configure-helper">Choose how Genre folders are arranged within collections on your Nuvio Home screen.</p>
 		<ChoiceCards legend="Structure options" hideLegend name="genre-hierarchy-structure" options={choices} selectedId={options.structure} onChange={onStructureChange} gridClassName="genre-structure-choice-grid" />
 		{options.structure === "genre-folders" && compositeChoices.length ? <section className="genre-composite-placement" aria-labelledby="genre-composite-placement-title">
@@ -258,8 +259,8 @@ function AppearanceStep({ advancedUi, planResult, options, onOptionsChange, diag
 	const elsewhereCount = plan.outcomes.filter((outcome) => outcome.status === GENRE_HIERARCHY_PLACEMENT_STATUSES.EXISTS_ELSEWHERE).length;
 	return (
 		<section className="genre-hierarchy-appearance" aria-labelledby="genre-hierarchy-appearance-title">
+			<CreationStageIntro step={4} phase="Appearance" title="Appearance" headingId="genre-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
    <DiscoverFamilyAdvancedSummary legacy ui={advancedUi} value={plan.configuration.advanced} mediaMode={plan.configuration.sharedMediaChoice} />
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 4</p><h3 id="genre-hierarchy-appearance-title" ref={headingRef} tabIndex={-1}>Appearance</h3></div></div>
 			<div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div>
 			{omittedCount || elsewhereCount ? <p className="studio-configure-helper">{omittedCount ? `${omittedCount} destination match${omittedCount === 1 ? " is" : "es are"} omitted. ` : ""}{elsewhereCount ? `${elsewhereCount} elsewhere match${elsewhereCount === 1 ? " remains" : "es remain"} addable.` : ""}</p> : null}
 			{plan.configuration.scope === "new-collection" ? <>

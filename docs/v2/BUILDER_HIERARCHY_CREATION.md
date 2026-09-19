@@ -88,6 +88,12 @@ For eligible family pickers:
 
 A hard ceiling requires measured technical evidence and explicit owner review. Controller convenience limits, historical UI limits, or concern about a large number alone are not evidence for a product cap.
 
+## Shared stage presentation (#230)
+
+Use the presentation-only `CreationStageIntro` for each guided stage: step number, optional phase, family-specific title/helper, heading ID and existing focus target. Place it before ordinary selected trays, summaries and controls. Keep the outer `CreationHeader` unchanged. The component must not own stage navigation, totals or family business rules. Preserve shorter/longer flows, Streaming Select subviews, append-only completion and separate Add Source workflows. The [UI Shell contract](./BUILDER_UI_SHELL.md#guided-stage-intros-230) records the nine-family mapping.
+
+Semantic Include/Exclude controls follow the stronger shared rule: Include mode/items stay green, Exclude mode/items stay red with dashed borders, and Any/All stays cyan. Ordinary cardinality must not override those meanings.
+
 ## 5. Selectable-card accessibility
 
 The authoritative visual rules are in [`BUILDER_UI_SHELL.md`](./BUILDER_UI_SHELL.md#selectable-choice-presentation-contract). This section records the guided-flow accessibility and scroll implications.
@@ -95,7 +101,7 @@ The authoritative visual rules are in [`BUILDER_UI_SHELL.md`](./BUILDER_UI_SHELL
 For multi-select catalogue or search results:
 
 - the complete card is an activation target;
-- selected state uses the established teal/cyan restrained surface and border plus a structural inset;
+- selected state uses the shared green retained-multi-selection surface and border plus a structural inset;
 - keep the native checkbox visually hidden and do not add a circular substitute, dot, or tick;
 - never rely on colour alone: keep selected state programmatically available and visually distinguishable through more than hue alone;
 - retain accessible native checkbox semantics where practical;
@@ -104,7 +110,7 @@ For multi-select catalogue or search results:
 
 The People regression establishes a required layout rule: a visually hidden focusable checkbox, or an equivalent focusable control, must be positioned inside the selectable card and intended inner scroller's coordinate context. When a partially clipped card receives pointer or keyboard focus, browser-native focus scrolling may move the inner result pane only; it must not reposition the outer creation dialog, document, or sticky action. Do not compensate with brittle focus handlers, synthetic keyboard interception, or post-focus scroll resets.
 
-Single-choice visual cards, including Genre Structure, retain visually hidden native radio semantics and the same restrained selected border/surface/inset plus visible full-card keyboard focus. They do not add a visible radio dot or tick. Shape choices may strengthen the selected schematic preview. A wireframe preview is presentation-only, may be hidden from assistive technology when the adjacent title/subtitle names the choice completely, and must not replace the radio label or live derived summary.
+Single-choice visual cards, including Genre Structure, retain visually hidden native radio semantics and cyan/teal selected border/surface/inset plus visible full-card keyboard focus. They do not add a visible radio dot or tick. Shape choices may strengthen the selected schematic preview. A wireframe preview is presentation-only, may be hidden from assistive technology when the adjacent title/subtitle names the choice completely, and must not replace the radio label or live derived summary.
 
 ## 6. Scroll ownership
 

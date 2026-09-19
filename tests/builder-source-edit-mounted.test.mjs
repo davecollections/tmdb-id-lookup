@@ -63,6 +63,8 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const semanticPresentationOnly = process.env.TMDB_SEMANTIC_PRESENTATION_ONLY === "1";
+	const guidedPresentationOnly = process.env.TMDB_GUIDED_PRESENTATION_ONLY === "1";
 	const decadesBoundaryOnly = process.env.TMDB_DECADES_BOUNDARY_ONLY === "1";
 	const previewPresentationOnly = process.env.TMDB_PREVIEW_PRESENTATION_ONLY === "1";
 	const previewPagesOnly = process.env.TMDB_PREVIEW_PAGES_ONLY === "1";
@@ -200,6 +202,18 @@ async function runMountedPage() {
 		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
+		if (guidedPresentationOnly || semanticPresentationOnly) {
+			resources.pageConnection.onEvent((message) => {
+				if (message.method !== "Runtime.bindingCalled" || message.params.name !== "pressGuidedPresentationKey") return;
+				const key = JSON.parse(message.params.payload).key;
+				const code = key === " " ? "Space" : key;
+				const virtualKey = key === " " ? 32 : key === "Escape" ? 27 : 9;
+				resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: virtualKey })
+					.then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: virtualKey }))
+					.then(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish230Key()" }));
+			});
+			await resources.pageConnection.command("Runtime.addBinding", { name: "pressGuidedPresentationKey" });
+		}
 		if (process.env.TMDB_204_SCREENSHOTS) {
 			await fsPromises.mkdir(process.env.TMDB_204_SCREENSHOTS, { recursive: true });
 			resources.pageConnection.onEvent((message) => {
@@ -240,7 +254,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -250,6 +264,54 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (semanticPresentationOnly) {
+					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+					const semantics = [];
+					for (const width of [393, 1280]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width <= 900 });
+						for (const expression of [
+							'window.__runGenreRulesPresentationScenario({ semanticReview: true })',
+							'window.__runGuidedPresentationScenario({ family: "advanced-discover", capture: true, semanticOnly: true })',
+							'window.__runNativeSharedAdvancedScenario({ family: "studio", scope: "new-folder", layoutOnly: true, semanticReview: true })',
+							'window.__runNativeSharedAdvancedScenario({ family: "network", scope: "edit", layoutOnly: true, semanticReview: true })',
+						]) {
+							const checked = await resources.pageConnection.command("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+							if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+							semantics.push(checked.result.value);
+							console.log(`SEMANTIC_PRESENTATION_CASE ${JSON.stringify(checked.result.value)}`);
+						}
+					}
+					return { semantics };
+				}
+				if (guidedPresentationOnly) {
+					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+					const allFamilies = ["decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
+					const cases = [
+						...[393, 1280].flatMap(width => allFamilies.map(family => ({ width, family, capture: true }))),
+						...[360, 384, 402, 412].map(width => ({ width, family: "decades" })),
+						...[899, 900, 901].flatMap(width => ["genres", "advanced-discover"].map(family => ({ width, family }))),
+						...["decades", "advanced-discover", "people"].map(family => ({ width: 393, family, forcedColors: true, capture: true })),
+					];
+					const presentation = [];
+					for (const view of cases) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }] });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runGuidedPresentationScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						presentation.push(checked.result.value);
+						console.log(`GUIDED_PRESENTATION_CASE ${JSON.stringify(checked.result.value)}`);
+					}
+					const discoverChoices = [];
+					await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "none" }] });
+					for (const width of [393, 1280]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: 'window.__runDiscoverPreviewScenario({ scope: "edit-created", mediaMode: "movies", presentationOnly: true })', awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						discoverChoices.push(checked.result.value);
+					}
+					console.log(`DISCOVER_CHOICE_PRESENTATION ${JSON.stringify(discoverChoices)}`);
+					return { presentation, discoverChoices };
+				}
 				if (previewPresentationOnly) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const pagingPresentation = [];
@@ -1108,6 +1170,20 @@ test("mounted notices retain even borders and accessible actions on desktop and 
 });
 
 let mountedResults;
+test("mounted semantic Include Exclude takes precedence over cardinality", { skip: process.env.TMDB_SEMANTIC_PRESENTATION_ONLY !== "1" }, () => {
+	assert.equal(mountedResults.semantics.length, 8);
+	for (const result of mountedResults.semantics) assert.ok(result.noMutation);
+});
+test("mounted guided presentation retains semantic choices and responsive stage structure", { skip: process.env.TMDB_GUIDED_PRESENTATION_ONLY !== "1" }, () => {
+	assert.equal(mountedResults.presentation.length, 31);
+	for (const result of mountedResults.presentation) {
+		assert.ok(result.noMutation && result.focusRestored);
+		assert.ok(result.stages.length >= 2);
+		if (["decades", "people", "franchises", "advanced-discover"].includes(result.family)) assert.ok(result.keyboard);
+	}
+	assert.equal(mountedResults.discoverChoices.length, 2);
+	for (const result of mountedResults.discoverChoices) assert.ok(result.scalarSortCyan && result.watchRegionCyan && result.liveProviderReady && result.noMutation);
+});
 test("mounted live Preview paging hides the normal fallback and ends quietly", { skip: process.env.TMDB_PREVIEW_PRESENTATION_ONLY !== "1" }, () => {
 	for (const entry of mountedResults.pagingPresentation) {
 		assert.ok(entry.frames > 0);

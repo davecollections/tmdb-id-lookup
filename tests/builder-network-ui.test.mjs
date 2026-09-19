@@ -118,7 +118,7 @@ test("Network Add discovery shows exact Series Count filters, count metadata, an
 	assert.ok(markup.includes(">A–Z</button>"));
 	assert.ok(markup.includes(">Most series</button>"));
 	assert.equal(markup.includes("Most shows"), false);
-	assert.match(markup, /<button class="add-source-result studio-result network-result is-selected" type="button" aria-pressed="true" data-tmdb-network-result="2"/);
+	assert.match(markup, /<button data-selection-mode="single" class="add-source-result studio-result network-result is-selected" type="button" aria-pressed="true" data-tmdb-network-result="2"/);
 	assert.equal(markup.includes("987654"), false);
 	assert.equal(markup.includes("legacyCount"), false);
 });

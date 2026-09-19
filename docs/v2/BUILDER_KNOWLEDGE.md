@@ -1,5 +1,13 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Guided creation presentation (#230, owner review pending)
+
+[Issue #230](https://github.com/davecollections/tmdb-id-lookup/issues/230) implements the owner-approved presentation cleanup across all nine guided families. Shared `CreationStageIntro` renders a lightweight numbered phase/title/helper, preserving family stage counts, headings, focus relationships and flow behavior. Studio/Network intros precede selected trays; Genre Appearance precedes its advanced summary. People keeps its existing outer header.
+
+The owner intentionally refines the historical cyan-only selected contract: green is retained/additive multi-selection; cyan/teal is single selected/current; red remains exclusion and grey remains unavailable. Independent booleans and membership/action rows stay neutral. Scoped success UI may also remain green. Shared semantic attributes/tokens own selection colours. Owner visual review corrected the initial #230 regression: established semantic Include mode/items stay green and Exclude mode/items stay red with dashed borders, taking precedence over ordinary cardinality across shared/family Advanced controls. Match any/all, watch region and scalar editing sort remain cyan. An even inset border preserves selected state in forced colours separately from focus. The [UI Shell choice contract](./BUILDER_UI_SHELL.md#selectable-choice-presentation-contract) is authoritative and supersedes contrary historical colour wording below.
+
+This is presentation-only: no controller/domain, source/filter/identity, artwork, V1, Worker, dependency or generated-data behavior changes. Changes remain unstaged/uncommitted for owner review; no publication or physical-phone acceptance is claimed.
+
 Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Worker deployment and live page-2 acceptance are pending owner authorization. Earlier checkpoint limits below are historical where superseded by that contract.
 
 ## Genre artwork and authored Square (#222)

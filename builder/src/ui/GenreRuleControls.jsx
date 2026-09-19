@@ -6,7 +6,7 @@ export function GenreRuleCard({ title = "Genres", headingRef, children }) {
 export function GenreRulePills({ rows, onChoose }) {
 	return <div className="discover-genre-pills">{rows.map((row) => {
 		const { included = false, excluded = false } = row;
-		return <button type="button" key={row.id} data-genre-name={row.genreName} aria-label={(excluded ? "Exclude: " : included ? "Include: " : "") + row.name + (row.unavailable ? " (unavailable for this media)" : row.only ? " (" + row.only + " only)" : "")} aria-pressed={included || excluded} data-chosen={included || excluded || undefined} data-excluded={excluded || undefined} onClick={() => onChoose(row)}>{row.name}{row.only ? <span className="discover-genre-media" aria-hidden="true">{row.only}</span> : null}</button>;
+		return <button type="button" data-selection-mode="multiple" data-selection-semantics={excluded ? "exclude" : included ? "include" : undefined} key={row.id} data-genre-name={row.genreName} aria-label={(excluded ? "Exclude: " : included ? "Include: " : "") + row.name + (row.unavailable ? " (unavailable for this media)" : row.only ? " (" + row.only + " only)" : "")} aria-pressed={included || excluded} data-chosen={included || excluded || undefined} data-excluded={excluded || undefined} onClick={() => onChoose(row)}>{row.name}{row.only ? <span className="discover-genre-media" aria-hidden="true">{row.only}</span> : null}</button>;
 	})}</div>;
 }
 

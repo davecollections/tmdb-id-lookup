@@ -12,39 +12,26 @@
 .discover-dialog .discover-genre-pills { display: flex; flex-wrap: wrap; gap: 7px; }
 .discover-dialog .discover-operator-label { flex-basis: 100%; color: var(--muted); font-size: .66rem; line-height: 1.45; }
 .discover-dialog .discover-genre-media { margin-left: 6px; font-size: .6rem; font-weight: 400; }
-/* Pressed buttons use the measured shared SemanticSortChoices pill treatment.
-   Genre state keeps the same metrics and adds a solid/dashed distinction. */
-.discover-dialog .discover-mode button,
-.discover-dialog .discover-operator button,
-.discover-dialog .discover-genre-pills button {
+/* Keep neutral base specificity below shared selected states even when this
+   component stylesheet loads after styles.css, as it does in the real app. */
+.discover-dialog :where(.discover-mode, .discover-operator, .discover-genre-pills) button {
  display: inline-flex; align-items: center; justify-content: center;
  flex: 0 0 auto; width: auto; max-width: 100%; min-height: 36px;
  padding: 7px 12px; color: var(--text); font: inherit; font-size: .68rem; font-weight: 800;
  background: rgb(11 35 48 / 72%); border: 1px solid var(--border); border-radius: 999px;
  white-space: normal; overflow-wrap: anywhere; cursor: pointer;
 }
-.discover-dialog .discover-mode button[aria-pressed="true"],
-.discover-dialog .discover-operator button[aria-pressed="true"] {
- color: #e9fbff; background: rgb(1 180 228 / 12%); border-color: rgb(98 225 255 / 56%);
+/* Membership chips keep their include/exclude meaning without fake toggle semantics. */
+.discover-dialog .discover-chips li {
+ color: var(--selection-include-text); background: var(--selection-include-background); border-color: var(--selection-include-border);
  box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
 }
-.genre-catalogue-list [data-genre-semantics="include"][data-selected],
-.discover-dialog .discover-mode button[data-mode="include"][aria-pressed="true"],
-.discover-dialog .discover-genre-pills button[data-chosen="true"],
-.discover-dialog .semantic-sort-choices label[data-selected]:has(input[name="discover-sort"]),
-.discover-dialog .discover-chips li,
-.discover-dialog .discover-dropdown li[aria-selected="true"],
+.discover-dialog .discover-chips li[data-excluded] {
+ color: var(--selection-exclude-text); background: var(--selection-exclude-background); border-color: var(--selection-exclude-border); border-style: dashed;
+}
 .discover-dialog select[data-watch-region] {
- color: #e8fff1; background: rgb(69 176 119 / 14%); border-color: rgb(132 220 166 / 62%);
+ color: var(--choice-selected-text); background: var(--choice-selected-background); border-color: var(--choice-selected-border);
  box-shadow: inset 0 0 0 1px rgb(233 247 255 / 12%);
-}
-.genre-exclusion-picker-list[data-genre-semantics="exclude"] button[data-selected],
-.genre-catalogue-list [data-genre-semantics="exclude"][data-selected],
-.discover-dialog .discover-mode button[data-mode="exclude"][aria-pressed="true"],
-.discover-dialog .discover-genre-pills button[data-excluded],
-.discover-dialog .discover-chips li[data-excluded],
-.discover-dialog .discover-dropdown li[data-excluded] {
- color: #ffe8e5; background: rgb(221 102 99 / 13%); border-color: rgb(255 154 145 / 62%); border-style: dashed;
 }
 .discover-dialog .semantic-sort-choices label:has(input:disabled) { opacity: .5; cursor: default; }
 .discover-dialog .discover-mode button:focus-visible,
@@ -167,13 +154,6 @@
 @media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
  .discover-dialog .discover-actions { grid-template-columns: minmax(180px, 320px) max-content; justify-content: space-between; }
 }
-@media (forced-colors: active) {
- .discover-dialog .discover-mode button[aria-pressed="true"],
- .discover-dialog .discover-operator button[aria-pressed="true"],
- .discover-dialog .discover-genre-pills button[data-chosen="true"] { outline: 2px solid Highlight; outline-offset: -4px; }
- .discover-dialog .discover-dropdown li[data-active] { outline: 2px solid Highlight; outline-offset: -3px; }
-}
-
 /* Dedicated secondary surfaces reuse the viewport observer, focus trap and
    Genre help/Done patterns; their content has one scroll owner. */
 .discover-dialog .discover-picker-launch { display: none; width: 100%; text-align: left; justify-content: space-between; }
@@ -209,9 +189,7 @@
  .discover-help-scroll dl div { grid-template-columns: minmax(0, 1fr); }
 }
 @media (forced-colors: active) {
- .discover-dialog .discover-dropdown li[aria-selected="true"],
- .discover-dialog .discover-chips li,
- .discover-dialog select[data-watch-region],
- .discover-dialog .semantic-sort-choices label[data-selected]:has(input[name="discover-sort"]) { outline: 2px solid Highlight; outline-offset: -4px; }
- .discover-dialog .discover-dropdown li[data-active] { outline-offset: -7px; }
+ .discover-dialog .discover-chips li { border-color: Highlight; }
+ .discover-dialog select[data-watch-region] { border: 1px solid Highlight; }
+ .discover-dialog .discover-dropdown li[data-active] { outline: 2px solid Highlight; outline-offset: -7px; }
 }

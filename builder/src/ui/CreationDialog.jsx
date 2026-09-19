@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { lazy, Suspense } from "react";
 const AdvancedDiscoverFlow = lazy(() => import("./AdvancedDiscoverFlow.jsx"));
@@ -185,16 +186,13 @@ function inheritedCollectionAppearanceSummary(presentation) {
 export function DecadePresetStep({ state, headingRef, onToggle, onSelectAll, onClearAll }) {
 	return (
 		<section className="decades-step" aria-labelledby="decades-preset-title">
-			<div className="add-source-section-heading">
-				<div><p className="panel-kicker">Step 1</p><h3 id="decades-preset-title" ref={headingRef} tabIndex={-1}>Choose decades</h3></div>
-			</div>
-			<p className="decades-step-guidance">Choose one or more presets.</p>
+			<CreationStageIntro step={1} phase="Select" title="Choose decades" description="Choose one or more presets." headingId="decades-preset-title" headingRef={headingRef} tabIndex={-1} />
 			<GenreSelectionToolbar selectionCount={state.selectedDecadeIds.length} totalCount={DECADE_PRESETS.length} onSelectAll={onSelectAll} onClearAll={onClearAll} />
 			<div className="decades-preset-grid">
 				{DECADE_PRESETS.map((preset) => {
 					const selected = state.selectedDecadeIds.includes(preset.id);
 					return (
-						<button key={preset.id} type="button" data-decade-preset={preset.id} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onToggle(preset.id)}>
+						<button key={preset.id} type="button" data-selection-mode="multiple" data-decade-preset={preset.id} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onToggle(preset.id)}>
 							<span><strong>{preset.label}</strong><small>{preset.startYear === null ? "Everything through 1959" : `${preset.startYear}–${preset.endYear}`}</small></span>
 						</button>
 					);
@@ -223,7 +221,8 @@ function ContentChoices({ state, onChange }) {
 							type="button"
 							data-decade-content={option.id}
 							data-selected={selected ? "true" : undefined}
-							aria-pressed={selected}
+							data-selection-mode="multiple"
+						aria-pressed={selected}
 							disabled={selected && selectedCount === 1}
 							onClick={() => onChange(Object.freeze({ ...state.content, [option.id]: !selected }))}
 						>
@@ -506,7 +505,7 @@ export function DecadesTitlePreview({ preview, onChangeChoice, onChangeRequest, 
 export function DecadesOptionsStep({ state, headingRef, previewGroups = [], previewAvailable = false, onPreview = () => {}, onStateChange, onRemoveDecade = () => {}, onOpenSecondary = () => {} }) {
 	return (
 		<section className="decades-step decades-options-step" aria-labelledby="decades-options-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="decades-options-title" ref={headingRef} tabIndex={-1}>Configure Decades</h3></div></div>
+			<CreationStageIntro step={2} phase="Configure" title="Configure Decades" headingId="decades-options-title" headingRef={headingRef} tabIndex={-1} />
 			<SelectedDecadesSummary selectedDecadeIds={state.selectedDecadeIds} onRemove={onRemoveDecade} />
 			<p className="decades-defaults-note">Recommended content defaults are selected. Continue as-is or adjust them below.</p>
 			<SemanticSortChoices options={DECADES_MEDIA_MODES} selectedId={state.mediaMode} name="decades-media" legend="Media" onChange={(mediaMode) => onStateChange(updateDecadesCreationMedia(state, mediaMode))} />
@@ -569,7 +568,7 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 	return (
 		<section className="decades-step decades-review-step" aria-labelledby="decades-review-title">
    <DiscoverFamilyAdvancedSummary legacy value={state.advanced} mediaMode={state.mediaMode} />
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="decades-review-title" ref={headingRef} tabIndex={-1}>Review &amp; Appearance</h3></div></div>
+			<CreationStageIntro step={3} phase="Review" title="Review & Appearance" headingId="decades-review-title" headingRef={headingRef} tabIndex={-1} />
 			<div className="decades-plan-totals" data-plan-scope={state.scope} aria-label="Plan totals">
 				{state.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection{plan.counts.collectionCount === 1 ? "" : "s"}</span></div> : null}
 				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>

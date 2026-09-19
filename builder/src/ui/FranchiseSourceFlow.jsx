@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
 	createAsyncRequestCoordinator,
@@ -48,7 +49,7 @@ function Poster({ item, className = "franchise-result-poster", size = "w185", al
 
 function FranchiseResult({ result, checked, loading, onActivate }) {
 	return (
-		<label className={`add-source-result franchise-result-selectable${checked ? " is-selected" : ""}${loading ? " is-loading" : ""}`} data-tmdb-franchise-result={result.id} aria-busy={loading || undefined}>
+		<label className={`add-source-result franchise-result-selectable${checked ? " is-selected" : ""}${loading ? " is-loading" : ""}`} data-tmdb-franchise-result={result.id} aria-busy={loading || undefined} data-selection-mode="multiple">
 			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onActivate(result)} />
 			<Poster item={result} />
 			<span className="add-source-result-content">
@@ -97,7 +98,7 @@ function ReviewStep({ planResult, options, onOptionsChange, onPreview, diagnosti
 	const plan = planResult.plan;
 	return (
 		<section className="franchise-review" aria-labelledby="franchise-review-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Review &amp; Appearance</p><h3 id="franchise-review-title">{plan.counts.folderCount} folder{plan.counts.folderCount === 1 ? "" : "s"} · {plan.counts.sourceCount} source{plan.counts.sourceCount === 1 ? "" : "s"}</h3></div></div>
+			<CreationStageIntro step={2} phase="Review" title="Review & Appearance" headingId="franchise-review-title" description={`${plan.counts.folderCount} folder${plan.counts.folderCount === 1 ? "" : "s"} · ${plan.counts.sourceCount} source${plan.counts.sourceCount === 1 ? "" : "s"}`} />
 			{plan.configuration.scope === "new-collection" ? <>
 				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><input id="franchise-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="franchise" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "franchise-hide-title-help", controlName: "franchiseHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
@@ -247,7 +248,7 @@ export function FranchiseSourceFlow({
 		<form className="add-source-form franchise-creation-form" data-franchise-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
-					<section className="add-source-mode"><div><h3 ref={selectHeadingRef} tabIndex={-1}>Movie franchises · TMDB</h3><p>Choose exact TMDB collections. One folder and one native movie source will be created for each selection.</p></div></section>
+					<CreationStageIntro step={1} phase="Select" title="Movie franchises · TMDB" description="Choose exact TMDB collections. One folder and one native movie source will be created for each selection." headingRef={selectHeadingRef} tabIndex={-1} />
 					<div className="editor-field add-source-query-field"><label htmlFor="franchise-source-query">Search or enter an exact collection</label><input id="franchise-source-query" type="search" value={input} autoComplete="off" spellCheck="false" onChange={(event) => { setInput(event.target.value); setPage(1); setSelectionError(null); }} aria-invalid={parsedInput.kind === "invalid" ? "true" : undefined} aria-describedby="franchise-query-help franchise-query-status" /><p className="editor-field-help" id="franchise-query-help">Search by franchise name, TMDB Collection ID or paste a TMDB collection link.</p><p id="franchise-query-status" className={parsedInput.kind === "invalid" ? "editor-field-error" : "editor-field-status"} role={parsedInput.kind === "invalid" ? "alert" : "status"}>{parsedInput.kind === "invalid" ? parsedInput.message : parsedInput.kind === "search" && !parsedInput.eligible ? parsedInput.message : lookupState.status === "loading" ? "Searching TMDB collections…" : null}</p></div>
 					{chosen.length ? <section className="people-selected-tray franchise-selected-tray"><div className="people-selected-summary"><strong>{chosen.length} franchise{chosen.length === 1 ? "" : "s"} selected</strong><SelectedFranchises franchises={chosen} onRemove={(id) => setSelection((current) => removeSelectedFranchise(current, id))} onPreview={openPreview} /></div>{notice.visible ? <p className="people-selection-limit" data-large-selection-notice="true" role="status">You’ve selected {notice.count} franchises. Review may take a little longer, but there is no selection cap.</p> : null}</section> : null}
 					{lookupState.status === "error" ? <div className="add-source-request-state" role="alert"><p>{lookupState.error?.message ?? "TMDB could not complete this search."}</p>{lookupState.error?.retryable ? <button type="button" onClick={() => setRetry((value) => value + 1)}>Retry</button> : null}</div> : null}

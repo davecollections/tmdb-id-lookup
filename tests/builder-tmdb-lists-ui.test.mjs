@@ -125,7 +125,7 @@ test("guided Lists starts with empty names, uses concise shared create copy, and
 	assert.match(flow, /aria-invalid=\{requiredNameErrors\.folder/);
 	assert.match(flow, /target\?\.scrollIntoView\?\.\(\{ block: "nearest" \}\)[\s\S]*focusElementWithoutScroll\(target\)/);
 	assert.match(flow, /className="tmdb-list-footer-validation" role="alert"/);
-	assert.match(flow, /standalone \? "Review" : "Review & Appearance"/);
+	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Review" title="Review & Appearance"/);
 	assert.match(flow, /standalone \? "Review exact List-ID placement before applying everything atomically\." : "Review names, appearance and exact List-ID placement before creating everything atomically\."/);
 });
 

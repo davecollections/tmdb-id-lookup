@@ -180,7 +180,7 @@ test("Decade Add Source responsive styles cover the required mobile/desktop boun
 	assert.match(read("builder/src/ui/advanced-discover.css"), /\.discover-genre-pills button/);
 	const genreStyles = read("builder/src/ui/advanced-discover.css");
 	assert.match(genreStyles, /\.discover-genre-pills\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
-	assert.match(genreStyles, /\.discover-genre-pills button\s*\{[^}]*border-radius:\s*999px/);
+	assert.match(genreStyles, /:where\([^)]*\.discover-genre-pills\) button\s*\{[^}]*border-radius:\s*999px/);
 	assert.match(genreStyles, /\.discover-genre-pills button:focus-visible/);
 	assert.match(styles, /\.decade-add-preview-dimension[\s\S]*grid-template-columns:\s*auto minmax\(0, 1fr\)/);
 });

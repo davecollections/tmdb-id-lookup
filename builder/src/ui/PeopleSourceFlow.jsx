@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
 import { inspectPeopleHierarchyPlacement } from "../source-add/people-plan.js";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
@@ -193,7 +194,7 @@ function PersonResult({ result, context, checked, disabled, loading, onActivate 
 		);
 	}
 	return (
-		<label className={`add-source-result people-result people-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-person-result={result.id}>
+		<label className={`add-source-result people-result people-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-person-result={result.id} data-selection-mode="multiple">
 			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} disabled={disabled && !checked} onChange={() => onActivate(result)} />
 			{body}
 		</label>
@@ -221,13 +222,12 @@ export function PeopleSearchStep({
 	const notice = peopleSelectionNotice(selection);
 	return (
 		<>
-			<section className="add-source-mode" aria-labelledby="people-mode-title">
+			{context === "hierarchy" ? <CreationStageIntro step={1} phase="Select" title="People · TMDB" description="Choose people in the order their folders should be created." headingId="people-mode-title" headingRef={headingRef} tabIndex={-1} /> : <section className="add-source-mode" aria-labelledby="people-mode-title">
 				<div>
-					{context === "hierarchy" ? <p className="panel-kicker">Step 1 · Select</p> : null}
 					<h3 ref={headingRef} id="people-mode-title" tabIndex={-1}>People · TMDB</h3>
 					<p>{context === "folder" ? "Choose a person, then add their sources to this folder." : "Choose people in the order their folders should be created."}</p>
 				</div>
-			</section>
+			</section>}
 			<div className="editor-field add-source-query-field">
 				<label htmlFor="people-source-query">Search or enter an exact person</label>
 				<input ref={inputRef} id="people-source-query" type="search" value={input} autoComplete="off" spellCheck="false" aria-invalid={parsedInput.kind === "invalid" ? "true" : undefined} aria-describedby="people-source-query-help people-source-query-status" onChange={onInputChange} />
@@ -271,14 +271,14 @@ function CombinationControls({ person, configuration, loading, onToggle, compact
 					const selected = configuration?.combinations.includes(combination.id) ?? false;
 					const present = alreadyAdded.includes(combination.id);
 					if (pills) return (
-						<label className="people-source-pill" data-people-role={combination.role} data-count-state={count.state} data-already-added={present ? "true" : undefined} key={combination.id}>
+						<label className="people-source-pill" data-people-role={combination.role} data-count-state={count.state} data-already-added={present ? "true" : undefined} key={combination.id} data-selection-mode="multiple">
 							<input className="visually-hidden choice-card-input" type="checkbox" checked={selected} disabled={loading || present} aria-label={`${combination.label}, ${present ? "Already added" : count.text}`} onChange={() => onToggle(combination.id)} />
 							<strong>{combination.label}</strong>
 							{present ? <em>Already added</em> : showCounts ? <em aria-hidden="true">{count.compactText}</em> : null}
 						</label>
 					);
 					return (
-						<label key={combination.id} data-count-state={count.state}>
+						<label key={combination.id} data-count-state={count.state} data-selection-mode="multiple">
 							<input className="visually-hidden choice-card-input" type="checkbox" checked={selected} disabled={loading} onChange={() => onToggle(combination.id)} />
 							<span><strong>{combination.label}</strong>{compact ? null : <small>{combination.role === "directing" ? "Directing" : "Acting"} · {combination.media === "series" ? "Series" : "Movies"}</small>}</span>
 							{showCounts ? <em>{count.text}</em> : null}
@@ -388,7 +388,7 @@ export function PeopleConfigurationModeControls({ mode, sharedCombinations, onMo
 				<legend id="people-configuration-approach-title">Configuration approach</legend>
 				<div>
 					{peopleConfigurationModeOptions.map((option) => (
-						<label key={option.id}>
+						<label key={option.id} data-selection-mode="single">
 							<input className="visually-hidden choice-card-input" type="radio" name="people-configuration-mode" value={option.id} checked={mode === option.id} onChange={() => onModeChange(option.id)} />
 							<span><strong>{option.label}</strong><small>{option.description}</small></span>
 						</label>
@@ -534,7 +534,7 @@ export function PeopleReviewStep({
 	);
 	return (
 		<section className="decades-step decades-review-step people-review-step" aria-labelledby="people-review-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="people-review-title" ref={headingRef} tabIndex={-1}>Review &amp; Appearance</h3></div></div>
+			<CreationStageIntro step={3} phase="Review" title="Review & Appearance" headingId="people-review-title" headingRef={headingRef} tabIndex={-1} />
 			{plan.configuration.scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">
 				{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}
 				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>
@@ -1081,7 +1081,7 @@ export function PeopleSourceFlow({
 								<PeopleSearchStep context={context} headingRef={searchHeadingRef} input={input} inputRef={inputRef} parsedInput={parsedInput} lookupState={lookupState} searchData={searchData} selection={selection} loadingPersonId={loadingPersonId} selectionError={selectionError} onInputChange={handleInputChange} onRetryLookup={() => setRetryGeneration((value) => value + 1)} onActivateResult={activateResult} onChangePage={setPage} onRemoveSelected={removePerson} />
 							) : step === PEOPLE_SOURCE_STEPS.CONFIGURE ? (
 								<section ref={configureRef} className="people-configure" aria-labelledby="people-configure-title" tabIndex={-1}>
-									<div className="add-source-section-heading"><div><p className="panel-kicker">{hierarchy ? "Step 2 · Configure" : "Configure"}</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`}</h3></div></div>
+									{hierarchy ? <CreationStageIntro step={2} phase="Configure" title={`${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`} headingId="people-configure-title" /> : <div className="add-source-section-heading"><div><p className="panel-kicker">Configure</p><h3 id="people-configure-title">{context === "folder" ? "Choose sources" : `${configuredEntries.length} People folder${configuredEntries.length === 1 ? "" : "s"}`}</h3></div></div>}
 									{multiContext ? <PeopleConfigurationModeControls mode={configurationMode} sharedCombinations={sharedCombinations} onModeChange={changeConfigurationMode} onToggleShared={(combinationId) => toggleCombination(null, combinationId)} /> : null}
 									{hierarchy || context === "folder" ? <PeopleSourceSortChoices context={hierarchy ? "guided" : "add"} selectedIds={sortOptionIds} onChange={(nextSortOptionIds) => { setSortOptionIds(nextSortOptionIds); setApplyDiagnostic(null); }} /> : null}
 									{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}

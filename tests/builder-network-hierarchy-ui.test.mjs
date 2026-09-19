@@ -154,12 +154,12 @@ test("Network hierarchy follows Select to Configure to Appearance with shared Se
 	assert.match(flow, /useState\("select"\)/);
 	assert.match(flow, /setStep\("configure"\)/);
 	assert.match(flow, /setStep\("appearance"\)/);
-	assert.match(flow, /stageKicker="Step 1 · Select"/);
-	assert.match(networkFlow, /stageKicker = null/);
-	assert.match(flow, /<p className="panel-kicker">Step 2<\/p>[\s\S]*>Configure Networks</);
-	assert.match(flow, /<p className="panel-kicker">Step 3<\/p>[\s\S]*>Appearance</);
-	assert.match(flow, />Configure Networks</);
-	assert.match(flow, />Appearance</);
+	assert.match(flow, /<CreationStageIntro step=\{1\} phase="Select"/);
+	assert.match(networkFlow, /showIntro = true/);
+	assert.match(flow, /<CreationStageIntro step=\{2\} phase="Configure" title="Configure Networks"/);
+	assert.match(flow, /<CreationStageIntro step=\{3\} phase="Appearance" title="Appearance"/);
+	assert.match(flow, /title="Configure Networks"/);
+	assert.match(flow, /title="Appearance"/);
 	assert.match(flow, /Continue to Appearance/);
 	assert.match(flow, /Choose shared Series source options and preview when useful\./);
 	assert.equal((flow.match(/<NetworkSortChoices/g) ?? []).length, 1);

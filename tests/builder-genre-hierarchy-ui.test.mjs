@@ -155,7 +155,7 @@ test("Configure reuses semantic pills and explains fixed-media Genres while Appe
 
 test("Structure presents plain-language plan-derived choices without changing composite boundaries", () => {
 	const structure = flowSource.slice(flowSource.indexOf("function StructureChoicePreview"), flowSource.indexOf("function AppearanceStep"));
-	assert.match(structure, /Step 3/);
+	assert.match(structure, /step=\{3\} phase="Structure"/);
 	assert.match(structure, /Choose how Genre folders are arranged within collections on your Nuvio Home screen\./);
 	assert.doesNotMatch(structure, />Genre hierarchy</);
 	assert.match(structure, /legend="Structure options" hideLegend/);

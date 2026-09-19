@@ -20,7 +20,7 @@ export function DiscoverNotice({ children, error = false }) {
 export function DiscoverOperator({ draft, field, onChange }) {
  return <div className="discover-operator" role="group" aria-label={"Included " + DISCOVER_FIELD_LABELS[field].toLowerCase() + " matching"}>
  <span className="discover-operator-label">Applies to all included {DISCOVER_FIELD_LABELS[field].toLowerCase()}. {field !== "withNetworks" ? "Exclusions are separate." : null}</span>
- {[["|", "Match any (OR)"], [",", "Match all (AND)"]].map(([id, label]) => <button key={id} type="button" aria-pressed={discoverSelectionOperator(draft, field) === id} onClick={() => onChange(setDiscoverOperator(draft, field, id))}>{label}</button>)}
+ {[["|", "Match any (OR)"], [",", "Match all (AND)"]].map(([id, label]) => <button data-selection-mode="single" key={id} type="button" aria-pressed={discoverSelectionOperator(draft, field) === id} onClick={() => onChange(setDiscoverOperator(draft, field, id))}>{label}</button>)}
  </div>;
 }
 function SelectionChips({ draft, field, onChange }) {
@@ -160,7 +160,7 @@ export function DiscoverNamedPicker({ field, negativeField = null, label = DISCO
    const location = formatTmdbEntityLocation(row), logo = buildTmdbLogoUrl(row.logoPath);
    const sameName = rows.filter((r) => r.name === row.name);
    const needsId = sameName.some((r) => r.id !== row.id && formatTmdbEntityLocation(r) === location);
-   return <li key={row.id} id={uid + "-" + i} role="option" aria-selected={selected.includes(row.id)} aria-label={[row.name, location, needsId ? "ID " + row.id : null, selected.includes(row.id) ? mode === "exclude" ? "excluded" : "included" : null].filter(Boolean).join(", ")}
+   return <li key={row.id} id={uid + "-" + i} role="option" data-selection-mode="multiple" data-selection-semantics={mode} aria-selected={selected.includes(row.id)} aria-label={[row.name, location, needsId ? "ID " + row.id : null, selected.includes(row.id) ? mode === "exclude" ? "excluded" : "included" : null].filter(Boolean).join(", ")}
     data-excluded={selected.includes(row.id) && mode === "exclude" || undefined} data-tmdb-id={row.id} data-active={i === active || undefined}
     onMouseDown={(e) => e.preventDefault()} onClick={() => choose(row)}>
     {!selectedOnly && entityType ? <span className="discover-entity-logo" aria-hidden="true"><TmdbEntityLogo entity={row} entityType={entityType} /></span> : logo ? <img src={logo} alt="" loading="lazy" /> : null}<span><strong>{row.name}</strong>{location || needsId ? <small>{[location, needsId ? "ID " + row.id : null].filter(Boolean).join(" · ")}</small> : null}{row.kind && !["exact", "name"].includes(row.kind) ? <small>{row.kind} · choose to apply</small> : null}</span>{selectedOnly ? <span className="discover-selected-remove" aria-hidden="true">×</span> : null}
@@ -175,7 +175,7 @@ export function DiscoverNamedPicker({ field, negativeField = null, label = DISCO
  return <section className="editor-settings-section discover-picker" role="group" aria-labelledby={uid + "-heading"} data-picker={field}
   onBlur={(e) => { if (!mobileOpen && !e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
   <h3 id={uid + "-heading"}>{label}</h3>
-  {negativeField && !exclusionOnly ? <div className="discover-mode" role="group" aria-label={label + " action"}>{["include", "exclude"].map((value) => <button type="button" key={value} data-mode={value} aria-pressed={mode === value} onClick={() => { setMode(value); setFeedback(""); setOpen(false); }}>{value === "include" ? "Include" : "Exclude"}</button>)}</div> : null}
+  {negativeField && !exclusionOnly ? <div className="discover-mode" role="group" aria-label={label + " action"}>{["include", "exclude"].map((value) => <button type="button" key={value} data-selection-mode="single" data-selection-semantics={value} data-mode={value} aria-pressed={mode === value} onClick={() => { setMode(value); setFeedback(""); setOpen(false); }}>{value === "include" ? "Include" : "Exclude"}</button>)}</div> : null}
   <div className="discover-autocomplete">
    <button type="button" className="secondary-action discover-picker-launch" aria-haspopup="dialog" aria-label={"Search " + label.toLowerCase()} disabled={!available && !selected.length}
     onClick={(e) => { setOpen(false); setFeedback(""); onOpenPanel(field, e.currentTarget); }}>{query || "Search " + label.toLowerCase()}<span aria-hidden="true">›</span></button>
@@ -218,7 +218,7 @@ export function DiscoverGenreControls({ draft, onChange, errors }) {
  }, [draft.mediaMode]);
  if (draft.extraEditable?.withGenres === false) return <p className="editor-field-help">Imported Genre settings are preserved.</p>;
  return <GenreRuleCard headingRef={headingRef}>
-  <div className="discover-mode" role="group" aria-label="Genre action">{["include", "exclude"].map((value) => <button key={value} type="button" data-mode={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === "include" ? "Include" : "Exclude"}</button>)}</div>
+  <div className="discover-mode" role="group" aria-label="Genre action">{["include", "exclude"].map((value) => <button key={value} type="button" data-selection-mode="single" data-selection-semantics={value} data-mode={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === "include" ? "Include" : "Exclude"}</button>)}</div>
   <DiscoverOperator draft={draft} field="withGenres" onChange={onChange} />
   <GenreRulePills rows={[...genres, ...[...new Set([...discoverExpressionIds(draft.filters.withGenres), ...discoverExpressionIds(draft.filters.withoutGenres)])].filter((id) => !genres.some((g) => g.id === id)).map((id) => ({ id, name: discoverSelectionLabel(draft, "withGenres", id), unavailable: true }))].map((row) => ({ ...row, included: discoverExpressionIds(draft.filters.withGenres).includes(row.id), excluded: discoverExpressionIds(draft.filters.withoutGenres).includes(row.id) }))} onChoose={(row) => {
     const other = mode === "include" ? "withoutGenres" : "withGenres";
@@ -235,7 +235,7 @@ export function DiscoverGenreControls({ draft, onChange, errors }) {
 export function DiscoverSelectField({ field, draft, onChange, options, errors, helper = null }) {
  const value = draft.filters[field] ?? "";
  const all = value && !options.some((o) => o.code === value) ? [{ code: value, label: "Saved: " + value }, ...options] : options;
- return <div className="editor-field"><label htmlFor={"discover-field-" + field}>{DISCOVER_FIELD_LABELS[field]}</label><select disabled={draft.extraEditable?.[field] === false} id={"discover-field-" + field} data-watch-region={field === "watchRegion" && value !== "" || undefined} aria-describedby={"discover-error-" + field} value={value} onChange={(e) => onChange({ ...draft, filters: { ...draft.filters, [field]: e.target.value } })}><option value="">Any</option>{all.map((o) => <option key={o.code} value={o.code}>{o.label ?? o.name}</option>)}</select>{helper ? <p className="editor-field-help">{helper}</p> : null}<DiscoverFieldError field={field} errors={errors} /></div>;
+ return <div className="editor-field"><label htmlFor={"discover-field-" + field}>{DISCOVER_FIELD_LABELS[field]}</label><select data-selection-mode="single" disabled={draft.extraEditable?.[field] === false} id={"discover-field-" + field} data-watch-region={field === "watchRegion" && value !== "" || undefined} aria-describedby={"discover-error-" + field} value={value} onChange={(e) => onChange({ ...draft, filters: { ...draft.filters, [field]: e.target.value } })}><option value="">Any</option>{all.map((o) => <option key={o.code} value={o.code}>{o.label ?? o.name}</option>)}</select>{helper ? <p className="editor-field-help">{helper}</p> : null}<DiscoverFieldError field={field} errors={errors} /></div>;
 }
 
 export function DiscoverDetailedControls({ draft, onChange, studioProvider, networkProvider, streamingProvider, namedCodes = null, errors = [], cataloguesOnly = false, fixedProviderContext = null, children = null, ...panelProps }) {

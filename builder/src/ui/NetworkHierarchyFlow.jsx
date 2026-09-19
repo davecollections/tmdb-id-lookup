@@ -1,3 +1,4 @@
+import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { MinimumVotesAdvancedOptions, MinimumVotesSummary } from "./MinimumVotesAdvancedOptions.jsx";
 import { validateNetworkAdvancedFilters } from "../source-add/network-advanced.js";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
@@ -66,7 +67,7 @@ function SelectedNetworks({ networks, onRemove }) {
 
 function SelectableNetworkResult({ network, checked, onToggle }) {
 	return (
-		<label className={`add-source-result studio-result network-result studio-result-selectable network-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-network-result={network.id}>
+		<label className={`add-source-result studio-result network-result studio-result-selectable network-result-selectable${checked ? " is-selected" : ""}`} data-tmdb-network-result={network.id} data-selection-mode="multiple">
 			<input className="visually-hidden choice-card-input" type="checkbox" checked={checked} onChange={() => onToggle(network)} />
 			<NetworkResultContent network={network} showSeriesCount />
 		</label>
@@ -94,8 +95,8 @@ function ConfigureStep({ networks, exactCounts, outcomes, sortOptionIds, onSortC
 	const advanced = validateNetworkAdvancedFilters(options.filters);
 	return (
 		<section className="studio-hierarchy-configure network-hierarchy-configure" aria-labelledby="network-hierarchy-configure-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 2</p><h3 id="network-hierarchy-configure-title" ref={headingRef} tabIndex={-1}>Configure Networks</h3></div></div>
-			<p className="studio-configure-helper">This sort applies to every selected Network.</p>
+			<CreationStageIntro step={2} phase="Configure" title="Configure Networks" headingId="network-hierarchy-configure-title" headingRef={headingRef} tabIndex={-1} />
+			<p className="studio-configure-helper">These choices apply to every selected Network.</p>
 			<NetworkSortChoices selectedIds={sortOptionIds} name="network-hierarchy-sort" onChange={onSortChange} />
 			<MinimumVotesAdvancedOptions family="network" draft={{ ...options, mediaType: "TV" }} onChange={onAdvancedChange} entities={networks} />
 			{placement ? <NativeFolderPlacementSummary counts={placement.counts} /> : null}
@@ -115,7 +116,7 @@ function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange,
 	const plan = planResult?.ok ? planResult.plan : null;
 	return (
 		<section className="studio-hierarchy-review studio-hierarchy-appearance network-hierarchy-appearance" aria-labelledby="network-hierarchy-appearance-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Step 3</p><h3 id="network-hierarchy-appearance-title" ref={headingRef} tabIndex={-1}>Appearance</h3></div></div>
+			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="network-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
 			{plan ? <><SourceVariantCounts counts={plan.counts} /><MinimumVotesSummary family="network" filters={plan.configuration.filters} mediaMode={"series"} genreOverrides={plan.configuration.genreOverrides} labels={options.labels} entities={plan.configuration.networks.map((entry) => entry.network)} /></> : null}
 			{plan?.configuration.scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			{plan?.configuration.scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
@@ -351,9 +352,9 @@ export function NetworkHierarchyFlow({
 		<form className="add-source-form studio-hierarchy-form network-hierarchy-form" data-network-hierarchy-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
-					<div ref={selectHeadingRef} tabIndex={-1} className="studio-hierarchy-focus-target network-hierarchy-focus-target" />
+					<CreationStageIntro step={1} phase="Select" title="Networks · TMDB" description="Search by Network name, country, location or TMDB ID." headingId="network-mode-title" headingRef={selectHeadingRef} tabIndex={-1} />
 					{chosen.length ? <section className="people-selected-tray studio-selected-tray network-selected-tray"><div className="people-selected-summary"><strong>{chosen.length} Network{chosen.length === 1 ? "" : "s"} selected</strong><SelectedNetworks networks={chosen} onRemove={removeNetwork} /></div>{notice.visible ? <p className="people-selection-limit" data-large-selection-notice="true" role="status">You’ve selected {notice.count} Networks. Configure may take a little longer, but there is no selection cap.</p> : null}</section> : null}
-					<NetworkSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onSeriesCountFilterChange={search.changeSeriesCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Networks" stageKicker="Step 1 · Select" renderResult={(network) => <SelectableNetworkResult key={network.id} network={network} checked={Boolean(selection.byId[network.id])} onToggle={toggleNetwork} />} />
+					<NetworkSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onSeriesCountFilterChange={search.changeSeriesCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Networks" showIntro={false} renderResult={(network) => <SelectableNetworkResult key={network.id} network={network} checked={Boolean(selection.byId[network.id])} onToggle={toggleNetwork} />} />
 				</> : step === "configure" ? <div inert={isPreparing || undefined} aria-busy={isPreparing ? "true" : undefined}><ConfigureStep options={options} onAdvancedChange={updateOptions} networks={chosen} exactCounts={exactCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} sortOptionIds={options.sortOptionIds} onSortChange={changeSort} onPreview={requestPreview} onRemove={removeNetwork} headingRef={configureHeadingRef} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} onArtworkChange={changeArtworkOrientation} diagnostic={diagnostic} headingRef={appearanceHeadingRef} isPreparing={isPreparing} />}
 			</div>
 			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>

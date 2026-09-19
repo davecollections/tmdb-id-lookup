@@ -77,7 +77,7 @@ export function StudioResultContent({ studio }) {
 
 function StudioResult({ studio, selected = false, onSelect }) {
 	return (
-		<button
+		<button data-selection-mode="single"
 			className={`add-source-result studio-result${selected ? " is-selected" : ""}`}
 			type="button"
 			aria-pressed={selected}
@@ -107,17 +107,16 @@ export function StudioSearchStep({
 	onChangePage,
 	renderResult = null,
 	resultsHeading = "Choose a studio",
-	stageKicker = null,
+	showIntro = true,
 }) {
 	return (
 		<>
-			<section className="add-source-mode" aria-labelledby="studio-mode-title">
+			{showIntro ? <section className="add-source-mode" aria-labelledby="studio-mode-title">
 				<div>
-					{stageKicker ? <p className="panel-kicker">{stageKicker}</p> : null}
 					<h3 id="studio-mode-title">Studios · TMDB</h3>
 					<p>Search by studio name, location or TMDB ID.</p>
 				</div>
-			</section>
+			</section> : null}
 			<div className="editor-field add-source-query-field">
 				<label htmlFor="studio-source-query">Search studios</label>
 				<input
@@ -143,10 +142,10 @@ export function StudioSearchStep({
 				</p>
 			</div>
 			<div className="studio-search-controls studio-search-controls--hierarchy" aria-label="Studio result controls">
-				<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Movie Count filter"><span className="studio-search-control-label">Movie count</span><span className="studio-search-control-buttons">{STUDIO_MOVIE_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={movieCountFilter === option.id} aria-label={`Movie Count ${option.label}`} onClick={() => onMovieCountFilterChange(option.id)}>{option.label}</button>)}</span></div>
+				<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Movie Count filter"><span className="studio-search-control-label">Movie count</span><span className="studio-search-control-buttons">{STUDIO_MOVIE_COUNT_FILTER_OPTIONS.map((option) => <button data-selection-mode="single" key={option.id} type="button" aria-pressed={movieCountFilter === option.id} aria-label={`Movie Count ${option.label}`} onClick={() => onMovieCountFilterChange(option.id)}>{option.label}</button>)}</span></div>
 				<div className="studio-search-control-group studio-search-order-controls" role="group" aria-label="Studio result order"><span className="studio-search-control-label">Sort</span><span className="studio-search-control-buttons">
-					<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} aria-label="Order Studios A–Z" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
-					<button type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC} aria-label="Order Studios by most movies" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC)}>Most movies</button>
+					<button data-selection-mode="single" type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.NAME_ASC} aria-label="Order Studios A–Z" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
+					<button data-selection-mode="single" type="button" aria-pressed={effectiveSearchSort === STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC} aria-label="Order Studios by most movies" onClick={() => onSortChange(STUDIO_SEARCH_SORTS.MOVIE_COUNT_DESC)}>Most movies</button>
 				</span></div>
 			</div>
 			{lookupState.status === "error" ? (
@@ -229,7 +228,7 @@ export function StudioConfigureStep({
 					{STUDIO_SOURCE_OPTIONS.map((option) => {
 						const count = currentCountText(option, counts[option.countKey]);
 						return (
-							<label className="studio-source-choice" key={option.id} data-count-state={count.state} data-source-supported={option.supported ? "true" : "false"}>
+							<label className="studio-source-choice" key={option.id} data-count-state={count.state} data-source-supported={option.supported ? "true" : "false"} data-selection-mode="multiple">
 								<input className="visually-hidden choice-card-input" type="checkbox" checked={choices.includes(option.id)} disabled={!option.supported} onChange={() => onToggle(option.id)} />
 								<span>
 									<strong>{option.label}</strong>

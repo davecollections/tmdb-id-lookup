@@ -70,7 +70,7 @@ export function NetworkResultContent({ network, showSeriesCount = false }) {
 
 function NetworkResult({ network, selected = false, showSeriesCount = false, onSelect }) {
 	return (
-		<button
+		<button data-selection-mode="single"
 			className={`add-source-result studio-result network-result${selected ? " is-selected" : ""}`}
 			type="button"
 			aria-pressed={selected}
@@ -101,13 +101,13 @@ export function NetworkSearchStep({
 	onChangePage,
 	resultsHeading = "Choose a Network",
 	renderResult = null,
-	stageKicker = null,
+	showIntro = true,
 }) {
 	return (
 		<>
-			<section className="add-source-mode" aria-labelledby="network-mode-title">
-				<div>{stageKicker ? <p className="panel-kicker">{stageKicker}</p> : null}<h3 id="network-mode-title">Networks · TMDB</h3><p>Search by Network name, country, location or TMDB ID.</p></div>
-			</section>
+			{showIntro ? <section className="add-source-mode" aria-labelledby="network-mode-title">
+				<div><h3 id="network-mode-title">Networks · TMDB</h3><p>Search by Network name, country, location or TMDB ID.</p></div>
+			</section> : null}
 			<div className="editor-field add-source-query-field">
 				<label htmlFor="network-source-query">Search Networks</label>
 				<input
@@ -134,13 +134,13 @@ export function NetworkSearchStep({
 				<div className="studio-search-controls studio-search-controls--hierarchy network-search-controls" aria-label="Network result controls">
 					<div className="studio-search-control-group studio-search-count-controls" role="group" aria-label="Series Count filter">
 						<span className="studio-search-control-label">Series count</span>
-						<span className="studio-search-control-buttons">{NETWORK_SERIES_COUNT_FILTER_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={seriesCountFilter === option.id} aria-label={`Series Count ${option.label}`} onClick={() => onSeriesCountFilterChange(option.id)}>{option.label}</button>)}</span>
+						<span className="studio-search-control-buttons">{NETWORK_SERIES_COUNT_FILTER_OPTIONS.map((option) => <button data-selection-mode="single" key={option.id} type="button" aria-pressed={seriesCountFilter === option.id} aria-label={`Series Count ${option.label}`} onClick={() => onSeriesCountFilterChange(option.id)}>{option.label}</button>)}</span>
 					</div>
 					<div className="studio-search-control-group studio-search-order-controls" role="group" aria-label="Network result order">
 						<span className="studio-search-control-label">Sort</span>
 						<span className="studio-search-control-buttons">
-							<button type="button" aria-pressed={effectiveSearchSort === NETWORK_SEARCH_SORTS.NAME_ASC} aria-label="Order Networks A–Z" onClick={() => onSortChange(NETWORK_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
-							<button type="button" aria-pressed={effectiveSearchSort === NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC} aria-label="Order Networks by most series" onClick={() => onSortChange(NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC)}>Most series</button>
+							<button data-selection-mode="single" type="button" aria-pressed={effectiveSearchSort === NETWORK_SEARCH_SORTS.NAME_ASC} aria-label="Order Networks A–Z" onClick={() => onSortChange(NETWORK_SEARCH_SORTS.NAME_ASC)}>A–Z</button>
+							<button data-selection-mode="single" type="button" aria-pressed={effectiveSearchSort === NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC} aria-label="Order Networks by most series" onClick={() => onSortChange(NETWORK_SEARCH_SORTS.SERIES_COUNT_DESC)}>Most series</button>
 						</span>
 					</div>
 				</div>

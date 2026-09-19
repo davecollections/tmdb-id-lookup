@@ -134,7 +134,7 @@ export function GenreContextCatalogueSubview({
 			<div className="genre-exclusion-layout genre-context-catalogue-layout" data-mobile-view={mobileDetail || (!multiple && showSingleContextHeading) ? "picker" : "genres"}>
 				{multiple ? <section className="genre-included-genre-pane genre-context-pane" aria-labelledby={contextTitleId}>
 					<h5 id={contextTitleId}>{contextTitle}</h5>
-					<ul>{contexts.map((context) => <li key={context.id}><button type="button" aria-pressed={activeContextId === context.id} aria-controls={choiceTitleId} data-selected={activeContextId === context.id ? "true" : undefined} onClick={() => enterContext(context.id)}><span><strong>{context.label}</strong><small>{context.summary}</small></span><span aria-hidden="true">›</span></button></li>)}</ul>
+					<ul>{contexts.map((context) => <li key={context.id}><button data-selection-mode="single" type="button" aria-pressed={activeContextId === context.id} aria-controls={choiceTitleId} data-selected={activeContextId === context.id ? "true" : undefined} onClick={() => enterContext(context.id)}><span><strong>{context.label}</strong><small>{context.summary}</small></span><span aria-hidden="true">›</span></button></li>)}</ul>
 				</section> : null}
 				<section id={choiceTitleId} className="genre-exclusion-choice-pane genre-context-choice-pane" aria-labelledby={`${choiceTitleId}-heading`}>
 					{activeContext ? <>
@@ -179,7 +179,7 @@ export function GenreCatalogueList({ concepts, selection, onChoose, selectionCon
 				if (selectionControl === "checkbox") {
 					return (
 						<li key={concept.name}>
-							<label className={`genre-catalogue-choice${selected ? " is-selected" : ""}`} data-genre-semantics={semantics} data-genre-name={concept.name} data-selected={selected ? "true" : undefined}>
+							<label className={`genre-catalogue-choice${selected ? " is-selected" : ""}`} data-selection-semantics={semantics} data-genre-semantics={semantics} data-genre-name={concept.name} data-selected={selected ? "true" : undefined} data-selection-mode="multiple">
 								<input className="visually-hidden choice-card-input" type="checkbox" checked={selected} onChange={() => onChoose(concept.name)} />
 								<span><strong>{concept.name}</strong>{showMedia ? <small>{genreMediaLabel(concept)}</small> : null}</span>
 							</label>
@@ -188,7 +188,7 @@ export function GenreCatalogueList({ concepts, selection, onChoose, selectionCon
 				}
 				return (
 					<li key={concept.name}>
-						<button type="button" data-genre-semantics={semantics} data-genre-name={concept.name} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onChoose(concept.name)}>
+						<button type="button" data-selection-mode="multiple" data-selection-semantics={semantics} data-genre-semantics={semantics} data-genre-name={concept.name} data-selected={selected ? "true" : undefined} aria-pressed={selected} onClick={() => onChoose(concept.name)}>
 							<span><strong>{concept.name}</strong>{showMedia ? <small>{genreMediaLabel(concept)}</small> : null}</span>
 						</button>
 					</li>
