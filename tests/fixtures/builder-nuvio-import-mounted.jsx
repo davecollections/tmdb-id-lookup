@@ -1,9 +1,10 @@
-import { StrictMode } from "react";
+import { act, StrictMode, useLayoutEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/controller.js";
 import { createNuvioConnection } from "../../builder/src/nuvio-connection/session.js";
 import { BuilderApp } from "../../builder/src/ui/BuilderApp.jsx";
 import { NuvioProfileAvatar } from "../../builder/src/ui/NuvioProfileAvatar.jsx";
+import { useExactUrlPreviewFailure } from "../../builder/src/ui/exact-url-preview.js";
 import "../../builder/src/styles.css";
 
 // Owner-approved mocked Nuvio responses for this slice. These checks establish
@@ -100,19 +101,72 @@ function geometry() {
 	return { width: innerWidth, height: innerHeight, scrollOwners: owners.length, overflow: false };
 }
 
-window.runNuvioLocalCases = async () => {
-	// Isolated avatar presentation check uses a real local repository image, not an external identity lookup.
-	const avatarHost = document.createElement("div"); document.body.append(avatarHost);
-	const avatarRoot = createRoot(avatarHost);
+function EarlyAvatarError({ profile, failEarly = false }) {
+	const host = useRef(null);
+	useLayoutEffect(() => {
+		// Fire while the child's URL-reset passive effect is still pending.
+		if (failEarly) host.current.querySelector("img")?.dispatchEvent(new Event("error"));
+	}, [profile.avatarUrl, failEarly]);
+	return <div ref={host}><NuvioProfileAvatar profile={profile} /></div>;
+}
+
+function PreviewFailureProbe({ url, onCommit }) {
+	const preview = useExactUrlPreviewFailure(url);
+	useLayoutEffect(() => onCommit(preview));
+	return null;
+}
+
+async function checkAvatarFallback() {
+	const previousActEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
+	globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+	const host = document.createElement("div"); document.body.append(host);
+	const avatarRoot = createRoot(host);
 	const avatarUrl = new URL("../../builder/src/assets/builder-mark.svg", import.meta.url).href;
-	avatarRoot.render(<NuvioProfileAvatar profile={{ name: "Family cinema", avatarUrl, avatarColor: "#1E88E5" }} />); await frame();
-	assert(avatarHost.querySelector("img").getAttribute("src") === avatarUrl, "Supplied avatar image is rendered");
-	avatarHost.querySelector("img").dispatchEvent(new Event("error")); await frame();
-	assert(!avatarHost.querySelector("img") && avatarHost.textContent === "FC", "Failed image becomes initials, never a broken image");
-	assert(avatarHost.firstChild.style.backgroundColor === "rgb(30, 136, 229)", "Nuvio color fallback");
-	avatarRoot.render(<NuvioProfileAvatar profile={{ name: "Guest", avatarUrl: null, avatarColor: null }} />); await frame();
-	assert(avatarHost.textContent === "G" && !avatarHost.firstChild.style.backgroundColor, "Initials fallback without color");
-	avatarRoot.unmount(); avatarHost.remove();
+	const replacementUrl = `${avatarUrl}?replacement`;
+	const profile = { name: "Family cinema", avatarUrl, avatarColor: "#1E88E5" };
+	const fallback = () => !host.querySelector("img") && host.textContent === "FC";
+	try {
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={profile} failEarly />));
+		assert(fallback(), "An avatar failure before mount passive effects must survive React settling");
+		assert(host.querySelector(".nuvio-avatar").style.backgroundColor === "rgb(30, 136, 229)", "Nuvio color fallback");
+
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={{ ...profile, avatarUrl: replacementUrl }} />));
+		assert(host.querySelector("img")?.getAttribute("src") === replacementUrl, "A replacement URL gets a fresh image attempt");
+		await act(async () => host.querySelector("img").dispatchEvent(new Event("error")));
+		assert(fallback(), "An avatar failure after passive effects becomes initials");
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={profile} failEarly />));
+		assert(fallback(), "An avatar failure before URL-change passive effects must survive React settling");
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={profile} />));
+		assert(fallback(), "Rerendering the same failed URL must not retry a broken image");
+
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={{ ...profile, avatarUrl: replacementUrl }} />));
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={profile} />));
+		assert(host.querySelector("img")?.getAttribute("src") === avatarUrl, "Returning to an earlier URL starts a fresh attempt");
+		await act(async () => avatarRoot.render(<EarlyAvatarError profile={{ name: "Guest", avatarUrl: null, avatarColor: null }} />));
+		assert(host.textContent === "G" && !host.querySelector(".nuvio-avatar").style.backgroundColor, "Initials fallback without color");
+
+		let currentPreview;
+		const capture = (preview) => { currentPreview = preview; };
+		await act(async () => avatarRoot.render(<PreviewFailureProbe url={avatarUrl} onCommit={capture} />));
+		const oldPreview = currentPreview;
+		await act(async () => avatarRoot.render(<PreviewFailureProbe url={replacementUrl} onCommit={capture} />));
+		await act(async () => currentPreview.markFailed());
+		assert(currentPreview.failed, "The current URL records its failure");
+		await act(async () => oldPreview.markFailed());
+		assert(currentPreview.failed, "A stale error must not clear the current URL's failure");
+		await act(async () => oldPreview.resetFailure());
+		assert(currentPreview.failed, "A stale reset must not clear the current URL's failure");
+		await act(async () => currentPreview.resetFailure());
+		assert(!currentPreview.failed, "An explicit retry resets the current URL");
+	} finally {
+		await act(async () => avatarRoot.unmount());
+		host.remove();
+		globalThis.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
+	}
+}
+
+window.runNuvioLocalCases = async () => {
+	await checkAvatarFallback();
 	await mount(); await login();
 	assertSharedButton($("[aria-label='Close Nuvio import']"), "add-source-header-action add-source-close-action");
 	assert(button("Disconnect").classList.contains("secondary-action"), "Disconnect extends the shared secondary action");

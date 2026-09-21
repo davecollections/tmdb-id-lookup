@@ -1,19 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function hasPreviewUrl(value) {
 	return typeof value === "string" && value.trim().length > 0;
 }
 
 export function useExactUrlPreviewFailure(url) {
-	const [failedUrl, setFailedUrl] = useState(null);
+	const [preview, setPreview] = useState({ url, failed: false });
 
-	useEffect(() => {
-		setFailedUrl(null);
-	}, [url]);
+	// Reset before committing the new URL. A passive reset could erase an
+	// image error that arrives between the commit and its effects.
+	if (preview.url !== url) setPreview({ url, failed: false });
+
+	function setFailure(failed) {
+		setPreview((current) => current.url === url && current.failed !== failed
+			? { url, failed }
+			: current);
+	}
 
 	return {
-		failed: failedUrl === url,
-		markFailed: () => setFailedUrl(url),
-		resetFailure: () => setFailedUrl(null),
+		failed: preview.url === url && preview.failed,
+		markFailed: () => setFailure(true),
+		resetFailure: () => setFailure(false),
 	};
 }
