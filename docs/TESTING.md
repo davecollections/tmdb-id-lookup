@@ -75,6 +75,8 @@ Remove-Item Env:NUVIO_IMPORT_ONLY
 Remove-Item Env:NUVIO_IMPORT_SCREENSHOT_DIR
 ```
 
+The avatar fallback regression in [#240](https://github.com/davecollections/tmdb-id-lookup/issues/240) reuses this fixture and a real local repository image. It dispatches errors before mount and URL-change passive effects, then uses React act to settle the actual state transition. It also covers later errors, stable fallback, replacement and returning URLs, stale callbacks, and explicit retry. These are local component/hook checks, not external-service evidence; no fixed sleep is used to hide an error/reset race.
+
 The six optional screenshots are landing desktop/phone, Profile phone, Merge Review desktop/phone and workspace after success. Mounted coverage exercises the unified Import hierarchy, sole native filename display, real local file/paste import, Profile Refresh/footer, shared Back, no backup action, all three modes, pure merge preview/counts, AU timestamp, grouped notes without raw paths, and success-only workspace feedback. It retains login/PIN/error/race/expiry/disconnect coverage, safe avatar fallbacks, compact rows, body/focus restoration, shared selection and forced colours. Selection/scrolling keep success; a content edit clears it. Nine stages (including landing, verified/locked PIN, expired Review and replacement confirmation) run at 360/384/393/402/412px, desktop and short height: 63 layouts. The normal full runner includes these checks alongside existing live-service mounted suites; the Nuvio mock approval does not permit mocks for those services. Pass 4 runs focused checks, mounted checks and build before one full repository validation.
 
 ### Compact Import and desktop PIN presentation (pass 5)
