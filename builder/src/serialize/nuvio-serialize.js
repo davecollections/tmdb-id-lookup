@@ -137,6 +137,19 @@ function serializeFolder(folder, path, errors, warnings) {
 	return output;
 }
 
+// A detached, preservation-aware view for exact local import comparison. The
+// same overlay and validation are used by ordinary project serialization.
+export function serializeNuvioSource(source) {
+	const errors = [];
+	const warnings = [];
+	try {
+		const value = serializeSource(source, "$source", errors, warnings);
+		return { ok: errors.length === 0, value: cloneJsonValue(value), errors, warnings };
+	} catch {
+		return { ok: false, value: null, errors: [diagnostic("INVALID_SOURCE", "$source", "The Source cannot be safely serialized.")], warnings };
+	}
+}
+
 function serializeSource(source, path, errors, warnings) {
 	const output = overlayKnownFields(
 		cloneRawObject(source.rawImported),

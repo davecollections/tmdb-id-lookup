@@ -110,6 +110,7 @@ test("the controller exposes only the documented public method surface", () => {
 	const controller = createBuilderController({ idFactory: () => "project" });
 	assert.deepEqual(Object.keys(controller).sort(), [
 		"addSourcesToFolder",
+		"appendImportedCollections",
 		"applyLegacyAddonProjectionMigration",
 		"applyPresentationUpdates",
 		"clearDiagnostics",
@@ -124,6 +125,7 @@ test("the controller exposes only the documented public method surface", () => {
 		"getState",
 		"importJsonText",
 		"importValue",
+		"mergeImportedCollections",
 		"moveNode",
 		"removeNode",
 		"removeFolders",

@@ -119,7 +119,7 @@ test("About & Credits reuses the established portal, body lock, focus trap, Esca
 	assert.match(workspace, /onClick=\{openAboutCredits\}/);
 	assert.match(workspace, /setAboutCreditsOpen\(false\)[\s\S]*setRestoreAboutCreditsFocus\(true\)/);
 	assert.match(workspace, /restoreAboutCreditsFocus[\s\S]*focusElementWithoutScroll\(aboutCreditsTriggerRef\.current\)/);
-	assert.match(welcome, /inert=\{aboutCreditsOpen \|\| undefined\}/);
+	assert.match(welcome, /inert=\{aboutCreditsOpen \|\| nuvioOpen \|\| undefined\}/);
 	assert.match(welcome, /restoreAboutCreditsFocusRef[\s\S]*focusElementWithoutScroll\(aboutCreditsTriggerRef\.current\)/);
 });
 

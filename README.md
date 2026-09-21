@@ -185,6 +185,8 @@ A new React/Vite product, Dingo's Collection Builder, is being developed under `
 
 For builder architecture, compatibility decisions, and contributor guidance, read [`AGENTS.md`](./AGENTS.md) and [`docs/v2/BUILDER_KNOWLEDGE.md`](./docs/v2/BUILDER_KNOWLEDGE.md).
 
+The optional **Import from Nuvio** flow in [issue #238](https://github.com/davecollections/tmdb-id-lookup/issues/238) is implemented for owner review. It leads the unified Import section, authenticates directly with Nuvio, retains only an in-memory connection, and loads one profile's Collections after PIN verification when protected. Existing work has explicit **Add as separate Collections**, **Merge exact matches**, and confirmed **Replace current project** modes. Merge uses unique exact visible names, preserves existing settings and skips Sources only when equivalence is proven without losing preserved data. Reviewed snapshots remain locally importable after expiry; login is required only to load more data. Read-only import has no backup action. Any future Direct Nuvio write must automatically download the current remote profile Collection JSON before attempting the write. Remote writes and **Send to Nuvio** remain unsupported; ordinary JSON import/export stay available without login. See the [connection contract](./docs/v2/BUILDER_NUVIO_CONNECTION.md).
+
 To build and validate the combined site locally:
 
 ```powershell

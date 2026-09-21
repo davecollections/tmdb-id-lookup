@@ -1,19 +1,12 @@
 import { canEditSource } from "../source-edit/index.js";
+import { collectionCounts as collectionExportCounts } from "../domain/collection-counts.js";
+
+export { collectionExportCounts };
 
 export const EXPORT_SUCCESS_TIMEOUT_MS = 4000;
 
 export function hasExportableStructure(project) {
 	return project.collections.some((collection) => collection.folders.some((folder) => folder.sources.length > 0));
-}
-
-// Both domain Collections and prepared Nuvio Collections have these child arrays.
-// Addon compatibility projections are not additional Sources.
-export function collectionExportCounts(collections) {
-	return collections.reduce((counts, collection) => ({
-		collections: counts.collections + 1,
-		folders: counts.folders + collection.folders.length,
-		sources: counts.sources + collection.folders.reduce((total, folder) => total + folder.sources.length, 0),
-	}), { collections: 0, folders: 0, sources: 0 });
 }
 
 export function collectionExportFilename(date = new Date()) {

@@ -393,14 +393,14 @@ test("welcome uses collection-focused wording while retaining literal file-picke
 		"Start a new collection",
 		"Create new collection",
 		"Open an existing collection",
-		"Choose a JSON file or paste its contents to continue.",
+		"Choose an import method",
 		"Choose a JSON file",
 		"Collection JSON file",
 		"Import selected file",
-		"No file selected",
 	]) {
 		assert.ok(welcome.includes(text), text);
 	}
+	assert.equal(welcome.includes("No file selected"), false, "The native file picker supplies its own filename status");
 	const workspace = renderWorkspace(controller);
 	for (const hidden of ["Current project", "Untitled project", "Unsaved changes", "Clean draft"]) assert.equal(workspace.includes(hidden), false);
 });

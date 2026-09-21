@@ -55,15 +55,15 @@ export function collectReservedNuvioIds(project) {
 	return reserved;
 }
 
-export function repairProjectNuvioIds(project, idFactory = defaultNuvioIdFactory) {
+export function repairProjectNuvioIds(project, idFactory = defaultNuvioIdFactory, reservedIds = [], insertedInternalIds = null) {
 	const repaired = cloneJsonValue(project, "project");
-	const reserved = collectReservedNuvioIds(repaired);
-	const claimed = new Set();
+	const claimed = new Set(reservedIds);
+	const reserved = new Set([...collectReservedNuvioIds(repaired), ...claimed]);
 
 	for (const collection of repaired.collections) {
-		repairNodeId(collection, reserved, claimed, idFactory);
+		if (!insertedInternalIds || insertedInternalIds.has(collection.internalId)) repairNodeId(collection, reserved, claimed, idFactory);
 		for (const folder of collection.folders) {
-			repairNodeId(folder, reserved, claimed, idFactory);
+			if (!insertedInternalIds || insertedInternalIds.has(folder.internalId)) repairNodeId(folder, reserved, claimed, idFactory);
 		}
 	}
 	return repaired;

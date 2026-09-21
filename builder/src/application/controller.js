@@ -18,9 +18,11 @@ import {
 	updateEditableValuesMany,
 } from "../domain/index.js";
 import { importNuvioCollections, parseNuvioJsonText } from "../import/index.js";
+import { planCollectionMerge } from "../import/merge-collections.js";
 import { migrateLegacyAddonProjections } from "../migrate/index.js";
 import {
 	defaultNuvioIdFactory,
+	collectReservedNuvioIds,
 	NuvioIdGenerationError,
 	prepareNewNodeEditable,
 	repairProjectNuvioIds,
@@ -127,9 +129,9 @@ export function createBuilderController(options = {}) {
 		};
 	}
 
-	function commitPatch(patch, { incrementRevision = true } = {}) {
+	function commitPatch(patch, { incrementRevision = true, force = false } = {}) {
 		const changed = Object.entries(patch).some(([key, value]) => !jsonValuesEqual(state[key], value));
-		if (!changed) {
+		if (!changed && !force) {
 			return false;
 		}
 
@@ -245,6 +247,46 @@ export function createBuilderController(options = {}) {
 
 	function importValue(value, actionOptions = {}) {
 		return importProject(value, actionOptions, importNuvioCollections);
+	}
+
+	// Import detached subtrees, retaining raw preservation evidence. New-hierarchy
+	// constructors intentionally cannot represent this imported-data operation.
+	function appendImportedCollections(value) {
+		const result = importNuvioCollections(value, { idFactory });
+		if (!result.ok) return failWithDiagnostics("import", result.errors, result.warnings);
+		if (result.project.collections.length === 0) return actionResult(true);
+		let project;
+		try {
+			const incoming = repairProjectNuvioIds(result.project, nuvioIdFactory, collectReservedNuvioIds(state.project));
+			project = { ...state.project, collections: [...state.project.collections, ...incoming.collections] };
+		} catch {
+			return failAtomicBundleOperation(CONTROLLER_DIAGNOSTIC_CODES.NUVIO_ID_GENERATION_FAILED,
+				"$controller.nuvioIds", "Unique Nuvio IDs could not be generated for the complete import.");
+		}
+		if (!checkInternalIdUniqueness(project).unique) {
+			return failAtomicBundleOperation(CONTROLLER_DIAGNOSTIC_CODES.INTERNAL_ID_COLLISION,
+				"$controller.appendImportedCollections", "The imported Collections could not be assigned unique internal identities.");
+		}
+		const offset = state.project.collections.length;
+		const warnings = result.warnings.map((warning) => ({ ...warning,
+			path: warning.path.replace(/^\$\[(\d+)\]/, (_, index) => `$[${Number(index) + offset}]`),
+		}));
+		let diagnostics = replaceDiagnosticScope(state.diagnostics, "import", [], [...state.diagnostics.import.warnings, ...warnings]);
+		diagnostics = replaceDiagnosticScope(diagnostics, "operation", [], []);
+		diagnostics = replaceDiagnosticScope(diagnostics, "export", [], []);
+		commitPatch({ project, dirty: true, migrationPreview: createMigrationPreview(project), diagnostics });
+		return actionResult(true, [], warnings);
+	}
+
+	function mergeImportedCollections(value) {
+		const plan = planCollectionMerge(state.project, value, { idFactory, nuvioIdFactory });
+		if (!plan.ok) return actionResult(false, plan.errors, plan.warnings);
+		let diagnostics = replaceDiagnosticScope(state.diagnostics, "import", [], [...state.diagnostics.import.warnings, ...plan.warnings]);
+		diagnostics = replaceDiagnosticScope(diagnostics, "operation", [], []);
+		diagnostics = replaceDiagnosticScope(diagnostics, "export", [], []);
+		commitPatch({ project: plan.project, dirty: true, selection: reconcileSelection(plan.project, state.selection),
+			migrationPreview: createMigrationPreview(plan.project), diagnostics }, { force: true });
+		return actionResult(true, [], plan.warnings, { counts: plan.counts });
 	}
 
 	function importProject(input, actionOptions, importer) {
@@ -1465,6 +1507,8 @@ export function createBuilderController(options = {}) {
 		startNewProject,
 		importJsonText,
 		importValue,
+		appendImportedCollections,
+		mergeImportedCollections,
 		selectNode,
 		clearSelection,
 		createCollection: createCollectionNode,

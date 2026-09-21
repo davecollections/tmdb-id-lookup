@@ -26,6 +26,8 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const builderModules = path.join(rootDir, "builder", "node_modules");
 const collectionCorrectionOnly = process.env.COLLECTION_FOLDERS_CORRECTION_ONLY === "1";
 const backToTopOnly = process.env.BUILDER_BACK_TO_TOP_ONLY === "1";
+const nuvioWelcomeOnly = process.env.NUVIO_WELCOME_ONLY === "1";
+const nuvioImportOnly = nuvioWelcomeOnly || process.env.NUVIO_IMPORT_ONLY === "1";
 const presentationOnly = process.env.BUILDER_MANAGEMENT_PRESENTATION_ONLY === "1";
 const ownerCollectionImport = process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH
 	? JSON.parse(fs.readFileSync(process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH, "utf8")) : null;
@@ -159,6 +161,122 @@ async function runBackToTopChecks(connection) {
 	return { results, errors: await evaluate(connection, "window.__mountedErrors") };
 }
 
+async function runWelcomeImportChecks(connection) {
+ const local = await evaluate(connection, "window.runWelcomeLayoutCases()");
+ const layouts = [];
+ const screenshots = process.env.NUVIO_IMPORT_SCREENSHOT_DIR;
+ if(screenshots) await fsPromises.mkdir(screenshots, { recursive: true });
+ for (const width of [360, 384, 393, 402, 412, 768, 899, 900, 901, 1024, 1280]) {
+  await connection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 900 });
+  for (const stage of ["landing", "landing-file", "landing-json", "landing-nuvio"]) {
+   layouts.push({ stage, ...await evaluate(connection, `window.prepareNuvioScreen(${JSON.stringify(stage)})`) });
+   // Native tabbing must never reach either hidden draft form.
+   await evaluate(connection, stage === "landing-nuvio" ? 'document.querySelector("[data-nuvio-dialog] h2").focus({ preventScroll: true })' : 'document.querySelector("[data-action=choose-import-json]").focus()');
+   for(let i=0; i<5; i++) {
+    await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+    await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+    assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("form[hidden]"))'), false, "Native Tab skips hidden forms");
+    if (stage === "landing-nuvio") assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Nuvio dialog contains keyboard focus");
+   }
+   if (screenshots && [393,1280].includes(width)) {
+    await evaluate(connection, "document.activeElement.blur()");
+    const metrics = await connection.command("Page.getLayoutMetrics");
+    const image = await connection.command("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: stage === "landing-nuvio" ? 900 : metrics.cssContentSize.height, scale: 1 } });
+    await fsPromises.writeFile(path.join(screenshots, `nuvio-${stage}-${width}.png`), Buffer.from(image.data, "base64"));
+   }
+  }
+ }
+ for (const width of [900, 901, 1024, 1280]) {
+  const atWidth = layouts.filter(layout => layout.width === width);
+  for (const dimension of ["panelHeight", "cardHeight"]) assert.ok(Math.max(...atWidth.map(layout => layout[dimension])) - Math.min(...atWidth.map(layout => layout[dimension])) <= 1, "Ordinary desktop methods keep a stable " + dimension);
+ }
+
+ await evaluate(connection, 'window.prepareNuvioScreen("landing")');
+ const hoverStyles = [];
+ for (const action of ["start-new-project", "open-nuvio-import", "choose-import-file", "choose-import-json"]) {
+  const point = await evaluate(connection, "(() => { const rect = document.querySelector('[data-action=" + action + "]').getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; })()");
+  await connection.command("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+  hoverStyles.push(await evaluate(connection, "new Promise(resolve => setTimeout(() => { const style = getComputedStyle(document.querySelector('[data-action=" + action + "]')); resolve({ filter: style.filter, transform: style.transform }); }, 200))"));
+ }
+ assert.notEqual(hoverStyles[0].transform, "none", "Create retains its established hover movement");
+ for (const style of hoverStyles.slice(1)) assert.deepEqual(style, hoverStyles[0], "Import and Create share the established hover treatment");
+ await connection.command("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+
+ for (const width of [393, 1280]) {
+  await connection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 900 });
+  await evaluate(connection, 'window.prepareNuvioScreen("landing-file")');
+  await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "active" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+  await evaluate(connection, 'document.querySelector("[data-action=choose-import-file]").focus()');
+  for (const type of ["keyDown", "keyUp"]) await connection.command("Input.dispatchKeyEvent", { type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+  for (const type of ["keyDown", "keyUp"]) await connection.command("Input.dispatchKeyEvent", { type, key: " ", code: "Space", windowsVirtualKeyCode: 32 });
+  assert.equal(await evaluate(connection, `(() => {
+   const selected = document.querySelector("[data-action=choose-import-json]");
+   return selected.getAttribute("aria-pressed") === "true" && document.activeElement === selected &&
+    getComputedStyle(selected).outlineStyle === "solid" && getComputedStyle(selected, "::after").borderTopStyle === "solid" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
+  })()`), true, "Space selects JSON with visible keyboard focus and a structural forced-colour selection");
+  for (const type of ["keyDown", "keyUp"]) await connection.command("Input.dispatchKeyEvent", { type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
+  await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", text: "\r", unmodifiedText: "\r", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+  await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  assert.equal(await evaluate(connection, 'document.querySelector("[data-action=choose-import-file]").getAttribute("aria-pressed")'), "true", "Enter selects File");
+  await connection.command("Emulation.setEmulatedMedia", { features: [] });
+ }
+ const jsonLayout = await evaluate(connection, 'window.prepareNuvioScreen("landing-json")');
+ await evaluate(connection, 'document.querySelector("#builder-import-text").focus()');
+ await connection.command("Input.insertText", { text: JSON.stringify(Array.from({ length: 20 }, () => ({ title: "Local draft", folders: [] })), null, 2) });
+ assert.equal(await evaluate(connection, `(() => {
+  const text = document.querySelector("#builder-import-text");
+  return text.scrollHeight > text.clientHeight && document.querySelector(".welcome-import-content").getBoundingClientRect().height === ${jsonLayout.panelHeight};
+ })()`), true, "Long local JSON scrolls inside the field without enlarging the desktop panel");
+ return { local, layouts, errors: await evaluate(connection, "window.__mountedErrors") };
+}
+
+async function runNuvioImportChecks(connection, origin) {
+	await connection.command("Page.navigate", { url: `${origin}/tests/fixtures/builder-nuvio-import-mounted.html` });
+	const deadline = Date.now() + 30000;
+	while (Date.now() < deadline && !await evaluate(connection, "window.nuvioFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
+	assert.equal(await evaluate(connection, "window.nuvioFixtureReady === true"), true, "Nuvio fixture loads");
+	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+	if (nuvioWelcomeOnly) return runWelcomeImportChecks(connection);
+	const local = await evaluate(connection, "window.runNuvioLocalCases()");
+	const layouts = [];
+	const screenshots = process.env.NUVIO_IMPORT_SCREENSHOT_DIR;
+	if (screenshots) await fsPromises.mkdir(screenshots, { recursive: true });
+	for (const [width, height] of [[360, 852], [384, 852], [393, 852], [402, 852], [412, 852], [1280, 900], [393, 400]]) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
+		for (const stage of ["landing", "login", "profiles", "pin-verified", "pin-locked", "review", "expired", "replace", "workspace"]) {
+			layouts.push({ stage, ...await evaluate(connection, `window.prepareNuvioScreen(${JSON.stringify(stage)})`) });
+			if (screenshots && height > 400 && (([393, 1280].includes(width) && ["landing", "review"].includes(stage)) || (width === 393 && stage === "profiles") || (width === 1280 && stage === "workspace"))) {
+				const metrics = stage === "landing" ? await connection.command("Page.getLayoutMetrics") : null;
+				const image = await connection.command("Page.captureScreenshot", { format: "png", ...(metrics ? { captureBeyondViewport: true, clip: { x: 0, y: 0, width, height: metrics.cssContentSize.height, scale: 1 } } : {}) });
+				await fsPromises.writeFile(path.join(screenshots, `nuvio-${stage}-${width}.png`), Buffer.from(image.data, "base64"));
+			}
+			if (["workspace", "landing"].includes(stage)) continue;
+			await evaluate(connection, 'document.querySelector("[data-nuvio-dialog] h2").focus({ preventScroll: true })');
+			await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
+			await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+			assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Shift-Tab from initial heading stays contained");
+			for (const backward of [false, true]) {
+				await evaluate(connection, `(() => { const controls = [...document.querySelector('[data-nuvio-dialog]').querySelectorAll('button, input, summary')].filter(node => !node.disabled && node.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
+				await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: backward ? 8 : 0 });
+				await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Native Tab stays inside Nuvio dialog");
+			}
+			await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+			await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+			await evaluate(connection, "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+			assert.equal(await evaluate(connection, "window.checkNuvioClosed()"), true, "Escape closes and restores trigger/body");
+		}
+	}
+	await evaluate(connection, 'window.prepareNuvioScreen("review")');
+	await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "active" }] });
+	assert.equal(await evaluate(connection, '(() => { const choice = document.querySelector(".nuvio-choice[data-selected=true]"); const inset = getComputedStyle(choice, "::after"); return inset.borderStyle === "solid" && parseFloat(inset.borderWidth) >= 1 && choice.querySelector("input").checked; })()'), true, "Shared forced-colour inset preserves non-hue selection");
+	await connection.command("Emulation.setEmulatedMedia", { features: [] });
+	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: false });
+	return { local, layouts, errors: await evaluate(connection, "window.__mountedErrors") };
+}
+
 async function runMountedPage() {
 	const resources = {
 		browserExecutable: null,
@@ -172,7 +290,8 @@ async function runMountedPage() {
 		viteCacheDir: null,
 	};
 	const execution = await runWithLifecycleCleanup(async () => {
-		const optimizeDeps = mountedReactOptimizeDeps(collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
+		const optimizeDeps = mountedReactOptimizeDeps(nuvioImportOnly ? [] : collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
+		if (nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-import-mounted.html");
 		optimizeDeps.include.push("react/jsx-dev-runtime");
 		optimizeDeps.needsInterop.push("react/jsx-dev-runtime");
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-bulk-edit-vite-"));
@@ -262,6 +381,9 @@ async function runMountedPage() {
 			}
 		` });
 		const address = resources.vite.httpServer.address();
+		const nuvioImport = nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)
+			? await runNuvioImportChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`) : null;
+		if (nuvioImportOnly) return { nuvioImport };
 		let unrelatedResults = {};
 		if (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly) {
 		await resources.pageConnection.command("Page.navigate", {
@@ -464,7 +586,7 @@ async function runMountedPage() {
 				}
 			}
 		}
-		return { ...unrelatedResults, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
+		return { ...unrelatedResults, nuvioImport, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
 	}, () => cleanupMountedBrowser({
 		browserExecutable: resources.browserExecutable,
 		browserProcess: resources.browserProcess,
@@ -488,6 +610,12 @@ test("mounted Back to top preserves workspace state, motion, modal safety and ph
 let mounted;
 before(async () => {
 	mounted = await runMountedPage();
+});
+
+test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+	assert.deepEqual(mounted.nuvioImport.local, nuvioWelcomeOnly ? { passed: true, externalServiceExercised: false } : { passed: true, mocked: true });
+	assert.equal(mounted.nuvioImport.layouts.length, nuvioWelcomeOnly ? 44 : 63);
+	assert.deepEqual(mounted.nuvioImport.errors, []);
 });
 
 test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: backToTopOnly }, () => {
