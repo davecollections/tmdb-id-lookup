@@ -643,28 +643,8 @@ function SourceList({ sources, actionProps }) {
 	);
 }
 
-function ImportWarningSummary({ warnings }) {
-	if (warnings.length === 0) {
-		return null;
-	}
-
-	return (
-		<details className="import-warning-summary">
-			<summary>Imported with {warnings.length} warning{warnings.length === 1 ? "" : "s"}</summary>
-			<ul>
-				{warnings.map((warning, index) => (
-					<li key={`${warning.code}-${warning.path}-${index}`}>
-						<strong>{warning.message}</strong>
-						<span>{warning.code}</span>
-					</li>
-				))}
-			</ul>
-		</details>
-	);
-}
-
-function InlineNotices({ diagnostic, migrationNotice, importWarnings }) {
-	if (!diagnostic && !migrationNotice && importWarnings.length === 0) {
+function InlineNotices({ diagnostic, migrationNotice }) {
+	if (!diagnostic && !migrationNotice) {
 		return null;
 	}
 
@@ -676,7 +656,6 @@ function InlineNotices({ diagnostic, migrationNotice, importWarnings }) {
 					<span>{diagnostic.code}</span>
 				</div>
 			) : null}
-			<ImportWarningSummary warnings={importWarnings} />
 			{migrationNotice ? <p className="migration-notice">{migrationNotice}</p> : null}
 		</div>
 	);
@@ -716,6 +695,9 @@ function findEditableNode(project, internalId) {
 export function BuilderWorkspace({
 	controller,
 	state,
+	onOpenNuvio,
+	nuvioOpen = false,
+	nuvioImportStatus = "",
 	onReturnHome = () => {},
 	initialEditorDraft = null,
 	initialEditorMode = "settings",
@@ -924,7 +906,7 @@ export function BuilderWorkspace({
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
 	const bulkEditLocked = bulkEditDraft !== null;
-	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null;
+	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || exportOpen || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -2532,7 +2514,10 @@ export function BuilderWorkspace({
 							<span aria-hidden="true">?</span>
 						</button>
 						</div>
-						{hasExportableStructure(state.project) ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export collections</button> : null}
+						<div className="workspace-transfer-actions">
+							{onOpenNuvio ? <button className="export-entry-action nuvio-entry-action" type="button" data-action="open-nuvio-import" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenNuvio}>Import from Nuvio</button> : null}
+							{hasExportableStructure(state.project) ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export collections</button> : null}
+						</div>
 					</div>
 				</header>
 
@@ -2544,10 +2529,10 @@ export function BuilderWorkspace({
 					/>
 				) : null}
 
+				{nuvioImportStatus ? <p className="nuvio-import-status" role="status">{nuvioImportStatus}</p> : null}
 				<InlineNotices
 					diagnostic={view.operationDiagnostic ?? returnDiagnostic}
 					migrationNotice={view.migrationNotice}
-					importWarnings={state.diagnostics.import.warnings}
 				/>
 				<p
 					id="reorder-instructions"

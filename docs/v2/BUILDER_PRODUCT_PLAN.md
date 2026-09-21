@@ -123,7 +123,7 @@ Progressive disclosure should let a beginner reach a useful result while preserv
 
 **Confirmed direction**
 
-A future Nuvio connection may require Nuvio authentication, but it must remain optional. Product copy must therefore avoid absolute promises such as “no login ever.” The core Builder must not depend on that connection.
+The optional Direct Nuvio import connection requires Nuvio authentication. Product copy must avoid absolute promises such as “no login ever.” The core Builder does not depend on that connection.
 
 ## 4. Startup experience
 
@@ -480,36 +480,21 @@ The intended journey is:
 
 Export discloses preservation warnings and blocking problems without changing the draft. Manual Copy JSON and Download JSON remain independently available after any future account connection feature.
 
-## 16. Optional future Nuvio connection
+<a id="16-optional-future-nuvio-connection"></a>
 
-**Near-term investigation after Back-to-top / large-library navigation; implementation is not approved.** The dated evidence below is a starting point to re-verify, not a committed connection contract.
+## 16. Optional Direct Nuvio connection
 
-Official Nuvio public API documentation reviewed 2026-07-25 explicitly documents:
+**First read/import slice approved and implemented locally for owner review — [#238](https://github.com/davecollections/tmdb-id-lookup/issues/238).** The [connection contract](./BUILDER_NUVIO_CONNECTION.md) retains the dated public API, upstream and CORS investigation evidence, architecture, safety boundaries and validation limits. This is not a release or remote-write approval.
 
-- email/password authentication and access/refresh tokens;
-- up to six profiles with profile-scoped resources;
-- collection pull and push operations;
-- full replacement of the profile’s complete `collections_json` blob, where omitted collections are removed and an empty array clears it.
+The approved flow is one of three consistently styled buttons in the unified landing Import section, alongside local File/JSON methods, and is also available from workspace: browser-direct login → identity-bound profile/PIN selection → pull Collections → local review → import. The file picker shows its filename once. Profile Refresh sits beside its heading; Profile/Review have primary Load/Import at left and quieter Disconnect at right. Review uses standard Back, local-time en-AU dates and concise grouped import notes. Workspace has only transient import success, cleared by content edits rather than selection/scrolling. Passwords are not retained; access tokens remain in memory, refresh tokens are discarded and reload starts disconnected. Missing blobs and empty arrays remain distinct and cannot import or clear current work.
 
-Source: [Nuvio Public API](https://nuvio.tv/docs), reviewed 2026-07-25.
+After successful pull/structural validation, the reviewed immutable snapshot is local data. Import makes no new requests or profile checks; expiry does not invalidate that snapshot. Login is required before another network operation. Disconnect discards connection/review state and leaves current Builder work unchanged. Read-only import has no backup action; ordinary Export is unchanged. **Any future Direct Nuvio write must automatically download the current remote profile Collection JSON before the write is attempted.** This is a future requirement, not implemented behavior.
 
-No separate collection import, merge, or targeted-update endpoint was identified on the reviewed page. This establishes that an authenticated collection transport exists. It does **not** make connection part of the core Builder or establish a safe product flow. Before implementation, a dedicated issue still needs verified answers for:
+Existing work requires **Add as separate Collections**, **Merge exact matches**, or **Replace current project**. Add appends complete Collections without matching. Merge requires unique exactly equal valid visible Collection/Folder titles, with no normalization or provenance inference. Invisible/U+200E, malformed and ambiguous parents stay whole and separate. Source dedupe occurs only inside matched Folders, reuses established identities and requires safe complete preserved equality; uncertainty retains both. Existing settings/raw data and order win; new nodes append with imported fields retained. The shared pure planner supplies preview counts and atomic apply, reserves current IDs, repairs only inserted IDs and validates the final tree. Failures commit no state/revision; success marks dirty in one revision. Replacement retains explicit destructive confirmation and the existing import pipeline.
 
-- supported authentication, browser handoff or device pairing;
-- browser feasibility, CORS and local-network constraints;
-- profile discovery and explicit profile selection;
-- retrieval of current Collections and safe targeting of existing Collections for initial setup and later updates;
-- actual Add / merge / update / replace semantics, if exposed, including whether safe updates are possible over a full-replace API;
-- stale-state detection, conflicts, backup and destructive-replacement safeguards;
-- token storage, lifetime, refresh, expiry and revocation;
-- disconnect/logout and removal of retained credentials;
-- partial failure and recovery behavior;
-- TV/local-network versus nuvio.tv differences;
-- security and privacy implications and disclosures.
+Remote Send/Add/Merge/Overwrite remain deferred. The documented Collection write operation is full-profile replacement without evidenced compare-and-swap; local merge does not authorize writes. Persistent login, refresh renewal, pairing, Dingo accounts/workspaces, TV LAN and Worker auth proxying remain outside scope. Mocked/local tests are explicitly approved. Owner-reported live login/avatar/PIN/pull/import and other-device-session checks remain the live evidence. The later resilience pass adds one bounded retry for safe reads after 429/503, preserving the 20-second attempt timeout and never replaying login/PIN automatically. Owner visual review is approved; final pre-publication validation and separate publication approval remain required.
 
-The reviewed documentation did not establish a public device-pairing contract. That remains unverified. The Builder must not infer its design from a third-party “Connect” button, ask users to paste credentials into an unreviewed flow, or expose long-lived tokens without an approved security model.
-
-The core Builder remains usable without login, a Nuvio connection, a personal TMDB API key or cloud storage. Manual JSON import, Copy JSON and Download JSON remain first-class supported paths, including after any future connection exists.
+The core Builder remains usable without login, a Nuvio connection, a personal TMDB API key or cloud storage. Manual JSON import, Copy JSON and Download JSON remain first-class supported paths.
 
 ### Integration terminology boundary
 
@@ -558,8 +543,8 @@ The owner-approved near-term order is:
 1. **Roadmap/documentation reconciliation — #234, this issue.** No product behavior change.
 2. **Back-to-top / large-library navigation — [#236](https://github.com/davecollections/tmdb-id-lookup/issues/236), implemented locally; owner review pending.** One floating `↑ Top` button (accessible name **Back to top**) appears at one viewport height of window scrolling and hides below that threshold. It sits at the lower right with a 48px minimum tap target and 16px plus safe-area offsets. Activation focuses the top Builder heading without an extra scroll and returns the page to the top smoothly, or immediately with reduced motion. The existing workspace underlay provides modal inert/aria-hidden protection. Selection, mobile level, project data and revision remain unchanged. No per-column bookkeeping or broader navigation features are added.
 
-3. **Direct Nuvio connection investigation.** This is the major near-term investigation after navigation polish. Re-verify the [dated evidence and safety questions](#16-optional-future-nuvio-connection), including authentication/pairing, browser/CORS/local-network feasibility, profiles, Collection retrieval/targeting, delivery semantics, stale/conflict handling, tokens, disconnect/logout, recovery and security/privacy. Priority is approved; implementation is not.
-4. **Direct Nuvio connection implementation, conditional.** Proceed only if investigation proves a safe supported path and focused implementation scope is separately owner-approved. Core use remains independent of login, connection, personal TMDB keys and cloud storage. Manual JSON import, Copy JSON and Download JSON stay first-class.
+3. **Direct Nuvio investigation completed for the approved read/import slice.** The [dated connection contract](./BUILDER_NUVIO_CONNECTION.md) records public browser-direct auth, profiles, retrieval, expiry/snapshot/disconnect handling and unresolved remote-write boundaries.
+4. **Direct Nuvio read/import owner review — #238.** The local slice includes unified Import, grouped Review notes, explicit Add separate/Merge exact/Replace and no read-only import backup. Finish owner review before separately authorized publication. Core use stays independent of login; future remote writes require separate approval and automatic download of current remote profile Collection JSON before attempting any write.
 5. **Review/export help polish.** Follow the investigation and any approved viable implementation so final help reflects actual supported delivery methods. Retain Nuvio.tv / TV app / TV management via phone or computer guidance, same-network local-address/QR instructions, and **Collections > Import > Paste or File > Import > Save Changes**, with dated client verification when implemented. Explain that URL import requires already hosted JSON; retain Copy JSON, Download JSON, shared beta and TMDB Enrichment guidance. If connection proves viable, final help may include Send to Nuvio; current copy must not promise it.
 
 This order does not create future issues or approve their implementation details. If connection is not viable, retain the manual paths and let the export/help work reflect that finding.
@@ -603,7 +588,7 @@ Later design should add unique Collections/Folders/Sources, review matching Coll
 
 If adoption and continued development justify it, Dingo's may evolve toward a **“Nuvio collection-management companion”**: build, import, safely edit, reorganise and maintain large configurations, compare/merge configurations, and potentially audit configuration health. Optional connection is prioritized separately in the near-term investigation sequence. This is a direction, not an immediate rename or implementation commitment. Keep **Dingo's Collection Builder** as the present name and creation plus preservation-first import/edit as the present focus. Nuvio remains the media centre and playback application; Dingo must not become its playback/media-centre replacement or add watch-history/general media-centre functions merely to broaden scope.
 
-Optional Direct Nuvio connection / Send to Nuvio has moved to the [near-term sequence](#next); its implementation remains conditional on a safe supported contract. It is no longer parked solely as a long-term capability.
+Optional Direct Nuvio read/import is in the [near-term owner-review sequence](#next). Send to Nuvio and all remote writes remain conditional on a safe supported contract and separate approval.
 
 ### Explicitly deferred / not currently planned
 
@@ -630,7 +615,7 @@ Optional Direct Nuvio connection / Send to Nuvio has moved to the [near-term seq
 | Startup-screen visual layout | The four routes are decided; their presentation is not. |
 | Future Search/Add destination and action wording | All eight current families now have evidenced selected-folder and/or hierarchy routes. Any new destination model or wording still requires a focused decision rather than being inferred from those implementations. |
 | Source-name parity across bulk creators | Source names are source-level where appropriate, but current family semantics differ; do not require hundreds of generated name inputs without focused design and evidence. |
-| Direct Nuvio connection flow | Near-term investigation is prioritized; dated transport evidence, authentication/pairing, browser feasibility, targeting, safe updates and recovery must be re-verified before implementation approval. |
+| Direct Nuvio remote writes and later connection capabilities | The first read/import slice is approved under #238. Safe remote updates, pairing and persistent/refresh login remain deferred decisions. |
 | Saved Builder project format | Not needed for the current local JSON flow; revisit only when persistence needs justify it. |
 | Removal of `noindex` | Requires explicit release-readiness approval. |
 | Final Dave Collections branding | Preferred direction is recorded; design remains deferred. |

@@ -36,7 +36,8 @@ function DiagnosticList({ diagnostics, kind }) {
 	);
 }
 
-export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
+export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvio, nuvioOpen = false }) {
+	const [importMethod, setImportMethod] = useState(null);
 	const [selectedFile, setSelectedFile] = useState(null);
 	const [pastedText, setPastedText] = useState("");
 	const [localDiagnostics, setLocalDiagnostics] = useState([]);
@@ -81,6 +82,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 
 	async function handleFileImport(event) {
 		event.preventDefault();
+		if (importMethod !== "file") return;
 		const file = selectedFile;
 		await runWelcomeAction({
 			gate: actionGateRef.current,
@@ -98,6 +100,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 
 	async function handlePastedImport(event) {
 		event.preventDefault();
+		if (importMethod !== "json") return;
 		const text = pastedText;
 		await runWelcomeAction({
 			gate: actionGateRef.current,
@@ -114,6 +117,12 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 		});
 	}
 
+	function chooseImportMethod(method, event) {
+		if (actionGateRef.current.isActive()) return;
+		if (method === "nuvio") onOpenNuvio(event);
+		else setImportMethod(method);
+	}
+
 	function closeAboutCredits() {
 		if (!aboutCreditsOpen) return;
 		restoreAboutCreditsFocusRef.current = true;
@@ -127,8 +136,8 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 			data-builder-welcome="true"
 			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
 			aria-busy={isBusy}
-			inert={aboutCreditsOpen || undefined}
-			aria-hidden={aboutCreditsOpen ? "true" : undefined}
+			inert={aboutCreditsOpen || nuvioOpen || undefined}
+			aria-hidden={aboutCreditsOpen || nuvioOpen ? "true" : undefined}
 		>
 			<header className="welcome-brand">
 				<img className="welcome-mark" src={builderMark} alt="" width="68" height="68" />
@@ -171,73 +180,109 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace }) {
 				<div className="welcome-section-heading">
 					<p className="panel-kicker">Import</p>
 					<h2 id="import-title">Open an existing collection</h2>
-					<p>Choose a JSON file or paste its contents to continue.</p>
 				</div>
 
-				<div className="import-grid">
-					<form className="import-card" aria-busy={busyAction === "file"} onSubmit={handleFileImport}>
-						<div>
-							<h3>Choose a JSON file</h3>
-							<p id="file-import-guidance">JSON files up to 10 MiB are supported.</p>
-						</div>
-						<label className="file-input-label" htmlFor="builder-import-file">Collection JSON file</label>
-						<input
-							id="builder-import-file"
-							className="file-input"
-							type="file"
-							accept=".json,application/json"
-							data-import-control="file"
-							aria-describedby="file-import-guidance selected-file-name"
-							disabled={isBusy}
-							onChange={(event) => {
-								if (actionGateRef.current.isActive()) return;
-								setSelectedFile(event.target.files?.[0] ?? null);
-								setLocalDiagnostics([]);
-							}}
-						/>
-						<p id="selected-file-name" className="selected-file" aria-live="polite">
-							<span>Selected file</span>
-							<strong>{selectedFile?.name ?? "No file selected"}</strong>
-						</p>
-						<button
-							className="import-action"
-							type="submit"
-							data-action="import-file"
-							disabled={isBusy}
-						>
-							{busyAction === "file" ? "Importing…" : "Import selected file"}
-						</button>
-					</form>
+				<div className="welcome-import-layout">
+					<div className="welcome-import-methods" role="group" aria-label="Import method">
+						{onOpenNuvio ? (
+							<button
+								type="button"
+								className="import-action welcome-import-method"
+								data-action="open-nuvio-import"
+								aria-haspopup="dialog"
+								disabled={isBusy}
+								aria-labelledby="builder-import-nuvio-title"
+								aria-describedby="builder-import-nuvio-help"
+								onClick={(event) => chooseImportMethod("nuvio", event)}
+							>
+								<span className="creation-option-copy"><strong id="builder-import-nuvio-title">Import from Nuvio</strong><small id="builder-import-nuvio-help">Connect to a Nuvio profile</small></span>
+								<span className="welcome-import-forward" aria-hidden="true" />
+							</button>
+						) : null}
+						{[["file", "Import from file", "Choose a Collection JSON file"], ["json", "Import from JSON", "Paste Collection JSON"]].map(([method, label, help]) => (
+							<button
+								key={method}
+								type="button"
+								className="import-action welcome-import-method"
+								data-action={`choose-import-${method}`}
+								data-selection-mode="single"
+								aria-pressed={importMethod === method}
+								aria-controls={`builder-import-${method}-panel`}
+								disabled={isBusy}
+								aria-label={label}
+								aria-describedby={`builder-import-${method}-help`}
+								onClick={() => chooseImportMethod(method)}
+							>
+								<span className="creation-option-copy"><strong>{label}</strong><small id={`builder-import-${method}-help`}>{help}</small></span>
+							</button>
+						))}
+					</div>
+					<div className="welcome-import-content">
+						{importMethod === null ? <div className="welcome-import-prompt">
+							<h3>Choose an import method</h3>
+							<p>Select an option to continue.</p>
+						</div> : null}
+						<form id="builder-import-file-panel" className="import-card" hidden={importMethod !== "file"} aria-busy={busyAction === "file"} onSubmit={handleFileImport}>
+							<div>
+								<h3>Choose a JSON file</h3>
+								<p id="file-import-guidance">JSON files up to 10 MB are supported.</p>
+							</div>
+							<label className="file-input-label" htmlFor="builder-import-file">Collection JSON file</label>
+							<input
+								id="builder-import-file"
+								className="file-input"
+								type="file"
+								accept=".json,application/json"
+								data-import-control="file"
+								aria-describedby="file-import-guidance"
+								disabled={isBusy}
+								onChange={(event) => {
+									if (actionGateRef.current.isActive()) return;
+									setSelectedFile(event.target.files?.[0] ?? null);
+									setLocalDiagnostics([]);
+								}}
+							/>
+							<button
+								className="secondary-action"
+								type="submit"
+								data-action="import-file"
+								disabled={isBusy}
+							>
+								{busyAction === "file" ? "Importing…" : "Import selected file"}
+							</button>
+						</form>
 
-					<form className="import-card" aria-busy={busyAction === "pasted"} onSubmit={handlePastedImport}>
-						<div>
-							<h3>Paste JSON text</h3>
-							<p id="pasted-import-guidance">Paste one Nuvio collection JSON document.</p>
-						</div>
-						<label htmlFor="builder-import-text">Collection JSON</label>
-						<textarea
-							id="builder-import-text"
-							value={pastedText}
-							data-import-control="pasted-json"
-							aria-describedby="pasted-import-guidance"
-							disabled={isBusy}
-							onChange={(event) => {
-								if (actionGateRef.current.isActive()) return;
-								setPastedText(event.target.value);
-								setLocalDiagnostics([]);
-							}}
-						/>
-						<button
-							className="import-action"
-							type="submit"
-							data-action="import-pasted-json"
-							disabled={isBusy}
-						>
-							{busyAction === "pasted" ? "Importing…" : "Import pasted JSON"}
-						</button>
-					</form>
+						<form id="builder-import-json-panel" className="import-card" hidden={importMethod !== "json"} aria-busy={busyAction === "pasted"} onSubmit={handlePastedImport}>
+							<div>
+								<h3>Paste JSON text</h3>
+								<p id="pasted-import-guidance">Paste one Nuvio collection JSON document.</p>
+							</div>
+							<label htmlFor="builder-import-text">Collection JSON</label>
+							<textarea
+								id="builder-import-text"
+								value={pastedText}
+								data-import-control="pasted-json"
+								aria-describedby="pasted-import-guidance"
+								disabled={isBusy}
+								onChange={(event) => {
+									if (actionGateRef.current.isActive()) return;
+									setPastedText(event.target.value);
+									setLocalDiagnostics([]);
+								}}
+							/>
+							<button
+								className="secondary-action"
+								type="submit"
+								data-action="import-pasted-json"
+								disabled={isBusy}
+							>
+								{busyAction === "pasted" ? "Importing…" : "Import pasted JSON"}
+							</button>
+						</form>
+					</div>
 				</div>
 			</section>
+
 
 			<footer className="welcome-footer">
 				<p className="privacy-note">Your collection JSON is processed locally in this browser and is not uploaded.</p>

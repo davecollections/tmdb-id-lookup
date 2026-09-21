@@ -30,6 +30,7 @@ const vite = await createServer({
 	server: { middlewareMode: true },
 });
 const { BuilderApp } = await vite.ssrLoadModule("/src/ui/BuilderApp.jsx");
+const { ProfilePin, NuvioImportProgress } = await vite.ssrLoadModule("/src/ui/NuvioConnectionDialog.jsx");
 after(() => vite.close());
 
 function countingIdFactory(prefix = "welcome") {
@@ -97,17 +98,22 @@ test("production welcome uses collection-focused startup copy and retains litera
 		"Open a clean workspace and build your Nuvio collection.",
 		"Create new collection",
 		"Open an existing collection",
-		"Choose a JSON file or paste its contents to continue.",
+		"Choose an import method",
+		"Select an option to continue.",
+		"Connect to a Nuvio profile",
+		"Choose a Collection JSON file",
+		"Paste Collection JSON",
 		"Choose a JSON file",
+		"JSON files up to 10 MB are supported.",
 		"Collection JSON file",
 		"Import selected file",
-		"No file selected",
 		"Import pasted JSON",
 		"processed locally in this browser and is not uploaded",
 	]) {
 		assert.ok(markup.includes(text), text);
 	}
 	for (const oldText of [
+		"JSON files up to 10 MiB are supported.",
 		"Create, import and organise collection files using TMDB-powered sources and Nuvio-compatible structures.",
 		"Begin with a clean collection file",
 		"Open an empty workspace for a new Nuvio collection file.",
@@ -145,14 +151,14 @@ test("welcome forms are labelled, described, semantic, and ID-safe", () => {
 	const markup = render(createController());
 	assert.match(markup, /<label[^>]+for="builder-import-file"/);
 	assert.match(markup, /<input[^>]+accept="\.json,application\/json"/);
-	assert.match(markup, /aria-describedby="file-import-guidance selected-file-name"/);
+	assert.match(markup, /aria-describedby="file-import-guidance"/);
 	assert.match(markup, /<label[^>]+for="builder-import-text"/);
 	assert.match(markup, /<textarea[^>]+aria-describedby="pasted-import-guidance"/);
-	assert.ok(markup.includes("No file selected"));
+	assert.equal(markup.includes("No file selected"), false);
 	assert.ok(markup.includes('aria-busy="false"'));
 	const ids = renderedIds(markup);
 	assert.equal(ids.length, new Set(ids).size);
-	for (const target of ["file-import-guidance", "selected-file-name", "pasted-import-guidance"]) {
+	for (const target of ["file-import-guidance", "pasted-import-guidance"]) {
 		assert.equal(ids.filter((id) => id === target).length, 1);
 	}
 });
@@ -514,17 +520,16 @@ test("controller file-import failure retains the prior project and returns no ra
 	assert.deepEqual(Object.keys(result.errors[0]).sort(), ["code", "message", "path"]);
 });
 
-test("successful importer warnings enter workspace as collapsed bounded details", () => {
+test("workspace retains import diagnostics internally without presenting import notes", () => {
 	const controller = createController();
 	const result = importPastedJson(controller, '[{"id":"one","title":"One"}]');
 	assert.equal(result.ok, true);
 	assert.equal(result.warnings[0].code, "MISSING_FOLDERS");
 	const markup = render(controller, { initialScreen: "workspace" });
-	assert.match(markup, /<details class="import-warning-summary">/);
-	assert.ok(markup.includes("Imported with 1 warning"));
-	assert.ok(markup.includes("MISSING_FOLDERS"));
-	assert.equal(markup.includes("<details class=\"import-warning-summary\" open"), false);
-	assert.match(read("builder/src/styles.css"), /\.import-warning-summary ul[\s\S]*max-height:[\s\S]*overflow:\s*auto/);
+	assert.equal(markup.includes("import-notice-details"), false);
+	assert.equal(markup.includes("import-notable"), false);
+	assert.equal(markup.includes("MISSING_FOLDERS"), false);
+	assert.equal(controller.getState().diagnostics.import.warnings[0].code, "MISSING_FOLDERS");
 });
 
 test("workspace omits the warning panel when import warnings are absent", () => {
@@ -533,6 +538,18 @@ test("workspace omits the warning panel when import warnings are absent", () => 
 	const markup = render(controller, { initialScreen: "workspace" });
 	assert.equal(markup.includes("import-warning-summary"), false);
 	assert.equal(markup.includes("Imported with"), false);
+});
+
+test("workspace has no compatibility explanation or importer details", () => {
+	const controller = createController();
+	controller.importValue([{ id: "one", title: "One", folders: [{ id: "folder", title: "Folder", sources: [{ provider: "tmdb", tmdbSourceType: "CUSTOM" }] }] }]);
+	const markup = render(controller, { initialScreen: "workspace" });
+	assert.equal(markup.includes("Some Sources have limited editing in Dingo"), false);
+	assert.equal(markup.includes("import-compatibility"), false);
+	assert.equal(markup.includes("import-notable"), false);
+	assert.equal(markup.includes("View import details"), false);
+	assert.equal(markup.includes("View import notes"), false);
+	assert.equal(markup.includes("UNSUPPORTED_TMDB_SOURCE_PRESERVED"), false);
 });
 
 test("welcome renders controller diagnostics safely without imported JSON or parser internals", () => {
@@ -555,7 +572,7 @@ test("screen state remains UI-only while the controller subscription stays above
 	assert.match(app, /screen === "workspace"/);
 	assert.doesNotMatch(app, /createBuilderController|history\.|pushState|replaceState/);
 	const welcome = read("builder/src/ui/BuilderWelcome.jsx");
-	assert.equal((welcome.match(/useState\(/g) ?? []).length, 5);
+	assert.equal((welcome.match(/useState\(/g) ?? []).length, 6);
 	assert.doesNotMatch(welcome, /setProject|setCollections|setFolders|setSources|setSnapshot/);
 });
 
@@ -599,10 +616,10 @@ test("welcome styles protect mobile widths, file wrapping, touch targets, and de
 	const styles = read("builder/src/styles.css");
 	assert.match(styles, /\.builder-welcome[\s\S]*width:\s*min\(100%,\s*1120px\)/);
 	assert.match(styles, /\.file-input[\s\S]*width:\s*100%[\s\S]*min-width:\s*0/);
-	assert.match(styles, /\.selected-file strong[\s\S]*overflow-wrap:\s*anywhere/);
+	assert.equal(read("builder/src/ui/BuilderWelcome.jsx").includes("selected-file-name"), false);
 	assert.match(styles, /\.welcome-primary-action,[\s\S]*\.import-action[\s\S]*min-height:\s*48px/);
 	assert.match(styles, /@media \(min-width: 760px\)/);
-	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.import-grid[\s\S]*grid-template-columns/);
+	assert.match(styles, /@media \(min-width: 900px\)[\s\S]*\.welcome-import-layout[\s\S]*grid-template-columns/);
 	assert.match(styles, /input:focus-visible/);
 	assert.match(styles, /textarea:focus-visible/);
 });
@@ -631,7 +648,7 @@ test("welcome source contains busy and disabled behavior without routes or defer
 	assert.match(source, /aria-busy=\{isBusy\}/);
 	assert.match(source, /aria-busy=\{busyAction === "file"\}/);
 	assert.match(source, /aria-busy=\{busyAction === "pasted"\}/);
-	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 6);
+	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 8);
 	for (const controlPattern of [
 		/data-action="start-new-project"[\s\S]{0,120}disabled=\{isBusy\}/,
 		/data-import-control="file"[\s\S]{0,160}disabled=\{isBusy\}/,
@@ -639,10 +656,11 @@ test("welcome source contains busy and disabled behavior without routes or defer
 		/data-import-control="pasted-json"[\s\S]{0,140}disabled=\{isBusy\}/,
 		/data-action="import-pasted-json"[\s\S]{0,100}disabled=\{isBusy\}/,
 		/data-action="open-about-credits"[\s\S]{0,160}disabled=\{isBusy\}/,
+		/data-action="open-nuvio-import"[\s\S]{0,160}disabled=\{isBusy\}/,
 	]) {
 		assert.match(source, controlPattern);
 	}
-	assert.equal((source.match(/actionGateRef\.current\.isActive\(\)/g) ?? []).length, 2);
+	assert.equal((source.match(/actionGateRef\.current\.isActive\(\)/g) ?? []).length, 3);
 	assert.doesNotMatch(source, /disabled=\{busyAction ===/);
 	assert.match(source, /beforeAction:\s*yieldToBrowser/);
 	for (const deferred of [
@@ -657,3 +675,53 @@ test("welcome source contains busy and disabled behavior without routes or defer
 	}
 	assert.doesNotMatch(source, /react-router|ReactRouter|pushState|replaceState/);
 });
+
+// Pure presentation tests: no external request, account or live-service claim.
+for (const compact of [false, true]) {
+ test(`PIN presentation retains accessible masked entry (compact=${compact})`, () => {
+  const props = { connection: { getProfileAccess: () => ({ unlocked: false, retryAfterSeconds: 0 }) }, profile: { id: "unit-profile", name: "Unit profile" }, busy: false, feedback: null, id: "unit-pin", compact };
+  const markup = renderToStaticMarkup(createElement(ProfilePin, props));
+  assert.match(markup, /type="password"/);
+  assert.match(markup, /inputMode="numeric"/);
+  assert.match(markup, /maxLength="4"/);
+  assert.match(markup, /autoComplete="off"/);
+  assert.match(markup, /for="unit-pin-pin"/);
+  assert.match(markup, /aria-describedby="unit-pin-pin-help unit-pin-pin-status"/);
+  assert.equal(markup.includes('placeholder="Enter PIN"'), compact);
+  assert.ok(markup.includes(compact ? '>Verify</button>' : '>Verify PIN</button>'));
+  const incorrect = renderToStaticMarkup(createElement(ProfilePin, { ...props, feedback: { kind: "incorrect" } }));
+  assert.match(incorrect, /class="nuvio-muted" id="unit-pin-pin-status" role="status"/);
+  assert.match(incorrect, /That PIN didn’t match/);
+  const locked = renderToStaticMarkup(createElement(ProfilePin, { ...props, connection: { getProfileAccess: () => ({ unlocked: false, retryAfterSeconds: 30 }) } }));
+  assert.match(locked, /30 seconds/);
+  assert.match(locked, /<input[^>]*disabled/);
+  assert.match(locked, /<button[^>]*disabled/);
+  const verified = renderToStaticMarkup(createElement(ProfilePin, { ...props, connection: { getProfileAccess: () => ({ unlocked: true, retryAfterSeconds: 0 }) } }));
+  assert.equal(verified.includes('<input'), false);
+  assert.ok(verified.includes(compact ? '>PIN verified</p>' : 'PIN verified. You can load this profile’s Collections.'));
+ });
+}
+
+test("welcome starts with unselected methods and both draft forms hidden", () => {
+ const markup = render(createController());
+ assert.match(markup, /role="group" aria-label="Import method"/);
+ for(const method of ["file", "json"]) {
+  assert.match(markup, new RegExp('data-action="choose-import-' + method + '"[^>]*aria-pressed="false"'));
+  assert.match(markup, new RegExp('<form id="builder-import-' + method + '-panel"[^>]*hidden=""'));
+ }
+ assert.equal(markup.includes('welcome-nuvio-route'), false);
+});
+
+for (const step of [1, 2, 3]) {
+ test("Nuvio journey communicates current/completed stages without navigation (step=" + step + ")", () => {
+  const markup = renderToStaticMarkup(createElement(NuvioImportProgress, { step }));
+  const items = [...markup.matchAll(/<li([^>]*)>([\s\S]*?)<\/li>/g)];
+  assert.equal(items.length, 3);
+  assert.deepEqual(items.map(([, , content]) => content.replace(/<span[^>]*>[\s\S]*?<\/span>/g, "").trim()), ["Connect", "Select profile", "Review"]);
+  assert.equal((markup.match(/aria-current="step"/g) ?? []).length, 1);
+  assert.match(items[step - 1][1], /aria-current="step"/);
+  assert.equal((markup.match(/data-completed="true"/g) ?? []).length, step - 1);
+  assert.equal((markup.match(/aria-hidden="true">›<\/span>/g) ?? []).length, 2);
+  assert.doesNotMatch(markup, /<button|<a[ >]|tabindex|role="tab|>\d+<|<u>/);
+ });
+}

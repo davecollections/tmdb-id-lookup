@@ -1,5 +1,13 @@
 # Builder Application Controller
 
+## Append imported Collections (#238)
+
+`appendImportedCollections(value)` runs the existing preservation-first importer, reserves every existing Collection/Folder Nuvio ID, repairs only incoming missing/conflicting IDs and validates project-wide internal identity before one commit. It appends complete raw-preserving subtrees in order, retains existing project metadata/nodes/selection, offsets incoming import diagnostic locations, refreshes migration preview and sets `dirty: true`. Empty input is a successful no-op; failures never add partial content. The source value is unchanged. Optional reserved-ID and inserted-internal-ID arguments to `repairProjectNuvioIds` leave default behavior intact.
+
+`mergeImportedCollections(value)` reuses the pure `planCollectionMerge` preview/apply planner. Collection/Folder matching requires unique exactly equal `isValidVisibleNuvioTitle` values; invisible and ambiguous parents remain whole separate additions. Existing own settings/raw data win. Source dedupe is confined to matched Folders and requires the established family identity plus exact complete preserved serialized content, or safe exact preserved equality for non-comparable Sources. Existing order remains; additions append in incoming order. The full candidate is structurally validated before and after repair; only inserted Collection/Folder IDs may change. Failure returns diagnostics in the action result without changing any state/revision. Success commits once, marks dirty, retains valid selection, refreshes migration preview and reports merged/added/skipped/ID-repair counts. A successful all-duplicate merge deliberately advances one revision.
+
+Normal `importValue`/`importJsonText` replacement and their dirty guard remain unchanged. The Direct Nuvio UI supplies `discardChanges: true` only after explicit replacement confirmation; it checks snapshot/destination identity locally without requiring an active network session. See [Direct Nuvio](./BUILDER_NUVIO_CONNECTION.md).
+
 ## Collection Folder operations (#232)
 
 `removeFolders(collectionInternalId, folderInternalIds)` validates one unambiguous Collection and a dense, unique array of existing direct-child Folder IDs before removal. Empty input is a successful no-op. A valid batch removes complete owned subtrees with one domain replacement and one content revision/notification. Unaffected selection remains exact; selected removed Folders or Sources recover to the next surviving original sibling, then previous, then parent, skipping all removed siblings in that same commit. Failure changes no content/revision.
@@ -78,6 +86,8 @@ controller.subscribe(listener)
 controller.startNewProject(options)
 controller.importJsonText(text, options)
 controller.importValue(value, options)
+controller.appendImportedCollections(value)
+controller.mergeImportedCollections(value)
 
 controller.selectNode(internalId)
 controller.clearSelection()
