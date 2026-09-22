@@ -5003,7 +5003,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8795,tv,0,,,,https://www.themoviedb.org/network/8795
 8796,WOW! SHOW,2,,PL,,https://www.themoviedb.org/network/8796
 8797,PLANETE+,1,,PL,,https://www.themoviedb.org/network/8797
-8799,bilibili,0,,,,https://www.themoviedb.org/network/8799
 8800,British Broadcasting Corporation (BBC): United Kingdom,1,,,,https://www.themoviedb.org/network/8800
 8802,Discovery+ (SE),0,,,,https://www.themoviedb.org/network/8802
 8803,Ponta Pass,0,,JP,,https://www.themoviedb.org/network/8803
@@ -5069,7 +5068,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8880,MTV Live,1,"New York, NY, USA",US,,https://www.themoviedb.org/network/8880
 8882,Comedy Central,1,,FR,,https://www.themoviedb.org/network/8882
 8883,tivibu,1,,,,https://www.themoviedb.org/network/8883
-8886,bilibili,0,,,,https://www.themoviedb.org/network/8886
 8887,遠傳friday影音,1,,,,https://www.themoviedb.org/network/8887
 8888,etbon.eus,1,,,,https://www.themoviedb.org/network/8888
 8889,Angel Studios,1,,,,https://www.themoviedb.org/network/8889
@@ -5629,6 +5627,8 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9518,MNET PLUS,1,,,,https://www.themoviedb.org/network/9518
 9519,The Movie Network Channels,1,"New South Wales, Australia",AU,,https://www.themoviedb.org/network/9519
 9520,Makusi,1,,ES,,https://www.themoviedb.org/network/9520
-9521,OxinFilms,13,,PH,https://www.oxinfilms.net/,https://www.themoviedb.org/network/9521
+9521,OxinFilms,13,,PH,,https://www.themoviedb.org/network/9521
 9522,PlayKids,1,,,,https://www.themoviedb.org/network/9522
 9523,"ТВЦ, EPIC+",0,,,,https://www.themoviedb.org/network/9523
+9524,@LCDLManosos,1,,,,https://www.themoviedb.org/network/9524
+9525,oneplus (CH),1,Zürich,CH,https://www.oneplus.ch/,https://www.themoviedb.org/network/9525
