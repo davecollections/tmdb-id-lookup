@@ -1,6 +1,6 @@
 # Builder Collection Export
 
-Status: Local owner-review implementation of [#194 — Export Builder collections as Nuvio JSON](https://github.com/davecollections/tmdb-id-lookup/issues/194). Unstaged, uncommitted and unpublished.
+Status: Implemented on main through closed [#194 — Export Builder collections as Nuvio JSON](https://github.com/davecollections/tmdb-id-lookup/issues/194) / merged [PR #195](https://github.com/davecollections/tmdb-id-lookup/pull/195). Download JSON and Copy JSON remain first-class manual paths. Direct Send and the Export & Send redesign below are approved future direction, not implemented behavior.
 
 The Builder is the sole editing, arrangement and reordering interface. Export confirms the output, reports problems and delivers a file. A visual Nuvio preview is deferred until shared on-demand title-preview work exists and users demonstrate demand. No follow-up visual-preview issue is created.
 
@@ -88,11 +88,17 @@ Export makes no title, artwork-discovery or TMDB requests. Diagnostic Source edi
 
 ## Future Send to Nuvio
 
-The boundary is authoritative project → existing validation/canonical preparation → delivery. A future compatible **Send to Nuvio** flow can reuse the prepared Collection data. This does not assume single/selected/all-Collection delivery scope or that an account API accepts the downloaded-file envelope. Authentication, profile selection, permissions, merge/replace, conflict confirmation and API compatibility require later investigation and approval.
+The investigation is complete and the owner has approved the following future product direction. **No direct Send or Export & Send runtime UI is implemented.** Optional account connection/profile import is already implemented through #238 / PR #239; the [connection contract](./BUILDER_NUVIO_CONNECTION.md) owns that current behavior.
 
-There is no account UI, disabled future action, network request, token storage, Worker endpoint, adapter framework or new dependency. Unauthenticated Download JSON remains an independent fallback permanently.
+The first **Send to Nuvio** slice is Replace-only for one selected profile. Reuse authoritative project → existing validation/canonical preparation → delivery, sending the complete canonical Collection array as a whole-profile replacement. Require explicit destructive review, current Dingo PIN verification for protected profiles, a final fresh remote comparison with the reviewed baseline, no automatic push replay after uncertain outcome, and post-write readback verification. An observed remote change requires renewed review. No supported CAS/expected-revision API has been evidenced; the owner accepts the residual final-read → write race with mitigation. Remote Add, Merge and selected-Collection modes remain deferred. This is Send, not Sync.
+
+**Both recovery downloads are mandatory before any future push:** automatically initiate (1) the fresh current remote inner `collections_json` array and (2) the exact proposed Dingo replacement array. If either preparation/download initiation fails, no write occurs. Review, proposed JSON download, push and readback verification must use the same semantic proposed payload. The browser can establish download initiation, not that the user retained the files.
+
+The approved future **Export & Send** concept offers **Send to Nuvio**, **Download JSON**, **Copy JSON** and manual **Nuvio.tv Add/Merge help**. Unauthenticated Download and Copy remain permanent first-class alternatives. The current manual instructions above remain current UI guidance; any client terminology/help refresh belongs to the future implementation, not this status-only reconciliation.
 
 ## Verification and current files
+
+Historical #194 implementation/pass evidence follows. Its owner-review, uncommitted and pre-publication wording records those stages; it is not an outstanding publication gate after merged PR #195. Original counts, observations and acceptance limits are retained.
 
 The final link-only refinement passed **25 UI tests**, **5 focused mounted export tests** and `git diff --check`. Visible labels are **Nuvio.tv** and **official TMDB API guide**, with exact destinations, matching accessible new-tab announcements, underlines, `target="_blank"`, and `rel="noopener noreferrer"`. The mounted checks retain keyboard order, modal geometry, warnings/errors, exact delivery bytes, zero requests and four-second feedback coverage. No production build or full repository check was run for this narrow refinement; the existing production preview was not rebuilt.
 
@@ -106,13 +112,15 @@ Physical-phone presentation and current-Nuvio import remain owner checks. No pro
 
 ## Recommended next focused issue: Nuvio round-trip Source recognition
 
+Historical follow-up recorded during #194, not the current task queue; the [Product Plan roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) owns current priorities.
+
 The owner reports that Genre and Decade Sources created in Dingo can become Delete-only after a Dingo export → Nuvio import/export → Dingo import round trip. This remains a separate compatibility investigation; no cause is asserted and no follow-up issue is created in #194. Source classification, editor eligibility, opaque preservation, the import-warning panel, Genre/Decade schemas and serializer output remain unchanged.
 
 Diagnosis requires both exact files from the same round trip: the original Dingo-downloaded `dingo-nuvio-collections-YYYY-MM-DD.json` and the subsequent Nuvio-exported JSON. Identify at least one affected Genre Source and one affected Decade Source in **each** file with their Collection/Folder/Source locations, retaining complete unmodified Source fields and surrounding Collection/Folder structure. Also record the Nuvio client/platform/version, Dingo build/HEAD, reproduction sequence, and which Sources lost Edit. Screenshots or warning codes alone do not establish the field-level cause.
 
 ## Files changed
 
-The final link-only pass changes five existing #194 worktree files: `ExportCollectionsDialog.jsx`, `builder-export-collections-mounted.jsx`, `builder-bulk-edit-mounted.test.mjs`, `builder-ui.test.mjs` and this document. Only the two links, related copy, focused assertions and documentation changed. All earlier intended #194 changes remain as inspected. The complete current issue worktree contains 15 modified tracked files and 8 untracked files, with nothing staged or committed:
+The final link-only pass changes five existing #194 worktree files: `ExportCollectionsDialog.jsx`, `builder-export-collections-mounted.jsx`, `builder-bulk-edit-mounted.test.mjs`, `builder-ui.test.mjs` and this document. Only the two links, related copy, focused assertions and documentation changed. All earlier intended #194 changes remain as inspected. At that historical #194 checkpoint, the complete issue worktree contained 15 modified tracked files and 8 untracked files, with nothing staged or committed:
 
 | Area | Files (repository-relative) |
 | --- | --- |
