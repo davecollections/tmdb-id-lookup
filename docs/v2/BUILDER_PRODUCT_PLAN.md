@@ -1,6 +1,16 @@
 # Dingo's Collection Builder — Product Plan
 
-## Current checkpoint - 2026-09-19
+## Current checkpoint - 2026-09-22
+
+**Verified through [#238](https://github.com/davecollections/tmdb-id-lookup/issues/238) / merged [PR #239](https://github.com/davecollections/tmdb-id-lookup/pull/239), followed by [#240](https://github.com/davecollections/tmdb-id-lookup/issues/240) / merged [PR #241](https://github.com/davecollections/tmdb-id-lookup/pull/241).** Main for documentation reconciliation [#242](https://github.com/davecollections/tmdb-id-lookup/issues/242) is `450fddc52a33a15bb1e5a78f4e3f6ef5096c3675`. Post-#238 validation exposed a real shared image-fallback race; #240/#241 repaired it, and final [Nuvio Contract Validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35645127885) and [Pages publication](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35645127801) succeeded.
+
+Export #194 / PR #195, roadmap reconciliation #234 / PR #235 and Back to top #236 / PR #237 are also complete and merged. Optional direct Nuvio read/import is on main; remote writes are not implemented. The [next approved feature direction](#next) is Replace-only Send to Nuvio for one profile with mandatory dual recovery downloads and the safeguards below. Export & Send redesign is approved in principle for that future implementation. This documentation task implements none of it and creates no future implementation issue. V2 remains isolated/unadvertised with `noindex, nofollow`; public-release approval is unchanged.
+
+<a id="current-checkpoint---2026-09-19"></a>
+
+## Historical checkpoint - 2026-09-19
+
+This retains the #234 baseline and completed sequence at that date; the checkpoint above and canonical roadmap own current status.
 
 **Verified through [#232](https://github.com/davecollections/tmdb-id-lookup/issues/232) / merged [PR #233](https://github.com/davecollections/tmdb-id-lookup/pull/233).** Canonical main at the start of documentation reconciliation [#234](https://github.com/davecollections/tmdb-id-lookup/issues/234): `1bd4fb8bbfba3445aec6fb6d2b6dcf5ca76a5bac`, with clean local main, origin/main and GitHub main equal. Collection Folder management and Preview-100 are merged; the Shared Advanced sequence is complete for the currently approved families and fields. **Global display settings** is the current user-facing name.
 
@@ -55,7 +65,7 @@ This former queue is superseded by the [canonical roadmap](#18-roadmap-and-manda
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-09-19 (roadmap reconciliation #234; verified through #232 / PR #233)
+Last reviewed: 2026-09-22 (publication/status reconciliation #242; verified through #240 / PR #241)
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
@@ -463,7 +473,7 @@ Nuvio client import behaviour can be destructive or can change by client and ver
 
 ## 15. Export and installation journey
 
-**Implemented and merged — issue [#194](https://github.com/davecollections/tmdb-id-lookup/issues/194) / [PR #195](https://github.com/davecollections/tmdb-id-lookup/pull/195):** The Builder remains the sole editing, arrangement and reordering interface. **Export collections** opens a compact modal with current totals, validation, preservation warnings, the local-date filename, Download JSON and Copy JSON. Existing diagnostic editors return with current validation/counts. A visual Nuvio preview is deferred and should be reconsidered only after shared on-demand title-preview work exists and users demonstrate demand; no follow-up visual-preview issue is created now. Future **Send to Nuvio** should reuse canonical prepared Collection data where compatible, without assuming delivery scope or the account API envelope. Unauthenticated Copy JSON and Download JSON remain first-class supported paths. See [`BUILDER_EXPORT.md`](./BUILDER_EXPORT.md).
+**Implemented and merged — issue [#194](https://github.com/davecollections/tmdb-id-lookup/issues/194) / [PR #195](https://github.com/davecollections/tmdb-id-lookup/pull/195):** The Builder remains the sole editing, arrangement and reordering interface. **Export collections** opens a compact modal with current totals, validation, preservation warnings, the local-date filename, Download JSON and Copy JSON. Existing diagnostic editors return with current validation/counts. A visual Nuvio preview is deferred and should be reconsidered only after shared on-demand title-preview work exists and users demonstrate demand; no follow-up visual-preview issue is created now. Future **Send to Nuvio** will reuse the canonical prepared complete Collection array for the approved Replace-only first slice described below; it is not implemented. Unauthenticated Copy JSON and Download JSON remain first-class supported paths. See [`BUILDER_EXPORT.md`](./BUILDER_EXPORT.md).
 
 **Confirmed direction**
 
@@ -476,23 +486,29 @@ The intended journey is:
 5. validate the output;
 6. Copy JSON or Download JSON;
 7. follow current, evidence-backed Nuvio import guidance;
-8. optionally Send to Nuvio only if the near-term investigation proves a safe supported path and implementation is separately approved.
+8. optionally Send to Nuvio after the separately scoped Replace-only implementation; the approved future safeguards below are not current runtime behavior.
 
-Export discloses preservation warnings and blocking problems without changing the draft. Manual Copy JSON and Download JSON remain independently available after any future account connection feature.
+Export discloses preservation warnings and blocking problems without changing the draft. Manual Copy JSON and Download JSON remain independently available with or without a Nuvio connection.
 
 <a id="16-optional-future-nuvio-connection"></a>
 
 ## 16. Optional Direct Nuvio connection
 
-**First read/import slice approved and implemented locally for owner review — [#238](https://github.com/davecollections/tmdb-id-lookup/issues/238).** The [connection contract](./BUILDER_NUVIO_CONNECTION.md) retains the dated public API, upstream and CORS investigation evidence, architecture, safety boundaries and validation limits. This is not a release or remote-write approval.
+**Read/import implemented on main — [#238](https://github.com/davecollections/tmdb-id-lookup/issues/238) / merged [PR #239](https://github.com/davecollections/tmdb-id-lookup/pull/239).** The [connection contract](./BUILDER_NUVIO_CONNECTION.md) retains the dated public API, upstream and CORS investigation evidence, architecture, safety boundaries and validation limits. #240 / PR #241 subsequently repaired the shared image-fallback race; repaired main validation and Pages are green. Publication of this slice does not implement remote writes or promote V2 as a released replacement for V1.
 
 The approved flow is one of three consistently styled buttons in the unified landing Import section, alongside local File/JSON methods, and is also available from workspace: browser-direct login → identity-bound profile/PIN selection → pull Collections → local review → import. The file picker shows its filename once. Profile Refresh sits beside its heading; Profile/Review have primary Load/Import at left and quieter Disconnect at right. Review uses standard Back, local-time en-AU dates and concise grouped import notes. Workspace has only transient import success, cleared by content edits rather than selection/scrolling. Passwords are not retained; access tokens remain in memory, refresh tokens are discarded and reload starts disconnected. Missing blobs and empty arrays remain distinct and cannot import or clear current work.
 
-After successful pull/structural validation, the reviewed immutable snapshot is local data. Import makes no new requests or profile checks; expiry does not invalidate that snapshot. Login is required before another network operation. Disconnect discards connection/review state and leaves current Builder work unchanged. Read-only import has no backup action; ordinary Export is unchanged. **Any future Direct Nuvio write must automatically download the current remote profile Collection JSON before the write is attempted.** This is a future requirement, not implemented behavior.
+After successful pull/structural validation, the reviewed immutable snapshot is local data. Import makes no new requests or profile checks; expiry does not invalidate that snapshot. Login is required before another network operation. Disconnect discards connection/review state and leaves current Builder work unchanged. Read-only import has no backup action; ordinary Export is unchanged. Future writes require the mandatory dual recovery downloads specified below; no remote-write behavior is implemented.
 
 Existing work requires **Add as separate Collections**, **Merge exact matches**, or **Replace current project**. Add appends complete Collections without matching. Merge requires unique exactly equal valid visible Collection/Folder titles, with no normalization or provenance inference. Invisible/U+200E, malformed and ambiguous parents stay whole and separate. Source dedupe occurs only inside matched Folders, reuses established identities and requires safe complete preserved equality; uncertainty retains both. Existing settings/raw data and order win; new nodes append with imported fields retained. The shared pure planner supplies preview counts and atomic apply, reserves current IDs, repairs only inserted IDs and validates the final tree. Failures commit no state/revision; success marks dirty in one revision. Replacement retains explicit destructive confirmation and the existing import pipeline.
 
-Remote Send/Add/Merge/Overwrite remain deferred. The documented Collection write operation is full-profile replacement without evidenced compare-and-swap; local merge does not authorize writes. Persistent login, refresh renewal, pairing, Dingo accounts/workspaces, TV LAN and Worker auth proxying remain outside scope. Mocked/local tests are explicitly approved. Owner-reported live login/avatar/PIN/pull/import and other-device-session checks remain the live evidence. The later resilience pass adds one bounded retry for safe reads after 429/503, preserving the 20-second attempt timeout and never replaying login/PIN automatically. Owner visual review is approved; final pre-publication validation and separate publication approval remain required.
+Persistent login, refresh renewal, pairing, Dingo accounts/workspaces, TV LAN and Worker auth proxying remain outside the implemented read/import scope. Mocked/local tests were explicitly approved for #238. Owner-reported live login/avatar/PIN/pull/import and other-device-session checks remain the separate live evidence. The merged resilience pass adds one bounded retry for safe reads after 429/503, preserving the 20-second attempt timeout and never replaying login/PIN automatically. Owner review and publication gates for #238 are complete.
+
+**Approved next feature direction — Send to Nuvio, not implemented:** Replace-only for one selected profile, using the complete canonical Dingo Collection payload. Require explicit destructive review, current Dingo PIN verification for protected profiles, a final fresh remote comparison against the reviewed baseline, no automatic write retry/replay after uncertain outcome, and post-write readback verification. An observed remote change stops the write and requires renewed review. No supported CAS/expected-revision API has been evidenced; the residual final-read → write race is accepted with mitigation. Remote Add, Merge and selected-Collection modes remain deferred. Do not call this Sync.
+
+**Mandatory dual recovery:** before any future push, automatically initiate downloads of both the fresh current remote inner `collections_json` array and the exact proposed Dingo replacement array. If either preparation/download initiation fails, no write occurs. Review, proposed JSON download, push and post-write verification must use the same semantic proposed payload. Browser download initiation does not prove that the files were retained.
+
+The owner has approved **Export & Send** redesign in principle for the future implementation: Send to Nuvio, Download JSON, Copy JSON and manual Nuvio.tv Add/Merge help. These requirements do not change current Export UI or authorize implementation in the documentation-housekeeping task.
 
 The core Builder remains usable without login, a Nuvio connection, a personal TMDB API key or cloud storage. Manual JSON import, Copy JSON and Download JSON remain first-class supported paths.
 
@@ -522,7 +538,7 @@ Trakt integration remains outside current project scope; a possible future colou
 
 ## 18. Roadmap and mandatory gates
 
-**Canonical roadmap and product-direction owner.** This section reconciles the owner-approved direction and retained repository plans as of 2026-09-19 under #234. It is a dependency-aware direction, not a rigid release schedule: no dates, release allocation or implementation promises are implied. Each implementation needs its own focused owner-approved scope. Listing a candidate does not create an issue or select it as the next task. Technical contracts and historical evidence remain in their focused documents.
+**Canonical roadmap and product-direction owner.** This section reconciles the owner-approved direction and retained repository plans as of 2026-09-22 under #242. It is a dependency-aware direction, not a rigid release schedule: no dates, release allocation or implementation promises are implied. Each implementation needs its own focused owner-approved scope. Listing a candidate does not create an issue or select it as the next task. Technical contracts and historical evidence remain in their focused documents.
 
 ### Current state
 
@@ -534,20 +550,21 @@ The approved **Shared Advanced** sequence is complete across Studios, Networks, 
 
 Genre Square and curated artwork (#222 / PR #223), Decades curated artwork (#224 / PR #225), unified guided stage presentation and green retained multi-selection (#230 / PR #231) are merged. **Collection Folder management (#232 / PR #233)** provides one-time existing-Folder shape changes with conservative exact-curated Tile/Focus orientation transitions, **Remove folders** through one atomic `removeFolders` operation, and **Sort folders** through one atomic Folder reorder. A–Z/Z–A use current titles; eligible native People Collections also offer First name/Last name, with the pragmatic final-word rule rather than surname inference. No persistent sorting/default mode or generic management framework is introduced. **Global display settings** is the current name for the existing one-shot presentation operation; internal `BulkEdit` names are not product copy.
 
-The [current checkpoint](#current-checkpoint---2026-09-19) records the verified base and completed sequence. Open non-PR product/maintenance issues checked on 2026-09-19 are [#9](https://github.com/davecollections/tmdb-id-lookup/issues/9) (V1/public-project screenshots and preview assets, not the next Builder milestone), [#14](https://github.com/davecollections/tmdb-id-lookup/issues/14) (public TMDB List keyword/name lookup; known URL/ID resolution already exists), [#19](https://github.com/davecollections/tmdb-id-lookup/issues/19) (ongoing cache-report maintenance), and [#24](https://github.com/davecollections/tmdb-id-lookup/issues/24) (blocked on a verified native direct TV/season source contract). #210 is closed. This reconciliation issue #234 is temporarily open in addition to that retained backlog.
+**Back to top (#236 / merged PR #237)** is implemented: one floating `↑ Top` button (accessible name **Back to top**) appears at one viewport height of window scrolling and hides below that threshold. It sits at the lower right with a 48px minimum tap target and 16px plus safe-area offsets. Activation focuses the top Builder heading without an extra scroll and returns the page to the top smoothly, or immediately with reduced motion. The existing workspace underlay provides modal inert/aria-hidden protection. Selection, mobile level, project data and revision remain unchanged. No per-column bookkeeping or broader navigation features were added.
+
+**Direct Nuvio read/import (#238 / merged PR #239)** includes unified Import, grouped Review notes, local Add separate/Merge exact/Replace and no read-only import backup. #240 / PR #241 repaired the subsequent shared image-fallback race; final main checks and Pages are green. Core use remains independent of login.
+
+The [current checkpoint](#current-checkpoint---2026-09-22) records the verified base and completed sequence. Open non-PR product/maintenance issues checked on 2026-09-19 are [#9](https://github.com/davecollections/tmdb-id-lookup/issues/9) (V1/public-project screenshots and preview assets, not the next Builder milestone), [#14](https://github.com/davecollections/tmdb-id-lookup/issues/14) (public TMDB List keyword/name lookup; known URL/ID resolution already exists), [#19](https://github.com/davecollections/tmdb-id-lookup/issues/19) (ongoing cache-report maintenance), and [#24](https://github.com/davecollections/tmdb-id-lookup/issues/24) (blocked on a verified native direct TV/season source contract). #210 is closed. That is a dated backlog observation, not a fresh issue inventory. Reconciliation #234 is now closed through merged PR #235; #242 is the current documentation-housekeeping issue.
 
 ### Next
 
-The owner-approved near-term order is:
+The completed prerequisites are roadmap reconciliation #234 / PR #235, Back to top #236 / PR #237, direct Nuvio read/import #238 / PR #239 and the #240 / PR #241 repair.
 
-1. **Roadmap/documentation reconciliation — #234, this issue.** No product behavior change.
-2. **Back-to-top / large-library navigation — [#236](https://github.com/davecollections/tmdb-id-lookup/issues/236), implemented locally; owner review pending.** One floating `↑ Top` button (accessible name **Back to top**) appears at one viewport height of window scrolling and hides below that threshold. It sits at the lower right with a 48px minimum tap target and 16px plus safe-area offsets. Activation focuses the top Builder heading without an extra scroll and returns the page to the top smoothly, or immediately with reduced motion. The existing workspace underlay provides modal inert/aria-hidden protection. Selection, mobile level, project data and revision remain unchanged. No per-column bookkeeping or broader navigation features are added.
+1. **Publication/status reconciliation — #242.** Correct current documentation and record settled future direction only; no product behavior change.
+2. **Send to Nuvio — approved next feature direction, not implemented.** Replace-only for one selected profile with the complete canonical Dingo Collection array, explicit destructive review, current protected-profile PIN verification, mandatory fresh-remote and exact-proposed recovery downloads, final remote-baseline comparison, no automatic write replay and post-write verification. The owner accepts the residual concurrency race with mitigation because no supported CAS/expected-revision API has been evidenced. Remote Add/Merge/selected modes remain deferred. Export & Send redesign is approved in principle for that future implementation.
+3. **Review/export help polish with the future implementation.** Keep Download JSON and Copy JSON first-class and retain manual Nuvio.tv Add/Merge help. Refresh dated client terminology when scoped; retain Nuvio.tv / TV app / TV management via phone or computer guidance, same-network local-address/QR instructions, and **Collections > Import > Paste or File > Import > Save Changes** where supported. Explain that URL import requires already hosted JSON, and retain beta and TMDB Enrichment guidance. Current UI must not promise Send before implementation.
 
-3. **Direct Nuvio investigation completed for the approved read/import slice.** The [dated connection contract](./BUILDER_NUVIO_CONNECTION.md) records public browser-direct auth, profiles, retrieval, expiry/snapshot/disconnect handling and unresolved remote-write boundaries.
-4. **Direct Nuvio read/import owner review — #238.** The local slice includes unified Import, grouped Review notes, explicit Add separate/Merge exact/Replace and no read-only import backup. Finish owner review before separately authorized publication. Core use stays independent of login; future remote writes require separate approval and automatic download of current remote profile Collection JSON before attempting any write.
-5. **Review/export help polish.** Follow the investigation and any approved viable implementation so final help reflects actual supported delivery methods. Retain Nuvio.tv / TV app / TV management via phone or computer guidance, same-network local-address/QR instructions, and **Collections > Import > Paste or File > Import > Save Changes**, with dated client verification when implemented. Explain that URL import requires already hosted JSON; retain Copy JSON, Download JSON, shared beta and TMDB Enrichment guidance. If connection proves viable, final help may include Send to Nuvio; current copy must not promise it.
-
-This order does not create future issues or approve their implementation details. If connection is not viable, retain the manual paths and let the export/help work reflect that finding.
+This sequence records owner-approved product direction, not implementation details or a new implementation issue. The housekeeping task stops at its documentation PR for owner review.
 
 ### Later
 
@@ -586,9 +603,9 @@ Later design should add unique Collections/Folders/Sources, review matching Coll
 
 ### Long-term direction
 
-If adoption and continued development justify it, Dingo's may evolve toward a **“Nuvio collection-management companion”**: build, import, safely edit, reorganise and maintain large configurations, compare/merge configurations, and potentially audit configuration health. Optional connection is prioritized separately in the near-term investigation sequence. This is a direction, not an immediate rename or implementation commitment. Keep **Dingo's Collection Builder** as the present name and creation plus preservation-first import/edit as the present focus. Nuvio remains the media centre and playback application; Dingo must not become its playback/media-centre replacement or add watch-history/general media-centre functions merely to broaden scope.
+If adoption and continued development justify it, Dingo's may evolve toward a **“Nuvio collection-management companion”**: build, import, safely edit, reorganise and maintain large configurations, compare/merge configurations, and potentially audit configuration health. Optional read/import is implemented; the approved future Send direction is prioritized separately in the near-term sequence. This is a direction, not an immediate rename or implementation commitment. Keep **Dingo's Collection Builder** as the present name and creation plus preservation-first import/edit as the present focus. Nuvio remains the media centre and playback application; Dingo must not become its playback/media-centre replacement or add watch-history/general media-centre functions merely to broaden scope.
 
-Optional Direct Nuvio read/import is in the [near-term owner-review sequence](#next). Send to Nuvio and all remote writes remain conditional on a safe supported contract and separate approval.
+Optional Direct Nuvio read/import is merged through #238 / PR #239. Replace-only Send to Nuvio is the [approved next feature direction](#next), with dual recovery downloads and the accepted residual concurrency limitation; it remains unimplemented and requires a separately scoped implementation task.
 
 ### Explicitly deferred / not currently planned
 
@@ -615,7 +632,7 @@ Optional Direct Nuvio read/import is in the [near-term owner-review sequence](#n
 | Startup-screen visual layout | The four routes are decided; their presentation is not. |
 | Future Search/Add destination and action wording | All eight current families now have evidenced selected-folder and/or hierarchy routes. Any new destination model or wording still requires a focused decision rather than being inferred from those implementations. |
 | Source-name parity across bulk creators | Source names are source-level where appropriate, but current family semantics differ; do not require hundreds of generated name inputs without focused design and evidence. |
-| Direct Nuvio remote writes and later connection capabilities | The first read/import slice is approved under #238. Safe remote updates, pairing and persistent/refresh login remain deferred decisions. |
+| Later Nuvio write modes and connection capabilities | Read/import is merged and Replace-only Send direction is approved. Remote Add/Merge/selected-Collection semantics, pairing and persistent/refresh login remain deferred decisions. |
 | Saved Builder project format | Not needed for the current local JSON flow; revisit only when persistence needs justify it. |
 | Removal of `noindex` | Requires explicit release-readiness approval. |
 | Final Dave Collections branding | Preferred direction is recorded; design remains deferred. |
