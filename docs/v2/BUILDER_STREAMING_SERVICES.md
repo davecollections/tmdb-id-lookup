@@ -3,7 +3,7 @@
 Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Implemented and merged through #226 / PR #227. Earlier checkpoint limits below are historical where superseded by that contract.
 
 
-## Multiple sorting variants (#198, approved for publication)
+## Multiple sorting variants (#198, merged PR #199)
 
 Issue [#198](https://github.com/davecollections/tmdb-id-lookup/issues/198) adds creation-only multiple sorting choices to ordinary Add Source and guided New Collection/New Folder. Popular is initially selected; choices expand in Popular, Recent, Top rated, Most voted display order. An empty selection remains empty and blocks creation. The existing grouping, provider/region order and common-media rules remain authoritative. Each generated Source has one scalar media-correct sort. One provider/region with Both and two sorts creates four Sources; two providers/two regions create sixteen Sources in the existing two or four Folders.
 
@@ -13,7 +13,7 @@ The existing title Preview now has one active **Show** choice, alongside unique 
 
 Within an otherwise trusted provider/region Folder, a different supported sort no longer blocks adding a missing variant. Exact destination matches are retained; imported unknown sorting, mixed-provider ambiguity and other existing trust guards still block automatic placement. Review and final actions describe actual additions, using one revalidated atomic operation. Physical Source editing stays scalar; no identity algorithm or saved-format change is included.
 
-Owner review is complete and publication is approved. Controlled Preview evidence does not claim live TMDB acceptance; merge approval remains pending.
+Owner review and publication are complete; #198 merged through [PR #199](https://github.com/davecollections/tmdb-id-lookup/pull/199). Controlled Preview evidence does not claim live TMDB acceptance.
 
 The #198 owner-approved wording refinement labels creation choices **Sources to create**, uses “Choose one or more options. Movies and Series get separate sources.” and validates empty selections with “Choose at least one option.” Creation summaries use **Selected:** and the existing Preview variant selector uses **Show**. Single-Source editors retain **Sort titles by**. See the shared [wording convention](./BUILDER_HIERARCHY_CREATION.md#creation-sorting-and-authored-punctuation-198); this refinement changes copy and its accessibility associations only.
 

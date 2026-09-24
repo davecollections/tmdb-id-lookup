@@ -165,9 +165,9 @@ Feedback, bug reports, data issues, and feature requests are tracked through
 [GitHub Issues](https://github.com/davecollections/tmdb-id-lookup/issues/new/choose).
 The live site links to the issue chooser instead of collecting feedback by email or embedded forms.
 
-The live site uses GoatCounter for privacy-focused aggregate analytics. This helps estimate whether the tool is being used without adding account tracking, Nuvio access, or TMDB API keys to the page.
+The live site uses GoatCounter for privacy-focused aggregate analytics.
 
-TMDB API requests from the live lookup tools go through the Cloudflare Worker proxy. Imported Nuvio JSON files and generated collection JSON are processed locally in the browser unless the user explicitly downloads or copies the output.
+TMDB API requests from the live lookup tools go through the Cloudflare Worker proxy. Imported Nuvio JSON files and generated collection JSON are processed locally in the browser. Optional Builder Import and Send connect directly from the browser to Nuvio when requested; Send replaces the selected profile's Collections only after review. Nuvio credentials do not pass through the Worker, and the connection is kept only in memory while the page is open.
 
 ## Local Checks
 
@@ -185,7 +185,9 @@ A new React/Vite product, Dingo's Collection Builder, is being developed under `
 
 For builder architecture, compatibility decisions, and contributor guidance, read [`AGENTS.md`](./AGENTS.md) and [`docs/v2/BUILDER_KNOWLEDGE.md`](./docs/v2/BUILDER_KNOWLEDGE.md).
 
-The optional **Import from Nuvio** flow is implemented on main through [issue #238](https://github.com/davecollections/tmdb-id-lookup/issues/238) / merged [PR #239](https://github.com/davecollections/tmdb-id-lookup/pull/239). It leads the unified Import section, authenticates directly with Nuvio, retains only an in-memory connection, and loads one profile's Collections after PIN verification when protected. Existing work has explicit **Add as separate Collections**, **Merge exact matches**, and confirmed **Replace current project** modes. Merge uses unique exact visible names, preserves existing settings and skips Sources only when equivalence is proven without losing preserved data. Reviewed snapshots remain locally importable after expiry; login is required only to load more data. Read-only import has no backup action. Direct remote writes and **Send to Nuvio** are not implemented. Manual JSON import, Download JSON and Copy JSON remain first-class paths available without login; the future write requirements are recorded separately in the connection contract. See the [connection contract](./docs/v2/BUILDER_NUVIO_CONNECTION.md).
+The Builder supports optional browser-direct **Import from Nuvio** and reviewed, Replace-only **Send to Nuvio**, completed through [#238 / PR #239](https://github.com/davecollections/tmdb-id-lookup/pull/239) and [#244 / PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245). Import loads one profile's Collections, with PIN verification when protected, and offers local Add as separate Collections, Merge exact matches or confirmed Replace current project. **Export & Send** can replace one selected Nuvio profile with the complete Builder output and verify the result.
+
+Manual JSON import, **Download JSON** and **Copy JSON** remain available without login. The optional Nuvio connection is memory-only; reload requires reconnection. See the [connection contract](./docs/v2/BUILDER_NUVIO_CONNECTION.md) for details.
 
 To build and validate the combined site locally:
 
