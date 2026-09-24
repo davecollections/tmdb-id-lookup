@@ -29,7 +29,7 @@ Before hierarchy creation or a new hierarchy-family task, also read:
 - Existing lookup and copy-ID workflows remain part of the product.
 - Do not rewrite or remove stable v1 features merely to modernise the code.
 - React/Vite under `/builder/` is the confirmed builder direction; keep domain, parsing, validation, migration, serialization, and ID logic framework-independent.
-- Trakt integration is outside the current project scope unless explicitly approved in a future issue.
+- Trakt list lookup is owner-approved future Builder scope, as ordered in the Product Plan; implementation requires its own focused task. Watch history, tracking/scrobbling, account-library synchronization and broader Trakt account management remain outside scope.
 
 ## Git and issue workflow
 

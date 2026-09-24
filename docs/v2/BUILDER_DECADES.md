@@ -3,7 +3,7 @@
 Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Implemented and merged through #226 / PR #227. Earlier checkpoint limits below are historical where superseded by that contract.
 
 
-## Multiple sorting variants (#198, approved for publication)
+## Multiple sorting variants (#198, merged PR #199)
 
 Issue [#198](https://github.com/davecollections/tmdb-id-lookup/issues/198) adds creation-only Popular, Recent, Top rated and Most voted selections to guided Decades and ordinary Decade/Year Add. Display order determines expansion order; Popular is the default and an explicit empty set blocks creation. Each Source still saves one scalar sort. Shared Advanced settings apply consistently without new implicit filters.
 
@@ -13,7 +13,7 @@ The existing title Preview keeps its Decade sample and exact year/source navigat
 
 Exact Preview descriptors come from validated creation drafts. Sample descriptors remain explicitly representative and distinct from exact Source state. A sample fetches at most ten year buckets for one active media/sort, with existing filter/current-year semantics; other sorts remain lazy. Matching exact-year queries can reuse the underlying query cache without turning the sample into an exact Source result. Retry, supersession, cancellation and context-bound counts remain variant-specific. Checkbox changes make no requests and Preview does not alter creation output.
 
-Existing destination-group omission and atomic application remain unchanged. The physical editor continues to edit a single Source and retains #196 optional-null/raw preservation. Owner review is complete; merge approval remains pending.
+Existing destination-group omission and atomic application remain unchanged. The physical editor continues to edit a single Source and retains #196 optional-null/raw preservation. Owner review and publication are complete; #198 merged through [PR #199](https://github.com/davecollections/tmdb-id-lookup/pull/199).
 
 The #198 owner-approved wording refinement labels creation choices **Sources to create**, uses “Choose one or more options. Movies and Series get separate sources.” and validates empty selections with “Choose at least one option.” Creation summaries use **Selected:** and the existing Preview variant selector uses **Show**. Single-Source editors retain **Sort titles by**. See the shared [wording convention](./BUILDER_HIERARCHY_CREATION.md#creation-sorting-and-authored-punctuation-198); this refinement changes copy and its accessibility associations only.
 

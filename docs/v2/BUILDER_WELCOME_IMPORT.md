@@ -1,30 +1,30 @@
 # Builder Welcome Screen and Local JSON Import
 
-Status: implemented for issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41)
+Status: Local JSON import was introduced by [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41); unified connected Import is merged through #238 / PR #239 and shared PIN/retained Send presentation through #244 / PR #245.
 
-Last reviewed: 2026-07-25
+Last reviewed: 2026-09-24
 
 ## Purpose and scope
 
-The `/builder/` entry now opens on a real welcome screen for **Dingo's Collection Builder**. The supporting line is **Built for Nuvio collections**, and the interface retains the small **Development preview** label. The welcome screen starts a clean project or imports an existing Nuvio collection JSON document before entering the existing hierarchy workspace.
+The `/builder/` entry opens the welcome screen for **Dingo’s Collection Builder**, with **Built for Nuvio collections** and **Create, import and organise Nuvio collections.** It starts a clean project or offers Import from Nuvio, Import from file and Import from JSON before entering the hierarchy workspace. V2 remains a development preview under its separate release boundary.
 
-This is an entry/import milestone, not a complete editor. The existing controller remains the sole owner of project state, while the importer remains authoritative for JSON parsing, structural validation, source classification, ordering, and unknown-field preservation.
+The controller remains the sole owner of project state, while the importer owns JSON parsing, structural validation, source classification, ordering and unknown-field preservation. This document describes Welcome and local File/JSON import; the [connection contract](./BUILDER_NUVIO_CONNECTION.md) owns connected Import and PIN behavior.
 
 ## Screen and controller boundary
 
 `builder/src/main.jsx` still creates one controller outside React rendering and passes it to `BuilderApp`. `BuilderApp` subscribes through the existing `useSyncExternalStore` adapter before choosing either the welcome or workspace presentation. The controller is therefore subscribed on both screens and is never replaced during a transition.
 
-Only the following presentation/transport values use local React state:
+Welcome’s local presentation/transport state includes:
 
 - `welcome` or `workspace` screen;
-- selected browser file;
+- selected import method and browser file;
 - pasted text;
 - UI-owned import diagnostics;
 - current asynchronous import action.
 
-Project, collection, folder, source, selection, dirty, migration-preview, and controller diagnostic values remain in the controller snapshot. Refresh creates the normal production presentation again and returns to welcome; there is no persistence, route, or browser-history entry.
+Project, collection, folder, source, selection, dirty, migration-preview and controller diagnostics remain in the controller snapshot. BuilderApp separately owns the memory-only Nuvio connection and Send coordinator; neither is project data. Refresh returns to Welcome disconnected, without persistent project/session storage. Retained dispatched Send evidence keeps a quiet Export & Send/history entry or unresolved-attention entry reachable while the current page remains open.
 
-Welcome project actions are mutually exclusive. A synchronous in-flight gate held by the welcome presentation protects the shared controller before React state can repaint. While Start New Project, file import, or pasted import is active, all five project-changing controls are disabled: the start button, file input, file-import button, pasted textarea, and pasted-import button. A second action is ignored while the gate is held. Pasted import yields one browser task after setting its busy presentation so disabled controls and **Importing…** can paint before synchronous controller parsing begins. Success and every structured or unexpected failure release the gate and clear the busy presentation; successful local input cleanup happens before the final workspace transition.
+Welcome project actions are mutually exclusive. A synchronous in-flight gate protects the shared controller before React repaint. Starting a project or importing disables competing project actions and import-method changes; inactive File/JSON forms cannot receive focus or submit. Pasted import yields one browser task so its busy presentation can paint before synchronous parsing. Success and structured/unexpected failure release the gate; local input cleanup completes before the workspace transition.
 
 ## Start New Project
 
@@ -36,7 +36,7 @@ controller.startNewProject({ title: "Untitled project" })
 
 A successful result clears the controller project to one clean empty project and enters the workspace. It creates no collection or folder. Failure remains on welcome and uses the controller's structured operation diagnostic.
 
-The import route reads **Open an existing collection** and **Choose a JSON file or paste its contents to continue**. Literal file wording remains on the actual file-picker path, including **Choose a JSON file**, **Collection JSON file**, **Import selected file**, and **No file selected**. No import behavior or format changed.
+The import route reads **Open an existing collection** and initially shows **Choose an import method** / **Select an option to continue.** Its three controls are **Import from Nuvio**, **Import from file** and **Import from JSON**. File/JSON selection opens the local form; Nuvio opens the shared connection dialog directly. Switching methods retains the selected native file and pasted draft. Closing Nuvio restores its trigger and the local method/drafts. File wording remains **Choose a JSON file**, **Collection JSON file** and **Import selected file**; the native picker is the sole filename display.
 
 ## Pasted JSON import
 
@@ -70,19 +70,19 @@ Every UI diagnostic has exactly `code`, `path`, and `message`; the path is `$ui.
 
 ## Diagnostics and warnings
 
-Welcome errors use `role="alert"` and show stable messages and codes. Controller import warnings remain non-fatal. After a successful warned import, the workspace shows a collapsed native `<details>` summary using **Imported with 1 warning** or **Imported with N warnings**. The bounded list contains only stable warning messages and codes; it does not expose the imported document.
+Welcome errors use `role="alert"` and stable messages/codes; importer warnings remain non-fatal. Connected Import groups preservation/limited-editing notes in its Review. The workspace does not render an import-warning panel: connected Import supplies transient success feedback that survives selection/scrolling and clears on the next project content change.
 
 Operation diagnostics and non-interactive migration notices retain their separate workspace treatment.
 
 ## Privacy boundary
 
-Selected or pasted JSON is processed locally in the browser and is not uploaded. Welcome/import production modules do not use `fetch`, XMLHttpRequest, WebSocket, `sendBeacon`, FormData submission, analytics events carrying file content, object URLs, localStorage, IndexedDB, service-worker persistence, or external resources. Imported JSON is not logged, placed in URLs, rendered back into the DOM, or stored as original text in controller state.
+Local File/JSON import reads and parses the selected or pasted document in the browser without uploading it. Its file/paste transport does not send imported JSON to analytics, logs, URLs or browser persistence, and original text is not stored in controller state. This local-import boundary does not describe optional Nuvio operations: connected Import and explicitly reviewed Send communicate directly with Nuvio through the separate connection contract. Ordinary Download/Copy requires no connection.
 
 ## Accessibility and responsive behavior
 
-Each screen renders exactly one page-level `h1`. Welcome uses labelled file and textarea controls, visible selected-file text, valid description targets, real forms/buttons, a real root anchor, live filename announcement, `aria-busy` state, disabled in-progress actions, visible focus treatment, and approximately 48px action targets. It does not use application, dialog, tab, or tree roles.
+Each screen renders exactly one page-level `h1`. Welcome uses labelled file/textarea controls, native method buttons with correct selected/dialog semantics, real forms, live diagnostics, busy/disabled states and visible focus treatment. Hidden local forms cannot receive focus. The About control provides credits and access to the stable root lookup tool. Connected Import and Send reuse the existing modal focus/body-lock behavior.
 
-The layout is mobile-first for 360, 384, 393, 402, and 412px. Inputs remain within the viewport, filenames wrap, and actions stack. The 768px layout remains restrained; at 900px and above the two import methods use balanced columns. The existing workspace behavior remains unchanged at its mobile widths and at 1024 and 1280px.
+The layout is mobile-first for 360, 384, 393, 402 and 412px. Inputs remain within the viewport and content wraps. From 900px, the compact method column sits beside the selected form; phone layouts stack the form below the methods. The JSON field scrolls internally and remains vertically resizable. See the connection contract for the unified Import presentation and responsive PIN placement.
 
 ## Stable DOM markers
 
@@ -95,14 +95,16 @@ The welcome milestone adds:
 - `data-import-control="file"`;
 - `data-import-control="pasted-json"`.
 
-The existing builder root, workspace shell, backlink, panel, action, and node markers remain unchanged.
+Connected Import adds `data-action="open-nuvio-import"`; the local method controls use `choose-import-file` and `choose-import-json`. Retained Send history uses `open-nuvio-send-status`. Existing local transport markers remain unchanged.
 
 The workspace can now return to welcome only after resetting the shared controller. Dirty workspaces require the inline discard flow documented in [BUILDER_AUTOMATIC_IDS_WORKSPACE_FLOW.md](./BUILDER_AUTOMATIC_IDS_WORKSPACE_FLOW.md).
 
-## Deliberate exclusions
+## Historical issue #41 exclusions
+
+The following exclusions describe issue #41 only and are retained as historical scope, not current product limitations. Later issues added editing, creation, manual Export, unified connected Import and Send.
 
 This milestone does not add export, save/download, copy JSON, persistence, recent files, autosave, service workers, return-to-welcome or open-another-file actions, dirty-replacement UI, drag-and-drop, the File System Access API, URL/network import, Nuvio connections, login, authentication, editing, source creation, deletion, reordering, migration actions, automatic migration, TMDB search, addon loading, artwork tools, Ultra MAX or AIO Metadata conversion, account-manager transforms, Trakt, language support, routing, React Router, v1 runtime changes, a v1 builder link, Worker/CSP/CORS changes, dependencies, lockfile changes, Pages allowlist/preparation/deployment changes, or unrelated cleanup.
 
 ## Historical extension boundary
 
-At the issue #41 checkpoint, the next likely milestone was one separately approved contained edit or export workflow. Later issues added editing while retaining controller ownership, preservation-first import/serialization, explicit dirty replacement decisions, and the established local-only boundary; export remains deferred.
+At the issue #41 checkpoint, the next milestone was a separately approved edit/export workflow. Editing and Export are now implemented; the [Product Plan](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) owns the current sequence. Persistence and a saved/switchable cloud-project model remain outside this local session flow.
