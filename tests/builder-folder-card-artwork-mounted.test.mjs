@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createValidationTiming } from "../scripts/lib/validation-timing.mjs";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
@@ -71,6 +72,7 @@ async function evaluate(connection, expression) {
 }
 
 async function runMountedPage() {
+	const timing = createValidationTiming("Artwork browser");
 	const devToolsStartupMs = resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS);
 	const resources = {
 		artworkRequests: [],
@@ -246,6 +248,7 @@ async function runMountedPage() {
 		const ready = await evaluate(resources.pageConnection, "window.__builderFolderArtworkMounted ?? null");
 		if (ready?.status !== "complete") throw new Error("Mounted Folder artwork regressions timed out.");
 
+		timing.stage("Card layouts and pointer/keyboard reordering");
 		const widths = [];
 		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
@@ -331,8 +334,10 @@ async function runMountedPage() {
 			};
 		})()`);
 
+		timing.stage("Failure and replacement");
 		const failureReplacement = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkFailureReplacement()");
 
+		timing.stage("Folder settings layouts");
 		const settingsWidths = [];
 		const ordinarySettingsWidths = [];
 		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
@@ -353,6 +358,7 @@ async function runMountedPage() {
 			deviceScaleFactor: 1,
 			mobile: true,
 		});
+		timing.stage("Folder preview and video transitions");
 		const settingsDraftPreviews = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSettingsDraftPreviews()");
 		const ordinaryVideoVisibility = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkOrdinaryVideoVisibility()");
 		const videoCancel = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkVideoCancel()");
@@ -366,6 +372,7 @@ async function runMountedPage() {
 		});
 		const settingsApply = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSettingsApply()");
 
+		timing.stage("Collection backdrop layouts and transitions");
 		const collectionSettingsWidths = [];
 		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
@@ -395,6 +402,7 @@ async function runMountedPage() {
 		const collectionUnrelatedApply = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropUnrelatedApply()");
 		const collectionApply = await evaluate(resources.pageConnection, "window.__exerciseCollectionBackdropApply()");
 
+		timing.stage("Artwork suggestion layouts");
 		const suggestionLayouts = [];
 		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
@@ -407,6 +415,7 @@ async function runMountedPage() {
 			suggestionLayouts.push(await evaluate(resources.pageConnection, "window.__measureFolderArtworkSuggestionLayout()"));
 		}
 
+		timing.stage("Shape-aware layouts");
 		const shapeAwareLayouts = [];
 		for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", {
@@ -427,6 +436,7 @@ async function runMountedPage() {
 			deviceScaleFactor: 1,
 			mobile: false,
 		});
+		timing.stage("Artwork suggestion contracts and transitions");
 		const suggestionStates = await evaluate(resources.pageConnection, "window.__inspectFolderArtworkSuggestionStates()");
 		const suggestionDraftContract = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkSuggestionDraftContract()");
 		const suggestionBlankOnlyTransitions = await evaluate(resources.pageConnection, "window.__exerciseFolderArtworkBlankOnlyTransitions()");
@@ -440,11 +450,16 @@ async function runMountedPage() {
 
 		return { widths, dragOverlay, dragAfter, keyboardActive, keyboardAfter, failureReplacement, settingsWidths, ordinarySettingsWidths, settingsDraftPreviews, ordinaryVideoVisibility, videoCancel, videoReplacement, settingsApply, collectionSettingsWidths, collectionDraftPreviews, collectionUnrelatedApply, collectionApply, suggestionLayouts, shapeAwareLayouts, suggestionStates, suggestionDraftContract, suggestionBlankOnlyTransitions, suggestionRequestContract, suggestionStudioOrientationContract, shapeAwareTransitions, missingOrientationAndSiblingNotices, mixedSiblingNotice, artworkRequests };
 	}, async () => {
-		const cleanupReport = await cleanupMountedBrowser(resources);
-		if (resources.artworkServer?.listening) {
-			await new Promise((resolve, reject) => resources.artworkServer.close((error) => (error ? reject(error) : resolve())));
+		timing.stage("Browser cleanup");
+		try {
+			const cleanupReport = await cleanupMountedBrowser(resources);
+			if (resources.artworkServer?.listening) {
+				await new Promise((resolve, reject) => resources.artworkServer.close((error) => (error ? reject(error) : resolve())));
+			}
+			return cleanupReport;
+		} finally {
+			timing.finish();
 		}
-		return cleanupReport;
 	});
 
 	if (execution.cleanupReport.browser.fallback === "succeeded") {

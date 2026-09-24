@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { createValidationTiming } from "../scripts/lib/validation-timing.mjs";
+import { runExportRegressions } from "./helpers/export-mounted.mjs";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
@@ -280,6 +282,7 @@ async function runNuvioImportChecks(connection, origin) {
 }
 
 async function runMountedPage() {
+	const timing = createValidationTiming("Workspace browser");
 	const resources = {
 		browserExecutable: null,
 		browserProcess: null,
@@ -384,11 +387,14 @@ async function runMountedPage() {
 			}
 		` });
 		const address = resources.vite.httpServer.address();
-		const nuvioSend = nuvioSendOnly || (!nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) ? await runNuvioSendChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate) : null;
+		timing.stage("Send scenarios");
+		const nuvioSend = nuvioSendOnly || (!nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) ? await runNuvioSendChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate, { includeExportRegressions: nuvioSendOnly }) : null;
 		if (nuvioSendOnly) return { nuvioSend };
+		timing.stage("Import scenarios");
 		const nuvioImport = nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)
 			? await runNuvioImportChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`) : null;
 		if (nuvioImportOnly) return { nuvioImport };
+		timing.stage("Bulk Edit, branding and header layouts");
 		let unrelatedResults = {};
 		if (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly) {
 		await resources.pageConnection.command("Page.navigate", {
@@ -467,19 +473,12 @@ async function runMountedPage() {
 			workspaceHeaderLayouts.push(await evaluate(resources.pageConnection, "window.__runWorkspaceHeaderGeometryScenario()"));
 		}
 
-		// Reuse this browser/Vite lifecycle for local export through the real Builder.
-		await resources.pageConnection.command("Page.navigate", { url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-export-collections-mounted.html` });
-		const exportDeadline = Date.now() + 30000;
-		while (Date.now() < exportDeadline && !await evaluate(resources.pageConnection, "window.exportFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
-		const exportResults = [];
-		for (const width of [393, 900, 1280]) {
-			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width === 393 });
-			exportResults.push(await evaluate(resources.pageConnection, "window.runExportScenario()"));
-		}
-		const exportEditors = await evaluate(resources.pageConnection, "window.runExportEditorCases()");
-		const exportFeedback = await evaluate(resources.pageConnection, "window.runExportFeedbackCases()");
-		const exportWarnings = await evaluate(resources.pageConnection, "window.runExportWarningCases()");
-		const exportLarge = await evaluate(resources.pageConnection, "window.runExportLargeCase()");
+		// Execute once; Send and Export assertions inspect the same complete results.
+		timing.stage("Shared Export regressions");
+		const exportRegression = await runExportRegressions(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate);
+		if (nuvioSend) Object.assign(nuvioSend, exportRegression);
+		const { exports: exportResults, regressions: { EditorCases: exportEditors, FeedbackCases: exportFeedback, WarningCases: exportWarnings, LargeCase: exportLarge } } = exportRegression;
+		timing.stage("Export keyboard, accessibility and dismissal");
 		await evaluate(resources.pageConnection, "window.prepareExportCase()");
 		await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "active" }] });
 		await evaluate(resources.pageConnection, 'document.querySelector(".export-import-instructions button").focus()');
@@ -526,10 +525,13 @@ async function runMountedPage() {
 		const collectionDeadline = Date.now() + 30000;
 		while (Date.now() < collectionDeadline && !await evaluate(resources.pageConnection, "window.collectionFoldersFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
 		assert.equal(await evaluate(resources.pageConnection, "window.collectionFoldersFixtureReady === true"), true, `Collection fixture loaded: ${JSON.stringify({ fixtureErrors, page: await evaluate(resources.pageConnection, "({ errors: window.__mountedErrors, page: document.body.innerText })") })}`);
+		timing.stage("Back to top");
 		const backToTop = !collectionCorrectionOnly && !presentationOnly ? await runBackToTopChecks(resources.pageConnection) : null;
 		if (backToTopOnly) return { backToTop };
+		timing.stage("Management presentation");
 		const presentation = await runManagementPresentation(resources.pageConnection);
 		if (presentationOnly) return { presentation };
+		timing.stage("Collection Folder management");
 		const collectionManagement = [];
 		if (ownerCollectionImport) await evaluate(resources.pageConnection, `window.setCollectionOwnerImport(${JSON.stringify(ownerCollectionImport)})`);
 		for (const width of collectionCorrectionOnly ? [393, 900, 1280] : [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
@@ -593,16 +595,23 @@ async function runMountedPage() {
 			}
 		}
 		return { ...unrelatedResults, nuvioSend, nuvioImport, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
-	}, () => cleanupMountedBrowser({
-		browserExecutable: resources.browserExecutable,
-		browserProcess: resources.browserProcess,
-		browserConnection: resources.browserConnection,
-		pageConnection: resources.pageConnection,
-		processTree: resources.processTree,
-		profileDir: resources.profileDir,
-		vite: resources.vite,
-		viteCacheDir: resources.viteCacheDir,
-	}));
+	}, async () => {
+		timing.stage("Browser cleanup");
+		try {
+			return await cleanupMountedBrowser({
+				browserExecutable: resources.browserExecutable,
+				browserProcess: resources.browserProcess,
+				browserConnection: resources.browserConnection,
+				pageConnection: resources.pageConnection,
+				processTree: resources.processTree,
+				profileDir: resources.profileDir,
+				vite: resources.vite,
+				viteCacheDir: resources.viteCacheDir,
+			});
+		} finally {
+			timing.finish();
+		}
+	});
 	return execution.value;
 }
 
