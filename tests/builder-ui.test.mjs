@@ -668,7 +668,8 @@ test("production UI keeps local Builder and approved attribution assets while ex
 	assert.doesNotMatch(source, /\b(?:localStorage|indexedDB)\b/);
 	// Import instructions may say “fetch” or “From File”; these are not API calls.
 	assert.doesNotMatch(source, /\b(?:fetch|showOpenFilePicker|showSaveFilePicker|new\s+File)\s*(?:\?\.)?\(/);
-	assert.match(read("builder/src/ui/export-collections.js"), /new Blob\(\[payload\.json\]/);
+	assert.match(read("builder/src/ui/export-collections.js"), /prepareJsonDownload\(\{ json: payload\.json, filename \}/);
+	assert.match(read("builder/src/ui/json-download.js"), /new BlobType\(\[json\]/);
 	assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
 	assert.doesNotMatch(source, /react-router|ReactRouter/i);
 	assert.deepEqual([...new Set([...source.matchAll(/https?:\/\/[^\s"'<>)}]+/g)].map((match) => match[0]))].sort(), [

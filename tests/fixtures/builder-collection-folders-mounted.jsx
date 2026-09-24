@@ -496,7 +496,7 @@ window.openBackToTopModal = async (exporting = false) => {
 };
 window.closeBackToTopModal = async (exporting = false) => {
 	assert(document.activeElement.closest('[role="dialog"]'), "Native Tab stays inside modal");
-	await click($(exporting ? '[aria-label="Close Export collections"]' : '[data-action="cancel-bulk-edit"]'));
+	await click($(exporting ? '[aria-label="Close Export & Send"]' : '[data-action="cancel-bulk-edit"]'));
 	await scrollPage(innerHeight + 160);
 	assert(!$('.workspace-underlay').inert && topButton() && !topButton().disabled, "Control works again after modal closes");
 	assertTopStatePreserved();

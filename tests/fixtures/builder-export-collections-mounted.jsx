@@ -71,14 +71,14 @@ window.runExportScenario = async () => {
 	assert($(".export-collections-summary h3").textContent === "Ready to export" && !$(".export-diagnostics.warnings"), "Warning-free ready status");
 	const project = await mount(profile()); const selection = JSON.stringify(controller.getState().selection);
 	const entry = $("[data-action=open-export-collections]");
-	assert(entry.textContent === "Export collections", "Exact entry name");
+	assert(entry.textContent === "Export & Send", "Exact entry name");
 	const navRects = [...$(".workspace-header-navigation").querySelectorAll("button")].map((button) => button.getBoundingClientRect());
 	assert(Math.abs(navRects[0].top - navRects[1].top) < 2, "Back/help remain on first row");
 	assert(entry.getBoundingClientRect().top >= Math.max(...navRects.map((rect) => rect.bottom)), "Export occupies second row");
 	assert(navRects.every((rect) => rect.right <= innerWidth), "Header controls contained");
 	await click(entry);
-	assert(modal().querySelector("h2").textContent === "Export collections", "Exact modal title");
-	assert($(".export-collections-summary h3").textContent === "Ready to export with warnings", "Warning-only ready status");
+	assert(modal().querySelector("h2").textContent === "Export & Send", "Exact modal title");
+	assert($(".export-collections-summary h3").textContent === "Ready to export", "Non-blocking warnings do not qualify the ready status");
 	assert(visible('[aria-modal="true"]').length === 1 && $(".workspace-underlay").inert, "One modal with inert Builder");
 	assert(document.body.style.position === "fixed", "Body locked");
 	assert(document.activeElement === $(".export-collections-header button"), "Initial Close focus");
@@ -86,35 +86,27 @@ window.runExportScenario = async () => {
 	assert(rect.width <= 661 && rect.left >= 9 && rect.right <= innerWidth - 9 && rect.top > 0 && rect.bottom <= innerHeight, "Compact centred responsive modal");
 	assert(rect.height < innerHeight - 50, "Ready modal sizes to content");
 	assert(!modal().querySelector('[role=tab], img, video') && !/Back to Workspace|Draft layout preview/.test(modal().textContent), "No removed simulator UI");
-	assert($(".export-diagnostics.warnings") && !$(".export-diagnostics.warnings").open, "Warnings initially collapsed");
-	assert(!$(".export-warning-group"), "Collapsed warnings do not render repeated contents");
-	await click($(".export-diagnostics.warnings summary"));
-	assert($(".export-diagnostics.warnings").open, "Warnings expand");
-	assert(modal().querySelectorAll(".export-warning-group").length === 1, "Same structured reason forms one group");
-	assert($(".export-warning-group").textContent.includes("4 affected Sources") && $(".export-warning-group h4").textContent === "Some Sources can’t be edited in the Builder", "Grouped plain-language cause and accurate Source count");
-	assert($(".export-warning-group").textContent.includes("They will still be included unchanged in the exported file."), "Exact plural preservation explanation");
-	assert(!$(".export-warning-location"), "Affected locations are lazy");
-	await click($(".export-warning-group button"));
-	assert($(".export-warning-group button").getAttribute("aria-expanded") === "true" && modal().querySelectorAll(".export-warning-location").length === 4, "Locations group by Collection and Folder");
+	assert(!modal().querySelector(".export-diagnostics.warnings, .export-warning-group, .export-warning-location") && !/preservation warning|affected Sources|can’t be edited/.test(modal().textContent), "Export omits non-blocking warning panel, counts and prose");
+	assert(controller.stringifyProject().warnings.length === 4 && controller.getState().diagnostics.export.warnings.length === 4, "Underlying preservation and project diagnostics remain available");
 	assert(!/OPAQUE_SOURCE_PRESERVED|AMBIGUOUS_SOURCE_PRESERVED_OPAQUE|UNMATCHED_CATALOG_SOURCE_REMOVED/.test(modal().textContent), "Internal codes hidden");
 	const owners = [modal(), ...modal().querySelectorAll("*")].filter((element) => element.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
 	assert(owners.length <= 1 && (!owners.length || owners[0] === $(".export-collections-content")), "Only export details can scroll vertically");
-	await click($(".export-diagnostics.warnings summary"));
 	const instructions = $(".export-import-instructions button");
-	assert(instructions.textContent === "How to import into Nuvio" && instructions.getAttribute("aria-expanded") === "false", "Import disclosure initially collapsed");
+	assert(instructions.textContent === "Need to add or merge Collections instead?" && instructions.getAttribute("aria-expanded") === "false", "Import disclosure initially collapsed");
 	assert(document.getElementById(instructions.getAttribute("aria-controls")).hidden, "Disclosure controls hidden instructions");
 	await click(instructions);
 	assert(instructions.getAttribute("aria-expanded") === "true" && document.activeElement === instructions, "Import disclosure retains focus and expands");
 	assert($(".export-import-guide h4").textContent === "Import into Nuvio" && $(".export-import-guide .export-muted").textContent === "Nuvio is currently in beta, so these import steps may change.", "Exact import heading and beta note");
 	const web = $('.export-import-section[aria-label="Web login"]');
 	const tv = $('.export-import-section[aria-label="TV app"]');
+	await click(tv.querySelector("summary"));
 	assert([...web.querySelectorAll("li")].map((item) => item.textContent).join("|") === [
-		"Go to Nuvio.tv and log in.", "Select the profile you want to update.", "Open Account.", "Open Collections.", "Choose Import.", "Select the downloaded JSON file.", "Choose Add as new, Merge, or Overwrite.", "Choose Add collections.",
+		"Download JSON from Dingo.", "Sign in to Nuvio.tv.", "Select the target profile and open its Collections import tools.", "Choose Import and select the downloaded file.", "Choose Add as new or Merge.", "Review and confirm in Nuvio.",
 	].join("|"), "Exact Web login steps");
 	assert([...tv.querySelectorAll("li")].map((item) => item.textContent).join("|") === [
 		"Open Nuvio and choose a profile.", "Go to Settings → Content & Discovery → Addons.", "Open Collections.", "Choose Import.", "Choose From File or From URL.", "For From File, select the downloaded JSON file from Downloads, then confirm the import.", "For From URL, enter the direct URL of a JSON file, fetch it, then confirm the import.",
 	].join("|"), "Exact TV app steps");
-	assert($(".export-import-clarification").textContent === "Dingo provides a downloaded JSON file. It does not currently create a hosted URL.", "Hosted URL clarification");
+	assert(tv.querySelector(".export-import-clarification").textContent === "Dingo provides a downloaded JSON file. It does not currently create a hosted URL.", "Hosted URL clarification");
 	assert($(".export-import-enrichment").textContent === "To help Nuvio add artwork and title details, go to Settings → Integrations → TMDB and turn on Enable TMDB Enrichment. A TMDB API key may be required. Follow the official TMDB API guide to request one.", "Exact TMDB enrichment callout");
 	const links = [...$(".export-import-guide").querySelectorAll("a")];
 	assert(links.map((link) => link.href).join("|") === "https://nuvio.tv/|https://developer.themoviedb.org/docs/getting-started", "Exact external destinations");
@@ -130,8 +122,8 @@ window.runExportScenario = async () => {
 	assert($(".export-collections-summary").getBoundingClientRect().top === pinnedTop && $(".export-collections-footer").getBoundingClientRect().bottom === pinnedBottom && pinnedBottom <= innerHeight, "Instruction scrolling keeps summary and actions pinned");
 	assert($(".export-import-enrichment").getBoundingClientRect().bottom <= content.getBoundingClientRect().bottom + 1, "Final callout is reachable through details scrolling");
 	assert(!$("#root [data-action=download-collections-json]"), "Modal uses existing portal pattern");
-	const actions = [...$(".export-collections-actions").querySelectorAll("button")];
-	assert(actions.map((button) => button.textContent).join("|") === "Download JSON|Copy JSON", "Primary Download, secondary Copy");
+	const actions = [...$(".export-collections-actions").querySelectorAll('button:not([data-action="send-to-nuvio"])')];
+	assert(actions.map((button) => button.querySelector("strong").textContent).join("|") === "Download JSON|Copy JSON", "Manual Download and Copy retained");
 	assert(actions.every((button) => !button.disabled), "Warnings leave both actions enabled");
 	let copied; let blob; let filename;
 	Object.defineProperty(navigator, "clipboard", { configurable: true, value: { async writeText(value) { copied = value; } } });
@@ -183,7 +175,7 @@ window.runExportEditorCases = async () => {
 		assert(document.activeElement === $(".export-collections-summary h3"), "Removed diagnostic returns focus to status");
 		if (kind === "collection") assert($(".export-collections-summary h3").textContent === "1 problem to fix before exporting", "Singular blocking status");
 	}
-	assert($(".export-collections-summary h3").textContent === "Ready to export with warnings", "Repairs return warning-only ready state");
+	assert($(".export-collections-summary h3").textContent === "Ready to export" && controller.stringifyProject().warnings.length > 0, "Repairs restore ready state while preserving underlying warnings");
 	assertCountsMatchJson(controller.stringifyProject().json);
 	// Exercise authoritative count changes while the existing diagnostic editor is suspended.
 	await act(() => controller.updateNode(project.collections[0].internalId, { title: "" }));
@@ -209,7 +201,7 @@ window.runExportEditorCases = async () => {
 	assert($(".export-diagnostics.errors").textContent.includes("delete this Source in the Builder"), "Unrepairable imported field has a real removal path");
 	await mount([{ id: "c", title: "Collection", folders: [{ id: "f", title: "Folder", sources: [{ provider: "addon", title: "Incomplete addon" }] }] }]);
 	await click($("[data-action=open-export-collections]"));
-	assert(!$("[data-export-edit=source]") && $(".export-diagnostics.errors").textContent.includes("This item cannot be repaired here. Close Export collections and delete this Source"), "Unsupported blocking Source has truthful guidance without changing editor eligibility");
+	assert(!$("[data-export-edit=source]") && $(".export-diagnostics.errors").textContent.includes("This item cannot be repaired here. Close Export & Send and delete this Source"), "Unsupported blocking Source has truthful guidance without changing editor eligibility");
 	assert([...$(".export-collections-actions").querySelectorAll("button")].every((button) => button.disabled), "Unrepairable Source blocks both actions");
 	assert(requests.length === 0, "Diagnostic editing adds no data requests");
 	return { passed: true, requests: requests.length };
@@ -220,16 +212,11 @@ window.runExportLargeCase = async () => {
 	const elapsedMs = Math.round(performance.now() - start);
 	assert(counts().collections === 24 && counts().folders === 600 && counts().sources === 1200, "Large totals");
 	assertCountsMatchJson(controller.stringifyProject().json);
-	assert(!$(".export-diagnostics.warnings").open && modal().querySelectorAll("img").length === 0, "Large warnings collapsed without artwork");
-	assert(!$(".export-warning-group") && !$(".export-warning-location"), "Large closed warning set does not render repeated items");
-	await click($(".export-diagnostics.warnings summary"));
-	assert(modal().querySelectorAll(".export-warning-group").length === 1 && !$(".export-warning-location"), "600 warnings expand to one summary, with locations still deferred");
-	assert($(".export-warning-group").textContent.includes("600 affected Sources"), "Large distinct Source count");
-	await click($(".export-warning-group button"));
-	assert(modal().querySelectorAll(".export-warning-location li").length === 600, "All affected Sources remain reachable");
+	assert(!modal().querySelector(".export-diagnostics.warnings, .export-warning-group, .export-warning-location, img"), "Large projects render no preservation warning panel or artwork");
+	assert(controller.stringifyProject().warnings.length === 600, "All 600 preservation diagnostics remain in the underlying result");
 	const owners = [modal(), ...modal().querySelectorAll("*")].filter((element) => element.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
-	assert(owners.length === 1 && owners[0] === $(".export-collections-content"), "Large expanded locations keep one scroll owner");
-	assert($(".export-collections-footer").getBoundingClientRect().bottom <= innerHeight && modal().scrollWidth <= modal().clientWidth + 1, "Large warning details retain actions without horizontal overflow");
+	assert(owners.length <= 1 && (!owners.length || owners[0] === $(".export-collections-content")), "Large project keeps at most one content scroll owner");
+	assert($(".export-collections-footer").getBoundingClientRect().bottom <= innerHeight && modal().scrollWidth <= modal().clientWidth + 1, "Large project retains reachable actions without horizontal overflow");
 	assert(elapsedMs < 5000 && requests.length === 0, "Large export opens within bounded local budget without data requests");
 	return { passed: true, elapsedMs, counts: counts(), requests: requests.length };
 };
@@ -237,18 +224,17 @@ window.runExportLargeCase = async () => {
 window.runExportWarningCases = async () => {
 	const value = [{ id: "c", title: "Imported Collection", folders: [{ id: "f", title: "Imported Folder", sources: [{ title: "Imported Source", addonName: "Community" }], catalogSources: [{ addonId: "old", type: "movie", catalogId: "old" }] }] }];
 	await mount(value); await click($("[data-action=open-export-collections]"));
-	await click($(".export-diagnostics.warnings summary"));
-	const groups = [...modal().querySelectorAll(".export-warning-group")];
-	assert(groups.length === 2 && groups[0].textContent.includes("1 affected Source") && groups[0].querySelector("h4").textContent === "This Source can’t be edited in the Builder" && groups[0].textContent.includes("It will still be included unchanged in the exported file."), "Exact singular preservation copy");
-	assert(groups[1].textContent.includes("1 warning") && groups[1].querySelector("h4").textContent === "Some saved addon details are no longer used" && groups[1].textContent.includes("These unused details won’t be exported. Your current Sources are unaffected."), "Exact saved addon details copy with warning count");
+	const output = controller.stringifyProject();
+	assert(output.warnings.some(warning => warning.code === "OPAQUE_SOURCE_PRESERVED") && output.warnings.some(warning => warning.code === "UNMATCHED_CATALOG_SOURCE_REMOVED"), "Both preservation diagnostics remain in canonical output");
+	const exportedFolder = JSON.parse(output.json)[0].folders[0];
+	assert(JSON.stringify(exportedFolder.sources) === JSON.stringify(value[0].folders[0].sources) && Array.isArray(exportedFolder.catalogSources) && exportedFolder.catalogSources.length === 0, "Opaque Sources remain exact and unused saved addon details retain their established removal behavior");
+	assert(!modal().querySelector(".export-diagnostics.warnings, .export-warning-group") && !/preservation warning|saved addon details|affected Source/.test(modal().textContent), "Both non-blocking warning types remain absent from Export");
 	assert(!/AMBIGUOUS_SOURCE_PRESERVED_OPAQUE|OPAQUE_SOURCE_PRESERVED|UNMATCHED_CATALOG_SOURCE_REMOVED/.test(modal().textContent), "Actual warning codes stay internal");
-	assert([...$(".export-collections-actions").querySelectorAll("button")].every((button) => !button.disabled), "Both real warning types permit export");
-	await click(groups[1].querySelector("button"));
-	assert(groups[1].textContent.includes("Imported Collection → Imported Folder") && groups[1].textContent.includes("Saved addon details 1"), "Saved addon details location stays reachable without a false Source count");
+	assert([...$(".export-collections-actions").querySelectorAll("button:not([data-action=send-to-nuvio])")].every((button) => !button.disabled), "Both real warning types permit manual export");
 	await mount(value, { exportWarnings: [{ code: "FUTURE_WARNING_INTERNAL", path: "$", message: "INTERNAL_IMPLEMENTATION_DETAIL" }] });
-	await click($("[data-action=open-export-collections]")); await click($(".export-diagnostics.warnings summary"));
-	assert($(".export-warning-group h4").textContent === "Some information will be preserved unchanged" && $(".export-warning-group").textContent.includes("Dingo does not fully recognise this information, so it will be kept unchanged in the exported file.") && !/FUTURE_WARNING_INTERNAL|INTERNAL_IMPLEMENTATION_DETAIL/.test(modal().textContent), "Unknown warning renders exact fallback without internal code/message");
-	assert(requests.length === 0, "Warning disclosures make no external requests");
+	await click($("[data-action=open-export-collections]"));
+	assert(!modal().querySelector(".export-diagnostics.warnings") && !/FUTURE_WARNING_INTERNAL|INTERNAL_IMPLEMENTATION_DETAIL|preservation warning/.test(modal().textContent) && controller.stringifyProject().warnings[0].code === "FUTURE_WARNING_INTERNAL", "Future non-blocking warnings stay available to diagnostics without surfacing in Export");
+	assert(requests.length === 0, "Export makes no external requests");
 	return { passed: true, requests: requests.length };
 };
 
@@ -331,7 +317,7 @@ window.prepareExportScreenshot = async (state) => {
 	await window.prepareExportCase();
 	if (state === "workspace") await click($(".export-collections-header button"));
 	if (state === "errors") { const p = controller.getState().project; await act(() => controller.updateNode(p.collections[0].internalId, { title: "" })); }
-	if (state === "warnings") await click($(".export-diagnostics.warnings summary"));
+	if (state === "warnings") assert(!$(".export-diagnostics.warnings"), "Warning-bearing projects have no Export warning panel");
 	if (state === "instructions" || state === "instructions-end") await click($(".export-import-instructions button"));
 	if (state === "instructions-end") await act(() => { const details = $(".export-collections-content"); details.scrollTop = details.scrollHeight; });
 	await frame();

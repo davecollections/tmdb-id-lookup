@@ -648,8 +648,9 @@ test("welcome source contains busy and disabled behavior without routes or defer
 	assert.match(source, /aria-busy=\{isBusy\}/);
 	assert.match(source, /aria-busy=\{busyAction === "file"\}/);
 	assert.match(source, /aria-busy=\{busyAction === "pasted"\}/);
-	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 8);
+	assert.equal((source.match(/disabled=\{isBusy\}/g) ?? []).length, 9);
 	for (const controlPattern of [
+		/data-action="open-nuvio-send-status"[\s\S]{0,240}disabled=\{isBusy\}/,
 		/data-action="start-new-project"[\s\S]{0,120}disabled=\{isBusy\}/,
 		/data-import-control="file"[\s\S]{0,160}disabled=\{isBusy\}/,
 		/data-action="import-file"[\s\S]{0,100}disabled=\{isBusy\}/,
@@ -688,17 +689,18 @@ for (const compact of [false, true]) {
   assert.match(markup, /for="unit-pin-pin"/);
   assert.match(markup, /aria-describedby="unit-pin-pin-help unit-pin-pin-status"/);
   assert.equal(markup.includes('placeholder="Enter PIN"'), compact);
-  assert.ok(markup.includes(compact ? '>Verify</button>' : '>Verify PIN</button>'));
+  assert.doesNotMatch(markup, /<button/);
+  assert.match(markup, /Enter the 4-digit PIN for this profile/);
   const incorrect = renderToStaticMarkup(createElement(ProfilePin, { ...props, feedback: { kind: "incorrect" } }));
   assert.match(incorrect, /class="nuvio-muted" id="unit-pin-pin-status" role="status"/);
-  assert.match(incorrect, /That PIN didn’t match/);
+  assert.match(incorrect, /Incorrect PIN. Try again/);
   const locked = renderToStaticMarkup(createElement(ProfilePin, { ...props, connection: { getProfileAccess: () => ({ unlocked: false, retryAfterSeconds: 30 }) } }));
   assert.match(locked, /30 seconds/);
   assert.match(locked, /<input[^>]*disabled/);
-  assert.match(locked, /<button[^>]*disabled/);
+  assert.doesNotMatch(locked, /<button/);
   const verified = renderToStaticMarkup(createElement(ProfilePin, { ...props, connection: { getProfileAccess: () => ({ unlocked: true, retryAfterSeconds: 0 }) } }));
   assert.equal(verified.includes('<input'), false);
-  assert.ok(verified.includes(compact ? '>PIN verified</p>' : 'PIN verified. You can load this profile’s Collections.'));
+  assert.ok(verified.includes('>PIN verified</p>'));
  });
 }
 

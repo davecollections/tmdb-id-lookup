@@ -1,7 +1,9 @@
 import { canEditSource } from "../source-edit/index.js";
 import { collectionCounts as collectionExportCounts } from "../domain/collection-counts.js";
+import { prepareJsonDownload } from "./json-download.js";
 
 export { collectionExportCounts };
+export { createCollectionExportPayload } from "../serialize/collection-export.js";
 
 export const EXPORT_SUCCESS_TIMEOUT_MS = 4000;
 
@@ -97,28 +99,6 @@ export function groupExportWarnings(project, warnings) {
 	});
 }
 
-// Keep one prepared result per authoritative project, independent of diagnostic
-// revisions. Preparation is local and happens outside React rendering.
-export function createCollectionExportPayload(controller) {
-	let project = null;
-	let payload = null;
-	return () => {
-		const current = controller.getState().project;
-		if (project !== current) {
-			const result = controller.stringifyProject({ space: 2 });
-			project = current;
-			// Retain the serializer's prepared Collections alongside its exact bytes.
-			// Future delivery can reuse these data without assuming an account API envelope.
-			payload = {
-				ok: result.ok, collections: result.value, json: result.json,
-				errors: result.errors, warnings: result.warnings, project,
-				counts: collectionExportCounts(result.ok ? result.value : project.collections),
-			};
-		}
-		return payload;
-	};
-}
-
 export async function copyCollectionsJson(payload, clipboard = globalThis.navigator?.clipboard) {
 	if (!payload?.ok || typeof payload.json !== "string") return false;
 	try {
@@ -130,11 +110,6 @@ export async function copyCollectionsJson(payload, clipboard = globalThis.naviga
 
 export function downloadCollectionsJson(payload, { filename = collectionExportFilename(), document = globalThis.document, url = globalThis.URL } = {}) {
 	if (!payload?.ok || typeof payload.json !== "string") return false;
-	const objectUrl = url.createObjectURL(new Blob([payload.json], { type: "application/json;charset=utf-8" }));
-	const link = document.createElement("a");
-	link.href = objectUrl;
-	link.download = filename;
-	link.hidden = true;
-	try { document.body.append(link); link.click(); } finally { link.remove(); setTimeout(() => url.revokeObjectURL(objectUrl), 0); }
-	return true;
+	const download = prepareJsonDownload({ json: payload.json, filename }, { document, url });
+	try { return download.initiate(); } finally { download.dispose(); }
 }

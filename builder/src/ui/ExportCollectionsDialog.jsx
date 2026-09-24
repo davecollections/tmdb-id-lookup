@@ -7,30 +7,32 @@ import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { nodeTitle } from "./view-model.js";
 import {
 	collectionExportCounts, collectionExportFilename, copyCollectionsJson, createCollectionExportPayload,
-	downloadCollectionsJson, exportDiagnosticMessage, exportDiagnosticNodes, exportDiagnosticTarget, groupExportWarnings, EXPORT_SUCCESS_TIMEOUT_MS,
+	downloadCollectionsJson, exportDiagnosticMessage, exportDiagnosticNodes, exportDiagnosticTarget, EXPORT_SUCCESS_TIMEOUT_MS,
 } from "./export-collections.js";
+import { NuvioSendContent } from "./NuvioSendContent.jsx";
+import { useNuvioSendState } from "./use-nuvio-send.js";
+import { sendInProgress, sendStatusLabel } from "./nuvio-send-presentation.js";
 import "./export-collections.css";
 
 const useBeforePaint = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const diagnosticLocation = (nodes) => nodes.map((node) => nodeTitle(node.editable.title, node.nodeType).text).join(" → ");
 
-function ExportWarningGroup({ group }) {
-	const [expanded, setExpanded] = useState(false);
-	const id = useId();
-	return <section className="export-warning-group">
-		<h4>{group.reason}</h4><p className="export-muted">{group.countLabel}</p><p>{group.consequence}</p>
-		<button type="button" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(!expanded)}>{group.sourceCount === null ? "Show affected locations" : "Show affected Sources"}</button>
-		<div id={id} hidden={!expanded}>{expanded ? <>
-			{group.locations.map((location) => <div className="export-warning-location" key={location.key}>
-				<p>{diagnosticLocation(location.nodes)}</p>
-				{location.items.length ? <ul>{location.items.map((item) => <li key={item.key}>{item.source ? nodeTitle(item.source.editable.title, "source").text : item.text}</li>)}</ul> : null}
-			</div>)}
-			{group.unresolved ? <p>{group.unresolved} {group.unresolved === 1 ? "warning has" : "warnings have"} no available location.</p> : null}
-		</> : null}</div>
-	</section>;
-}
-
-export function ExportCollectionsDialog({ controller, onClose, onEdit, locked = false }) {
+export function ExportCollectionsDialog({ controller, onClose, onEdit, onMergeInstead, locked = false, connection, sendCoordinator, initialView = "export" }) {
+	const attempt = useNuvioSendState(sendCoordinator);
+	const [view, setView] = useState(initialView);
+	const pendingSend = attempt.dispatch.count > 0 && !["VERIFIED", "REJECTED"].includes(attempt.phase);
+	const lastTarget = attempt.baseline?.profile ?? attempt.target;
+	function close() {
+		if (view === "send" && sendInProgress(sendCoordinator.getState(), connection.getState())) return;
+		if (view === "send" && !attempt.dispatch.count) { sendCoordinator.cancel(); connection.cancelReview(); }
+		onClose();
+	}
+	function enterSend() {
+		if (!sendCoordinator || !connection) return;
+		if (!pendingSend) sendCoordinator.prepare();
+		actionVersion.current++; setFeedback(null); setImportExpanded(false);
+		setView("send");
+	}
 	const { project } = useBuilderControllerState(controller);
 	const getPayload = useMemo(() => createCollectionExportPayload(controller), [controller]);
 	const [payload, setPayload] = useState(null);
@@ -40,8 +42,7 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, locked = 
 	const [feedback, setFeedback] = useState(null);
 	const [importExpanded, setImportExpanded] = useState(false);
 	const importInstructionsId = useId();
-	const [warningsExpanded, setWarningsExpanded] = useState(false);
-	const warningGroups = useMemo(() => current ? groupExportWarnings(project, current.warnings) : [], [current, project]);
+
 	const [copying, setCopying] = useState(false);
 	const busy = useRef(false);
 	const mounted = useRef(true);
@@ -112,7 +113,7 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, locked = 
 				{context ? <p className="export-muted">{context}</p> : null}
 				<p>{exportDiagnosticMessage(diagnostic)}</p>
 				{target ? <button type="button" data-export-edit={target.nodeType} onClick={(event) => edit(diagnostic, event.currentTarget)}>Edit {target.nodeType}: {nodeTitle(target.editable.title, target.nodeType).text}</button> : null}
-				{affected && !["COLLECTION_TITLE_REQUIRED", "FOLDER_TITLE_REQUIRED"].includes(diagnostic.code) ? <p className="export-muted">{target ? "If this problem cannot be corrected in the editor, close" : "This item cannot be repaired here. Close"} Export collections and delete this {affected.nodeType === "source" ? "Source" : affected.nodeType === "folder" ? "Folder" : "Collection"} in the Builder. Keep your original imported file.</p> : null}
+				{affected && !["COLLECTION_TITLE_REQUIRED", "FOLDER_TITLE_REQUIRED"].includes(diagnostic.code) ? <p className="export-muted">{target ? "If this problem cannot be corrected in the editor, close" : "This item cannot be repaired here. Close"} Export &amp; Send and delete this {affected.nodeType === "source" ? "Source" : affected.nodeType === "folder" ? "Folder" : "Collection"} in the Builder. Keep your original imported file.</p> : null}
 			</li>;
 		})}</ul>;
 	}
@@ -121,37 +122,42 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, locked = 
 		<div className="settings-modal-backdrop export-collections-backdrop" style={viewportStyle ?? undefined} data-backdrop-dismiss="false" onMouseDown={(event) => {
 			if (event.target === event.currentTarget) { event.preventDefault(); focusElementWithoutScroll(dialogRef.current); }
 		}}>
-			<section className="export-collections-dialog" data-export-collections ref={dialogRef} role={locked ? undefined : "dialog"} aria-modal={locked ? undefined : "true"} aria-labelledby="export-collections-title" tabIndex={-1} onKeyDown={(event) => {
-				if (!locked) handleDialogKeyDown(event, dialogRef.current, onClose, { includeControl: (element) => element.getClientRects().length > 0 });
+			<section className={`export-collections-dialog${view === "send" ? " is-send nuvio-connection-dialog" : ""}`} data-export-collections data-nuvio-send={view === "send" ? true : undefined} data-send-phase={view === "send" ? attempt.phase : undefined} ref={dialogRef} role={locked ? undefined : "dialog"} aria-modal={locked ? undefined : "true"} aria-labelledby="export-collections-title" tabIndex={-1} onKeyDown={(event) => {
+				if (!locked) handleDialogKeyDown(event.target.tagName === "H2" ? { key: event.key, shiftKey: event.shiftKey, target: dialogRef.current, preventDefault: () => event.preventDefault() } : event, dialogRef.current, close, { includeControl: (element) => element.getClientRects().length > 0 });
 			}}>
-				<header className="export-collections-header"><h2 id="export-collections-title">Export collections</h2><button type="button" ref={closeRef} aria-label="Close Export collections" onClick={onClose}>Close</button></header>
+				{view === "send" ? <NuvioSendContent connection={connection} coordinator={sendCoordinator} attempt={attempt} onClose={close} onMergeInstead={onMergeInstead} onBack={() => { setView("export"); requestAnimationFrame(() => focusElementWithoutScroll(closeRef.current)); }} /> : <>
+				<header className="export-collections-header"><h2 id="export-collections-title">Export &amp; Send</h2><button type="button" ref={closeRef} aria-label="Close Export & Send" onClick={close}>Close</button></header>
 				<div className="export-collections-summary">
-					<h3 ref={statusRef} tabIndex={-1} className={errorCount ? "export-problem-status" : ""} role="status">{!current ? "Checking your collections…" : errorCount ? `${errorCount} ${errorCount === 1 ? "problem" : "problems"} to fix before exporting` : current.warnings.length ? "Ready to export with warnings" : "Ready to export"}</h3>
+					<h3 ref={statusRef} tabIndex={-1} className={errorCount ? "export-problem-status" : ""} role="status">{!current ? "Checking your collections…" : errorCount ? `${errorCount} ${errorCount === 1 ? "problem" : "problems"} to fix before exporting` : "Ready to export"}</h3>
 					<dl className="export-collections-totals">{Object.entries(counts).map(([name, count]) => <div key={name}><dt>{name[0].toUpperCase() + name.slice(1)}</dt><dd data-export-count={name}>{count}</dd></div>)}</dl>
 					<p className="export-filename">{filename}</p>
 				</div>
 				<div className="export-collections-content dingo-scrollbar" ref={scrollRef} role="region" aria-label="Export details" tabIndex={0}>
+					<div className="export-collections-actions">
+						<button type="button" className="editor-apply export-send-primary" data-action="send-to-nuvio" disabled={!current?.ok || !sendCoordinator || pendingSend} onClick={enterSend}><strong>Send to Nuvio</strong><small>Replace the Collections on a Nuvio profile.</small></button>
+						{attempt.dispatch.count ? <section className="send-last" aria-label="Last Send"><div><h4>Last Send</h4><p>{lastTarget.name} · Profile {lastTarget.index}</p><p className="export-muted">{attempt.phase === "VERIFIED" ? "Verified with Nuvio" : sendStatusLabel(attempt)}</p></div><button type="button" data-action="view-send-status" onClick={() => setView("send")}>View details</button></section> : null}
+						<button type="button" className="secondary-action export-manual-action" data-action="download-collections-json" disabled={!current?.ok} onClick={download}><strong>Download JSON</strong><small>Save a Nuvio-compatible JSON file to your device.</small></button>
+						<button type="button" className="secondary-action export-manual-action" data-action="copy-collections-json" disabled={!current?.ok || copying} onClick={copy}><strong>{copying ? "Copying…" : "Copy JSON"}</strong><small>Copy the Collection JSON to your clipboard.</small></button>
+					</div>
 					{current && errorCount > 0 ? <section className="export-diagnostics errors" aria-label="Export errors"><h4>Resolve before exporting</h4>{diagnostics(current.errors)}<p>No partial file will be exported.</p></section> : null}
-					{current && current.warnings.length > 0 ? <details className="export-diagnostics warnings" onToggle={(event) => setWarningsExpanded(event.currentTarget.open)}><summary tabIndex={0}>{current.warnings.length} preservation {current.warnings.length === 1 ? "warning" : "warnings"}</summary>{warningsExpanded ? <><p>These warnings do not prevent export.</p>{warningGroups.map((group) => <ExportWarningGroup key={group.code} group={group} />)}</> : null}</details> : null}
 					<div className="export-import-instructions">
-						<button type="button" aria-expanded={importExpanded} aria-controls={importInstructionsId} onClick={() => setImportExpanded(!importExpanded)}>How to import into Nuvio</button>
+						<button type="button" aria-expanded={importExpanded} aria-controls={importInstructionsId} onClick={() => setImportExpanded(!importExpanded)}>Need to add or merge Collections instead?</button>
 						<div id={importInstructionsId} className="export-import-guide" hidden={!importExpanded}>
 							<h4>Import into Nuvio</h4>
 							<p className="export-muted">Nuvio is currently in beta, so these import steps may change.</p>
 							<section className="export-import-section" aria-label="Web login">
-								<h5>Web login</h5>
+								<h5>Add or merge on Nuvio.tv</h5>
 								<ol>
-									<li>Go to <a href="https://nuvio.tv/" target="_blank" rel="noopener noreferrer" aria-label="Nuvio.tv (opens in a new tab)">Nuvio.tv</a> and log in.</li>
-									<li>Select the profile you want to update.</li>
-									<li>Open Account.</li>
-									<li>Open Collections.</li>
-									<li>Choose Import.</li>
-									<li>Select the downloaded JSON file.</li>
-									<li>Choose Add as new, Merge, or Overwrite.</li>
-									<li>Choose Add collections.</li>
+									<li>Download JSON from Dingo.</li>
+									<li>Sign in to <a href="https://nuvio.tv/" target="_blank" rel="noopener noreferrer" aria-label="Nuvio.tv (opens in a new tab)">Nuvio.tv</a>.</li>
+									<li>Select the target profile and open its Collections import tools.</li>
+									<li>Choose Import and select the downloaded file.</li>
+									<li>Choose Add as new or Merge.</li>
+									<li>Review and confirm in Nuvio.</li>
 								</ol>
+								<p className="export-import-clarification">Nuvio’s Merge uses Nuvio’s own matching rules and may differ from Dingo’s Merge exact matches.</p>
 							</section>
-							<section className="export-import-section" aria-label="TV app">
+							<details className="export-import-section" aria-label="TV app"><summary tabIndex={0}>TV import and TMDB Enrichment</summary>
 								<h5>TV app</h5>
 								<ol>
 									<li>Open Nuvio and choose a profile.</li>
@@ -163,15 +169,13 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, locked = 
 									<li>For From URL, enter the direct URL of a JSON file, fetch it, then confirm the import.</li>
 								</ol>
 								<p className="export-import-clarification">Dingo provides a downloaded JSON file. It does not currently create a hosted URL.</p>
-							</section>
-							<p className="export-import-enrichment">To help Nuvio add artwork and title details, go to Settings → Integrations → TMDB and turn on Enable TMDB Enrichment. A TMDB API key may be required. Follow the <a href="https://developer.themoviedb.org/docs/getting-started" target="_blank" rel="noopener noreferrer" aria-label="official TMDB API guide (opens in a new tab)">official TMDB API guide</a> to request one.</p>
+							<p className="export-import-enrichment">To help Nuvio add artwork and title details, go to Settings → Integrations → TMDB and turn on Enable TMDB Enrichment. A TMDB API key may be required. Follow the <a href="https://developer.themoviedb.org/docs/getting-started" target="_blank" rel="noopener noreferrer" aria-label="official TMDB API guide (opens in a new tab)">official TMDB API guide</a> to request one.</p></details>
 						</div>
 					</div>
 				</div>
 				<footer className="export-collections-footer">
-					<div className="export-collections-actions"><button type="button" className="editor-apply" data-action="download-collections-json" disabled={!current?.ok} onClick={download}>Download JSON</button><button type="button" data-action="copy-collections-json" disabled={!current?.ok || copying} onClick={copy}>{copying ? "Copying…" : "Copy JSON"}</button></div>
 					<p className="export-feedback" role={feedback?.error ? "alert" : "status"} aria-live={feedback?.error ? "assertive" : "polite"}>{feedback?.text ?? ""}</p>
-				</footer>
+				</footer></>}
 			</section>
 		</div>
 	</div>;

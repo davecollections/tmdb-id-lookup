@@ -11,6 +11,7 @@ import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
+import { runNuvioSendChecks } from "./helpers/nuvio-send-mounted.mjs";
 import { mountedReactOptimizeDeps } from "./helpers/mounted-react-vite.mjs";
 import {
 	cleanupMountedBrowser,
@@ -26,6 +27,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const builderModules = path.join(rootDir, "builder", "node_modules");
 const collectionCorrectionOnly = process.env.COLLECTION_FOLDERS_CORRECTION_ONLY === "1";
 const backToTopOnly = process.env.BUILDER_BACK_TO_TOP_ONLY === "1";
+const nuvioSendOnly = process.env.NUVIO_SEND_ONLY === "1";
 const nuvioWelcomeOnly = process.env.NUVIO_WELCOME_ONLY === "1";
 const nuvioImportOnly = nuvioWelcomeOnly || process.env.NUVIO_IMPORT_ONLY === "1";
 const presentationOnly = process.env.BUILDER_MANAGEMENT_PRESENTATION_ONLY === "1";
@@ -290,8 +292,9 @@ async function runMountedPage() {
 		viteCacheDir: null,
 	};
 	const execution = await runWithLifecycleCleanup(async () => {
-		const optimizeDeps = mountedReactOptimizeDeps(nuvioImportOnly ? [] : collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
+		const optimizeDeps = mountedReactOptimizeDeps(nuvioSendOnly ? ["tests/fixtures/builder-nuvio-send-mounted.html", "tests/fixtures/builder-export-collections-mounted.html"] : nuvioImportOnly ? [] : collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
 		if (nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-import-mounted.html");
+		if (!nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-send-mounted.html");
 		optimizeDeps.include.push("react/jsx-dev-runtime");
 		optimizeDeps.needsInterop.push("react/jsx-dev-runtime");
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-bulk-edit-vite-"));
@@ -381,6 +384,8 @@ async function runMountedPage() {
 			}
 		` });
 		const address = resources.vite.httpServer.address();
+		const nuvioSend = nuvioSendOnly || (!nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) ? await runNuvioSendChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate) : null;
+		if (nuvioSendOnly) return { nuvioSend };
 		const nuvioImport = nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)
 			? await runNuvioImportChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`) : null;
 		if (nuvioImportOnly) return { nuvioImport };
@@ -482,10 +487,11 @@ async function runMountedPage() {
 		await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
 		await evaluate(resources.pageConnection, 'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
 		assert.deepEqual(await evaluate(resources.pageConnection, `(() => { const button = document.querySelector('.export-import-instructions button'); return { forcedColours: matchMedia('(forced-colors: active)').matches, expanded: button.getAttribute('aria-expanded'), focused: document.activeElement === button, border: getComputedStyle(button).borderStyle, outline: getComputedStyle(button).outlineStyle, contained: document.querySelector('[data-export-collections]').scrollWidth <= document.querySelector('[data-export-collections]').clientWidth + 1 }; })()`), { forcedColours: true, expanded: "true", focused: true, border: "solid", outline: "solid", contained: true }, "Import disclosure works with native keyboard focus and forced colours");
-		for (const expected of ["https://nuvio.tv/", "https://developer.themoviedb.org/docs/getting-started", "download-collections-json"]) {
+		await evaluate(resources.pageConnection, 'document.querySelector(\'details[aria-label="TV app"]\').open = true');
+		for (const expected of ["https://nuvio.tv/", "TV import and TMDB Enrichment", "https://developer.themoviedb.org/docs/getting-started", "Close"]) {
 			await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
 			await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
-			assert.equal(await evaluate(resources.pageConnection, 'document.activeElement.href || document.activeElement.dataset.action'), expected, "Instructions keep natural link and action keyboard order");
+			assert.equal(await evaluate(resources.pageConnection, 'document.activeElement.href || document.activeElement.dataset.action || document.activeElement.textContent.trim()'), expected, "Instructions keep natural link and action keyboard order");
 		}
 		for (const backward of [false, true]) {
 			await evaluate(resources.pageConnection, `(() => { const controls = [...document.querySelector('[data-export-collections]').querySelectorAll('button, a[href], [tabindex]')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
@@ -586,7 +592,7 @@ async function runMountedPage() {
 				}
 			}
 		}
-		return { ...unrelatedResults, nuvioImport, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
+		return { ...unrelatedResults, nuvioSend, nuvioImport, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
 	}, () => cleanupMountedBrowser({
 		browserExecutable: resources.browserExecutable,
 		browserProcess: resources.browserProcess,
@@ -612,13 +618,25 @@ before(async () => {
 	mounted = await runMountedPage();
 });
 
-test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+test("mounted Nuvio Send retains safe outcomes and one responsive Export shell", { skip: nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+	assert.deepEqual(mounted.nuvioSend.local, { passed: true, mocked: true });
+	if (process.env.NUVIO_SEND_LOCAL_ONLY === "1") return;
+	assert.equal(mounted.nuvioSend.layouts.length, 390);
+	assert.deepEqual(mounted.nuvioSend.errors, []);
+	assert.deepEqual(mounted.nuvioSend.exportErrors, []);
+	assert.ok(mounted.nuvioSend.exports.every(result => result.passed && result.requests === 0));
+	assert.ok(Object.values(mounted.nuvioSend.regressions).every(result => result.passed && result.requests === 0));
+	console.log("Send layouts:", mounted.nuvioSend.layouts.length, "; existing Export regressions passed.");
+	console.log("Compact Send measurements:", JSON.stringify(mounted.nuvioSend.layouts.filter(layout => [393, 1280].includes(layout.width) && layout.height === 900 && ["export", "review", "sending", "verified"].includes(layout.screen))));
+});
+
+test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.nuvioImport.local, nuvioWelcomeOnly ? { passed: true, externalServiceExercised: false } : { passed: true, mocked: true });
 	assert.equal(mounted.nuvioImport.layouts.length, nuvioWelcomeOnly ? 44 : 63);
 	assert.deepEqual(mounted.nuvioImport.errors, []);
 });
 
-test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: backToTopOnly }, () => {
+test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: nuvioSendOnly || backToTopOnly }, () => {
 	assert.equal(mounted.presentation.layouts.length, 12);
 	assert.ok(mounted.presentation.layouts.every((layout) => layout.modalWidth <= 460 && layout.footer));
 	assert.deepEqual(mounted.presentation.terminology.map(({ width }) => width), [393, 1280]);
@@ -627,14 +645,14 @@ test("Sort folders stays compact on phones and Global display settings retains a
 	console.log("Management presentation:", JSON.stringify(mounted.presentation));
 });
 
-test("collection Folder management preserves atomic edits and responsive retained selection", { skip: presentationOnly || backToTopOnly }, () => {
+test("collection Folder management preserves atomic edits and responsive retained selection", { skip: nuvioSendOnly || presentationOnly || backToTopOnly }, () => {
 	assert.equal(mounted.collectionManagement.length, (collectionCorrectionOnly ? 9 : 24) + (ownerCollectionImport ? 2 : 0));
 	assert.ok(mounted.collectionManagement.every((result) => result.passed));
 	assert.deepEqual(mounted.collectionErrors, []);
 	if (collectionCorrectionOnly) console.log("Focused management correction:", JSON.stringify(mounted.collectionManagement));
 });
 
-const unrelatedTest = collectionCorrectionOnly || presentationOnly || backToTopOnly ? test.skip : test;
+const unrelatedTest = nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly ? test.skip : test;
 
 unrelatedTest("compact export, accurate totals, exact delivery and responsive entry work at owner widths", () => {
 	assert.deepEqual(mounted.exportErrors, []);
@@ -658,7 +676,7 @@ unrelatedTest("export success feedback expires deterministically while failures 
 	assert.deepEqual(mounted.exportFeedback, { passed: true, timeoutMs: 4000, requests: 0 });
 });
 
-unrelatedTest("export maps real warning reasons and safely presents unknown future warnings", () => {
+unrelatedTest("export omits non-blocking warning presentation while preserving underlying diagnostics", () => {
 	assert.deepEqual(mounted.exportWarnings, { passed: true, requests: 0 });
 });
 
@@ -810,7 +828,7 @@ unrelatedTest("mounted product heading stays exact, stacked, contained, and navi
 		assert.equal(layout.documentOverflow, false, `document overflow at ${label}`);
 		assert.equal(layout.subtitle, "Built for Nuvio collections", `subtitle at ${label}`);
 		assert.equal(layout.oldProductTitlePresent, false, `old title at ${label}`);
-		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits", "Export collections"], `header actions at ${label}`);
+		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits", "Export & Send"], `header actions at ${label}`);
 		assert.equal(layout.headerActionsContained, true, `header action containment at ${label}`);
 	}
 });
