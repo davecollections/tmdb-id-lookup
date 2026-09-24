@@ -176,15 +176,13 @@ window.runNuvioLocalCases = async () => {
 	assert(button("Refresh profiles").closest(".nuvio-profile-heading") && button("Load Collections").closest("footer"), "Refresh is near heading; Load is in footer");
 	assertFooter("Load Collections");
 	pinOutcome = "wrong"; await submitPin();
-	assert($(".nuvio-pin").textContent.includes("didn’t match") && button("Load Collections").disabled, "Incorrect PIN remains locked");
+	assert($(".nuvio-pin").textContent.includes("Incorrect PIN. Try again.") && button("Load Collections").disabled && document.activeElement === $("input[name=pin]"), "Incorrect PIN remains locked and refocuses fresh entry");
 	pinOutcome = "locked"; await submitPin();
-	assert($(".nuvio-pin").textContent.includes("30 seconds") && button("Verify PIN").disabled, "Server retry-after represented");
+	assert($(".nuvio-pin").textContent.includes("30 seconds") && $("input[name=pin]").disabled, "Server retry-after represented");
 	now += 30001; await new Promise((resolve) => setTimeout(resolve, 1100));
-	assert(!button("Verify PIN").disabled, "Lockout expires locally without requests");
+	assert(!$("input[name=pin]").disabled, "Lockout expires locally without requests");
 	pinOutcome = "correct"; await submitPin();
-	assert($(".nuvio-pin-success") && !button("Load Collections").disabled, "Correct PIN enables load");
-	assert($(".nuvio-lock").dataset.unlocked === "true" && $(".nuvio-lock").getBoundingClientRect().width === 13, "Verified profile uses the same small icon with an open shackle");
-	await click(button("Load Collections")); await until(() => !connection.getState().busy);
+	assert(connection.getProfileAccess("33333333-3333-4333-8333-333333333333").unlocked && $(".nuvio-review-profile"), "Correct PIN automatically loads the exact protected profile");
 	assert($(".nuvio-review-profile").textContent.includes("Kids"), "Protected profile snapshot reviewed");
 	const protectedCalls = requests.length; now += 3600001; connection.checkExpiry(); await frame();
 	await click(button("Import to Dingo"));
@@ -294,7 +292,7 @@ window.prepareNuvioScreen = async (stage = "review") => {
 	if (["pin-verified", "pin-locked"].includes(stage)) {
 		await click($("input[value='33333333-3333-4333-8333-333333333333']"));
 		if (stage === "pin-locked") { pinOutcome = "locked"; await submitPin(); }
-		if (stage === "pin-verified") await submitPin();
+		if (stage === "pin-verified") { await submitPin(); await click(button("← Back")); assert($(".nuvio-lock").dataset.unlocked === "true", "Back retains the exact profile grant and open lock"); }
 	}
 	if (["review", "expired", "replace", "workspace"].includes(stage)) {
 		await pull();
@@ -337,9 +335,10 @@ function assertSharedButton(buttonNode, className, properties = ["backgroundColo
 }
 
 async function submitPin() {
-	$("input[name=pin]").value = "4826";
-	$(".nuvio-pin form").requestSubmit();
-	assert($("input[name=pin]").value === "", "PIN cleared immediately, before response");
+	const field = $("input[name=pin]");
+	Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(field, "4826");
+	field.dispatchEvent(new Event("input", { bubbles: true }));
+	assert(field.value === "", "PIN cleared immediately, before response");
 	await until(() => !connection.getState().busy);
 	assert(!/4826|p_pin/.test(JSON.stringify(connection.getState())), "PIN absent from public connection state");
 	assert(!document.body.innerHTML.includes("4826"), "PIN absent from rendered UI");

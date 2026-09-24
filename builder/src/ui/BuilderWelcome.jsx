@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import builderMark from "../assets/builder-mark.svg";
 import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
+import { sendAttentionLabel } from "./nuvio-send-presentation.js";
 import {
 	importJsonFile,
 	importPastedJson,
@@ -36,7 +37,7 @@ function DiagnosticList({ diagnostics, kind }) {
 	);
 }
 
-export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvio, nuvioOpen = false }) {
+export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvio, nuvioOpen = false, sendState, onOpenSendStatus }) {
 	const [importMethod, setImportMethod] = useState(null);
 	const [selectedFile, setSelectedFile] = useState(null);
 	const [pastedText, setPastedText] = useState("");
@@ -153,6 +154,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvi
 					Create, import and organise Nuvio collections.
 				</p>
 			</header>
+			{sendState?.dispatch.count ? <div className="welcome-send-status"><button className={sendAttentionLabel(sendState) ? "send-attention" : "send-history-entry"} type="button" data-action="open-nuvio-send-status" aria-haspopup="dialog" onClick={(event) => onOpenSendStatus(event, sendAttentionLabel(sendState) ? "send" : "export")} disabled={isBusy}>{sendAttentionLabel(sendState) ?? "Export & Send"}</button></div> : null}
 
 			<section className="welcome-start" aria-labelledby="start-project-title">
 				<div>

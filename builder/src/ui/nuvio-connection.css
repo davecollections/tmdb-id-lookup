@@ -53,9 +53,8 @@
 .nuvio-pin { padding: 14px; border: 1px solid var(--border); border-radius: 11px; background: var(--panel); }
 .nuvio-pin-entry { display: flex; gap: 10px; }
 .nuvio-pin-entry input { flex: 1; letter-spacing: .4em; }
-.nuvio-pin-entry button { flex-shrink: 0; }
 .nuvio-pin p:last-child { margin-bottom: 0; }
-.nuvio-pin.is-inline { flex: 0 0 228px; min-width: 0; box-sizing: border-box; padding: 10px 12px 10px 0; border: 0; border-radius: 0; background: transparent; }
+.nuvio-pin.is-inline { flex: 0 0 148px; min-width: 0; box-sizing: border-box; padding: 10px 12px 10px 0; border: 0; border-radius: 0; background: transparent; }
 .nuvio-pin.is-inline input { min-height: 44px; padding: 10px; }
 .nuvio-pin.is-inline input::placeholder { letter-spacing: normal; font-size: .82rem; }
 .nuvio-pin.is-inline p:not(.visually-hidden) { margin: 8px 0 0; }

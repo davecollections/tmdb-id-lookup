@@ -8,6 +8,70 @@ import { captureNuvioCollections } from "../builder/src/nuvio-connection/collect
 import { importNuvioSnapshot } from "../builder/src/ui/nuvio-import-actions.js";
 import { repairProjectNuvioIds } from "../builder/src/nuvio/nuvio-ids.js";
 import { groupedImportNotes, countLimitedImportedSources } from "../builder/src/import/import-notices.js";
+import { createMockNuvioApi } from "./helpers/nuvio-api.mjs";
+
+for (const interruption of ["cancel", "timeout"]) test(`a stalled response body releases the read after ${interruption}`, async (t) => {
+	t.mock.timers.enable({ apis: ["setTimeout"] });
+	let finishBody; let calls = 0;
+	const body = new Promise((resolve) => { finishBody = resolve; });
+	const abort = new AbortController();
+	const request = createNuvioTransport({ timeoutMs: 100, fetchImpl: async () => {
+		calls++; return { ok: true, json: () => body };
+	} });
+	const pending = request("account", { signal: abort.signal });
+	const rejected = assert.rejects(pending, { code: interruption === "cancel" ? "CANCELLED" : "TIMEOUT" });
+	await new Promise((resolve) => setImmediate(resolve));
+	if (interruption === "cancel") abort.abort(); else t.mock.timers.tick(100);
+	await rejected;
+	finishBody({ private: "late-response" });
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.equal(calls, 1, "An interrupted read never starts a retry");
+});
+
+test("PIN auto-entry cannot duplicate or supersede an in-flight verification", async (t) => {
+	const api = mockApi(); t.after(() => api.connection.dispose()); api.profiles[0].pin_enabled = true;
+	await api.connection.connect(account.email, "test");
+	const started = deferred(), held = deferred();
+	api.hook = async (url) => { if (url.endsWith("verify_profile_pin")) { started.resolve(); await held.promise; } };
+	const first = api.connection.verifyProfilePin(profile.id, "4826"); await started.promise;
+	assert.equal(await api.connection.verifyProfilePin(profile.id, "4826"), false);
+	assert.equal(await api.connection.verifyProfilePin(profile.id, "0000"), false);
+	assert.equal(api.requests.filter(call => call.url.endsWith("verify_profile_pin")).length, 1);
+	held.resolve(); assert.equal(await first, true); assert.equal(api.connection.getProfileAccess(profile.id).unlocked, true);
+});
+
+for (const unlocked of [true, false]) test(`abandoned PIN ${unlocked ? "success" : "failure"} cannot affect a later target`, async (t) => {
+	const api = mockApi(); t.after(() => api.connection.dispose()); api.profiles[0].pin_enabled = true;
+	const other = { ...api.profiles[0], id: "33333333-3333-4333-8333-333333333333", profile_index: 3 };
+	api.profiles.push(other); await api.connection.connect(account.email, "test");
+	const abort = new AbortController(), started = deferred(), held = deferred();
+	api.hook = async (url, options) => {
+		if (url.endsWith("verify_profile_pin") && JSON.parse(options.body).p_profile_id === 2) { started.resolve(); await held.promise; return Response.json([{ unlocked, retry_after_seconds: 0 }]); }
+	};
+	const old = api.connection.verifyProfilePin(profile.id, "4826", { signal: abort.signal }); await started.promise;
+	abort.abort(); assert.equal(await old, false); assert.equal(api.connection.getState().busy, null);
+	assert.equal(await api.connection.verifyProfilePin(other.id, "1357"), true);
+	const newer = api.connection.getState(); held.resolve(); await new Promise(resolve => setImmediate(resolve));
+	assert.equal(api.connection.getState(), newer); assert.equal(api.connection.getProfileAccess(profile.id).unlocked, false);
+	assert.equal(api.connection.getProfileAccess(other.id).unlocked, true);
+});
+
+test("an already aborted PIN entry sends no request", async (t) => {
+	const api = mockApi(); t.after(() => api.connection.dispose()); api.profiles[0].pin_enabled = true;
+	await api.connection.connect(account.email, "test"); const count = api.requests.length;
+	const abort = new AbortController(); abort.abort();
+	assert.equal(await api.connection.verifyProfilePin(profile.id, "4826", { signal: abort.signal }), false);
+	assert.equal(api.requests.length, count);
+});
+
+test("synchronous PIN abandonment during post-verification identity publication cannot grant access", async (t) => {
+	const api = mockApi(); t.after(() => api.connection.dispose()); api.profiles[0].pin_enabled = true;
+	await api.connection.connect(account.email, "test"); const abort = new AbortController(); let returned = false;
+	api.hook = (url) => { if (url.endsWith("verify_profile_pin")) returned = true; };
+	const stop = api.connection.subscribe(() => { if (returned && api.connection.getState().busy === "pin") abort.abort(); });
+	assert.equal(await api.connection.verifyProfilePin(profile.id, "4826", { signal: abort.signal }), false); stop();
+	assert.equal(api.connection.getProfileAccess(profile.id).unlocked, false);
+});
 
 test("PIN verification uses the authenticated numeric-profile RPC and keeps secrets out of public state", async (t) => {
 	const api = mockApi(); t.after(() => api.connection.dispose());
@@ -177,24 +241,7 @@ const controller = (options) => createBuilderController({ idFactory: counter("in
 const deferred = () => { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; };
 
 function mockApi() {
-	const api = { time: Date.parse("2026-09-19T08:30:00Z"), account: clone(account), profiles: [clone(profile)], collections: clone(collections), requests: [], hook: null };
-	api.auth = () => ({ access_token: "private-access-sentinel", refresh_token: "private-refresh-sentinel", token_type: "bearer", expires_in: 3600, user: { ...api.account, metadata: "private-user-sentinel" } });
-	api.fetch = async (url, options) => {
-		assert.equal(new URL(url).origin, NUVIO_API_ORIGIN);
-		api.requests.push({ url, ...options });
-		const custom = await api.hook?.(url, options);
-		if (custom) return custom;
-		let body;
-		if (url.includes("grant_type=password")) body = api.auth();
-		else if (url.endsWith("/user")) body = api.account;
-		else if (url.endsWith("sync_pull_profiles")) body = api.profiles;
-		else if (url.endsWith("verify_profile_pin")) body = api.pinResult ?? [{ unlocked: true, retry_after_seconds: 0 }];
-		else if (url.endsWith("sync_pull_collections")) body = [{ profile_id: 2, collections_json: api.collections, updated_at: "2026-09-19T00:00:00Z" }];
-		else assert.fail(`Unexpected Nuvio endpoint: ${url}`);
-		return Response.json(clone(body));
-	};
-	api.connection = createNuvioConnection({ fetchImpl: api.fetch, now: () => api.time });
-	return api;
+	return createMockNuvioApi({ account, profiles: [profile], collections });
 }
 
 test("login goes directly to Nuvio and retains only a private access session", async (t) => {

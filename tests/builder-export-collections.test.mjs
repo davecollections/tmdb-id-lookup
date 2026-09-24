@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createBuilderController } from "../builder/src/application/controller.js";
 import { stringifyNuvioProject } from "../builder/src/serialize/index.js";
+import { prepareSendProposal } from "../builder/src/nuvio-send/proposal.js";
 import {
 	collectionExportCounts, collectionExportFilename, copyCollectionsJson, createCollectionExportPayload,
 	downloadCollectionsJson, exportDiagnosticNodes, exportDiagnosticTarget, groupExportWarnings, hasExportableStructure,
@@ -74,6 +75,8 @@ test("Copy/Download share exact bytes and use the displayed session filename", a
 	const filename = collectionExportFilename(new Date(2026, 8, 5));
 	assert.equal(downloadCollectionsJson(payload, { filename, document: { body: { append() {} }, createElement() { return link; } }, url: { createObjectURL(blob) { downloaded = blob; return "blob:local-export"; }, revokeObjectURL() {} } }), true);
 	assert.equal(await downloaded.text(), copied);
+	assert.ok(payload.warnings.length > 0, "Preservation diagnostics remain in the canonical result");
+	assert.equal(prepareSendProposal(imported(profile)).proposal.intended.json, copied, "Send, Copy and Download retain identical canonical bytes despite hidden warning presentation");
 	assert.equal(link.download, filename);
 	assert.equal(await copyCollectionsJson(payload, { async writeText() { throw new Error("denied"); } }), false);
 	assert.equal(await copyCollectionsJson(payload, {}), false);

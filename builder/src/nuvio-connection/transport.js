@@ -7,6 +7,7 @@ const endpoints = Object.freeze({
 	profiles: ["POST", "/rest/v1/rpc/sync_pull_profiles"],
 	pin: ["POST", "/rest/v1/rpc/verify_profile_pin"],
 	collections: ["POST", "/rest/v1/rpc/sync_pull_collections"],
+	pushCollections: ["POST", "/rest/v1/rpc/sync_push_collections"],
 });
 const messages = Object.freeze({
 	AUTH: "Your Nuvio connection has expired. Log in again before loading more data.",
@@ -22,6 +23,7 @@ const messages = Object.freeze({
 	PROTECTED: "This profile needs PIN verification, or its protection changed. Review the profile and try again.",
 	PIN: "Enter the four-digit Nuvio profile PIN.",
 	CANCELLED: "The Nuvio request was cancelled.",
+	BUSY: "Another Nuvio operation is still in progress.",
 });
 
 export class NuvioConnectionError extends Error {
@@ -87,14 +89,65 @@ function waitForRetry(delayMs, signal) {
 }
 
 export function createNuvioTransport({ fetchImpl = globalThis.fetch, timeoutMs = 20000, now = Date.now } = {}) {
+	// Mutations have a separate outcome contract. In particular, aborting a fetch
+	// cannot establish that the server did not apply it. Never enter read retries.
+	async function pushAttempt({ token, body, signal, beforeDispatch } = {}) {
+		let dispatched = false;
+		let status = null;
+		let timer;
+		let abort;
+		let interruptionCode = null;
+		const timeout = new AbortController();
+		const result = (kind, code = null) => Object.freeze({ kind, dispatched, status, code });
+		try {
+			if (signal?.aborted) return result("not-sent", "CANCELLED");
+			const encoded = JSON.stringify(body);
+			const [method, path] = endpoints.pushCollections;
+			const init = { method, headers: { apikey: PUBLISHABLE_KEY, "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+				body: encoded, signal: timeout.signal, credentials: "omit", cache: "no-store", redirect: "error" };
+			const cancelled = new Promise((resolve, reject) => {
+				const interrupt = (code) => {
+					interruptionCode ??= code;
+					reject(new NuvioConnectionError(interruptionCode));
+					timeout.abort();
+				};
+				abort = () => interrupt("CANCELLED");
+				timer = setTimeout(() => interrupt("TIMEOUT"), timeoutMs);
+			});
+			// Also bound uncooperative adapters; late completion never dispatches again.
+			void cancelled.catch(() => {});
+			signal?.addEventListener("abort", abort, { once: true });
+			if (signal?.aborted) return result("not-sent", "CANCELLED");
+			// The internal guard records dispatch without notifying UI observers.
+			// No asynchronous boundary is permitted between this guard and fetch.
+			beforeDispatch?.();
+			dispatched = true;
+			const response = await Promise.race([fetchImpl(`${NUVIO_API_ORIGIN}${path}`, init), cancelled]);
+			status = response.status;
+			if (status === 204) return result("acknowledged");
+			// Never parse success or private error bodies for this void RPC.
+			if ([400, 401, 403, 404, 405, 409, 413, 415, 422, 429].includes(status)) {
+				return result("rejected", status === 401 ? "AUTH" : status === 403 ? "FORBIDDEN" : status === 429 ? "RATE_LIMIT" : "SERVICE");
+			}
+			return result("unknown", "SERVICE");
+		} catch (error) {
+			return result(dispatched ? "unknown" : "not-sent", interruptionCode ?? (error instanceof NuvioConnectionError ? error.code : dispatched ? "NETWORK" : "PAYLOAD"));
+		} finally {
+			clearTimeout(timer);
+			if (abort) signal?.removeEventListener("abort", abort);
+		}
+	}
 	async function attempt(operation, { token, body, signal }, allowRetry) {
 		if (signal?.aborted) throw new NuvioConnectionError("CANCELLED");
 		const [method, path] = endpoints[operation];
 		const timeout = new AbortController();
-		const abort = () => timeout.abort();
+		let rejectInterrupted;
+		const interrupted = new Promise((resolve, reject) => { rejectInterrupted = reject; });
+		void interrupted.catch(() => {});
+		const abort = () => { rejectInterrupted(new NuvioConnectionError("CANCELLED")); timeout.abort(); };
 		signal?.addEventListener("abort", abort, { once: true });
 		let timedOut = false;
-		const timer = setTimeout(() => { timedOut = true; timeout.abort(); }, timeoutMs);
+		const timer = setTimeout(() => { timedOut = true; rejectInterrupted(new NuvioConnectionError("TIMEOUT")); timeout.abort(); }, timeoutMs);
 		const active = () => {
 			if (signal?.aborted) throw new NuvioConnectionError("CANCELLED");
 			if (timedOut) throw new NuvioConnectionError("TIMEOUT");
@@ -103,10 +156,12 @@ export function createNuvioTransport({ fetchImpl = globalThis.fetch, timeoutMs =
 			const headers = { apikey: PUBLISHABLE_KEY };
 			if (token) headers.Authorization = `Bearer ${token}`;
 			if (body !== undefined) headers["Content-Type"] = "application/json";
-			const response = await fetchImpl(`${NUVIO_API_ORIGIN}${path}`, {
+			// Cancellation also bounds adapters/body readers that ignore the signal;
+			// their late completion cannot keep a cancelled read busy.
+			const response = await Promise.race([fetchImpl(`${NUVIO_API_ORIGIN}${path}`, {
 				method, headers, signal: timeout.signal, credentials: "omit", cache: "no-store", redirect: "error",
 				...(body === undefined ? {} : { body: JSON.stringify(body) }),
-			});
+			}), interrupted]);
 			active();
 			if (!response.ok) {
 				// We never consume private error bodies. Release this attempt before waiting.
@@ -123,7 +178,7 @@ export function createNuvioTransport({ fetchImpl = globalThis.fetch, timeoutMs =
 				throw new NuvioConnectionError("SERVICE");
 			}
 			let value;
-			try { value = await response.json(); }
+			try { value = await Promise.race([response.json(), interrupted]); }
 			catch (error) {
 				// JSON syntax errors are payload failures; body-stream failures are transport errors.
 				if (error?.name === "SyntaxError") throw new NuvioConnectionError("PAYLOAD");
@@ -141,6 +196,7 @@ export function createNuvioTransport({ fetchImpl = globalThis.fetch, timeoutMs =
 	}
 	return async function request(operation, options = {}) {
 		if (!Object.hasOwn(endpoints, operation)) throw new NuvioConnectionError("SERVICE");
+		if (operation === "pushCollections") return pushAttempt(options);
 		const result = await attempt(operation, options, retryableReads.has(operation));
 		if (result.retryDelayMs === undefined) return result.value;
 		await waitForRetry(result.retryDelayMs, options.signal);

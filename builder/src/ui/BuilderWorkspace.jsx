@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { WorkspaceBackToTop } from "./WorkspaceBackToTop.jsx";
 import { ExportCollectionsDialog } from "./ExportCollectionsDialog.jsx";
+import { sendAttentionLabel } from "./nuvio-send-presentation.js";
 import { hasExportableStructure } from "./export-collections.js";
 import builderMark from "../assets/builder-mark.svg";
 import {
@@ -698,6 +699,11 @@ export function BuilderWorkspace({
 	onOpenNuvio,
 	nuvioOpen = false,
 	nuvioImportStatus = "",
+	connection,
+	sendCoordinator,
+	sendState,
+	onOpenSendStatus,
+	onMergeFromNuvio,
 	onReturnHome = () => {},
 	initialEditorDraft = null,
 	initialEditorMode = "settings",
@@ -966,7 +972,7 @@ export function BuilderWorkspace({
 	}, [restoreCollectionFoldersFocus]);
 
 	function openExport() {
-		if (!hasExportableStructure(state.project) || hierarchyInteractionLocked) return;
+		if ((!hasExportableStructure(state.project) && !sendState?.dispatch.count) || hierarchyInteractionLocked) return;
 		workspaceScrollRef.current = window.scrollY;
 		setExportOpen(true);
 	}
@@ -2469,7 +2475,7 @@ export function BuilderWorkspace({
 			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
 			data-bulk-edit-open={bulkEditLocked ? "true" : undefined}
 		>
-			{exportOpen ? <ExportCollectionsDialog controller={controller} locked={modalLocked} onClose={closeExport} onEdit={editFromExport} /> : null}
+			{exportOpen ? <ExportCollectionsDialog controller={controller} connection={connection} sendCoordinator={sendCoordinator} locked={modalLocked} onClose={closeExport} onEdit={editFromExport} onMergeInstead={onMergeFromNuvio ? (profile) => { setExportOpen(false); onMergeFromNuvio(profile, exportTriggerRef.current); } : undefined} /> : null}
 			<div
 				className="workspace-underlay"
 				data-workspace-underlay="true"
@@ -2516,7 +2522,8 @@ export function BuilderWorkspace({
 						</div>
 						<div className="workspace-transfer-actions">
 							{onOpenNuvio ? <button className="export-entry-action nuvio-entry-action" type="button" data-action="open-nuvio-import" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenNuvio}>Import from Nuvio</button> : null}
-							{hasExportableStructure(state.project) ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export collections</button> : null}
+							{hasExportableStructure(state.project) || sendState?.dispatch.count ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export &amp; Send</button> : null}
+							{sendAttentionLabel(sendState) ? <button className="send-attention" type="button" data-action="open-nuvio-send-status" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenSendStatus}>{sendAttentionLabel(sendState)}</button> : null}
 						</div>
 					</div>
 				</header>

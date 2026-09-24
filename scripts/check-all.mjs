@@ -58,6 +58,8 @@ runNode(["--test", path.join("tests", "builder-serializer.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-migration.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-controller.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-nuvio-import.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-nuvio-send.test.mjs")]);
+runNode(["--test", path.join("tests", "builder-nuvio-send-ui.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-collection-folder-management.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-collection-extension.test.mjs")]);
 runNode(["--test", path.join("tests", "builder-presentation-updates.test.mjs")]);

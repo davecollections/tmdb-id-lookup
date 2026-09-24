@@ -21,6 +21,8 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 	let session = null;
 	let state = deepFreeze(initialState());
 	let generation = 0;
+	let authorityEpoch = 0;
+	let sendPending = null;
 	let pending = null;
 	let expiryTimer = null;
 	const verifiedProfiles = new Map();
@@ -33,6 +35,7 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 	}
 	function cancelPending() { generation++; pending?.abort(); pending = null; }
 	function expire() {
+		authorityEpoch++; sendPending?.abort(); sendPending = null;
 		cancelPending(); clearTimeout(expiryTimer); session = null;
 		verifiedProfiles.clear(); retryTimes.clear();
 		// A completed snapshot is local data. Expiry never invalidates it.
@@ -49,16 +52,18 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 		expiryTimer?.unref?.();
 	}
 	function disconnect() {
+		authorityEpoch++; sendPending?.abort(); sendPending = null;
 		cancelPending(); clearTimeout(expiryTimer); session = null;
 		verifiedProfiles.clear(); retryTimes.clear();
 		publish(initialState());
 	}
 	function cancelReview() {
 		cancelPending();
-		publish({ busy: null, snapshot: null, error: null, status: session ? "connected" : state.status === "expired" ? "expired" : "disconnected" });
+		publish({ busy: sendPending ? state.busy : null, snapshot: null, error: null, status: session ? "connected" : state.status === "expired" ? "expired" : "disconnected" });
 	}
-	async function run(kind, action, { login = false } = {}) {
+	async function run(kind, action, { login = false, signal: externalSignal } = {}) {
 		checkExpiry();
+		if (sendPending) return false;
 		if (!login && !session) { publish({ error: publicConnectionError(new NuvioConnectionError("AUTH")) }); return false; }
 		cancelPending();
 		pending = new AbortController();
@@ -68,8 +73,11 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 			if (version !== generation || signal.aborted) throw new NuvioConnectionError("CANCELLED");
 			if (session && now() >= session.expiresAt) throw new NuvioConnectionError("AUTH");
 		};
-		publish({ busy: kind, error: null, snapshot: null, pinFeedback: null });
+		const abort = () => { if (version === generation) cancelReview(); };
+		externalSignal?.addEventListener("abort", abort, { once: true });
 		try {
+			if (externalSignal?.aborted) { abort(); return false; }
+			publish({ busy: kind, error: null, snapshot: null, pinFeedback: null });
 			const patch = await action(signal, active);
 			active(); pending = null;
 			publish({ ...patch, busy: null });
@@ -83,7 +91,7 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 			else if (safe.code === "IDENTITY") { disconnect(); publish({ error: safe }); }
 			else publish({ busy: null, error: safe, ...(login ? { status: session ? "connected" : "disconnected", account: session?.account ?? null } : {}) });
 			return false;
-		}
+		} finally { externalSignal?.removeEventListener("abort", abort); }
 	}
 	async function identities(signal, active) {
 		const token = session.token;
@@ -113,13 +121,16 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 	function requireAccess(profile) {
 		if (!getProfileAccess(profile.id).unlocked) throw new NuvioConnectionError("PROTECTED");
 	}
-	function verifyProfilePin(profileId, pin) {
+	function verifyProfilePin(profileId, pin, { signal } = {}) {
+		// A fresh entry owns one attempt; another event must not cancel/replay it.
+		if (state.busy || pending || sendPending || signal?.aborted) { pin = null; return Promise.resolve(false); }
 		const expected = state.profiles.find((profile) => profile.id === profileId);
 		return run("pin", async (signal, active) => {
 			if (!expected) throw new NuvioConnectionError("IDENTITY");
 			if (typeof pin !== "string" || !/^[0-9]{4}$/.test(pin)) { pin = null; throw new NuvioConnectionError("PIN"); }
 			const before = await identities(signal, active);
 			publish(before);
+			active();
 			const profile = requireSameProfile(before.profiles, expected);
 			if (profile.protection !== "pin") { pin = null; throw new NuvioConnectionError("PROTECTED"); }
 			if (getProfileAccess(profile.id).retryAfterSeconds > 0) { pin = null; return { pinFeedback: { profileId, kind: "locked" } }; }
@@ -136,6 +147,7 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 			if (result.retry_after_seconds > 0) retryTimes.set(key, now() + result.retry_after_seconds * 1000);
 			const after = await identities(signal, active);
 			publish(after);
+			active();
 			// Verification itself resets lockout metadata and updates the profile timestamp.
 			const verified = requireSameProfile(after.profiles, profile, { protection: false });
 			if (verified.protection !== "pin") throw new NuvioConnectionError("PROTECTED");
@@ -144,7 +156,7 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 				retryTimes.delete(key); verifiedProfiles.set(key, verified);
 			}
 			return { ...after, pinFeedback: { profileId, kind: result.unlocked ? "verified" : getProfileAccess(profileId).retryAfterSeconds > 0 ? "locked" : "incorrect" } };
-		}).finally(() => { pin = null; });
+		}, { signal }).finally(() => { pin = null; });
 	}
 	async function connect(email, password) {
 		disconnect();
@@ -162,29 +174,98 @@ export function createNuvioConnection({ fetchImpl, now = Date.now, timeoutMs } =
 	function refreshProfiles() {
 		return run("profiles", async (signal, active) => ({ ...await identities(signal, active), status: "connected" }));
 	}
+	async function readBoundProfile(expected, signal, active, options) {
+		if (!expected) throw new NuvioConnectionError("IDENTITY");
+		const before = await identities(signal, active);
+		publish(before);
+		active();
+		const profile = requireSameProfile(before.profiles, expected);
+		requireAccess(profile);
+		const response = await request("collections", { token: session.token, body: { p_profile_id: profile.index }, signal });
+		active();
+		// Detect removal, slot replacement or newly enabled protection during the pull.
+		const after = await identities(signal, active);
+		publish(after);
+		active();
+		const verified = requireSameProfile(after.profiles, profile);
+		requireAccess(verified);
+		const snapshot = captureNuvioCollections(response, verified, new Date(now()).toISOString(), options);
+		return { ...after, snapshot, status: "connected" };
+	}
 	function pullProfile(profileId) {
 		const expected = state.profiles.find((profile) => profile.id === profileId);
-		return run("pull", async (signal, active) => {
-			if (!expected) throw new NuvioConnectionError("IDENTITY");
-			const before = await identities(signal, active);
-			publish(before);
-			const profile = requireSameProfile(before.profiles, expected);
-			requireAccess(profile);
-			const response = await request("collections", { token: session.token, body: { p_profile_id: profile.index }, signal });
+		return run("pull", (signal, active) => readBoundProfile(expected, signal, active));
+	}
+	function getAuthority() {
+		checkExpiry();
+		return session ? Object.freeze({ epoch: authorityEpoch, accountId: session.account.id }) : null;
+	}
+	function requireSendAuthority(authority, expected) {
+		if (!session || now() >= session.expiresAt) throw new NuvioConnectionError("AUTH");
+		if (!authority || authority.epoch !== authorityEpoch || authority.accountId !== session.account.id
+			|| expected?.accountId !== session.account.id) throw new NuvioConnectionError("IDENTITY");
+		const profile = requireSameProfile(state.profiles, expected);
+		requireAccess(profile);
+	}
+	function isSendAuthorityCurrent(authority, expected) {
+		try { requireSendAuthority(authority, expected); return true; } catch { return false; }
+	}
+	// Share auth and identity checks without storing Send baselines in Import's
+	// snapshot or suppressing dispatched evidence through the read runner.
+	async function runSendOperation(kind, authority, expected, externalSignal, action) {
+		checkExpiry();
+		requireSendAuthority(authority, expected);
+		if (pending || sendPending) throw new NuvioConnectionError("BUSY");
+		const operation = new AbortController();
+		sendPending = operation;
+		const abort = () => operation.abort();
+		externalSignal?.addEventListener("abort", abort, { once: true });
+		if (externalSignal?.aborted) abort();
+		const active = () => {
+			if (operation.signal.aborted) throw new NuvioConnectionError("CANCELLED");
+			requireSendAuthority(authority, expected);
+		};
+		try {
+			publish({ busy: kind, error: null });
 			active();
-			// Detect removal, slot replacement or newly enabled protection during the pull.
-			const after = await identities(signal, active);
-			publish(after);
-			const verified = requireSameProfile(after.profiles, profile);
-			requireAccess(verified);
-			const snapshot = captureNuvioCollections(response, verified, new Date(now()).toISOString());
-			return { ...after, snapshot, status: "connected" };
+			return await action(operation.signal, active);
+		} catch (error) {
+			// Stop sibling identity reads/retry waits when one branch fails.
+			operation.abort();
+			if (authority.epoch === authorityEpoch) {
+				if (error instanceof NuvioConnectionError && error.code === "AUTH") expire();
+				else if (error instanceof NuvioConnectionError && error.code === "IDENTITY") disconnect();
+			}
+			throw error;
+		} finally {
+			externalSignal?.removeEventListener("abort", abort);
+			if (sendPending === operation) { sendPending = null; publish({ busy: null }); }
+		}
+	}
+	function readProfileForSend(expected, { authority = getAuthority(), signal } = {}) {
+		return runSendOperation("send-read", authority, expected, signal, async (ownedSignal, active) => {
+			const result = await readBoundProfile(expected, ownedSignal, active, { retainTimestampEvidence: true });
+			active();
+			return Object.freeze({ authority, snapshot: result.snapshot });
+		});
+	}
+	function pushCollectionsForSend(expected, collections, { authority, signal, beforeDispatch } = {}) {
+		return runSendOperation("send-write", authority, expected, signal, async (ownedSignal, active) => {
+			if (!Array.isArray(collections) || collections.length === 0) throw new NuvioConnectionError("PAYLOAD");
+			const result = await request("pushCollections", {
+				token: session.token, body: { p_profile_id: expected.index, p_collections_json: collections }, signal: ownedSignal,
+				beforeDispatch() { active(); beforeDispatch?.(); },
+			});
+			// Known acknowledgement/rejection survives a later expiry or disconnect.
+			if (result.code === "AUTH" && authority.epoch === authorityEpoch) expire();
+			return result;
 		});
 	}
 	return Object.freeze({
 		getState: () => state,
 		subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
 		connect, refreshProfiles, verifyProfilePin, getProfileAccess, pullProfile, checkExpiry, cancelReview, disconnect,
+		getAuthority, isSendAuthorityCurrent, readProfileForSend, pushCollectionsForSend,
 		dispose() { listeners.clear(); disconnect(); },
 	});
 }
