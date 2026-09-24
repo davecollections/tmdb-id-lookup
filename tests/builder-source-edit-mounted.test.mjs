@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createValidationTiming } from "../scripts/lib/validation-timing.mjs";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
@@ -63,6 +64,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 }
 
 async function runMountedPage() {
+	const timing = createValidationTiming("Source browser");
 	const semanticPresentationOnly = process.env.TMDB_SEMANTIC_PRESENTATION_ONLY === "1";
 	const guidedPresentationOnly = process.env.TMDB_GUIDED_PRESENTATION_ONLY === "1";
 	const decadesBoundaryOnly = process.env.TMDB_DECADES_BOUNDARY_ONLY === "1";
@@ -344,6 +346,7 @@ async function runMountedPage() {
 					return { genreLivePreviewWidths };
 				}
 				if (decadesArtworkOnly || (!contentCardsOnly && !genreRulesOnly && !familyAdvancedOnly && !sharedAdvancedOnly && !studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+					timing.stage("Decades artwork");
 					result.results.decadesArtworkCases = [];
 					const cases = [
 						{ width: 393, height: 852, scope: "new-collection", mediaMode: "movies", decadeId: "1950s-and-earlier", initialShape: "POSTER" },
@@ -428,6 +431,7 @@ async function runMountedPage() {
 					return result.results;
 				}
                 if (familyAdvancedOnly || (!sharedAdvancedOnly && !studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+                 timing.stage("Family Advanced");
                  result.results.familyAdvancedCases = [];
                  const cases = ["genre", "decade", "streaming"].flatMap((family) => ["add", "new-collection", "new-folder", "edit"].map((scope, index) => ({ family, scope, width: index === 2 ? 1280 : 393, height: index === 3 ? 400 : index === 2 ? 900 : 852 })));
                  if (familyAdvancedOnly) { for (const width of [360,384,402,412]) cases.push({ family: "genre", scope: "add", width, height: 800, layoutOnly: true }); cases.push({ family: "streaming", scope: "new-folder", width: 393, height: 800, layoutOnly: true, forcedColors: true }); }
@@ -442,6 +446,7 @@ async function runMountedPage() {
                  if (familyAdvancedOnly) return result.results;
                 }
                 if (sharedAdvancedOnly || (!studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+                 timing.stage("Native shared Advanced");
                  result.results.sharedAdvancedCases = [];
                  const cases = ["studio", "network"].flatMap((family) => ["add", "new-collection", "new-folder", "edit"].map((scope, index) => ({ family, scope, width: index === 2 ? 1280 : 393, height: index === 3 ? 400 : index === 2 ? 900 : 852, mediaType: index === 3 ? "TV" : "MOVIE" })));
                  if (sharedAdvancedOnly) for (const width of [360,384,402,412]) cases.push({ family: "studio", scope: "add", width, height: 800, layoutOnly: true });
@@ -462,6 +467,7 @@ async function runMountedPage() {
                 }
                 for (const family of ["studio", "network"]) {
                 if ((family === "studio" ? studioMinimumVotesOnly : networkMinimumVotesOnly) || (!studioMinimumVotesOnly && !networkMinimumVotesOnly && !discoverPreviewOnly && !listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+                    timing.stage(family + " minimum votes and ratings");
                     result.results[family + "MinimumVotesCases"] = [];
                     const views = studioMinimumVotesOnly || networkMinimumVotesOnly ? [[360,800],[384,800],[393,852],[402,800],[412,800],[1280,900],[393,400]] : [[393,852]];
                     for (const [width,height] of views) {
@@ -477,6 +483,7 @@ async function runMountedPage() {
                 }
 
 				if (discoverPreviewOnly || (!listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
+					timing.stage("Discover Preview");
 					result.results.discoverPreviewCases = [];
 					for (const [width, height] of [[360, 800], [384, 800], [393, 852], [402, 800], [412, 800], [1280, 900]]) {
 						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
@@ -491,6 +498,7 @@ async function runMountedPage() {
 				}
 				if (listEditOnly || (!nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly)) {
 					const supplied = process.env.TMDB_LIST_IMPORT_FILE ? JSON.parse(await fsPromises.readFile(process.env.TMDB_LIST_IMPORT_FILE, "utf8")) : null;
+					timing.stage("Imported List sorts");
 					result.results.listImportedSortWidths = [];
 					for (const [width, height] of [[360, 800], [384, 800], [393, 800], [402, 800], [412, 800], [900, 900], [1280, 900], [393, 320]]) {
 						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
@@ -587,6 +595,7 @@ async function runMountedPage() {
 					return { sourceSortVariantWidths, expandedDecades: expanded.result.value };
 				}
 				if (!sourceDetailsOnly) {
+					timing.stage("Desktop round trips");
 					result.results.desktopRoundTripWidths = [];
 					for (const width of [360, 384, 393, 402, 412, 900]) {
 						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: width < 900 });
@@ -596,6 +605,7 @@ async function runMountedPage() {
 					}
 					if (roundTripOnly) return result.results;
 				}
+				timing.stage("Source details");
 				// Reuse the mounted Workspace and browser lifecycle for Source-only details.
 				for (const width of [393, 900, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 1100, deviceScaleFactor: 1, mobile: width === 393 });
@@ -675,6 +685,7 @@ async function runMountedPage() {
 				let streamingDuplicateConfirmation = null;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					timing.stage("Source chooser");
 					const sourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: `window.__runSourceChooserLayoutScenario({ includeGrowthStress: ${width <= 412 || width === 1280}, includeOrderStress: ${width === 360 || width === 1280}, includeClassicScrollbarStress: ${width === 360} })`,
 						awaitPromise: true,
@@ -683,6 +694,7 @@ async function runMountedPage() {
 					if (sourceChooserEvaluation.exceptionDetails) throw new Error(sourceChooserEvaluation.exceptionDetails.exception?.description ?? sourceChooserEvaluation.exceptionDetails.text);
 					sourceChooserWidths.push(sourceChooserEvaluation.result?.value);
 					if (launcherOnly) continue;
+					timing.stage("TMDB Lists");
 					const tmdbListLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runTmdbListLayoutScenario()",
 						awaitPromise: true,
@@ -691,6 +703,7 @@ async function runMountedPage() {
 					if (tmdbListLayoutEvaluation.exceptionDetails) throw new Error(tmdbListLayoutEvaluation.exceptionDetails.exception?.description ?? tmdbListLayoutEvaluation.exceptionDetails.text);
 					tmdbListLayoutWidths.push(tmdbListLayoutEvaluation.result?.value);
 					if (width <= 412) await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1.1 });
+					timing.stage("TMDB List Preview");
 					const tmdbListPreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runTmdbListLivePreviewScenario()",
 						awaitPromise: true,
@@ -699,6 +712,7 @@ async function runMountedPage() {
 					if (width <= 412) await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
 					if (tmdbListPreviewEvaluation.exceptionDetails) throw new Error(tmdbListPreviewEvaluation.exceptionDetails.exception?.description ?? tmdbListPreviewEvaluation.exceptionDetails.text);
 					tmdbListPreviewWidths.push(tmdbListPreviewEvaluation.result?.value);
+					timing.stage("Decade Source Layout");
 					const decadeSourceLayoutEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadeSourceLayoutScenario()",
 						awaitPromise: true,
@@ -707,6 +721,7 @@ async function runMountedPage() {
 					if (decadeSourceLayoutEvaluation.exceptionDetails) throw new Error(decadeSourceLayoutEvaluation.exceptionDetails.exception?.description ?? decadeSourceLayoutEvaluation.exceptionDetails.text);
 					decadeSourceLayoutWidths.push(decadeSourceLayoutEvaluation.result?.value);
 					if ([393, 900, 1280].includes(width)) {
+						timing.stage("Decade Source Overlap Footer");
 						const decadeSourceOverlapFooterEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 							expression: "(async () => ({ partial: await window.__runDecadeSourceOverlapFooterScenario(1), complete: await window.__runDecadeSourceOverlapFooterScenario(2) }))()",
 							awaitPromise: true,
@@ -715,6 +730,7 @@ async function runMountedPage() {
 						if (decadeSourceOverlapFooterEvaluation.exceptionDetails) throw new Error(decadeSourceOverlapFooterEvaluation.exceptionDetails.exception?.description ?? decadeSourceOverlapFooterEvaluation.exceptionDetails.text);
 						decadeSourceOverlapFooterWidths.push(decadeSourceOverlapFooterEvaluation.result?.value);
 					}
+					timing.stage("People");
 					const peopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleConfigureLayoutScenario()",
 						awaitPromise: true,
@@ -722,6 +738,7 @@ async function runMountedPage() {
 					});
 					if (peopleEvaluation.exceptionDetails) throw new Error(peopleEvaluation.exceptionDetails.exception?.description ?? peopleEvaluation.exceptionDetails.text);
 					peopleConfigureWidths.push(peopleEvaluation.result?.value);
+					timing.stage("People Pill");
 					const peoplePillEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeoplePillStabilityScenario()",
 						awaitPromise: true,
@@ -729,6 +746,7 @@ async function runMountedPage() {
 					});
 					if (peoplePillEvaluation.exceptionDetails) throw new Error(peoplePillEvaluation.exceptionDetails.exception?.description ?? peoplePillEvaluation.exceptionDetails.text);
 					peoplePillStabilityWidths.push(peoplePillEvaluation.result?.value);
+					timing.stage("Franchise");
 					const franchiseEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runFranchiseReviewScenario()",
 						awaitPromise: true,
@@ -736,6 +754,7 @@ async function runMountedPage() {
 					});
 					if (franchiseEvaluation.exceptionDetails) throw new Error(franchiseEvaluation.exceptionDetails.exception?.description ?? franchiseEvaluation.exceptionDetails.text);
 					franchiseReviewWidths.push(franchiseEvaluation.result?.value);
+					timing.stage("Studio");
 					const studioEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runStudioHierarchyScenario()",
 						awaitPromise: true,
@@ -743,6 +762,7 @@ async function runMountedPage() {
 					});
 					if (studioEvaluation.exceptionDetails) throw new Error(studioEvaluation.exceptionDetails.exception?.description ?? studioEvaluation.exceptionDetails.text);
 					studioHierarchyWidths.push(studioEvaluation.result?.value);
+					timing.stage("Network");
 					const networkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runNetworkHierarchyScenario()",
 						awaitPromise: true,
@@ -750,6 +770,7 @@ async function runMountedPage() {
 					});
 					if (networkEvaluation.exceptionDetails) throw new Error(networkEvaluation.exceptionDetails.exception?.description ?? networkEvaluation.exceptionDetails.text);
 					networkHierarchyWidths.push(networkEvaluation.result?.value);
+					timing.stage("Genre Hierarchy");
 					const genreHierarchyEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runGenreHierarchyScenario()",
 						awaitPromise: true,
@@ -757,6 +778,7 @@ async function runMountedPage() {
 					});
 					if (genreHierarchyEvaluation.exceptionDetails) throw new Error(genreHierarchyEvaluation.exceptionDetails.exception?.description ?? genreHierarchyEvaluation.exceptionDetails.text);
 					genreHierarchyWidths.push(genreHierarchyEvaluation.result?.value);
+					timing.stage("Genre New Folder Summary");
 					const genreNewFolderSummaryEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runGenreNewFolderSummaryScenario()",
 						awaitPromise: true,
@@ -764,6 +786,7 @@ async function runMountedPage() {
 					});
 					if (genreNewFolderSummaryEvaluation.exceptionDetails) throw new Error(genreNewFolderSummaryEvaluation.exceptionDetails.exception?.description ?? genreNewFolderSummaryEvaluation.exceptionDetails.text);
 					genreNewFolderSummaryWidths.push(genreNewFolderSummaryEvaluation.result?.value);
+					timing.stage("Streaming Hierarchy");
 					const streamingHierarchyEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: `window.__runStreamingHierarchyScenario(${width === 393 || width === 900})`,
 						awaitPromise: true,
@@ -771,6 +794,7 @@ async function runMountedPage() {
 					});
 					if (streamingHierarchyEvaluation.exceptionDetails) throw new Error(streamingHierarchyEvaluation.exceptionDetails.exception?.description ?? streamingHierarchyEvaluation.exceptionDetails.text);
 					streamingHierarchyWidths.push(streamingHierarchyEvaluation.result?.value);
+					timing.stage("Streaming Affinity Destination");
 					const streamingAffinityDestinationEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runStreamingAffinityDestinationScenario()",
 						awaitPromise: true,
@@ -778,6 +802,7 @@ async function runMountedPage() {
 					});
 					if (streamingAffinityDestinationEvaluation.exceptionDetails) throw new Error(streamingAffinityDestinationEvaluation.exceptionDetails.exception?.description ?? streamingAffinityDestinationEvaluation.exceptionDetails.text);
 					streamingAffinityDestinationWidths.push(streamingAffinityDestinationEvaluation.result?.value);
+					timing.stage("Streaming Reconciliation");
 					const streamingReconciliationEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runStreamingSelectionReconciliationScenario()",
 						awaitPromise: true,
@@ -792,6 +817,7 @@ async function runMountedPage() {
 					{ width: 834, height: 1194 },
 				]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: true });
+					timing.stage("Source chooser");
 					const sourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: `window.__runSourceChooserLayoutScenario({ includeGrowthStress: ${width === 768}, includeOrderStress: ${width === 768} })`,
 						awaitPromise: true,
@@ -801,6 +827,7 @@ async function runMountedPage() {
 					sourceChooserTabletPortraitWidths.push(sourceChooserEvaluation.result?.value);
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1024, height: 768, deviceScaleFactor: 1, mobile: true });
+				timing.stage("Source Chooser Tablet Landscape");
 				const sourceChooserTabletLandscapeEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runSourceChooserLayoutScenario({ includeGrowthStress: true, includeOrderStress: true })",
 					awaitPromise: true,
@@ -809,6 +836,7 @@ async function runMountedPage() {
 				if (sourceChooserTabletLandscapeEvaluation.exceptionDetails) throw new Error(sourceChooserTabletLandscapeEvaluation.exceptionDetails.exception?.description ?? sourceChooserTabletLandscapeEvaluation.exceptionDetails.text);
 				sourceChooserTabletLandscape = sourceChooserTabletLandscapeEvaluation.result?.value;
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 360, height: 852, deviceScaleFactor: 1, mobile: true });
+				timing.stage("Wide Font Source Chooser");
 				const wideFontSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: `window.__runSourceChooserLayoutScenario({ fontFamily: 'Verdana, sans-serif', includeGrowthStress: true, includeOrderStress: true, includeClassicScrollbarStress: true })`,
 					awaitPromise: true,
@@ -818,6 +846,7 @@ async function runMountedPage() {
 				wideFontSourceChooser = wideFontSourceChooserEvaluation.result?.value;
 				if (launcherOnly) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 320, deviceScaleFactor: 1, mobile: true });
+					timing.stage("Short Source Chooser");
 					const shortSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runSourceChooserLayoutScenario()",
 						awaitPromise: true,
@@ -856,6 +885,7 @@ async function runMountedPage() {
 				});
 				if (sourceChooserKeyboardAfter.exceptionDetails) throw new Error(sourceChooserKeyboardAfter.exceptionDetails.exception?.description ?? sourceChooserKeyboardAfter.exceptionDetails.text);
 				sourceChooserKeyboard = { ...sourceChooserKeyboardBefore.result?.value, ...sourceChooserKeyboardFocus.result?.value, ...sourceChooserKeyboardAfter.result?.value };
+				timing.stage("Streaming Duplicate");
 				const streamingDuplicateEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runStreamingDuplicateConfirmationScenario()",
 					awaitPromise: true,
@@ -878,6 +908,7 @@ async function runMountedPage() {
 				});
 				if (decadeSourceGenreKeyboardAfter.exceptionDetails) throw new Error(decadeSourceGenreKeyboardAfter.exceptionDetails.exception?.description ?? decadeSourceGenreKeyboardAfter.exceptionDetails.text);
 				decadeSourceGenreKeyboard = { ...decadeSourceGenreKeyboardBefore.result?.value, ...decadeSourceGenreKeyboardAfter.result?.value };
+				timing.stage("Network Deferred Artwork");
 				const networkDeferredArtworkEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runNetworkDeferredArtworkScenario()",
 					awaitPromise: true,
@@ -887,6 +918,7 @@ async function runMountedPage() {
 				const networkDeferredArtwork = networkDeferredArtworkEvaluation.result?.value;
 				for (const width of [393, 900]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 520 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 520 });
+					timing.stage("Network Live Preview");
 					const networkLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runNetworkLivePreviewScenario()",
 						awaitPromise: true,
@@ -894,6 +926,7 @@ async function runMountedPage() {
 					});
 					if (networkLivePreviewEvaluation.exceptionDetails) throw new Error(networkLivePreviewEvaluation.exceptionDetails.exception?.description ?? networkLivePreviewEvaluation.exceptionDetails.text);
 					networkLivePreviewWidths.push(networkLivePreviewEvaluation.result?.value);
+					timing.stage("Genre Live Preview");
 					const genreLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runGenreLivePreviewScenario()",
 						awaitPromise: true,
@@ -901,6 +934,7 @@ async function runMountedPage() {
 					});
 					if (genreLivePreviewEvaluation.exceptionDetails) throw new Error(genreLivePreviewEvaluation.exceptionDetails.exception?.description ?? genreLivePreviewEvaluation.exceptionDetails.text);
 					genreLivePreviewWidths.push(genreLivePreviewEvaluation.result?.value);
+					timing.stage("Source Edit Live Preview");
 					const sourceEditLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runSourceEditLivePreviewScenario()",
 						awaitPromise: true,
@@ -908,6 +942,7 @@ async function runMountedPage() {
 					});
 					if (sourceEditLivePreviewEvaluation.exceptionDetails) throw new Error(sourceEditLivePreviewEvaluation.exceptionDetails.exception?.description ?? sourceEditLivePreviewEvaluation.exceptionDetails.text);
 					sourceEditLivePreviewWidths.push(sourceEditLivePreviewEvaluation.result?.value);
+					timing.stage("Add Source Live Preview Parity");
 					const addSourceLivePreviewParityEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runAddSourceLivePreviewParityScenario()",
 						awaitPromise: true,
@@ -916,6 +951,7 @@ async function runMountedPage() {
 					if (addSourceLivePreviewParityEvaluation.exceptionDetails) throw new Error(addSourceLivePreviewParityEvaluation.exceptionDetails.exception?.description ?? addSourceLivePreviewParityEvaluation.exceptionDetails.text);
 					addSourceLivePreviewParityWidths.push(addSourceLivePreviewParityEvaluation.result?.value);
 					if (process.env.TMDB_DECADES_PREVIEW_DEPLOYED === "1") {
+						timing.stage("Decade Source Live Preview");
 						const decadeSourceLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 							expression: "window.__runDecadeSourceLivePreviewScenario()",
 							awaitPromise: true,
@@ -923,6 +959,7 @@ async function runMountedPage() {
 						});
 						if (decadeSourceLivePreviewEvaluation.exceptionDetails) throw new Error(decadeSourceLivePreviewEvaluation.exceptionDetails.exception?.description ?? decadeSourceLivePreviewEvaluation.exceptionDetails.text);
 						decadeSourceLivePreviewWidths.push(decadeSourceLivePreviewEvaluation.result?.value);
+						timing.stage("Decades Live Preview");
 						const decadesLivePreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 							expression: "window.__runDecadesLivePreviewScenario()",
 							awaitPromise: true,
@@ -933,6 +970,7 @@ async function runMountedPage() {
 					}
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 320, deviceScaleFactor: 1, mobile: true });
+				timing.stage("Short Source Chooser");
 				const shortSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runSourceChooserLayoutScenario()",
 					awaitPromise: true,
@@ -940,6 +978,7 @@ async function runMountedPage() {
 				});
 				if (shortSourceChooserEvaluation.exceptionDetails) throw new Error(shortSourceChooserEvaluation.exceptionDetails.exception?.description ?? shortSourceChooserEvaluation.exceptionDetails.text);
 				shortHeightSourceChooser = shortSourceChooserEvaluation.result?.value;
+				timing.stage("Short Tmdb List");
 				const shortTmdbListEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runTmdbListLayoutScenario()",
 					awaitPromise: true,
@@ -948,6 +987,7 @@ async function runMountedPage() {
 				if (shortTmdbListEvaluation.exceptionDetails) throw new Error(shortTmdbListEvaluation.exceptionDetails.exception?.description ?? shortTmdbListEvaluation.exceptionDetails.text);
 				shortHeightTmdbListLayout = shortTmdbListEvaluation.result?.value;
 				await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1.1 });
+				timing.stage("Short Tmdb List Preview");
 				const shortTmdbListPreviewEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runTmdbListLivePreviewScenario()",
 					awaitPromise: true,
@@ -956,12 +996,14 @@ async function runMountedPage() {
 				await resources.pageConnection.command("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
 				if (shortTmdbListPreviewEvaluation.exceptionDetails) throw new Error(shortTmdbListPreviewEvaluation.exceptionDetails.exception?.description ?? shortTmdbListPreviewEvaluation.exceptionDetails.text);
 				shortHeightTmdbListPreview = shortTmdbListPreviewEvaluation.result?.value;
+				timing.stage("Short People");
 				const shortPeopleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runPeopleConfigureLayoutScenario()",
 					awaitPromise: true,
 					returnByValue: true,
 				});
 				if (shortPeopleEvaluation.exceptionDetails) throw new Error(shortPeopleEvaluation.exceptionDetails.exception?.description ?? shortPeopleEvaluation.exceptionDetails.text);
+				timing.stage("Short Source Edit");
 				const shortSourceEditEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runSourceEditLivePreviewScenario()",
 					awaitPromise: true,
@@ -976,6 +1018,7 @@ async function runMountedPage() {
 				};
 				for (const width of [360, 393, 412, 899, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					timing.stage("People Scroll");
 					const peopleScrollEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runPeopleSelectionScrollScenario()",
 						awaitPromise: true,
@@ -985,12 +1028,14 @@ async function runMountedPage() {
 					peopleSelectionScrollWidths.push(peopleScrollEvaluation.result?.value);
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+				timing.stage("Decades Genre Desktop");
 				const decadesGenreDesktopEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runDecadesGenreLayoutScenario()",
 					awaitPromise: true,
 					returnByValue: true,
 				});
 				const decadesGenreDesktop = decadesGenreDesktopEvaluation.result?.value;
+				timing.stage("Decades Exclusion Desktop");
 				const decadesExclusionDesktopEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runDecadesExclusionLayoutScenario()",
 					awaitPromise: true,
@@ -999,6 +1044,7 @@ async function runMountedPage() {
 				const decadesExclusionDesktop = decadesExclusionDesktopEvaluation.result?.value;
 				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width <= 412 ? 852 : 900, deviceScaleFactor: 1, mobile: width <= 412 });
+					timing.stage("Decades Action");
 					const decadesActionEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadesActionLayoutScenario()",
 						awaitPromise: true,
@@ -1009,18 +1055,21 @@ async function runMountedPage() {
 				}
 				for (const width of [360, 384, 393, 402, 412]) {
 					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: true });
+					timing.stage("Toolbar");
 					const toolbarEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runGenreToolbarScenario()",
 						awaitPromise: true,
 						returnByValue: true,
 					});
 					genreToolbarWidths.push(toolbarEvaluation.result?.value);
+					timing.stage("Decades Genre");
 					const decadesGenreEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadesGenreLayoutScenario()",
 						awaitPromise: true,
 						returnByValue: true,
 					});
 					decadesGenreWidths.push(decadesGenreEvaluation.result?.value);
+					timing.stage("Decades Exclusion");
 					const decadesExclusionEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 						expression: "window.__runDecadesExclusionLayoutScenario()",
 						awaitPromise: true,
@@ -1029,6 +1078,7 @@ async function runMountedPage() {
 					decadesExclusionWidths.push(decadesExclusionEvaluation.result?.value);
 				}
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+				timing.stage("Studio Scale");
 				const studioScaleEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: "window.__runStudioScaleScenario()",
 					awaitPromise: true,
@@ -1041,7 +1091,11 @@ async function runMountedPage() {
 			await new Promise((resolve) => setTimeout(resolve, 50));
 		}
 		throw new Error("Mounted source-edit regressions timed out.");
-	}, () => cleanupMountedBrowser(resources));
+	}, async () => {
+		timing.stage("Browser cleanup");
+		try { return await cleanupMountedBrowser(resources); }
+		finally { timing.finish(); }
+	});
 
 	if (execution.cleanupReport.browser.fallback === "succeeded") {
 		console.warn(

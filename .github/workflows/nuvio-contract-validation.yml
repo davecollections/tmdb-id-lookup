@@ -13,8 +13,14 @@ permissions:
   actions: read
   contents: read
 
+# Only newer commits to the same PR supersede a run. Every other event is unique.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}-{1}', github.run_id, github.run_attempt) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  validate:
+  core:
+    name: Core and build
     runs-on: ubuntu-latest
 
     steps:
@@ -36,10 +42,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/restore-tmdb-keyword-catalogue.mjs
 
-      - name: Run frontend and Nuvio contract checks
+      - name: Run core validation
         env:
           DEVTOOLS_STARTUP_MS: "30000"
-        run: node scripts/check-all.mjs
+        run: node scripts/check-all.mjs --group core
 
       - name: Build builder
         run: npm run build --prefix builder
@@ -51,3 +57,105 @@ jobs:
 
       - name: Validate combined Pages artifact
         run: node scripts/validate-pages-site.mjs --code-only
+
+  source:
+    name: Source, hierarchy and live Preview
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: builder/package-lock.json
+
+      - name: Install builder dependencies
+        run: npm ci --prefix builder
+
+      - name: Restore validated keyword data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/restore-tmdb-keyword-catalogue.mjs
+
+      - name: Run source validation
+        env:
+          DEVTOOLS_STARTUP_MS: "30000"
+        run: node scripts/check-all.mjs --group source
+
+  workspace:
+    name: Bulk Edit, Import, Export and Send
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: builder/package-lock.json
+
+      - name: Install builder dependencies
+        run: npm ci --prefix builder
+
+      - name: Restore validated keyword data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/restore-tmdb-keyword-catalogue.mjs
+
+      - name: Run workspace validation
+        env:
+          DEVTOOLS_STARTUP_MS: "30000"
+        run: node scripts/check-all.mjs --group workspace
+
+  artwork:
+    name: Folder artwork
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: builder/package-lock.json
+
+      - name: Install builder dependencies
+        run: npm ci --prefix builder
+
+      - name: Restore validated keyword data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/restore-tmdb-keyword-catalogue.mjs
+
+      - name: Run artwork validation
+        env:
+          DEVTOOLS_STARTUP_MS: "30000"
+        run: node scripts/check-all.mjs --group artwork
+
+  # Preserve the original check name for review and any required-check settings.
+  validate:
+    if: ${{ always() }}
+    needs: [core, source, workspace, artwork]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Require every validation group to succeed
+        env:
+          VALIDATION_RESULTS: ${{ toJSON(needs) }}
+        run: node scripts/validate-ci-results.mjs

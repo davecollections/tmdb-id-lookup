@@ -25,7 +25,24 @@ Run checks when they answer an unanswered question about the change. Choose vali
 
 `scripts\check.cmd` remains the full Windows repository-validation entry point; `node scripts/check-all.mjs` runs the equivalent full sequence on any platform. Neither is automatically required for every documentation or copy correction.
 
-Current PR/main CI still runs the monolithic validation suite. This local validation policy does not change workflow triggers, split jobs, add path filters, restructure the test runner or weaken CI/live-service requirements. Any future separation of core, build/artifact, live integration and documentation validation needs its own investigation and approved scope.
+## Local and CI validation groups (#247)
+
+`scripts\check.cmd` and `node scripts/check-all.mjs` still run the complete ordered local inventory. CI runs that same inventory in four independent jobs using `node scripts/check-all.mjs --group <group>`. `--list` prints the selected commands without executing them.
+
+| Group | Coverage |
+| --- | --- |
+| `core` | Every existing command except the three browser suites below, plus orchestration regressions. CI also retains the production build and combined code-only Pages artifact preparation/validation. |
+| `source` | `tests/builder-source-edit-mounted.test.mjs`: source editing, hierarchy and live Preview. |
+| `workspace` | `tests/builder-bulk-edit-mounted.test.mjs`: Bulk Edit, Import, Export, Send and Collection management. |
+| `artwork` | `tests/builder-folder-card-artwork-mounted.test.mjs`: Folder artwork and settings. |
+
+Each worker has its own checkout, dependency installation, validated keyword restoration, temporary caches, browser profiles and local servers. There is no shared build output. Source/Preview scenarios retain their internal order, production clients and request/cache protections; the other browser groups retain their existing published artwork reads. Keyword restoration reads an existing validated bundle, not a fresh TMDB export. Scheduled maintenance reservations and their daily budget are unchanged.
+
+The existing `validate` check is the final aggregate. It runs after all four workers and succeeds only when each reports `success`; setup/test failures, missing, skipped, cancelled, neutral or unknown worker results cannot produce a green aggregate. PR, main-push and manual triggers remain enabled. Only a newer run for the same PR cancels its predecessor; non-PR runs have unique concurrency groups. There are no path filters or docs-only routes.
+
+`[CI timing]` lines report command and mounted phase elapsed time using a monotonic clock. Repeated phase segments are summed; cleanup reports timings on failure as well as success. These measurements impose no performance thresholds. TAP may still charge the shared `before()` hook to its first test; use the named phase output for diagnosis.
+
+Shared Export regressions live in `tests/helpers/export-mounted.mjs`: the three existing viewport scenarios and Editor/Feedback/Warning/Large cases execute once in full Workspace validation. The existing Send and Export assertions both inspect these results. Export-specific keyboard, forced-colour, disclosure and dismissal checks remain in the enclosing suite. Focused Send (`NUVIO_SEND_ONLY=1` with the existing Send name pattern) invokes the same helper itself; existing Export test name patterns still select the Export assertions. All responsive matrices and Send states remain intact.
 
 ## GitHub Actions runtime maintenance (#228)
 
@@ -33,7 +50,7 @@ External JavaScript Actions use Node 24 implementations, independently of the No
 
 For Action/runtime-only changes, parse the workflow YAML, compare workflow structure and inputs against the baseline, and run focused maintenance, request-budget, keyword-artifact, Pages-boundary and genre-reference checks. Natural PR CI provides hosted validation; observe Pages and scheduled maintenance through their ordinary runs instead of dispatching collection jobs or consuming extra TMDB budget solely to prove a version update.
 
-Nuvio validation retains its pull-request, main-push and manual triggers. CI deduplication and maintenance-validation architecture remain deferred: maintenance commits made with `GITHUB_TOKEN` do not trigger push-based Nuvio validation, and Pages still uses its existing independent push and maintenance-completion triggers. The runtime upgrade does not close that coverage gap.
+Nuvio validation retains its pull-request, main-push and manual triggers. The #247 grouping above supersedes the original monolithic CI execution. Maintenance-validation architecture remains deferred: maintenance commits made with `GITHUB_TOKEN` do not trigger push-based Nuvio validation, and Pages still uses its existing independent push and maintenance-completion triggers. The runtime upgrade does not close that coverage gap.
 
 ## Guided creation presentation (#230)
 

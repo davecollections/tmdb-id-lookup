@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import { runExportRegressions } from "./export-mounted.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
 // Runs inside the existing Bulk Edit/Export browser lifecycle. No new launcher.
-export async function runNuvioSendChecks(connection, origin, evaluate) {
+export async function runNuvioSendChecks(connection, origin, evaluate, { includeExportRegressions = true } = {}) {
 	await connection.command("Page.navigate", { url: `${origin}/tests/fixtures/builder-nuvio-send-mounted.html` });
 	const deadline = Date.now() + 30000;
 	while (Date.now() < deadline && !await evaluate(connection, "window.nuvioSendFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
@@ -77,16 +78,6 @@ export async function runNuvioSendChecks(connection, origin, evaluate) {
 	const errors = await evaluate(connection, "window.__mountedErrors");
 	await connection.command("Emulation.setEmulatedMedia", { features: [] });
 
-	// Keep the existing byte/filename/warning/editor/feedback regressions intact.
-	await connection.command("Page.navigate", { url: `${origin}/tests/fixtures/builder-export-collections-mounted.html` });
-	const exportDeadline = Date.now() + 30000;
-	while (Date.now() < exportDeadline && !await evaluate(connection, "window.exportFixtureReady === true")) await new Promise((resolve) => setTimeout(resolve, 50));
-	const exports = [];
-	for (const width of [393,900,1280]) {
-		await connection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 900 });
-		exports.push(await evaluate(connection, "window.runExportScenario()"));
-	}
-	const regressions = {};
-	for (const name of ["EditorCases", "FeedbackCases", "WarningCases", "LargeCase"]) regressions[name] = await evaluate(connection, `window.runExport${name}()`);
-	return { local, layouts, errors, exports, regressions, exportErrors: await evaluate(connection, "window.__mountedErrors") };
+	const exportResults = includeExportRegressions ? await runExportRegressions(connection, origin, evaluate) : null;
+	return { local, layouts, errors, ...exportResults };
 }
