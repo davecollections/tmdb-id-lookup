@@ -66,6 +66,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
 	const editorOrderOnly = process.env.TMDB_EDITOR_ORDER_ONLY === "1";
+	const streamingHierarchyOnly = process.env.TMDB_STREAMING_HIERARCHY_ONLY === "1";
 	const meaningOnly = process.env.TMDB_MEANING_ONLY === "1";
 	const requiredNamesOnly = process.env.TMDB_REQUIRED_NAMES_ONLY === "1";
 	const semanticPresentationOnly = process.env.TMDB_SEMANTIC_PRESENTATION_ONLY === "1";
@@ -258,7 +259,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -268,6 +269,17 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (streamingHierarchyOnly) {
+					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+					const streamingHierarchyWidths = [];
+					for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runStreamingHierarchyScenario(${width === 393 || width === 900})`, awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						streamingHierarchyWidths.push(checked.result.value);
+					}
+					return { streamingHierarchyWidths };
+				}
 				if (editorOrderOnly) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const editors = [];
@@ -3048,7 +3060,7 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 			{ status: "new-folder", text: "Curated DekkooDekkooNew folder4 sources will be createdView matches elsewhereThese exact sources exist elsewhereDekkoo movies · in Streaming Services · Collection 3They stay there; choosing this destination does not move them." },
 		], `${result.width}px clear existing/new placement rows`);
 		assert.equal(result.review.folderNameCount, 1, `${result.width}px only new Dekkoo folder editable`);
-		assert.equal(result.review.invalidNameBlocked, true, `${result.width}px Folder validation blocks Apply`);
+		assert.equal(result.review.invalidNameBlocked, true, `${result.width}px invalid Apply focuses Folder name without mutation`);
 		assert.equal(result.review.customNamePreservedAfterBack, true, `${result.width}px logical folder custom name survives Back`);
 		assert.equal(result.review.textOnlyNoteAbsent, true, `${result.width}px no temporary artwork warning`);
 		assert.equal(result.review.providerLogoAbsent, true, `${result.width}px transient logos`);

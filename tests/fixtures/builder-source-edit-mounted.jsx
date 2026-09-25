@@ -3523,7 +3523,11 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		await clickAndSettle(required(folderNames.querySelector("summary"), "Folder names summary"));
 		dekkooName = required(folderNames.querySelector("#streaming-folder-name-444"), "Dekkoo folder name");
 		await act(async () => { setInputValue(dekkooName, ""); await afterCommittedEffects(); });
-		const invalidNameBlocked = required(dialog.querySelector(".add-source-actions .editor-apply"), "invalid-name Apply action").disabled === true && dekkooName.getAttribute("aria-invalid") === "true";
+		const invalidNameAction = required(dialog.querySelector(".add-source-actions .editor-apply"), "invalid-name Apply action");
+		await clickAndSettle(invalidNameAction);
+		const invalidNameBlocked = !invalidNameAction.disabled && dekkooName.getAttribute("aria-invalid") === "true"
+			&& document.activeElement === dekkooName && applyCalls === 0
+			&& controller.getState().revision === initialRevision && controller.getState().project === initialProject;
 		await act(async () => { setInputValue(dekkooName, "Curated Dekkoo"); await afterCommittedEffects(); });
 		const preApplyUnchanged = controller.getState().revision === initialRevision && controller.getState().project === initialProject;
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-review"]'), "Review Back action"));
