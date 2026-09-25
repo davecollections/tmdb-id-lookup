@@ -331,7 +331,7 @@ test("New Collection Review requires explicit destination intent and then render
 test("Folder naming is collapsed, stable-keyed, validated, and limited to new folders", () => {
 	assert.match(flow, /<details className="streaming-folder-names"/);
 	assert.match(flow, /Keep the generated names or customise new folders/);
-	assert.match(flow, /folders=\{plan\.newFolders\}/g);
+	// Mounted recovery coverage verifies new-folder drafts remain mounted when the Collection name invalidates the plan.
 	assert.match(flow, /folder\.key\.replaceAll/);
 	assert.match(flow, /isValidVisibleNuvioTitle/);
 	assert.match(flow, /Use default name/);

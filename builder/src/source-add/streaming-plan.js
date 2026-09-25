@@ -590,6 +590,8 @@ export function inspectStreamingHierarchyDestinationCandidates(project, options)
 		configuration: probe.plan.configuration,
 		elsewhereEvidence: probe.plan.elsewhereEvidence,
 		logicalFolderKeys: Object.freeze(probe.plan.newFolders.map((folder) => folder.key)),
+		// Name controls follow the selected output intent, even while a Collection title is invalid.
+		logicalFolderNames: Object.freeze(probe.plan.newFolders.map(({ key, generatedTitle }) => Object.freeze({ key, generatedTitle }))),
 		proposedSourceCount: probe.plan.counts.sourceCount,
 		candidates: Object.freeze(candidates),
 		errors: Object.freeze([]),
