@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -26,7 +27,6 @@ import {
 	pruneGenreExclusionConfiguration,
 	searchGenreConcepts,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -250,6 +250,8 @@ function AppearanceStep({ scope, advancedUi, planResult, options, onOptionsChang
 	const structure = options.structure;
 	const mediaFolders = structure === "media-folders";
 	const separateCollections = structure === "separate-media-collections";
+	const namePaths = separateCollections ? ["$genreHierarchy.collectionTitles.movies", "$genreHierarchy.collectionTitles.series"] : ["$genreHierarchy.collectionTitle"];
+	const otherErrors = (planResult.errors ?? []).filter((entry) => !namePaths.includes(entry.path));
 	const folderTitleVisibility = mediaFolders ? null : {
 		selectedId: plan?.configuration.folderTitleVisibility ?? (structure === "separate-media-genre-folders" && !options.folderTitleVisibilityTouched ? "SHOW_EVERYWHERE" : options.folderTitleVisibility),
 		name: "genre-hierarchy-folder-title-visibility",
@@ -265,9 +267,9 @@ function AppearanceStep({ scope, advancedUi, planResult, options, onOptionsChang
 			{omittedCount || elsewhereCount ? <p className="studio-configure-helper">{omittedCount ? `${omittedCount} destination match${omittedCount === 1 ? " is" : "es are"} omitted. ` : ""}{elsewhereCount ? `${elsewhereCount} elsewhere match${elsewhereCount === 1 ? " remains" : "es remain"} addable.` : ""}</p> : null}
 			{scope === "new-collection" ? <>
 				{separateCollections ? <>
-					<div className="genre-collection-name-grid">{[["movies", "Movie collection name"], ["series", "Series collection name"]].map(([role, label]) => <div className="editor-field" key={role}><label htmlFor={`genre-hierarchy-collection-${role}`}>{label}</label><input id={`genre-hierarchy-collection-${role}`} type="text" {...reversibleTitleFieldProps(options.collectionTitles[role], options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "genre-hierarchy-collection-titles-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitles: Object.freeze({ ...options.collectionTitles, [role]: event.target.value }) })} /></div>)}</div>
+					<div className="genre-collection-name-grid">{[["movies", "Movie collection name"], ["series", "Series collection name"]].map(([role, label]) => <div className="editor-field" key={role}><label htmlFor={`genre-hierarchy-collection-${role}`}>{label}</label><RequiredNameInput id={`genre-hierarchy-collection-${role}`} value={options.collectionTitles[role]} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "genre-hierarchy-collection-titles-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, `$genreHierarchy.collectionTitles.${role}`, options.collectionTitles[role])} onChange={(event) => onOptionsChange({ collectionTitles: Object.freeze({ ...options.collectionTitles, [role]: event.target.value }) })} /></div>)}</div>
 					<HiddenTitleFieldHelp id="genre-hierarchy-collection-titles-hidden-help" hidden={options.hideCollectionTitle} kind="collection" plural />
-				</> : <div className="editor-field"><label htmlFor="genre-hierarchy-collection-name">Collection name</label><input id="genre-hierarchy-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "genre-hierarchy-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="genre-hierarchy-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>}
+				</> : <div className="editor-field"><label htmlFor="genre-hierarchy-collection-name">Collection name</label><RequiredNameInput id="genre-hierarchy-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "genre-hierarchy-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$genreHierarchy.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="genre-hierarchy-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>}
 				<TitleOptions idPrefix="genre-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "genre-hierarchy-hide-collection-title-help", controlName: "genreHierarchyHideNuvioTitle" }} folderTitleVisibility={folderTitleVisibility} />
 				{mediaFolders ? <p className="genre-fixed-media-note">Movies and Series folders use the safe folder fallback, so their titles remain visible.</p> : null}
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="genre-hierarchy-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Genre folder in one All tab." showAllDescriptionId="genre-hierarchy-all-tab-help" showAllControlName="genreHierarchyShowAllTab" /></fieldset>
@@ -279,7 +281,7 @@ function AppearanceStep({ scope, advancedUi, planResult, options, onOptionsChang
 			</> : null}
 			<fieldset className="editor-field editor-choice-field genre-hierarchy-artwork-shape" data-editor-field="folderTileShape"><legend>Artwork shape</legend><FolderShapeChoices selectedId={options.folderTileShape} name="genre-hierarchy-folder-shape" idPrefix="genre-hierarchy-folder" onChange={(folderTileShape) => onOptionsChange({ folderTileShape })} /></fieldset>
 			<p className="decades-defaults-note" data-genre-hierarchy-artwork-rule={options.folderTileShape.toLowerCase()}>{mediaFolders ? `The ${options.folderTileShape === "POSTER" ? "Poster" : options.folderTileShape === "SQUARE" ? "Square" : "Landscape"} shape applies to the safe Movies/Series folder fallback. No Genre artwork is assigned to media folders.` : `The selected ${options.folderTileShape.toLowerCase()} published Genre artwork is applied to every generated Genre folder. Missing artwork safely falls back without borrowing the other orientation.`}</p>
-			{!plan ? <div className="editor-diagnostics" role="alert"><p>{planResult.errors[0]?.message ?? "The Genre hierarchy plan could not be prepared."}</p></div> : null}
+			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Genre hierarchy plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 		</section>
 	);

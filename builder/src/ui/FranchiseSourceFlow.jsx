@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -13,7 +14,6 @@ import {
 	toggleSelectedFranchise,
 	buildTmdbPosterUrl,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -95,11 +95,12 @@ function statusLabel(status) {
 
 function ReviewStep({ scope, planResult, options, onOptionsChange, onPreview, diagnostic }) {
 	const plan = planResult.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$franchisePlan.collectionTitle");
 	return (
 		<section className="franchise-review" aria-labelledby="franchise-review-title">
 			<CreationStageIntro step={2} phase="Review" title="Review & Appearance" headingId="franchise-review-title" description={plan ? `${plan.counts.folderCount} folder${plan.counts.folderCount === 1 ? "" : "s"} · ${plan.counts.sourceCount} source${plan.counts.sourceCount === 1 ? "" : "s"}` : undefined} />
 			{scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><input id="franchise-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
+				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><RequiredNameInput id="franchise-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$franchisePlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="franchise" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "franchise-hide-title-help", controlName: "franchiseHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every franchise folder in one All tab." showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="franchise-pin-help" controlName="franchisePinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
@@ -108,7 +109,7 @@ function ReviewStep({ scope, planResult, options, onOptionsChange, onPreview, di
 				<TitleOptions idPrefix="franchise" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 			</> : null}
 			<p className="decades-defaults-note" data-franchise-artwork-rule="poster-only">Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.</p>
-			{!plan ? <div className="editor-diagnostics" role="alert"><p>{planResult.errors[0]?.message ?? "The Franchise plan could not be prepared."}</p></div> : null}
+			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Franchise plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 			{plan ? <div className="franchise-review-list">{plan.configuration.franchises.map((franchise, index) => {
 				const outcome = plan.outcomes[index];

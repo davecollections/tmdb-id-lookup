@@ -30,6 +30,7 @@ const vite = await createServer({
 	server: { middlewareMode: true },
 });
 const { GenreHierarchyFlow } = await vite.ssrLoadModule("/src/ui/GenreHierarchyFlow.jsx");
+const { RequiredNameInput, requiredNameMessage } = await vite.ssrLoadModule("/src/ui/RequiredNameInput.jsx");
 const { GenreCatalogueList } = await vite.ssrLoadModule("/src/ui/GenreCatalogueSelector.jsx");
 const { GENRE_CONCEPTS } = await vite.ssrLoadModule("/src/source-add/index.js");
 after(() => vite.close());
@@ -224,4 +225,31 @@ test("Genre hierarchy has one scroll owner and the established focus/selection s
 	assert.match(flowSource, /back-to-genre-hierarchy-selection/);
 	assert.match(flowSource, /back-to-genre-hierarchy-configuration/);
 	assert.doesNotMatch(flowSource, /fetch\(/);
+});
+
+test("required-name feedback translates existing field diagnostics without changing when validation runs", () => {
+	const path = "$genreHierarchy.collectionTitles.movies";
+	const errors = [{ path, message: "Collection names must be nonblank trimmed strings." }];
+	for (const value of ["", "   ", "\t"]) assert.equal(requiredNameMessage(errors, path, value), "Enter a collection name.");
+	assert.equal(requiredNameMessage(errors, path, "", "folder"), "Enter a folder name.");
+	assert.equal(requiredNameMessage(errors, path, " Movie Genres "), "Remove spaces at the start or end of the name.");
+	assert.equal(requiredNameMessage([], path, ""), null, "does not create a new validation lifecycle");
+	assert.equal(requiredNameMessage(errors, "$genreHierarchy.collectionTitles.series", "Series Genres"), null, "does not mark valid siblings invalid");
+	assert.equal(requiredNameMessage([{ path: "$genreHierarchy.structure" }], path, ""), null, "leaves unrelated diagnostics alone");
+});
+
+test("required-name input keeps accessible error and hidden-title associations distinct", () => {
+	const render = (props) => renderToStaticMarkup(createElement(RequiredNameInput, { id: "movie-name", value: "", onChange() {}, ...props }));
+	const invalid = render({ error: "Enter a collection name." });
+	assert.match(invalid, /aria-invalid="true"/);
+	assert.match(invalid, /aria-describedby="movie-name-error"/);
+	assert.match(invalid, /id="movie-name-error" role="alert" aria-atomic="true">Enter a collection name\./);
+	assert.doesNotMatch(invalid, /nonblank|trimmed string/);
+	const corrected = render({ value: "Movie Genres", error: null });
+	assert.doesNotMatch(corrected, /aria-invalid/);
+	assert.match(corrected, /id="movie-name-error" role="alert" aria-atomic="true"><\/p>/);
+	const hidden = render({ value: "Remembered name", hidden: true, error: "Enter a collection name.", describedBy: "hidden-title-help" });
+	assert.match(hidden, /disabled=""/);
+	assert.match(hidden, /aria-describedby="hidden-title-help movie-name-error"/);
+	assert.doesNotMatch(hidden, /aria-invalid|Enter a collection name/);
 });

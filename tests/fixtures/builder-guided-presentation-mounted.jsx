@@ -176,6 +176,24 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await next(); await stage(3, "Appearance", "appearance");
 		}
 		if (nameRecovery) {
+			function assertNameFeedback(field, kind, invalid) {
+				check(field.getAttribute("aria-invalid") === (invalid ? "true" : null), `${kind} aria-invalid state`);
+				const descriptions = (field.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean).map(id => document.getElementById(id));
+				check(descriptions.length > 0 && descriptions.every(Boolean), `${kind} descriptions resolve`);
+				const message = descriptions.find(node => node.classList.contains("editor-field-error"));
+				check(message && message.textContent === (invalid ? `Enter a ${kind} name.` : ""), `${kind} plain-language field message`);
+				check(message.getAttribute("role") === "alert" && message.getAttribute("aria-atomic") === "true", `${kind} announced field feedback`);
+				check(document.querySelectorAll(`[id="${message.id}"]`).length === 1, `${kind} unique error association`);
+				if (invalid) {
+					const style = getComputedStyle(field);
+					check(["Top", "Right", "Bottom", "Left"].every(edge => style[`border${edge}Color`] === "rgb(255, 142, 134)"), `${kind} coral error border`);
+					check(getComputedStyle(message).color === "rgb(255, 231, 228)" && !message.closest(".genre-advanced-errors"), `${kind} error rather than amber warning`);
+					check(message.scrollWidth <= message.clientWidth + 1, `${kind} error wraps inside field`);
+				}
+				check(!/nonblank|trimmed string|invalid string|required scalar/i.test(dialog().textContent), "internal required-name diagnostic leaked into UI");
+				const actionRect = primary().getBoundingClientRect();
+				check(actionRect.top >= -1 && actionRect.bottom <= innerHeight + 1, "footer remains reachable");
+			}
 			const fields = () => [...dialog().querySelectorAll('input[type="text"]')].filter(node => [...node.labels].some(label => /collection name/i.test(label.textContent)));
 			let folderInputs = [], folderNames = [];
 			if (family === "streaming-services") {
@@ -185,8 +203,10 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				for (const [index, field] of folderInputs.entries()) {
 					field.focus(); await input(`#${field.id}`, "");
 					check(field.isConnected && document.activeElement === field && field.getAttribute("aria-invalid") === "true" && primary().disabled, "Folder name recovery changed");
+					assertNameFeedback(field, "folder", true);
 					folderNames.push(`Custom Folder ${index + 1}`);
 					await input(`#${field.id}`, folderNames[index]);
+					assertNameFeedback(field, "folder", false);
 				}
 			}
 			const pin = [...dialog().querySelectorAll('[role="switch"]')].find(node => node.closest("label")?.textContent.includes("Pin collection"));
@@ -203,13 +223,26 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				check(document.activeElement === field && !field.disabled && field.labels[0]?.textContent === label, "name lost focus, accessibility or editability");
 				check(folderInputs.every((node, sibling) => node.isConnected && node.value === folderNames[sibling]), "Collection validation removed sibling Folder fields or drafts");
 				check(settings.every(({ node, checked }) => node.isConnected && node.checked === checked), "Collection validation reset presentation choices");
-				check(field.value === "" && primary().disabled && dialog().querySelector('[role="alert"]'), "blank draft / existing invalid state was not retained");
+				check(field.value === "" && primary().disabled, "blank draft / existing invalid state was not retained");
+				assertNameFeedback(field, "collection", true);
+				if (folderInputs.length) {
+					await input(`#${folderInputs[0].id}`, "");
+					assertNameFeedback(folderInputs[0], "folder", true);
+					assertNameFeedback(folderInputs[1], "folder", false);
+					assertNameFeedback(field, "collection", true);
+					await input(`#${folderInputs[0].id}`, folderNames[0]);
+					assertNameFeedback(folderInputs[0], "folder", false);
+					field.focus();
+				}
+				for (const sibling of originals.filter(node => node !== field)) assertNameFeedback(sibling, "collection", false);
 				check(originals.every((node, sibling) => node.isConnected && (sibling === index || node.value === (sibling < index ? expected[sibling] : siblings[sibling]))), "sibling name changed");
 				check(document.documentElement.scrollWidth <= innerWidth + 1 && dialog().scrollWidth <= dialog().clientWidth + 1, "invalid form horizontal overflow");
 				await input(`#${field.id}`, "   ");
 				check(field.isConnected && field.value === "   " && primary().disabled, "whitespace name recovery changed");
+				assertNameFeedback(field, "collection", true);
 				await input(`#${field.id}`, expected[index]);
 				check(field.isConnected && document.activeElement === field, "correcting name replaced the focused input");
+				assertNameFeedback(field, "collection", false);
 			}
 			check(!primary().disabled, "corrected names did not restore valid creation");
 			await click(button("Back"));

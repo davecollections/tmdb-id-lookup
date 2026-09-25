@@ -646,7 +646,7 @@ test("People Review keeps shared Title options and Layout visible and only colla
 		collectionOptions: { title: "People", hideTitle: true, viewMode: "TABBED_GRID", showAllTab: true, pinToTop: false },
 		onCollectionOptionsChange() {}, folderTileShape: "POSTER", onFolderTileShapeChange() {}, folderTitleVisibility: "HIDE_HOME_SCREEN", onFolderTitleVisibilityChange() {}, applyDiagnostic: null, headingRef: null,
 	}));
-	assert.match(hiddenTitleMarkup, /<input(?=[^>]*id="people-collection-title")(?=[^>]*value="")(?=[^>]*disabled="")(?=[^>]*aria-describedby="people-collection-title-hidden-help")[^>]*>/);
+	assert.match(hiddenTitleMarkup, /<input(?=[^>]*id="people-collection-title")(?=[^>]*value="")(?=[^>]*disabled="")(?=[^>]*aria-describedby="people-collection-title-hidden-help people-collection-title-error")[^>]*>/);
 	assert.equal((hiddenTitleMarkup.match(/The collection title is intentionally invisible in Nuvio\. Turn off the setting below to enter a visible title\./g) ?? []).length, 1);
 	assert.ok(hiddenTitleMarkup.includes(selected.name));
 	const rowsMarkup = renderToStaticMarkup(createElement(PeopleReviewStep, {

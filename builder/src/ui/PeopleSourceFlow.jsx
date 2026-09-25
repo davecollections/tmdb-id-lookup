@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
 import { inspectPeopleHierarchyPlacement } from "../source-add/people-plan.js";
@@ -44,7 +45,6 @@ import {
 	updatePeopleConfiguration,
 	validatePeopleCombinationSelection,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import {
 	lockAddSourceDocumentBody,
@@ -507,6 +507,7 @@ export function PeopleReviewStep({
 	headingRef,
 }) {
 	const plan = planResult?.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$peoplePlan.collectionTitle");
 	const elsewhereOccurrences = (plan?.outcomes ?? []).flatMap((outcome) => outcome.occurrences ?? []).filter((occurrence) => (
 		plan.destination === null || occurrence.collectionInternalId !== plan.destination.collectionInternalId
 	));
@@ -537,7 +538,7 @@ export function PeopleReviewStep({
 				<>
 					<div className="decades-collection-names"><div className="editor-field">
 						<label htmlFor="people-collection-title">Collection name</label>
-						<input id="people-collection-title" type="text" {...reversibleTitleFieldProps(collectionOptions.title, collectionOptions.hideTitle)} aria-describedby={collectionOptions.hideTitle ? "people-collection-title-hidden-help" : undefined} onChange={(event) => onCollectionOptionsChange({ ...collectionOptions, title: event.target.value })} />
+						<RequiredNameInput id="people-collection-title" value={collectionOptions.title} hidden={collectionOptions.hideTitle} describedBy={collectionOptions.hideTitle ? "people-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$peoplePlan.collectionTitle", collectionOptions.title)} onChange={(event) => onCollectionOptionsChange({ ...collectionOptions, title: event.target.value })} />
 						<HiddenTitleFieldHelp id="people-collection-title-hidden-help" hidden={collectionOptions.hideTitle} kind="collection" />
 						{plan && plan.collections[0].titleCollisions.length > 0 ? <p className="editor-field-help">A collection with this name already exists. The new collection will still be created.</p> : null}
 					</div></div>
@@ -558,7 +559,7 @@ export function PeopleReviewStep({
 			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
 			{scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			<PeopleFolderAppearance tileShape={folderTileShape} onTileShapeChange={onFolderTileShapeChange} />
-			{!plan && planResult?.errors?.length ? <ul className="genre-advanced-errors" role="alert">{planResult.errors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
+			{!plan && otherErrors.length ? <ul className="genre-advanced-errors" role="alert">{otherErrors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
 			{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}
 			{plan ? <details className="decades-review-details">
 				<summary>View person details · {entries.length}</summary>

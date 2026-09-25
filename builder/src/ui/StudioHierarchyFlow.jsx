@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
 import { StudioAdvancedOptions, StudioMinimumVotesSummary } from "./StudioAdvancedOptions.jsx";
@@ -23,7 +24,6 @@ import {
 	studioSelectionNotice,
 	toggleSelectedStudio,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -106,6 +106,7 @@ function ConfigureStep({ studios, knownSeriesCounts, outcomes, mediaMode, sortOp
 
 function AppearanceStep({ scope, planResult, options, onOptionsChange, diagnostic, headingRef }) {
 	const plan = planResult?.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$studioPlan.collectionTitle");
 	return (
 		<section className="studio-hierarchy-review studio-hierarchy-appearance" aria-labelledby="studio-hierarchy-appearance-title">
 			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="studio-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
@@ -114,7 +115,7 @@ function AppearanceStep({ scope, planResult, options, onOptionsChange, diagnosti
 			{scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			{plan && scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
 			{scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="studio-collection-name">Collection name</label><input id="studio-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "studio-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="studio-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
+				<div className="editor-field"><label htmlFor="studio-collection-name">Collection name</label><RequiredNameInput id="studio-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "studio-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$studioPlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="studio-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="studio-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "studio-hide-title-help", controlName: "studioHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "studio-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="studio-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Studio folder in one All tab." showAllDescriptionId="studio-all-tab-help" showAllControlName="studioShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="studio-pin-help" controlName="studioPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
@@ -122,7 +123,7 @@ function AppearanceStep({ scope, planResult, options, onOptionsChange, diagnosti
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
 				<TitleOptions idPrefix="studio-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "studio-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 			</> : null}
-			{!plan ? <div className="editor-diagnostics" role="alert"><p>{planResult?.errors?.[0]?.message ?? "The Studio plan could not be prepared."}</p></div> : null}
+			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Studio plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 		</section>
 	);
