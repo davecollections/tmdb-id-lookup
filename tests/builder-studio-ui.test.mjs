@@ -152,7 +152,7 @@ test("Studio search renders a clear empty state and no live count call", () => {
 
 test("Studio Configure presents independent counts and compact semantic sort choices", () => {
 	const markup = renderConfigure();
-	assert.ok(markup.includes("Add studio") === false);
+	assert.ok(markup.includes("Add Studio sources") === false);
 	assert.ok(markup.includes("<strong>Movies</strong>"));
 	assert.ok(markup.includes("42 movies"));
 	assert.ok(markup.includes("<strong>Series</strong>"));
@@ -530,13 +530,13 @@ test("every folder-level flow has a visible Back action below the source picker"
 		onApply() {},
 	}));
 	for (const markup of [franchise, people, studios]) {
-		assert.ok(markup.includes('data-action="back-to-source-types"') || markup.includes("Add studio"));
+		assert.ok(markup.includes('data-action="back-to-source-types"') || markup.includes("Add Studio sources"));
 		assert.ok(markup.includes("Back"));
 		assert.ok(markup.includes("Close"));
 	}
 	assert.ok(franchise.includes('data-action="back-to-source-types"'));
 	assert.ok(people.includes('data-action="back-to-source-types"'));
-	assert.ok(studios.includes("Add studio"));
+	assert.ok(studios.includes("Add Studio sources"));
 });
 
 test("source-picker return focus and Configure-to-Search state restoration stay inside modal state", () => {

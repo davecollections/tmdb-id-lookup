@@ -367,7 +367,7 @@ export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefa
 					<p className="editor-field-help">Provider ID {draft.providerId} · {draft.regionCode} · {mediaLabel}</p>
 				</div>
 			</div>
-			<p className="source-edit-fixed-note">Provider, region and media type stay fixed for this physical source.</p>
+			<p className="source-edit-fixed-note">Provider, region and media type stay fixed for this source.</p>
 			{providerIdentity.resolved ? <button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button> : null}
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={STREAMING_SORT_OPTIONS} selectedId={selectedSortId} name="streaming-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
@@ -456,12 +456,12 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 				<span>TMDB collection {draft.tmdbId}</span>
 				<small>{draft.selectedCollectionName
 					? "This is the collection that will be saved."
-					: "Current source title; no canonical TMDB name was fetched."}</small>
+					: "Showing the current source name. Choose a franchise to see its TMDB name."}</small>
 			</p>
 			<div className="source-edit-option-actions">
 				<button ref={chooseButtonRef} type="button" disabled={localOnly} onClick={onChoose}>Choose another franchise</button>
 				{draft.selectedCollectionName ? (
-					<button type="button" onClick={onUseSelectedName}>Use selected collection name</button>
+					<button type="button" onClick={onUseSelectedName}>Use default name</button>
 				) : null}
 			</div>
 			{localOnly ? <p className="editor-field-help">Franchise lookup is available from the Builder.</p> : null}
@@ -887,7 +887,7 @@ export function SourceEditorDialog({
 											? "Update this People source role, media, name and title order."
 										: session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID
 											? "Update this TMDB List source name and title order."
-									: "Change only the supported fields for this physical source."}
+									: "Edit this source’s name and available settings."}
 						</p>
 					</header>
 

@@ -1,3 +1,4 @@
+import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
@@ -36,10 +37,6 @@ import { StudioSortChoices } from "./StudioSortChoices.jsx";
 import { useStudioCatalogueSearch } from "./use-studio-catalogue-search.js";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function scopeLabel(scope) {
-	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
 
 function formatCount(value) {
 	return Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString("en") : null;
@@ -117,7 +114,7 @@ function AppearanceStep({ scope, planResult, options, onOptionsChange, diagnosti
 			{scope === "new-collection" ? <>
 				<div className="editor-field"><label htmlFor="studio-collection-name">Collection name</label><RequiredNameInput id="studio-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "studio-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$studioPlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="studio-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="studio-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "studio-hide-title-help", controlName: "studioHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "studio-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
-				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="studio-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Studio folder in one All tab." showAllDescriptionId="studio-all-tab-help" showAllControlName="studioShowAllTab" /></fieldset>
+				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="studio-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="studio-all-tab-help" showAllControlName="studioShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="studio-pin-help" controlName="studioPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : plan ? <>
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
@@ -273,9 +270,9 @@ export function StudioHierarchyFlow({
 	}
 
 	const primaryDisabled = step === "select" ? chosen.length === 0 : step === "configure" ? !configurationValid || isPreparing || isApplying : !planResult?.ok || planResult.plan.counts.sourceCount === 0 || planResult.plan.counts.unresolvedEntityCount > 0 || isApplying;
-	const primaryLabel = step === "select" ? `Configure ${chosen.length} Studio${chosen.length === 1 ? "" : "s"}` : step === "configure" ? isApplying ? "Adding…" : isPreparing ? "Preparing artwork…" : appendOnly ? "Add sources" : "Continue to Appearance" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope);
+	const primaryLabel = step === "select" ? `Configure ${chosen.length} Studio${chosen.length === 1 ? "" : "s"}` : step === "configure" ? isApplying ? "Adding…" : isPreparing ? "Preparing artwork…" : appendOnly ? "Add sources" : "Continue to Appearance" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 	return <>
-		<CreationHeader title="Create with Studios" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Select Studios in folder order." : step === "configure" ? "Choose Studios, media and source options." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-studio-selection" : "back-to-studio-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
+		<CreationHeader title="Create with Studios" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select Studios in folder order." : step === "configure" ? "Choose Studios, media and source options." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-studio-selection" : "back-to-studio-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
 		<form className="add-source-form studio-hierarchy-form" data-studio-hierarchy-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>

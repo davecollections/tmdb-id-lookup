@@ -81,8 +81,8 @@ test("Add Source Streaming opens with a grammatically complete immediate heading
 		onCancel() {},
 		project: { collections: [] },
 	}));
-	assert.ok(markup.includes('<h2 id="streaming-source-title">Add a streaming service</h2>'));
-	assert.ok(markup.includes('aria-label="Close Add a streaming service"'));
+	assert.ok(markup.includes('<h2 id="streaming-source-title">Add Streaming sources</h2>'));
+	assert.ok(markup.includes('aria-label="Close Add Streaming sources"'));
 });
 
 test("Region opens first as an accessible natural multi-select with known alphabetical rows", () => {

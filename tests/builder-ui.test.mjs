@@ -206,7 +206,7 @@ test("view model presents only supported collection and folder settings with fri
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Pinned to top" && entry.value === "Yes"));
 	assert.ok(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled" && entry.value === "No"));
 	assert.ok(view.selectedCollection.details.some((entry) => (
-		entry.label === "All tab when using Tabs" && entry.value === "Yes"
+		entry.label === "Show All tab" && entry.value === "Yes"
 	)));
 	assert.equal(view.selectedFolder.tileShape, "Landscape");
 	assert.ok(view.selectedFolder.details.some((entry) => (
@@ -219,8 +219,8 @@ test("view model presents only supported collection and folder settings with fri
 	assert.equal(JSON.stringify(view).includes("RAW_HIDE"), false);
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Layout"), false);
 	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Focus glow enabled"), false);
-	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "All tab when using Tabs"), false);
-	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Tile shape"), false);
+	assert.equal(view.selectedCollection.details.some((entry) => entry.label === "Show All tab"), false);
+	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder tile shape"), false);
 	assert.equal(view.selectedFolder.details.some((entry) => entry.label === "Folder title visibility"), false);
 	assert.equal(JSON.stringify(view).includes("Home-screen title shown"), false);
 	assert.equal(JSON.stringify(view).includes("All source tab enabled"), false);
@@ -298,7 +298,7 @@ test("collection and folder summaries use saved preference and final visibility 
 		controller.selectNode(collections[index].folders[0].internalId);
 		const view = buildBuilderViewModel(controller.getState());
 		const allDetail = view.selectedCollection.details.find((entry) => (
-			entry.label === "All tab when using Tabs"
+			entry.label === "Show All tab"
 		));
 		const visibilityDetail = view.selectedFolder.details.find((entry) => (
 			entry.label === "Folder title visibility"

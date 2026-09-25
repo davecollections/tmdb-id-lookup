@@ -1,3 +1,4 @@
+import { creationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { MinimumVotesAdvancedOptions, MinimumVotesSummary } from "./MinimumVotesAdvancedOptions.jsx";
 import { validateNetworkAdvancedFilters } from "../source-add/network-advanced.js";
@@ -34,10 +35,6 @@ import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 import { useNetworkCatalogueSearch } from "./use-network-catalogue-search.js";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function scopeLabel(scope) {
-	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
 
 function formatCount(value) {
 	return Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString("en") : "Unknown";
@@ -109,7 +106,7 @@ function ConfigureStep({ networks, exactCounts, outcomes, sortOptionIds, onSortC
 }
 
 function ArtworkChoices({ options, onArtworkChange, disabled }) {
-	return <fieldset className="editor-field editor-choice-field" disabled={disabled}><legend>Folder artwork</legend><FolderShapeChoices supportedShapes={["POSTER", "LANDSCAPE"]} selectedId={options.artworkOrientation} name="network-folder-artwork" idPrefix="network-hierarchy" onChange={onArtworkChange} /></fieldset>;
+	return <fieldset className="editor-field editor-choice-field" disabled={disabled}><legend>Folder tile shape</legend><FolderShapeChoices supportedShapes={["POSTER", "LANDSCAPE"]} selectedId={options.artworkOrientation} name="network-folder-artwork" idPrefix="network-hierarchy" onChange={onArtworkChange} /></fieldset>;
 }
 
 function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange, diagnostic, headingRef, isPreparing }) {
@@ -124,7 +121,7 @@ function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange,
 				<div className="editor-field"><label htmlFor="network-collection-name">Collection name</label><input id="network-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "network-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="network-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="network-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "network-hide-title-help", controlName: "networkHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "network-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
-				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="network-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Network folder in one All tab." showAllDescriptionId="network-all-tab-help" showAllControlName="networkShowAllTab" /></fieldset>
+				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="network-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="network-all-tab-help" showAllControlName="networkShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="network-pin-help" controlName="networkPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : <>
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan?.destination.titleHidden ? "Hidden collection" : plan?.destination.collectionTitle || options.destinationCollectionTitle || "Hidden collection"}{plan ? ` · ${plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}` : ""}</span></div>
@@ -345,10 +342,10 @@ export function NetworkHierarchyFlow({
 		? `Configure ${chosen.length} Network${chosen.length === 1 ? "" : "s"}`
 		: step === "configure"
 			? isApplying ? "Adding…" : isPreparing ? "Preparing artwork…" : appendOnly ? "Add sources" : "Continue to Appearance"
-			: isPreparing ? "Preparing artwork…" : !artworkBatch ? "Retry artwork" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope);
+			: isPreparing ? "Preparing artwork…" : !artworkBatch ? "Retry artwork" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 
 	return <>
-		<CreationHeader title="Create with Networks" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Select Networks in folder order." : step === "configure" ? "Choose shared Series source options and preview when useful." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-network-selection" : "back-to-network-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
+		<CreationHeader title="Create with Networks" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select Networks in folder order." : step === "configure" ? "Choose shared Series source options and preview when useful." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-network-selection" : "back-to-network-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
 		<form className="add-source-form studio-hierarchy-form network-hierarchy-form" data-network-hierarchy-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>

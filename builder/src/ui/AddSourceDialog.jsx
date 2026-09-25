@@ -1,3 +1,4 @@
+import { destinationContext } from "./creation-context.js";
 import {
 	useEffect,
 	useLayoutEffect,
@@ -511,6 +512,7 @@ export function AddSourcePrimaryAction({
 export function AddSourceDialog({
 	provider,
 	folderName,
+	collectionName,
 	onBack,
 	onCancel,
 	onApply,
@@ -901,14 +903,14 @@ export function AddSourceDialog({
 								</button>
 							)}
 							<div>
-								<h2 id="add-source-title">Add source</h2>
-								<p>Adding to {folderName}</p>
+								<h2 id="add-source-title">Add Franchise source</h2>
+								<p>{destinationContext(collectionName, folderName)}</p>
 							</div>
 							<button
 								className="add-source-header-action add-source-close-action"
 								type="button"
 								data-action="cancel-add-source"
-								aria-label="Close Add source"
+								aria-label="Close Add Franchise source"
 								disabled={isApplying}
 								onClick={cancel}
 							>

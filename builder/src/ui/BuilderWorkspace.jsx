@@ -2938,7 +2938,8 @@ export function BuilderWorkspace({
 			{visibleAddSourceSession ? (
 				visibleAddSourceSession.modeId === null ? (
 					<SourceModeDialog
-						folderName={addSourceFolder?.editable?.title ?? "selected folder"}
+						folderName={addSourceFolder?.editable?.title ?? ""}
+						collectionName={addSourceCollection?.editable?.title}
 						initialFocusModeId={visibleAddSourceSession.returnFocusModeId}
 						onCancel={cancelAddSource}
 						onSelectMode={chooseSourceMode}
@@ -3020,7 +3021,8 @@ export function BuilderWorkspace({
 				) : (
 					<AddSourceDialog
 						provider={sourceProviderRef.current}
-						folderName={addSourceFolder?.editable?.title ?? "selected folder"}
+						folderName={addSourceFolder?.editable?.title ?? ""}
+						collectionName={addSourceCollection?.editable?.title}
 						onBack={returnToSourceModePicker}
 						onCancel={cancelAddSource}
 						onApply={applyAddSource}

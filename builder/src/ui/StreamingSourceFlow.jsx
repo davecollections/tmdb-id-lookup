@@ -1,3 +1,4 @@
+import { sourceDestinationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -357,7 +358,7 @@ export function StreamingConfigureStep({
 										<div className="editor-field streaming-generated-name-field">
 											<label htmlFor={inputId}>Source name</label>
 											<input ref={(element) => onTitleInputMount(candidateKey, element)} id={inputId} type="text" value={customTitle} aria-invalid={error ? "true" : undefined} aria-describedby={`${inputId}-help ${inputId}-error`} onChange={(event) => onTitleChange(candidateKey, event.target.value)} />
-											<div><p className="editor-field-help" id={`${inputId}-help`}>Shown for this physical source in Nuvio.</p><button type="button" onClick={() => onUseDefaultName(candidateKey)}>Use default name</button></div>
+											<div><p className="editor-field-help" id={`${inputId}-help`}>This is the source name shown in Nuvio.</p><button type="button" onClick={() => onUseDefaultName(candidateKey)}>Use default name</button></div>
 											<p className="editor-field-error" id={`${inputId}-error`}>{error?.message ?? ""}</p>
 										</div>
 									) : null}
@@ -643,8 +644,8 @@ export function StreamingSourceFlow({ catalogueProvider, previewProvider, projec
 					<header className="add-source-heading" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							<button className="add-source-header-action" type="button" disabled={isApplying} onClick={returnOneStep}><span aria-hidden="true">←</span>Back</button>
-							<div><h2 id="streaming-source-title">Add a streaming service</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
-							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add a streaming service" disabled={isApplying} onClick={cancel}>Close</button>
+							<div><h2 id="streaming-source-title">Add Streaming sources</h2><p>{sourceDestinationContext(project, folder)}</p></div>
+							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Streaming sources" disabled={isApplying} onClick={cancel}>Close</button>
 						</div>
 						<p id="streaming-source-description" className="add-source-heading-description">{descriptions[step]}</p>
 					</header>

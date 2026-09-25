@@ -190,7 +190,7 @@ Where applicable, Review follows this composition:
 1. summary, counts, and status;
 2. generated names or captured destination;
 3. **Title options**;
-4. **Layout**;
+4. **Collection layout**;
 5. generated Folder appearance/options;
 6. bounded or collapsed generated-item details.
 
@@ -200,7 +200,7 @@ Candidate rows remain visually neutral. Communicate ready, already at destinatio
 
 Streaming issue #162 distinguishes full creation from mutation delta in Review. New Collection uses **What will be created**, reports the full hierarchy, and separately surfaces ordinary project-wide exact-source overlap. Where that overlap identifies safe relevant existing Collections, Streaming alone offers an explicit destination chooser: exact duplicate inspection supplies raw evidence, each candidate is qualified and fully planned through the same existing-Collection Streaming planner, candidates rank by exact overlap then project order, and no route is auto-selected. Unsafe ambiguous candidates are omitted while ordinary Sort conflicts remain visible and blocking. Equal visible Collection titles receive UI-only project-order `· Collection N` labels, reused consistently on cards, disclosures, selected Review, and zero-change notices; unique titles remain clean and internal IDs remain authoritative. Cards use plain already-here/will-be-added copy and may show reliable Folder/Source counts. Choosing an existing Collection changes the active Review to **What will change** and reports only existing folders updated, new folders, and sources to add. A complete route shows **Nothing to add**, states that no project changes are needed, and closes without mutation; **Create new collection instead** preserves the explicit duplicate-Collection confirmation. This is a focused Streaming behavior, not a generic destination-routing contract for the other hierarchy families. Placement rows keep status and count explanation separate. Streaming also permits initially collapsed, stable-logical-key naming for active new folders only; route switching preserves dormant drafts, reused existing folder titles and artwork/focus fields stay read-only and exact, and title validation reuses the ordinary Folder rule.
 
-## 10. Title options and Layout
+## 10. Title options and Collection layout
 
 Title visibility and layout are separate presentation concerns. Reuse the shared **Title options** composition where applicable.
 
@@ -223,7 +223,7 @@ Issue [#172](https://github.com/davecollections/tmdb-id-lookup/issues/172) / PR 
 
 Persisted behavior is unchanged: a hidden Collection title uses U+200E where required; Folder Hide everywhere uses U+200E plus `hideTitle: true`; Hide on home screen only uses the visible title plus `hideTitle: true`; and Show everywhere uses the visible title plus `hideTitle: false`. Remembered draft state is never exported, no schema or source identity/name changes result, and final creation remains one atomic controller operation. The four locked hidden-state explanations remain quiet muted secondary text rather than warning, error, success, or alert treatment.
 
-**Layout** follows Title options and may contain Tabs/Rows, Show All tab, and Pin to top. **Show All tab is a Tabs-specific visible control:** expose and normally toggle it while Tabs is selected; hide it while Rows is selected. Hierarchy plans always retain/generated `showAllTab: true` in Rows mode so changing that Collection back to Tabs later restores an enabled All tab by default. Switching Rows → Tabs inside creation therefore shows the enabled control. Do not display an irrelevant control merely because its serialized field exists. Show only controls relevant to the current scope. New Folder inherits the parent Collection's presentation as read-only evidence and must not mutate it.
+**Collection layout** follows Title options and may contain Tabs/Rows, Show All tab, and Pin to top. **Show All tab is a Tabs-specific visible control:** expose and normally toggle it while Tabs is selected; hide it while Rows is selected. Hierarchy plans always retain/generated `showAllTab: true` in Rows mode so changing that Collection back to Tabs later restores an enabled All tab by default. Switching Rows → Tabs inside creation therefore shows the enabled control. Do not display an irrelevant control merely because its serialized field exists. Show only controls relevant to the current scope. New Folder inherits the parent Collection's presentation as read-only evidence and must not mutate it.
 
 ## 11. Artwork boundary
 

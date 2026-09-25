@@ -1,3 +1,4 @@
+import { destinationContext, sourceDestinationContext } from "./creation-context.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -336,7 +337,7 @@ export function GenreSourceFlow({ previewProvider, project, folder, onBack, onCa
 					handleDialogKeyDown(event, dialogRef.current, onCancel);
 				}}>
 					<header className="add-source-heading" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
-						<div className="add-source-heading-row"><button className="add-source-header-action" type="button" disabled={isApplying} data-action={step === GENRE_SOURCE_STEPS.BROWSE ? "back-to-source-types" : "back-to-genre-browse"} onClick={goBack}><span aria-hidden="true">←</span> Back</button><div><h2 id="genre-source-title">Add Genre sources</h2><p>{folder?.editable?.title || "Selected folder"}</p></div><button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Genre sources" disabled={isApplying} onClick={onCancel}>Close</button></div>
+						<div className="add-source-heading-row"><button className="add-source-header-action" type="button" disabled={isApplying} data-action={step === GENRE_SOURCE_STEPS.BROWSE ? "back-to-source-types" : "back-to-genre-browse"} onClick={goBack}><span aria-hidden="true">←</span> Back</button><div><h2 id="genre-source-title">Add Genre sources</h2><p>{effectiveDestinationMode === "current-folder" ? sourceDestinationContext(project, folder) : destinationContext(collection?.editable?.title)}</p></div><button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Genre sources" disabled={isApplying} onClick={onCancel}>Close</button></div>
 						<p id="genre-source-description" className="add-source-heading-description">{step === GENRE_SOURCE_STEPS.BROWSE ? "Choose one or more Genres from the local official TMDB catalogue." : "Configure and review the generated Genre sources."}</p>
 					</header>
 					<form className="add-source-form genre-source-form" onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>

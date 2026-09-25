@@ -21,12 +21,12 @@ export async function assertSelectionAppearance(node, kind, { wait, forcedColors
 
 // Task-specific assertions in the existing source-edit browser harness. The real
 // workspace constructs its production providers; external data is never replaced.
-export async function runGuidedPresentationScenario(helpers, { family, forcedColors = false, capture = false, semanticOnly = false, nameRecovery = null }) {
+export async function runGuidedPresentationScenario(helpers, { family, forcedColors = false, capture = false, semanticOnly = false, nameRecovery = null, meaning = false, enlargedText = false }) {
 	const { createController, clickAndSettle: click, afterCommittedEffects: settle, setInputValue, setTextareaValue, setSelectValue, waitForMountedCondition: wait, serializedValue } = helpers;
 	const check = (value, message) => { if (!value) throw new Error(`${family}/${innerWidth}: ${message}`); return value; };
 	const visible = (node) => Boolean(node?.getClientRects().length && !node.closest('[inert], [aria-hidden="true"]'));
 	const originalFontSize = document.documentElement.style.fontSize;
-	if (nameRecovery?.enlargedText) document.documentElement.style.fontSize = "24px";
+	if (nameRecovery?.enlargedText || enlargedText) document.documentElement.style.fontSize = "24px";
 	const controller = createController(), before = serializedValue(controller), revision = controller.getState().revision;
 	const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
 	function Workspace() {
@@ -121,6 +121,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await palette(selected("multiple")[0], "multiple"); await stage(1, "Select Genres", "select");
 			await next(); await stage(2, "Configure Genres", "configure"); await palette(selected("multiple")[0], "multiple");
 			await next(); await stage(3, "Structure", "structure"); await palette(selected("single")[0], "single");
+			if (meaning) await click(check(dialog().querySelector('input[value="separate-media-collections"]'), "split Genre structure"));
 			if (nameRecovery?.structure) await click(check(dialog().querySelector(`input[value="${nameRecovery.structure}"]`), "Genre structure"));
 			await next(); await stage(4, "Appearance", "appearance");
 		} else if (family === "streaming-services") {
@@ -174,6 +175,25 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await click(row); await palette(row, "multiple"); await stage(1, name, "select");
 			await next(); await stage(2, `Configure ${name}`, "configure"); await palette(selected("multiple")[0], "multiple");
 			await next(); await stage(3, "Appearance", "appearance");
+		}
+		if (meaning) {
+			check(dialog().querySelector("h2").textContent.startsWith("Create with "), "persistent create operation");
+			for (const field of dialog().querySelectorAll('input[type="text"]')) {
+				if (!field.disabled && !field.value && [...field.labels].some(label => /(?:collection|folder) name/i.test(label.textContent))) await input(`#${field.id}`, `Review ${field.labels[0].textContent.replace(/ name/i, "")}`);
+			}
+			if (family === "decades" || family === "genres") check(primary().textContent === "Create 2 collections", "split output action understates two Collections");
+			else check(primary().textContent === "Create collection", "single Collection action");
+			const allHelp = dialog().querySelector(".hierarchy-show-all-control") ?? [...dialog().querySelectorAll("p")].find(node => node.textContent.includes("two or more sources"));
+			check(allHelp && /each folder with two or more sources.*All tab.*its sources/.test(allHelp.textContent), "All-tab source-within-folder meaning");
+			check(!/atomically|one atomic Apply|canonical People defaults/.test(dialog().textContent), "normal flow jargon");
+			check(dialog().textContent.includes("Collection layout"), "shared layout term");
+			for (const label of dialog().querySelectorAll("label[for]")) check(document.getElementById(label.htmlFor), "label target missing");
+			for (const node of dialog().querySelectorAll("[aria-describedby]")) for (const id of node.getAttribute("aria-describedby").split(/\s+/)) check(document.getElementById(id), "description target missing");
+			check(!primary().disabled, "valid commit action unavailable");
+			const rect = primary().getBoundingClientRect();
+			check(rect.bottom <= innerHeight + 1 && rect.left >= 0 && rect.right <= innerWidth + 1, "plural footer clipped");
+			check(dialog().scrollWidth <= dialog().clientWidth + 1, "copy horizontal overflow");
+			evidence.meaning = { action: primary().textContent, noOverflow: true, accessibleLabels: true, enlargedText };
 		}
 		if (nameRecovery) {
 			function assertNameFeedback(field, kind, invalid) {

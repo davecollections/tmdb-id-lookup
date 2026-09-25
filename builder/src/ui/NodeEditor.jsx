@@ -13,7 +13,7 @@ import {
 	handleDialogKeyDown,
 	initializeTitleInput,
 } from "./modal-focus.js";
-import { CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import { ALL_TAB_DESCRIPTION, CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
 import { CollectionArtworkField } from "./CollectionArtworkField.jsx";
 import {
 	FolderArtworkFields,
@@ -126,7 +126,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 						: ` ${prefix}-layout-status`
 				}`}
 			>
-				<legend>How sources appear in this collection</legend>
+				<legend>Collection layout</legend>
 				<p className="editor-field-help" id={`${prefix}-layout-help`}>
 					Choose how each folder in this collection displays its sources in Nuvio.
 				</p>
@@ -145,9 +145,9 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 
 			<div className="editor-switch-field" data-editor-field="showAllTab">
 				<PresentationSwitch
-					label="Include an All tab when using Tabs"
+					label="Show All tab"
 					description={tabsSelected
-						? "For each folder with two or more sources, adds an All tab that combines its sources."
+						? ALL_TAB_DESCRIPTION
 						: "Rows do not show tabs. This preference will be used if the collection is later changed to Tabs."}
 					descriptionId={`${prefix}-all-tab-help`}
 					describedBy={allTabDescriptionIds}
@@ -207,7 +207,7 @@ function FolderPresentationFields({ draft, prefix, missingTileOrientationNotice,
 			data-editor-field="tileShape"
 			aria-describedby={describedBy}
 		>
-			<legend>Tile shape</legend>
+			<legend>Folder tile shape</legend>
 			<p className="editor-field-help" id={`${prefix}-shape-help`}>
 				Choose the shape of this folder card in Nuvio.
 			</p>
@@ -463,7 +463,7 @@ export function NodeEditor({
 
 	const titleField = (
 		<div className="editor-field">
-			<label htmlFor={`${prefix}-title-input`}>Title</label>
+			<label htmlFor={`${prefix}-title-input`}>{draft.nodeType === "collection" ? "Collection name" : "Folder name"}</label>
 			<input
 				ref={titleInputRef}
 				id={`${prefix}-title-input`}

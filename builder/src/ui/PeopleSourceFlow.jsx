@@ -1,3 +1,4 @@
+import { creationContext, destinationContext, sourceDestinationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
@@ -465,7 +466,7 @@ export function PeopleFolderAppearance({
 				<p className="editor-field-help">One shape applies to every generated People folder.</p>
 				<FolderShapeChoices supportedShapes={["POSTER", "LANDSCAPE"]} selectedId={tileShape} name="people-folder-shape" idPrefix="people-folder" posterLabel="Poster (recommended)" onChange={onTileShapeChange} />
 			</fieldset>
-			<p className="editor-field-help people-folder-artwork-note">Each person’s Hero, Title Logo and Focus artwork will use the canonical People defaults. To customise artwork links later, edit that person’s folder.</p>
+			<p className="editor-field-help people-folder-artwork-note">Default People artwork is used for each person. You can customise it later in Edit Folder.</p>
 		</section>
 	);
 }
@@ -544,8 +545,8 @@ export function PeopleReviewStep({
 					</div></div>
 					{titleOptions}
 					<section className="review-layout-options people-review-layout" data-review-layout="true" aria-labelledby="people-review-layout-title">
-						<div className="review-presentation-heading"><h4 id="people-review-layout-title">Layout</h4><span>{collectionOptions.viewMode === "ROWS" ? "Rows" : `Tabs · All tab ${collectionOptions.showAllTab ? "on" : "off"}`} · {collectionOptions.pinToTop ? "pinned" : "not pinned"}</span></div>
-						<HierarchyCollectionPresentationControls selectedId={collectionOptions.viewMode} name="people-collection-view" showAllTab={collectionOptions.showAllTab} onPresentationChange={(patch) => onCollectionOptionsChange({ ...collectionOptions, ...patch })} showAllDescription="Combine all person folders in an All tab." showAllDescriptionId="people-show-all-help" showAllControlName="peopleShowAllTab" />
+						<div className="review-presentation-heading"><h4 id="people-review-layout-title">Collection layout</h4><span>{collectionOptions.viewMode === "ROWS" ? "Rows" : `Tabs · All tab ${collectionOptions.showAllTab ? "on" : "off"}`} · {collectionOptions.pinToTop ? "pinned" : "not pinned"}</span></div>
+						<HierarchyCollectionPresentationControls selectedId={collectionOptions.viewMode} name="people-collection-view" showAllTab={collectionOptions.showAllTab} onPresentationChange={(patch) => onCollectionOptionsChange({ ...collectionOptions, ...patch })} showAllDescriptionId="people-show-all-help" showAllControlName="peopleShowAllTab" />
 						<PresentationSwitch label="Pin collection to top" description="Keep this collection near the top in Nuvio." descriptionId="people-pin-help" controlName="peoplePinToTop" checked={collectionOptions.pinToTop} onChange={(pinToTop) => onCollectionOptionsChange({ ...collectionOptions, pinToTop })} />
 					</section>
 				</>
@@ -566,7 +567,7 @@ export function PeopleReviewStep({
 				<ul className="genre-review-list">
 					{entries.map((entry, index) => {
 						const outcome = plan.outcomes[index];
-						return <li key={entry.person.id}><div><strong>{entry.person.name}</strong><span>{entry.drafts.drafts.length} source{entry.drafts.drafts.length === 1 ? "" : "s"} · {entry.artworkState?.artwork?.source === "manifest" ? "canonical artwork" : `${entry.artworkState?.artwork?.source ?? "safe"} fallback`}</span></div><span data-status={outcome.status === PEOPLE_PLACEMENT_STATUSES.READY ? "ready" : outcome.status === PEOPLE_PLACEMENT_STATUSES.EXISTS_ELSEWHERE ? "elsewhere" : "destination-duplicate"}>{outcome.kind === "complete" ? "Already added" : outcome.kind === "append" ? "Add missing sources" : outcome.kind === "unresolved" ? "Choose a folder" : peoplePlacementLabels[outcome.status]}</span></li>;
+						return <li key={entry.person.id}><div><strong>{entry.person.name}</strong><span>{entry.drafts.drafts.length} source{entry.drafts.drafts.length === 1 ? "" : "s"} · {entry.artworkState?.artwork?.source === "manifest" ? "default People artwork" : `${entry.artworkState?.artwork?.source ?? "safe"} fallback`}</span></div><span data-status={outcome.status === PEOPLE_PLACEMENT_STATUSES.READY ? "ready" : outcome.status === PEOPLE_PLACEMENT_STATUSES.EXISTS_ELSEWHERE ? "elsewhere" : "destination-duplicate"}>{outcome.kind === "complete" ? "Already added" : outcome.kind === "append" ? "Add missing sources" : outcome.kind === "unresolved" ? "Choose a folder" : peoplePlacementLabels[outcome.status]}</span></li>;
 					})}
 				</ul>
 			</details> : null}
@@ -1033,21 +1034,21 @@ export function PeopleSourceFlow({
 	const primaryCount = context === "folder" ? quickDuplicates.missingDrafts.length : bulkSourceCount;
 	const primaryLabel = hierarchy
 		? step === PEOPLE_SOURCE_STEPS.CONFIGURE && hierarchyPlanResult?.ok && hierarchyPlanResult.plan.counts.folderCount === 0 ? isApplying ? "Adding…" : "Add sources" : step === PEOPLE_SOURCE_STEPS.REVIEW
-			? isApplying ? "Applying…" : hierarchyPlanResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(hierarchyScope)
+			? isApplying ? "Applying…" : hierarchyPlanResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(hierarchyScope, hierarchyPlanResult?.plan?.counts)
 			: "Continue"
 		: context === "folder"
-		? quickEntry ? `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}` : "Add person"
+		? quickEntry ? `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}` : "Add sources"
 		: `Add ${configuredEntries.length} folder${configuredEntries.length === 1 ? "" : "s"} · ${bulkSourceCount} source${bulkSourceCount === 1 ? "" : "s"}`;
 	const titleId = embedded ? "creation-title" : "people-source-title";
 	const descriptionId = embedded ? "creation-description" : "people-source-description";
-	const headingTitle = hierarchy ? "Create with People" : context === "folder" ? "Add person" : "Add people";
+	const headingTitle = hierarchy ? "Create with People" : context === "folder" ? "Add People sources" : "Add People folders";
 	const headingContext = hierarchy
-		? `${hierarchyScope === "new-folder" ? "New Folder" : "New Collection"}${hierarchyScope === "new-folder" && collection?.editable?.title ? ` · ${collection.editable.title}` : ""}`
-		: context === "folder" ? folder?.editable?.title || "Selected folder" : collection?.editable?.title || "Selected collection";
+		? creationContext(hierarchyScope, collection?.editable?.title)
+		: context === "folder" ? sourceDestinationContext(project, folder) : destinationContext(collection?.editable?.title);
 	const headingDescription = step === PEOPLE_SOURCE_STEPS.SEARCH
 		? context === "folder" ? "Search for one person to add to the current folder." : "Select people in folder order, then configure their existing Acting and Directing sources."
 		: step === PEOPLE_SOURCE_STEPS.CONFIGURE ? multiContext ? null : "Choose the exact Acting and Directing sources to add."
-			: "Review names, appearance and destination placement before creating everything atomically.";
+			: "Review names, appearance and where your content will be added before creating it.";
 	const sourcePreviewAvailable = Boolean(quickEntry?.drafts.ok && titlePreview.available(quickEntry.drafts.drafts, quickEntry.person));
 	const dialogContent = (
 		<section ref={dialogRef} className={`add-source-dialog people-source-dialog${embedded ? " people-source-embedded" : ""}`} data-dialog-compact={step === PEOPLE_SOURCE_STEPS.SEARCH ? "true" : undefined} data-add-source-modal={embedded ? undefined : "true"} data-add-source-step={step} data-people-context={context} data-people-hierarchy-scope={hierarchyScope ?? undefined} data-source-mode={PEOPLE_SOURCE_MODE.id} data-preview-open={sourcePreview ? "true" : undefined} role={embedded ? undefined : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby={titleId} aria-describedby={headingDescription ? descriptionId : undefined} tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, () => !isApplying && onCancel())}>
@@ -1057,7 +1058,7 @@ export function PeopleSourceFlow({
 								? <button className="add-source-header-action" type="button" data-action={step === PEOPLE_SOURCE_STEPS.SEARCH ? hierarchy ? "back-to-creation-launcher" : "back-to-source-types" : undefined} disabled={isApplying} onClick={goBack}><span aria-hidden="true">←</span>Back</button>
 									: <span className="add-source-header-spacer" aria-hidden="true" />}
 							<div><h2 id={titleId}>{headingTitle}</h2><p>{headingContext}</p></div>
-							<button className="add-source-header-action add-source-close-action" type="button" aria-label={context === "folder" ? "Close Add person" : "Close Add people"} disabled={isApplying} onClick={onCancel}>Close</button>
+							<button className="add-source-header-action add-source-close-action" type="button" aria-label={`Close ${headingTitle}`} disabled={isApplying} onClick={onCancel}>Close</button>
 						</div>
 						{headingDescription ? <p id={descriptionId} className="add-source-heading-description">{headingDescription}</p> : null}
 					</header>

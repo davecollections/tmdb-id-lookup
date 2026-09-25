@@ -23,11 +23,17 @@ function recordLiveDiscover() {
 
 // All titles, counts and posters come from the shared production-path requester.
 // This thin scenario reuses the source-editor mounted browser and lifecycle helpers.
-export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode, presentationOnly = false }) {
+export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode, presentationOnly = false, meaning = false, enlargedText = false }) {
 	const { createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, setSelectValue, titlePreviewGeometry, waitForMountedCondition, streamingProvider } = helpers;
 	recordLiveDiscover();
 	const controller = createController(), folder = importSources(controller, []);
-	const initial = controller.getState(), collection = initial.project.collections[0];
+	if (meaning) {
+  controller.updateNode(controller.getState().project.collections[0].internalId, { title: "Movies and Series for the whole family on quiet evenings" });
+  controller.updateNode(folder.internalId, { title: "Discover favourites with a long descriptive folder name" });
+ }
+ const originalFontSize = document.documentElement.style.fontSize;
+ if (enlargedText) document.documentElement.style.fontSize = "24px";
+ const initial = controller.getState(), collection = initial.project.collections[0];
 	const editing = scope.startsWith("edit-");
 	let draft = { ...createAdvancedDiscoverDraft(), mediaMode, sortOptionIds: editing ? ["recent"] : ["recent", "top-rated"], filters: { voteCountGte: "100", withGenres: "16", releaseDateGte: "2020-01-01" } };
 	if (editing) {
@@ -51,6 +57,23 @@ export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode, pr
 	try {
 		await act(async () => { root.render(createElement(AdvancedDiscoverFlow, { scope: editing ? "add-source" : scope, ...controller.getState(), projectRevision: controller.getState().revision, collectionInternalId: collection.internalId, folderInternalId: folder.internalId, initialDraft: draft, streamingProvider, onCancel: () => { cancels += 1; }, onApply: forbidden, ...(editing ? { onSave: forbidden } : {}) })); await afterCommittedEffects(); });
 		const dialog = document.querySelector(".discover-dialog");
+		if (meaning) {
+			const inspect = () => {
+				if (dialog.querySelector("h2").textContent !== "Add Discover sources") throw new Error("Discover Add claims creation");
+				const context = dialog.querySelector(".add-source-heading-row p");
+				if (context.textContent !== "To Movies and Series for the whole family on quiet evenings / Discover favourites with a long descriptive folder name") throw new Error("Discover destination path");
+				if (document.documentElement.scrollWidth > innerWidth + 1 || dialog.scrollWidth > dialog.clientWidth + 1 || context.scrollWidth > context.clientWidth + 1) throw new Error("Long destination overflows");
+				const buttons = [...dialog.querySelectorAll(".add-source-heading-row button, footer button")];
+				for (const button of buttons) { const rect = button.getBoundingClientRect(); if (rect.left < -1 || rect.right > innerWidth + 1 || rect.top < -1 || rect.bottom > innerHeight + 1) throw new Error("Discover action clipped"); }
+			};
+			inspect();
+			await clickAndSettle(dialog.querySelector("footer .editor-apply"));
+			await afterCommittedEffects(); inspect();
+			if (dialog.querySelector("footer .editor-apply").textContent !== "Add sources") throw new Error("Discover Add commit verb");
+			await clickAndSettle(dialog.querySelector('[aria-label="Close creation flow"]'));
+			if (serializedValue(controller) !== snapshot || cancels !== 1) throw new Error("Discover copy check mutated content");
+			return { scope, width: innerWidth, enlargedText, noOverflow: true, noMutation: true, operation: "Add Discover sources" };
+		}
 		if (presentationOnly) {
 			const sort = dialog.querySelector('input[name="discover-sort"]:checked');
 			if (sort?.type !== "radio" || sort.parentElement.dataset.selectionMode !== "single") throw new Error("Physical Discover sort lost single-choice semantics.");
@@ -132,5 +155,5 @@ export async function runDiscoverPreviewScenario(helpers, { scope, mediaMode, pr
 		evidence.preserved = serializedValue(controller) === snapshot && JSON.stringify(draft) === openingDraft;
 		evidence.cancelled = cancels === 1;
 		return evidence;
-	} finally { await act(async () => { root.unmount(); await afterCommittedEffects(); }); host.remove(); }
+	} finally { await act(async () => { root.unmount(); await afterCommittedEffects(); }); host.remove(); document.documentElement.style.fontSize = originalFontSize; }
 }
