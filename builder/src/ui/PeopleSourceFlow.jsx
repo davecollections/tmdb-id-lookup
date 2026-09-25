@@ -1,5 +1,5 @@
 import { creationContext, destinationContext, sourceDestinationContext } from "./creation-context.js";
-import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
+import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
 import { inspectPeopleHierarchyPlacement } from "../source-add/people-plan.js";
@@ -535,6 +535,7 @@ export function PeopleReviewStep({
 				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>
 				<div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div>
 			</div> : null}
+			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
 			{scope === "new-collection" ? (
 				<>
 					<div className="decades-collection-names"><div className="editor-field">
@@ -557,7 +558,6 @@ export function PeopleReviewStep({
 					<div className="decades-inherited-presentation" data-people-inherited-presentation="true"><strong>Collection settings stay unchanged.</strong><span>{inheritedPeopleCollectionSummary(plan.destination)}</span><small>New folders use this Collection’s {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"} layout.</small></div>
 				</>
 			) : null}
-			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
 			{scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			<PeopleFolderAppearance tileShape={folderTileShape} onTileShapeChange={onFolderTileShapeChange} />
 			{!plan && otherErrors.length ? <ul className="genre-advanced-errors" role="alert">{otherErrors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
@@ -1032,10 +1032,11 @@ export function PeopleSourceFlow({
 
 	const step = navigation.step;
 	const primaryCount = context === "folder" ? quickDuplicates.missingDrafts.length : bulkSourceCount;
+	const nameCorrection = hierarchy && configureReady && !isApplying && onlyRequiredNameErrors(hierarchyPlanResult, ["$peoplePlan.collectionTitle"]);
 	const primaryLabel = hierarchy
 		? step === PEOPLE_SOURCE_STEPS.CONFIGURE && hierarchyPlanResult?.ok && hierarchyPlanResult.plan.counts.folderCount === 0 ? isApplying ? "Adding…" : "Add sources" : step === PEOPLE_SOURCE_STEPS.REVIEW
 			? isApplying ? "Applying…" : hierarchyPlanResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(hierarchyScope, hierarchyPlanResult?.plan?.counts)
-			: "Continue"
+			: "Continue to Review & Appearance"
 		: context === "folder"
 		? quickEntry ? `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}` : "Add sources"
 		: `Add ${configuredEntries.length} folder${configuredEntries.length === 1 ? "" : "s"} · ${bulkSourceCount} source${bulkSourceCount === 1 ? "" : "s"}`;
@@ -1062,11 +1063,12 @@ export function PeopleSourceFlow({
 						</div>
 						{headingDescription ? <p id={descriptionId} className="add-source-heading-description">{headingDescription}</p> : null}
 					</header>
-					<form className="add-source-form" data-people-source-form-step={step} inert={sourcePreview || undefined} aria-hidden={sourcePreview ? "true" : undefined} onSubmit={(event) => {
+					<form className="add-source-form" data-people-source-form-step={step} inert={sourcePreview || undefined} aria-hidden={sourcePreview ? "true" : undefined} onSubmitCapture={handleRequiredNameSubmit} onSubmit={(event) => {
 						event.preventDefault();
 						if (step === PEOPLE_SOURCE_STEPS.SEARCH) beginBulkConfigure();
 						else if (step === PEOPLE_SOURCE_STEPS.CONFIGURE && hierarchy) {
-							if (hierarchyPlanResult?.ok && hierarchyPlanResult.plan.counts.sourceCount > 0 && hierarchyPlanResult.plan.counts.unresolvedEntityCount === 0) {
+							if (nameCorrection) setNavigation(enterPeopleReview);
+							else if (hierarchyPlanResult?.ok && hierarchyPlanResult.plan.counts.sourceCount > 0 && hierarchyPlanResult.plan.counts.unresolvedEntityCount === 0) {
 								if (hierarchyPlanResult.plan.counts.folderCount === 0) applyPeople(false);
 								else setNavigation(enterPeopleReview);
 							}
@@ -1090,8 +1092,8 @@ export function PeopleSourceFlow({
 								</section>
 							) : <PeopleReviewStep scope={hierarchyScope} planResult={hierarchyPlanResult} entries={configuredEntries} collectionOptions={collectionOptions} onCollectionOptionsChange={(next) => { setCollectionOptions(Object.freeze(next)); setApplyDiagnostic(null); }} folderTileShape={folderTileShape} onFolderTileShapeChange={(tileShape) => { setFolderTileShape(tileShape); setApplyDiagnostic(null); }} folderTitleVisibility={folderTitleVisibility} onFolderTitleVisibilityChange={(next) => { setFolderTitleVisibility(next); setApplyDiagnostic(null); }} applyDiagnostic={applyDiagnostic} headingRef={configureRef} />}
 						</div>
-						{step === PEOPLE_SOURCE_STEPS.SEARCH && multiContext ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={chosenPeople.length === 0}>Configure {chosenPeople.length} {chosenPeople.length === 1 ? "person" : "people"}</button></footer> : null}
-						{step !== PEOPLE_SOURCE_STEPS.SEARCH ? <footer className="add-source-actions people-configure-actions"><button className="editor-apply" type="submit" disabled={!configureReady || isApplying || (context === "folder" && primaryCount === 0) || (hierarchy && (!hierarchyPlanResult?.ok || hierarchyPlanResult.plan.counts.sourceCount === 0 || hierarchyPlanResult.plan.counts.unresolvedEntityCount > 0))}>{isApplying ? "Adding…" : primaryLabel}</button>{context === "folder" && quickDuplicates.destination.length ? <button className="editor-cancel people-add-all" type="button" disabled={!configureReady || isApplying} data-action="add-all-people-anyway" onClick={() => applyPeople(true)}>Add all {quickEntry?.drafts.drafts.length ?? 0} anyway</button> : null}</footer> : null}
+						{step === PEOPLE_SOURCE_STEPS.SEARCH && multiContext ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={chosenPeople.length === 0}>Continue to Configure</button></footer> : null}
+						{step !== PEOPLE_SOURCE_STEPS.SEARCH ? <footer className="add-source-actions people-configure-actions"><button className="editor-apply" type="submit" disabled={!nameCorrection && (!configureReady || isApplying || (context === "folder" && primaryCount === 0) || (hierarchy && (!hierarchyPlanResult?.ok || hierarchyPlanResult.plan.counts.sourceCount === 0 || hierarchyPlanResult.plan.counts.unresolvedEntityCount > 0)))}>{isApplying ? "Adding…" : primaryLabel}</button>{context === "folder" && quickDuplicates.destination.length ? <button className="editor-cancel people-add-all" type="button" disabled={!configureReady || isApplying} data-action="add-all-people-anyway" onClick={() => applyPeople(true)}>Add all {quickEntry?.drafts.drafts.length ?? 0} anyway</button> : null}</footer> : null}
 					</form>
 					{sourcePreview ? <SourceTitlePreviewDialog preview={sourcePreview} titleId="people-add-preview-title" backdropProps={{ "data-people-add-preview-backdrop": "true" }} dialogProps={{ "data-people-add-preview": "true" }} {...titlePreview.dialogProps} /> : null}
 				</section>

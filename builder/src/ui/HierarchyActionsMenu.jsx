@@ -189,7 +189,7 @@ export function HierarchyActionsMenu({
 			) : null}
 			{onAdvancedEdit ? <button type="button" role="menuitem" tabIndex={-1} disabled={disabled || !open} onClick={() => runAction(onAdvancedEdit)}>Edit Discover</button> : null}
 			{onSortFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="sort-folders" disabled={disabled || !open || node.folderCount < 2} onClick={() => runAction(onSortFolders)}>Sort folders</button> : null}
-			{onRemoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="remove-folders" disabled={disabled || !open || node.folderCount === 0} onClick={() => runAction(onRemoveFolders)}>Remove folders</button> : null}
+			{onRemoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="remove-folders" disabled={disabled || !open || node.folderCount === 0} onClick={() => runAction(onRemoveFolders)}>Delete folders</button> : null}
 			<button
 				className="hierarchy-menu-delete"
 				type="button"

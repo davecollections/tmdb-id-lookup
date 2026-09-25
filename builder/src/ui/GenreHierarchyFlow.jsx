@@ -1,5 +1,5 @@
 import { creationContext } from "./creation-context.js";
-import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
+import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -476,13 +476,13 @@ export function GenreHierarchyFlow({
 			return;
 		}
 		if (step === "configure") {
-			if (!planResult.ok || planResult.plan.counts.folderCount === 0) return;
+			if ((!planResult.ok && !nameCorrection) || planResult.plan?.counts.folderCount === 0) return;
 			scrollByStepRef.current.configure = scrollRef.current?.scrollTop ?? 0;
 			setStep("structure");
 			return;
 		}
 		if (step === "structure") {
-			if (!planResult.ok || planResult.plan.counts.folderCount === 0) return;
+			if ((!planResult.ok && !nameCorrection) || planResult.plan?.counts.folderCount === 0) return;
 			scrollByStepRef.current.structure = scrollRef.current?.scrollTop ?? 0;
 			setStep("appearance");
 			return;
@@ -499,21 +499,22 @@ export function GenreHierarchyFlow({
 	const primaryDisabled = step === "select"
 		? selection.length === 0
 		: !planResult.ok || planResult.plan.counts.folderCount === 0 || (step === "appearance" && isApplying);
+	const nameCorrection = !isApplying && onlyRequiredNameErrors(planResult, ["$genreHierarchy.collectionTitle", "$genreHierarchy.collectionTitles.movies", "$genreHierarchy.collectionTitles.series"]);
 	const primaryLabel = step === "select"
-		? `Configure ${selection.length} Genre${selection.length === 1 ? "" : "s"}`
+		? "Continue to Configure"
 		: step === "configure"
-			? planResult.ok && planResult.plan.counts.folderCount > 0 ? "Continue to Structure" : "No Genre folders ready"
+			? (planResult.ok && planResult.plan.counts.folderCount > 0 || nameCorrection) ? "Continue to Structure" : "No Genre folders ready"
 			: step === "structure"
-				? planResult.ok && planResult.plan.counts.folderCount > 0 ? "Continue to Appearance" : "No Genre folders ready"
+				? (planResult.ok && planResult.plan.counts.folderCount > 0 || nameCorrection) ? "Continue to Appearance" : "No Genre folders ready"
 				: isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 	return <>
 		<CreationHeader title="Create with Genres" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select official TMDB Genres in folder order." : step === "configure" ? "Choose your media, sources and any advanced settings, then review." : step === "structure" ? "Choose how Genre sources are grouped in Nuvio." : "Choose how your collections and folders will appear in Nuvio."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-genre-hierarchy-selection" : step === "structure" ? "back-to-genre-hierarchy-configuration" : "back-to-genre-hierarchy-structure"} backDisabled={isApplying} inactive={Boolean(secondarySurface || preview)} onClose={onCancel} />
-		<form className="add-source-form genre-hierarchy-form" data-genre-hierarchy-stage={step} data-secondary-surface={secondarySurface ?? undefined} onSubmit={submit} noValidate onKeyDown={(event) => { if (secondarySurface && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSecondary(); } }}>
+		<form className="add-source-form genre-hierarchy-form" data-genre-hierarchy-stage={step} data-secondary-surface={secondarySurface ?? undefined} onSubmitCapture={handleRequiredNameSubmit} onSubmit={submit} noValidate onKeyDown={(event) => { if (secondarySurface && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSecondary(); } }}>
 			<div ref={scrollRef} className="add-source-scroll" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
 				{step === "select" ? <SelectStep query={query} selection={selection} genres={genres} headingRef={selectHeadingRef} onQueryChange={(event) => setQuery(event.target.value)} onClearSearch={() => setQuery("")} onChoose={chooseGenre} onSelectAll={() => { const names = GENRE_CONCEPTS.map((concept) => concept.name); setSelection(names); setAdvanced((current) => pruneGenreExclusionConfiguration(current, names)); setKnownPreviewCounts({}); setDiagnostic(null); }} onClearAll={() => { setSelection([]); setAdvanced((current) => pruneGenreExclusionConfiguration(current, [])); setKnownPreviewCounts({}); setDiagnostic(null); }} onRemove={chooseGenre} /> : step === "configure" ? <ConfigureStep scope={scope} genres={genres} sharedMediaChoice={sharedMediaChoice} sortOptionIds={sortOptionIds} advanced={advanced} built={built} folderPlan={folderPlan} headingRef={configureHeadingRef} onRemove={chooseGenre} onPreview={openPreview} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onSortChange={(value) => { setSortOptionIds(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onOpenSecondary={openSecondary} /> : step === "structure" ? <StructureStep structurePlans={structurePlans} compositeChoices={compositeChoices} options={options} headingRef={structureHeadingRef} onStructureChange={(structure) => updateOptions({ structure })} onCompositeChange={(genreName, placement) => updateOptions({ compositePlacements: Object.freeze({ ...options.compositePlacements, [genreName]: placement }) })} /> : <AppearanceStep scope={scope} advancedUi={advanced.ui} planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
 			</div>
 			{secondarySurface ? <div className="genre-secondary-surface" data-surface={secondarySurface}><GenreAdvancedSecondarySurface surface={secondarySurface} value={advanced} includedGenres={genres} sharedMediaChoice={sharedMediaChoice} onChange={(value) => { setAdvanced(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onDone={closeSecondary} focusRef={secondaryHeadingRef} /></div> : null}
-			{!secondarySurface ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled}>{primaryLabel}</button></footer> : null}
+			{!secondarySurface ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled && !nameCorrection}>{primaryLabel}</button></footer> : null}
 		</form>
 		{preview ? <GenreTitlePreview preview={preview} knownPreviewCounts={knownPreviewCounts} onChangeDraft={(draft) => { if (draft !== preview.draft) requestPreview(preview.group, draft); }} onClose={closePreview} onRetry={() => requestPreview(preview.group, preview.draft)} /> : null}
 	</>;

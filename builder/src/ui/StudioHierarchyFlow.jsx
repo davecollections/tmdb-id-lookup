@@ -1,5 +1,5 @@
 import { creationContext } from "./creation-context.js";
-import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
+import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
 import { StudioAdvancedOptions, StudioMinimumVotesSummary } from "./StudioAdvancedOptions.jsx";
@@ -270,10 +270,11 @@ export function StudioHierarchyFlow({
 	}
 
 	const primaryDisabled = step === "select" ? chosen.length === 0 : step === "configure" ? !configurationValid || isPreparing || isApplying : !planResult?.ok || planResult.plan.counts.sourceCount === 0 || planResult.plan.counts.unresolvedEntityCount > 0 || isApplying;
-	const primaryLabel = step === "select" ? `Configure ${chosen.length} Studio${chosen.length === 1 ? "" : "s"}` : step === "configure" ? isApplying ? "Adding…" : isPreparing ? "Preparing artwork…" : appendOnly ? "Add sources" : "Continue to Appearance" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
+	const nameCorrection = step === "appearance" && !(isApplying || isPreparing) && onlyRequiredNameErrors(planResult, ["$studioPlan.collectionTitle"]);
+	const primaryLabel = step === "select" ? "Continue to Configure" : step === "configure" ? isApplying ? "Adding…" : isPreparing ? "Preparing artwork…" : appendOnly ? "Add sources" : "Continue to Appearance" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 	return <>
 		<CreationHeader title="Create with Studios" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select Studios in folder order." : step === "configure" ? "Choose Studios, media and source options." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-studio-selection" : "back-to-studio-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
-		<form className="add-source-form studio-hierarchy-form" data-studio-hierarchy-stage={step} onSubmit={submit} noValidate>
+		<form className="add-source-form studio-hierarchy-form" data-studio-hierarchy-stage={step} onSubmitCapture={handleRequiredNameSubmit} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
 					<CreationStageIntro step={1} phase="Select" title="Studios · TMDB" description="Search by studio name, location or TMDB ID." headingId="studio-mode-title" headingRef={selectHeadingRef} tabIndex={-1} />
@@ -281,7 +282,7 @@ export function StudioHierarchyFlow({
 					<StudioSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Studios" showIntro={false} renderResult={(studio) => <SelectableStudioResult key={studio.id} studio={studio} checked={Boolean(selection.byId[studio.id])} onToggle={toggleStudio} />} />
 				</> : step === "configure" ? <div ref={configureHeadingRef} tabIndex={-1}><ConfigureStep studios={chosen} knownSeriesCounts={knownSeriesCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} mediaMode={options.mediaMode} sortOptionIds={options.sortOptionIds} onMediaChange={(mediaMode) => updateOptions({ mediaMode })} onSortChange={(sortOptionIds) => updateOptions({ sortOptionIds })} onPreview={openPreview} onRemove={removeStudio} options={options} onAdvancedChange={updateOptions} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep scope={scope} planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
 			</div>
-			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>
+			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled && !nameCorrection} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>
 		</form>
 		{preview ? <SourceTitlePreviewDialog {...titlePreview.dialogProps} titleId="studio-preview-title" backdropProps={{ "data-studio-preview-backdrop": "true" }} dialogProps={{ "data-studio-preview": "true" }} /> : null}
 	</>;

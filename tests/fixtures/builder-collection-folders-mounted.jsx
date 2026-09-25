@@ -65,7 +65,7 @@ async function open(action) {
 	await showCollections();
 	const trigger = $('[data-action="open-collection-actions"]');
 	await click(trigger);
-	assert($$('[data-actions-menu="collection"] [role="menuitem"]').map((el) => el.textContent).join("|") === "Edit|Sort folders|Remove folders|Delete collection", "Collection menu order");
+	assert($$('[data-actions-menu="collection"] [role="menuitem"]').map((el) => el.textContent).join("|") === "Edit|Sort folders|Delete folders|Delete collection", "Collection menu order");
 	await click($(`[data-action="${action}"]`));
 	return trigger;
 }
@@ -84,6 +84,10 @@ function measure() {
 	const removing = dialog.dataset.collectionFoldersDialog === "remove";
 	const warning = $('.collection-folders-controls .genre-attention-note');
 	if (removing) {
+		const buttons = [...document.querySelectorAll('.collection-folders-actions button')];
+		assert(buttons[0].textContent === "Cancel" && buttons[1].textContent.startsWith("Delete "), "Safe-first destructive action order");
+		const safe = buttons[0].getBoundingClientRect(), danger = buttons[1].getBoundingClientRect();
+		assert(safe.top <= danger.top + 1 && (safe.top < danger.top - 1 || safe.left < danger.left), "Visual order matches semantic order");
 		const warningRect = warning.getBoundingClientRect();
 		assert(warningRect.top >= rect.top && warningRect.bottom <= actions.top, "Irreversible warning stays visible outside the list");
 		assert(warning.textContent === "This can’t be undone. Selected folders and all sources inside them will be permanently deleted.", "Exact irreversible Folder and Source consequence");
@@ -99,7 +103,7 @@ window.runCollectionFoldersCase = async () => {
 	const collection = await mount();
 	const before = controller.getState();
 	const trigger = await open("remove-folders");
-	assert(document.activeElement === modal(), "Dialog receives initial focus");
+	assert(document.activeElement === button("Cancel"), "Safe Cancel receives initial focus");
 	assert(!modal().querySelector('input[type="search"], [role="tab"], [aria-label="Show folders"]'), "No Search or All/Selected tabs");
 	assert(button("Delete 0 folders").disabled, "Zero selection cannot delete");
 	assert($$('.collection-folder-list input').length === 70, "All 70 current rows rendered");
@@ -501,4 +505,38 @@ window.closeBackToTopModal = async (exporting = false) => {
 	assert(!$('.workspace-underlay').inert && topButton() && !topButton().disabled, "Control works again after modal closes");
 	assertTopStatePreserved();
 	return true;
+};
+
+
+let singleDeleteOpening;
+window.prepareSingleDeleteCase = async (kind) => {
+	const value = project(3);
+	value.push({ id: "surviving-collection", title: "Surviving collection", folders: [] });
+	await mount(value);
+	if (kind === "collection") await showCollections();
+	if (kind === "folder" && innerWidth < 900) await click($('.sources-panel .back-control'));
+	const trigger = $(`[data-action="open-${kind}-actions"]`);
+	await click(trigger);
+	await click(document.getElementById(trigger.getAttribute("aria-controls")).querySelector(`[data-action="delete-${kind}"]`));
+	const dialog = $('[data-delete-confirmation]'), cancel = $('[data-action="cancel-delete"]'), confirm = $('[data-action="confirm-delete"]');
+	assert(dialog && document.activeElement === cancel, `Single ${kind} deletion focuses safe Cancel: dialog=${Boolean(dialog)}, active=${document.activeElement?.outerHTML.slice(0, 300)}`);
+	assert(cancel.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING, "Cancel precedes Delete");
+	assert(confirm.textContent === `Delete ${kind}`, "Explicit destructive verb and target");
+	assert(dialog.textContent.includes("Permanent deletion") && $('#delete-confirmation-description').textContent.length > 25, "Meaningful permanent consequence");
+	for (const action of [cancel, confirm]) {
+		const rect = action.getBoundingClientRect();
+		assert(rect.width >= 44 && rect.height >= 44 && rect.top >= 0 && rect.bottom <= innerHeight + 1, "Reachable destructive-dialog controls");
+	}
+	singleDeleteOpening = { before: controller.getState(), trigger, kind };
+	return true;
+};
+window.finishSingleDeleteCase = async (commit = false) => {
+	const { before, trigger, kind } = singleDeleteOpening;
+	if (commit) await click($('[data-action="confirm-delete"]'));
+	await frame();
+	assert(!$('[data-delete-confirmation]'), "Deletion confirmation closed");
+	assert(controller.getState().revision === before.revision + (commit ? 1 : 0), "Expected deletion revision");
+	if (!commit) assert(controller.getState().project === before.project && document.activeElement === trigger, "Cancel keeps project and restores exact trigger");
+	else assert(document.activeElement !== document.body && document.activeElement.isConnected && !document.activeElement.closest('[inert]'), "Delete focuses surviving context");
+	return { kind, commit, safeFocus: true, restoredFocus: true, width: innerWidth };
 };

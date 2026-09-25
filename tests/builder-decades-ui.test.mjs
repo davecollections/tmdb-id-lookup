@@ -750,13 +750,13 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	for (const label of ["Show everywhere", "Hide on home screen only", "Hide everywhere"]) assert.ok(review.includes(label), label);
 	assert.ok(review.includes('data-decades-settings="layout"'));
 	assert.ok(review.includes('data-decades-settings="folder-options"'));
-	for (const label of ["Title options", "Collection layout", "Folder options", "View folder details"]) assert.ok(review.includes(label), label);
+	for (const label of ["Title options", "Collection layout", "Folder tile shape", "View folder details"]) assert.ok(review.includes(label), label);
 	assert.ok(review.indexOf("Title options") < review.indexOf("Collection layout"));
-	assert.ok(review.indexOf("Collection layout") < review.indexOf("Folder options"));
-	assert.ok(review.indexOf("Folder options") < review.indexOf("View folder details"));
+	assert.ok(review.indexOf("Collection layout") < review.indexOf("Folder tile shape"));
+	assert.ok(review.indexOf("Folder tile shape") < review.indexOf("View folder details"));
 	assert.equal(review.includes("Decade folder options"), false);
 	const collectionOptions = review.match(/<section class="review-layout-options"[^>]*data-decades-settings="layout"[\s\S]*?<\/section>/)?.[0] ?? "";
-	const folderOptions = review.match(/<details class="decades-settings-disclosure" data-decades-settings="folder-options">[\s\S]*?<\/details>/)?.[0] ?? "";
+	const folderOptions = review.match(/<section data-decades-settings="folder-options">[\s\S]*?<\/section>/)?.[0] ?? "";
 	assert.ok(collectionOptions.includes("Collection layout"));
 	assert.equal(collectionOptions.includes("hideNuvioTitle"), false);
 	assert.equal(collectionOptions.includes("Hide collection title"), false);
@@ -770,7 +770,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	const invalidPlan = buildDecadesCreationPlan(current.getState().project, current.getState().revision, invalidState);
 	assert.equal(invalidPlan.ok, false);
 	const recoverableReview = renderToStaticMarkup(createElement(DecadesReviewStep, { state: invalidState, planResult: invalidPlan, onCollectionTitleChange() {} }));
-	assert.ok(recoverableReview.includes("Review needs attention"));
+	assert.ok(recoverableReview.includes("Enter a collection name."));
 	assert.ok(recoverableReview.includes('id="decades-collection-movies"'));
 
 	const destination = current.createCollection({ editable: { title: "Destination", viewMode: "ROWS", showAllTab: false, pinToTop: true } });
@@ -815,7 +815,7 @@ test("hidden Decades collection titles use one shared accessible message and pre
 		for (const input of titleInputs) {
 			assert.ok(input.includes('value=""'));
 			assert.ok(input.includes('disabled=""'));
-			assert.ok(input.includes('aria-describedby="decades-hidden-collection-titles-help"'));
+			assert.ok(input.includes('aria-describedby="decades-hidden-collection-titles-help '));
 		}
 		assert.deepEqual(state.collectionTitles, expectedDrafts);
 		for (const collection of planResult.plan.collections) assert.equal(collection.editable.title, NUVIO_INVISIBLE_TITLE);
@@ -858,14 +858,14 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 	assert.ok(review.indexOf("Title options") < review.indexOf("Collection layout"));
 	for (const summary of ["Rows · pinned", "Landscape"]) assert.ok(review.includes(summary), summary);
 	assert.equal(review.includes("Show All tab"), false);
-	assert.match(review, /id="decades-collection-mixed" type="text" disabled=""[^>]*value=""/);
+	assert.match(review, /id="decades-collection-mixed" type="text"[^>]*disabled=""[^>]*value=""/);
 	assert.equal((review.match(/Collection titles are intentionally hidden in Nuvio\. Turn this off to edit visible titles\./g) ?? []).length, 1);
 	assert.match(review, /data-editor-choice="hide-everywhere"[^>]*checked="" value="HIDE_EVERYWHERE"/);
 	const restoredState = { ...prepareDecadesReview(state), hideCollectionTitle: false };
 	const restoredPlan = buildDecadesCreationPlan(current.getState().project, current.getState().revision, restoredState);
 	const restoredReview = renderToStaticMarkup(createElement(DecadesReviewStep, { state: restoredState, planResult: restoredPlan, onCollectionTitleChange() {}, onStateChange() {} }));
-	assert.match(restoredReview, /id="decades-collection-mixed" type="text" value="Decades"/);
-	assert.equal(restoredReview.includes('id="decades-collection-mixed" type="text" value="Decades" disabled'), false);
+	assert.match(restoredReview, /id="decades-collection-mixed" type="text"[^>]*value="Decades"/);
+	assert.equal(restoredReview.includes('id="decades-collection-mixed" type="text"[^>]*value="Decades" disabled'), false);
 	assert.equal(review.includes('data-decades-overview-all-tab-note="true"'), false);
 
 	const noteState = prepareDecadesReview({ ...state, viewMode: "TABBED_GRID", showAllTab: true });

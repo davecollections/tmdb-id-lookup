@@ -2111,7 +2111,7 @@ async function runFranchiseReviewScenario() {
 			selectedNames.get(franchiseIds[0]),
 		]);
 
-		await clickAndSettle(required(buttonContaining(dialog, "Review 2 franchises"), "Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review & Appearance"), "Review action"));
 		const review = required(dialog.querySelector(".franchise-review"), "Review surface");
 		const showAll = required(review.querySelector('[data-editor-control="franchiseShowAllTab"]'), "Tabs Show All control");
 		const tabsInitiallyEnabled = showAll.checked === true;
@@ -2341,7 +2341,7 @@ async function runStudioHierarchyScenario() {
 			requests: requests.length,
 		};
 
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Studios"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		let configure = required(dialog.querySelector(".studio-hierarchy-configure"), "Configure stage");
 		const configureInitialRequests = requests.length;
 		const defaults = {
@@ -2370,7 +2370,7 @@ async function runStudioHierarchyScenario() {
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-studio-selection"]'), "Back to Select after removals"));
 		configureRows.filterPreserved = buttonContaining(dialog.querySelector('[role="group"][aria-label="Movie Count filter"]'), "100+")?.getAttribute("aria-pressed") === "true";
 		for (const [index, id] of studioIds.entries()) await selectExactStudio(dialog, id, index + 1);
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Studios"), "Configure after reselection"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure after reselection"));
 		configure = required(dialog.querySelector(".studio-hierarchy-configure"), "restored Configure stage");
 		configureRows.reselectedOrder = [...configure.querySelectorAll(".studio-configure-row")].map((row) => Number(row.dataset.studioId));
 		let configurePreviewTrigger = required(configure.querySelector('.studio-configure-row button[aria-haspopup="dialog"]'), "Configure Preview action");
@@ -2805,7 +2805,7 @@ async function runNetworkLivePreviewScenario() {
 			() => dialog.querySelectorAll(".network-selected-disclosure li").length === 1,
 			{ label: `Network ${networkId} selection`, timeoutMs: 10_000 },
 		);
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 Network"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		const configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
 		const row = required(configure.querySelector(`[data-network-id="${networkId}"]`), "Network Configure row");
 		const initialCountLines = countLines(row);
@@ -3090,7 +3090,7 @@ async function runGenreLivePreviewScenario() {
 	try {
 		const dialog = required(document.querySelector('[data-creation-option="genres"]'), "creation dialog");
 		await clickAndSettle(required(dialog.querySelector('[data-genre-name="Animation"]'), "Animation choice"));
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 Genre"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		const row = required(dialog.querySelector('.genre-hierarchy-configure-row[data-genre-name="Animation"]'), "Animation Configure row");
 		let previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "Animation Preview trigger");
 		const requestsBeforeExplicitPreview = requests.length;
@@ -3341,7 +3341,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 			leftRailAbsent: !selectedRegionStyle.boxShadow.includes("3px 0px"),
 		};
 		const regionLayout = stageLayout(dialog);
-		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 2 regions"), "Choose services action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "Choose services action"));
 
 		const providerQuery = required(dialog.querySelector("#streaming-hierarchy-provider-query"), "provider Search");
 		const providerFocus = {
@@ -3379,7 +3379,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		providerNames.push(required(providerCard.querySelector("strong"), "second provider name").textContent.trim());
 		await clickAndSettle(providerCard);
 		const providerLayout = stageLayout(dialog);
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 services"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 
 		const configure = required(dialog.querySelector(".streaming-hierarchy-configure"), "Configure stage");
 		const configureRow = required(configure.querySelector(`[data-streaming-provider="${providerIds[0]}"]`), "Configure provider row");
@@ -3691,9 +3691,9 @@ async function runStreamingAffinityDestinationScenario() {
 	try {
 		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "dialog");
 		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "Streaming affinity AU Region", timeoutMs: 10_000 }));
-		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "Region action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "Region action"));
 		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-provider="283"]'), { label: "Streaming affinity Crunchyroll provider", timeoutMs: 10_000 }));
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 service"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
 
 		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "destination Review");
@@ -3833,7 +3833,7 @@ async function runStreamingSelectionReconciliationScenario() {
 	try {
 		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "dialog");
 		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "Streaming reconciliation AU Region", timeoutMs: 10_000 }));
-		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "Region action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "Region action"));
 
 		await clickAndSettle(await card(dialog, netflix.id));
 		await clickAndSettle(required(dialog.querySelector('input[name="streaming-hierarchy-media"][value="series"]'), "Series Media"));
@@ -3844,7 +3844,7 @@ async function runStreamingSelectionReconciliationScenario() {
 			notice: noticeText(dialog),
 			continueEnabled: required(dialog.querySelector(".add-source-actions .editor-apply"), "Configure action").disabled === false,
 		};
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 service"), "Netflix Series Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Netflix Series Configure action"));
 		const configure = required(dialog.querySelector(".streaming-hierarchy-configure"), "Netflix Series Configure");
 		ownerSeries.configureSeriesOnly = configure.textContent.includes("AU · Series") && required(configure.querySelector('[aria-label="Streaming run context"]'), "Series run summary").textContent.includes("MediaSeries");
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-configure"]'), "Configure Back"));
@@ -3886,7 +3886,7 @@ async function runStreamingSelectionReconciliationScenario() {
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-providers"]'), "Provider Back"));
 		await clickAndSettle(required(dialog.querySelector('[data-streaming-region="US"]'), "add US Region"));
 		const restrictedNotice = noticeText(dialog);
-		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 2 regions"), "two-Region action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "two-Region action"));
 		const regionRestricted = {
 			selectedNames: selectedNames(dialog),
 			selectedCount: selectedCount(dialog),
@@ -3897,7 +3897,7 @@ async function runStreamingSelectionReconciliationScenario() {
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-providers"]'), "two-Region Provider Back"));
 		await clickAndSettle(required(dialog.querySelector('[data-streaming-region="US"]'), "remove US Region"));
 		const relaxedNoticeAbsent = noticeText(dialog) === null;
-		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "relaxed Region action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "relaxed Region action"));
 		const regionRelaxed = {
 			selectedNames: selectedNames(dialog),
 			selectedCount: selectedCount(dialog),
@@ -3907,7 +3907,7 @@ async function runStreamingSelectionReconciliationScenario() {
 		};
 
 		for (const selectedProvider of [b, netflix]) await clickAndSettle(await card(dialog, selectedProvider.id));
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 3 services"), "three-service Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "three-service Configure action"));
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "three-service Review action"));
 		const review = required(dialog.querySelector(".streaming-hierarchy-review"), "three-folder Review");
 		const folderNames = required(review.querySelector(".streaming-folder-names"), "Folder names section");
@@ -3989,10 +3989,10 @@ async function runStreamingDuplicateConfirmationScenario() {
 		const dialog = required(document.querySelector('[data-creation-dialog="true"]'), "dialog");
 		const au = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-region="AU"]'), { label: "duplicate AU region", timeoutMs: 10_000 });
 		await clickAndSettle(au);
-		await clickAndSettle(required(buttonContaining(dialog, "Choose services for 1 region"), "region action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "region action"));
 		const provider = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-provider="8"]'), { label: "duplicate Netflix provider", timeoutMs: 10_000 });
 		await clickAndSettle(provider);
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 service"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
 		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "Review");
 		const evidence = required(review.querySelector('[data-streaming-overlap="complete"]'), "complete overlap evidence");
@@ -4250,7 +4250,7 @@ async function runNetworkHierarchyScenario() {
 			filterPreserved: excludeZero.getAttribute("aria-pressed") === "true",
 		};
 
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Networks"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		let configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-network-selection"]'), "Back to Network selection"));
 		const restoration = await waitForMountedCondition(() => {
@@ -4275,7 +4275,7 @@ async function runNetworkHierarchyScenario() {
 				? state
 				: null;
 		}, { label: "restored Network Search state" });
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 2 Networks"), "restored Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "restored Configure action"));
 		configure = required(dialog.querySelector(".network-hierarchy-configure"), "restored Configure stage");
 		const configureRows = [...configure.querySelectorAll(".network-configure-row")];
 		const configureLayout = stageLayout(dialog);
@@ -4427,7 +4427,7 @@ async function runNetworkDeferredArtworkScenario() {
 			{ label: "checked-in deferred Network selection", timeoutMs: 10_000 },
 		);
 		await clickAndSettle(card);
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 1 Network"), "Configure action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
 		const configure = required(dialog.querySelector(".network-hierarchy-configure"), "Configure stage");
 		const configureShell = required(configure.parentElement, "Configure interaction shell");
 		const popular = required(configure.querySelector('input[name="network-hierarchy-sort"][value="popular"]'), "Popular sort");
@@ -4543,7 +4543,7 @@ async function runStudioScaleScenario() {
 		const afterSelection = previewRequests;
 		const selectedCount = Number.parseInt(dialog.querySelector(".people-selected-summary > strong")?.textContent ?? "0", 10);
 		const noticeAt100 = dialog.querySelector('[data-large-selection-notice="true"]')?.textContent.includes("100 Studios") === true;
-		await clickAndSettle(required(buttonContaining(dialog, "Configure 100 Studios"), `Configure action after ${selectedCount} selections`));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), `Configure action after ${selectedCount} selections`));
 		const afterConfigure = previewRequests;
 		await clickAndSettle(required(dialog.querySelector('input[name="studio-hierarchy-media"][value="both"]'), "Movies plus Series choice"));
 		const configureRows = dialog.querySelectorAll(".studio-configure-row").length;
@@ -4645,7 +4645,7 @@ async function runPeopleConfigureLayoutScenario() {
 				{ label: `Live TMDB Person ${personId} selection`, timeoutMs: 15_000 },
 			);
 		}
-		const configureButton = buttonContaining(document, "Configure 2 people");
+		const configureButton = buttonContaining(document, "Continue to Configure");
 		if (configureButton === null) throw new Error("Mounted People Configure action did not render.");
 		await clickAndSettle(configureButton);
 		const dialog = await waitForMountedCondition(() => {
@@ -5076,7 +5076,7 @@ async function runDecadesNavigationScenario() {
 			sectionLabels: [
 				dialog().querySelector(".review-title-options h4")?.textContent.trim(),
 				dialog().querySelector('[data-decades-settings="layout"] h4')?.textContent.trim(),
-				dialog().querySelector('details[data-decades-settings="folder-options"] > summary strong')?.textContent.trim(),
+				dialog().querySelector('[data-decades-settings="folder-options"] legend')?.textContent.trim(),
 				dialog().querySelector(".decades-review-details > summary")?.textContent.split(" · ")[0].trim(),
 			],
 			oldFolderLabelAbsent: !dialog().textContent.includes("Decade folder options"),
@@ -5100,7 +5100,6 @@ async function runDecadesNavigationScenario() {
 			allBlankAndDisabled: hiddenTitleFields.every((field) => field.value === "" && field.disabled),
 			allShareDescription: hiddenTitleFields.every((field) => field.getAttribute("aria-describedby")?.split(/\s+/).includes("decades-hidden-collection-titles-help")),
 		};
-		await clickAndSettle(dialog().querySelector('details[data-decades-settings="folder-options"] > summary'));
 		await clickAndSettle(dialog().querySelector('input[name="decades-folder-shape"][value="LANDSCAPE"]'));
 		await clickAndSettle(dialog().querySelector('input[name="decades-folder-title-visibility"][value="HIDE_EVERYWHERE"]'));
 		await clickAndSettle(headerBack());
@@ -5886,7 +5885,7 @@ async function runAddSourceLivePreviewParityScenario() {
 				await clickAndSettle(au);
 				const us = requiredElement(document.querySelector('[data-streaming-region="US"]'), "US Streaming region");
 				await clickAndSettle(us);
-				await clickAndSettle(requiredElement(buttonContaining(document.querySelector(".streaming-region-actions"), "Next"), "Streaming region Next"));
+				await clickAndSettle(requiredElement(buttonContaining(document.querySelector(".streaming-region-actions"), "Continue to Provider"), "Streaming region Next"));
 				const providerResult = await waitForMountedCondition(() => document.querySelector('[data-streaming-provider="8"]'), { label: "Netflix provider" });
 				await clickAndSettle(providerResult);
 				const trigger = await waitForMountedCondition(() => document.querySelector('[data-action="preview-add-streaming"]:not(:disabled)'), { label: "Streaming Add Preview action" });
@@ -7688,7 +7687,7 @@ async function runTmdbListLayoutScenario() {
 		const clearHadInputError = dialog.querySelector(".tmdb-list-input-errors")?.textContent.includes("Line 1 · bad-host") ?? false;
 		await clickAndSettle(clearButton);
 		const clearPreservedSelection = dialog.querySelectorAll(".tmdb-list-selected-items li").length === 20;
-		const reviewAfterClear = requiredElement(buttonContaining(dialog.querySelector(".add-source-actions"), "Review 20 lists"), "Review after Clear input");
+		const reviewAfterClear = requiredElement(buttonContaining(dialog.querySelector(".add-source-actions"), "Continue to Review"), "Review after Clear input");
 		const selection = {
 			count: selectedRows.length,
 			inputPreservedAfterPartialFailure: inputPreservedAfterPartialFailure && initialErrorRows.length === 3,
@@ -7797,7 +7796,7 @@ async function runTmdbListLayoutScenario() {
 			});
 			await clickAndSettle(requiredElement(buttonContaining(surface, "Resolve lists"), `${scope} Resolve lists`));
 			await waitForMountedCondition(() => surface.querySelectorAll(".tmdb-list-selected-items li").length === ids.length, { label: `${scope} TMDB List selection` });
-			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), `Review ${ids.length} list`), `${scope} Review lists`));
+			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), "Continue to Review"), `${scope} Review lists`));
 			await waitForMountedCondition(() => surface.dataset.tmdbListStage === "review", { label: `${scope} TMDB List review` });
 
 			const collectionInput = surface.querySelector("#tmdb-list-collection-title");
@@ -8782,4 +8781,62 @@ window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedCol
   await unmount();
   return evidence;
  } finally { if (host?.isConnected) { await act(async () => root.unmount()); host.remove(); } }
+};
+
+
+window.__runOrdinaryEditorOrderScenario = async ({ family, enlargedText = false }) => {
+	const check = (value, message) => { if (!value) throw new Error(`${family}/${innerWidth}: ${message}`); return value; };
+	const source = { provider: "tmdb", title: "Custom source name", mediaType: "MOVIE", sortBy: "popularity.desc", filters: {}, ...{
+		studio: { tmdbSourceType: "COMPANY", tmdbId: 3 },
+		network: { tmdbSourceType: "NETWORK", tmdbId: 2, mediaType: "TV" },
+		people: { tmdbSourceType: "PERSON", tmdbId: 31 },
+		franchise: { tmdbSourceType: "COLLECTION", tmdbId: 645, sortBy: "original" },
+		list: { tmdbSourceType: "LIST", tmdbId: 5916, sortBy: "original" },
+		genre: { tmdbSourceType: "DISCOVER", tmdbId: null, filters: { withGenres: "35" } },
+		decade: { tmdbSourceType: "DISCOVER", tmdbId: null, filters: { releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31" } },
+		streaming: { tmdbSourceType: "DISCOVER", tmdbId: null, filters: { watchRegion: "AU", withWatchProviders: "8" } },
+	}[family] };
+	const controller = createController(), folder = importSources(controller, [source]);
+	controller.selectNode(folder.sources[0].internalId);
+	const before = controller.getState(), saved = serializedValue(controller);
+	const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
+	const previousFont = document.documentElement.style.fontSize;
+	if (enlargedText) document.documentElement.style.fontSize = "24px";
+	function Workspace() { const state = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState); return createElement(BuilderWorkspace, { controller, state }); }
+	try {
+		await act(async () => { root.render(createElement(Workspace)); await afterCommittedEffects(); });
+		const trigger = check(host.querySelector('[data-action="open-source-actions"]'), "source menu trigger");
+		trigger.scrollIntoView({ block: "nearest" });
+		await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+		await clickAndSettle(trigger);
+		const editAction = document.getElementById(trigger.getAttribute("aria-controls")).querySelector('[data-action="edit-source"]');
+		check(!editAction.disabled, "open editor menu action became disabled");
+		await clickAndSettle(editAction);
+		const dialog = await waitForMountedCondition(() => document.querySelector('[data-source-edit-modal]'), { label: `${family} ordinary editor`, timeoutMs: 10000 });
+		const name = check(dialog.querySelector('#source-edit-title-input'), "name field");
+		const identity = check(dialog.querySelector(family === "people" ? '.source-edit-people-identity' : family === "list" ? '#source-edit-identity-title' : family === "decade" ? '#decade-source-fixed-title' : '#source-edit-options-title'), "source identity");
+		check(identity.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING, "identity must precede name");
+		const reset = dialog.querySelector('.source-edit-title-reset');
+		if (reset) check(name.compareDocumentPosition(reset) & Node.DOCUMENT_POSITION_FOLLOWING, "reset follows name");
+		const sort = dialog.querySelector('.semantic-sort-choices, .studio-sort-choices');
+		if (sort) check(name.compareDocumentPosition(sort) & Node.DOCUMENT_POSITION_FOLLOWING, "sort follows name");
+		const advanced = dialog.querySelector('.source-edit-scroll details');
+		if (advanced && sort) check(sort.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING, "Advanced follows sort");
+		await act(async () => { setInputValue(name, `Reviewed ${family}`); await afterCommittedEffects(); });
+		check(name.isConnected && name.value === `Reviewed ${family}`, "name remains controlled");
+		const preview = check(dialog.querySelector('[data-action="preview-source-edit"]'), "Preview remains available");
+		await waitForMountedCondition(() => !preview.disabled, { label: "live Preview ready", timeoutMs: 30000 });
+		await clickAndSettle(preview);
+		const ready = await waitForReadyPosterGrid({ preview: ".source-edit-preview-modal", gridSelector: ".source-edit-preview-grid", expectedVisibleCount: null, label: `${family} live Preview` });
+		check(ready.images.length > 0, "live titles rendered");
+		await clickAndSettle([...ready.preview.querySelectorAll('button')].find(node => node.textContent.trim() === "Close"));
+		check(name.value === `Reviewed ${family}` && document.activeElement === preview, "Preview preserves name and returns focus");
+		check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth + 1, "editor horizontal overflow");
+		check(serializedValue(controller) === saved, "draft/Preview mutated project");
+		await clickAndSettle(dialog.querySelector('[data-action="save-source-edit"]'));
+		await waitForMountedCondition(() => !document.querySelector('[data-source-edit-modal]'), { label: "saved source closes", timeoutMs: 10000 });
+		const result = controller.getState();
+		check(result.revision === before.revision + 1 && result.project.collections[0].folders[0].sources[0].editable.title === `Reviewed ${family}`, "one minimal name save");
+		return { family, width: innerWidth, enlargedText, ordered: true, previewPreserved: true, saved: true, noOverflow: true };
+	} finally { document.documentElement.style.fontSize = previousFont; await act(async () => root.unmount()); host.remove(); }
 };

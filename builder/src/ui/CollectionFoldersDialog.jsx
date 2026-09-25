@@ -15,15 +15,16 @@ export function CollectionFoldersDialog({ collection, mode, onCancel, onApply, e
 	const [sort, setSort] = useState("az");
 	const dialogRef = useRef(null);
 	const errorRef = useRef(null);
+	const cancelRef = useRef(null);
 	const [viewport, setViewport] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const removing = mode === "remove";
-	const title = removing ? "Remove folders" : "Sort folders";
+	const title = removing ? "Delete folders" : "Sort folders";
 	const rows = collection.folders.map((folder, index) => ({ folder, index, title: nodeTitle(folder.editable.title, "folder") }));
 
 	usePrePaintLayoutEffect(() => {
 		const unlock = lockAddSourceDocumentBody();
 		const stop = observeAddSourceViewport(setViewport);
-		focusElementWithoutScroll(dialogRef.current);
+		focusElementWithoutScroll(removing ? cancelRef.current : dialogRef.current);
 		return () => { stop(); unlock(); };
 	}, []);
 	useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
@@ -46,7 +47,7 @@ export function CollectionFoldersDialog({ collection, mode, onCancel, onApply, e
 				</div> : null}
 				<div className="add-source-scroll collection-folders-scroll">
 					{removing ? <>
-						<ul className="genre-catalogue-list collection-folder-list" aria-label="Folders to remove">
+						<ul className="genre-catalogue-list collection-folder-list" aria-label="Folders to delete">
 							{rows.map(({ folder, index, title: folderTitle }) => <li key={folder.internalId}>
 								<label className="genre-catalogue-choice" data-selection-mode="multiple" data-selected={selected.includes(folder.internalId) ? "true" : undefined}>
 									<input className="visually-hidden choice-card-input" type="checkbox" checked={selected.includes(folder.internalId)} onChange={() => toggle(folder.internalId)} />
@@ -59,8 +60,9 @@ export function CollectionFoldersDialog({ collection, mode, onCancel, onApply, e
 				</div>
 				<footer className="add-source-actions collection-folders-actions">
 					{error ? <p className="editor-diagnostics" ref={errorRef} tabIndex={-1} role="alert">{error}</p> : null}
+					{removing ? <button ref={cancelRef} className="editor-cancel" type="button" onClick={onCancel}>Cancel</button> : null}
 					<button className={removing ? "editor-apply collection-folders-delete" : "editor-apply"} type="button" disabled={removing && selected.length === 0} onClick={() => onApply(removing ? selected : sort)}>{removing ? `Delete ${selected.length} ${selected.length === 1 ? "folder" : "folders"}` : "Sort folders"}</button>
-					<button className="editor-cancel" type="button" onClick={onCancel}>Cancel</button>
+					{!removing ? <button className="editor-cancel" type="button" onClick={onCancel}>Cancel</button> : null}
 				</footer>
 			</section>
 		</div>

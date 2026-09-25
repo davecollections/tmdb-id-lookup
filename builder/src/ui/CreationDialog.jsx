@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
@@ -27,7 +28,7 @@ import {
 	createAsyncRequestCoordinator,
 	decadesRepresentativeItems,
 } from "../source-add/index.js";
-import { isInvisibleNuvioTitle, reversibleTitleFieldProps } from "../nuvio/titles.js";
+import { isInvisibleNuvioTitle } from "../nuvio/titles.js";
 import {
 	lockAddSourceDocumentBody,
 	observeAddSourceViewport,
@@ -165,10 +166,6 @@ function DecadesSettingsDisclosure({ id, title, summary, children }) {
 function collectionAppearanceSummary({ viewMode, showAllTab, pinToTop }) {
 	const layout = typeof viewMode === "string" && viewMode.toUpperCase() === "ROWS" ? "Rows" : "Tabs";
 	return `${layout}${layout === "Tabs" ? ` · All tab ${showAllTab ? "on" : "off"}` : ""} · ${pinToTop ? "pinned" : "not pinned"}`;
-}
-
-function folderAppearanceSummary({ folderTileShape }) {
-	return folderTileShape === "LANDSCAPE" ? "Landscape" : folderTileShape === "SQUARE" ? "Square" : "Poster";
 }
 
 function inheritedCollectionAppearanceSummary(presentation) {
@@ -414,13 +411,13 @@ function CollectionAppearance({ state, onStateChange }) {
 
 function FolderAppearance({ state, onStateChange }) {
 	return (
-		<DecadesSettingsDisclosure id="folder-options" title="Folder options" summary={folderAppearanceSummary(state)}>
+		<section data-decades-settings="folder-options">
 			<fieldset className="editor-field editor-choice-field" data-editor-field="tileShape">
 				<legend>Folder tile shape</legend>
 				<p className="editor-field-help">One choice applies to every generated Decade folder.</p>
 				<FolderShapeChoices selectedId={state.folderTileShape} name="decades-folder-shape" idPrefix="decades-folder" onChange={(folderTileShape) => onStateChange(Object.freeze({ ...state, folderTileShape }))} />
 			</fieldset>
-		</DecadesSettingsDisclosure>
+		</section>
 	);
 }
 
@@ -546,52 +543,42 @@ function reviewRows(plan, state) {
 }
 
 export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnostic, onCollectionTitleChange, onStateChange }) {
-	if (!planResult.ok) {
-		return (
-			<section className="decades-step" aria-labelledby="decades-review-error-title">
-				<h3 id="decades-review-error-title" ref={headingRef} tabIndex={-1}>Review needs attention</h3>
-				<SelectedDecadesSummary selectedDecadeIds={state.selectedDecadeIds} />
-				{state.scope === "new-collection" ? <div className="decades-collection-names">
-					{Object.entries(state.collectionTitles).map(([role, title]) => <div className="editor-field" key={role}><label htmlFor={`decades-collection-${role}`}>{role === "mixed" ? "Collection name" : `${role === "movies" ? "Movie" : "Series"} collection name`}</label><input id={`decades-collection-${role}`} type="text" {...reversibleTitleFieldProps(title, state.hideCollectionTitle)} aria-describedby={state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : undefined} onChange={(event) => onCollectionTitleChange(role, event.target.value)} /></div>)}
-				</div> : null}
-				<TitlesAndVisibility state={state} onStateChange={onStateChange} />
-				<ul className="genre-advanced-errors" role="alert">{planResult.errors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul>
-			</section>
-		);
-	}
-	const { plan } = planResult;
-	const rows = reviewRows(plan, state);
-	const occurrences = plan.outcomes.flatMap((outcome) => outcome.occurrences ?? []);
+	const plan = planResult.ok ? planResult.plan : null;
+	const otherErrors = (planResult.errors ?? []).filter((entry) => !Object.keys(state.collectionTitles).some((role) => entry.path === `$decadesPlan.collectionTitles.${role}`));
+	const collections = plan?.collections ?? Object.keys(state.collectionTitles).map((role) => ({ role, titleCollisions: [] }));
+	const rows = plan ? reviewRows(plan, state) : [];
+	const occurrences = (plan?.outcomes ?? []).flatMap((outcome) => outcome.occurrences ?? []);
 	return (
 		<section className="decades-step decades-review-step" aria-labelledby="decades-review-title">
    <DiscoverFamilyAdvancedSummary legacy value={state.advanced} mediaMode={state.mediaMode} />
 			<CreationStageIntro step={3} phase="Review" title="Review & Appearance" headingId="decades-review-title" headingRef={headingRef} tabIndex={-1} />
-			<div className="decades-plan-totals" data-plan-scope={state.scope} aria-label="Plan totals">
+			{plan ? <div className="decades-plan-totals" data-plan-scope={state.scope} aria-label="Plan totals">
 				{state.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection{plan.counts.collectionCount === 1 ? "" : "s"}</span></div> : null}
 				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>
 				<div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div>
-			</div>
-			{state.scope === "new-folder" ? <div className="decades-destination-summary"><strong>Destination</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle}</span><small>{inheritedCollectionAppearanceSummary({ title: plan.destination.collectionTitle, viewMode: plan.destination.viewMode, showAllTab: plan.destination.showAllTab, pinToTop: plan.destination.pinToTop })} · parent unchanged</small></div> : (
+			</div> : null}
+			{state.scope === "new-folder" ? <div className="decades-destination-summary"><strong>Destination</strong><span>{plan?.destination?.titleHidden ? "Hidden-title collection" : plan?.destination?.collectionTitle}</span><small>{inheritedCollectionAppearanceSummary({ title: plan?.destination?.collectionTitle, viewMode: plan?.destination?.viewMode, showAllTab: plan?.destination?.showAllTab, pinToTop: plan?.destination?.pinToTop })} · parent unchanged</small></div> : (
 				<div className="decades-collection-names">
-					{plan.collections.map((collection) => (
+					{collections.map((collection) => (
 						<div className="editor-field" key={collection.role}>
 							<label htmlFor={`decades-collection-${collection.role}`}>{collection.role === "mixed" ? "Collection name" : `${collection.role === "movies" ? "Movie" : "Series"} collection name`}</label>
-							<input id={`decades-collection-${collection.role}`} type="text" {...reversibleTitleFieldProps(state.collectionTitles[collection.role], state.hideCollectionTitle)} aria-describedby={[state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : null, collection.titleCollisions.length > 0 ? `decades-title-collision-${collection.role}` : null].filter(Boolean).join(" ") || undefined} onChange={(event) => onCollectionTitleChange(collection.role, event.target.value)} />
+							<RequiredNameInput id={`decades-collection-${collection.role}`} value={state.collectionTitles[collection.role]} hidden={state.hideCollectionTitle} error={requiredNameMessage(planResult.errors, `$decadesPlan.collectionTitles.${collection.role}`, state.collectionTitles[collection.role])} describedBy={[state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : null, collection.titleCollisions.length > 0 ? `decades-title-collision-${collection.role}` : null].filter(Boolean).join(" ") || undefined} onChange={(event) => onCollectionTitleChange(collection.role, event.target.value)} />
 							{collection.titleCollisions.length > 0 ? <p id={`decades-title-collision-${collection.role}`} className="editor-field-help">A collection with this name already exists. The new collection will still be created.</p> : null}
 						</div>
 					))}
 				</div>
 			)}
 			<TitlesAndVisibility state={state} onStateChange={onStateChange} />
-			{state.scope === "new-collection" ? <CollectionAppearance state={state} onStateChange={onStateChange} /> : <div className="decades-inherited-presentation" data-decades-inherited-presentation="true"><strong>Inherited Collection options</strong><span>{inheritedCollectionAppearanceSummary({ title: plan.destination.collectionTitle, viewMode: plan.destination.viewMode, showAllTab: plan.destination.showAllTab, pinToTop: plan.destination.pinToTop })}</span><small>The parent collection is not changed.</small></div>}
+			{state.scope === "new-collection" ? <CollectionAppearance state={state} onStateChange={onStateChange} /> : <div className="decades-inherited-presentation" data-decades-inherited-presentation="true"><strong>Inherited Collection options</strong><span>{inheritedCollectionAppearanceSummary({ title: plan?.destination?.collectionTitle, viewMode: plan?.destination?.viewMode, showAllTab: plan?.destination?.showAllTab, pinToTop: plan?.destination?.pinToTop })}</span><small>The parent collection is not changed.</small></div>}
 			<FolderAppearance state={state} onStateChange={onStateChange} />
+			{otherErrors.length > 0 ? <ul className="genre-advanced-errors" role="alert">{otherErrors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
 			{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}
-			<details className="decades-review-details">
+			{plan ? <details className="decades-review-details">
 				<summary>View folder details · {rows.length}</summary>
 				<ul className="genre-review-list">
 					{rows.map((row) => <li key={row.key}><div><strong>{row.title}</strong><span>{row.context}</span></div><span data-status={row.status === DECADES_PLACEMENT_STATUSES.READY ? "ready" : row.status === DECADES_PLACEMENT_STATUSES.EXISTS_ELSEWHERE ? "elsewhere" : "destination-duplicate"}>{statusLabels[row.status]}</span></li>)}
 				</ul>
-			</details>
+			</details> : null}
 			<SourceElsewhereNotice occurrences={occurrences} heading="Matching sources exist elsewhere in this project" action="You can still create the ready folders here." />
 		</section>
 	);
@@ -617,7 +604,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 	const previewAvailable = previewGroupsResult.ok
 		&& typeof previewProvider?.getDecadePreview === "function"
 		&& typeof previewProvider?.getDecadeSample === "function";
-	const optionErrors = planResult.ok ? [] : planResult.errors.filter((entry) => !(
+	const optionErrors = planResult.ok ? [] : planResult.errors.filter((entry) => !entry.path.startsWith("$decadesPlan.collectionTitles.") && !(
 		entry.code === "INVALID_DECADES_GENRES"
 		&& (entry.path === "$decades.genreNames" || entry.path.startsWith("$decades.genreNamesByDecade"))
 	));
@@ -695,7 +682,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 			return;
 		}
 		if (state.step === DECADES_CREATION_STEPS.OPTIONS) {
-			if (planResult.ok) setState(prepareDecadesReview);
+			if (planResult.ok || nameCorrection) setState(prepareDecadesReview);
 			return;
 		}
 		if (!planResult.ok || applyingRef.current || planResult.plan.counts.folderCount === 0) return;
@@ -713,9 +700,10 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 		: state.step === DECADES_CREATION_STEPS.OPTIONS
 			? !planResult.ok
 			: !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying;
+	const nameCorrection = !isApplying && onlyRequiredNameErrors(planResult, Object.keys(state.collectionTitles).map((role) => `$decadesPlan.collectionTitles.${role}`));
 	const primaryLabel = state.step === DECADES_CREATION_STEPS.REVIEW
 		? isApplying ? "Creating…" : planResult.ok ? guidedCreateActionLabel(scope, planResult?.plan?.counts) : "Create"
-		: "Continue";
+		: state.step === DECADES_CREATION_STEPS.PRESETS ? "Continue to Configure" : "Continue to Review & Appearance";
 	const backAction = state.step === DECADES_CREATION_STEPS.PRESETS
 		? "back-to-creation-launcher"
 		: state.step === DECADES_CREATION_STEPS.OPTIONS
@@ -734,7 +722,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 				inactive={Boolean(secondarySurface || preview)}
 				onClose={onCancel}
 			/>
-			<form className="add-source-form decades-creation-form" data-decades-stage={state.step} data-secondary-surface={secondarySurface ?? undefined} data-preview-open={preview ? "true" : undefined} onSubmit={submit} noValidate>
+			<form className="add-source-form decades-creation-form" data-decades-stage={state.step} data-secondary-surface={secondarySurface ?? undefined} data-preview-open={preview ? "true" : undefined} onSubmitCapture={handleRequiredNameSubmit} onSubmit={submit} noValidate>
 				<div className="add-source-scroll" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
 					{state.step === DECADES_CREATION_STEPS.PRESETS ? <DecadePresetStep state={state} headingRef={headingRef} onToggle={(id) => { setState((current) => toggleDecadePreset(current, id)); setApplyDiagnostic(null); }} onSelectAll={() => { setState(selectAllDecadePresets); setApplyDiagnostic(null); }} onClearAll={() => { setState(clearAllDecadePresets); setApplyDiagnostic(null); }} /> : null}
 					{state.step === DECADES_CREATION_STEPS.OPTIONS ? <DecadesOptionsStep state={state} headingRef={headingRef} previewGroups={previewGroupsResult.groups} previewAvailable={previewAvailable} onPreview={openPreview} onRemoveDecade={(id) => { setState((current) => toggleDecadePreset(current, id)); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onStateChange={(next) => { setState(next); setApplyDiagnostic(null); }} /> : null}
@@ -754,7 +742,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 					{secondarySurface === "advanced-help" ? <DecadesAdvancedHelpSubview onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : null}
 				</div> : null}
 				{!secondarySurface ? <footer className="add-source-actions decades-creation-actions" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
-					<button className="editor-apply" type="submit" disabled={primaryDisabled}>{primaryLabel}</button>
+					<button className="editor-apply" type="submit" disabled={primaryDisabled && !nameCorrection}>{primaryLabel}</button>
 				</footer> : null}
 			</form>
 			{preview ? <DecadesTitlePreview preview={preview} onChangeChoice={(choice) => loadPreview(preview.group, choice, resolveDecadesPreviewRequest(choice, preview.request))} onChangeRequest={(request) => loadPreview(preview.group, preview.choice, request)} onClose={closePreview} onRetry={() => loadPreview(preview.group, preview.choice, preview.request)} /> : null}

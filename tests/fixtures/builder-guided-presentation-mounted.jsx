@@ -83,6 +83,30 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 		const owners = [...surface.querySelectorAll("*")].filter(node => visible(node) && /auto|scroll/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 2);
 		check(owners.length <= 1, `competing scroll owners: ${owners.map(node => node.className).join(" / ")}`);
 		for (const toggle of surface.querySelectorAll('[role="switch"]')) check(!toggle.closest("[data-selection-mode]"), "independent boolean gained selection semantics");
+		const navigation = {
+			decades: { 1: "Configure", 2: "Review & Appearance" },
+			people: { 1: "Configure", 2: "Review & Appearance" },
+			franchises: { 1: "Review & Appearance" },
+			"tmdb-lists": { 1: "Review & Appearance" },
+			studios: { 1: "Configure", 2: "Appearance" },
+			networks: { 1: "Configure", 2: "Appearance" },
+			genres: { 1: "Configure", 2: "Structure", 3: "Appearance" },
+			"streaming-services": { 1: titlePart === "Choose regions" ? "Services" : "Configure", 2: "Review" },
+			"advanced-discover": { 1: "Appearance", 2: "Artwork", 3: "Review" },
+		}[family]?.[step];
+		if (navigation) check(primary().textContent === `Continue to ${navigation}`, "navigation does not identify the actual next stage");
+		if (/Appearance/.test(intro.querySelector("h3").textContent)) {
+			const name = surface.querySelector('input[data-required-name]');
+			const visibility = surface.querySelector('.review-title-options');
+			const layout = surface.querySelector('.hierarchy-collection-presentation-controls');
+			const pin = [...surface.querySelectorAll('[role="switch"]')].find(node => /Pin .*collection/.test(node.closest("label")?.textContent));
+			const shape = surface.querySelector('.editor-shape-choice-grid');
+			const groups = [name, visibility, layout, pin, shape].filter(Boolean);
+			for (let index = 1; index < groups.length; index++) check(Boolean(groups[index - 1].compareDocumentPosition(groups[index]) & Node.DOCUMENT_POSITION_FOLLOWING), "Appearance controls are out of semantic order");
+			if (family === "decades") check(shape && !shape.closest("details"), "basic Decades shape is hidden in disclosure");
+			if (["studios", "franchises", "streaming-services"].includes(family)) check(!shape, "unsupported shape selector appeared");
+			if (["people", "networks"].includes(family)) check(!shape.querySelector('[value="SQUARE"]'), "unsupported Square shape appeared");
+		}
 		evidence.stages.push({ step, title: intro.querySelector("h3").textContent, scrollOwners: owners.length });
 		if (capture && globalThis.capture204Preview) {
 			if (["exclusions", "semantic-include"].includes(shot) && owner) {
@@ -152,8 +176,8 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			if (semanticOnly) await stage(1, "Filters", "semantic-include");
 			if (!semanticOnly) {
 			await next(); await stage(2, "Appearance", "appearance");
-			await next(); await stage(3, "Artwork", "artwork"); await palette(selected("single")[0], "single");
-			await next(); await stage(4, "Review", "review");
+			if (!nameRecovery) { await next(); await stage(3, "Artwork", "artwork"); await palette(selected("single")[0], "single");
+			await next(); await stage(4, "Review", "review"); }
 			}
 		} else if (family === "tmdb-lists") {
 			await stage(1, "TMDB lists", "select");
@@ -204,7 +228,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				check(message && message.textContent === (invalid ? `Enter a ${kind} name.` : ""), `${kind} plain-language field message`);
 				check(message.getAttribute("role") === "alert" && message.getAttribute("aria-atomic") === "true", `${kind} announced field feedback`);
 				check(document.querySelectorAll(`[id="${message.id}"]`).length === 1, `${kind} unique error association`);
-				if (invalid) {
+				if (invalid && !forcedColors) {
 					const style = getComputedStyle(field);
 					check(["Top", "Right", "Bottom", "Left"].every(edge => style[`border${edge}Color`] === "rgb(255, 142, 134)"), `${kind} coral error border`);
 					check(getComputedStyle(message).color === "rgb(255, 231, 228)" && !message.closest(".genre-advanced-errors"), `${kind} error rather than amber warning`);
@@ -215,14 +239,24 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				check(actionRect.top >= -1 && actionRect.bottom <= innerHeight + 1, "footer remains reachable");
 			}
 			const fields = () => [...dialog().querySelectorAll('input[type="text"]')].filter(node => [...node.labels].some(label => /collection name/i.test(label.textContent)));
+
+			check(!dialog().querySelector('[data-required-name][aria-invalid="true"]'), "untouched names unexpectedly have errors");
+			if (family === "tmdb-lists") {
+				await next();
+				check(document.activeElement === fields()[0], "List attempted create focuses Collection first");
+				for (const field of dialog().querySelectorAll('[data-required-name]')) {
+					assertNameFeedback(field, field.id.includes("collection") ? "collection" : "folder", true);
+					await input(`#${field.id}`, field.id.includes("collection") ? "Lists review" : "Lists folder");
+				}
+			}
 			let folderInputs = [], folderNames = [];
-			if (family === "streaming-services") {
-				await click(check(dialog().querySelector(".streaming-folder-names summary"), "Folder name disclosure"));
-				folderInputs = [...dialog().querySelectorAll('[id^="streaming-folder-name-"]')].filter(node => node.tagName === "INPUT");
-				check(folderInputs.length === 2, "two required Folder names");
+			if (["streaming-services", "tmdb-lists", "advanced-discover"].includes(family)) {
+				if (family === "streaming-services") await click(check(dialog().querySelector(".streaming-folder-names summary"), "Folder name disclosure"));
+				folderInputs = [...dialog().querySelectorAll('input[data-required-name]')].filter(node => node.id.includes("folder"));
+				check(folderInputs.length === (family === "streaming-services" ? 2 : 1), "required Folder names");
 				for (const [index, field] of folderInputs.entries()) {
 					field.focus(); await input(`#${field.id}`, "");
-					check(field.isConnected && document.activeElement === field && field.getAttribute("aria-invalid") === "true" && primary().disabled, "Folder name recovery changed");
+					check(field.isConnected && document.activeElement === field && field.getAttribute("aria-invalid") === "true" && !primary().disabled, "Folder name recovery changed");
 					assertNameFeedback(field, "folder", true);
 					folderNames.push(`Custom Folder ${index + 1}`);
 					await input(`#${field.id}`, folderNames[index]);
@@ -233,7 +267,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			if (pin) await click(pin);
 			const settings = [...dialog().querySelectorAll('input[type="radio"], [role="switch"]')].map(node => ({ node, checked: node.checked }));
 			const originals = fields();
-			check(originals.length === (nameRecovery.structure === "separate-media-collections" ? 2 : 1), "one name control per Collection");
+			check(originals.length === (nameRecovery.structure === "separate-media-collections" || family === "decades" ? 2 : 1), "one name control per Collection");
 			const siblings = originals.map(node => node.value);
 			const expected = originals.map((_, index) => `Recovered ${family} ${index + 1}`);
 			for (let index = 0; index < originals.length; index++) {
@@ -243,12 +277,12 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				check(document.activeElement === field && !field.disabled && field.labels[0]?.textContent === label, "name lost focus, accessibility or editability");
 				check(folderInputs.every((node, sibling) => node.isConnected && node.value === folderNames[sibling]), "Collection validation removed sibling Folder fields or drafts");
 				check(settings.every(({ node, checked }) => node.isConnected && node.checked === checked), "Collection validation reset presentation choices");
-				check(field.value === "" && primary().disabled, "blank draft / existing invalid state was not retained");
+				check(field.value === "" && !primary().disabled, "blank draft / existing invalid state was not retained");
 				assertNameFeedback(field, "collection", true);
 				if (folderInputs.length) {
 					await input(`#${folderInputs[0].id}`, "");
 					assertNameFeedback(folderInputs[0], "folder", true);
-					assertNameFeedback(folderInputs[1], "folder", false);
+					if (folderInputs[1]) assertNameFeedback(folderInputs[1], "folder", false);
 					assertNameFeedback(field, "collection", true);
 					await input(`#${folderInputs[0].id}`, folderNames[0]);
 					assertNameFeedback(folderInputs[0], "folder", false);
@@ -258,13 +292,30 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				check(originals.every((node, sibling) => node.isConnected && (sibling === index || node.value === (sibling < index ? expected[sibling] : siblings[sibling]))), "sibling name changed");
 				check(document.documentElement.scrollWidth <= innerWidth + 1 && dialog().scrollWidth <= dialog().clientWidth + 1, "invalid form horizontal overflow");
 				await input(`#${field.id}`, "   ");
-				check(field.isConnected && field.value === "   " && primary().disabled, "whitespace name recovery changed");
+				check(field.isConnected && field.value === "   " && !primary().disabled, "whitespace name recovery changed");
 				assertNameFeedback(field, "collection", true);
 				await input(`#${field.id}`, expected[index]);
 				check(field.isConnected && document.activeElement === field, "correcting name replaced the focused input");
 				assertNameFeedback(field, "collection", false);
 			}
 			check(!primary().disabled, "corrected names did not restore valid creation");
+			const allNames = [...originals, ...folderInputs], savedNames = allNames.map(node => node.value);
+			for (const field of allNames) await input(`#${field.id}`, "   ");
+			await click(button("Back")); await next();
+			const restored = [...dialog().querySelectorAll('input[data-required-name]')];
+			check(restored.length === allNames.length && restored.every(node => node.value === "   "), "invalid names cannot recover after Back/return");
+			allNames.splice(0, allNames.length, ...restored);
+			primary().focus(); await key("Enter");
+			check(document.activeElement === allNames[0], "Enter did not focus the first invalid name");
+
+			for (const [index, field] of allNames.entries()) {
+				await next();
+				check(document.activeElement === field, "attempt did not focus first invalid name in semantic order");
+				check(controller.getState().revision === revision, "invalid attempt mutated project");
+				for (const pending of allNames.slice(index)) check(pending.getAttribute("aria-invalid") === "true", "one correction cleared another error");
+				await input(`#${field.id}`, savedNames[index]);
+			}
+
 			await click(button("Back"));
 			if (family === "genres") {
 				const structure = nameRecovery.structure ?? "genre-folders";
@@ -276,6 +327,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await next();
 			check(fields().every((node, index) => node.value === expected[index]), "corrected names did not survive Back/return");
 			await next();
+			if (family === "advanced-discover") { await next(); await next(); }
 			await wait(() => !document.querySelector('.add-source-dialog[role="dialog"]'), { label: "recovered hierarchy created" });
 			check(JSON.stringify(controller.getState().project.collections.map(node => node.editable.title)) === JSON.stringify(expected), "created Collections did not use corrected names");
 			check(controller.getState().revision === revision + 1, "creation was not atomic");
