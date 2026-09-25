@@ -1105,6 +1105,8 @@ test("shared hidden-title help uses the authoritative singular and grouped wordi
 });
 
 test("all guided output-title fields reuse reversible fields and contextual hidden-state help", () => {
+	const requiredNameInput = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "RequiredNameInput.jsx"), "utf8");
+	assert.match(requiredNameInput, /reversibleTitleFieldProps\(value, hidden\)/);
 	for (const file of [
 		"CreationDialog.jsx",
 		"PeopleSourceFlow.jsx",
@@ -1116,7 +1118,7 @@ test("all guided output-title fields reuse reversible fields and contextual hidd
 		"TmdbListSourceFlow.jsx",
 	]) {
 		const source = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", file), "utf8");
-		assert.match(source, /reversibleTitleFieldProps/, file);
+		assert.match(source, /reversibleTitleFieldProps|<RequiredNameInput\s/, file);
 		assert.match(source, /HiddenTitleFieldHelp/, file);
 	}
 
