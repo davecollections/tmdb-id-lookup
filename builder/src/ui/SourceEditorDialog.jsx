@@ -208,6 +208,7 @@ function SourceTitleField({ draft, titleInputRef, error, onChange, helperText = 
 }
 
 export function PeopleEditorFields({
+	titleField = null,
 	draft,
 	combinationRef,
 	countState,
@@ -222,6 +223,10 @@ export function PeopleEditorFields({
 	const selectedSortId = sortOptions.find((option) => option.value === draft.sortBy)?.id ?? null;
 	return (
 		<section className="source-edit-options" aria-labelledby="source-edit-options-title">
+			{titleField}
+			<button className="source-edit-title-reset" type="button" onClick={onDefaultTitle}>
+				Use default title
+			</button>
 			<div className="add-source-section-heading">
 				<div>
 					<p className="panel-kicker">Role and media</p>
@@ -257,9 +262,7 @@ export function PeopleEditorFields({
 					<button type="button" onClick={onRetryCounts}>Retry</button>
 				</div>
 			) : null}
-			<button className="source-edit-title-reset" type="button" onClick={onDefaultTitle}>
-				Use default title
-			</button>
+
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<SemanticSortChoices
 				options={sortOptions}
@@ -290,6 +293,7 @@ function studioCountText(count, mediaType) {
 }
 
 export function StudioEditorFields({
+	titleField = null,
 	draft,
 	studio,
 	onAdvancedChange,
@@ -318,6 +322,7 @@ export function StudioEditorFields({
 				<em>{count.text}</em>
 				<TmdbKnownZeroNotice count={countDimension} entity="studio" media={mediaType === "TV" ? "series" : "movies"} />
 			</div>
+			{titleField}
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<StudioSortChoices selectedId={selectedSortId} name="studio-edit-sort" firstInputRef={sortRef} onChange={(optionId) => onSortChange(studioSortValue(optionId, mediaType), optionId)} />
 			<StudioAdvancedOptions draft={draft} onChange={onAdvancedChange} />
@@ -355,7 +360,7 @@ export function NetworkEditorFields({ draft, network, countState, sortRef, title
 	);
 }
 
-export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefaultName, onSortChange, onAdvancedChange }) {
+export function StreamingEditorFields({ titleField = null, draft, providerIdentity, sortRef, onDefaultName, onSortChange, onAdvancedChange }) {
 	const selectedSortId = draft.sortOptionId;
 	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
 	return (
@@ -368,6 +373,7 @@ export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefa
 				</div>
 			</div>
 			<p className="source-edit-fixed-note">Provider, region and media type stay fixed for this source.</p>
+			{titleField}
 			{providerIdentity.resolved ? <button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button> : null}
 			{selectedSortId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={STREAMING_SORT_OPTIONS} selectedId={selectedSortId} name="streaming-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
@@ -376,7 +382,7 @@ export function StreamingEditorFields({ draft, providerIdentity, sortRef, onDefa
 	);
 }
 
-export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange, onAdvancedChange, onOpenSecondary }) {
+export function GenreEditorFields({ titleField = null, draft, sortRef, onDefaultName, onSortChange, onAdvancedChange, onOpenSecondary }) {
 	const mediaLabel = draft.mediaType === "TV" ? "Series" : "Movies";
 	return (
 		<section className="source-edit-options studio-source-edit-options genre-source-edit-options" aria-labelledby="source-edit-options-title">
@@ -388,6 +394,7 @@ export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange,
 				</div>
 			</div>
 			<p className="source-edit-fixed-note">Genre ID and media type stay fixed for this source.</p>
+			{titleField}
 			<button className="source-edit-title-reset" type="button" onClick={onDefaultName}>Use default name</button>
 			{draft.sortOptionId === null ? <p className="studio-imported-sort-note">Current imported sort is preserved until you choose a supported sort: {draft.originalSortBy || "not set"}</p> : null}
 			<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={GENRE_SORT_OPTIONS} selectedId={draft.sortOptionId} name="genre-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
@@ -403,7 +410,7 @@ export function GenreEditorFields({ draft, sortRef, onDefaultName, onSortChange,
 	);
 }
 
-export function DecadeEditorFields({ draft, sortRef, onSortChange, onAdvancedChange, onOpenSecondary }) {
+export function DecadeEditorFields({ titleField = null, draft, sortRef, onSortChange, onAdvancedChange, onOpenSecondary }) {
 	const mediaMode = draft.mediaType === "TV" ? "series" : "movies";
 	return (
 		<>
@@ -416,6 +423,7 @@ export function DecadeEditorFields({ draft, sortRef, onSortChange, onAdvancedCha
 				</dl>
 				<p className="source-edit-fixed-note">Period dates, media and the included Genre stay fixed. Use the Decades creation flow to build a different structure.</p>
 			</section>
+			{titleField}
 			<div ref={sortRef} tabIndex={-1}>
 				<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={DECADES_SORT_OPTIONS} selectedId={draft.sortOptionId} name="decade-edit-sort" legend="Sort titles by" onChange={onSortChange} />
 			</div>
@@ -442,7 +450,7 @@ export function SourceEditErrorPanel({ result, alertRef = null }) {
 	);
 }
 
-function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose, onUseSelectedName, localOnly = false }) {
+function MovieCollectionEditorFields({ titleField = null, draft, session, chooseButtonRef, onChoose, onUseSelectedName, localOnly = false }) {
 	const collectionName = draft.selectedCollectionName ?? session.openingTitle;
 	return (
 		<section className="source-edit-options" aria-labelledby="source-edit-options-title">
@@ -460,10 +468,11 @@ function MovieCollectionEditorFields({ draft, session, chooseButtonRef, onChoose
 			</p>
 			<div className="source-edit-option-actions">
 				<button ref={chooseButtonRef} type="button" disabled={localOnly} onClick={onChoose}>Choose another franchise</button>
-				{draft.selectedCollectionName ? (
-					<button type="button" onClick={onUseSelectedName}>Use default name</button>
-				) : null}
 			</div>
+			{titleField}
+			{draft.selectedCollectionName ? (
+				<button type="button" onClick={onUseSelectedName}>Use default name</button>
+			) : null}
 			{localOnly ? <p className="editor-field-help">Franchise lookup is available from the Builder.</p> : null}
 		</section>
 	);
@@ -812,6 +821,25 @@ export function SourceEditorDialog({
 		window.requestAnimationFrame(() => focusElementWithoutScroll(trigger));
 	}
 
+	const titleField = <SourceTitleField
+		draft={draft}
+		titleInputRef={titleInputRef}
+		error={titleError}
+		helperText={session.adapterId === STUDIO_SOURCE_EDITOR_ID
+			? "Changes how this source appears in Nuvio, not which Studio it represents."
+		: session.adapterId === NETWORK_SOURCE_EDITOR_ID
+			? "Changes how this source appears in Nuvio, not which Network it represents."
+		: session.adapterId === GENRE_SOURCE_EDITOR_ID
+			? "Changes how this source appears in Nuvio, not which Genre it represents."
+		: session.adapterId === DECADE_SOURCE_EDITOR_ID
+			? "Changes how this source appears in Nuvio, not its fixed Decade structure."
+			: null}
+			onChange={(title) => {
+			setDraft((current) => updateSourceEditTitle(current, title));
+			clearFieldDiagnostic("title");
+		}}
+	/>;
+
 	const content = (
 		<div className="add-source-portal source-edit-portal" data-source-edit-portal="true" data-mobile-surface="opaque">
 			<div
@@ -916,24 +944,7 @@ export function SourceEditorDialog({
 										: ![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, DECADE_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId)
 											? <SourceIdentity adapter={adapter} draft={draft} />
 											: null}
-									{session.adapterId !== NETWORK_SOURCE_EDITOR_ID ? <SourceTitleField
-											draft={draft}
-											titleInputRef={titleInputRef}
-											error={titleError}
-											helperText={session.adapterId === STUDIO_SOURCE_EDITOR_ID
-												? "Changes how this source appears in Nuvio, not which Studio it represents."
-											: session.adapterId === NETWORK_SOURCE_EDITOR_ID
-												? "Changes how this source appears in Nuvio, not which Network it represents."
-											: session.adapterId === GENRE_SOURCE_EDITOR_ID
-												? "Changes how this source appears in Nuvio, not which Genre it represents."
-											: session.adapterId === DECADE_SOURCE_EDITOR_ID
-												? "Changes how this source appears in Nuvio, not its fixed Decade structure."
-												: null}
-												onChange={(title) => {
-												setDraft((current) => updateSourceEditTitle(current, title));
-												clearFieldDiagnostic("title");
-											}}
-										/> : null}
+									{session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? titleField : null}
 									{session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? (
 										<TmdbListEditorFields draft={draft} sortRef={tmdbListSortRef} onSortChange={(optionId) => {
 											setDraft((current) => updateTmdbListSourceSort(current, optionId));
@@ -942,6 +953,7 @@ export function SourceEditorDialog({
 									) : null}
 									{session.adapterId === PEOPLE_SOURCE_EDITOR_ID ? (
 										<PeopleEditorFields
+											titleField={titleField}
 											draft={draft}
 											combinationRef={combinationRef}
 											countState={peopleCountState}
@@ -967,16 +979,7 @@ export function SourceEditorDialog({
 											network={networkIdentity}
 											countState={networkCountState}
 											sortRef={networkSortRef}
-											titleField={<SourceTitleField
-												draft={draft}
-												titleInputRef={titleInputRef}
-												error={titleError}
-												helperText="Changes how this source appears in Nuvio, not which Network it represents."
-												onChange={(title) => {
-													setDraft((current) => updateSourceEditTitle(current, title));
-													clearFieldDiagnostic("title");
-												}}
-											/>}
+											titleField={titleField}
 											onSortChange={(sortBy, optionId) => {
 												setDraft((current) => updateNetworkSourceSort(current, sortBy, optionId));
 												clearFieldDiagnostic("sort");
@@ -984,6 +987,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === STUDIO_SOURCE_EDITOR_ID ? (
 										<StudioEditorFields
+											titleField={titleField}
 											draft={draft}
 											studio={studioIdentity}
 											onAdvancedChange={(next) => { setDraft(next); setFailure(null); }}
@@ -996,6 +1000,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === STREAMING_SOURCE_EDITOR_ID ? (
 										<StreamingEditorFields
+											titleField={titleField}
                                             onAdvancedChange={(advanced) => { setDraft((current) => updateStreamingSourceAdvanced(current, advanced)); setFailure(null); }}
 											draft={draft}
 											providerIdentity={streamingProviderIdentity}
@@ -1012,6 +1017,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === DECADE_SOURCE_EDITOR_ID ? (
 										<DecadeEditorFields
+											titleField={titleField}
                                             onOpenSecondary={openGenreSecondarySurface}
 											draft={draft}
 											sortRef={decadeSortRef}
@@ -1026,6 +1032,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === GENRE_SOURCE_EDITOR_ID ? (
 										<GenreEditorFields
+											titleField={titleField}
 											draft={draft}
 											sortRef={genreSortRef}
 											onDefaultName={() => {
@@ -1045,6 +1052,7 @@ export function SourceEditorDialog({
 										/>
 									) : session.adapterId === MOVIE_COLLECTION_SOURCE_EDITOR_ID ? (
 										<MovieCollectionEditorFields
+											titleField={titleField}
 											localOnly={localOnly}
 											draft={draft}
 											session={session}

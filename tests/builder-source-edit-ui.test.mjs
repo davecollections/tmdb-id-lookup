@@ -906,3 +906,27 @@ test("responsive source editor styles are safe-area aware and bounded for every 
 	assert.match(styles, /\.add-source-form\s*\{[\s\S]*grid-template-rows:\s*minmax\(0,\s*1fr\) auto[\s\S]*overflow:\s*hidden/);
 	for (const width of [360, 384, 393, 402, 412]) assert.ok(width <= 420);
 });
+
+
+test("ordinary source editors keep identity, name/reset, options and Preview in semantic order", () => {
+	for (const [family, source, identity, reset, editable] of [
+		["studio", studioSource(), 'id="source-edit-options-title"', null, null],
+		["network", networkSource(), 'id="source-edit-options-title"', null, null],
+		["genre", genreSource(), 'id="source-edit-options-title"', "Use default name", null],
+		["streaming", streamingSource(), 'id="source-edit-options-title"', null, null],
+		["decade", decadeSource(), 'id="decade-source-fixed-title"', null, null],
+		["people", peopleSource(), 'aria-label="TMDB person', "Use default title", "Choose role and media"],
+		["franchise", collectionSource(), "Choose another franchise", null, null],
+		["list", { provider: "tmdb", title: "List", tmdbSourceType: "LIST", tmdbId: 5916, mediaType: "MOVIE", sortBy: "original", filters: {} }, 'id="source-edit-identity-title"', null, null],
+	]) {
+		const current = createController(), folder = importSources(current, [source]);
+		const edit = openEdit(current, folder.sources[0]);
+		const markup = renderToStaticMarkup(createElement(SourceEditorDialog, { session: edit.session, initialDraft: edit.draft, onCancel() {}, onSave() {} }));
+		const labels = [identity, 'for="source-edit-title-input"', reset, editable, family === "franchise" ? null : "Sort titles by", 'data-action="preview-source-edit"'].filter(Boolean);
+		for (let index = 0; index < labels.length; index++) {
+			assert.ok(markup.includes(labels[index]), `${family}: ${labels[index]}`);
+			if (index) assert.ok(markup.indexOf(labels[index - 1]) < markup.indexOf(labels[index]), `${family}: ${labels[index - 1]} before ${labels[index]}`);
+		}
+		assert.equal((markup.match(/id="source-edit-title-input"/g) ?? []).length, 1, family);
+	}
+});

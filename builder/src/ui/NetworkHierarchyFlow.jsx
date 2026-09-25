@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { MinimumVotesAdvancedOptions, MinimumVotesSummary } from "./MinimumVotesAdvancedOptions.jsx";
@@ -23,7 +24,6 @@ import {
 	selectedNetworks,
 	toggleSelectedNetwork,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -111,6 +111,7 @@ function ArtworkChoices({ options, onArtworkChange, disabled }) {
 
 function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange, diagnostic, headingRef, isPreparing }) {
 	const plan = planResult?.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$networkPlan.collectionTitle");
 	return (
 		<section className="studio-hierarchy-review studio-hierarchy-appearance network-hierarchy-appearance" aria-labelledby="network-hierarchy-appearance-title">
 			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="network-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
@@ -118,18 +119,18 @@ function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange,
 			{plan?.configuration.scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			{plan?.configuration.scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
 			{options.scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="network-collection-name">Collection name</label><input id="network-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "network-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="network-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
+				<div className="editor-field"><label htmlFor="network-collection-name">Collection name</label><RequiredNameInput id="network-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} error={requiredNameMessage(planResult?.errors, "$networkPlan.collectionTitle", options.collectionTitle)} describedBy={options.hideCollectionTitle ? "network-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="network-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="network-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "network-hide-title-help", controlName: "networkHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "network-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
-				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="network-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="network-all-tab-help" showAllControlName="networkShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="network-pin-help" controlName="networkPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
+				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
 			</> : <>
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan?.destination.titleHidden ? "Hidden collection" : plan?.destination.collectionTitle || options.destinationCollectionTitle || "Hidden collection"}{plan ? ` · ${plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}` : ""}</span></div>
 				<TitleOptions idPrefix="network-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "network-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
 			</>}
 			{isPreparing ? <p className="studio-preview-state" role="status">Preparing folder artwork…</p> : null}
-			{!isPreparing && !plan && !diagnostic ? <div className="editor-diagnostics" role="alert"><p>{planResult?.errors?.[0]?.message ?? "The Network plan could not be prepared."}</p></div> : null}
+			{!isPreparing && !plan && otherErrors.length > 0 && !diagnostic ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Network plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 		</section>
 	);
@@ -338,15 +339,16 @@ export function NetworkHierarchyFlow({
 		: step === "configure"
 			? !configurationValid || isPreparing || isApplying
 			: isPreparing || (artworkBatch ? (!planResult?.ok || planResult.plan.counts.sourceCount === 0 || planResult.plan.counts.unresolvedEntityCount > 0 || isApplying) : chosen.length === 0);
+	const nameCorrection = step === "appearance" && !isApplying && !isPreparing && onlyRequiredNameErrors(planResult, ["$networkPlan.collectionTitle"]);
 	const primaryLabel = step === "select"
-		? `Configure ${chosen.length} Network${chosen.length === 1 ? "" : "s"}`
+		? "Continue to Configure"
 		: step === "configure"
 			? isApplying ? "Adding…" : isPreparing ? "Preparing artwork…" : appendOnly ? "Add sources" : "Continue to Appearance"
 			: isPreparing ? "Preparing artwork…" : !artworkBatch ? "Retry artwork" : isApplying ? "Applying…" : planResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 
 	return <>
 		<CreationHeader title="Create with Networks" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select Networks in folder order." : step === "configure" ? "Choose shared Series source options and preview when useful." : "Choose presentation settings."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-network-selection" : "back-to-network-configuration"} backDisabled={isApplying || isPreparing} inactive={Boolean(preview)} onClose={onCancel} />
-		<form className="add-source-form studio-hierarchy-form network-hierarchy-form" data-network-hierarchy-stage={step} onSubmit={submit} noValidate>
+		<form className="add-source-form studio-hierarchy-form network-hierarchy-form" data-network-hierarchy-stage={step} onSubmitCapture={handleRequiredNameSubmit} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
 					<CreationStageIntro step={1} phase="Select" title="Networks · TMDB" description="Search by Network name, country, location or TMDB ID." headingId="network-mode-title" headingRef={selectHeadingRef} tabIndex={-1} />
@@ -354,7 +356,7 @@ export function NetworkHierarchyFlow({
 					<NetworkSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} seriesCountFilter={search.seriesCountFilter} showSeriesCountFilters onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onSeriesCountFilterChange={search.changeSeriesCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Networks" showIntro={false} renderResult={(network) => <SelectableNetworkResult key={network.id} network={network} checked={Boolean(selection.byId[network.id])} onToggle={toggleNetwork} />} />
 				</> : step === "configure" ? <div inert={isPreparing || undefined} aria-busy={isPreparing ? "true" : undefined}><ConfigureStep options={options} onAdvancedChange={updateOptions} networks={chosen} exactCounts={exactCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} sortOptionIds={options.sortOptionIds} onSortChange={changeSort} onPreview={requestPreview} onRemove={removeNetwork} headingRef={configureHeadingRef} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} onArtworkChange={changeArtworkOrientation} diagnostic={diagnostic} headingRef={appearanceHeadingRef} isPreparing={isPreparing} />}
 			</div>
-			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>
+			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled && !nameCorrection} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>
 		</form>
 		{preview ? <SourceTitlePreviewDialog {...titlePreview.dialogProps} titleId="network-preview-title" backdropProps={{ "data-network-preview-backdrop": "true" }} dialogProps={{ "data-network-preview": "true" }} /> : null}
 	</>;

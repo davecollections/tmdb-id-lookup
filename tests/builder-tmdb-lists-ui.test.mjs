@@ -113,7 +113,7 @@ test("Review exposes independent source names, neutral duplicate status, Origina
 	assert.doesNotMatch(flow, /coverImageUrl|heroBackdropUrl|Sort choices|Media type/);
 });
 
-test("guided Lists starts with empty names, uses concise shared create copy, and validates required containers in the footer", () => {
+test("guided Lists starts with empty names, uses concise shared create copy, and links required errors to each field and retains the footer summary", () => {
 	assert.match(flow, /useState\(""\)[\s\S]*useState\(""\)/);
 	assert.doesNotMatch(flow, /useState\("TMDB Lists"\)|useState\("Lists"\)|useState\("My Lists"\)/);
 	assert.match(flow, /guidedCreateActionLabel\(scope, planResult\?\.plan\?\.counts\)/);
@@ -121,9 +121,9 @@ test("guided Lists starts with empty names, uses concise shared create copy, and
 	assert.match(flow, /Collection and folder names are required\./);
 	assert.match(flow, /Collection name is required\./);
 	assert.match(flow, /Folder name is required\./);
-	assert.match(flow, /aria-invalid=\{requiredNameErrors\.collection/);
-	assert.match(flow, /aria-invalid=\{requiredNameErrors\.folder/);
-	assert.match(flow, /target\?\.scrollIntoView\?\.\(\{ block: "nearest" \}\)[\s\S]*focusElementWithoutScroll\(target\)/);
+	assert.match(flow, /error=\{requiredNameErrors\.collection/);
+	assert.match(flow, /error=\{requiredNameErrors\.folder/);
+	assert.match(flow, /focusRequiredName\(target\)/);
 	assert.match(flow, /className="tmdb-list-footer-validation" role="alert"/);
 	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Review" title="Review & Appearance"/);
 	assert.match(flow, /standalone \? "Review source names and where your lists will be added\." : "Review names, appearance and where your lists will be added\."/);

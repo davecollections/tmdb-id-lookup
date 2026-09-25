@@ -531,6 +531,20 @@ async function runMountedPage() {
 		timing.stage("Management presentation");
 		const presentation = await runManagementPresentation(resources.pageConnection);
 		if (presentationOnly) return { presentation };
+		timing.stage("Single deletion interaction");
+		for (const width of [393, 1280]) {
+			await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+			for (const kind of ["collection", "folder", "source"]) {
+				for (const [key, code, windowsVirtualKeyCode] of [["Enter", "Enter", 13], [" ", "Space", 32], ["Escape", "Escape", 27]]) {
+					await evaluate(resources.pageConnection, `window.prepareSingleDeleteCase(${JSON.stringify(kind)})`);
+					await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode, ...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}) });
+					await resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode });
+					await evaluate(resources.pageConnection, 'window.finishSingleDeleteCase()');
+				}
+				await evaluate(resources.pageConnection, `window.prepareSingleDeleteCase(${JSON.stringify(kind)})`);
+				console.log("SINGLE_DELETE_CASE " + JSON.stringify(await evaluate(resources.pageConnection, 'window.finishSingleDeleteCase(true)')));
+			}
+		}
 		timing.stage("Collection Folder management");
 		const collectionManagement = [];
 		if (ownerCollectionImport) await evaluate(resources.pageConnection, `window.setCollectionOwnerImport(${JSON.stringify(ownerCollectionImport)})`);

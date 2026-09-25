@@ -57,6 +57,12 @@ Use this established shape as the starting point:
 Select / Choose → Configure → Review & Appearance → Create
 ```
 
+Pure stage navigation uses **Continue to [next stage]**, using the current stage name. Counts stay in existing selection context. Resolve lists, artwork retry/preparation, append-only Add sources, Create/Apply and transactional Import/Send retain their operation verbs. Streaming keeps Services selection and destination routing; it is not flattened into a generic wizard.
+
+Comparable presentation stages follow **summary → names → title visibility → Collection layout / All → pin → Folder tile shape → family detail**. Missing or unsupported controls stay absent. Decades batch shape is directly visible; only its detailed review stays disclosed. Streaming routing precedes destination-dependent settings, and its optional per-folder overrides may stay disclosed. Discover retains arrangement before generated names and its separate Artwork stage.
+
+Required Collection/Folder names remain mounted and editable through blank or whitespace-only drafts. Generated valid defaults start without errors; clearing a required field exposes its own adjacent, associated plain-language error immediately. Initially empty List names remain quiet until editing or a submission attempt. Correcting one field clears only its error. Ordinary name errors leave the action available: an attempt focuses and reveals the first invalid field in semantic order without applying anything. Back/return retains invalid drafts and a route to correction. Busy, missing-selection, unresolved-placement and other structural gates stay disabled; commit still requires the actual validated plan. Intentionally hidden titles retain their existing exemptions. This extends the Pass 0 recovery guarantee without changing family title rules or generated names.
+
 A simple family may collapse a stage. A family may add a focused nested subview when the task would otherwise overload the primary stage. Do not force identical steps when the semantics are simpler.
 
 Stage names describe decisions, not a mandatory number of screens:

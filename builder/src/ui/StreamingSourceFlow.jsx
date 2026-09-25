@@ -266,7 +266,7 @@ export function StreamingRegionActions({ selectedCount, onNext }) {
 	return (
 		<footer className="add-source-actions streaming-region-actions">
 			<span role="status">{selectedCount} region{selectedCount === 1 ? "" : "s"} selected</span>
-			<button className="editor-apply" type="button" disabled={selectedCount === 0} onClick={onNext}>Next</button>
+			<button className="editor-apply" type="button" disabled={selectedCount === 0} onClick={onNext}>Continue to Provider</button>
 		</footer>
 	);
 }

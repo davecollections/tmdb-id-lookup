@@ -153,10 +153,10 @@ test("Region selection preserves click order, deselection and reselect-at-end be
 	assert.throws(() => toggleStreamingRegionSelection(selected, { code: "GG", name: "" }), /known normalized/i);
 });
 
-test("Region footer reports singular/plural count and keeps Next disabled until selection", () => {
+test("Region footer reports singular/plural count and keeps Provider progression disabled until selection", () => {
 	const zero = renderToStaticMarkup(createElement(StreamingRegionActions, { selectedCount: 0, onNext() {} }));
 	assert.ok(zero.includes("0 regions selected"));
-	assert.match(zero, /<button[^>]*disabled=""[^>]*>Next<\/button>/);
+	assert.match(zero, /<button[^>]*disabled=""[^>]*>Continue to Provider<\/button>/);
 	const one = renderToStaticMarkup(createElement(StreamingRegionActions, { selectedCount: 1, onNext() {} }));
 	assert.ok(one.includes("1 region selected"));
 	assert.doesNotMatch(one, /<button[^>]*disabled=""/);

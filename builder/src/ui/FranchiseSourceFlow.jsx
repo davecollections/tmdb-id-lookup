@@ -1,5 +1,5 @@
 import { creationContext } from "./creation-context.js";
-import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
+import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -241,9 +241,11 @@ export function FranchiseSourceFlow({
 		if (step === "review") { setStep("select"); setDiagnostic(null); }
 		else onBack();
 	};
+	const nameCorrection = step === "review" && !isApplying && onlyRequiredNameErrors(planResult, ["$franchisePlan.collectionTitle"]);
+
 	return <>
 		<CreationHeader title="Create with Franchises" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select TMDB movie collections in folder order, then review appearance and placement." : "Review names, appearance and where your franchise folders will be created."} onBack={back} backAction={step === "select" ? "back-to-creation-launcher" : "back-to-franchise-selection"} backDisabled={isApplying} inactive={Boolean(preview)} onClose={onCancel} />
-		<form className="add-source-form franchise-creation-form" data-franchise-stage={step} onSubmit={submit} noValidate>
+		<form className="add-source-form franchise-creation-form" data-franchise-stage={step} onSubmitCapture={handleRequiredNameSubmit} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
 					<CreationStageIntro step={1} phase="Select" title="Movie franchises · TMDB" description="Choose exact TMDB collections. One folder and one native movie source will be created for each selection." headingRef={selectHeadingRef} tabIndex={-1} />
@@ -254,7 +256,7 @@ export function FranchiseSourceFlow({
 					{searchData ? <section className="add-source-results"><div className="add-source-section-heading"><div><p className="panel-kicker">TMDB results</p><h3>Select franchises</h3></div>{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}</div>{searchData.results.length ? <div className="add-source-result-list">{searchData.results.map((result) => <FranchiseResult key={result.id} result={result} checked={Boolean(selection.byId[result.id])} loading={loadingId === result.id || (selectionState.status === "loading" && selectionState.context?.id === result.id)} onActivate={activate} />)}</div> : <p className="add-source-empty-results">No TMDB collections matched this search.</p>}{searchData.totalPages > 1 ? <nav className="add-source-pagination"><button type="button" disabled={searchData.page <= 1} onClick={() => setPage(searchData.page - 1)}>Previous page</button><button type="button" disabled={searchData.page >= searchData.totalPages} onClick={() => setPage(searchData.page + 1)}>Next page</button></nav> : null}</section> : null}
 				</> : <div ref={reviewHeadingRef} tabIndex={-1}><ReviewStep scope={scope} planResult={planResult} options={options} onOptionsChange={updateOptions} onPreview={openPreview} diagnostic={diagnostic} /></div>}
 			</div>
-			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying}>{step === "select" ? `Review ${chosen.length} franchise${chosen.length === 1 ? "" : "s"}` : isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button></footer>
+			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={!nameCorrection && (step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying)}>{step === "select" ? "Continue to Review & Appearance" : isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button></footer>
 		</form>
 		{preview ? <TitlesPreview franchise={preview} onClose={closePreview} /> : null}
 	</>;

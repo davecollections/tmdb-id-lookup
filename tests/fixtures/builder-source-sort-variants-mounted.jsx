@@ -72,7 +72,7 @@ export async function runSourceSortVariantsScenario(helpers, { wordingOnly = fal
 				onApplyStreaming: apply, onApplyGenres: apply, onApplyDecades: apply, onCancel() {},
 			}) : createElement(family === "streaming" ? StreamingSourceFlow : family === "genre" ? GenreSourceFlow : DecadeSourceFlow, props)); await settle(); });
 			const dialog = required(document.querySelector(guided ? '[data-creation-dialog="true"]' : `.${family === "decade" ? "decade" : family}-source-dialog`), `${name} dialog`);
-			const submit = () => click(required(dialog.querySelector('button[type="submit"]') ?? [...dialog.querySelectorAll('button')].find((button) => ["Continue", "Next"].includes(button.textContent)), `${name} Continue`));
+			const submit = () => click(required(dialog.querySelector('button[type="submit"]') ?? [...dialog.querySelectorAll('button')].find((button) => button.textContent.startsWith("Continue to ")), `${name} Continue`));
 			if (family === "streaming") {
 				await click(required(dialog.querySelector('[data-streaming-region="AU"]'), "AU"));
 				await click(required(dialog.querySelector('[data-streaming-region="US"]'), "US"));
