@@ -5,7 +5,7 @@ import { assertSelectionAppearance, runGuidedPresentationScenario } from "./buil
 import { DECADES_ARTWORK_KEYS, resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "../../builder/src/source-add/decades-folder-artwork.js";
 import { runSourceSortVariantsScenario, runExpandedDecadesScenario } from "./builder-source-sort-variants-mounted.jsx";
 import { matchesTitlePreviewSummary, runNativeSharedAdvancedScenario, runNativeSourceVariantsScenario, runStudioMinimumVotesScenario, runNetworkMinimumVotesScenario } from "./builder-native-source-variants-mounted.jsx";
-import { runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
+import { recordLiveDiscover, runDiscoverPreviewScenario } from "./builder-discover-preview-mounted.jsx";
 import { runPreviewPagesScenario } from "./builder-preview-pages-mounted.jsx";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
@@ -59,6 +59,9 @@ import { CreationDialog } from "../../builder/src/ui/CreationDialog.jsx";
 import { createArtworkRuntimeClient } from "../../js/artwork-runtime.mjs";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+// Discover name recovery can mount the shared provider before Preview scenarios.
+// Record real responses before that provider captures fetch, including cache reuse.
+recordLiveDiscover();
 
 const livePeopleManifestClient = createPeopleManifestClient();
 const liveNetworkCatalogueProvider = createNetworkCatalogueProvider({ catalogueUrl: "/data/tv-networks.min.json" });

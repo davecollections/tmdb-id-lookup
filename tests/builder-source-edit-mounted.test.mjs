@@ -538,6 +538,13 @@ async function runMountedPage() {
 				if (discoverPreviewOnly || (!listEditOnly && !nativeVariantsOnly && !multiSortOnly && !roundTripOnly && !sourceDetailsOnly && !launcherOnly)) {
 					timing.stage("Discover Preview");
 					result.results.discoverPreviewCases = [];
+					if (discoverPreviewOnly) {
+						// Exercise the shared provider's earlier name-recovery initialization too.
+						await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+						const primed = await resources.pageConnection.command("Runtime.evaluate", { expression: 'window.__runGuidedPresentationScenario({ family: "advanced-discover", nameRecovery: {} })', awaitPromise: true, returnByValue: true });
+						if (primed.exceptionDetails) throw new Error(primed.exceptionDetails.exception?.description ?? primed.exceptionDetails.text);
+					}
 					for (const [width, height] of [[360, 800], [384, 800], [393, 852], [402, 800], [412, 800], [1280, 900]]) {
 						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
 						for (const scope of ["add-source", "new-collection", "new-folder", "edit-imported", "edit-created"]) {

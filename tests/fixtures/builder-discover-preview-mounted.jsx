@@ -7,7 +7,7 @@ import { createSourceEditSession } from "../../builder/src/source-edit/index.js"
 
 const responses = new Map();
 let recording = false;
-function recordLiveDiscover() {
+export function recordLiveDiscover() {
 	if (recording) return;
 	recording = true;
 	const realFetch = globalThis.fetch;
