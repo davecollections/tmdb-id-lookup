@@ -1,3 +1,4 @@
+import { creationContext, sourceDestinationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -26,7 +27,6 @@ import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const SOURCE_NAME_HELPER = "This is the name shown in Nuvio. You can customise it.";
-function scopeLabel(scope) { return scope === "new-folder" ? "New Folder" : "New Collection"; }
 function sourceDrafts(lists) { return lists.map((list) => buildTmdbListSourceDraft(list, list.sourceTitle).draft).filter(Boolean); }
 function statusLabel(status) {
 	if (status === TMDB_LIST_PLACEMENT_STATUSES.ALREADY_IN_COLLECTION) return "Already in this collection · omitted";
@@ -65,10 +65,10 @@ function GuidedPresentationControls({ scope, options, destinationCollectionTitle
 			folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "tmdb-list-folder-title-visibility", onChange: (folderTitleVisibility) => onChange({ folderTitleVisibility }) }}
 		/>
 		{scope === "new-collection" ? <>
-			<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="tmdb-list-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onChange} showAllDescription="Combines every TMDB List source in the folder into one All tab." showAllDescriptionId="tmdb-list-all-tab-help" showAllControlName="tmdbListShowAllTab" /></fieldset>
+			<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="tmdb-list-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onChange} showAllDescriptionId="tmdb-list-all-tab-help" showAllControlName="tmdbListShowAllTab" /></fieldset>
 			<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="tmdb-list-pin-help" controlName="tmdbListPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onChange({ pinToTop })} />
 		</> : null}
-		<fieldset className="editor-field editor-choice-field" data-editor-field="folderTileShape"><legend>Tile shape</legend><p className="editor-field-help">Applies to the new folder. No list-derived artwork is assigned.</p><FolderShapeChoices selectedId={options.folderTileShape} name="tmdb-list-folder-shape" idPrefix="tmdb-list-folder" onChange={(folderTileShape) => onChange({ folderTileShape })} /></fieldset>
+		<fieldset className="editor-field editor-choice-field" data-editor-field="folderTileShape"><legend>Folder tile shape</legend><p className="editor-field-help">Applies to the new folder. No list-derived artwork is assigned.</p><FolderShapeChoices selectedId={options.folderTileShape} name="tmdb-list-folder-shape" idPrefix="tmdb-list-folder" onChange={(folderTileShape) => onChange({ folderTileShape })} /></fieldset>
 	</>;
 }
 
@@ -272,7 +272,7 @@ export function TmdbListSourceFlow({
 	const back = () => { if (applying) return; if (step === "review") { setStep("select"); setDiagnostic(null); setRequiredNameErrors(Object.freeze({ collection: false, folder: false })); } else onBack(); };
 
 	const inner = <>
-		<CreationHeader title={standalone ? "Add TMDB lists" : "Create with TMDB Lists"} context={standalone ? `In ${folder?.editable?.title ?? "selected folder"}` : `${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Resolve public TMDB list URLs or IDs, then review source names and placement." : standalone ? "Review exact List-ID placement before applying everything atomically." : "Review names, appearance and exact List-ID placement before creating everything atomically."} onBack={back} backAction={step === "select" ? "back-to-source-modes" : "back-to-tmdb-list-selection"} backDisabled={applying} inactive={Boolean(preview)} onClose={onCancel} />
+		<CreationHeader title={standalone ? "Add TMDB List sources" : "Create with TMDB Lists"} context={standalone ? sourceDestinationContext(project, folder) : creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Resolve public TMDB list URLs or IDs, then review source names and placement." : standalone ? "Review source names and where your lists will be added." : "Review names, appearance and where your lists will be added."} onBack={back} backAction={step === "select" ? "back-to-source-modes" : "back-to-tmdb-list-selection"} backDisabled={applying} inactive={Boolean(preview)} onClose={onCancel} />
 		<form className="add-source-form tmdb-list-form" data-tmdb-list-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
@@ -291,7 +291,7 @@ export function TmdbListSourceFlow({
 					{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 				</section>}
 			</div>
-			<footer className="add-source-actions tmdb-list-actions"><button className="editor-apply" type="submit" disabled={applying || (step === "select" ? lists.length === 0 : count === 0)}>{step === "select" ? `Review ${lists.length} list${lists.length === 1 ? "" : "s"}` : applying ? (standalone ? "Adding…" : "Creating…") : standalone ? `Add ${count} source${count === 1 ? "" : "s"}` : guidedCreateActionLabel(scope)}</button>{step === "review" && !standalone && requiredNameMessage ? <p id="tmdb-list-required-names" className="tmdb-list-footer-validation" role="alert">{requiredNameMessage}</p> : null}</footer>
+			<footer className="add-source-actions tmdb-list-actions"><button className="editor-apply" type="submit" disabled={applying || (step === "select" ? lists.length === 0 : count === 0)}>{step === "select" ? `Review ${lists.length} list${lists.length === 1 ? "" : "s"}` : applying ? (standalone ? "Adding…" : "Creating…") : standalone ? `Add ${count} source${count === 1 ? "" : "s"}` : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button>{step === "review" && !standalone && requiredNameMessage ? <p id="tmdb-list-required-names" className="tmdb-list-footer-validation" role="alert">{requiredNameMessage}</p> : null}</footer>
 		</form>
 		{preview ? <SourceTitlePreviewDialog preview={preview} titleId="tmdb-list-preview-title" backdropProps={{ "data-tmdb-list-preview": "true" }} dialogProps={{ "data-tmdb-list-preview-dialog": "true" }} onClose={closePreview} onRetry={retryPreview} /> : null}
 	</>;

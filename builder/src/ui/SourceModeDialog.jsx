@@ -1,3 +1,4 @@
+import { destinationContext } from "./creation-context.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AVAILABLE_SOURCE_MODES } from "../source-add/index.js";
@@ -12,7 +13,7 @@ import { handleDialogKeyDown } from "./modal-focus.js";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function SourceModeDialog({ folderName, initialFocusModeId = null, onCancel, onSelectMode }) {
+export function SourceModeDialog({ folderName, collectionName, initialFocusModeId = null, onCancel, onSelectMode }) {
 	const dialogRef = useRef(null);
 	const firstModeRef = useRef(null);
 	const [viewportStyle, setViewportStyle] = useState(() => (
@@ -63,7 +64,7 @@ export function SourceModeDialog({ folderName, initialFocusModeId = null, onCanc
 							<span className="add-source-header-spacer" aria-hidden="true" />
 							<div>
 								<h2 id="source-mode-title">Add source</h2>
-								<p>Starting from {folderName}</p>
+								<p>{destinationContext(collectionName, folderName)}</p>
 							</div>
 							<button
 								className="add-source-header-action add-source-close-action"

@@ -27,7 +27,7 @@ test("TMDB Lists is available from Add Source, New Collection, and New Folder th
 	assert.match(sourceModes, /label: "TMDB lists"[\s\S]*description: "Add one or more public TMDB lists\."/);
 	assert.match(workspace, /visibleAddSourceSession\.modeId === TMDB_LIST_SOURCE_MODE_ID[\s\S]*<TmdbListSourceFlow/);
 	assert.match(creation, /CREATION_OPTION_IDS\.TMDB_LISTS[\s\S]*<TmdbListSourceFlow context="hierarchy"/);
-	assert.match(flow, /title=\{standalone \? "Add TMDB lists" : "Create with TMDB Lists"\}/);
+	assert.match(flow, /title=\{standalone \? "Add TMDB List sources" : "Create with TMDB Lists"\}/);
 	assert.match(flow, /scope === "new-collection"[\s\S]*Collection name/);
 	assert.match(flow, /Folder name/);
 });
@@ -116,7 +116,7 @@ test("Review exposes independent source names, neutral duplicate status, Origina
 test("guided Lists starts with empty names, uses concise shared create copy, and validates required containers in the footer", () => {
 	assert.match(flow, /useState\(""\)[\s\S]*useState\(""\)/);
 	assert.doesNotMatch(flow, /useState\("TMDB Lists"\)|useState\("Lists"\)|useState\("My Lists"\)/);
-	assert.match(flow, /guidedCreateActionLabel\(scope\)/);
+	assert.match(flow, /guidedCreateActionLabel\(scope, planResult\?\.plan\?\.counts\)/);
 	assert.doesNotMatch(flow, /Create collection with 1 folder|Create 1 folder with/);
 	assert.match(flow, /Collection and folder names are required\./);
 	assert.match(flow, /Collection name is required\./);
@@ -126,7 +126,7 @@ test("guided Lists starts with empty names, uses concise shared create copy, and
 	assert.match(flow, /target\?\.scrollIntoView\?\.\(\{ block: "nearest" \}\)[\s\S]*focusElementWithoutScroll\(target\)/);
 	assert.match(flow, /className="tmdb-list-footer-validation" role="alert"/);
 	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Review" title="Review & Appearance"/);
-	assert.match(flow, /standalone \? "Review exact List-ID placement before applying everything atomically\." : "Review names, appearance and exact List-ID placement before creating everything atomically\."/);
+	assert.match(flow, /standalone \? "Review source names and where your lists will be added\." : "Review names, appearance and where your lists will be added\."/);
 });
 
 test("guided Lists directly reuses standard Collection and Folder presentation controls while Add Source remains container-free", () => {

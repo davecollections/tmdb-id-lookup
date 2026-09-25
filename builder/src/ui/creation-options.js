@@ -97,6 +97,13 @@ export function creationOptionsForScope(scope) {
 	return Object.freeze(CREATION_OPTIONS.filter((option) => option.scopes.includes(scope)));
 }
 
-export function guidedCreateActionLabel(scope) {
-	return scope === CREATION_SCOPES.NEW_COLLECTION ? "Create collection" : "Create folder";
+export function outputNoun(count, singular) {
+	return count === 1 ? singular : `${singular}s`;
+}
+
+export function guidedCreateActionLabel(scope, counts = {}) {
+	const collection = scope === CREATION_SCOPES.NEW_COLLECTION;
+	const noun = collection ? "collection" : "folder";
+	const count = collection ? counts?.collectionCount : counts?.newFolderCount ?? counts?.folderCount;
+	return Number.isSafeInteger(count) && count > 1 ? `Create ${count} ${outputNoun(count, noun)}` : `Create ${noun}`;
 }

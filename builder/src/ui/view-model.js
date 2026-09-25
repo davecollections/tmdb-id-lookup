@@ -116,7 +116,7 @@ function buildCollection(collection, selectedInternalId) {
 			detail("Sources", sourceCount),
 			detail("Layout", layout),
 			detail("Pinned to top", pinToTop),
-			detail("All tab when using Tabs", showAllTab),
+			detail("Show All tab", showAllTab),
 			detail("Focus glow enabled", focusGlowEnabled),
 		]),
 	};
@@ -156,7 +156,7 @@ function buildFolder(folder, selectedInternalId) {
 			detail("Title", title.text),
 			detail("Folder title visibility", titleVisibility),
 			detail("Sources", sourceCount),
-			detail("Tile shape", tileShape),
+			detail("Folder tile shape", tileShape),
 			detail("Artwork", artworkCount === 0 ? "None added" : countLabel(artworkCount, "artwork field")),
 		]),
 	};

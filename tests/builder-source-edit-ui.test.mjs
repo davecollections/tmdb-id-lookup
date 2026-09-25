@@ -359,9 +359,9 @@ test("Collection editor is prepopulated, offline on open, and exposes explicit i
 	assert.equal(markup.includes("Nuvio source title"), false);
 	assert.ok(markup.includes("TMDB · COLLECTION · 100 · MOVIE"));
 	assert.ok(markup.indexOf("Existing franchise title") < markup.indexOf("TMDB collection 100"));
-	assert.ok(markup.includes("Current source title; no canonical TMDB name was fetched."));
+	assert.ok(markup.includes("Showing the current source name. Choose a franchise to see its TMDB name."));
 	assert.ok(markup.includes("Choose another franchise"));
-	assert.equal(markup.includes("Use selected collection name"), false);
+	assert.equal(markup.includes("Use default name"), false);
 	assert.ok(markup.includes('data-action="save-source-edit"'));
 	assert.ok(markup.includes('data-action="cancel-source-edit"'));
 });
@@ -674,7 +674,7 @@ test("selected Collection name is prominent, becomes the draft title, and preced
 	assert.ok(markup.includes('value="My Big Fat Greek Wedding Collection"'));
 	assert.ok(markup.indexOf("My Big Fat Greek Wedding Collection") < markup.indexOf("TMDB collection 389767"));
 	assert.ok(markup.includes("This is the collection that will be saved."));
-	assert.ok(markup.includes("Use selected collection name"));
+	assert.ok(markup.includes("Use default name"));
 	assert.ok(markup.includes("This name updates automatically until you customise it."));
 });
 

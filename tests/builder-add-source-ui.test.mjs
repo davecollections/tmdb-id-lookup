@@ -244,7 +244,7 @@ test("initial Add Source dialog is a Search task with Close and no reserved acti
 	);
 	assert.equal((markup.match(/data-add-source-modal="true"/g) ?? []).length, 1);
 	assert.ok(openingTag(markup, 'data-add-source-portal="true"').includes('data-mobile-surface="opaque"'));
-	assert.ok(markup.includes("Adding to Franchises"));
+	assert.ok(markup.includes("To Collection / Franchises"));
 	assert.ok(markup.includes("Movie franchise"));
 	assert.ok(markup.includes("Official TMDB movie collection"));
 	assert.ok(markup.includes('data-action="cancel-add-source"'));

@@ -1,3 +1,4 @@
+import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -27,10 +28,6 @@ import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function scopeLabel(scope) {
-	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
 
 function safeOverview(value) {
 	if (typeof value !== "string") return "";
@@ -102,7 +99,7 @@ function ReviewStep({ scope, planResult, options, onOptionsChange, onPreview, di
 			{scope === "new-collection" ? <>
 				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><RequiredNameInput id="franchise-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$franchisePlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="franchise" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "franchise-hide-title-help", controlName: "franchiseHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
-				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every franchise folder in one All tab." showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
+				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="franchise-pin-help" controlName="franchisePinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : plan ? <>
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
@@ -245,7 +242,7 @@ export function FranchiseSourceFlow({
 		else onBack();
 	};
 	return <>
-		<CreationHeader title="Create with Franchises" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Select TMDB movie collections in folder order, then review appearance and placement." : "Review names, appearance and exact Collection-ID placement before creating everything atomically."} onBack={back} backAction={step === "select" ? "back-to-creation-launcher" : "back-to-franchise-selection"} backDisabled={isApplying} inactive={Boolean(preview)} onClose={onCancel} />
+		<CreationHeader title="Create with Franchises" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select TMDB movie collections in folder order, then review appearance and placement." : "Review names, appearance and where your franchise folders will be created."} onBack={back} backAction={step === "select" ? "back-to-creation-launcher" : "back-to-franchise-selection"} backDisabled={isApplying} inactive={Boolean(preview)} onClose={onCancel} />
 		<form className="add-source-form franchise-creation-form" data-franchise-stage={step} onSubmit={submit} noValidate>
 			<div ref={scrollRef} className="add-source-scroll" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 				{step === "select" ? <>
@@ -257,7 +254,7 @@ export function FranchiseSourceFlow({
 					{searchData ? <section className="add-source-results"><div className="add-source-section-heading"><div><p className="panel-kicker">TMDB results</p><h3>Select franchises</h3></div>{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}</div>{searchData.results.length ? <div className="add-source-result-list">{searchData.results.map((result) => <FranchiseResult key={result.id} result={result} checked={Boolean(selection.byId[result.id])} loading={loadingId === result.id || (selectionState.status === "loading" && selectionState.context?.id === result.id)} onActivate={activate} />)}</div> : <p className="add-source-empty-results">No TMDB collections matched this search.</p>}{searchData.totalPages > 1 ? <nav className="add-source-pagination"><button type="button" disabled={searchData.page <= 1} onClick={() => setPage(searchData.page - 1)}>Previous page</button><button type="button" disabled={searchData.page >= searchData.totalPages} onClick={() => setPage(searchData.page + 1)}>Next page</button></nav> : null}</section> : null}
 				</> : <div ref={reviewHeadingRef} tabIndex={-1}><ReviewStep scope={scope} planResult={planResult} options={options} onOptionsChange={updateOptions} onPreview={openPreview} diagnostic={diagnostic} /></div>}
 			</div>
-			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying}>{step === "select" ? `Review ${chosen.length} franchise${chosen.length === 1 ? "" : "s"}` : isApplying ? "Creating…" : guidedCreateActionLabel(scope)}</button></footer>
+			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying}>{step === "select" ? `Review ${chosen.length} franchise${chosen.length === 1 ? "" : "s"}` : isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button></footer>
 		</form>
 		{preview ? <TitlesPreview franchise={preview} onClose={closePreview} /> : null}
 	</>;

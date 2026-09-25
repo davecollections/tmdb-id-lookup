@@ -1,6 +1,8 @@
 import { normalizeHierarchyShowAllTab } from "../source-add/hierarchy-presentation.js";
 import { PresentationSwitch } from "./PresentationControls.jsx";
 
+export const ALL_TAB_DESCRIPTION = "For each folder with two or more sources, adds an All tab that combines its sources.";
+
 function isSelected(value, canonicalValue) {
 	return typeof value === "string" && value.toUpperCase() === canonicalValue;
 }
@@ -70,7 +72,7 @@ export function HierarchyCollectionPresentationControls({
 	showAllTab,
 	onPresentationChange,
 	showAllLabel = "Show All tab",
-	showAllDescription,
+	showAllDescription = ALL_TAB_DESCRIPTION,
 	showAllDescriptionId,
 	showAllControlName,
 }) {

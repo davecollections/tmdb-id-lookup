@@ -1,3 +1,4 @@
+import { sourceDestinationContext } from "./creation-context.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -327,7 +328,7 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 					handleDialogKeyDown(event, dialogRef.current, onCancel);
 				}}>
 					<header className="add-source-heading" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
-						<div className="add-source-heading-row"><button className="add-source-header-action" type="button" disabled={isApplying} data-action="back-to-source-types" onClick={onBack}><span aria-hidden="true">←</span> Back</button><div><h2 ref={headingRef} id="decade-source-title" tabIndex={-1}>Add Decade source</h2><p>{folder?.editable?.title || "Selected folder"}</p></div><button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Decade source" disabled={isApplying} onClick={onCancel}>Close</button></div>
+						<div className="add-source-heading-row"><button className="add-source-header-action" type="button" disabled={isApplying} data-action="back-to-source-types" onClick={onBack}><span aria-hidden="true">←</span> Back</button><div><h2 ref={headingRef} id="decade-source-title" tabIndex={-1}>Add Decade sources</h2><p>{sourceDestinationContext(project, folder)}</p></div><button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Decade sources" disabled={isApplying} onClick={onCancel}>Close</button></div>
 						<p id="decade-source-description" className="add-source-heading-description">Choose a decade, then the whole decade or any individual years. Optional Genre sources are added to each selection.</p>
 					</header>
 					<form className="add-source-form decade-source-form" onSubmit={submit} noValidate>

@@ -65,6 +65,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
+	const meaningOnly = process.env.TMDB_MEANING_ONLY === "1";
 	const requiredNamesOnly = process.env.TMDB_REQUIRED_NAMES_ONLY === "1";
 	const semanticPresentationOnly = process.env.TMDB_SEMANTIC_PRESENTATION_ONLY === "1";
 	const guidedPresentationOnly = process.env.TMDB_GUIDED_PRESENTATION_ONLY === "1";
@@ -205,7 +206,7 @@ async function runMountedPage() {
 		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000 });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
-		if (guidedPresentationOnly || semanticPresentationOnly) {
+		if (guidedPresentationOnly || semanticPresentationOnly || meaningOnly) {
 			resources.pageConnection.onEvent((message) => {
 				if (message.method !== "Runtime.bindingCalled" || message.params.name !== "pressGuidedPresentationKey") return;
 				const key = JSON.parse(message.params.payload).key;
@@ -257,7 +258,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -267,6 +268,21 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (meaningOnly) {
+					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+					const families = ["people", "genres", "networks", "decades", "streaming-services", "tmdb-lists", "discover-add"];
+					const views = [...[393, 1280].flatMap(width => families.map(family => ({ width, family }))), ...["genres", "people", "discover-add"].map(family => ({ width: 393, family, enlargedText: true }))];
+					const meaningCases = [];
+					for (const view of views) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						const expression = view.family === "discover-add" ? `window.__runDiscoverPreviewScenario(${JSON.stringify({ scope: "add-source", mediaMode: "both", meaning: true, enlargedText: view.enlargedText })})` : `window.__runGuidedPresentationScenario(${JSON.stringify({ ...view, meaning: true })})`;
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						meaningCases.push(checked.result.value);
+						console.log("MEANING_CASE " + JSON.stringify(checked.result.value));
+					}
+					return { meaningCases };
+				}
 				const requiredNameCases = [];
 				if (requiredNamesOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
@@ -2026,7 +2042,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		}, `${label} selection`);
 		assert.deepEqual(result.review, {
 			stageKicker: "Review",
-			headerDescription: "Review exact List-ID placement before applying everything atomically.",
+			headerDescription: "Review source names and where your lists will be added.",
 			count: 20,
 			countLabel: "20 sources will be added",
 			actionCopy: "Add 20 sources",
@@ -2050,7 +2066,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			scope: "new-collection",
 			stageKicker: "Step 2 · Review",
 			stageTitle: "Review & Appearance",
-			headerDescription: "Review names, appearance and exact List-ID placement before creating everything atomically.",
+			headerDescription: "Review names, appearance and where your lists will be added.",
 			selectedCount: 4,
 			namesInitiallyEmpty: true,
 			collectionNamePresent: true,
@@ -2095,7 +2111,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			scope: "new-folder",
 			stageKicker: "Step 2 · Review",
 			stageTitle: "Review & Appearance",
-			headerDescription: "Review names, appearance and exact List-ID placement before creating everything atomically.",
+			headerDescription: "Review names, appearance and where your lists will be added.",
 			selectedCount: 1,
 			namesInitiallyEmpty: true,
 			collectionNamePresent: false,
@@ -2396,7 +2412,7 @@ test("mounted People Configure stays compact, editable, preview-safe, and overfl
 		assert.equal(result.appearance.personSelectorAbsent, true, `${width}px no person artwork selector`);
 		assert.equal(result.appearance.artworkFields, 0, `${width}px no hierarchy artwork URL fields`);
 		assert.equal(result.appearance.focusOverrideAbsent, true, `${width}px no hierarchy focus override`);
-		assert.equal(result.appearance.guidance, "Each person’s Hero, Title Logo and Focus artwork will use the canonical People defaults. To customise artwork links later, edit that person’s folder.", `${width}px canonical artwork guidance`);
+		assert.equal(result.appearance.guidance, "Default People artwork is used for each person. You can customise it later in Edit Folder.", `${width}px canonical artwork guidance`);
 		assert.equal(result.appearance.personDetailsPresent, true, `${width}px person details reachable`);
 		assert.equal(result.appearance.backReviewPreserved, true, `${width}px Landscape survives Back and Review`);
 		assert.equal(result.appearance.folderTitleBackReviewPreserved, true, `${width}px folder title choice survives Back and Review`);
@@ -2972,7 +2988,7 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 		assert.deepEqual(result.review.newCollectionDraftState, {
 			stageKicker: "Step 3 · Review",
 			heading: "Review & Appearance",
-			headerDescription: "Review the exact creation or change summary before one atomic Apply.",
+			headerDescription: "Review what will be created or updated before you finish.",
 			collectionNameVisible: true,
 			folderNameCount: 2,
 			apple: "Curated Apple New",
@@ -3727,11 +3743,11 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 		reviewEntered: {
 			stage: "review",
 			backAction: "back-to-decades-options",
-			footerLabels: ["Create collection"],
+			footerLabels: ["Create 2 collections"],
 			headingFocused: true,
 			countCards: 3,
 			removedSummariesAbsent: true,
-			sectionLabels: ["Title options", "Layout", "Folder options", "View folder details"],
+			sectionLabels: ["Title options", "Collection layout", "Folder options", "View folder details"],
 			oldFolderLabelAbsent: true,
 			showAllSpacing: { separateSiblings: true, cssGap: 14, actualGap: 14, noOverlap: true },
 		},
@@ -4102,4 +4118,13 @@ test("mounted Decades artwork uses live canonical assets across creation, rename
 		assert.ok(entry.sourceCount > 1);
 	}
 	if (process.env.TMDB_DECADES_ARTWORK_ONLY === "1") assert.deepEqual([...new Set(cases.map((entry) => entry.width))].sort((a, b) => a - b), [360,384,393,402,412,1280]);
+});
+
+
+test("mounted meaning and vocabulary retain readable actions and destination context", { skip: process.env.TMDB_MEANING_ONLY !== "1" }, () => {
+ assert.equal(mountedResults.meaningCases.length, 17);
+ for (const result of mountedResults.meaningCases) {
+  assert.ok(result.noMutation);
+  assert.ok(result.noOverflow || result.meaning.noOverflow);
+ }
 });

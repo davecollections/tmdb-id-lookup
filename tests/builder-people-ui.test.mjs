@@ -617,7 +617,7 @@ test("People Review keeps shared Title options and Layout visible and only colla
 		headingRef: null,
 	}));
 	assert.ok(markup.includes("Title options"));
-	assert.ok(markup.includes("Layout"));
+	assert.ok(markup.includes("Collection layout"));
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Folder title visibility"));
 	assert.equal(markup.includes("Person folder titles"), false);
@@ -625,14 +625,14 @@ test("People Review keeps shared Title options and Layout visible and only colla
 	assert.match(markup, /data-editor-choice="hide-home-screen"[^>]*checked="" value="HIDE_HOME_SCREEN"/);
 	assert.ok(markup.includes("Show All tab"));
 	assert.ok(markup.includes("Pin collection to top"));
-	assert.ok(markup.indexOf("Title options") < markup.indexOf("Layout"));
-	assert.ok(markup.indexOf("Layout") < markup.indexOf("Person folder appearance"));
+	assert.ok(markup.indexOf("Title options") < markup.indexOf("Collection layout"));
+	assert.ok(markup.indexOf("Collection layout") < markup.indexOf("Person folder appearance"));
 	assert.ok(markup.includes("Person folder appearance"));
 	assert.ok(markup.includes("Poster (recommended)"));
 	assert.ok(markup.includes("Landscape"));
 	assert.match(markup, /<input(?=[^>]*data-editor-choice="poster")(?=[^>]*checked="")[^>]*>/);
-	assert.ok(markup.includes("Each person’s Hero, Title Logo and Focus artwork will use the canonical People defaults."));
-	assert.ok(markup.includes("edit that person’s folder"));
+	assert.ok(markup.includes("Default People artwork is used for each person."));
+	assert.ok(markup.includes("You can customise it later in Edit Folder."));
 	for (const label of ["Person folder to edit", "Tile artwork URL", "Hero / background URL", "Title Logo URL", "Focus artwork URL", "Enable focus artwork", "Restore default artwork"]) assert.equal(markup.includes(label), false, label);
 	assert.equal(/<select\b/.test(markup), false);
 	assert.equal(/type="url"/.test(markup), false);
@@ -688,7 +688,7 @@ test("People New Folder Review keeps parent presentation read-only while generat
 	assert.equal(markup.includes("Hide collection title in Nuvio"), false);
 	assert.match(markup, /data-editor-choice="hide-everywhere"[^>]*checked="" value="HIDE_EVERYWHERE"/);
 	assert.match(markup, /<input(?=[^>]*data-editor-choice="landscape")(?=[^>]*checked="")[^>]*>/);
-	assert.ok(markup.includes("edit that person’s folder"));
+	assert.ok(markup.includes("You can customise it later in Edit Folder."));
 	assert.equal(markup.includes("Person folder to edit"), false);
 	assert.equal(/type="url"/.test(markup), false);
 });

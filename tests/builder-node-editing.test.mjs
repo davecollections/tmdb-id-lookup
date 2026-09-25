@@ -1970,8 +1970,8 @@ test("quick rename renders only title, invisibility, diagnostics, and actions", 
 	assert.ok(markup.includes(">Rename collection</h2>"));
 	assert.ok(markup.includes("Update the title and its visibility for this collection."));
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
-	assert.equal(markup.includes("How sources appear in this collection"), false);
-	assert.equal(markup.includes("Include an All tab"), false);
+	assert.equal(markup.includes("Collection layout"), false);
+	assert.equal(markup.includes("Show All tab"), false);
 	assert.equal(markup.includes("Pin to top"), false);
 	assert.equal(markup.includes("Enable focus glow"), false);
 	assert.ok(markup.includes('data-action="apply-node-edit"'));
@@ -1985,7 +1985,7 @@ test("quick rename renders only title, invisibility, diagnostics, and actions", 
 	assert.ok(markup.includes("Update the title and its visibility for this folder."));
 	assert.ok(markup.includes("Hide folder title everywhere in Nuvio"));
 	assert.equal(markup.includes("Folder title visibility"), false);
-	assert.equal(markup.includes("Tile shape"), false);
+	assert.equal(markup.includes("Folder tile shape"), false);
 	assert.equal((markup.match(/data-editor-field="title"/g) ?? []).length, 1);
 	assert.equal((markup.match(/data-editor-control="hideFolderTitleEverywhere"/g) ?? []).length, 1);
 });
@@ -2052,7 +2052,7 @@ test("collection settings render exactly one accessible modal with stable marker
 		'data-action="cancel-node-edit"',
 	]) assert.ok(markup.includes(marker), marker);
 	assert.ok(markup.includes("Collection settings"));
-	assert.equal((markup.match(/<legend>How sources appear in this collection<\/legend>/g) ?? []).length, 1);
+	assert.equal((markup.match(/<legend>Collection layout<\/legend>/g) ?? []).length, 1);
 	assert.ok(markup.includes("Choose how each folder in this collection displays its sources in Nuvio."));
 	assert.ok(markup.includes("<strong>Tabs (recommended)</strong>"));
 	assert.ok(openingTag(markup, 'data-editor-choice="tabs"').includes('value="TABBED_GRID"'));
@@ -2071,7 +2071,7 @@ test("collection settings render exactly one accessible modal with stable marker
 		assert.doesNotMatch(choiceMarkup, /<(?:img|svg|video|canvas)\b/);
 	}
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
-	assert.ok(markup.includes("Include an All tab when using Tabs"));
+	assert.ok(markup.includes("Show All tab"));
 	assert.ok(markup.includes(
 		"For each folder with two or more sources, adds an All tab that combines its sources.",
 	));
@@ -2096,12 +2096,12 @@ test("collection settings render exactly one accessible modal with stable marker
 	const display = markedElement(markup, 'data-settings-section="display"', "section");
 	const artwork = markedElement(markup, 'data-settings-section="artwork"', "section");
 	assert.ok(basicDetails.includes('<h3 id="node-editor-collection-basic-details-heading">Basic details</h3>'));
-	assert.ok(basicDetails.includes(">Title</label>"));
+	assert.ok(basicDetails.includes(">Collection name</label>"));
 	assert.equal(basicDetails.includes("Hide collection title in Nuvio"), false);
 	assert.ok(display.includes('<h3 id="node-editor-collection-display-heading">Display</h3>'));
 	assert.ok(display.includes("Hide collection title in Nuvio"));
-	assert.ok(display.includes("How sources appear in this collection"));
-	assert.ok(display.includes("Include an All tab when using Tabs"));
+	assert.ok(display.includes("Collection layout"));
+	assert.ok(display.includes("Show All tab"));
 	assert.ok(display.includes("Pin to top"));
 	assert.ok(artwork.includes('<h3 id="node-editor-collection-artwork-heading">Artwork</h3>'));
 	assert.ok(artwork.includes("Backdrop Image or GIF URL"));
@@ -2112,7 +2112,7 @@ test("collection settings render exactly one accessible modal with stable marker
 	assert.equal(artwork.includes("<img"), false);
 	assert.ok(markup.indexOf('data-settings-section="basic-details"') < markup.indexOf('data-settings-section="display"'));
 	assert.ok(markup.indexOf('data-settings-section="display"') < markup.indexOf('data-settings-section="artwork"'));
-	assert.match(markup, /<label for="node-editor-collection-title-input">Title<\/label>/);
+	assert.match(markup, /<label for="node-editor-collection-title-input">Collection name<\/label>/);
 	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes("inert"));
 	assert.ok(openingTag(markup, 'data-workspace-underlay="true"').includes('aria-hidden="true"'));
 });
@@ -2210,12 +2210,12 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	const basicDetails = markedElement(markup, 'data-settings-section="basic-details"', "section");
 	const display = markedElement(markup, 'data-settings-section="display"', "section");
 	assert.ok(basicDetails.includes("<h3 id=\"node-editor-folder-basic-details-heading\">Basic details</h3>"));
-	assert.ok(basicDetails.includes(">Title</label>"));
+	assert.ok(basicDetails.includes(">Folder name</label>"));
 	assert.equal(basicDetails.includes("Folder title visibility"), false);
-	assert.equal(basicDetails.includes("Tile shape"), false);
+	assert.equal(basicDetails.includes("Folder tile shape"), false);
 	assert.ok(display.includes("<h3 id=\"node-editor-folder-display-heading\">Display</h3>"));
 	assert.ok(display.includes("Folder title visibility"));
-	assert.ok(display.includes("Tile shape"));
+	assert.ok(display.includes("Folder tile shape"));
 	assert.ok(markup.indexOf('data-settings-section="basic-details"') < markup.indexOf('data-settings-section="display"'));
 	const artworkStart = markup.indexOf('data-settings-section="artwork"');
 	const artworkEnd = markup.indexOf('<div class="editor-diagnostics"', artworkStart);
@@ -2257,7 +2257,7 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.ok(markup.includes("Choose the shape of this folder card in Nuvio."));
 	assert.equal((markup.match(/data-control-presentation="visual-cards"/g) ?? []).length, 1);
 	const shapeFieldset = markedElement(markup, 'data-editor-field="tileShape"', "fieldset");
-	assert.equal((shapeFieldset.match(/<legend>Tile shape<\/legend>/g) ?? []).length, 1);
+	assert.equal((shapeFieldset.match(/<legend>Folder tile shape<\/legend>/g) ?? []).length, 1);
 	assert.equal((shapeFieldset.match(/name="node-editor-folder-shape"/g) ?? []).length, 3);
 	assert.equal((shapeFieldset.match(/type="radio"/g) ?? []).length, 3);
 	assert.equal((shapeFieldset.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 3);
@@ -2280,8 +2280,8 @@ test("folder editor keeps unique IDs, valid descriptions, one h1, and one local 
 	assert.equal((visibilityFieldset.match(/type="radio"/g) ?? []).length, 3);
 	assert.equal((visibilityFieldset.match(/class="visually-hidden choice-card-input"/g) ?? []).length, 3);
 	assert.equal(markup.includes("hideTitle"), false);
-	assert.ok(markup.indexOf(">Title</label>") < markup.indexOf("Folder title visibility"));
-	assert.ok(markup.indexOf("Folder title visibility") < markup.indexOf("Tile shape"));
+	assert.ok(markup.indexOf(">Folder name</label>") < markup.indexOf("Folder title visibility"));
+	assert.ok(markup.indexOf("Folder title visibility") < markup.indexOf("Folder tile shape"));
 	assert.ok(markup.includes('data-settings-section="artwork"'));
 	assert.ok(markup.includes(">Artwork<"));
 	const sourceList = markedElement(markup, 'aria-label="Sources"', "ul");
@@ -2529,7 +2529,7 @@ test("Rows keeps the saved All-tab preference enabled, editable, and independent
 	assert.ok(openingTag(markup, 'data-editor-choice="rows"').includes("checked"));
 	assert.equal(openingTag(markup, 'data-editor-control="showAllTab"').includes("disabled"), false);
 	assert.ok(openingTag(markup, 'data-editor-control="showAllTab"').includes("checked"));
-	assert.ok(markup.includes("Include an All tab when using Tabs"));
+	assert.ok(markup.includes("Show All tab"));
 	assert.ok(markup.includes(
 		"Rows do not show tabs. This preference will be used if the collection is later changed to Tabs.",
 	));

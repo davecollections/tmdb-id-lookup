@@ -1,3 +1,4 @@
+import { creationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { lazy, Suspense } from "react";
@@ -101,10 +102,6 @@ const statusLabels = Object.freeze({
 	[DECADES_PLACEMENT_STATUSES.PARTLY_IN_COLLECTION]: "Partly in this collection",
 	[DECADES_PLACEMENT_STATUSES.EXISTS_ELSEWHERE]: "Exists elsewhere",
 });
-
-function scopeLabel(scope) {
-	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
 
 function CreationLauncher({ firstOptionRef, onSelect, scope }) {
 	const options = creationOptionsForScope(scope);
@@ -399,11 +396,11 @@ function CollectionAppearance({ state, onStateChange }) {
 	const showOverviewAllTabNote = state.content.wholeDecade && state.viewMode === "TABBED_GRID" && state.showAllTab;
 	return (
 		<section className="review-layout-options" data-review-layout="true" data-decades-settings="layout" aria-labelledby="decades-layout-title">
-			<div className="review-presentation-heading"><h4 id="decades-layout-title">Layout</h4><span>{collectionAppearanceSummary(state)}</span></div>
+			<div className="review-presentation-heading"><h4 id="decades-layout-title">Collection layout</h4><span>{collectionAppearanceSummary(state)}</span></div>
 			<fieldset className="editor-field editor-choice-field decades-presentation">
-				<legend>How sources appear in each collection</legend>
+				<legend>Collection layout</legend>
 				<p className="editor-field-help">Choose how each Decade folder displays its sources in Nuvio.</p>
-				<HierarchyCollectionPresentationControls selectedId={state.viewMode} name="decades-view" showAllTab={state.showAllTab} onPresentationChange={(patch) => onStateChange(Object.freeze({ ...state, ...patch }))} showAllLabel="Include an All tab when using Tabs" showAllDescription="For folders with two or more sources, adds an All tab that combines them." showAllDescriptionId="decades-all-tab-help" showAllControlName="showAllTab" />
+				<HierarchyCollectionPresentationControls selectedId={state.viewMode} name="decades-view" showAllTab={state.showAllTab} onPresentationChange={(patch) => onStateChange(Object.freeze({ ...state, ...patch }))} showAllDescriptionId="decades-all-tab-help" showAllControlName="showAllTab" />
 			</fieldset>
 			<div className="decades-presentation-switches">
 				<div className="editor-switch-field">
@@ -419,7 +416,7 @@ function FolderAppearance({ state, onStateChange }) {
 	return (
 		<DecadesSettingsDisclosure id="folder-options" title="Folder options" summary={folderAppearanceSummary(state)}>
 			<fieldset className="editor-field editor-choice-field" data-editor-field="tileShape">
-				<legend>Tile shape</legend>
+				<legend>Folder tile shape</legend>
 				<p className="editor-field-help">One choice applies to every generated Decade folder.</p>
 				<FolderShapeChoices selectedId={state.folderTileShape} name="decades-folder-shape" idPrefix="decades-folder" onChange={(folderTileShape) => onStateChange(Object.freeze({ ...state, folderTileShape }))} />
 			</fieldset>
@@ -555,7 +552,7 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 				<h3 id="decades-review-error-title" ref={headingRef} tabIndex={-1}>Review needs attention</h3>
 				<SelectedDecadesSummary selectedDecadeIds={state.selectedDecadeIds} />
 				{state.scope === "new-collection" ? <div className="decades-collection-names">
-					{Object.entries(state.collectionTitles).map(([role, title]) => <div className="editor-field" key={role}><label htmlFor={`decades-collection-${role}`}>{role === "mixed" ? "Collection name" : `${role === "movies" ? "Movie" : "TV"} collection name`}</label><input id={`decades-collection-${role}`} type="text" {...reversibleTitleFieldProps(title, state.hideCollectionTitle)} aria-describedby={state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : undefined} onChange={(event) => onCollectionTitleChange(role, event.target.value)} /></div>)}
+					{Object.entries(state.collectionTitles).map(([role, title]) => <div className="editor-field" key={role}><label htmlFor={`decades-collection-${role}`}>{role === "mixed" ? "Collection name" : `${role === "movies" ? "Movie" : "Series"} collection name`}</label><input id={`decades-collection-${role}`} type="text" {...reversibleTitleFieldProps(title, state.hideCollectionTitle)} aria-describedby={state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : undefined} onChange={(event) => onCollectionTitleChange(role, event.target.value)} /></div>)}
 				</div> : null}
 				<TitlesAndVisibility state={state} onStateChange={onStateChange} />
 				<ul className="genre-advanced-errors" role="alert">{planResult.errors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul>
@@ -578,7 +575,7 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 				<div className="decades-collection-names">
 					{plan.collections.map((collection) => (
 						<div className="editor-field" key={collection.role}>
-							<label htmlFor={`decades-collection-${collection.role}`}>{collection.role === "mixed" ? "Collection name" : `${collection.role === "movies" ? "Movie" : "TV"} collection name`}</label>
+							<label htmlFor={`decades-collection-${collection.role}`}>{collection.role === "mixed" ? "Collection name" : `${collection.role === "movies" ? "Movie" : "Series"} collection name`}</label>
 							<input id={`decades-collection-${collection.role}`} type="text" {...reversibleTitleFieldProps(state.collectionTitles[collection.role], state.hideCollectionTitle)} aria-describedby={[state.hideCollectionTitle ? DECADES_HIDDEN_COLLECTION_TITLES_HELP_ID : null, collection.titleCollisions.length > 0 ? `decades-title-collision-${collection.role}` : null].filter(Boolean).join(" ") || undefined} onChange={(event) => onCollectionTitleChange(collection.role, event.target.value)} />
 							{collection.titleCollisions.length > 0 ? <p id={`decades-title-collision-${collection.role}`} className="editor-field-help">A collection with this name already exists. The new collection will still be created.</p> : null}
 						</div>
@@ -717,7 +714,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 			? !planResult.ok
 			: !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying;
 	const primaryLabel = state.step === DECADES_CREATION_STEPS.REVIEW
-		? isApplying ? "Creating…" : planResult.ok ? guidedCreateActionLabel(scope) : "Create"
+		? isApplying ? "Creating…" : planResult.ok ? guidedCreateActionLabel(scope, planResult?.plan?.counts) : "Create"
 		: "Continue";
 	const backAction = state.step === DECADES_CREATION_STEPS.PRESETS
 		? "back-to-creation-launcher"
@@ -729,7 +726,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 		<>
 			<CreationHeader
 				title="Create with Decades"
-				context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`}
+				context={creationContext(scope, destinationCollectionTitle)}
 				description="Choose Decades, configure content, then review names and appearance."
 				onBack={goBack}
 				backAction={backAction}

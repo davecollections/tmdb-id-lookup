@@ -1,3 +1,4 @@
+import { sourceDestinationContext } from "./creation-context.js";
 import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceVariantReview } from "./SourceVariantReview.jsx";
@@ -337,8 +338,8 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 					<header className="add-source-heading" inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div className="add-source-heading-row">
 							<button className="add-source-header-action" type="button" disabled={isApplying} onClick={step === NETWORK_SOURCE_STEPS.SEARCH ? onBack : returnToSearch}><span aria-hidden="true">←</span>Back</button>
-							<div><h2 id="network-source-title">Add Network</h2><p>{folder?.editable?.title || "Selected folder"}</p></div>
-							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Network" disabled={isApplying} onClick={cancel}>Close</button>
+							<div><h2 id="network-source-title">Add Network sources</h2><p>{sourceDestinationContext(project, folder)}</p></div>
+							<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close Add Network sources" disabled={isApplying} onClick={cancel}>Close</button>
 						</div>
 						<p id="network-source-description" className="add-source-heading-description">{step === NETWORK_SOURCE_STEPS.SEARCH ? "Find a Network to add to this folder." : "Choose the Network Series sources to create."}</p>
 					</header>

@@ -1,3 +1,4 @@
+import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
@@ -29,7 +30,7 @@ import {
 } from "../source-add/index.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
-import { guidedCreateActionLabel } from "./creation-options.js";
+import { guidedCreateActionLabel, outputNoun } from "./creation-options.js";
 import { ChoiceCards } from "./ChoiceCards.jsx";
 import { GenreAdvancedOptions, GenreAdvancedSecondarySurface } from "./GenreAdvancedOptions.jsx";
 import { GenreCatalogueList, genreMediaLabel, GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
@@ -46,10 +47,6 @@ import { sourceSortLabel } from "../source-add/source-sort-variants.js";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function scopeLabel(scope) {
-	return scope === "new-folder" ? "New Folder" : "New Collection";
-}
 
 function selectionItems(genres) {
 	return genres.map((concept) => ({ id: concept.name, label: concept.name, detail: genreMediaLabel(concept) }));
@@ -263,7 +260,7 @@ function AppearanceStep({ scope, advancedUi, planResult, options, onOptionsChang
 		<section className="genre-hierarchy-appearance" aria-labelledby="genre-hierarchy-appearance-title">
 			<CreationStageIntro step={4} phase="Appearance" title="Appearance" headingId="genre-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
    {plan ? <DiscoverFamilyAdvancedSummary legacy ui={advancedUi} value={plan.configuration.advanced} mediaMode={plan.configuration.sharedMediaChoice} /> : null}
-			{plan ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
+			{plan ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>{outputNoun(plan.counts.collectionCount, "Collection")}</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
 			{omittedCount || elsewhereCount ? <p className="studio-configure-helper">{omittedCount ? `${omittedCount} destination match${omittedCount === 1 ? " is" : "es are"} omitted. ` : ""}{elsewhereCount ? `${elsewhereCount} elsewhere match${elsewhereCount === 1 ? " remains" : "es remain"} addable.` : ""}</p> : null}
 			{scope === "new-collection" ? <>
 				{separateCollections ? <>
@@ -272,14 +269,14 @@ function AppearanceStep({ scope, advancedUi, planResult, options, onOptionsChang
 				</> : <div className="editor-field"><label htmlFor="genre-hierarchy-collection-name">Collection name</label><RequiredNameInput id="genre-hierarchy-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "genre-hierarchy-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$genreHierarchy.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="genre-hierarchy-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>}
 				<TitleOptions idPrefix="genre-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "genre-hierarchy-hide-collection-title-help", controlName: "genreHierarchyHideNuvioTitle" }} folderTitleVisibility={folderTitleVisibility} />
 				{mediaFolders ? <p className="genre-fixed-media-note">Movies and Series folders use the safe folder fallback, so their titles remain visible.</p> : null}
-				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="genre-hierarchy-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Genre folder in one All tab." showAllDescriptionId="genre-hierarchy-all-tab-help" showAllControlName="genreHierarchyShowAllTab" /></fieldset>
+				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="genre-hierarchy-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="genre-hierarchy-all-tab-help" showAllControlName="genreHierarchyShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="genre-hierarchy-pin-help" controlName="genreHierarchyPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : plan ? <>
 				<div className="franchise-inherited-summary"><strong>Parent presentation is inherited</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle || "Untitled collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"} · parent unchanged</span></div>
 				<TitleOptions idPrefix="genre-hierarchy" folderTitleVisibility={folderTitleVisibility} />
 				{mediaFolders ? <p className="genre-fixed-media-note">Movies and Series folders use the safe folder fallback, so their titles remain visible.</p> : null}
 			</> : null}
-			<fieldset className="editor-field editor-choice-field genre-hierarchy-artwork-shape" data-editor-field="folderTileShape"><legend>Artwork shape</legend><FolderShapeChoices selectedId={options.folderTileShape} name="genre-hierarchy-folder-shape" idPrefix="genre-hierarchy-folder" onChange={(folderTileShape) => onOptionsChange({ folderTileShape })} /></fieldset>
+			<fieldset className="editor-field editor-choice-field genre-hierarchy-artwork-shape" data-editor-field="folderTileShape"><legend>Folder tile shape</legend><FolderShapeChoices selectedId={options.folderTileShape} name="genre-hierarchy-folder-shape" idPrefix="genre-hierarchy-folder" onChange={(folderTileShape) => onOptionsChange({ folderTileShape })} /></fieldset>
 			<p className="decades-defaults-note" data-genre-hierarchy-artwork-rule={options.folderTileShape.toLowerCase()}>{mediaFolders ? `The ${options.folderTileShape === "POSTER" ? "Poster" : options.folderTileShape === "SQUARE" ? "Square" : "Landscape"} shape applies to the safe Movies/Series folder fallback. No Genre artwork is assigned to media folders.` : `The selected ${options.folderTileShape.toLowerCase()} published Genre artwork is applied to every generated Genre folder. Missing artwork safely falls back without borrowing the other orientation.`}</p>
 			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Genre hierarchy plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
@@ -508,9 +505,9 @@ export function GenreHierarchyFlow({
 			? planResult.ok && planResult.plan.counts.folderCount > 0 ? "Continue to Structure" : "No Genre folders ready"
 			: step === "structure"
 				? planResult.ok && planResult.plan.counts.folderCount > 0 ? "Continue to Appearance" : "No Genre folders ready"
-				: isApplying ? "Creating…" : guidedCreateActionLabel(scope);
+				: isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 	return <>
-		<CreationHeader title="Create with Genres" context={`${scopeLabel(scope)}${scope === "new-folder" && destinationCollectionTitle ? ` · ${destinationCollectionTitle}` : ""}`} description={step === "select" ? "Select official TMDB Genres in folder order." : step === "configure" ? "Choose your media, sources and any advanced settings, then review." : step === "structure" ? "Choose how Genre sources are grouped in Nuvio." : "Choose presentation settings and create the hierarchy atomically."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-genre-hierarchy-selection" : step === "structure" ? "back-to-genre-hierarchy-configuration" : "back-to-genre-hierarchy-structure"} backDisabled={isApplying} inactive={Boolean(secondarySurface || preview)} onClose={onCancel} />
+		<CreationHeader title="Create with Genres" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select official TMDB Genres in folder order." : step === "configure" ? "Choose your media, sources and any advanced settings, then review." : step === "structure" ? "Choose how Genre sources are grouped in Nuvio." : "Choose how your collections and folders will appear in Nuvio."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-genre-hierarchy-selection" : step === "structure" ? "back-to-genre-hierarchy-configuration" : "back-to-genre-hierarchy-structure"} backDisabled={isApplying} inactive={Boolean(secondarySurface || preview)} onClose={onCancel} />
 		<form className="add-source-form genre-hierarchy-form" data-genre-hierarchy-stage={step} data-secondary-surface={secondarySurface ?? undefined} onSubmit={submit} noValidate onKeyDown={(event) => { if (secondarySurface && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSecondary(); } }}>
 			<div ref={scrollRef} className="add-source-scroll" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
 				{step === "select" ? <SelectStep query={query} selection={selection} genres={genres} headingRef={selectHeadingRef} onQueryChange={(event) => setQuery(event.target.value)} onClearSearch={() => setQuery("")} onChoose={chooseGenre} onSelectAll={() => { const names = GENRE_CONCEPTS.map((concept) => concept.name); setSelection(names); setAdvanced((current) => pruneGenreExclusionConfiguration(current, names)); setKnownPreviewCounts({}); setDiagnostic(null); }} onClearAll={() => { setSelection([]); setAdvanced((current) => pruneGenreExclusionConfiguration(current, [])); setKnownPreviewCounts({}); setDiagnostic(null); }} onRemove={chooseGenre} /> : step === "configure" ? <ConfigureStep scope={scope} genres={genres} sharedMediaChoice={sharedMediaChoice} sortOptionIds={sortOptionIds} advanced={advanced} built={built} folderPlan={folderPlan} headingRef={configureHeadingRef} onRemove={chooseGenre} onPreview={openPreview} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onSortChange={(value) => { setSortOptionIds(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onOpenSecondary={openSecondary} /> : step === "structure" ? <StructureStep structurePlans={structurePlans} compositeChoices={compositeChoices} options={options} headingRef={structureHeadingRef} onStructureChange={(structure) => updateOptions({ structure })} onCompositeChange={(genreName, placement) => updateOptions({ compositePlacements: Object.freeze({ ...options.compositePlacements, [genreName]: placement }) })} /> : <AppearanceStep scope={scope} advancedUi={advanced.ui} planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
