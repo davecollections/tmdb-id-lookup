@@ -65,6 +65,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
+	const requiredNamesOnly = process.env.TMDB_REQUIRED_NAMES_ONLY === "1";
 	const semanticPresentationOnly = process.env.TMDB_SEMANTIC_PRESENTATION_ONLY === "1";
 	const guidedPresentationOnly = process.env.TMDB_GUIDED_PRESENTATION_ONLY === "1";
 	const decadesBoundaryOnly = process.env.TMDB_DECADES_BOUNDARY_ONLY === "1";
@@ -256,7 +257,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -266,6 +267,27 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				const requiredNameCases = [];
+				if (requiredNamesOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+					const structures = ["genre-folders", "media-folders", "separate-media-genre-folders", "separate-media-collections"];
+					const families = ["people", "franchises", "studios", "streaming-services"];
+					const views = [
+						...[393, 1280].flatMap(width => [
+							...structures.map(structure => ({ width, family: "genres", nameRecovery: { structure } })),
+							...families.map(family => ({ width, family, nameRecovery: {} })),
+						]),
+						...["genres", ...families].map(family => ({ width: 393, family, nameRecovery: { enlargedText: true } })),
+					];
+					for (const view of views) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runGuidedPresentationScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						requiredNameCases.push(checked.result.value);
+						console.log("REQUIRED_NAME_CASE " + JSON.stringify(checked.result.value));
+					}
+					if (requiredNamesOnly) return { requiredNameCases };
+				}
 				if (semanticPresentationOnly) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const semantics = [];
@@ -1085,7 +1107,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1272,6 +1294,11 @@ test("mounted local Preview paging covers the requested widths and deliberate sc
 	for (const result of mountedResults.previewPages) assert.ok(result.noMutation && result.focusRestored && result.localOnly);
 	assert.ok(mountedResults.posterlessPreview.neutralEmpty && mountedResults.posterlessPreview.noMutation && mountedResults.posterlessPreview.focusRestored);
 	console.log("PREVIEW_PAGES_LOCAL " + JSON.stringify(mountedResults.previewPages));
+});
+test("mounted required Collection names remain recoverable after clearing", () => {
+	assert.equal(mountedResults.requiredNameCases.length, 21);
+	for (const result of mountedResults.requiredNameCases) assert.ok(result.focusRetained && result.navigationRetained && result.noOverflow, JSON.stringify(result));
+	console.log("REQUIRED_NAME_RECOVERY " + JSON.stringify(mountedResults.requiredNameCases));
 });
 before(async () => {
 	mountedResults = await runMountedPage();

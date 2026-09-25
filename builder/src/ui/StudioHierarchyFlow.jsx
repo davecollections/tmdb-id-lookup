@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
 import { StudioAdvancedOptions, StudioMinimumVotesSummary } from "./StudioAdvancedOptions.jsx";
@@ -23,7 +24,6 @@ import {
 	studioSelectionNotice,
 	toggleSelectedStudio,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -104,25 +104,26 @@ function ConfigureStep({ studios, knownSeriesCounts, outcomes, mediaMode, sortOp
 	);
 }
 
-function AppearanceStep({ planResult, options, onOptionsChange, diagnostic, headingRef }) {
-	if (!planResult?.ok) return <div className="editor-diagnostics" role="alert"><p>{planResult?.errors?.[0]?.message ?? "The Studio plan could not be prepared."}</p></div>;
-	const plan = planResult.plan;
+function AppearanceStep({ scope, planResult, options, onOptionsChange, diagnostic, headingRef }) {
+	const plan = planResult?.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$studioPlan.collectionTitle");
 	return (
 		<section className="studio-hierarchy-review studio-hierarchy-appearance" aria-labelledby="studio-hierarchy-appearance-title">
 			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="studio-hierarchy-appearance-title" headingRef={headingRef} tabIndex={-1} />
-			<SourceVariantCounts counts={plan.counts} />
-			<StudioMinimumVotesSummary filters={plan.configuration.filters} mediaMode={plan.configuration.mediaMode} genreOverrides={plan.configuration.genreOverrides} labels={options.labels} entities={plan.configuration.studios.map((entry) => entry.studio)} />
-			{plan.configuration.scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
-			{plan.configuration.scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
-			{plan.configuration.scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="studio-collection-name">Collection name</label><input id="studio-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "studio-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="studio-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
+			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
+			{plan ? <StudioMinimumVotesSummary filters={plan.configuration.filters} mediaMode={plan.configuration.mediaMode} genreOverrides={plan.configuration.genreOverrides} labels={options.labels} entities={plan.configuration.studios.map((entry) => entry.studio)} /> : null}
+			{scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
+			{plan && scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div><div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div></div> : null}
+			{scope === "new-collection" ? <>
+				<div className="editor-field"><label htmlFor="studio-collection-name">Collection name</label><RequiredNameInput id="studio-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "studio-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$studioPlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="studio-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="studio-hierarchy" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "studio-hide-title-help", controlName: "studioHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "studio-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="studio-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every Studio folder in one All tab." showAllDescriptionId="studio-all-tab-help" showAllControlName="studioShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="studio-pin-help" controlName="studioPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
-			</> : <>
+			</> : plan ? <>
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
 				<TitleOptions idPrefix="studio-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "studio-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
-			</>}
+			</> : null}
+			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Studio plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 		</section>
 	);
@@ -281,7 +282,7 @@ export function StudioHierarchyFlow({
 					<CreationStageIntro step={1} phase="Select" title="Studios · TMDB" description="Search by studio name, location or TMDB ID." headingId="studio-mode-title" headingRef={selectHeadingRef} tabIndex={-1} />
 					{chosen.length ? <section className="people-selected-tray studio-selected-tray"><div className="people-selected-summary"><strong>{chosen.length} Studio{chosen.length === 1 ? "" : "s"} selected</strong><SelectedStudios studios={chosen} knownSeriesCounts={knownSeriesCounts} onRemove={removeStudio} /></div>{notice.visible ? <p className="people-selection-limit" data-large-selection-notice="true" role="status">You’ve selected {notice.count} Studios. Configure may take a little longer, but there is no selection cap.</p> : null}</section> : null}
 					<StudioSearchStep input={search.input} parsedInput={search.parsedInput} lookupState={search.lookupState} searchData={search.searchData} effectiveSearchSort={search.effectiveSearchSort} browsing={search.browsing} movieCountFilter={search.movieCountFilter} onInputChange={search.handleInputChange} onSortChange={search.toggleSearchSort} onMovieCountFilterChange={search.changeMovieCountFilter} onRetry={search.retrySearch} onSelect={() => {}} onChangePage={search.setPage} resultsHeading="Select Studios" showIntro={false} renderResult={(studio) => <SelectableStudioResult key={studio.id} studio={studio} checked={Boolean(selection.byId[studio.id])} onToggle={toggleStudio} />} />
-				</> : step === "configure" ? <div ref={configureHeadingRef} tabIndex={-1}><ConfigureStep studios={chosen} knownSeriesCounts={knownSeriesCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} mediaMode={options.mediaMode} sortOptionIds={options.sortOptionIds} onMediaChange={(mediaMode) => updateOptions({ mediaMode })} onSortChange={(sortOptionIds) => updateOptions({ sortOptionIds })} onPreview={openPreview} onRemove={removeStudio} options={options} onAdvancedChange={updateOptions} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
+				</> : step === "configure" ? <div ref={configureHeadingRef} tabIndex={-1}><ConfigureStep studios={chosen} knownSeriesCounts={knownSeriesCounts} outcomes={configureOutcomes} placement={scope === "new-folder" ? placement : null} mediaMode={options.mediaMode} sortOptionIds={options.sortOptionIds} onMediaChange={(mediaMode) => updateOptions({ mediaMode })} onSortChange={(sortOptionIds) => updateOptions({ sortOptionIds })} onPreview={openPreview} onRemove={removeStudio} options={options} onAdvancedChange={updateOptions} />{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}</div> : <AppearanceStep scope={scope} planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
 			</div>
 			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled} aria-describedby={scope === "new-folder" && step === "configure" ? "native-folder-placement-summary" : undefined}>{primaryLabel}</button></footer>
 		</form>

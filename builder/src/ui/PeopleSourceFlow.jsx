@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
 import { inspectPeopleHierarchyPlacement } from "../source-add/people-plan.js";
@@ -44,7 +45,6 @@ import {
 	updatePeopleConfiguration,
 	validatePeopleCombinationSelection,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import {
 	lockAddSourceDocumentBody,
@@ -495,6 +495,7 @@ export function PeopleSourceSortChoices({
 
 export function PeopleReviewStep({
 	planResult,
+	scope = planResult?.plan?.configuration.scope,
 	entries,
 	collectionOptions,
 	onCollectionOptionsChange,
@@ -505,22 +506,15 @@ export function PeopleReviewStep({
 	applyDiagnostic,
 	headingRef,
 }) {
-	if (!planResult?.ok) {
-		return (
-		<section className="decades-step" aria-labelledby="people-review-error-title">
-			<h3 id="people-review-error-title" ref={headingRef} tabIndex={-1}>Review needs attention</h3>
-			{planResult?.errors?.length ? <ul className="genre-advanced-errors" role="alert">{planResult.errors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
-		</section>
-		);
-	}
-	const { plan } = planResult;
-	const elsewhereOccurrences = plan.outcomes.flatMap((outcome) => outcome.occurrences ?? []).filter((occurrence) => (
+	const plan = planResult?.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$peoplePlan.collectionTitle");
+	const elsewhereOccurrences = (plan?.outcomes ?? []).flatMap((outcome) => outcome.occurrences ?? []).filter((occurrence) => (
 		plan.destination === null || occurrence.collectionInternalId !== plan.destination.collectionInternalId
 	));
 	const titleOptions = (
 		<TitleOptions
 			idPrefix="people"
-			collectionTitleVisibility={plan.configuration.scope === "new-collection" ? {
+			collectionTitleVisibility={scope === "new-collection" ? {
 				checked: collectionOptions.hideTitle,
 				descriptionId: "people-hide-collection-title-help",
 				onChange: (hideTitle) => onCollectionOptionsChange({ ...collectionOptions, hideTitle }),
@@ -535,18 +529,18 @@ export function PeopleReviewStep({
 	return (
 		<section className="decades-step decades-review-step people-review-step" aria-labelledby="people-review-title">
 			<CreationStageIntro step={3} phase="Review" title="Review & Appearance" headingId="people-review-title" headingRef={headingRef} tabIndex={-1} />
-			{plan.configuration.scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">
-				{plan.configuration.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}
+			{plan && scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">
+				{scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}
 				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>
 				<div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div>
 			</div> : null}
-			{plan.configuration.scope === "new-collection" ? (
+			{scope === "new-collection" ? (
 				<>
 					<div className="decades-collection-names"><div className="editor-field">
 						<label htmlFor="people-collection-title">Collection name</label>
-						<input id="people-collection-title" type="text" {...reversibleTitleFieldProps(collectionOptions.title, collectionOptions.hideTitle)} aria-describedby={collectionOptions.hideTitle ? "people-collection-title-hidden-help" : undefined} onChange={(event) => onCollectionOptionsChange({ ...collectionOptions, title: event.target.value })} />
+						<RequiredNameInput id="people-collection-title" value={collectionOptions.title} hidden={collectionOptions.hideTitle} describedBy={collectionOptions.hideTitle ? "people-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$peoplePlan.collectionTitle", collectionOptions.title)} onChange={(event) => onCollectionOptionsChange({ ...collectionOptions, title: event.target.value })} />
 						<HiddenTitleFieldHelp id="people-collection-title-hidden-help" hidden={collectionOptions.hideTitle} kind="collection" />
-						{plan.collections[0].titleCollisions.length > 0 ? <p className="editor-field-help">A collection with this name already exists. The new collection will still be created.</p> : null}
+						{plan && plan.collections[0].titleCollisions.length > 0 ? <p className="editor-field-help">A collection with this name already exists. The new collection will still be created.</p> : null}
 					</div></div>
 					{titleOptions}
 					<section className="review-layout-options people-review-layout" data-review-layout="true" aria-labelledby="people-review-layout-title">
@@ -555,18 +549,19 @@ export function PeopleReviewStep({
 						<PresentationSwitch label="Pin collection to top" description="Keep this collection near the top in Nuvio." descriptionId="people-pin-help" controlName="peoplePinToTop" checked={collectionOptions.pinToTop} onChange={(pinToTop) => onCollectionOptionsChange({ ...collectionOptions, pinToTop })} />
 					</section>
 				</>
-			) : (
+			) : plan ? (
 				<>
 					<div className="decades-destination-summary"><strong>Destination</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle}</span><small>{inheritedPeopleCollectionSummary(plan.destination)} · parent unchanged</small></div>
 					{titleOptions}
 					<div className="decades-inherited-presentation" data-people-inherited-presentation="true"><strong>Collection settings stay unchanged.</strong><span>{inheritedPeopleCollectionSummary(plan.destination)}</span><small>New folders use this Collection’s {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"} layout.</small></div>
 				</>
-			)}
-			<SourceVariantCounts counts={plan.counts} />
-			{plan.configuration.scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
+			) : null}
+			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
+			{scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}
 			<PeopleFolderAppearance tileShape={folderTileShape} onTileShapeChange={onFolderTileShapeChange} />
+			{!plan && otherErrors.length ? <ul className="genre-advanced-errors" role="alert">{otherErrors.map((entry) => <li key={`${entry.code}-${entry.path}`}>{entry.message}</li>)}</ul> : null}
 			{applyDiagnostic ? <div className="editor-diagnostics" role="alert"><p>{applyDiagnostic.message}</p></div> : null}
-			<details className="decades-review-details">
+			{plan ? <details className="decades-review-details">
 				<summary>View person details · {entries.length}</summary>
 				<ul className="genre-review-list">
 					{entries.map((entry, index) => {
@@ -574,7 +569,7 @@ export function PeopleReviewStep({
 						return <li key={entry.person.id}><div><strong>{entry.person.name}</strong><span>{entry.drafts.drafts.length} source{entry.drafts.drafts.length === 1 ? "" : "s"} · {entry.artworkState?.artwork?.source === "manifest" ? "canonical artwork" : `${entry.artworkState?.artwork?.source ?? "safe"} fallback`}</span></div><span data-status={outcome.status === PEOPLE_PLACEMENT_STATUSES.READY ? "ready" : outcome.status === PEOPLE_PLACEMENT_STATUSES.EXISTS_ELSEWHERE ? "elsewhere" : "destination-duplicate"}>{outcome.kind === "complete" ? "Already added" : outcome.kind === "append" ? "Add missing sources" : outcome.kind === "unresolved" ? "Choose a folder" : peoplePlacementLabels[outcome.status]}</span></li>;
 					})}
 				</ul>
-			</details>
+			</details> : null}
 			<SourceElsewhereNotice occurrences={elsewhereOccurrences} heading="Matching People sources exist elsewhere in this project" action="You can still create the ready person folders here." />
 		</section>
 	);
@@ -1092,7 +1087,7 @@ export function PeopleSourceFlow({
 									{!multiContext && quickEntry?.drafts.ok ? <SourceVariantReview drafts={quickEntry.drafts.drafts} review={quickDuplicates} variantKey={peopleSourceVariantKey} /> : null}
 									{!multiContext ? <div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-people" disabled={!sourcePreviewAvailable || isApplying} onClick={(event) => openTitlePreview(quickEntry, event.currentTarget)}>Preview titles</button>{!sourcePreviewAvailable ? <p className="editor-field-help">Choose a valid source configuration to preview.</p> : null}</div> : null}
 								</section>
-							) : <PeopleReviewStep planResult={hierarchyPlanResult} entries={configuredEntries} collectionOptions={collectionOptions} onCollectionOptionsChange={(next) => { setCollectionOptions(Object.freeze(next)); setApplyDiagnostic(null); }} folderTileShape={folderTileShape} onFolderTileShapeChange={(tileShape) => { setFolderTileShape(tileShape); setApplyDiagnostic(null); }} folderTitleVisibility={folderTitleVisibility} onFolderTitleVisibilityChange={(next) => { setFolderTitleVisibility(next); setApplyDiagnostic(null); }} applyDiagnostic={applyDiagnostic} headingRef={configureRef} />}
+							) : <PeopleReviewStep scope={hierarchyScope} planResult={hierarchyPlanResult} entries={configuredEntries} collectionOptions={collectionOptions} onCollectionOptionsChange={(next) => { setCollectionOptions(Object.freeze(next)); setApplyDiagnostic(null); }} folderTileShape={folderTileShape} onFolderTileShapeChange={(tileShape) => { setFolderTileShape(tileShape); setApplyDiagnostic(null); }} folderTitleVisibility={folderTitleVisibility} onFolderTitleVisibilityChange={(next) => { setFolderTitleVisibility(next); setApplyDiagnostic(null); }} applyDiagnostic={applyDiagnostic} headingRef={configureRef} />}
 						</div>
 						{step === PEOPLE_SOURCE_STEPS.SEARCH && multiContext ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={chosenPeople.length === 0}>Configure {chosenPeople.length} {chosenPeople.length === 1 ? "person" : "people"}</button></footer> : null}
 						{step !== PEOPLE_SOURCE_STEPS.SEARCH ? <footer className="add-source-actions people-configure-actions"><button className="editor-apply" type="submit" disabled={!configureReady || isApplying || (context === "folder" && primaryCount === 0) || (hierarchy && (!hierarchyPlanResult?.ok || hierarchyPlanResult.plan.counts.sourceCount === 0 || hierarchyPlanResult.plan.counts.unresolvedEntityCount > 0))}>{isApplying ? "Adding…" : primaryLabel}</button>{context === "folder" && quickDuplicates.destination.length ? <button className="editor-cancel people-add-all" type="button" disabled={!configureReady || isApplying} data-action="add-all-people-anyway" onClick={() => applyPeople(true)}>Add all {quickEntry?.drafts.drafts.length ?? 0} anyway</button> : null}</footer> : null}

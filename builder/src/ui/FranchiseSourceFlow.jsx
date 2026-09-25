@@ -1,3 +1,4 @@
+import { RequiredNameInput, requiredNameMessage } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -13,7 +14,6 @@ import {
 	toggleSelectedFranchise,
 	buildTmdbPosterUrl,
 } from "../source-add/index.js";
-import { reversibleTitleFieldProps } from "../nuvio/titles.js";
 import { HierarchyCollectionPresentationControls } from "./CollectionPresentationChoices.jsx";
 import { CreationHeader } from "./CreationHeader.jsx";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -93,27 +93,28 @@ function statusLabel(status) {
 	return "Ready to create";
 }
 
-function ReviewStep({ planResult, options, onOptionsChange, onPreview, diagnostic }) {
-	if (!planResult.ok) return <div className="editor-diagnostics" role="alert"><p>{planResult.errors[0]?.message ?? "The Franchise plan could not be prepared."}</p></div>;
-	const plan = planResult.plan;
+function ReviewStep({ scope, planResult, options, onOptionsChange, onPreview, diagnostic }) {
+	const plan = planResult.ok ? planResult.plan : null;
+	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$franchisePlan.collectionTitle");
 	return (
 		<section className="franchise-review" aria-labelledby="franchise-review-title">
-			<CreationStageIntro step={2} phase="Review" title="Review & Appearance" headingId="franchise-review-title" description={`${plan.counts.folderCount} folder${plan.counts.folderCount === 1 ? "" : "s"} · ${plan.counts.sourceCount} source${plan.counts.sourceCount === 1 ? "" : "s"}`} />
-			{plan.configuration.scope === "new-collection" ? <>
-				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><input id="franchise-collection-name" type="text" {...reversibleTitleFieldProps(options.collectionTitle, options.hideCollectionTitle)} aria-describedby={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
+			<CreationStageIntro step={2} phase="Review" title="Review & Appearance" headingId="franchise-review-title" description={plan ? `${plan.counts.folderCount} folder${plan.counts.folderCount === 1 ? "" : "s"} · ${plan.counts.sourceCount} source${plan.counts.sourceCount === 1 ? "" : "s"}` : undefined} />
+			{scope === "new-collection" ? <>
+				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><RequiredNameInput id="franchise-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$franchisePlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="franchise" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "franchise-hide-title-help", controlName: "franchiseHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescription="Combines every franchise folder in one All tab." showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="franchise-pin-help" controlName="franchisePinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
-			</> : <>
+			</> : plan ? <>
 				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
 				<TitleOptions idPrefix="franchise" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
-			</>}
+			</> : null}
 			<p className="decades-defaults-note" data-franchise-artwork-rule="poster-only">Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.</p>
+			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Franchise plan could not be prepared."}</p></div> : null}
 			{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
-			<div className="franchise-review-list">{plan.configuration.franchises.map((franchise, index) => {
+			{plan ? <div className="franchise-review-list">{plan.configuration.franchises.map((franchise, index) => {
 				const outcome = plan.outcomes[index];
 				return <details key={franchise.id}><summary><span className="franchise-review-row-primary"><strong>{franchise.name}</strong></span><span className="franchise-review-row-actions"><em>{statusLabel(outcome.status)}</em><button className="franchise-selected-preview" type="button" aria-haspopup="dialog" aria-label={`Preview titles for ${franchise.name}`} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onPreview(franchise, event.currentTarget); }}>Preview titles</button></span></summary><div className="franchise-review-details"><small>TMDB {franchise.id} · Movie · Collection · TMDB order</small>{outcome.elsewhere.length ? <SourceElsewhereNotice occurrences={outcome.elsewhere} heading="This franchise source exists elsewhere" action="It can still be created here." /> : null}</div></details>;
-			})}</div>
+			})}</div> : null}
 		</section>
 	);
 }
@@ -254,7 +255,7 @@ export function FranchiseSourceFlow({
 					{lookupState.status === "error" ? <div className="add-source-request-state" role="alert"><p>{lookupState.error?.message ?? "TMDB could not complete this search."}</p>{lookupState.error?.retryable ? <button type="button" onClick={() => setRetry((value) => value + 1)}>Retry</button> : null}</div> : null}
 					{selectionError ? <div className="add-source-request-state" role="alert"><p>{selectionError.message}</p></div> : null}
 					{searchData ? <section className="add-source-results"><div className="add-source-section-heading"><div><p className="panel-kicker">TMDB results</p><h3>Select franchises</h3></div>{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}</div>{searchData.results.length ? <div className="add-source-result-list">{searchData.results.map((result) => <FranchiseResult key={result.id} result={result} checked={Boolean(selection.byId[result.id])} loading={loadingId === result.id || (selectionState.status === "loading" && selectionState.context?.id === result.id)} onActivate={activate} />)}</div> : <p className="add-source-empty-results">No TMDB collections matched this search.</p>}{searchData.totalPages > 1 ? <nav className="add-source-pagination"><button type="button" disabled={searchData.page <= 1} onClick={() => setPage(searchData.page - 1)}>Previous page</button><button type="button" disabled={searchData.page >= searchData.totalPages} onClick={() => setPage(searchData.page + 1)}>Next page</button></nav> : null}</section> : null}
-				</> : <div ref={reviewHeadingRef} tabIndex={-1}><ReviewStep planResult={planResult} options={options} onOptionsChange={updateOptions} onPreview={openPreview} diagnostic={diagnostic} /></div>}
+				</> : <div ref={reviewHeadingRef} tabIndex={-1}><ReviewStep scope={scope} planResult={planResult} options={options} onOptionsChange={updateOptions} onPreview={openPreview} diagnostic={diagnostic} /></div>}
 			</div>
 			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying}>{step === "select" ? `Review ${chosen.length} franchise${chosen.length === 1 ? "" : "s"}` : isApplying ? "Creating…" : guidedCreateActionLabel(scope)}</button></footer>
 		</form>
