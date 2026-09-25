@@ -8276,8 +8276,8 @@ async function runDecadesArtworkScenario({ scope, mediaMode, decadeId, initialSh
 		if (scope === "new-collection" && mediaMode === "both") await click(dialog.querySelector('input[name="decades-layout"][value="mixed-collection"]'));
 		await click(decadeContentChoice(dialog, "Decade overview")); // Keep default individual years too.
 		await click(dialog.querySelector('button[type="submit"]'));
-		const appearance = check(dialog.querySelector('input[name="decades-folder-shape"]')?.closest("details"), "Folder Appearance");
-		if (!appearance.open) await click(appearance.querySelector("summary"));
+		const appearance = check(dialog.querySelector('input[name="decades-folder-shape"]')?.closest("fieldset"), "Folder tile shape");
+		check(!appearance.closest("details"), "shared Folder tile shape is directly visible");
 		await click(check(dialog.querySelector(`input[name="decades-folder-shape"][value="${initialShape}"]`), "creation shape"));
 		check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "creation overflow");
 		check(controller.getState().revision === initial.revision, "creation mutated before Apply");
