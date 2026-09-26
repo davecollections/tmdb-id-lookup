@@ -503,7 +503,7 @@ async function submitPin() {
 	assert(!document.body.innerHTML.includes("4826"), "PIN absent from rendered UI");
 }
 function assertFooter(primary) {
- const actions = [...document.querySelectorAll(".nuvio-dialog-footer button")];
+ const actions = [...document.querySelectorAll("[data-nuvio-dialog] .nuvio-dialog-footer button")];
  assert(actions[0] === button(primary) && actions[1] === button("Disconnect"), "Forward left, Disconnect right in footer");
  assert(actions[1].classList.contains("secondary-action") && parseFloat(getComputedStyle(actions[1]).fontSize) < parseFloat(getComputedStyle(actions[0]).fontSize), "Disconnect uses smaller standard secondary styling");
 }
