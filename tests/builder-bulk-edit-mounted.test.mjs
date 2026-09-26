@@ -14,6 +14,7 @@ import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import { NUVIO_INVISIBLE_TITLE } from "../builder/src/nuvio/titles.js";
 import { runNuvioSendChecks } from "./helpers/nuvio-send-mounted.mjs";
+import { runWorkspaceImportChecks } from "./helpers/workspace-import-mounted.mjs";
 import { mountedReactOptimizeDeps } from "./helpers/mounted-react-vite.mjs";
 import {
 	cleanupMountedBrowser,
@@ -31,6 +32,7 @@ const collectionCorrectionOnly = process.env.COLLECTION_FOLDERS_CORRECTION_ONLY 
 const backToTopOnly = process.env.BUILDER_BACK_TO_TOP_ONLY === "1";
 const nuvioSendOnly = process.env.NUVIO_SEND_ONLY === "1";
 const nuvioWelcomeOnly = process.env.NUVIO_WELCOME_ONLY === "1";
+const workspaceImportOnly = process.env.WORKSPACE_IMPORT_ONLY === "1";
 const nuvioImportOnly = nuvioWelcomeOnly || process.env.NUVIO_IMPORT_ONLY === "1";
 const presentationOnly = process.env.BUILDER_MANAGEMENT_PRESENTATION_ONLY === "1";
 const ownerCollectionImport = process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH
@@ -289,15 +291,15 @@ async function runNuvioImportChecks(connection, origin) {
 				await fsPromises.writeFile(path.join(screenshots, `nuvio-${stage}-${width}.png`), Buffer.from(image.data, "base64"));
 			}
 			if (["workspace", "landing"].includes(stage)) continue;
-			await evaluate(connection, 'document.querySelector("[data-nuvio-dialog] h2").focus({ preventScroll: true })');
+			await evaluate(connection, 'document.querySelector("[aria-modal=true] h2").focus({ preventScroll: true })');
 			await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
 			await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
-			assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Shift-Tab from initial heading stays contained");
+			assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[aria-modal=true]"))'), true, "Shift-Tab from initial heading stays contained");
 			for (const backward of [false, true]) {
-				await evaluate(connection, `(() => { const controls = [...document.querySelector('[data-nuvio-dialog]').querySelectorAll('button, input, summary')].filter(node => !node.disabled && node.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
+				await evaluate(connection, `(() => { const controls = [...document.querySelector('[aria-modal=true]').querySelectorAll('button, input, summary')].filter(node => !node.disabled && node.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
 				await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: backward ? 8 : 0 });
 				await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
-				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Native Tab stays inside Nuvio dialog");
+				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[aria-modal=true]"))'), true, "Native Tab stays inside Nuvio dialog");
 			}
 			await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
 			await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
@@ -328,7 +330,7 @@ async function runMountedPage() {
 	};
 	const execution = await runWithLifecycleCleanup(async () => {
 		const optimizeDeps = mountedReactOptimizeDeps(nuvioSendOnly ? ["tests/fixtures/builder-nuvio-send-mounted.html", "tests/fixtures/builder-export-collections-mounted.html"] : nuvioImportOnly ? [] : collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
-		if (nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-import-mounted.html");
+		if (workspaceImportOnly || nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-import-mounted.html");
 		if (!nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-send-mounted.html");
 		optimizeDeps.include.push("react/jsx-dev-runtime");
 		optimizeDeps.needsInterop.push("react/jsx-dev-runtime");
@@ -419,6 +421,10 @@ async function runMountedPage() {
 			}
 		` });
 		const address = resources.vite.httpServer.address();
+		timing.stage("Workspace Import scenarios");
+		const workspaceImport = workspaceImportOnly || (!nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly)
+			? await runWorkspaceImportChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate) : null;
+		if (workspaceImportOnly) return { workspaceImport };
 		timing.stage("Send scenarios");
 		const nuvioSend = nuvioSendOnly || (!nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) ? await runNuvioSendChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate, { includeExportRegressions: nuvioSendOnly }) : null;
 		if (nuvioSendOnly) return { nuvioSend };
@@ -640,7 +646,7 @@ async function runMountedPage() {
 				}
 			}
 		}
-		return { ...unrelatedResults, nuvioSend, nuvioImport, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
+		return { ...unrelatedResults, workspaceImport, nuvioSend, nuvioImport, backToTop, presentation, collectionManagement, collectionErrors: await evaluate(resources.pageConnection, "window.__mountedErrors") };
 	}, async () => {
 		timing.stage("Browser cleanup");
 		try {
@@ -671,6 +677,17 @@ test("mounted Back to top preserves workspace state, motion, modal safety and ph
 let mounted;
 before(async () => {
 	mounted = await runMountedPage();
+});
+
+test("mounted workspace Import shares local review, artwork policies and accessible responsive navigation", { skip: nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+	assert.deepEqual(mounted.workspaceImport.local, { passed: true, externalServiceExercised: false });
+	assert.deepEqual(mounted.workspaceImport.embedded, { passed: true, mocked: true });
+	assert.equal(mounted.workspaceImport.layouts.length, 106);
+	assert.equal(mounted.workspaceImport.embeddedLayouts.length, 79);
+	assert.ok(mounted.workspaceImport.layouts.every(result => result.passed));
+	assert.ok(mounted.workspaceImport.embeddedLayouts.every(result => result.passed));
+	assert.deepEqual(mounted.workspaceImport.errors, []);
+	console.log("Workspace Import layouts:", mounted.workspaceImport.layouts.length, "; embedded Nuvio layouts:", mounted.workspaceImport.embeddedLayouts.length);
 });
 
 test("mounted Nuvio Send retains safe outcomes and one responsive Export shell", { skip: nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {

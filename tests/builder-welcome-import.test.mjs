@@ -644,7 +644,7 @@ test("branding metadata, README naming, and Pages markers are corrected narrowly
 
 test("welcome source contains busy and disabled behavior without routes or deferred controls", () => {
 	const welcomeSource = read("builder/src/ui/BuilderWelcome.jsx");
-	const source = `${welcomeSource}\n${read("builder/src/ui/BuilderWorkspace.jsx")}`;
+	const source = `${welcomeSource}\n${read("builder/src/ui/ImportMethods.jsx")}\n${read("builder/src/ui/BuilderWorkspace.jsx")}`;
 	assert.doesNotMatch(welcomeSource, /ExportCollectionsDialog|Copy JSON|Download JSON/);
 	assert.match(source, /aria-busy=\{isBusy\}/);
 	assert.match(source, /aria-busy=\{busyAction === "file"\}/);
@@ -662,7 +662,7 @@ test("welcome source contains busy and disabled behavior without routes or defer
 	]) {
 		assert.match(source, controlPattern);
 	}
-	assert.equal((source.match(/actionGateRef\.current\.isActive\(\)/g) ?? []).length, 3);
+	assert.equal((source.match(/actionGateRef\.current\.isActive\(\)/g) ?? []).length, 2);
 	assert.doesNotMatch(source, /disabled=\{busyAction ===/);
 	assert.match(source, /beforeAction:\s*yieldToBrowser/);
 	for (const deferred of [

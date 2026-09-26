@@ -1,5 +1,25 @@
 # Repository Testing
 
+## Workspace Import and Merge artwork (#259)
+
+Run `node --test tests/builder-import-merge.test.mjs tests/builder-workspace-import.test.mjs tests/builder-nuvio-import.test.mjs tests/builder-welcome-import.test.mjs` for every artwork field under all policies, absence/null/blank/unsupported values, no-deletion, exact text/raw preservation, unchanged matching/dedupe/order, input-source parity, file limits/errors, stale review, complete planner/controller equality and atomic apply. Related importer/controller/serializer/presentation/export/Send suites provide focused regression evidence.
+
+The existing workspace browser lifecycle and import fixture exercise local JSON with the production app/controller and unsubmitted production Nuvio login. The owner-approved embedded-host amendment additionally uses the existing mocked Nuvio contract path for deterministic authentication/profile/PIN/review mechanics:
+
+```powershell
+$env:WORKSPACE_IMPORT_ONLY = "1"
+$env:WORKSPACE_IMPORT_SCREENSHOT_DIR = "C:\path\outside-repository\import-review"
+node --test --test-name-pattern="mounted workspace Import" tests/builder-bulk-edit-mounted.test.mjs
+Remove-Item Env:WORKSPACE_IMPORT_ONLY
+Remove-Item Env:WORKSPACE_IMPORT_SCREENSHOT_DIR
+```
+
+Its 106 local layout states cover File/JSON Acquire and full-width Review, Merge artwork, Replace and long filename context at 360/393/899/900/901/1280px, 393×400 and 1280×400. Additional 384/402/412px checks retain the common phone-width contract. Another 79 embedded Nuvio states cover Connect/profiles/PIN/Review/Merge/Replace and short-height error focus. Both local and embedded flows include desktop and phone 200% text, forced colours and reduced motion. Assertions cover one persistent Import shell/backdrop/trap/body lock, compact Acquire with visible methods, full-width Review with hidden methods/divider, header-only Back, source context, stacked mode/artwork cards, one scroll owner, fixed reachable footer through long scroll, no overflow, native Tab/Escape and trigger restoration. Behavioral cases cover retained File/JSON drafts and Nuvio session/profile after Back, snapshot invalidation, empty-current-project Review, PIN, missing/empty/expired/error snapshots, all shared modes, artwork counts/reset, stale refresh, safe footer Replace focus, both confirmation return paths, method-aware privacy, and busy/late-completion safety for login/refresh/PIN/pull. Local file read cancellation and detached Apply remain covered. Optional capture emits twelve focused owner images for desktop Acquire/Review/Merge/preview/Replace and phone Acquire/Review/Merge/Replace.
+
+Zero external requests are asserted. These explicitly mocked mechanics are not authenticated live Nuvio acceptance; a real authenticated snapshot must reach the shared embedded review before merge. Physical-phone keyboard/Visual Viewport acceptance remains an owner check. No destructive Replace is required just to establish the amendment. Pure snapshot-adapter parity and connection tests remain separate evidence.
+
+The existing `NUVIO_WELCOME_ONLY=1` / `--test-name-pattern="mounted Nuvio welcome"` check retains 44 local Welcome layouts and four direct-creation cases. `NUVIO_IMPORT_ONLY=1` / `--test-name-pattern="mounted Nuvio local mock"` retains 63 Nuvio layouts and standalone Welcome login/PIN/review behavior. `NUVIO_SEND_ONLY=1` / `--test-name-pattern="mounted Nuvio Send"` retains Send and standalone Merge-instead regressions; `NUVIO_SEND_LOCAL_ONLY=1` narrows this to its authorized mocked mechanics. Grouped PR CI supplies final-head coverage without repeatedly running full local validation. Retain frontend/four-fixture guards, production build and Git hygiene.
+
 ## Optional Source naming (#257)
 
 `tests/builder-source-names.test.mjs` exercises untouched and title-only serialized Add output for all nine families, stable recipe keys, dormant/reordered/new candidates, blank/equivalent/invalid title states, destination duplicate/consent independence, Preview parameter identity and retained strict guided validation. Synthetic inputs here are pure contract fixtures, not external-service evidence. Run this with affected Add, hierarchy, capability, serialization and Preview suites plus frontend/fixture guards and the production build.

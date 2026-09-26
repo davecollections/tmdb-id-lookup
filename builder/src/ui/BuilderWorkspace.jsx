@@ -697,7 +697,7 @@ function findEditableNode(project, internalId) {
 export function BuilderWorkspace({
 	controller,
 	state,
-	onOpenNuvio,
+	onOpenImport,
 	nuvioOpen = false,
 	nuvioImportStatus = "",
 	connection,
@@ -2519,7 +2519,7 @@ export function BuilderWorkspace({
 						</button>
 						</div>
 						<div className="workspace-transfer-actions">
-							{onOpenNuvio ? <button className="export-entry-action nuvio-entry-action" type="button" data-action="open-nuvio-import" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenNuvio}>Import from Nuvio</button> : null}
+							{onOpenImport ? <button className="export-entry-action nuvio-entry-action" type="button" data-action="open-workspace-import" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenImport}>Import</button> : null}
 							{hasExportableStructure(state.project) || sendState?.dispatch.count ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export &amp; Send</button> : null}
 							{sendAttentionLabel(sendState) ? <button className="send-attention" type="button" data-action="open-nuvio-send-status" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenSendStatus}>{sendAttentionLabel(sendState)}</button> : null}
 						</div>

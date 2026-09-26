@@ -278,15 +278,17 @@ export function createBuilderController(options = {}) {
 		return actionResult(true, [], warnings);
 	}
 
-	function mergeImportedCollections(value) {
-		const plan = planCollectionMerge(state.project, value, { idFactory, nuvioIdFactory });
+	function mergeImportedCollections(value, actionOptions = {}) {
+		const optionError = validatePlainOptions(actionOptions, new Set(["artworkPolicy"]), "$controller.mergeImportedCollections", "Merge options");
+		if (optionError) return actionResult(false, [optionError], []);
+		const plan = planCollectionMerge(state.project, value, { idFactory, nuvioIdFactory, artworkPolicy: actionOptions.artworkPolicy });
 		if (!plan.ok) return actionResult(false, plan.errors, plan.warnings);
 		let diagnostics = replaceDiagnosticScope(state.diagnostics, "import", [], [...state.diagnostics.import.warnings, ...plan.warnings]);
 		diagnostics = replaceDiagnosticScope(diagnostics, "operation", [], []);
 		diagnostics = replaceDiagnosticScope(diagnostics, "export", [], []);
 		commitPatch({ project: plan.project, dirty: true, selection: reconcileSelection(plan.project, state.selection),
 			migrationPreview: createMigrationPreview(plan.project), diagnostics }, { force: true });
-		return actionResult(true, [], plan.warnings, { counts: plan.counts });
+		return actionResult(true, [], plan.warnings, { counts: plan.counts, artworkCounts: plan.artworkCounts });
 	}
 
 	function importProject(input, actionOptions, importer) {

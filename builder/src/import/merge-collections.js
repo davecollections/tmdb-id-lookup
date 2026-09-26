@@ -6,6 +6,38 @@ import { serializeNuvioSource } from "../serialize/nuvio-serialize.js";
 import { validateProjectTree } from "../serialize/validation.js";
 import { sourceEditorFor } from "../source-edit/source-editors.js";
 import { deepFreeze, jsonValuesEqual } from "../application/state.js";
+import { FOLDER_ARTWORK_TEXT_FIELD_NAMES } from "../nuvio/folder-artwork-fields.js";
+
+export const MERGE_ARTWORK_POLICIES = Object.freeze(["keep-existing", "fill-missing", "prefer-incoming"]);
+export const DEFAULT_MERGE_ARTWORK_POLICY = "keep-existing";
+
+// Mirror the serializer's own editable-over-raw precedence. Null and blank text
+// mean no artwork; every other non-string value is preservation-only.
+function artworkValue(node, field) {
+	return Object.hasOwn(node.editable, field) ? node.editable[field] : node.rawImported?.[field];
+}
+function artworkKind(value) {
+	if (value == null || (typeof value === "string" && !value.trim())) return "missing";
+	return typeof value === "string" ? "usable" : "unsupported";
+}
+
+function mergeArtwork(existing, incoming, fields, policy, counts) {
+	let editable = existing.editable;
+	for (const field of fields) {
+		const current = artworkValue(existing, field);
+		const next = artworkValue(incoming, field);
+		const currentKind = artworkKind(current);
+		if (currentKind === "unsupported") continue;
+		const change = policy !== "keep-existing" && artworkKind(next) === "usable"
+			&& (currentKind === "missing" || (policy === "prefer-incoming" && current !== next));
+		if (change) {
+			if (editable === existing.editable) editable = { ...editable };
+			editable[field] = next;
+			counts[currentKind === "missing" ? "filled" : "replaced"] += 1;
+		} else if (currentKind === "usable") counts.kept += 1;
+	}
+	return editable === existing.editable ? existing : { ...existing, editable };
+}
 
 function uniqueVisibleTitles(nodes) {
 	const matches = new Map();
@@ -35,8 +67,12 @@ function equivalentSource(left, right) {
 
 // Pure, detached and ephemeral: preview and apply use this exact planner. Preview
 // factories are local and reserve destination identities; controller factories
-// are only consumed by apply. Existing settings/raw data are never overlaid.
+// are only consumed by apply. Only allowlisted artwork may receive an editable
+// overlay; existing non-artwork settings and raw preservation evidence win.
 export function planCollectionMerge(current, value, options = {}) {
+	const artworkPolicy = options?.artworkPolicy === undefined ? DEFAULT_MERGE_ARTWORK_POLICY : options.artworkPolicy;
+	if (!MERGE_ARTWORK_POLICIES.includes(artworkPolicy)) return { ok: false,
+		errors: [{ code: "INVALID_MERGE_ARTWORK_POLICY", path: "$merge.artworkPolicy", message: "Choose a supported Merge artwork policy. Your project is unchanged." }], warnings: [] };
 	const currentErrors = validateProjectTree(current);
 	if (currentErrors.length) return { ok: false, errors: currentErrors, warnings: [] };
 	const reservedInternal = new Set();
@@ -50,6 +86,7 @@ export function planCollectionMerge(current, value, options = {}) {
 	const imported = importNuvioCollections(value, { idFactory });
 	if (!imported.ok) return imported;
 	const counts = { collectionsMerged: 0, foldersMerged: 0, duplicateSourcesSkipped: 0, collectionsAdded: 0, foldersAdded: 0, sourcesAdded: 0, idsRepaired: 0 };
+	const artworkCounts = { kept: 0, filled: 0, replaced: 0 };
 	const inserted = new Set();
 	function addSource(source) { inserted.add(source.internalId); counts.sourcesAdded += 1; return source; }
 	function addFolder(folder) {
@@ -71,7 +108,7 @@ export function planCollectionMerge(current, value, options = {}) {
 			if (comparisons.some((other) => equivalentSource(other, comparison))) counts.duplicateSourcesSkipped += 1;
 			else { sources.push(addSource(source)); comparisons.push(comparison); }
 		}
-		return { ...existing, sources };
+		return { ...mergeArtwork(existing, incoming, FOLDER_ARTWORK_TEXT_FIELD_NAMES, artworkPolicy, artworkCounts), sources };
 	}
 	function integrate(existing, incoming, merge, add) {
 		const currentTitles = uniqueVisibleTitles(existing);
@@ -86,7 +123,7 @@ export function planCollectionMerge(current, value, options = {}) {
 	}
 	function mergeCollection(existing, incoming) {
 		counts.collectionsMerged += 1;
-		return { ...existing, folders: integrate(existing.folders, incoming.folders, mergeFolder, addFolder) };
+		return { ...mergeArtwork(existing, incoming, ["backdropImageUrl"], artworkPolicy, artworkCounts), folders: integrate(existing.folders, incoming.folders, mergeFolder, addFolder) };
 	}
 	try {
 		const candidate = { ...current, collections: integrate(current.collections, imported.project.collections, mergeCollection, addCollection) };
@@ -101,7 +138,7 @@ export function planCollectionMerge(current, value, options = {}) {
 		traverseProject(project).forEach((node) => { if (originalIds.has(node.internalId) && originalIds.get(node.internalId) !== node.editable.id) counts.idsRepaired += 1; });
 		errors = validateProjectTree(project);
 		if (errors.length) return { ok: false, errors, warnings: imported.warnings };
-		return deepFreeze({ ok: true, project, counts, errors: [], warnings: imported.warnings });
+		return deepFreeze({ ok: true, project, counts, artworkCounts, errors: [], warnings: imported.warnings });
 	} catch {
 		return { ok: false, errors: [{ code: "MERGE_PREPARATION_FAILED", path: "$merge", message: "The complete merge could not be prepared with unique IDs. Your project is unchanged." }], warnings: imported.warnings };
 	}
