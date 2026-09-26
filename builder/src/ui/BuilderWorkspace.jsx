@@ -980,7 +980,7 @@ export function BuilderWorkspace({
 	useEffect(() => {
 		if (findOpen || pendingFindFocus === null) return;
 		const target = pendingFindFocus === "cancel" ? findTriggerRef.current : primaryControlRefs.current.get(pendingFindFocus);
-		if (pendingFindFocus !== "cancel") target?.scrollIntoView?.({ behavior: builderCardScrollBehavior(), block: "nearest" });
+		if (pendingFindFocus !== "cancel") target?.scrollIntoView?.({ behavior: builderCardScrollBehavior(), block: "center" });
 		focusElementWithoutScroll(target);
 		setPendingFindFocus(null);
 	}, [findOpen, pendingFindFocus]);

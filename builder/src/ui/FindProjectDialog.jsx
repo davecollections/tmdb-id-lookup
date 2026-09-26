@@ -19,7 +19,7 @@ export function FindProjectDialog({ project, onCancel, onJump }) {
 	const { results, total, ready } = useMemo(() => searchProjectFindIndex(index, query), [index, query]);
 	const status = !ready ? "Type at least 2 characters to search."
 		: total === 0 ? "No matches in this project."
-		: total > PROJECT_FIND_LIMIT ? `Showing the first 100 of ${total} matches. Refine your search to narrow the results.`
+		: total > PROJECT_FIND_LIMIT ? `${total.toLocaleString("en")} matches · showing first ${PROJECT_FIND_LIMIT}. Refine your search.`
 		: `${total} ${total === 1 ? "match" : "matches"} in this project.`;
 	const [announcement, setAnnouncement] = useState(status);
 

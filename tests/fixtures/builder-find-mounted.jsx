@@ -74,10 +74,20 @@ function measure() {
  assert(close.top >= 0 && close.bottom <= innerHeight && input.top >= 0 && input.bottom <= innerHeight, "Close and Search reachable");
  assert(dialog().scrollHeight <= dialog().clientHeight + 1, "Dialog is not second scroll owner");
  assert(dialog().scrollWidth <= dialog().clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth + 1, "No horizontal overflow");
- assert(scroller.clientHeight >= 44, "Results retain a usable scroll area");
+ assert(!rows().length || scroller.clientHeight >= 44, "Results retain a usable scroll area");
+ assert(close.height >= 44, "Close retains its accessible target");
+ const portal = $(".find-project-portal"), backdrop = $(".find-project-backdrop");
+ if (innerWidth < 900) {
+  assert(rect.width === innerWidth && rect.height === innerHeight, "Phone Find fills the viewport");
+  const backgrounds = [portal, dialog()].map(el => getComputedStyle(el).backgroundColor);
+  assert(backgrounds.every(color => matchMedia("(forced-colors: active)").matches ? color.startsWith("rgb(") : color === "rgb(7, 24, 33)"), "Phone surfaces stay opaque, including system forced colours");
+ } else {
+  assert(getComputedStyle(portal).backgroundColor.endsWith(", 0)") && getComputedStyle(backdrop).backgroundColor.endsWith(", 0.68)"), "Desktop retains translucent backdrop, including system forced colours");
+  assert(rect.height <= 640 && (!rows().length ? scroller.clientHeight <= 22 : true), "Desktop is content-sized and bounded");
+ }
  assert(rows().every(row => row.getBoundingClientRect().height >= 44 && row.scrollWidth <= row.clientWidth + 1), "Full-row targets fit");
  assert(!dialog().querySelector('input[type="checkbox"], input[type="radio"], [aria-pressed]'), "Results are navigation actions");
- return { width: innerWidth, height: innerHeight, rows: rows().length, scrollable: scroller.scrollHeight > scroller.clientHeight, passed: true };
+ return { width: innerWidth, height: innerHeight, dialogHeight: rect.height, rows: rows().length, scrollable: scroller.scrollHeight > scroller.clientHeight, passed: true };
 }
 window.prepareFindScreen = async (screen, enlarged = false) => {
  await mount({ large: screen === "cap" });
@@ -94,7 +104,7 @@ window.prepareFindScreen = async (screen, enlarged = false) => {
  const queries = { collection: "Same collection", folder: "Same folder", source: "Source 2-3-4", duplicates: "Same source", none: "unmatched phrase", cap: "source", long: "Long source" };
  if (queries[screen]) await query(queries[screen]);
  if (screen === "cap") {
-  assert(rows().length === 100 && $(".find-project-status").textContent.includes("4000 matches"), "Cap reports real count");
+  assert(rows().length === 100 && $(".find-project-status").textContent === "4,000 matches · showing first 100. Refine your search.", "Cap reports real count concisely");
   const scroll = $(".find-project-results"), beforeTop = dialog().getBoundingClientRect().top;
   scroll.scrollTop = scroll.scrollHeight;
   await frame(); unchanged();
@@ -108,12 +118,58 @@ window.prepareFindScreen = async (screen, enlarged = false) => {
  return result;
 };
 window.findCancelCheck = async () => { await frame(); closed(); assert(document.activeElement === trigger(), "Cancel restores Find"); unchanged(); return true; };
+// Keep the layout viewport intact while delivering the resize/scroll events
+// used by the production lifecycle. This simulates keyboard geometry, not iOS.
+window.findKeyboardViewport = async (height, top = 0) => {
+ const viewport = window.visualViewport;
+ Object.defineProperties(viewport, {
+  height: { configurable: true, value: height },
+  offsetTop: { configurable: true, value: top },
+ });
+ viewport.dispatchEvent(new Event("resize"));
+ viewport.dispatchEvent(new Event("scroll"));
+ await frame();
+ const portal = $(".find-project-portal"), surface = dialog().getBoundingClientRect();
+ const cover = portal.getBoundingClientRect(), input = $("#find-project-query").getBoundingClientRect();
+ const heading = $(".find-project-heading").getBoundingClientRect();
+ const scroller = $(".find-project-results"), results = scroller.getBoundingClientRect();
+ assert(cover.top === 0 && cover.bottom === innerHeight && cover.width === innerWidth, "Opaque portal still covers full layout viewport");
+ assert(getComputedStyle(portal).backgroundColor === "rgb(7, 24, 33)" && getComputedStyle(dialog()).backgroundColor === "rgb(7, 24, 33)", "No transparent gap behind keyboard viewport");
+ assert($$(".find-project-backdrop").length === 1 && document.body.style.position === "fixed", "One backdrop and existing body lock throughout keyboard transitions");
+ assert(Math.abs(surface.top - top) < 1 && Math.abs(surface.height - height) < 1 && surface.width === innerWidth, "Full-screen phone surface follows Visual Viewport");
+ assert(heading.top >= top && heading.bottom <= top + height && input.top >= top && input.bottom <= top + height, "Header, Close and Search stay above keyboard");
+ assert(results.bottom <= top + height && (!rows().length || scroller.clientHeight >= 44), "Results remain above keyboard");
+ assert(dialog().scrollHeight <= dialog().clientHeight + 1 && document.documentElement.scrollWidth <= innerWidth, "One scroll owner and no horizontal overflow");
+ if (rows().length > 10) {
+  scroller.scrollTop = scroller.scrollHeight;
+  await frame();
+  assert(scroller.scrollTop > 0 && dialog().getBoundingClientRect().top === surface.top && window.scrollY === 0, "Keyboard result scrolling leaves surface/document stable");
+  scroller.scrollTop = 0;
+ }
+ unchanged();
+ return { width: innerWidth, layoutHeight: innerHeight, visualHeight: height, offsetTop: top, resultsHeight: results.height, rows: rows().length, opaque: true, passed: true };
+};
+window.restoreFindViewport = async () => {
+ delete window.visualViewport.height;
+ delete window.visualViewport.offsetTop;
+ window.visualViewport.dispatchEvent(new Event("resize"));
+ window.visualViewport.dispatchEvent(new Event("scroll"));
+ await frame();
+};
+window.closeFind = async () => { await click($(".find-project-heading button")); return window.findCancelCheck(); };
 window.findLocalCases = async () => {
  await mount({ empty: true });
  assert(trigger().disabled, "Empty project disables Find");
  await mount();
  assert($$(".workspace-transfer-actions > button").map(el => el.textContent).join("|") === "Find|Import|Export & Send", "Find before Import and Export");
  await open();
+ const announcement = dialog().querySelector('[role="status"]');
+ await query("Same source");
+ assert(announcement.textContent === "Type at least 2 characters to search.", "Status does not announce every immediate keystroke");
+ await new Promise(resolve => setTimeout(resolve, 350));
+ assert(announcement.textContent === $(".find-project-status").textContent, "Settled status announces after 300ms delay");
+ const inputStyle = getComputedStyle($("#find-project-query"));
+ assert(inputStyle.outlineStyle !== "none" && parseFloat(inputStyle.outlineWidth) >= 2, "Search keeps its strong focus ring");
  for (const text of ["", "s", "  ", "same", "No matches", ""]) {
   await query(text); unchanged();
   if (text.trim().length < 2) assert(rows().length === 0, "No short query dump");
@@ -148,10 +204,13 @@ window.findLocalCases = async () => {
  assert(requests.length === 0, "Find makes no remote requests");
  return { passed: true, requests: requests.length, duplicateJumps: 8 };
 };
-window.prepareFindJump = async (type, large = false) => {
+window.prepareFindJump = async (type, large = false, middle = false) => {
  await mount({ large });
- const c = controller.getState().project.collections.at(-1), f = c.folders.at(-1), s = f.sources.at(-1);
- expected = { type, node: type === "collection" ? c : type === "folder" ? f : s, c, f };
+ const collections = controller.getState().project.collections;
+ const c = collections.at(middle ? Math.floor(collections.length / 2) : -1);
+ const f = c.folders.at(middle ? Math.floor(c.folders.length / 2) : -1);
+ const s = f.sources.at(middle ? Math.floor(f.sources.length / 2) : -1);
+ expected = { type, node: type === "collection" ? c : type === "folder" ? f : s, c, f, middle };
  await open();
  await query(expected.node.editable.title);
  assert(rows().length === 1, "Unique jump target");
@@ -180,22 +239,31 @@ window.finishFindJump = async (continueNavigation = true) => {
  } while (performance.now() < focusDeadline);
  assert(target && document.activeElement === target, "Exact selected primary card focused: " + JSON.stringify({ type, width: innerWidth, target: target?.outerHTML.slice(0, 220), active: document.activeElement?.outerHTML.slice(0, 220), level: $(".workspace").dataset.mobileLevel }));
  assert($(".workspace").dataset.mobileLevel === type + "s", "Result's own mobile level");
- assert(scrollCalls.some(call => call.node === target && call.value.block === "nearest" && call.value.behavior === (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth")), "Shared reduced-motion nearest scroll");
+ assert(scrollCalls.some(call => call.node === target && call.value.block === "center" && call.value.behavior === (matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth")), "Find-specific centered scroll retains reduced motion");
  const deadline = performance.now() + 2500;
+ let lastTop = null, stableFrames = 0;
  while (performance.now() < deadline) {
   const rect = target.getBoundingClientRect();
-  if (rect.top >= -1 && rect.bottom <= innerHeight + 1) break;
+  stableFrames = lastTop !== null && Math.abs(rect.top - lastTop) < 0.5 ? stableFrames + 1 : 0;
+  lastTop = rect.top;
+  if (stableFrames >= 4) break;
   await frame();
  }
  const rect = target.getBoundingClientRect();
  assert(rect.top >= -1 && rect.bottom <= innerHeight + 1 && rect.width > 0 && rect.height > 0, "Exact target scrolled into view");
+ let scrollOwner = target.parentElement;
+ while (scrollOwner && !(["auto", "scroll"].includes(getComputedStyle(scrollOwner).overflowY) && scrollOwner.scrollHeight > scrollOwner.clientHeight)) scrollOwner = scrollOwner.parentElement;
+ scrollOwner ??= document.scrollingElement;
+ const atBottom = scrollOwner.scrollHeight - scrollOwner.clientHeight - scrollOwner.scrollTop <= 1;
+ const central = Math.abs(rect.top + rect.height / 2 - innerHeight / 2) <= innerHeight / 4;
+ assert(central || (!expected.middle && atBottom && rect.bottom <= innerHeight - 64), "Target centers where scroll range permits, otherwise retains lower-edge clearance: " + JSON.stringify({ type, width: innerWidth, top: rect.top, bottom: rect.bottom, height: innerHeight, atBottom }));
  assert(!document.querySelector('[role="dialog"]'), "Jump never opens Edit");
  if (continueNavigation && innerWidth < 900 && type !== "source") {
   await click(target);
   assert($(".workspace").dataset.mobileLevel === (type === "collection" ? "folders" : "sources"), "Ordinary selection clears Find override");
  }
  assert(requests.length === 0, "No remote request during Find jump");
- return { passed: true, type, width: innerWidth, focusAndScroll: true };
+ return { passed: true, type, width: innerWidth, targetTop: rect.top, targetBottom: rect.bottom, central, atBottom, focusAndScroll: true };
 };
 window.findBusyCases = async () => {
  const modes = [
@@ -240,7 +308,7 @@ window.findPerformance = async () => {
  for (const value of ["source", "Source 19", "Source 19-19", "unmatched", "source"]) {
   const begin = performance.now(); await query(value); durations.push(performance.now() - begin);
  }
- assert(rows().length === 100 && $(".find-project-status").textContent.includes("4000 matches"), "Large project remains capped");
+ assert(rows().length === 100 && $(".find-project-status").textContent.startsWith("4,000 matches"), "Large project remains capped");
  unchanged();
  return { indexed: { collections: 20, folders: 400, sources: 4000 }, openMs, maxInputToTwoFramesMs: Math.max(...durations), passed: true };
 };

@@ -10003,7 +10003,7 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 	padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
 .add-source-dialog.find-project-dialog {
-	width: 100%; max-width: 680px; height: min(640px, 100%); max-height: 100%;
+	width: 100%; max-width: 680px; height: auto; max-height: min(640px, 100%);
 	grid-template-rows: auto auto minmax(0, 1fr); border-radius: 18px;
 }
 .find-project-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 10px; }
@@ -10020,10 +10020,32 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 .find-project-result span, .find-project-result small { color: var(--muted); }
 .find-project-result:hover { background: rgb(1 180 228 / 10%); border-color: var(--cyan-bright); }
 .find-project-result:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 2px; }
+@media (max-width: 899.98px) {
+	/* Cover the layout viewport even when the keyboard moves/shrinks the inner surface. */
+	.add-source-portal.find-project-portal { background: rgb(7 24 33); }
+	.settings-modal-backdrop.find-project-backdrop {
+		padding: 0; background: rgb(7 24 33);
+		-webkit-backdrop-filter: none; backdrop-filter: none;
+	}
+	.add-source-dialog.find-project-dialog {
+		max-width: none; height: 100%; max-height: 100%;
+		background: rgb(7 24 33); border: 0; border-radius: 0; box-shadow: none;
+	}
+	.find-project-heading {
+		padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left));
+	}
+	.find-project-search { padding: 0 max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left)); }
+	.find-project-search .editor-field { gap: 6px; }
+	.find-project-search label { margin-bottom: 0; }
+	.find-project-status { margin-top: 6px; }
+	.find-project-results { padding: 4px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+	.find-project-results ul { gap: 6px; }
+	.find-project-result { gap: 3px; min-height: 56px; padding: 9px 10px; }
+}
 @media (max-height: 450px) {
-	.find-project-heading { padding-top: 6px; padding-bottom: 4px; }
+	.find-project-heading { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 4px; }
 	.find-project-search { padding-bottom: 6px; }
-	.find-project-search label { margin-bottom: 4px; }
+	.find-project-search label { margin-bottom: 0; }
 	.find-project-status { margin-top: 4px; }
 }
 @media (forced-colors: active) {

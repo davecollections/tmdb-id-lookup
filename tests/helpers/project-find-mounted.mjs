@@ -27,7 +27,7 @@ export async function runProjectFindChecks(connection, baseUrl, evaluate) {
  const local = await evaluate(connection, "window.findLocalCases()");
  const busy = await evaluate(connection, "window.findBusyCases()");
  const performance = await evaluate(connection, "window.findPerformance()");
- const layouts = [], jumps = [];
+ const layouts = [], jumps = [], keyboard = [];
  const screens = ["initial", "collection", "folder", "source", "duplicates", "none", "cap", "long"];
  for (const [width, height] of [[360,800], [384,852], [393,852], [402,852], [412,852], [899,900], [900,900], [901,900], [1280,900], [393,320], [1280,320]]) {
   await viewport(width, height);
@@ -44,6 +44,47 @@ export async function runProjectFindChecks(connection, baseUrl, evaluate) {
    await key("Escape", "Escape", 27);
    assert.equal(await evaluate(connection, "window.findCancelCheck()"), true);
   }
+ }
+ // Visual viewport shrinks and pans independently of the layout viewport,
+ // leaving a potential bleed area that ordinary short-window tests miss.
+ for (const width of [360,393]) {
+  await viewport(width, 852);
+  for (const screen of ["none", "cap"]) {
+   await evaluate(connection, "window.prepareFindScreen(" + JSON.stringify(screen) + ")");
+   for (const [height, top] of [[852,0],[460,0],[320,42],[500,18],[852,0]]) {
+    keyboard.push({ screen, ...await evaluate(connection, "window.findKeyboardViewport(" + height + "," + top + ")") });
+    if (height === 320) await capture("phone-" + width + "-keyboard-" + screen);
+   }
+   keyboard.push({ screen, closing: true, ...await evaluate(connection, "window.findKeyboardViewport(360,24)") });
+   assert.equal(await evaluate(connection, "window.closeFind()"), true);
+   await evaluate(connection, "window.restoreFindViewport()");
+  }
+  for (const type of ["folder","source"]) {
+   await evaluate(connection, "window.prepareFindJump(" + JSON.stringify(type) + ",true)");
+   keyboard.push({ jump: type, ...await evaluate(connection, "window.findKeyboardViewport(360,24)") });
+   // Result focus dismisses a phone keyboard; restore its viewport before
+   // the explicit jump, then check the actual card's final focus/position.
+   await evaluate(connection, "window.restoreFindViewport()");
+   await key("Enter", "Enter", 13);
+   jumps.push({ activation: "keyboard-viewport", ...await evaluate(connection, "window.finishFindJump(false)") });
+   await capture("phone-" + width + "-keyboard-" + type + "-jump");
+  }
+ }
+ const desktop = layouts.filter(item => item.width === 1280 && item.height === 900 && !item.variant);
+ const idle = desktop.find(item => item.screen === "initial");
+ const empty = desktop.find(item => item.screen === "none");
+ const single = desktop.find(item => item.screen === "source");
+ const many = desktop.find(item => item.screen === "cap");
+ assert.equal(idle.dialogHeight, empty.dialogHeight, "Desktop initial and empty states share compact natural height");
+ assert.ok(idle.dialogHeight < single.dialogHeight && single.dialogHeight < many.dialogHeight, "Desktop grows naturally with results");
+ assert.equal(many.dialogHeight, 640, "Long desktop results retain existing height cap");
+ assert.equal(many.scrollable, true);
+ for (const width of [393,1280]) for (const type of ["folder","source"]) {
+  await viewport(width, width < 900 ? 852 : 900);
+  await evaluate(connection, "window.prepareFindJump(" + JSON.stringify(type) + ",true,true)");
+  await key("Enter", "Enter", 13);
+  jumps.push({ position: "middle", ...await evaluate(connection, "window.finishFindJump(false)") });
+  await capture((width < 900 ? "phone" : "desktop") + "-centered-" + type + "-jump");
  }
  for (const variant of ["enlarged", "forced-colors", "reduced-motion"]) for (const width of [393,1280]) {
   await viewport(width, width === 393 ? 852 : 900);
@@ -108,6 +149,6 @@ export async function runProjectFindChecks(connection, baseUrl, evaluate) {
  assert.ok(buttons.some(name => name.includes("Same source") && name.includes("Source") && name.includes("Same collection / Same folder") && name.includes("Position 1 of 8")));
  await key("Escape", "Escape", 27);
  assert.deepEqual(await evaluate(connection, "window.__mountedErrors"), []);
- if (screenshots) await fs.writeFile(path.join(screenshots, "find-measurements.json"), JSON.stringify({local,busy,performance,layouts,jumps},null,2));
- return { local, busy, performance, layouts, jumps, errors: await evaluate(connection, "window.__mountedErrors") };
+ if (screenshots) await fs.writeFile(path.join(screenshots, "find-measurements.json"), JSON.stringify({local,busy,performance,layouts,jumps,keyboard},null,2));
+ return { local, busy, performance, layouts, jumps, keyboard, errors: await evaluate(connection, "window.__mountedErrors") };
 }

@@ -951,7 +951,8 @@ test("mounted Find searches locally and jumps with exact identity, accessible fo
  assert.equal(projectFindMounted.local.passed, true);
  assert.equal(projectFindMounted.busy.passed, true);
  assert.equal(projectFindMounted.layouts.length, 112);
- assert.equal(projectFindMounted.jumps.length, 42);
+ assert.equal(projectFindMounted.jumps.length, 50);
+ assert.equal(projectFindMounted.keyboard.length, 28);
  assert.deepEqual(projectFindMounted.errors, []);
- console.log("Find mounted:", JSON.stringify({ layouts: projectFindMounted.layouts.length, jumps: projectFindMounted.jumps.length, performance: projectFindMounted.performance }));
+ console.log("Find mounted:", JSON.stringify({ layouts: projectFindMounted.layouts.length, keyboard: projectFindMounted.keyboard.length, jumps: projectFindMounted.jumps.length, performance: projectFindMounted.performance }));
 });
