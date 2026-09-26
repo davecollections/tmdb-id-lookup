@@ -12,9 +12,9 @@ const useBeforePaint = typeof window === "undefined" ? useEffect : useLayoutEffe
 
 // One journey supplies both hosts with content and actions. The host alone
 // owns dialog semantics, viewport, body locking, focus containment and Close.
-export function NuvioImportFlow({ connection, controller, builderState, initialProfile, onImported, focusRef, scrollRef, children }) {
+export function NuvioImportFlow({ connection, controller, builderState, initialProfile, onImported, focusRef, scrollRef, active = true, reviewInHost = false, children }) {
 	const state = useSyncExternalStore(connection.subscribe, connection.getState, connection.getState);
-	const snapshot = state.snapshot;
+	const snapshot = active ? state.snapshot : null;
 	const [selected, setSelected] = useState(() => {
 		try { return initialProfile ? requireSameProfile(state.profiles, initialProfile, { protection: false }).id : ""; } catch { return ""; }
 	});
@@ -33,24 +33,38 @@ export function NuvioImportFlow({ connection, controller, builderState, initialP
 	const canLoad = selectedProfile && connection.getProfileAccess(selected).unlocked;
 
 	useBeforePaint(() => {
-		if (focusRef?.current) {
+		if (!active) return;
+		if (focusRef?.current && (!reviewInHost || snapshot)) {
 			if (scrollRef?.current) scrollRef.current.scrollTop = 0;
 			focusElementWithoutScroll(focusRef.current);
 		} else restoreAddSourceSearchView({ scrollElement: scrollRef?.current, resultElement: heading.current, searchScrollTop: 0, focusWithoutScroll: focusElementWithoutScroll });
-	}, [step, confirmation]);
+	}, [active, step, confirmation]);
 	useEffect(() => { setSelected((current) => state.profiles.some((profile) => profile.id === current) ? current : ""); }, [state.profiles]);
 	useEffect(() => {
-		if (error || state.error) restoreAddSourceSearchView({ scrollElement: scrollRef?.current, resultElement: errorRef.current, searchScrollTop: scrollRef?.current?.scrollTop, focusWithoutScroll: focusElementWithoutScroll });
-	}, [error, state.error]);
+		if (active && (error || state.error)) restoreAddSourceSearchView({ scrollElement: scrollRef?.current, resultElement: errorRef.current, searchScrollTop: scrollRef?.current?.scrollTop, focusWithoutScroll: focusElementWithoutScroll });
+	}, [active, error, state.error]);
 	function backToProfiles() { setConfirmation(false); setError(null); connection.cancelReview(); }
 	const backAction = snapshot ? <button className="add-source-header-action" type="button" onClick={backToProfiles}><span aria-hidden="true">←</span> Back</button> : null;
+	const notices = <>
+		{(error || state.error) ? <div className="nuvio-notice is-error" role="alert" tabIndex={-1} ref={errorRef}>{error ?? state.error.message}</div> : null}
+		{expired ? <p className="nuvio-notice" role="status">Connection expired. {snapshot ? "Your reviewed Collections are still available to import. Log in again to load more data." : "Log in again to load your profiles and Collections."}</p> : null}
+	</>;
+	const summary = snapshot ? <>
+			{!reviewInHost ? <div className="nuvio-review-profile"><div className="nuvio-profile-identity"><NuvioProfileAvatar profile={snapshot.profile} /><div><h4>{snapshot.profile.name}</h4><span className="nuvio-muted">Profile {snapshot.profile.index}</span></div></div></div> : null}
+			{snapshot.kind === "missing" ? <p className="nuvio-notice">This profile has no stored Collections yet. Nothing can be imported.</p> : <>
+				<ImportCounts counts={snapshot.counts} />
+				<p className="nuvio-muted">{snapshot.updatedAt ? <>Last updated in Nuvio: <time dateTime={snapshot.updatedAt}>{new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(snapshot.updatedAt)).replace(/\s+/g, " ").replace(/AM|PM/g, (period) => period.toLowerCase())}</time></> : "Nuvio update time unavailable."}</p>
+				{snapshot.kind === "empty" ? <p className="nuvio-notice">This profile has an empty Collections array. Nothing can be imported; your current work will stay as it is.</p> : null}
+			</>}
+		{snapshot.kind === "ready" ? <p className="nuvio-muted">This is a local snapshot. Importing will not change Nuvio.</p> : null}
+	</> : null;
+	const sourceContext = snapshot ? <><NuvioProfileAvatar profile={snapshot.profile} /><span>Nuvio · {snapshot.profile.name} · Profile {snapshot.profile.index}</span></> : null;
 	const content = <>
 		<h3 ref={heading} tabIndex={-1} data-nuvio-stage-heading>{login ? "Connect your Nuvio account" : snapshot ? "Review Nuvio import" : "Choose a profile"}</h3>
 		{state.account ? <div className="nuvio-account"><span>{state.account.email}</span></div> : null}
-		{(error || state.error) ? <div className="nuvio-notice is-error" role="alert" tabIndex={-1} ref={errorRef}>{error ?? state.error.message}</div> : null}
-		{expired ? <p className="nuvio-notice" role="status">Connection expired. {snapshot ? "Your reviewed Collections are still available to import. Log in again to load more data." : "Log in again to load your profiles and Collections."}</p> : null}
+		{notices}
 		{login ? <NuvioLoginForm heading={false} connection={connection} id={id} busy={Boolean(state.busy)} onConnecting={() => setError(null)}
-				description="Bring your saved Collections into Dingo to edit and organise them."
+				description={reviewInHost ? "Connect to your Nuvio account to load saved Collections." : "Bring your saved Collections into Dingo to edit and organise them."}
 				notice="Your login details go directly to Nuvio and aren't saved by Dingo. Dingo keeps the connection only while this page is open, and your Nuvio Collections won't be changed." /> : null}
 		{!login && !snapshot ? <div className="nuvio-profile-stage" aria-busy={Boolean(state.busy)}>
 			<div className="nuvio-profile-heading"><button className="secondary-action" type="button" disabled={Boolean(state.busy)} onClick={() => void connection.refreshProfiles()}>{state.busy === "profiles" ? "Refreshing…" : "Refresh profiles"}</button></div><p className="nuvio-muted">Load the Collections from a Nuvio profile.</p>
@@ -59,14 +73,8 @@ export function NuvioImportFlow({ connection, controller, builderState, initialP
 
 		</div> : null}
 		{snapshot ? <div className="nuvio-review">
-			<div className="nuvio-review-profile"><div className="nuvio-profile-identity"><NuvioProfileAvatar profile={snapshot.profile} /><div><h4>{snapshot.profile.name}</h4><span className="nuvio-muted">Profile {snapshot.profile.index}</span></div></div></div>
-			{snapshot.kind === "missing" ? <p className="nuvio-notice">This profile has no stored Collections yet. Nothing can be imported.</p> : <>
-				<ImportCounts counts={snapshot.counts} />
-				<p className="nuvio-muted">{snapshot.updatedAt ? <>Last updated in Nuvio: <time dateTime={snapshot.updatedAt}>{new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(snapshot.updatedAt)).replace(/\s+/g, " ").replace(/AM|PM/g, (period) => period.toLowerCase())}</time></> : "Nuvio update time unavailable."}</p>
-				{snapshot.kind === "empty" ? <p className="nuvio-notice">This profile has an empty Collections array. Nothing can be imported; your current work will stay as it is.</p> : null}
-			</>}
+			{summary}
 			{snapshot.kind === "ready" ? <>
-				<p className="nuvio-muted">This is a local snapshot. Importing will not change Nuvio.</p>
 				<CollectionImportReview headingLevel={4} scrollRef={scrollRef} id={id} snapshot={snapshot} review={review} currentCollectionCount={builderState.project.collections.length} />
 			</> : null}
 		</div> : null}
@@ -77,5 +85,5 @@ export function NuvioImportFlow({ connection, controller, builderState, initialP
 			<button className="secondary-action" type="button" onClick={() => { setError(null); connection.disconnect(); }}>Disconnect</button>
 		</div>}
 	</> : null;
-	return children({ id, confirmation, backAction, progress: <NuvioImportProgress step={step} />, content, actions });
+	return children({ id, snapshot, review, confirmation, backToProfiles, sourceContext, reviewSummary: <>{notices}{summary}</>, backAction, progress: <NuvioImportProgress step={step} />, content, actions });
 }

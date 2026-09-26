@@ -25,12 +25,13 @@ export async function runWorkspaceImportChecks(connection, origin, evaluate) {
 		await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: keyCode });
 		await evaluate(connection, 'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
 	}
-	for (const [width, height] of [[360, 800], [393, 852], [1280, 900], [384, 852], [402, 852], [412, 852], [899, 900], [900, 900], [901, 900], [393, 400]]) {
+	const coreViewports = [[360, 800], [393, 852], [899, 900], [900, 900], [901, 900], [1280, 900], [1280, 400], [393, 400]];
+	for (const [width, height] of [...coreViewports, [384, 852], [402, 852], [412, 852]]) {
 		await connection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
-		const stages = [360, 393, 1280].includes(width) && height > 400 ? ["workspace", "methods", "file", "json", "review", "merge-keep", "merge-fill", "merge-prefer", "replace", "nuvio"] : ["methods", "merge-prefer"];
+		const stages = [384, 402, 412].includes(width) ? ["methods", "merge-prefer"] : ["methods", "file", "json", "review-file", "review", "merge-prefer", "replace", "review-file-long"];
 		for (const stage of stages) {
 			layouts.push({ stage, ...await evaluate(connection, `window.prepareWorkspaceImportScreen(${JSON.stringify(stage)})`) });
-			if (width === 1280 && ["methods", "file", "json"].includes(stage)) {
+			if (width === 1280 && height === 900 && ["file", "json"].includes(stage)) {
 				await capture(`${stage}-${width}`);
 			}
 			if (stage === "workspace") continue;
@@ -44,15 +45,24 @@ export async function runWorkspaceImportChecks(connection, origin, evaluate) {
 				await key("Tab", "Tab", 9, backward ? 8 : 0);
 				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest(\'[role="dialog"][aria-modal="true"]\'))'), true, "Native Tab stays in active dialog");
 			}
+			if (stage === "review" && width === 393 && height === 852) {
+				await evaluate(connection, 'document.querySelector("header [aria-label=Back]").focus()');
+				await key("Enter", "Enter", 13);
+				assert.equal(await evaluate(connection, 'document.querySelector("[data-workspace-import]").dataset.importLayout === "acquire" && Boolean(document.querySelector("#builder-import-text").value)'), true, "Native keyboard Back restores the retained JSON acquisition state");
+				await evaluate(connection, 'document.querySelector("[data-workspace-import] footer button").focus()');
+				await key("Enter", "Enter", 13);
+				assert.equal(await evaluate(connection, "window.workspaceImportClosed()"), true, "Native keyboard Cancel restores the workspace trigger");
+				continue;
+			}
 			await key("Escape", "Escape", 27);
 			await evaluate(connection, 'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
 			assert.equal(await evaluate(connection, "window.workspaceImportClosed()"), true, "Escape restores workspace trigger and scroll");
 		}
 	}
-	for (const variant of ["enlarged", "forced-colors", "reduced-motion"]) {
-		await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+	for (const variant of ["enlarged", "forced-colors", "reduced-motion"]) for (const [width, height] of [[393, 852], [1280, 900]]) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
 		await connection.command("Emulation.setEmulatedMedia", { features: variant === "forced-colors" ? [{ name: "forced-colors", value: "active" }] : variant === "reduced-motion" ? [{ name: "prefers-reduced-motion", value: "reduce" }] : [] });
-		for (const stage of ["methods", "json", "merge-prefer", "replace"]) {
+		for (const stage of ["file", "json", "review-file", "review", "merge-prefer", "replace"]) {
 			layouts.push({ stage, variant, ...await evaluate(connection, `window.prepareWorkspaceImportScreen(${JSON.stringify(stage)}, ${variant === "enlarged"})`) });
 			if (stage === "merge-prefer") {
 				await evaluate(connection, 'document.querySelector(\'input[value="keep-existing"]\').focus()');
@@ -63,13 +73,17 @@ export async function runWorkspaceImportChecks(connection, origin, evaluate) {
 		}
 	}
 	await connection.command("Emulation.setEmulatedMedia", { features: [] });
-	for (const [width, height] of [[360, 800], [393, 852], [899, 900], [900, 900], [901, 900], [1280, 900], [393, 400]]) {
+	for (const [width, height] of coreViewports) {
 		await connection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
-		for (const stage of ["login", "profiles", "pin", "review", "merge"]) {
+		for (const stage of ["login", "profiles", "pin", "review", "merge", "replace"]) {
 			embeddedLayouts.push({ stage, ...await evaluate(connection, `window.prepareEmbeddedNuvioScreen(${JSON.stringify(stage)})`) });
-			if ((width === 1280 && stage !== "pin") || (width === 393 && height > 400 && stage === "login")) {
+			if ((width === 1280 && height === 900 && stage !== "pin") || (width === 393 && height === 852 && ["login", "review", "merge", "replace"].includes(stage))) {
 				if (stage === "merge") await evaluate(connection, 'document.querySelector(".merge-artwork-policies").scrollIntoView({ block: "center", behavior: "instant" }); new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
 				await capture(`embedded-${stage}-${width}`);
+				if (width === 1280 && stage === "merge") {
+					await evaluate(connection, 'document.querySelector(".nuvio-merge-preview").scrollIntoView({ block: "end", behavior: "instant" }); new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+					await capture('embedded-merge-preview-1280');
+				}
 			}
 			for (const backward of [false, true]) {
 				await evaluate(connection, `(() => { const modal=document.querySelector('[data-workspace-import]'); const controls=[...modal.querySelectorAll('button,input,textarea,summary')].filter(n=>!n.disabled&&n.getClientRects().length); controls[${backward ? "0" : "controls.length-1"}].focus({preventScroll:true}); })()`);
@@ -80,10 +94,10 @@ export async function runWorkspaceImportChecks(connection, origin, evaluate) {
 			assert.equal(await evaluate(connection, "window.workspaceImportClosed()"), true, "Embedded Escape restores workspace trigger and scroll");
 		}
 	}
-	for (const variant of ["enlarged", "forced-colors", "reduced-motion"]) {
-		await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+	for (const variant of ["enlarged", "forced-colors", "reduced-motion"]) for (const [width, height] of [[393, 852], [1280, 900]]) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
 		await connection.command("Emulation.setEmulatedMedia", { features: variant === "forced-colors" ? [{ name: "forced-colors", value: "active" }] : variant === "reduced-motion" ? [{ name: "prefers-reduced-motion", value: "reduce" }] : [] });
-		for (const stage of ["login", "profiles", "merge"]) {
+		for (const stage of ["login", "profiles", "review", "merge", "replace"]) {
 			embeddedLayouts.push({ stage, variant, ...await evaluate(connection, `window.prepareEmbeddedNuvioScreen(${JSON.stringify(stage)}, ${variant === "enlarged"})`) });
 		}
 	}

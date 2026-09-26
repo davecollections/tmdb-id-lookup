@@ -76,14 +76,24 @@
 .workspace-import-dialog { width: min(100%, 900px); }
 .workspace-import-dialog .welcome-import { margin: 0; }
 .workspace-import-dialog .welcome-import[hidden] { display: none; }
-.workspace-import-dialog .welcome-import-content { min-width: 0; }
+.workspace-import-dialog .welcome-import-content { min-width: 0; min-height: 0; }
+.workspace-import-dialog .welcome-import-layout { align-items: start; }
+.workspace-import-dialog .welcome-import-prompt { min-height: 140px; }
+.workspace-import-dialog .import-card { grid-template-rows: none; }
 .workspace-import-dialog .privacy-note { margin-bottom: 0; }
 .workspace-nuvio-flow { min-width: 0; }
 .workspace-nuvio-flow .nuvio-steps { padding: 0 0 16px; }
-.nuvio-flow-back { margin-bottom: 12px; }
 .nuvio-flow-actions { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
 [data-nuvio-stage-heading]:focus, .workspace-import-dialog .import-card h3:focus { outline: none; }
-.workspace-nuvio-flow .nuvio-import-modes, .workspace-nuvio-flow .merge-artwork-policies { grid-template-columns: 1fr; }
+.workspace-import-dialog .nuvio-import-modes, .workspace-import-dialog .merge-artwork-policies { grid-template-columns: minmax(0, 1fr); }
+.workspace-import-dialog .add-source-heading-row { display: grid; gap: 10px; }
+.workspace-import-dialog .add-source-heading-row > div { text-align: center; }
+.workspace-import-source { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 8px; margin-top: 7px; color: var(--muted); font-size: .74rem; line-height: 1.4; }
+.workspace-import-source > span { min-width: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.workspace-import-source .nuvio-avatar { flex: 0 0 32px; width: 32px; height: 32px; }
+.workspace-import-footer .secondary-action { margin-left: 0; }
+.workspace-import-footer :is(.nuvio-primary, .nuvio-danger) { margin-left: auto; }
+.workspace-import-dialog[data-import-layout="acquire"] .workspace-import-footer .secondary-action { margin-left: auto; }
 @media (min-width: 900px) and (min-height: 600px) {
 	.workspace-import-dialog .welcome-import-methods { position: sticky; top: 0; align-self: start; }
 }

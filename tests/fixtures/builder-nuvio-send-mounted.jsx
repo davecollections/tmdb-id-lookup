@@ -133,7 +133,7 @@ async function runPinCases() {
 		assert(pinCount() === 1 && field.value === "", "Fifth digit, paste, Enter and rerender cannot replay PIN");
 		const finish = release; behavior = "verified"; finish(); await until(() => !api.connection.getState().busy);
 		assert(api.connection.getProfileAccess(protectedA.id).unlocked && pinCount() === 1, "One completed entry records the exact-profile grant");
-		assert(flow === "send" ? phase() === "REVIEWED" : $(".nuvio-review-profile")?.textContent.includes("Kids"), "PIN success advances directly to the existing Review");
+		assert(flow === "send" ? phase() === "REVIEWED" : $(".nuvio-review-profile, .workspace-import-source")?.textContent.includes("Kids"), "PIN success advances directly to the existing Review");
 
 		await pinFlow(flow); api.pinResult = [{ unlocked: false, retry_after_seconds: 0 }]; await pin();
 		assert($("input[name=pin]").value === "" && document.activeElement === $("input[name=pin]") && $(".nuvio-pin [role=status]").textContent === "Incorrect PIN. Try again.", "Incorrect PIN clears, announces and restores input focus");
@@ -197,7 +197,7 @@ async function runMergeInsteadCases() {
 		if (change === "pin-version") api.profiles[1].updated_at = "2026-09-24T12:00:00Z";
 		await click(button("Merge instead")); await until(() => !api.connection.getState().busy);
 		assert(!api.connection.getState().snapshot && controller.getState().project === project && pushCount() === 0, "Changed identity/protection cannot bypass ordinary Import authority");
-		if (change !== "identity") { assert($("input[name=pin]"), "Current protected profile requires fresh PIN authority"); await pin(); assert($(".nuvio-review-profile"), "Fresh valid PIN advances through normal Import review"); }
+		if (change !== "identity") { assert($("input[name=pin]"), "Current protected profile requires fresh PIN authority"); await pin(); assert($(".nuvio-review-profile, .workspace-import-source"), "Fresh valid PIN advances through normal Import review"); }
 		else assert(api.connection.getState().status === "disconnected", "Replaced profile follows the existing identity failure policy");
 	}
 	for (const fallback of [false, true]) {
@@ -456,6 +456,6 @@ window.checkPinKeyboard = async (digits) => {
 };
 window.finishPinKeyboard = async (flow) => {
 	const finish = release; behavior = "verified"; finish(); await until(() => !api.connection.getState().busy);
-	return pinCount() === 1 && api.connection.getProfileAccess(protectedA.id).unlocked && (flow === "send" ? phase() === "REVIEWED" : Boolean($(".nuvio-review-profile")));
+	return pinCount() === 1 && api.connection.getProfileAccess(protectedA.id).unlocked && (flow === "send" ? phase() === "REVIEWED" : Boolean($(".nuvio-review-profile, .workspace-import-source")));
 };
 window.nuvioSendFixtureReady = true;

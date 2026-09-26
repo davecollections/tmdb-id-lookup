@@ -682,8 +682,8 @@ before(async () => {
 test("mounted workspace Import shares local review, artwork policies and accessible responsive navigation", { skip: nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.workspaceImport.local, { passed: true, externalServiceExercised: false });
 	assert.deepEqual(mounted.workspaceImport.embedded, { passed: true, mocked: true });
-	assert.equal(mounted.workspaceImport.layouts.length, 56);
-	assert.equal(mounted.workspaceImport.embeddedLayouts.length, 45);
+	assert.equal(mounted.workspaceImport.layouts.length, 106);
+	assert.equal(mounted.workspaceImport.embeddedLayouts.length, 79);
 	assert.ok(mounted.workspaceImport.layouts.every(result => result.passed));
 	assert.ok(mounted.workspaceImport.embeddedLayouts.every(result => result.passed));
 	assert.deepEqual(mounted.workspaceImport.errors, []);

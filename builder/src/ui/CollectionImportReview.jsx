@@ -28,20 +28,35 @@ export function ImportCounts({ counts }) {
 	return <dl className="nuvio-counts">{Object.entries(counts).map(([label, count]) => <div key={label}><dt>{label[0].toUpperCase() + label.slice(1)}</dt><dd>{count}</dd></div>)}</dl>;
 }
 
-export function CollectionImportReview({ id, snapshot, review, currentCollectionCount, headingLevel = 3, scrollRef }) {
+export function CollectionImportReviewActions({ review, onCancel, scrollRef, confirmationOnly = false }) {
+	const safeAction = useRef(null);
+	const confirming = review.confirmation && !review.staleProject;
+	useEffect(() => {
+		if (!confirming) return;
+		if (scrollRef) restoreAddSourceSearchView({ scrollElement: scrollRef.current, resultElement: safeAction.current, searchScrollTop: scrollRef.current?.scrollTop, focusWithoutScroll: focusElementWithoutScroll });
+		else focusElementWithoutScroll(safeAction.current);
+	}, [confirming]);
+	if (confirming) return <div className={confirmationOnly ? "nuvio-actions" : "nuvio-footer-actions"}>
+		<button ref={safeAction} className={confirmationOnly ? undefined : "secondary-action"} type="button" onClick={() => review.setConfirmation(false)}>Keep current work</button>
+		<button type="button" className="nuvio-danger" disabled={review.importDisabled} onClick={() => review.perform(true)}>Replace current project</button>
+	</div>;
+	if (confirmationOnly) return null;
+	return <div className="nuvio-footer-actions">
+		<button className="secondary-action" type="button" onClick={onCancel}>Cancel</button>
+		<button className="nuvio-primary" type="button" disabled={review.importDisabled || review.confirmation} onClick={() => review.perform()}>Import to Dingo</button>
+	</div>;
+}
+
+export function CollectionImportReview({ id, snapshot, review, currentCollectionCount, headingLevel = 3, scrollRef, actionsInFooter = false }) {
 	const ReviewHeading = `h${headingLevel}`;
 	const ArtworkHeading = `h${headingLevel + 1}`;
-	const safeAction = useRef(null);
-	const { mode, setMode, artworkPolicy, setArtworkPolicy, confirmation, setConfirmation, staleProject, hasWork, mergePreview, refresh, perform } = review;
-	useEffect(() => {
-		if (confirmation && !staleProject) restoreAddSourceSearchView({ scrollElement: scrollRef?.current, resultElement: safeAction.current, searchScrollTop: scrollRef?.current?.scrollTop, focusWithoutScroll: focusElementWithoutScroll });
-	}, [confirmation, staleProject]);
+	const { mode, setMode, artworkPolicy, setArtworkPolicy, confirmation, staleProject, hasWork, mergePreview, refresh } = review;
 	return <>
-		<ImportWarningSummary warnings={snapshot.warnings} limitedSourceCount={snapshot.limitedSourceCount} idsRepaired={mergePreview?.counts?.idsRepaired} />
+		{!actionsInFooter || !confirmation || staleProject ? <ImportWarningSummary warnings={snapshot.warnings} limitedSourceCount={snapshot.limitedSourceCount} idsRepaired={mergePreview?.counts?.idsRepaired} /> : null}
 		{staleProject ? <div className="nuvio-notice">Your Dingo project changed. <button type="button" onClick={refresh}>Review current project</button></div>
 			: confirmation ? <div className="nuvio-notice nuvio-replace-confirmation">
 				<ReviewHeading>Replace all current work in Dingo</ReviewHeading><p>Your {quantity(currentCollectionCount, "Collection")} and any unfinished edits will be removed. Dingo will import {quantity(snapshot.counts.collections, "Collection")} from this snapshot. This cannot be undone.</p>
-				<div className="nuvio-actions"><button ref={safeAction} type="button" onClick={() => setConfirmation(false)}>Keep current work</button><button type="button" className="nuvio-danger" onClick={() => perform(true)}>Replace current project</button></div>
+				{!actionsInFooter ? <CollectionImportReviewActions review={review} scrollRef={scrollRef} confirmationOnly /> : null}
 			</div> : hasWork ? <Choices id={`${id}-mode`} className="nuvio-import-modes" legend="How should this import affect your current work?" choices={modes} selected={mode} onChange={setMode} /> : null}
 		{mergePreview && !confirmation && !staleProject ? <>
 			<Choices id={`${id}-artwork`} className="merge-artwork-policies" legend="Artwork in exact matches" choices={artworkPolicies} selected={artworkPolicy} onChange={setArtworkPolicy} />
