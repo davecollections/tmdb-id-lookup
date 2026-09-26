@@ -2108,7 +2108,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			footerReachable: true,
 			noSearchMediaOrSort: true,
 			originalOrder: true,
-			sourceNameHelpers: true,
+			optionalNamesCollapsed: true,
 			noPreviewActions: true,
 			noContainerPresentation: true,
 		}, `${label} review`);

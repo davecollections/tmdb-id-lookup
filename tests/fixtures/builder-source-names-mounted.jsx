@@ -84,6 +84,7 @@ export async function runSourceNamesScenario(helpers, view) {
   const details = await wait(() => dialog.querySelector(".source-names-disclosure"), { label: "Source names", timeoutMs: 30000 });
   check(!details.open && !details.querySelector("input"), "naming must start collapsed and lazy");
   check(details.textContent.includes("Generated automatically."), "automatic summary");
+  if (family === "list") check(details.querySelector("summary").textContent === "Source namesGenerated automatically." && [...dialog.querySelectorAll(".tmdb-list-review-item")].every(row => !row.querySelector("input")), "List review retains optional naming outside result rows");
   details.scrollIntoView({ block: "center" }); await settle(); await shot("automatic");
   const summary = details.querySelector("summary");
   await act(async () => { summary.focus({ preventScroll: true }); await new Promise(resolve => { window.__finishNamesKey = resolve; window.sourceNamesSpace("space"); }); await settle(); });

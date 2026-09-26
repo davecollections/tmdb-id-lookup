@@ -7682,6 +7682,7 @@ async function runTmdbListLayoutScenario() {
 		const footer = requiredElement(dialog.querySelector(".add-source-actions"), "TMDB List footer");
 		const submit = requiredElement(footer.querySelector('button[type="submit"]'), "TMDB List submit action");
 		const reviewActionCopy = submit.textContent.trim();
+		const optionalNamesCollapsed = Boolean(dialog.querySelector(".source-names-disclosure:not([open])")) && dialog.querySelector(".source-names-disclosure > summary")?.textContent === "Source namesGenerated automatically." && !dialog.querySelector(".source-names-disclosure input") && reviewRows.every((row) => !row.querySelector("input"));
 		submit.focus({ preventScroll: true });
 		await act(async () => {
 			dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
@@ -7702,7 +7703,7 @@ async function runTmdbListLayoutScenario() {
 			footerReachable: footer.getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom + 1,
 			noSearchMediaOrSort: !/Search|Media type|Sort titles by/.test(reviewRows.map((row) => row.textContent).join(" ")),
 			originalOrder: reviewRows.every((row) => row.textContent.includes("Original order") && !row.textContent.includes("List order")),
-			sourceNameHelpers: reviewRows.every((row) => row.querySelector(".editor-field-help")?.textContent.trim() === "This is the name shown in Nuvio. You can customise it."),
+			optionalNamesCollapsed,
 			noPreviewActions: reviewRows.every((row) => !buttonContaining(row, "Preview")),
 			noContainerPresentation: dialog.querySelector('[data-review-title-options="true"], [data-hierarchy-collection-presentation="true"], [data-editor-field="folderTileShape"]') === null,
 		};
