@@ -9979,3 +9979,19 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
  .genre-advanced-options, .genre-advanced-options[open] > .genre-advanced-content { border-color: CanvasText; }
  .filters-disclosure-label small { color: CanvasText; }
 }
+
+/* Optional display names use the modal scroll owner and stay quieter than Filters. */
+.source-names-disclosure { margin-block: 1rem; min-width: 0; border: 1px solid var(--border); border-radius: 0.65rem; }
+.source-names-disclosure > summary { min-height: 44px; padding: 0.7rem 0.85rem; cursor: pointer; color: var(--text); }
+.source-names-disclosure > summary > span { display: inline-grid; gap: 0.2rem; vertical-align: middle; }
+.source-names-disclosure > summary small { color: var(--muted); font-weight: 400; }
+.source-names-content { display: grid; gap: 1rem; min-width: 0; padding: 0.5rem 0.85rem 0.85rem; }
+.source-name-field { min-width: 0; gap: 0.4rem; }
+.source-name-field label { overflow-wrap: anywhere; }
+.source-name-field input { width: 100%; min-width: 0; }
+.source-name-reset { justify-self: start; min-height: 44px; padding: 0.4rem 0.65rem; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 0.4rem; }
+.source-names-disclosure summary:focus-visible, .source-name-reset:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+@media (forced-colors: active) {
+ .source-names-disclosure, .source-name-reset, .source-name-field input { border: 1px solid CanvasText; }
+ .source-names-disclosure summary:focus-visible, .source-name-reset:focus-visible { outline-color: Highlight; }
+}

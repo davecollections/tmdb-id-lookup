@@ -1,5 +1,11 @@
 # Repository Testing
 
+## Optional Source naming (#257)
+
+`tests/builder-source-names.test.mjs` exercises untouched and title-only serialized Add output for all nine families, stable recipe keys, dormant/reordered/new candidates, blank/equivalent/invalid title states, destination duplicate/consent independence, Preview parameter identity and retained strict guided validation. Synthetic inputs here are pure contract fixtures, not external-service evidence. Run this with affected Add, hierarchy, capability, serialization and Preview suites plus frontend/fixture guards and the production build.
+
+Set `TMDB_SOURCE_NAMES_ONLY=1` and run `node --test --test-name-pattern="mounted optional Source naming" tests/builder-source-edit-mounted.test.mjs`. The existing browser lifecycle runs all nine real flows at phone/desktop widths, plus 360/384/402/412/899/900/901, short height, 200% text, forced colours and reduced motion. It checks collapsed/lazy rows, canonical labels, effective output, invalid-field recovery, blank/equivalent/reset, focus and action reachability, and saved title-only output. Live entity resolution and explicit representative Preview use approved production providers. `TMDB_204_SCREENSHOTS` writes compact review evidence outside Git. Normal full Source CI includes these cases; do not repeat the full local suite simply before push or merge.
+
 ## Builder Back to top (#236)
 
 Set `BUILDER_BACK_TO_TOP_ONLY=1` and run `node --test --test-name-pattern="mounted Back to top" tests/builder-bulk-edit-mounted.test.mjs`. The existing mounted browser/Collection fixture checks the real workspace at 360/384/393/402/412/1280px, including a 70-Folder Collection and a 40-Source Folder. It covers window scroll ownership, threshold visibility, native pointer/keyboard activation, actual smooth/immediate motion, focus without extra scrolling, unchanged controller state/mobile level, and ordinary/Export modal inert protection. These project-local checks make no external requests. Optional `BUILDER_BACK_TO_TOP_SCREENSHOT_DIR` writes phone/desktop evidence outside Git.

@@ -1,10 +1,14 @@
+import { sourcePreviewContext } from "../source-add/source-title-preview.js";
 import { sourceDestinationContext } from "./creation-context.js";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceVariantReview } from "./SourceVariantReview.jsx";
 import {
 	useEffect,
 	useLayoutEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -262,6 +266,7 @@ export function StudioConfigureActions({
 	primaryCount,
 	configuredCount,
 	isApplying = false,
+	namesInvalid = false,
 	onAddAll,
 }) {
 	const primaryLabel = `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}`;
@@ -269,8 +274,8 @@ export function StudioConfigureActions({
 		<footer className="add-source-actions studio-configure-actions">
 			{hasDestinationDuplicates && primaryCount === 0
 				? <span className="studio-no-missing-sources">No new sources to add</span>
-				: <button className="editor-apply" type="submit" disabled={primaryCount === 0 || isApplying}>{isApplying ? "Adding…" : primaryLabel}</button>}
-			{hasDestinationDuplicates && configuredCount > 0 ? <button className="editor-cancel studio-add-all" type="button" disabled={isApplying} data-action="add-all-studio-anyway" onClick={onAddAll}>Add all anyway</button> : null}
+				: <button className="editor-apply" type="submit" disabled={primaryCount === 0 || isApplying || namesInvalid}>{isApplying ? "Adding…" : primaryLabel}</button>}
+			{hasDestinationDuplicates && configuredCount > 0 ? <button className="editor-cancel studio-add-all" type="button" disabled={isApplying || namesInvalid} data-action="add-all-studio-anyway" onClick={onAddAll}>Add all anyway</button> : null}
 		</footer>
 	);
 }
@@ -306,7 +311,8 @@ export function StudioSourceFlow({
 	if (!countCoordinatorRef.current) countCoordinatorRef.current = createAsyncRequestCoordinator();
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 
-	const draftResult = selectedStudio ? buildStudioSourceDrafts(selectedStudio, { choices, sortOptionIds: titleSortOptionIds, filters: advanced.filters }) : { ok: false, drafts: [], errors: [] };
+	const draftResult = useMemo(() => selectedStudio ? buildStudioSourceDrafts(selectedStudio, { choices, sortOptionIds: titleSortOptionIds, filters: advanced.filters }) : { ok: false, drafts: [], errors: [] }, [selectedStudio, choices, titleSortOptionIds, advanced.filters]);
+	const naming = useSourceNames(draftResult.drafts, studioSourceVariantKey);
 	const duplicateReview = inspectStudioSourceDuplicates(project, folder?.internalId ?? null, draftResult.ok ? draftResult.drafts : []);
 	const step = navigation.step;
 
@@ -390,13 +396,14 @@ export function StudioSourceFlow({
 
 	async function applyStudioSources(addAllAnyway = false) {
 		const submission = draftResult;
-		if (step !== STUDIO_SOURCE_STEPS.CONFIGURE || !submission.ok || isApplying || !submissionGateRef.current.begin()) return;
+		if (step !== STUDIO_SOURCE_STEPS.CONFIGURE || !submission.ok || naming.invalid || isApplying || !submissionGateRef.current.begin()) return;
+		naming.commit();
 		setIsApplying(true);
 		let result;
 		try {
 			result = await onApply({
 				studio: selectedStudio,
-				drafts: submission.drafts,
+				drafts: naming.drafts,
 				duplicateOverrideIdentity: addAllAnyway
 					? studioDuplicateOverrideIdentity(folder.internalId, submission.drafts)
 					: null,
@@ -441,12 +448,13 @@ export function StudioSourceFlow({
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<StudioConfigureStep studio={selectedStudio} counts={counts} choices={choices} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionIds={titleSortOptionIds} onToggle={toggleChoice} onSortChange={(optionId) => { setTitleSortOptionIds(optionId); setApplyDiagnostic(null); }} advanced={advanced} onAdvancedChange={(next) => { setAdvanced(next); setApplyDiagnostic(null); }} />
-									<SourceVariantReview drafts={draftResult.drafts} review={duplicateReview} variantKey={studioSourceVariantKey} />
+									<SourceVariantReview drafts={naming.drafts} review={duplicateReview} variantKey={studioSourceVariantKey} />
 									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-studio" disabled={!previewAvailable || isApplying} onClick={(event) => titlePreview.open(draftResult.drafts, { trigger: event.currentTarget, label: selectedStudio.name })}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Choose a valid source configuration to preview.</p> : null}</div>
+									<SourceNamesDisclosure naming={naming} disabled={isApplying} context={(row) => `${selectedStudio.name} · ${sourcePreviewContext(row.draft)}`} />
 								</div>
 							)}
 						</div>
-						{step === STUDIO_SOURCE_STEPS.CONFIGURE ? <StudioConfigureActions hasDestinationDuplicates={hasDestinationDuplicates} primaryCount={primaryCount} configuredCount={configuredCount} isApplying={isApplying} onAddAll={() => applyStudioSources(true)} /> : null}
+						{step === STUDIO_SOURCE_STEPS.CONFIGURE ? <StudioConfigureActions hasDestinationDuplicates={hasDestinationDuplicates} primaryCount={primaryCount} configuredCount={configuredCount} isApplying={isApplying} namesInvalid={naming.invalid} onAddAll={() => applyStudioSources(true)} /> : null}
 					</form>
 				</section>
 			</div>

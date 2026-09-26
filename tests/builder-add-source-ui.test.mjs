@@ -1,3 +1,4 @@
+import { resolveSourceNames } from "../builder/src/source-add/source-names.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -531,7 +532,7 @@ test("Review retains the count and authoritative poster Preview without the lega
 	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
 		selectedResult: detailsResult(),
 		title: "Edited source title",
-		titleInputRef: null,
+		naming: resolveSourceNames([buildMovieFranchiseSourceDraft(detailsResult()).draft], {}, d => movieFranchiseDuplicateIdentity(d.editable)),
 		titleError: null,
 		duplicate: null,
 		applyDiagnostic: null,
@@ -543,9 +544,9 @@ test("Review retains the count and authoritative poster Preview without the lega
 	assert.ok(markup.includes("https://image.tmdb.org/t/p/w342/poster.jpg"));
 	assert.ok(markup.includes('alt="Collection poster artwork"'));
 	assert.ok(markup.includes("2 titles in this collection"));
-	assert.ok(markup.includes('value="Edited source title"'));
+	assert.ok(markup.includes("<strong>Edited source title</strong>"));
 	assert.ok(markup.includes("Source name"));
-	assert.ok(markup.includes("This is the name shown in Nuvio. You can customise it."));
+	assert.ok(markup.includes("source-names-disclosure"));
 	assert.equal(markup.includes("Nuvio source title"), false);
 	assert.ok(markup.includes('data-source-recipe="tmdb-collection"'));
 	assert.ok(markup.includes("TMDB-provided order"));
@@ -559,7 +560,8 @@ test("Review retains the count and authoritative poster Preview without the lega
 	assert.equal(/data-action="preview-add-source"[^>]*disabled/.test(markup), false);
 	assert.ok(markup.includes("Preview titles"));
 	for (const legacy of ["toggle-contained-titles", "add-source-contained-titles", "View 2 titles in this collection", "First Movie", "Second Movie", "Year unavailable"]) assert.equal(markup.includes(legacy), false, legacy);
-	assert.ok(markup.includes("add-source-title-input"));
+	assert.ok(markup.includes("source-names-disclosure"));
+	assert.doesNotMatch(markup, /data-source-name=/, "lazy inputs remain unmounted while collapsed");
 	assert.doesNotMatch(read("builder/src/styles.css"), /\.add-source-title-list/);
 });
 
@@ -568,14 +570,14 @@ test("Review identifies the canonical Collection name as auto-managed until cust
 	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
 		selectedResult,
 		title: selectedResult.name,
-		titleInputRef: null,
+		naming: resolveSourceNames([buildMovieFranchiseSourceDraft(detailsResult()).draft], {}, d => movieFranchiseDuplicateIdentity(d.editable)),
 		titleError: null,
 		duplicate: null,
 		applyDiagnostic: null,
 		onTitleChange() {},
 	}));
 	assert.ok(markup.includes("Source name"));
-	assert.ok(markup.includes("This name updates automatically until you customise it."));
+	assert.ok(markup.includes("Generated automatically."));
 	assert.equal(markup.includes("Nuvio source title"), false);
 });
 
@@ -597,7 +599,7 @@ test("long Collection review titles wrap above a secondary mobile TMDB link", ()
 	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
 		selectedResult: detailsResult({ name: longName }),
 		title: longName,
-		titleInputRef: null,
+		naming: resolveSourceNames([buildMovieFranchiseSourceDraft(detailsResult()).draft], {}, d => movieFranchiseDuplicateIdentity(d.editable)),
 		titleError: null,
 		duplicate: null,
 		applyDiagnostic: null,
@@ -615,7 +617,7 @@ test("Review uses a stable no-poster placeholder without emitting an image URL",
 	const markup = renderToStaticMarkup(createElement(AddSourceReviewStep, {
 		selectedResult: detailsResult({ posterPath: null }),
 		title: "Example Collection",
-		titleInputRef: null,
+		naming: resolveSourceNames([buildMovieFranchiseSourceDraft(detailsResult()).draft], {}, d => movieFranchiseDuplicateIdentity(d.editable)),
 		titleError: null,
 		duplicate: null,
 		applyDiagnostic: null,
@@ -739,9 +741,8 @@ test("Movie-franchise title drafts restore by physical identity without leaking 
 	assert.equal(movieFranchiseDuplicateIdentity(customised.editable), movieFranchiseDuplicateIdentity(canonical.editable));
 
 	const dialog = read("builder/src/ui/AddSourceDialog.jsx");
-	assert.match(dialog, /const titleDraftsRef = useRef\(\{\}\)/);
-	assert.match(dialog, /setTitle\(resolveMovieFranchiseTitleDraft\(result, titleDraftsRef\.current\)\)/);
-	assert.match(dialog, /titleDraftsRef\.current = \{ \.\.\.titleDraftsRef\.current, \[draftKey\]: nextTitle \}/);
+	assert.ok(dialog.includes("useSourceNames(draftResult.ok ? [draftResult.draft] : [], franchiseNameKey)"));
+	assert.ok(dialog.includes("movieFranchiseDuplicateIdentity(draft.editable)"));
 });
 
 test("query and page changes clear stale selection state and failed details are focused within Search", () => {

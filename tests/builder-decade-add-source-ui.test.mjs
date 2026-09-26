@@ -107,7 +107,7 @@ test("Decade Add Source server markup is one compact canonical editor in the app
 	assert.match(markup, /All 2020s Series/);
 	assert.match(markup, /Add 2 sources/);
 	assert.doesNotMatch(markup, />Cancel<\/button>/);
-	for (const forbidden of ["Decade sample", "Period sample", "custom date", "Artwork", "Source name"]) assert.equal(markup.includes(forbidden), false);
+	for (const forbidden of ["Decade sample", "Period sample", "custom date", "Artwork"]) assert.equal(markup.includes(forbidden), false);
 });
 
 test("Decade Add Source keeps normal and duplicate footer actions minimal and ordered", () => {

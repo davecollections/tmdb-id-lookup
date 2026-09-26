@@ -65,6 +65,7 @@ export const validationChecks = Object.freeze([
 	["--test", path.join("tests", "builder-source-chooser-ui.test.mjs")],
 	["--test", path.join("tests", "builder-people-foundation.test.mjs")],
 	["--test", path.join("tests", "builder-native-source-variants.test.mjs")],
+	["--test", path.join("tests", "builder-source-names.test.mjs")],
 	["--test", path.join("tests", "builder-source-sort-variants.test.mjs")],
 	["--test", path.join("tests", "builder-people-hierarchy.test.mjs")],
 	["--test", path.join("tests", "builder-people-ui.test.mjs")],

@@ -1,4 +1,5 @@
 import { orderedSourceSortIds, sourceSortLabel, sourceSortSelectionError } from "./source-sort-variants.js";
+import { sourceDraftsWithGeneratedTitles } from "./source-names.js";
 import {
 	buildDiscoverSourceDraft,
 	DEFAULT_DISCOVER_SORT_OPTION_ID,
@@ -796,10 +797,10 @@ export function buildDecadeSourceBundleDrafts({
 	});
 }
 
-export function validateDecadeSourceBundleDrafts(drafts, configuration) {
+export function validateDecadeSourceBundleDrafts(drafts, configuration, { allowCustomTitles = false } = {}) {
 	const expected = buildDecadeSourceBundleDrafts(configuration);
 	if (!expected.ok) return Object.freeze({ ok: false, errors: expected.errors });
-	if (!equalDecadesStructures(drafts, expected.drafts)) {
+	if (!equalDecadesStructures(allowCustomTitles ? sourceDraftsWithGeneratedTitles(drafts, expected.drafts) : drafts, expected.drafts)) {
 		return Object.freeze({ ok: false, errors: Object.freeze([
 			diagnostic("INVALID_DECADE_SOURCE_DRAFTS", "$decadeSource.sources", "The Decade source bundle must exactly match the reviewed canonical configuration."),
 		]) });
@@ -893,7 +894,7 @@ export function createDecadeSourceBundle(controller, {
 	interactionLocked = false,
 } = {}) {
 	const configuration = { periodIds, periodId, mediaMode, genreNames, sortOptionId, sortOptionIds, advanced };
-	const validation = validateDecadeSourceBundleDrafts(drafts, configuration);
+	const validation = validateDecadeSourceBundleDrafts(drafts, configuration, { allowCustomTitles: true });
 	if (!validation.ok) return { ok: false, errors: validation.errors, warnings: [] };
 	if (interactionLocked) {
 		return { ok: false, errors: [diagnostic("DECADE_SOURCE_CREATION_LOCKED", "$decadeSource.creation", "Finish the current hierarchy interaction before adding Decade sources.")], warnings: [] };

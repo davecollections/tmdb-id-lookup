@@ -1,4 +1,5 @@
 import { resolveNativeGenreFilters } from "./native-shared-advanced.js";
+import { isValidNuvioTitle } from "../nuvio/titles.js";
 import { validateNetworkAdvancedFilters, networkComparisonFilters } from "./network-advanced.js";
 import { NETWORK_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
@@ -103,7 +104,7 @@ export function buildNetworkHierarchySourceDraft(network, { sortOptionId = DEFAU
 	return { ...validation, draft: validation.ok ? draft : null };
 }
 
-export function validateNetworkSourceDraft(draft, { network = null, path = "$network.source" } = {}) {
+export function validateNetworkSourceDraft(draft, { network = null, path = "$network.source", allowCustomTitles = false } = {}) {
 	const errors = [];
 	if (!plainObject(draft) || !sameKeys(draft, ["category", "editable"])) {
 		return { ok: false, errors: [diagnostic("INVALID_NETWORK_SOURCE_DRAFT", path, "The Network source draft contains an unsupported field.")] };
@@ -120,8 +121,8 @@ export function validateNetworkSourceDraft(draft, { network = null, path = "$net
 	if (editable.tmdbSourceType !== "NETWORK") errors.push(diagnostic("INVALID_NETWORK_SOURCE_TYPE", `${path}.editable.tmdbSourceType`, "The Network source type must be NETWORK."));
 	if (editable.mediaType !== "TV") errors.push(diagnostic("UNSUPPORTED_NETWORK_MEDIA_TYPE", `${path}.editable.mediaType`, "Network sources must use the proven TV contract."));
 	if (id === null) errors.push(diagnostic("INVALID_NETWORK_TMDB_ID", `${path}.editable.tmdbId`, "The Network TMDB ID must be a positive safe integer."));
-	if (!title || editable.title !== title) errors.push(diagnostic("INVALID_NETWORK_TITLE", `${path}.editable.title`, "The Network source title must be non-empty and trimmed."));
-	if (network !== null && (id !== network.id || !isSourceVariantTitle(editable.title, canonicalText(network.name), editable.sortBy, "TV", NETWORK_SORT_OPTIONS))) {
+	if (!title || editable.title !== title || (allowCustomTitles && !isValidNuvioTitle(title))) errors.push(diagnostic("INVALID_NETWORK_TITLE", `${path}.editable.title`, "The Network source title must be non-empty and trimmed."));
+	if (network !== null && (id !== network.id || (!allowCustomTitles && !isSourceVariantTitle(editable.title, canonicalText(network.name), editable.sortBy, "TV", NETWORK_SORT_OPTIONS)))) {
 		errors.push(diagnostic("MISMATCHED_NETWORK_SOURCE", path, "The Network source must match the selected cached Network."));
 	}
 	if (!isSupportedNetworkSort(editable.sortBy)) errors.push(diagnostic("INVALID_NETWORK_SORT", `${path}.editable.sortBy`, "Choose a supported Network Series sort order."));
@@ -159,11 +160,11 @@ export function buildNetworkSourceDrafts(network, { sortOptionId = DEFAULT_NETWO
 	return { ...validateNetworkSourceDrafts(drafts, { network, hierarchy }), drafts };
 }
 
-export function validateNetworkSourceDrafts(drafts, { network = null, hierarchy = false } = {}) {
+export function validateNetworkSourceDrafts(drafts, { network = null, hierarchy = false, allowCustomTitles = false } = {}) {
 	if (!Array.isArray(drafts) || drafts.length < 1 || drafts.length > NETWORK_SORT_OPTIONS.length) {
 		return { ok: false, errors: [diagnostic("INVALID_NETWORK_SOURCE_BUNDLE", "$network.sources", "Choose supported Network source variants.")] };
 	}
-	const errors = drafts.flatMap((draft) => (hierarchy ? validateNetworkHierarchySourceDraft : validateNetworkSourceDraft)(draft, { network }).errors);
+	const errors = drafts.flatMap((draft) => (hierarchy ? validateNetworkHierarchySourceDraft : validateNetworkSourceDraft)(draft, { network, allowCustomTitles }).errors);
 	const keys = drafts.map(networkSourceVariantKey);
 	if (keys.some((key) => key === null) || new Set(keys).size !== keys.length || new Set(drafts.map((draft) => canonicalTmdbId(draft?.editable?.tmdbId))).size !== 1) {
 		errors.push(diagnostic("INVALID_NETWORK_SOURCE_VARIANTS", "$network.sources", "Choose distinct source variants for one Network."));
@@ -191,7 +192,7 @@ export function inspectNetworkSourceDuplicates(project, destinationFolderInterna
 
 export function networkDuplicateOverrideIdentity(folderInternalId, candidate) {
 	const drafts = Array.isArray(candidate) ? candidate : [candidate];
-	if (typeof folderInternalId !== "string" || !folderInternalId || !validateNetworkSourceDrafts(drafts).ok) return null;
+	if (typeof folderInternalId !== "string" || !folderInternalId || !validateNetworkSourceDrafts(drafts, { allowCustomTitles: true }).ok) return null;
 	return `${folderInternalId}\n${drafts.map(networkSourceVariantKey).join("\n")}`;
 }
 
@@ -211,7 +212,7 @@ export function createNetworkSource(controller, {
 	duplicateOverrideIdentity = null,
 	interactionLocked = false,
 } = {}) {
-	const validation = validateNetworkSourceDrafts(drafts, { network });
+	const validation = validateNetworkSourceDrafts(drafts, { network, allowCustomTitles: true });
 	if (!validation.ok) return { ok: false, errors: validation.errors, warnings: [] };
 	if (interactionLocked) return { ok: false, errors: [diagnostic("NETWORK_CREATION_INTERACTION_LOCKED", "$network.creation", "Finish the current hierarchy interaction before adding a Network source.")], warnings: [] };
 	const state = controller.getState();

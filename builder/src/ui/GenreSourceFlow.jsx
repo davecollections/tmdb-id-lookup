@@ -1,4 +1,6 @@
 import { destinationContext, sourceDestinationContext } from "./creation-context.js";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -186,9 +188,11 @@ export function GenreSourceFlow({ previewProvider, project, folder, onBack, onCa
 	const genres = useMemo(() => selection.map((name) => officialGenreConcept(name)).filter(Boolean), [selection]);
 	const collection = currentCollection(project, folder?.internalId);
 	const effectiveDestinationMode = genres.length === 1 ? DEFAULT_GENRE_DESTINATION_MODE : destinationMode;
-	const built = buildGenreSourceDrafts(genres, { sharedMediaChoice, sortOptionIds, advanced });
+	const built = useMemo(() => buildGenreSourceDrafts(genres, { sharedMediaChoice, sortOptionIds, advanced }), [genres, sharedMediaChoice, sortOptionIds, advanced]);
 	const drafts = built.ok ? built.drafts : [];
-	const duplicates = built.ok && folder ? inspectGenreSourceDuplicates(project, folder.internalId, drafts) : { destination: [], elsewhere: [], missingDrafts: [], duplicateDrafts: [], elsewhereDrafts: [] };
+	const naming = useSourceNames(effectiveDestinationMode === "current-folder" ? drafts : [], sourcePreviewVariantKey);
+	const outputDrafts = effectiveDestinationMode === "current-folder" ? naming.drafts : drafts;
+	const duplicates = built.ok && folder ? inspectGenreSourceDuplicates(project, folder.internalId, outputDrafts) : { destination: [], elsewhere: [], missingDrafts: [], duplicateDrafts: [], elsewhereDrafts: [] };
 	const folderPlan = built.ok && collection ? inspectGenreFolderPlan(project, collection.internalId, genres, drafts, sharedMediaChoice) : { groups: [], readyGroups: [], alreadyExistingGroups: [], partialGroups: [], elsewhere: [] };
 	const normalCount = effectiveDestinationMode === "current-folder" ? duplicates.missingDrafts.length : folderPlan.readyGroups.length;
 
@@ -245,11 +249,12 @@ export function GenreSourceFlow({ previewProvider, project, folder, onBack, onCa
 	}
 
 	async function applyGenres(addAllAnyway = false) {
-		if (secondarySurface || !built.ok || drafts.length === 0 || isApplying || !submissionGateRef.current.begin()) return;
+		if (secondarySurface || !built.ok || drafts.length === 0 || naming.invalid || isApplying || !submissionGateRef.current.begin()) return;
+		naming.commit();
 		setIsApplying(true);
 		let result;
 		try {
-			result = await onApply({ genres, destinationMode: effectiveDestinationMode, sharedMediaChoice, sortOptionIds, advanced, drafts, duplicateOverrideIdentity: addAllAnyway ? genreDuplicateOverrideIdentity(folder.internalId, drafts) : null });
+			result = await onApply({ genres, destinationMode: effectiveDestinationMode, sharedMediaChoice, sortOptionIds, advanced, drafts: outputDrafts, duplicateOverrideIdentity: addAllAnyway ? genreDuplicateOverrideIdentity(folder.internalId, drafts) : null });
 		} catch {
 			result = { ok: false, errors: [{ message: "Genre sources could not be added. Try again." }] };
 		}
@@ -343,11 +348,11 @@ export function GenreSourceFlow({ previewProvider, project, folder, onBack, onCa
 					<form className="add-source-form genre-source-form" onSubmit={submit} noValidate inert={preview || undefined} aria-hidden={preview ? "true" : undefined}>
 						<div ref={scrollRef} className="add-source-scroll" inert={secondarySurface || undefined} aria-hidden={secondarySurface ? "true" : undefined}>
 							{step === GENRE_SOURCE_STEPS.BROWSE ? <GenreBrowseStep query={query} headingRef={browseHeadingRef} inputRef={inputRef} selection={selection} onQueryChange={(event) => setQuery(event.target.value)} onClearSearch={() => setQuery("")} onChoose={chooseGenre} onSelectAll={() => { const names = GENRE_CONCEPTS.map((concept) => concept.name); setSelection(names); setDestinationMode(DEFAULT_GENRE_DESTINATION_MODE); setAdvanced((current) => pruneGenreExclusionConfiguration(current, names)); setApplyDiagnostic(null); }} onClearAll={() => { setSelection([]); setDestinationMode(DEFAULT_GENRE_DESTINATION_MODE); setAdvanced((current) => pruneGenreExclusionConfiguration(current, [])); setApplyDiagnostic(null); }} /> : null}
-							{step === GENRE_SOURCE_STEPS.CONFIGURE_REVIEW ? <><GenreConfigureReviewStep genres={genres} folderName={folder?.editable?.title || "this folder"} destinationMode={effectiveDestinationMode} sharedMediaChoice={sharedMediaChoice} sortOptionIds={sortOptionIds} advanced={advanced} drafts={drafts} duplicates={duplicates} folderPlan={folderPlan} buildErrors={built.errors ?? []} applyDiagnostic={applyDiagnostic} configureRef={configureRef} reviewExpanded={reviewExpanded} onRemoveGenre={chooseGenre} onDestinationChange={(value) => { setDestinationMode(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSortChange={(value) => { setSortOptionIds(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onToggleReview={() => setReviewExpanded((value) => !value)} /><div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-genre" disabled={!previewAvailable || isApplying} onClick={openPreview}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Fix the current source fields before previewing.</p> : null}</div></> : null}
+							{step === GENRE_SOURCE_STEPS.CONFIGURE_REVIEW ? <><GenreConfigureReviewStep genres={genres} folderName={folder?.editable?.title || "this folder"} destinationMode={effectiveDestinationMode} sharedMediaChoice={sharedMediaChoice} sortOptionIds={sortOptionIds} advanced={advanced} drafts={outputDrafts} duplicates={duplicates} folderPlan={folderPlan} buildErrors={built.errors ?? []} applyDiagnostic={applyDiagnostic} configureRef={configureRef} reviewExpanded={reviewExpanded} onRemoveGenre={chooseGenre} onDestinationChange={(value) => { setDestinationMode(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onSortChange={(value) => { setSortOptionIds(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onOpenSecondary={openSecondary} onToggleReview={() => setReviewExpanded((value) => !value)} /><div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-genre" disabled={!previewAvailable || isApplying} onClick={openPreview}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Fix the current source fields before previewing.</p> : null}</div>{effectiveDestinationMode === "current-folder" ? <SourceNamesDisclosure naming={naming} disabled={isApplying} /> : null}</> : null}
 						</div>
 						{secondarySurface ? <div className="genre-secondary-surface" data-surface={secondarySurface}><GenreAdvancedSecondarySurface surface={secondarySurface} value={advanced} includedGenres={genres} sharedMediaChoice={sharedMediaChoice} onChange={(value) => { setAdvanced(value); setReviewExpanded(false); setApplyDiagnostic(null); }} onDone={closeSecondary} focusRef={secondaryHeadingRef} /></div> : null}
 						{step === GENRE_SOURCE_STEPS.BROWSE ? <footer className="add-source-actions"><span className="genre-selection-count" role="status">{selection.length} genre{selection.length === 1 ? "" : "s"} selected</span><button className="editor-apply" type="submit" disabled={selection.length === 0}>Continue to Configure</button></footer> : null}
-						{step === GENRE_SOURCE_STEPS.CONFIGURE_REVIEW && !secondarySurface ? <footer className={`add-source-actions genre-review-actions${effectiveDestinationMode === "current-folder" && duplicates.duplicateDrafts.length > 0 ? " add-source-override-actions" : ""}`}><button className="editor-apply" type="submit" disabled={isApplying || !built.ok || normalCount === 0}>{primaryLabel}</button>{effectiveDestinationMode === "current-folder" && duplicates.duplicateDrafts.length > 0 ? <button className="editor-cancel people-add-all" type="button" disabled={isApplying || !built.ok} data-action="add-all-genres-anyway" onClick={() => applyGenres(true)}>{drafts.length === 1 ? "Add anyway" : "Add all anyway"}</button> : null}</footer> : null}
+						{step === GENRE_SOURCE_STEPS.CONFIGURE_REVIEW && !secondarySurface ? <footer className={`add-source-actions genre-review-actions${effectiveDestinationMode === "current-folder" && duplicates.duplicateDrafts.length > 0 ? " add-source-override-actions" : ""}`}><button className="editor-apply" type="submit" disabled={isApplying || naming.invalid || !built.ok || normalCount === 0}>{primaryLabel}</button>{effectiveDestinationMode === "current-folder" && duplicates.duplicateDrafts.length > 0 ? <button className="editor-cancel people-add-all" type="button" disabled={isApplying || naming.invalid || !built.ok} data-action="add-all-genres-anyway" onClick={() => applyGenres(true)}>{drafts.length === 1 ? "Add anyway" : "Add all anyway"}</button> : null}</footer> : null}
 					</form>
 				</section>
 			</div>

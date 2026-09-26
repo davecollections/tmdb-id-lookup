@@ -1,4 +1,6 @@
 import { destinationContext } from "./creation-context.js";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import {
 	useEffect,
 	useLayoutEffect,
@@ -14,10 +16,9 @@ import {
 	createSourceSubmissionGate,
 	INITIAL_ASYNC_REQUEST_STATE,
 	MOVIE_FRANCHISE_SOURCE_MODE,
-	movieFranchiseTitleDraftKey,
+	movieFranchiseDuplicateIdentity,
 	parseTmdbCollectionInput,
 	requestSourceTitlePreview,
-	resolveMovieFranchiseTitleDraft,
 	sourceTitlePreviewRequest,
 } from "../source-add/index.js";
 import {
@@ -41,6 +42,8 @@ import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
 export const ADD_SOURCE_SEARCH_DEBOUNCE_MS = 300;
 export { ADD_SOURCE_STEPS };
+
+function franchiseNameKey(draft) { return movieFranchiseDuplicateIdentity(draft.editable); }
 
 const usePrePaintLayoutEffect = typeof window === "undefined"
 	? useEffect
@@ -408,15 +411,13 @@ export function AddSourceSearchStep({
 export function AddSourceReviewStep({
 	selectedResult,
 	title,
-	titleInputRef,
-	titleError,
+	naming,
+	isApplying = false,
 	duplicate,
 	applyDiagnostic,
 	previewAvailable,
-	onTitleChange,
 	onPreview,
 }) {
-	const nameIsAutoManaged = title === selectedResult.name;
 	return (
 		<section className="add-source-review" aria-labelledby="add-source-review-title">
 			{duplicate ? (
@@ -455,27 +456,7 @@ export function AddSourceReviewStep({
 					<p className="add-source-review-count">
 						{selectedResult.movieCount} title{selectedResult.movieCount === 1 ? "" : "s"} in this collection
 					</p>
-					<div className="editor-field">
-						<label htmlFor="add-source-title-input">Source name</label>
-						<input
-							ref={titleInputRef}
-							id="add-source-title-input"
-							type="text"
-							value={title}
-							data-add-source-field="title"
-							aria-invalid={titleError ? "true" : undefined}
-							aria-describedby="add-source-title-help add-source-title-error"
-							onChange={onTitleChange}
-						/>
-						<p className="editor-field-help" id="add-source-title-help">
-							{nameIsAutoManaged
-								? "This name updates automatically until you customise it."
-								: "This is the name shown in Nuvio. You can customise it."}
-						</p>
-						<p className="editor-field-error" id="add-source-title-error" role={titleError ? "alert" : undefined}>
-							{titleError?.message ?? ""}
-						</p>
-					</div>
+					<p className="add-source-output-title">Source: <strong>{title}</strong></p>
 					<SourceRecipe />
 					<div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
 						<button type="button" aria-haspopup="dialog" data-action="preview-add-source" disabled={!previewAvailable} onClick={onPreview}>Preview titles</button>
@@ -483,6 +464,7 @@ export function AddSourceReviewStep({
 					</div>
 				</div>
 			</div>
+			{naming ? <SourceNamesDisclosure naming={naming} disabled={isApplying} context={() => `${selectedResult.name} · Movies`} /> : null}
 		</section>
 	);
 }
@@ -525,7 +507,6 @@ export function AddSourceDialog({
 	const [selectionState, setSelectionState] = useState(INITIAL_ASYNC_REQUEST_STATE);
 	const [selectionCandidate, setSelectionCandidate] = useState(null);
 	const [selectedResult, setSelectedResult] = useState(null);
-	const [title, setTitle] = useState("");
 	const [duplicate, setDuplicate] = useState(null);
 	const [applyDiagnostic, setApplyDiagnostic] = useState(null);
 	const [isApplying, setIsApplying] = useState(false);
@@ -536,8 +517,6 @@ export function AddSourceDialog({
 	const dialogRef = useRef(null);
 	const scrollRef = useRef(null);
 	const inputRef = useRef(null);
-	const titleInputRef = useRef(null);
-	const titleDraftsRef = useRef({});
 	const selectionErrorRef = useRef(null);
 	const lookupCoordinatorRef = useRef(null);
 	const selectionCoordinatorRef = useRef(null);
@@ -564,9 +543,10 @@ export function AddSourceDialog({
 		[input],
 	);
 	const draftResult = useMemo(
-		() => buildMovieFranchiseSourceDraft(selectedResult, title),
-		[selectedResult, title],
+		() => buildMovieFranchiseSourceDraft(selectedResult),
+		[selectedResult],
 	);
+	const naming = useSourceNames(draftResult.ok ? [draftResult.draft] : [], franchiseNameKey);
 	const previewCandidate = useMemo(() => draftResult.ok
 		? Object.freeze({ sourceDraft: draftResult.draft, request: sourceTitlePreviewRequest("collection", draftResult.draft) })
 		: null, [draftResult]);
@@ -582,13 +562,11 @@ export function AddSourceDialog({
 		selectionState,
 		"Validating the selected TMDB collection…",
 	);
-	const titleError = selectedResult && !draftResult.ok
-		? draftResult.errors.find((entry) => entry.path.endsWith(".title")) ?? null
-		: null;
 	const step = navigationState.step;
 	const applyDisabled = (
 		step !== ADD_SOURCE_STEPS.REVIEW
 		|| !draftResult.ok
+		|| naming.invalid
 		|| lookupState.status === "loading"
 		|| selectionState.status === "loading"
 		|| isApplying
@@ -634,7 +612,7 @@ export function AddSourceDialog({
 				return;
 			}
 			setSelectedResult(outcome.result.data);
-			setTitle(resolveMovieFranchiseTitleDraft(outcome.result.data, titleDraftsRef.current));
+
 			setDuplicate(null);
 			setApplyDiagnostic(null);
 			setNavigationState((current) => enterAddSourceReview(
@@ -642,7 +620,7 @@ export function AddSourceDialog({
 				outcome.result.data.id,
 				0,
 			));
-			queueMicrotask(() => focusElementWithoutScroll(titleInputRef.current));
+			queueMicrotask(() => focusElementWithoutScroll(dialogRef.current));
 		}, ADD_SOURCE_SEARCH_DEBOUNCE_MS);
 
 		return () => {
@@ -707,21 +685,21 @@ export function AddSourceDialog({
 		setSelectedResult(null);
 		setSelectionCandidate(null);
 		setSelectionState(INITIAL_ASYNC_REQUEST_STATE);
-		setTitle("");
+
 		clearApprovalAndDiagnostics();
 		selectionCoordinatorRef.current.cancel({ notify: false });
 	}
 
 	function showReview(result) {
 		setSelectedResult(result);
-		setTitle(resolveMovieFranchiseTitleDraft(result, titleDraftsRef.current));
+
 		clearApprovalAndDiagnostics();
 		setNavigationState((current) => enterAddSourceReview(
 			current,
 			result.id,
 			scrollRef.current?.scrollTop ?? current.searchScrollTop,
 		));
-		queueMicrotask(() => focusElementWithoutScroll(titleInputRef.current));
+		queueMicrotask(() => focusElementWithoutScroll(dialogRef.current));
 	}
 
 	async function validateSearchResult(result) {
@@ -746,7 +724,7 @@ export function AddSourceDialog({
 		setNavigationState(selection.navigationState);
 		setSelectionCandidate(result);
 		setSelectedResult(null);
-		setTitle("");
+
 		clearApprovalAndDiagnostics();
 		const outcome = await selection.request;
 		const details = selectedCollectionDetailsFromOutcome(outcome);
@@ -766,7 +744,7 @@ export function AddSourceDialog({
 		setSelectedResult(null);
 		setSelectionCandidate(null);
 		setSelectionState(INITIAL_ASYNC_REQUEST_STATE);
-		setTitle("");
+
 		setNavigationState(createAddSourceNavigationState());
 		clearApprovalAndDiagnostics();
 	}
@@ -779,10 +757,11 @@ export function AddSourceDialog({
 			|| !submissionGateRef.current.begin()
 		) return;
 
+		naming.commit();
 		setIsApplying(true);
 		let result;
 		try {
-			result = await onApply(draftResult.draft, {
+			result = await onApply(naming.drafts[0], {
 				duplicateApprovalIdentity: duplicate?.identity ?? null,
 			});
 		} catch {
@@ -955,19 +934,12 @@ export function AddSourceDialog({
 							) : (
 								<AddSourceReviewStep
 									selectedResult={selectedResult}
-									title={title}
-									titleInputRef={titleInputRef}
-									titleError={titleError}
+									title={naming.drafts[0]?.editable.title}
+									naming={naming}
+									isApplying={isApplying}
 									duplicate={duplicate}
 									applyDiagnostic={applyDiagnostic}
 									previewAvailable={previewCandidate !== null}
-									onTitleChange={(event) => {
-										const nextTitle = event.target.value;
-										setTitle(nextTitle);
-										const draftKey = movieFranchiseTitleDraftKey(selectedResult);
-										if (draftKey !== null) titleDraftsRef.current = { ...titleDraftsRef.current, [draftKey]: nextTitle };
-										setApplyDiagnostic(null);
-									}}
 									onPreview={openPreview}
 								/>
 							)}
