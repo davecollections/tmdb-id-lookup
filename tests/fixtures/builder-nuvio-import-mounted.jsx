@@ -66,6 +66,7 @@ async function mount({ existing = false, screen = "welcome", result = "ready", o
 	root = createRoot($("#root")); root.render(<StrictMode><BuilderApp controller={controller} initialScreen={screen} nuvioConnection={connection} /></StrictMode>);
 	await frame();
 	if (!open) return;
+	if (screen === "workspace") await click($("[data-action=open-workspace-import]"));
 	await click($("[data-action=open-nuvio-import]"));
 	assert(document.activeElement === $("[data-nuvio-dialog] h2"), "Heading focus avoids unexpected keyboard");
 	assert(document.body.style.position === "fixed", "Modal locks the document");
@@ -97,7 +98,7 @@ function geometry() {
 	const owners = [...dialog.querySelectorAll("*")].filter((node) => ["auto", "scroll"].includes(getComputedStyle(node).overflowY));
 	assert(document.documentElement.scrollWidth <= innerWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1, "No horizontal overflow");
 	assert(rect.left >= 0 && rect.right <= innerWidth + 1 && rect.top >= 0 && rect.bottom <= innerHeight + 1, "Dialog fits viewport");
-	assert(owners.length === 1 && owners[0] === $(".nuvio-dialog-content"), "One content scroll owner");
+	assert(owners.length === 1 && owners[0] === $("[data-nuvio-dialog] .nuvio-dialog-content"), "One content scroll owner");
 	assert([...dialog.querySelectorAll("button")].filter((node) => node.getClientRects().length).every((node) => node.getBoundingClientRect().height >= 43), "Large action targets");
 	return { width: innerWidth, height: innerHeight, scrollOwners: owners.length, overflow: false };
 }
@@ -212,6 +213,7 @@ window.runNuvioLocalCases = async () => {
 	assert(controller.getState().project.collections.length === 2 && !$("[data-nuvio-dialog]"), "Home import enters workspace");
 	assert(controller.getState().project.collections[0].rawImported.custom.preserve[1] === false, "Unknown fields preserved");
 	assert(document.activeElement === $("[data-builder-shell] h1"), "Import focuses workspace heading");
+	await click($("[data-action=open-workspace-import]"));
 	await click($("[data-action=open-nuvio-import]"));
 	assert($(".nuvio-login"), "Next network operation requires login after expiry");
 	await click(button("Disconnect"));
@@ -325,11 +327,161 @@ window.prepareNuvioScreen = async (stage = "review") => {
 		assert(getComputedStyle(selectedCard).outlineStyle === "none", "Selected state does not imply keyboard focus");
 		assert(getComputedStyle(selectedCard).boxShadow.includes("inset"), "Shared selected state retains its structural inset");
 	}
-	$(".nuvio-dialog-content").scrollTop = stage === "review" ? $(".nuvio-dialog-content").scrollHeight : 0; await frame();
+	$("[data-nuvio-dialog] .nuvio-dialog-content").scrollTop = stage === "review" ? $("[data-nuvio-dialog] .nuvio-dialog-content").scrollHeight : 0; await frame();
 	return geometry();
 };
-window.checkNuvioClosed = () => !$("[data-nuvio-dialog]") && document.body.style.position !== "fixed" && document.activeElement === $("[data-action=open-nuvio-import]");
+window.checkNuvioClosed = () => !$("[data-nuvio-dialog]") && (document.body.style.position === "fixed") === Boolean($("[data-workspace-import]")) && document.activeElement === $("[data-action=open-nuvio-import]");
 window.nuvioFixtureReady = true;
+
+// Workspace checks exercise only local project JSON and the real, unsubmitted
+// Nuvio login surface. No injected external transport or fabricated media URLs.
+const workspaceIncoming = [{ id: "local-c", title: "Movie nights", future: "incoming", folders: [
+	{ id: "local-a", title: "Classics", coverEmoji: "📽️", sources: [] },
+	{ id: "local-b", title: "Discover", coverEmoji: "🎬", sources: [{ provider: "tmdb", tmdbSourceType: "CUSTOM", title: "Preserved source" }] },
+	{ id: "local-cf", title: "Favourites", coverEmoji: "🍿", sources: [] },
+] }];
+const workspaceExisting = [{ ...workspaceIncoming[0], future: "existing", folders: workspaceIncoming[0].folders.map((folder, index) => ({ ...folder, coverEmoji: ["🎞️", null, "🍿"][index] })) }];
+const workspaceDialog = () => $("[data-workspace-import]");
+const importTrigger = () => $("[data-action=open-workspace-import]");
+async function mountWorkspaceImport({ empty = false, open = true } = {}) {
+	await mount({ open: false, screen: "workspace", localOnly: true });
+	if (!empty) { assert(controller.importValue(workspaceExisting).ok, "Local baseline imported"); await frame(); }
+	assert(importTrigger().textContent === "Import" && importTrigger().getAttribute("aria-haspopup") === "dialog", "Workspace trigger has the correct accessible name");
+	if (open) await click(importTrigger());
+}
+async function setWorkspaceText(text) {
+	const field = $("#builder-import-text");
+	Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(field, text);
+	field.dispatchEvent(new Event("input", { bubbles: true })); await frame();
+}
+async function setWorkspaceFile(value = workspaceIncoming) {
+	const data = new DataTransfer(); const file = new File([JSON.stringify(value)], "movie-nights.json", { type: "application/json" }); data.items.add(file);
+	const input = $("#builder-import-file"); input.files = data.files; input.dispatchEvent(new Event("change", { bubbles: true })); await frame(); return file;
+}
+async function workspaceReview(method = "json") {
+	await click($(`[data-action=choose-import-${method}]`));
+	if (method === "file") await setWorkspaceFile(); else await setWorkspaceText(JSON.stringify(workspaceIncoming, null, 2));
+	await click(button(method === "file" ? "Review selected file" : "Review pasted JSON"));
+	await until(() => workspaceDialog().querySelector(".nuvio-review"));
+}
+async function workspaceChoice(value) {
+	await click(workspaceDialog().querySelector(`input[type=radio][value="${value}"]`));
+}
+function artworkCountsText() { return workspaceDialog().querySelector("[data-artwork-counts]").textContent; }
+function workspaceGeometry() {
+	const modal = $("[data-nuvio-dialog]") ?? workspaceDialog(); const rect = modal.getBoundingClientRect();
+	const content = modal.querySelector(".nuvio-dialog-content");
+	const owners = [...modal.querySelectorAll("*")].filter((node) => node.getClientRects().length && node.tagName !== "TEXTAREA" && ["auto", "scroll"].includes(getComputedStyle(node).overflowY));
+	assert(document.documentElement.scrollWidth <= innerWidth + 1 && modal.scrollWidth <= modal.clientWidth + 1, "Import has no horizontal overflow");
+	assert(rect.top >= -1 && rect.bottom <= innerHeight + 1 && rect.left >= -1 && rect.right <= innerWidth + 1, "Import fits the visible viewport");
+	assert(owners.length === 1 && owners[0] === content, "Import has one content scroll owner");
+	assert([...modal.querySelectorAll("button, .nuvio-choice")].filter(node => node.getClientRects().length).every(node => node.getBoundingClientRect().height >= 43), "Visible actions retain touch targets");
+	assert(document.querySelectorAll('[role="dialog"][aria-modal="true"]').length === 1, "Only one active dialog");
+	const footer = modal.querySelector(".nuvio-dialog-footer");
+	if (footer) assert(footer.getBoundingClientRect().bottom <= innerHeight + 1, "Footer remains reachable");
+	return { passed: true, width: innerWidth, height: innerHeight, scrollOwner: true };
+}
+
+window.runWorkspaceImportCases = async () => {
+	await mountWorkspaceImport(); const initial = controller.getState(); const trigger = importTrigger();
+	assert([...workspaceDialog().querySelectorAll(".welcome-import-methods strong")].map(n => n.textContent).join("|") === "Import from Nuvio|Import from file|Import from JSON", "Method order matches Welcome");
+	await click($("[data-action=choose-import-file]")); const chosen = await setWorkspaceFile(); const fileInput = $("#builder-import-file");
+	await click($("[data-action=choose-import-json]")); await setWorkspaceText("retained draft");
+	await click($("[data-action=open-nuvio-import]"));
+	assert($(".nuvio-login") && document.querySelectorAll('[role="dialog"]').length === 1, "Real Nuvio login hands off without two active dialogs");
+	await click($("[aria-label='Close Nuvio import']"));
+	assert(document.activeElement === $("[data-action=open-nuvio-import]"), "Nuvio returns focus to its method trigger");
+	assert($("#builder-import-text").value === "retained draft" && $("#builder-import-file") === fileInput && fileInput.files[0] === chosen, "Both local drafts and native file survive handoff");
+	await click(button("Cancel")); assert(controller.getState() === initial && document.activeElement === trigger && !document.body.style.position, "Cancel is nonmutating and restores Import focus/body");
+	for (const method of ["file", "json"]) for (const mode of ["add", "merge", "replace"]) {
+		await mountWorkspaceImport(); const before = controller.getState(); await workspaceReview(method);
+		assert(controller.getState() === before && button("Import to Dingo").disabled, "Local review precedes mutation and requires a choice");
+		const reviewNode = workspaceDialog().querySelector(".nuvio-review");
+		$("#builder-import-file-panel").requestSubmit(); $("#builder-import-json-panel").requestSubmit(); await frame();
+		assert(workspaceDialog().querySelector(".nuvio-review") === reviewNode && controller.getState() === before, "Hidden local forms cannot replace an active review");
+		assert(workspaceDialog().textContent.includes("Some Sources have limited editing"), "Local warnings remain visible");
+		await workspaceChoice(mode);
+		assert(Boolean(workspaceDialog().querySelector(".merge-artwork-policies")) === (mode === "merge"), "Artwork appears only for Merge");
+		if (mode === "merge") {
+			assert(workspaceDialog().querySelector('input[value="keep-existing"]').checked, "Keep existing defaults");
+			assert(artworkCountsText().includes("2 existing fields kept · 0 missing fields filled · 0 existing fields replaced"), "Keep counts are fields");
+			await workspaceChoice("fill-missing"); assert(artworkCountsText().includes("2 existing fields kept · 1 missing field filled · 0 existing fields replaced"), "Fill changes preview without replacement");
+			await workspaceChoice("prefer-incoming"); assert(artworkCountsText().includes("1 existing field kept · 1 missing field filled · 1 existing field replaced"), "Prefer separates fills/replacements");
+			assert(controller.getState() === before, "Policy switching is preview-only");
+			await workspaceChoice("add"); assert(!workspaceDialog().querySelector(".merge-artwork-policies"), "Add hides retained policy");
+			await workspaceChoice("merge"); assert(workspaceDialog().querySelector('input[value="prefer-incoming"]').checked, "Same snapshot retains reviewed policy");
+		}
+		await click(button("Import to Dingo"));
+		if (mode === "replace") {
+			assert(controller.getState() === before && document.activeElement === button("Keep current work"), "Replace starts on the safe action and is not applied early");
+			await click(button("Keep current work")); assert(controller.getState() === before, "Keep current work cancels Replace");
+			await click(button("Import to Dingo")); await click(button("Replace current project"));
+		}
+		assert(!workspaceDialog() && controller.getState().revision === before.revision + 1, "Final Apply commits one revision and closes");
+		assert(document.activeElement === importTrigger(), "Apply restores Import focus even after project replacement remounts the workspace");
+		const project = controller.getState().project;
+		assert(project.collections.length === (mode === "add" ? 2 : 1), "Exact chosen mode applied");
+		if (mode === "merge") assert(project.collections[0].folders[0].editable.coverEmoji === "📽️" && project.collections[0].rawImported.future === "existing", "Exact reviewed policy applied with raw evidence preserved");
+	}
+	await mountWorkspaceImport(); await workspaceReview(); await workspaceChoice("merge"); await workspaceChoice("prefer-incoming");
+	await click([...workspaceDialog().querySelectorAll("button")].find(n => n.textContent.includes("Back")));
+	await setWorkspaceText(JSON.stringify(workspaceIncoming)); await click(button("Review pasted JSON")); await until(() => workspaceDialog().querySelector(".nuvio-review"));
+	assert(button("Import to Dingo").disabled, "New review resets mode"); await workspaceChoice("merge"); assert(workspaceDialog().querySelector('input[value="keep-existing"]').checked, "New snapshot resets artwork policy");
+	for (const mode of ["add", "merge", "replace"]) {
+		await workspaceChoice(mode); const project = controller.getState().project;
+		controller.updateNode(project.collections[0].internalId, { pinToTop: !project.collections[0].editable.pinToTop }); await frame();
+		const changed = controller.getState(); assert(button("Import to Dingo").disabled && button("Review current project"), "Stale review cannot apply");
+		await click(button("Review current project")); assert(controller.getState() === changed && button("Import to Dingo").disabled, "Explicit refresh is nonmutating and requires a new mode");
+	}
+	await click(button("Cancel"));
+	await mountWorkspaceImport({ empty: true }); const empty = controller.getState(); await workspaceReview();
+	assert(!workspaceDialog().querySelector(".nuvio-import-modes") && !workspaceDialog().querySelector(".merge-artwork-policies"), "Empty workspace has no meaningless modes/policy");
+	assert(controller.getState() === empty, "Empty review still waits for final action"); await click(button("Import to Dingo"));
+	assert(controller.getState().project.collections.length === 1 && !controller.getState().dirty, "Empty final import opens clean project");
+	await mountWorkspaceImport(); const untouched = controller.getState();
+	await click($("[data-action=choose-import-file]")); await click(button("Review selected file"));
+	await until(() => workspaceDialog().querySelector('[role="alert"]'));
+	assert(workspaceDialog().textContent.includes("Choose a JSON file before importing."), "Missing file diagnostic");
+	for (const kind of ["unsupported", "oversized", "unreadable", "invalid"]) {
+		const data = new DataTransfer(); const chosen = new File([kind === "invalid" ? "[" : "[]"], kind === "unsupported" ? "notes.txt" : "collections.json", { type: kind === "unsupported" ? "text/plain" : "application/json" });
+		if (kind === "oversized") Object.defineProperty(chosen, "size", { value: 10 * 1024 * 1024 + 1 });
+		if (kind === "unreadable") Object.defineProperty(chosen, "text", { value: async () => { throw Error("private read failure"); } });
+		data.items.add(chosen); $("#builder-import-file").files = data.files; $("#builder-import-file").dispatchEvent(new Event("change", { bubbles: true })); await frame();
+		await click(button("Review selected file")); await until(() => workspaceDialog().querySelector('[role="alert"]'));
+		assert(controller.getState() === untouched && !workspaceDialog().querySelector(".nuvio-review"), `${kind} file cannot mutate or review`);
+	}
+	await click($("[data-action=choose-import-json]"));
+	for (const draft of ["", "[", '{"folders":[]}']) {
+		await setWorkspaceText(draft); await click(button("Review pasted JSON")); await until(() => workspaceDialog().querySelector('[role="alert"]'));
+		assert(controller.getState() === untouched && !workspaceDialog().querySelector(".nuvio-review"), "Invalid pasted JSON cannot mutate or review");
+	}
+	await workspaceReview(); assert(controller.getState() === untouched, "Recovery review is detached"); await click(button("Cancel")); assert(controller.getState() === untouched, "Cancel reviewed snapshot keeps state exact");
+	await click(importTrigger()); await click($("[data-action=choose-import-file]")); const delayed = await setWorkspaceFile(); let finishRead;
+	Object.defineProperty(delayed, "text", { value: () => new Promise(resolve => { finishRead = resolve; }) });
+	await click(button("Review selected file")); await until(() => Boolean(finishRead));
+	assert([...workspaceDialog().querySelectorAll(".welcome-import-methods button")].every(n => n.disabled), "Async read locks method changes");
+	await click(button("Cancel")); finishRead(JSON.stringify(workspaceIncoming)); await frame();
+	assert(!workspaceDialog() && controller.getState() === untouched, "Late file read after Cancel has no effect");
+	return { passed: true, externalServiceExercised: false };
+};
+
+window.prepareWorkspaceImportScreen = async (stage, enlarged = false) => {
+	document.documentElement.style.fontSize = enlarged ? "32px" : "";
+	await mountWorkspaceImport({ open: stage !== "workspace" });
+	if (stage === "workspace") return { passed: true, width: innerWidth, height: innerHeight };
+	if (["file", "json"].includes(stage)) {
+		await click($(`[data-action=choose-import-${stage}]`));
+		if (stage === "file") await setWorkspaceFile(); else await setWorkspaceText(JSON.stringify(workspaceIncoming, null, 2));
+	} else if (stage === "nuvio") await click($("[data-action=open-nuvio-import]"));
+	else if (stage !== "methods") {
+		await workspaceReview();
+		if (stage.startsWith("merge")) { await workspaceChoice("merge"); if (stage !== "merge-keep") await workspaceChoice(stage === "merge-fill" ? "fill-missing" : "prefer-incoming"); }
+		if (stage === "replace") { await workspaceChoice("replace"); await click(button("Import to Dingo")); }
+	}
+	return workspaceGeometry();
+};
+window.workspaceImportGeometry = workspaceGeometry;
+window.workspaceImportClosed = () => !workspaceDialog() && !$("[data-nuvio-dialog]") && document.activeElement === importTrigger() && !document.body.style.position;
 
 function assertSharedButton(buttonNode, className, properties = ["backgroundColor", "borderTopColor", "borderTopWidth", "borderRadius", "padding", "fontSize", "fontWeight", "minHeight", "color"]) {
 	const container = document.createElement("div"); container.style.fontSize = getComputedStyle(buttonNode.parentElement).fontSize;

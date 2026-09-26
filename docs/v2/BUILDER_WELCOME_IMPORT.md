@@ -10,6 +10,30 @@ The `/builder/` entry opens the welcome screen for **Dingo’s Collection Builde
 
 The controller remains the sole owner of project state, while the importer owns JSON parsing, structural validation, source classification, ordering and unknown-field preservation. This document describes Welcome and local File/JSON import; the [connection contract](./BUILDER_NUVIO_CONNECTION.md) owns connected Import and PIN behavior.
 
+## Workspace Import and Merge artwork (#259)
+
+The workspace header now says **Import**; **Export & Send** is unchanged. The modal reuses Welcome's `ImportMethods` presentation, method order, native file control and pasted-text form. It does not return to Home. Workspace actions read **Review selected file** and **Review pasted JSON**; Welcome keeps direct-import actions and Start a new collection behavior.
+
+Workspace review calls the same `parseNuvioJsonText` importer without a controller, retaining frozen exact incoming Collection values, counts, warnings and limited-source notes. It neither serializes/rewrites the snapshot nor uploads JSON. File type, exact 10 MiB limit, filename title and sanitized diagnostics remain unchanged. Drafts and the native file input stay mounted through method switching/Nuvio handoff; hidden forms cannot focus or submit. The local surface releases its trap/body lock while Nuvio is active. Return restores the method trigger and drafts; closing restores workspace Import. Cancel during a file read invalidates late completion.
+
+`useCollectionImportReview`, `CollectionImportReview` and `importCollectionSnapshot` share the review/application contract. The Nuvio adapter additionally verifies exact connection-snapshot authority. All sources use `appendImportedCollections` for Add, `mergeImportedCollections(value, { artworkPolicy })` for Merge, and `importValue` for Replace. Replace requires an explicit irreversible confirmation initially focused on **Keep current work**. The existing Collections-or-dirty rule defines current work; an empty workspace reviews then opens on the final action without mode/policy choices.
+
+All modes bind the reviewed project reference. Changed content blocks Apply until **Review current project** resets the choices; selection-only changes are harmless. New incoming snapshots reset mode and artwork policy. Policy/mode switching is preview-only and never rereads a file/refetches Nuvio.
+
+### Artwork in exact matches
+
+| Policy | Matched-node result |
+| --- | --- |
+| **Keep existing artwork** (default / `keep-existing`) | Keep every existing field exactly, including absence, blanks, nulls and unsupported values. |
+| **Fill missing artwork** (`fill-missing`) | Fill missing fields from usable incoming text; never replace usable existing artwork. |
+| **Prefer incoming artwork** (`prefer-incoming`) | Fill missing fields or replace different usable text when usable incoming text exists; otherwise retain existing artwork. |
+
+The allowlist is Collection `backdropImageUrl` and Folder `coverImageUrl`, `coverEmoji`, `heroBackdropUrl`, `heroVideoUrl`, `titleLogoUrl`, `focusGifUrl`. Hidden/compatibility-only fields participate without new ordinary editing controls. Missing means absent/null/empty/whitespace-only string. Usable means a nonblank string under the existing text contract, copied exactly without new URL validation, trimming or normalization. Other non-null JSON types remain unsupported/preserved; existing unsupported values are never overwritten, and unsupported incoming values do nothing.
+
+This is field-by-field. Only changed allowlisted fields gain editable overlays. Existing `rawImported` remains unchanged; incoming unknown fields never overlay matched nodes. Identical values stay unchanged. All non-artwork settings (IDs, titles, layout, shape, title visibility, Focus GIF enabled), matching, Source equality/dedupe and order remain current. Unmatched inserted nodes retain complete incoming data through the existing import contract.
+
+The same pure `planCollectionMerge(current, value, { artworkPolicy })` supplies preview and Apply. Its separate `artworkCounts: { kept, filled, replaced }` counts fields on matched nodes: retained usable existing text; missing → usable; and different usable → usable. Missing-both and unsupported existing fields do not count. Identical usable text counts as kept. The controller returns these counts beside unchanged structural counts and commits at most one revision. Unknown policies fail closed; omitted policy defaults to Keep existing.
+
 ## Screen and controller boundary
 
 `builder/src/main.jsx` still creates one controller outside React rendering and passes it to `BuilderApp`. `BuilderApp` subscribes through the existing `useSyncExternalStore` adapter before choosing either the welcome or workspace presentation. The controller is therefore subscribed on both screens and is never replaced during a transition.

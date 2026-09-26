@@ -10,6 +10,7 @@ import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { createNuvioSendCoordinator } from "../nuvio-send/coordinator.js";
 import { useNuvioSendState } from "./use-nuvio-send.js";
 import { ExportCollectionsDialog } from "./ExportCollectionsDialog.jsx";
+import { WorkspaceImportDialog } from "./WorkspaceImportDialog.jsx";
 
 export function BuilderApp({ controller, initialScreen = "welcome", nuvioConnection }) {
 	const state = useBuilderControllerState(controller);
@@ -23,6 +24,8 @@ export function BuilderApp({ controller, initialScreen = "welcome", nuvioConnect
 	}, [initialCreationSession, state]);
 	const [connection] = useState(() => nuvioConnection ?? createNuvioConnection());
 	const [nuvioOpen, setNuvioOpen] = useState(false);
+	const [workspaceImportOpen, setWorkspaceImportOpen] = useState(false);
+	const workspaceImportTrigger = useRef(null);
 	const [nuvioImportTarget, setNuvioImportTarget] = useState(null);
 	const [sendCoordinator, setSendCoordinator] = useState(null);
 	const sendState = useNuvioSendState(sendCoordinator);
@@ -49,8 +52,11 @@ export function BuilderApp({ controller, initialScreen = "welcome", nuvioConnect
 	useBeforePaint(() => {
 		if (nuvioOpen || sendStatusOpen || !restoreFocus.current) return;
 		restoreFocus.current = false;
-		focusElementWithoutScroll(returnFocus.current?.isConnected ? returnFocus.current : document.querySelector("[data-builder-shell] .builder-product-title"));
-	}, [nuvioOpen, sendStatusOpen, screen]);
+		focusElementWithoutScroll(returnFocus.current?.isConnected ? returnFocus.current
+			: returnFocus.current && returnFocus.current === workspaceImportTrigger.current
+				? document.querySelector('[data-action="open-workspace-import"]')
+				: document.querySelector("[data-builder-shell] .builder-product-title"));
+	}, [nuvioOpen, sendStatusOpen, workspaceImportOpen, screen]);
 	useBeforePaint(() => {
 		if (screen !== "welcome" || !restoreStartFocus.current) return;
 		restoreStartFocus.current = false;
@@ -69,6 +75,8 @@ export function BuilderApp({ controller, initialScreen = "welcome", nuvioConnect
 		setScreen("welcome");
 	}
 	function openNuvio(event) { returnFocus.current = event.currentTarget; setNuvioImportTarget(null); connection.checkExpiry(); setNuvioOpen(true); }
+	function openWorkspaceImport(event) { workspaceImportTrigger.current = event.currentTarget; setWorkspaceImportOpen(true); }
+	function closeWorkspaceImport() { returnFocus.current = workspaceImportTrigger.current; restoreFocus.current = true; setWorkspaceImportOpen(false); }
 	function openMergeFromNuvio(profile, origin = returnFocus.current) {
 		returnFocus.current = origin; restoreFocus.current = false;
 		setSendStatusOpen(false); setNuvioImportTarget(profile); setNuvioOpen(true);
@@ -83,10 +91,10 @@ export function BuilderApp({ controller, initialScreen = "welcome", nuvioConnect
 	function closeNuvio() { connection.cancelReview(); restoreFocus.current = true; setNuvioOpen(false); }
 	function openSendStatus(event, view = "send") { returnFocus.current = event.currentTarget; setSendStatusOpen(view); }
 	function closeSendStatus() { restoreFocus.current = true; setSendStatusOpen(false); }
-	function imported(message) { returnFocus.current = null; setImportStatus({ message, project: controller.getState().project }); enterWorkspace(); closeNuvio(); }
+	function imported(message) { returnFocus.current = workspaceImportOpen ? workspaceImportTrigger.current : null; setWorkspaceImportOpen(false); setImportStatus({ message, project: controller.getState().project }); enterWorkspace(); closeNuvio(); }
 
 	return <>{screen === "workspace"
-		? <BuilderWorkspace key={state.project.internalId} controller={controller} state={state} connection={connection} sendCoordinator={sendCoordinator} sendState={sendState} onOpenSendStatus={openSendStatus} onMergeFromNuvio={openMergeFromNuvio} initialCreationSession={isUntouchedWelcomeCreation(initialCreationSession, state) ? initialCreationSession : null} onReturnHome={returnHome} onOpenNuvio={openNuvio} nuvioOpen={nuvioOpen || sendStatusOpen} nuvioImportStatus={importStatus?.project === state.project ? importStatus.message : ""} />
+		? <BuilderWorkspace key={state.project.internalId} controller={controller} state={state} connection={connection} sendCoordinator={sendCoordinator} sendState={sendState} onOpenSendStatus={openSendStatus} onMergeFromNuvio={openMergeFromNuvio} initialCreationSession={isUntouchedWelcomeCreation(initialCreationSession, state) ? initialCreationSession : null} onReturnHome={returnHome} onOpenImport={openWorkspaceImport} nuvioOpen={nuvioOpen || sendStatusOpen || workspaceImportOpen} nuvioImportStatus={importStatus?.project === state.project ? importStatus.message : ""} />
 		: (
 			<BuilderWelcome
 				controller={controller}
@@ -97,6 +105,7 @@ export function BuilderApp({ controller, initialScreen = "welcome", nuvioConnect
 				onOpenSendStatus={openSendStatus}
 				onEnterWorkspace={enterWorkspace}
 			/>
-		)}{nuvioOpen ? <NuvioConnectionDialog connection={connection} controller={controller} builderState={state} initialProfile={nuvioImportTarget} onClose={closeNuvio} onImported={imported} /> : null}
+		)}{workspaceImportOpen ? <WorkspaceImportDialog controller={controller} builderState={state} suspended={nuvioOpen} onOpenNuvio={openNuvio} onClose={closeWorkspaceImport} onImported={imported} /> : null}
+		{nuvioOpen ? <NuvioConnectionDialog connection={connection} controller={controller} builderState={state} initialProfile={nuvioImportTarget} onClose={closeNuvio} onImported={imported} /> : null}
 		{sendStatusOpen ? <ExportCollectionsDialog controller={controller} connection={connection} sendCoordinator={sendCoordinator} initialView={sendStatusOpen} onClose={closeSendStatus} onMergeInstead={openMergeFromNuvio} /> : null}</>;
 }

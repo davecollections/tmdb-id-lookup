@@ -1,5 +1,23 @@
 # Repository Testing
 
+## Workspace Import and Merge artwork (#259)
+
+Run `node --test tests/builder-import-merge.test.mjs tests/builder-workspace-import.test.mjs tests/builder-nuvio-import.test.mjs tests/builder-welcome-import.test.mjs` for every artwork field under all policies, absence/null/blank/unsupported values, no-deletion, exact text/raw preservation, unchanged matching/dedupe/order, input-source parity, file limits/errors, stale review, complete planner/controller equality and atomic apply. Related importer/controller/serializer/presentation/export/Send suites provide focused regression evidence.
+
+The existing workspace browser lifecycle and import fixture provide a **local-only** scenario using the production app/controller and real unsubmitted Nuvio login:
+
+```powershell
+$env:WORKSPACE_IMPORT_ONLY = "1"
+$env:WORKSPACE_IMPORT_SCREENSHOT_DIR = "C:\path\outside-repository\import-review"
+node --test --test-name-pattern="mounted workspace Import" tests/builder-bulk-edit-mounted.test.mjs
+Remove-Item Env:WORKSPACE_IMPORT_ONLY
+Remove-Item Env:WORKSPACE_IMPORT_SCREENSHOT_DIR
+```
+
+Its 56 layout states cover 360/384/393/402/412/899/900/901/1280px, 393×400, 200% text, forced colours and reduced motion. Assertions cover local errors/warnings, native-file/pasted draft retention, Nuvio handoff without overlapping dialogs, Add/Merge/Replace, policy counts/reset, stale refresh, safe Replace focus, cancellation/late-read rejection, one content scroll owner, no horizontal overflow, reachable actions and native keyboard focus/restoration. Local examples use emoji payloads and no fabricated external media URLs/responses; zero external requests are asserted. These checks make no authenticated live Nuvio review claim. Pure snapshot-adapter parity and connection tests remain separate evidence; historical owner-authorized mock suites are not substitutes for current live service acceptance.
+
+The existing `NUVIO_WELCOME_ONLY=1` / `--test-name-pattern="mounted Nuvio welcome"` check retains 44 local Welcome layouts and four direct-creation cases. Grouped PR CI supplies final-head coverage without repeatedly running full local validation. Retain frontend/four-fixture guards, production build and Git hygiene.
+
 ## Optional Source naming (#257)
 
 `tests/builder-source-names.test.mjs` exercises untouched and title-only serialized Add output for all nine families, stable recipe keys, dormant/reordered/new candidates, blank/equivalent/invalid title states, destination duplicate/consent independence, Preview parameter identity and retained strict guided validation. Synthetic inputs here are pure contract fixtures, not external-service evidence. Run this with affected Add, hierarchy, capability, serialization and Preview suites plus frontend/fixture guards and the production build.
