@@ -1,5 +1,9 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Find in project (#261, pending merge)
+
+Find is local display-name navigation for current Collections/Folders/Sources. The shared card-title contracts supply meaningful searchable names and safe parent paths; exact internal identity drives selection and current-state stale checks. Search uses a two-character minimum, literal case-insensitive substring matching, exact/prefix/substring tiers and a 100-row render cap with real totals. Successful jumps preserve project/revision/dirty state, focus/scroll the exact card and reveal its own hierarchy level on phones. The modal preserves the controller snapshot until a result is chosen and reuses existing locks, focus and viewport helpers. No Nuvio schema/export behavior, remote provider, Worker, dependency or persistence changes. See [the UI contract](./BUILDER_UI_SHELL.md#find-in-project-261-pending-merge) and [focused validation](../TESTING.md#find-in-project-261-pending-merge). Completion remains pending owner review and merge.
+
 ## Selected-folder optional Source names (#257)
 
 [The Add naming contract](./BUILDER_SOURCE_ADD.md#optional-source-names-in-selected-folder-add-257) is presentation-only: existing serialized title, no naming metadata, unchanged physical/duplicate/Preview identities. Ordinary candidates use existing stable keys; Discover keeps one base name. Blank/reset returns to generated naming. Five generated-title validators permit valid custom titles only at Add boundaries; guided generation stays strict. Source Edit, hierarchy naming, Nuvio transactions and Worker/API contracts are unchanged.

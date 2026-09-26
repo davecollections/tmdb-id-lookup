@@ -71,7 +71,7 @@ function nearestSibling(items, index) {
 	return items[index + 1] ?? items[index - 1] ?? null;
 }
 
-function locateProjectNode(project, internalId) {
+export function locateProjectNode(project, internalId) {
 	for (const collection of project.collections) {
 		if (collection.internalId === internalId) {
 			return {

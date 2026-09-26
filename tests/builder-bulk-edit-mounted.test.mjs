@@ -1,3 +1,4 @@
+import { runProjectFindChecks } from "./helpers/project-find-mounted.mjs";
 import assert from "node:assert/strict";
 import { createValidationTiming } from "../scripts/lib/validation-timing.mjs";
 import { runExportRegressions } from "./helpers/export-mounted.mjs";
@@ -28,6 +29,8 @@ import {
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builderModules = path.join(rootDir, "builder", "node_modules");
+const projectFindOnly = process.env.BUILDER_FIND_ONLY === "1";
+let projectFindMounted;
 const collectionCorrectionOnly = process.env.COLLECTION_FOLDERS_CORRECTION_ONLY === "1";
 const backToTopOnly = process.env.BUILDER_BACK_TO_TOP_ONLY === "1";
 const nuvioSendOnly = process.env.NUVIO_SEND_ONLY === "1";
@@ -329,9 +332,10 @@ async function runMountedPage() {
 		viteCacheDir: null,
 	};
 	const execution = await runWithLifecycleCleanup(async () => {
-		const optimizeDeps = mountedReactOptimizeDeps(nuvioSendOnly ? ["tests/fixtures/builder-nuvio-send-mounted.html", "tests/fixtures/builder-export-collections-mounted.html"] : nuvioImportOnly ? [] : collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
-		if (workspaceImportOnly || nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-import-mounted.html");
-		if (!nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-send-mounted.html");
+		const optimizeDeps = mountedReactOptimizeDeps(projectFindOnly ? ["tests/fixtures/builder-find-mounted.html"] : nuvioSendOnly ? ["tests/fixtures/builder-nuvio-send-mounted.html", "tests/fixtures/builder-export-collections-mounted.html"] : nuvioImportOnly ? [] : collectionCorrectionOnly || presentationOnly || backToTopOnly ? ["tests/fixtures/builder-collection-folders-mounted.html"] : ["tests/fixtures/builder-bulk-edit-mounted.html", "tests/fixtures/builder-export-collections-mounted.html", "tests/fixtures/builder-collection-folders-mounted.html"]);
+		if (!projectFindOnly && (workspaceImportOnly || nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly))) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-import-mounted.html");
+		if (!projectFindOnly && !nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-send-mounted.html");
+		if (!projectFindOnly) optimizeDeps.entries.push("tests/fixtures/builder-find-mounted.html");
 		optimizeDeps.include.push("react/jsx-dev-runtime");
 		optimizeDeps.needsInterop.push("react/jsx-dev-runtime");
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-bulk-edit-vite-"));
@@ -421,6 +425,11 @@ async function runMountedPage() {
 			}
 		` });
 		const address = resources.vite.httpServer.address();
+		if (projectFindOnly || (!workspaceImportOnly && !nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly)) {
+			timing.stage("Find scenarios");
+			projectFindMounted = await runProjectFindChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate);
+		}
+		if (projectFindOnly) return { find: projectFindMounted };
 		timing.stage("Workspace Import scenarios");
 		const workspaceImport = workspaceImportOnly || (!nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly)
 			? await runWorkspaceImportChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`, evaluate) : null;
@@ -667,7 +676,7 @@ async function runMountedPage() {
 	return execution.value;
 }
 
-test("mounted Back to top preserves workspace state, motion, modal safety and phone/desktop geometry", { skip: collectionCorrectionOnly || presentationOnly }, () => {
+test("mounted Back to top preserves workspace state, motion, modal safety and phone/desktop geometry", { skip: projectFindOnly || collectionCorrectionOnly || presentationOnly }, () => {
 	assert.equal(mounted.backToTop.results.length, 12);
 	assert.ok(mounted.backToTop.results.every((result) => result.passed));
 	assert.deepEqual(mounted.backToTop.errors, []);
@@ -679,7 +688,7 @@ before(async () => {
 	mounted = await runMountedPage();
 });
 
-test("mounted workspace Import shares local review, artwork policies and accessible responsive navigation", { skip: nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+test("mounted workspace Import shares local review, artwork policies and accessible responsive navigation", { skip: projectFindOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.workspaceImport.local, { passed: true, externalServiceExercised: false });
 	assert.deepEqual(mounted.workspaceImport.embedded, { passed: true, mocked: true });
 	assert.equal(mounted.workspaceImport.layouts.length, 106);
@@ -690,7 +699,7 @@ test("mounted workspace Import shares local review, artwork policies and accessi
 	console.log("Workspace Import layouts:", mounted.workspaceImport.layouts.length, "; embedded Nuvio layouts:", mounted.workspaceImport.embeddedLayouts.length);
 });
 
-test("mounted Nuvio Send retains safe outcomes and one responsive Export shell", { skip: nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+test("mounted Nuvio Send retains safe outcomes and one responsive Export shell", { skip: projectFindOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.nuvioSend.local, { passed: true, mocked: true });
 	if (process.env.NUVIO_SEND_LOCAL_ONLY === "1") return;
 	assert.equal(mounted.nuvioSend.layouts.length, 390);
@@ -702,7 +711,7 @@ test("mounted Nuvio Send retains safe outcomes and one responsive Export shell",
 	console.log("Compact Send measurements:", JSON.stringify(mounted.nuvioSend.layouts.filter(layout => [393, 1280].includes(layout.width) && layout.height === 900 && ["export", "review", "sending", "verified"].includes(layout.screen))));
 });
 
-test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: projectFindOnly || nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.nuvioImport.local, nuvioWelcomeOnly ? { passed: true, externalServiceExercised: false } : { passed: true, mocked: true });
 	assert.equal(mounted.nuvioImport.layouts.length, nuvioWelcomeOnly ? 44 : 63);
 	assert.equal(mounted.nuvioImport.creation.length, 4);
@@ -710,7 +719,7 @@ test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, bu
 	assert.deepEqual(mounted.nuvioImport.errors, []);
 });
 
-test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: nuvioSendOnly || backToTopOnly }, () => {
+test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: projectFindOnly || nuvioSendOnly || backToTopOnly }, () => {
 	assert.equal(mounted.presentation.layouts.length, 12);
 	assert.ok(mounted.presentation.layouts.every((layout) => layout.modalWidth <= 460 && layout.footer));
 	assert.deepEqual(mounted.presentation.terminology.map(({ width }) => width), [393, 1280]);
@@ -719,14 +728,14 @@ test("Sort folders stays compact on phones and Global display settings retains a
 	console.log("Management presentation:", JSON.stringify(mounted.presentation));
 });
 
-test("collection Folder management preserves atomic edits and responsive retained selection", { skip: nuvioSendOnly || presentationOnly || backToTopOnly }, () => {
+test("collection Folder management preserves atomic edits and responsive retained selection", { skip: projectFindOnly || nuvioSendOnly || presentationOnly || backToTopOnly }, () => {
 	assert.equal(mounted.collectionManagement.length, (collectionCorrectionOnly ? 9 : 24) + (ownerCollectionImport ? 2 : 0));
 	assert.ok(mounted.collectionManagement.every((result) => result.passed));
 	assert.deepEqual(mounted.collectionErrors, []);
 	if (collectionCorrectionOnly) console.log("Focused management correction:", JSON.stringify(mounted.collectionManagement));
 });
 
-const unrelatedTest = nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly ? test.skip : test;
+const unrelatedTest = projectFindOnly || nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly ? test.skip : test;
 
 unrelatedTest("compact export, accurate totals, exact delivery and responsive entry work at owner widths", () => {
 	assert.deepEqual(mounted.exportErrors, []);
@@ -902,7 +911,7 @@ unrelatedTest("mounted product heading stays exact, stacked, contained, and navi
 		assert.equal(layout.documentOverflow, false, `document overflow at ${label}`);
 		assert.equal(layout.subtitle, "Built for Nuvio collections", `subtitle at ${label}`);
 		assert.equal(layout.oldProductTitlePresent, false, `old title at ${label}`);
-		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits", "Export & Send"], `header actions at ${label}`);
+		assert.deepEqual(layout.headerActionLabels, ["Back to builder home", "About & Credits", "Find", "Export & Send"], `header actions at ${label}`);
 		assert.equal(layout.headerActionsContained, true, `header action containment at ${label}`);
 	}
 });
@@ -936,4 +945,14 @@ unrelatedTest("mounted Workspace header dividers stay aligned independently of c
 		{ width: 900, spreads: [0, 0, 0] },
 		{ width: 1280, spreads: [0, 0, 0] },
 	], "desktop divider alignment for empty, collection-selected, and folder-selected states");
+});
+
+test("mounted Find searches locally and jumps with exact identity, accessible focus and responsive navigation", { skip: !projectFindOnly && (workspaceImportOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly) }, () => {
+ assert.equal(projectFindMounted.local.passed, true);
+ assert.equal(projectFindMounted.busy.passed, true);
+ assert.equal(projectFindMounted.layouts.length, 112);
+ assert.equal(projectFindMounted.jumps.length, 50);
+ assert.equal(projectFindMounted.keyboard.length, 28);
+ assert.deepEqual(projectFindMounted.errors, []);
+ console.log("Find mounted:", JSON.stringify({ layouts: projectFindMounted.layouts.length, keyboard: projectFindMounted.keyboard.length, jumps: projectFindMounted.jumps.length, performance: projectFindMounted.performance }));
 });

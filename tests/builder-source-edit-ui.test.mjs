@@ -785,6 +785,7 @@ test("an open source editor makes the workspace inert and retains one polite suc
 	const folder = importSources(controller, [collectionSource()]);
 	const markup = renderWorkspace(controller, { initialSourceEdit: openEdit(controller, folder.sources[0]) });
 	assert.match(markup, /<main[^>]+data-source-edit-open="true"/);
+	assert.match(markup, /data-action="open-project-find"[^>]+disabled=""/);
 	assert.match(markup, /<div[^>]+data-workspace-underlay="true"[^>]+inert=""[^>]+aria-hidden="true"/);
 	assert.equal((markup.match(/data-source-edit-modal="true"/g) ?? []).length, 1);
 	assert.match(markup, /data-source-edit-status="true" role="status" aria-live="polite"/);
