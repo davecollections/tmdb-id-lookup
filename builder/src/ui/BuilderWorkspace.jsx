@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FindProjectDialog } from "./FindProjectDialog.jsx";
 import { WorkspaceBackToTop } from "./WorkspaceBackToTop.jsx";
 import { ExportCollectionsDialog } from "./ExportCollectionsDialog.jsx";
 import { sendAttentionLabel } from "./nuvio-send-presentation.js";
@@ -68,6 +69,7 @@ import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
 import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
 import {
 	buildDeletionImpact,
+	locateProjectNode,
 	createDeletionSubmissionGate,
 	executeDeletion,
 } from "./hierarchy-deletion.js";
@@ -732,6 +734,9 @@ export function BuilderWorkspace({
 	peopleManifestClient = null,
 }) {
 	const view = buildBuilderViewModel(state);
+	const [findOpen, setFindOpen] = useState(false);
+	const [pendingFindFocus, setPendingFindFocus] = useState(null);
+	const findTriggerRef = useRef(null);
 	const [exportOpen, setExportOpen] = useState(false);
 	const exportTriggerRef = useRef(null);
 	const workspaceScrollRef = useRef(0);
@@ -913,7 +918,7 @@ export function BuilderWorkspace({
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
 	const bulkEditLocked = bulkEditDraft !== null;
-	const modalLocked = editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
+	const modalLocked = findOpen || editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || exportOpen || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -971,6 +976,35 @@ export function BuilderWorkspace({
 		focusElementWithoutScroll(collectionFoldersTriggerRef.current);
 		collectionFoldersTriggerRef.current = null;
 	}, [restoreCollectionFoldersFocus]);
+
+	useEffect(() => {
+		if (findOpen || pendingFindFocus === null) return;
+		const target = pendingFindFocus === "cancel" ? findTriggerRef.current : primaryControlRefs.current.get(pendingFindFocus);
+		if (pendingFindFocus !== "cancel") target?.scrollIntoView?.({ behavior: builderCardScrollBehavior(), block: "nearest" });
+		focusElementWithoutScroll(target);
+		setPendingFindFocus(null);
+	}, [findOpen, pendingFindFocus]);
+
+	function openFind() {
+		if (!state.project.collections.length || hierarchyInteractionLocked || pointerInteractionLocked() || keyboardReorderInternalId !== null || editorPreparing) return;
+		setFindOpen(true);
+	}
+
+	function closeFind() {
+		setFindOpen(false);
+		setPendingFindFocus("cancel");
+	}
+
+	function jumpFromFind(result) {
+		// Re-resolve before selection: a stale hit must not write controller diagnostics.
+		const target = locateProjectNode(controller.getState().project, result.internalId)?.node;
+		if (!target || target.nodeType !== result.nodeType) return false;
+		if (!controller.selectNode(target.internalId).ok) return false;
+		setMobileLevelOverride({ collection: "collections", folder: "folders", source: "sources" }[target.nodeType]);
+		setFindOpen(false);
+		setPendingFindFocus(target.internalId);
+		return true;
+	}
 
 	function openExport() {
 		if ((!hasExportableStructure(state.project) && !sendState?.dispatch.count) || hierarchyInteractionLocked) return;
@@ -2473,6 +2507,7 @@ export function BuilderWorkspace({
 			data-about-credits-open={aboutCreditsOpen ? "true" : undefined}
 			data-bulk-edit-open={bulkEditLocked ? "true" : undefined}
 		>
+			{findOpen ? <FindProjectDialog project={state.project} onCancel={closeFind} onJump={jumpFromFind} /> : null}
 			{exportOpen ? <ExportCollectionsDialog controller={controller} connection={connection} sendCoordinator={sendCoordinator} locked={modalLocked} onClose={closeExport} onEdit={editFromExport} onMergeInstead={onMergeFromNuvio ? (profile) => { setExportOpen(false); onMergeFromNuvio(profile, exportTriggerRef.current); } : undefined} /> : null}
 			<div
 				className="workspace-underlay"
@@ -2519,6 +2554,7 @@ export function BuilderWorkspace({
 						</button>
 						</div>
 						<div className="workspace-transfer-actions">
+							<button ref={findTriggerRef} className="export-entry-action" type="button" data-action="open-project-find" aria-haspopup="dialog" disabled={!state.project.collections.length || hierarchyInteractionLocked || dragState !== null || keyboardReorderInternalId !== null || editorPreparing} onClick={openFind}>Find</button>
 							{onOpenImport ? <button className="export-entry-action nuvio-entry-action" type="button" data-action="open-workspace-import" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenImport}>Import</button> : null}
 							{hasExportableStructure(state.project) || sendState?.dispatch.count ? <button ref={exportTriggerRef} className="export-entry-action" type="button" data-action="open-export-collections" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={openExport}>Export &amp; Send</button> : null}
 							{sendAttentionLabel(sendState) ? <button className="send-attention" type="button" data-action="open-nuvio-send-status" aria-haspopup="dialog" disabled={hierarchyInteractionLocked} onClick={onOpenSendStatus}>{sendAttentionLabel(sendState)}</button> : null}

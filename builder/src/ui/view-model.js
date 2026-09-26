@@ -1,5 +1,6 @@
+import { nodeTitle, sourceTitle } from "./node-titles.js";
+export { nodeTitle } from "./node-titles.js";
 import {
-	isInvisibleNuvioTitle,
 	isValidVisibleNuvioTitle,
 } from "../nuvio/titles.js";
 import { sourceCardDetails } from "./source-details.js";
@@ -51,24 +52,6 @@ function compactDetails(details) {
 function friendlyChoice(value, labels) {
 	if (typeof value !== "string") return null;
 	return labels[value.toUpperCase()] ?? null;
-}
-
-export function nodeTitle(value, noun) {
-	if (isInvisibleNuvioTitle(value)) {
-		const capitalizedNoun = noun[0].toUpperCase() + noun.slice(1);
-		return {
-			text: "Hidden title",
-			hidden: true,
-			accessibleName: `${capitalizedNoun} with hidden Nuvio title`,
-		};
-	}
-
-	const text = isValidVisibleNuvioTitle(value) ? value.trim() : `Untitled ${noun}`;
-	return {
-		text,
-		hidden: false,
-		accessibleName: text,
-	};
 }
 
 function supportedBoolean(value) {
@@ -159,27 +142,6 @@ function buildFolder(folder, selectedInternalId) {
 			detail("Folder tile shape", tileShape),
 			detail("Artwork", artworkCount === 0 ? "None added" : countLabel(artworkCount, "artwork field")),
 		]),
-	};
-}
-
-function sourceTitle(source, fallback) {
-	if (isInvisibleNuvioTitle(source.editable.title)) {
-		return nodeTitle(source.editable.title, "source");
-	}
-
-	const title = nonBlankText(source.editable.title);
-	if (title) {
-		return {
-			text: title,
-			hidden: false,
-			accessibleName: title,
-		};
-	}
-	const text = fallback;
-	return {
-		text,
-		hidden: false,
-		accessibleName: text,
 	};
 }
 

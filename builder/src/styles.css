@@ -9995,3 +9995,38 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
  .source-names-disclosure, .source-name-reset, .source-name-field input { border: 1px solid CanvasText; }
  .source-names-disclosure summary:focus-visible, .source-name-reset:focus-visible { outline-color: Highlight; }
 }
+
+/* Local project navigation uses one results scroll owner and ordinary actions. */
+.add-source-portal.find-project-portal { background: transparent; }
+.settings-modal-backdrop.find-project-backdrop {
+	align-items: center; justify-items: center;
+	padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+.add-source-dialog.find-project-dialog {
+	width: 100%; max-width: 680px; height: min(640px, 100%); max-height: 100%;
+	grid-template-rows: auto auto minmax(0, 1fr); border-radius: 18px;
+}
+.find-project-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 10px; }
+.find-project-heading h2 { margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+.find-project-heading button { flex: 0 0 auto; min-height: 44px; }
+.find-project-search { min-width: 0; padding: 0 18px 12px; }
+.find-project-search label { display: block; margin-bottom: 8px; font-size: 0.95rem; font-weight: 600; }
+.find-project-status { margin: 10px 0 0; color: var(--muted); font-size: 0.9rem; overflow-wrap: anywhere; }
+.find-project-results { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 18px 18px; scrollbar-gutter: stable; }
+.find-project-results ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.find-project-results li { min-width: 0; }
+.find-project-result { display: grid; gap: 5px; width: 100%; min-height: 64px; padding: 12px; text-align: left; background: rgb(255 255 255 / 3%); border: 1px solid var(--border-strong); border-radius: 10px; overflow-wrap: anywhere; white-space: normal; }
+.find-project-result strong { font-weight: 650; }
+.find-project-result span, .find-project-result small { color: var(--muted); }
+.find-project-result:hover { background: rgb(1 180 228 / 10%); border-color: var(--cyan-bright); }
+.find-project-result:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 2px; }
+@media (max-height: 450px) {
+	.find-project-heading { padding-top: 6px; padding-bottom: 4px; }
+	.find-project-search { padding-bottom: 6px; }
+	.find-project-search label { margin-bottom: 4px; }
+	.find-project-status { margin-top: 4px; }
+}
+@media (forced-colors: active) {
+	.find-project-result { border-color: ButtonText; }
+	.find-project-result:focus-visible { outline-color: Highlight; }
+}

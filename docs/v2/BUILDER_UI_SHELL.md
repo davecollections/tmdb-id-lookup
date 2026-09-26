@@ -24,6 +24,18 @@ Discover's full **Filters** stage stays directly visible. **Advanced tips** in D
 
 Operation headings, purpose-based stages and output summaries follow [the hierarchy creation contract](./BUILDER_HIERARCHY_CREATION.md#3-flow-and-state). This current contract supersedes historical Review & Appearance and Advanced disclosure wording in the milestone descriptions below.
 
+## Find in project (#261, pending merge)
+
+The workspace **Find** action precedes Import and Export & Send. It opens a navigation-only modal for the current local project's Collections, Folders and Sources. Empty projects disable the action. Existing workspace modal, menu, creation/edit, Import/Export and reorder guards protect entry; while open, Find participates in the same inert underlay/navigation lock. It makes no remote request and stores no search history.
+
+The pure `ui/project-find.js` index carries exact internal identity, node type, parent identities, display title/path and visible hierarchy order. It shares `node-titles.js` with cards: Collections/Folders require valid visible saved titles, excluding generated Hidden title/Untitled labels; Source names use their existing card title or source-type/catalogue/preserved-source fallback. Invisible/format-only names are excluded. Hidden or untitled parents use safe labels in descendant paths only. Source metadata, IDs, filters, artwork, raw imports and preview content are not independently indexed. Collection order respects the existing stable pinned/ordinary groups; children retain their saved order.
+
+Queries are trimmed, case-insensitive literal substrings with a two-character minimum. Exact names rank before prefixes, then other substrings; hierarchy order breaks ties. Find renders at most 100 rows and reports the full count with refinement guidance. Identical title/type/path presentations receive Position N of X in hierarchy order. Rows are ordinary buttons with type/parent context, without retained-selection styling or result actions.
+
+A jump re-resolves the exact ID in the current project using the existing hierarchy locator before calling `controller.selectNode`. Missing targets leave Find open with unavailable feedback and no controller operation. Successful selection exposes parents, closes Find, scrolls the target's primary card control with the shared reduced-motion/nearest behavior and focuses it without additional scroll. The existing mobile override reveals the result's own Collections/Folders/Sources level, and ordinary subsequent selection/back navigation clears that override. No editor opens and content revision/dirty state remain unchanged. Opening, typing, clearing, scrolling and cancelling preserve the entire controller snapshot.
+
+Search autofocuses because typing is this surface's primary task. Header Close and Escape restore the Find trigger; successful jumps focus the target instead. Shared Visual Viewport geometry, body lock and native Tab trapping support one scrolling results region. Visible counts update immediately and a separate polite status announces settled counts after 300 ms. There is no global shortcut, dependency, persistence or API integration. This contract is pending owner review/merge, not a release claim.
+
 ## Purpose and scope
 
 The first visible workspace replaced the deployment placeholder under `/builder/`. Issue [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41) now places a welcome/import screen in front of this contained hierarchy workspace. The visible product name is **Dingo's Collection Builder**, with **Built for Nuvio collections** as its supporting line.

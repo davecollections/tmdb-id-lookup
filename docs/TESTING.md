@@ -1,5 +1,13 @@
 # Repository Testing
 
+## Find in project (#261, pending merge)
+
+`node --test tests/builder-project-find.test.mjs` covers title-only indexing, shared Source fallback parity, hidden/invalid parent names, safe paths, query minimum/trim/case/literal matching, ranking/order, exact identities, duplicate positional context, selection-only behavior, the 100-row cap and true totals. The local scale fixture contains 20 Collections, 400 Folders and 4,000 Sources. These are authored local project structures; no external-service result is substituted.
+
+Set `BUILDER_FIND_ONLY=1` and run `node --test --test-name-pattern="mounted Find" tests/builder-bulk-edit-mounted.test.mjs`. Find reuses the existing browser lifecycle/CI workspace group with `tests/helpers/project-find-mounted.mjs` and a focused local fixture. It covers 112 layouts at 360/384/393/402/412/899/900/901/1280, short 320px heights, desktop/phone 200% text, forced colours and reduced motion. Six native touch/pointer jumps supplement thirty-six keyboard jumps, which cover all three node types at phone/breakpoint/desktop widths, exact parent selection, card focus, actual scrolling, reduced-motion options and clearing the mobile override on ordinary selection. Additional cases cover empty projects, opening/search/cancel snapshot identity, duplicate jumps, controlled stale current-state substitution, busy/modal/reorder guards, native Tab/Escape/Enter, accessible names and zero Find requests. `BUILDER_FIND_SCREENSHOT_DIR` optionally writes twelve compact owner screenshots and measurements outside Git.
+
+Run affected workspace/controller, Source display, mobile creation, deletion/reorder and focus-helper regressions, frontend/four fixture guards and production build. Normal grouped PR CI supplies broader evidence; do not repeatedly run the full local suite. Physical phone keyboard/Visual Viewport behavior and owner visual acceptance remain manual review points.
+
 ## Workspace Import and Merge artwork (#259)
 
 Run `node --test tests/builder-import-merge.test.mjs tests/builder-workspace-import.test.mjs tests/builder-nuvio-import.test.mjs tests/builder-welcome-import.test.mjs` for every artwork field under all policies, absence/null/blank/unsupported values, no-deletion, exact text/raw preservation, unchanged matching/dedupe/order, input-source parity, file limits/errors, stale review, complete planner/controller equality and atomic apply. Related importer/controller/serializer/presentation/export/Send suites provide focused regression evidence.
