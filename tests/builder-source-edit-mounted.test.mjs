@@ -2085,7 +2085,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			stageKicker: "Review",
 			headerDescription: "Review source names and where your lists will be added.",
 			count: 20,
-			countLabel: "20 sources will be added",
+			countLabel: "20 Sources to add",
 			actionCopy: "Add 20 sources",
 			rowsContained: true,
 			oneScrollOwner: true,
@@ -2495,7 +2495,7 @@ test("mounted Franchise review corrections remain layered, compact, state-safe, 
 	assert.deepEqual(mountedResults.franchiseReviewWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.franchiseReviewWidths) {
 		const width = result.width;
-		assert.equal(result.selectedActions.visiblePreviewLabel, "Preview", `${width}px compact Preview label`);
+		assert.equal(result.selectedActions.visiblePreviewLabel, "Preview titles", `${width}px standard title Preview label`);
 		assert.match(result.selectedActions.previewAccessibleLabel, /^Preview titles for /, `${width}px Preview accessible label`);
 		assert.match(result.selectedActions.removeAccessibleLabel, /^Remove /, `${width}px remove accessible label`);
 		assert.equal(result.selectedActions.previewTouchSafe, true, `${width}px Preview touch target`);
