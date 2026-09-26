@@ -1,3 +1,6 @@
+import { appliedFilterCount } from "./filter-disclosure.js";
+import { FiltersDisclosureSummary } from "./FiltersDisclosureSummary.jsx";
+import { resolveNativeGenreFilters } from "../source-add/native-shared-advanced.js";
 import { useState } from "react";
 import { NativeExtraAdvancedControls, NativeExtraSummary } from "./NativeExtraAdvancedControls.jsx";
 import { DiscoverValueField } from "./DiscoverValueField.jsx";
@@ -18,10 +21,15 @@ export function MinimumVotesAdvancedOptions({ draft, onChange, family, entities 
  const [expanded, setExpanded] = useState(false);
  const value = { ...draft, filters: draft.filters ?? {} };
  const editable = draft.minimumVotesEditable !== false;
+ const count = appliedFilterCount(value.filters, {
+  editable: { ...draft.extraEditable, voteCountGte: editable, voteAverageGte: draft.ratingBoundsEditable, voteAverageLte: draft.ratingBoundsEditable, withoutGenres: draft.extraEditable?.withGenres, withoutKeywords: draft.extraEditable?.withKeywords, releaseDateGte: draft.extraEditable?.year, releaseDateLte: draft.extraEditable?.year },
+  hiddenFields: ["withCompanies", "withoutCompanies", "withNetworks", "watchRegion", "withWatchProviders", "withoutWatchProviders"],
+  genreFilters: entities.length ? entities.map((entity) => resolveNativeGenreFilters(value.filters, draft.genreOverrides, entity.id).filters) : [value.filters],
+ });
  const validation = validateMinimumVotesFilters({ voteCountGte: draft.filters?.voteCountGte }, draft.mediaType ?? "MOVIE");
  const ratings = validateRatingBounds(value.filters, draft.mediaType ?? "MOVIE");
- return <details onToggle={(event) => setExpanded(event.currentTarget.open)} className="genre-advanced-options" {...{ [`data-${family}-advanced`]: "true" }}>
-  <summary>Advanced options</summary>
+ return <details onToggle={(event) => { if (event.target === event.currentTarget) setExpanded(event.currentTarget.open); }} className="genre-advanced-options" {...{ [`data-${family}-advanced`]: "true" }}>
+  <FiltersDisclosureSummary count={count} />
   <div className="genre-advanced-content">
    <div className="native-threshold-fields">
    {editable ? <DiscoverValueField field="voteCountGte" draft={value} errors={validation.errors} onChange={(next) => onChange(touchDiscoverFilters(value, next))} />

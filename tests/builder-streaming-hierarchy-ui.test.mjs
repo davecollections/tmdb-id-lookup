@@ -63,8 +63,8 @@ function provider(id) {
 	};
 }
 
-test("Streaming is the eighth scope-aware launcher family after Genres in both Creation scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
+test("Streaming follows People in the canonical launcher order in both Creation scopes", () => {
+	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.deepEqual([...markup.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), expected);
@@ -106,8 +106,8 @@ test("the flow groups regions and services under Select, then uses Configure and
 	assert.match(flow, /Choose Streaming services/);
 	assert.match(flow, /<CreationStageIntro step=\{2\} phase="Configure"/);
 	assert.match(flow, /Configure Streaming services/);
-	assert.match(flow, /<CreationStageIntro step=\{3\} phase="Review"/);
-	assert.match(flow, /Review &amp; Appearance/);
+	assert.match(flow, /phase=\{choiceRequired \? "Destination" : existingScope && plan\?\.counts\.newFolderCount === 0 \? "Review" : "Appearance"\}/);
+	assert.match(flow, /Appearance/);
 	assert.match(flow, /choiceRequired \? "Choose destination"/);
 	assert.match(flow, /review: destinationChoiceRequired \? "Choose where these Streaming sources should go\."/);
 	assert.equal((flow.match(/name="streaming-hierarchy-media"/g) ?? []).length, 1);

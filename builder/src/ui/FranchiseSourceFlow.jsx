@@ -1,3 +1,4 @@
+import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
@@ -64,7 +65,7 @@ function SelectedFranchises({ franchises, onRemove, onPreview }) {
 			<ul>
 				{franchises.map((franchise) => <li key={franchise.id}>
 					<div><strong>{franchise.name}</strong><span>TMDB {franchise.id} · {franchise.movieCount ?? "?"} titles</span></div>
-					<span className="franchise-selected-actions"><button className="franchise-selected-preview" type="button" aria-haspopup="dialog" aria-label={`Preview titles for ${franchise.name}`} onClick={(event) => onPreview(franchise, event.currentTarget)}>Preview</button><button className="franchise-selected-remove" type="button" aria-label={`Remove ${franchise.name}`} onClick={() => onRemove(franchise.id)}>×</button></span>
+					<span className="franchise-selected-actions"><button className="franchise-selected-preview" type="button" aria-haspopup="dialog" aria-label={`Preview titles for ${franchise.name}`} onClick={(event) => onPreview(franchise, event.currentTarget)}>Preview titles</button><button className="franchise-selected-remove" type="button" aria-label={`Remove ${franchise.name}`} onClick={() => onRemove(franchise.id)}>×</button></span>
 				</li>)}
 			</ul>
 		</details>
@@ -95,7 +96,8 @@ function ReviewStep({ scope, planResult, options, onOptionsChange, onPreview, di
 	const otherErrors = (planResult?.errors ?? []).filter((entry) => entry.path !== "$franchisePlan.collectionTitle");
 	return (
 		<section className="franchise-review" aria-labelledby="franchise-review-title">
-			<CreationStageIntro step={2} phase="Review" title="Review & Appearance" headingId="franchise-review-title" description={plan ? `${plan.counts.folderCount} folder${plan.counts.folderCount === 1 ? "" : "s"} · ${plan.counts.sourceCount} source${plan.counts.sourceCount === 1 ? "" : "s"}` : undefined} />
+			<CreationStageIntro step={2} phase="Appearance" title="Appearance" headingId="franchise-review-title" />
+			{plan ? <HierarchyOutputSummary counts={plan.counts} scope={scope} /> : null}
 			{scope === "new-collection" ? <>
 				<div className="editor-field"><label htmlFor="franchise-collection-name">Collection name</label><RequiredNameInput id="franchise-collection-name" value={options.collectionTitle} hidden={options.hideCollectionTitle} describedBy={options.hideCollectionTitle ? "franchise-collection-title-hidden-help" : undefined} error={requiredNameMessage(planResult?.errors, "$franchisePlan.collectionTitle", options.collectionTitle)} onChange={(event) => onOptionsChange({ collectionTitle: event.target.value })} /><HiddenTitleFieldHelp id="franchise-collection-title-hidden-help" hidden={options.hideCollectionTitle} kind="collection" /></div>
 				<TitleOptions idPrefix="franchise" collectionTitleVisibility={{ checked: options.hideCollectionTitle, onChange: (hideCollectionTitle) => onOptionsChange({ hideCollectionTitle }), descriptionId: "franchise-hide-title-help", controlName: "franchiseHideNuvioTitle" }} folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
@@ -256,7 +258,7 @@ export function FranchiseSourceFlow({
 					{searchData ? <section className="add-source-results"><div className="add-source-section-heading"><div><p className="panel-kicker">TMDB results</p><h3>Select franchises</h3></div>{searchData.totalPages > 1 ? <span>Page {searchData.page} of {searchData.totalPages}</span> : null}</div>{searchData.results.length ? <div className="add-source-result-list">{searchData.results.map((result) => <FranchiseResult key={result.id} result={result} checked={Boolean(selection.byId[result.id])} loading={loadingId === result.id || (selectionState.status === "loading" && selectionState.context?.id === result.id)} onActivate={activate} />)}</div> : <p className="add-source-empty-results">No TMDB collections matched this search.</p>}{searchData.totalPages > 1 ? <nav className="add-source-pagination"><button type="button" disabled={searchData.page <= 1} onClick={() => setPage(searchData.page - 1)}>Previous page</button><button type="button" disabled={searchData.page >= searchData.totalPages} onClick={() => setPage(searchData.page + 1)}>Next page</button></nav> : null}</section> : null}
 				</> : <div ref={reviewHeadingRef} tabIndex={-1}><ReviewStep scope={scope} planResult={planResult} options={options} onOptionsChange={updateOptions} onPreview={openPreview} diagnostic={diagnostic} /></div>}
 			</div>
-			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={!nameCorrection && (step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying)}>{step === "select" ? "Continue to Review & Appearance" : isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button></footer>
+			<footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={!nameCorrection && (step === "select" ? chosen.length === 0 : !planResult.ok || planResult.plan.counts.folderCount === 0 || isApplying)}>{step === "select" ? "Continue to Appearance" : isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button></footer>
 		</form>
 		{preview ? <TitlesPreview franchise={preview} onClose={closePreview} /> : null}
 	</>;

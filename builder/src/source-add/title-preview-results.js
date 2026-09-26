@@ -64,12 +64,16 @@ export function completeTitlePreview(results, totalResults = results.length, med
 	return accumulateTitlePreviewPages([{ results, totalResults, mediaType }], { complete: true });
 }
 
-export function titlePreviewSummary(data, displayedCount) {
-	const count = data.sourcePositions;
-	if (count === 0) return "No titles found.";
+// The accumulator establishes reliable totals/completeness; loaded row counts
+// alone must never become a claimed total. Artwork availability is independent.
+export function titlePreviewSummary(data, displayedCount, limit = TITLE_PREVIEW_RESULT_LIMIT) {
+	if (data.sourcePositions === 0) return "No titles to preview.";
 	if (displayedCount === 0) return "No posters available.";
-	// Describe the represented source window, independently of usable artwork.
-	if (data.complete) return `Showing ${count} of ${count} ${count === 1 ? "title" : "titles"}.`;
-	if (count === TITLE_PREVIEW_RESULT_LIMIT) return "Preview shows up to 100 titles.";
-	return `${count} ${count === 1 ? "title" : "titles"} loaded.${data.canLoadMore ? " Preview shows up to 100 titles." : ""}`;
+	if (data.complete && Number.isSafeInteger(data.totalResults)) {
+		return data.totalResults === 1 ? "Showing the only title." : `Showing all ${data.totalResults} titles.`;
+	}
+	if (Number.isSafeInteger(data.totalResults) && data.totalResults > limit) {
+		return `${data.totalResults} titles found. Preview is limited to ${limit}.`;
+	}
+	return `Preview shows up to ${limit} titles.`;
 }

@@ -427,7 +427,7 @@ export function DecadeEditorFields({ titleField = null, draft, sortRef, onSortCh
 			<div ref={sortRef} tabIndex={-1}>
 				<SemanticSortChoices fieldsetProps={{ disabled: draft.sortEditable === false }} options={DECADES_SORT_OPTIONS} selectedId={draft.sortOptionId} name="decade-edit-sort" legend="Sort titles by" onChange={onSortChange} />
 			</div>
-			<DecadesAdvancedOptions onOpenSecondary={onOpenSecondary} extraEditable={draft.extraEditable} exclusionSummary={(draft.genreName ? draft.advanced.exclusionsByGenre?.[draft.genreName] : draft.advanced.ordinaryExcludedGenres)?.join(", ") || "No exclusions"} value={draft.advanced} mediaMode={mediaMode} includedGenres={draft.genreName ? [draft.genreName] : []} onChange={onAdvancedChange} idPrefix="decade-edit-advanced" />
+			<DecadesAdvancedOptions genresApplied={(draft.genreName ? draft.advanced.exclusionsByGenre?.[draft.genreName] : draft.advanced.ordinaryExcludedGenres)?.length > 0} onOpenSecondary={onOpenSecondary} extraEditable={draft.extraEditable} exclusionSummary={(draft.genreName ? draft.advanced.exclusionsByGenre?.[draft.genreName] : draft.advanced.ordinaryExcludedGenres)?.join(", ") || "No exclusions"} value={draft.advanced} mediaMode={mediaMode} includedGenres={draft.genreName ? [draft.genreName] : []} onChange={onAdvancedChange} idPrefix="decade-edit-advanced" />
 		</>
 	);
 }

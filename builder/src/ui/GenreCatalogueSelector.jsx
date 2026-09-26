@@ -40,7 +40,7 @@ export function GenreContextCatalogueSubview({
 	emptyTitle,
 	focusRef,
 	guidance,
-	kicker = "Advanced options",
+	kicker = "Filters",
 	onContextChange,
 	onDone,
 	onReturnToContexts,

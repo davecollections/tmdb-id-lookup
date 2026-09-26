@@ -2114,7 +2114,7 @@ async function runFranchiseReviewScenario() {
 			selectedNames.get(franchiseIds[0]),
 		]);
 
-		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review & Appearance"), "Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Review action"));
 		const review = required(dialog.querySelector(".franchise-review"), "Review surface");
 		const showAll = required(review.querySelector('[data-editor-control="franchiseShowAllTab"]'), "Tabs Show All control");
 		const tabsInitiallyEnabled = showAll.checked === true;
@@ -2957,9 +2957,7 @@ async function runGenreLivePreviewScenario() {
 		const line = preview.countLine ?? "";
 		// Broad reported totals exceed TMDB's documented 500 accessible pages.
 		// Live presentation must describe the loaded window without certifying that total.
-		return request.totalResults > 20
-			? /^20 titles loaded\. Preview shows up to 100 titles\./.test(line)
-			: line === `Showing ${request.totalResults} of ${request.totalResults} titles.`;
+		return line === (request.totalResults > 100 && request.totalResults <= 10000 ? `${request.totalResults} titles found. Preview is limited to 100.` : request.totalResults > 20 ? "Preview shows up to 100 titles." : request.totalResults === 1 ? "Showing the only title." : `Showing all ${request.totalResults} titles.`);
 	}
 	const requests = [];
 	const failedImageSources = new Set();
@@ -3130,7 +3128,7 @@ async function runGenreLivePreviewScenario() {
 		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-media"][value="movies"]'), "Movies media choice"));
 		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-sort"][value="popular"]'), "Deselect Popular source choice"));
 		await clickAndSettle(required(dialog.querySelector('input[name="genre-hierarchy-sort"][value="recent"]'), "Recent sort choice"));
-		await clickAndSettle(required(dialog.querySelector(".genre-advanced-options > summary"), "Advanced options summary"));
+		await clickAndSettle(required(dialog.querySelector(".genre-advanced-options > summary"), "Filters summary"));
 		await updateInput(dialog.querySelector("#discover-field-releaseDateGte"), "2020-01-01");
 		await updateInput(dialog.querySelector("#discover-field-releaseDateLte"), "2026-12-31");
 		await updateInput(dialog.querySelector("#discover-field-voteAverageGte"), "6");
@@ -3419,7 +3417,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 			};
 		}
 
-		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Destination"), "Destination action"));
 		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "Review stage");
 		const reviewFocusEntered = document.activeElement === review.querySelector("#streaming-hierarchy-review-title");
 		const initialDestinationRadios = [...review.querySelectorAll('input[name="streaming-hierarchy-destination"]')];
@@ -3531,7 +3529,7 @@ async function runStreamingHierarchyScenario(runLivePreview = false) {
 		await act(async () => { setInputValue(dekkooName, "Curated Dekkoo"); await afterCommittedEffects(); });
 		const preApplyUnchanged = controller.getState().revision === initialRevision && controller.getState().project === initialProject;
 		await clickAndSettle(required(dialog.querySelector('[data-action="back-to-streaming-review"]'), "Review Back action"));
-		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Return to Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "Return to Appearance action"));
 		review = required(dialog.querySelector(".streaming-hierarchy-review"), "returned Review stage");
 		await clickAndSettle(required(review.querySelector(".streaming-folder-names summary"), "returned Folder names summary"));
 		dekkooName = required(review.querySelector("#streaming-folder-name-444"), "returned Dekkoo folder name");
@@ -3701,7 +3699,7 @@ async function runStreamingAffinityDestinationScenario() {
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Services"), "Region action"));
 		await clickAndSettle(await waitForMountedCondition(() => dialog.querySelector('[data-streaming-provider="283"]'), { label: "Streaming affinity Crunchyroll provider", timeoutMs: 10_000 }));
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
-		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Destination"), "Review action"));
 
 		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "destination Review");
 		const candidate = required(review.querySelector("[data-streaming-destination-candidate]"), "affinity destination card");
@@ -3915,7 +3913,7 @@ async function runStreamingSelectionReconciliationScenario() {
 
 		for (const selectedProvider of [b, netflix]) await clickAndSettle(await card(dialog, selectedProvider.id));
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "three-service Configure action"));
-		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "three-service Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Appearance"), "three-service Appearance action"));
 		const review = required(dialog.querySelector(".streaming-hierarchy-review"), "three-folder Review");
 		const folderNames = required(review.querySelector(".streaming-folder-names"), "Folder names section");
 		await clickAndSettle(required(folderNames.querySelector("summary"), "Folder names summary"));
@@ -4000,7 +3998,7 @@ async function runStreamingDuplicateConfirmationScenario() {
 		const provider = await waitForMountedCondition(() => dialog.querySelector('[data-streaming-provider="8"]'), { label: "duplicate Netflix provider", timeoutMs: 10_000 });
 		await clickAndSettle(provider);
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
-		await clickAndSettle(required(buttonContaining(dialog, "Continue to Review"), "Review action"));
+		await clickAndSettle(required(buttonContaining(dialog, "Continue to Destination"), "Review action"));
 		let review = required(dialog.querySelector(".streaming-hierarchy-review"), "Review");
 		const evidence = required(review.querySelector('[data-streaming-overlap="complete"]'), "complete overlap evidence");
 		const initialPrimary = required(buttonContaining(dialog, "Choose a destination"), "destination-required action");
@@ -5290,13 +5288,12 @@ async function runDecadesActionLayoutScenario({ contentCardsOnly = false, captur
 		if (wholeDecadeInput.getAttribute("aria-pressed") !== "true") await clickAndSettle(wholeDecadeInput);
 		if (individualYearsInput.getAttribute("aria-pressed") !== "true") await clickAndSettle(individualYearsInput);
 		const previewCatalogue = required(dialog.querySelector(".decades-preview-catalogue"), "Decades Preview catalogue");
-		const previewRowsDeferred = previewCatalogue.querySelector(".decades-preview-group") === null;
-		await clickAndSettle(required(previewCatalogue.querySelector(":scope > summary"), "Decades Preview catalogue summary"));
+		const previewRowsVisible = previewCatalogue.querySelector(".decades-preview-group") !== null && !previewCatalogue.querySelector("summary");
 		const previewGroups = [...previewCatalogue.querySelectorAll(".decades-preview-group")];
 		const previewRows = previewGroups.map((group) => group.querySelector(".decades-preview-row"));
 		const previewButtons = previewGroups.map((group) => group.querySelector('button[aria-haspopup="dialog"]'));
 		const previewGroupEvidence = {
-			deferredUntilCatalogueOpen: previewRowsDeferred,
+			directlyVisible: previewRowsVisible,
 			groupCount: previewGroups.length,
 			oneRowPerDecade: previewRows.every(Boolean) && previewGroups.every((group) => group.querySelectorAll(".decades-preview-row").length === 1),
 			noNestedDetails: previewGroups.every((group) => group.tagName === "ARTICLE" && group.querySelector("details, summary") === null),
@@ -6122,10 +6119,9 @@ async function runDecadesLivePreviewScenario({ correctionReview = false } = {}) 
 		if (wholeDecadeChoice.getAttribute("aria-pressed") !== "true") await clickAndSettle(wholeDecadeChoice);
 		if (individualYearsChoice.getAttribute("aria-pressed") !== "true") await clickAndSettle(individualYearsChoice);
 		const catalogue = required(dialog.querySelector(".decades-preview-catalogue"), "Decades Preview catalogue");
-		const lightweightClosed = !catalogue.open
-			&& catalogue.querySelector(".decades-preview-group") === null
+		const directlyVisibleAndRequestFree = !catalogue.querySelector("summary")
+			&& catalogue.querySelector(".decades-preview-group") !== null
 			&& requests.length === 0;
-		await clickAndSettle(required(catalogue.querySelector(":scope > summary"), "Preview catalogue summary"));
 		const group = required(catalogue.querySelector(".decades-preview-group"), "1980s Preview group");
 		const row = required(group.querySelector(".decades-preview-row"), "1980s Decade Preview row");
 		const trigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "Decades Preview action");
@@ -6192,7 +6188,7 @@ async function runDecadesLivePreviewScenario({ correctionReview = false } = {}) 
 		const openEvidence = {
 			boundaries,
 			width: window.innerWidth,
-			lightweightClosed,
+			directlyVisibleAndRequestFree,
 			compactOlderGroup,
 			requestFreeBeforeExplicitPreview,
 			olderMovieSampleRequests,
@@ -6234,7 +6230,6 @@ async function runDecadesLivePreviewScenario({ correctionReview = false } = {}) 
 		await clickAndSettle(required(dialog.querySelector(".decades-creation-actions button"), "Decades Continue for current decade"));
 		const individualYearsPersisted = decadeContentChoice(dialog, "Individual years")?.getAttribute("aria-pressed") === "true";
 		const currentCatalogue = required(dialog.querySelector(".decades-preview-catalogue"), "current Decades Preview catalogue");
-		await clickAndSettle(required(currentCatalogue.querySelector(":scope > summary"), "current Preview catalogue summary"));
 		const currentGroup = required(currentCatalogue.querySelector(".decades-preview-group"), "2020s Preview group");
 		const currentRow = required(currentGroup.querySelector(".decades-preview-row"), "2020s Decade Preview row");
 		const currentTrigger = required(currentRow.querySelector('button[aria-haspopup="dialog"]'), "2020s Preview action");
@@ -6398,8 +6393,8 @@ async function runDecadeSourceLayoutScenario() {
 			const b = status.getBoundingClientRect();
 			return a.right <= b.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1;
 		});
-		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Advanced options");
-		await clickAndSettle(required(advanced.querySelector(":scope > summary"), "Advanced options summary"));
+		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Filters");
+		await clickAndSettle(required(advanced.querySelector(":scope > summary"), "Filters summary"));
 		const configure = required(buttonContaining(advanced, "Configure"), "Genre exclusions Configure action");
 		configure.focus({ preventScroll: true });
 		await clickAndSettle(configure);
@@ -6657,7 +6652,7 @@ async function runDecadeSourcePreviewErrorScenario() {
 			calls,
 			errorMessage,
 			redundantSelectors,
-			retryRecovered: empty.textContent.includes("No titles found."),
+			retryRecovered: empty.textContent.includes("No titles to preview."),
 			closed: document.querySelector(".decade-add-preview-modal") === null,
 			exactFocusRestored: document.activeElement === trigger,
 			noMutation: controller.getState().revision === revisionBefore && serializedValue(controller) === serializedBefore,
@@ -6713,7 +6708,7 @@ async function runDecadeSourceLivePreviewScenario({ correctionReview = false } =
 		const configuredYearSelection = [...yearFieldset.querySelectorAll('input[name="decade-source-year"]:checked')].map((input) => input.value);
 		const genreFieldset = required(dialog.querySelector('[data-decade-source-control="genres"]'), "Genre sources fieldset");
 		await clickAndSettle(required(genreFieldset.querySelector('[data-genre-name="Comedy"]'), "Comedy Genre source"));
-		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Advanced options");
+		const advanced = required(dialog.querySelector(".decades-advanced-options"), "Filters");
 		await clickAndSettle(required(advanced.querySelector(":scope > summary"), "Advanced summary"));
 		await act(async () => {
 			setInputValue(required(dialog.querySelector("#discover-field-voteAverageGte"), "Minimum rating"), "5");
@@ -6829,6 +6824,7 @@ async function runSourceChooserLayoutScenario({
 	includeClassicScrollbarStress = false,
 	includeGrowthStress = false,
 	includeOrderStress = false,
+    capture = false,
 } = {}) {
 	function required(element, label) {
 		if (!element) throw new Error(`${label} was not rendered.`);
@@ -7243,7 +7239,8 @@ async function runSourceChooserLayoutScenario({
 		});
 		try {
 			const dialog = required(document.querySelector(`[data-creation-dialog="true"][data-creation-scope="${scope}"]`), `${scope} Creation chooser`);
-			const modal = launcherModalGeometry(dialog);
+			if (capture && scope === "new-collection" && globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `pass-c-create-launcher-${innerWidth}` })); });
+            const modal = launcherModalGeometry(dialog);
 			const list = required(dialog.querySelector(".creation-option-list"), `${scope} Creation launcher grid`);
 			const listStyle = getComputedStyle(list);
 			const cards = [...list.querySelectorAll("[data-creation-option]")];
@@ -7329,7 +7326,8 @@ async function runSourceChooserLayoutScenario({
 		const trigger = required(host.querySelector('[data-action="add-source"]'), "Add Source trigger");
 		await clickAndSettle(trigger);
 		const dialog = required(document.querySelector('[data-source-mode-chooser="true"]'), "Add Source chooser");
-		const description = required(dialog.querySelector("#source-mode-description"), "Add Source chooser introduction");
+		if (capture && globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `pass-c-add-launcher-${innerWidth}` })); });
+        const description = required(dialog.querySelector("#source-mode-description"), "Add Source chooser introduction");
 		const list = required(dialog.querySelector(".source-mode-list"), "Add Source launcher grid");
 		const cards = [...list.querySelectorAll("[data-source-mode-option]")];
 		const firstCard = required(cards[0], "first Add Source card");
@@ -7403,9 +7401,9 @@ async function runSourceChooserLayoutScenario({
 		const finalCardReachable = finalRect.top >= listRect.top - 1 && finalRect.bottom <= listRect.bottom + 1;
 
 		await clickAndSettle(firstCard);
-		const immediateDestination = document.querySelector('[data-source-mode="tmdb-movie-franchise"]') !== null;
-		await clickAndSettle(required(document.querySelector('[data-action="back-to-source-types"]'), "Movie franchise Back action"));
-		const returnedCard = required(document.querySelector('[data-source-mode-option="tmdb-movie-franchise"]'), "returned Movie franchise card");
+		const immediateDestination = document.querySelector('[data-source-mode="tmdb-decade"]') !== null;
+		await clickAndSettle(required(document.querySelector('[data-action="back-to-source-types"]'), "Decade Back action"));
+		const returnedCard = required(document.querySelector('[data-source-mode-option="tmdb-decade"]'), "returned Decade card");
 		const backRestoredFocus = document.activeElement === returnedCard;
 		await clickAndSettle(required(document.querySelector('[data-source-mode-chooser="true"] .add-source-close-action'), "Add Source Close action"));
 		const closeRestoredTrigger = document.activeElement === trigger;
@@ -7515,7 +7513,7 @@ async function runTmdbListImportedSortScenario(supplied = null) {
 				const count = loaded.data.items.length;
 				const complete = count === loaded.data.itemCount;
 				const label = sortBy === "vote_average.desc" ? "Top rated" : sortBy === "primary_release_date.desc" ? "Recent" : sortBy === "vote_count.desc" ? "Most voted" : "List order";
-				const expectedSummary = `${complete ? `Showing ${count} of ${count} titles.` : `${count} titles loaded.${ranked || sortBy === "original" ? " Preview shows up to 100 titles." : ""}`} · ${label}${ranked ? " within each page" : ""}`;
+				const expectedSummary = `${complete ? count === 1 ? "Showing the only title." : `Showing all ${count} titles.` : loaded.data.itemCount > 100 ? `${loaded.data.itemCount} titles found. Preview is limited to 100.` : "Preview shows up to 100 titles."} · ${label}${ranked ? " within each page" : ""}`;
 				const geometry = tmdbListPreviewGeometry(modal, grid);
 				const contained = geometry.gridInlineContained && geometry.closeReachable && geometry.verticalScrollOnly && grid.clientHeight > 0;
 				const ordered = JSON.stringify([...grid.querySelectorAll("img")].map((image) => image.src)) === JSON.stringify(expectedPosters);
@@ -7803,7 +7801,7 @@ async function runTmdbListLayoutScenario() {
 			});
 			await clickAndSettle(requiredElement(buttonContaining(surface, "Resolve lists"), `${scope} Resolve lists`));
 			await waitForMountedCondition(() => surface.querySelectorAll(".tmdb-list-selected-items li").length === ids.length, { label: `${scope} TMDB List selection` });
-			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), "Continue to Review"), `${scope} Review lists`));
+			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), "Continue to Appearance"), `${scope} Review lists`));
 			await waitForMountedCondition(() => surface.dataset.tmdbListStage === "review", { label: `${scope} TMDB List review` });
 
 			const collectionInput = surface.querySelector("#tmdb-list-collection-title");
@@ -8034,6 +8032,7 @@ async function runTmdbListLivePreviewScenario({ pagingPresentation = false } = {
 				body.focus({ preventScroll: true });
 				for (let page = 2; page <= 5; page++) {
 					const countBefore = listRequests.length;
+					const postersBefore = modal.querySelectorAll(".poster-only-preview-grid img").length;
 					await act(async () => {
 						body.scrollTop = 0; body.dispatchEvent(new Event("scroll", { bubbles: true }));
 						body.dispatchEvent(new WheelEvent("wheel", { deltaY: 800, bubbles: true }));
@@ -8043,7 +8042,7 @@ async function runTmdbListLivePreviewScenario({ pagingPresentation = false } = {
 					await waitForMountedCondition(() => {
 						const error = modal.querySelector('[role="alert"]');
 						if (error) throw new Error(`Production next-page request failed: ${error.textContent}`);
-						return page === 5 ? modal.querySelector(".title-preview-end") : modal.querySelector(".source-title-preview-summary")?.textContent.startsWith(`${page * 20} titles loaded.`);
+						return page === 5 ? modal.querySelector(".title-preview-end") : modal.querySelectorAll(".poster-only-preview-grid img").length > postersBefore && modal.querySelector(".title-preview-more")?.getAttribute("aria-busy") === "false";
 					}, { label: `live List page ${page}`, timeoutMs: 30_000 });
 					await act(afterCommittedEffects);
 					check(listRequests.length === countBefore + 1, "exactly one next page per deliberate scroll");
@@ -8055,7 +8054,8 @@ async function runTmdbListLivePreviewScenario({ pagingPresentation = false } = {
 				const countAtEnd = listRequests.length;
 				await act(async () => { end.click(); body.scrollTop = body.scrollHeight; body.dispatchEvent(new WheelEvent("wheel", { deltaY: 800, bubbles: true })); body.dispatchEvent(new Event("scroll", { bubbles: true })); await afterCommittedEffects(); });
 				await waitForMountedCondition(() => [...modal.querySelectorAll(".poster-only-preview-grid img")].every(previewImageReady), { label: "genuine live end-of-preview posters", timeoutMs: 30_000 });
-				if (globalThis.capture204Preview) await new Promise((resolve) => { window.__finish204Capture = resolve; capture204Preview(JSON.stringify({ name: `preview-226-live-end-${innerWidth}` })); });
+				body.scrollTop = 0; modal.querySelector("header button").focus({ preventScroll: true }); await act(afterCommittedEffects);
+                if (globalThis.capture204Preview) await new Promise((resolve) => { window.__finish204Capture = resolve; capture204Preview(JSON.stringify({ name: `pass-c-preview-capped-${innerWidth}` })); });
 				const evidence = { width: innerWidth, frames, visibleLoadMoreFrames, endMarkerPlain,
 					pages: listRequests.filter((request) => request.startsWith("/3/list/5916?")).map((request) => Number(new URL(request, TMDB_PROXY_BASE_URL).searchParams.get("page"))),
 					requestPaths: [...listRequests], noExtraRequests: listRequests.length === countAtEnd,
@@ -8063,11 +8063,30 @@ async function runTmdbListLivePreviewScenario({ pagingPresentation = false } = {
 					noMutation: controller.getState().revision === initialState.revision && serializedValue(controller) === serializedBefore,
 				};
 				await clickAndSettle(modal.querySelector("header button"));
-				return { ...evidence, focusRestored: document.activeElement === musicalsTrigger };
+				const focusRestored = document.activeElement === musicalsTrigger;
+                cancelAnimationFrame(frame);
+                await clickAndSettle(topTenRow.querySelector("button"));
+                const completeModal = await waitForMountedCondition(() => {
+                    const view = document.querySelector('[data-tmdb-list-preview-dialog="true"]');
+                    return view?.querySelector(".source-title-preview-summary")?.textContent === "Showing all 10 titles. · List order" ? view : null;
+                }, { label: "live complete ten-title List", timeoutMs: 30000 });
+                await waitForMountedCondition(() => [...completeModal.querySelectorAll("img")].every(previewImageReady), { label: "complete List posters", timeoutMs: 30000 });
+                if (globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; capture204Preview(JSON.stringify({ name: `pass-c-preview-complete-${innerWidth}` })); });
+                await clickAndSettle(completeModal.querySelector("header button"));
+                await clickAndSettle(buttonContaining(dialog, "Continue to Review"));
+                check(dialog.querySelector("#tmdb-list-review-title")?.textContent === "2 Sources to add", "Add summary must describe Sources only");
+                check(!dialog.querySelector('[aria-label="Plan totals"]'), "Add must not show empty hierarchy tiles");
+                check(dialog.querySelector("header h2")?.textContent === "Add TMDB List sources" && dialog.querySelector("header").textContent.includes("To "), "persistent Add/destination context");
+                check(dialog.querySelector(".tmdb-list-review-item em")?.textContent === "Ready to add", "scope-aware readiness");
+                if (globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; capture204Preview(JSON.stringify({ name: `pass-c-add-summary-${innerWidth}` })); });
+                return { ...evidence, focusRestored, complete: true, addSummary: true, noMutation: controller.getState().revision === initialState.revision && serializedValue(controller) === serializedBefore };
 			} finally { cancelAnimationFrame(frame); }
 		}
 		const initialGeometry = tmdbListPreviewGeometry(preview.modal, preview.grid);
-		const initialMusicals = {
+		const resolvedMusicals = await listProvider.getList(5916);
+        if (!resolvedMusicals.ok) throw new Error("Live Musicals list metadata unavailable.");
+        const initialMusicals = {
+            totalResults: resolvedMusicals.data.itemCount,
 			title: preview.modal.querySelector("h3")?.textContent.trim() ?? null,
 			subtitle: preview.modal.querySelector(".source-title-preview-summary")?.textContent.trim() ?? null,
 			rendered: Number(preview.grid.dataset.previewPosterCount),
@@ -8497,7 +8516,7 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
    const included = advanced.querySelector('.discover-genre-pills button[data-chosen]:not([data-excluded])'), excluded = advanced.querySelector('.discover-genre-pills button[data-excluded]');
    check(getComputedStyle(excluded).borderStyle === "dashed" && getComputedStyle(included).borderStyle !== "dashed", "Genre states lack non-hue distinction");
    evidence.forcedColors = matchMedia("(forced-colors: active)").matches;
-   if (evidence.forcedColors) check(getComputedStyle(included).outlineStyle !== "none", "forced-colour selected outline");
+   if (evidence.forcedColors) { await assertSelectionAppearance(included, "include", { wait, forcedColors: true }); await assertSelectionAppearance(excluded, "exclude", { wait, forcedColors: true }); }
    advanced.querySelector(".discover-genres").scrollIntoView({ block: "start" }); await shot(evidence.forcedColors ? "genres-forced-colours" : "genres");
   }
   async function choice(key, query, id, exclude = false, conflict = false) {
@@ -8532,7 +8551,7 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   check(owners.length <= 1 && window.scrollY === 0 && dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "Advanced overflow or competing scroll owners");
   evidence.noImplicitRequests = true; evidence.boundedScroll = true; evidence.focusRestored = true;
   if (layoutOnly) return evidence;
-  if (guided && family === "decade") { const catalogue = dialog.querySelector('.decades-preview-catalogue'); await click(catalogue.querySelector('summary')); }
+  if (guided && family === "decade") check(!dialog.querySelector('.decades-preview-catalogue summary'), "Decades Preview must be directly visible");
   const trigger = editing ? dialog.querySelector('[data-action="preview-source-edit"]') : [...dialog.querySelectorAll('button')].find((element) => element.textContent.trim() === "Preview titles");
   check(trigger && !trigger.disabled, "current draft Preview unavailable: " + dialog.textContent.slice(-1600));
   trigger.focus({ preventScroll: true }); await click(trigger);

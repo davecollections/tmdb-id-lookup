@@ -285,7 +285,7 @@ async function runMountedPage() {
 					const editors = [];
 					const views = [...[393, 1280].flatMap(width => ["studio", "network", "genre", "streaming", "decade", "people", "franchise", "list"].map(family => ({ width, family }))), ...[899, 900, 901].map(width => ({ width, family: "studio" })), { width: 393, height: 400, family: "genre" }, { width: 393, family: "studio", enlargedText: true }];
 					for (const view of views) {
-						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height ?? 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
 						const result = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runOrdinaryEditorOrderScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
 						if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text);
 						editors.push(result.result.value); console.log("EDITOR_ORDER_CASE " + JSON.stringify(result.result.value));
@@ -322,7 +322,7 @@ async function runMountedPage() {
 						{ width: 393, height: 400, family: "genres", nameRecovery: {} },
 					];
 					for (const view of views) {
-						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height ?? 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
 						await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }] });
 						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runGuidedPresentationScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
 						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
@@ -354,20 +354,31 @@ async function runMountedPage() {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const allFamilies = ["decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
 					const cases = [
-						...[393, 1280].flatMap(width => allFamilies.map(family => ({ width, family, capture: true }))),
+						...[393, 1280].flatMap(width => allFamilies.map(family => ({ width, family, capture: ["decades", "advanced-discover"].includes(family) }))),
 						...[360, 384, 402, 412].map(width => ({ width, family: "decades" })),
+                        { width: 393, height: 400, family: "decades" },
+                        { width: 393, family: "decades", enlargedText: true },
+                        { width: 1280, family: "decades", reducedMotion: true },
 						...[899, 900, 901].flatMap(width => ["genres", "advanced-discover"].map(family => ({ width, family }))),
-						...["decades", "advanced-discover", "people"].map(family => ({ width: 393, family, forcedColors: true, capture: true })),
+						...["decades", "advanced-discover", "people"].map(family => ({ width: 393, family, forcedColors: true })),
 					];
 					const presentation = [];
 					for (const view of cases) {
-						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
-						await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }] });
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height ?? 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }, { name: "prefers-reduced-motion", value: view.reducedMotion ? "reduce" : "no-preference" }] });
 						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runGuidedPresentationScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
 						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
 						presentation.push(checked.result.value);
 						console.log(`GUIDED_PRESENTATION_CASE ${JSON.stringify(checked.result.value)}`);
 					}
+                    const launchers = [];
+                    for (const width of [393, 1280]) {
+                        await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+                        await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "none" }] });
+                        const result = await resources.pageConnection.command("Runtime.evaluate", { expression: 'window.__runSourceChooserLayoutScenario({ capture: true })', awaitPromise: true, returnByValue: true });
+                        if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text);
+                        launchers.push(result.result.value);
+                    }
 					const discoverChoices = [];
 					await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "none" }] });
 					for (const width of [393, 1280]) {
@@ -377,7 +388,7 @@ async function runMountedPage() {
 						discoverChoices.push(checked.result.value);
 					}
 					console.log(`DISCOVER_CHOICE_PRESENTATION ${JSON.stringify(discoverChoices)}`);
-					return { presentation, discoverChoices };
+					return { presentation, discoverChoices, launchers };
 				}
 				if (previewPresentationOnly) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
@@ -1301,13 +1312,20 @@ test("mounted semantic Include Exclude takes precedence over cardinality", { ski
 	for (const result of mountedResults.semantics) assert.ok(result.noMutation);
 });
 test("mounted guided presentation retains semantic choices and responsive stage structure", { skip: process.env.TMDB_GUIDED_PRESENTATION_ONLY !== "1" }, () => {
-	assert.equal(mountedResults.presentation.length, 31);
+	assert.equal(mountedResults.presentation.length, 34);
 	for (const result of mountedResults.presentation) {
 		assert.ok(result.noMutation && result.focusRestored);
 		assert.ok(result.stages.length >= 2);
+        assert.ok(result.operation.startsWith("Create with "));
+        if (["decades", "genres", "studios", "networks", "streaming-services"].includes(result.family)) assert.equal(result.filters.length, 1);
 		if (["decades", "people", "franchises", "advanced-discover"].includes(result.family)) assert.ok(result.keyboard);
 	}
-	assert.equal(mountedResults.discoverChoices.length, 2);
+	assert.equal(mountedResults.launchers.length, 2);
+    for (const entry of mountedResults.launchers) {
+        assert.ok(entry.noMutation && entry.noHorizontalOverflow && entry.comfortableTargets && entry.backRestoredFocus && entry.finalCardReachable);
+        assert.deepEqual(entry.modeIds, ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
+    }
+    assert.equal(mountedResults.discoverChoices.length, 2);
 	for (const result of mountedResults.discoverChoices) assert.ok(result.scalarSortCyan && result.watchRegionCyan && result.liveProviderReady && result.noMutation);
 });
 test("mounted live Preview paging hides the normal fallback and ends quietly", { skip: process.env.TMDB_PREVIEW_PRESENTATION_ONLY !== "1" }, () => {
@@ -1315,7 +1333,7 @@ test("mounted live Preview paging hides the normal fallback and ends quietly", {
 		assert.ok(entry.frames > 0);
 		assert.equal(entry.visibleLoadMoreFrames, 0);
 		assert.deepEqual(entry.pages, [1, 2, 3, 4, 5]);
-		assert.ok(entry.noMutation && entry.noExtraRequests && entry.endMarkerPlain && entry.focusRestored);
+		assert.ok(entry.noMutation && entry.noExtraRequests && entry.endMarkerPlain && entry.focusRestored && entry.complete && entry.addSummary);
 	}
 	console.log("PREVIEW_PRESENTATION_LIVE " + JSON.stringify(mountedResults.pagingPresentation));
 });
@@ -1335,7 +1353,7 @@ test("mounted Decades Preview keeps selectors below the fixed header", { skip: p
 			assert.ok(entry.bodyTop >= entry.headerBottom, `${sample.width} ${entry.label}: body below header`);
 			assert.ok(entry.controlsVisible, `${sample.width} ${entry.label}: complete selector height ${JSON.stringify(entry.rows)}`);
 			assert.ok(entry.oneBodyOwner && entry.closeFixed, `${sample.width} ${entry.label}: one body owner, fixed Close`);
-			if (entry.summary) assert.equal(entry.summary, "20 titles loaded. Preview shows up to 100 titles.");
+			if (entry.summary) assert.match(entry.summary, /^(?:Preview shows up to 100 titles\.|[1-9]\d* titles found\. Preview is limited to 100\.)$/);
 		}
 	}
 });
@@ -1837,32 +1855,21 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.ok(variant.cardWidth <= stress.growth[0].cardWidth, `${label} scrollbar card width`);
 		assert.ok(variant.helperWidth <= stress.growth[0].helperWidth, `${label} scrollbar helper width`);
 	}
-	const expectedModes = [
-		"tmdb-movie-franchise",
-		"tmdb-lists",
-		"tmdb-people",
-		"tmdb-studios",
-		"tmdb-networks",
-		"tmdb-streaming-services",
-		"tmdb-genres",
-		"tmdb-decade",
-		"advanced-discover",
-	];
-	const expectedCreationIds = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
-	const expectedCreationLabels = ["Blank", "Decades", "People", "Franchises", "TMDB Lists", "Studios", "Networks", "Genres", "Streaming", "Discover"];
+	const expectedModes = ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"];
+	const expectedCreationIds = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
+	const expectedCreationLabels = ["Blank", "Decades", "Franchises", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB Lists", "Discover"];
 	const expectedCreationHelpers = [
 		"Start manually.",
 		"Build by decade or year.",
-		"Build around actors or directors.",
 		"Build from a movie franchise.",
-		"Build from public TMDB lists.",
-		"Build from movie or TV studios.",
-		"Build from TV networks.",
 		"Build by genre.",
+		"Build from TV networks.",
+		"Build around actors or directors.",
 		"Build from streaming services.",
+		"Build from movie or TV studios.",
+		"Build from public TMDB lists.",
 		"Build from keywords and filters.",
-	];
-	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
+	];	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.sourceChooserWidths) {
 		const width = result.width;
 		const expectedPresentation = width <= 620 ? "phone-fullscreen" : "contained";
@@ -2098,8 +2105,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.equal(result.backPreviewAvailable, true, `${label} Back restores Choose Preview`);
 		assert.deepEqual(result.guidedNewCollection, {
 			scope: "new-collection",
-			stageKicker: "Step 2 · Review",
-			stageTitle: "Review & Appearance",
+			stageKicker: "Step 2",
+			stageTitle: "Appearance",
 			headerDescription: "Review names, appearance and where your lists will be added.",
 			selectedCount: 4,
 			namesInitiallyEmpty: true,
@@ -2143,8 +2150,8 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.ok(result.guidedNewCollection.actionLineCount <= 2, `${label} New Collection action wrapping`);
 		assert.deepEqual(result.guidedNewFolder, {
 			scope: "new-folder",
-			stageKicker: "Step 2 · Review",
-			stageTitle: "Review & Appearance",
+			stageKicker: "Step 2",
+			stageTitle: "Appearance",
 			headerDescription: "Review names, appearance and where your lists will be added.",
 			selectedCount: 1,
 			namesInitiallyEmpty: true,
@@ -2220,7 +2227,7 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		const expectedColumns = result.width <= 620 ? 3 : 5;
 		assert.ok([0, 2].includes(result.requestsAfterResolve - result.requestCountBeforeResolve), `${label} resolve uses cache or two exact live requests`);
 		assert.equal(result.initialMusicals.title, "Musicals", `${label} live long-list title`);
-		assert.equal(result.initialMusicals.subtitle, "20 titles loaded. Preview shows up to 100 titles. · List order", `${label} truthful partial subtitle`);
+		assert.equal(result.initialMusicals.subtitle, `${result.initialMusicals.totalResults} titles found. Preview is limited to 100. · List order`, `${label} truthful partial subtitle`);
 		assert.equal(result.initialMusicals.rendered, 20, `${label} complete page-one sample rendered at open`);
 		assert.equal(result.initialMusicals.loaded, 20, `${label} twenty page-one titles loaded`);
 		assert.equal(result.initialMusicals.completeSample, true, `${label} complete-sample presentation`);
@@ -2283,7 +2290,7 @@ test("mounted TMDB List Preview keeps fixed geometry while the complete live pag
 		assert.equal(result.reopenStartsAtTop, true, `${label} reopen returns to top`);
 		assert.equal(result.requestsAfterReopen, result.requestsAfterResolve, `${label} reopen cache`);
 		assert.equal(result.completeSmallList.title, "Top 10 Netflix Movies", `${label} complete-list title`);
-		assert.equal(result.completeSmallList.subtitle, "Showing 10 of 10 titles. · List order", `${label} truthful complete-list subtitle`);
+		assert.equal(result.completeSmallList.subtitle, "Showing all 10 titles. · List order", `${label} truthful complete-list subtitle`);
 		assert.equal(result.completeSmallList.rendered, 10, `${label} complete ten-title sample`);
 		assert.equal(result.completeSmallList.loaded, 10, `${label} complete ten-title loaded count`);
 		assert.equal(result.completeSmallList.completeSample, true, `${label} complete ten-title marker`);
@@ -2743,12 +2750,11 @@ test("mounted Network hierarchy locks Configure while deferred production artwor
 test("mounted Network Preview uses the live Worker, TMDB, and image CDN with transient count, cache, sort, and focus safety", () => {
 	function expectedFirstPageSummary({ request, preview }) {
 		const count = request.resultCount;
-		if (count === 0) return "No titles found.";
+		if (count === 0) return "No titles to preview.";
 		if (preview.visiblePosterCount === 0) return "No posters available.";
-		const titles = count === 1 ? "title" : "titles";
 		return count === request.totalResults
-			? `Showing ${count} of ${count} ${titles}.`
-			: `${count} ${titles} loaded. Preview shows up to 100 titles.`;
+            ? count === 1 ? "Showing the only title." : `Showing all ${count} titles.`
+            : request.totalResults > 100 && request.totalResults <= 10000 ? `${request.totalResults} titles found. Preview is limited to 100.` : "Preview shows up to 100 titles.";
 	}
 	assert.deepEqual(mountedResults.networkLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.networkLivePreviewWidths) {
@@ -3003,7 +3009,7 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 			heading: result.review.initialDestination.heading,
 			headerDescription: result.review.initialDestination.headerDescription,
 		}, {
-			stageKicker: "Step 3 · Review",
+			stageKicker: "Step 3 · Destination",
 			heading: "Choose destination",
 			headerDescription: "Choose where these Streaming sources should go.",
 		}, `${result.width}px unresolved destination stage language`);
@@ -3020,8 +3026,8 @@ test("mounted Streaming New Collection disambiguates duplicate titles and routes
 		assert.match(result.review.initialDestination.overlapText, /Apple movies · in Streaming Services · Collection 2/);
 		assert.match(result.review.initialDestination.overlapText, /Dekkoo movies · in Streaming Services · Collection 3/);
 		assert.deepEqual(result.review.newCollectionDraftState, {
-			stageKicker: "Step 3 · Review",
-			heading: "Review & Appearance",
+			stageKicker: "Step 3",
+			heading: "Appearance",
 			headerDescription: "Review what will be created or updated before you finish.",
 			collectionNameVisible: true,
 			folderNameCount: 2,
@@ -3619,7 +3625,7 @@ test("mounted Decades Preview uses the deployed Worker for bounded representativ
 	}
 	assert.deepEqual(mountedResults.decadesLivePreviewWidths.map((result) => result.width), [393, 900]);
 	for (const result of mountedResults.decadesLivePreviewWidths) {
-		assert.equal(result.lightweightClosed, true);
+		assert.equal(result.directlyVisibleAndRequestFree, true);
 		assert.equal(result.compactOlderGroup, true);
 		assert.equal(result.requestFreeBeforeExplicitPreview, true);
 		assertAnnualRequests(result.olderMovieSampleRequests, "MOVIE", [1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989]);
@@ -3738,7 +3744,7 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 		optionsEntered: {
 			stage: "options",
 			backAction: "back-to-decades-presets",
-			footerLabels: ["Continue to Review & Appearance"],
+			footerLabels: ["Continue to Appearance"],
 			headingFocused: true,
 			defaultDisplayOrder: true,
 		},
@@ -3851,7 +3857,7 @@ test("mounted Decades options and compact Preview actions remain stable at every
 			toggleRestored: true,
 		}, `${result.width}px Decades content selection language`);
 		assert.deepEqual(result.previewGroups, {
-			deferredUntilCatalogueOpen: true,
+			directlyVisible: true,
 			groupCount: 2,
 			oneRowPerDecade: true,
 			noNestedDetails: true,

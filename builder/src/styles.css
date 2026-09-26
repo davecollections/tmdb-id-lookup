@@ -9965,3 +9965,17 @@ body.hierarchy-pointer-dragging .builder-shell {
 		min-height: 44px;
 	}
 }
+
+/* Content filters retain native disclosure semantics and a quiet, bounded surface. */
+.genre-advanced-options { border-color: var(--border-strong, #36505e); }
+.genre-advanced-options > summary { color: var(--text); }
+.filters-disclosure-label { display: inline-grid; gap: 3px; vertical-align: middle; max-width: calc(100% - 20px); }
+.filters-disclosure-label strong { font-size: .82rem; }
+.filters-disclosure-label small { color: var(--muted); font-size: .72rem; font-weight: 500; overflow-wrap: anywhere; }
+.genre-advanced-options[open] > .genre-advanced-content { padding-top: 14px; border-top: 1px solid var(--border); background: rgb(255 255 255 / 3%); border-radius: 0 0 10px 10px; }
+section.decades-preview-catalogue { background: none; border: 0; }
+section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
+@media (forced-colors: active) {
+ .genre-advanced-options, .genre-advanced-options[open] > .genre-advanced-content { border-color: CanvasText; }
+ .filters-disclosure-label small { color: CanvasText; }
+}

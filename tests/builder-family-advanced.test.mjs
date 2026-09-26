@@ -165,3 +165,25 @@ test("conflicting sort mirrors are preservation-only in every family editor", ()
   assert.equal(editor.validateDraft({ source, draft: { ...draft, sortTouched: true, sortBy: "primary_release_date.desc", sortOptionId: "recent" } }).ok, false);
  }
 });
+
+// Presentation-only count tests; synthetic filter values do not stand in for live results.
+test("Filters applied count groups tokens and ignores defaults, identity, hidden and preserved controls", async () => {
+ const { appliedFilterCount, filtersDisclosureSummary } = await import("../builder/src/ui/filter-disclosure.js");
+ assert.equal(appliedFilterCount({}), 0);
+ assert.equal(appliedFilterCount({ voteCountGte: 0, voteAverageGte: "0", voteAverageLte: "10", withOriginalLanguage: "", watchRegion: "US", ui: { touched: true } }), 0);
+ assert.equal(filtersDisclosureSummary(0), "Refine which titles are included.");
+ const genres = { withGenres: "28|35", withoutGenres: "27" };
+ assert.equal(appliedFilterCount(genres), 1, "one semantic Genres group, not three chips");
+ assert.equal(filtersDisclosureSummary(1), "1 applied");
+ const filters = { ...genres, voteCountGte: "100", voteAverageGte: "5", voteAverageLte: "8", releaseDateGte: "1990-01-01", releaseDateLte: "1999-12-31", year: "1994" };
+ const before = structuredClone(filters);
+ assert.equal(appliedFilterCount(filters), 4, "votes, rating range, Genres and Dates");
+ assert.equal(filtersDisclosureSummary(4), "4 applied");
+ assert.deepEqual(filters, before, "counting does not normalize or mutate filter payloads");
+ assert.equal(appliedFilterCount(filters, { hiddenFields: ["releaseDateGte", "releaseDateLte", "year"], editable: { withGenres: false, withoutGenres: false } }), 2);
+ assert.equal(appliedFilterCount({ watchRegion: "US", withWatchProviders: "8" }, { hiddenFields: ["watchRegion", "withWatchProviders"] }), 0);
+ assert.equal(appliedFilterCount({ withGenres: "28" }, { genreFilters: [{}] }), 0, "all applicable entities can override shared Genres to unrestricted");
+ assert.equal(appliedFilterCount({}, { genresApplied: true }), 1, "legacy family exclusions remain one Genres group");
+ assert.equal(appliedFilterCount({}, { genresApplied: true, editable: { withGenres: false, withoutGenres: false } }), 0);
+ assert.equal(appliedFilterCount({}), 0, "clearing returns to the default helper");
+});

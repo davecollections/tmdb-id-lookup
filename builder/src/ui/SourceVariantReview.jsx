@@ -1,16 +1,11 @@
+import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 export function SourceVariantCounts({ counts }) {
 	if (!counts) return null;
 	if (Object.hasOwn(counts, "existingFolderAdditionCount")) {
-		const sources = `${counts.sourceCount} source${counts.sourceCount === 1 ? "" : "s"}`;
-		const newFolders = `${counts.folderCount} new folder${counts.folderCount === 1 ? "" : "s"}`;
-		const existingFolders = `${counts.existingFolderAdditionCount} existing folder${counts.existingFolderAdditionCount === 1 ? "" : "s"}`;
-		const summary = counts.sourceCount === 0 ? counts.unresolvedEntityCount > 0 ? "New sources need a destination." : "No new sources to add."
-			: counts.folderCount === 0 ? `${sources} to add to ${existingFolders}.`
-				: counts.existingFolderAdditionCount === 0 ? `${newFolders} with ${sources}.`
-					: `${sources} to add across ${newFolders} and ${existingFolders}.`;
-		return <p className="editor-field-help" data-source-variant-counts="true">{summary}</p>;
+		return <div data-source-variant-counts="true"><HierarchyOutputSummary counts={counts} scope={counts.collectionCount > 0 ? "new-collection" : "new-folder"} />{counts.unresolvedEntityCount > 0 ? <p className="editor-field-help">New sources need a destination.</p> : null}</div>;
 	}
 	return <div className="editor-field-help" role="status" data-source-variant-counts="true">
+		<p>{counts.toAdd} {counts.toAdd === 1 ? "Source" : "Sources"} to add</p>
 		<p>{counts.configured} configured · {counts.existing} already present · {counts.omitted} omitted · {counts.toAdd} to add</p>
 	</div>;
 }

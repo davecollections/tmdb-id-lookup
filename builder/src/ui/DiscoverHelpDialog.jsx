@@ -14,7 +14,7 @@ export function DiscoverHelpDialog({ editing, scope = "new-collection", onClose 
      <li>{editing ? <>Your source’s <strong>Media</strong> stays fixed as Movies or Series.</> : <>Choose <strong>Movies</strong>, <strong>Series</strong> or <strong>Both</strong>.</>}</li>
      <li>{editing ? <>Keep the current order, or choose another under <strong>Sort titles by</strong>.</> : <>Leave <strong>Popular</strong> selected to start, or choose another option under <strong>Sources to create</strong>.</>}</li>
      <li>{editing ? "Adjust" : "Add"} the filters you want, such as a keyword or genre.</li>
-     <li>Use <strong>Preview titles</strong> to check the results, then {editing ? <>choose <strong>Continue to Review</strong> and <strong>Save source</strong>.</> : adding ? <>choose <strong>Continue to Review</strong> and <strong>Add sources</strong>.</> : `continue to finish your ${folder ? "folder" : "collection"}.`}</li>
+     <li>Use <strong>Preview titles</strong> to check the results, then {editing ? <>choose <strong>Continue to Review</strong> and <strong>Save changes</strong>.</> : adding ? <>choose <strong>Continue to Review</strong> and <strong>Add sources</strong>.</> : `continue to finish your ${folder ? "folder" : "collection"}.`}</li>
     </ol>
     <p>You can start with just one or two filters.</p>
    </section>

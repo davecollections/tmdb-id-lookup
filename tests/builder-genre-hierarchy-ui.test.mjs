@@ -35,8 +35,8 @@ const { GenreCatalogueList } = await vite.ssrLoadModule("/src/ui/GenreCatalogueS
 const { GENRE_CONCEPTS } = await vite.ssrLoadModule("/src/source-add/index.js");
 after(() => vite.close());
 
-test("Genres follows the completed hierarchy families in both creation scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
+test("Genres follows Franchises in the canonical family order in both creation scopes", () => {
+	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), expected);
 	assert.match(dialogSource, /CREATION_OPTION_IDS\.GENRES/);
 	assert.match(dialogSource, /<GenreHierarchyFlow/);
@@ -107,7 +107,7 @@ test("Genre hierarchy uses Select to Configure to Structure to Appearance with s
 	assert.match(flowSource, /inert=\{secondarySurface \|\| preview \|\| undefined\}/);
 	assert.match(flowSource, /!secondarySurface \? <footer/);
 	assert.match(flowSource, /pruneGenreExclusionConfiguration/);
-	assert.doesNotMatch(flowSource, /Review &amp; Appearance|Continue to Review/);
+	assert.doesNotMatch(flowSource, /Review & Appearance|Continue to Review/);
 	assert.doesNotMatch(flowSource, /DestinationChoices|Add all to this folder|One folder per genre|Add all anyway|Add anyway/);
 });
 
@@ -122,7 +122,7 @@ test("Configure always renders compact logical placement rows with Preview and R
 	assert.match(flowSource, /group\.drafts\.map\(\(draft\) => draft\.editable\.title\)/);
 	assert.match(flowSource, /Preview titles<\/button>/);
 	assert.match(flowSource, /genre-hierarchy-configure-remove/);
-	assert.match(flowSource, /Selected: \{sortLabel\} · Advanced:/);
+	assert.match(flowSource, /Selected: \{sortLabel\} · Filters:/);
 	assert.doesNotMatch(configure, /35 verbose|physical-source rows/);
 });
 
@@ -138,7 +138,7 @@ test("Configure reuses semantic pills and explains fixed-media Genres while Appe
 	assert.match(styles, /\.genre-hierarchy-configuration-surface[\s\S]*linear-gradient/);
 	assert.match(styles, /\.studio-sort-choice-row\s*\{[\s\S]*flex-wrap:\s*wrap/);
 	assert.doesNotMatch(styles, /\.genre-hierarchy-configuration-surface \.studio-sort-choice-row/);
-	assert.match(appearance, /Plan totals/);
+	assert.match(appearance, /<HierarchyOutputSummary counts=\{plan.counts\}/);
 	assert.match(appearance, /Movie collection name/);
 	assert.match(appearance, /Series collection name/);
 	assert.match(appearance, /<TitleOptions/);

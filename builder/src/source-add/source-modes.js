@@ -89,14 +89,15 @@ export const TMDB_LIST_SOURCE_MODE = Object.freeze({
 export const ADVANCED_DISCOVER_SOURCE_MODE_ID = "advanced-discover";
 export const ADVANCED_DISCOVER_SOURCE_MODE = Object.freeze({ id: ADVANCED_DISCOVER_SOURCE_MODE_ID, label: "Discover", icon: "genres", providerLabel: "TMDB", description: "Find titles with keywords and filters.", category: "native-tmdb" });
 
+// Same family order as Create, without Blank; retain the established Add labels.
 export const AVAILABLE_SOURCE_MODES = Object.freeze([
-	MOVIE_FRANCHISE_SOURCE_MODE,
-	TMDB_LIST_SOURCE_MODE,
-	PEOPLE_SOURCE_MODE,
-	STUDIO_SOURCE_MODE,
-	NETWORK_SOURCE_MODE,
-	STREAMING_SOURCE_MODE,
-	GENRE_SOURCE_MODE,
 	DECADE_SOURCE_MODE,
+	MOVIE_FRANCHISE_SOURCE_MODE,
+	GENRE_SOURCE_MODE,
+	NETWORK_SOURCE_MODE,
+	PEOPLE_SOURCE_MODE,
+	STREAMING_SOURCE_MODE,
+	STUDIO_SOURCE_MODE,
+	TMDB_LIST_SOURCE_MODE,
 	ADVANCED_DISCOVER_SOURCE_MODE,
 ]);

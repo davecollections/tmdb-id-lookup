@@ -65,7 +65,7 @@ test("native folder placement is compact, explains duplicates once and requires 
 	assert.match(complete, /Already added/);
 	assert.doesNotMatch(complete, /<select/);
 	const summary = renderToStaticMarkup(createElement(NativeFolderPlacementSummary, { counts: { folderCount: 0, existingFolderAdditionCount: 2, sourceCount: 3, existing: 1, unresolvedEntityCount: 0 } }));
-	assert.match(summary, /3 sources to add to 2 existing folders/);
+	assert.match(summary, /3 Sources to add to 2 existing Folders/);
 	assert.match(summary, /<p class="native-folder-duplicate-notice">Some sources already exist and won’t be created\.<\/p>/);
 	assert.doesNotMatch(summary, /requested|skipped|represented/);
 });
@@ -143,7 +143,7 @@ test("guided People uses the approved conceptual stage language while Add Source
 	assert.ok(guided.includes("Step 1 · Select"));
 	assert.equal(addSource.includes("Step 1 · Select"), false);
 	assert.match(source, /hierarchy \? <CreationStageIntro step=\{2\} phase="Configure"/);
-	assert.match(source, /<CreationStageIntro step=\{3\} phase="Review" title="Review & Appearance"/);
+	assert.match(source, /<CreationStageIntro step=\{3\} phase="Appearance" title="Appearance"/);
 });
 
 test("source chooser retains the established first five modes before Lists, Genres and Decade", () => {
@@ -313,14 +313,14 @@ test("shared People title Preview limits posters, distinguishes title totals and
 	assert.ok(ready.includes('aria-modal="true"'));
 	assert.equal((ready.match(/<img/g) ?? []).length, 14);
 	assert.ok(ready.includes("Acting · Most voted Movies"));
-	assert.ok(ready.includes("14 titles loaded."));
+	assert.ok(ready.includes("Preview shows up to 100 titles."));
 	assert.ok(ready.includes(">Close<"));
 	const loading = render("loading", []);
 	assert.ok(loading.includes("Preparing preview"));
 	assert.equal(loading.includes("18 titles"), false);
 	assert.equal(loading.includes("<img"), false);
 	assert.equal((render("ready", [{ id: 3, posterPath: null }, { id: 2, posterPath: "invalid" }, items[0]]).match(/<img/g) ?? []).length, 1);
-	assert.ok(render("ready", []).includes("No titles found."));
+	assert.ok(render("ready", []).includes("No titles to preview."));
 	const failed = render("error", [], { message: "Preview unavailable." });
 	assert.ok(failed.includes('role="alert"'));
 	assert.ok(failed.includes("Preview unavailable."));
@@ -330,11 +330,11 @@ test("shared People title Preview limits posters, distinguishes title totals and
 test("shared title Preview renders ceiling, complete and empty copy without exposing extra pages", () => {
 	const items = Array.from({ length: 186 }, (_, index) => ({ id: index + 1, posterPath: index % 3 ? `/copy-unit-${index}.jpg` : null }));
 	const cases = [
-		{ data: accumulateTitlePreviewPages([{ results: items.slice(0, 20), totalResults: 186, page: 1, totalPages: 10 }]), copy: "20 titles loaded. Preview shows up to 100 titles." },
-		{ data: completeTitlePreview(items), copy: "Preview shows up to 100 titles." },
-		{ data: completeTitlePreview(items.slice(0, 18)), copy: "Showing 18 of 18 titles." },
-		{ data: completeTitlePreview(items.slice(0, 100)), copy: "Showing 100 of 100 titles." },
-		{ data: completeTitlePreview([]), copy: "No titles found." },
+		{ data: accumulateTitlePreviewPages([{ results: items.slice(0, 20), totalResults: 186, page: 1, totalPages: 10 }]), copy: "186 titles found. Preview is limited to 100." },
+		{ data: completeTitlePreview(items), copy: "186 titles found. Preview is limited to 100." },
+		{ data: completeTitlePreview(items.slice(0, 18)), copy: "Showing all 18 titles." },
+		{ data: completeTitlePreview(items.slice(0, 100)), copy: "Showing all 100 titles." },
+		{ data: completeTitlePreview([]), copy: "No titles to preview." },
 		{ data: completeTitlePreview([{ id: 1, posterPath: null }]), copy: "No posters available." },
 	];
 	// Narrow static rendering only: no service requests or live catalogue claims.

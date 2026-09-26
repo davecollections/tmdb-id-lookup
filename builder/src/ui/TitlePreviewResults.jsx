@@ -85,7 +85,7 @@ export function TitlePreviewResults({ data: initialData, listPreview = false, ha
 			</div>}
 		/>
 		{data?.loadMore || requestedMore.current ? <div ref={footer} className="title-preview-more" aria-busy={pending}>
-			{error ? <p className="add-source-request-state" role="alert">Couldn’t load more titles. Your loaded results are still available. {error.message}</p> : null}
+			{error ? <p className="add-source-request-state" role="alert">Couldn’t load more titles. Your loaded results are still available.</p> : null}
 			{pending ? <p role="status">Loading more titles…</p> : null}
 			{data?.loadMore
 				? <button ref={action} type="button" data-fallback-hidden={!needsManual && !error ? "true" : undefined} aria-disabled={pending} onClick={() => loadMore(Boolean(error))}>{error ? "Retry" : "Load more titles"}</button>

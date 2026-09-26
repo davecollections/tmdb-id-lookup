@@ -104,7 +104,7 @@ test("Studio Preview complete query cache distinguishes absent/zero/100, media, 
 test("Studio hierarchy is registered in New Collection and New Folder scopes", () => {
 	for (const scope of ["new-collection", "new-folder"]) {
 		assert.equal(creationOptionSupportsScope(CREATION_OPTION_IDS.STUDIOS, scope), true);
-		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"]);
+		assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"]);
 	}
 });
 

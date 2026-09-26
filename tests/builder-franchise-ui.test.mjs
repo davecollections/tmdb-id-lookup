@@ -20,7 +20,7 @@ test("Franchises is a guided New Collection and New Folder option with a two-sta
 	assert.match(dialog, /<FranchiseSourceFlow/);
 	assert.match(flow, /useState\("select"\)/);
 	assert.match(flow, /setStep\("review"\)/);
-	assert.match(flow, /title="Review & Appearance"/);
+	assert.match(flow, /title="Appearance"/);
 	assert.doesNotMatch(flow, /setStep\("configure"\)|data-franchise-stage="configure"/i);
 });
 
@@ -140,7 +140,7 @@ test("title preview is a bounded poster-only body portal with explicit Close and
 test("franchise creation keeps one intentional scroll owner and sticky action footer", () => {
 	assert.equal((flow.match(/className="add-source-scroll"/g) ?? []).length, 1);
 	assert.match(flow, /<footer className="add-source-actions">/);
-	assert.match(flow, /Continue to Review & Appearance/);
+	assert.match(flow, /Continue to Appearance/);
 	assert.match(flow, /guidedCreateActionLabel\(scope, planResult\?\.plan\?\.counts\)/);
 });
 

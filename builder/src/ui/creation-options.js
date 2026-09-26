@@ -18,6 +18,7 @@ export const CREATION_SCOPES = Object.freeze({
 
 const BOTH_SCOPES = Object.freeze([CREATION_SCOPES.NEW_COLLECTION, CREATION_SCOPES.NEW_FOLDER]);
 
+// Blank first, ordinary families A-Z, Discover last. Keep Add Source in the same relative order.
 export const CREATION_OPTIONS = Object.freeze([
 	Object.freeze({
 		id: CREATION_OPTION_IDS.BLANK,
@@ -34,38 +35,10 @@ export const CREATION_OPTIONS = Object.freeze([
 		scopes: BOTH_SCOPES,
 	}),
 	Object.freeze({
-		id: CREATION_OPTION_IDS.PEOPLE,
-		label: "People",
-		icon: "people",
-		supportingText: "Build around actors or directors.",
-		scopes: BOTH_SCOPES,
-	}),
-	Object.freeze({
 		id: CREATION_OPTION_IDS.FRANCHISES,
 		label: "Franchises",
 		icon: "franchises",
 		supportingText: "Build from a movie franchise.",
-		scopes: BOTH_SCOPES,
-	}),
-	Object.freeze({
-		id: CREATION_OPTION_IDS.TMDB_LISTS,
-		label: "TMDB Lists",
-		icon: "lists",
-		supportingText: "Build from public TMDB lists.",
-		scopes: BOTH_SCOPES,
-	}),
-	Object.freeze({
-		id: CREATION_OPTION_IDS.STUDIOS,
-		label: "Studios",
-		icon: "studios",
-		supportingText: "Build from movie or TV studios.",
-		scopes: BOTH_SCOPES,
-	}),
-	Object.freeze({
-		id: CREATION_OPTION_IDS.NETWORKS,
-		label: "Networks",
-		icon: "networks",
-		supportingText: "Build from TV networks.",
 		scopes: BOTH_SCOPES,
 	}),
 	Object.freeze({
@@ -76,10 +49,38 @@ export const CREATION_OPTIONS = Object.freeze([
 		scopes: BOTH_SCOPES,
 	}),
 	Object.freeze({
+		id: CREATION_OPTION_IDS.NETWORKS,
+		label: "Networks",
+		icon: "networks",
+		supportingText: "Build from TV networks.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.PEOPLE,
+		label: "People",
+		icon: "people",
+		supportingText: "Build around actors or directors.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
 		id: CREATION_OPTION_IDS.STREAMING_SERVICES,
 		label: "Streaming",
 		icon: "streaming-services",
 		supportingText: "Build from streaming services.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.STUDIOS,
+		label: "Studios",
+		icon: "studios",
+		supportingText: "Build from movie or TV studios.",
+		scopes: BOTH_SCOPES,
+	}),
+	Object.freeze({
+		id: CREATION_OPTION_IDS.TMDB_LISTS,
+		label: "TMDB Lists",
+		icon: "lists",
+		supportingText: "Build from public TMDB lists.",
 		scopes: BOTH_SCOPES,
 	}),
 	Object.freeze({ id: CREATION_OPTION_IDS.ADVANCED_DISCOVER, label: "Discover", icon: "genres", supportingText: "Build from keywords and filters.", scopes: BOTH_SCOPES }),

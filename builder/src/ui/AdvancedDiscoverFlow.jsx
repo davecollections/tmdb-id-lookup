@@ -1,3 +1,4 @@
+import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { RequiredNameInput, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext, sourceDestinationContext } from "./creation-context.js";
 import { guidedCreateActionLabel } from "./creation-options.js";
@@ -161,7 +162,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
   if (page !== "review") { go(pages[pages.indexOf(page) + 1]); return; }
   apply();
  }
- const primaryLabel = page !== "review" ? "Continue to " + pageLabels[pages[pages.indexOf(page) + 1]] : editing ? "Save source" : scope === "new-folder" || scope === "new-collection" ? guidedCreateActionLabel(scope, planResult?.ok ? { collectionCount: planResult.plan.collectionEditable ? 1 : 0, folderCount: planResult.plan.folders.length } : undefined) : "Add sources";
+ const primaryLabel = page !== "review" ? "Continue to " + pageLabels[pages[pages.indexOf(page) + 1]] : editing ? "Save changes" : scope === "new-folder" || scope === "new-collection" ? guidedCreateActionLabel(scope, planResult?.ok ? { collectionCount: planResult.plan.collectionEditable ? 1 : 0, folderCount: planResult.plan.folders.length } : undefined) : "Add sources";
  const disabled = busy || (editing ? !editValid : !built.ok) || page === "review" && !editing && (!planResult.ok || sourceCount === 0);
  const contextLabel = editing ? "Edit Source" : scope === "new-collection" ? "New Collection" : scope === "new-folder" ? "New Folder" : "Add Source";
  const destinationLabel = [destinationCollection?.editable.title, !hierarchy && destinationFolder?.editable.title].filter(Boolean).join(" / ");
@@ -215,7 +216,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
   </section> : null}
  </> : <>
   <section className="discover-review" aria-label="Final review">
-   {hierarchy ? <div className="decades-plan-totals" data-plan-scope={scope} aria-label="Plan totals">{scope === "new-collection" ? <div><strong>1</strong><span>Collection</span></div> : null}<div><strong>{folders.length}</strong><span>{folders.length === 1 ? "Folder" : "Folders"}</span></div><div><strong>{sourceCount}</strong><span>{sourceCount === 1 ? "Source" : "Sources"}</span></div></div> : <p className="discover-output-total">{editing ? "One Source to save" : sourceCount + (sourceCount === 1 ? " Source" : " Sources") + " to add"}</p>}
+   {hierarchy ? planResult?.ok ? <HierarchyOutputSummary scope={scope} counts={{ collectionCount: planResult.plan.collectionEditable ? 1 : 0, folderCount: planResult.plan.folders.length, sourceCount: planResult.plan.drafts.length }} /> : null : <p className="discover-output-total">{editing ? "Changes to this Source" : sourceCount + (sourceCount === 1 ? " Source" : " Sources") + " to add"}</p>}
    {scope === "new-collection" ? <p className="editor-field-help">Collection: <strong>{options.collectionTitle}</strong>{appearance.hideCollectionTitle ? " - Title hidden" : ""}</p> : null}
    <section className="add-source-review"><div className="discover-review-heading"><h4>Filters</h4><button className="secondary-action" type="button" onClick={() => go("filters")}>Edit filters</button></div><DiscoverFilterReview draft={draft} />
     {draft.previewBlocked ? <DiscoverNotice>Some imported settings disagree or are not supported here. They are preserved, but an exact Preview is unavailable.</DiscoverNotice> : null}

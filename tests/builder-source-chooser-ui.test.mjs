@@ -48,27 +48,27 @@ function renderCreationChooser(scope) {
 }
 
 const expectedModes = Object.freeze([
-	["tmdb-movie-franchise", "Movie franchise", "franchises", "Add a TMDB movie collection."],
-	["tmdb-lists", "TMDB lists", "lists", "Add one or more public TMDB lists."],
-	["tmdb-people", "People", "people", "Add movies or series for an actor or director."],
-	["tmdb-studios", "Studios", "studios", "Add movies or series from a studio."],
-	["tmdb-networks", "Networks", "networks", "Add series from a TV network."],
-	["tmdb-streaming-services", "Streaming", "streaming-services", "Add a streaming service."],
-	["tmdb-genres", "Genres", "genres", "Add movies or series by genre."],
 	["tmdb-decade", "Decade", "decades", "Add movies or series by decade or year."],
+	["tmdb-movie-franchise", "Movie franchise", "franchises", "Add a TMDB movie collection."],
+	["tmdb-genres", "Genres", "genres", "Add movies or series by genre."],
+	["tmdb-networks", "Networks", "networks", "Add series from a TV network."],
+	["tmdb-people", "People", "people", "Add movies or series for an actor or director."],
+	["tmdb-streaming-services", "Streaming", "streaming-services", "Add a streaming service."],
+	["tmdb-studios", "Studios", "studios", "Add movies or series from a studio."],
+	["tmdb-lists", "TMDB lists", "lists", "Add one or more public TMDB lists."],
 	["advanced-discover", "Discover", "genres", "Find titles with keywords and filters."],
 ]);
 
 const expectedCreationOptions = Object.freeze([
 	["blank", "Blank", "blank", "Start manually."],
 	["decades", "Decades", "decades", "Build by decade or year."],
-	["people", "People", "people", "Build around actors or directors."],
 	["franchises", "Franchises", "franchises", "Build from a movie franchise."],
-	["tmdb-lists", "TMDB Lists", "lists", "Build from public TMDB lists."],
-	["studios", "Studios", "studios", "Build from movie or TV studios."],
-	["networks", "Networks", "networks", "Build from TV networks."],
 	["genres", "Genres", "genres", "Build by genre."],
+	["networks", "Networks", "networks", "Build from TV networks."],
+	["people", "People", "people", "Build around actors or directors."],
 	["streaming-services", "Streaming", "streaming-services", "Build from streaming services."],
+	["studios", "Studios", "studios", "Build from movie or TV studios."],
+	["tmdb-lists", "TMDB Lists", "lists", "Build from public TMDB lists."],
 	["advanced-discover", "Discover", "genres", "Build from keywords and filters."],
 ]);
 

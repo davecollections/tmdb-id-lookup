@@ -152,7 +152,7 @@ function DecadeSourceReview({ drafts, duplicates, sortOptionIds }) {
 	const missingCount = duplicates.missingDrafts.length;
 	return (
 		<section className="decade-source-generated" aria-labelledby="decade-source-generated-title">
-			<div className="add-source-section-heading"><div><p className="panel-kicker">Generated sources</p><h3 id="decade-source-generated-title">{drafts.length} source{drafts.length === 1 ? "" : "s"} configured</h3></div></div>
+			<div className="add-source-section-heading"><div><p className="panel-kicker">Generated sources</p><h3 id="decade-source-generated-title">{missingCount} {missingCount === 1 ? "Source" : "Sources"} to add</h3></div></div>
 			<ul className="genre-review-list decade-source-review-list">{drafts.map((draft, index) => {
 				const status = duplicateDrafts.has(draft) ? "destination-duplicate" : elsewhereDrafts.has(draft) ? "elsewhere" : "ready";
 				const label = status === "destination-duplicate" ? "Already in this folder" : status === "elsewhere" ? "Exists elsewhere" : "Ready to add";
@@ -347,7 +347,7 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 									{reconciliationNotice ? <p className="genre-fixed-media-note" role="status">{reconciliationNotice}</p> : null}
 									</GenreRuleCard>
 								</div>
-								<DecadesAdvancedOptions mediaMode={mediaMode} value={advanced} exclusionSummary={exclusionCount === 0 ? "No Genre exclusions configured" : `${exclusionCount} Genre exclusion${exclusionCount === 1 ? "" : "s"} configured across generated source choices`} onChange={(value) => { setAdvanced(reconcileAdvanced(value, mediaMode, genreNames)); setDiagnostic(null); }} onOpenSecondary={openSecondary} idPrefix="decade-source-advanced" />
+								<DecadesAdvancedOptions mediaMode={mediaMode} value={advanced} genresApplied={exclusionCount > 0} exclusionSummary={exclusionCount === 0 ? "No Genre exclusions configured" : `${exclusionCount} Genre exclusion${exclusionCount === 1 ? "" : "s"} configured across generated source choices`} onChange={(value) => { setAdvanced(reconcileAdvanced(value, mediaMode, genreNames)); setDiagnostic(null); }} onOpenSecondary={openSecondary} idPrefix="decade-source-advanced" />
 								{built.errors.length > 0 ? <ul className="genre-advanced-errors" role="alert">{built.errors.map((error) => <li id={error.code === "INVALID_DECADE_SOURCE_SORT" ? "decade-source-sort-error" : undefined} key={`${error.code}-${error.path}-${error.message}`}>{error.message}</li>)}</ul> : null}
 								{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 								<DecadeSourceReview drafts={drafts} duplicates={duplicates} sortOptionIds={sortOptionIds} />

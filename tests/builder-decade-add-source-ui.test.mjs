@@ -60,19 +60,9 @@ function renderFlow(existingDraftCount = 0) {
 	}));
 }
 
-test("ordinary Add Source exposes TMDB Lists and singular Decade in its retained position in the established chooser", () => {
+test("ordinary Add Source retains its labels in the canonical family order", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "Decades", onCancel() {}, onSelectMode() {} }));
-	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), [
-		"tmdb-movie-franchise",
-		"tmdb-lists",
-		"tmdb-people",
-		"tmdb-studios",
-		"tmdb-networks",
-		"tmdb-streaming-services",
-		"tmdb-genres",
-		"tmdb-decade",
-		"advanced-discover",
-	]);
+	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
 	assert.match(markup, /<strong>Decade<\/strong>/);
 	assert.doesNotMatch(markup, /<strong>Decades<\/strong>/);
 });
@@ -80,7 +70,7 @@ test("ordinary Add Source exposes TMDB Lists and singular Decade in its retained
 test("Decade Add Source server markup is one compact canonical editor in the approved order", () => {
 	const markup = renderFlow();
 	const editorMarkup = markup.match(/<section class="decade-source-editor">[\s\S]*?<\/section><\/div><footer/)?.[0] ?? markup;
-	const orderedLabels = ["Media", "Sources to create", "Decade", "Year", "Genre sources", "Advanced options", "Generated sources", "Preview titles"];
+	const orderedLabels = ["Media", "Sources to create", "Decade", "Year", "Genre sources", "Filters", "Generated sources", "Preview titles"];
 	let cursor = -1;
 	for (const label of orderedLabels) {
 		const next = editorMarkup.indexOf(label);
@@ -112,7 +102,7 @@ test("Decade Add Source server markup is one compact canonical editor in the app
 	assert.doesNotMatch(markup, /selection-indicator|selectable-card-indicator|✓/);
 	assert.match(markup, />Select all<\/button>/);
 	assert.match(markup, />Clear<\/button>/);
-	assert.match(markup, /2 sources configured/);
+	assert.match(markup, /2 Sources to add/);
 	assert.match(markup, /All 2020s Movies/);
 	assert.match(markup, /All 2020s Series/);
 	assert.match(markup, /Add 2 sources/);

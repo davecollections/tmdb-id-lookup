@@ -89,24 +89,14 @@ function configureMarkup(overrides = {}) {
 	}));
 }
 
-test("Add Source keeps Lists second and exposes Genres and Decade after the established modes", () => {
+test("Add Source preserves the approved canonical family order", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, {
 		folderName: "Genres",
 		onCancel() {},
 		onSelectMode() {},
 	}));
 	const modeIds = [...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]);
-	assert.deepEqual(modeIds, [
-		"tmdb-movie-franchise",
-		"tmdb-lists",
-		"tmdb-people",
-		"tmdb-studios",
-		"tmdb-networks",
-		"tmdb-streaming-services",
-		"tmdb-genres",
-		"tmdb-decade",
-		"advanced-discover",
-	]);
+	assert.deepEqual(modeIds, ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
 	assert.ok(markup.includes("<strong>Genres</strong>"));
 	assert.ok(markup.includes("<strong>Decade</strong>"));
 });
@@ -157,7 +147,7 @@ test("one fixed-media Genre stays in the current folder and hides irrelevant cho
 		assert.equal(markup.includes("Remove Action"), false);
 		assert.equal(markup.includes("genre-review-summary"), false);
 		assert.equal(markup.includes("1 genre selected"), false);
-		assert.ok(markup.includes("Configure &amp; review"));
+		assert.ok(markup.includes("Configure"));
 	}
 });
 
@@ -178,7 +168,7 @@ test("multi-Genre configure offers destination choices, removable summaries and 
 		drafts,
 		duplicates: { destination: [drafts[0]], duplicateDrafts: [drafts[0]], missingDrafts: drafts.slice(1), elsewhere: [{ identity: "elsewhere" }], elsewhereDrafts: [drafts[1]] },
 	});
-	for (const label of ["Configure &amp; review", "How would you like these added?", "Add all to this folder", "One folder per genre", "Favourites", "For genres available in both Movies and Series", "Sources to create", "Advanced options", "What do these options do?", "Sources to add · 3", "Already in this folder", "Exists elsewhere", "A matching source exists elsewhere in this project", "You can still add it here.", "Genre exclusions", "No genre exclusions configured"]) assert.ok(markup.includes(label), label);
+	for (const label of ["Configure", "How would you like these added?", "Add all to this folder", "One folder per genre", "Favourites", "For genres available in both Movies and Series", "Sources to create", "Filters", "What do these options do?", "Sources to add · 3", "Already in this folder", "Exists elsewhere", "A matching source exists elsewhere in this project", "You can still add it here.", "Genre exclusions", "No genre exclusions configured"]) assert.ok(markup.includes(label), label);
 	assert.equal(markup.includes("data-attention"), false);
 	assert.equal(markup.includes("genre-elsewhere-note"), false);
 	assert.ok(markup.includes("source-elsewhere-note"));
@@ -389,7 +379,7 @@ test("Genre Source Edit shares the advanced controls while Genre identity and me
 	assert.equal(markup.includes("genre-edit-mark"), false);
 	assert.ok(markup.includes("Genre ID and media type stay fixed for this source"));
 	assert.ok(markup.includes("Use default name"));
-	assert.ok(markup.includes("Advanced options"));
+	assert.ok(markup.includes("Filters"));
 	assert.ok(markup.includes("What do these options do?"));
 	assert.equal((markup.match(/type="date"/g) ?? []).length, 2);
  assert.ok(markup.includes("native-threshold-fields"));

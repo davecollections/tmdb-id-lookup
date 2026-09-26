@@ -132,7 +132,7 @@ test("Appearance exposes presentation decisions without artwork controls or Stud
 	assert.match(flow, /<PresentationSwitch/);
 	const appearance = flow.slice(flow.indexOf("function AppearanceStep"), flow.indexOf("export function StudioHierarchyFlow"));
 	assert.match(appearance, /title="Appearance"/);
-	assert.match(appearance, /Plan totals/);
+	assert.match(appearance, /<SourceVariantCounts counts=\{plan.counts\}/);
 	assert.match(appearance, /Collection name/);
 	assert.match(appearance, /Collection layout/);
 	assert.match(appearance, /Pin collection to top/);
@@ -143,7 +143,7 @@ test("Appearance exposes presentation decisions without artwork controls or Stud
 	assert.doesNotMatch(flow, /Choose presentation and fixed Landscape artwork settings/);
 	assert.match(flow, /resolveStudioFolderArtworkBatch\(chosen, artworkRuntimeClient\)/);
 	assert.match(flow, /Continue to Appearance/);
-	assert.doesNotMatch(flow, /Review &amp; Appearance|Continue to Review/);
+	assert.doesNotMatch(flow, /Review & Appearance|Continue to Review/);
 });
 
 test("Studio hierarchy has one scroll owner, sticky actions, and shared expanded Preview", () => {

@@ -68,7 +68,7 @@ export async function runPreviewPagesScenario(helpers, { deep = false, posterles
   }
   evidence.geometry = titlePreviewGeometry(modal(), modal().querySelector(".poster-only-preview-grid"));
   check(evidence.geometry.withinViewport && evidence.geometry.closeReachable && evidence.geometry.pageNoHorizontalOverflow && evidence.geometry.gridNoHorizontalScroll && evidence.geometry.activeScrollOwnerCount === 1, "one bounded body scroll owner");
-  check(status() === "20 titles loaded. Preview shows up to 100 titles. · List order", "neutral status despite missing metadata and repeat");
+  check(status() === "Preview shows up to 100 titles. · List order", "neutral status despite missing metadata and repeat");
   check(!fallbackVisible() && more().tabIndex === 0, "scrollable Preview hides the fallback visually but keeps keyboard access");
   checkOrder(20);
   await act(async () => { images()[0].dispatchEvent(new Event("error")); await afterCommittedEffects(); });
@@ -91,7 +91,7 @@ export async function runPreviewPagesScenario(helpers, { deep = false, posterles
    await clickAndSettle(more());
    check(calls.join() === "1,2,2" && images().length > initialCount, "Retry fetches just page two");
    checkOrder(40, [3]);
-   check(status() === "40 titles loaded. Preview shows up to 100 titles. · List order", "forty source titles represented despite fewer cards");
+   check(status() === "Preview shows up to 100 titles. · List order", "forty source titles represented despite fewer cards");
    check(document.activeElement === more() && body().scrollTop === top, `append keeps focus and scroll (${document.activeElement?.outerHTML.slice(0, 100)}, ${top} → ${body().scrollTop})`);
    await settle(); check(calls.join() === "1,2,2", "append does not drain");
    hold = true; await scroll("key"); check(calls.at(-1) === 3, "keyboard gesture requests page three");

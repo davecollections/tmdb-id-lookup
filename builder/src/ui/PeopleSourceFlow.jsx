@@ -529,12 +529,7 @@ export function PeopleReviewStep({
 	);
 	return (
 		<section className="decades-step decades-review-step people-review-step" aria-labelledby="people-review-title">
-			<CreationStageIntro step={3} phase="Review" title="Review & Appearance" headingId="people-review-title" headingRef={headingRef} tabIndex={-1} />
-			{plan && scope === "new-collection" ? <div className="decades-plan-totals" data-plan-scope={plan.configuration.scope} aria-label="Plan totals">
-				{scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection</span></div> : null}
-				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>
-				<div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div>
-			</div> : null}
+			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="people-review-title" headingRef={headingRef} tabIndex={-1} />
 			{plan ? <SourceVariantCounts counts={plan.counts} /> : null}
 			{scope === "new-collection" ? (
 				<>
@@ -1036,7 +1031,7 @@ export function PeopleSourceFlow({
 	const primaryLabel = hierarchy
 		? step === PEOPLE_SOURCE_STEPS.CONFIGURE && hierarchyPlanResult?.ok && hierarchyPlanResult.plan.counts.folderCount === 0 ? isApplying ? "Adding…" : "Add sources" : step === PEOPLE_SOURCE_STEPS.REVIEW
 			? isApplying ? "Applying…" : hierarchyPlanResult?.plan?.counts.existingFolderAdditionCount > 0 ? "Apply changes" : guidedCreateActionLabel(hierarchyScope, hierarchyPlanResult?.plan?.counts)
-			: "Continue to Review & Appearance"
+			: "Continue to Appearance"
 		: context === "folder"
 		? quickEntry ? `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}` : "Add sources"
 		: `Add ${configuredEntries.length} folder${configuredEntries.length === 1 ? "" : "s"} · ${bulkSourceCount} source${bulkSourceCount === 1 ? "" : "s"}`;
