@@ -11,6 +11,7 @@ import "../../builder/src/styles.css";
 // Owner-approved mocked Nuvio responses for this slice. These checks establish
 // local UI/transport mechanics, not live account or external-service evidence.
 const $ = (selector) => document.querySelector(selector);
+const nuvioHost = () => $("[data-nuvio-dialog]") ?? $("[data-workspace-import]");
 const frame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 const assert = (value, message) => { if (!value) throw new Error(message); };
 async function until(predicate) {
@@ -27,12 +28,12 @@ const incoming = [
 	{ id: "c", title: "Weekend favourites", custom: { preserve: [1, false, null] }, folders: [{ id: "f", title: "Family night", sources: [{ provider: "tmdb", tmdbSourceType: "CUSTOM", title: "Saved family catalogue", custom: true }] }] },
 	{ id: "c2", title: "Explore more", folders: [{ id: "f2", title: "Documentaries", sources: [{ provider: "community", title: "Saved documentaries" }] }, { id: "f3", title: "World cinema", sources: [{ provider: "community", title: "Saved world cinema" }] }] },
 ];
-let root, controller, connection, now, requests, outcome, loginFailure, pullChange, pinOutcome;
+let root, controller, connection, now, requests, outcome, loginFailure, pullChange, pinOutcome, holdRequest, releaseRequest, reviewIncoming;
 
 async function mount({ existing = false, screen = "welcome", result = "ready", open = true, matching = false, localOnly = false } = {}) {
 	if (root) { root.unmount(); connection.dispose(); await frame(); }
 	now = Date.parse("2026-09-19T08:30:00Z"); requests = []; loginFailure = false; pullChange = false; outcome = result;
-	pinOutcome = "correct";
+	pinOutcome = "correct"; holdRequest = null; releaseRequest = null; reviewIncoming = incoming;
 	controller = createBuilderController();
 	if (existing) {
 		controller.importValue([{ id: "c", title: "My current collection", folders: [{ id: "f", title: "Work in progress", sources: [] }] }]);
@@ -43,6 +44,7 @@ async function mount({ existing = false, screen = "welcome", result = "ready", o
 		assert(new URL(url).origin === "https://api.nuvio.tv", "Credentials sent directly to Nuvio origin");
 		assert(options.credentials === "omit" && options.cache === "no-store", "No cookies or response cache");
 		requests.push({ url, method: options.method });
+		if (holdRequest && url.includes(holdRequest)) { holdRequest = null; await new Promise(resolve => { releaseRequest = resolve; }); }
 		if (url.includes("grant_type=password")) {
 			if (loginFailure) return new Response("private-test-password private-test-token", { status: 400 });
 			return Response.json({ access_token: "private-test-token", refresh_token: "private-test-refresh", token_type: "bearer", expires_in: 3600, user });
@@ -59,7 +61,7 @@ async function mount({ existing = false, screen = "welcome", result = "ready", o
 			const index = JSON.parse(options.body).p_profile_id;
 			assert([1, 2].includes(index), "Selected numeric profile index");
 			if (outcome === "protection-change") pullChange = true;
-			return Response.json(outcome === "missing" ? [] : [{ profile_id: index, collections_json: outcome === "empty" ? [] : outcome === "malformed" ? null : incoming, updated_at: "2026-09-19T08:20:00Z" }]);
+			return Response.json(outcome === "missing" ? [] : [{ profile_id: index, collections_json: outcome === "empty" ? [] : outcome === "malformed" ? null : reviewIncoming, updated_at: "2026-09-19T08:20:00Z" }]);
 		}
 		throw Error("Unexpected endpoint");
 	} });
@@ -68,7 +70,7 @@ async function mount({ existing = false, screen = "welcome", result = "ready", o
 	if (!open) return;
 	if (screen === "workspace") await click($("[data-action=open-workspace-import]"));
 	await click($("[data-action=open-nuvio-import]"));
-	assert(document.activeElement === $("[data-nuvio-dialog] h2"), "Heading focus avoids unexpected keyboard");
+	assert(document.activeElement === (screen === "workspace" ? $("[data-nuvio-stage-heading]") : $("[data-nuvio-dialog] h2")), "Heading focus avoids unexpected keyboard");
 	assert(document.body.style.position === "fixed", "Modal locks the document");
 	assert(($("[data-builder-welcome]") ?? $(".workspace-underlay")).inert, "Background is inert");
 }
@@ -94,11 +96,11 @@ async function pull() {
 }
 
 function geometry() {
-	const dialog = $("[data-nuvio-dialog]"); const rect = dialog.getBoundingClientRect();
-	const owners = [...dialog.querySelectorAll("*")].filter((node) => ["auto", "scroll"].includes(getComputedStyle(node).overflowY));
+	const dialog = nuvioHost(); const rect = dialog.getBoundingClientRect();
+	const owners = [...dialog.querySelectorAll("*")].filter((node) => node.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(node).overflowY));
 	assert(document.documentElement.scrollWidth <= innerWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1, "No horizontal overflow");
 	assert(rect.left >= 0 && rect.right <= innerWidth + 1 && rect.top >= 0 && rect.bottom <= innerHeight + 1, "Dialog fits viewport");
-	assert(owners.length === 1 && owners[0] === $("[data-nuvio-dialog] .nuvio-dialog-content"), "One content scroll owner");
+	assert(owners.length === 1 && owners[0] === dialog.querySelector(".nuvio-dialog-content"), "One content scroll owner");
 	assert([...dialog.querySelectorAll("button")].filter((node) => node.getClientRects().length).every((node) => node.getBoundingClientRect().height >= 43), "Large action targets");
 	return { width: innerWidth, height: innerHeight, scrollOwners: owners.length, overflow: false };
 }
@@ -218,8 +220,8 @@ window.runNuvioLocalCases = async () => {
 	assert($(".nuvio-login"), "Next network operation requires login after expiry");
 	await click(button("Disconnect"));
 	assert(controller.getState().project.collections.length === 2, "Disconnect preserves imported project");
-	await click($("[aria-label='Close Nuvio import']"));
-	assert(document.activeElement === $("[data-action=open-nuvio-import]"), "Close restores exact workspace trigger");
+	await click($("[aria-label='Close Import']"));
+	assert(document.activeElement === $("[data-action=open-workspace-import]"), "Close restores exact workspace trigger");
 
 	await mount({ existing: true, screen: "workspace" }); await login(); await pull();
 	const original = controller.getState().project; const beforeRevision = controller.getState().revision;
@@ -228,7 +230,7 @@ window.runNuvioLocalCases = async () => {
 	assert($(".import-compatibility").textContent.includes("Some Sources have limited editing") && !$(".import-notable"), "Routine compatibility is quiet");
 	assert($(".import-compatibility p").textContent === "Their Source settings can't be edited in Dingo. Collection and Folder details remain editable.", "Short review compatibility copy");
 	assert(!button("Choose another profile") && !button("Import + download backup"), "Review has no superseded actions");
-	const back = [...document.querySelectorAll(".nuvio-dialog-header button")].find((node) => node.textContent.includes("Back"));
+	const back = [...nuvioHost().querySelectorAll(".nuvio-dialog-header button, .nuvio-flow-back button")].find((node) => node.textContent.includes("Back"));
 	assertSharedButton(back, "add-source-header-action");
 	assert($(".nuvio-review time").parentElement.textContent.startsWith("Last updated in Nuvio:"), "Last updated label");
 	assert(/^19 Sept 2026, \d{1,2}:\d{2} [ap]m$/.test($(".nuvio-review time").textContent), "Deterministic Australian date without seconds");
@@ -294,7 +296,9 @@ window.prepareNuvioScreen = async (stage = "review") => {
 		if (stage !== "landing") await click($(`[data-action=choose-import-${stage.slice(8)}]`));
 		return landingGeometry();
 	}
-	await mount({ existing: !["login", "landing"].includes(stage), screen: ["login", "landing"].includes(stage) ? "welcome" : "workspace", open: stage !== "landing", matching: ["review", "workspace"].includes(stage) });
+	// Keep the established standalone matrix; the dedicated workspace suite
+	// independently covers embedded stages and their narrower content panel.
+	await mount({ existing: !["login", "landing"].includes(stage), screen: stage === "workspace" ? "workspace" : "welcome", open: stage !== "landing", matching: ["review", "workspace"].includes(stage) });
 	if (stage === "landing") return landingGeometry();
 	if (stage !== "login") await login();
 	if (stage === "profiles") await click($(".nuvio-profile-choice input"));
@@ -318,7 +322,7 @@ window.prepareNuvioScreen = async (stage = "review") => {
 			return { width: innerWidth, height: innerHeight, overflow: false };
 		}
 	}
-	$("[data-nuvio-dialog] h2").focus({ preventScroll: true });
+	nuvioHost().querySelector("h2").focus({ preventScroll: true });
 	for (const avatar of document.querySelectorAll(".nuvio-avatar")) assert(avatar.getBoundingClientRect().width === 38, "Profile and Review avatars use 38px");
 	for (const card of document.querySelectorAll(".nuvio-profile-choice")) if (!card.querySelector(".nuvio-pin.is-inline .nuvio-muted")) assert(card.getBoundingClientRect().height <= 76, "Avatars retain compact profile rows");
 	const selectedCard = $(".nuvio-choice[data-selected=true]");
@@ -327,10 +331,10 @@ window.prepareNuvioScreen = async (stage = "review") => {
 		assert(getComputedStyle(selectedCard).outlineStyle === "none", "Selected state does not imply keyboard focus");
 		assert(getComputedStyle(selectedCard).boxShadow.includes("inset"), "Shared selected state retains its structural inset");
 	}
-	$("[data-nuvio-dialog] .nuvio-dialog-content").scrollTop = stage === "review" ? $("[data-nuvio-dialog] .nuvio-dialog-content").scrollHeight : 0; await frame();
+	nuvioHost().querySelector(".nuvio-dialog-content").scrollTop = stage === "review" ? nuvioHost().querySelector(".nuvio-dialog-content").scrollHeight : 0; await frame();
 	return geometry();
 };
-window.checkNuvioClosed = () => !$("[data-nuvio-dialog]") && (document.body.style.position === "fixed") === Boolean($("[data-workspace-import]")) && document.activeElement === $("[data-action=open-nuvio-import]");
+window.checkNuvioClosed = () => !nuvioHost() && document.body.style.position !== "fixed" && document.activeElement === ($("[data-action=open-workspace-import]") ?? $("[data-action=open-nuvio-import]"));
 window.nuvioFixtureReady = true;
 
 // Workspace checks exercise only local project JSON and the real, unsubmitted
@@ -388,9 +392,9 @@ window.runWorkspaceImportCases = async () => {
 	await click($("[data-action=choose-import-file]")); const chosen = await setWorkspaceFile(); const fileInput = $("#builder-import-file");
 	await click($("[data-action=choose-import-json]")); await setWorkspaceText("retained draft");
 	await click($("[data-action=open-nuvio-import]"));
-	assert($(".nuvio-login") && document.querySelectorAll('[role="dialog"]').length === 1, "Real Nuvio login hands off without two active dialogs");
-	await click($("[aria-label='Close Nuvio import']"));
-	assert(document.activeElement === $("[data-action=open-nuvio-import]"), "Nuvio returns focus to its method trigger");
+	assert($(".nuvio-login") && !$("[data-nuvio-dialog]") && document.querySelectorAll('[role="dialog"]').length === 1, "Real Nuvio login is embedded in the existing Import shell");
+	await click($("[data-action=choose-import-json]"));
+	assert(document.activeElement === $("#builder-import-json-panel h3"), "Method switching focuses its visible heading");
 	assert($("#builder-import-text").value === "retained draft" && $("#builder-import-file") === fileInput && fileInput.files[0] === chosen, "Both local drafts and native file survive handoff");
 	await click(button("Cancel")); assert(controller.getState() === initial && document.activeElement === trigger && !document.body.style.position, "Cancel is nonmutating and restores Import focus/body");
 	for (const method of ["file", "json"]) for (const mode of ["add", "merge", "replace"]) {
@@ -480,6 +484,120 @@ window.prepareWorkspaceImportScreen = async (stage, enlarged = false) => {
 	}
 	return workspaceGeometry();
 };
+
+// Owner-approved mocked Nuvio mechanics for the embedded-host amendment.
+// These cases never claim authenticated live-service acceptance.
+function assertEmbeddedShell(shell) {
+	assert(workspaceDialog() === shell && shell.isConnected && shell.getClientRects().length, "Outer Import shell remains mounted and visible");
+	assert(!shell.inert && !shell.closest('[inert], [aria-hidden="true"]'), "Import is never suspended or hidden");
+	assert(!$("[data-nuvio-dialog]") && document.querySelectorAll(".nuvio-connection-backdrop").length === 1, "No second backdrop or Nuvio portal");
+	assert(document.querySelectorAll('[role="dialog"]').length === 1 && document.querySelectorAll('[aria-modal="true"]').length === 1, "One modal semantic surface");
+	assert(shell.querySelector("h2").textContent === "Import" && shell.querySelectorAll("h2").length === 1, "One outer Import heading");
+	const method = $("[data-action=open-nuvio-import]");
+	assert(method.getAttribute("aria-pressed") === "true" && !method.hasAttribute("aria-haspopup"), "Nuvio is the selected method, not a dialog trigger");
+	assert(method.getClientRects().length && document.body.style.position === "fixed", "Methods remain present under the single body lock");
+	assert(!shell.textContent.includes("Your collection JSON is processed locally"), "Nuvio does not show local-only privacy copy");
+	assert(shell.querySelector('[data-nuvio-stage-heading]').tagName === "H3", "Nuvio heading is subordinate to outer Import");
+	assert(![...shell.querySelectorAll("[hidden] input, [hidden] textarea")].includes(document.activeElement), "Focus never moves to a hidden local control");
+}
+window.runEmbeddedNuvioCases = async () => {
+	for (const mode of ["add", "merge", "replace"]) {
+		await mount({ existing: true, screen: "workspace", matching: true }); const shell = workspaceDialog(); const before = controller.getState();
+		reviewIncoming = structuredClone(incoming); reviewIncoming[0].folders[0].coverEmoji = "🎬";
+		assertEmbeddedShell(shell); assert($(".nuvio-login").textContent.includes("Your login details go directly to Nuvio"), "Existing credential/privacy reassurance retained");
+		await login(); assertEmbeddedShell(shell);
+		assert(document.activeElement === $("[data-nuvio-stage-heading]") && document.activeElement.textContent === "Choose a profile", "Connected stage heading receives focus");
+		await pull(); assertEmbeddedShell(shell); assert(controller.getState() === before, "Snapshot review has no early mutation");
+		await workspaceChoice(mode);
+		assert(Boolean(shell.querySelector(".merge-artwork-policies")) === (mode === "merge"), "Only Merge exposes shared artwork choices");
+		if (mode === "merge") {
+			assert(shell.querySelector('input[value="keep-existing"]').checked, "Embedded Merge defaults to Keep existing");
+			await workspaceChoice("fill-missing"); assert(artworkCountsText().includes("1 missing field filled"), "Embedded preview uses shared field counts");
+		}
+		await click(button("Import to Dingo"));
+		if (mode === "replace") {
+			assertEmbeddedShell(shell); assert(document.activeElement === button("Keep current work") && controller.getState() === before, "Shared Replace confirmation focuses safe action");
+			const safe = document.activeElement.getBoundingClientRect(); const area = shell.querySelector(".nuvio-dialog-content").getBoundingClientRect();
+			assert(safe.top >= area.top && safe.bottom <= area.bottom + 1, "Safe Replace action is visible inside the outer scroll owner");
+			await click(button("Replace current project"));
+		}
+		assert(!workspaceDialog() && controller.getState().revision === before.revision + 1, "Embedded final Apply commits exactly once");
+		assert(controller.getState().project.collections.length === (mode === "add" ? 3 : 2), "Shared Add/Merge/Replace result");
+		if (mode === "merge") assert(controller.getState().project.collections[0].folders[0].editable.coverEmoji === "🎬", "Reviewed artwork policy reaches the same controller");
+		assert(document.activeElement === importTrigger(), "Successful import restores workspace trigger");
+	}
+	for (const mode of ["add", "merge", "replace"]) {
+		await mount({ existing: true, screen: "workspace" }); await login(); await pull(); await workspaceChoice(mode);
+		const project = controller.getState().project; controller.updateNode(project.collections[0].internalId, { pinToTop: true }); await frame();
+		assert(button("Import to Dingo").disabled && button("Review current project"), "Embedded stale project blocks every mode");
+		await click(button("Review current project")); assert(button("Import to Dingo").disabled, "Refresh requires a new mode");
+	}
+	await mount({ existing: true, screen: "workspace" }); const shell = workspaceDialog();
+	await click($("[data-action=choose-import-file]")); const chosen = await setWorkspaceFile(); const fileInput = $("#builder-import-file");
+	assert(shell.textContent.includes("Your collection JSON is processed locally"), "File privacy is local");
+	await click($("[data-action=choose-import-json]")); await setWorkspaceText(JSON.stringify(workspaceIncoming));
+	assert(shell.textContent.includes("Your collection JSON is processed locally"), "Pasted privacy is local");
+	await click($("[data-action=open-nuvio-import]")); await login(); await pull(); await workspaceChoice("merge"); await workspaceChoice("prefer-incoming");
+	const reviewed = connection.getState().snapshot;
+	await click($("[data-action=choose-import-file]"));
+	assert(connection.getState().status === "connected" && !connection.getState().snapshot && !$("[data-nuvio-flow]"), "Method switch keeps session and discards Nuvio review authority");
+	assert($("#builder-import-file") === fileInput && fileInput.files[0] === chosen, "Native file selection survives embedded Nuvio");
+	await click($("[data-action=open-nuvio-import]")); assertEmbeddedShell(shell);
+	assert(!$(".nuvio-login") && !$(".nuvio-review") && connection.getState().snapshot !== reviewed, "Returning retains profiles and requires a fresh snapshot");
+	await pull(); await workspaceChoice("merge"); assert(shell.querySelector('input[value="keep-existing"]').checked, "New authority resets artwork policy");
+	await click($("[data-action=choose-import-json]"));
+	assert($("#builder-import-text").value === JSON.stringify(workspaceIncoming), "Pasted draft survives Nuvio review");
+	await click(button("Review pasted JSON")); await until(() => $(".nuvio-review")); await workspaceChoice("add"); await click(button("Import to Dingo"));
+	assert(controller.getState().project.collections.at(-1).editable.title === "Movie nights", "Local Apply uses only the active local snapshot");
+	for (const stage of ["pin", "missing", "empty", "expired", "error"]) {
+		await window.prepareEmbeddedNuvioScreen(stage);
+		if (["missing", "empty"].includes(stage)) assert(button("Import to Dingo").disabled, "Missing/empty Nuvio cannot import");
+		if (stage === "pin") { await submitPin(); assert($(".nuvio-review-profile").textContent.includes("Kids"), "Protected PIN advances inside the same shell"); }
+		if (stage === "expired") assert(workspaceDialog().querySelector(".nuvio-notice[role=status]").textContent.includes("expired"), "Expiry retains its local snapshot notice");
+		if (stage === "error") assert($("[role=alert]").textContent.includes("could not sign you in"), "Login error remains sanitized");
+	}
+	for (const kind of ["login", "profiles", "pin", "pull"]) {
+		await mount({ existing: true, screen: "workspace" }); const before = controller.getState();
+		if (kind !== "login") await login();
+		if (kind === "pin") await click($("input[value='33333333-3333-4333-8333-333333333333']"));
+		if (kind === "pull") await click($(".nuvio-profile-choice input"));
+		holdRequest = { login: "grant_type=password", profiles: "sync_pull_profiles", pin: "verify_profile_pin", pull: "sync_pull_collections" }[kind];
+		if (kind === "login") { $("input[name=email]").value = user.email; $("input[name=password]").value = "private-test-password"; $(".nuvio-login").requestSubmit(); }
+		else if (kind === "pin") { const field = $("input[name=pin]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(field, "4826"); field.dispatchEvent(new Event("input", { bubbles: true })); }
+		else button(kind === "profiles" ? "Refresh profiles" : "Load Collections").click();
+		$("[data-action=choose-import-file]").click(); await until(() => Boolean(releaseRequest));
+		assertEmbeddedShell(workspaceDialog());
+		assert([...workspaceDialog().querySelectorAll(".welcome-import-methods button")].every(n => n.disabled), "Every active Nuvio request prevents method switching");
+		const finish = releaseRequest; await click($("[aria-label='Close Import']")); finish(); await frame();
+		assert(!workspaceDialog() && !connection.getState().busy && !connection.getState().snapshot && controller.getState() === before, "Close cancels request authority and rejects late completion");
+		assert(connection.getState().status === (kind === "login" ? "disconnected" : "connected"), "Close preserves an established memory-only session");
+		assert(document.activeElement === importTrigger() && !document.body.style.position, "Close restores the workspace and single body lock");
+	}
+	assert(!requests.some(request => request.url.includes("sync_push")), "Import never sends a Collection mutation");
+	return { passed: true, mocked: true };
+};
+window.prepareEmbeddedNuvioScreen = async (stage = "login", enlarged = false) => {
+	document.documentElement.style.fontSize = enlarged ? "32px" : "";
+	await mount({ existing: true, matching: true, screen: "workspace", result: ["missing", "empty"].includes(stage) ? stage : "ready" });
+	const shell = workspaceDialog();
+	if (stage === "error") loginFailure = true;
+	if (stage !== "login") await login();
+	if (stage === "pin") await click($("input[value='33333333-3333-4333-8333-333333333333']"));
+	if (["review", "merge", "missing", "empty", "expired"].includes(stage)) await pull();
+	if (stage === "merge") { await workspaceChoice("merge"); await workspaceChoice("prefer-incoming"); }
+	if (stage === "expired") { now += 3600001; connection.checkExpiry(); await frame(); }
+	assertEmbeddedShell(shell);
+	const focused = document.activeElement.getBoundingClientRect(); const scroll = shell.querySelector(".nuvio-dialog-content"); const viewport = scroll.getBoundingClientRect();
+	if (document.activeElement.matches('[data-nuvio-stage-heading], [role="alert"]')) assert(focused.top >= viewport.top - 1 && focused.bottom <= viewport.bottom + 1, `Focused embedded ${stage} stays visible at ${innerWidth}×${innerHeight}: ${focused.top}–${focused.bottom} within ${viewport.top}–${viewport.bottom}`);
+	if (innerWidth >= 900 && innerHeight >= 600 && stage === "merge") {
+		scroll.scrollTop = scroll.scrollHeight; await frame();
+		const methods = shell.querySelector(".welcome-import-methods").getBoundingClientRect();
+		assert(methods.top >= viewport.top - 1 && methods.bottom <= viewport.bottom + 1, "Desktop method choices remain visible at the final review action");
+		scroll.scrollTop = 0; await frame();
+	}
+	return workspaceGeometry();
+};
+
 window.workspaceImportGeometry = workspaceGeometry;
 window.workspaceImportClosed = () => !workspaceDialog() && !$("[data-nuvio-dialog]") && document.activeElement === importTrigger() && !document.body.style.position;
 
@@ -503,7 +621,7 @@ async function submitPin() {
 	assert(!document.body.innerHTML.includes("4826"), "PIN absent from rendered UI");
 }
 function assertFooter(primary) {
- const actions = [...document.querySelectorAll("[data-nuvio-dialog] .nuvio-dialog-footer button")];
+ const actions = [...nuvioHost().querySelectorAll(".nuvio-flow-actions button, [data-nuvio-dialog] .nuvio-dialog-footer button")];
  assert(actions[0] === button(primary) && actions[1] === button("Disconnect"), "Forward left, Disconnect right in footer");
  assert(actions[1].classList.contains("secondary-action") && parseFloat(getComputedStyle(actions[1]).fontSize) < parseFloat(getComputedStyle(actions[0]).fontSize), "Disconnect uses smaller standard secondary styling");
 }
@@ -609,7 +727,7 @@ async function checkMerge() {
  assert(requests.length === calls && controller.getState().project.collections.length === 2 && controller.getState().revision === before.revision + 1, "Expired merge applies locally once");
  assertWorkspaceStatus();
  await mount(); await login(); await pull();
- const back = [...document.querySelectorAll(".nuvio-dialog-header button")].find((node) => node.textContent.includes("Back"));
+ const back = [...nuvioHost().querySelectorAll(".nuvio-dialog-header button, .nuvio-flow-back button")].find((node) => node.textContent.includes("Back"));
  await click(back);
  assert($(".nuvio-profile-stage") && !connection.getState().snapshot && $(".nuvio-profile-choice input:checked").value === main.id, "Standard Back returns to the retained selected Profile");
  assert(snapshot.collections.length === 2, "Reviewed snapshot remains immutable");

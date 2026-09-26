@@ -1,20 +1,24 @@
 // Shared method presentation; each host owns drafts and its apply/review boundary.
-export function ImportMethods({ importMethod, onOpenNuvio, isBusy, isActionActive = () => isBusy, busyAction, chooseImportMethod, handleFileImport, handlePastedImport, onFileChange, pastedText, onTextChange, reviewOnly = false }) {
+export function ImportMethods({ importMethod, onOpenNuvio, nuvioMode = "dialog", nuvioContent, isBusy, isActionActive = () => isBusy, busyAction, chooseImportMethod, handleFileImport, handlePastedImport, onFileChange, pastedText, onTextChange, reviewOnly = false }) {
+	const embeddedNuvio = nuvioMode === "embedded";
 	return (<div className="welcome-import-layout">
 		<div className="welcome-import-methods" role="group" aria-label="Import method">
-			{onOpenNuvio ? (
+			{onOpenNuvio || embeddedNuvio ? (
 				<button
 					type="button"
 					className="import-action welcome-import-method"
 					data-action="open-nuvio-import"
-					aria-haspopup="dialog"
+					aria-haspopup={embeddedNuvio ? undefined : "dialog"}
 					disabled={isBusy}
+					data-selection-mode={embeddedNuvio ? "single" : undefined}
+					aria-pressed={embeddedNuvio ? importMethod === "nuvio" : undefined}
+					aria-controls={embeddedNuvio ? "builder-import-nuvio-panel" : undefined}
 					aria-labelledby="builder-import-nuvio-title"
 					aria-describedby="builder-import-nuvio-help"
 					onClick={(event) => chooseImportMethod("nuvio", event)}
 				>
 					<span className="creation-option-copy"><strong id="builder-import-nuvio-title">Import from Nuvio</strong><small id="builder-import-nuvio-help">Connect to a Nuvio profile</small></span>
-					<span className="welcome-import-forward" aria-hidden="true" />
+					{!embeddedNuvio ? <span className="welcome-import-forward" aria-hidden="true" /> : null}
 				</button>
 			) : null}
 			{[["file", "Import from file", "Choose a Collection JSON file"], ["json", "Import from JSON", "Paste Collection JSON"]].map(([method, label, help]) => (
@@ -36,13 +40,14 @@ export function ImportMethods({ importMethod, onOpenNuvio, isBusy, isActionActiv
 			))}
 		</div>
 		<div className="welcome-import-content">
+			{embeddedNuvio ? <div id="builder-import-nuvio-panel" hidden={importMethod !== "nuvio"}>{nuvioContent}</div> : null}
 			{importMethod === null ? <div className="welcome-import-prompt">
 				<h3>Choose an import method</h3>
 				<p>Select an option to continue.</p>
 			</div> : null}
 			<form id="builder-import-file-panel" className="import-card" hidden={importMethod !== "file"} aria-busy={busyAction === "file"} onSubmit={handleFileImport}>
 				<div>
-					<h3>Choose a JSON file</h3>
+					<h3 tabIndex={reviewOnly ? -1 : undefined}>Choose a JSON file</h3>
 					<p id="file-import-guidance">JSON files up to 10 MB are supported.</p>
 				</div>
 				<label className="file-input-label" htmlFor="builder-import-file">Collection JSON file</label>
@@ -71,7 +76,7 @@ export function ImportMethods({ importMethod, onOpenNuvio, isBusy, isActionActiv
 
 			<form id="builder-import-json-panel" className="import-card" hidden={importMethod !== "json"} aria-busy={busyAction === "pasted"} onSubmit={handlePastedImport}>
 				<div>
-					<h3>Paste JSON text</h3>
+					<h3 tabIndex={reviewOnly ? -1 : undefined}>Paste JSON text</h3>
 					<p id="pasted-import-guidance">Paste one Nuvio collection JSON document.</p>
 				</div>
 				<label htmlFor="builder-import-text">Collection JSON</label>

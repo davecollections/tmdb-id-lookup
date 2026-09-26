@@ -4,7 +4,7 @@
 
 Run `node --test tests/builder-import-merge.test.mjs tests/builder-workspace-import.test.mjs tests/builder-nuvio-import.test.mjs tests/builder-welcome-import.test.mjs` for every artwork field under all policies, absence/null/blank/unsupported values, no-deletion, exact text/raw preservation, unchanged matching/dedupe/order, input-source parity, file limits/errors, stale review, complete planner/controller equality and atomic apply. Related importer/controller/serializer/presentation/export/Send suites provide focused regression evidence.
 
-The existing workspace browser lifecycle and import fixture provide a **local-only** scenario using the production app/controller and real unsubmitted Nuvio login:
+The existing workspace browser lifecycle and import fixture exercise local JSON with the production app/controller and unsubmitted production Nuvio login. The owner-approved embedded-host amendment additionally uses the existing mocked Nuvio contract path for deterministic authentication/profile/PIN/review mechanics:
 
 ```powershell
 $env:WORKSPACE_IMPORT_ONLY = "1"
@@ -14,9 +14,11 @@ Remove-Item Env:WORKSPACE_IMPORT_ONLY
 Remove-Item Env:WORKSPACE_IMPORT_SCREENSHOT_DIR
 ```
 
-Its 56 layout states cover 360/384/393/402/412/899/900/901/1280px, 393×400, 200% text, forced colours and reduced motion. Assertions cover local errors/warnings, native-file/pasted draft retention, Nuvio handoff without overlapping dialogs, Add/Merge/Replace, policy counts/reset, stale refresh, safe Replace focus, cancellation/late-read rejection, one content scroll owner, no horizontal overflow, reachable actions and native keyboard focus/restoration. Local examples use emoji payloads and no fabricated external media URLs/responses; zero external requests are asserted. These checks make no authenticated live Nuvio review claim. Pure snapshot-adapter parity and connection tests remain separate evidence; historical owner-authorized mock suites are not substitutes for current live service acceptance.
+Its 56 local layout states cover 360/384/393/402/412/899/900/901/1280px, 393×400, 200% text, forced colours and reduced motion. Another 44 embedded Nuvio states cover login/profiles/PIN/review/Merge at 360/393/899/900/901/1280px and short height, with login/profiles/Merge at 200% text, forced colours and reduced motion. Assertions cover exactly one persistent Import shell/backdrop/trap/body lock, selected-method semantics, subordinate headings, visible stage focus, desktop method visibility through long reviews, one scroll owner, no overflow, native Tab/Escape and trigger restoration. Behavioral cases cover PIN, missing/empty/expired/error snapshots, all shared modes, artwork counts/reset, stale refresh, safe Replace focus, method-aware privacy, retained drafts/session, discarded snapshot authority, and busy/late-completion safety for login/refresh/PIN/pull. Local file read cancellation and detached Apply remain covered. Optional capture emits eight focused owner images.
 
-The existing `NUVIO_WELCOME_ONLY=1` / `--test-name-pattern="mounted Nuvio welcome"` check retains 44 local Welcome layouts and four direct-creation cases. Grouped PR CI supplies final-head coverage without repeatedly running full local validation. Retain frontend/four-fixture guards, production build and Git hygiene.
+Zero external requests are asserted. These explicitly mocked mechanics are not authenticated live Nuvio acceptance; a real authenticated snapshot must reach the shared embedded review before merge. Physical-phone keyboard/Visual Viewport acceptance remains an owner check. No destructive Replace is required just to establish the amendment. Pure snapshot-adapter parity and connection tests remain separate evidence.
+
+The existing `NUVIO_WELCOME_ONLY=1` / `--test-name-pattern="mounted Nuvio welcome"` check retains 44 local Welcome layouts and four direct-creation cases. `NUVIO_IMPORT_ONLY=1` / `--test-name-pattern="mounted Nuvio local mock"` retains 63 Nuvio layouts and standalone Welcome login/PIN/review behavior. `NUVIO_SEND_ONLY=1` / `--test-name-pattern="mounted Nuvio Send"` retains Send and standalone Merge-instead regressions; `NUVIO_SEND_LOCAL_ONLY=1` narrows this to its authorized mocked mechanics. Grouped PR CI supplies final-head coverage without repeatedly running full local validation. Retain frontend/four-fixture guards, production build and Git hygiene.
 
 ## Optional Source naming (#257)
 

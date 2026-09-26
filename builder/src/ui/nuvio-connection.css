@@ -45,7 +45,7 @@
 .nuvio-profile-choice[data-disabled="true"] .nuvio-profile-label { cursor: not-allowed; }
 .nuvio-profile-choice:has(> .choice-card-input:focus-visible) { outline: 3px solid var(--cyan-bright); outline-offset: 3px; }
 .nuvio-profile-label > span:last-child, .nuvio-review-profile > div { min-width: 0; }
-.nuvio-review-profile h3 { margin: 0 0 4px; }
+.nuvio-review-profile :is(h3, h4) { margin: 0 0 4px; font-size: 1.12rem; }
 .nuvio-lock { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; }
 .nuvio-avatar { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; overflow: hidden; border-radius: 9px; background: var(--elevated); border: 1px solid var(--border); }
 .nuvio-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -71,13 +71,22 @@
 .nuvio-dialog-header > div { flex: 1; min-width: 0; }
 .nuvio-account { padding-bottom: 10px; }
 .nuvio-merge-preview { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--panel); font-size: .82rem; }
-.nuvio-merge-preview h4 { margin: 0; }
-.nuvio-merge-preview h4:not(:first-child) { margin-top: 16px; }
+.nuvio-merge-preview :is(h3, h4, h5) { margin: 0; font-size: inherit; }
+.nuvio-merge-preview :is(h4, h5):not(:first-child) { margin-top: 16px; }
 .workspace-import-dialog { width: min(100%, 900px); }
 .workspace-import-dialog .welcome-import { margin: 0; }
 .workspace-import-dialog .welcome-import[hidden] { display: none; }
 .workspace-import-dialog .welcome-import-content { min-width: 0; }
 .workspace-import-dialog .privacy-note { margin-bottom: 0; }
+.workspace-nuvio-flow { min-width: 0; }
+.workspace-nuvio-flow .nuvio-steps { padding: 0 0 16px; }
+.nuvio-flow-back { margin-bottom: 12px; }
+.nuvio-flow-actions { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+[data-nuvio-stage-heading]:focus, .workspace-import-dialog .import-card h3:focus { outline: none; }
+.workspace-nuvio-flow .nuvio-import-modes, .workspace-nuvio-flow .merge-artwork-policies { grid-template-columns: 1fr; }
+@media (min-width: 900px) and (min-height: 600px) {
+	.workspace-import-dialog .welcome-import-methods { position: sticky; top: 0; align-self: start; }
+}
 .nuvio-merge-preview p { margin: 8px 0 0; }
 .nuvio-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0; }
 .nuvio-counts > div { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--panel); }

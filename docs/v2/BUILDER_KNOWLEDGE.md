@@ -6,7 +6,7 @@
 
 ## Workspace Import and Merge artwork — #259
 
-Workspace Import offers Nuvio, file and pasted JSON through detached review and common Add/Merge/Replace behavior. Exact matching and Source equality remain unchanged. The [import contract](./BUILDER_WELCOME_IMPORT.md#workspace-import-and-merge-artwork-259) owns the allowlist, classification, no-deletion, counts, stale review and atomic apply. Welcome direct open and Send semantics remain unchanged.
+Workspace Import offers Nuvio, file and pasted JSON through detached review and common Add/Merge/Replace behavior. Nuvio now embeds the shared `NuvioImportFlow` inside the existing Import panel, with one outer modal/trap/body lock. Switching methods retains drafts and the valid memory-only session while discarding reviewed snapshot authority; Welcome and Send keep the standalone shell. Exact matching and Source equality remain unchanged. The [import contract](./BUILDER_WELCOME_IMPORT.md#workspace-import-and-merge-artwork-259) owns the allowlist, classification, no-deletion, counts, stale review and atomic apply. Welcome direct open and Send semantics remain unchanged.
 
 ## Direct Nuvio Import and Send
 

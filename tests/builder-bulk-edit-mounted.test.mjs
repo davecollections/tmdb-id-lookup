@@ -291,15 +291,15 @@ async function runNuvioImportChecks(connection, origin) {
 				await fsPromises.writeFile(path.join(screenshots, `nuvio-${stage}-${width}.png`), Buffer.from(image.data, "base64"));
 			}
 			if (["workspace", "landing"].includes(stage)) continue;
-			await evaluate(connection, 'document.querySelector("[data-nuvio-dialog] h2").focus({ preventScroll: true })');
+			await evaluate(connection, 'document.querySelector("[aria-modal=true] h2").focus({ preventScroll: true })');
 			await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: 8 });
 			await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
-			assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Shift-Tab from initial heading stays contained");
+			assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[aria-modal=true]"))'), true, "Shift-Tab from initial heading stays contained");
 			for (const backward of [false, true]) {
-				await evaluate(connection, `(() => { const controls = [...document.querySelector('[data-nuvio-dialog]').querySelectorAll('button, input, summary')].filter(node => !node.disabled && node.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
+				await evaluate(connection, `(() => { const controls = [...document.querySelector('[aria-modal=true]').querySelectorAll('button, input, summary')].filter(node => !node.disabled && node.getClientRects().length); controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
 				await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: backward ? 8 : 0 });
 				await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
-				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-nuvio-dialog]"))'), true, "Native Tab stays inside Nuvio dialog");
+				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[aria-modal=true]"))'), true, "Native Tab stays inside Nuvio dialog");
 			}
 			await connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
 			await connection.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
@@ -681,10 +681,13 @@ before(async () => {
 
 test("mounted workspace Import shares local review, artwork policies and accessible responsive navigation", { skip: nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.workspaceImport.local, { passed: true, externalServiceExercised: false });
+	assert.deepEqual(mounted.workspaceImport.embedded, { passed: true, mocked: true });
 	assert.equal(mounted.workspaceImport.layouts.length, 56);
+	assert.equal(mounted.workspaceImport.embeddedLayouts.length, 44);
 	assert.ok(mounted.workspaceImport.layouts.every(result => result.passed));
+	assert.ok(mounted.workspaceImport.embeddedLayouts.every(result => result.passed));
 	assert.deepEqual(mounted.workspaceImport.errors, []);
-	console.log("Workspace Import layouts:", mounted.workspaceImport.layouts.length);
+	console.log("Workspace Import layouts:", mounted.workspaceImport.layouts.length, "; embedded Nuvio layouts:", mounted.workspaceImport.embeddedLayouts.length);
 });
 
 test("mounted Nuvio Send retains safe outcomes and one responsive Export shell", { skip: nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
