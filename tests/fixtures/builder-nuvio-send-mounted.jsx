@@ -116,7 +116,7 @@ async function complete() { await until(() => !api.connection.getState().busy &&
 async function pinFlow(flow, mode = "verified") {
 	await mount({ connected: true, mode });
 	if (flow === "send") await enterSend();
-	else { await click(button("Close")); await click($("[data-action=open-nuvio-import]")); }
+	else { await click(button("Close")); await click($("[data-action=open-workspace-import]")); await click($("[data-action=open-nuvio-import]")); }
 	await select(protectedA);
 	assert(!$(".nuvio-pin button") && $("input[name=pin]").inputMode === "numeric", "Shared PIN has a numeric field and no Verify button");
 }
