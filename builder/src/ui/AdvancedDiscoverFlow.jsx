@@ -1,3 +1,5 @@
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { sourceNameState } from "../source-add/source-names.js";
 import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { RequiredNameInput, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext, sourceDestinationContext } from "./creation-context.js";
@@ -58,7 +60,11 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  const pages = hierarchy ? ["filters", "appearance", "artwork", "review"] : ["filters", "review"];
  const opening = useRef({ project, projectRevision });
  const [stateDraft, setDraft] = useState(() => initialDraft ?? createAdvancedDiscoverDraft());
- const draft = { ...stateDraft, name: suggestDiscoverName(stateDraft), previewBlocked: discoverEditorPreviewBlocked(stateDraft) };
+ const optionalNaming = !editing && !hierarchy;
+ const [baseNameDraft, setBaseNameDraft] = useState(() => initialDraft?.nameMode === "custom" ? initialDraft.name : undefined);
+ const automaticName = suggestDiscoverName({ ...stateDraft, nameMode: "auto" });
+ const baseName = sourceNameState(automaticName, baseNameDraft);
+ const draft = { ...stateDraft, name: optionalNaming ? baseName.title : suggestDiscoverName(stateDraft), ...(optionalNaming ? { nameMode: baseName.customised ? "custom" : "auto" } : {}), previewBlocked: discoverEditorPreviewBlocked(stateDraft) };
  const [page, setPage] = useState("filters"), [busy, setBusy] = useState(false), [errors, setErrors] = useState([]);
  const [catalogue, setCatalogue] = useState({ status: "loading" }), [namedCodes, setNamedCodes] = useState(null), [nameWarning, setNameWarning] = useState(null);
  const [collectionTitle, setCollectionTitle] = useState("Discover"), [folderArrangement, setFolderArrangement] = useState("one-folder"), [folderSettings, setFolderSettings] = useState(() => ({ combined: { title: "Discover" }, movies: { title: "Movies" }, series: { title: "Series" } })), [artworkKey, setArtworkKey] = useState("combined");
@@ -76,7 +82,10 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  const filterErrors = discoverMediaTypes(draft.mediaMode).flatMap((media) => deriveAdvancedDiscoverFilters(draft, media).errors);
  if (draft.providerContextReview) filterErrors.push({ path: "$discover.withWatchProviders", message: "Review retained providers for the new media or region." });
  const editValid = !filterErrors.length && (!draft.titleTouched || Boolean(draft.title?.trim()));
- const candidates = !draft.previewBlocked && !filterErrors.length ? built.drafts : [];
+ const previewBuilt = optionalNaming ? compileAdvancedDiscover({ ...draft, name: automaticName, nameMode: "auto" }) : built;
+ const candidates = !draft.previewBlocked && !filterErrors.length ? previewBuilt.drafts : [];
+ // Discover names a setup, not each physical output. Preserve its existing base-name generator.
+ const naming = { rows: [{ key: "base-name", generatedTitle: automaticName, ...baseName }], customisedCount: baseName.customised ? 1 : 0, invalid: Boolean(baseName.error), change: (_key, value) => setBaseNameDraft(value.trim() === automaticName ? undefined : value), reset: () => setBaseNameDraft(undefined), resetAll: () => setBaseNameDraft(undefined), commit: () => { if (!baseName.resettable) setBaseNameDraft(undefined); } };
  const duplicates = inspectDiscoverDuplicates(project, folderInternalId, built.drafts);
  const overrideIdentity = discoverDuplicateOverrideIdentity(folderInternalId, built.drafts);
  const override = !editing && scope === "add-source" && duplicateConsent === overrideIdentity;
@@ -146,8 +155,9 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
  }
  function changeFolder(key, patch) { setFolderSettings((current) => ({ ...current, [key]: { ...current[key], ...patch } })); setErrors([]); }
  async function apply() {
-  if (gate.current || page !== "review") return;
+  if (gate.current || page !== "review" || (optionalNaming && naming.invalid)) return;
   if (!editing && !planResult.ok) { setErrors(planResult.errors); return; }
+  if (optionalNaming) naming.commit();
   gate.current = true; setBusy(true);
   try {
    const saved = editing ? await onSave(draft) : await onApply(planResult.plan);
@@ -163,7 +173,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
   apply();
  }
  const primaryLabel = page !== "review" ? "Continue to " + pageLabels[pages[pages.indexOf(page) + 1]] : editing ? "Save changes" : scope === "new-folder" || scope === "new-collection" ? guidedCreateActionLabel(scope, planResult?.ok ? { collectionCount: planResult.plan.collectionEditable ? 1 : 0, folderCount: planResult.plan.folders.length } : undefined) : "Add sources";
- const disabled = busy || (editing ? !editValid : !built.ok) || page === "review" && !editing && (!planResult.ok || sourceCount === 0);
+ const disabled = busy || (page === "review" && optionalNaming && naming.invalid) || (editing ? !editValid : !built.ok) || page === "review" && !editing && (!planResult.ok || sourceCount === 0);
  const contextLabel = editing ? "Edit Source" : scope === "new-collection" ? "New Collection" : scope === "new-folder" ? "New Folder" : "Add Source";
  const destinationLabel = [destinationCollection?.editable.title, !hierarchy && destinationFolder?.editable.title].filter(Boolean).join(" / ");
  const instructions = { filters: "Choose the content and Source orders you want.", appearance: "Name your folders and choose how they appear in Nuvio.", artwork: "Choose artwork for each folder, or leave the fields empty.", review: editing ? "Check your changes before saving this Source." : "Check what will be created before you finish." };
@@ -196,7 +206,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
 
 
   </DiscoverDetailedControls>
-  {editing ? <div className="editor-field"><label htmlFor="discover-source-name">Source name</label><input id="discover-source-name" type="text" value={draft.title} onChange={(e) => change({ ...draft, title: e.target.value, titleTouched: true })} />{draft.titleTouched && !draft.title?.trim() ? <span className="discover-field-error" role="alert">Enter a Source name.</span> : null}</div> : scope === "add-source" ? <div className="editor-field"><label htmlFor="discover-source-name">Source name</label><input id="discover-source-name" type="text" value={draft.name} onChange={(e) => change({ ...draft, name: e.target.value, nameMode: "custom" })} /></div> : null}
+  {editing ? <div className="editor-field"><label htmlFor="discover-source-name">Source name</label><input id="discover-source-name" type="text" value={draft.title} onChange={(e) => change({ ...draft, title: e.target.value, titleTouched: true })} />{draft.titleTouched && !draft.title?.trim() ? <span className="discover-field-error" role="alert">Enter a Source name.</span> : null}</div> : null}
   {draft.previewBlocked ? <DiscoverNotice>Some imported settings disagree or are not supported here. They are preserved, but an exact Preview is unavailable.</DiscoverNotice> : null}
  </> : page === "appearance" ? <>
   <div className="genre-hierarchy-configuration-summary discover-plan-summary" role="status" aria-label="Planned output"><strong>{sourceCount} {sourceCount === 1 ? "Source" : "Sources"} in {folders.length} {folders.length === 1 ? "folder" : "folders"}</strong></div>
@@ -229,6 +239,7 @@ export default function AdvancedDiscoverFlow({ scope = "add-source", project, pr
     </section>
     {folders.map((folder) => <section className="add-source-review discover-review-folder" key={folder.key} data-review-folder={folder.key}><div className="discover-review-heading"><div><h4>{folder.title}</h4><span className="editor-field-help">{folder.drafts.length} {folder.drafts.length === 1 ? "Source" : "Sources"}</span></div><button className="secondary-action" type="button" onClick={() => { setArtworkKey(folder.key); go("artwork"); }}>Edit artwork</button></div><ul>{folder.drafts.map((source) => <li key={source.editable.mediaType + source.editable.sortBy}>{source.editable.title}</li>)}</ul><ArtworkSummary artwork={folder.artwork} /></section>)}
    </> : editing ? <section className="add-source-review"><h4>{draft.title || "Discover"}</h4><p className="editor-field-help">{draft.mediaType === "TV" ? "Series" : "Movies"} - {DISCOVER_SORT_OPTIONS.find((s) => s.id === draft.sortOptionIds[0])?.label ?? "Imported order (preserved)"}</p></section> : <section className="add-source-review"><h4>Sources</h4><ul>{built.drafts.map((source) => <li key={source.editable.mediaType + source.editable.sortBy}>{source.editable.title}{duplicates.duplicateDrafts.includes(source) ? override ? " - Add another copy" : " - Already in this folder; skipped" : ""}</li>)}</ul>{duplicates.duplicateDrafts.length ? <PresentationSwitch label="Include exact duplicates" checked={override} onChange={(checked) => setDuplicateConsent(checked ? overrideIdentity : null)} description="Add another copy of the Sources already in this folder." descriptionId="discover-duplicates-help" controlName="discover-duplicates" /> : null}</section>}
+   {optionalNaming ? <SourceNamesDisclosure naming={naming} baseName plural={built.drafts.length > 1} disabled={busy} /> : null}
    {!editing ? <SourceElsewhereNotice occurrences={duplicates.elsewhere} heading="Matching Sources exist elsewhere" action="You can still create these Sources here." /> : null}
    {scope === "new-collection" ? <p className="editor-field-help">After creating this collection, choose New Folder → Discover to add another folder.</p> : null}
   </section>

@@ -119,9 +119,9 @@ export async function runSourceSortVariantsScenario(helpers, { wordingOnly = fal
 			const sortValuesBefore = [...dialog.querySelectorAll(`input[name="${sortName}"]:checked`)].map((input) => input.value);
 			let custom = null;
 			if (!guided && family === "streaming") {
-				await click(required([...dialog.querySelectorAll("button")].find((button) => button.textContent === "Edit name"), "Edit name"));
+				await click(required(dialog.querySelector(".source-names-disclosure > summary"), "Edit name"));
 				custom = "My exact — title";
-				await act(async () => { setInputValue(required(dialog.querySelector('input[id^="streaming-source-name-"]'), "custom name"), custom); await settle(); });
+				await act(async () => { setInputValue(required(dialog.querySelector('input[data-source-name]'), "custom name"), custom); await settle(); });
 			}
 			if (guided && family === "decade") await click(required(dialog.querySelector(".decades-preview-catalogue > summary"), "Preview disclosure"));
 			const trigger = required([...dialog.querySelectorAll('button[aria-haspopup="dialog"]')].find((button) => button.textContent === "Preview titles"), `${name} Preview`);

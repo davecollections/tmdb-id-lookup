@@ -1,4 +1,5 @@
 import { deriveNativeAdvancedFilters, resolveNativeGenreFilters } from "./native-shared-advanced.js";
+import { isValidNuvioTitle } from "../nuvio/titles.js";
 import { studioComparisonFilters, validateStudioAdvancedFilters } from "./studio-advanced.js";
 import { STUDIO_SOURCE_MODE } from "./source-modes.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
@@ -198,7 +199,7 @@ export function buildStudioSourceDrafts(studio, {
 	return { ...validation, drafts: validation.ok ? drafts : [] };
 }
 
-export function validateStudioSourceDraft(draft, { studio = null, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY, path = "$studio.sources[0]" } = {}) {
+export function validateStudioSourceDraft(draft, { studio = null, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY, path = "$studio.sources[0]", allowCustomTitles = false } = {}) {
 	const errors = [];
 	if (!plainObject(draft) || !sameKeys(draft, ["category", "editable"])) {
 		return { ok: false, errors: [diagnostic("INVALID_STUDIO_SOURCE_DRAFT", path, "The Studio source draft contains an unsupported field.")] };
@@ -216,8 +217,8 @@ export function validateStudioSourceDraft(draft, { studio = null, titleMode = ST
 	if (editable.tmdbSourceType !== "COMPANY") errors.push(diagnostic("INVALID_STUDIO_SOURCE_TYPE", `${path}.editable.tmdbSourceType`, "The Studio source type must be COMPANY."));
 	if (!["MOVIE", "TV"].includes(editable.mediaType)) errors.push(diagnostic("UNSUPPORTED_STUDIO_MEDIA_TYPE", `${path}.editable.mediaType`, "Studio sources must use the proven COMPANY Movie or TV contract."));
 	if (id === null) errors.push(diagnostic("INVALID_STUDIO_TMDB_ID", `${path}.editable.tmdbId`, "The Studio TMDB ID must be a positive safe integer."));
-	if (!title || editable.title !== title) errors.push(diagnostic("INVALID_STUDIO_TITLE", `${path}.editable.title`, "The Studio source title must be non-empty and trimmed."));
-	if (studio !== null && (id !== studio.id || !isSourceVariantTitle(editable.title, studioSourceTitle(name, editable.mediaType, titleMode), editable.sortBy, editable.mediaType, STUDIO_SORT_OPTIONS))) {
+	if (!title || editable.title !== title || (allowCustomTitles && !isValidNuvioTitle(title))) errors.push(diagnostic("INVALID_STUDIO_TITLE", `${path}.editable.title`, "The Studio source title must be non-empty and trimmed."));
+	if (studio !== null && (id !== studio.id || (!allowCustomTitles && !isSourceVariantTitle(editable.title, studioSourceTitle(name, editable.mediaType, titleMode), editable.sortBy, editable.mediaType, STUDIO_SORT_OPTIONS)))) {
 		errors.push(diagnostic("MISMATCHED_STUDIO_SOURCE", path, "The Studio source must match the selected cached Studio."));
 	}
 	if (!isSupportedStudioSort(editable.sortBy, editable.mediaType)) errors.push(diagnostic("INVALID_STUDIO_SORT", `${path}.editable.sortBy`, "Choose a supported Studio sort order for this media type."));
@@ -226,11 +227,11 @@ export function validateStudioSourceDraft(draft, { studio = null, titleMode = ST
 	return { ok: errors.length === 0, errors };
 }
 
-export function validateStudioSourceDrafts(drafts, { studio = null, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY } = {}) {
+export function validateStudioSourceDrafts(drafts, { studio = null, titleMode = STUDIO_SOURCE_TITLE_MODES.ENTITY, allowCustomTitles = false } = {}) {
 	if (!Array.isArray(drafts) || drafts.length < 1 || drafts.length > STUDIO_SOURCE_OPTIONS.length * STUDIO_SORT_OPTIONS.length) {
 		return { ok: false, errors: [diagnostic("INVALID_STUDIO_SOURCE_BUNDLE", "$studio.sources", "Choose supported Studio source variants.")] };
 	}
-	const errors = drafts.flatMap((draft, index) => validateStudioSourceDraft(draft, { studio, titleMode, path: `$studio.sources[${index}]` }).errors);
+	const errors = drafts.flatMap((draft, index) => validateStudioSourceDraft(draft, { studio, titleMode, allowCustomTitles, path: `$studio.sources[${index}]` }).errors);
 	const identities = drafts.map(studioSourceVariantKey);
 	if (identities.some((identity) => identity === null) || new Set(identities).size !== identities.length) {
 		errors.push(diagnostic("DUPLICATE_STUDIO_SOURCE_IDENTITY", "$studio.sources", "Studio source bundles must contain distinct supported identities."));
@@ -269,7 +270,7 @@ export function inspectStudioSourceDuplicates(project, destinationFolderInternal
 
 export function studioDuplicateOverrideIdentity(folderInternalId, drafts) {
 	if (typeof folderInternalId !== "string" || !folderInternalId) return null;
-	const validation = validateStudioSourceDrafts(drafts);
+	const validation = validateStudioSourceDrafts(drafts, { allowCustomTitles: true });
 	if (!validation.ok) return null;
 	return `${folderInternalId}\n${drafts.map(studioSourceVariantKey).join("\n")}`;
 }
@@ -281,7 +282,7 @@ export function createStudioSourceBundle(controller, {
 	duplicateOverrideIdentity = null,
 	interactionLocked = false,
 } = {}) {
-	const validation = validateStudioSourceDrafts(drafts, { studio });
+	const validation = validateStudioSourceDrafts(drafts, { studio, allowCustomTitles: true });
 	if (!validation.ok) return { ok: false, errors: validation.errors, warnings: [] };
 	if (interactionLocked) {
 		return { ok: false, errors: [diagnostic("STUDIO_CREATION_INTERACTION_LOCKED", "$studio.creation", "Finish the current hierarchy interaction before adding Studio sources.")], warnings: [] };

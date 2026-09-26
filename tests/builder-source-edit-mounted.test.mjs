@@ -65,6 +65,7 @@ async function waitForJson(url, timeoutMs = 10000) {
 
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
+	const sourceNamesOnly = process.env.TMDB_SOURCE_NAMES_ONLY === "1";
 	const editorOrderOnly = process.env.TMDB_EDITOR_ORDER_ONLY === "1";
 	const streamingHierarchyOnly = process.env.TMDB_STREAMING_HIERARCHY_ONLY === "1";
 	const meaningOnly = process.env.TMDB_MEANING_ONLY === "1";
@@ -231,6 +232,14 @@ async function runMountedPage() {
 			});
 			await resources.pageConnection.command("Runtime.addBinding", { name: "capture204Preview" });
 		}
+
+  resources.pageConnection.onEvent((message) => {
+   if (message.method !== "Runtime.bindingCalled" || message.params.name !== "sourceNamesSpace") return;
+   resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32 })
+    .then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32 }))
+    .finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishNamesKey?.()" }));
+  });
+  await resources.pageConnection.command("Runtime.addBinding", { name: "sourceNamesSpace" });
 		const address = resources.vite.httpServer.address();
 		if (previewPagesOnly) {
 			await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
@@ -259,7 +268,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${sourceNamesOnly || streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -269,6 +278,23 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+    const sourceNameCases = [];
+    if (sourceNamesOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+     timing.stage("Optional Source names");
+     await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+     const families = ["franchise", "network", "studio", "people", "list", "genre", "streaming", "decade", "discover"];
+     const views = [...[393, 1280].flatMap(width => families.map(family => ({ width, family, capture: ["franchise", "genre", "discover"].includes(family), preview: width === 393 && ["franchise", "genre", "discover"].includes(family) }))), ...[360, 384, 402, 412, 899, 900, 901].map(width => ({ width, family: "decade" })), { width: 393, height: 400, family: "genre" }, { width: 393, family: "network", enlargedText: true, forcedColors: true }, { width: 393, family: "decade", large: true, capture: true }, { width: 1280, family: "genre", reducedMotion: true }];
+     for (const view of views) {
+      await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height ?? 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+      await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }, { name: "prefers-reduced-motion", value: view.reducedMotion ? "reduce" : "no-preference" }] });
+      const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runSourceNamesScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+      if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+      sourceNameCases.push(checked.result.value); console.log("SOURCE_NAMES_CASE " + JSON.stringify(checked.result.value));
+     }
+     await resources.pageConnection.command("Emulation.setEmulatedMedia", { features: [] });
+     if (sourceNamesOnly) return { sourceNameCases };
+    }
+
 				if (streamingHierarchyOnly) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const streamingHierarchyWidths = [];
@@ -1168,7 +1194,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, sourceNameCases, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1503,16 +1529,6 @@ test("mounted duplicate failure focuses the diagnostic alert and preserves the d
 	assert.equal(result.updateCalls, 0);
 	assert.equal(result.revisionAfter, result.revisionBefore);
 	assert.equal(result.serializedUnchanged, true);
-});
-
-test("mounted Streaming creation reopens and focuses the invalid physical-source name without applying", () => {
-	const result = mountedResults.streamingCreationRequiredName;
-	assert.equal(result.activeElementIsInput, true);
-	assert.equal(result.ariaInvalid, "true");
-	assert.equal(result.inlineError, "Enter a name for this source before adding it.");
-	assert.equal(result.alertRendered, true);
-	assert.equal(result.dialogOpen, true);
-	assert.equal(result.applyCalls, 0);
 });
 
 test("mounted Genre Browse is browse-first and only focuses Search after explicit interaction", () => {
@@ -2092,7 +2108,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			footerReachable: true,
 			noSearchMediaOrSort: true,
 			originalOrder: true,
-			sourceNameHelpers: true,
+			optionalNamesCollapsed: true,
 			noPreviewActions: true,
 			noContainerPresentation: true,
 		}, `${label} review`);
@@ -4173,4 +4189,9 @@ test("mounted meaning and vocabulary retain readable actions and destination con
 test("mounted ordinary editor order preserves live Preview and minimal saves", { skip: process.env.TMDB_EDITOR_ORDER_ONLY !== "1" }, () => {
 	assert.equal(mountedResults.editors.length, 21);
 	for (const result of mountedResults.editors) assert.ok(result.ordered && result.previewPreserved && result.saved && result.noOverflow, JSON.stringify(result));
+});
+
+test("mounted optional Source naming preserves recipes, recovery and responsive Add", () => {
+ assert.equal(mountedResults.sourceNameCases.length, 29);
+ for (const result of mountedResults.sourceNameCases) assert.ok(result.saved && result.noOverflow && result.recoverable && result.keyboard && result.rows > 0, JSON.stringify(result));
 });

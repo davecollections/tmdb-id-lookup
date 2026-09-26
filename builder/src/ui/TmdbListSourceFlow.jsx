@@ -1,4 +1,6 @@
 import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import { RequiredNameInput, focusRequiredName } from "./RequiredNameInput.jsx";
 import { creationContext, sourceDestinationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
@@ -14,6 +16,7 @@ import {
 	parseTmdbListBatch,
 	requestSourceTitlePreview,
 	tmdbListDuplicateOverrideIdentity,
+	tmdbListPhysicalIdentity,
 	TMDB_LIST_PLACEMENT_STATUSES,
 } from "../source-add/index.js";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
@@ -28,6 +31,7 @@ import { SourceTitlePreviewDialog } from "./SourceTitlePreviewDialog.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const SOURCE_NAME_HELPER = "This is the name shown in Nuvio. You can customise it.";
+function listNameKey(draft) { return tmdbListPhysicalIdentity(draft.editable); }
 function sourceDrafts(lists) { return lists.map((list) => buildTmdbListSourceDraft(list, list.sourceTitle).draft).filter(Boolean); }
 function statusLabel(status, standalone) {
 	if (status === TMDB_LIST_PLACEMENT_STATUSES.ALREADY_IN_COLLECTION) return "Already in this collection · omitted";
@@ -122,6 +126,7 @@ export function TmdbListSourceFlow({
 	if (previewCoordinatorRef.current === null) previewCoordinatorRef.current = createAsyncRequestCoordinator();
 
 	const drafts = useMemo(() => sourceDrafts(lists), [lists]);
+	const naming = useSourceNames(standalone ? drafts : [], listNameKey);
 	const duplicateReview = useMemo(() => standalone && folder ? inspectTmdbListSourceDuplicates(project, folder.internalId, drafts) : null, [drafts, folder, project, standalone]);
 	const planResult = useMemo(() => standalone ? null : createTmdbListHierarchyPlan(project, {
 		scope,
@@ -227,7 +232,7 @@ export function TmdbListSourceFlow({
 	async function submit(event) {
 		event.preventDefault();
 		if (step === "select") { if (lists.length) { reviewRevisionRef.current = projectRevision; setStep("review"); } return; }
-		if (applying) return;
+		if (applying || naming.invalid) return;
 		if (!standalone) {
 			const missing = Object.freeze({
 				collection: scope === "new-collection" && !presentation.hideCollectionTitle && !collectionTitle.trim(),
@@ -246,9 +251,10 @@ export function TmdbListSourceFlow({
 		if (standalone && reviewRevisionRef.current !== projectRevision) { setDiagnostic({ message: "The Builder project changed. Return to selection and review the current placement before adding sources." }); return; }
 		if (drafts.length !== lists.length) { setDiagnostic({ message: "Enter a valid name for every TMDB List source." }); return; }
 		if (!standalone && (!planResult?.ok || planResult.plan.counts.sourceCount === 0)) { setDiagnostic({ message: planResult?.errors?.[0]?.message ?? "Nothing to add here." }); return; }
+		if (standalone) naming.commit();
 		setApplying(true);
 		const payload = standalone ? {
-			drafts,
+			drafts: naming.drafts,
 			expectedProjectRevision: reviewRevisionRef.current,
 			duplicateOverrideIdentity: duplicateOverride ? tmdbListDuplicateOverrideIdentity(folder.internalId, drafts) : null,
 		} : planResult.plan;
@@ -287,12 +293,13 @@ export function TmdbListSourceFlow({
 					{!standalone && scope === "new-collection" ? <div className="editor-field"><label htmlFor="tmdb-list-collection-title">Collection name</label><RequiredNameInput inputRef={collectionTitleRef} id="tmdb-list-collection-title" value={collectionTitle} hidden={collectionTitleHiddenEverywhere} error={requiredNameErrors.collection ? "Enter a collection name." : null} describedBy={collectionTitleHiddenEverywhere ? "tmdb-list-collection-title-hidden-help" : undefined} onChange={(event) => updateRequiredName("collection", event.target.value)} /><HiddenTitleFieldHelp id="tmdb-list-collection-title-hidden-help" hidden={collectionTitleHiddenEverywhere} kind="collection" /></div> : null}
 					{!standalone ? <div className="editor-field"><label htmlFor="tmdb-list-folder-title">Folder name</label><RequiredNameInput inputRef={folderTitleRef} id="tmdb-list-folder-title" value={folderTitle} hidden={folderTitleHiddenEverywhere} error={requiredNameErrors.folder ? "Enter a folder name." : null} describedBy={folderTitleHiddenEverywhere ? "tmdb-list-folder-title-hidden-help" : "tmdb-list-folder-help"} onChange={(event) => updateRequiredName("folder", event.target.value)} /><HiddenTitleFieldHelp id="tmdb-list-folder-title-hidden-help" hidden={folderTitleHiddenEverywhere} kind="folder" />{!folderTitleHiddenEverywhere ? <p id="tmdb-list-folder-help" className="editor-field-help">One folder will contain the selected List sources in this order.</p> : null}</div> : null}
 					{!standalone ? <GuidedPresentationControls scope={scope} options={presentation} destinationCollectionTitle={destinationCollectionTitle} onChange={updatePresentation} /> : null}
-					<div className="tmdb-list-review-items">{lists.map((list, index) => { const outcome = reviewOutcomes[index] ?? { status: TMDB_LIST_PLACEMENT_STATUSES.READY, elsewhere: [] }; const sourceHelpId = `tmdb-list-source-title-${list.id}-help`; return <article key={list.id} className="tmdb-list-review-item"><div><strong>{list.name || `TMDB list ${list.id}`}</strong><em>{statusLabel(outcome.status, standalone)}</em></div><small>TMDB {list.id} · {list.itemCount === null ? "Count unavailable" : `${list.itemCount} title${list.itemCount === 1 ? "" : "s"}`} · Original order</small><div className="editor-field"><label htmlFor={`tmdb-list-source-title-${list.id}`}>Source name</label><input id={`tmdb-list-source-title-${list.id}`} type="text" value={list.sourceTitle} aria-describedby={sourceHelpId} onChange={(event) => updateTitle(list.id, event.target.value)} /><p id={sourceHelpId} className="editor-field-help">{SOURCE_NAME_HELPER}</p></div>{outcome.elsewhere?.length ? <SourceElsewhereNotice occurrences={outcome.elsewhere} heading="This TMDB List source exists elsewhere" action="It can still be added here." /> : null}</article>; })}</div>
+					<div className="tmdb-list-review-items">{lists.map((list, index) => { const outcome = reviewOutcomes[index] ?? { status: TMDB_LIST_PLACEMENT_STATUSES.READY, elsewhere: [] }; const sourceHelpId = `tmdb-list-source-title-${list.id}-help`; return <article key={list.id} className="tmdb-list-review-item"><div><strong>{list.name || `TMDB list ${list.id}`}</strong><em>{statusLabel(outcome.status, standalone)}</em></div><small>TMDB {list.id} · {list.itemCount === null ? "Count unavailable" : `${list.itemCount} title${list.itemCount === 1 ? "" : "s"}`} · Original order</small>{standalone ? <p>{naming.drafts[index]?.editable.title}</p> : <div className="editor-field"><label htmlFor={`tmdb-list-source-title-${list.id}`}>Source name</label><input id={`tmdb-list-source-title-${list.id}`} type="text" value={list.sourceTitle} aria-describedby={sourceHelpId} onChange={(event) => updateTitle(list.id, event.target.value)} /><p id={sourceHelpId} className="editor-field-help">{SOURCE_NAME_HELPER}</p></div>}{outcome.elsewhere?.length ? <SourceElsewhereNotice occurrences={outcome.elsewhere} heading="This TMDB List source exists elsewhere" action="It can still be added here." /> : null}</article>; })}</div>
+					{standalone ? <SourceNamesDisclosure naming={naming} disabled={applying} context={(row) => `${row.generatedTitle} · TMDB ${row.draft.editable.tmdbId}`} /> : null}
 					{standalone && destinationDuplicates.length ? <div className="editor-diagnostics"><p>{destinationDuplicates.length} selected source{destinationDuplicates.length === 1 ? " is" : "s are"} already in this folder and will be omitted.</p><button type="button" onClick={() => setDuplicateOverride((value) => !value)}>{duplicateOverride ? "Omit existing sources" : "Add all anyway"}</button></div> : null}
 					{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
 				</section>}
 			</div>
-			<footer className="add-source-actions tmdb-list-actions"><button className="editor-apply" type="submit" disabled={applying || (step === "select" ? lists.length === 0 : count === 0)}>{step === "select" ? (standalone ? "Continue to Review" : "Continue to Appearance") : applying ? (standalone ? "Adding…" : "Creating…") : standalone ? `Add ${count} source${count === 1 ? "" : "s"}` : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button>{step === "review" && !standalone && requiredNameMessage ? <p id="tmdb-list-required-names" className="tmdb-list-footer-validation" role="alert">{requiredNameMessage}</p> : null}</footer>
+			<footer className="add-source-actions tmdb-list-actions"><button className="editor-apply" type="submit" disabled={applying || (step === "select" ? lists.length === 0 : naming.invalid || count === 0)}>{step === "select" ? (standalone ? "Continue to Review" : "Continue to Appearance") : applying ? (standalone ? "Adding…" : "Creating…") : standalone ? `Add ${count} source${count === 1 ? "" : "s"}` : guidedCreateActionLabel(scope, planResult?.plan?.counts)}</button>{step === "review" && !standalone && requiredNameMessage ? <p id="tmdb-list-required-names" className="tmdb-list-footer-validation" role="alert">{requiredNameMessage}</p> : null}</footer>
 		</form>
 		{preview ? <SourceTitlePreviewDialog preview={preview} titleId="tmdb-list-preview-title" backdropProps={{ "data-tmdb-list-preview": "true" }} dialogProps={{ "data-tmdb-list-preview-dialog": "true" }} onClose={closePreview} onRetry={retryPreview} /> : null}
 	</>;

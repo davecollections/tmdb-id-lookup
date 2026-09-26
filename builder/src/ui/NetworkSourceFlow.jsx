@@ -1,8 +1,11 @@
+import { sourcePreviewContext } from "../source-add/source-title-preview.js";
 import { sourceDestinationContext } from "./creation-context.js";
 import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { useSourceTitlePreview } from "./use-source-title-preview.js";
 import { SourceVariantReview } from "./SourceVariantReview.jsx";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import { createPortal } from "react-dom";
 import {
 	buildNetworkSourceDrafts,
@@ -209,13 +212,13 @@ export function NetworkConfigureStep({ network, count, duplicateReview, applyDia
 	);
 }
 
-export function NetworkConfigureActions({ duplicate, primaryCount = 0, configuredCount = 0, isApplying = false, onAddAnyway }) {
+export function NetworkConfigureActions({ duplicate, primaryCount = 0, configuredCount = 0, isApplying = false, namesInvalid = false, onAddAnyway }) {
 	return (
 		<footer className="add-source-actions studio-configure-actions network-configure-actions">
 			{duplicate && primaryCount === 0
 				? <span className="studio-no-missing-sources">No new sources to add</span>
-				: <button className="editor-apply" type="submit" disabled={isApplying || primaryCount === 0}>{isApplying ? "Adding…" : `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}`}</button>}
-			{duplicate && configuredCount > 0 ? <button className="editor-cancel studio-add-all" type="button" disabled={isApplying} data-action="add-network-anyway" onClick={onAddAnyway}>Add all anyway</button> : null}
+				: <button className="editor-apply" type="submit" disabled={isApplying || namesInvalid || primaryCount === 0}>{isApplying ? "Adding…" : `Add ${primaryCount} source${primaryCount === 1 ? "" : "s"}`}</button>}
+			{duplicate && configuredCount > 0 ? <button className="editor-cancel studio-add-all" type="button" disabled={isApplying || namesInvalid} data-action="add-network-anyway" onClick={onAddAnyway}>Add all anyway</button> : null}
 		</footer>
 	);
 }
@@ -241,7 +244,8 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 	if (!submissionGateRef.current) submissionGateRef.current = createSourceSubmissionGate();
 
 	const search = useNetworkCatalogueSearch(catalogueProvider, { seriesCountFilters: true });
-	const draftResult = selectedNetwork ? buildNetworkSourceDrafts(selectedNetwork, { sortOptionIds, filters: advanced.filters }) : { ok: false, drafts: [], errors: [] };
+	const draftResult = useMemo(() => selectedNetwork ? buildNetworkSourceDrafts(selectedNetwork, { sortOptionIds, filters: advanced.filters }) : { ok: false, drafts: [], errors: [] }, [selectedNetwork, sortOptionIds, advanced.filters]);
+	const naming = useSourceNames(draftResult.drafts, networkSourceVariantKey);
 	const duplicateReview = inspectNetworkSourceDuplicates(project, folder?.internalId ?? null, draftResult.ok ? draftResult.drafts : []);
 	const duplicate = duplicateReview.destination.length > 0;
 	const step = navigation.step;
@@ -304,13 +308,14 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 	}
 
 	async function applyNetworkSource(addAnyway = false) {
-		if (step !== NETWORK_SOURCE_STEPS.CONFIGURE || !draftResult.ok || isApplying || !submissionGateRef.current.begin()) return;
+		if (step !== NETWORK_SOURCE_STEPS.CONFIGURE || !draftResult.ok || naming.invalid || isApplying || !submissionGateRef.current.begin()) return;
+		naming.commit();
 		setIsApplying(true);
 		let result;
 		try {
 			result = await onApply({
 				network: selectedNetwork,
-				drafts: draftResult.drafts,
+				drafts: naming.drafts,
 				duplicateOverrideIdentity: addAnyway ? networkDuplicateOverrideIdentity(folder.internalId, draftResult.drafts) : null,
 			});
 		} catch {
@@ -350,12 +355,13 @@ export function NetworkSourceFlow({ catalogueProvider, countProvider, previewPro
 							) : (
 								<div ref={configureRef} className="studio-configure-focus-target" tabIndex={-1}>
 									<NetworkConfigureStep advanced={advanced} onAdvancedChange={(next) => { setAdvanced(next); setApplyDiagnostic(null); }} network={selectedNetwork} count={count} duplicateReview={duplicateReview} applyDiagnostic={applyDiagnostic} sortOptionIds={sortOptionIds} onSortChange={(optionId) => { setSortOptionIds(optionId); setApplyDiagnostic(null); }} />
-									<SourceVariantReview drafts={draftResult.drafts} review={duplicateReview} variantKey={networkSourceVariantKey} />
+									<SourceVariantReview drafts={naming.drafts} review={duplicateReview} variantKey={networkSourceVariantKey} />
 									<div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-network" disabled={!previewAvailable || isApplying} onClick={(event) => titlePreview.open(draftResult.drafts, { trigger: event.currentTarget, label: selectedNetwork.name })}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help">Preview is unavailable right now.</p> : null}</div>
+									<SourceNamesDisclosure naming={naming} disabled={isApplying} context={(row) => `${selectedNetwork.name} · ${sourcePreviewContext(row.draft)}`} />
 								</div>
 							)}
 						</div>
-						{step === NETWORK_SOURCE_STEPS.CONFIGURE ? <NetworkConfigureActions duplicate={duplicate} primaryCount={duplicateReview.counts.toAdd} configuredCount={duplicateReview.counts.configured} isApplying={isApplying} onAddAnyway={() => applyNetworkSource(true)} /> : null}
+						{step === NETWORK_SOURCE_STEPS.CONFIGURE ? <NetworkConfigureActions duplicate={duplicate} primaryCount={duplicateReview.counts.toAdd} configuredCount={duplicateReview.counts.configured} isApplying={isApplying} namesInvalid={naming.invalid} onAddAnyway={() => applyNetworkSource(true)} /> : null}
 					</form>
 				</section>
 			</div>

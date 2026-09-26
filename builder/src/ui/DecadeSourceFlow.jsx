@@ -1,4 +1,6 @@
 import { sourceDestinationContext } from "./creation-context.js";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -192,8 +194,9 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 	const configuration = useMemo(() => ({ periodIds, mediaMode, genreNames, sortOptionIds, advanced }), [advanced, genreNames, mediaMode, periodIds, sortOptionIds]);
 	const built = useMemo(() => buildDecadeSourceBundleDrafts(configuration), [configuration]);
 	const drafts = built.ok ? built.drafts : Object.freeze([]);
+	const naming = useSourceNames(drafts, sourcePreviewVariantKey);
 	const logicalSources = built.ok ? built.logicalSources : Object.freeze([]);
-	const duplicates = built.ok && folder ? inspectDecadeSourceDuplicates(project, folder.internalId, drafts) : EMPTY_DUPLICATES;
+	const duplicates = built.ok && folder ? inspectDecadeSourceDuplicates(project, folder.internalId, naming.drafts) : EMPTY_DUPLICATES;
 	const genreOptions = decadeSourceGenreOptions(mediaMode);
 	const selectedPreset = DECADE_PRESETS.find((preset) => preset.id === decadeId) ?? DECADE_PRESETS.at(-1);
 	const periodChoices = decadeSourcePeriodChoices(selectedPreset.id);
@@ -299,11 +302,12 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 	}
 
 	async function save(addAllAnyway = false) {
-		if (!built.ok || drafts.length === 0 || isApplying || secondarySurface || preview || !submissionGateRef.current.begin()) return;
+		if (!built.ok || drafts.length === 0 || naming.invalid || isApplying || secondarySurface || preview || !submissionGateRef.current.begin()) return;
+		naming.commit();
 		setIsApplying(true);
 		let result;
 		try {
-			result = await onApply({ ...configuration, drafts, duplicateOverrideIdentity: addAllAnyway ? decadeDuplicateOverrideIdentity(folder.internalId, drafts) : null });
+			result = await onApply({ ...configuration, drafts: naming.drafts, duplicateOverrideIdentity: addAllAnyway ? decadeDuplicateOverrideIdentity(folder.internalId, drafts) : null });
 		} catch {
 			result = { ok: false, errors: [{ message: "Decade sources could not be added. Try again." }] };
 		}
@@ -350,12 +354,13 @@ export function DecadeSourceFlow({ project, folder, previewProvider, onBack, onC
 								<DecadesAdvancedOptions mediaMode={mediaMode} value={advanced} genresApplied={exclusionCount > 0} exclusionSummary={exclusionCount === 0 ? "No Genre exclusions configured" : `${exclusionCount} Genre exclusion${exclusionCount === 1 ? "" : "s"} configured across generated source choices`} onChange={(value) => { setAdvanced(reconcileAdvanced(value, mediaMode, genreNames)); setDiagnostic(null); }} onOpenSecondary={openSecondary} idPrefix="decade-source-advanced" />
 								{built.errors.length > 0 ? <ul className="genre-advanced-errors" role="alert">{built.errors.map((error) => <li id={error.code === "INVALID_DECADE_SOURCE_SORT" ? "decade-source-sort-error" : undefined} key={`${error.code}-${error.path}-${error.message}`}>{error.message}</li>)}</ul> : null}
 								{diagnostic ? <div className="editor-diagnostics" role="alert"><p>{diagnostic.message}</p></div> : null}
-								<DecadeSourceReview drafts={drafts} duplicates={duplicates} sortOptionIds={sortOptionIds} />
+								<DecadeSourceReview drafts={naming.drafts} duplicates={duplicates} sortOptionIds={sortOptionIds} />
 								<div className="source-edit-preview-action genre-hierarchy-configure-row-actions decade-source-preview-action"><button type="button" aria-haspopup="dialog" disabled={!previewAvailable || isApplying} onClick={(event) => requestPreview(built.periodGroups[0], built.periodGroups[0]?.logicalSources[0], built.periodGroups[0]?.logicalSources[0]?.drafts[0], event.currentTarget)}>Preview titles</button>{!previewAvailable ? <p className="editor-field-help" role="status">Preview is unavailable until the current configuration is valid.</p> : null}</div>
+								<SourceNamesDisclosure naming={naming} disabled={isApplying} />
 							</section>
 						</div>
 						{secondarySurface ? <div className="genre-secondary-surface" data-surface={secondarySurface}>{secondarySurface === "ordinary-exclusions" ? <DecadeBundleExclusionSubview selectedGenreNames={built.ok ? built.configuration.genreNames : genreNames} selectionByContext={exclusionSelectionByContext} contextId={exclusionContextId} selection={activeExclusionSelection} mediaMode={mediaMode} onContextChange={setExclusionContextId} onToggle={(name) => setAdvanced((current) => updateExclusionsForContext(current, exclusionContextId, activeExclusionSelection.includes(name) ? activeExclusionSelection.filter((entry) => entry !== name) : [...activeExclusionSelection, name]))} onSelectAll={() => setAdvanced((current) => updateExclusionsForContext(current, exclusionContextId, exclusionOptions(mediaMode, activeIncludedGenre).map((concept) => concept.name)))} onClearAll={() => setAdvanced((current) => updateExclusionsForContext(current, exclusionContextId, []))} onDone={closeSecondary} focusRef={secondaryHeadingRef} /> : <DecadesAdvancedHelpSubview onDone={closeSecondary} focusRef={secondaryHeadingRef} />}</div> : null}
-						{!secondarySurface ? <footer className={`add-source-actions decade-source-actions${duplicates.duplicateDrafts.length > 0 ? " add-source-override-actions" : ""}`} inert={preview || undefined} aria-hidden={preview ? "true" : undefined}><button className="editor-apply" type="submit" disabled={isApplying || !built.ok || saveCount === 0}>{saveLabel}</button>{duplicates.duplicateDrafts.length > 0 ? <button className="editor-cancel people-add-all" type="button" disabled={isApplying || !built.ok} onClick={() => save(true)}>{drafts.length === 1 ? "Add anyway" : "Add all anyway"}</button> : null}</footer> : null}
+						{!secondarySurface ? <footer className={`add-source-actions decade-source-actions${duplicates.duplicateDrafts.length > 0 ? " add-source-override-actions" : ""}`} inert={preview || undefined} aria-hidden={preview ? "true" : undefined}><button className="editor-apply" type="submit" disabled={isApplying || naming.invalid || !built.ok || saveCount === 0}>{saveLabel}</button>{duplicates.duplicateDrafts.length > 0 ? <button className="editor-cancel people-add-all" type="button" disabled={isApplying || naming.invalid || !built.ok} onClick={() => save(true)}>{drafts.length === 1 ? "Add anyway" : "Add all anyway"}</button> : null}</footer> : null}
 					</form>
 				</section>
 			</div>

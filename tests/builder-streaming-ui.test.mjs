@@ -233,33 +233,12 @@ test("Configure uses the shared strict-common result and includes generated dupl
 	assert.equal(markup.includes("JustWatch via TMDB"), true);
 });
 
-test("Configure exposes compact independent source-name editing with defaults and inline validation", () => {
-	const selectedProvider = provider();
-	const drafts = buildStreamingSourceDrafts(selectedProvider, { regionCodes: ["AU"], mediaChoice: "both" }).drafts;
-	const markup = renderToStaticMarkup(createElement(StreamingConfigureStep, {
-		provider: selectedProvider,
-		regions: [au],
-		mediaChoice: "both",
-		sortOptionIds: ["popular"],
-		drafts,
-		duplicateReview: { destination: [], elsewhere: [] },
-		expandedCandidateKey: "AU|MOVIE|popular",
-		sourceTitles: { "AU|MOVIE|popular": "Cinema shelf", "AU|TV|popular": "Series shelf" },
-		titleErrors: new Map([["AU|MOVIE|popular", { message: "Enter a name for this source before adding it." }]]),
-		onMediaChange() {},
-		onSortChange() {},
-		onEditName() {},
-		onTitleChange() {},
-		onTitleInputMount() {},
-		onUseDefaultName() {},
-	}));
-	assert.ok(markup.includes("Cinema shelf"));
-	assert.ok(markup.includes("Series shelf"));
-	assert.equal((markup.match(/>Edit name<\/button>/g) ?? []).length, 1);
-	assert.ok(markup.includes(">Done</button>"));
-	assert.ok(markup.includes("Use default name"));
-	assert.ok(markup.includes('aria-invalid="true"'));
-	assert.ok(markup.includes("Enter a name for this source before adding it."));
+test("Configure review shows saved titles separately from canonical region/media context", () => {
+ const drafts = buildStreamingSourceDrafts(provider(), { regionCodes: ["AU"], mediaChoice: "both" }).drafts.map((d, i) => ({ ...d, editable: { ...d.editable, title: i ? "Series shelf" : "Cinema shelf" } }));
+ const markup = renderToStaticMarkup(createElement(StreamingConfigureStep, { provider: provider(), regions: [au], mediaChoice: "both", sortOptionIds: ["popular"], drafts, duplicateReview: { destination: [], elsewhere: [] } }));
+ assert.ok(markup.includes("Cinema shelf")); assert.ok(markup.includes("Series shelf"));
+ assert.ok(markup.includes("AU · Popular Movies"));
+ assert.doesNotMatch(markup, />Edit name<|>Use default name</);
 });
 
 test("Configure fails safely if runtime availability changes after Provider eligibility", () => {
@@ -319,11 +298,8 @@ test("flow derives eligible providers while retaining provider-keyed title draft
 	assert.match(source, /regionCodes\.length === 1[\s\S]*STREAMING_PROVIDER_BROWSE_MODES\.ALL/);
 	assert.match(source, /setProviderBrowseMode\(selectedRegions\.length === 1 \? STREAMING_PROVIDER_BROWSE_MODES\.TOP : STREAMING_PROVIDER_BROWSE_MODES\.ALL\)/);
 	assert.match(source, /setSelectedProvider\(null\);[\s\S]*setProviderQuery\(""\)/);
-	assert.match(source, /const \[sourceTitleDrafts, setSourceTitleDrafts\] = useState\(\{\}\)/);
-	assert.match(source, /streamingSourceTitlesForProvider\(sourceTitleDrafts, selectedProvider\?\.id\)/);
-	assert.doesNotMatch(source, /setSourceTitles\(\{\}\)/);
-	assert.match(source, /streamingSourceTitleDraftKey\(selectedProvider\?\.id, regionCode, mediaType, sortId\)/);
-	assert.match(source, /onUseDefaultName=\{\(candidateKey\) => \{[\s\S]*delete next\[draftKey\]/);
+	assert.ok(source.includes("useSourceNames(baseDraftResult.drafts, sourcePreviewVariantKey)"));
+	assert.ok(source.includes("<SourceNamesDisclosure"));
 	assert.doesNotMatch(source, /streamingProviderSupportedRegions/);
 	assert.doesNotMatch(source, /multiSelect|Select multiple|proceedToConfigure\(\[region\]\)/);
 });

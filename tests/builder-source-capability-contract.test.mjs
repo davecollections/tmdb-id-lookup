@@ -24,12 +24,12 @@ function assertSemanticEvidence(source, token, label) {
 	assert.ok(source.includes(token), `${label} lost UI evidence ${token}`);
 }
 
-// This is deliberately a test-owned contract, not a second production registry. "Fixed" source names
-// record today's generated-name behavior; whether those names should become editable remains a product decision.
+// Test-owned contract: selected-folder Add supports optional display names.
+// Guided creation and Source Edit retain their separate naming contracts.
 const FAMILY_CAPABILITIES = Object.freeze({
  discover: Object.freeze({
   ids: Object.freeze({ add: "advanced-discover", guided: "advanced-discover", edit: "advanced-discover" }),
-  add: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, { media: "DISCOVER_MEDIA_OPTIONS", sort: "Sources to create", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", physicalIdentity: "compileAdvancedDiscover" }),
+  add: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, { media: "DISCOVER_MEDIA_OPTIONS", sort: "Sources to create", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "compileAdvancedDiscover" }),
   guided: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, { media: "DISCOVER_MEDIA_OPTIONS", sort: "Sources to create", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", physicalIdentity: "compileAdvancedDiscover" }),
   edit: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, { sort: "Sort titles by", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", sourceName: ">Source name</" }),
  }),
@@ -37,7 +37,7 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	franchise: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-movie-franchise", guided: "franchises", edit: "movie-collection" }),
 		add: context("builder/src/ui/AddSourceDialog.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
-			preview: "<SourceTitlePreviewDialog", sourceName: 'id="add-source-title-input"', physicalIdentity: "selectedCollectionDetailsFromOutcome",
+			preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "selectedCollectionDetailsFromOutcome",
 		}),
 		guided: context("builder/src/ui/FranchiseSourceFlow.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
 			preview: "<TitlesPreview", physicalIdentity: "data-tmdb-franchise-result",
@@ -49,7 +49,7 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	lists: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-lists", guided: "tmdb-lists", edit: "tmdb-list" }),
 		add: context("builder/src/ui/TmdbListSourceFlow.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
-			preview: "<SourceTitlePreviewDialog", sourceName: "tmdb-list-source-title", physicalIdentity: "parseTmdbListBatch",
+			preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "parseTmdbListBatch",
 		}),
 		guided: context("builder/src/ui/TmdbListSourceFlow.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
 			preview: "<SourceTitlePreviewDialog", sourceName: "tmdb-list-source-title", physicalIdentity: "parseTmdbListBatch",
@@ -60,8 +60,8 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	people: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-people", guided: "people", edit: "people" }),
-		add: context("builder/src/ui/PeopleSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: U, roleCredit: C, preview: C, sourceName: F, physicalIdentity: C }, {
-			media: "<CombinationControls", sort: '<PeopleSourceSortChoices context={hierarchy ? "guided" : "add"}', roleCredit: "PEOPLE_SOURCE_COMBINATIONS", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-person-result",
+		add: context("builder/src/ui/PeopleSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: U, roleCredit: C, preview: C, sourceName: C, physicalIdentity: C }, {
+			media: "<CombinationControls", sort: '<PeopleSourceSortChoices context={hierarchy ? "guided" : "add"}', roleCredit: "PEOPLE_SOURCE_COMBINATIONS", preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "data-tmdb-person-result",
 		}),
 		guided: context("builder/src/ui/PeopleSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: U, roleCredit: C, preview: C, sourceName: F, physicalIdentity: C }, {
 			media: "<CombinationControls", sort: '<PeopleSourceSortChoices context={hierarchy ? "guided" : "add"}', roleCredit: "PEOPLE_SOURCE_COMBINATIONS", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-person-result",
@@ -72,8 +72,8 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	studio: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-studios", guided: "studios", edit: "studio" }),
-		add: context("builder/src/ui/StudioSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			media: "STUDIO_SOURCE_OPTIONS", sort: "<StudioSortChoices", filtersAdvanced: "<StudioAdvancedOptions", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-studio-result",
+		add: context("builder/src/ui/StudioSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
+			media: "STUDIO_SOURCE_OPTIONS", sort: "<StudioSortChoices", filtersAdvanced: "<StudioAdvancedOptions", preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "data-tmdb-studio-result",
 		}),
 		guided: context("builder/src/ui/StudioHierarchyFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
 			media: "STUDIO_HIERARCHY_MEDIA_MODES", sort: "<StudioSortChoices", filtersAdvanced: "<StudioAdvancedOptions", preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-studio-result",
@@ -84,8 +84,8 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	network: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-networks", guided: "networks", edit: "network" }),
-		add: context("builder/src/ui/NetworkSourceFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			sort: "<NetworkSortChoices", filtersAdvanced: '<MinimumVotesAdvancedOptions family="network"', preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-network-result",
+		add: context("builder/src/ui/NetworkSourceFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
+			sort: "<NetworkSortChoices", filtersAdvanced: '<MinimumVotesAdvancedOptions family="network"', preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "data-tmdb-network-result",
 		}),
 		guided: context("builder/src/ui/NetworkHierarchyFlow.jsx", { media: F, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
 			sort: "<NetworkSortChoices", filtersAdvanced: '<MinimumVotesAdvancedOptions family="network"', preview: "<SourceTitlePreviewDialog", physicalIdentity: "data-tmdb-network-result",
@@ -97,7 +97,7 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	streaming: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-streaming-services", guided: "streaming-services", edit: "streaming" }),
 		add: context("builder/src/ui/StreamingSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
-			media: "STREAMING_MEDIA_CHOICES", sort: "STREAMING_SORT_OPTIONS", filtersAdvanced: "<StreamingRegionStep", preview: "<SourceTitlePreviewDialog", sourceName: ">Source name</", physicalIdentity: "data-streaming-provider",
+			media: "STREAMING_MEDIA_CHOICES", sort: "STREAMING_SORT_OPTIONS", filtersAdvanced: "<StreamingRegionStep", preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "data-streaming-provider",
 		}),
 		guided: context("builder/src/ui/StreamingHierarchyFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
 			media: "STREAMING_MEDIA_CHOICES", sort: "STREAMING_SORT_OPTIONS", filtersAdvanced: "<StreamingRegionStep", preview: "<StreamingTitlePreview", physicalIdentity: "data-streaming-provider",
@@ -108,8 +108,8 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	genre: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-genres", guided: "genres", edit: "genre" }),
-		add: context("builder/src/ui/GenreSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			media: "GENRE_MEDIA_CHOICES", sort: "GENRE_SORT_OPTIONS", filtersAdvanced: "<GenreAdvancedOptions", preview: "<SourceTitlePreviewDialog", physicalIdentity: "<GenreBrowseStep",
+		add: context("builder/src/ui/GenreSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
+			media: "GENRE_MEDIA_CHOICES", sort: "GENRE_SORT_OPTIONS", filtersAdvanced: "<GenreAdvancedOptions", preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "<GenreBrowseStep",
 		}),
 		guided: context("builder/src/ui/GenreHierarchyFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
 			media: "GENRE_MEDIA_CHOICES", sort: "GENRE_SORT_OPTIONS", filtersAdvanced: "<GenreAdvancedOptions", preview: "<NestedPreviewDialog", physicalIdentity: "data-genre-name",
@@ -120,8 +120,8 @@ const FAMILY_CAPABILITIES = Object.freeze({
 	}),
 	decade: Object.freeze({
 		ids: Object.freeze({ add: "tmdb-decade", guided: "decades", edit: "decade" }),
-		add: context("builder/src/ui/DecadeSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
-			media: 'data-decade-source-control": "media"', sort: 'data-decade-source-control": "sort"', filtersAdvanced: "<DecadesAdvancedOptions", preview: "<NestedPreviewDialog", physicalIdentity: 'data-decade-source-control": "decade"',
+		add: context("builder/src/ui/DecadeSourceFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
+			media: 'data-decade-source-control": "media"', sort: 'data-decade-source-control": "sort"', filtersAdvanced: "<DecadesAdvancedOptions", preview: "<NestedPreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: 'data-decade-source-control": "decade"',
 		}),
 		guided: context("builder/src/ui/CreationDialog.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: F, physicalIdentity: C }, {
 			media: "DECADES_MEDIA_MODES", sort: "DECADES_SORT_OPTIONS", filtersAdvanced: "<DecadesAdvancedOptions", preview: "<NestedPreviewDialog", physicalIdentity: "data-decade-preset",

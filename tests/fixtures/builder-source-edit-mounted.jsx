@@ -1,3 +1,4 @@
+import { runSourceNamesScenario } from "./builder-source-names-mounted.jsx";
 // Match main.jsx: shared styles load before component/lazy styles. Reversing this
 // order hides cascade regressions that occur in the actual Builder preview.
 import "../../builder/src/styles.css";
@@ -567,77 +568,6 @@ async function runDuplicateScenario() {
 			};
 		},
 	});
-}
-
-async function runStreamingCreationRequiredNameScenario() {
-	const host = document.createElement("div");
-	document.body.append(host);
-	const root = createRoot(host);
-	let applyCalls = 0;
-	await act(async () => {
-		root.render(createElement(StreamingSourceFlow, {
-			catalogueProvider: {
-				async loadCatalogue() {
-					return {
-						ok: true,
-						data: {
-							regions: [{ code: "AU", name: "Australia" }],
-							providers: [{ id: 8, name: "Netflix", logoPath: null, moviePriorities: { AU: 1 }, tvPriorities: { AU: 2 } }],
-						},
-					};
-				},
-			},
-			project: { collections: [] },
-			folder: { internalId: "streaming-folder", editable: { title: "Streaming" } },
-			onBack() {},
-			onCancel() {},
-			onApply() { applyCalls += 1; return { ok: true }; },
-		}));
-		await afterCommittedEffects();
-	});
-	try {
-		await act(async () => {
-			document.querySelector('[data-streaming-region="AU"]').click();
-			await afterCommittedEffects();
-		});
-		await act(async () => {
-			document.querySelector(".streaming-region-actions .editor-apply").click();
-			await afterCommittedEffects();
-		});
-		await act(async () => {
-			document.querySelector('[data-streaming-provider="8"]').click();
-			await afterCommittedEffects();
-		});
-		await act(async () => {
-			document.querySelector(".streaming-generated-source-actions button").click();
-			await afterCommittedEffects();
-		});
-		let input = document.querySelector("#streaming-source-name-AU-movie-popular");
-		await act(async () => {
-			setInputValue(input, "");
-			await afterCommittedEffects();
-		});
-		await act(async () => {
-			document.querySelector(".streaming-generated-source-actions button").click();
-			await afterCommittedEffects();
-		});
-		await act(async () => {
-			document.querySelector(".streaming-configure-actions .editor-apply").click();
-			await afterCommittedEffects();
-		});
-		input = document.querySelector("#streaming-source-name-AU-movie-popular");
-		return {
-			activeElementIsInput: document.activeElement === input,
-			ariaInvalid: input?.getAttribute("aria-invalid") ?? null,
-			inlineError: document.querySelector("#streaming-source-name-AU-movie-popular-error")?.textContent ?? "",
-			alertRendered: Boolean(document.querySelector(".streaming-configure .editor-diagnostics")),
-			dialogOpen: Boolean(document.querySelector('[data-source-mode="tmdb-streaming-services"]')),
-			applyCalls,
-		};
-	} finally {
-		await act(async () => root.unmount());
-		host.remove();
-	}
 }
 
 async function runGenreEditSecondaryScenario() {
@@ -7752,6 +7682,7 @@ async function runTmdbListLayoutScenario() {
 		const footer = requiredElement(dialog.querySelector(".add-source-actions"), "TMDB List footer");
 		const submit = requiredElement(footer.querySelector('button[type="submit"]'), "TMDB List submit action");
 		const reviewActionCopy = submit.textContent.trim();
+		const optionalNamesCollapsed = Boolean(dialog.querySelector(".source-names-disclosure:not([open])")) && dialog.querySelector(".source-names-disclosure > summary")?.textContent === "Source namesGenerated automatically." && !dialog.querySelector(".source-names-disclosure input") && reviewRows.every((row) => !row.querySelector("input"));
 		submit.focus({ preventScroll: true });
 		await act(async () => {
 			dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
@@ -7772,7 +7703,7 @@ async function runTmdbListLayoutScenario() {
 			footerReachable: footer.getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom + 1,
 			noSearchMediaOrSort: !/Search|Media type|Sort titles by/.test(reviewRows.map((row) => row.textContent).join(" ")),
 			originalOrder: reviewRows.every((row) => row.textContent.includes("Original order") && !row.textContent.includes("List order")),
-			sourceNameHelpers: reviewRows.every((row) => row.querySelector(".editor-field-help")?.textContent.trim() === "This is the name shown in Nuvio. You can customise it."),
+			optionalNamesCollapsed,
 			noPreviewActions: reviewRows.every((row) => !buttonContaining(row, "Preview")),
 			noContainerPresentation: dialog.querySelector('[data-review-title-options="true"], [data-hierarchy-collection-presentation="true"], [data-editor-field="folderTileShape"]') === null,
 		};
@@ -8252,7 +8183,6 @@ async function runMountedRegressions() {
 		collectionRequiredName: await runRequiredNameScenario(collectionSource()),
 		streamingRequiredName: await runRequiredNameScenario(streamingSource()),
 		duplicate: await runDuplicateScenario(),
-		streamingCreationRequiredName: await runStreamingCreationRequiredNameScenario(),
 		genreBrowseFocus: await runGenreBrowseFocusScenario(),
 		genreEditSecondary: await runGenreEditSecondaryScenario(),
 		genreCreationSecondary: await runGenreCreationSecondaryScenario(),
@@ -8866,3 +8796,5 @@ window.__runOrdinaryEditorOrderScenario = async ({ family, enlargedText = false 
 		return { family, width: innerWidth, enlargedText, ordered: true, previewPreserved: true, saved: true, noOverflow: true };
 	} finally { document.documentElement.style.fontSize = previousFont; await act(async () => root.unmount()); host.remove(); }
 };
+
+window.__runSourceNamesScenario = (view) => runSourceNamesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, setTextareaValue, waitForMountedCondition }, view);

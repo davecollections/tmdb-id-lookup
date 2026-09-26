@@ -1,4 +1,5 @@
 import { isPersonCreditCountSet } from "./person-credits.js";
+import { isValidNuvioTitle } from "../nuvio/titles.js";
 import {
 	buildPromotedPeopleFolderEditable,
 	isPromotablePeopleFolder,
@@ -387,7 +388,7 @@ export function buildPeopleSourceDrafts(person, { combinations, sortOptionId = D
 	return { ...validation, drafts: validation.ok ? drafts : [] };
 }
 
-export function validatePeopleSourceDraft(draft, path = "$people.sources[0]") {
+export function validatePeopleSourceDraft(draft, path = "$people.sources[0]", { allowCustomTitles = false } = {}) {
 	const errors = [];
 	if (!plainObject(draft) || !sameKeys(draft, ["category", "editable"])) {
 		return { ok: false, errors: [diagnostic("INVALID_PEOPLE_SOURCE_DRAFT", path, "The People source draft contains an unsupported field.")] };
@@ -404,7 +405,7 @@ export function validatePeopleSourceDraft(draft, path = "$people.sources[0]") {
 	const sourceType = canonicalText(editable.tmdbSourceType).toUpperCase();
 	const mediaType = canonicalText(editable.mediaType).toUpperCase();
 	const expectedTitle = peopleSourceTitle(sourceType, mediaType);
-	if (!title || editable.title !== title || expectedTitle === null || !isSourceVariantTitle(title, expectedTitle, editable.sortBy, mediaType, PEOPLE_SOURCE_SORT_OPTIONS)) {
+	if (!title || editable.title !== title || expectedTitle === null || (allowCustomTitles ? !isValidNuvioTitle(title) : !isSourceVariantTitle(title, expectedTitle, editable.sortBy, mediaType, PEOPLE_SOURCE_SORT_OPTIONS))) {
 		errors.push(diagnostic("INVALID_PEOPLE_SOURCE_TITLE", `${path}.editable.title`, "The People source title must use the established role-and-media wording."));
 	}
 	if (!isPositiveSafePersonId(editable.tmdbId)) {
@@ -424,11 +425,11 @@ export function validatePeopleSourceDraft(draft, path = "$people.sources[0]") {
 	return { ok: errors.length === 0, errors };
 }
 
-export function validatePeopleSourceDrafts(drafts, { person = null } = {}) {
+export function validatePeopleSourceDrafts(drafts, { person = null, allowCustomTitles = false } = {}) {
 	if (!Array.isArray(drafts) || drafts.length < 1 || drafts.length > PEOPLE_SOURCE_COMBINATIONS.length * PEOPLE_SOURCE_SORT_OPTIONS.length) {
 		return { ok: false, errors: [diagnostic("INVALID_PEOPLE_SOURCE_BUNDLE", "$people.sources", "Choose supported People source variants.")] };
 	}
-	const errors = drafts.flatMap((draft, index) => validatePeopleSourceDraft(draft, `$people.sources[${index}]`).errors);
+	const errors = drafts.flatMap((draft, index) => validatePeopleSourceDraft(draft, `$people.sources[${index}]`, { allowCustomTitles }).errors);
 	const identities = drafts.map(peopleSourceVariantKey);
 	if (identities.some((identity) => identity === null) || new Set(identities).size !== identities.length) {
 		errors.push(diagnostic("DUPLICATE_PEOPLE_SOURCE_IDENTITY", "$people.sources", "A People source bundle must contain distinct supported identities."));
@@ -472,7 +473,7 @@ export function inspectPeopleSourceDuplicates(project, destinationFolderInternal
 
 export function peopleDuplicateOverrideIdentity(folderInternalId, drafts) {
 	if (typeof folderInternalId !== "string" || !folderInternalId) return null;
-	const validation = validatePeopleSourceDrafts(drafts);
+	const validation = validatePeopleSourceDrafts(drafts, { allowCustomTitles: true });
 	if (!validation.ok) return null;
 	return `${folderInternalId}\n${drafts.map(peopleSourceVariantKey).join("\n")}`;
 }
@@ -493,7 +494,7 @@ export function createPeopleSourceBundle(controller, {
 	duplicateOverrideIdentity = null,
 	interactionLocked = false,
 } = {}) {
-	const validation = validatePeopleSourceDrafts(drafts, { person });
+	const validation = validatePeopleSourceDrafts(drafts, { person, allowCustomTitles: true });
 	if (!validation.ok) return { ok: false, errors: validation.errors, warnings: [] };
 	if (interactionLocked) {
 		return { ok: false, errors: [diagnostic("PEOPLE_CREATION_INTERACTION_LOCKED", "$people.creation", "Finish the current hierarchy interaction before adding People sources.")], warnings: [] };

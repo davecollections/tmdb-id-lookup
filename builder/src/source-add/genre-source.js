@@ -1,3 +1,4 @@
+import { sourceDraftsWithGeneratedTitles } from "./source-names.js";
 import {
 	buildDiscoverSourceDraft,
 	DEFAULT_DISCOVER_SORT_OPTION_ID,
@@ -167,7 +168,7 @@ export function buildGenreSourceDrafts(genres, {
 	});
 }
 
-export function validateGenreSourceDrafts(drafts, options = {}) {
+export function validateGenreSourceDrafts(drafts, options = {}, { allowCustomTitles = false } = {}) {
 	const expected = buildGenreSourceDrafts(options.genres, options);
 	if (!expected.ok) return Object.freeze({ ok: false, errors: expected.errors });
 	if (!Array.isArray(drafts) || drafts.length !== expected.drafts.length) {
@@ -176,7 +177,7 @@ export function validateGenreSourceDrafts(drafts, options = {}) {
 		]) });
 	}
 	const errors = [];
-	for (const [index, draft] of drafts.entries()) {
+	for (const [index, draft] of (allowCustomTitles ? sourceDraftsWithGeneratedTitles(drafts, expected.drafts) : drafts).entries()) {
 		const editable = draft?.editable;
 		const expectedEditable = expected.drafts[index].editable;
 		const identity = discoverSourceIdentity(editable);
@@ -310,7 +311,7 @@ export function createGenreSourceBundle(controller, {
 	interactionLocked = false,
 } = {}) {
 	const options = { genres, sharedMediaChoice, sortOptionId, sortOptionIds, advanced };
-	const validation = validateGenreSourceDrafts(drafts, options);
+	const validation = validateGenreSourceDrafts(drafts, options, { allowCustomTitles: destinationMode === "current-folder" });
 	if (!validation.ok) return { ok: false, errors: validation.errors, warnings: [] };
 	if (!GENRE_DESTINATION_MODES.some((entry) => entry.id === destinationMode)) return { ok: false, errors: [diagnostic("INVALID_GENRE_DESTINATION", "$genres.destination", "Choose where the Genre sources should be added.")], warnings: [] };
 	if (canonicalConcepts(genres)?.length === 1 && destinationMode !== DEFAULT_GENRE_DESTINATION_MODE) {

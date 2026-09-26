@@ -1,4 +1,6 @@
 import { creationContext, destinationContext, sourceDestinationContext } from "./creation-context.js";
+import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
+import { useSourceNames } from "./use-source-names.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { useNativeFolderPlacement, NativeFolderPlacementNotice, NativeFolderPlacementSummary } from "./NativeFolderPlacement.jsx";
@@ -688,6 +690,7 @@ export function PeopleSourceFlow({
 	});
 	const placement = useNativeFolderPlacement(hierarchyScope === "new-folder" ? collection?.internalId : null, configuredEntries.map((entry) => ({ id: entry.result.id, drafts: entry.drafts.drafts, outcome: entry.drafts.ok ? inspectPeopleHierarchyPlacement(project, entry.drafts.drafts, { destinationCollectionInternalId: hierarchyScope === "new-folder" ? collection?.internalId : null }) : null })));
 	const quickEntry = configuredEntries[0] ?? null;
+	const naming = useSourceNames(context === "folder" && quickEntry?.drafts.ok ? quickEntry.drafts.drafts : [], peopleSourceVariantKey);
 	const quickDuplicates = context === "folder" && quickEntry?.drafts.ok
 		? inspectPeopleSourceDuplicates(project, folder?.internalId ?? null, quickEntry.drafts.drafts)
 		: { destination: [], elsewhere: [], missingDrafts: [], duplicateDrafts: [] };
@@ -983,7 +986,8 @@ export function PeopleSourceFlow({
 	}
 
 	async function applyPeople(addAllAnyway = false) {
-		if (!configureReady || isApplying || !submissionGateRef.current.begin()) return;
+		if (!configureReady || naming.invalid || isApplying || !submissionGateRef.current.begin()) return;
+		if (context === "folder") naming.commit();
 		setIsApplying(true);
 		let payload;
 		if (hierarchy) {
@@ -995,7 +999,7 @@ export function PeopleSourceFlow({
 			}
 			payload = hierarchyPlanResult.plan;
 		} else if (context === "folder") {
-			const drafts = quickEntry.drafts.drafts;
+			const drafts = naming.drafts;
 			payload = {
 				context,
 				person: quickEntry.person,
@@ -1082,13 +1086,14 @@ export function PeopleSourceFlow({
 									{multiContext ? <PeopleBulkConfigurationList placement={hierarchyScope === "new-folder" ? placement : null} entries={configuredEntries} mode={configurationMode} onToggleCombination={toggleCombination} onRetry={(entry) => loadDetails(entry.result, { bypassCache: true })} onRemove={removePerson} onPreview={openTitlePreview} previewPersonId={sourcePreview?.candidate.request.tmdbId} /> : <div className="people-configuration-list">{configuredEntries.map((entry) => <PeopleConfigurationCard key={entry.result.id} personResult={entry.result} detail={entry.detail} configuration={entry.configuration} artworkState={entry.artworkState} showArtwork={resolvesFolderArtwork} onToggle={(id) => toggleCombination(entry.result.id, id)} onRefresh={() => loadDetails(entry.result, { bypassCache: true })} onRetry={() => loadDetails(entry.result, { bypassCache: true })} onRetryArtwork={() => entry.person && loadArtwork(entry.person, true)} onRemove={null} />)}</div>}
 									{context === "folder" && quickDuplicates.destination.length ? <div className="add-source-duplicate-warning" role="alert" data-people-duplicate-warning="true"><strong>{quickDuplicates.duplicateDrafts.length} selected source{quickDuplicates.duplicateDrafts.length === 1 ? " is" : "s are"} already in this folder.</strong><p>The main action adds only missing sources. Add all anyway is an explicit override for this person and selection.</p></div> : null}
 									{context === "folder" && quickDuplicates.elsewhere.length ? <p className="people-elsewhere-note" role="status">Matching sources also exist elsewhere in this Builder document. This does not block adding them here.</p> : null}
-									{!multiContext && quickEntry?.drafts.ok ? <SourceVariantReview drafts={quickEntry.drafts.drafts} review={quickDuplicates} variantKey={peopleSourceVariantKey} /> : null}
+									{!multiContext && quickEntry?.drafts.ok ? <SourceVariantReview drafts={context === "folder" ? naming.drafts : quickEntry.drafts.drafts} review={quickDuplicates} variantKey={peopleSourceVariantKey} /> : null}
 									{!multiContext ? <div className="source-edit-preview-action genre-hierarchy-configure-row-actions"><button type="button" aria-haspopup="dialog" data-action="preview-add-people" disabled={!sourcePreviewAvailable || isApplying} onClick={(event) => openTitlePreview(quickEntry, event.currentTarget)}>Preview titles</button>{!sourcePreviewAvailable ? <p className="editor-field-help">Choose a valid source configuration to preview.</p> : null}</div> : null}
+									{context === "folder" ? <SourceNamesDisclosure naming={naming} disabled={isApplying} context={(row) => `${quickEntry?.person.name} · ${row.generatedTitle}`} /> : null}
 								</section>
 							) : <PeopleReviewStep scope={hierarchyScope} planResult={hierarchyPlanResult} entries={configuredEntries} collectionOptions={collectionOptions} onCollectionOptionsChange={(next) => { setCollectionOptions(Object.freeze(next)); setApplyDiagnostic(null); }} folderTileShape={folderTileShape} onFolderTileShapeChange={(tileShape) => { setFolderTileShape(tileShape); setApplyDiagnostic(null); }} folderTitleVisibility={folderTitleVisibility} onFolderTitleVisibilityChange={(next) => { setFolderTitleVisibility(next); setApplyDiagnostic(null); }} applyDiagnostic={applyDiagnostic} headingRef={configureRef} />}
 						</div>
 						{step === PEOPLE_SOURCE_STEPS.SEARCH && multiContext ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={chosenPeople.length === 0}>Continue to Configure</button></footer> : null}
-						{step !== PEOPLE_SOURCE_STEPS.SEARCH ? <footer className="add-source-actions people-configure-actions"><button className="editor-apply" type="submit" disabled={!nameCorrection && (!configureReady || isApplying || (context === "folder" && primaryCount === 0) || (hierarchy && (!hierarchyPlanResult?.ok || hierarchyPlanResult.plan.counts.sourceCount === 0 || hierarchyPlanResult.plan.counts.unresolvedEntityCount > 0)))}>{isApplying ? "Adding…" : primaryLabel}</button>{context === "folder" && quickDuplicates.destination.length ? <button className="editor-cancel people-add-all" type="button" disabled={!configureReady || isApplying} data-action="add-all-people-anyway" onClick={() => applyPeople(true)}>Add all {quickEntry?.drafts.drafts.length ?? 0} anyway</button> : null}</footer> : null}
+						{step !== PEOPLE_SOURCE_STEPS.SEARCH ? <footer className="add-source-actions people-configure-actions"><button className="editor-apply" type="submit" disabled={!nameCorrection && (!configureReady || naming.invalid || isApplying || (context === "folder" && primaryCount === 0) || (hierarchy && (!hierarchyPlanResult?.ok || hierarchyPlanResult.plan.counts.sourceCount === 0 || hierarchyPlanResult.plan.counts.unresolvedEntityCount > 0)))}>{isApplying ? "Adding…" : primaryLabel}</button>{context === "folder" && quickDuplicates.destination.length ? <button className="editor-cancel people-add-all" type="button" disabled={!configureReady || naming.invalid || isApplying} data-action="add-all-people-anyway" onClick={() => applyPeople(true)}>Add all {quickEntry?.drafts.drafts.length ?? 0} anyway</button> : null}</footer> : null}
 					</form>
 					{sourcePreview ? <SourceTitlePreviewDialog preview={sourcePreview} titleId="people-add-preview-title" backdropProps={{ "data-people-add-preview-backdrop": "true" }} dialogProps={{ "data-people-add-preview": "true" }} {...titlePreview.dialogProps} /> : null}
 				</section>
