@@ -89,6 +89,8 @@ export async function runWorkspaceImportChecks(connection, origin, evaluate) {
 	}
 	await connection.command("Emulation.setEmulatedMedia", { features: [] });
 	await evaluate(connection, 'document.documentElement.style.fontSize=""');
+	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 400, deviceScaleFactor: 1, mobile: true });
+	embeddedLayouts.push({ stage: "error", ...await evaluate(connection, 'window.prepareEmbeddedNuvioScreen("error")') });
 	const external = await evaluate(connection, 'performance.getEntriesByType("resource").filter(r=>new URL(r.name).origin!==location.origin).map(r=>r.name)');
 	assert.deepEqual(external, [], "Local imports and explicitly mocked Nuvio mechanics make zero external requests; live acceptance remains separate");
 	return { local, embedded, layouts, embeddedLayouts, errors: await evaluate(connection, "window.__mountedErrors") };

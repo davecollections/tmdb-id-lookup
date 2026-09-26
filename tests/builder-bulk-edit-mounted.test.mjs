@@ -683,7 +683,7 @@ test("mounted workspace Import shares local review, artwork policies and accessi
 	assert.deepEqual(mounted.workspaceImport.local, { passed: true, externalServiceExercised: false });
 	assert.deepEqual(mounted.workspaceImport.embedded, { passed: true, mocked: true });
 	assert.equal(mounted.workspaceImport.layouts.length, 56);
-	assert.equal(mounted.workspaceImport.embeddedLayouts.length, 44);
+	assert.equal(mounted.workspaceImport.embeddedLayouts.length, 45);
 	assert.ok(mounted.workspaceImport.layouts.every(result => result.passed));
 	assert.ok(mounted.workspaceImport.embeddedLayouts.every(result => result.passed));
 	assert.deepEqual(mounted.workspaceImport.errors, []);

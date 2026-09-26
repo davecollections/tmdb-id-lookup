@@ -39,7 +39,9 @@ export function NuvioImportFlow({ connection, controller, builderState, initialP
 		} else restoreAddSourceSearchView({ scrollElement: scrollRef?.current, resultElement: heading.current, searchScrollTop: 0, focusWithoutScroll: focusElementWithoutScroll });
 	}, [step, confirmation]);
 	useEffect(() => { setSelected((current) => state.profiles.some((profile) => profile.id === current) ? current : ""); }, [state.profiles]);
-	useEffect(() => { if (error || state.error) focusElementWithoutScroll(errorRef.current); }, [error, state.error]);
+	useEffect(() => {
+		if (error || state.error) restoreAddSourceSearchView({ scrollElement: scrollRef?.current, resultElement: errorRef.current, searchScrollTop: scrollRef?.current?.scrollTop, focusWithoutScroll: focusElementWithoutScroll });
+	}, [error, state.error]);
 	function backToProfiles() { setConfirmation(false); setError(null); connection.cancelReview(); }
 	const backAction = snapshot ? <button className="add-source-header-action" type="button" onClick={backToProfiles}><span aria-hidden="true">←</span> Back</button> : null;
 	const content = <>
