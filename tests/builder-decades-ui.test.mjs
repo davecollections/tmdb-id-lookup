@@ -110,33 +110,12 @@ function addSource(current, editable = canonicalSource()) {
 }
 
 test("the shared creation registry keeps Blank first and leaves a stable future-option seam", () => {
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.id), [
-		CREATION_OPTION_IDS.BLANK,
-		CREATION_OPTION_IDS.DECADES,
-		CREATION_OPTION_IDS.PEOPLE,
-		CREATION_OPTION_IDS.FRANCHISES,
-		CREATION_OPTION_IDS.TMDB_LISTS,
-		CREATION_OPTION_IDS.STUDIOS,
-		CREATION_OPTION_IDS.NETWORKS,
-		CREATION_OPTION_IDS.GENRES,
-		CREATION_OPTION_IDS.STREAMING_SERVICES,
-		CREATION_OPTION_IDS.ADVANCED_DISCOVER,
-	]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.id), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
-	assert.equal(CREATION_OPTIONS[0].label, "Blank");
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "people", "franchises", "lists", "studios", "networks", "genres", "streaming-services", "genres"]);
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), [
-		"Start manually.",
-		"Build by decade or year.",
-		"Build around actors or directors.",
-		"Build from a movie franchise.",
-		"Build from public TMDB lists.",
-		"Build from movie or TV studios.",
-		"Build from TV networks.",
-		"Build by genre.",
-		"Build from streaming services.",
-		"Build from keywords and filters.",
-	]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.label), ["Blank", "Decades", "Franchises", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB Lists", "Discover"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "lists", "genres"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), ["Start manually.", "Build by decade or year.", "Build from a movie franchise.", "Build by genre.", "Build from TV networks.", "Build around actors or directors.", "Build from streaming services.", "Build from movie or TV studios.", "Build from public TMDB lists.", "Build from keywords and filters."]);
+
 	assert.equal(CREATION_OPTIONS.every((option) => option.description === undefined), true);
 });
 
@@ -162,7 +141,7 @@ test("Decade selection is multi-select, catalogue ordered, and the visible flow 
 	assert.equal(state.folderTitleVisibility, "SHOW_EVERYWHERE");
 });
 
-test("Decades Preview catalogue is closed and request-free by default, one-row-per-Decade, and placed after Advanced options", () => {
+test("Decades Preview catalogue is directly visible and request-free by default, one-row-per-Decade, and placed after Filters", () => {
 	const previewGroups = buildDecadesPreviewGroups({
 		selectedDecadeIds: ["1980s"],
 		mediaMode: "both",
@@ -176,16 +155,17 @@ test("Decades Preview catalogue is closed and request-free by default, one-row-p
 	assert.ok(closed.includes("Preview titles"));
 	assert.equal(closed.includes("All 1980s"), false);
 	assert.equal(closed.includes("1980s · Comedy"), false);
-	assert.equal(closed.includes('aria-haspopup="dialog"'), false);
+	assert.equal(closed.includes('aria-haspopup="dialog"'), true);
+	assert.doesNotMatch(closed, /<details/);
 
 	let state = toggleDecadePreset(createDecadesCreationState({ scope: "new-collection", currentYear: 2026 }), "1980s");
 	state = { ...state, mediaMode: "both", content: { wholeDecade: true, individualYears: true, genreBreakdown: true }, genreNames: ["Comedy"] };
 	const options = renderToStaticMarkup(createElement(DecadesOptionsStep, { state, previewGroups, previewAvailable: true, onStateChange() {} }));
-	assert.ok(options.indexOf("Advanced") < options.indexOf("Preview titles"));
+	assert.ok(options.indexOf("Filters") < options.indexOf("Preview titles"));
 
 	const source = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "CreationDialog.jsx"), "utf8");
 	for (const marker of [
-		"open ? <div className=\"decades-preview-groups\"",
+		"<div className=\"decades-preview-groups\"",
 		"const choice = group.choices[0]",
 		"previewProvider.getDecadeSample(request.drafts",
 		"decades-preview-source-selector",
@@ -716,7 +696,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	collectionState = updateDecadesCreationMedia(collectionState, "both");
 	collectionState = { ...collectionState, step: DECADES_CREATION_STEPS.OPTIONS };
 	const options = renderToStaticMarkup(createElement(DecadesOptionsStep, { state: collectionState, onStateChange() {} }));
-	for (const text of ["Configure Decades", "Media", "Sources to create", "Collection structure", "Decade overview", "Individual years", "Genre breakdown", "Decade &amp; Year order", "Display order", "Advanced options"]) assert.ok(options.includes(text), text);
+	for (const text of ["Configure Decades", "Media", "Sources to create", "Collection structure", "Decade overview", "Individual years", "Genre breakdown", "Decade &amp; Year order", "Display order", "Filters"]) assert.ok(options.includes(text), text);
 	assert.ok(options.includes("Add one source covering the complete Decade, such as All 2000s."));
 	assert.ok(options.includes("Add Genre sources to all selected Decades, or customise each Decade."));
 	assert.equal(options.includes("Future-year sources may remain empty"), false);
@@ -737,7 +717,7 @@ test("Step 2 owns content configuration while Step 3 owns names, presentation, a
 	const planResult = buildDecadesCreationPlan(current.getState().project, current.getState().revision, collectionState);
 	const review = renderToStaticMarkup(createElement(DecadesReviewStep, { state: collectionState, planResult, onCollectionTitleChange() {} }));
 	assert.ok(review.includes("Plan totals"));
-	assert.ok(review.includes("Review &amp; Appearance"));
+	assert.ok(review.includes("Appearance"));
 	assert.ok(review.includes("2</strong><span>Collections"));
 	assert.ok(review.includes("2</strong><span>Folders"));
 	assert.ok(review.includes("20</strong><span>Sources"));
@@ -979,4 +959,27 @@ test("creation styles keep selected cards restrained and cover required responsi
 	assert.ok(styles.includes(".review-title-options"));
 	assert.ok(styles.includes(".review-layout-options"));
 	assert.doesNotMatch(styles, /\.decades-(?:preset|choice|content|genre)[^}]*border-left:/);
+});
+
+test("Pass C output summaries use actual hierarchy scope and omit unchanged containers", async () => {
+ const { HierarchyOutputSummary } = await vite.ssrLoadModule("/src/ui/HierarchyOutputSummary.jsx");
+ const render = (counts, scope) => renderToStaticMarkup(createElement(HierarchyOutputSummary, { counts, scope }));
+ const multiple = render({ collectionCount: 2, folderCount: 16, sourceCount: 162 }, "new-collection");
+ assert.match(multiple, /<strong>2<\/strong><span>Collections/);
+ assert.match(multiple, /<strong>16<\/strong><span>Folders/);
+ assert.match(multiple, /<strong>162<\/strong><span>Sources/);
+ assert.match(render({ collectionCount: 1, folderCount: 1, sourceCount: 1 }, "new-collection"), /<strong>1<\/strong><span>Collection<\/span>/);
+ const folder = render({ collectionCount: 0, folderCount: 1, sourceCount: 3 }, "new-folder");
+ assert.doesNotMatch(folder, /Collections?/);
+ assert.match(folder, /<strong>1<\/strong><span>Folder<\/span>/);
+ const append = render({ collectionCount: 0, folderCount: 0, sourceCount: 3, existingFolderAdditionCount: 1 }, "new-folder");
+ assert.match(append, /3 Sources to add to 1 existing Folder/);
+ assert.doesNotMatch(append, /decades-plan-totals|<strong>0/);
+ assert.equal(render(null, "new-collection"), "");
+});
+
+test("Pass C source chooser retains approved labels and follows the shared family order", async () => {
+ const { AVAILABLE_SOURCE_MODES } = await import("../builder/src/source-add/source-modes.js");
+ assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ id }) => id), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
+ assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ label }) => label), ["Decade", "Movie franchise", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB lists", "Discover"]);
 });

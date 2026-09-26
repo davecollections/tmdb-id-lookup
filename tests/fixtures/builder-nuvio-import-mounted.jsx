@@ -2,6 +2,7 @@ import { act, StrictMode, useLayoutEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/controller.js";
 import { createNuvioConnection } from "../../builder/src/nuvio-connection/session.js";
+import { creationOptionsForScope } from "../../builder/src/ui/creation-options.js";
 import { BuilderApp } from "../../builder/src/ui/BuilderApp.jsx";
 import { NuvioProfileAvatar } from "../../builder/src/ui/NuvioProfileAvatar.jsx";
 import { useExactUrlPreviewFailure } from "../../builder/src/ui/exact-url-preview.js";
@@ -121,11 +122,17 @@ async function checkAvatarFallback() {
 	globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 	const host = document.createElement("div"); document.body.append(host);
 	const avatarRoot = createRoot(host);
-	const avatarUrl = new URL("../../builder/src/assets/builder-mark.svg", import.meta.url).href;
+	// Keep a real local URL: Vite may inline import.meta assets into data URLs,
+	// where appending a replacement query corrupts the SVG payload.
+	const avatarUrl = new URL("/builder/src/assets/builder-mark.svg", window.location.origin).href;
 	const replacementUrl = `${avatarUrl}?replacement`;
 	const profile = { name: "Family cinema", avatarUrl, avatarColor: "#1E88E5" };
 	const fallback = () => !host.querySelector("img") && host.textContent === "FC";
 	try {
+		for (const url of [avatarUrl, replacementUrl]) {
+			const image = new Image(); image.src = url;
+			await image.decode();
+		}
 		await act(async () => avatarRoot.render(<EarlyAvatarError profile={profile} failEarly />));
 		assert(fallback(), "An avatar failure before mount passive effects must survive React settling");
 		assert(host.querySelector(".nuvio-avatar").style.backgroundColor === "rgb(30, 136, 229)", "Nuvio color fallback");
@@ -260,7 +267,7 @@ window.runNuvioLocalCases = async () => {
 	return { passed: true, mocked: true };
 };
 
-window.runWelcomeLayoutCases = checkLanding;
+window.runWelcomeLayoutCases = async () => { await checkAvatarFallback(); return checkLanding(); };
 window.prepareNuvioScreen = async (stage = "review") => {
 	if (stage.startsWith("landing")) {
 		await mount({ open: false, localOnly: true });
@@ -426,11 +433,13 @@ async function checkLanding() {
  assert(method("file").getAttribute("aria-pressed") === "true" && !$("[data-nuvio-dialog]"), "Busy guard prevents switching and opening Nuvio");
  finishRead(JSON.stringify(incoming)); await until(() => $("[data-builder-shell]"));
  assert(controller.getState().project.collections.length === 2, "Ordinary local JSON file import still succeeds");
+ assert(!$("[data-creation-dialog]"), "File import enters the ordinary workspace without the creation picker");
  await mount({ open: false, localOnly: true }); await click(method("json"));
  const pasted = $("#builder-import-text");
  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(pasted, JSON.stringify(incoming)); pasted.dispatchEvent(new Event("input", { bubbles: true })); await frame();
  await click(button("Import pasted JSON")); await until(() => $("[data-builder-shell]"));
  assert(controller.getState().project.collections.length === 2, "Ordinary pasted JSON import still succeeds");
+ assert(!$("[data-creation-dialog]"), "JSON import enters the ordinary workspace without the creation picker");
  return { passed: true, externalServiceExercised: false };
 }
 async function checkMerge() {
@@ -453,3 +462,112 @@ async function checkMerge() {
  assert($(".nuvio-profile-stage") && !connection.getState().snapshot && $(".nuvio-profile-choice input:checked").value === main.id, "Standard Back returns to the retained selected Profile");
  assert(snapshot.collections.length === 2, "Reviewed snapshot remains immutable");
 }
+
+
+// C02 exercises only local shell/Blank creation, with the production disconnected
+// connection. No external catalogue or account responses are substituted.
+let welcomeOpening, welcomeHeadingBefore;
+const welcomeHeadingBounds = () => { const rect = $(".welcome-brand h1").getBoundingClientRect(); return { left: rect.left, right: rect.right }; };
+const creationDialog = () => $("[data-creation-dialog]");
+const startAction = () => $("[data-action=start-new-project]");
+const workspaceCreate = () => [...document.querySelectorAll('[data-action="create-collection"], [data-action="create-collection-empty"], [data-action="create-collection-after-list"]')].find(node => node.getClientRects().length);
+function checkInitialWelcomeReturn() {
+	assert($("[data-builder-welcome]") && !creationDialog(), "Initial Cancel returns to Welcome");
+	assert(controller.getState().project === welcomeOpening.project && controller.getState().revision === welcomeOpening.revision, "Cancel creates no content or controller change");
+	assert(controller.getState().project.collections.length === 0 && !controller.getState().dirty, "Untouched project stays clean and empty");
+	assert(document.activeElement === startAction(), "Welcome Start regains focus");
+	assert(document.body.style.position !== "fixed", "Initial Cancel releases the shared body lock");
+	assert(JSON.stringify(welcomeHeadingBounds()) === JSON.stringify(welcomeHeadingBefore), "Returning preserves the existing Welcome heading layout");
+	return true;
+}
+window.checkInitialWelcomeReturn = checkInitialWelcomeReturn;
+window.prepareWelcomeCreation = async (enlarged = false) => {
+	document.documentElement.style.fontSize = enlarged ? "200%" : "";
+	await mount({ open: false, localOnly: true });
+	welcomeHeadingBefore = welcomeHeadingBounds();
+	const before = controller.getState();
+	const snapshots = []; const focusTargets = [];
+	const observe = () => { if ($("[data-builder-shell]")) snapshots.push(Boolean(creationDialog())); };
+	const observer = new MutationObserver(observe);
+	const focus = event => { if (!event.target.closest("[data-builder-welcome]")) focusTargets.push(Boolean(event.target.closest("[data-creation-dialog]"))); };
+	observer.observe(document.body, { childList: true, subtree: true });
+	document.addEventListener("focusin", focus);
+	const start = startAction(); start.focus(); start.click(); start.click();
+	await until(creationDialog);
+	observer.disconnect(); document.removeEventListener("focusin", focus);
+	welcomeOpening = controller.getState();
+	assert(welcomeOpening.revision === before.revision + 1, "Double activation starts just one clean project");
+	assert(snapshots.length && snapshots.every(Boolean), "First committed workspace already contains the shared picker");
+	assert(focusTargets.length && focusTargets.every(Boolean), "No transient focus on unrelated workspace controls");
+	const dialog = creationDialog();
+	const expected = creationOptionsForScope("new-collection").map(option => option.id);
+	const actual = [...dialog.querySelectorAll("button[data-creation-option]")].map(node => node.dataset.creationOption);
+	assert(JSON.stringify(actual) === JSON.stringify(expected), "Welcome uses the canonical D01 family options and order");
+	assert(document.querySelectorAll("[role=dialog]").length === 1, "Exactly one dialog opens under StrictMode");
+	assert(document.activeElement === dialog.querySelector('[data-creation-option="blank"]'), "Existing picker first-option focus is retained");
+	assert($(".workspace-underlay").inert && document.body.style.position === "fixed", "Existing modal inert/background lock is reused");
+	root.render(<StrictMode><BuilderApp controller={controller} nuvioConnection={connection} /></StrictMode>); await frame();
+	assert(creationDialog() === dialog && controller.getState() === welcomeOpening, "Rerender does not reopen or repeat creation");
+	const rect = dialog.getBoundingClientRect();
+	assert(rect.left >= -1 && rect.right <= innerWidth + 1 && rect.top >= -1 && rect.bottom <= innerHeight + 1, "Picker fits viewport");
+	assert(document.documentElement.scrollWidth <= innerWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1, "No horizontal overflow");
+	return { width: innerWidth, enlarged, order: actual, singlePicker: true, noIdleWorkspace: true, overflow: false };
+};
+window.finishWelcomeCreationCases = async () => {
+	checkInitialWelcomeReturn();
+	// The same initial close callback may be invoked twice without a second action.
+	await click(startAction()); welcomeOpening = controller.getState();
+	const close = creationDialog().querySelector(".add-source-close-action");
+	assert(close, "Existing picker Close exists"); close.click(); close.click(); await frame();
+	checkInitialWelcomeReturn();
+	await click(startAction());
+	await click(creationDialog().querySelector('[data-creation-option="blank"]'));
+	const created = controller.getState();
+	assert(!creationDialog() && $("[data-builder-shell]") && created.project.collections.length === 1, "Blank completes normally and stays in workspace");
+	assert(created.project.collections[0].editable.title === "Untitled Collection", "Blank retains its existing defaults");
+	if (innerWidth >= 900) assert(created.selection.collectionInternalId === created.project.collections[0].internalId, "Desktop retains normal created selection");
+	else assert(created.selection.collectionInternalId === null && $('[data-node-type="collection"]').getClientRects().length, "Phone retains the existing unselected created-card presentation");
+	root.render(<StrictMode><BuilderApp controller={controller} nuvioConnection={connection} /></StrictMode>); await frame();
+	assert(!creationDialog() && controller.getState() === created, "Successful creation never reopens on rerender");
+	const trigger = workspaceCreate(); await click(trigger);
+	await click(creationDialog().querySelector(".add-source-close-action"));
+	assert($("[data-builder-shell]") && !creationDialog() && controller.getState() === created, "Established workspace Cancel stays in workspace");
+	assert(document.activeElement === trigger, "Ordinary creation restores its workspace trigger");
+	await click($("[data-action=return-builder-home]")); await click($("[data-action=discard-and-return]"));
+	root.render(<StrictMode><BuilderApp controller={controller} nuvioConnection={connection} /></StrictMode>); await frame();
+	assert($("[data-builder-welcome]") && !creationDialog(), "Later Welcome has no stale launch context");
+	// A legitimate empty import must never acquire the special Welcome journey.
+	for (const method of ["file", "json"]) {
+		await mount({ open: false, localOnly: true });
+		await click($(`[data-action=choose-import-${method}]`));
+		if (method === "file") {
+			const data = new DataTransfer(); data.items.add(new File(["[]"], "empty.json", { type: "application/json" }));
+			$("#builder-import-file").files = data.files; $("#builder-import-file").dispatchEvent(new Event("change", { bubbles: true })); await frame();
+		} else {
+			Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call($("#builder-import-text"), "[]");
+			$("#builder-import-text").dispatchEvent(new Event("input", { bubbles: true })); await frame();
+		}
+		await click($(`[data-action=${method === "file" ? "import-file" : "import-pasted-json"}]`));
+		assert($("[data-builder-shell]") && !creationDialog(), "Empty import enters workspace without auto-opening");
+		const imported = controller.getState(); await click(workspaceCreate());
+		await click(creationDialog().querySelector(".add-source-close-action"));
+		assert($("[data-builder-shell]") && controller.getState() === imported, "Cancel keeps the legitimate empty imported workspace");
+	}
+	await mount({ open: false, localOnly: true }); await click(startAction());
+	await click(creationDialog().querySelector('[data-creation-option="decades"]'));
+	await click($("[data-decade-preset='1980s']"));
+	await click(button("Continue to Configure")); await click(button("Continue to Appearance"));
+	await click($(".decades-creation-form button[type=submit]"));
+	assert(!creationDialog() && $("[data-builder-shell]") && controller.getState().project.collections.some(collection => collection.folders.some(folder => folder.sources.length)), "Guided Decades creation completes normally without Preview or external requests");
+	root.render(<StrictMode><BuilderApp controller={controller} nuvioConnection={connection} /></StrictMode>); await frame();
+	assert(!creationDialog(), "Guided success does not reopen the initial picker");
+	// Losing the opening revision, even while still empty, must prevent return.
+	await mount({ open: false, localOnly: true }); await click(startAction());
+	assert(controller.updateNode(controller.getState().project.internalId, { title: "Changed while open" }).ok, "Controller edit succeeds");
+	await frame(); await click(creationDialog().querySelector(".add-source-close-action"));
+	assert($("[data-builder-shell]") && !creationDialog(), "Changed opening project cannot return as untouched");
+	root.unmount(); root = null; connection.dispose();
+	document.documentElement.style.fontSize = "";
+	await frame();
+	return { passed: true, externalServiceExercised: false };
+};

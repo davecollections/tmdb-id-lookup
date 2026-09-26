@@ -10,7 +10,17 @@ Status: current Builder shell includes eight-family selected-folder Add Source a
 
 Last reviewed: 2026-09-03
 
-Ordinary Source editors place identity/context before the existing Source name/reset, then editable role/media, sort, Advanced and Preview where supported. Fixed identities stay fixed. Franchise replacement stays with identity; its existing default-name reset follows naming. Full Discover retains its separate Filters → Review editor. No additional Source-name controls are implied for Add Source flows.
+Ordinary Source editors place identity/context before the existing Source name/reset, then editable role/media, sort, Filters and Preview titles where supported. Fixed identities stay fixed. Franchise replacement stays with identity; its existing default-name reset follows naming. Full Discover retains its separate Filters → Review editor. No additional Source-name controls are implied for Add Source flows.
+
+## Filters and flow context
+
+Content-filter disclosures in Decades, Genres, Streaming, Studios and Networks use **Filters**, collapsed by default, across creation, Add and ordinary Edit. The helper is **Refine which titles are included.** with no active non-default groups, otherwise **N applied**. Native disclosure behavior retains keyboard focus and expanded state. A quiet full border and subtle expanded surface separate the controls without selection styling; forced colours retain visible boundaries.
+
+Applied counts use semantic groups: Minimum votes; rating bounds together; language; country; Genres together; Keywords together; dates/year together; Studios together; Networks; and services together. Included/excluded chips count once per group. Only editable controls present on the current surface count. Empty/default values, fixed family identity, metadata, hidden/preserved fields and watch region alone do not count. Effective per-entity genre overrides count as one group if any applicable selected entity is restricted; blank overrides do not inherit a count from a discarded shared rule. Validation and generated filter payloads remain independent and unchanged.
+
+Discover's full **Filters** stage stays directly visible. **Advanced tips** in Discover Help remains a guidance subsection, not an editable filter disclosure. Read-only applied-filter details use **View applied filters**. Presentation details, selected-item lists, and optional Folder-name overrides keep their own descriptive labels.
+
+Operation headings, purpose-based stages and output summaries follow [the hierarchy creation contract](./BUILDER_HIERARCHY_CREATION.md#3-flow-and-state). This current contract supersedes historical Review & Appearance and Advanced disclosure wording in the milestone descriptions below.
 
 ## Purpose and scope
 

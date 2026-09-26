@@ -70,7 +70,7 @@ export function GenreAdvancedHelpSubview({ onDone, focusRef }) {
 	return (
 		<section className="genre-advanced-subview genre-help-subview" aria-labelledby="genre-advanced-help-title">
 			<header>
-				<div><p className="panel-kicker">Advanced options</p><h4 id="genre-advanced-help-title" tabIndex={-1} ref={focusRef}>What do these options do?</h4></div>
+				<div><p className="panel-kicker">Filters</p><h4 id="genre-advanced-help-title" tabIndex={-1} ref={focusRef}>What do these options do?</h4></div>
 				<button type="button" className="editor-apply genre-secondary-done" onClick={onDone}>Done</button>
 			</header>
 			<dl>{GENRE_ADVANCED_HELP.map((entry) => <div key={entry.field}><dt>{entry.label}</dt><dd>{entry.description}</dd></div>)}</dl>
@@ -90,7 +90,7 @@ export function GenreAdvancedOptions({ value, includedGenres, sharedMediaChoice 
  const names = includedGenres.map(genreName).filter(Boolean);
  const count = names.filter((name) => genreExclusionsFor(advanced, name).length).length;
  const genres = extraEditable?.withoutGenres === false ? <p className="editor-field-help">Imported Genre exclusions are preserved.</p> : <div className="genre-advanced-compact-actions"><div><strong>Genre exclusions</strong><span>{names.length === 1 && count ? genreExclusionsFor(advanced, names[0]).join(", ") : count ? `Exclusions configured for ${count} genre${count === 1 ? "" : "s"}` : "No genre exclusions configured"}</span></div><button type="button" className="secondary-action" onClick={(event) => onOpenSecondary("exclusions", event.currentTarget)}>{names.length === 1 ? "Choose" : "Configure"}</button></div>;
- return <DiscoverFamilyAdvancedOptions value={advanced} onChange={(next) => onChange(createGenreAdvancedState(next))} mediaMode={genreAdvancedMediaMode(includedGenres, sharedMediaChoice)} legacy genreControls={genres} extraEditable={extraEditable}>
+ return <DiscoverFamilyAdvancedOptions value={advanced} onChange={(next) => onChange(createGenreAdvancedState(next))} mediaMode={genreAdvancedMediaMode(includedGenres, sharedMediaChoice)} legacy genreControls={genres} genresApplied={count > 0} extraEditable={extraEditable}>
   <button type="button" className="genre-advanced-help-action" onClick={(event) => onOpenSecondary("help", event.currentTarget)}>What do these options do?</button>
  </DiscoverFamilyAdvancedOptions>;
 }

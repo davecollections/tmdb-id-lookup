@@ -28,6 +28,7 @@ Approved visible wording: label the included multiple-choice creation group **So
 - **New Collection** and **New Folder** are the contextual hierarchy-creation launchers.
 - **Add Source** remains the physical-source operation for the selected existing Folder. A family may support both entry types, but the flows must not be conflated.
 - People uses only `New Collection → People` and `New Folder → People` for hierarchy creation; there is no Folders-header People shortcut. `Selected Folder → Add Source → People` remains the separate physical-source route.
+- The explicit family order is **Blank → Decades → Franchises → Genres → Networks → People → Streaming → Studios → TMDB Lists → Discover**. Blank stays first, ordinary families follow A–Z, and Discover stays last. Add Source uses the same relative order without Blank, retaining its approved labels and native IDs.
 - New hierarchy families register through the existing ordered, scope-aware creation-family registry. Do not create a panel-specific or family-specific launcher in parallel.
 - The registry owns only family ID, label, description, supported scope, and ordering. Family components, planners, validators, constructors, duplicate rules, and mutations remain outside it.
 - A hierarchy creator generates ordinary editable `Collection → Folder → Source` nodes. It must not persist a recipe, hierarchy, wizard, or family-only node merely to support creation.
@@ -51,11 +52,15 @@ Shared infrastructure must not absorb family business rules merely to increase r
 
 ## 3. Flow and state
 
-Use this established shape as the starting point:
+Use this purpose-based vocabulary, including only the stages the family actually needs:
 
 ```text
-Select / Choose → Configure → Review & Appearance → Create
+Select → Configure → Structure → Appearance → Artwork → Review
 ```
+
+The persistent operation heading remains **Create with [family]**, **Add [family] sources**, or **Edit source**; destination context uses **To Collection / Folder** where applicable. The stage is subordinate to that operation. When the phase and stage title match, show the step number once and the stage title once. Decades, People, Franchises and guided TMDB Lists use **Appearance** for the final editable presentation stage. Discover retains **Filters → Appearance → Artwork → Review** for creation and **Filters → Review** for Add/Edit. Streaming retains Services and Destination routing; its final stage is Appearance when it offers container settings, Review for append-only confirmation.
+
+Hierarchy output summaries use validated plan counts and Collection/Folder/Source tiles. New Folder omits unchanged Collection totals; adding only Sources to existing Folders uses **N Sources to add**, with destination/duplicate context separately. Editing keeps **Save changes** without creation tiles. Summary, validity and action availability remain separate; no name-recovery behavior is changed.
 
 Pure stage navigation uses **Continue to [next stage]**, using the current stage name. Counts stay in existing selection context. Resolve lists, artwork retry/preparation, append-only Add sources, Create/Apply and transactional Import/Send retain their operation verbs. Streaming keeps Services selection and destination routing; it is not flattened into a generic wizard.
 
@@ -70,13 +75,14 @@ Stage names describe decisions, not a mandatory number of screens:
 - **Select** chooses people, genres, studios, networks, services, lists, decades, or other entities.
 - **Configure** owns source-level choices such as Media, roles, Sort, filters, and source combinations.
 - **Structure** owns hierarchy and grouping.
-- **Appearance** owns display and artwork for newly created containers.
+- **Appearance** owns names and presentation for newly created containers.
+- **Artwork** owns detailed artwork where a separate stage is useful.
 - **Review** is mostly read-only confirmation of destination, conflicts, duplicates, existing matches, warnings, and the resulting hierarchy.
 - **Create / Apply** performs the atomic mutation and introduces no major new decision.
 
 A family may skip or combine stages when appropriate. If users are still making major hierarchy, display, title, source, or appearance decisions, the screen is not genuinely Review. Preview is an action or nested view, never a wizard stage.
 
-A family may also move routine entity review earlier when that makes the final presentation stage materially clearer. Studio issue #124 deliberately uses **Select → Configure → Appearance**: Configure owns the directly visible selected-Studio rows, Preview/remove actions, learned counts, and reactive placement; Appearance owns presentation only and contains no Studio rows. Network issue #126 follows that same stage split with Network-specific Series-only configuration and appearance. Genre issue #130 uses **Select → Configure → Structure → Appearance → Create**. Configure keeps the approved catalogue stable, groups shared-pill Media and Sort controls with Advanced, and always renders one compact configured row per selected Genre with Preview/remove/placement. Structure owns the four evidenced hierarchy shapes, plan-derived Collection/Folder/Source counts, and the three focused combined-Series placement choices. Its choices use visual selection cards with first-time-user copy, compact illustrative Collection → Folder → content-choice wireframes, live plan-derived Collection/Folder summaries, native radios, and established selected/focus treatment; source totals remain authoritative internally and in later technical summaries, while the illustrations are explanatory only and never become plan input. Appearance owns only choices valid for the selected structure. Configure has no duplicate selected-set or View-all disclosure; the primary stage scroll owner handles all 27 logical rows.
+A family may also move routine entity review earlier when that makes the final presentation stage materially clearer. Studio issue #124 deliberately uses **Select → Configure → Appearance**: Configure owns the directly visible selected-Studio rows, Preview/remove actions, learned counts, and reactive placement; Appearance owns presentation only and contains no Studio rows. Network issue #126 follows that same stage split with Network-specific Series-only configuration and appearance. Genre issue #130 uses **Select → Configure → Structure → Appearance → Create**. Configure keeps the approved catalogue stable, groups shared-pill Media and Sort controls with Filters, and always renders one compact configured row per selected Genre with Preview/remove/placement. Structure owns the four evidenced hierarchy shapes, plan-derived Collection/Folder/Source counts, and the three focused combined-Series placement choices. Its choices use visual selection cards with first-time-user copy, compact illustrative Collection → Folder → content-choice wireframes, live plan-derived Collection/Folder summaries, native radios, and established selected/focus treatment; source totals remain authoritative internally and in later technical summaries, while the illustrations are explanatory only and never become plan input. Appearance owns only choices valid for the selected structure. Configure has no duplicate selected-set or View-all disclosure; the primary stage scroll owner handles all 27 logical rows.
 
 Back must preserve every still-valid selection, configuration override, title draft, presentation choice, and relevant search position. Cancel and Back are mutation-free. Browse/select screens do not auto-focus Search or summon the mobile keyboard; Search may receive focus only after explicit interaction or when the user has explicitly chosen a flow whose primary task is typing.
 

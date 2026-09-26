@@ -127,16 +127,16 @@ export function DecadesOrdinaryExclusionSubview({ selectedDecadeIds, selectionBy
 export function DecadesAdvancedHelpSubview({ onDone, focusRef }) {
 	return (
 		<section className="genre-advanced-subview genre-help-subview" aria-labelledby="decades-advanced-help-title">
-			<header><div><p className="panel-kicker">Advanced options</p><h4 id="decades-advanced-help-title" tabIndex={-1} ref={focusRef}>What do these options do?</h4></div><button type="button" className="editor-apply genre-secondary-done" onClick={onDone}>Done</button></header>
+			<header><div><p className="panel-kicker">Filters</p><h4 id="decades-advanced-help-title" tabIndex={-1} ref={focusRef}>What do these options do?</h4></div><button type="button" className="editor-apply genre-secondary-done" onClick={onDone}>Done</button></header>
 			<dl>{DECADES_ADVANCED_HELP.map((entry) => <div key={entry.label}><dt>{entry.label}</dt><dd>{entry.description}</dd></div>)}</dl>
 			<div className="genre-advanced-callout"><strong>Decade dates stay fixed</strong><span>These options refine the generated sources without changing the selected Decade ranges.</span></div>
 		</section>
 	);
 }
 
-export function DecadesAdvancedOptions({ value, onChange, mediaMode = "both", exclusionSummary, onOpenSecondary, extraEditable }) {
+export function DecadesAdvancedOptions({ value, onChange, mediaMode = "both", exclusionSummary, onOpenSecondary, extraEditable, genresApplied = false }) {
  const genres = extraEditable?.withoutGenres === false ? <p className="editor-field-help">Imported Genre exclusions are preserved.</p> : <div className="genre-advanced-compact-actions"><div><strong>Genre exclusions</strong><span>{exclusionSummary}</span></div><button type="button" className="secondary-action" onClick={(event) => onOpenSecondary("ordinary-exclusions", event.currentTarget)}>Configure</button></div>;
- return <DiscoverFamilyAdvancedOptions value={value} onChange={onChange} mediaMode={mediaMode} legacy dates={false} genreControls={genres} extraEditable={extraEditable} className="decades-advanced-options">
+ return <DiscoverFamilyAdvancedOptions value={value} onChange={onChange} mediaMode={mediaMode} legacy dates={false} genreControls={genres} genresApplied={genresApplied} extraEditable={extraEditable} className="decades-advanced-options">
   <p className="editor-field-help">Decade dates stay fixed.</p>
   <button type="button" className="genre-advanced-help-action" onClick={(event) => onOpenSecondary("advanced-help", event.currentTarget)}>What do these options do?</button>
  </DiscoverFamilyAdvancedOptions>;

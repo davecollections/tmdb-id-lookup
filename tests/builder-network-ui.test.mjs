@@ -300,7 +300,7 @@ test("Network Add and Edit reuse collapsed Minimum votes with shared errors and 
  const { MinimumVotesAdvancedOptions } = await vite.ssrLoadModule("/src/ui/MinimumVotesAdvancedOptions.jsx");
  for (const value of ["", "0", "100", "-1"]) {
   const markup = renderToStaticMarkup(createElement(MinimumVotesAdvancedOptions, { family: "network", draft: { mediaType: "TV", filters: { voteCountGte: value } }, onChange() {} }));
-  assert.match(markup, /<summary>Advanced options<\/summary>/);
+  assert.match(markup, /<summary><span[^>]*><strong>Filters<\/strong><small>(?:Refine which titles are included\.|1 applied)<\/small>/);
   assert.doesNotMatch(markup, /<details[^>]*\sopen|autoFocus|autofocus/);
   assert.match(markup, /inputMode="numeric"/);
   assert.match(markup, /Minimum votes/);

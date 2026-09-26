@@ -33,7 +33,11 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 		const state = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState);
 		return createElement(BuilderWorkspace, { controller, state });
 	}
-	const evidence = { family, width: innerWidth, forcedColors, stages: [], palettes: [], screenshots: [], noMutation: false, focusRestored: false, keyboard: false };
+	const evidence = { family, width: innerWidth, forcedColors, stages: [], filters: [], palettes: [], screenshots: [], noMutation: false, focusRestored: false, keyboard: false };
+    async function saveShot(name) {
+        if (!capture || forcedColors || !globalThis.capture204Preview) return;
+        await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `pass-c-${family}-${innerWidth}-${name}` })); });
+    }
 	async function key(value) {
 		await new Promise(resolve => { window.__finish230Key = resolve; window.pressGuidedPresentationKey(JSON.stringify({ key: value })); });
 		await settle();
@@ -67,10 +71,53 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 		return [...scope.querySelectorAll(`[data-selection-mode="${mode}"]`)].filter(node => visible(node) && (node.matches('[data-selected="true"], [aria-pressed="true"], [aria-selected="true"], .is-selected') || node.querySelector(":scope > input:checked")));
 	}
 	async function stage(step, titlePart, shot) {
-		await wait(() => dialog().querySelector(".creation-stage-intro .panel-kicker")?.textContent.startsWith(`Step ${step} · `), { label: `${family} step ${step} ready`, timeoutMs: 30000 });
+		await wait(() => dialog().querySelector(".creation-stage-intro .panel-kicker")?.textContent.match(new RegExp(`^Step ${step}(?: · |$)`)), { label: `${family} step ${step} ready`, timeoutMs: 30000 });
 		await settle();
 		const surface = dialog(), intro = check(surface.querySelector(".creation-stage-intro"), "shared stage intro");
-		check(intro.querySelector(".panel-kicker").textContent.startsWith(`Step ${step} · `), `step ${step} phase`);
+        const heading = surface.querySelector("header h2")?.textContent;
+        check(heading?.startsWith("Create with "), "persistent creation operation missing");
+        if (evidence.operation) check(evidence.operation === heading, "operation changed between stages");
+        evidence.operation = heading;
+        const filters = surface.querySelector("details.genre-advanced-options");
+        if (filters && !nameRecovery && !semanticOnly && !meaning && !evidence.filters.length) {
+            const summary = filters.querySelector(":scope > summary");
+            check(!filters.open, "Filters should start collapsed");
+            check(summary.querySelector("strong")?.textContent === "Filters", "Filters label missing");
+            check(summary.querySelector("small")?.textContent === "Refine which titles are included.", "default Filters helper missing");
+            summary.scrollIntoView({ block: "nearest" }); summary.focus({ preventScroll: true });
+            if (family === "decades") await saveShot("filters-default");
+            await key("Enter"); check(filters.open && document.activeElement === summary, "native Filters keyboard expansion/focus");
+            const content = filters.querySelector(".genre-advanced-content");
+            check(getComputedStyle(filters).borderTopStyle !== "none" && getComputedStyle(content).borderTopStyle !== "none", "Filters boundaries missing");
+            const votes = filters.querySelector('[id="discover-field-voteCountGte"]');
+            const rating = filters.querySelector('[id="discover-field-voteAverageGte"]');
+            const initial = [votes.value, rating.value];
+            async function setField(node, value) { await act(async () => { setInputValue(node, value); await settle(); }); }
+            await setField(votes, "100"); check(summary.textContent.includes("1 applied"), "one active Filters group");
+            await setField(rating, "7"); check(summary.textContent.includes("2 applied"), "two active Filters groups");
+            summary.focus({ preventScroll: true }); await key("Enter");
+            summary.scrollIntoView({ block: "nearest" }); await settle();
+            if (family === "decades") await saveShot("filters-applied");
+            await key("Enter");
+            if (family === "decades") {
+                const scrollOwner = surface.querySelector(".add-source-scroll");
+                scrollOwner.scrollTop += summary.getBoundingClientRect().top - scrollOwner.getBoundingClientRect().top;
+                await settle(); await saveShot("filters-expanded");
+            }
+            await setField(votes, initial[0]); await setField(rating, initial[1]);
+            check(summary.textContent.includes("Refine which titles are included."), "clear Filters helper recovery");
+            summary.focus({ preventScroll: true }); await key("Enter");
+            check(!filters.open && document.activeElement === summary, "Filters keyboard collapse/focus");
+            evidence.filters.push({ helper: true, semanticCounts: true, clearing: true, keyboard: true, boundaries: true });
+            if (family === "decades") {
+                const preview = surface.querySelector('.decades-preview-catalogue');
+                check(preview && !preview.querySelector("summary") && preview.querySelector('button[aria-haspopup="dialog"]')?.textContent === "Preview titles", "direct Decades Preview titles");
+                const scrollOwner = surface.querySelector(".add-source-scroll");
+                scrollOwner.scrollTop += preview.getBoundingClientRect().top - scrollOwner.getBoundingClientRect().top;
+                await settle(); await saveShot("preview-actions");
+            }
+        }
+		check(intro.querySelector(".panel-kicker").textContent.match(new RegExp(`^Step ${step}(?: · |$)`)), `step ${step} phase`);
 		check(intro.querySelector("h3").textContent.includes(titlePart), `title ${titlePart}`);
 		check(getComputedStyle(intro).borderTopWidth === "0px", "stage intro acquired a card border");
 		const owner = surface.querySelector(".add-source-scroll");
@@ -84,14 +131,14 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 		check(owners.length <= 1, `competing scroll owners: ${owners.map(node => node.className).join(" / ")}`);
 		for (const toggle of surface.querySelectorAll('[role="switch"]')) check(!toggle.closest("[data-selection-mode]"), "independent boolean gained selection semantics");
 		const navigation = {
-			decades: { 1: "Configure", 2: "Review & Appearance" },
-			people: { 1: "Configure", 2: "Review & Appearance" },
-			franchises: { 1: "Review & Appearance" },
-			"tmdb-lists": { 1: "Review & Appearance" },
+			decades: { 1: "Configure", 2: "Appearance" },
+			people: { 1: "Configure", 2: "Appearance" },
+			franchises: { 1: "Appearance" },
+			"tmdb-lists": { 1: "Appearance" },
 			studios: { 1: "Configure", 2: "Appearance" },
 			networks: { 1: "Configure", 2: "Appearance" },
 			genres: { 1: "Configure", 2: "Structure", 3: "Appearance" },
-			"streaming-services": { 1: titlePart === "Choose regions" ? "Services" : "Configure", 2: "Review" },
+			"streaming-services": { 1: titlePart === "Choose regions" ? "Services" : "Configure", 2: "Appearance" },
 			"advanced-discover": { 1: "Appearance", 2: "Artwork", 3: "Review" },
 		}[family]?.[step];
 		if (navigation) check(primary().textContent === `Continue to ${navigation}`, "navigation does not identify the actual next stage");
@@ -108,14 +155,14 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			if (["people", "networks"].includes(family)) check(!shape.querySelector('[value="SQUARE"]'), "unsupported Square shape appeared");
 		}
 		evidence.stages.push({ step, title: intro.querySelector("h3").textContent, scrollOwners: owners.length });
-		if (capture && globalThis.capture204Preview) {
+		if (capture && globalThis.capture204Preview && (semanticOnly || ["appearance", "review"].includes(shot))) {
 			if (["exclusions", "semantic-include"].includes(shot) && owner) {
 				const genres = surface.querySelector(".discover-genres");
 				owner.scrollTop += genres.getBoundingClientRect().top - owner.getBoundingClientRect().top;
 				await settle();
 			}
 			await wait(() => [...surface.querySelectorAll("img")].filter(node => visible(node) && within(node)).every(node => node.complete), { label: "visible screenshot artwork settled", timeoutMs: 15000 });
-			const name = `issue-230-${family}-${innerWidth}-${shot}${forcedColors ? "-forced" : ""}`;
+			const name = `pass-c-${family}-${innerWidth}-${shot}${forcedColors ? "-forced" : ""}`;
 			await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name })); });
 			evidence.screenshots.push(name + ".png");
 		}
@@ -139,7 +186,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await next(); await stage(2, "Configure Decades", "configure");
 			await palette(selected("multiple")[0], "multiple"); await palette(selected("single")[0], "single");
 			await palette(dialog().querySelector('.decades-content-grid [aria-pressed="true"]'), "multiple");
-			await next(); await stage(3, "Review & Appearance", "review"); await palette(selected("single")[0], "single");
+			await next(); await stage(3, "Appearance", "review"); await palette(selected("single")[0], "single");
 		} else if (family === "genres") {
 			for (const row of [...dialog().querySelectorAll(".genre-catalogue-choice")].slice(0, 2)) await click(row);
 			await palette(selected("multiple")[0], "multiple"); await stage(1, "Select Genres", "select");
@@ -157,7 +204,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			if (nameRecovery) await click(check(dialog().querySelectorAll(".streaming-provider-selectable")[1], "second live Streaming provider"));
 			await palette(selected("multiple")[0], "multiple"); await palette(selected("single")[0], "single");
 			await next(); await stage(2, "Configure Streaming services", "configure");
-			await next(); await stage(3, "Review", "review");
+			await next(); await stage(3, "Appearance", "appearance");
 		} else if (family === "advanced-discover") {
 			await stage(1, "Filters", "filters"); await palette(selected("multiple")[0], "multiple"); await palette(selected("single")[0], "single");
 			const genres = check(dialog().querySelector(".discover-genres"), "Discover genre group");
@@ -183,7 +230,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await stage(1, "TMDB lists", "select");
 			await input("textarea", "5916"); await click(button("Resolve lists"));
 			await wait(() => dialog().querySelector(".tmdb-list-selected") || !primary().disabled, { label: "live public TMDB list resolution", timeoutMs: 30000 });
-			await next(); await stage(2, "Review & Appearance", "review");
+			await next(); await stage(2, "Appearance", "review");
 		} else if (family === "franchises" || family === "people") {
 			const people = family === "people", id = people ? "31" : "645";
 			await input('input[type="search"]', id);
@@ -191,8 +238,8 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await click(row); await wait(() => row.querySelector("input:checked"), { label: `${family} retained selection`, timeoutMs: 30000 });
 			await keyboardToggle(row);
 			await palette(row, "multiple"); await stage(1, people ? "People" : "Movie franchises", "select");
-			await next(); await stage(2, people ? "People folder" : "Review & Appearance", people ? "configure" : "review");
-			if (people) { await palette(selected("multiple")[0], "multiple"); await palette(selected("single")[0], "single"); await next(); await stage(3, "Review & Appearance", "review"); }
+			await next(); await stage(2, people ? "People folder" : "Appearance", people ? "configure" : "review");
+			if (people) { await palette(selected("multiple")[0], "multiple"); await palette(selected("single")[0], "single"); await next(); await stage(3, "Appearance", "review"); }
 		} else {
 			const network = family === "networks", name = network ? "Networks" : "Studios";
 			const row = await wait(() => dialog().querySelector(".studio-result-selectable"), { label: `production ${family} catalogue`, timeoutMs: 30000 });

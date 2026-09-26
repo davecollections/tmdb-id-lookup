@@ -35,7 +35,7 @@ test("the first 100 positions precede deduplication and poster filtering; no rep
  assert.equal(data.complete, false);
  assert.equal(data.capped, true);
  assert.equal(data.totalResults, 124);
- assert.equal(titlePreviewSummary(data, 89), "Preview shows up to 100 titles.");
+ assert.equal(titlePreviewSummary(data, 89), "124 titles found. Preview is limited to 100.");
  assert.equal(titlePreviewSummary(data, 88), titlePreviewSummary(data, 89));
 });
 
@@ -46,7 +46,7 @@ test("completion and conservative totals use structural evidence, independently 
   assert.equal(data.totalResults, total);
   assert.equal(data.complete, total <= 100);
  }
- assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([pageData(1, 18)]), 18), "Showing 18 of 18 titles.");
+ assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([pageData(1, 18)]), 18), "Showing all 18 titles.");
  for (const total of [10_001, 19_997, 20_001, 50_001]) assert.equal(accumulateTitlePreviewPages([pageData(1, total)]).totalResults, null, "beyond TMDB's accessible page range, not a special sentinel");
  for (const pages of [[{ ...pageData(1), totalPages: 9 }], [pageData(1), pageData(2, 125)], [{ ...pageData(1), results: [item(1)] }], [{ results: [item(1)], totalResults: 124 }]]) {
   assert.equal(accumulateTitlePreviewPages(pages).totalResults, null);
@@ -65,15 +65,15 @@ test("completion and conservative totals use structural evidence, independently 
 test("neutral title status is independent of ordinary missing artwork and repeats", () => {
  const first = accumulateTitlePreviewPages([pageData(1)]);
  const second = accumulateTitlePreviewPages([pageData(1), pageData(2)]);
- for (const visible of [1, 14, 19, 20]) assert.equal(titlePreviewSummary(first, visible), "20 titles loaded. Preview shows up to 100 titles.");
- assert.equal(titlePreviewSummary(second, 35), "40 titles loaded. Preview shows up to 100 titles.");
- assert.equal(titlePreviewSummary(completeTitlePreview([item(1)]), 1), "Showing 1 of 1 title.");
- assert.equal(titlePreviewSummary(completeTitlePreview(Array.from({ length: 18 }, (_, i) => item(i + 1))), 14), "Showing 18 of 18 titles.");
+ for (const visible of [1, 14, 19, 20]) assert.equal(titlePreviewSummary(first, visible), "124 titles found. Preview is limited to 100.");
+ assert.equal(titlePreviewSummary(second, 35), "124 titles found. Preview is limited to 100.");
+ assert.equal(titlePreviewSummary(completeTitlePreview([item(1)]), 1), "Showing the only title.");
+ assert.equal(titlePreviewSummary(completeTitlePreview(Array.from({ length: 18 }, (_, i) => item(i + 1))), 14), "Showing all 18 titles.");
  assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([1,2,3,4,5].map((page) => pageData(page, 20001))), 80), "Preview shows up to 100 titles.");
- assert.equal(titlePreviewSummary(completeTitlePreview([]), 0), "No titles found.");
- assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([{ results: [] }]), 0), "No titles found.");
+ assert.equal(titlePreviewSummary(completeTitlePreview([]), 0), "No titles to preview.");
+ assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([{ results: [] }]), 0), "No titles to preview.");
  assert.equal(titlePreviewSummary(completeTitlePreview([item(1)]), 0), "No posters available.");
- assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([{ results: [item(1)] }]), 1), "1 title loaded.");
+ assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([{ results: [item(1)] }]), 1), "Preview shows up to 100 titles.");
 });
 
 test("Preview ceiling copy preserves totals and distinguishes completion at exactly 100", () => {
@@ -82,7 +82,7 @@ test("Preview ceiling copy preserves totals and distinguishes completion at exac
   const pagedData = accumulateTitlePreviewPages(Array.from({ length: Math.min(5, Math.ceil(total / 20)) }, (_, i) => pageData(i + 1, total)));
   for (const data of [completeData, pagedData]) {
    const before = structuredClone(data);
-   const expected = total <= 100 ? `Showing ${total} of ${total} ${total === 1 ? "title" : "titles"}.` : "Preview shows up to 100 titles.";
+   const expected = total <= 100 ? total === 1 ? "Showing the only title." : `Showing all ${total} titles.` : `${total} titles found. Preview is limited to 100.`;
    for (const posters of [1, data.results.length]) assert.equal(titlePreviewSummary(data, posters), expected);
    assert.equal(data.totalResults, total, "the full total remains available internally");
    assert.deepEqual(data, before, "formatting never mutates result state");
@@ -93,7 +93,7 @@ test("Preview ceiling copy preserves totals and distinguishes completion at exac
  assert.equal(titlePreviewSummary(unknown, 90), "Preview shows up to 100 titles.");
  assert.equal(unknown.totalResults, null);
  assert.equal(unknown.canLoadMore, false);
- for (const totalResults of [0, 186, null]) assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([{ results: [], totalResults }]), 0), "No titles found.");
+ for (const totalResults of [0, 186, null]) assert.equal(titlePreviewSummary(accumulateTitlePreviewPages([{ results: [], totalResults }]), 0), "No titles to preview.");
 });
 
 test("cache coalesces one sequential flight, retains pages on failure, retries only that page, and reopens", async () => {
@@ -168,10 +168,10 @@ for (const media of ["MOVIE", "TV"]) for (const family of ["Discover", "Studio",
    : family === "Streaming" ? () => createTmdbStreamingPreviewProvider(options).getStreamingPreview(draft(media, { watchRegion: "AU", withWatchProviders: "8", voteCountGte: 100 }))
    : () => createTmdbDecadesPreviewProvider(options).getDecadePreview(draft(media, { ...(family === "Year" ? year : period), ...(family === "Decade Genre" ? { withGenres: "35" } : {}), voteCountGte: 100 }));
   let result = await get(); assert.equal(result.ok, true, JSON.stringify(result)); assert.equal(urls.length, 1);
-  assert.equal(titlePreviewSummary(result.data, 18), "20 titles loaded. Preview shows up to 100 titles.");
+  assert.equal(titlePreviewSummary(result.data, 18), "124 titles found. Preview is limited to 100.");
   for (let page = 2; page <= 5; page++) { result = await result.data.loadMore(); assert.equal(result.ok, true); assert.equal(urls.length, page); }
   assert.equal(result.data.loadMore, undefined);
-  assert.equal(titlePreviewSummary(result.data, 90), "Preview shows up to 100 titles.");
+  assert.equal(titlePreviewSummary(result.data, 90), "124 titles found. Preview is limited to 100.");
   assert.equal(result.data.totalResults, 124);
   const original = urls[0]; assert.equal(original.pathname, `/builder/discover/${media === "TV" ? "tv" : "movie"}`);
   assert.equal(original.searchParams.get("include_adult"), "false");
@@ -195,7 +195,7 @@ test("List original and each recognised sort project cached pages independently 
  const provider = createTmdbListProvider({ baseUrl: "https://worker.example", fetchImpl: async (input) => { const page = Number(new URL(input).searchParams.get("page")); calls.push(page); return response({ id: 9, item_count: 124, page, total_pages: 7, total_results: 124,
   items: Array.from({ length: 20 }, (_, i) => ({ id: (page - 1) * 20 + i + 1, media_type: "movie", title: `Unit ${i}`, release_date: `${2000 + page}-01-${String(i + 1).padStart(2, "0")}`, vote_average: i / 2, vote_count: i + page * 100, poster_path: i === 0 ? null : `/unit-${i}.jpg` })) }); } });
  let original = (await provider.getListPreview(9)).data; original = (await original.loadMore()).data;
- assert.equal(titlePreviewSummary(original, 38), "40 titles loaded. Preview shows up to 100 titles.");
+ assert.equal(titlePreviewSummary(original, 38), "124 titles found. Preview is limited to 100.");
  assert.deepEqual(original.results.map((entry) => entry.id), Array.from({ length: 40 }, (_, i) => i + 1));
  for (const sortBy of ["primary_release_date.desc", "first_air_date.desc", "vote_average.desc", "vote_count.desc"]) {
   const data = (await provider.getListPreview(9, { sortBy })).data;
@@ -207,7 +207,7 @@ test("List original and each recognised sort project cached pages independently 
  assert.deepEqual(calls, [1, 2]);
  for (let page = 3; page <= 5; page++) original = (await original.loadMore()).data;
  assert.equal(original.sourcePositions, 100); assert.equal(original.loadMore, undefined); assert.deepEqual(calls, [1, 2, 3, 4, 5]);
- assert.equal(titlePreviewSummary(original, 95), "Preview shows up to 100 titles.");
+ assert.equal(titlePreviewSummary(original, 95), "124 titles found. Preview is limited to 100.");
  assert.equal(original.totalResults, 124);
 });
 
@@ -220,7 +220,15 @@ test("complete People credits and Collection parts expand without extra requests
  const collection = await requestSourceTitlePreview({ kind: "collection", tmdbId: 1 }, { collection: { getCollection: async () => { calls++; return { ok: true, data: { containedTitles: parts, movieCount: 120 } }; } } });
  assert.equal(calls, 1); assert.deepEqual(collection.data.results.map((entry) => entry.id), parts.slice(0, 100).map((entry) => entry.id)); assert.equal(collection.data.loadMore, undefined);
  for (const data of [people.data, collection.data]) {
-  assert.equal(titlePreviewSummary(data, 90), "Preview shows up to 100 titles.");
+  assert.equal(titlePreviewSummary(data, 90), "120 titles found. Preview is limited to 100.");
   assert.equal(data.totalResults, 120);
  }
+});
+
+
+test("Preview status uses the supplied cap and never infers a total from loaded rows", () => {
+ assert.equal(titlePreviewSummary({ sourcePositions: 10, complete: false, totalResults: null }, 8, 10), "Preview shows up to 10 titles.");
+ assert.equal(titlePreviewSummary({ sourcePositions: 10, complete: false, totalResults: 45 }, 8, 10), "45 titles found. Preview is limited to 10.");
+ assert.equal(titlePreviewSummary({ sourcePositions: 10, complete: true, totalResults: 10 }, 8, 10), "Showing all 10 titles.");
+ assert.equal(titlePreviewSummary({ sourcePositions: 1, complete: true, totalResults: 1 }, 1, 10), "Showing the only title.");
 });

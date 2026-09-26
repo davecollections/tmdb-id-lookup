@@ -2,7 +2,7 @@
 
 Status: Local JSON import was introduced by [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41); unified connected Import is merged through #238 / PR #239 and shared PIN/retained Send presentation through #244 / PR #245.
 
-Last reviewed: 2026-09-24
+Last reviewed: 2026-09-26
 
 ## Purpose and scope
 
@@ -34,7 +34,7 @@ Visible wording now speaks about creating a Nuvio collection rather than creatin
 controller.startNewProject({ title: "Untitled project" })
 ```
 
-A successful result clears the controller project to one clean empty project and enters the workspace. It creates no collection or folder. Failure remains on welcome and uses the controller's structured operation diagnostic.
+A successful result clears the controller project to one clean empty project and enters the workspace with its existing Create Collection picker open on the first render. The same canonical family registry, modal lifecycle and creation flows serve Welcome and ordinary workspace entry; starting alone creates no collection or folder. Cancelling this initial journey returns to Welcome and focuses Create new collection only while the exact opening project snapshot and controller revision remain unchanged and clean. Successful creation consumes the session and keeps normal workspace selection/focus. Imported/opened empty projects and later workspace creation have no special cancellation behavior. Failure remains on Welcome and uses the controller's structured operation diagnostic.
 
 The import route reads **Open an existing collection** and initially shows **Choose an import method** / **Select an option to continue.** Its three controls are **Import from Nuvio**, **Import from file** and **Import from JSON**. File/JSON selection opens the local form; Nuvio opens the shared connection dialog directly. Switching methods retains the selected native file and pasted draft. Closing Nuvio restores its trigger and the local method/drafts. File wording remains **Choose a JSON file**, **Collection JSON file** and **Import selected file**; the native picker is the sole filename display.
 

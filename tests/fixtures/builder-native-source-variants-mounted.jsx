@@ -18,10 +18,10 @@ import { SourceEditorDialog } from "../../builder/src/ui/SourceEditorDialog.jsx"
 
 // Assert the complete approved copy independently of the production formatter.
 export function matchesTitlePreviewSummary(summary) {
-	if (["Preview shows up to 100 titles.", "No titles found.", "No posters available."].includes(summary)) return true;
-	const counted = summary.match(/^([1-9]\d?) (title|titles) loaded\. Preview shows up to 100 titles\.$/)
-		?? summary.match(/^Showing ([1-9]\d?|100) of \1 (title|titles)\.$/);
-	return Boolean(counted && counted[2] === (Number(counted[1]) === 1 ? "title" : "titles"));
+ if (["Preview shows up to 100 titles.", "No titles to preview.", "No posters available.", "Showing the only title."].includes(summary)) return true;
+ const complete = summary.match(/^Showing all (\d+) titles\.$/);
+ const capped = summary.match(/^(\d+) titles found\. Preview is limited to 100\.$/);
+ return Boolean(complete && Number(complete[1]) >= 2 && Number(complete[1]) <= 100 || capped && Number(capped[1]) > 100);
 }
 
 // Real production-path providers only. Shared caches survive responsive cases.

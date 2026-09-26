@@ -337,7 +337,7 @@ export function StreamingConfigureStep({
             {advancedErrors.length ? <div role="alert" className="editor-diagnostics">{advancedErrors.map((error, index) => <p key={index}>{error.message}</p>)}</div> : null}
 			{summary.length ? (
 				<section className="streaming-generated-summary" aria-labelledby="streaming-generated-summary-title">
-					<div><div><p className="panel-kicker">Generated sources</p><h4 id="streaming-generated-summary-title">{summary.length} source{summary.length === 1 ? "" : "s"} configured</h4></div><span>{missingCount} to add</span></div>
+					<div><div><p className="panel-kicker">Generated sources</p><h4 id="streaming-generated-summary-title">{summary.length} source{summary.length === 1 ? "" : "s"} configured</h4></div><span>{missingCount} {missingCount === 1 ? "Source" : "Sources"} to add</span></div>
 					<ul>
 						{summary.map((entry) => {
 							const candidateKey = streamingSourceCandidateKey(entry.regionCode, entry.mediaType, entry.sortOptionId);
@@ -350,7 +350,7 @@ export function StreamingConfigureStep({
 									<div className="streaming-generated-source-row">
 										<span><strong>{entry.regionCode} · {sourceSortLabel(entry.sortOptionId)} {generatedMediaLabel(entry.mediaType)}</strong><small>{customTitle}</small></span>
 										<div className="streaming-generated-source-actions">
-											<em>{entry.existsInDestination ? "Already exists" : "To add"}</em>
+											<em>{entry.existsInDestination ? "Already in this folder" : "Ready to add"}</em>
 											<button type="button" onClick={() => onEditName(candidateKey)}>{editing ? "Done" : "Edit name"}</button>
 										</div>
 									</div>

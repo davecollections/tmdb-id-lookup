@@ -1,3 +1,5 @@
+import { appliedFilterCount } from "./filter-disclosure.js";
+import { FiltersDisclosureSummary } from "./FiltersDisclosureSummary.jsx";
 import { useEffect, useRef, useState } from "react";
 import { NativeExtraAdvancedControls } from "./NativeExtraAdvancedControls.jsx";
 import { changeDiscoverContext } from "../source-add/advanced-discover.js";
@@ -7,7 +9,7 @@ const legacyFields = Object.freeze({ minimumVotes: "voteCountGte", minimumRating
 
 // Thin adapter for the pre-existing Genre/Decades scalar state. The controls,
 // catalogue lifecycle, fields and nested panels are all the Discover components.
-export function DiscoverFamilyAdvancedOptions({ value = { filters: {} }, onChange, mediaMode, legacy = false, dates = true, genreControls, fixedFilters = {}, fixedProviderContext = null, extraEditable, children, className = "" }) {
+export function DiscoverFamilyAdvancedOptions({ value = { filters: {} }, onChange, mediaMode, legacy = false, dates = true, genreControls, genresApplied = false, fixedFilters = {}, fixedProviderContext = null, extraEditable, children, className = "" }) {
  const [expanded, setExpanded] = useState(false);
  const providerContext = [mediaMode, fixedFilters.watchRegion ?? value.filters?.watchRegion ?? ""].join("|");
  const previousContext = useRef(providerContext);
@@ -22,6 +24,11 @@ export function DiscoverFamilyAdvancedOptions({ value = { filters: {} }, onChang
   if (value.yearFrom && !Object.hasOwn(filters, "releaseDateGte")) filters.releaseDateGte = value.yearFrom + "-01-01";
   if (value.yearTo && !Object.hasOwn(filters, "releaseDateLte")) filters.releaseDateLte = value.yearTo + "-12-31";
  }
+ const count = appliedFilterCount(filters, {
+  editable: { ...extraEditable, withGenres: genreControls !== undefined ? extraEditable?.withoutGenres : extraEditable?.withGenres, withoutGenres: genreControls !== undefined ? extraEditable?.withoutGenres : extraEditable?.withGenres, withoutKeywords: extraEditable?.withKeywords, releaseDateGte: extraEditable?.year, releaseDateLte: extraEditable?.year, withoutCompanies: extraEditable?.withCompanies, withWatchProviders: extraEditable?.withoutWatchProviders },
+  hiddenFields: [...Object.keys(fixedFilters), ...(!dates ? ["releaseDateGte", "releaseDateLte", "year"] : []), ...(mediaMode === "movies" ? ["withNetworks"] : [])],
+  genresApplied,
+ });
  const draft = { ...value.ui, mediaMode, filters: { ...filters, ...fixedFilters }, labels: value.ui?.labels ?? {}, extraEditable };
  function change(next) {
   const context = draft.filters.watchRegion !== next.filters.watchRegion ? changeDiscoverContext(draft, next) : next;
@@ -38,7 +45,7 @@ export function DiscoverFamilyAdvancedOptions({ value = { filters: {} }, onChang
   onChange(state);
  }
  return <details className={["genre-advanced-options", className].filter(Boolean).join(" ")} data-decades-advanced={className.includes("decades-advanced-options") ? "true" : undefined} onToggle={(event) => { if (event.target === event.currentTarget) setExpanded(event.currentTarget.open); }}>
-  <summary>Advanced options</summary>
+  <FiltersDisclosureSummary count={count} />
   <div className="genre-advanced-content">
    <p className="editor-field-help">Leave an option blank if it should not affect results.</p>
    <NativeExtraAdvancedControls draft={draft} onChange={change} expanded={expanded} thresholds dateControls={dates} genreControls={genreControls} catalogueControls fixedProviderContext={fixedProviderContext} />
@@ -55,5 +62,5 @@ export function DiscoverFamilyAdvancedSummary({ value = {}, mediaMode, legacy = 
   if (value.yearTo) filters.releaseDateLte = value.yearTo + "-12-31";
  }
  const rows = discoverFilterRows({ ...ui, labels: ui?.labels ?? {}, filters, mediaMode });
- return rows.length ? <details className="native-advanced-summary"><summary>Review Advanced filters</summary>{rows.map((row) => <p key={row.label} className="editor-field-help">{row.label}: {row.value}</p>)}</details> : null;
+ return rows.length ? <details className="native-advanced-summary"><summary>View applied filters</summary>{rows.map((row) => <p key={row.label} className="editor-field-help">{row.label}: {row.value}</p>)}</details> : null;
 }

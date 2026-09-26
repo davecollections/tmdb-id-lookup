@@ -108,8 +108,8 @@ test("Review exposes independent source names, neutral duplicate status, Origina
 	assert.match(flow, /Nothing to add/);
 	assert.match(flow, /· Original order/);
 	assert.doesNotMatch(flow, /· List order/);
-	assert.match(flow, />Preview<\/button>/);
-	assert.doesNotMatch(flow, />Preview titles<\/button>/);
+	assert.match(flow, />Preview titles<\/button>/);
+	assert.doesNotMatch(flow, />Preview<\/button>/);
 	assert.doesNotMatch(flow, /coverImageUrl|heroBackdropUrl|Sort choices|Media type/);
 });
 
@@ -125,7 +125,7 @@ test("guided Lists starts with empty names, uses concise shared create copy, and
 	assert.match(flow, /error=\{requiredNameErrors\.folder/);
 	assert.match(flow, /focusRequiredName\(target\)/);
 	assert.match(flow, /className="tmdb-list-footer-validation" role="alert"/);
-	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Review" title="Review & Appearance"/);
+	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Appearance" title="Appearance"/);
 	assert.match(flow, /standalone \? "Review source names and where your lists will be added\." : "Review names, appearance and where your lists will be added\."/);
 });
 

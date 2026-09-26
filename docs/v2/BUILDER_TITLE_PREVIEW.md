@@ -23,21 +23,21 @@ Source Edit uses these same providers and the validated, detached current draft.
 
 The limit is **100 ordered source-result positions before poster filtering**. Duplicate identities consume their original positions but display only once. Missing artwork is normal catalogue data. The grid skips missing/failed posters and naturally reflows all remaining usable posters from the already-loaded bounded projection in source order. This never requests another page or artwork endpoint for replacements, including before page two or beyond page five/position 100. People deduplicates the complete role/media membership before sorting and taking its identity window.
 
-The shared accumulator distinguishes represented positions, unique identities, visible posters, completion, the cap, and the next page. Complete-count wording requires established completion, not merely a short page or 100 loaded results. Complete datasets provide their known total. Paged totals require consistent non-negative integers, matching sequential metadata, plausible 20-row page lengths and final-page arithmetic, and a total within TMDB's documented accessible page range ([TMDB errors, page limit](https://developer.themoviedb.org/docs/errors)). Missing, contradictory, changing, or inaccessible totals use cautious loaded/up-to-100 wording. There is no special case for particular observed totals. A successful empty response remains cacheable. Total-result data remains available internally even when the displayed status omits it.
+The shared accumulator distinguishes represented positions, unique identities, visible posters, completion, the cap, and the next page. Complete-count wording requires established completion, not merely a short page or 100 loaded results. Complete datasets provide their known total. Paged totals require consistent non-negative integers, matching sequential metadata, plausible 20-row page lengths and final-page arithmetic, and a total within TMDB's documented accessible page range ([TMDB errors, page limit](https://developer.themoviedb.org/docs/errors)). Missing, contradictory, changing, or inaccessible totals use cautious up-to-limit wording. There is no special case for particular observed totals. A successful empty response remains cacheable. Total-result data remains available internally even when the displayed status omits it.
 
 The shared successful status contract is:
 
 | State | Status |
 | --- | --- |
-| Incomplete pageable Preview below the ceiling | “20 titles loaded. Preview shows up to 100 titles.”, using the actual loaded count |
-| At 100 represented positions with more source results, or without established completion | “Preview shows up to 100 titles.” |
-| Complete source within the limit | “Showing 18 of 18 titles.”, using the actual complete count |
-| Complete source of exactly 100 | “Showing 100 of 100 titles.” |
-| Bounded incomplete view without paging | “20 titles loaded.”, using the actual loaded count |
-| Zero source results | “No titles found.” |
+| Exact reliable total fully represented within the limit | “Showing all 20 titles.”; singular “Showing the only title.” |
+| Reliable total exceeds the Preview limit | “347 titles found. Preview is limited to 100.”, using the actual reliable total and cap |
+| Total unknown/unreliable, or known within the cap but not yet fully represented | “Preview shows up to 100 titles.”, using the actual cap |
+| Zero source results | “No titles to preview.” |
 | Represented titles but zero usable posters | “No posters available.” |
 
 The ceiling is intentional: capped copy never displays a partial fraction or suggests more Preview pages. The same formatter serves Discover-backed Preview, People, Franchises/Movie Collections, Lists, exact Decades and Source Edit. Representative Decade/Period samples keep their separate established representative wording. The number of visible posters may be lower than the represented title count without changing its normal status; no missing-poster or repeat count is appended. Recognized List rankings retain “within each page”; missing optional sorting metadata retains the existing neutral fallback explanation. Imported List filters are not applied.
+
+Title-result actions use **Preview titles**. Per-entity actions remain beside their entity; whole-configuration actions stay directly discoverable after Filters where applicable. Decades shows its per-Decade actions directly in Configure without another disclosure. Representative samples retain their own labels and cap; no samples are relabelled as exact results. Retry/loading copy stays concise and user-facing. Paging behavior within the existing bounded window is unchanged.
 
 ## Requests, cache and interaction
 

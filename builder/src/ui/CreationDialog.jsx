@@ -1,3 +1,4 @@
+import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
@@ -459,13 +460,10 @@ export function DecadesPreviewGroup({ group, previewAvailable, onPreview }) {
 }
 
 export function DecadesPreviewCatalogue({ groups, previewAvailable, onPreview }) {
-	const [open, setOpen] = useState(false);
-	return (
-		<details className="decades-preview-catalogue" onToggle={(event) => setOpen(event.currentTarget.open)}>
-			<summary><span><strong>Preview titles</strong><small>Check the current Decade, year and Genre sources before continuing.</small></span></summary>
-			{open ? <div className="decades-preview-groups">{groups.map((group) => <DecadesPreviewGroup key={group.decadeId} group={group} previewAvailable={previewAvailable} onPreview={onPreview} />)}</div> : null}
-		</details>
-	);
+	return <section className="decades-preview-catalogue" aria-label="Preview titles">
+		<p className="editor-field-help">Check the current Decade, year and Genre sources before continuing.</p>
+		<div className="decades-preview-groups">{groups.map((group) => <DecadesPreviewGroup key={group.decadeId} group={group} previewAvailable={previewAvailable} onPreview={onPreview} />)}</div>
+	</section>;
 }
 
 export function DecadesTitlePreview({ preview, onChangeChoice, onChangeRequest, onClose, onRetry }) {
@@ -511,7 +509,7 @@ export function DecadesOptionsStep({ state, headingRef, previewGroups = [], prev
 			<ContentChoices state={state} onChange={(content) => onStateChange(Object.freeze({ ...state, content }))} />
 			{state.content.genreBreakdown ? <DecadesGenreSummary state={state} onConfigure={(trigger) => onOpenSecondary("genres", trigger)} /> : null}
 			<DecadesOrdering state={state} onStateChange={onStateChange} />
-			<DecadesAdvancedOptions mediaMode={state.mediaMode} value={state.advanced} exclusionSummary={ordinaryExclusionSummary(state)} onChange={(advanced) => onStateChange(Object.freeze({ ...state, advanced }))} onOpenSecondary={onOpenSecondary} />
+			<DecadesAdvancedOptions mediaMode={state.mediaMode} value={state.advanced} genresApplied={state.selectedDecadeIds.some((id) => (state.advanced.ordinaryExcludedGenresByDecade?.[id] ?? state.advanced.ordinaryExcludedGenres ?? []).length > 0)} exclusionSummary={ordinaryExclusionSummary(state)} onChange={(advanced) => onStateChange(Object.freeze({ ...state, advanced }))} onOpenSecondary={onOpenSecondary} />
 			<DecadesPreviewCatalogue groups={previewGroups} previewAvailable={previewAvailable} onPreview={onPreview} />
 		</section>
 	);
@@ -551,12 +549,8 @@ export function DecadesReviewStep({ state, planResult, headingRef, applyDiagnost
 	return (
 		<section className="decades-step decades-review-step" aria-labelledby="decades-review-title">
    <DiscoverFamilyAdvancedSummary legacy value={state.advanced} mediaMode={state.mediaMode} />
-			<CreationStageIntro step={3} phase="Review" title="Review & Appearance" headingId="decades-review-title" headingRef={headingRef} tabIndex={-1} />
-			{plan ? <div className="decades-plan-totals" data-plan-scope={state.scope} aria-label="Plan totals">
-				{state.scope === "new-collection" ? <div><strong>{plan.counts.collectionCount}</strong><span>Collection{plan.counts.collectionCount === 1 ? "" : "s"}</span></div> : null}
-				<div><strong>{plan.counts.folderCount}</strong><span>Folder{plan.counts.folderCount === 1 ? "" : "s"}</span></div>
-				<div><strong>{plan.counts.sourceCount}</strong><span>Source{plan.counts.sourceCount === 1 ? "" : "s"}</span></div>
-			</div> : null}
+			<CreationStageIntro step={3} phase="Appearance" title="Appearance" headingId="decades-review-title" headingRef={headingRef} tabIndex={-1} />
+			{plan ? <HierarchyOutputSummary counts={plan.counts} scope={state.scope} /> : null}
 			{state.scope === "new-folder" ? <div className="decades-destination-summary"><strong>Destination</strong><span>{plan?.destination?.titleHidden ? "Hidden-title collection" : plan?.destination?.collectionTitle}</span><small>{inheritedCollectionAppearanceSummary({ title: plan?.destination?.collectionTitle, viewMode: plan?.destination?.viewMode, showAllTab: plan?.destination?.showAllTab, pinToTop: plan?.destination?.pinToTop })} · parent unchanged</small></div> : (
 				<div className="decades-collection-names">
 					{collections.map((collection) => (
@@ -703,7 +697,7 @@ function DecadesFlow({ project, projectRevision, scope, currentYear, destination
 	const nameCorrection = !isApplying && onlyRequiredNameErrors(planResult, Object.keys(state.collectionTitles).map((role) => `$decadesPlan.collectionTitles.${role}`));
 	const primaryLabel = state.step === DECADES_CREATION_STEPS.REVIEW
 		? isApplying ? "Creating…" : planResult.ok ? guidedCreateActionLabel(scope, planResult?.plan?.counts) : "Create"
-		: state.step === DECADES_CREATION_STEPS.PRESETS ? "Continue to Configure" : "Continue to Review & Appearance";
+		: state.step === DECADES_CREATION_STEPS.PRESETS ? "Continue to Configure" : "Continue to Appearance";
 	const backAction = state.step === DECADES_CREATION_STEPS.PRESETS
 		? "back-to-creation-launcher"
 		: state.step === DECADES_CREATION_STEPS.OPTIONS

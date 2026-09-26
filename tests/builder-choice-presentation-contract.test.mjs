@@ -32,7 +32,7 @@ const FAMILY_CHOICE_EVIDENCE = Object.freeze({
 
 test("every guided family has explicit choice-presentation evidence", () => {
 	const guidedIds = CREATION_OPTIONS.filter((option) => option.id !== CREATION_OPTION_IDS.BLANK).map((option) => option.id);
-	assert.deepEqual(Object.keys(FAMILY_CHOICE_EVIDENCE), guidedIds);
+	assert.deepEqual(Object.keys(FAMILY_CHOICE_EVIDENCE).sort(), [...guidedIds].sort());
 	for (const [familyId, evidence] of Object.entries(FAMILY_CHOICE_EVIDENCE)) {
 		assert.ok(read(evidence.file).includes(evidence.token), `${familyId} lost ${evidence.token}`);
 	}
@@ -118,14 +118,14 @@ test("Decade content uses independent pressed cards with the final-selection gua
 
 test("all nine guided families use explicit shared stage intros without imposing one workflow", () => {
 	const stages = {
-		CreationDialog: [[1, "Select", "Choose decades"], [2, "Configure", "Configure Decades"], [3, "Review", "Review & Appearance"]],
-		PeopleSourceFlow: [[1, "Select", "People · TMDB"], [2, "Configure"], [3, "Review", "Review & Appearance"]],
-		FranchiseSourceFlow: [[1, "Select", "Movie franchises · TMDB"], [2, "Review", "Review & Appearance"]],
-		TmdbListSourceFlow: [[1, "Select", "TMDB lists"], [2, "Review", "Review & Appearance"]],
+		CreationDialog: [[1, "Select", "Choose decades"], [2, "Configure", "Configure Decades"], [3, "Appearance", "Appearance"]],
+		PeopleSourceFlow: [[1, "Select", "People · TMDB"], [2, "Configure"], [3, "Appearance", "Appearance"]],
+		FranchiseSourceFlow: [[1, "Select", "Movie franchises · TMDB"], [2, "Appearance", "Appearance"]],
+		TmdbListSourceFlow: [[1, "Select", "TMDB lists"], [2, "Appearance", "Appearance"]],
 		StudioHierarchyFlow: [[1, "Select", "Studios · TMDB"], [2, "Configure", "Configure Studios"], [3, "Appearance", "Appearance"]],
 		NetworkHierarchyFlow: [[1, "Select", "Networks · TMDB"], [2, "Configure", "Configure Networks"], [3, "Appearance", "Appearance"]],
 		GenreHierarchyFlow: [[1, "Select", "Select Genres"], [2, "Configure", "Configure Genres"], [3, "Structure", "Structure"], [4, "Appearance", "Appearance"]],
-		StreamingHierarchyFlow: [[1, "Select", "Choose Streaming services"], [2, "Configure", "Configure Streaming services"], [3, "Review"]],
+		StreamingHierarchyFlow: [[1, "Select", "Choose Streaming services"], [2, "Configure", "Configure Streaming services"]],
 	};
 	for (const [file, expected] of Object.entries(stages)) {
 		const source = read(`builder/src/ui/${file}.jsx`);
@@ -133,13 +133,15 @@ test("all nine guided families use explicit shared stage intros without imposing
 			assert.ok(source.includes(`<CreationStageIntro step={${step}} phase="${phase}"${title ? ` title="${title}"` : ""}`), `${file}: ${step} ${phase} ${title ?? "dynamic title"}`);
 		}
 	}
-	const streaming = read("builder/src/ui/StreamingSourceFlow.jsx");
+	const routing = read("builder/src/ui/StreamingHierarchyFlow.jsx");
+    assert.match(routing, /phase=\{choiceRequired \? "Destination" : existingScope && plan\?\.counts.newFolderCount === 0 \? "Review" : "Appearance"\}/);
+    const streaming = read("builder/src/ui/StreamingSourceFlow.jsx");
 	assert.match(streaming, /guided \? <CreationStageIntro step=\{1\} phase="Select" title=\{heading\}/);
 	const discover = read("builder/src/ui/AdvancedDiscoverFlow.jsx");
 	assert.match(discover, /hierarchy \? \["filters", "appearance", "artwork", "review"\] : \["filters", "review"\]/);
 	assert.match(discover, /<CreationStageIntro step=\{pages.indexOf\(page\) \+ 1\} phase=\{pageLabels\[page\]\}/);
 	const intro = read("builder/src/ui/CreationStageIntro.jsx");
-	assert.match(intro, /Step \{step\}\{phase \? ` · \$\{phase\}` : ""\}/);
+	assert.match(intro, /Step \{step\}\{phase && phase !== title \? ` · \$\{phase\}` : ""\}/);
 	assert.match(intro, /<h3 id=\{headingId\} ref=\{headingRef\} tabIndex=\{tabIndex\}/);
 	assert.doesNotMatch(intro, /useState|useEffect|controller|onClick|totalSteps|<button|add-source-mode/);
 	const styles = read("builder/src/styles.css");

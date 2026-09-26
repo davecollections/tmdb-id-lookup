@@ -98,8 +98,8 @@ function renderSearch({ hierarchy }) {
 	}));
 }
 
-test("Networks remains ordered immediately before Genres in both hierarchy scopes", () => {
-	const expected = ["blank", "decades", "people", "franchises", "tmdb-lists", "studios", "networks", "genres", "streaming-services", "advanced-discover"];
+test("Networks remains between Genres and People in both hierarchy scopes", () => {
+	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.ok(markup.includes(`data-creation-scope="${scope}"`));
@@ -178,7 +178,7 @@ test("Network hierarchy follows Select to Configure to Appearance with shared Se
 test("Network Preview is explicit in Configure, Series-only and exposes exact Show candidates", () => {
 	const configure = flow.slice(flow.indexOf("function NetworkConfigureRow"), flow.indexOf("function ArtworkChoices"));
 	assert.match(configure, /aria-haspopup="dialog"/);
-	assert.match(configure, />Preview<\/button>/);
+	assert.match(configure, />Preview titles<\/button>/);
 	assert.match(flow, /titlePreview.open\(entry.result.drafts/);
 	assert.match(sharedPreview, /<TitlePreviewResults data=\{preview.data\}/);
 	assert.match(read("builder/src/source-add/title-preview-results.js"), /No posters available\./);

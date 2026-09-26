@@ -8,6 +8,7 @@ import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
+import { createCollectionCreationSession, isUntouchedWelcomeCreation } from "../builder/src/ui/creation-session.js";
 import {
 	importJsonFile,
 	importPastedJson,
@@ -727,3 +728,23 @@ for (const step of [1, 2, 3]) {
   assert.doesNotMatch(markup, /<button|<a[ >]|tabindex|role="tab|>\d+<|<u>/);
  });
 }
+
+test("Welcome cancellation requires its exact clean opening project and revision", () => {
+	const controller = createController();
+	assert.equal(startNewBuilderProject(controller).ok, true);
+	const opening = controller.getState();
+	const initial = createCollectionCreationSession(opening, { returnToWelcomeOnCancel: true });
+	assert.equal(isUntouchedWelcomeCreation(initial, opening), true);
+	assert.equal(isUntouchedWelcomeCreation(createCollectionCreationSession(opening), opening), false);
+	assert.equal(isUntouchedWelcomeCreation(null, opening), false);
+	assert.equal(isUntouchedWelcomeCreation(initial, { ...opening, revision: opening.revision + 1 }), false);
+	assert.equal(isUntouchedWelcomeCreation(initial, { ...opening, dirty: true }), false);
+	assert.equal(isUntouchedWelcomeCreation(initial, { ...opening, project: structuredClone(opening.project) }), false);
+	assert.equal(controller.createCollection({ editable: { title: "Created" } }).ok, true);
+	assert.equal(isUntouchedWelcomeCreation(initial, controller.getState()), false);
+	assert.equal(controller.importValue([], { discardChanges: true }).ok, true);
+	assert.equal(controller.getState().project.collections.length, 0);
+	assert.equal(isUntouchedWelcomeCreation(initial, controller.getState()), false, "Empty import is a different project");
+	assert.equal(startNewBuilderProject(controller).ok, true);
+	assert.equal(isUntouchedWelcomeCreation(initial, controller.getState()), false, "Later Welcome launches cannot reuse an old session");
+});

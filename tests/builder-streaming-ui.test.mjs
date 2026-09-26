@@ -223,12 +223,12 @@ test("Configure uses the shared strict-common result and includes generated dupl
 	for (const label of ["Movies", "Series", "Both", "Popular", "Recent", "Top rated", "Most voted"]) assert.ok(markup.includes(`>${label}<`), label);
 	assert.ok(markup.includes("2 regions · US · AU"));
 	assert.ok(markup.includes("4 sources configured"));
-	assert.ok(markup.includes("3 to add"));
+	assert.ok(markup.includes("3 Sources to add"));
 	assert.ok(markup.includes("US · Popular Movies"));
 	assert.ok(markup.includes("US · Popular Series"));
 	assert.ok(markup.includes("AU · Popular Movies"));
 	assert.ok(markup.includes("AU · Popular Series"));
-	assert.ok(markup.includes("Already exists"));
+	assert.ok(markup.includes("Already in this folder"));
 	assert.ok(markup.includes("This source exists elsewhere"));
 	assert.equal(markup.includes("JustWatch via TMDB"), true);
 });

@@ -61,6 +61,7 @@ import {
 	createBulkEditDraft,
 	updateBulkEditDraft,
 } from "./bulk-edit.js";
+import { createCollectionCreationSession, isUntouchedWelcomeCreation } from "./creation-session.js";
 import { CreationDialog } from "./CreationDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
@@ -1517,14 +1518,7 @@ export function BuilderWorkspace({
 		if (hierarchyInteractionLocked || pointerInteractionLocked()) return;
 		creationRestoreFocusRef.current = event?.currentTarget ?? null;
 		setCreationStatusText("");
-		setCreationSession({
-			scope: "new-collection",
-			openingProject: state.project,
-			projectRevision: state.revision,
-			currentYear: new Date().getFullYear(),
-			destinationCollectionInternalId: null,
-			destinationCollectionTitle: null,
-		});
+		setCreationSession(createCollectionCreationSession(state));
 	}
 
 	function createFolder(event) {
@@ -1571,6 +1565,10 @@ export function BuilderWorkspace({
 	function cancelCreation() {
 		if (!creationSession) return;
 		setCreationSession(null);
+		if (isUntouchedWelcomeCreation(creationSession, controller.getState())) {
+			onReturnHome({ focusStart: true });
+			return;
+		}
 		setRestoreCreationTriggerFocus(true);
 	}
 
