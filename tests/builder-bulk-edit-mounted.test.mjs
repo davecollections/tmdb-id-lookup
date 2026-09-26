@@ -235,6 +235,36 @@ async function runWelcomeImportChecks(connection) {
  return { local, layouts, errors: await evaluate(connection, "window.__mountedErrors") };
 }
 
+async function runWelcomeCreationChecks(connection) {
+	const results = [];
+	const screenshots = process.env.BUILDER_WELCOME_CREATION_SCREENSHOT_DIR;
+	if (screenshots) await fsPromises.mkdir(screenshots, { recursive: true });
+	for (const width of [393, 1280]) {
+		for (const enlarged of [false, true]) {
+			await connection.command("Emulation.setDeviceMetricsOverride", { width, height: 852, deviceScaleFactor: 1, mobile: width < 900 });
+			const layout = await evaluate(connection, `window.prepareWelcomeCreation(${enlarged})`);
+			async function capture(stage) {
+				if (!screenshots) return;
+				const shot = await connection.command("Page.captureScreenshot", { format: "webp", quality: 85 });
+				await fsPromises.writeFile(path.join(screenshots, `c02-${stage}-${width}${enlarged ? "-200pct" : ""}.webp`), Buffer.from(shot.data, "base64"));
+			}
+			await capture("picker");
+			for (const backward of [false, true]) {
+				await evaluate(connection, `(() => { const controls = [...document.querySelector('[data-creation-dialog]').querySelectorAll('button')]; controls[${backward ? "0" : "controls.length - 1"}].focus(); })()`);
+				for (const type of ["keyDown", "keyUp"]) await connection.command("Input.dispatchKeyEvent", { type, key: "Tab", code: "Tab", windowsVirtualKeyCode: 9, modifiers: backward ? 8 : 0 });
+				assert.equal(await evaluate(connection, 'Boolean(document.activeElement.closest("[data-creation-dialog]"))'), true, "Existing picker traps native Tab/Shift-Tab");
+			}
+			for (const type of ["keyDown", "keyUp"]) await connection.command("Input.dispatchKeyEvent", { type, key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+			await evaluate(connection, 'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
+			assert.equal(await evaluate(connection, "window.checkInitialWelcomeReturn()"), true);
+			await capture("cancel-welcome");
+			results.push({ ...layout, ...await evaluate(connection, "window.finishWelcomeCreationCases()") });
+		}
+	}
+	console.log("Welcome creation:", JSON.stringify(results));
+	return results;
+}
+
 async function runNuvioImportChecks(connection, origin) {
 	await connection.command("Page.navigate", { url: `${origin}/tests/fixtures/builder-nuvio-import-mounted.html` });
 	const deadline = Date.now() + 30000;
@@ -242,7 +272,9 @@ async function runNuvioImportChecks(connection, origin) {
 	assert.equal(await evaluate(connection, "window.nuvioFixtureReady === true"), true, "Nuvio fixture loads");
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
-	if (nuvioWelcomeOnly) return runWelcomeImportChecks(connection);
+	const creation = await runWelcomeCreationChecks(connection);
+	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+	if (nuvioWelcomeOnly) return { ...await runWelcomeImportChecks(connection), creation };
 	const local = await evaluate(connection, "window.runNuvioLocalCases()");
 	const layouts = [];
 	const screenshots = process.env.NUVIO_IMPORT_SCREENSHOT_DIR;
@@ -278,7 +310,7 @@ async function runNuvioImportChecks(connection, origin) {
 	assert.equal(await evaluate(connection, '(() => { const choice = document.querySelector(".nuvio-choice[data-selected=true]"); const inset = getComputedStyle(choice, "::after"); return inset.borderStyle === "solid" && parseFloat(inset.borderWidth) >= 1 && choice.querySelector("input").checked; })()'), true, "Shared forced-colour inset preserves non-hue selection");
 	await connection.command("Emulation.setEmulatedMedia", { features: [] });
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: false });
-	return { local, layouts, errors: await evaluate(connection, "window.__mountedErrors") };
+	return { local, layouts, creation, errors: await evaluate(connection, "window.__mountedErrors") };
 }
 
 async function runMountedPage() {
@@ -656,6 +688,8 @@ test("mounted Nuvio Send retains safe outcomes and one responsive Export shell",
 test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
 	assert.deepEqual(mounted.nuvioImport.local, nuvioWelcomeOnly ? { passed: true, externalServiceExercised: false } : { passed: true, mocked: true });
 	assert.equal(mounted.nuvioImport.layouts.length, nuvioWelcomeOnly ? 44 : 63);
+	assert.equal(mounted.nuvioImport.creation.length, 4);
+	assert.ok(mounted.nuvioImport.creation.every(result => result.passed && !result.externalServiceExercised && !result.overflow));
 	assert.deepEqual(mounted.nuvioImport.errors, []);
 });
 

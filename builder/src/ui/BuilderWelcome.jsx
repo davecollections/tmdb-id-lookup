@@ -77,7 +77,7 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvi
 			action: () => startNewBuilderProject(controller),
 			onFailure: showFailure,
 			onSuccess: () => setLocalDiagnostics([]),
-			onEnterWorkspace,
+			onEnterWorkspace: () => onEnterWorkspace({ startCreation: true }),
 		});
 	}
 
