@@ -122,11 +122,17 @@ async function checkAvatarFallback() {
 	globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 	const host = document.createElement("div"); document.body.append(host);
 	const avatarRoot = createRoot(host);
-	const avatarUrl = new URL("../../builder/src/assets/builder-mark.svg", import.meta.url).href;
+	// Keep a real local URL: Vite may inline import.meta assets into data URLs,
+	// where appending a replacement query corrupts the SVG payload.
+	const avatarUrl = new URL("/builder/src/assets/builder-mark.svg", window.location.origin).href;
 	const replacementUrl = `${avatarUrl}?replacement`;
 	const profile = { name: "Family cinema", avatarUrl, avatarColor: "#1E88E5" };
 	const fallback = () => !host.querySelector("img") && host.textContent === "FC";
 	try {
+		for (const url of [avatarUrl, replacementUrl]) {
+			const image = new Image(); image.src = url;
+			await image.decode();
+		}
 		await act(async () => avatarRoot.render(<EarlyAvatarError profile={profile} failEarly />));
 		assert(fallback(), "An avatar failure before mount passive effects must survive React settling");
 		assert(host.querySelector(".nuvio-avatar").style.backgroundColor === "rgb(30, 136, 229)", "Nuvio color fallback");
@@ -261,7 +267,7 @@ window.runNuvioLocalCases = async () => {
 	return { passed: true, mocked: true };
 };
 
-window.runWelcomeLayoutCases = checkLanding;
+window.runWelcomeLayoutCases = async () => { await checkAvatarFallback(); return checkLanding(); };
 window.prepareNuvioScreen = async (stage = "review") => {
 	if (stage.startsWith("landing")) {
 		await mount({ open: false, localOnly: true });
@@ -560,6 +566,8 @@ window.finishWelcomeCreationCases = async () => {
 	assert(controller.updateNode(controller.getState().project.internalId, { title: "Changed while open" }).ok, "Controller edit succeeds");
 	await frame(); await click(creationDialog().querySelector(".add-source-close-action"));
 	assert($("[data-builder-shell]") && !creationDialog(), "Changed opening project cannot return as untouched");
+	root.unmount(); root = null; connection.dispose();
 	document.documentElement.style.fontSize = "";
+	await frame();
 	return { passed: true, externalServiceExercised: false };
 };
