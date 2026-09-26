@@ -156,7 +156,7 @@ async function runPinCases() {
 
 		await pinFlow(flow, "hold-pin"); enterPin("4826"); await until(() => held === "pin"); const late = release;
 		if (flow === "send") { await assertActiveProgress(); root.render(<p>Application interrupted</p>); await frame(); }
-		else await click(button("Close"));
+		else await click($("[aria-label='Close Nuvio import']"));
 		late(); await frame();
 		assert(!api.connection.getProfileAccess(protectedA.id).unlocked && !$("input[name=pin]"), "Genuine interruption/Import Close abandons the owned PIN response without a late grant or navigation");
 	}
