@@ -7,6 +7,7 @@ import { GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
 import { CollectionFolderSelectionList } from "./CollectionFolderSelectionList.jsx";
 import { CollectionSettingsFields } from "./NodeEditor.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
+import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { updateNodeEditorField } from "./node-editor.js";
 import { collectionViewModels, nodeTitle } from "./view-model.js";
 import { createMoveCollectionDraft, reviewFolderMove } from "./move-folders.js";
@@ -98,8 +99,12 @@ export function MoveFoldersDialog({ session, onCancel, onApply }) {
 					</> : null}
 					{stage === "configure" ? <div className="move-collection-settings"><CollectionSettingsFields draft={draft} prefix="move-collection" diagnostics={diagnostics} titleInputRef={titleRef} onChange={(field, value) => { setDraft((current) => updateNodeEditorField(current, field, value)); setError(""); setDiagnostics([]); }} /></div> : null}
 					{stage === "review" ? <>
-						<dl className="move-folders-summary"><div><dt>From</dt><dd>{sourceTitle}</dd></div><div><dt>To{kind === "new" ? " · New Collection" : ""}</dt><dd>{destinationTitle}{kind === "existing" ? <small>Collection {destination.position}</small> : null}</dd></div></dl>
-						<p>{folderLabel} · {selectedFolders.reduce((count, folder) => count + folder.sources.length, 0)} sources</p>
+						<div className="move-folders-transfer">
+							<dl className="move-folders-summary"><dt>From</dt><dd>{sourceTitle}</dd></dl>
+							<span className="move-folders-direction" aria-hidden="true">→</span>
+							<dl className="move-folders-summary"><dt>To</dt><dd>{destinationTitle}<small>{kind === "new" ? "New Collection" : `Collection ${destination.position}`}</small></dd></dl>
+						</div>
+						<HierarchyOutputSummary counts={{ folderCount: selectedFolders.length, sourceCount: selectedFolders.reduce((count, folder) => count + folder.sources.length, 0) }} scope="move-folders" className="move-folders-totals" />
 						<p className="editor-field-help">The selected Folders and everything inside them will move together, in their current order, after any existing Folders.</p>
 						{kind === "new" ? <p className="editor-field-help" data-move-new-summary="true">{draft.values.viewMode === "ROWS" ? "Rows" : "Tabs"}{draft.values.viewMode !== "ROWS" ? draft.values.showAllTab ? " · All tab on" : " · All tab off" : ""} · {draft.values.pinToTop ? "Pinned" : "Not pinned"} · {draft.values.hideNuvioTitle ? "Title hidden" : "Title visible"} · {draft.values.backdropImageUrl ? "Collection artwork set" : "No Collection artwork"}</p> : null}
 						<details className="move-folders-selected"><summary>View {selected.length} selected {selected.length === 1 ? "folder" : "folders"}</summary><ol>{selectedFolders.map((folder) => <li key={folder.internalId}>{nodeTitle(folder.editable.title, "folder").text}</li>)}</ol></details>
@@ -111,7 +116,10 @@ export function MoveFoldersDialog({ session, onCancel, onApply }) {
 				</div>
 				<footer className="add-source-actions collection-folders-actions move-folders-actions">
 					{error ? <p ref={errorRef} id="move-collection-title-error" tabIndex={-1} className="editor-diagnostics" role="alert">{error}</p> : null}
-					{stage === "review" ? <button className={`editor-apply${deleteEmptySource ? " collection-folders-delete" : ""}`} type="button" onClick={apply}>Move {folderLabel}{deleteEmptySource ? " and delete Collection" : ""}</button> : <button className="editor-apply" type="button" disabled={stage === "select" ? !selected.length : stage === "destination" ? !kind || kind === "existing" && !destinationId : false} onClick={continueFlow}>{stage === "configure" ? "Review move" : "Continue"}</button>}
+					{stage === "review" ? <>
+						<button className={`editor-apply${deleteEmptySource ? " collection-folders-delete" : ""}`} type="button" onClick={apply}>Move {folderLabel}{deleteEmptySource ? " and delete Collection" : ""}</button>
+						<button className="editor-cancel" type="button" onClick={onCancel}>Cancel</button>
+					</> : <button className="editor-apply" type="button" disabled={stage === "select" ? !selected.length : stage === "destination" ? !kind || kind === "existing" && !destinationId : false} onClick={continueFlow}>{stage === "configure" ? "Review move" : "Continue"}</button>}
 				</footer>
 			</section>
 		</div>

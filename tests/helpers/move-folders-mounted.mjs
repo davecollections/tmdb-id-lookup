@@ -15,14 +15,14 @@ export async function runMoveFoldersChecks(connection, baseUrl, evaluate) {
 	await viewport(1280,900);
 	const local=await evaluate(connection,'window.moveLocalCases()');
 	const layouts=[], landings=[], keyboard=[];
-	const screens=['none','folder-entry','several','all','existing','new','configure','review','empty','delete','long'];
+	const screens=['none','folder-entry','several','all','existing','new','configure','review','empty','delete','new-review','new-empty','new-delete','long'];
 	for(const [width,height] of [[360,800],[384,852],[393,852],[402,852],[412,852],[899,900],[900,900],[901,900],[1280,900],[1280,320]]) {
 		await viewport(width,height);
 		if(width===1280 && height===900) {await evaluate(connection,'window.prepareMoveScreen("collection-menu")');await capture('01-collection-menu');}
 		for(const screen of screens) {
 			layouts.push(await evaluate(connection,`window.prepareMoveScreen(${JSON.stringify(screen)})`));
 			if(width===1280 && height===900 && screen!=='long' && screen!=='all') await capture('desktop-'+screen);
-			if(width===393 && ['several','configure','delete'].includes(screen))await capture('phone-'+screen);
+			if(width===393 && ['several','configure','review','empty','delete','new-review','new-delete'].includes(screen))await capture('phone-'+screen);
 			for(const reverse of [false,true]) {
 				await evaluate(connection,`(()=>{const controls=[...document.querySelector('[data-move-folders-dialog]').querySelectorAll('button,input,summary')].filter(el=>!el.disabled && el.getClientRects().length);controls[${reverse?'0':'controls.length-1'}].focus({preventScroll:true});})()`);
 				await key('Tab','Tab',9,reverse?8:0); assert.equal(await evaluate(connection,"Boolean(document.activeElement.closest('[data-move-folders-dialog]'))"),true,'Focus trap');
@@ -33,13 +33,20 @@ export async function runMoveFoldersChecks(connection, baseUrl, evaluate) {
 	for(const variant of ['enlarged','forced-colors','reduced-motion']) for(const width of [393,1280]) {
 		await viewport(width,width===393?852:900);
 		await connection.command('Emulation.setEmulatedMedia',{features:variant==='forced-colors'?[{name:'forced-colors',value:'active'}]:variant==='reduced-motion'?[{name:'prefers-reduced-motion',value:'reduce'}]:[]});
-		for(const screen of ['several','configure','delete','long']) {
+		for(const screen of ['several','configure','delete','new-review','long']) {
 			layouts.push({variant,...await evaluate(connection,`window.prepareMoveScreen(${JSON.stringify(screen)},${variant==='enlarged'})`)});
+			if(['delete','new-review'].includes(screen) && variant!=='reduced-motion') await capture(`${width===393?'phone':'desktop'}-${variant}-${screen}`);
 			if(variant==='forced-colors' && screen==='several') assert.equal(await evaluate(connection,"(()=>{const choice=document.querySelector('.move-folders-body [data-selected=true]');const style=getComputedStyle(choice,'::after');return choice.querySelector('input').checked && style.borderStyle==='solid' && parseFloat(style.borderWidth)>=1;})()"),true,'Non-colour selected inset');
 			await key('Escape','Escape',27); await evaluate(connection,'window.moveCancelCheck()');
 		}
 	}
 	await connection.command('Emulation.setEmulatedMedia',{features:[]});
+	for(const width of [393,1280]) {
+		await viewport(width,width===393?852:900);
+		for(const kind of ['existing','new']) for(const folderEntry of [false,true]) for(const remove of [false,true]) for(const headerClose of [false,true]) {
+			assert.equal(await evaluate(connection,`window.moveReviewCancel('${kind}',${folderEntry},${remove},${headerClose})`),true,'Close/Cancel preserves state and exact trigger');
+		}
+	}
 	for(const width of [393,1280]) {
 		await viewport(width); await evaluate(connection,'window.prepareMoveClipped()');
 		await key('Tab','Tab',9); assert.equal(await evaluate(connection,'window.checkMoveClipped()'),true);
@@ -49,7 +56,7 @@ export async function runMoveFoldersChecks(connection, baseUrl, evaluate) {
 	}
 	for(const width of [360,393]) {
 		await viewport(width);
-		for(const screen of ['several','configure','delete']) {
+		for(const screen of ['several','configure','delete','new-review']) {
 			await evaluate(connection,`window.prepareMoveScreen(${JSON.stringify(screen)})`);
 			for(const [height,top] of [[460,0],[320,42],[500,18],[852,0]]) keyboard.push(await evaluate(connection,`window.moveKeyboardViewport(${height},${top})`));
 			await evaluate(connection,'window.restoreMoveViewport()'); await key('Escape','Escape',27); await evaluate(connection,'window.moveCancelCheck()');

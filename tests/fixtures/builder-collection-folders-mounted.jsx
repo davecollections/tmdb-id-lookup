@@ -65,7 +65,7 @@ async function open(action) {
 	await showCollections();
 	const trigger = $('[data-action="open-collection-actions"]');
 	await click(trigger);
-	assert($$('[data-actions-menu="collection"] [role="menuitem"]').map((el) => el.textContent).join("|") === "Edit|Move folders…|Sort folders|Delete folders|Delete collection", "Collection menu order");
+	assert($$('[data-actions-menu="collection"] [role="menuitem"]').map((el) => el.textContent).join("|") === "Edit|Move folders|Sort folders|Delete folders|Delete collection", "Collection menu order");
 	await click($(`[data-action="${action}"]`));
 	return trigger;
 }

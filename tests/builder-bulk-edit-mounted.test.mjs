@@ -968,9 +968,9 @@ test("mounted Find searches locally and jumps with exact identity, accessible fo
 
 test("mounted Move folders preserves atomic relocation, accessible stages and exact responsive landing", { skip: !moveFoldersOnly && (projectFindOnly || workspaceImportOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly) }, () => {
 	assert.equal(moveFoldersMounted.local.passed, true);
-	assert.equal(moveFoldersMounted.layouts.length, 134);
+	assert.equal(moveFoldersMounted.layouts.length, 170);
 	assert.equal(moveFoldersMounted.landings.length, 36);
-	assert.equal(moveFoldersMounted.keyboard.length, 24);
+	assert.equal(moveFoldersMounted.keyboard.length, 32);
 	assert.deepEqual(moveFoldersMounted.errors, []);
-	console.log("Move mounted:", JSON.stringify({ layouts: 134, landings: 36, keyboard: 24 }));
+	console.log("Move mounted:", JSON.stringify({ layouts: 170, landings: 36, keyboard: 32 }));
 });

@@ -189,7 +189,7 @@ export function HierarchyActionsMenu({
 				</button>
 			) : null}
 			{onAdvancedEdit ? <button type="button" role="menuitem" tabIndex={-1} disabled={disabled || !open} onClick={() => runAction(onAdvancedEdit)}>Edit Discover</button> : null}
-			{onMoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action={`move-${noun}-folders`} disabled={disabled || !open || noun === "collection" && node.folderCount === 0} onClick={() => runAction(onMoveFolders)}>{noun === "collection" ? "Move folders…" : "Move to another Collection…"}</button> : null}
+			{onMoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action={`move-${noun}-folders`} disabled={disabled || !open || noun === "collection" && node.folderCount === 0} onClick={() => runAction(onMoveFolders)}>Move folders</button> : null}
 			{onSortFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="sort-folders" disabled={disabled || !open || node.folderCount < 2} onClick={() => runAction(onSortFolders)}>Sort folders</button> : null}
 			{onRemoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="remove-folders" disabled={disabled || !open || node.folderCount === 0} onClick={() => runAction(onRemoveFolders)}>Delete folders</button> : null}
 			<button

@@ -37,6 +37,7 @@ async function mount({ folders = 8, collections = 3, folderEntry = false, menuOn
 	trigger = folderEntry ? $$('[data-action="open-folder-actions"]')[1] : $('[data-action="open-collection-actions"]');
 	await click(trigger);
 	opening = controller.getState(); beforePayload = serializeNuvioProject(opening.project).value;
+	assert($(`[data-actions-menu]:not([hidden]) [data-action="move-${folderEntry ? "folder" : "collection"}-folders"]`).textContent === 'Move folders', 'Both menu entries use identical wording without ellipsis');
 	if (menuOnly) return;
 	await click($(`[data-actions-menu]:not([hidden]) [data-action="move-${folderEntry ? "folder" : "collection"}-folders"]`));
 	assert(dialog() && $$('[role="dialog"]').length === 1, `One semantic dialog: ${JSON.stringify({ folderEntry, errors: window.__mountedErrors, text: document.body.innerText.slice(-2000) })}`);
@@ -80,11 +81,12 @@ window.prepareMoveScreen = async (screen, enlarged = false) => {
 	if(screen==='collection-menu') return {passed:true};
 	if(screen==='several') { await click(checks()[3]); await click(checks()[1]); }
 	if(screen==='all') await click($$('.genre-selection-actions button').find(el=>el.textContent==='Select all'));
-	if(['existing','new','configure','review','empty','delete'].includes(screen)) {
-		await select(['empty','delete'].includes(screen));
+	if(['existing','new','configure','review','empty','delete','new-review','new-empty','new-delete'].includes(screen)) {
+		await select(['empty','delete','new-empty','new-delete'].includes(screen));
 		if(screen==='existing' || screen==='new') await click($(`input[name="move-destination-kind"][value="${screen==='existing'?'existing':'new'}"]`));
-		else { await destination(screen==='configure' ? 'new' : 'existing'); }
-		if(screen==='delete') await click($('input[name="move-empty-source"][value="true"]'));
+		else { await destination(screen==='configure' || screen.startsWith('new-') ? 'new' : 'existing'); }
+		if(screen.startsWith('new-')) await next();
+		if(screen==='delete' || screen==='new-delete') await click($('input[name="move-empty-source"][value="true"]'));
 	}
 	if(enlarged) { document.documentElement.style.fontSize='200%'; await frame(); }
 	unchanged(); return measure();
@@ -100,12 +102,37 @@ function measure() {
 	assert($$('.move-folders-heading button,.move-folders-actions button').every(el=>el.getBoundingClientRect().height>=44),'44px actions');
 	assert($$('.move-folders-body label.genre-catalogue-choice').every(el=>el.getBoundingClientRect().height>=44),'44px full-row choices');
 	assert($$('[role="dialog"]').length===1 && $$('.move-folders-backdrop').length===1,'One dialog/backdrop');
+	const actions=$$('.move-folders-actions button');
+	if(dialog().dataset.moveFoldersDialog==='review') {
+		assert(actions.length===2 && actions[0].textContent.startsWith('Move ') && actions[1].textContent==='Cancel','Review DOM order: Move then Cancel');
+		const primary=actions[0].getBoundingClientRect(), cancel=actions[1].getBoundingClientRect();
+		assert(primary.right<=cancel.left && primary.top===cancel.top,'Review primary LEFT and Cancel RIGHT');
+		assert(actions.every(el=>el.scrollWidth<=el.clientWidth+1 && el.scrollHeight<=el.clientHeight+1),'Final labels wrap without clipping');
+		assert($('[aria-label="Close Move folders"]'),'Header Close remains');
+		const totals=$$('.move-folders-totals > div'), selectedIds=$$('.move-folders-selected li');
+		assert(totals.length===2 && totals[0].textContent===`${selectedIds.length}Folders` && totals[1].textContent===`${selectedIds.length*2}Sources`,'Exactly two shared count tiles for actual Folders and Sources');
+		assert($$('.move-folders-transfer dt').map(el=>el.textContent).join('|')==='From|To','Semantic From / To labels remain outside metrics');
+		assert($('.move-folders-direction').getAttribute('aria-hidden')==='true','Directional arrow is decorative');
+		assert(!$('.move-folders-selected').open,'Selected Folder disclosure starts collapsed');
+		const deleting=$('input[name="move-empty-source"][value="true"]')?.checked ?? false;
+		assert(actions[0].classList.contains('collection-folders-delete')===deleting && actions[0].textContent.endsWith('and delete Collection')===deleting,'Destructive text and styling follow approved choice');
+		if($('[data-move-new-summary]')) assert($('.move-folders-summary:last-child small').textContent==='New Collection','New destination has quiet type context');
+		else assert($('.move-folders-summary:last-child small').textContent==='Collection 2','Existing duplicate-name position remains visible');
+	} else assert(actions.length===1 && !actions.some(el=>el.textContent==='Cancel'),'Earlier stages retain their single footer action');
 	if(innerWidth<900) assert(rect.width===innerWidth && Math.abs(rect.height-visualViewport.height)<1,'Phone fills visual viewport');
 	return {width:innerWidth,height:innerHeight,stage:dialog().dataset.moveFoldersDialog,rows:checks().length,bodyHeight:body.clientHeight,passed:true};
 }
 window.moveCancelCheck = () => {
 	assert(!dialog() && !$('.workspace-underlay').inert && document.body.style.position!=='fixed','Cancel unlocks');
 	assert(document.activeElement===trigger,'Exact menu trigger focus restored'); unchanged(); return true;
+};
+window.moveReviewCancel = async (kind, folderEntry, remove, headerClose) => {
+	await mount({folderEntry}); await select(true); await destination(kind);
+	if(kind==='new') await next();
+	if(remove) await click($('input[name="move-empty-source"][value="true"]'));
+	measure(); unchanged();
+	await click(headerClose ? $('[aria-label="Close Move folders"]') : $('.move-folders-actions .editor-cancel'));
+	return window.moveCancelCheck();
 };
 window.movePrepareApply = async (kind, remove = false, all = false) => {
 	await mount({folders:70}); await select(all || remove); await destination(kind);
