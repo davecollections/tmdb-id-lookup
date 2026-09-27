@@ -272,6 +272,42 @@ export function reorderFolders(project, collectionInternalId, orderedFolderInter
 	}));
 }
 
+// Relocation retains the exact Folder objects, including all descendants/raw data.
+// A supplied new Collection is detached and empty; it follows ordinary append
+// creation order. Pinned presentation order remains owned by the existing view.
+export function moveFolders(project, { sourceCollectionInternalId, folderInternalIds,
+	destinationCollectionInternalId, newCollection = null, deleteEmptySource = false }) {
+	const { collection: source, requested } = requireCollectionFolders(project, sourceCollectionInternalId, folderInternalIds);
+	if (!requested.size) throw new TypeError("Select at least one Folder");
+	if (typeof deleteEmptySource !== "boolean") throw new TypeError("Choose whether to keep the empty Collection");
+	if (!checkInternalIdUniqueness(project).unique) throw new TypeError("Project identities must be unique");
+	let destination;
+	if (newCollection !== null) {
+		if (destinationCollectionInternalId !== undefined || newCollection.nodeType !== NODE_TYPES.COLLECTION
+			|| typeof newCollection.internalId !== "string" || !newCollection.internalId.length
+			|| !Array.isArray(newCollection.folders) || newCollection.folders.length
+			|| traverseProject(project).some((node) => node.internalId === newCollection.internalId)) {
+			throw new TypeError("New destination must be one empty Collection with a unique identity");
+		}
+		destination = newCollection;
+	} else {
+		destination = requireUniqueLocation(project, destinationCollectionInternalId).node;
+		if (destination.nodeType !== NODE_TYPES.COLLECTION || destination === source) {
+			throw new TypeError("Choose another Collection");
+		}
+	}
+	const movedFolders = source.folders.filter((folder) => requested.has(folder.internalId));
+	const remaining = source.folders.filter((folder) => !requested.has(folder.internalId));
+	if (deleteEmptySource && remaining.length) throw new RangeError("Only an emptied source Collection may be deleted");
+	const nextDestination = { ...destination, folders: [...destination.folders, ...movedFolders] };
+	const collections = project.collections.flatMap((collection) => collection === source
+		? deleteEmptySource ? [] : [{ ...source, folders: remaining }]
+		: [collection === destination ? nextDestination : collection]);
+	if (newCollection !== null) collections.push(nextDestination);
+	return { project: { ...project, collections }, destinationCollectionInternalId: destination.internalId,
+		movedFolderInternalIds: movedFolders.map((folder) => folder.internalId) };
+}
+
 /**
  * @param {object} node
  * @param {(node: object) => void} visitor

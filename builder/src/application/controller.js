@@ -8,6 +8,7 @@ import {
 	defaultInternalIdFactory,
 	insertChild,
 	moveNode as moveDomainNode,
+	moveFolders as moveDomainFolders,
 	NODE_TYPES,
 	removeNode as removeDomainNode,
 	removeFolders as removeDomainFolders,
@@ -1369,6 +1370,53 @@ export function createBuilderController(options = {}) {
 		return actionResult(true);
 	}
 
+	function moveFolders(options) {
+		const path = "$controller.moveFolders";
+		const fail = (message) => actionResult(false, [controllerDiagnostic(
+			CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT, path, message,
+		)]);
+		const optionError = validatePlainOptions(options, new Set([
+			"openingProject", "sourceCollectionInternalId", "folderInternalIds", "destination", "deleteEmptySource",
+		]), path, "Move folders options");
+		if (optionError) return fail(optionError.message);
+		if (options.openingProject !== state.project) return fail("This project changed. Close and reopen Move folders before applying.");
+		const destination = options.destination;
+		if (!isPlainObject(destination) || !["existing", "new"].includes(destination.kind)) return fail("Choose a destination Collection.");
+		const destinationError = validatePlainOptions(destination, new Set(destination.kind === "new"
+			? ["kind", "editable"] : ["kind", "internalId"]), path, "Destination");
+		if (destinationError) return fail(destinationError.message);
+		let newCollection = null;
+		let transfer;
+		try {
+			if (destination.kind === "new") {
+				// Same authored presentation contract used by Collection settings.
+				const validation = validatePresentationPatch(NODE_TYPES.COLLECTION, destination.editable, path);
+				if (validation.error) return fail(validation.error.message);
+				if (!isValidNuvioTitle(validation.patch.title)) return fail("Enter a collection title before applying changes.");
+				newCollection = createCollection({ idFactory,
+					editable: prepareNewNodeEditable(state.project, validation.patch, nuvioIdFactory) });
+			}
+			transfer = moveDomainFolders(state.project, {
+				sourceCollectionInternalId: options.sourceCollectionInternalId,
+				folderInternalIds: options.folderInternalIds,
+				...(newCollection ? { newCollection } : { destinationCollectionInternalId: destination.internalId }),
+				deleteEmptySource: options.deleteEmptySource === undefined ? false : options.deleteEmptySource,
+			});
+		} catch {
+			return fail("The selected Folders or destination are invalid or changed. Nothing was moved.");
+		}
+		// Selection is included in the same content commit: subscribers never see
+		// a dangling parent or a transient empty newly-created Collection.
+		commitProjectEdit(transfer.project, {
+			collectionInternalId: transfer.destinationCollectionInternalId,
+			folderInternalId: transfer.movedFolderInternalIds[0], sourceInternalId: null,
+		});
+		return actionResult(true, [], [], {
+			destinationCollectionInternalId: transfer.destinationCollectionInternalId,
+			movedFolderInternalIds: transfer.movedFolderInternalIds,
+		});
+	}
+
 	function commitProjectEdit(project, selection = state.selection) {
 		let diagnostics = replaceDiagnosticScope(state.diagnostics, "operation", [], []);
 		diagnostics = replaceDiagnosticScope(diagnostics, "export", [], []);
@@ -1527,6 +1575,7 @@ export function createBuilderController(options = {}) {
 		removeNode,
 		removeFolders,
 		reorderFolders,
+		moveFolders,
 		applyLegacyAddonProjectionMigration,
 		serializeProject,
 		stringifyProject,

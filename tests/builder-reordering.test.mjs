@@ -715,7 +715,9 @@ test("every rendered collection, folder, and source card has one accessible stab
 	assert.equal((markup.match(/data-action="reorder-collection"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-action="reorder-folder"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-action="reorder-source"/g) ?? []).length, 3);
-	assert.equal(markup.includes('data-action="move-'), false);
+	assert.equal((markup.match(/data-action="move-collection-folders"/g) ?? []).length, 2);
+	assert.equal((markup.match(/data-action="move-folder-folders"/g) ?? []).length, 2);
+	assert.equal(markup.includes('data-action="move-source'), false);
 	assert.equal((markup.match(/data-action="edit-collection"/g) ?? []).length, 2);
 	assert.equal((markup.match(/data-action="edit-folder"/g) ?? []).length, 2);
 	assert.equal(markup.includes('data-action="edit-source"'), false);

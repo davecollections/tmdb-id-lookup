@@ -1,12 +1,26 @@
 # Builder Collection and Folder Editing
 
+## Move folders (#263, pending merge)
+
+Both Collection and Folder menus use **Move folders** (no ellipsis), opening one responsive Select → Destination → optional Configure new Collection → Review dialog. Collection entry starts with none selected; Folder entry preselects its exact ID. Native full-row checkboxes show all direct-child Folders in current source order, with selected count, Select all and Clear all. No search, pagination, selection limit or separate Split feature is introduced.
+
+Existing destinations exclude the source, follow visible pinned/project order, and show Collection position/count to distinguish duplicate names. None is silently chosen. With no other Collection, only New is available. New configuration starts with normal domain defaults and a blank required name; Back and destination switches retain useful work. `CollectionSettingsFields` and `NodeTitleField` are extracted from ordinary NodeEditor, sharing title visibility, layout, All tab, pin and artwork fields. Move omits child shape management, so configuring the destination cannot patch moved Folders. No nested editor/modal opens.
+
+Review freezes its request and binds the exact new-draft reference. A changed draft requires fresh Review; the controller revalidates current Project authority and all settings/targets at Apply. Only an all-Folder selection offers Keep empty (default) or explicit Delete empty after moving. Deselecting any Folder resets Delete to Keep. Delete changes the final action to **Move N folders and delete “Source name”**, naming the exact source with existing destructive styling and no further confirmation modal. Creation, relocation and deletion form [one atomic operation](./BUILDER_CONTROLLER.md#move-folders-263-pending-merge); all earlier stages/cancellation leave project state untouched.
+
+Review keeps the restrained From → To transfer surface. Ordinary existing destinations have no Collection position metadata; only exact matching visible titles among eligible destinations get quiet context such as **2 of 2 with this name**, in destination view order. This render-only context differs from full-project positional helpers and does not change exact-ID authority or the Destination chooser. New destinations retain **New Collection** context. **What will move?** introduces exactly two compact shared `HierarchyOutputSummary` tiles: Folders and Sources. Supporting copy names the destination and describes appending for an existing Collection or moving into a new one. Ordinary retained-source residual counts are omitted.
+
+**Selected folders · N** uses the existing Builder settings-disclosure surface, collapsed by default, with read-only names in source order. New destinations alone then show a contained **Collection setup** definition list: Layout (Tabs/Rows), All tab (On/Off, Tabs only), Position (Pinned/Not pinned) and Title (Visible/Hidden). Review has no artwork row or preservation note; Collection configuration and Folder artwork preservation are unchanged. The exceptional empty-source decision follows when applicable. Only Review adds footer **Cancel**: the Move action stays on the **left**, Cancel on the **right**, including destructive Delete with wrapping source names. Under extreme narrow/enlarged-text pressure (dialog width at most 20rem), the actions stack with Move first so the full exact-name label leaves meaningful body scrolling space. Action text uses its normal size. Header Close remains. Both cancel through the existing no-mutation/exact-trigger restoration contract. Desktop stages retain natural bounded heights; ordinary phone footer actions stay side by side. This scoped container-query treatment changes no shared Visual Viewport or zoom behavior.
+
+Reuse: `CollectionFolderSelectionList` also serves Delete folders; viewport/body locking, focus trap, stage intro, selection toolbar, Collection view ordering and Find card-focus recovery are shared. The new operation differs from sibling reorder/removal because it retains subtree identity across parents and optionally creates/deletes a Collection in the same commit. No creation-family registry or persisted recipe is added.
+
 <a id="collection-folder-management-232-local-owner-review"></a>
 
 ## Collection Folder management (#232)
 
 Implemented and merged through [PR #233](https://github.com/davecollections/tmdb-id-lookup/pull/233).
 
-The Collection menu is **Edit → Sort folders → Delete folders → Delete collection**. Sort is disabled below two folders; Delete folders is disabled for an empty Collection. The mobile selected-context pencil still opens rename-only settings.
+The Collection menu is **Edit → Move folders → Sort folders → Delete folders → Delete collection**. Move and Delete folders are disabled for an empty Collection; Sort is disabled below two folders. The mobile selected-context pencil still opens rename-only settings.
 
 Full Collection settings includes **Folder tile shape** for a one-time update of existing child Folders. Uniform supported values select Poster, Square or Landscape; mixed, missing and unsupported values show neutral **Mixed / not set** with no selected option. Empty Collections show a calm no-folder message. Untouched shape adds no child patch. No Collection shape/default is saved, and later Folders retain their ordinary creation defaults.
 

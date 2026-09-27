@@ -1,5 +1,15 @@
 # Builder Application Controller
 
+## Move folders (#263, pending merge)
+
+`moveFolders({ openingProject, sourceCollectionInternalId, folderInternalIds, destination, deleteEmptySource? })` accepts `{ kind: "existing", internalId }` or `{ kind: "new", editable }` as destination. New settings use the existing Collection presentation validator, required title, normal Collection/Nuvio ID factories and domain defaults. The new Collection appends in ordinary creation order; existing pinned-group display/export rules remain authoritative.
+
+The opening immutable Project must still be current. Dense, nonempty, unique direct-child Folder IDs, unambiguous distinct source/destination Collections, supported new settings and generated identity uniqueness are checked before one candidate commit. Duplicate names are allowed. Invalid/stale input returns errors without changing the exact state snapshot, revision, dirty flag, selection, diagnostics or notifications.
+
+The domain operation retains exact Folder objects, including editable/raw data, internal/persisted IDs, Source arrays/order and opaque content. Existing destination settings/Folders stay exact and in order. Moved Folders append in original source order. Source settings/raw data and remaining Folders retain identity/order. The source remains even when empty unless explicit `deleteEmptySource: true` is requested and no current Folder remains; deletion is part of the same operation.
+
+Success commits one content revision and notification, including selection of destination/first moved Folder. It returns `destinationCollectionInternalId` and ordered `movedFolderInternalIds` for UI focus recovery. No partial move, transient new Collection or separate source deletion is observable. This narrow relocation API is not a generic transaction or loops over creation/removal. See [draft authority and UI](./BUILDER_NODE_EDITING.md#move-folders-263-pending-merge).
+
 ## Append imported Collections (#238)
 
 `appendImportedCollections(value)` runs the existing preservation-first importer, reserves every existing Collection/Folder Nuvio ID, repairs only incoming missing/conflicting IDs and validates project-wide internal identity before one commit. It appends complete raw-preserving subtrees in order, retains existing project metadata/nodes/selection, offsets incoming import diagnostic locations, refreshes migration preview and sets `dirty: true`. Empty input is a successful no-op; failures never add partial content. The source value is unchanged. Optional reserved-ID and inserted-internal-ID arguments to `repairProjectNuvioIds` leave default behavior intact.
@@ -102,6 +112,7 @@ controller.moveNode(internalId, targetIndex)
 controller.removeNode(internalId)
 controller.removeFolders(collectionInternalId, folderInternalIds)
 controller.reorderFolders(collectionInternalId, orderedFolderInternalIds)
+controller.moveFolders(options)
 
 controller.applyLegacyAddonProjectionMigration()
 

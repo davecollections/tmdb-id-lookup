@@ -127,6 +127,7 @@ test("the controller exposes only the documented public method surface", () => {
 		"importValue",
 		"mergeImportedCollections",
 		"moveNode",
+		"moveFolders",
 		"removeNode",
 		"removeFolders",
 		"reorderFolders",
