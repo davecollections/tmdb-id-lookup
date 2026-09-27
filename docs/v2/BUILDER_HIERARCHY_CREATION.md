@@ -50,6 +50,14 @@ Prefer, in order:
 
 Shared infrastructure must not absorb family business rules merely to increase reuse. Record a material semantic difference in the focused issue and final report.
 
+## Ephemeral Source occurrence evidence (#266)
+
+Repeated hierarchy placement queries share an ordered Source/location snapshot owned by the exact deeply immutable controller Project object. WeakMap ownership allows view-only navigation to reuse evidence; a new Project object always receives fresh evidence, even when IDs or child references are retained. Mutable domain drafts bypass caching. Every authoritative Source occurrence and its original hierarchy location remain represented, including opaque Sources; no derived evidence is serialized or attached to project nodes.
+
+Genres and Decades hierarchy request one lazy DISCOVER index. People, Studios and Networks request distinct lazy native family indexes through the existing native hierarchy placement helper. Stable structural/variant function pairs identify native family evidence, allowing Configure and final planning to share it. Each native family retains its existing effective variant helper and separate editable-only structural entity check. Effective materialization is performed once per native Source reference per activated family; it is not shared between native families. Duplicate occurrences keep their separate locations and original order.
+
+Snapshots and indexes publish only after successful synchronous construction. Family comparison, title projection, candidate construction and placement rules remain authoritative. The cache never replaces current-project/revision checks, apply-time rebuilding/comparison or atomic controller application. Ordinary native Add Source duplicate inspection, TMDB Lists, Franchises, ordinary Add Decade and Streaming New Collection retain their existing paths. See [native comparison](./BUILDER_NATIVE_VARIANTS.md#exact-comparison-placement-and-counts) and [validation](../TESTING.md#shared-source-occurrence-evidence-266).
+
 ## 3. Flow and state
 
 Use this purpose-based vocabulary, including only the stages the family actually needs:

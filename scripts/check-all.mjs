@@ -29,6 +29,7 @@ export const validationChecks = Object.freeze([
 	["--test", path.join("tests", "builder-reordering-client-evidence.test.mjs")],
 	["--test", path.join("tests", "tmdb-discover-compatibility.test.mjs")],
 	["--test", path.join("tests", "builder-discover-core.test.mjs")],
+	["--test", path.join("tests", "builder-source-occurrences.test.mjs"), path.join("tests", "builder-native-source-occurrences.test.mjs")],
 	["--test", path.join("tests", "builder-advanced-discover.test.mjs"), path.join("tests", "builder-advanced-discover-worker.test.mjs"), path.join("tests", "builder-keyword-catalogue.test.mjs")],
 	["--test", path.join("tests", "maintenance-commit-action.test.mjs")],
 	["--test", path.join("tests", "tmdb-request-budget.test.mjs")],

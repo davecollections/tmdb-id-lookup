@@ -1,0 +1,200 @@
+[
+  {
+    "change": "import",
+    "genre": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_GENRE_HIERARCHY_PLAN",
+          "path": "$genreHierarchy.captured",
+          "message": "The Builder project changed after this Genre plan was prepared."
+        }
+      ]
+    },
+    "decades": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_DECADES_HIERARCHY_PLAN",
+          "path": "$decadesPlan.captured",
+          "message": "The Builder changed after this Decades plan was prepared. Review a new plan before creating it."
+        }
+      ]
+    }
+  },
+  {
+    "change": "merge",
+    "genre": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "move-folders",
+    "genre": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_GENRE_HIERARCHY_PLAN",
+          "path": "$genreHierarchy",
+          "message": "Genre placement changed. Review a new plan before creating it."
+        }
+      ]
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "add",
+    "genre": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_GENRE_HIERARCHY_PLAN",
+          "path": "$genreHierarchy",
+          "message": "Genre placement changed. Review a new plan before creating it."
+        }
+      ]
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "remove",
+    "genre": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_GENRE_HIERARCHY_PLAN",
+          "path": "$genreHierarchy",
+          "message": "Genre placement changed. Review a new plan before creating it."
+        }
+      ]
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "rename",
+    "genre": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_GENRE_HIERARCHY_PLAN",
+          "path": "$genreHierarchy",
+          "message": "Genre placement changed. Review a new plan before creating it."
+        }
+      ]
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "source-edit",
+    "genre": {
+      "ok": false,
+      "stale": true,
+      "errors": [
+        {
+          "code": "STALE_GENRE_HIERARCHY_PLAN",
+          "path": "$genreHierarchy",
+          "message": "Genre placement changed. Review a new plan before creating it."
+        }
+      ]
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "collection-settings",
+    "genre": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "folder-settings",
+    "genre": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "source-order",
+    "genre": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "folder-order",
+    "genre": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  },
+  {
+    "change": "collection-order",
+    "genre": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    },
+    "decades": {
+      "ok": true,
+      "stale": false,
+      "errors": []
+    }
+  }
+]

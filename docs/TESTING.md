@@ -1,5 +1,12 @@
 # Repository Testing
 
+## Shared Source occurrence evidence (#266)
+
+Run `node --test tests/builder-source-occurrences.test.mjs tests/builder-native-source-occurrences.test.mjs` for focused shared-evidence coverage; both are included in the canonical full validation inventory. Pure synthetic cases verify exact immutable Project ownership, lazy family isolation, every ordered occurrence/location, mutable-draft fallback, all-or-nothing construction, new-project authority and unchanged apply-time validation. Large-project guards count traversals and existing identity derivations independently of candidate work; there are no wall-clock thresholds.
+
+Captured pre-refactor complete-output hashes cover Genre/Decades and People/Studio/Network helper/planner parity without retaining duplicate production implementations. Native cases specifically preserve effective raw/editable variant identity versus the separate editable-only structural entity check, along with destination/elsewhere, repeated locations, partial/split/complete placement, malformed imports and family-specific comparison. Existing family/controller/Import/Merge/Move suites remain required regressions. Runtime measurements use actual production flows and the approved live service path whenever external data is involved.
+
+
 ## Move folders (#263, pending merge)
 
 `tests/builder-move-folders.test.mjs` covers existing/new destinations, non-contiguous source-order relocation, duplicate names, exact Folder/Source/raw object identity, serialized payload equality, Collection defaults/settings, Keep/Delete empty source, one revision/notification, stale project/draft rejection, invalid membership/settings and factory failures. Failures retain the entire state snapshot. It is in the normal core inventory.

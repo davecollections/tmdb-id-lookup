@@ -1,10 +1,10 @@
+import { discoverSourceOccurrences } from "./discover-source-occurrences.js";
 import { sourceDraftsWithGeneratedTitles } from "./source-names.js";
 import {
 	buildDiscoverSourceDraft,
 	DEFAULT_DISCOVER_SORT_OPTION_ID,
 	DISCOVER_SORT_OPTIONS,
 	discoverSourceIdentity,
-	discoverSourceNodeIdentity,
 } from "../nuvio/discover.js";
 import { compileGenreAdvancedFilters, emptyGenreAdvancedState } from "./genre-advanced.js";
 import { GENRE_CONCEPTS, OFFICIAL_GENRE_REFERENCES, officialGenreConcept } from "./genre-catalogue.js";
@@ -208,27 +208,16 @@ export function groupGenreSourceDrafts(genres, drafts, sharedMediaChoice = DEFAU
 	return count === drafts.length ? Object.freeze(groups) : Object.freeze([]);
 }
 
-function sourceOccurrences(project, selectedIdentities) {
-	const identities = new Set(selectedIdentities);
-	const occurrences = [];
-	for (const collection of project?.collections ?? []) {
-		for (const folder of collection.folders ?? []) {
-			for (const source of folder.sources ?? []) {
-				const identity = discoverSourceNodeIdentity(source);
-				if (!identity.comparable || !identities.has(identity.key)) continue;
-				occurrences.push(Object.freeze({
-					identity: identity.key,
-					collectionInternalId: collection.internalId,
-					collectionTitle: typeof collection.editable?.title === "string" ? collection.editable.title.trim() : "",
-					folderInternalId: folder.internalId,
-					folderTitle: typeof folder.editable?.title === "string" ? folder.editable.title.trim() : "",
-					sourceInternalId: source.internalId,
-					sourceTitle: typeof source.editable?.title === "string" ? source.editable.title.trim() : "",
-				}));
-			}
-		}
-	}
-	return occurrences;
+export function genreSourceOccurrences(project, selectedIdentities) {
+	return discoverSourceOccurrences(project, selectedIdentities).map(({ identity, collection, folder, source }) => Object.freeze({
+		identity,
+		collectionInternalId: collection.internalId,
+		collectionTitle: typeof collection.editable?.title === "string" ? collection.editable.title.trim() : "",
+		folderInternalId: folder.internalId,
+		folderTitle: typeof folder.editable?.title === "string" ? folder.editable.title.trim() : "",
+		sourceInternalId: source.internalId,
+		sourceTitle: typeof source.editable?.title === "string" ? source.editable.title.trim() : "",
+	}));
 }
 
 function draftIdentities(drafts) {
@@ -237,7 +226,7 @@ function draftIdentities(drafts) {
 
 export function inspectGenreSourceDuplicates(project, destinationFolderInternalId, drafts) {
 	const identities = draftIdentities(drafts);
-	const occurrences = sourceOccurrences(project, identities.map((entry) => entry.key));
+	const occurrences = genreSourceOccurrences(project, identities.map((entry) => entry.key));
 	const destination = occurrences.filter((entry) => entry.folderInternalId === destinationFolderInternalId);
 	const elsewhere = occurrences.filter((entry) => entry.folderInternalId !== destinationFolderInternalId);
 	const destinationIdentities = new Set(destination.map((entry) => entry.identity));
@@ -257,7 +246,7 @@ export function inspectGenreSourceDuplicates(project, destinationFolderInternalI
 export function inspectGenreFolderPlan(project, collectionInternalId, genres, drafts, sharedMediaChoice = DEFAULT_SHARED_GENRE_MEDIA_CHOICE, { folderTileShape = "LANDSCAPE" } = {}) {
 	const groups = groupGenreSourceDrafts(genres, drafts, sharedMediaChoice);
 	const allIdentities = draftIdentities(drafts).map((entry) => entry.key);
-	const occurrences = sourceOccurrences(project, allIdentities);
+	const occurrences = genreSourceOccurrences(project, allIdentities);
 	const plannedGroups = groups.map((group) => {
 		const identities = draftIdentities(group.drafts).map((entry) => entry.key);
 		const identitySet = new Set(identities);

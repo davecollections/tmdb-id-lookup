@@ -1,3 +1,4 @@
+import { nativeHierarchySourceOccurrences } from "./native-source-occurrences.js";
 import { canonicalJsonValue, resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
 import { DISCOVER_FILTER_FIELDS } from "../nuvio/known-fields.js";
 
@@ -86,24 +87,7 @@ export function inspectNativeHierarchyPlacement(project, drafts, { destinationCo
 	const identities = drafts.map(variantKey);
 	const entityId = structuralIdentity(drafts[0]?.editable)?.split("|")[2];
 	if (!identities.length || !entityId || identities.some((identity) => identity === null)) return null;
-	const occurrences = [];
-	for (const collection of project?.collections ?? []) {
-		for (const folder of collection.folders ?? []) {
-			for (const source of folder.sources ?? []) {
-				if (source.category !== "native-tmdb" || variantKey(source) === null || structuralIdentity(source.editable)?.split("|")[2] !== entityId) continue;
-				occurrences.push(Object.freeze({
-					identity: variantKey(source),
-					mediaType: source.editable.mediaType.trim().toUpperCase(),
-					collectionInternalId: collection.internalId,
-					collectionTitle: collection.editable?.title ?? "",
-					folderInternalId: folder.internalId,
-					folderTitle: folder.editable?.title ?? "",
-					sourceInternalId: source.internalId,
-					sourceTitle: source.editable?.title ?? "",
-				}));
-			}
-		}
-	}
+	const occurrences = nativeHierarchySourceOccurrences(project, entityId, structuralIdentity, variantKey);
 	const destination = Object.freeze(occurrences.filter((entry) => entry.collectionInternalId === destinationCollectionInternalId));
 	const elsewhere = Object.freeze(occurrences.filter((entry) => entry.collectionInternalId !== destinationCollectionInternalId));
 	const sourceOutcomes = Object.freeze(identities.map((identity) => Object.freeze({

@@ -1,5 +1,9 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Shared hierarchy evidence (#266)
+
+Genres, Decades hierarchy, People, Studios and Networks now reuse ephemeral evidence owned by the exact immutable Project. One ordered Source/location snapshot supports lazy, separate DISCOVER and native-family indexes while preserving existing identity, placement and apply-time authority. The [hierarchy architecture contract](./BUILDER_HIERARCHY_CREATION.md#ephemeral-source-occurrence-evidence-266) owns the cache and family boundaries; [testing](../TESTING.md#shared-source-occurrence-evidence-266) owns deterministic parity, laziness and invalidation coverage. Issue #266 remains the implementation/evidence record; owner desktop and physical-phone acceptance passed, and PR integration remains pending.
+
 ## Move folders (#263, pending merge)
 
 The [editing](./BUILDER_NODE_EDITING.md#move-folders-263-pending-merge) and [controller](./BUILDER_CONTROLLER.md#move-folders-263-pending-merge) contracts define exact-ID local relocation to an existing or newly configured Collection. Existing Folder objects, Source order/IDs, rawImported/unknown data and serialized Folder payloads stay unchanged. Source-order append and optional explicit empty-source deletion commit once. New Collection settings/defaults reuse ordinary editor/domain contracts. Draft-only stages reject stale authority and recover exact destination/first-Folder focus. Owner acceptance and merge remain pending.
