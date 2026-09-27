@@ -229,14 +229,18 @@ function migrationNotice(preview) {
 	return null;
 }
 
-export function buildBuilderViewModel(state) {
-	const collections = buildSiblingMovements(
-		state.project.collections,
+export function collectionViewModels(project, selectedInternalId = null) {
+	return buildSiblingMovements(
+		project.collections,
 		{ groupPinnedCollections: true },
 	).map((entry) => withMovement(
 		entry,
-		buildCollection(entry.node, state.selection.collectionInternalId),
+		buildCollection(entry.node, selectedInternalId),
 	));
+}
+
+export function buildBuilderViewModel(state) {
+	const collections = collectionViewModels(state.project, state.selection.collectionInternalId);
 	const selectedCollection = collections.find((collection) => collection.selected) ?? null;
 	const selectedCollectionNode = selectedCollection
 		? state.project.collections.find((collection) => collection.internalId === selectedCollection.internalId)

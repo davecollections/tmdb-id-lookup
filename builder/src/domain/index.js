@@ -13,6 +13,7 @@ export {
 	findNodeByInternalId,
 	insertChild,
 	moveNode,
+	moveFolders,
 	removeNode,
 	removeFolders,
 	reorderFolders,

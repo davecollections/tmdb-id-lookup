@@ -9996,6 +9996,38 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
  .source-names-disclosure summary:focus-visible, .source-name-reset:focus-visible { outline-color: Highlight; }
 }
 
+/* Folder transfer keeps one body scroll owner across all creation stages. */
+.add-source-portal.move-folders-portal { background: transparent; }
+.settings-modal-backdrop.move-folders-backdrop { align-items: center; justify-items: center; padding: 12px; }
+.add-source-dialog.move-folders-dialog { width: 100%; max-width: 720px; height: auto; max-height: min(780px, 100%); grid-template-rows: auto minmax(0, 1fr) auto; border-radius: 18px; }
+.move-folders-heading { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.move-folders-heading h2 { flex: 1; min-width: 0; margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+.move-folders-heading button { flex: 0 0 auto; min-height: 44px; }
+.move-folders-body { min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; overflow-wrap: anywhere; scrollbar-gutter: stable; }
+.move-folders-body .creation-stage-intro { margin-bottom: 16px; }
+.move-folders-body .genre-selection-toolbar { flex-wrap: wrap; margin-bottom: 10px; }
+.move-folders-choices { display: grid; gap: 8px; margin: 16px 0; padding: 0; border: 0; min-width: 0; }
+.move-folders-choices legend { padding: 0 0 10px; font-weight: 650; }
+.move-folders-choices .genre-catalogue-choice { padding: 12px; min-height: 48px; }
+.move-folders-choices [data-disabled="true"] { opacity: 0.5; cursor: default; }
+.move-collection-settings { display: grid; gap: 16px; }
+.move-folders-summary { display: grid; gap: 12px; }
+.move-folders-summary div { display: grid; gap: 4px; }
+.move-folders-summary dt { color: var(--muted); font-size: 0.9rem; }
+.move-folders-summary dd { display: grid; gap: 4px; margin: 0; font-weight: 650; }
+.move-folders-summary small { font-weight: 400; color: var(--muted); }
+.move-folders-selected summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.move-folders-selected li { padding: 4px 0; }
+.move-folders-dialog .move-folders-actions { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+.move-folders-actions button { min-height: 44px; white-space: normal; }
+@media (max-width: 899px) {
+	.add-source-portal.move-folders-portal { background: rgb(7 24 33); }
+	.settings-modal-backdrop.move-folders-backdrop { padding: 0; background: rgb(7 24 33); }
+	.add-source-dialog.move-folders-dialog { width: 100%; height: 100%; max-height: 100%; max-width: none; border: 0; border-radius: 0; background: rgb(7 24 33); }
+	.move-folders-heading { padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); gap: 8px; }
+	.move-folders-body { padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); }
+	.move-folders-dialog .move-folders-actions { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
 /* Local project navigation uses one results scroll owner and ordinary actions. */
 .add-source-portal.find-project-portal { background: transparent; }
 .settings-modal-backdrop.find-project-backdrop {

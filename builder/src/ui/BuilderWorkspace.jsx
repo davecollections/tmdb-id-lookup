@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FindProjectDialog } from "./FindProjectDialog.jsx";
+import { MoveFoldersDialog } from "./MoveFoldersDialog.jsx";
+import { applyReviewedFolderMove } from "./move-folders.js";
 import { WorkspaceBackToTop } from "./WorkspaceBackToTop.jsx";
 import { ExportCollectionsDialog } from "./ExportCollectionsDialog.jsx";
 import { sendAttentionLabel } from "./nuvio-send-presentation.js";
@@ -341,6 +343,7 @@ function HierarchyCard({
 	onRequestDelete,
 	onSortFolders,
 	onRemoveFolders,
+	onMoveFolders,
 	dragState,
 	keyboardReorderInternalId,
 	registerHierarchyCard,
@@ -406,6 +409,7 @@ function HierarchyCard({
 						onDelete={onRequestDelete}
 						onSortFolders={noun === "collection" ? onSortFolders : null}
 						onRemoveFolders={noun === "collection" ? onRemoveFolders : null}
+						onMoveFolders={noun === "collection" || noun === "folder" ? onMoveFolders : null}
 						registerTrigger={registerActionsTrigger}
 					/>
 				</div>
@@ -737,6 +741,9 @@ export function BuilderWorkspace({
 	const [findOpen, setFindOpen] = useState(false);
 	const [pendingFindFocus, setPendingFindFocus] = useState(null);
 	const findTriggerRef = useRef(null);
+	const [moveFoldersSession, setMoveFoldersSession] = useState(null);
+	const moveFoldersTriggerRef = useRef(null);
+	const [restoreMoveFoldersFocus, setRestoreMoveFoldersFocus] = useState(false);
 	const [exportOpen, setExportOpen] = useState(false);
 	const exportTriggerRef = useRef(null);
 	const workspaceScrollRef = useRef(0);
@@ -918,7 +925,7 @@ export function BuilderWorkspace({
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
 	const bulkEditLocked = bulkEditDraft !== null;
-	const modalLocked = findOpen || editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
+	const modalLocked = moveFoldersSession !== null || findOpen || editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || exportOpen || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -988,6 +995,45 @@ export function BuilderWorkspace({
 	function openFind() {
 		if (!state.project.collections.length || hierarchyInteractionLocked || pointerInteractionLocked() || keyboardReorderInternalId !== null || editorPreparing) return;
 		setFindOpen(true);
+	}
+
+	useEffect(() => {
+		if (!restoreMoveFoldersFocus) return;
+		focusElementWithoutScroll(moveFoldersTriggerRef.current);
+		moveFoldersTriggerRef.current = null;
+		setRestoreMoveFoldersFocus(false);
+	}, [restoreMoveFoldersFocus]);
+
+	function openMoveFolders(internalId, trigger) {
+		if (navigationLocked || exportOpen || pointerInteractionLocked() || editorPreparing) return;
+		const project = controller.getState().project;
+		const target = locateProjectNode(project, internalId)?.node;
+		const collection = target?.nodeType === "collection" ? target
+			: target?.nodeType === "folder" ? project.collections.find((entry) => entry.folders.includes(target)) : null;
+		if (!collection?.folders.length) return;
+		moveFoldersTriggerRef.current = trigger;
+		setKeyboardReorderInternalId(null);
+		setActionsMenuInternalId(null);
+		setMoveFoldersSession({ project, collection, folderInternalId: target.nodeType === "folder" ? internalId : null });
+	}
+
+	function closeMoveFolders() {
+		if (!desktopViewport) setMobileLevelOverride(moveFoldersSession?.folderInternalId ? "folders" : "collections");
+		setMoveFoldersSession(null);
+		setRestoreMoveFoldersFocus(true);
+	}
+
+	function applyMoveFolders(review, draft, deleteEmptySource) {
+		const result = applyReviewedFolderMove(controller, review, draft, deleteEmptySource);
+		if (result.ok) {
+			setMoveFoldersSession(null);
+			moveFoldersTriggerRef.current = null;
+			setMobileLevelOverride("folders");
+			// Share Find's exact-card centering and prevent-scroll focus recovery.
+			setPendingFindFocus(result.movedFolderInternalIds[0]);
+			setMovementStatusText(`Moved ${result.movedFolderInternalIds.length} ${result.movedFolderInternalIds.length === 1 ? "folder" : "folders"}${deleteEmptySource ? " and deleted the empty Collection" : ""}.`);
+		}
+		return result;
 	}
 
 	function closeFind() {
@@ -2479,6 +2525,7 @@ export function BuilderWorkspace({
 		onRequestDelete: requestDeletion,
 		onSortFolders: (id, trigger) => openCollectionFolders("sort", id, trigger),
 		onRemoveFolders: (id, trigger) => openCollectionFolders("remove", id, trigger),
+		onMoveFolders: openMoveFolders,
 		dragState,
 		keyboardReorderInternalId,
 		onPointerDown: beginPointerReorder,
@@ -2508,6 +2555,7 @@ export function BuilderWorkspace({
 			data-bulk-edit-open={bulkEditLocked ? "true" : undefined}
 		>
 			{findOpen ? <FindProjectDialog project={state.project} onCancel={closeFind} onJump={jumpFromFind} /> : null}
+			{moveFoldersSession ? <MoveFoldersDialog session={moveFoldersSession} onCancel={closeMoveFolders} onApply={applyMoveFolders} /> : null}
 			{exportOpen ? <ExportCollectionsDialog controller={controller} connection={connection} sendCoordinator={sendCoordinator} locked={modalLocked} onClose={closeExport} onEdit={editFromExport} onMergeInstead={onMergeFromNuvio ? (profile) => { setExportOpen(false); onMergeFromNuvio(profile, exportTriggerRef.current); } : undefined} /> : null}
 			<div
 				className="workspace-underlay"

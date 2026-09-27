@@ -347,6 +347,94 @@ function RenameFolderInvisibleTitleField({ draft, prefix, onChange }) {
 	);
 }
 
+export function NodeTitleField({ draft, prefix, onChange, titleInputRef, diagnostics = [] }) {
+	const noun = draft.nodeType === "folder" ? "folder" : "collection";
+	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
+	const titleHiddenEverywhere = draft.nodeType === "collection" ? draft.values.hideNuvioTitle : draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
+	const titleReplacementPending = draft.touched.title && (
+		draft.nodeType === "collection" && draft.values.hideNuvioTitle
+			? isValidNuvioTitle(draft.values.title)
+			: isValidVisibleNuvioTitle(draft.values.title)
+	) || (
+		draft.nodeType === "folder"
+		&& draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
+		&& (
+			draft.original.title.hidden
+			|| draft.canonicalizeFolderInvisibleTitle
+		)
+	);
+	function describedBy(diagnostic) {
+		const ids = [`${prefix}-title-help`];
+		if (!draft.original.title.supported && !titleReplacementPending) {
+			ids.push(`${prefix}-title-status`);
+		}
+		if (diagnostic) ids.push(`${prefix}-title-error`);
+		return ids.join(" ");
+	}
+
+	return (
+		<div className="editor-field">
+			<label htmlFor={`${prefix}-title-input`}>{draft.nodeType === "collection" ? "Collection name" : "Folder name"}</label>
+			<input
+				ref={titleInputRef}
+				id={`${prefix}-title-input`}
+				name="title"
+				type="text"
+				{...reversibleTitleFieldProps(draft.values.title, titleHiddenEverywhere)}
+				data-editor-field="title"
+				aria-invalid={titleError ? "true" : undefined}
+				aria-describedby={describedBy(titleError)}
+				onChange={(event) => onChange("title", event.target.value)}
+			/>
+			<p className="editor-field-help" id={`${prefix}-title-help`}>
+				{draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
+					? FOLDER_INVISIBLE_TITLE_HELP
+					: draft.nodeType === "collection" && draft.values.hideNuvioTitle
+					? COLLECTION_INVISIBLE_TITLE_HELP
+					: `Displayed as the ${noun} title in Nuvio.`}
+			</p>
+			<TitleStatus
+				original={draft.original.title}
+				replacementPending={titleReplacementPending}
+				statusId={`${prefix}-title-status`}
+			/>
+		</div>
+	);
+}
+
+export function CollectionSettingsFields({ draft, prefix, onChange, titleInputRef, diagnostics = [], collectionFolderSettings = null }) {
+	const titleField = <NodeTitleField draft={draft} prefix={prefix} onChange={onChange} titleInputRef={titleInputRef} diagnostics={diagnostics} />;
+	return (
+		<>
+			<SettingsSection prefix={prefix} slug="basic-details" title="Basic details">
+				{titleField}
+			</SettingsSection>
+			<SettingsSection prefix={prefix} slug="display" title="Display">
+				<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
+				<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
+				{collectionFolderSettings ? <fieldset className="editor-field editor-choice-field" data-editor-field="folderShape">
+					<legend>Folder tile shape</legend>
+					{collectionFolderSettings.count === 0 ? <p className="editor-field-help">There are no folders in this collection yet.</p> : <>
+						{!collectionFolderSettings.shape ? <p className="editor-field-help">Mixed / not set</p> : null}
+						<FolderShapeChoices selectedId={collectionFolderSettings.shape} name={`${prefix}-folder-shape`} idPrefix={`${prefix}-folders`} onChange={collectionFolderSettings.onChange} />
+						<p className="editor-field-help">Applies to the folders currently in this collection.</p>
+						<p className="editor-field-help">Matching Dingo artwork is updated automatically when available.</p>
+					</>}
+				</fieldset> : null}
+			</SettingsSection>
+			<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
+				<CollectionArtworkField
+					values={draft.values}
+					original={draft.original}
+					touched={draft.touched}
+					prefix={`${prefix}-artwork`}
+					onChange={onChange}
+				/>
+			</SettingsSection>
+		</>
+	);
+}
+
 export function NodeEditor({
 	draft,
 	diagnostics,
@@ -395,25 +483,12 @@ export function NodeEditor({
 			siblingFolders: folderSiblings,
 		})
 		: null;
-	const titleError = diagnostics.find((entry) => entry.path === "$ui.editor.title") ?? null;
 	const dialogRef = useRef(null);
 	const diagnosticsRef = useRef(null);
 	const initializedTitleTargetRef = useRef(null);
 	const titleHiddenEverywhere = draft.nodeType === "collection"
 		? draft.values.hideNuvioTitle
 		: draft.values.folderTitleVisibility === "HIDE_EVERYWHERE";
-	const titleReplacementPending = draft.touched.title && (
-		draft.nodeType === "collection" && draft.values.hideNuvioTitle
-			? isValidNuvioTitle(draft.values.title)
-			: isValidVisibleNuvioTitle(draft.values.title)
-	) || (
-		draft.nodeType === "folder"
-		&& draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
-		&& (
-			draft.original.title.hidden
-			|| draft.canonicalizeFolderInvisibleTitle
-		)
-	);
 
 	useEffect(() => {
 		if (
@@ -452,43 +527,7 @@ export function NodeEditor({
 		if (diagnostics.some((entry) => entry.path === "$ui.editor.folderShape")) diagnosticsRef.current?.focus();
 	}, [diagnostics]);
 
-	function describedBy(diagnostic) {
-		const ids = [`${prefix}-title-help`];
-		if (!draft.original.title.supported && !titleReplacementPending) {
-			ids.push(`${prefix}-title-status`);
-		}
-		if (diagnostic) ids.push(`${prefix}-title-error`);
-		return ids.join(" ");
-	}
-
-	const titleField = (
-		<div className="editor-field">
-			<label htmlFor={`${prefix}-title-input`}>{draft.nodeType === "collection" ? "Collection name" : "Folder name"}</label>
-			<input
-				ref={titleInputRef}
-				id={`${prefix}-title-input`}
-				name="title"
-				type="text"
-				{...reversibleTitleFieldProps(draft.values.title, titleHiddenEverywhere)}
-				data-editor-field="title"
-				aria-invalid={titleError ? "true" : undefined}
-				aria-describedby={describedBy(titleError)}
-				onChange={(event) => onChange("title", event.target.value)}
-			/>
-			<p className="editor-field-help" id={`${prefix}-title-help`}>
-				{draft.nodeType === "folder" && draft.values.folderTitleVisibility === "HIDE_EVERYWHERE"
-					? FOLDER_INVISIBLE_TITLE_HELP
-					: draft.nodeType === "collection" && draft.values.hideNuvioTitle
-					? COLLECTION_INVISIBLE_TITLE_HELP
-					: `Displayed as the ${noun} title in Nuvio.`}
-			</p>
-			<TitleStatus
-				original={draft.original.title}
-				replacementPending={titleReplacementPending}
-				statusId={`${prefix}-title-status`}
-			/>
-		</div>
-	);
+	const titleField = <NodeTitleField draft={draft} prefix={prefix} onChange={onChange} titleInputRef={titleInputRef} diagnostics={diagnostics} />;
 
 	return (
 		<div
@@ -535,33 +574,7 @@ export function NodeEditor({
 							)}
 						</>
 					) : draft.nodeType === "collection" ? (
-						<>
-							<SettingsSection prefix={prefix} slug="basic-details" title="Basic details">
-								{titleField}
-							</SettingsSection>
-							<SettingsSection prefix={prefix} slug="display" title="Display">
-								<InvisibleCollectionTitleField draft={draft} prefix={prefix} onChange={onChange} />
-								<CollectionPresentationFields draft={draft} prefix={prefix} onChange={onChange} />
-								{collectionFolderSettings ? <fieldset className="editor-field editor-choice-field" data-editor-field="folderShape">
-									<legend>Folder tile shape</legend>
-									{collectionFolderSettings.count === 0 ? <p className="editor-field-help">There are no folders in this collection yet.</p> : <>
-										{!collectionFolderSettings.shape ? <p className="editor-field-help">Mixed / not set</p> : null}
-										<FolderShapeChoices selectedId={collectionFolderSettings.shape} name={`${prefix}-folder-shape`} idPrefix={`${prefix}-folders`} onChange={collectionFolderSettings.onChange} />
-										<p className="editor-field-help">Applies to the folders currently in this collection.</p>
-										<p className="editor-field-help">Matching Dingo artwork is updated automatically when available.</p>
-									</>}
-								</fieldset> : null}
-							</SettingsSection>
-							<SettingsSection prefix={prefix} slug="artwork" title="Artwork">
-								<CollectionArtworkField
-									values={draft.values}
-									original={draft.original}
-									touched={draft.touched}
-									prefix={`${prefix}-artwork`}
-									onChange={onChange}
-								/>
-							</SettingsSection>
-						</>
+						<CollectionSettingsFields draft={draft} prefix={prefix} onChange={onChange} titleInputRef={titleInputRef} diagnostics={diagnostics} collectionFolderSettings={collectionFolderSettings} />
 					) : (
 						<>
 							<SettingsSection prefix={prefix} slug="basic-details" title="Basic details">

@@ -44,6 +44,7 @@ export const validationChecks = Object.freeze([
 	["--test", path.join("tests", "builder-nuvio-send.test.mjs")],
 	["--test", path.join("tests", "builder-nuvio-send-ui.test.mjs")],
 	["--test", path.join("tests", "builder-collection-folder-management.test.mjs")],
+	["--test", path.join("tests", "builder-move-folders.test.mjs")],
 	["--test", path.join("tests", "builder-collection-extension.test.mjs")],
 	["--test", path.join("tests", "builder-presentation-updates.test.mjs")],
 	["--test", path.join("tests", "builder-bulk-edit.test.mjs")],

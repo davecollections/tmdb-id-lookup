@@ -1,3 +1,4 @@
+import { CollectionFolderSelectionList } from "./CollectionFolderSelectionList.jsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
@@ -47,14 +48,7 @@ export function CollectionFoldersDialog({ collection, mode, onCancel, onApply, e
 				</div> : null}
 				<div className="add-source-scroll collection-folders-scroll">
 					{removing ? <>
-						<ul className="genre-catalogue-list collection-folder-list" aria-label="Folders to delete">
-							{rows.map(({ folder, index, title: folderTitle }) => <li key={folder.internalId}>
-								<label className="genre-catalogue-choice" data-selection-mode="multiple" data-selected={selected.includes(folder.internalId) ? "true" : undefined}>
-									<input className="visually-hidden choice-card-input" type="checkbox" checked={selected.includes(folder.internalId)} onChange={() => toggle(folder.internalId)} />
-									<span><strong>{folderTitle.text}</strong><small>Folder {index + 1} · {folder.sources.length} {folder.sources.length === 1 ? "source" : "sources"}{folderTitle.hidden ? " · Invisible in Nuvio" : ""}</small></span>
-								</label>
-							</li>)}
-						</ul>
+						<CollectionFolderSelectionList folders={collection.folders} selected={selected} onToggle={toggle} label="Folders to delete" />
 					</> : <SemanticSortChoices options={folderSortOptions(collection)} selectedId={sort} onChange={setSort} name="collection-folder-sort" legend="Order folders by" helper="Sort once. You can still drag folders afterward." />}
 				</div>
 				</div>

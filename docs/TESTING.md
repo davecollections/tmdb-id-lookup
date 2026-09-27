@@ -1,5 +1,13 @@
 # Repository Testing
 
+## Move folders (#263, pending merge)
+
+`tests/builder-move-folders.test.mjs` covers existing/new destinations, non-contiguous source-order relocation, duplicate names, exact Folder/Source/raw object identity, serialized payload equality, Collection defaults/settings, Keep/Delete empty source, one revision/notification, stale project/draft rejection, invalid membership/settings and factory failures. Failures retain the entire state snapshot. It is in the normal core inventory.
+
+The existing Workspace browser harness hosts `builder-move-folders-mounted.html`. Set `BUILDER_MOVE_ONLY=1` and run `node --test --test-name-pattern="mounted Move folders" tests/builder-bulk-edit-mounted.test.mjs`. Optional `BUILDER_MOVE_SCREENSHOT_DIR` saves screenshots/measurements outside Git. Local authored project data exercises no external service and substitutes no external response. Cases cover both menu entries, exact duplicate-name preselection, zero mutation/cancel, retained drafts, stale deletion and exact success focus.
+
+The 134-layout matrix covers 360/384/393/402/412/899/900/901/1280px, short desktop, 200% text, forced colours, reduced motion and 200 Folders; 24 independently reduced/panned Visual Viewport cases exercise keyboard geometry. Thirty-six success cases cover existing/new destinations and partial/Keep-empty/Delete-empty moves. Assertions include one dialog/backdrop/body scroller, reachable fixed header/footer, 44px targets, labelled native checkboxes, selected inset, Tab trap/Escape and inert underlay. Browser geometry is not physical-phone or Nuvio-client acceptance. Shared Collection editor/management, deletion, reorder and Find regressions remain required where affected; normal PR CI supplies full grouped validation.
+
 ## Find in project (#261, pending merge)
 
 `node --test tests/builder-project-find.test.mjs` covers title-only indexing, shared Source fallback parity, hidden/invalid parent names, safe paths, query minimum/trim/case/literal matching, ranking/order, exact identities, duplicate positional context, selection-only behavior, the 100-row cap and true totals. The local scale fixture contains 20 Collections, 400 Folders and 4,000 Sources. These are authored local project structures; no external-service result is substituted.
