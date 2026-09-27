@@ -1,0 +1,462 @@
+{
+  "baseline": "6c24d79f9341f1aeb4cfb687609d257d737c2a8d",
+  "description": "SHA-256 of each full JSON result captured from the unmodified investigation baseline; synthetic pure planner cases only.",
+  "cases": [
+    {
+      "name": "empty/genre/new-collection/genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 5,
+        "sourceCount": 6
+      },
+      "sha256": "08e5e0e0ea9a49df91534e47552605159e12cc29938a6b00a13f6296549d51c8"
+    },
+    {
+      "name": "empty/genre/new-collection/composite-both",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 4,
+        "sourceCount": 7
+      },
+      "sha256": "a5ca7d9f231f5376f48d9616c69d31cc74aea87c8b806a3120c07f3c911bbf07"
+    },
+    {
+      "name": "empty/genre/new-collection/media-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 6
+      },
+      "sha256": "438882d6309349751a516c66601eae3623c6257875c464af6add5935c65b9eb7"
+    },
+    {
+      "name": "empty/genre/new-collection/separate-media-genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 6,
+        "sourceCount": 6
+      },
+      "sha256": "02e0652c797069a1cd07f1b2dac8f9b44b5d68a2d96e432cc9c97da269b72a47"
+    },
+    {
+      "name": "empty/genre/new-collection/separate-media-collections",
+      "ok": true,
+      "counts": {
+        "collectionCount": 2,
+        "folderCount": 6,
+        "sourceCount": 6
+      },
+      "sha256": "9afc6b806506dfc0b5eae303b147f5667f7377e6d5855eb5bab7bb301df1a0bf"
+    },
+    {
+      "name": "empty/decades/new-collection/movies/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "9baa0c32461a4b3735a279183f662ce3ee0d924c8f200060dd2c6fe9f74750d2"
+    },
+    {
+      "name": "empty/decades/new-collection/series/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "845aa1951c40c4a20cfb4a6fe92c4137e9bb563045061e9b7a197d84bedccfd0"
+    },
+    {
+      "name": "empty/decades/new-collection/both/separate-media-collections",
+      "ok": true,
+      "counts": {
+        "collectionCount": 2,
+        "folderCount": 4,
+        "sourceCount": 46
+      },
+      "sha256": "4aec4293dfd1ae2ee3c5d96d51d5a556abc4462243c1520ccde144a3a8af103c"
+    },
+    {
+      "name": "empty/decades/new-collection/both/mixed-collection",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 46
+      },
+      "sha256": "caad10492a790bbcecd42ad9da4783ce14a8ac89209f8bf1b3fe516bfa5d9560"
+    },
+    {
+      "name": "empty/genre/duplicates",
+      "ok": null,
+      "counts": null,
+      "sha256": "439e95e571bad754a40a19dd594c6718f3a2deed3a120f39121a2000b080f8d4"
+    },
+    {
+      "name": "empty/genre/folders",
+      "ok": null,
+      "counts": null,
+      "sha256": "88cc0896f49d08570c32f11e175ea51d54eb80dd662944ffe1097fdfff838886"
+    },
+    {
+      "name": "empty/decades/placement",
+      "ok": null,
+      "counts": null,
+      "sha256": "d8496c8a53a1071e87b77613fef519ea903e5b127890dae40d69fd193a13c92f"
+    },
+    {
+      "name": "small/genre/new-collection/genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 5,
+        "sourceCount": 6
+      },
+      "sha256": "29ab61df52cad3db90a3d97fca68d299217bda6f2dc32b418d241f132db1fb34"
+    },
+    {
+      "name": "small/genre/new-collection/composite-both",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 4,
+        "sourceCount": 7
+      },
+      "sha256": "3352b28e60ec22227c9e2b2563572682413b36a27434b86902d4352ed7d4416a"
+    },
+    {
+      "name": "small/genre/new-collection/media-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 6
+      },
+      "sha256": "a535b32efe3cc3efa8f9cdb4b119f506a14b0ec46cf06b3fbe85fd53ec6b56d4"
+    },
+    {
+      "name": "small/genre/new-collection/separate-media-genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 6,
+        "sourceCount": 6
+      },
+      "sha256": "6b4382b57e44e5d33029aa97fc1bb20dd607093371c0e4942fea7910b1980bfd"
+    },
+    {
+      "name": "small/genre/new-collection/separate-media-collections",
+      "ok": true,
+      "counts": {
+        "collectionCount": 2,
+        "folderCount": 6,
+        "sourceCount": 6
+      },
+      "sha256": "a965ff9560f0393573013b09257e1d326e7da9cf4cf446121487e8bba59af0e9"
+    },
+    {
+      "name": "small/decades/new-collection/movies/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "4371ebb7bf8cf1e9623ad1924577b3de88c72358ed0022331b78c171bd92c824"
+    },
+    {
+      "name": "small/decades/new-collection/series/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "1fceec8147791ca7066d34f8ab0bea7c2ed7cbc60ad1eec597ce21e88c529bd3"
+    },
+    {
+      "name": "small/decades/new-collection/both/separate-media-collections",
+      "ok": true,
+      "counts": {
+        "collectionCount": 2,
+        "folderCount": 4,
+        "sourceCount": 46
+      },
+      "sha256": "501b6ea1edc7e210e829668448a57685eb0ac009b68b8bf6a40e3dd43b10eb36"
+    },
+    {
+      "name": "small/decades/new-collection/both/mixed-collection",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 46
+      },
+      "sha256": "d724477cd385792a7e009d03618ded81b86d0922653cfe217158d8218b8504a7"
+    },
+    {
+      "name": "small/genre/new-folder/genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 3,
+        "sourceCount": 3
+      },
+      "sha256": "3f4f5f6cc2c8525c2e32d75972d223bde6622bbd249ac493ac153b251439e1ef"
+    },
+    {
+      "name": "small/genre/new-folder/composite-both",
+      "ok": false,
+      "counts": null,
+      "sha256": "310e0ec7032483da65beb99c7e8db2b3e655c87c3183d0fffbe15df3b4e16c27"
+    },
+    {
+      "name": "small/genre/new-folder/media-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 2,
+        "sourceCount": 4
+      },
+      "sha256": "0fe787fb0e83d857bb33f1a5532247ece9a7b78f036972957b87c123908becd8"
+    },
+    {
+      "name": "small/genre/new-folder/separate-media-genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 4,
+        "sourceCount": 4
+      },
+      "sha256": "4c68e54257616b3f530f7f25127de02825a4fbf7360a3e27fe3bd7aef605d8d2"
+    },
+    {
+      "name": "small/decades/new-folder/movies/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 11
+      },
+      "sha256": "315deb82b27f53be8b11cf862452006c8b68a72da941b0207fa6c42837324613"
+    },
+    {
+      "name": "small/decades/new-folder/series/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "1056bd43916d7de3b2066376e90f23e947bcffe4d2690eb83e6f68cdbbe54287"
+    },
+    {
+      "name": "small/decades/new-folder/both/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 22
+      },
+      "sha256": "d6f1e5d459f224cf02f882825bb4e949106a72abdc4af596b4254d244486bb0a"
+    },
+    {
+      "name": "small/genre/duplicates",
+      "ok": null,
+      "counts": null,
+      "sha256": "958e57ef38f52ad5b018d3160a961b76a2e6cdaf4454a289c707f1a1f741f949"
+    },
+    {
+      "name": "small/genre/folders",
+      "ok": null,
+      "counts": null,
+      "sha256": "376aa24fc862e35c34c42c9a96108751cba344c8e6c747d9530f366982208751"
+    },
+    {
+      "name": "small/decades/placement",
+      "ok": null,
+      "counts": null,
+      "sha256": "0388db9e64178c86729dddd26a1caff4ad7d02c6d52ddfed4311686ef7546b0f"
+    },
+    {
+      "name": "mixed/genre/new-collection/genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 5,
+        "sourceCount": 6
+      },
+      "sha256": "c965553e20e4c341c09d88aff1f9b6944182df6f7b38a24bc9b8f2e43b88dc67"
+    },
+    {
+      "name": "mixed/genre/new-collection/composite-both",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 4,
+        "sourceCount": 7
+      },
+      "sha256": "f5f236bf5ffcafe6addb1bb2dce0c4d8c59b425a1408610a9cc466d15440b890"
+    },
+    {
+      "name": "mixed/genre/new-collection/media-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 6
+      },
+      "sha256": "814779c0ffca2eb319ed30911d2eb107dd751ec48584eb2db2938da16dae0896"
+    },
+    {
+      "name": "mixed/genre/new-collection/separate-media-genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 6,
+        "sourceCount": 6
+      },
+      "sha256": "a298cb9a719bc3a482eda61ec6d6f6433b4e38e81ef6814c30d857617a415658"
+    },
+    {
+      "name": "mixed/genre/new-collection/separate-media-collections",
+      "ok": true,
+      "counts": {
+        "collectionCount": 2,
+        "folderCount": 6,
+        "sourceCount": 6
+      },
+      "sha256": "14136f80a4b0c2cece354c67fa9ec73311278967b5b2fc655904f00cb87f492a"
+    },
+    {
+      "name": "mixed/decades/new-collection/movies/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "6c683de87ec17496a4b1394df7c7228a5c58dd3ddb8a27855572b7799ce44fc1"
+    },
+    {
+      "name": "mixed/decades/new-collection/series/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "09763d42edc346062413113b0eea2cfd14b062eff0bbbc0ea0c393485bd1100e"
+    },
+    {
+      "name": "mixed/decades/new-collection/both/separate-media-collections",
+      "ok": true,
+      "counts": {
+        "collectionCount": 2,
+        "folderCount": 4,
+        "sourceCount": 46
+      },
+      "sha256": "8c9ba9249f114b29d9d41fa5620d36295205e7f67dc860df639b68096aa8a77a"
+    },
+    {
+      "name": "mixed/decades/new-collection/both/mixed-collection",
+      "ok": true,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 2,
+        "sourceCount": 46
+      },
+      "sha256": "4d43a39dfd7f6e71981dc0531163fe050d3e2775caac711bcabd09a0be507558"
+    },
+    {
+      "name": "mixed/genre/new-folder/genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 3,
+        "sourceCount": 3
+      },
+      "sha256": "25b80b187d873f84ec18054a3071369a379efb1671cbc32ec1dc0ba16348f1ad"
+    },
+    {
+      "name": "mixed/genre/new-folder/composite-both",
+      "ok": false,
+      "counts": null,
+      "sha256": "310e0ec7032483da65beb99c7e8db2b3e655c87c3183d0fffbe15df3b4e16c27"
+    },
+    {
+      "name": "mixed/genre/new-folder/media-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 2,
+        "sourceCount": 4
+      },
+      "sha256": "fb9d5832aa65dc8e3b22e88e0c27d60a5235a5c3b1c99469365c38f2c67bdda9"
+    },
+    {
+      "name": "mixed/genre/new-folder/separate-media-genre-folders",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 4,
+        "sourceCount": 4
+      },
+      "sha256": "0328439186a194aab1fdaf88499ff8409c744eca85ffe7d0255c3efa38eb63d9"
+    },
+    {
+      "name": "mixed/decades/new-folder/movies/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 11
+      },
+      "sha256": "45c1eef0f18496abe41bbda5df1e251ee66386b7cf94059b7f9865d01a45b106"
+    },
+    {
+      "name": "mixed/decades/new-folder/series/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 2,
+        "sourceCount": 23
+      },
+      "sha256": "b7f8194e2872f163e8aa573d4a57315cee7854841e05c4b53a65a053ff9e7be3"
+    },
+    {
+      "name": "mixed/decades/new-folder/both/null",
+      "ok": true,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 22
+      },
+      "sha256": "e328b5604a758935ceca39372fc23e976d7e402141420ede1e2d4f3d7cb8e76d"
+    },
+    {
+      "name": "mixed/genre/duplicates",
+      "ok": null,
+      "counts": null,
+      "sha256": "75376a93b21ec0f1b087d89e5f74358ead43e8d9833b1bb2828fd7047ae76573"
+    },
+    {
+      "name": "mixed/genre/folders",
+      "ok": null,
+      "counts": null,
+      "sha256": "176f005579f1f77b29820fc46b96723132962950d1bdbeafa5cb811001cfbd16"
+    },
+    {
+      "name": "mixed/decades/placement",
+      "ok": null,
+      "counts": null,
+      "sha256": "d5a9380810cc66740d544cdf6d215a40686db3aa4de8e5fac881798dfc4d24eb"
+    }
+  ]
+}

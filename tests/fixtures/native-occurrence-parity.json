@@ -1,0 +1,2089 @@
+{
+  "baseline": "6c24d79f9341f1aeb4cfb687609d257d737c2a8d + approved Pass 1; captured before Pass 2 replacement",
+  "cases": [
+    {
+      "name": "People/empty/new-collection/placement",
+      "ok": null,
+      "status": "ready-to-create",
+      "counts": null,
+      "sha256": "c2e8dfacdee8fb8ae7e75e45c4ed87d400683f7cb2d38c74bec70c11d5a64bce"
+    },
+    {
+      "name": "People/empty/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "694211e7ea3bd301abc09ae9380ab795d2f49c85455e3ad4a39efb71021d718c"
+    },
+    {
+      "name": "People/empty/new-folder/placement",
+      "ok": null,
+      "status": "ready-to-create",
+      "counts": null,
+      "sha256": "c2e8dfacdee8fb8ae7e75e45c4ed87d400683f7cb2d38c74bec70c11d5a64bce"
+    },
+    {
+      "name": "People/empty/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "fba3d63bda4345c14cef21704e0496227fce4697054c1b4639c818805c7edb22"
+    },
+    {
+      "name": "People/partial/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "93e2689432ba506b201eadccf4cd14f6be4bd388bfaa7fed525f4c4478724d33"
+    },
+    {
+      "name": "People/partial/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "8f7c35ecf4683c2f6beb216c16cbd0f60b5d9d3d8fa9c7cf3cd50d78cb501202"
+    },
+    {
+      "name": "People/partial/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "c57f8043340adf302b28d5ab52b67c3513793d9d6a617966b0b009ba2629f6e5"
+    },
+    {
+      "name": "People/partial/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 7,
+        "configured": 8,
+        "existing": 1,
+        "toAdd": 7,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 7,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "bfe465b0a740ab09f5d058501117923404b44784eb54f1708c5044da3a5cb6dc"
+    },
+    {
+      "name": "People/complete/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "def6cf8a52a0f8d7317db1bb7175ece2401b8bdf52647aa7da2d1a0b3044535c"
+    },
+    {
+      "name": "People/complete/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "795d594ac5e94e7de901dc3e3ed9ed1c488f8691653ae160c364a0a289493c30"
+    },
+    {
+      "name": "People/complete/new-folder/placement",
+      "ok": null,
+      "status": "already-in-this-collection",
+      "counts": null,
+      "sha256": "2177fd60e33fc532b50745dfb99c3828d2814158726cafd2b2fa1589dd2f11e4"
+    },
+    {
+      "name": "People/complete/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 8,
+        "existing": 8,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "7b2f4f68a6f68bd7f1f46f787fb095a882081ff59b83f09349c2dc4958cb95c7"
+    },
+    {
+      "name": "People/split/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "375b47c287ce88a246d8ad477b73fc4d5c218db51e93f7fa4a6c805f73f29003"
+    },
+    {
+      "name": "People/split/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "aec9f8dadd729d4bbdca39f4a68991a011f8fe3ae64901f3a8c49cfe4fee1da6"
+    },
+    {
+      "name": "People/split/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "1e9745a997c2ea98b1d95783b78fb44d370e0857670089e8e5404b12316b08aa"
+    },
+    {
+      "name": "People/split/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 8,
+        "existing": 2,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 1,
+        "unresolvedSourceCount": 6,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "0391055239dda7df385e4910a9cda6107dbc8507a0898d6a00b4a3fb0842f9ac"
+    },
+    {
+      "name": "People/split/new-folder/chosen-folder",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 6,
+        "configured": 8,
+        "existing": 2,
+        "toAdd": 6,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 6,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "7d6f205faec21c2a793d71354aa24d555da7512f2e4a1f1283fa351da526272a"
+    },
+    {
+      "name": "People/elsewhere/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "64985a5901435cdf2873883de78c6c25cde1f96483d86f1c10bd6862b9b032cc"
+    },
+    {
+      "name": "People/elsewhere/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "7e788016f6da0e527d393feeaa3dac3b99d8e8a23e5d22f18615701a98ed6715"
+    },
+    {
+      "name": "People/elsewhere/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "64985a5901435cdf2873883de78c6c25cde1f96483d86f1c10bd6862b9b032cc"
+    },
+    {
+      "name": "People/elsewhere/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "84ab29dcee80c2e01f2142b29d65704a31535dc366eebb31b6941f5bc69076c2"
+    },
+    {
+      "name": "People/mixed/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "d54bf9b8e669f861b53c636219d4a888ab5cbb38e8de3ea19a9fbf823cee99ce"
+    },
+    {
+      "name": "People/mixed/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "79613066f4d496ff9f7bebad9267fb4abcec0f4e3f50d57c67d3bcc7c1176bf0"
+    },
+    {
+      "name": "People/mixed/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "d71c630cb1b70964ad3fc0e4f4d11f21686b9ea4a3d6dfe33a91afc3a7e15cc3"
+    },
+    {
+      "name": "People/mixed/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 7,
+        "configured": 8,
+        "existing": 1,
+        "toAdd": 7,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 7,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "65d1dce69dbd579f77373485f580e07f43963b06b9f75176fe36b548da362396"
+    },
+    {
+      "name": "People/raw-only-id/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-id/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "67b6beae0b43debe2f0e3349e8d3253628cc5c77178015f48f553d6015e5a224"
+    },
+    {
+      "name": "People/raw-only-id/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-id/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "6d10966a3734c5bfbd42aa221893472a54466e521447c247e23967940d34b323"
+    },
+    {
+      "name": "People/raw-only-provider/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-provider/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "67b6beae0b43debe2f0e3349e8d3253628cc5c77178015f48f553d6015e5a224"
+    },
+    {
+      "name": "People/raw-only-provider/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-provider/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "6d10966a3734c5bfbd42aa221893472a54466e521447c247e23967940d34b323"
+    },
+    {
+      "name": "People/raw-only-type/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-type/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "67b6beae0b43debe2f0e3349e8d3253628cc5c77178015f48f553d6015e5a224"
+    },
+    {
+      "name": "People/raw-only-type/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-type/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "6d10966a3734c5bfbd42aa221893472a54466e521447c247e23967940d34b323"
+    },
+    {
+      "name": "People/raw-only-media/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-media/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "67b6beae0b43debe2f0e3349e8d3253628cc5c77178015f48f553d6015e5a224"
+    },
+    {
+      "name": "People/raw-only-media/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "ef8b8d196457b661c3554bdbbe3ae45513ee1d2d3568aa8361695a242c350c0a"
+    },
+    {
+      "name": "People/raw-only-media/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "6d10966a3734c5bfbd42aa221893472a54466e521447c247e23967940d34b323"
+    },
+    {
+      "name": "People/edited-overlay/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "9856653d5e9f176e4a787f8cdd3cb0eb1764737662503d138a8d48d8837322f4"
+    },
+    {
+      "name": "People/edited-overlay/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "deee67095af0e9e5e1c9aa573a3490d6ef7547a7b5cc93ff7e5f074c91524f8c"
+    },
+    {
+      "name": "People/edited-overlay/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "ad9a435aa7354e7b0ed3e9933ac8ba9aaa387df1a9564130a285a018e1b0070c"
+    },
+    {
+      "name": "People/edited-overlay/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 8,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "30d9bb35de09a9dec5facf0da776ad9903e028589382378664be09a8d5e091e0"
+    },
+    {
+      "name": "People/advanced/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "def6cf8a52a0f8d7317db1bb7175ece2401b8bdf52647aa7da2d1a0b3044535c"
+    },
+    {
+      "name": "People/advanced/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 8,
+        "configured": 8,
+        "existing": 0,
+        "toAdd": 8,
+        "newFolderSourceCount": 8,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "795d594ac5e94e7de901dc3e3ed9ed1c488f8691653ae160c364a0a289493c30"
+    },
+    {
+      "name": "People/advanced/new-folder/placement",
+      "ok": null,
+      "status": "already-in-this-collection",
+      "counts": null,
+      "sha256": "2177fd60e33fc532b50745dfb99c3828d2814158726cafd2b2fa1589dd2f11e4"
+    },
+    {
+      "name": "People/advanced/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 8,
+        "existing": 8,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "7b2f4f68a6f68bd7f1f46f787fb095a882081ff59b83f09349c2dc4958cb95c7"
+    },
+    {
+      "name": "Studio/empty/new-collection/placement",
+      "ok": null,
+      "status": "ready-to-create",
+      "counts": null,
+      "sha256": "9f8fbe1c459324d7def1a6e3a0be4fe92fe2ec2b19c7b05f72c3fb476e38749e"
+    },
+    {
+      "name": "Studio/empty/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "7a2d2bddd5c9464388770048508139f19fab40925f760340c5bf4f7aa71ead81"
+    },
+    {
+      "name": "Studio/empty/new-folder/placement",
+      "ok": null,
+      "status": "ready-to-create",
+      "counts": null,
+      "sha256": "9f8fbe1c459324d7def1a6e3a0be4fe92fe2ec2b19c7b05f72c3fb476e38749e"
+    },
+    {
+      "name": "Studio/empty/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "7d82f80e8f77b682d304c166934236d738f118eea94aaeca0fca276ebc3dddf7"
+    },
+    {
+      "name": "Studio/partial/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "c62b75a7080744678ddeacd26ebe359c2d9c2147237dd8fb5fbe8b05bc9c3a8c"
+    },
+    {
+      "name": "Studio/partial/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "b152b1c910e3c0ebb76bf502ad6acf65010527b8dbfeb0bea8754de6002db178"
+    },
+    {
+      "name": "Studio/partial/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "b62dc384b46628c510bd17f0335d175130902075293389822b249eaa61c53efe"
+    },
+    {
+      "name": "Studio/partial/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 3,
+        "configured": 4,
+        "existing": 1,
+        "toAdd": 3,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 3,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "f6452bcd9d7228af49410ea40e6ac4f9cf656646886abe4d16f5d5c0f31497f4"
+    },
+    {
+      "name": "Studio/complete/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "258e774fe4459b55248d0fb3adf2804ca9e4116b18c33e24968807b194e0170c"
+    },
+    {
+      "name": "Studio/complete/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "c5ca8bcef70c90ad3b2d17fe5a7ad270500a534ef87aba1cdcd523ef3b7bf2bf"
+    },
+    {
+      "name": "Studio/complete/new-folder/placement",
+      "ok": null,
+      "status": "already-in-this-collection",
+      "counts": null,
+      "sha256": "ac83211b187dbb0f563ced0b1a9d2163d57e983610852d66c9dae1c229199ea1"
+    },
+    {
+      "name": "Studio/complete/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 4,
+        "existing": 4,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "673e32b9cf54887c7a0cf5d4ec3ab61f4ecb5a6bd73ac63114106df429b3f332"
+    },
+    {
+      "name": "Studio/split/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "528bb06ff35942294854d051d41c59745ace9d80a9a4b9cb9d95fa41982bfeab"
+    },
+    {
+      "name": "Studio/split/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "5d3f4ec42c2717f7d95b01eea173dda3c7471834850b1b55043c744ac18c8ae3"
+    },
+    {
+      "name": "Studio/split/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "b314ab73a727893a7ea43f4e01a4b74f3758b95edb82164db776bab4da8a014b"
+    },
+    {
+      "name": "Studio/split/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 4,
+        "existing": 2,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 1,
+        "unresolvedSourceCount": 2,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "1380d8f909cd73c96605105efce9ee8502c4ec7951780e62f2218ab379c98abd"
+    },
+    {
+      "name": "Studio/split/new-folder/chosen-folder",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 2,
+        "configured": 4,
+        "existing": 2,
+        "toAdd": 2,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 2,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "63dd00fb511db2551865048e5497fa931b406b5912d862fe8689929978b490df"
+    },
+    {
+      "name": "Studio/elsewhere/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "4a477e1e6a6e8f01495d97fbd20d857d79906d7066d01a7ea622752a8c176659"
+    },
+    {
+      "name": "Studio/elsewhere/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "af13467210ab2ad9e3f5e928cc2a2260d6edb6b4ffd94af74eb233934b43d1d1"
+    },
+    {
+      "name": "Studio/elsewhere/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "4a477e1e6a6e8f01495d97fbd20d857d79906d7066d01a7ea622752a8c176659"
+    },
+    {
+      "name": "Studio/elsewhere/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a07996e9ef285b75752c32acced9ee922dbf270ee5335d6a9a21d3586403b926"
+    },
+    {
+      "name": "Studio/mixed/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "27f90df8404d28f0ad8e23fc712533d701659967fd4f47c5431ee521d8fa6a93"
+    },
+    {
+      "name": "Studio/mixed/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "391da8991779dc61fc97bad9388ad6d7cd2458340db2f5f53bee917ecaaddd51"
+    },
+    {
+      "name": "Studio/mixed/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "5a5a507f3c2bc161f2e4781869f0b787c3233f989347dc36718104ea856420cb"
+    },
+    {
+      "name": "Studio/mixed/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 3,
+        "configured": 4,
+        "existing": 1,
+        "toAdd": 3,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 3,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "cae6ed6359639d054e8033f4578d197452439225d9d4bf53c4fd718b72dad167"
+    },
+    {
+      "name": "Studio/raw-only-id/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-id/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a3d19f25e06354c47bc7132e11d605ee76a394c3fad4dab78c86c1663fdd6a6d"
+    },
+    {
+      "name": "Studio/raw-only-id/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-id/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "c4581b6fad5fcdc528c323b37bd7174a521371679fbc86e822466f396accf681"
+    },
+    {
+      "name": "Studio/raw-only-provider/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-provider/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a3d19f25e06354c47bc7132e11d605ee76a394c3fad4dab78c86c1663fdd6a6d"
+    },
+    {
+      "name": "Studio/raw-only-provider/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-provider/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "c4581b6fad5fcdc528c323b37bd7174a521371679fbc86e822466f396accf681"
+    },
+    {
+      "name": "Studio/raw-only-type/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-type/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a3d19f25e06354c47bc7132e11d605ee76a394c3fad4dab78c86c1663fdd6a6d"
+    },
+    {
+      "name": "Studio/raw-only-type/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-type/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "c4581b6fad5fcdc528c323b37bd7174a521371679fbc86e822466f396accf681"
+    },
+    {
+      "name": "Studio/raw-only-media/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-media/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a3d19f25e06354c47bc7132e11d605ee76a394c3fad4dab78c86c1663fdd6a6d"
+    },
+    {
+      "name": "Studio/raw-only-media/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "b4afa3293d9caa4374dfd2748bdf9eb4c09b1de57c0e8d9e8aac723d7b87170a"
+    },
+    {
+      "name": "Studio/raw-only-media/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "c4581b6fad5fcdc528c323b37bd7174a521371679fbc86e822466f396accf681"
+    },
+    {
+      "name": "Studio/edited-overlay/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "c2f4bd6959d193faa5c1c9ffffc4423d1e6a3258159bd505aaef24d36057f3a9"
+    },
+    {
+      "name": "Studio/edited-overlay/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "261f67b6ce985acd13ba98e871b9f25fb0e6ab35b4275585b84c14988a1b4f98"
+    },
+    {
+      "name": "Studio/edited-overlay/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "e78c5d3f7ecff47c58ac7dd90b91499e64ce081480e66a0f1f04eb224f35477a"
+    },
+    {
+      "name": "Studio/edited-overlay/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 4,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "78a3d1b60d8d94a74f7e9c9199c4115ea6a42a1df92e6d85950467aa0a34e4d5"
+    },
+    {
+      "name": "Studio/advanced/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "2f579e30ac51e5e8af50e26da710a6ed4ee452919dc6d2ce88393f4c5cca3331"
+    },
+    {
+      "name": "Studio/advanced/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "95f2ebe9c3875c6d1d48571f70e2bad9c7c5a66d4bff91c377e6c041a8507925"
+    },
+    {
+      "name": "Studio/advanced/new-collection/genre-override",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 4,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "2806f18b6924e9508ad15991af0f74c40bc16e2ca3e85649c9df67eb3275a6f9"
+    },
+    {
+      "name": "Studio/advanced/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "33bd29d3f54cc237452d381a7b0de5cb82c6598bd8fac9f34b5e29d8dc487b5b"
+    },
+    {
+      "name": "Studio/advanced/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 4,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "9bef5f4bb6d91309736a217abd1462c9c22804b2b5b8f302ff6a45e47242f6ed"
+    },
+    {
+      "name": "Studio/advanced/new-folder/genre-override",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 4,
+        "configured": 4,
+        "existing": 0,
+        "toAdd": 4,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 4,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "2f07624e30fc8e892afcde230a6e27da0630b21ad0f606fdcd1cdfa99eff3152"
+    },
+    {
+      "name": "Network/empty/new-collection/placement",
+      "ok": null,
+      "status": "ready-to-create",
+      "counts": null,
+      "sha256": "af1e39711cbb84dadc8fbdbd8ec66ba085f1265e9cbc10c60e5da5da036e7b20"
+    },
+    {
+      "name": "Network/empty/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "6679d254608581b22cf123d17e7ec04016e07d24dadbb5904ff297473adc5ac0"
+    },
+    {
+      "name": "Network/empty/new-folder/placement",
+      "ok": null,
+      "status": "ready-to-create",
+      "counts": null,
+      "sha256": "af1e39711cbb84dadc8fbdbd8ec66ba085f1265e9cbc10c60e5da5da036e7b20"
+    },
+    {
+      "name": "Network/empty/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "e270a8cd4e58c3a207b932d9b7edc80f3d7ed01faf1898b8654c774d51a662af"
+    },
+    {
+      "name": "Network/partial/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "3ee23715e50899c04aa52d1d7b1c1a66902afd9716da536fed4148cdfc087281"
+    },
+    {
+      "name": "Network/partial/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "e9ae5e8fa5d50f5aa6d46ea7936fa607ddbe338381fbf9fcae88bf96a30fc095"
+    },
+    {
+      "name": "Network/partial/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "70b7474a222a5ae2a994fe1436f35b10235a4777fd888c57a71eb8f3601a65b1"
+    },
+    {
+      "name": "Network/partial/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 1,
+        "configured": 2,
+        "existing": 1,
+        "toAdd": 1,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 1,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "6f1679a83c7274499c45aee917ab6909ab9ab8113f3be1b972f6e9b6a15e02cc"
+    },
+    {
+      "name": "Network/complete/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "bcf35951a1b22d630af59fd5218c7c4cb04caaaa3ebb4d5d47bd97b0d0fdd452"
+    },
+    {
+      "name": "Network/complete/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "859505445a7d98b071518473fdd32fdb51af81af2c07686ba87769e31d5e85d9"
+    },
+    {
+      "name": "Network/complete/new-folder/placement",
+      "ok": null,
+      "status": "already-in-this-collection",
+      "counts": null,
+      "sha256": "f5c73538ecaec93ff7b50dde11aea162d9ca7b4770a4a92cd1e160c57406ec99"
+    },
+    {
+      "name": "Network/complete/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 2,
+        "existing": 2,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "d5c45e6034ea81978ef8f2a0daeb1734db1b80613f74177b9e6cb97479e32a75"
+    },
+    {
+      "name": "Network/split/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "7fc20c837d0ab8ff47671b4c8d1912085192d88216ab4830380a4980810bd267"
+    },
+    {
+      "name": "Network/split/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "51bd481fc218f6f9cb78966aff26718b414bca161dbfeb8d0990f2a17c9ba757"
+    },
+    {
+      "name": "Network/split/new-folder/placement",
+      "ok": null,
+      "status": "already-in-this-collection",
+      "counts": null,
+      "sha256": "4709d94091d94d52c0b5d4e336afd1d91daafbc0060513be649a41499a71a114"
+    },
+    {
+      "name": "Network/split/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 2,
+        "existing": 2,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "9833161bfab70c58171f8c38e8b086f720d4658f3f9144da2239852775cf3148"
+    },
+    {
+      "name": "Network/split/new-folder/chosen-folder",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 2,
+        "existing": 2,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "c1176014cd7bb223fb64db55f30cd0b401d20406d244c36c712b9425bbd0a40b"
+    },
+    {
+      "name": "Network/elsewhere/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "e14fbe87242964c8ecdbabdebf9e7b7adc11faddba098fc815bb97ce2aeeb322"
+    },
+    {
+      "name": "Network/elsewhere/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "4cfbf46f36ed2dd85cb0d6fc49e1b79780fd0f63f566ed3bfc4594a1e58e5587"
+    },
+    {
+      "name": "Network/elsewhere/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "e14fbe87242964c8ecdbabdebf9e7b7adc11faddba098fc815bb97ce2aeeb322"
+    },
+    {
+      "name": "Network/elsewhere/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "930d5996ef39cbd2d4b1da31fbe6b4a4fec7d70c1deba92419a953b59187a970"
+    },
+    {
+      "name": "Network/mixed/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "3a7ae0dea198070561ffdd02c8acaa5ba2e98ca5f5b32c925956115a33e53bbf"
+    },
+    {
+      "name": "Network/mixed/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "e408fd53e13d730f036cb7c4c3540df6a1715aaa540cefe5da4a019ecb8ccfef"
+    },
+    {
+      "name": "Network/mixed/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "06ef24a57debbf98a836da0cd8ce0ede2d8a1652c3217ba854f2332b44bb8abe"
+    },
+    {
+      "name": "Network/mixed/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 1,
+        "configured": 2,
+        "existing": 1,
+        "toAdd": 1,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 1,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "490144818680913b9715cf24d03f685922480801dc11e791040e8b86fe373e7c"
+    },
+    {
+      "name": "Network/raw-only-id/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-id/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "f1ace11a0aab813bd6d1dbe805484b58556cc12cf9900cd1c2fa3d4117da0563"
+    },
+    {
+      "name": "Network/raw-only-id/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-id/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a91b0fd1f382436717e92745554952e1259902513cecab3b125eeba38ca9e584"
+    },
+    {
+      "name": "Network/raw-only-provider/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-provider/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "f1ace11a0aab813bd6d1dbe805484b58556cc12cf9900cd1c2fa3d4117da0563"
+    },
+    {
+      "name": "Network/raw-only-provider/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-provider/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a91b0fd1f382436717e92745554952e1259902513cecab3b125eeba38ca9e584"
+    },
+    {
+      "name": "Network/raw-only-type/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-type/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "f1ace11a0aab813bd6d1dbe805484b58556cc12cf9900cd1c2fa3d4117da0563"
+    },
+    {
+      "name": "Network/raw-only-type/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-type/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a91b0fd1f382436717e92745554952e1259902513cecab3b125eeba38ca9e584"
+    },
+    {
+      "name": "Network/raw-only-media/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-media/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "f1ace11a0aab813bd6d1dbe805484b58556cc12cf9900cd1c2fa3d4117da0563"
+    },
+    {
+      "name": "Network/raw-only-media/new-folder/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "6c04d91d2f36ccac6d73ca9cee399f4a201d2152137bbe4eaa0359317fec2e7f"
+    },
+    {
+      "name": "Network/raw-only-media/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "a91b0fd1f382436717e92745554952e1259902513cecab3b125eeba38ca9e584"
+    },
+    {
+      "name": "Network/edited-overlay/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "d79a92a0e50c385cc9e4cc4490ade1df5f6baae95d7de6155a1d310525a9c925"
+    },
+    {
+      "name": "Network/edited-overlay/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "76c522c283dfa4dcaa0e66042c010c349a380cb2d25d5a45132817bfa06e973b"
+    },
+    {
+      "name": "Network/edited-overlay/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "4653f453715cc26701e56b1b41116ea568f38bad97167bac9d78cf2b11c7b3df"
+    },
+    {
+      "name": "Network/edited-overlay/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 2,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "718bd098441d58ad12ee61e6ec6f92ddbcd271c9b5b9b03c62cd13d629609007"
+    },
+    {
+      "name": "Network/advanced/new-collection/placement",
+      "ok": null,
+      "status": "exists-elsewhere",
+      "counts": null,
+      "sha256": "a06134bacf7cdbf7ffb94d17a8f761798c5829f7c669c74607cac0fee7a554ae"
+    },
+    {
+      "name": "Network/advanced/new-collection/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "5b728a8409c429af7ff5cbc553c0664543dd9791ef10c2ba9dbbf0fd592746d8"
+    },
+    {
+      "name": "Network/advanced/new-collection/genre-override",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 1,
+        "folderCount": 1,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 2,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "fb20a822df11a3b2c50f291b4d9702f9aa34d71d035b4f91aeaec7bb35bf9cd6"
+    },
+    {
+      "name": "Network/advanced/new-folder/placement",
+      "ok": null,
+      "status": "partly-in-this-collection",
+      "counts": null,
+      "sha256": "91370b282b24ef8a515201dcfc68d9cbe72607fd3996371e3bb8cad9105e4255"
+    },
+    {
+      "name": "Network/advanced/new-folder/plan",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 2,
+        "configured": 2,
+        "existing": 0,
+        "toAdd": 2,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 2,
+        "existingFolderAdditionCount": 1,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 0
+      },
+      "sha256": "255b8099a4f646db979be082cb52e3cd8d45515ac234a3b760d046d69ff0df7b"
+    },
+    {
+      "name": "Network/advanced/new-folder/genre-override",
+      "ok": true,
+      "status": null,
+      "counts": {
+        "collectionCount": 0,
+        "folderCount": 0,
+        "sourceCount": 0,
+        "configured": 2,
+        "existing": 2,
+        "toAdd": 0,
+        "newFolderSourceCount": 0,
+        "appendedSourceCount": 0,
+        "existingFolderAdditionCount": 0,
+        "unresolvedEntityCount": 0,
+        "unresolvedSourceCount": 0,
+        "unchangedEntityCount": 1
+      },
+      "sha256": "6246eaf67ab4af6ebcea4a75e32a7ac4d43c66fe3dd1b473c32d4242b03dcdba"
+    }
+  ]
+}

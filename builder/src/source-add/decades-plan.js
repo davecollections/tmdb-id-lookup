@@ -1,5 +1,6 @@
+import { discoverSourceOccurrences } from "./discover-source-occurrences.js";
 import { resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "./decades-folder-artwork.js";
-import { discoverSourceIdentity, discoverSourceNodeIdentity } from "../nuvio/discover.js";
+import { discoverSourceIdentity } from "../nuvio/discover.js";
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { buildDecadesSourceDrafts } from "./decades-source.js";
 import { equalDecadesStructures, isDecadesStructure } from "./decades-structural.js";
@@ -55,26 +56,15 @@ function plainObject(value) {
 }
 
 function occurrencesFor(project, identities) {
-	const selected = new Set(identities);
-	const occurrences = [];
-	for (const collection of project?.collections ?? []) {
-		for (const folder of collection.folders ?? []) {
-			for (const source of folder.sources ?? []) {
-				const identity = discoverSourceNodeIdentity(source);
-				if (!identity.comparable || !selected.has(identity.key)) continue;
-				occurrences.push(Object.freeze({
-					identity: identity.key,
-					collectionInternalId: collection.internalId,
-					collectionTitle: typeof collection.editable?.title === "string" ? collection.editable.title : "",
-					folderInternalId: folder.internalId,
-					folderTitle: typeof folder.editable?.title === "string" ? folder.editable.title : "",
-					sourceInternalId: source.internalId,
-					sourceTitle: typeof source.editable?.title === "string" ? source.editable.title : "",
-				}));
-			}
-		}
-	}
-	return occurrences;
+	return discoverSourceOccurrences(project, identities).map(({ identity, collection, folder, source }) => Object.freeze({
+		identity,
+		collectionInternalId: collection.internalId,
+		collectionTitle: typeof collection.editable?.title === "string" ? collection.editable.title : "",
+		folderInternalId: folder.internalId,
+		folderTitle: typeof folder.editable?.title === "string" ? folder.editable.title : "",
+		sourceInternalId: source.internalId,
+		sourceTitle: typeof source.editable?.title === "string" ? source.editable.title : "",
+	}));
 }
 
 export function inspectDecadesSourcePlacement(project, drafts, {

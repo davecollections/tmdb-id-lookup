@@ -1,7 +1,7 @@
-import { discoverSourceIdentity, discoverSourceNodeIdentity } from "../nuvio/discover.js";
+import { discoverSourceIdentity } from "../nuvio/discover.js";
 import { NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { buildGenreFolderEditable } from "./genre-folder-artwork.js";
-import { groupGenreSourceDrafts, inspectGenreFolderPlan } from "./genre-source.js";
+import { genreSourceOccurrences, groupGenreSourceDrafts, inspectGenreFolderPlan } from "./genre-source.js";
 import { sourceDraftSortId, sourceSortLabel } from "./source-sort-variants.js";
 
 export const GENRE_HIERARCHY_STRUCTURES = Object.freeze([
@@ -109,26 +109,7 @@ export function normalizeGenreCompositePlacements(project, options, errors) {
 
 function sourceOccurrences(project, draft) {
 	const identity = discoverSourceIdentity(draft.editable);
-	if (!identity.comparable) return Object.freeze([]);
-	const occurrences = [];
-	for (const collection of project.collections ?? []) {
-		for (const folder of collection.folders ?? []) {
-			for (const source of folder.sources ?? []) {
-				const candidate = discoverSourceNodeIdentity(source);
-				if (!candidate.comparable || candidate.key !== identity.key) continue;
-				occurrences.push(Object.freeze({
-					identity: identity.key,
-					collectionInternalId: collection.internalId,
-					collectionTitle: canonicalText(collection.editable?.title),
-					folderInternalId: folder.internalId,
-					folderTitle: canonicalText(folder.editable?.title),
-					sourceInternalId: source.internalId,
-					sourceTitle: canonicalText(source.editable?.title),
-				}));
-			}
-		}
-	}
-	return Object.freeze(occurrences);
+	return Object.freeze(identity.comparable ? genreSourceOccurrences(project, [identity.key]) : []);
 }
 
 function sourceOutcome(project, destinationCollectionInternalId, entry, statuses) {
