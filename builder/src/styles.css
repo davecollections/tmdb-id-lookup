@@ -9999,7 +9999,7 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 /* Folder transfer keeps one body scroll owner across all creation stages. */
 .add-source-portal.move-folders-portal { background: transparent; }
 .settings-modal-backdrop.move-folders-backdrop { align-items: center; justify-items: center; padding: 12px; }
-.add-source-dialog.move-folders-dialog { width: 100%; max-width: 720px; height: auto; max-height: min(780px, 100%); grid-template-rows: auto minmax(0, 1fr) auto; border-radius: 18px; }
+.add-source-dialog.move-folders-dialog { width: 100%; max-width: 720px; height: auto; max-height: min(780px, 100%); grid-template-rows: auto minmax(0, 1fr) auto; border-radius: 18px; container: move-folders / inline-size; }
 .move-folders-heading { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .move-folders-heading h2 { flex: 1; min-width: 0; margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
 .move-folders-heading button { flex: 0 0 auto; min-height: 44px; }
@@ -10031,12 +10031,14 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 .move-folders-setup dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .move-folders-setup dt { color: var(--muted); }
 .move-folders-setup dd { margin: 0; }
-.move-folders-artwork-note { margin-top: 10px; }
 .move-folders-dialog .move-folders-actions { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
 .move-folders-dialog[data-move-folders-dialog="review"] .move-folders-actions { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 .move-folders-actions .editor-diagnostics { grid-column: 1 / -1; }
 .move-folders-actions button { min-height: 44px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-.move-folders-actions .collection-folders-delete { font-size: 0.9rem; line-height: 1.25; }
+/* Size against text as well as available width; ordinary phone actions stay side by side. */
+@container move-folders (max-width: 20rem) {
+	.move-folders-dialog[data-move-folders-dialog="review"] .move-folders-actions { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 430px) {
 	.move-folders-transfer { grid-template-columns: minmax(0, 1fr); gap: 10px; }
 	.move-folders-direction { justify-self: center; transform: rotate(90deg); }

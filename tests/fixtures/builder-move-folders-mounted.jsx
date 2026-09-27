@@ -118,7 +118,9 @@ function measure(expanded = false) {
 	if(dialog().dataset.moveFoldersDialog==='review') {
 		assert(actions.length===2 && actions[0].textContent.startsWith('Move ') && actions[1].textContent==='Cancel','Review DOM order: Move then Cancel');
 		const primary=actions[0].getBoundingClientRect(), cancel=actions[1].getBoundingClientRect();
-		assert(primary.right<=cancel.left && primary.top===cancel.top,'Review primary LEFT and Cancel RIGHT');
+		const stacked=rect.width<=20*parseFloat(getComputedStyle(document.documentElement).fontSize);
+		assert(stacked ? primary.bottom<=cancel.top && primary.left===cancel.left : primary.right<=cancel.left && primary.top===cancel.top,'Review primary LEFT / Cancel RIGHT ordinarily; primary first when text scaling requires stacking');
+		if(stacked) assert(body.clientHeight>=120,'Stacked Review retains meaningful body scroll area');
 		assert(actions.every(el=>el.scrollWidth<=el.clientWidth+1 && el.scrollHeight<=el.clientHeight+1),'Final labels wrap without clipping');
 		assert($('[aria-label="Close Move folders"]'),'Header Close remains');
 		const totals=$$('.move-folders-totals > div'), selectedIds=$$('.move-folders-selected li');
@@ -141,7 +143,7 @@ function measure(expanded = false) {
 			assert(fields.Layout==='Tabs' || fields.Layout==='Rows','Friendly layout label');
 			assert(fields.Layout==='Rows' ? !('All tab' in fields) && fields.Position==='Pinned' : fields['All tab']==='On','All tab only applies to Tabs');
 			assert(['Pinned','Not pinned'].includes(fields.Position) && fields.Title==='Visible' && !('Artwork' in fields),'Friendly setup values omit Collection artwork');
-			assert(setup.nextElementSibling?.textContent==='Folder artwork — Existing artwork moves with each Folder.' && setup.nextElementSibling.matches('p.editor-field-help'),'Informational Folder artwork copy immediately follows setup');
+			assert(!body.textContent.includes('artwork') && !body.textContent.includes('Backdrop'),'New Collection Review has no artwork row or note');
 		} else {
 			const peers=opening.project.collections.filter(collection=>collection!==source && collection.editable.title===reviewDestination.editable.title);
 			assert(peers.length>1 ? context?.textContent===`${peers.indexOf(reviewDestination)+1} of ${peers.length} with this name` : !context,'Only duplicate destinations get quiet disambiguation');

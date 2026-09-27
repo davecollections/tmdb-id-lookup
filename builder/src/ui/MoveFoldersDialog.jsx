@@ -122,7 +122,6 @@ export function MoveFoldersDialog({ session, onCancel, onApply }) {
 								<div><dt>Title</dt><dd>{draft.values.hideNuvioTitle ? "Hidden" : "Visible"}</dd></div>
 							</dl>
 						</section> : null}
-						{kind === "new" ? <p className="editor-field-help move-folders-artwork-note">Folder artwork — Existing artwork moves with each Folder.</p> : null}
 						{willEmpty ? <fieldset className="move-folders-choices" data-empty-source-choice="true"><legend>What should happen to the empty “{sourceTitle}” Collection?</legend>
 							<Choice name="move-empty-source" value={false} selected={deleteEmptySource} onChange={setDeleteEmptySource}><strong>Keep the empty Collection</strong><small>Keep it so you can add or move Folders into it later.</small></Choice>
 							<Choice name="move-empty-source" value={true} selected={deleteEmptySource} onChange={setDeleteEmptySource}><strong>Delete the empty Collection after moving</strong><small>Remove it after these Folders are moved. This can’t be undone.</small></Choice>
