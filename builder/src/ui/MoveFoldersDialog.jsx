@@ -42,6 +42,9 @@ export function MoveFoldersDialog({ session, onCancel, onApply }) {
 		.filter((collection) => collection.internalId !== source.internalId);
 	const destination = destinations.find((collection) => collection.internalId === destinationId);
 	const destinationTitle = kind === "new" ? nodeTitle(draft.values.title, "collection").text : destination?.title;
+	const sameNameDestinations = destinations.filter((collection) => collection.title === destinationTitle);
+	const destinationContext = kind === "new" ? "New Collection" : sameNameDestinations.length > 1
+		? `${sameNameDestinations.findIndex((collection) => collection.internalId === destinationId) + 1} of ${sameNameDestinations.length} with this name` : null;
 	const folderLabel = `${selected.length} ${selected.length === 1 ? "folder" : "folders"}`;
 	const phase = { select: "Select Folders", destination: "Choose destination", configure: "Configure new Collection", review: `Move ${folderLabel}` }[stage];
 	const step = { select: 1, destination: 2, configure: 3, review: kind === "new" ? 4 : 3 }[stage];
@@ -102,22 +105,34 @@ export function MoveFoldersDialog({ session, onCancel, onApply }) {
 						<div className="move-folders-transfer">
 							<dl className="move-folders-summary"><dt>From</dt><dd>{sourceTitle}</dd></dl>
 							<span className="move-folders-direction" aria-hidden="true">→</span>
-							<dl className="move-folders-summary"><dt>To</dt><dd>{destinationTitle}<small>{kind === "new" ? "New Collection" : `Collection ${destination.position}`}</small></dd></dl>
+							<dl className="move-folders-summary"><dt>To</dt><dd>{destinationTitle}{destinationContext ? <small>{destinationContext}</small> : null}</dd></dl>
 						</div>
-						<HierarchyOutputSummary counts={{ folderCount: selectedFolders.length, sourceCount: selectedFolders.reduce((count, folder) => count + folder.sources.length, 0) }} scope="move-folders" className="move-folders-totals" />
-						<p className="editor-field-help">The selected Folders and everything inside them will move together, in their current order, after any existing Folders.</p>
-						{kind === "new" ? <p className="editor-field-help" data-move-new-summary="true">{draft.values.viewMode === "ROWS" ? "Rows" : "Tabs"}{draft.values.viewMode !== "ROWS" ? draft.values.showAllTab ? " · All tab on" : " · All tab off" : ""} · {draft.values.pinToTop ? "Pinned" : "Not pinned"} · {draft.values.hideNuvioTitle ? "Title hidden" : "Title visible"} · {draft.values.backdropImageUrl ? "Collection artwork set" : "No Collection artwork"}</p> : null}
-						<details className="move-folders-selected"><summary>View {selected.length} selected {selected.length === 1 ? "folder" : "folders"}</summary><ol>{selectedFolders.map((folder) => <li key={folder.internalId}>{nodeTitle(folder.editable.title, "folder").text}</li>)}</ol></details>
+						<section className="move-folders-counts" aria-labelledby="move-folders-counts-title">
+							<h4 id="move-folders-counts-title">What will move?</h4>
+							<HierarchyOutputSummary counts={{ folderCount: selectedFolders.length, sourceCount: selectedFolders.reduce((count, folder) => count + folder.sources.length, 0) }} scope="move-folders" className="move-folders-totals" />
+						</section>
+						<p className="editor-field-help move-folders-review-copy">The selected Folders and everything inside them will move in their current order {kind === "new" ? `into “${destinationTitle}”.` : `and be placed after any existing Folders in “${destinationTitle}”.`}</p>
+						<details className="decades-settings-disclosure move-folders-selected"><summary><span><strong>Selected folders · {selected.length}</strong><small>View selected folders</small></span></summary><ol>{selectedFolders.map((folder) => <li key={folder.internalId}>{nodeTitle(folder.editable.title, "folder").text}</li>)}</ol></details>
+						{kind === "new" ? <section className="move-folders-setup" aria-labelledby="move-folders-setup-title" data-move-new-summary="true">
+							<h4 id="move-folders-setup-title">Collection setup</h4>
+							<dl>
+								<div><dt>Layout</dt><dd>{draft.values.viewMode === "ROWS" ? "Rows" : "Tabs"}</dd></div>
+								{draft.values.viewMode !== "ROWS" ? <div><dt>All tab</dt><dd>{draft.values.showAllTab ? "On" : "Off"}</dd></div> : null}
+								<div><dt>Position</dt><dd>{draft.values.pinToTop ? "Pinned" : "Not pinned"}</dd></div>
+								<div><dt>Title</dt><dd>{draft.values.hideNuvioTitle ? "Hidden" : "Visible"}</dd></div>
+							</dl>
+						</section> : null}
+						{kind === "new" ? <p className="editor-field-help move-folders-artwork-note">Folder artwork — Existing artwork moves with each Folder.</p> : null}
 						{willEmpty ? <fieldset className="move-folders-choices" data-empty-source-choice="true"><legend>What should happen to the empty “{sourceTitle}” Collection?</legend>
 							<Choice name="move-empty-source" value={false} selected={deleteEmptySource} onChange={setDeleteEmptySource}><strong>Keep the empty Collection</strong><small>Keep it so you can add or move Folders into it later.</small></Choice>
 							<Choice name="move-empty-source" value={true} selected={deleteEmptySource} onChange={setDeleteEmptySource}><strong>Delete the empty Collection after moving</strong><small>Remove it after these Folders are moved. This can’t be undone.</small></Choice>
-						</fieldset> : <p className="editor-field-help">“{sourceTitle}” will keep {source.folders.length - selected.length} {source.folders.length - selected.length === 1 ? "Folder" : "Folders"}.</p>}
+						</fieldset> : null}
 					</> : null}
 				</div>
 				<footer className="add-source-actions collection-folders-actions move-folders-actions">
 					{error ? <p ref={errorRef} id="move-collection-title-error" tabIndex={-1} className="editor-diagnostics" role="alert">{error}</p> : null}
 					{stage === "review" ? <>
-						<button className={`editor-apply${deleteEmptySource ? " collection-folders-delete" : ""}`} type="button" onClick={apply}>Move {folderLabel}{deleteEmptySource ? " and delete Collection" : ""}</button>
+						<button className={`editor-apply${deleteEmptySource ? " collection-folders-delete" : ""}`} type="button" onClick={apply}>Move {folderLabel}{deleteEmptySource ? ` and delete “${sourceTitle}”` : ""}</button>
 						<button className="editor-cancel" type="button" onClick={onCancel}>Cancel</button>
 					</> : <button className="editor-apply" type="button" disabled={stage === "select" ? !selected.length : stage === "destination" ? !kind || kind === "existing" && !destinationId : false} onClick={continueFlow}>{stage === "configure" ? "Review move" : "Continue"}</button>}
 				</footer>

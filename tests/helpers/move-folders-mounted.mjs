@@ -11,7 +11,12 @@ export async function runMoveFoldersChecks(connection, baseUrl, evaluate) {
 	if(screenshots) await fs.mkdir(screenshots,{recursive:true});
 	async function capture(name) { if(!screenshots)return; const shot=await connection.command('Page.captureScreenshot',{format:'png'}); await fs.writeFile(path.join(screenshots,name+'.png'),Buffer.from(shot.data,'base64')); }
 	async function key(key,code,value,modifiers=0) { await connection.command('Input.dispatchKeyEvent',{type:'keyDown',key,code,windowsVirtualKeyCode:value,modifiers}); await connection.command('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:value}); await evaluate(connection,'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))'); }
-	async function viewport(width,height=852) { await connection.command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<900}); }
+	async function viewport(width,height=852) {
+		await connection.command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<900});
+		// Device-width changes can retain mobile page scaling from the previous case.
+		// Text enlargement is applied independently by the fixture after mounting.
+		await connection.command('Emulation.setPageScaleFactor',{pageScaleFactor:1});
+	}
 	await viewport(1280,900);
 	const local=await evaluate(connection,'window.moveLocalCases()');
 	const layouts=[], landings=[], keyboard=[];
@@ -41,6 +46,20 @@ export async function runMoveFoldersChecks(connection, baseUrl, evaluate) {
 		}
 	}
 	await connection.command('Emulation.setEmulatedMedia',{features:[]});
+	for(const width of [360,393,1280]) for(const enlarged of [false,true]) {
+		await viewport(width,width<900?852:900);
+		for(const screen of ['duplicate-review','rows-review','long-delete','expanded-review']) {
+			try { layouts.push(await evaluate(connection,`window.prepareMoveScreen('${screen}',${enlarged})`)); }
+			catch(error) { await capture(`failed-${width}-${enlarged?'enlarged-':''}${screen}`); throw error; }
+			if(width!==360) await capture(`${width<900?'phone':'desktop'}-${enlarged?'enlarged-':''}${screen}`);
+			if(screen==='long-delete') {
+				const expectedName=await evaluate(connection,'window.moveExpectedDestructiveName()');
+				const tree=await connection.command('Accessibility.getFullAXTree');
+				assert.ok(tree.nodes.some(node=>node.role?.value==='button' && node.name?.value===expectedName),'Exact long source title in accessible destructive action');
+			}
+			await key('Escape','Escape',27); await evaluate(connection,'window.moveCancelCheck()');
+		}
+	}
 	for(const width of [393,1280]) {
 		await viewport(width,width===393?852:900);
 		for(const kind of ['existing','new']) for(const folderEntry of [false,true]) for(const remove of [false,true]) for(const headerClose of [false,true]) {

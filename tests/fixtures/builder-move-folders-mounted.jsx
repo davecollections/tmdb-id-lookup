@@ -17,17 +17,20 @@ const next = () => click($('.move-folders-actions button'));
 const back = () => click($('[aria-label="Back to previous step"]'));
 const close = () => click($('[aria-label="Close Move folders"]'));
 const checks = () => $$('[aria-label="Folders to move"] input');
-let root, controller, source, opening, trigger, expectedMoved, beforePayload, notifications;
+let root, controller, source, opening, trigger, expectedMoved, beforePayload, notifications, reviewDestination;
+const longSourceTitle = 'International Science Fiction, Fantasy and Classic Adventure Collections';
 let requests = [];
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (...args) => { requests.push(String(args[0])); return originalFetch(...args); };
 
-async function mount({ folders = 8, collections = 3, folderEntry = false, menuOnly = false } = {}) {
+async function mount({ folders = 8, collections = 3, folderEntry = false, menuOnly = false, sourceTitle = null, duplicateDestinations = false } = {}) {
 	if (root) root.unmount(); await frame();
 	document.documentElement.style.fontSize = "";
 	controller = createBuilderController();
 	const data = projectFindData({ collections, folders, sources: 2 });
 	data[0].viewMode = "ROWS"; data[0].pinToTop = true; data[0].unknown = { keep: true };
+	if(sourceTitle) data[0].title = sourceTitle;
+	if(duplicateDestinations) data.slice(1).forEach(collection => { collection.title = 'Family favourites'; });
 	assert(controller.importValue(data).ok, "Local import succeeds");
 	source = controller.getState().project.collections[0];
 	if (folderEntry) controller.selectNode(source.internalId);
@@ -60,12 +63,13 @@ async function select(all = false) {
 	expectedMoved = source.folders.filter((_,i)=>all || [1,3].includes(i));
 	await next();
 }
-async function destination(kind = 'existing') {
+async function destination(kind = 'existing', destinationIndex = 0) {
 	await click($(`input[name="move-destination-kind"][value="${kind}"]`));
 	if(kind === 'existing') {
 		const options = $$('input[name="move-destination"]'); assert(options.length === opening.project.collections.length-1, "Source excluded");
 		assert(!options.some(el=>el.checked), "No silent destination");
-		await click(options[0]);
+		reviewDestination = opening.project.collections.find(collection => collection.internalId === options[destinationIndex].value);
+		await click(options[destinationIndex]);
 	}
 	await next();
 	if(kind === 'new') {
@@ -77,26 +81,34 @@ async function destination(kind = 'existing') {
 	}
 }
 window.prepareMoveScreen = async (screen, enlarged = false) => {
-	await mount({folders: screen==='long' ? 200 : 8, folderEntry: screen==='folder-entry', menuOnly:screen==='collection-menu'});
+	await mount({folders: screen==='long' ? 200 : 8, folderEntry: screen==='folder-entry', menuOnly:screen==='collection-menu', sourceTitle:screen==='long-delete' ? longSourceTitle : null, duplicateDestinations:screen==='duplicate-review'});
 	if(screen==='collection-menu') return {passed:true};
 	if(screen==='several') { await click(checks()[3]); await click(checks()[1]); }
 	if(screen==='all') await click($$('.genre-selection-actions button').find(el=>el.textContent==='Select all'));
-	if(['existing','new','configure','review','empty','delete','new-review','new-empty','new-delete'].includes(screen)) {
-		await select(['empty','delete','new-empty','new-delete'].includes(screen));
+	if(['existing','new','configure','review','empty','delete','new-review','new-empty','new-delete','duplicate-review','rows-review','long-delete','expanded-review'].includes(screen)) {
+		await select(['empty','delete','new-empty','new-delete','long-delete'].includes(screen));
 		if(screen==='existing' || screen==='new') await click($(`input[name="move-destination-kind"][value="${screen==='existing'?'existing':'new'}"]`));
-		else { await destination(screen==='configure' || screen.startsWith('new-') ? 'new' : 'existing'); }
-		if(screen.startsWith('new-')) await next();
-		if(screen==='delete' || screen==='new-delete') await click($('input[name="move-empty-source"][value="true"]'));
+		else { await destination(screen==='configure' || screen==='rows-review' || screen.startsWith('new-') ? 'new' : 'existing', screen==='duplicate-review' ? 1 : 0); }
+		if(screen==='rows-review') { await click(dialog().querySelector('input[value="ROWS"]') ?? dialog().querySelector('[data-editor-choice="rows"] input')); await click($('[data-editor-control="pinToTop"]')); }
+		if(screen.startsWith('new-') || screen==='rows-review') await next();
+		if(screen==='delete' || screen==='new-delete' || screen==='long-delete') await click($('input[name="move-empty-source"][value="true"]'));
 	}
 	if(enlarged) { document.documentElement.style.fontSize='200%'; await frame(); }
-	unchanged(); return measure();
+	unchanged();
+	if(screen==='expanded-review') {
+		measure(); await click($('.move-folders-selected summary'));
+		assert($$('.move-folders-selected li').map(el=>el.textContent).join('|')===expectedMoved.map(folder=>folder.editable.title).join('|'),'Expanded names retain source order');
+		assert(!$('.move-folders-selected').querySelector('input,button'),'Expanded disclosure has no edits or actions');
+		unchanged();
+	}
+	return measure(screen==='expanded-review');
 };
-function measure() {
+function measure(expanded = false) {
 	const rect=dialog().getBoundingClientRect(), head=$('.move-folders-heading').getBoundingClientRect(), footer=$('.move-folders-actions').getBoundingClientRect(), body=$('.move-folders-body');
 	const top=visualViewport.offsetTop, bottom=top+visualViewport.height;
 	assert(rect.left>=0 && rect.right<=innerWidth+1 && rect.top>=top-1 && rect.bottom<=bottom+1, 'Dialog fits viewport');
 	assert(head.top>=top-1 && head.bottom<=bottom+1 && footer.top>=top && footer.bottom<=bottom+1,'Header and footer stay reachable');
-	assert(body.clientHeight>=44,'Usable body scroll area');
+	assert(body.clientHeight>=44,`Usable body scroll area: ${JSON.stringify({width:innerWidth,fontSize:getComputedStyle(document.documentElement).fontSize,body:body.clientHeight,header:head.height,footer:footer.height,action:$('.move-folders-actions button').textContent})}`);
 	assert(dialog().scrollHeight<=dialog().clientHeight+1,'One main body scroll owner');
 	assert(dialog().scrollWidth<=dialog().clientWidth+1 && document.documentElement.scrollWidth<=innerWidth+1,'No horizontal overflow');
 	assert($$('.move-folders-heading button,.move-folders-actions button').every(el=>el.getBoundingClientRect().height>=44),'44px actions');
@@ -110,22 +122,41 @@ function measure() {
 		assert(actions.every(el=>el.scrollWidth<=el.clientWidth+1 && el.scrollHeight<=el.clientHeight+1),'Final labels wrap without clipping');
 		assert($('[aria-label="Close Move folders"]'),'Header Close remains');
 		const totals=$$('.move-folders-totals > div'), selectedIds=$$('.move-folders-selected li');
+		assert($('.move-folders-counts h4').textContent==='What will move?' && Boolean($('.move-folders-counts h4').compareDocumentPosition($('.move-folders-totals')) & Node.DOCUMENT_POSITION_FOLLOWING),'Semantic What will move heading precedes metrics');
 		assert(totals.length===2 && totals[0].textContent===`${selectedIds.length}Folders` && totals[1].textContent===`${selectedIds.length*2}Sources`,'Exactly two shared count tiles for actual Folders and Sources');
 		assert($$('.move-folders-transfer dt').map(el=>el.textContent).join('|')==='From|To','Semantic From / To labels remain outside metrics');
 		assert($('.move-folders-direction').getAttribute('aria-hidden')==='true','Directional arrow is decorative');
-		assert(!$('.move-folders-selected').open,'Selected Folder disclosure starts collapsed');
+		assert($('.move-folders-selected').open===expanded,'Selected Folder disclosure is collapsed unless explicitly expanded');
+		assert($('.move-folders-selected summary strong').textContent===`Selected folders · ${selectedIds.length}` && getComputedStyle($('.move-folders-selected summary')).display==='grid','Selected folders uses contained Builder disclosure');
 		const deleting=$('input[name="move-empty-source"][value="true"]')?.checked ?? false;
-		assert(actions[0].classList.contains('collection-folders-delete')===deleting && actions[0].textContent.endsWith('and delete Collection')===deleting,'Destructive text and styling follow approved choice');
-		if($('[data-move-new-summary]')) assert($('.move-folders-summary:last-child small').textContent==='New Collection','New destination has quiet type context');
-		else assert($('.move-folders-summary:last-child small').textContent==='Collection 2','Existing duplicate-name position remains visible');
+		const actionName=`Move ${selectedIds.length} folders${deleting ? ` and delete “${source.editable.title}”` : ''}`;
+		assert(actions[0].classList.contains('collection-folders-delete')===deleting && actions[0].textContent===actionName,'Destructive action names exact source and retains approved styling');
+		assert(!body.textContent.includes('will keep'),'No ordinary residual Folder count line');
+		const setup=$('[data-move-new-summary]'), context=$('.move-folders-summary:last-child small');
+		if(setup) {
+			assert(context?.textContent==='New Collection' && setup.querySelector('h4').textContent==='Collection setup','New destination has reviewable setup');
+			assert(!setup.querySelector('input,button,select'),'Setup is read-only');
+			assert(Boolean($('.move-folders-selected').compareDocumentPosition(setup) & Node.DOCUMENT_POSITION_FOLLOWING),'Setup follows selected folders');
+			const fields=Object.fromEntries([...setup.querySelectorAll('dl > div')].map(el=>[el.querySelector('dt').textContent,el.querySelector('dd').textContent]));
+			assert(fields.Layout==='Tabs' || fields.Layout==='Rows','Friendly layout label');
+			assert(fields.Layout==='Rows' ? !('All tab' in fields) && fields.Position==='Pinned' : fields['All tab']==='On','All tab only applies to Tabs');
+			assert(['Pinned','Not pinned'].includes(fields.Position) && fields.Title==='Visible' && !('Artwork' in fields),'Friendly setup values omit Collection artwork');
+			assert(setup.nextElementSibling?.textContent==='Folder artwork — Existing artwork moves with each Folder.' && setup.nextElementSibling.matches('p.editor-field-help'),'Informational Folder artwork copy immediately follows setup');
+		} else {
+			const peers=opening.project.collections.filter(collection=>collection!==source && collection.editable.title===reviewDestination.editable.title);
+			assert(peers.length>1 ? context?.textContent===`${peers.indexOf(reviewDestination)+1} of ${peers.length} with this name` : !context,'Only duplicate destinations get quiet disambiguation');
+		}
+		const targetName=setup ? 'Franchises' : reviewDestination.editable.title;
+		assert($('.move-folders-review-copy').textContent===`The selected Folders and everything inside them will move in their current order ${setup ? `into “${targetName}”.` : `and be placed after any existing Folders in “${targetName}”.`}`,'Destination-aware explanation respects existing/new distinction');
 	} else assert(actions.length===1 && !actions.some(el=>el.textContent==='Cancel'),'Earlier stages retain their single footer action');
-	if(innerWidth<900) assert(rect.width===innerWidth && Math.abs(rect.height-visualViewport.height)<1,'Phone fills visual viewport');
+	if(innerWidth<900) assert(rect.width===innerWidth && Math.abs(rect.height-visualViewport.height)<1,`Phone fills visual viewport: ${JSON.stringify({width:innerWidth,rectWidth:rect.width,rectHeight:rect.height,viewportWidth:visualViewport.width,viewportHeight:visualViewport.height,scale:visualViewport.scale})}`);
 	return {width:innerWidth,height:innerHeight,stage:dialog().dataset.moveFoldersDialog,rows:checks().length,bodyHeight:body.clientHeight,passed:true};
 }
 window.moveCancelCheck = () => {
 	assert(!dialog() && !$('.workspace-underlay').inert && document.body.style.position!=='fixed','Cancel unlocks');
 	assert(document.activeElement===trigger,'Exact menu trigger focus restored'); unchanged(); return true;
 };
+window.moveExpectedDestructiveName = () => `Move 8 folders and delete “${source.editable.title}”`;
 window.moveReviewCancel = async (kind, folderEntry, remove, headerClose) => {
 	await mount({folderEntry}); await select(true); await destination(kind);
 	if(kind==='new') await next();
