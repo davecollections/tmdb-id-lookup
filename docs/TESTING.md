@@ -80,7 +80,7 @@ Run checks when they answer an unanswered question about the change. Choose vali
 
 ## Local and CI validation groups (#247)
 
-`scripts\check.cmd` and `node scripts/check-all.mjs` still run the complete ordered local inventory. CI runs that same inventory in four independent jobs using `node scripts/check-all.mjs --group <group>`. `--list` prints the selected commands without executing them.
+`scripts\check.cmd` and `node scripts/check-all.mjs` still run the complete ordered local inventory. CI uses the same four inventory groups, with dependency-aware PR scheduling (#270), using `node scripts/check-all.mjs --group <group>`. `--list` prints the selected commands without executing them.
 
 | Group | Coverage |
 | --- | --- |
@@ -91,7 +91,13 @@ Run checks when they answer an unanswered question about the change. Choose vali
 
 Each worker has its own checkout, dependency installation, validated keyword restoration, temporary caches, browser profiles and local servers. There is no shared build output. Source/Preview scenarios retain their internal order, production clients and request/cache protections; the other browser groups retain their existing published artwork reads. Keyword restoration reads an existing validated bundle, not a fresh TMDB export. Scheduled maintenance reservations and their daily budget are unchanged.
 
-The existing `validate` check is the final aggregate. It runs after all four workers and succeeds only when each reports `success`; setup/test failures, missing, skipped, cancelled, neutral or unknown worker results cannot produce a green aggregate. PR, main-push and manual triggers remain enabled. Only a newer run for the same PR cancels its predecessor; non-PR runs have unique concurrency groups. There are no path filters or docs-only routes.
+Core runs on every PR. A small planner compares the immutable event base/head and verified synthetic merge commit, then selects Source, Workspace and Artwork only from audited leaf ownership. Ordinary approved Markdown documentation and existing audited Core test entries can require Core alone. Shared or unknown paths, any production stylesheet, deletion/rename/copy/type/mode changes, empty diffs and uncertain acquisition require all four groups. The exact registry and fail-closed policy live in `scripts/plan-validation.mjs` and `tests/validation-orchestration.test.mjs`; new files are not automatically narrow.
+
+Main pushes and `workflow_dispatch` always require all four groups. To deliberately force the complete suite on a PR branch, open **Actions → Nuvio Contract Validation → Run workflow**, select that branch/ref, and dispatch it. This is the manual force-full path; there is no label override. The complete local commands above remain unchanged.
+
+The existing `validate` check remains the final aggregate and always evaluates the planner plus all four worker records. It validates the plan schema, independent event identity and output flags. Every required worker must succeed. An explicitly non-required optional worker may be skipped or succeed; a failure, cancellation, missing or unknown result still fails. A missing, failed or invalid planner cannot authorize skips. Core starts independently of planning; optional workers wait for a successful plan and an exact `'true'` flag.
+
+PR, main-push and manual triggers remain enabled without workflow path filters. Only a newer run for the same PR cancels its predecessor; non-PR runs have unique concurrency groups. Full-history planner checkout adds overhead that must be measured in hosted acceptance; no timing threshold changes correctness.
 
 `[CI timing]` lines report command and mounted phase elapsed time using a monotonic clock. Repeated phase segments are summed; cleanup reports timings on failure as well as success. These measurements impose no performance thresholds. TAP may still charge the shared `before()` hook to its first test; use the named phase output for diagnosis.
 

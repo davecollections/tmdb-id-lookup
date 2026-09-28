@@ -19,6 +19,29 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  plan:
+    name: Plan validation
+    runs-on: ubuntu-latest
+    outputs:
+      plan: ${{ steps.route.outputs.plan }}
+      source: ${{ steps.route.outputs.source }}
+      workspace: ${{ steps.route.outputs.workspace }}
+      artwork: ${{ steps.route.outputs.artwork }}
+    steps:
+      - name: Checkout exact event with complete history
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Plan required validation
+        id: route
+        run: node scripts/plan-validation.mjs
+
   core:
     name: Core and build
     runs-on: ubuntu-latest
@@ -59,6 +82,8 @@ jobs:
         run: node scripts/validate-pages-site.mjs --code-only
 
   source:
+    needs: plan
+    if: ${{ needs.plan.result == 'success' && needs.plan.outputs.source == 'true' }}
     name: Source, hierarchy and live Preview
     runs-on: ubuntu-latest
 
@@ -87,6 +112,8 @@ jobs:
         run: node scripts/check-all.mjs --group source
 
   workspace:
+    needs: plan
+    if: ${{ needs.plan.result == 'success' && needs.plan.outputs.workspace == 'true' }}
     name: Bulk Edit, Import, Export and Send
     runs-on: ubuntu-latest
 
@@ -115,6 +142,8 @@ jobs:
         run: node scripts/check-all.mjs --group workspace
 
   artwork:
+    needs: plan
+    if: ${{ needs.plan.result == 'success' && needs.plan.outputs.artwork == 'true' }}
     name: Folder artwork
     runs-on: ubuntu-latest
 
@@ -145,7 +174,7 @@ jobs:
   # Preserve the original check name for review and any required-check settings.
   validate:
     if: ${{ always() }}
-    needs: [core, source, workspace, artwork]
+    needs: [plan, core, source, workspace, artwork]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -155,7 +184,12 @@ jobs:
         with:
           node-version: 22
           package-manager-cache: false
-      - name: Require every validation group to succeed
+      - name: Require planned validation to succeed
         env:
           VALIDATION_RESULTS: ${{ toJSON(needs) }}
+          VALIDATION_PLAN: ${{ needs.plan.outputs.plan }}
+          VALIDATION_EVENT_NAME: ${{ github.event_name }}
+          VALIDATION_EVENT_SHA: ${{ github.sha }}
+          VALIDATION_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          VALIDATION_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/validate-ci-results.mjs
