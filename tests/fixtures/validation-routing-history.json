@@ -1,0 +1,973 @@
+[
+  {
+    "name": "#269 first commit",
+    "baseSha": "49ed7b74ce8b26b09a649a9813bea7dc0ecdbdc8",
+    "headSha": "3d79656dbad35d3b99f5e5c34fa1dd559fdc837f",
+    "mergeBaseSha": "49ed7b74ce8b26b09a649a9813bea7dc0ecdbdc8",
+    "expected": [
+      "core",
+      "workspace"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/AboutCreditsDialog.jsx",
+        "newPath": "builder/src/ui/AboutCreditsDialog.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_KNOWLEDGE.md",
+        "newPath": "docs/v2/BUILDER_KNOWLEDGE.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_PRODUCT_PLAN.md",
+        "newPath": "docs/v2/BUILDER_PRODUCT_PLAN.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-about-credits-ui.test.mjs",
+        "newPath": "tests/builder-about-credits-ui.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-ui.test.mjs",
+        "newPath": "tests/builder-ui.test.mjs"
+      }
+    ]
+  },
+  {
+    "name": "#269 final",
+    "baseSha": "49ed7b74ce8b26b09a649a9813bea7dc0ecdbdc8",
+    "headSha": "fdbd013d6d41bc0548147765dbc251777f3e2843",
+    "mergeBaseSha": "49ed7b74ce8b26b09a649a9813bea7dc0ecdbdc8",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/styles.css",
+        "newPath": "builder/src/styles.css"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/AboutCreditsDialog.jsx",
+        "newPath": "builder/src/ui/AboutCreditsDialog.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_KNOWLEDGE.md",
+        "newPath": "docs/v2/BUILDER_KNOWLEDGE.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_PRODUCT_PLAN.md",
+        "newPath": "docs/v2/BUILDER_PRODUCT_PLAN.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-about-credits-ui.test.mjs",
+        "newPath": "tests/builder-about-credits-ui.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-ui.test.mjs",
+        "newPath": "tests/builder-ui.test.mjs"
+      }
+    ]
+  },
+  {
+    "name": "#267 final",
+    "baseSha": "dfb44c44ed5abe66384451ef9120b020a27eaaa7",
+    "headSha": "c86cd23fc317a0da0cacf3692deef64a63eb3cb0",
+    "mergeBaseSha": "6c24d79f9341f1aeb4cfb687609d257d737c2a8d",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/domain/source-occurrences.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/decades-plan.js",
+        "newPath": "builder/src/source-add/decades-plan.js"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/source-add/discover-source-occurrences.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/genre-hierarchy-structures.js",
+        "newPath": "builder/src/source-add/genre-hierarchy-structures.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/genre-source.js",
+        "newPath": "builder/src/source-add/genre-source.js"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/source-add/native-source-occurrences.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/native-source-variants.js",
+        "newPath": "builder/src/source-add/native-source-variants.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/TESTING.md",
+        "newPath": "docs/TESTING.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_HIERARCHY_CREATION.md",
+        "newPath": "docs/v2/BUILDER_HIERARCHY_CREATION.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_KNOWLEDGE.md",
+        "newPath": "docs/v2/BUILDER_KNOWLEDGE.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "scripts/check-all.mjs",
+        "newPath": "scripts/check-all.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/builder-native-source-occurrences.test.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/builder-source-occurrences.test.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/fixtures/native-occurrence-parity.json"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/fixtures/source-occurrence-authority.json"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/fixtures/source-occurrence-parity.json"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/helpers/native-occurrence-parity.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/helpers/source-occurrence-parity.mjs"
+      }
+    ]
+  },
+  {
+    "name": "#264 final",
+    "baseSha": "943c5b61aaf653e6da18300c2069465038b3deb3",
+    "headSha": "23803969ba747cc7263a5283d008cd044d56a2b2",
+    "mergeBaseSha": "943c5b61aaf653e6da18300c2069465038b3deb3",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/application/controller.js",
+        "newPath": "builder/src/application/controller.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/domain/index.js",
+        "newPath": "builder/src/domain/index.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/domain/operations.js",
+        "newPath": "builder/src/domain/operations.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/styles.css",
+        "newPath": "builder/src/styles.css"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/BuilderWorkspace.jsx",
+        "newPath": "builder/src/ui/BuilderWorkspace.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/ui/CollectionFolderSelectionList.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/CollectionFoldersDialog.jsx",
+        "newPath": "builder/src/ui/CollectionFoldersDialog.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/HierarchyActionsMenu.jsx",
+        "newPath": "builder/src/ui/HierarchyActionsMenu.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/ui/MoveFoldersDialog.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/NodeEditor.jsx",
+        "newPath": "builder/src/ui/NodeEditor.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/ui/move-folders.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/view-model.js",
+        "newPath": "builder/src/ui/view-model.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/TESTING.md",
+        "newPath": "docs/TESTING.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_CONTROLLER.md",
+        "newPath": "docs/v2/BUILDER_CONTROLLER.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_KNOWLEDGE.md",
+        "newPath": "docs/v2/BUILDER_KNOWLEDGE.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_NODE_EDITING.md",
+        "newPath": "docs/v2/BUILDER_NODE_EDITING.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_PRODUCT_PLAN.md",
+        "newPath": "docs/v2/BUILDER_PRODUCT_PLAN.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_UI_SHELL.md",
+        "newPath": "docs/v2/BUILDER_UI_SHELL.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "scripts/check-all.mjs",
+        "newPath": "scripts/check-all.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-bulk-edit-mounted.test.mjs",
+        "newPath": "tests/builder-bulk-edit-mounted.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-controller.test.mjs",
+        "newPath": "tests/builder-controller.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-hierarchy-menu-placement.test.mjs",
+        "newPath": "tests/builder-hierarchy-menu-placement.test.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/builder-move-folders.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-reordering.test.mjs",
+        "newPath": "tests/builder-reordering.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/fixtures/builder-collection-folders-mounted.jsx",
+        "newPath": "tests/fixtures/builder-collection-folders-mounted.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/fixtures/builder-move-folders-mounted.html"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/fixtures/builder-move-folders-mounted.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/helpers/move-folders-mounted.mjs"
+      }
+    ]
+  },
+  {
+    "name": "#241 final",
+    "baseSha": "bf5e63c88af40b313915dff14b226341914f1e33",
+    "headSha": "46ca1cd24b9e9ef26940958c90b49fa82438c104",
+    "mergeBaseSha": "bf5e63c88af40b313915dff14b226341914f1e33",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/exact-url-preview.js",
+        "newPath": "builder/src/ui/exact-url-preview.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/TESTING.md",
+        "newPath": "docs/TESTING.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/fixtures/builder-nuvio-import-mounted.jsx",
+        "newPath": "tests/fixtures/builder-nuvio-import-mounted.jsx"
+      }
+    ]
+  },
+  {
+    "name": "#225 final",
+    "baseSha": "84ce995fc7f28b2ca08d8480892ea68d542540b1",
+    "headSha": "06fb516188037c61ee855d4243048f557c7f383e",
+    "mergeBaseSha": "84ce995fc7f28b2ca08d8480892ea68d542540b1",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/folder-artwork-suggestions.js",
+        "newPath": "builder/src/folder-artwork-suggestions.js"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/source-add/decades-artwork-data.json"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/source-add/decades-folder-artwork.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/decades-plan.js",
+        "newPath": "builder/src/source-add/decades-plan.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/ARTWORK_RUNTIME.md",
+        "newPath": "docs/v2/ARTWORK_RUNTIME.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_DECADES.md",
+        "newPath": "docs/v2/BUILDER_DECADES.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_HIERARCHY_CREATION.md",
+        "newPath": "docs/v2/BUILDER_HIERARCHY_CREATION.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "scripts/check-all.mjs",
+        "newPath": "scripts/check-all.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-decades-plan.test.mjs",
+        "newPath": "tests/builder-decades-plan.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-decades-ui.test.mjs",
+        "newPath": "tests/builder-decades-ui.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-folder-artwork-suggestions.test.mjs",
+        "newPath": "tests/builder-folder-artwork-suggestions.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-source-edit-mounted.test.mjs",
+        "newPath": "tests/builder-source-edit-mounted.test.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/decades-artwork.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/fixtures/builder-source-edit-mounted.jsx",
+        "newPath": "tests/fixtures/builder-source-edit-mounted.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/genre-artwork.test.mjs",
+        "newPath": "tests/genre-artwork.test.mjs"
+      }
+    ]
+  },
+  {
+    "name": "#258 final",
+    "baseSha": "d35a52b265efc493b969455d0785a6d2e5133d57",
+    "headSha": "fb3fff0823dcce5877c80732e044b33bc3ab6090",
+    "mergeBaseSha": "d35a52b265efc493b969455d0785a6d2e5133d57",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/decades-source.js",
+        "newPath": "builder/src/source-add/decades-source.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/genre-source.js",
+        "newPath": "builder/src/source-add/genre-source.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/network-source.js",
+        "newPath": "builder/src/source-add/network-source.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/person-source.js",
+        "newPath": "builder/src/source-add/person-source.js"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/source-add/source-names.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/source-add/studio-source.js",
+        "newPath": "builder/src/source-add/studio-source.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/styles.css",
+        "newPath": "builder/src/styles.css"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/AddSourceDialog.jsx",
+        "newPath": "builder/src/ui/AddSourceDialog.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/AdvancedDiscoverFlow.jsx",
+        "newPath": "builder/src/ui/AdvancedDiscoverFlow.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/DecadeSourceFlow.jsx",
+        "newPath": "builder/src/ui/DecadeSourceFlow.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/GenreSourceFlow.jsx",
+        "newPath": "builder/src/ui/GenreSourceFlow.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/NetworkSourceFlow.jsx",
+        "newPath": "builder/src/ui/NetworkSourceFlow.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/PeopleSourceFlow.jsx",
+        "newPath": "builder/src/ui/PeopleSourceFlow.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/ui/SourceNamesDisclosure.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/StreamingSourceFlow.jsx",
+        "newPath": "builder/src/ui/StreamingSourceFlow.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/StudioSourceFlow.jsx",
+        "newPath": "builder/src/ui/StudioSourceFlow.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "builder/src/ui/TmdbListSourceFlow.jsx",
+        "newPath": "builder/src/ui/TmdbListSourceFlow.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "builder/src/ui/use-source-names.js"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/TESTING.md",
+        "newPath": "docs/TESTING.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_HIERARCHY_CREATION.md",
+        "newPath": "docs/v2/BUILDER_HIERARCHY_CREATION.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_KNOWLEDGE.md",
+        "newPath": "docs/v2/BUILDER_KNOWLEDGE.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_PEOPLE.md",
+        "newPath": "docs/v2/BUILDER_PEOPLE.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_PRODUCT_PLAN.md",
+        "newPath": "docs/v2/BUILDER_PRODUCT_PLAN.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_SOURCE_ADD.md",
+        "newPath": "docs/v2/BUILDER_SOURCE_ADD.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_STREAMING_SERVICES.md",
+        "newPath": "docs/v2/BUILDER_STREAMING_SERVICES.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/v2/BUILDER_TMDB_LISTS.md",
+        "newPath": "docs/v2/BUILDER_TMDB_LISTS.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "scripts/check-all.mjs",
+        "newPath": "scripts/check-all.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-add-source-preview-parity.test.mjs",
+        "newPath": "tests/builder-add-source-preview-parity.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-add-source-ui.test.mjs",
+        "newPath": "tests/builder-add-source-ui.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-decade-add-source-ui.test.mjs",
+        "newPath": "tests/builder-decade-add-source-ui.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-source-capability-contract.test.mjs",
+        "newPath": "tests/builder-source-capability-contract.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-source-edit-mounted.test.mjs",
+        "newPath": "tests/builder-source-edit-mounted.test.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/builder-source-names.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-streaming-ui.test.mjs",
+        "newPath": "tests/builder-streaming-ui.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/fixtures/builder-source-edit-mounted.jsx",
+        "newPath": "tests/fixtures/builder-source-edit-mounted.jsx"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/fixtures/builder-source-names-mounted.jsx"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/fixtures/builder-source-sort-variants-mounted.jsx",
+        "newPath": "tests/fixtures/builder-source-sort-variants-mounted.jsx"
+      }
+    ]
+  },
+  {
+    "name": "#248 final",
+    "baseSha": "3c11c13ff02e66d2c7abad04fa0d6f63152ef58f",
+    "headSha": "2c77506c4dcc65f75b3ef249e85588c6dbc5aa7f",
+    "mergeBaseSha": "3c11c13ff02e66d2c7abad04fa0d6f63152ef58f",
+    "expected": [
+      "core",
+      "source",
+      "workspace",
+      "artwork"
+    ],
+    "records": [
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": ".github/workflows/nuvio-contract-validation.yml",
+        "newPath": ".github/workflows/nuvio-contract-validation.yml"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "docs/TESTING.md",
+        "newPath": "docs/TESTING.md"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "scripts/check-all.mjs",
+        "newPath": "scripts/check-all.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "scripts/lib/validation-timing.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "scripts/validate-ci-results.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-bulk-edit-mounted.test.mjs",
+        "newPath": "tests/builder-bulk-edit-mounted.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-folder-card-artwork-mounted.test.mjs",
+        "newPath": "tests/builder-folder-card-artwork-mounted.test.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/builder-source-edit-mounted.test.mjs",
+        "newPath": "tests/builder-source-edit-mounted.test.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/helpers/export-mounted.mjs"
+      },
+      {
+        "status": "M",
+        "oldMode": "100644",
+        "newMode": "100644",
+        "oldPath": "tests/helpers/nuvio-send-mounted.mjs",
+        "newPath": "tests/helpers/nuvio-send-mounted.mjs"
+      },
+      {
+        "status": "A",
+        "oldMode": "000000",
+        "newMode": "100644",
+        "oldPath": null,
+        "newPath": "tests/validation-orchestration.test.mjs"
+      }
+    ]
+  }
+]
