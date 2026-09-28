@@ -131,6 +131,13 @@ export function AboutCreditsDialog({ onClose }) {
 							<nav className="about-credits-links" aria-label="About links">
 								<a data-root-link="true" href="../">TMDB ID Lookup Tool</a>
 								<a
+									href="https://trakt-list-lookup.pages.dev/"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									Trakt List Lookup
+								</a>
+								<a
 									href="https://github.com/davecollections/tmdb-id-lookup/issues/new/choose"
 									target="_blank"
 									rel="noopener noreferrer"
