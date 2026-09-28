@@ -73,19 +73,33 @@ test("welcome uses an About control and workspace replaces its former V1 link wi
 	assert.ok(openMarkup.includes("About &amp; Credits"));
 });
 
-test("About & Credits contains compact linked attribution and the marked root application link", () => {
+test("About & Credits retains TMDB and JustWatch attribution with ordered related-tool and feedback links", () => {
 	const markup = renderToStaticMarkup(createElement(AboutCreditsDialog, { onClose() {} }));
-	assert.ok(markup.includes("This product uses the TMDB API but is not endorsed or certified by TMDB."));
-	assert.ok(markup.includes("Streaming provider availability data supplied by JustWatch via TMDB."));
+	const credits = markup.match(/<section[^>]+aria-label="Data credits"[^>]*>([\s\S]*?)<\/section>/)?.[1];
+	assert.ok(credits);
+	assert.equal((credits.match(/class="about-credit-row"/g) ?? []).length, 2);
+	assert.deepEqual([...credits.matchAll(/<img[^>]+alt="([^"]+)"/g)].map((match) => match[1]), ["TMDB", "JustWatch"]);
+	assert.equal(credits.includes("Trakt"), false);
+	assert.ok(credits.includes("This product uses the TMDB API but is not endorsed or certified by TMDB."));
+	assert.ok(credits.includes("Streaming provider availability data supplied by JustWatch via TMDB."));
 	assert.match(markup, /href="https:\/\/www\.themoviedb\.org\/"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
 	assert.match(markup, /href="https:\/\/www\.justwatch\.com\/"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
 	assert.match(markup, /<img[^>]+alt="TMDB"/);
 	assert.match(markup, /<img[^>]+alt="JustWatch"/);
 	assert.match(markup, /tmdb-logo-square\.svg/);
 	assert.match(markup, /justwatch-mark-gold\.svg/);
-	assert.match(markup, /<a[^>]+data-root-link="true"[^>]+href="\.\.\/"[^>]*>TMDB ID Lookup Tool<\/a>/);
+	assert.match(markup, /<a[^>]+data-root-link="true"[^>]+href="\.\.\/"[^>]*>TMDB ID Lookup<\/a>/);
+	assert.equal(markup.includes("TMDB ID Lookup Tool"), false);
 	assert.match(markup, /href="https:\/\/github\.com\/davecollections\/tmdb-id-lookup\/issues\/new\/choose"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
-	assert.ok(markup.includes("Feedback / report an issue"));
+	const aboutLinks = markup.match(/<nav[^>]+aria-label="About links"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+	assert.ok(aboutLinks);
+	assert.match(aboutLinks, /<a class="about-credits-feedback"[^>]*>Feedback \/ report an issue<\/a>/);
+	assert.deepEqual([...aboutLinks.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map((match) => match[1]), [
+		"TMDB ID Lookup",
+		"Trakt List Lookup",
+		"Feedback / report an issue",
+	]);
+	assert.match(aboutLinks, /<a href="https:\/\/trakt-list-lookup\.pages\.dev\/" target="_blank" rel="noopener noreferrer">Trakt List Lookup<\/a>/);
 	assert.match(markup, /Created by[\s\S]*href="https:\/\/github\.com\/davecollections"[^>]+target="_blank"[^>]+rel="noopener noreferrer"[\s\S]*davecollections/);
 	assert.match(markup, /<svg[^>]+class="about-credits-github-mark"[^>]+aria-hidden="true"/);
 	assert.ok(markup.includes("Independent community tool for Nuvio collections. Not affiliated with or endorsed by Nuvio."));

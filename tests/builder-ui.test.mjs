@@ -657,7 +657,7 @@ test("builder HTML uses development metadata and retains the private preview bou
 	assert.doesNotMatch(html, /deployment-test|data-deployment-test/i);
 });
 
-test("production UI keeps local Builder and approved attribution assets while excluding deferred browser and rendering APIs", () => {
+test("production UI keeps local Builder assets and approved links while excluding deferred browser and rendering APIs", () => {
 	const source = `${read("builder/src/main.jsx")}\n${uiSource()}`;
 	const assets = fs.readdirSync(path.join(builderSrcDir, "assets")).sort();
 	assert.deepEqual(assets, ["builder-mark.svg", "justwatch-mark-gold.svg", "tmdb-logo-square.svg"]);
@@ -678,6 +678,7 @@ test("production UI keeps local Builder and approved attribution assets while ex
 		"https://github.com/davecollections",
 		"https://github.com/davecollections/tmdb-id-lookup/issues/new/choose",
 		"https://nuvio.tv/",
+		"https://trakt-list-lookup.pages.dev/",
 		"https://developer.themoviedb.org/docs/getting-started",
 	].sort());
 });
