@@ -1075,6 +1075,11 @@ body.settings-modal-open {
 	border-radius: 999px;
 }
 
+.about-credits-links .about-credits-feedback {
+	color: var(--muted);
+	border-color: rgb(1 180 228 / 14%);
+}
+
 @supports ((-webkit-backdrop-filter: blur(8px)) or (backdrop-filter: blur(8px))) {
 	.settings-modal-backdrop {
 		background: rgb(0 8 13 / 68%);

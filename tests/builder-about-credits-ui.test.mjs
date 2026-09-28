@@ -88,12 +88,14 @@ test("About & Credits retains TMDB and JustWatch attribution with ordered relate
 	assert.match(markup, /<img[^>]+alt="JustWatch"/);
 	assert.match(markup, /tmdb-logo-square\.svg/);
 	assert.match(markup, /justwatch-mark-gold\.svg/);
-	assert.match(markup, /<a[^>]+data-root-link="true"[^>]+href="\.\.\/"[^>]*>TMDB ID Lookup Tool<\/a>/);
+	assert.match(markup, /<a[^>]+data-root-link="true"[^>]+href="\.\.\/"[^>]*>TMDB ID Lookup<\/a>/);
+	assert.equal(markup.includes("TMDB ID Lookup Tool"), false);
 	assert.match(markup, /href="https:\/\/github\.com\/davecollections\/tmdb-id-lookup\/issues\/new\/choose"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
 	const aboutLinks = markup.match(/<nav[^>]+aria-label="About links"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
 	assert.ok(aboutLinks);
+	assert.match(aboutLinks, /<a class="about-credits-feedback"[^>]*>Feedback \/ report an issue<\/a>/);
 	assert.deepEqual([...aboutLinks.matchAll(/<a[^>]*>([^<]+)<\/a>/g)].map((match) => match[1]), [
-		"TMDB ID Lookup Tool",
+		"TMDB ID Lookup",
 		"Trakt List Lookup",
 		"Feedback / report an issue",
 	]);
