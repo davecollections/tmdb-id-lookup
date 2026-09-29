@@ -8,6 +8,7 @@ import {
 import { createPortal } from "react-dom";
 import {
 	focusElementWithoutScroll,
+	HIERARCHY_MENU_VIEWPORT_MARGIN_PX,
 	placeAnchoredMenu,
 	resolveVisibleViewport,
 } from "./hierarchy-menu-placement.js";
@@ -65,8 +66,7 @@ export function HierarchyActionsMenu({
 	onClose,
 	onEdit = null,
 	editLabel = "Edit",
-	onAdvancedEdit = null,
-	onSortFolders = null,
+	onMoveBoundary = null,
 	onRemoveFolders = null,
 	onMoveFolders = null,
 	onDelete,
@@ -90,13 +90,20 @@ export function HierarchyActionsMenu({
 		}
 		if (placement !== null) return;
 		const triggerRect = triggerRef.current?.getBoundingClientRect?.();
+		const viewport = resolveVisibleViewport();
+		const maxHeight = Math.max(0, viewport.height - 2 * HIERARCHY_MENU_VIEWPORT_MARGIN_PX);
+		const maxWidth = Math.max(0, viewport.width - 2 * HIERARCHY_MENU_VIEWPORT_MARGIN_PX);
+		if (panelRef.current) {
+			panelRef.current.style.maxHeight = maxHeight + "px";
+			panelRef.current.style.maxWidth = maxWidth + "px";
+		}
 		const menuRect = panelRef.current?.getBoundingClientRect?.();
 		if (!triggerRect || !menuRect) return;
-		setPlacement(placeAnchoredMenu(
+		setPlacement({ maxHeight, maxWidth, ...placeAnchoredMenu(
 			triggerRect,
 			{ width: menuRect.width, height: menuRect.height },
-			resolveVisibleViewport(),
-		));
+			viewport,
+		) });
 	}, [open, placement]);
 
 	useLayoutEffect(() => {
@@ -114,7 +121,8 @@ export function HierarchyActionsMenu({
 			onClose({ restoreFocus: true });
 		}
 
-		function handleVisibleViewportChange() {
+		function handleVisibleViewportChange(event) {
+			if (event.type === "scroll" && event.target instanceof Node && panelRef.current?.contains(event.target)) return;
 			onClose({ restoreFocus: false });
 		}
 
@@ -168,6 +176,8 @@ export function HierarchyActionsMenu({
 			style={open ? {
 				top: placement?.top ?? 0,
 				left: placement?.left ?? 0,
+				maxHeight: placement?.maxHeight,
+				maxWidth: placement?.maxWidth,
 				visibility: placement === null ? "hidden" : "visible",
 			} : undefined}
 			onKeyDown={(event) => handleHierarchyMenuKeyDown(
@@ -188,9 +198,12 @@ export function HierarchyActionsMenu({
 					{editLabel}
 				</button>
 			) : null}
-			{onAdvancedEdit ? <button type="button" role="menuitem" tabIndex={-1} disabled={disabled || !open} onClick={() => runAction(onAdvancedEdit)}>Edit Discover</button> : null}
+			{onMoveBoundary && (noun === "collection" || noun === "folder") ? ["top", "bottom"].map((boundary) => <button
+				key={boundary} type="button" role="menuitem" tabIndex={-1} data-action={"move-" + noun + "-" + boundary}
+				disabled={disabled || !open || node.reorderGroupSize <= 1 || (boundary === "top" ? node.reorderGroupPosition === 0 : node.reorderGroupPosition === node.reorderGroupSize - 1)}
+				onClick={() => runAction((id, trigger) => onMoveBoundary(id, noun, boundary, trigger))}
+			>Move to {boundary}</button>) : null}
 			{onMoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action={`move-${noun}-folders`} disabled={disabled || !open || noun === "collection" && node.folderCount === 0} onClick={() => runAction(onMoveFolders)}>Move folders</button> : null}
-			{onSortFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="sort-folders" disabled={disabled || !open || node.folderCount < 2} onClick={() => runAction(onSortFolders)}>Sort folders</button> : null}
 			{onRemoveFolders ? <button type="button" role="menuitem" tabIndex={-1} data-action="remove-folders" disabled={disabled || !open || node.folderCount === 0} onClick={() => runAction(onRemoveFolders)}>Delete folders</button> : null}
 			<button
 				className="hierarchy-menu-delete"

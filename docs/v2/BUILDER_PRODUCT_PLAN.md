@@ -1,5 +1,11 @@
 # Dingo's Collection Builder — Product Plan
 
+## Local implementation checkpoint — hierarchy polish (#273, 2026-09-29)
+
+Owner-approved hierarchy ordering polish is implemented locally for review: icon-only panel Sort in the left title/utility group after Collections settings, with count and creation grouped on the right; Collection/Folder Move to top/bottom within current reorder groups; atomic pin-slot-preserving Collection sorting and exact Source sorting; and one registered **Edit source** entry for all nine adapters. Folder People options and existing family Discover Filters are retained. The [ordering](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review), [shell](./BUILDER_UI_SHELL.md#hierarchy-ordering-and-source-entry-273-local-owner-review) and [Source editing](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) contracts own current branch behavior.
+
+This checkpoint supersedes older menu-placement descriptions only. It introduces no new Source/Discover semantics, provenance, persistent sort mode, Worker/dependency change or V1 integration. Owner review is required before separately authorized commit/push/PR; nothing is merged or deployed by this local pass. The roadmap and release gates remain unchanged.
+
 <a id="current-checkpoint---2026-09-22"></a>
 
 ## Current checkpoint - 2026-09-24
@@ -378,7 +384,7 @@ Hidden does not mean unvalidated. Diagnostics and automatic repair protect outpu
 
 The current owner-reviewed workflow exposes:
 
-- one in-card overflow trigger on every hierarchy card, with a body-portalled menu that uses full rendered height, the current Visual Viewport, upward flipping, edge clamping, and prevent-scroll initial focus; Collections expose Edit / Sort folders / Remove folders / Delete collection and Folders expose Edit/Delete, supported physical source shapes expose Edit/Delete through the fail-closed editor registry, unsupported source shapes expose Delete only, and actions directly target unselected cards;
+- one in-card overflow trigger on every hierarchy card, with a body-portalled menu that uses full rendered height, the current Visual Viewport, upward flipping, edge clamping, and prevent-scroll initial focus; Collections expose Edit / Move to top / Move to bottom / Move folders / Delete folders / Delete collection and Folders expose Edit / Move to top / Move to bottom / Move folders / Delete, supported physical source shapes expose Edit source/Delete through the fail-closed editor registry, unsupported source shapes expose Delete only; #273 adds internal menu scrolling and panel-level Sort, and actions directly target unselected cards;
 - one mobile-only selected-context quick-rename pencil for collections and folders;
 - one responsive modal for collection title, intentional invisible Nuvio title, source-level Tabs/Rows, the saved Show All tab preference, and Pin to top; the source group is headed **Collection layout**, and `TABBED_GRID` is labelled **Tabs (recommended)**;
 - the same modal with Folder **Basic details** and **Display** groups, compact native radios for the three title-visibility outcomes, and Poster/Square/Landscape visual selection cards.

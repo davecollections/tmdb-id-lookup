@@ -3,7 +3,7 @@ import {
 	planCuratedFolderShapePatch,
 	resolveFolderArtworkIdentity,
 } from "../folder-artwork-suggestions.js";
-import { isValidVisibleNuvioTitle } from "../nuvio/titles.js";
+import { sortedTitleIds, titleSortText, titleSortWords } from "./title-sorting.js";
 import { buildNodeEditorPatch, validateNodeEditorDraft } from "./node-editor.js";
 
 const shapes = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
@@ -33,25 +33,16 @@ export function folderSortOptions(collection) {
 	];
 }
 
-// Deliberately mirrors V1 json-combiner's getFolderSortWords/getFolderSortText.
-// That classic script also owns DOM startup; importing it would change V1's
-// loading boundary. First name retains the V1 name/title comparator explicitly.
+// Last name retains V1 last-word behavior; People eligibility remains above.
 export function folderSortText(title, mode) {
-	if (!isValidVisibleNuvioTitle(title)) return "";
-	const text = mode === "last" ? title : title.trim().replace(/^(the|an|a)\s+/i, "");
-	const words = text.replace(/[^\p{L}\p{N}\s'-]/gu, " ").trim().split(/\s+/).filter(Boolean);
-	return mode === "last" && words.length > 1
-		? `${words.at(-1)} ${words.slice(0, -1).join(" ")}`
-		: words.join(" ");
+	if (mode !== "last") return titleSortText(title);
+	const words = titleSortWords(title, { stripArticle: false });
+	return words.length > 1 ? [words.at(-1), ...words.slice(0, -1)].join(" ") : words.join(" ");
 }
 
 export function sortedFolderIds(collection, mode) {
 	if (!folderSortOptions(collection).some((option) => option.id === mode)) throw new TypeError("Unsupported folder sort");
-	return collection.folders.map((folder, index) => ({ id: folder.internalId, index, key: folderSortText(folder.editable.title, mode) }))
-		.sort((a, b) => {
-			if (!a.key || !b.key) return (a.key ? -1 : b.key ? 1 : a.index - b.index);
-			return a.key.localeCompare(b.key, undefined, { sensitivity: "base" }) * (mode === "za" ? -1 : 1) || a.index - b.index;
-		}).map(({ id }) => id);
+	return sortedTitleIds(collection.folders, mode === "za" ? "za" : "az", (title) => folderSortText(title, mode));
 }
 
 function staleShapeResult() {

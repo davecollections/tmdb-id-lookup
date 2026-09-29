@@ -5,27 +5,22 @@ import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceVi
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { GenreSelectionToolbar } from "./GenreCatalogueSelector.jsx";
-import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { nodeTitle } from "./view-model.js";
-import { folderSortOptions } from "./collection-folder-management.js";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
-export function CollectionFoldersDialog({ collection, mode, onCancel, onApply, error }) {
+export function CollectionFoldersDialog({ collection, onCancel, onApply, error }) {
 	const [selected, setSelected] = useState([]);
-	const [sort, setSort] = useState("az");
 	const dialogRef = useRef(null);
 	const errorRef = useRef(null);
 	const cancelRef = useRef(null);
 	const [viewport, setViewport] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
-	const removing = mode === "remove";
-	const title = removing ? "Delete folders" : "Sort folders";
 	const rows = collection.folders.map((folder, index) => ({ folder, index, title: nodeTitle(folder.editable.title, "folder") }));
 
 	usePrePaintLayoutEffect(() => {
 		const unlock = lockAddSourceDocumentBody();
 		const stop = observeAddSourceViewport(setViewport);
-		focusElementWithoutScroll(removing ? cancelRef.current : dialogRef.current);
+		focusElementWithoutScroll(cancelRef.current);
 		return () => { stop(); unlock(); };
 	}, []);
 	useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
@@ -34,29 +29,26 @@ export function CollectionFoldersDialog({ collection, mode, onCancel, onApply, e
 		setSelected((current) => current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]);
 	}
 
-	const content = <div className={`add-source-portal${removing ? "" : " collection-folders-sort-portal"}`} data-mobile-surface="opaque">
-		<div className={`settings-modal-backdrop add-source-backdrop${removing ? "" : " collection-folders-sort-backdrop"}`} style={viewport ?? undefined}>
-			<section ref={dialogRef} className={`add-source-dialog collection-folders-dialog is-${mode}`} data-collection-folders-dialog={mode} role="dialog" aria-modal="true" aria-labelledby="collection-folders-title" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, onCancel)}>
+	const content = <div className="add-source-portal" data-mobile-surface="opaque">
+		<div className="settings-modal-backdrop add-source-backdrop" style={viewport ?? undefined}>
+			<section ref={dialogRef} className="add-source-dialog collection-folders-dialog is-remove" data-collection-folders-dialog="remove" role="dialog" aria-modal="true" aria-labelledby="collection-folders-title" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, onCancel)}>
 				<header className="add-source-heading">
-					<h2 id="collection-folders-title">{title}</h2>
+					<h2 id="collection-folders-title">Delete folders</h2>
 					<p>{nodeTitle(collection.editable.title, "collection").text}</p>
 				</header>
 				<div className="collection-folders-body">
-				{removing ? <div className="collection-folders-controls">
+				<div className="collection-folders-controls">
 					<p className="genre-attention-note">This can’t be undone. Selected folders and all sources inside them will be permanently deleted.</p>
 					<GenreSelectionToolbar selectionCount={selected.length} totalCount={rows.length} onSelectAll={() => setSelected(rows.map(({ folder }) => folder.internalId))} onClearAll={() => setSelected([])} />
-				</div> : null}
+				</div>
 				<div className="add-source-scroll collection-folders-scroll">
-					{removing ? <>
 						<CollectionFolderSelectionList folders={collection.folders} selected={selected} onToggle={toggle} label="Folders to delete" />
-					</> : <SemanticSortChoices options={folderSortOptions(collection)} selectedId={sort} onChange={setSort} name="collection-folder-sort" legend="Order folders by" helper="Sort once. You can still drag folders afterward." />}
 				</div>
 				</div>
 				<footer className="add-source-actions collection-folders-actions">
 					{error ? <p className="editor-diagnostics" ref={errorRef} tabIndex={-1} role="alert">{error}</p> : null}
-					{removing ? <button ref={cancelRef} className="editor-cancel" type="button" onClick={onCancel}>Cancel</button> : null}
-					<button className={removing ? "editor-apply collection-folders-delete" : "editor-apply"} type="button" disabled={removing && selected.length === 0} onClick={() => onApply(removing ? selected : sort)}>{removing ? `Delete ${selected.length} ${selected.length === 1 ? "folder" : "folders"}` : "Sort folders"}</button>
-					{!removing ? <button className="editor-cancel" type="button" onClick={onCancel}>Cancel</button> : null}
+					<button ref={cancelRef} className="editor-cancel" type="button" onClick={onCancel}>Cancel</button>
+					<button className="editor-apply collection-folders-delete" type="button" disabled={selected.length === 0} onClick={() => onApply(selected)}>Delete {selected.length} {selected.length === 1 ? "folder" : "folders"}</button>
 				</footer>
 			</section>
 		</div>

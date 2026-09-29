@@ -595,6 +595,12 @@ label:has(> .choice-card-input:focus-visible) {
 	min-width: 0;
 }
 
+/* Keep the workspace usable when text is enlarged on narrow screens. */
+.brand-lockup .builder-product-title span {
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+
 .builder-mark {
 	flex: 0 0 auto;
 	width: 48px;
@@ -849,7 +855,8 @@ h1 {
 	background: var(--elevated-hover);
 }
 
-.presentation-settings-trigger {
+.presentation-settings-trigger,
+.panel-sort-action {
 	position: relative;
 	display: inline-grid;
 	width: 44px;
@@ -864,7 +871,8 @@ h1 {
 	cursor: pointer;
 }
 
-.presentation-settings-trigger::before {
+.presentation-settings-trigger::before,
+.panel-sort-action::before {
 	position: absolute;
 	inset: 5px;
 	content: "";
@@ -873,7 +881,8 @@ h1 {
 	border-radius: 8px;
 }
 
-.presentation-settings-icon {
+.presentation-settings-icon,
+.panel-sort-icon {
 	position: relative;
 	z-index: 1;
 	width: 18px;
@@ -1768,7 +1777,7 @@ body.settings-modal-open {
 	grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
-.collection-folders-dialog.is-sort {
+.hierarchy-sort-dialog {
 	grid-template-rows: auto minmax(0, 1fr) auto;
 	max-width: 460px;
 }
@@ -3084,10 +3093,6 @@ body.settings-modal-open {
 		max-height: 100%;
 		align-self: stretch;
 	}
-
-	.panel-count.panel-count-desktop-only {
-		display: none;
-	}
 }
 
 @media (max-width: 899.98px) and (max-height: 600px) {
@@ -3233,11 +3238,12 @@ body.settings-modal-open {
 
 .panel-header {
 	display: flex;
+	flex-wrap: wrap;
 	min-height: 72px;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
-	padding: 15px;
+	gap: 4px;
+	padding: 15px 10px;
 	border-bottom: 1px solid var(--border);
 }
 
@@ -3254,27 +3260,33 @@ body.settings-modal-open {
 
 .panel-header-title {
 	display: flex;
+	min-height: 44px;
+	flex-wrap: wrap;
 	min-width: 0;
+	max-width: 100%;
 	align-items: center;
-	gap: 5px;
-}
-
-.panel-title-inline-count {
-	color: var(--muted);
-	font-weight: 650;
+	gap: 2px;
 }
 
 .panel-header-actions {
 	display: flex;
+	flex-wrap: nowrap;
+	flex: 0 0 auto;
 	min-width: 0;
+	max-width: 100%;
+	margin-left: auto;
 	align-items: center;
 	justify-content: flex-end;
-	gap: 8px;
+	gap: 4px;
 }
 
+.panel-header-actions .primary-action { max-width: 100%; padding-inline: 8px; gap: 4px; }
 .panel-count {
 	display: inline-grid;
-	min-width: 30px;
+	flex: 0 0 auto;
+	min-width: 26px;
+	padding-inline: 4px;
+	white-space: nowrap;
 	height: 30px;
 	place-items: center;
 	color: var(--muted);
@@ -3495,6 +3507,9 @@ button:disabled {
 }
 
 .hierarchy-actions-menu {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	grid-auto-rows: max-content;
 	position: fixed;
 	/* Menus sit over page content while remaining below the z-index 1000 modal layer. */
 	z-index: 900;
@@ -3513,7 +3528,7 @@ button:disabled {
 }
 
 .hierarchy-actions-menu button {
-	min-height: 42px;
+	min-height: 44px;
 	padding: 9px 11px;
 	color: var(--text);
 	font-size: 0.78rem;
@@ -3975,27 +3990,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 		border-radius: 15px;
 	}
 
-	.panel-header {
-		align-items: flex-start;
-	}
-
-	.panel-header-actions {
-		align-items: flex-end;
-		flex-direction: column-reverse;
-	}
 
 	.primary-action {
 		min-height: 48px;
 	}
 
-	.panel-header-actions {
-		max-width: 58%;
-	}
-
-	.panel-header-actions .primary-action,
-	.panel-header-actions .secondary-action {
-		width: 100%;
-	}
 
 	.source-heading {
 		align-items: flex-start;
@@ -4278,28 +4277,22 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 
 	.panel-header {
-		gap: 6px;
-		padding-right: 10px;
-		padding-left: 10px;
+		gap: 2px;
+		padding-right: 5px;
+		padding-left: 5px;
 	}
 
 	.panel-header h2 {
 		font-size: 1rem;
 		overflow-wrap: normal;
-		white-space: nowrap;
+		white-space: normal;
 	}
 
-	.panel-header-title {
-		gap: 3px;
-	}
+	.panel-header-title { gap: 0; }
 
-	.panel-title-inline-count.mobile-only {
-		display: inline;
-	}
+	.panel-header-actions { gap: 2px; }
 
-	.panel-count.panel-count-desktop-only {
-		display: none;
-	}
+	.panel-count { min-width: 24px; padding-inline: 0; }
 
 	.source-heading {
 		align-items: flex-start;
@@ -4404,7 +4397,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 		transform: translateY(-1px);
 	}
 
-	.presentation-settings-trigger:hover:not(:disabled)::before {
+	.presentation-settings-trigger:hover:not(:disabled)::before,
+	.panel-sort-action:hover:not(:disabled)::before {
 		background: rgb(1 180 228 / 11%);
 		border-color: rgb(98 225 255 / 42%);
 	}
@@ -9944,17 +9938,17 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 /* Simple Sort keeps the existing modal lifecycle with compact geometry at every width. */
-.add-source-portal.collection-folders-sort-portal {
+.add-source-portal.hierarchy-sort-portal {
 	background: transparent;
 }
 
-.settings-modal-backdrop.collection-folders-sort-backdrop {
+.settings-modal-backdrop.hierarchy-sort-backdrop {
 	align-items: center;
 	justify-items: center;
 	padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
 
-.collection-folders-dialog.is-sort {
+.hierarchy-sort-dialog {
 	height: auto;
 	max-height: min(85dvh, 100%);
 	border: 1px solid var(--border-strong);
@@ -9963,11 +9957,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 }
 
 @media (max-width: 899.98px) {
-	.settings-modal-backdrop.collection-folders-sort-backdrop {
+	.settings-modal-backdrop.hierarchy-sort-backdrop {
 		background: rgb(0 8 13 / 88%);
-	}
-	.collection-folders-dialog.is-sort .semantic-sort-choice-row label {
-		min-height: 44px;
 	}
 }
 
@@ -10112,3 +10103,5 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 	.find-project-result { border-color: ButtonText; }
 	.find-project-result:focus-visible { outline-color: Highlight; }
 }
+
+.hierarchy-sort-dialog .semantic-sort-choice-row label { min-height: 44px; }

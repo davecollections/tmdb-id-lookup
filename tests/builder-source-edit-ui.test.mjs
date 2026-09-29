@@ -1,3 +1,5 @@
+import { sourceEditorFor } from "../builder/src/source-edit/source-editors.js";
+import { buildBuilderViewModel } from "../builder/src/ui/view-model.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,6 +33,7 @@ const vite = await createServer({
 	logLevel: "silent",
 	server: { middlewareMode: true },
 });
+const { HierarchyActionsMenu } = await vite.ssrLoadModule("/src/ui/HierarchyActionsMenu.jsx");
 const { BuilderWorkspace } = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
 const {
 	PeopleEditorFields,
@@ -929,5 +932,59 @@ test("ordinary source editors keep identity, name/reset, options and Preview in 
 			if (index) assert.ok(markup.indexOf(labels[index - 1]) < markup.indexOf(labels[index]), `${family}: ${labels[index - 1]} before ${labels[index]}`);
 		}
 		assert.equal((markup.match(/id="source-edit-title-input"/g) ?? []).length, 1, family);
+	}
+});
+
+test("all nine registered Source adapters expose exactly one ordinary Edit source action", () => {
+	const native=(type,id,media="MOVIE",filters={})=>({provider:"tmdb",tmdbSourceType:type,tmdbId:id,mediaType:media,title:"Saved source",sortBy:type==="COLLECTION"||type==="LIST"?"original":"popularity.desc",filters});
+	const cases=[["movie-collection",native("COLLECTION",10)],["tmdb-list",native("LIST",1)],["people",native("PERSON",31)],["studio",native("COMPANY",420)],["network",native("NETWORK",213,"TV")],
+		["decade",native("DISCOVER",null,"MOVIE",{releaseDateGte:"1960-01-01",releaseDateLte:"1969-12-31"})],
+		["genre",native("DISCOVER",null,"MOVIE",{withGenres:"28"})],["streaming",native("DISCOVER",null,"MOVIE",{watchRegion:"US",withWatchProviders:"8"})],
+		["advanced-discover",native("DISCOVER",null,"MOVIE",{withKeywords:"123"})],
+		["advanced-discover",native("DISCOVER",null,"MOVIE",{withGenres:"28",watchRegion:"US",withWatchProviders:"8"})],
+		[null,{provider:"community",title:"Preserved"}],[null,{addonId:"local-authored",catalogId:"retained",type:"movie",title:"Addon"}]];
+	for (const [adapter,source] of cases) {
+		const controller=createController(); controller.importValue([{id:"c",title:"Collection",folders:[{id:"f",title:"Folder",sources:[source]}]}]);
+		const saved=controller.getState().project.collections[0].folders[0].sources[0]; controller.selectNode(saved.internalId);
+		assert.equal(sourceEditorFor(saved)?.id??null,adapter);
+		const node=buildBuilderViewModel(controller.getState()).sources[0];
+		assert.equal(Object.hasOwn(node,"advancedEditSupported"),false);
+		const html=renderToStaticMarkup(createElement(HierarchyActionsMenu,{node,noun:"source",open:true,disabled:false,onOpen(){},onClose(){},onEdit:node.editSupported?()=>{}:null,editLabel:"Edit source",onDelete(){},registerTrigger(){}}));
+		assert.equal((html.match(/role="menuitem"/g)??[]).length,adapter?2:1);
+		assert.equal(html.includes("Edit source"),Boolean(adapter)); assert.doesNotMatch(html,/Edit Discover/);
+		if(adapter) assert.equal(createSourceEditSession(controller.getState().project,saved.internalId).session.adapterId,adapter);
+	}
+});
+
+test("panel Sort remains visible at unavailable thresholds and boundary menus retain disabled endpoints", () => {
+	const controller = createController();
+	function assertSorts(expected) {
+		const markup = renderToStaticMarkup(createElement(BuilderWorkspace,{controller,state:controller.getState()}));
+		for(const [index,level] of ["collections","folders","sources"].entries()) {
+			const tag=markup.match(new RegExp('<button[^>]*data-action="sort-'+level+'"[^>]*>[\\s\\S]*?</button>'))?.[0];
+			assert.ok(tag,level+" Sort remains visible");
+			assert.ok(tag.includes('aria-label="Sort '+level[0].toUpperCase()+level.slice(1)+'"'));
+			assert.ok(tag.includes('aria-haspopup="dialog"') && tag.includes('aria-hidden="true"'));
+			assert.match(tag, /<svg[^>]*>[\s\S]*<path/);
+			assert.doesNotMatch(tag, />Sort</);
+			assert.equal(tag.includes('disabled=""'),expected[index],level+" availability");
+		}
+	}
+	assertSorts([true,true,true]);
+	controller.importValue([{id:"one",title:"One",pinToTop:true,folders:[]},{id:"two",title:"Two",folders:[{id:"folder",title:"One folder",sources:[{provider:"opaque",title:"One source"}]}]}]);
+	assertSorts([true,true,true]);
+	const source=controller.getState().project.collections[1].folders[0].sources[0];
+	controller.selectNode(source.internalId);
+	assertSorts([true,true,true]);
+	controller.importValue([{id:"many",title:"Many",folders:[{id:"f1",title:"One",sources:[{provider:"opaque",title:"One"},{provider:"opaque",title:"Two"}]},{id:"f2",title:"Two",sources:[]}]},{id:"other",title:"Other",folders:[]}]);
+	controller.selectNode(controller.getState().project.collections[0].folders[0].internalId);
+	assertSorts([false,false,false]);
+	for(const noun of ["collection","folder"]) for(const size of [1,3]) for(let position=0;position<size;position++) {
+		const markup=renderToStaticMarkup(createElement(HierarchyActionsMenu,{node:{internalId:"local",accessibleName:"Local",reorderGroupSize:size,reorderGroupPosition:position},noun,open:true,onMoveBoundary(){},onDelete(){},registerTrigger(){}}));
+		for(const boundary of ["top","bottom"]) {
+			const tag=markup.match(new RegExp('<button[^>]*data-action="move-'+noun+'-'+boundary+'"[^>]*>'))?.[0];
+			assert.ok(tag);
+			assert.equal(tag.includes('disabled=""'),size===1||(boundary==="top"?position===0:position===size-1));
+		}
 	}
 });

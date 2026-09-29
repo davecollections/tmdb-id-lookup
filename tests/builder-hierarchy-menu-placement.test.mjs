@@ -376,7 +376,7 @@ test("menu component keeps shared actions programmatic, clickable, and viewport-
 	const menu = read("builder/src/ui/HierarchyActionsMenu.jsx");
 	const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 	const styles = read("builder/src/styles.css");
-	const placementIndex = menu.indexOf("setPlacement(placeAnchoredMenu(");
+	const placementIndex = menu.indexOf("...placeAnchoredMenu(");
 	const focusIndex = menu.indexOf("focusElementWithoutScroll(menuItems(panelRef.current)[0])");
 
 	assert.ok(placementIndex >= 0);
@@ -387,13 +387,14 @@ test("menu component keeps shared actions programmatic, clickable, and viewport-
 	assert.match(menu, /window\.visualViewport\?\.addEventListener\(\s*"scroll"/);
 	assert.match(menu, /document\.addEventListener\("pointerdown"/);
 	assert.match(menu, /event\.key === "Escape"/);
-	assert.equal((menu.match(/tabIndex=\{-1\}/g) ?? []).length, 6);
+	assert.equal((menu.match(/tabIndex=\{-1\}/g) ?? []).length, 5);
 	assert.match(menu, /onClick=\{\(\) => runAction\(onMoveFolders\)\}/);
-	assert.match(menu, /onClick=\{\(\) => runAction\(onSortFolders\)\}/);
 	assert.match(menu, /onClick=\{\(\) => runAction\(onRemoveFolders\)\}/);
-	assert.match(menu, /onAdvancedEdit \? <button[^>]+onClick=\{\(\) => runAction\(onAdvancedEdit\)\}/);
 	assert.match(menu, /onClick=\{\(\) => runAction\(onEdit\)\}/);
 	assert.match(menu, /onClick=\{\(\) => runAction\(onDelete\)\}/);
+	assert.doesNotMatch(menu, /Edit Discover|onAdvancedEdit|onSortFolders/);
+	assert.match(menu, /panelRef\.current\?\.contains\(event\.target\)/);
+	assert.match(styles, /\.hierarchy-actions-menu\s*\{[^}]*overflow-y:\s*auto/);
 	assert.doesNotMatch(menu, /scrollIntoView/);
 	assert.match(workspace, /<HierarchyActionsMenu[\s\S]*noun=\{noun\}/);
 	assert.match(workspace, /<HierarchyActionsMenu[\s\S]*noun="source"/);

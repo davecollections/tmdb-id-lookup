@@ -3,8 +3,10 @@ import fs from "node:fs";
 import vm from "node:vm";
 import test from "node:test";
 import { createBuilderController } from "../builder/src/application/index.js";
-import { removeFolders, reorderFolders } from "../builder/src/domain/index.js";
+import { reorderCollections, reorderSources, removeFolders, reorderFolders } from "../builder/src/domain/index.js";
 import { applyCollectionFolderShape, collectionFolderShape, folderSortOptions, folderSortText, isPeopleFolderCollection, sortedFolderIds } from "../builder/src/ui/collection-folder-management.js";
+import { applyHierarchySort, createHierarchySortSession, hierarchySortAvailable, sortedCollectionIds, sortedSourceIds } from "../builder/src/ui/hierarchy-sorting.js";
+import { sortedTitleIds, titleSortText } from "../builder/src/ui/title-sorting.js";
 import { createNodeEditorDraft, updateNodeEditorField } from "../builder/src/ui/node-editor.js";
 import { loadFolderArtworkSuggestions, planCuratedFolderShapePatch } from "../builder/src/folder-artwork-suggestions.js";
 import { buildGenreSourceDrafts } from "../builder/src/source-add/index.js";
@@ -318,4 +320,117 @@ test("export/reopened recognized Genre artwork uses published counterparts witho
 	const c = reopened.getState().project.collections[0];
 	assert.equal((await applyCollectionFolderShape(reopened, createNodeEditorDraft(c), { project: reopened.getState().project, collection: c }, "SQUARE")).ok, true);
 	assert.equal(reopened.getState().project.collections[0].folders[0].editable.coverImageUrl, suggestions.curated.coverImageUrl.SQUARE);
+});
+
+function orderingSetup() {
+	let id = 0;
+	const controller = createBuilderController({ idFactory: () => "ordering-" + ++id });
+	assert.equal(controller.importValue(["Zulu", "Zulu", "Alpha", "Alpha"].map((title, index) => ({
+		id: "c-" + index, title, pinToTop: index % 2 === 1, retained: { index },
+		folders: [folder(index, { sources: [native(), { addonId: "local-authored", catalogId: "saved", type: "movie", title: "Addon", retained: [1] }, { provider: "unrecognized", title: "Opaque", retained: [2] }] })],
+	}))).ok, true);
+	return controller;
+}
+
+test("Collection sorting preserves interleaved pin slots, exact subtrees and selection atomically", () => {
+	const controller = orderingSetup();
+	const project = controller.getState().project;
+	const ids = project.collections.map((node) => node.internalId);
+	controller.selectNode(project.collections[0].folders[0].sources[1].internalId);
+	const { before, snapshots } = watch(controller);
+	assert.deepEqual(sortedCollectionIds(project, "az"), [ids[2], ids[3], ids[0], ids[1]]);
+	assert.equal(controller.reorderCollections(sortedCollectionIds(project, "az")).ok, true);
+	const after = controller.getState();
+	assert.equal(after.revision, before.revision + 1); assert.equal(snapshots.length, 1);
+	assert.deepEqual(after.selection, before.selection);
+	after.project.collections.forEach((node, index) => assert.equal(node, project.collections[[2,3,0,1][index]]));
+	assert.deepEqual(after.project.collections.map((node) => node.editable.pinToTop), [false,true,false,true]);
+	assert.deepEqual(sortedCollectionIds(after.project, "za"), ids);
+	assert.equal(reorderCollections(after.project, sortedCollectionIds(after.project, "az")), after.project);
+	assert.equal(controller.reorderCollections(sortedCollectionIds(after.project, "az")).ok, true);
+	assert.equal(controller.getState(), after); assert.equal(snapshots.length, 1);
+});
+
+test("Collection and Source complete permutations reject malformed, foreign and ambiguous identities atomically", () => {
+	for (const method of ["reorderCollections", "reorderSources"]) {
+		const controller = orderingSetup(), before = controller.getState();
+		const project = before.project, target = project.collections[0].folders[0];
+		const nodes = method === "reorderCollections" ? project.collections : target.sources;
+		const ids = nodes.map((node) => node.internalId);
+		const foreign = method === "reorderCollections" ? target.internalId : project.collections[1].folders[0].sources[0].internalId;
+		const sparse = [...ids]; delete sparse[1];
+		for (const invalid of [null, {}, ids.slice(1), [...ids, "extra"], [...ids.slice(0,-1), ids[0]], [...ids.slice(0,-1), "unknown"], [...ids.slice(0,-1), foreign], [...ids.slice(0,-1), ""], [...ids.slice(0,-1), 1], sparse]) {
+			const result = method === "reorderCollections" ? controller[method](invalid) : controller[method](target.internalId, invalid);
+			assert.equal(result.ok, false); assert.equal(controller.getState().project, project);
+			assert.equal(controller.getState().revision, before.revision); assert.deepEqual(controller.getState().selection, before.selection);
+		}
+		const ambiguous = structuredClone(project);
+		ambiguous.collections[1].folders[0].internalId = ids[0];
+		assert.throws(() => method === "reorderCollections" ? reorderCollections(ambiguous, ids) : reorderSources(ambiguous, target.internalId, ids));
+		assert.deepEqual(ambiguous.collections[0].folders[0].sources.map((node) => node.internalId), target.sources.map((node) => node.internalId));
+		if (method === "reorderCollections") assert.equal(controller.reorderCollections([...ids].reverse()).ok, false, "cross-pin-slot permutation rejected");
+		else for (const parent of ["unknown", project.internalId, project.collections[0].internalId, ids[0], project.collections[1].folders[0].internalId]) assert.equal(controller.reorderSources(parent, ids).ok, false);
+	}
+});
+
+test("Source reorder retains native, addon and opaque objects/raw fields and remains manually reorderable", () => {
+	const controller = orderingSetup(), project = controller.getState().project;
+	const target = project.collections[0].folders[0], ids = target.sources.map((node) => node.internalId);
+	controller.selectNode(ids[1]); const { before, snapshots } = watch(controller);
+	assert.equal(controller.reorderSources(target.internalId, [...ids].reverse()).ok, true);
+	const after = controller.getState(), sources = after.project.collections[0].folders[0].sources;
+	sources.forEach((node,index) => { assert.equal(node,target.sources[2-index]); assert.equal(node.rawImported,target.sources[2-index].rawImported); });
+	assert.equal(after.revision,before.revision+1); assert.equal(snapshots.length,1); assert.deepEqual(after.selection,before.selection);
+	assert.equal(reorderSources(after.project,target.internalId,[...ids].reverse()),after.project);
+	controller.reorderSources(target.internalId,[...ids].reverse()); assert.equal(controller.getState(),after);
+	assert.equal(controller.moveNode(ids[0],0).ok,true); assert.equal(controller.getState().project.collections[0].folders[0].sources[0],target.sources[0]);
+});
+
+test("same-order reorder can clear diagnostics without a content revision", () => {
+	const controller = orderingSetup(), project = controller.getState().project;
+	const ids = project.collections.map((node) => node.internalId);
+	controller.reorderCollections([]); const { before, snapshots } = watch(controller);
+	assert.equal(controller.reorderCollections(ids).ok,true);
+	assert.equal(controller.getState().project,project); assert.equal(controller.getState().revision,before.revision);
+	assert.equal(snapshots.length,1);
+});
+
+test("shared Collection/Source comparator retains title-only stable and blank-last semantics", () => {
+	const titles = ["The Zebra","alpha","Alpha","An Apple","A Life","Éclair","ECLAIR","AC/DC","Wong Kar-Wai","Lupita Nyong\u0027o","\u200e","",null,"!!!","2 Worlds","10 Worlds"];
+	const nodes = titles.map((title,index) => ({ internalId:String(index), editable:{title} }));
+	for (const mode of ["az","za"]) {
+		const expected = sortedTitleIds(nodes,mode);
+		assert.deepEqual(sortedCollectionIds({collections:nodes},mode),expected);
+		assert.deepEqual(sortedSourceIds({sources:nodes},mode),expected);
+		assert.deepEqual(expected.slice(-4),["10","11","12","13"]);
+		assert.ok(expected.indexOf("1") < expected.indexOf("2")); assert.ok(expected.indexOf("5") < expected.indexOf("6"));
+	}
+	assert.equal(titleSortText(" The A-Team! "),"A-Team"); assert.equal(titleSortText("AC/DC"),"AC DC");
+	assert.equal(titleSortText("Lupita Nyong\u0027o"),"Lupita Nyong\u0027o");
+	assert.ok(sortedTitleIds(nodes,"az").indexOf("15") < sortedTitleIds(nodes,"az").indexOf("14"),"no numeric collation");
+	for (const labels of [["1950s","1960s","2000s","2020s"],["1950","1960","2000","2020"]]) {
+		const sources = labels.map((title,index) => ({internalId:String(index),editable:{title}}));
+		assert.deepEqual(sortedSourceIds({sources},"az"),["0","1","2","3"]);
+		assert.deepEqual(sortedSourceIds({sources},"za"),["3","2","1","0"]);
+		assert.deepEqual(sortedCollectionIds({collections:sources},"az"),["0","1","2","3"]);
+		assert.deepEqual(sortedCollectionIds({collections:sources},"za"),["3","2","1","0"]);
+	}
+	assert.deepEqual(nodes.map((node) => node.editable.title),titles);
+});
+
+test("list-sort sessions preserve selection changes, reject stale content, and expose exact availability/options", () => {
+	const controller = orderingSetup(), project = controller.getState().project;
+	const parent = project.collections[0], target = parent.folders[0];
+	assert.equal(hierarchySortAvailable({collections:project.collections.slice(0,2)},"collections"),false);
+	assert.equal(hierarchySortAvailable(project,"folders"),false); assert.equal(hierarchySortAvailable(project,"folders",parent.internalId),false);
+	assert.equal(createHierarchySortSession(project,"folders",parent.internalId),null);
+	const session = createHierarchySortSession(project,"sources",target.internalId);
+	assert.deepEqual(session.options.map((o) => o.id),["az","za"]);
+	controller.selectNode(target.sources[1].internalId); const selected=controller.getState().selection;
+	assert.equal(applyHierarchySort(controller,session,"last").ok,false);
+	assert.equal(applyHierarchySort(controller,session,"az").ok,true); assert.deepEqual(controller.getState().selection,selected);
+	assert.equal(applyHierarchySort(controller,session,"za").ok,false,"content change invalidates opening authority");
+	const current = controller.getState().project;
+	const next = createHierarchySortSession(current,"sources",target.internalId);
+	assert.deepEqual(applyHierarchySort(controller,next,"az"),{ok:true,changed:false});
 });
