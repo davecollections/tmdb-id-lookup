@@ -4306,6 +4306,15 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 }
 
+/* Reuse the compact header creation presentation on genuinely narrow phones. */
+@media (max-width: 389px) {
+	.panel-header .primary-action {
+		width: 46px;
+		padding: 0;
+		font-size: 0;
+	}
+}
+
 @media (min-width: 900px) and (max-width: 1239px) {
 	.panel-header .primary-action {
 		width: 46px;

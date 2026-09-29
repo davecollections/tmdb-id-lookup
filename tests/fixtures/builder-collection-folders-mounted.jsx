@@ -590,7 +590,19 @@ window.measureHierarchyOrdering = () => {
 			const countRect=count.getBoundingClientRect(), createRect=create.getBoundingClientRect();
 			assert(create.previousElementSibling===count && actionGroup.children.length===2 && Math.abs(countRect.top+countRect.height/2-createRect.top-createRect.height/2)<=1,"Count/create remain one clean row even with enlarged text");
 		}
-		if(create) assert(create.textContent.replace(/\s/g,"")==="+"+noun && create.getAttribute("aria-label")===(noun==="Source"?"Add source":"New "+noun.toLowerCase()) && create.querySelector('span[aria-hidden="true"]'),"Compact header creation copy keeps explicit action naming");
+		if(create) {
+			const plus=create.querySelector('span[aria-hidden="true"]'), plusOnly=innerWidth<=389 || (innerWidth>=900 && innerWidth<=1239);
+			assert(create.textContent.replace(/\s/g,"")==="+"+noun && create.getAttribute("aria-label")===(noun==="Source"?"Add source":"New "+noun.toLowerCase()) && plus,"Compact header creation copy keeps explicit action naming");
+			const label=[...create.childNodes].find(node=>node.nodeType===Node.TEXT_NODE && node.textContent.trim()===noun);
+			assert(label,"Creation noun remains in the existing button markup");
+			const labelRange=document.createRange(); labelRange.selectNodeContents(label);
+			const labelWidth=labelRange.getBoundingClientRect().width;
+			assert(plusOnly ? getComputedStyle(create).fontSize==="0px" && labelWidth===0 && create.getBoundingClientRect().width===46 : parseFloat(getComputedStyle(create).fontSize)>0 && labelWidth>0,"Responsive creation label is visually plus-only only at approved phone/desktop widths");
+			assert(parseFloat(getComputedStyle(plus).fontSize)>0 && plus.getBoundingClientRect().width>0,"Decorative plus stays visible");
+		}
+		for(const trailing of header.closest(".workspace-panel").querySelectorAll(".hierarchy-add-action")) {
+			assert(parseFloat(getComputedStyle(trailing).fontSize)>0 && trailing.textContent.replace(/\s/g,"")===(noun==="Source"?"+Addsource":"+New"+noun.toLowerCase()),"Bottom creation retains its full visible wording");
+		}
 	}
 	return {width:innerWidth,height:innerHeight,headers:headers.length,level:$(".workspace").dataset.mobileLevel};
 };
