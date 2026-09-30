@@ -1,3 +1,4 @@
+import { moveHierarchyNodeToBoundary } from "../builder/src/ui/hierarchy-actions.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -903,4 +904,59 @@ test("capture admission and one pointer-session gate protect active and settling
 	assert.match(completePointer, /visiblePositionForGroupDestination\(/);
 	assert.match(completePointer, /moveSiblingNodeToPosition\([\s\S]*controller/);
 	assert.match(workspace, /const disabled = navigationLocked \|\| node\.reorderGroupSize <= 1/);
+});
+
+test("menu boundaries resolve current Collection groups and retain exact state at satisfied endpoints", () => {
+	for (const index of [0,1,2,3,4,5]) for (const boundary of ["top","bottom"]) {
+		const controller=createController();
+		controller.importValue(Array.from({length:6},(_,i)=>({id:"c"+i,title:"Collection "+i,pinToTop:i%2===1,folders:[{id:"f"+i,title:"Folder",sources:[]}]})));
+		const before=controller.getState(), node=before.project.collections[index];
+		let notifications=0, calls=0; controller.subscribe(()=>notifications++);
+		const wrapper={getState:controller.getState,moveNode(...args){calls++;return controller.moveNode(...args);}};
+		const result=moveHierarchyNodeToBoundary(wrapper,node.internalId,"collection",boundary);
+		const expectedMove = boundary === "top" ? index >= 2 : index < 4;
+		assert.equal(result.moved,expectedMove); assert.equal(calls,Number(expectedMove));
+		assert.equal(notifications,Number(expectedMove)); assert.equal(controller.getState().revision,before.revision+Number(expectedMove));
+		assert.deepEqual(controller.getState().selection,before.selection);
+		const group=controller.getState().project.collections.filter(item=>item.editable.pinToTop===node.editable.pinToTop);
+		assert.equal(boundary==="top"?group[0]:group.at(-1),node);
+		assert.equal(result.message,"Moved collection “Collection "+index+"” to "+boundary+" of its group.");
+	}
+});
+
+test("Folder boundary action uses current order and parent without mutating selection", () => {
+	const controller=createController();
+	controller.importValue([{id:"c",title:"Collection",folders:[0,1,2].map(i=>({id:"f"+i,title:"Folder "+i,sources:[]}))}]);
+	const collection=controller.getState().project.collections[0], folders=collection.folders;
+	controller.selectNode(folders[1].internalId);
+	controller.moveNode(folders[1].internalId,0);
+	const before=controller.getState();
+	assert.equal(moveHierarchyNodeToBoundary(controller,folders[1].internalId,"folder","top").moved,false);
+	assert.equal(controller.getState(),before);
+	const result=moveHierarchyNodeToBoundary(controller,folders[1].internalId,"folder","bottom");
+	assert.equal(result.moved,true); assert.equal(result.message,"Moved folder “Folder 1” to bottom.");
+	assert.equal(controller.getState().project.collections[0].folders.at(-1),folders[1]);
+	assert.deepEqual(controller.getState().selection,before.selection);
+	for (const [id,noun] of [["missing","folder"],[folders[0].internalId,"source"]]) assert.equal(moveHierarchyNodeToBoundary(controller,id,noun,"top").moved,false);
+	controller.removeFolders(collection.internalId,[folders[0].internalId,folders[2].internalId]);
+	assert.equal(moveHierarchyNodeToBoundary(controller,folders[1].internalId,"folder","top").moved,false);
+});
+
+test("Folder boundary first/middle/last matrix preserves exact subtrees in one move", () => {
+	for (const position of [0,1,2]) for (const boundary of ["top","bottom"]) {
+		const controller=createController();
+		controller.importValue([{id:"local",title:"Local",folders:[0,1,2].map(i=>({id:"f"+i,title:"Folder "+i,sources:[{provider:"opaque",title:"Retained",unknown:{i}}]}))}]);
+		const node=controller.getState().project.collections[0].folders[position];
+		controller.selectNode(node.sources[0].internalId);
+		const before=controller.getState();
+		let calls=0;
+		const wrapper={getState:controller.getState,moveNode(...args){calls++;return controller.moveNode(...args);}};
+		const result=moveHierarchyNodeToBoundary(wrapper,node.internalId,"folder",boundary);
+		const changed=boundary==="top"?position!==0:position!==2;
+		assert.equal(result.moved,changed); assert.equal(calls,Number(changed));
+		assert.equal(controller.getState().revision,before.revision+Number(changed));
+		const siblings=controller.getState().project.collections[0].folders;
+		assert.equal(boundary==="top"?siblings[0]:siblings.at(-1),node);
+		assert.deepEqual(controller.getState().selection,before.selection);
+	}
 });

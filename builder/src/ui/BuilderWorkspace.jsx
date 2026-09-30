@@ -68,7 +68,7 @@ import { createCollectionCreationSession, isUntouchedWelcomeCreation } from "./c
 import { CreationDialog } from "./CreationDialog.jsx";
 import { DeleteConfirmation } from "./DeleteConfirmation.jsx";
 import { createDraftCollection, createDraftFolder } from "./draft-actions.js";
-import { createTargetedNodeEditorDraft } from "./hierarchy-actions.js";
+import { createTargetedNodeEditorDraft, moveHierarchyNodeToBoundary } from "./hierarchy-actions.js";
 import {
 	buildDeletionImpact,
 	locateProjectNode,
@@ -95,7 +95,9 @@ import { HierarchyActionsMenu } from "./HierarchyActionsMenu.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { NodeEditor } from "./NodeEditor.jsx";
 import { CollectionFoldersDialog } from "./CollectionFoldersDialog.jsx";
-import { applyCollectionFolderShape, collectionFolderShape, sortedFolderIds } from "./collection-folder-management.js";
+import { HierarchySortDialog } from "./HierarchySortDialog.jsx";
+import { applyHierarchySort, createHierarchySortSession, hierarchySortAvailable } from "./hierarchy-sorting.js";
+import { applyCollectionFolderShape, collectionFolderShape } from "./collection-folder-management.js";
 import { NetworkSourceFlow } from "./NetworkSourceFlow.jsx";
 import { PeopleSourceFlow } from "./PeopleSourceFlow.jsx";
 import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
@@ -126,36 +128,28 @@ import {
 	requestWorkspaceReturn,
 } from "./workspace-return-actions.js";
 
-function PanelHeader({
-	id,
-	title,
-	count,
-	action,
-	headingAction = null,
-	mobileInlineCount = false,
-}) {
-	const countLabel = count === 1 && title.endsWith("s")
-		? `${count} ${title.slice(0, -1).toLowerCase()}`
-		: `${count} ${title.toLowerCase()}`;
+function SortIcon() {
+	return (
+		<svg className="panel-sort-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+			<path d="M6 16V4m-3 3 3-3 3 3M14 4v12m-3-3 3 3 3-3" />
+		</svg>
+	);
+}
 
+function PanelHeader({ id, title, count, action, onSort, sortDisabled, headingAction = null }) {
+	const countLabel = count + " " + (count === 1 && title.endsWith("s") ? title.slice(0, -1) : title).toLowerCase();
+	const sortLabel = "Sort " + title;
 	return (
 		<header className="panel-header" data-panel-header={title.toLowerCase()}>
 			<div className="panel-header-title">
-				<h2 id={id}>
-					{title}
-					{mobileInlineCount ? (
-						<span className="panel-title-inline-count mobile-only"> · {count}</span>
-					) : null}
-				</h2>
+				<h2 id={id}>{title}</h2>
 				{headingAction}
+				<button type="button" className="panel-sort-action" data-action={"sort-" + title.toLowerCase()} aria-label={sortLabel} title={sortLabel} aria-haspopup="dialog" disabled={sortDisabled} onClick={onSort}>
+					<SortIcon />
+				</button>
 			</div>
 			<div className="panel-header-actions">
-				<span
-					className={`panel-count${mobileInlineCount ? " panel-count-desktop-only" : ""}`}
-					aria-label={countLabel}
-				>
-					{count}
-				</span>
+				<span className="panel-count" aria-label={countLabel}>{count}</span>
 				{action}
 			</div>
 		</header>
@@ -341,7 +335,7 @@ function HierarchyCard({
 	onOpenEditor,
 	enableDoubleClickEdit,
 	onRequestDelete,
-	onSortFolders,
+	onMoveBoundary,
 	onRemoveFolders,
 	onMoveFolders,
 	dragState,
@@ -407,7 +401,7 @@ function HierarchyCard({
 						onClose={onCloseActionsMenu}
 						onEdit={onOpenEditor}
 						onDelete={onRequestDelete}
-						onSortFolders={noun === "collection" ? onSortFolders : null}
+						onMoveBoundary={onMoveBoundary}
 						onRemoveFolders={noun === "collection" ? onRemoveFolders : null}
 						onMoveFolders={noun === "collection" || noun === "folder" ? onMoveFolders : null}
 						registerTrigger={registerActionsTrigger}
@@ -637,7 +631,6 @@ function SourceList({ sources, actionProps }) {
 									onOpen={actionProps.onOpenActionsMenu}
 									onClose={actionProps.onCloseActionsMenu}
 									onEdit={source.editSupported ? actionProps.onOpenSourceEditor : null}
-									onAdvancedEdit={source.advancedEditSupported ? actionProps.onOpenAdvancedDiscoverEditor : null}
 									editLabel="Edit source"
 									onDelete={actionProps.onRequestDelete}
 									registerTrigger={actionProps.registerActionsTrigger}
@@ -759,6 +752,9 @@ export function BuilderWorkspace({
 	const [collectionShapeTouched, setCollectionShapeTouched] = useState(false);
 	const [editorPreparing, setEditorPreparing] = useState(false);
 	const editorPreparingRef = useRef(false);
+	const [sortSession, setSortSession] = useState(null);
+	const [sortError, setSortError] = useState(null);
+	const sortRestoreRef = useRef(null);
 	const [collectionFoldersSession, setCollectionFoldersSession] = useState(null);
 	const [collectionFoldersError, setCollectionFoldersError] = useState(null);
 	const collectionFoldersTriggerRef = useRef(null);
@@ -925,7 +921,7 @@ export function BuilderWorkspace({
 	const addSourceLocked = visibleAddSourceSession !== null;
 	const sourceEditLocked = sourceEdit !== null;
 	const bulkEditLocked = bulkEditDraft !== null;
-	const modalLocked = moveFoldersSession !== null || findOpen || editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
+	const modalLocked = sortSession !== null || moveFoldersSession !== null || findOpen || editorLocked || deleteLocked || creationLocked || addSourceLocked || sourceEditLocked || aboutCreditsOpen || bulkEditLocked || collectionFoldersSession !== null || nuvioOpen;
 	const navigationLocked = modalLocked || returnConfirmationOpen;
 	const hierarchyInteractionLocked = navigationLocked || exportOpen || actionsMenuInternalId !== null;
 	const activeMobileLevel = mobileLevelOverride ?? view.activeMobileLevel;
@@ -976,6 +972,12 @@ export function BuilderWorkspace({
 		editRestoreFocusRef.current = null;
 		if (!exportOpen) target.focus?.();
 	}, [editorDraft]);
+
+	useEffect(() => {
+		if (sortSession !== null || sortRestoreRef.current === null) return;
+		focusElementWithoutScroll(sortRestoreRef.current);
+		sortRestoreRef.current = null;
+	}, [sortSession]);
 
 	useEffect(() => {
 		if (!restoreCollectionFoldersFocus) return;
@@ -1316,9 +1318,9 @@ export function BuilderWorkspace({
 		setEditorDraft(draft);
 	}
 
-	function openSourceEditor(internalId, trigger, editorId = null) {
+	function openSourceEditor(internalId, trigger) {
 		if (navigationLocked || pointerInteractionLocked()) return;
-		const result = createSourceEditSession(state.project, internalId, editorId);
+		const result = createSourceEditSession(controller.getState().project, internalId);
 		if (!result.ok) return;
 		setKeyboardReorderInternalId(null);
 		setActionsMenuInternalId(null);
@@ -1496,17 +1498,50 @@ export function BuilderWorkspace({
 		if (result.ok) closeEditor();
 	}
 
-	function openCollectionFolders(mode, internalId, trigger) {
+	function openHierarchySort(level, trigger) {
+		if (hierarchyInteractionLocked || pointerInteractionLocked()) return;
+		const current = controller.getState();
+		const parentId = level === "folders" ? current.selection.collectionInternalId : level === "sources" ? current.selection.folderInternalId : null;
+		const session = createHierarchySortSession(current.project, level, parentId);
+		if (!session) return;
+		setKeyboardReorderInternalId(null);
+		setSortError(null);
+		setSortSession({ ...session, trigger });
+	}
+
+	function closeHierarchySort() {
+		sortRestoreRef.current = sortSession?.trigger ?? null;
+		setSortSession(null);
+		setSortError(null);
+	}
+
+	function applyListSort(mode) {
+		const result = applyHierarchySort(controller, sortSession, mode);
+		if (!result.ok) { setSortError(result.error); return; }
+		const label = sortSession.level[0].toUpperCase() + sortSession.level.slice(1);
+		closeHierarchySort();
+		announceMovement(result.changed ? label + " sorted." : label + " already in this order.");
+	}
+
+	function moveToBoundary(internalId, noun, boundary, trigger) {
+		if (navigationLocked || pointerInteractionLocked()) return;
+		setKeyboardReorderInternalId(null);
+		const result = moveHierarchyNodeToBoundary(controller, internalId, noun, boundary);
+		if (result.moved) completeMovement(result.node, result.message);
+		else focusElementWithoutScroll(trigger);
+	}
+
+	function openCollectionFolders(internalId, trigger) {
 		if (navigationLocked || pointerInteractionLocked()) return;
 		const project = controller.getState().project;
 		const collection = project.collections.find((node) => node.internalId === internalId);
-		if (!collection || collection.folders.length < (mode === "sort" ? 2 : 1)) return;
+		if (!collection || collection.folders.length < 1) return;
 		if (controller.getState().selection.collectionInternalId !== internalId) controller.selectNode(internalId);
 		if (!desktopViewport) setMobileLevelOverride("collections");
 		collectionFoldersTriggerRef.current = trigger;
 		setKeyboardReorderInternalId(null);
 		setCollectionFoldersError(null);
-		setCollectionFoldersSession({ mode, project, collection });
+		setCollectionFoldersSession({ project, collection });
 	}
 
 	function closeCollectionFolders() {
@@ -1524,20 +1559,13 @@ export function BuilderWorkspace({
 			setCollectionFoldersError("This collection or project changed. Close and reopen this dialog before applying.");
 			return;
 		}
-		const result = session.mode === "remove"
-			? controller.removeFolders(session.collection.internalId, value)
-			: controller.reorderFolders(session.collection.internalId, sortedFolderIds(session.collection, value));
+		const result = controller.removeFolders(session.collection.internalId, value);
 		if (!result.ok) {
 			setCollectionFoldersError("The folders could not be changed. Close and reopen this dialog to try again.");
 			return;
 		}
 		setCollectionFoldersSession(null);
-		if (session.mode === "sort") {
-			if (!desktopViewport) setMobileLevelOverride("collections");
-			setRestoreCollectionFoldersFocus(true);
-			setMovementStatusText("Folders sorted.");
-			return;
-		}
+
 		const after = controller.getState();
 		const collection = after.project.collections.find((node) => node.internalId === session.collection.internalId);
 		const folderId = after.selection.folderInternalId;
@@ -2521,10 +2549,9 @@ export function BuilderWorkspace({
 		onSelect: selectNode,
 		onOpenEditor: openEditor,
 		onOpenSourceEditor: openSourceEditor,
-		onOpenAdvancedDiscoverEditor: (id, trigger) => openSourceEditor(id, trigger, "advanced-discover"),
 		onRequestDelete: requestDeletion,
-		onSortFolders: (id, trigger) => openCollectionFolders("sort", id, trigger),
-		onRemoveFolders: (id, trigger) => openCollectionFolders("remove", id, trigger),
+		onMoveBoundary: moveToBoundary,
+		onRemoveFolders: openCollectionFolders,
 		onMoveFolders: openMoveFolders,
 		dragState,
 		keyboardReorderInternalId,
@@ -2680,9 +2707,10 @@ export function BuilderWorkspace({
 					<section className="workspace-panel collections-panel" data-panel="collections" aria-labelledby="collections-title">
 						<PanelHeader
 							id="collections-title"
+							onSort={(event) => openHierarchySort("collections", event.currentTarget)}
+							sortDisabled={hierarchyInteractionLocked || !hierarchySortAvailable(state.project, "collections", null)}
 							title="Collections"
 							count={view.collections.length}
-							mobileInlineCount
 							headingAction={(
 								<button
 									ref={bulkEditTriggerRef}
@@ -2703,11 +2731,12 @@ export function BuilderWorkspace({
 									className="primary-action"
 									type="button"
 									data-action="create-collection"
+									aria-label="New collection"
 									disabled={hierarchyInteractionLocked}
 									onClick={createCollection}
 								>
 									<span aria-hidden="true">+</span>
-									New collection
+									Collection
 								</button>
 							)}
 						/>
@@ -2776,19 +2805,21 @@ export function BuilderWorkspace({
 						) : null}
 						<PanelHeader
 							id="folders-title"
+							onSort={(event) => openHierarchySort("folders", event.currentTarget)}
+							sortDisabled={hierarchyInteractionLocked || !hierarchySortAvailable(state.project, "folders", state.selection.collectionInternalId)}
 							title="Folders"
 							count={view.folders.length}
-							mobileInlineCount
 							action={view.selectedCollection ? (
 								<button
 									className="primary-action"
 									type="button"
 									data-action="create-folder"
+									aria-label="New folder"
 									disabled={hierarchyInteractionLocked}
 									onClick={createFolder}
 								>
 									<span aria-hidden="true">+</span>
-									New folder
+									Folder
 								</button>
 							) : null}
 						/>
@@ -2862,19 +2893,21 @@ export function BuilderWorkspace({
 						) : null}
 						<PanelHeader
 							id="sources-title"
+							onSort={(event) => openHierarchySort("sources", event.currentTarget)}
+							sortDisabled={hierarchyInteractionLocked || !hierarchySortAvailable(state.project, "sources", state.selection.folderInternalId)}
 							title="Sources"
 							count={view.sources.length}
-							mobileInlineCount
 							action={view.selectedFolder ? (
 								<button
 									className="primary-action"
 									type="button"
 									data-action="add-source"
+									aria-label="Add source"
 									disabled={hierarchyInteractionLocked}
 									onClick={(event) => openAddSource(event.currentTarget)}
 								>
 									<span aria-hidden="true">+</span>
-									Add source
+									Source
 								</button>
 							) : null}
 						/>
@@ -3009,7 +3042,8 @@ export function BuilderWorkspace({
 					onCancel={closeEditor}
 				/>
 			) : null}
-			{collectionFoldersSession ? <CollectionFoldersDialog collection={collectionFoldersSession.collection} mode={collectionFoldersSession.mode} error={collectionFoldersError} onApply={applyCollectionFolders} onCancel={closeCollectionFolders} /> : null}
+			{sortSession ? <HierarchySortDialog session={sortSession} error={sortError} onApply={applyListSort} onCancel={closeHierarchySort} /> : null}
+			{collectionFoldersSession ? <CollectionFoldersDialog collection={collectionFoldersSession.collection} error={collectionFoldersError} onApply={applyCollectionFolders} onCancel={closeCollectionFolders} /> : null}
 			{deleteConfirmation ? (
 				<DeleteConfirmation
 					impact={deleteConfirmation}

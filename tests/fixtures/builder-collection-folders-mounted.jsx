@@ -14,7 +14,7 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 const click = async (element) => { assert(element, "Missing click target"); element.focus({ preventScroll: true }); element.click(); await frame(); };
 const input = async (element, value) => { assert(element, "Missing input target"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(element, value); element.dispatchEvent(new Event("input", { bubbles: true })); await frame(); };
 const button = (text) => $$('[role="dialog"] button').find((element) => element.textContent === text);
-const modal = () => $('[data-collection-folders-dialog]');
+const modal = () => $('[data-collection-folders-dialog], [data-hierarchy-sort-dialog]');
 let root;
 let controller;
 let artwork;
@@ -62,15 +62,23 @@ async function showCollections() {
 	if (collectionsBack?.getClientRects().length) await click(collectionsBack);
 }
 async function open(action) {
+	if (action === "sort-folders") {
+		const sourcesBack = $('.sources-panel .back-control');
+		if (sourcesBack?.getClientRects().length) await click(sourcesBack);
+		if (innerWidth < 900 && $(".workspace").dataset.mobileLevel === "collections") await click($('[data-node-type="collection"]'));
+		const trigger = $('[data-action="sort-folders"]');
+		await click(trigger);
+		return trigger;
+	}
 	await showCollections();
 	const trigger = $('[data-action="open-collection-actions"]');
 	await click(trigger);
-	assert($$('[data-actions-menu="collection"] [role="menuitem"]').map((el) => el.textContent).join("|") === "Edit|Move folders|Sort folders|Delete folders|Delete collection", "Collection menu order");
+	assert($$('[data-actions-menu="collection"] [role="menuitem"]').map((el) => el.textContent).join("|") === "Edit|Move to top|Move to bottom|Move folders|Delete folders|Delete collection", "Collection menu order");
 	await click($(`[data-action="${action}"]`));
 	return trigger;
 }
 async function closeEditor() { await click($('[data-action="cancel-node-edit"]')); }
-function measure() {
+function measure({ wholePageContainment = true } = {}) {
 	const dialog = modal();
 	const rect = dialog.getBoundingClientRect();
 	const actions = $('.collection-folders-actions').getBoundingClientRect();
@@ -78,7 +86,8 @@ function measure() {
 	assert(rect.left >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1, "Dialog fits viewport");
 	assert(actions.bottom <= innerHeight + 1 && actions.top >= 0, "Footer remains reachable");
 	assert(dialog.scrollHeight <= dialog.clientHeight + 1, "Modal does not become a second scroll owner");
-	assert(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "No horizontal overflow");
+	assert(dialog.scrollWidth <= dialog.clientWidth + 1, "Dialog has no horizontal overflow");
+	if (wholePageContainment) assert(document.documentElement.scrollWidth <= innerWidth, "No horizontal overflow");
 	assert(document.body.style.position === "fixed", "Body scroll locked");
 	assert($('.workspace-underlay').inert, "Workspace inert");
 	const removing = dialog.dataset.collectionFoldersDialog === "remove";
@@ -139,7 +148,7 @@ window.runCollectionFoldersCase = async () => {
 	if (innerWidth < 900) assert($('.workspace').dataset.mobileLevel === "folders", "Mobile returns to Folder level");
 	assert(document.activeElement.dataset.nodeId === collection.folders[15].internalId || document.activeElement.textContent.includes("Folder 015"), "Focus recovers to surviving folder");
 	await open("sort-folders");
-	assert($$('input[name="collection-folder-sort"]').length === 2, "Mixed non-People collection has only generic sorts");
+	assert($$('input[name="hierarchy-sort"]').length === 2, "Mixed non-People collection has only generic sorts");
 	const sortLayout = measure();
 	const sameOrder = controller.getState();
 	await click(button("Sort folders"));
@@ -157,7 +166,7 @@ window.runCollectionPeopleCase = async () => {
 	const collection = await mount(project(7, true));
 	const before = controller.getState();
 	await open("sort-folders");
-	assert($$('input[name="collection-folder-sort"]').length === 4, "People offers A–Z, Z–A, First name and Last name");
+	assert($$('input[name="hierarchy-sort"]').length === 4, "People offers A–Z, Z–A, First name and Last name");
 	const layout = measure();
 	await click($('input[value="last"]'));
 	await click(button("Sort folders"));
@@ -175,7 +184,7 @@ window.runCollectionImportedPeopleCase = async () => {
 	const before = controller.getState();
 	const sourceBytes = JSON.stringify(collection.folders.map((folder) => folder.sources));
 	await open("sort-folders");
-	assert($$('input[name="collection-folder-sort"]').map((el) => el.value).join("|") === "az|za|first|last", "Nuvio-expanded imported People exposes all four choices");
+	assert($$('input[name="hierarchy-sort"]').map((el) => el.value).join("|") === "az|za|first|last", "Nuvio-expanded imported People exposes all four choices");
 	const layout = measure();
 	await click($('input[value="first"]'));
 	await click(button("Sort folders"));
@@ -200,7 +209,7 @@ window.runCollectionOwnerImportCase = async () => {
 	await mount([ownerActors]);
 	const before = controller.getState();
 	await open("sort-folders");
-	assert($$('input[name="collection-folder-sort"]').map((el) => el.value).join("|") === "az|za", "Owner's LIST/opaque Actors remains fail-closed");
+	assert($$('input[name="hierarchy-sort"]').map((el) => el.value).join("|") === "az|za", "Owner's LIST/opaque Actors remains fail-closed");
 	const layout = measure();
 	await click(button("Cancel"));
 	assert(controller.getState().project === before.project && controller.getState().revision === before.revision, "Inspection/Cancel preserves the complete owner import");
@@ -337,8 +346,8 @@ window.prepareCollectionSortPresentation = async (people) => {
 	presentationTrigger = await open("sort-folders");
 	return window.measureCollectionSortPresentation(people);
 };
-window.measureCollectionSortPresentation = (people) => {
-	const layout = measure();
+window.measureCollectionSortPresentation = (people, { hierarchyOrdering = false } = {}) => {
+	const layout = measure({ wholePageContainment: !hierarchyOrdering });
 	const dialog = modal();
 	const rect = dialog.getBoundingClientRect();
 	const viewport = window.visualViewport;
@@ -349,14 +358,14 @@ window.measureCollectionSortPresentation = (people) => {
 	assert(rect.left >= left + 11 && rect.right <= left + width - 11 && rect.top >= top + 11 && rect.bottom <= top + height - 11, "Compact Sort remains inside the Visual Viewport with side margins");
 	assert(rect.height < height - 24, "Sort uses natural compact content height");
 	assert(Math.abs(rect.top + rect.height / 2 - (top + height / 2)) <= 1, "Sort is centered when its content fits");
-	const choices = $$('input[name="collection-folder-sort"]');
+	const choices = $$('input[name="hierarchy-sort"]');
 	assert(choices.map((el) => el.value).join("|") === (people ? "az|za|first|last" : "az|za"), "Exact ordinary/People choices retained");
 	const labels = choices.map((el) => el.closest("label"));
 	assert(labels.every((label) => label.getBoundingClientRect().height >= (innerWidth < 900 ? 44 : 36)), "Comfortable sort targets");
 	assert(labels.every((label) => label.scrollWidth <= label.clientWidth + 1), "No clipped choice labels");
 	const scrollOwners = [...dialog.querySelectorAll("*")].filter((el) => /auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight + 1);
 	assert(scrollOwners.length <= 1, "At most one appropriate inner scroll owner");
-	assert(!scrollOwners.length, "These short Sort forms need no vertical scrolling");
+	if (!hierarchyOrdering) assert(!scrollOwners.length, "These short Sort forms need no vertical scrolling");
 	return { ...layout, height: innerHeight, choices: choices.length, left: rect.left, top: rect.top, scrollOwners: scrollOwners.length, minChoiceHeight: Math.min(...labels.map((label) => label.getBoundingClientRect().height)) };
 };
 window.prepareGlobalDisplayPresentation = async () => {
@@ -539,4 +548,298 @@ window.finishSingleDeleteCase = async (commit = false) => {
 	if (!commit) assert(controller.getState().project === before.project && document.activeElement === trigger, "Cancel keeps project and restores exact trigger");
 	else assert(document.activeElement !== document.body && document.activeElement.isConnected && !document.activeElement.closest('[inert]'), "Delete focuses surviving context");
 	return { kind, commit, safeFocus: true, restoredFocus: true, width: innerWidth };
+};
+
+// #273 uses local authored hierarchy only; no external responses are replaced.
+function orderingProject() {
+	return ["Zulu ordinary","Zulu pinned","Alpha ordinary","Alpha pinned","Beta ordinary","Beta pinned"].map((title,c)=>({
+		id:"order-c"+c,title,pinToTop:c%2===1,folders:["Zulu","Alpha","Beta"].map((name,f)=>({id:"order-f"+c+"-"+f,title:name,sources:["2020s","1950s","2000s","1960s"].map((year,s)=>({provider:"preserved-ordering-fixture",title:year,retained:{c,f,s}}))})),
+	}));
+}
+window.prepareHierarchyOrdering = async (level="collections") => {
+	const collection=await mount(orderingProject());
+	controller.selectNode(collection.folders[0].sources[0].internalId); await frame();
+	if(level==="collections") await showCollections();
+	if(level==="folders" && innerWidth<900) await click($(".sources-panel .back-control"));
+	window.scrollTo(0,0); await frame();
+	return window.measureHierarchyOrdering();
+};
+// Read-only, bounded failure evidence; this must not affect the layout under test.
+function hierarchyOverflowDetails() {
+	const root=document.documentElement, body=document.body, viewportWidth=root.clientWidth;
+	const short=value=>String(value ?? "").replace(/\s+/g," ").trim().slice(0,120);
+	const identity=element=>({
+		tag:element.tagName.toLowerCase(),id:element.id || undefined,
+		className:short(element.getAttribute("class")),
+		data:Object.fromEntries(Object.entries(element.dataset ?? {}).slice(0,6).map(([key,value])=>[key,short(value)])),
+		ariaLabel:short(element.getAttribute("aria-label")) || undefined,
+		text:short(element.textContent),
+	});
+	const rect=element=>{
+		if(!element)return null;
+		const {left,right,top,bottom,width,height}=element.getBoundingClientRect();
+		return {left,right,top,bottom,width,height};
+	};
+	const visible=element=>{
+		if(!element.getClientRects().length)return false;
+		const bounds=element.getBoundingClientRect(), style=getComputedStyle(element);
+		if(bounds.width<=0 || bounds.height<=0 || style.display==="none" || ["hidden","collapse"].includes(style.visibility))return false;
+		for(let ancestor=element;ancestor;ancestor=ancestor.parentElement) {
+			const ancestorStyle=getComputedStyle(ancestor);
+			if(ancestorStyle.opacity==="0" || ancestorStyle.clip==="rect(0px, 0px, 0px, 0px)" || ancestorStyle.clipPath==="inset(50%)")return false;
+		}
+		return true;
+	};
+	const dimensions=element=>({
+		clientWidth:element.clientWidth,scrollWidth:element.scrollWidth,
+		overflowPx:Math.max(0,element.scrollWidth-element.clientWidth),
+	});
+	const css=element=>{
+		const style=getComputedStyle(element);
+		return Object.fromEntries(["display","position","width","minWidth","maxWidth","paddingLeft","paddingRight","marginLeft","marginRight","fontSize","whiteSpace","overflowX","flex","flexBasis","flexShrink","boxSizing","columnGap","gridTemplateColumns"].map(key=>[key,style[key]]));
+	};
+	const candidates=$$("body *").filter(visible).map(element=>{
+		const bounds=rect(element), beyondLeft=Math.max(0,-bounds.left), beyondRight=Math.max(0,bounds.right-viewportWidth);
+		return {element,bounds,beyondLeft,beyondRight,excursion:Math.max(beyondLeft,beyondRight)};
+	}).filter(item=>item.excursion>0).sort((a,b)=>b.excursion-a.excursion);
+	const headers=$$(".panel-header").filter(visible).slice(0,3).map(header=>{
+		const title=header.querySelector(".panel-header-title"), actions=header.querySelector(".panel-header-actions");
+		const titleRect=rect(title), actionsRect=rect(actions), style=getComputedStyle(header);
+		const gap=parseFloat(style.columnGap) || 0;
+		const available=header.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+		const required=titleRect.width+actionsRect.width+gap;
+		return {
+			panel:header.dataset.panelHeader,...dimensions(header),rect:rect(header),
+			padding:style.padding,paddingLeft:style.paddingLeft,paddingRight:style.paddingRight,columnGap:style.columnGap,
+			titleGroup:titleRect,actionsGroup:actionsRect,h2:rect(header.querySelector("h2")),
+			count:rect(header.querySelector(".panel-count")),settings:rect(header.querySelector(".presentation-settings-trigger")),
+			sort:rect(header.querySelector(".panel-sort-action")),create:rect(header.querySelector(".primary-action")),
+			titleActionsWrap:Math.abs(titleRect.top+titleRect.height/2-actionsRect.top-actionsRect.height/2)>1,
+			available,requiredCombinedWidth:required,reserve:available-required,
+		};
+	});
+	return {
+		viewport:{width:innerWidth,height:innerHeight,expectedWidth:window.orderingExpectedWidth,scrollX},
+		rootFontSize:getComputedStyle(root).fontSize,rootInlineFontSize:root.style.fontSize,
+		enlargementMethod:'document.documentElement.style.fontSize = "200%"',
+		mobileLevel:$(".workspace")?.dataset.mobileLevel,
+		document:dimensions(root),body:dimensions(body),overflowingElementCount:candidates.length,
+		// Excursion alone does not prove causation: fixed and clipped descendants remain labelled.
+		offenders:candidates.slice(0,10).map(({element,bounds,beyondLeft,beyondRight})=>({
+			...identity(element),rect:bounds,beyondLeft,beyondRight,css:css(element),
+			parent:element.parentElement ? {...identity(element.parentElement),css:css(element.parentElement)} : null,
+		})),
+		headers,
+	};
+}
+window.measureHierarchyOverflow = hierarchyOverflowDetails;
+window.measureHierarchyOrdering = (options) => {
+	try { return measureHierarchyOrdering(options); }
+	catch(error) { throw new Error(error.message+": "+JSON.stringify(hierarchyOverflowDetails()),{cause:error}); }
+};
+function measureHierarchyOrdering({ sortEnabled = true } = {}) {
+	const rootFontSize=getComputedStyle(document.documentElement).fontSize, enlargedText=parseFloat(rootFontSize)>16;
+	const documentOverflowPx=Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth);
+	const bodyOverflowPx=Math.max(0,document.body.scrollWidth-document.body.clientWidth);
+	// Ordinary page containment is unchanged. Enlarged #273 acceptance owns headers,
+	// Sort and menus; other document overflow remains visible as diagnostic evidence.
+	if(!enlargedText) assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow");
+	assert(!window.orderingExpectedWidth || innerWidth<=window.orderingExpectedWidth+1,"Mobile layout viewport must not expand to conceal overflow");
+	const headers=$$(".panel-header").filter(el=>el.getClientRects().length), headerWidths=[];
+	for(const header of headers){
+		const heading=header.querySelector(".panel-header-title"), title=heading.getBoundingClientRect(), actionGroup=header.querySelector(".panel-header-actions"), actions=actionGroup.getBoundingClientRect();
+		const count=header.querySelector(".panel-count"), settings=header.querySelector(".presentation-settings-trigger");
+		const headerStyle=getComputedStyle(header), available=header.clientWidth-parseFloat(headerStyle.paddingLeft)-parseFloat(headerStyle.paddingRight), required=title.width+actions.width+parseFloat(headerStyle.columnGap), reserve=available-required;
+		headerWidths.push({panel:header.dataset.panelHeader,available,required,reserve});
+		if(innerWidth>=900 && innerWidth<=1080 && parseFloat(getComputedStyle(document.documentElement).fontSize)<=16) assert(reserve>=4,"Narrow-desktop header retains at least 4px width reserve at "+innerWidth+"px: "+JSON.stringify(headerWidths.at(-1)));
+		if(innerWidth>=1024 && innerWidth<1240) assert(headerStyle.columnGap==="4px" && getComputedStyle(actionGroup).columnGap==="4px" && getComputedStyle(heading).columnGap==="2px" && Math.abs(parseFloat(getComputedStyle(heading.querySelector("h2")).fontSize)-parseFloat(getComputedStyle(document.documentElement).fontSize)*1.15)<0.01,"Desktop padding handoff preserves ordinary gaps and heading size");
+		assert(actionGroup.firstElementChild===count && !actionGroup.querySelector(".panel-sort-action"),"Right group contains count and creation only");
+		assert(!settings || settings.parentElement===heading,"Global settings stays with the Collections heading");
+		assert(!header.querySelector(".panel-title-inline-count"),"Count has one persistent badge beside creation");
+		if(parseFloat(getComputedStyle(document.documentElement).fontSize)<=16) assert(Math.abs(title.top+title.height/2-actions.top-actions.height/2)<=1,"Ordinary headers use one compact row at "+innerWidth+"px: "+header.dataset.panelHeader+" "+JSON.stringify({header:header.clientWidth,title:title.width,actions:actions.width,heading:heading.querySelector("h2").getBoundingClientRect().width,count:count.getBoundingClientRect().width,buttons:[...header.querySelectorAll("button")].map(b=>({name:b.getAttribute("aria-label"),width:b.getBoundingClientRect().width})),padding:getComputedStyle(header).padding}));
+		const items=[heading.querySelector("h2"),count,...header.querySelectorAll("button")].map(el=>el.getBoundingClientRect());
+		for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++) assert(Math.min(items[i].right,items[j].right)-Math.max(items[i].left,items[j].left)<=1 || Math.min(items[i].bottom,items[j].bottom)-Math.max(items[i].top,items[j].top)<=1,"Header title/count/controls do not overlap");
+		assert(header.scrollWidth<=header.clientWidth+1,"Header content fits");
+		const headerRect=header.getBoundingClientRect(), viewport=visualViewport;
+		const visibleLeft=viewport?.offsetLeft ?? 0, visibleRight=visibleLeft+(viewport?.width ?? innerWidth);
+		for(const item of [title,actions,...items]) {
+			assert(item.left>=headerRect.left-1 && item.right<=headerRect.right+1 && item.top>=headerRect.top-1 && item.bottom<=headerRect.bottom+1,"Header groups and controls stay inside their header");
+			assert(item.left>=visibleLeft-1 && item.right<=visibleRight+1,"Header controls need no horizontal page panning");
+		}
+		for(const button of header.querySelectorAll("button")){ const r=button.getBoundingClientRect(); assert(r.width>=44&&r.height>=44,"Header interactive target >=44px"); }
+		const sort=header.querySelector(".panel-sort-action");
+		assert(sort.disabled===!sortEnabled,"Sort enabled/disabled semantics match the authored sibling groups");
+		assert(sort.textContent.trim()==="" && sort.querySelector('svg[aria-hidden="true"] path') && sort.getAttribute("aria-label")==="Sort "+header.querySelector("h2").textContent,"Icon-only Sort retains its explicit accessible name");
+		assert(sort.parentElement===heading && sort.previousElementSibling===(settings ?? heading.querySelector("h2")) && sort.getAttribute("aria-haspopup")==="dialog","Left group orders heading, existing settings, then Sort");
+		if(settings) {
+			assert(settings.getAttribute("aria-label")==="Global display settings","Collections settings keeps its explicit accessible name");
+			for(const pseudo of [null,"::before"]) for(const property of ["width","height","padding","borderRadius","backgroundColor","borderWidth"]) assert(getComputedStyle(sort,pseudo)[property]===getComputedStyle(settings,pseudo)[property],"Sort shares settings utility styling: "+property);
+		}
+		assert(count.getBoundingClientRect().width>0 && sort.getBoundingClientRect().width>=44,"Count and Sort remain visible");
+		const create=actionGroup.querySelector(".primary-action"), noun={collections:"Collection",folders:"Folder",sources:"Source"}[header.dataset.panelHeader];
+		if(create) {
+			const countRect=count.getBoundingClientRect(), createRect=create.getBoundingClientRect();
+			assert(create.previousElementSibling===count && actionGroup.children.length===2 && Math.abs(countRect.top+countRect.height/2-createRect.top-createRect.height/2)<=1,"Count/create remain one clean row even with enlarged text");
+		}
+		if(create) {
+			const plus=create.querySelector('span[aria-hidden="true"]'), plusOnly=innerWidth<=389 || (innerWidth>=900 && innerWidth<=1239);
+			assert(create.textContent.replace(/\s/g,"")==="+"+noun && create.getAttribute("aria-label")===(noun==="Source"?"Add source":"New "+noun.toLowerCase()) && plus,"Compact header creation copy keeps explicit action naming");
+			const label=[...create.childNodes].find(node=>node.nodeType===Node.TEXT_NODE && node.textContent.trim()===noun);
+			assert(label,"Creation noun remains in the existing button markup");
+			const labelRange=document.createRange(); labelRange.selectNodeContents(label);
+			const labelWidth=labelRange.getBoundingClientRect().width;
+			assert(plusOnly ? getComputedStyle(create).fontSize==="0px" && labelWidth===0 && create.getBoundingClientRect().width===(innerWidth>=900 && innerWidth<1024?44:46) : parseFloat(getComputedStyle(create).fontSize)>0 && labelWidth>0,"Responsive creation label is visually plus-only only at approved phone/desktop widths");
+			assert(parseFloat(getComputedStyle(plus).fontSize)>0 && plus.getBoundingClientRect().width>0,"Decorative plus stays visible");
+		}
+		for(const trailing of header.closest(".workspace-panel").querySelectorAll(".hierarchy-add-action")) {
+			assert(parseFloat(getComputedStyle(trailing).fontSize)>0 && trailing.textContent.replace(/\s/g,"")===(noun==="Source"?"+Addsource":"+New"+noun.toLowerCase()),"Bottom creation retains its full visible wording");
+		}
+	}
+	const overflow=enlargedText && (documentOverflowPx>1 || bodyOverflowPx>1) ? hierarchyOverflowDetails() : null;
+	return {width:innerWidth,height:innerHeight,headers:headers.length,level:$(".workspace").dataset.mobileLevel,headerWidths,rootFontSize,enlargedText,documentOverflowPx,bodyOverflowPx,
+		overflowOffenders:overflow?.offenders.map(({tag,className,data,text,beyondLeft,beyondRight})=>({tag,className,data,text,beyondLeft,beyondRight})) ?? []};
+}
+window.checkHierarchySortDisabled = async () => {
+	const value=orderingProject().slice(0,2).map(collection=>({...collection,folders:collection.folders.slice(0,1).map(folder=>({...folder,sources:folder.sources.slice(0,1)}))}));
+	const collection=await mount(value);
+	controller.selectNode(collection.folders[0].sources[0].internalId); await frame(); await showCollections();
+	window.scrollTo(0,0); await frame();
+	window.measureHierarchyOrdering({sortEnabled:false});
+	const triggers=$$(".panel-sort-action").filter(el=>el.getClientRects().length);
+	for(const trigger of triggers) { await click(trigger); assert(!modal(),"Disabled Sort cannot open a dialog"); }
+	return {disabledTriggers:triggers.length};
+};
+window.runHierarchySortCase = async (level) => {
+	await window.prepareHierarchyOrdering(level);
+	const before=controller.getState(), selection=JSON.stringify(before.selection), active=$(".workspace").dataset.mobileLevel;
+	const trigger=$('[data-action="sort-'+level+'"]');
+	await click(trigger); assert(modal()?.dataset.hierarchySortDialog===level,"Panel opens matching Sort");
+	assert($(".workspace-underlay").inert,"Sort locks workspace");
+	await click(button("Cancel"));
+	assert(document.activeElement===trigger&&controller.getState().project===before.project,"Cancel restores trigger without mutation");
+	await click(trigger); await click($('input[value="az"]'));
+	await click(button("Sort "+level));
+	assert(document.activeElement===trigger,"Apply restores Sort trigger");
+	assert(JSON.stringify(controller.getState().selection)===selection&&$(".workspace").dataset.mobileLevel===active,"Sort retains descendants and mobile level");
+	assert(controller.getState().revision===before.revision+1,"Changed Sort commits once");
+	if(level==="collections"){
+		assert(controller.getState().project.collections.map(c=>c.editable.pinToTop).join("|")==="false|true|false|true|false|true","Raw pin slots preserved");
+		assert(controller.getState().project.collections[0]===before.project.collections[2],"Exact sorted Collection reused");
+	}
+	if(level==="sources") assert(controller.getState().project.collections[0].folders[0].sources.map(s=>s.editable.title).join("|")==="1950s|1960s|2000s|2020s","Decade titles sort generically");
+	const sorted=controller.getState(); await click(trigger); await click(button("Sort "+level));
+	assert(controller.getState().revision===sorted.revision,"Already sorted is zero revision");
+	assert($("[data-movement-status]").textContent.includes("already in this order"),"No-op announcement is truthful");
+	await click(trigger); await click($('input[value="za"]')); await click(button("Sort "+level));
+	assert(controller.getState().revision===sorted.revision+1,"Reverse Sort commits once");
+	if(level==="sources") assert(controller.getState().project.collections[0].folders[0].sources.map(s=>s.editable.title).join("|")==="2020s|2000s|1960s|1950s","Source Z–A reverses decade titles");
+	assert(JSON.stringify(controller.getState().selection)===selection&&$(".workspace").dataset.mobileLevel===active&&document.activeElement===trigger,"Reverse Sort retains selection, level and focus");
+	await click(trigger); controller.updateNode(before.project.collections[0].internalId,{title:"Changed while open"}); await frame();
+	const stale=controller.getState(); await click(button("Sort "+level));
+	assert(modal()&&$("[role=alert]").textContent.includes("reopen Sort")&&controller.getState().project===stale.project,"Stale session fails without mutation");
+	await click(button("Cancel"));
+	assert(fetches.length===0,"Hierarchy-only scenario makes no external requests");
+	return {level,passed:true};
+};
+window.runHierarchyBoundaryCase = async (noun) => {
+	await window.prepareHierarchyOrdering(noun==="collection"?"collections":"folders");
+	const before=controller.getState(),trigger=$('[data-action="open-'+noun+'-actions"]');
+	await click(trigger);
+	const menu=$('[data-actions-menu="'+noun+'"]:not([hidden])');
+	assert([...menu.querySelectorAll("[role=menuitem]")].map(el=>el.textContent).join("|")===(noun==="collection"?"Edit|Move to top|Move to bottom|Move folders|Delete folders|Delete collection":"Edit|Move to top|Move to bottom|Move folders|Delete"),"Exact final item menu");
+	assert(menu.querySelector('[data-action="move-'+noun+'-top"]').disabled&&!menu.querySelector('[data-action="move-'+noun+'-bottom"]').disabled,"Visible boundary-disabled states");
+	await click(menu.querySelector('[data-action="move-'+noun+'-bottom"]'));
+	assert(document.activeElement.dataset.action==="reorder-"+noun,"Moved item handle receives focus");
+	assert(JSON.stringify(controller.getState().selection)===JSON.stringify(before.selection),"Boundary move retains selection");
+	assert(controller.getState().revision===before.revision+1,"Boundary changes one revision");
+	assert($("[data-movement-status]").textContent.includes(noun==="collection"?"bottom of its group":"bottom"),"Truthful boundary announcement");
+	return {noun,passed:true};
+};
+let orderingMenuTrigger;
+window.isOrderingMenuTriggerFocused = () => document.activeElement===orderingMenuTrigger;
+window.prepareOrderingMenu = async (noun="collection") => {
+	if(noun==="source") {
+		// Reuse the existing locally authored supported Genre source; no external data is substituted.
+		const collection=await mount(project(2));
+		controller.selectNode(collection.folders[0].sources[0].internalId); await frame();
+	} else await window.prepareHierarchyOrdering(noun==="folder" ? "folders" : "collections");
+	const trigger=$('[data-action="open-'+noun+'-actions"]');
+	orderingMenuTrigger=trigger;
+	trigger.scrollIntoView({block:"end"}); await frame(); await click(trigger);
+	return window.measureOrderingMenu();
+};
+window.measureOrderingMenuDetails = () => {
+	const menu=$('[data-actions-menu]:not([hidden])');
+	if(!menu)return null;
+	const rect=element=>{
+		const {left,right,top,bottom,width,height}=element.getBoundingClientRect();
+		return {left,right,top,bottom,width,height};
+	};
+	const style=getComputedStyle(menu), bounds=rect(menu);
+	const contentBox={left:bounds.left+parseFloat(style.borderLeftWidth)+parseFloat(style.paddingLeft),
+		right:bounds.right-parseFloat(style.borderRightWidth)-parseFloat(style.paddingRight)};
+	contentBox.width=contentBox.right-contentBox.left;
+	const items=[...menu.querySelectorAll("button")].map(item=>{
+		const itemStyle=getComputedStyle(item), itemRect=rect(item), textRange=document.createRange();
+		textRange.selectNodeContents(item);
+		const fragments=[...textRange.getClientRects()].filter(line=>line.width>0&&line.height>0);
+		const lineCount=new Set(fragments.map(line=>line.top)).size;
+		const words=[], walker=document.createTreeWalker(item,NodeFilter.SHOW_TEXT);
+		for(let node=walker.nextNode();node;node=walker.nextNode()) for(const match of node.textContent.matchAll(/\S+/g)) {
+			const wordRange=document.createRange();wordRange.setStart(node,match.index);wordRange.setEnd(node,match.index+match[0].length);
+			words.push({text:match[0],width:wordRange.getBoundingClientRect().width});
+		}
+		const longestWord=words.sort((a,b)=>b.width-a.width)[0];
+		const textContentLeft=itemRect.left+parseFloat(itemStyle.borderLeftWidth)+parseFloat(itemStyle.paddingLeft);
+		const textContentRight=itemRect.right-parseFloat(itemStyle.borderRightWidth)-parseFloat(itemStyle.paddingRight);
+		return {
+			text:item.textContent,action:item.dataset.action,disabled:item.disabled,clientWidth:item.clientWidth,scrollWidth:item.scrollWidth,
+			rect:itemRect,minWidth:itemStyle.minWidth,maxWidth:itemStyle.maxWidth,paddingLeft:itemStyle.paddingLeft,paddingRight:itemStyle.paddingRight,
+			whiteSpace:itemStyle.whiteSpace,overflowWrap:itemStyle.overflowWrap,wordBreak:itemStyle.wordBreak,fontSize:itemStyle.fontSize,lineHeight:itemStyle.lineHeight,
+			wraps:lineCount>1,lineCount,longestWord,
+			textBeyondContentLeft:Math.max(0,...fragments.map(line=>textContentLeft-line.left)),textBeyondContentRight:Math.max(0,...fragments.map(line=>line.right-textContentRight)),
+			wordRangeWidthWithPadding:longestWord.width+parseFloat(itemStyle.paddingLeft)+parseFloat(itemStyle.paddingRight)+parseFloat(itemStyle.borderLeftWidth)+parseFloat(itemStyle.borderRightWidth),
+			beyondContentLeft:Math.max(0,contentBox.left-itemRect.left),beyondContentRight:Math.max(0,itemRect.right-contentBox.right),
+		};
+	});
+	return {viewport:{width:innerWidth,height:innerHeight},rootFontSize:getComputedStyle(document.documentElement).fontSize,
+		noun:menu.dataset.actionsMenu,clientWidth:menu.clientWidth,scrollWidth:menu.scrollWidth,overflowPx:Math.max(0,menu.scrollWidth-menu.clientWidth),
+		rect:bounds,contentBox,computed:Object.fromEntries(["width","maxWidth","padding","boxSizing","overflowX","overflowY","gridTemplateColumns","minWidth","fontSize"].map(key=>[key,style[key]])),items};
+};
+window.measureOrderingMenu = () => {
+	const menu=$('[data-actions-menu]:not([hidden])'),r=menu.getBoundingClientRect(),v=visualViewport;
+	assert(r.top>=v.offsetTop+9&&r.bottom<=v.offsetTop+v.height-9,"Tall menu fits visible viewport");
+	assert(r.left>=v.offsetLeft+9&&r.right<=v.offsetLeft+v.width-9,"Menu fits visible viewport width");
+	const details=window.measureOrderingMenuDetails();
+	assert(menu.scrollWidth<=menu.clientWidth+1,"Menu content has no horizontal clipping: "+JSON.stringify(details));
+	assert(details.items.every(item=>item.scrollWidth<=item.clientWidth+1 && item.textBeyondContentLeft<=1 && item.textBeyondContentRight<=1),"Menu labels wrap within their available text width: "+JSON.stringify(details));
+	assert([...menu.querySelectorAll("button")].every(el=>{const bounds=el.getBoundingClientRect();return bounds.width>=44&&bounds.height>=44;}),"Menu targets remain >=44px");
+	return {height:r.height,client:menu.clientHeight,scroll:menu.scrollHeight,placement:menu.dataset.menuPlacement,clientWidth:menu.clientWidth,scrollWidth:menu.scrollWidth,items:details.items.map(({text,lineCount,rect})=>({text,lineCount,width:rect.width,height:rect.height})),...(window.orderingMenuDiagnostics ? {details} : {})};
+};
+window.measureOrderingMenuFocus = () => {
+	const menu=$('[data-actions-menu]:not([hidden])'), active=document.activeElement;
+	assert(menu.contains(active),"Keyboard focus stays in the Collection menu");
+	const item=active.getBoundingClientRect(), bounds=menu.getBoundingClientRect();
+	assert(item.top>=bounds.top-1 && item.bottom<=bounds.bottom+1 && item.left>=bounds.left-1 && item.right<=bounds.right+1,"Focused menu action is visible without page panning");
+	return active.dataset.action;
+};
+window.scrollOrderingMenu = async () => {
+	const menu=$('[data-actions-menu]:not([hidden])'); menu.scrollTop=menu.scrollHeight; await frame();
+	assert(menu.isConnected&&menu.scrollTop>0,"Internal menu scroll stays open");
+	const last=menu.querySelector("[role=menuitem]:last-child").getBoundingClientRect(),r=menu.getBoundingClientRect();
+	assert(last.bottom<=r.bottom&&last.top>=r.top,"Delete collection is reachable inside menu");
+	return true;
+};
+window.prepareSourceOrderingDrag = async () => {
+	await window.prepareHierarchyOrdering("sources"); await click($('[data-action="sort-sources"]')); await click(button("Sort sources"));
+	beforeDrag=controller.getState();
+	const handles=$$('[data-action="reorder-source"]');
+	return handles.slice(0,2).map(el=>{const r=el.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});
+};
+window.finishSourceOrderingDrag = async () => {
+	await new Promise(resolve=>setTimeout(resolve,250)); await frame();
+	const before=beforeDrag.project.collections[0].folders[0].sources,after=controller.getState().project.collections[0].folders[0].sources;
+	assert(after[1]===before[0]&&after[0]===before[1],"Source drag remains usable after sorting: "+JSON.stringify({width:innerWidth,before:before.map(s=>s.editable.title),after:after.map(s=>s.editable.title),revision:controller.getState().revision,opening:beforeDrag.revision,status:$("[data-movement-status]").textContent}));
+	assert(controller.getState().revision===beforeDrag.revision+1,"Post-sort drag commits once");
+	return true;
 };

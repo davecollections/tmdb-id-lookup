@@ -12,7 +12,9 @@ import {
 	NODE_TYPES,
 	removeNode as removeDomainNode,
 	removeFolders as removeDomainFolders,
+	reorderCollections as reorderDomainCollections,
 	reorderFolders as reorderDomainFolders,
+	reorderSources as reorderDomainSources,
 	SOURCE_CATEGORIES,
 	traverseProject,
 	updateEditableValues,
@@ -1351,6 +1353,44 @@ export function createBuilderController(options = {}) {
 		return actionResult(true);
 	}
 
+	function reorderCollections(orderedCollectionInternalIds) {
+		let project;
+		try {
+			project = reorderDomainCollections(state.project, orderedCollectionInternalIds);
+		} catch {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				"$controller.reorderCollections",
+				"The collection order must include every collection exactly once within its existing pin slots. Nothing was reordered.",
+			);
+		}
+		if (project === state.project) {
+			clearSuccessfulOperationDiagnostics({}, { incrementRevision: false });
+			return actionResult(true);
+		}
+		commitProjectEdit(project);
+		return actionResult(true);
+	}
+
+	function reorderSources(folderInternalId, orderedSourceInternalIds) {
+		let project;
+		try {
+			project = reorderDomainSources(state.project, folderInternalId, orderedSourceInternalIds);
+		} catch {
+			return failAtomicBundleOperation(
+				CONTROLLER_DIAGNOSTIC_CODES.INVALID_CONTROLLER_ARGUMENT,
+				"$controller.reorderSources",
+				"The source order must include every source in this folder exactly once. Nothing was reordered.",
+			);
+		}
+		if (project === state.project) {
+			clearSuccessfulOperationDiagnostics({}, { incrementRevision: false });
+			return actionResult(true);
+		}
+		commitProjectEdit(project);
+		return actionResult(true);
+	}
+
 	function reorderFolders(collectionInternalId, orderedFolderInternalIds) {
 		let project;
 		try {
@@ -1574,7 +1614,9 @@ export function createBuilderController(options = {}) {
 		moveNode,
 		removeNode,
 		removeFolders,
+		reorderCollections,
 		reorderFolders,
+		reorderSources,
 		moveFolders,
 		applyLegacyAddonProjectionMigration,
 		serializeProject,

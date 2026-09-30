@@ -1,12 +1,20 @@
 # Native Source Editing
 
+## One registered Source edit entry (#273, local owner review)
+
+Every supported physical Source has exactly **Edit source → Delete** in its menu; unsupported native/addon/opaque shapes have **Delete** only. The competing **Edit Discover** menu capability/callback is removed. Ordinary Edit resolves the current Source through `sourceEditorFor(source)` and opens its registered adapter. Movie Collection, TMDB List, People, Studio, Network, Decade, Genre and Streaming retain `SourceEditorDialog`; `advanced-discover` retains the existing `AdvancedDiscoverFlow`.
+
+Genre, Decade and Streaming already reuse the shared Discover Filters controls inside their family editor. Their field components and adapters are unchanged by this consolidation: defining Genre/media, period/included Genre/media, and provider/region/media anchors remain fixed. Studio and Network remain native `COMPANY`/`NETWORK` editors with their existing narrower native filter contract; internal Discover resolution does not make them DISCOVER identities.
+
+Structural classification remains authoritative, with no persisted creator provenance. An overlapping provider plus structural Genre/period may legitimately reopen through Advanced Discover. This is accepted behavior. Existing readiness classifications, unknown/raw/alias preservation, minimal/no-op updates, duplicate/stale guards, exact current-draft Preview gates and one modal lifecycle remain unchanged. No filters, source types, sort values, locale/provider/company/network or role semantics are expanded. Local implementation awaits owner review and integration.
+
 Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Implemented and merged through #226 / PR #227. Earlier checkpoint limits below are historical where superseded by that contract.
 
 ## Genre, Decades and Streaming Advanced (#220)
 
 The three family editors share the Discover controls and per-field touched ownership. Unchanged values/types/nulls, unknown fields, inactive/conflicting aliases and source order survive. Only deliberately touched canonical fields and proven equivalent mirrors may change. Coupled groups validate against effective untouched partners; unsafe groups remain read-only and exact Preview fails closed. Physical Decade exclusion/help surfaces use the existing nested focus/history/scroll lifecycle.
 
-Routing inspects all anchors together. A rich single official Genre, canonical period (optionally one structural Genre), or one provider plus explicit region uses its expanded family editor. Period plus Genre remains Decades. A single provider/region overlapping Genre or period uses **Full Discover**. Compound providers are never interpreted using token order. There is no persisted provenance metadata. Exclusion-only provider settings do not establish a Streaming anchor.
+Routing inspects all anchors together. A rich single official Genre, canonical period (optionally one structural Genre), or one provider plus explicit region uses its expanded family editor. Period plus Genre remains Decades. A single provider/region overlapping Genre or period uses the registered **Advanced Discover** editor. Compound providers are never interpreted using token order. There is no persisted provenance metadata. Exclusion-only provider settings do not establish a Streaming anchor.
 
 
 ## Native Shared Advanced filters (#218)

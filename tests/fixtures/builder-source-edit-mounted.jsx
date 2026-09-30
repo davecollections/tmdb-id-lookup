@@ -8743,6 +8743,7 @@ window.__runGenreRulesPresentationScenario = async ({ compact = false, forcedCol
 window.__runOrdinaryEditorOrderScenario = async ({ family, enlargedText = false }) => {
 	const check = (value, message) => { if (!value) throw new Error(`${family}/${innerWidth}: ${message}`); return value; };
 	const source = { provider: "tmdb", title: "Custom source name", mediaType: "MOVIE", sortBy: "popularity.desc", filters: {}, ...{
+		advanced: { tmdbSourceType: "DISCOVER", tmdbId: null, filters: {} },
 		studio: { tmdbSourceType: "COMPANY", tmdbId: 3 },
 		network: { tmdbSourceType: "NETWORK", tmdbId: 2, mediaType: "TV" },
 		people: { tmdbSourceType: "PERSON", tmdbId: 31 },
@@ -8765,9 +8766,25 @@ window.__runOrdinaryEditorOrderScenario = async ({ family, enlargedText = false 
 		trigger.scrollIntoView({ block: "nearest" });
 		await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 		await clickAndSettle(trigger);
-		const editAction = document.getElementById(trigger.getAttribute("aria-controls")).querySelector('[data-action="edit-source"]');
+		const menu = document.getElementById(trigger.getAttribute("aria-controls"));
+		check([...menu.querySelectorAll("[role=menuitem]")].map(el=>el.textContent).join("|") === "Edit source|Delete", "exactly one registered Source edit action");
+		async function shot(name) {
+			if (!globalThis.capture204Preview || family !== "genre" || innerWidth !== 393 || enlargedText) return;
+			await new Promise(resolve=>{window.__finish204Capture=resolve;window.capture204Preview(JSON.stringify({name:"ordering-source-"+name}));});
+		}
+		await shot("menu");
+		const editAction = menu.querySelector('[data-action="edit-source"]');
 		check(!editAction.disabled, "open editor menu action became disabled");
 		await clickAndSettle(editAction);
+		if (family === "advanced") {
+			const full = await waitForMountedCondition(()=>document.querySelector('[data-creation-option="advanced-discover"]'),{label:"registered Advanced Discover",timeoutMs:10000});
+			check(!document.querySelector("[data-source-edit-modal]"),"generic Source has one modal lifecycle");
+			await clickAndSettle([...full.querySelectorAll("button")].find(el=>el.textContent.startsWith("Continue to")));
+			await clickAndSettle([...full.querySelectorAll("button")].find(el=>el.textContent==="Save changes"));
+			await waitForMountedCondition(()=>!document.querySelector('[data-creation-option="advanced-discover"]'),{label:"no-op generic Save closes"});
+			check(controller.getState().project===before.project&&controller.getState().revision===before.revision,"generic no-op save preserves exact project");
+			return {family,width:innerWidth,registeredRoute:true,noOp:true};
+		}
 		const dialog = await waitForMountedCondition(() => document.querySelector('[data-source-edit-modal]'), { label: `${family} ordinary editor`, timeoutMs: 10000 });
 		const name = check(dialog.querySelector('#source-edit-title-input'), "name field");
 		const identity = check(dialog.querySelector(family === "people" ? '.source-edit-people-identity' : family === "list" ? '#source-edit-identity-title' : family === "decade" ? '#decade-source-fixed-title' : '#source-edit-options-title'), "source identity");
@@ -8778,6 +8795,13 @@ window.__runOrdinaryEditorOrderScenario = async ({ family, enlargedText = false 
 		if (sort) check(name.compareDocumentPosition(sort) & Node.DOCUMENT_POSITION_FOLLOWING, "sort follows name");
 		const advanced = dialog.querySelector('.source-edit-scroll details');
 		if (advanced && sort) check(sort.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING, "Advanced follows sort");
+		if (family === "genre" && innerWidth === 393) {
+			await clickAndSettle(advanced.querySelector("summary"));
+			check(advanced.querySelector("#discover-field-voteCountGte"),"shared Discover Filters remain integrated");
+			advanced.scrollIntoView({block:"start"}); await afterCommittedEffects(); await shot("integrated-filters");
+			await clickAndSettle(advanced.querySelector("summary"));
+			name.scrollIntoView({block:"nearest"});
+		}
 		await act(async () => { setInputValue(name, `Reviewed ${family}`); await afterCommittedEffects(); });
 		check(name.isConnected && name.value === `Reviewed ${family}`, "name remains controlled");
 		const preview = check(dialog.querySelector('[data-action="preview-source-edit"]'), "Preview remains available");

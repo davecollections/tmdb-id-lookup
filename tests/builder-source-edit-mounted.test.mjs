@@ -309,9 +309,9 @@ async function runMountedPage() {
 				if (editorOrderOnly) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const editors = [];
-					const views = [...[393, 1280].flatMap(width => ["studio", "network", "genre", "streaming", "decade", "people", "franchise", "list"].map(family => ({ width, family }))), ...[899, 900, 901].map(width => ({ width, family: "studio" })), { width: 393, height: 400, family: "genre" }, { width: 393, family: "studio", enlargedText: true }];
+					const views = [...[393, 1280].flatMap(width => ["studio", "network", "genre", "streaming", "decade", "people", "franchise", "list", "advanced"].map(family => ({ width, family }))), ...[899, 900, 901].map(width => ({ width, family: "studio" })), { width: 393, height: 400, family: "genre" }, { width: 393, family: "studio", enlargedText: true }];
 					for (const view of views) {
-						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height ?? 852, deviceScaleFactor: 1, mobile: view.width < 900 });
 						const result = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runOrdinaryEditorOrderScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
 						if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text);
 						editors.push(result.result.value); console.log("EDITOR_ORDER_CASE " + JSON.stringify(result.result.value));
@@ -4187,8 +4187,8 @@ test("mounted meaning and vocabulary retain readable actions and destination con
 
 
 test("mounted ordinary editor order preserves live Preview and minimal saves", { skip: process.env.TMDB_EDITOR_ORDER_ONLY !== "1" }, () => {
-	assert.equal(mountedResults.editors.length, 21);
-	for (const result of mountedResults.editors) assert.ok(result.ordered && result.previewPreserved && result.saved && result.noOverflow, JSON.stringify(result));
+	assert.equal(mountedResults.editors.length, 23);
+	for (const result of mountedResults.editors) assert.ok(result.family === "advanced" ? result.registeredRoute && result.noOp : result.ordered && result.previewPreserved && result.saved && result.noOverflow, JSON.stringify(result));
 });
 
 test("mounted optional Source naming preserves recipes, recovery and responsive Add", () => {

@@ -209,7 +209,7 @@ test("Sources shows no disabled or ambiguous Add action without a selected folde
 	assert.ok(markup.includes("Select a folder to view its sources."));
 });
 
-test("selected empty folder exposes shared Add actions and an intentional inline mobile count", () => {
+test("selected empty folder exposes shared Add actions and a persistent count beside creation", () => {
 	const controller = createController();
 	importFolder(controller);
 	const markup = renderWorkspace(controller);
@@ -217,9 +217,10 @@ test("selected empty folder exposes shared Add actions and an intentional inline
 	assert.equal((markup.match(/data-action="add-source-empty"/g) ?? []).length, 1);
 	assert.equal(markup.includes('data-action="add-source-after-list"'), false);
 	assert.ok(markup.includes("Add source"));
-	assert.equal((markup.match(/class="panel-title-inline-count mobile-only"/g) ?? []).length, 3);
-	assert.ok(markup.includes('class="panel-title-inline-count mobile-only"> · 0</span>'));
-	assert.equal((markup.match(/panel-count panel-count-desktop-only/g) ?? []).length, 3);
+	assert.equal((markup.match(/class="panel-header-actions"><span class="panel-count"/g) ?? []).length, 3);
+	assert.ok(markup.includes('class="panel-count" aria-label="0 sources">0</span>'));
+	assert.equal((markup.match(/class="panel-count"/g) ?? []).length, 3);
+	assert.equal(markup.includes("panel-count-desktop-only"), false);
 });
 
 test("selected populated folder exposes header and trailing Add entry points", () => {
@@ -231,7 +232,7 @@ test("selected populated folder exposes header and trailing Add entry points", (
 	assert.equal(markup.includes('data-action="add-source-empty"'), false);
 	assert.ok(markup.indexOf("Existing") < markup.lastIndexOf("Add source"));
 	assert.equal(markup.includes("Add another source"), false);
-	assert.ok(markup.includes('class="panel-title-inline-count mobile-only"> · 1</span>'));
+	assert.ok(markup.includes('class="panel-count" aria-label="1 source">1</span>'));
 });
 
 test("initial Add Source dialog is a Search task with Close and no reserved action footer", () => {
@@ -963,7 +964,6 @@ test("responsive CSS keeps phone-sized launchers fullscreen and normal tablet vi
 	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-portal\s*\{[\s\S]*background:\s*rgb\(7 24 33\)/);
 	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.settings-modal-backdrop\.add-source-backdrop\s*\{[\s\S]*padding:\s*0[\s\S]*background:\s*rgb\(7 24 33\)/);
 	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.add-source-dialog\s*\{[\s\S]*isolation:\s*isolate[\s\S]*background:\s*rgb\(7 24 33\)[\s\S]*border:\s*0[\s\S]*border-radius:\s*0/);
-	assert.match(styles, /@media \(max-width: 620px\), \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*\.panel-count\.panel-count-desktop-only\s*\{\s*display:\s*none/);
 	assert.match(styles, /\.add-source-review-poster-frame\s*\{[\s\S]*width:\s*clamp\(180px,\s*48vw,\s*220px\)/);
 	assert.match(styles, /@media \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*width:\s*clamp\(140px,\s*40vw,\s*180px\)/);
 	assert.match(styles, /@media \(min-width: 600px\) and \(max-width: 899\.98px\) and \(max-height: 600px\)[\s\S]*grid-template-columns:\s*180px minmax\(0,\s*1fr\)/);
