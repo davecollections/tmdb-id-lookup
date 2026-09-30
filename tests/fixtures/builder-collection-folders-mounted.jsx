@@ -566,10 +566,14 @@ window.prepareHierarchyOrdering = async (level="collections") => {
 window.measureHierarchyOrdering = () => {
 	assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow");
 	assert(!window.orderingExpectedWidth || innerWidth<=window.orderingExpectedWidth+1,"Mobile layout viewport must not expand to conceal overflow");
-	const headers=$$(".panel-header").filter(el=>el.getClientRects().length);
+	const headers=$$(".panel-header").filter(el=>el.getClientRects().length), headerWidths=[];
 	for(const header of headers){
 		const heading=header.querySelector(".panel-header-title"), title=heading.getBoundingClientRect(), actionGroup=header.querySelector(".panel-header-actions"), actions=actionGroup.getBoundingClientRect();
 		const count=header.querySelector(".panel-count"), settings=header.querySelector(".presentation-settings-trigger");
+		const headerStyle=getComputedStyle(header), available=header.clientWidth-parseFloat(headerStyle.paddingLeft)-parseFloat(headerStyle.paddingRight), required=title.width+actions.width+parseFloat(headerStyle.columnGap), reserve=available-required;
+		headerWidths.push({panel:header.dataset.panelHeader,available,required,reserve});
+		if(innerWidth>=900 && innerWidth<=1080 && parseFloat(getComputedStyle(document.documentElement).fontSize)<=16) assert(reserve>=4,"Narrow-desktop header retains at least 4px width reserve at "+innerWidth+"px: "+JSON.stringify(headerWidths.at(-1)));
+		if(innerWidth>=1024 && innerWidth<1240) assert(headerStyle.columnGap==="4px" && getComputedStyle(actionGroup).columnGap==="4px" && getComputedStyle(heading).columnGap==="2px" && Math.abs(parseFloat(getComputedStyle(heading.querySelector("h2")).fontSize)-parseFloat(getComputedStyle(document.documentElement).fontSize)*1.15)<0.01,"Desktop padding handoff preserves ordinary gaps and heading size");
 		assert(actionGroup.firstElementChild===count && !actionGroup.querySelector(".panel-sort-action"),"Right group contains count and creation only");
 		assert(!settings || settings.parentElement===heading,"Global settings stays with the Collections heading");
 		assert(!header.querySelector(".panel-title-inline-count"),"Count has one persistent badge beside creation");
@@ -597,14 +601,14 @@ window.measureHierarchyOrdering = () => {
 			assert(label,"Creation noun remains in the existing button markup");
 			const labelRange=document.createRange(); labelRange.selectNodeContents(label);
 			const labelWidth=labelRange.getBoundingClientRect().width;
-			assert(plusOnly ? getComputedStyle(create).fontSize==="0px" && labelWidth===0 && create.getBoundingClientRect().width===46 : parseFloat(getComputedStyle(create).fontSize)>0 && labelWidth>0,"Responsive creation label is visually plus-only only at approved phone/desktop widths");
+			assert(plusOnly ? getComputedStyle(create).fontSize==="0px" && labelWidth===0 && create.getBoundingClientRect().width===(innerWidth>=900 && innerWidth<1024?44:46) : parseFloat(getComputedStyle(create).fontSize)>0 && labelWidth>0,"Responsive creation label is visually plus-only only at approved phone/desktop widths");
 			assert(parseFloat(getComputedStyle(plus).fontSize)>0 && plus.getBoundingClientRect().width>0,"Decorative plus stays visible");
 		}
 		for(const trailing of header.closest(".workspace-panel").querySelectorAll(".hierarchy-add-action")) {
 			assert(parseFloat(getComputedStyle(trailing).fontSize)>0 && trailing.textContent.replace(/\s/g,"")===(noun==="Source"?"+Addsource":"+New"+noun.toLowerCase()),"Bottom creation retains its full visible wording");
 		}
 	}
-	return {width:innerWidth,height:innerHeight,headers:headers.length,level:$(".workspace").dataset.mobileLevel};
+	return {width:innerWidth,height:innerHeight,headers:headers.length,level:$(".workspace").dataset.mobileLevel,headerWidths};
 };
 window.runHierarchySortCase = async (level) => {
 	await window.prepareHierarchyOrdering(level);

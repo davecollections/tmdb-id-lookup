@@ -27,24 +27,35 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		await connection.command("Input.dispatchKeyEvent",{type:"keyUp",key,code,windowsVirtualKeyCode:value}); await frame();
 	}
 	const layouts=[], actions=[];
-	for(const width of [360,375,384,393,402,412,899,900,901,1280]) {
+	for(const width of [360,375,384,393,402,412,899,900,901,1023,1024,1025,1079,1080,1280]) {
 		await viewport(width);
 		for(const level of ["collections","folders","sources"]) {
 			layouts.push(await evaluate(connection,"window.prepareHierarchyOrdering("+JSON.stringify(level)+")"));
-			if([360,375,384,393,900,901,1280].includes(width)) {
+			if([360,375,384,393,900,901,1023,1024,1025,1079,1080,1280].includes(width)) {
 				const tree=await connection.command("Accessibility.getFullAXTree");
-				for(const active of width<900?[level]:["collections","folders","sources"]) assert.ok(tree.nodes.some(node=>node.role?.value==="button"&&node.name?.value==="Sort "+active[0].toUpperCase()+active.slice(1)),"Sort accessible name exposed for "+active);
+				for(const active of width<900?[level]:["collections","folders","sources"]) {
+					assert.ok(tree.nodes.some(node=>node.role?.value==="button"&&node.name?.value==="Sort "+active[0].toUpperCase()+active.slice(1)),"Sort accessible name exposed for "+active);
+					const createName={collections:"New collection",folders:"New folder",sources:"Add source"}[active];
+					assert.ok(tree.nodes.some(node=>node.role?.value==="button"&&node.name?.value===createName),"Full creation accessible name exposed for "+active);
+				}
 			}
 			if([360,375,384,393].includes(width))await capture(width+"-"+level);
 		}
-		if(width===901||width===1280) await capture(width+"-workspace");
+		if([900,901,1023,1024,1025,1079,1080,1280].includes(width)) await capture(width+"-workspace");
+		if([900,901,1024,1080].includes(width)) {
+			await evaluate(connection,'document.querySelector("[data-action=sort-collections]").focus()');
+			await key("Enter","Enter",13);
+			assert.equal(await evaluate(connection,'Boolean(document.querySelector("[data-hierarchy-sort-dialog]"))'),true,"Narrow-desktop keyboard activation opens Sort");
+			await key("Escape","Escape",27);
+			assert.equal(await evaluate(connection,"document.activeElement.dataset.action"),"sort-collections","Narrow-desktop Sort restores its exact trigger");
+		}
 	}
 	for(const [width,height] of [[393,320],[1280,320]]) {await viewport(width,height);layouts.push(await evaluate(connection,"window.prepareHierarchyOrdering()"));}
-	for(const width of [360,393,901,1280]) {
+	for(const width of [360,393,901,1024,1280]) {
 		await viewport(width);
 		await evaluate(connection,'document.documentElement.style.fontSize="200%"');
 		layouts.push(await evaluate(connection,"window.prepareHierarchyOrdering()"));
-		if(width===360||width===393)await capture(width+"-enlarged-text");
+		if([360,393,1024].includes(width))await capture(width+"-enlarged-text");
 		await evaluate(connection,"window.prepareOrderingMenu()");
 		if(width===393)await capture("393-enlarged-menu");
 		await key("Escape","Escape",27);

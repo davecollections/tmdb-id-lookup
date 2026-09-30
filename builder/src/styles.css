@@ -4277,9 +4277,9 @@ body.hierarchy-pointer-dragging .builder-shell {
 	}
 
 	.panel-header {
-		gap: 2px;
-		padding-right: 5px;
-		padding-left: 5px;
+		gap: 0;
+		padding-right: 1px;
+		padding-left: 1px;
 	}
 
 	.panel-header h2 {
@@ -4290,7 +4290,10 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 	.panel-header-title { gap: 0; }
 
-	.panel-header-actions { gap: 2px; }
+	.panel-header-actions { gap: 0; }
+
+	/* Keep a real width reserve without reducing utility targets or heading size. */
+	.workspace .panel-header .primary-action { width: 44px; }
 
 	.panel-count { min-width: 24px; padding-inline: 0; }
 
@@ -4303,6 +4306,14 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.source-heading .node-title {
 		overflow-wrap: normal;
 		word-break: normal;
+	}
+}
+
+/* Bridge the larger heading at 1024px until normal padding has safe width reserve. */
+@media (min-width: 1024px) and (max-width: 1079.98px) {
+	.panel-header {
+		padding-right: 4px;
+		padding-left: 4px;
 	}
 }
 
