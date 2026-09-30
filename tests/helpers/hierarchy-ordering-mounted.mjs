@@ -54,11 +54,17 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 	for(const width of [360,393,901,1024,1280]) {
 		await viewport(width);
 		await evaluate(connection,'document.documentElement.style.fontSize="200%"');
-		layouts.push(await evaluate(connection,"window.prepareHierarchyOrdering()"));
-		if([360,393,1024].includes(width))await capture(width+"-enlarged-text");
-		await evaluate(connection,"window.prepareOrderingMenu()");
-		if(width===393)await capture("393-enlarged-menu");
-		await key("Escape","Escape",27);
+		const enlargedContext=await evaluate(connection,'({requestedWidth:window.orderingExpectedWidth,width:innerWidth,height:innerHeight,rootInlineFontSize:document.documentElement.style.fontSize,rootFontSize:getComputedStyle(document.documentElement).fontSize})');
+		console.log("Hierarchy 200% text iteration: "+JSON.stringify({...enlargedContext,method:'document.documentElement.style.fontSize = "200%"'}));
+		try {
+			layouts.push(await evaluate(connection,"window.prepareHierarchyOrdering()"));
+			if([360,393,1024].includes(width))await capture(width+"-enlarged-text");
+			await evaluate(connection,"window.prepareOrderingMenu()");
+			if(width===393)await capture("393-enlarged-menu");
+			await key("Escape","Escape",27);
+		} catch(error) {
+			throw new Error("Hierarchy 200% text iteration "+JSON.stringify(enlargedContext)+": "+error.message,{cause:error});
+		}
 		await evaluate(connection,'document.documentElement.style.fontSize=""');
 	}
 	for(const forcedWidth of [360,393]) {

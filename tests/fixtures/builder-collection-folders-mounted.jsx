@@ -563,8 +563,76 @@ window.prepareHierarchyOrdering = async (level="collections") => {
 	window.scrollTo(0,0); await frame();
 	return window.measureHierarchyOrdering();
 };
+// Read-only, bounded failure evidence; this must not affect the layout under test.
+function hierarchyOverflowDetails() {
+	const root=document.documentElement, body=document.body, viewportWidth=root.clientWidth;
+	const short=value=>String(value ?? "").replace(/\s+/g," ").trim().slice(0,120);
+	const identity=element=>({
+		tag:element.tagName.toLowerCase(),id:element.id || undefined,
+		className:short(element.getAttribute("class")),
+		data:Object.fromEntries(Object.entries(element.dataset ?? {}).slice(0,6).map(([key,value])=>[key,short(value)])),
+		ariaLabel:short(element.getAttribute("aria-label")) || undefined,
+		text:short(element.textContent),
+	});
+	const rect=element=>{
+		if(!element)return null;
+		const {left,right,top,bottom,width,height}=element.getBoundingClientRect();
+		return {left,right,top,bottom,width,height};
+	};
+	const visible=element=>{
+		if(!element.getClientRects().length)return false;
+		const bounds=element.getBoundingClientRect(), style=getComputedStyle(element);
+		if(bounds.width<=0 || bounds.height<=0 || style.display==="none" || ["hidden","collapse"].includes(style.visibility))return false;
+		for(let ancestor=element;ancestor;ancestor=ancestor.parentElement) {
+			const ancestorStyle=getComputedStyle(ancestor);
+			if(ancestorStyle.opacity==="0" || ancestorStyle.clip==="rect(0px, 0px, 0px, 0px)" || ancestorStyle.clipPath==="inset(50%)")return false;
+		}
+		return true;
+	};
+	const dimensions=element=>({
+		clientWidth:element.clientWidth,scrollWidth:element.scrollWidth,
+		overflowPx:Math.max(0,element.scrollWidth-element.clientWidth),
+	});
+	const css=element=>{
+		const style=getComputedStyle(element);
+		return Object.fromEntries(["display","position","width","minWidth","maxWidth","paddingLeft","paddingRight","marginLeft","marginRight","fontSize","whiteSpace","overflowX","flex","flexBasis","flexShrink","boxSizing","columnGap","gridTemplateColumns"].map(key=>[key,style[key]]));
+	};
+	const candidates=$$("body *").filter(visible).map(element=>{
+		const bounds=rect(element), beyondLeft=Math.max(0,-bounds.left), beyondRight=Math.max(0,bounds.right-viewportWidth);
+		return {element,bounds,beyondLeft,beyondRight,excursion:Math.max(beyondLeft,beyondRight)};
+	}).filter(item=>item.excursion>0).sort((a,b)=>b.excursion-a.excursion);
+	const headers=$$(".panel-header").filter(visible).slice(0,3).map(header=>{
+		const title=header.querySelector(".panel-header-title"), actions=header.querySelector(".panel-header-actions");
+		const titleRect=rect(title), actionsRect=rect(actions), style=getComputedStyle(header);
+		const gap=parseFloat(style.columnGap) || 0;
+		const available=header.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+		const required=titleRect.width+actionsRect.width+gap;
+		return {
+			panel:header.dataset.panelHeader,...dimensions(header),rect:rect(header),
+			padding:style.padding,paddingLeft:style.paddingLeft,paddingRight:style.paddingRight,columnGap:style.columnGap,
+			titleGroup:titleRect,actionsGroup:actionsRect,h2:rect(header.querySelector("h2")),
+			count:rect(header.querySelector(".panel-count")),settings:rect(header.querySelector(".presentation-settings-trigger")),
+			sort:rect(header.querySelector(".panel-sort-action")),create:rect(header.querySelector(".primary-action")),
+			titleActionsWrap:Math.abs(titleRect.top+titleRect.height/2-actionsRect.top-actionsRect.height/2)>1,
+			available,requiredCombinedWidth:required,reserve:available-required,
+		};
+	});
+	return {
+		viewport:{width:innerWidth,height:innerHeight,expectedWidth:window.orderingExpectedWidth,scrollX},
+		rootFontSize:getComputedStyle(root).fontSize,rootInlineFontSize:root.style.fontSize,
+		enlargementMethod:'document.documentElement.style.fontSize = "200%"',
+		mobileLevel:$(".workspace")?.dataset.mobileLevel,
+		document:dimensions(root),body:dimensions(body),overflowingElementCount:candidates.length,
+		// Excursion alone does not prove causation: fixed and clipped descendants remain labelled.
+		offenders:candidates.slice(0,10).map(({element,bounds,beyondLeft,beyondRight})=>({
+			...identity(element),rect:bounds,beyondLeft,beyondRight,css:css(element),
+			parent:element.parentElement ? {...identity(element.parentElement),css:css(element.parentElement)} : null,
+		})),
+		headers,
+	};
+}
 window.measureHierarchyOrdering = () => {
-	assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow");
+	assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow"+(document.documentElement.scrollWidth>document.documentElement.clientWidth+1 ? ": "+JSON.stringify(hierarchyOverflowDetails()) : ""));
 	assert(!window.orderingExpectedWidth || innerWidth<=window.orderingExpectedWidth+1,"Mobile layout viewport must not expand to conceal overflow");
 	const headers=$$(".panel-header").filter(el=>el.getClientRects().length), headerWidths=[];
 	for(const header of headers){
