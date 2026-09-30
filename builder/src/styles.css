@@ -3528,6 +3528,8 @@ button:disabled {
 }
 
 .hierarchy-actions-menu button {
+	min-width: 0;
+	overflow-wrap: anywhere;
 	min-height: 44px;
 	padding: 9px 11px;
 	color: var(--text);

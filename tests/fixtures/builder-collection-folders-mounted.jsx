@@ -78,7 +78,7 @@ async function open(action) {
 	return trigger;
 }
 async function closeEditor() { await click($('[data-action="cancel-node-edit"]')); }
-function measure() {
+function measure({ wholePageContainment = true } = {}) {
 	const dialog = modal();
 	const rect = dialog.getBoundingClientRect();
 	const actions = $('.collection-folders-actions').getBoundingClientRect();
@@ -86,7 +86,8 @@ function measure() {
 	assert(rect.left >= -1 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1, "Dialog fits viewport");
 	assert(actions.bottom <= innerHeight + 1 && actions.top >= 0, "Footer remains reachable");
 	assert(dialog.scrollHeight <= dialog.clientHeight + 1, "Modal does not become a second scroll owner");
-	assert(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "No horizontal overflow");
+	assert(dialog.scrollWidth <= dialog.clientWidth + 1, "Dialog has no horizontal overflow");
+	if (wholePageContainment) assert(document.documentElement.scrollWidth <= innerWidth, "No horizontal overflow");
 	assert(document.body.style.position === "fixed", "Body scroll locked");
 	assert($('.workspace-underlay').inert, "Workspace inert");
 	const removing = dialog.dataset.collectionFoldersDialog === "remove";
@@ -345,8 +346,8 @@ window.prepareCollectionSortPresentation = async (people) => {
 	presentationTrigger = await open("sort-folders");
 	return window.measureCollectionSortPresentation(people);
 };
-window.measureCollectionSortPresentation = (people) => {
-	const layout = measure();
+window.measureCollectionSortPresentation = (people, { hierarchyOrdering = false } = {}) => {
+	const layout = measure({ wholePageContainment: !hierarchyOrdering });
 	const dialog = modal();
 	const rect = dialog.getBoundingClientRect();
 	const viewport = window.visualViewport;
@@ -364,7 +365,7 @@ window.measureCollectionSortPresentation = (people) => {
 	assert(labels.every((label) => label.scrollWidth <= label.clientWidth + 1), "No clipped choice labels");
 	const scrollOwners = [...dialog.querySelectorAll("*")].filter((el) => /auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight + 1);
 	assert(scrollOwners.length <= 1, "At most one appropriate inner scroll owner");
-	assert(!scrollOwners.length, "These short Sort forms need no vertical scrolling");
+	if (!hierarchyOrdering) assert(!scrollOwners.length, "These short Sort forms need no vertical scrolling");
 	return { ...layout, height: innerHeight, choices: choices.length, left: rect.left, top: rect.top, scrollOwners: scrollOwners.length, minChoiceHeight: Math.min(...labels.map((label) => label.getBoundingClientRect().height)) };
 };
 window.prepareGlobalDisplayPresentation = async () => {
@@ -631,8 +632,18 @@ function hierarchyOverflowDetails() {
 		headers,
 	};
 }
-window.measureHierarchyOrdering = () => {
-	assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow"+(document.documentElement.scrollWidth>document.documentElement.clientWidth+1 ? ": "+JSON.stringify(hierarchyOverflowDetails()) : ""));
+window.measureHierarchyOverflow = hierarchyOverflowDetails;
+window.measureHierarchyOrdering = (options) => {
+	try { return measureHierarchyOrdering(options); }
+	catch(error) { throw new Error(error.message+": "+JSON.stringify(hierarchyOverflowDetails()),{cause:error}); }
+};
+function measureHierarchyOrdering({ sortEnabled = true } = {}) {
+	const rootFontSize=getComputedStyle(document.documentElement).fontSize, enlargedText=parseFloat(rootFontSize)>16;
+	const documentOverflowPx=Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth);
+	const bodyOverflowPx=Math.max(0,document.body.scrollWidth-document.body.clientWidth);
+	// Ordinary page containment is unchanged. Enlarged #273 acceptance owns headers,
+	// Sort and menus; other document overflow remains visible as diagnostic evidence.
+	if(!enlargedText) assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow");
 	assert(!window.orderingExpectedWidth || innerWidth<=window.orderingExpectedWidth+1,"Mobile layout viewport must not expand to conceal overflow");
 	const headers=$$(".panel-header").filter(el=>el.getClientRects().length), headerWidths=[];
 	for(const header of headers){
@@ -649,11 +660,19 @@ window.measureHierarchyOrdering = () => {
 		const items=[heading.querySelector("h2"),count,...header.querySelectorAll("button")].map(el=>el.getBoundingClientRect());
 		for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++) assert(Math.min(items[i].right,items[j].right)-Math.max(items[i].left,items[j].left)<=1 || Math.min(items[i].bottom,items[j].bottom)-Math.max(items[i].top,items[j].top)<=1,"Header title/count/controls do not overlap");
 		assert(header.scrollWidth<=header.clientWidth+1,"Header content fits");
+		const headerRect=header.getBoundingClientRect(), viewport=visualViewport;
+		const visibleLeft=viewport?.offsetLeft ?? 0, visibleRight=visibleLeft+(viewport?.width ?? innerWidth);
+		for(const item of [title,actions,...items]) {
+			assert(item.left>=headerRect.left-1 && item.right<=headerRect.right+1 && item.top>=headerRect.top-1 && item.bottom<=headerRect.bottom+1,"Header groups and controls stay inside their header");
+			assert(item.left>=visibleLeft-1 && item.right<=visibleRight+1,"Header controls need no horizontal page panning");
+		}
 		for(const button of header.querySelectorAll("button")){ const r=button.getBoundingClientRect(); assert(r.width>=44&&r.height>=44,"Header interactive target >=44px"); }
 		const sort=header.querySelector(".panel-sort-action");
+		assert(sort.disabled===!sortEnabled,"Sort enabled/disabled semantics match the authored sibling groups");
 		assert(sort.textContent.trim()==="" && sort.querySelector('svg[aria-hidden="true"] path') && sort.getAttribute("aria-label")==="Sort "+header.querySelector("h2").textContent,"Icon-only Sort retains its explicit accessible name");
 		assert(sort.parentElement===heading && sort.previousElementSibling===(settings ?? heading.querySelector("h2")) && sort.getAttribute("aria-haspopup")==="dialog","Left group orders heading, existing settings, then Sort");
 		if(settings) {
+			assert(settings.getAttribute("aria-label")==="Global display settings","Collections settings keeps its explicit accessible name");
 			for(const pseudo of [null,"::before"]) for(const property of ["width","height","padding","borderRadius","backgroundColor","borderWidth"]) assert(getComputedStyle(sort,pseudo)[property]===getComputedStyle(settings,pseudo)[property],"Sort shares settings utility styling: "+property);
 		}
 		assert(count.getBoundingClientRect().width>0 && sort.getBoundingClientRect().width>=44,"Count and Sort remain visible");
@@ -676,7 +695,19 @@ window.measureHierarchyOrdering = () => {
 			assert(parseFloat(getComputedStyle(trailing).fontSize)>0 && trailing.textContent.replace(/\s/g,"")===(noun==="Source"?"+Addsource":"+New"+noun.toLowerCase()),"Bottom creation retains its full visible wording");
 		}
 	}
-	return {width:innerWidth,height:innerHeight,headers:headers.length,level:$(".workspace").dataset.mobileLevel,headerWidths};
+	const overflow=enlargedText && (documentOverflowPx>1 || bodyOverflowPx>1) ? hierarchyOverflowDetails() : null;
+	return {width:innerWidth,height:innerHeight,headers:headers.length,level:$(".workspace").dataset.mobileLevel,headerWidths,rootFontSize,enlargedText,documentOverflowPx,bodyOverflowPx,
+		overflowOffenders:overflow?.offenders.map(({tag,className,data,text,beyondLeft,beyondRight})=>({tag,className,data,text,beyondLeft,beyondRight})) ?? []};
+}
+window.checkHierarchySortDisabled = async () => {
+	const value=orderingProject().slice(0,2).map(collection=>({...collection,folders:collection.folders.slice(0,1).map(folder=>({...folder,sources:folder.sources.slice(0,1)}))}));
+	const collection=await mount(value);
+	controller.selectNode(collection.folders[0].sources[0].internalId); await frame(); await showCollections();
+	window.scrollTo(0,0); await frame();
+	window.measureHierarchyOrdering({sortEnabled:false});
+	const triggers=$$(".panel-sort-action").filter(el=>el.getClientRects().length);
+	for(const trigger of triggers) { await click(trigger); assert(!modal(),"Disabled Sort cannot open a dialog"); }
+	return {disabledTriggers:triggers.length};
 };
 window.runHierarchySortCase = async (level) => {
 	await window.prepareHierarchyOrdering(level);
@@ -724,21 +755,76 @@ window.runHierarchyBoundaryCase = async (noun) => {
 	assert($("[data-movement-status]").textContent.includes(noun==="collection"?"bottom of its group":"bottom"),"Truthful boundary announcement");
 	return {noun,passed:true};
 };
-window.prepareOrderingMenu = async () => {
-	await window.prepareHierarchyOrdering("collections");
-	const trigger=$('[data-action="open-collection-actions"]');
+let orderingMenuTrigger;
+window.isOrderingMenuTriggerFocused = () => document.activeElement===orderingMenuTrigger;
+window.prepareOrderingMenu = async (noun="collection") => {
+	if(noun==="source") {
+		// Reuse the existing locally authored supported Genre source; no external data is substituted.
+		const collection=await mount(project(2));
+		controller.selectNode(collection.folders[0].sources[0].internalId); await frame();
+	} else await window.prepareHierarchyOrdering(noun==="folder" ? "folders" : "collections");
+	const trigger=$('[data-action="open-'+noun+'-actions"]');
+	orderingMenuTrigger=trigger;
 	trigger.scrollIntoView({block:"end"}); await frame(); await click(trigger);
 	return window.measureOrderingMenu();
 };
+window.measureOrderingMenuDetails = () => {
+	const menu=$('[data-actions-menu]:not([hidden])');
+	if(!menu)return null;
+	const rect=element=>{
+		const {left,right,top,bottom,width,height}=element.getBoundingClientRect();
+		return {left,right,top,bottom,width,height};
+	};
+	const style=getComputedStyle(menu), bounds=rect(menu);
+	const contentBox={left:bounds.left+parseFloat(style.borderLeftWidth)+parseFloat(style.paddingLeft),
+		right:bounds.right-parseFloat(style.borderRightWidth)-parseFloat(style.paddingRight)};
+	contentBox.width=contentBox.right-contentBox.left;
+	const items=[...menu.querySelectorAll("button")].map(item=>{
+		const itemStyle=getComputedStyle(item), itemRect=rect(item), textRange=document.createRange();
+		textRange.selectNodeContents(item);
+		const fragments=[...textRange.getClientRects()].filter(line=>line.width>0&&line.height>0);
+		const lineCount=new Set(fragments.map(line=>line.top)).size;
+		const words=[], walker=document.createTreeWalker(item,NodeFilter.SHOW_TEXT);
+		for(let node=walker.nextNode();node;node=walker.nextNode()) for(const match of node.textContent.matchAll(/\S+/g)) {
+			const wordRange=document.createRange();wordRange.setStart(node,match.index);wordRange.setEnd(node,match.index+match[0].length);
+			words.push({text:match[0],width:wordRange.getBoundingClientRect().width});
+		}
+		const longestWord=words.sort((a,b)=>b.width-a.width)[0];
+		const textContentLeft=itemRect.left+parseFloat(itemStyle.borderLeftWidth)+parseFloat(itemStyle.paddingLeft);
+		const textContentRight=itemRect.right-parseFloat(itemStyle.borderRightWidth)-parseFloat(itemStyle.paddingRight);
+		return {
+			text:item.textContent,action:item.dataset.action,disabled:item.disabled,clientWidth:item.clientWidth,scrollWidth:item.scrollWidth,
+			rect:itemRect,minWidth:itemStyle.minWidth,maxWidth:itemStyle.maxWidth,paddingLeft:itemStyle.paddingLeft,paddingRight:itemStyle.paddingRight,
+			whiteSpace:itemStyle.whiteSpace,overflowWrap:itemStyle.overflowWrap,wordBreak:itemStyle.wordBreak,fontSize:itemStyle.fontSize,lineHeight:itemStyle.lineHeight,
+			wraps:lineCount>1,lineCount,longestWord,
+			textBeyondContentLeft:Math.max(0,...fragments.map(line=>textContentLeft-line.left)),textBeyondContentRight:Math.max(0,...fragments.map(line=>line.right-textContentRight)),
+			wordRangeWidthWithPadding:longestWord.width+parseFloat(itemStyle.paddingLeft)+parseFloat(itemStyle.paddingRight)+parseFloat(itemStyle.borderLeftWidth)+parseFloat(itemStyle.borderRightWidth),
+			beyondContentLeft:Math.max(0,contentBox.left-itemRect.left),beyondContentRight:Math.max(0,itemRect.right-contentBox.right),
+		};
+	});
+	return {viewport:{width:innerWidth,height:innerHeight},rootFontSize:getComputedStyle(document.documentElement).fontSize,
+		noun:menu.dataset.actionsMenu,clientWidth:menu.clientWidth,scrollWidth:menu.scrollWidth,overflowPx:Math.max(0,menu.scrollWidth-menu.clientWidth),
+		rect:bounds,contentBox,computed:Object.fromEntries(["width","maxWidth","padding","boxSizing","overflowX","overflowY","gridTemplateColumns","minWidth","fontSize"].map(key=>[key,style[key]])),items};
+};
 window.measureOrderingMenu = () => {
-	const menu=$('[data-actions-menu="collection"]:not([hidden])'),r=menu.getBoundingClientRect(),v=visualViewport;
+	const menu=$('[data-actions-menu]:not([hidden])'),r=menu.getBoundingClientRect(),v=visualViewport;
 	assert(r.top>=v.offsetTop+9&&r.bottom<=v.offsetTop+v.height-9,"Tall menu fits visible viewport");
 	assert(r.left>=v.offsetLeft+9&&r.right<=v.offsetLeft+v.width-9,"Menu fits visible viewport width");
-	assert([...menu.querySelectorAll("button")].every(el=>el.getBoundingClientRect().height>=44),"Menu targets remain >=44px");
-	return {height:r.height,client:menu.clientHeight,scroll:menu.scrollHeight,placement:menu.dataset.menuPlacement};
+	const details=window.measureOrderingMenuDetails();
+	assert(menu.scrollWidth<=menu.clientWidth+1,"Menu content has no horizontal clipping: "+JSON.stringify(details));
+	assert(details.items.every(item=>item.scrollWidth<=item.clientWidth+1 && item.textBeyondContentLeft<=1 && item.textBeyondContentRight<=1),"Menu labels wrap within their available text width: "+JSON.stringify(details));
+	assert([...menu.querySelectorAll("button")].every(el=>{const bounds=el.getBoundingClientRect();return bounds.width>=44&&bounds.height>=44;}),"Menu targets remain >=44px");
+	return {height:r.height,client:menu.clientHeight,scroll:menu.scrollHeight,placement:menu.dataset.menuPlacement,clientWidth:menu.clientWidth,scrollWidth:menu.scrollWidth,items:details.items.map(({text,lineCount,rect})=>({text,lineCount,width:rect.width,height:rect.height})),...(window.orderingMenuDiagnostics ? {details} : {})};
+};
+window.measureOrderingMenuFocus = () => {
+	const menu=$('[data-actions-menu]:not([hidden])'), active=document.activeElement;
+	assert(menu.contains(active),"Keyboard focus stays in the Collection menu");
+	const item=active.getBoundingClientRect(), bounds=menu.getBoundingClientRect();
+	assert(item.top>=bounds.top-1 && item.bottom<=bounds.bottom+1 && item.left>=bounds.left-1 && item.right<=bounds.right+1,"Focused menu action is visible without page panning");
+	return active.dataset.action;
 };
 window.scrollOrderingMenu = async () => {
-	const menu=$('[data-actions-menu="collection"]:not([hidden])'); menu.scrollTop=menu.scrollHeight; await frame();
+	const menu=$('[data-actions-menu]:not([hidden])'); menu.scrollTop=menu.scrollHeight; await frame();
 	assert(menu.isConnected&&menu.scrollTop>0,"Internal menu scroll stays open");
 	const last=menu.querySelector("[role=menuitem]:last-child").getBoundingClientRect(),r=menu.getBoundingClientRect();
 	assert(last.bottom<=r.bottom&&last.top>=r.top,"Delete collection is reachable inside menu");

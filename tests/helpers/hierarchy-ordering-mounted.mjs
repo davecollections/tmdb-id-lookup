@@ -26,7 +26,42 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		await connection.command("Input.dispatchKeyEvent",{type:"keyDown",key,code,windowsVirtualKeyCode:value,modifiers,...(key==="Enter"?{text:"\r"}:{})});
 		await connection.command("Input.dispatchKeyEvent",{type:"keyUp",key,code,windowsVirtualKeyCode:value}); await frame();
 	}
-	const layouts=[], actions=[];
+	async function checkMenu(noun,width) {
+		const menu=await evaluate(connection,"window.prepareOrderingMenu("+JSON.stringify(noun)+")");
+		const expected={collection:["Edit","Move to top","Move to bottom","Move folders","Delete folders","Delete collection"],folder:["Edit","Move to top","Move to bottom","Move folders","Delete"],source:["Edit source","Delete"]};
+		assert.deepEqual(menu.items.map(item=>item.text),expected[noun],"Complete "+noun+" action names remain unchanged");
+		await capture(width+"-enlarged-"+noun+"-menu");
+		const enabledCount=await evaluate(connection,'document.querySelectorAll("[data-actions-menu]:not([hidden]) button:not(:disabled)").length'), reached=[];
+		for(let i=0;i<enabledCount;i++) {
+			reached.push(await evaluate(connection,"window.measureOrderingMenuFocus()"));
+			await key("ArrowDown","ArrowDown",40);
+		}
+		assert.equal(new Set(reached).size,enabledCount,"Every enabled enlarged menu action is reachable");
+		assert.ok(reached.includes("delete-"+noun),"Enlarged Delete action is reachable");
+		if(menu.scroll>menu.client) {
+			assert.equal(await evaluate(connection,"window.scrollOrderingMenu()"),true);
+			await capture(width+"-enlarged-"+noun+"-menu-bottom");
+		}
+		await key("Escape","Escape",27);
+		assert.equal(await evaluate(connection,"window.isOrderingMenuTriggerFocused()"),true,"Enlarged menu Escape restores its exact trigger element");
+		return {...menu,reached};
+	}
+	const menuDiagnostics=process.env.BUILDER_ORDERING_MENU_DIAGNOSTICS==="1";
+	await evaluate(connection,"window.orderingMenuDiagnostics="+menuDiagnostics);
+	const layouts=[], actions=[], enlargedChecks=[], ordinaryMenus=[];
+	if(menuDiagnostics) {
+		await viewport(360);
+		for(const noun of ["collection","folder","source"]) {
+			const after=await evaluate(connection,"window.prepareOrderingMenu("+JSON.stringify(noun)+")");
+			// Compare ordinary geometry with the previous two CSS values, then restore.
+			const before=await evaluate(connection,'(()=>{const buttons=[...document.querySelectorAll("[data-actions-menu]:not([hidden]) button")];for(const item of buttons){item.style.minWidth="auto";item.style.overflowWrap="normal";}const result=window.measureOrderingMenuDetails();for(const item of buttons){item.style.removeProperty("min-width");item.style.removeProperty("overflow-wrap");}return result;})()');
+			const shape=details=>({clientWidth:details.clientWidth,scrollWidth:details.scrollWidth,rect:details.rect,items:details.items.map(({text,rect,lineCount})=>({text,rect,lineCount}))});
+			assert.deepEqual(shape(after.details),shape(before),"Ordinary "+noun+" menu geometry is unchanged");
+			ordinaryMenus.push({noun,unchanged:true,before,after:after.details});
+			await capture("360-ordinary-"+noun+"-menu");
+			await key("Escape","Escape",27);
+		}
+	}
 	for(const width of [360,375,384,393,402,412,899,900,901,1023,1024,1025,1079,1080,1280]) {
 		await viewport(width);
 		for(const level of ["collections","folders","sources"]) {
@@ -56,14 +91,38 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		await evaluate(connection,'document.documentElement.style.fontSize="200%"');
 		const enlargedContext=await evaluate(connection,'({requestedWidth:window.orderingExpectedWidth,width:innerWidth,height:innerHeight,rootInlineFontSize:document.documentElement.style.fontSize,rootFontSize:getComputedStyle(document.documentElement).fontSize})');
 		console.log("Hierarchy 200% text iteration: "+JSON.stringify({...enlargedContext,method:'document.documentElement.style.fontSize = "200%"'}));
+		assert.equal(enlargedContext.rootFontSize,"32px","200% test uses the expected enlarged root size");
 		try {
 			layouts.push(await evaluate(connection,"window.prepareHierarchyOrdering()"));
 			if([360,393,1024].includes(width))await capture(width+"-enlarged-text");
-			await evaluate(connection,"window.prepareOrderingMenu()");
-			if(width===393)await capture("393-enlarged-menu");
-			await key("Escape","Escape",27);
+			const sortActions=await evaluate(connection,'[...document.querySelectorAll(".panel-sort-action")].filter(el=>el.getClientRects().length).map(el=>el.dataset.action)');
+			const sorts=[];
+			for(const action of sortActions) {
+				await evaluate(connection,'document.querySelector("[data-action='+action+']").focus()');
+				await key("Enter","Enter",13);
+				const sort=await evaluate(connection,"window.measureCollectionSortPresentation(false,{hierarchyOrdering:true})");
+				await key("Escape","Escape",27);
+				assert.equal(await evaluate(connection,"document.activeElement.dataset.action"),action,"Enlarged Sort Escape restores the exact trigger");
+				await key("Enter","Enter",13);
+				await evaluate(connection,'document.querySelector("[data-hierarchy-sort-dialog] .editor-cancel").click()'); await frame();
+				assert.equal(await evaluate(connection,"document.activeElement.dataset.action"),action,"Enlarged Sort Cancel restores the exact trigger");
+				sorts.push({action,...sort});
+			}
+			const disabled=await evaluate(connection,"window.checkHierarchySortDisabled()");
+			const menu=await checkMenu("collection",width);
+			const otherMenus=[];
+			let shortMenu=null;
+			if(width===360) {
+				for(const noun of ["folder","source"])otherMenus.push({noun,...await checkMenu(noun,width)});
+				await viewport(360,320);
+				shortMenu=await checkMenu("collection","360-short");
+				assert.ok(shortMenu.scroll>shortMenu.client,"Short enlarged Collection menu scrolls internally");
+				await viewport(width);
+			}
+			enlargedChecks.push({width,rootFontSize:enlargedContext.rootFontSize,sorts,disabled,menu,otherMenus,shortMenu});
 		} catch(error) {
-			throw new Error("Hierarchy 200% text iteration "+JSON.stringify(enlargedContext)+": "+error.message,{cause:error});
+			const diagnostics=await evaluate(connection,"window.measureHierarchyOverflow()");
+			throw new Error("Hierarchy 200% text iteration "+JSON.stringify(enlargedContext)+": "+error.message+"; diagnostics="+JSON.stringify(diagnostics),{cause:error});
 		}
 		await evaluate(connection,'document.documentElement.style.fontSize=""');
 	}
@@ -155,5 +214,5 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		await new Promise(resolve=>setTimeout(resolve,50));
 	}
 	await viewport(1280,900);
-	return {layouts,actions,shortMenu,reducedMenu,headerLayouts,errors};
+	return {layouts,actions,enlargedChecks,ordinaryMenus,shortMenu,reducedMenu,headerLayouts,errors};
 }
