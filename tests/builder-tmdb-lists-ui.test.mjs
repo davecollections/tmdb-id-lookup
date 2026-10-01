@@ -98,9 +98,8 @@ test("the body-portalled nested Preview stays bound to the live Visual Viewport"
 	assert.match(styles, /\.franchise-preview-modal\s*\{[\s\S]*min-width:\s*0[\s\S]*max-width:\s*100%/);
 });
 
-test("Review exposes independent source names, neutral duplicate status, Original order, and no content Preview control", () => {
-	assert.match(flow, /Source name/);
-	assert.match(flow, /This is the name shown in Nuvio\. You can customise it\./);
+test("Names retains secondary Source names, clear placement status, Original order and no content Preview control", () => {
+	assert.match(flow, /<SourceNamesDisclosure naming=\{activeNaming\}/);
 	assert.match(flow, /Already in this collection · omitted/);
 	assert.match(flow, /Exists elsewhere · ready to create/);
 	assert.match(flow, /<SourceElsewhereNotice/);
@@ -113,20 +112,21 @@ test("Review exposes independent source names, neutral duplicate status, Origina
 	assert.doesNotMatch(flow, /coverImageUrl|heroBackdropUrl|Sort choices|Media type/);
 });
 
-test("guided Lists starts with empty names, uses concise shared create copy, and links required errors to each field and retains the footer summary", () => {
+test("guided Lists defaults per-list Folder names, uses concise shared create copy, and links required errors to each field and retains the footer summary", () => {
 	assert.match(flow, /useState\(""\)[\s\S]*useState\(""\)/);
+	assert.match(flow, /folderTitle: defaultTmdbListFolderTitle\(result\.data\)/);
 	assert.doesNotMatch(flow, /useState\("TMDB Lists"\)|useState\("Lists"\)|useState\("My Lists"\)/);
-	assert.match(flow, /guidedCreateActionLabel\(scope, planResult\?\.plan\?\.counts\)/);
+	assert.match(flow, /guidedCreateActionLabel\(scope, hierarchyReview\?\.counts\)/);
 	assert.doesNotMatch(flow, /Create collection with 1 folder|Create 1 folder with/);
 	assert.match(flow, /Collection and folder names are required\./);
 	assert.match(flow, /Collection name is required\./);
 	assert.match(flow, /Folder name is required\./);
 	assert.match(flow, /error=\{requiredNameErrors\.collection/);
-	assert.match(flow, /error=\{requiredNameErrors\.folder/);
-	assert.match(flow, /focusRequiredName\(target\)/);
+	assert.match(flow, /error=\{requiredNameErrors\.folders\[list\.id\]/);
+	assert.match(flow, /focusRequiredName\(key === "collection"/);
 	assert.match(flow, /className="tmdb-list-footer-validation" role="alert"/);
-	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Appearance" title="Appearance"/);
-	assert.match(flow, /standalone \? "Review source names and where your lists will be added\." : "Review names, appearance and where your lists will be added\."/);
+	assert.match(flow, /standalone \? <div[^\n]+<CreationStageIntro step=\{2\} phase="Names" title="Names"/);
+	assert.match(flow, /Review placement and name the folders and sources that will be created\./);
 });
 
 test("guided Lists directly reuses standard Collection and Folder presentation controls while Add Source remains container-free", () => {
@@ -136,7 +136,7 @@ test("guided Lists directly reuses standard Collection and Folder presentation c
 	assert.match(flow, /<HierarchyCollectionPresentationControls[\s\S]*showAllTab=\{options\.showAllTab\}/);
 	assert.match(flow, /<PresentationSwitch label="Pin collection to top"/);
 	assert.match(flow, /<FolderShapeChoices selectedId=\{options\.folderTileShape\}/);
-	assert.match(flow, /\{!standalone \? <GuidedPresentationControls/);
+	assert.match(flow, /activeStep === "appearance"[\s\S]*<GuidedPresentationControls/);
 	assert.match(flow, /Collection settings stay unchanged\./);
 	assert.doesNotMatch(flow, /focusGlowEnabled/);
 });
@@ -164,4 +164,41 @@ test("TMDB Lists keeps one scroll owner, a fixed action footer, mobile-safe card
 	assert.match(styles, /@media \(max-width: 620px\)[\s\S]*\.tmdb-list-selected-items li[\s\S]*flex-direction:\s*column/);
 	assert.match(styles, /@media \(min-width: 900px\)/);
 	assert.doesNotMatch(styles.match(/\.tmdb-list-selected-items li,[\s\S]*?\}/)?.[0] ?? "", /border-left/);
+});
+
+
+test("TMDB hierarchy has Names then appearance-only controls, zero-output safe navigation and compact disclosures", () => {
+ assert.match(flow, /Continue to Names/);
+ assert.match(flow, /activeStep === "names"[\s\S]*setStep\("appearance"\)/);
+ assert.match(flow, /invalidNameFocusRef\.current[\s\S]*setStep\("names"\)/);
+ assert.match(flow, /phase="Appearance" title="Appearance"/);
+ assert.match(flow, /className="tmdb-list-omitted people-zero-warning"/);
+ assert.match(flow, /className="tmdb-list-locations"/);
+ assert.match(flow, /activeStep === "empty" \? <button[\s\S]*Back to selection/);
+ assert.doesNotMatch(flow, /tmdb-list-source-title-/);
+});
+
+
+test("TMDB Lists keeps Back separate from submit and explains hierarchy-only artwork", () => {
+ assert.match(flow, /key="back-to-selection" className="editor-cancel" type="button"/);
+ assert.match(flow, /key="forward" className="editor-apply" type="submit"/);
+ const presentation = flow.slice(flow.indexOf("function GuidedPresentationControls"), flow.indexOf("function SelectedLists"));
+ assert.match(presentation, /Folder artwork/);
+ assert.match(presentation, /No artwork is assigned by this flow\. After creating, use Edit on each folder to add or change its artwork\./);
+ assert.equal((flow.match(/tmdb-list-artwork-note-title">Folder artwork/g) ?? []).length, 1);
+ assert.match(styles, /\.tmdb-list-form\[data-tmdb-list-stage="names"\] \.tmdb-list-locations summary \{ padding-block: 8px;/);
+});
+
+
+test("hierarchy selection reset is distinct from Clear input and remains outside Add Source", () => {
+ const clearInput = flow.slice(flow.indexOf("function clearInput()"), flow.indexOf("function clearSelectedLists()"));
+ const clearSelection = flow.slice(flow.indexOf("function clearSelectedLists()"), flow.indexOf("function openPreview("));
+ assert.doesNotMatch(clearInput, /setLists|naming\.resetAll/);
+ assert.doesNotMatch(clearSelection, /setInput|provider\.getList|onApply|resolveLists\(/);
+ assert.match(clearSelection, /naming\.resetAll\(\{ includeUnselected: true \}\)/);
+ assert.match(flow, /onClear=\{standalone \? undefined : clearSelectedLists\}/);
+ assert.match(flow, /key="clear-selected-lists" className="editor-cancel tmdb-list-selection-reset" type="button"/);
+ assert.match(styles, /\.tmdb-list-selection-reset \{[\s\S]*min-height: 44px/);
+ // Existing Source names consumers keep their current-rows-only Reset all behavior.
+ assert.match(read("builder/src/ui/use-source-names.js"), /includeUnselected = false/);
 });

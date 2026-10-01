@@ -31,7 +31,7 @@ test("all eight guided families use the shared completion language", () => {
 		["Decades", "builder/src/ui/CreationDialog.jsx", "guidedCreateActionLabel(scope, planResult?.plan?.counts)"],
 		["People", "builder/src/ui/PeopleSourceFlow.jsx", "guidedCreateActionLabel(hierarchyScope, hierarchyPlanResult?.plan?.counts)"],
 		["Franchises", "builder/src/ui/FranchiseSourceFlow.jsx", "guidedCreateActionLabel(scope, planResult?.plan?.counts)"],
-		["TMDB Lists", "builder/src/ui/TmdbListSourceFlow.jsx", "guidedCreateActionLabel(scope, planResult?.plan?.counts)"],
+		["TMDB Lists", "builder/src/ui/TmdbListSourceFlow.jsx", "guidedCreateActionLabel(scope, hierarchyReview?.counts)"],
 		["Studios", "builder/src/ui/StudioHierarchyFlow.jsx", "guidedCreateActionLabel(scope, planResult?.plan?.counts)"],
 		["Networks", "builder/src/ui/NetworkHierarchyFlow.jsx", "guidedCreateActionLabel(scope, planResult?.plan?.counts)"],
 		["Genres", "builder/src/ui/GenreHierarchyFlow.jsx", "guidedCreateActionLabel(scope, planResult?.plan?.counts)"],

@@ -16,6 +16,8 @@ import { desktopExpandedSource, roundTripSourceCases } from "./nuvio-desktop-rou
 import { createCollectionExportPayload } from "../../builder/src/ui/export-collections.js";
 import {
 	applyGenreHierarchyPlan,
+	applyTmdbListHierarchyPlan,
+	createTmdbListSourceBundle,
 	applyDecadesHierarchyPlan,
 	createGenreSourceBundle,
 	createDecadeSourceBundle,
@@ -7485,6 +7487,301 @@ async function runTmdbListImportedSortScenario(supplied = null) {
 	return { width: innerWidth, height: innerHeight, supplied: supplied !== null, cases, requests: liveTmdbListRequests.slice(requestStart) };
 }
 
+
+// Local hierarchy content is authored here; all resolved Lists use the production
+// TMDB integration, including its real metadata and bounded response cache.
+// A separate production-provider instance keeps this matrix's cache/request
+// evidence independent of the existing imported-List Source Edit matrix.
+const hierarchyListRequests = [];
+const hierarchyListProvider = createTmdbListProvider({ fetchImpl(input, init) {
+ const url = new URL(input instanceof Request ? input.url : input);
+ hierarchyListRequests.push(`${url.pathname}${url.search}`);
+ return liveTmdbListFetch(input, init);
+} });
+async function runTmdbListHierarchyScenario({ finalRefinement = false, selectionRecovery = false } = {}) {
+ const ids = [21608, 5916, 8679739, 8687275, 8659014, 8285446, 8294149, 5779, 65056, 6017, 47966];
+ const check = (condition, message) => { if (!condition) throw new Error(`List hierarchy ${innerWidth}x${innerHeight}: ${message}`); return condition; };
+ const loaded = [];
+ for (const id of ids) {
+  const result = await hierarchyListProvider.getList(id);
+  check(result.ok, `live List ${id} unavailable: ${result.error?.message}`); loaded.push(result.data);
+ }
+ check(loaded[0].name === "Musicals" && loaded[1].name === "Musicals", "owner's distinct Musicals Lists remain available");
+ const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
+ const edit = async (input, value) => { check(input, "missing name input"); await act(async () => { setInputValue(input, value); await afterCommittedEffects(); }); };
+ const capture = async stage => {
+  if (selectionRecovery && !["select-reset-action", "nothing-to-add"].includes(stage)) return;
+  if (finalRefinement && !(innerWidth === 1280 && ["nothing-to-add", "select-after-back", "names-tight-elsewhere", "appearance-artwork-new-collection", "appearance-artwork-new-folder"].includes(stage)) && !(innerWidth === 393 && stage === "names-tight-elsewhere")) return;
+  if (globalThis.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `issue-277-${selectionRecovery ? "selection-recovery" : finalRefinement ? "final" : "refined"}-${innerWidth}-${innerHeight}-${stage}` })); });
+ };
+ const nativeKey = async key => { await new Promise(resolve => { window.__finish230Key = resolve; window.pressGuidedPresentationKey(JSON.stringify({ key })); }); await afterCommittedEffects(); };
+ const cases = [];
+ try {
+  for (const mode of (selectionRecovery ? ["new-collection", "complete"] : finalRefinement ? ["complete", "new-collection", "new-folder", "partial", "add-source"] : ["new-collection", "new-folder", "partial", "complete", "stale", "single", "hidden", "add-source"])) {
+   const controller = createController(), isAdd = mode === "add-source", collectionScope = ["new-collection", "hidden"].includes(mode);
+   const source = list => ({ provider: "tmdb", tmdbSourceType: "LIST", tmdbId: list.id, title: list.name || `TMDB list ${list.id}`, mediaType: "MOVIE", sortBy: "original", filters: {} });
+   const seed = (id, title, lists) => ({ id, title, folders: [{ id: id + "-folder", title: "Existing Lists", sources: lists.map(source) }] });
+   const existing = mode === "complete" ? loaded : mode === "partial" ? loaded.slice(0, 3) : mode === "new-collection" ? loaded.slice(0, 4) : [];
+   const value = [seed("destination", "Owner destination", existing)];
+   if (["new-folder", "partial"].includes(mode)) value.push(seed("elsewhere", "Another collection", mode === "partial" ? loaded.slice(3, 5) : loaded.slice(0, 4)));
+   check(controller.importValue(value).ok, "authored destination imported");
+   const original = controller.getState(), collection = original.project.collections[0], oldFolder = collection.folders[0];
+   if (isAdd) controller.selectNode(oldFolder.internalId);
+   const selectedIds = mode === "single" ? [ids[0]] : isAdd ? ids.slice(0, 3) : ids;
+   const scope = collectionScope ? "new-collection" : "new-folder";
+   const expected = mode === "complete" ? 0 : mode === "partial" ? 8 : selectedIds.length;
+   let applied = null, calls = 0, notifications = 0, closed = 0, resolutions = 0;
+   const selectionProvider = { ...hierarchyListProvider, getList(...args) { resolutions++; return hierarchyListProvider.getList(...args); } };
+   const unsubscribe = controller.subscribe(() => { if (controller.getState().revision !== original.revision) notifications++; });
+   function Surface() {
+    const state = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState);
+    const apply = payload => { calls++; applied = isAdd ? createTmdbListSourceBundle(controller, { ...payload, folderInternalId: oldFolder.internalId }) : applyTmdbListHierarchyPlan(controller, payload); return applied; };
+    return isAdd ? createElement(TmdbListSourceFlow, { project: state.project, projectRevision: state.revision, folder: state.project.collections[0].folders[0], provider: selectionProvider, onApply: apply, onBack() {}, onCancel() { closed++; } })
+     : createElement(CreationDialog, { initialOptionId: "tmdb-lists", scope, project: state.project, projectRevision: state.revision, destinationCollectionInternalId: collection.internalId, destinationCollectionTitle: collection.editable.title, listProvider: selectionProvider, onApplyTmdbLists: apply, onCancel() { closed++; } });
+   }
+   await act(async () => { root.render(createElement(Surface, { key: mode })); await afterCommittedEffects(); });
+   const dialog = requiredElement(document.querySelector(isAdd ? ".tmdb-list-dialog" : ".creation-dialog"), "Lists dialog");
+   const form = dialog.querySelector(".tmdb-list-form"), action = () => form.querySelector('.add-source-actions button[type="submit"]');
+   const next = () => clickAndSettle(requiredElement(action(), `${mode} forward action`));
+   const back = () => clickAndSettle(dialog.querySelector('.add-source-header-action[data-action^="back-"]'));
+   const field = id => form.querySelector(`#tmdb-list-folder-title-${id}`);
+   const folderInputs = () => [...form.querySelectorAll('input[id^="tmdb-list-folder-title-"]')];
+   const totals = () => [...form.querySelectorAll('[aria-label="Plan totals"] strong')].map(node => Number(node.textContent));
+   const disclosure = () => form.querySelector(".source-names-disclosure");
+   const sourceInput = id => [...form.querySelectorAll('.source-name-field')].find(row => row.querySelector("label").textContent.endsWith(`TMDB ${id}`))?.querySelector("input");
+   const requestsAtSelection = hierarchyListRequests.length;
+   await act(async () => { setTextareaValue(form.querySelector("textarea"), selectedIds.join("\n")); await afterCommittedEffects(); });
+   await clickAndSettle(buttonContaining(form, "Resolve lists"));
+   await waitForMountedCondition(() => !buttonContaining(form, "Resolving"), { label: "live Lists resolved", timeoutMs: 30_000 });
+   check(form.querySelectorAll(".tmdb-list-selected-items li").length === selectedIds.length, "real selections resolved");
+   check(action().textContent === (isAdd ? "Continue to Review" : "Continue to Names"), "Select forward stage");
+   check(Boolean(buttonContaining(form, "Clear lists")) === !isAdd, "selection reset is hierarchy-only");
+   await next();
+   check(form.dataset.tmdbListStage === (isAdd ? "review" : expected ? "names" : "empty"), "correct post-Select route");
+   check(dialog.getAttribute("role") === "dialog" && dialog.getAttribute("aria-modal") === "true" && document.body.style.overflow === "hidden", "dialog semantics / lock");
+   const geometry = () => {
+    const scroll = form.querySelector(".add-source-scroll");
+    const owners = [form, ...form.querySelectorAll("*")].filter(node => node.tagName !== "TEXTAREA" && node.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1);
+    const primary = form.querySelector("footer button"), rect = primary.getBoundingClientRect();
+    check(owners.length <= 1 && (!owners.length || owners[0] === scroll), "one scroll owner");
+    check(rect.bottom <= innerHeight + 1 && rect.top >= 0 && rect.height >= 44, "fixed 44px footer");
+    check(dialog.scrollWidth <= dialog.clientWidth + 1 && scroll.scrollWidth <= scroll.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth, "no horizontal overflow");
+    for (const node of form.querySelectorAll(".tmdb-list-review-item, .tmdb-list-name-warning, .tmdb-list-omitted")) check(node.scrollWidth <= node.clientWidth + 1, "card/status/warning wraps");
+    check(folderInputs().every(node => node.getBoundingClientRect().height >= 44), "44px Folder names");
+   };
+   if (selectionRecovery && mode === "new-collection") {
+    const beforeReset = serializedValue(controller), selectionRequests = hierarchyListRequests.length, selectionResolutions = resolutions;
+    const selectedRows = () => [...form.querySelectorAll(".tmdb-list-selected-items li")];
+    await edit(form.querySelector("#tmdb-list-collection-title"), "Retained collection choice");
+    await edit(field(ids[0]), "Custom Folder to forget");
+    await clickAndSettle(disclosure().querySelector("summary"));
+    await edit(sourceInput(ids[0]), "Custom Source to forget");
+    await edit(sourceInput(ids[1]), "Earlier removed Source to forget");
+    await next();
+    await clickAndSettle(form.querySelector('[data-editor-field="folderTileShape"] input[value="SQUARE"]'));
+    await back(); await back();
+    await clickAndSettle(selectedRows()[1].querySelector('button[aria-label^="Remove "]'));
+    const retainedIds = selectedRows().map(row => row.textContent);
+    await clickAndSettle(buttonContaining(form, "Clear input"));
+    check(form.querySelector("textarea").value === "" && JSON.stringify(selectedRows().map(row => row.textContent)) === JSON.stringify(retainedIds), "Clear input removes only text and retains every resolved selection");
+    const replacementText = `  ${selectedIds.join("\n")}\n`;
+    await act(async () => { setTextareaValue(form.querySelector("textarea"), replacementText); await afterCommittedEffects(); });
+    const resetButton = requiredElement(form.querySelector(".tmdb-list-selected .tmdb-list-selection-reset"), "Selected-section reset");
+    resetButton.scrollIntoView({ block: "nearest" }); resetButton.focus();
+    await nativeKey("Tab"); // Establish keyboard modality, then return to the measured control.
+    resetButton.focus();
+    check(resetButton.tagName === "BUTTON" && resetButton.type === "button" && resetButton.textContent === "Clear lists" && resetButton.getBoundingClientRect().height >= 44 && getComputedStyle(resetButton).outlineStyle !== "none", "real 44px secondary button with visible keyboard focus");
+    geometry(); await capture("select-reset-action");
+    const documentScroll = [scrollX, scrollY], dialogScroll = dialog.scrollTop;
+    await nativeKey(" ");
+    check(form.dataset.tmdbListStage === "select" && !selectedRows().length && action().disabled && !buttonContaining(form, "Clear lists"), "Space clears selection and leaves no active reset/Continue");
+    check(form.querySelector("textarea").value === replacementText && document.activeElement === form.querySelector("textarea"), "reset preserves input byte-for-byte and focuses textarea");
+    check(scrollX === documentScroll[0] && scrollY === documentScroll[1] && dialog.scrollTop === dialogScroll && form.querySelector(".add-source-scroll").scrollTop === 0, "focus restores Select within its scroll owner without document scrolling");
+    check(!form.querySelector('.tmdb-list-name-warning, .tmdb-list-omitted, .tmdb-list-locations, .source-names-disclosure'), "no stale selection outcomes or advisories");
+    check(resolutions === selectionResolutions && hierarchyListRequests.length === selectionRequests && calls === 0 && notifications === 0 && serializedValue(controller) === beforeReset && controller.getState().revision === original.revision, "both clear actions make no requests, no resolve, no Apply, and no project changes");
+    geometry();
+    await clickAndSettle(buttonContaining(form, "Resolve lists"));
+    await waitForMountedCondition(() => selectedRows().length === selectedIds.length, { label: "explicitly re-resolved live Lists" });
+    await next();
+    check(folderInputs().every(input => loaded.some(list => input.id.endsWith(`-${list.id}`) && input.value === list.name)), "all re-resolved Folder defaults restored");
+    check(form.querySelector("#tmdb-list-collection-title").value === "Retained collection choice", "global Collection draft retained");
+    await clickAndSettle(disclosure().querySelector("summary"));
+    check([...form.querySelectorAll("[data-source-name]")].every(input => loaded.some(list => list.name === input.value)) && disclosure().textContent.includes("Generated automatically."), "all Source defaults restored, including the previously removed List");
+    await next();
+    check(form.querySelector('[data-editor-field="folderTileShape"] input[value="SQUARE"]').checked, "existing shared Appearance choice retained");
+    check(calls === 0 && notifications === 0 && serializedValue(controller) === beforeReset && controller.getState().revision === original.revision, "explicit re-resolution remains draft-only");
+    await clickAndSettle(dialog.querySelector('[aria-label="Close creation flow"]'));
+   } else if (mode === "complete") {
+    check(!action() && !form.querySelector('input, [data-review-title-options], .source-names-disclosure, .tmdb-list-review-item'), "zero output has no naming/appearance/Create");
+    check(form.textContent.includes("All 11 selected TMDB Lists are already in this collection"), "clear zero output count");
+    check(form.querySelectorAll('.tmdb-list-omitted li').length === 11 && !form.querySelector('.tmdb-list-omitted').open, "compact complete omission group");
+    geometry(); await capture("nothing-to-add");
+    const beforeNavigation = serializedValue(controller), navigationSubmits = [], backButton = form.querySelector("footer button");
+    const recordSubmit = event => navigationSubmits.push({ stage: form.dataset.tmdbListStage, submitterWasBack: event.submitter === backButton, submitterType: event.submitter?.type, trusted: event.isTrusted });
+    form.addEventListener("submit", recordSubmit, true);
+    const rect = backButton.getBoundingClientRect();
+    await new Promise(resolve => { window.__finishListClick = resolve; window.clickTmdbListHierarchyControl(JSON.stringify({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 })); });
+    await afterCommittedEffects(); await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    form.removeEventListener("submit", recordSubmit, true);
+    check(form.dataset.tmdbListStage === "select" && navigationSubmits.length === 0, `native Back stays on Select without submitting: ${JSON.stringify(navigationSubmits)}`);
+    const selectedRows = () => [...form.querySelectorAll(".tmdb-list-selected-items li")];
+    check(form.querySelector(".creation-stage-intro .panel-kicker").textContent === "Step 1 · Select", "Back visibly returns to Select");
+    check(JSON.stringify(selectedRows().map(row => Number(row.textContent.match(/TMDB (\d+)/)[1]))) === JSON.stringify(selectedIds), "native Back retains all resolved Lists in order");
+    check(selectedRows().every(row => buttonContaining(row, "Preview titles") && row.querySelector('button[aria-label^="Remove "]')), "Preview and removal remain available");
+    check(hierarchyListRequests.length === requestsAtSelection, "Back never re-resolves retained Lists");
+    geometry(); await capture("select-after-back");
+    await clickAndSettle(selectedRows()[0].querySelector('button[aria-label^="Remove "]'));
+    check(form.dataset.tmdbListStage === "select" && selectedRows().length === 10, "removing a List stays on Select");
+    await next();
+    check(form.dataset.tmdbListStage === "empty" && form.textContent.includes("All 10 selected TMDB Lists") && form.querySelectorAll(".tmdb-list-omitted li").length === 10, "explicit Continue recalculates reduced overlap");
+    form.addEventListener("submit", recordSubmit, true);
+    form.querySelector("footer button").focus(); await nativeKey("Enter");
+    form.removeEventListener("submit", recordSubmit, true);
+    check(form.dataset.tmdbListStage === "select" && selectedRows().length === 10 && navigationSubmits.length === 0, "keyboard Back also stays on Select");
+    await next();
+    check(form.dataset.tmdbListStage === "empty", "explicit Continue returns to Nothing to add");
+    const resetButton = requiredElement(buttonContaining(form.querySelector("footer"), "Clear lists"), "Nothing-to-add reset");
+    const retainedInput = selectedIds.join("\n"), resolutionsBeforeReset = resolutions, documentScroll = [scrollX, scrollY];
+    check(resetButton.type === "button" && resetButton.getBoundingClientRect().height >= 44 && form.querySelector("footer button").textContent === "Back to selection", "normal Back recovery precedes the 44px secondary reset");
+    form.querySelector("footer button").focus(); await nativeKey("Tab");
+    check(document.activeElement === resetButton && getComputedStyle(resetButton).outlineStyle !== "none", "reset follows Back in keyboard order with visible focus");
+    form.addEventListener("submit", recordSubmit, true);
+    await nativeKey("Enter");
+    form.removeEventListener("submit", recordSubmit, true);
+    check(!selectedRows().length && form.querySelector("textarea").value === retainedInput && !buttonContaining(form, "Clear lists"), "Nothing-to-add reset clears cards but retains pasted input");
+    check(document.activeElement === form.querySelector("textarea") && scrollX === documentScroll[0] && scrollY === documentScroll[1], "Nothing-to-add reset focuses textarea without document scrolling");
+    check(resolutions === resolutionsBeforeReset && navigationSubmits.length === 0, "native reset does not resolve or acquire a submit action");
+    check(form.dataset.tmdbListStage === "select" && action().disabled && hierarchyListRequests.length === requestsAtSelection, "empty corrected selection stays on Select until resolvable forward action");
+    check(calls === 0 && notifications === 0 && serializedValue(controller) === beforeNavigation, "all zero-output navigation preserves the project");
+    await clickAndSettle(dialog.querySelector('[aria-label="Close creation flow"]'));
+    check(closed === 1 && calls === 0 && controller.getState().revision === original.revision, "zero mutation / Close");
+   } else {
+    if (!isAdd) {
+     check(folderInputs().length === expected && !form.querySelector('[data-review-title-options], [data-editor-field="folderTileShape"]'), "Names has only ready names and no appearance");
+     check(JSON.stringify(totals()) === JSON.stringify(collectionScope ? [1, expected, expected] : [expected, expected]), "ready output totals");
+     check(action().textContent === "Continue to Appearance" && !disclosure().open && !form.querySelector("[data-source-name]"), "secondary Source names start collapsed");
+     check(folderInputs().every(input => loaded.some(list => input.id.endsWith(`-${list.id}`) && input.value === list.name && input.labels[0].textContent.includes(list.name))), "per-List defaults / labels");
+     if (["new-collection", "new-folder", "partial"].includes(mode)) {
+      const expectedElsewhere = mode === "partial" ? 2 : 4;
+      check(form.querySelector(".tmdb-list-placement-summary").textContent.includes(`${expectedElsewhere} ${mode === "partial" || mode === "new-folder" ? "of the ready Lists" : "selected Lists"} also exist elsewhere`), "prominent elsewhere summary");
+      const locations = [...form.querySelectorAll(".tmdb-list-locations")];
+      check(locations.length === expectedElsewhere && locations.every(node => !node.open), "location evidence is retained behind compact disclosures");
+      const summary = locations[0].querySelector("summary");
+      summary.focus(); await nativeKey("Enter"); check(locations[0].open && locations[0].textContent.includes("Existing Lists"), "keyboard opens actual occurrence details");
+      check(getComputedStyle(summary).outlineStyle !== "none", "disclosure keyboard focus treatment remains visible");
+      await nativeKey("Enter"); check(!locations[0].open, "keyboard closes locations");
+      const nameInput = locations[0].closest("article").querySelector('[data-required-name]');
+      check(summary.getBoundingClientRect().height >= 44 && Number.parseFloat(getComputedStyle(summary).fontSize) >= 12, "disclosure retains target and text size");
+      const inputGap = summary.getBoundingClientRect().top - nameInput.getBoundingClientRect().bottom;
+      check(inputGap >= 0 && inputGap <= 9, `tight input/disclosure gap: ${inputGap}`);
+      if (mode === "partial") {
+       locations[0].closest("article").scrollIntoView({ block: "nearest" }); await afterCommittedEffects(); geometry(); await capture("names-tight-elsewhere");
+      }
+     }
+     if (mode === "partial") {
+      const omitted = form.querySelector(".tmdb-list-omitted");
+      check(omitted && !omitted.open && omitted.querySelectorAll("li").length === 3 && !omitted.querySelector("input"), "partial omitted group has no editable output");
+      check(!field(ids[0]) && !field(ids[1]) && !field(ids[2]), "omitted Folder fields absent");
+     }
+     if (mode === "new-collection") {
+      check(form.querySelector(".tmdb-list-name-warning")?.textContent.includes('2 new folders share the name “Musicals”'), "same-name warning is advisory");
+      geometry(); await capture("names-musicals-elsewhere");
+      disclosure().scrollIntoView({ block: "end" }); await afterCommittedEffects(); await capture("names-source-disclosure");
+      form.querySelector(".add-source-scroll").scrollTop = 0;
+      await next(); await next();
+      check(form.dataset.tmdbListStage === "names" && document.activeElement === form.querySelector("#tmdb-list-collection-title") && controller.getState().revision === original.revision, "blank Collection reaches Appearance and final Create returns to its name without mutation");
+     }
+    } else check(folderInputs().length === 0 && action().textContent === "Add 3 sources" && !form.querySelector(".tmdb-list-artwork-note"), "Add Source retains Review/count and no Folder artwork note");
+    await clickAndSettle(disclosure().querySelector("summary"));
+    check(form.querySelectorAll("[data-source-name]").length === expected, "only ready output exposes Source names");
+    check([...form.querySelectorAll("[data-source-name]")].every(input => loaded.some(list => list.name === input.value)), "existing list-derived Source defaults");
+    const firstReadyId = mode === "partial" ? ids[3] : selectedIds[0];
+    await edit(sourceInput(firstReadyId), "My named List Source");
+    await clickAndSettle(disclosure().querySelector("summary"));
+    if (isAdd) { geometry(); await capture("add-source-review"); }
+    else {
+     if (collectionScope && mode !== "hidden") await edit(form.querySelector("#tmdb-list-collection-title"), "Owner review Lists");
+     const customFolder = "My long Folder name — " + "Cinema favourites with family and friends ".repeat(4).trim();
+     if (mode === "new-collection") {
+      await edit(field(ids[3]), customFolder);
+      await edit(field(ids[0]), ""); await edit(field(ids[1]), "");
+     }
+     if (mode === "hidden") { await edit(field(ids[0]), ""); }
+     geometry();
+     if (mode === "partial") {
+      await capture("names-partial");
+      const omitted = form.querySelector(".tmdb-list-omitted");
+      await clickAndSettle(omitted.querySelector("summary")); omitted.scrollIntoView({ block: "end" });
+      await afterCommittedEffects(); await capture("names-omitted-group"); await clickAndSettle(omitted.querySelector("summary"));
+     }
+     await next(); check(form.dataset.tmdbListStage === "appearance", "Names advances without forcing visible names");
+     check(!form.querySelector('.tmdb-list-review-item, input[type="text"], .tmdb-list-omitted, .tmdb-list-locations, .source-names-disclosure'), "Appearance contains no List cards/names/placement details");
+     const artworkNote = form.querySelector(".tmdb-list-artwork-note");
+     check(artworkNote?.textContent === "Folder artworkNo artwork is assigned by this flow. After creating, use Edit on each folder to add or change its artwork." && !artworkNote.querySelector("input,button") && !["alert", "status"].includes(artworkNote.getAttribute("role")), "quiet artwork guidance without controls in both hierarchy scopes");
+     if (finalRefinement && ["new-collection", "new-folder"].includes(mode)) {
+      artworkNote.scrollIntoView({ block: "end" }); await afterCommittedEffects(); geometry(); await capture(`appearance-artwork-${mode}`);
+     }
+     check(action().textContent === (collectionScope ? "Create collection" : expected === 1 ? "Create folder" : `Create ${expected} folders`), "final scope-aware Create action");
+     if (!collectionScope) check(form.textContent.includes("Collection settings stay unchanged."), "parent appearance inherited");
+     if (collectionScope) check(form.querySelector("#tmdb-list-all-tab-help")?.textContent.includes("two or more sources"), "shared Show All copy remains truthful");
+     geometry();
+     if (["new-collection", "new-folder"].includes(mode)) await capture(`appearance-${mode}`);
+     const square = form.querySelector('[data-editor-field="folderTileShape"] input[value="SQUARE"]');
+     await clickAndSettle(requiredElement(square, "shared Square shape"));
+     if (mode === "hidden") {
+      await clickAndSettle(form.querySelector('[data-editor-control="tmdbListHideNuvioTitle"]'));
+      await clickAndSettle(form.querySelector('input[name="tmdb-list-folder-title-visibility"][value="HIDE_EVERYWHERE"]'));
+     }
+     if (mode === "new-collection") {
+      await next(); check(form.dataset.tmdbListStage === "names" && document.activeElement === field(ids[0]), "final invalid names return to first Names field");
+      check(field(ids[1]).getAttribute("aria-invalid") === "true", "all invalid fields announced");
+      await edit(field(ids[0]), "Musicals"); check(field(ids[1]).getAttribute("aria-invalid") === "true", "one correction keeps other error");
+      await next(); await next(); check(document.activeElement === field(ids[1]), "next invalid ready field focused");
+      await capture("invalid-name-return");
+      await edit(field(ids[1]), "Musicals"); check(field(ids[3]).value === customFolder, "other Folder draft retained");
+      await next();
+     }
+     await back(); check(form.dataset.tmdbListStage === "names", "Appearance Back returns to Names");
+     await clickAndSettle(disclosure().querySelector("summary")); check(sourceInput(firstReadyId).value === "My named List Source", "custom Source draft retained");
+     await clickAndSettle(disclosure().querySelector("summary"));
+     await back(); check(form.dataset.tmdbListStage === "select" && form.querySelectorAll(".tmdb-list-selected-items li").length === selectedIds.length, "Names Back retains selections");
+     check(document.activeElement === form.querySelector("textarea"), "selection focus restored");
+     await next(); check(document.activeElement === form.querySelector("#tmdb-list-review-title"), "Names heading focus restored");
+     await next(); check(form.querySelector('[data-editor-field="folderTileShape"] input[value="SQUARE"]').checked, "appearance state retained through all transitions");
+     if (mode === "hidden") check(form.querySelector('[data-editor-control="tmdbListHideNuvioTitle"]').checked, "hidden Collection choice retained");
+     check(hierarchyListRequests.length === requestsAtSelection, "navigation never re-resolves Lists");
+    }
+    const scroll = form.querySelector(".add-source-scroll"), outer = dialog.getBoundingClientRect();
+    scroll.scrollTop = scroll.scrollHeight; await afterCommittedEffects(); geometry();
+    action().focus(); await new Promise(resolve => { window.__finish230Key = resolve; window.pressGuidedPresentationKey(JSON.stringify({ key: "Tab" })); });
+    check(dialog.contains(document.activeElement) && Math.abs(dialog.getBoundingClientRect().top - outer.top) < 1 && scrollY === 0, "keyboard containment and outer geometry");
+    if (mode === "stale") {
+     await act(async () => { controller.updateNode(collection.internalId, { title: "Changed while reviewing" }); await afterCommittedEffects(); });
+     const before = serializedValue(controller), revision = controller.getState().revision;
+     await next(); check(calls === 0 && serializedValue(controller) === before && controller.getState().revision === revision && form.textContent.includes("The Builder project changed"), "stale placement fails closed");
+    } else {
+     await next(); check(applied?.ok && calls === 1 && notifications === 1 && controller.getState().revision === original.revision + 1, `one atomic apply ${mode}: ${JSON.stringify(applied?.errors)}`);
+     const project = controller.getState().project;
+     if (isAdd) check(project.collections.length === 1 && project.collections[0].folders.length === 1 && JSON.stringify(project.collections[0].folders[0].sources.map(node => node.editable.tmdbId)) === JSON.stringify(selectedIds), "Add Source direct insertion / no new Folders");
+     else {
+      const folders = collectionScope ? project.collections.at(-1).folders : project.collections[0].folders.slice(1);
+      const ready = mode === "partial" ? selectedIds.slice(3) : selectedIds;
+      check(folders.length === expected && folders.every((folder, index) => folder.sources.length === 1 && folder.sources[0].editable.tmdbId === ready[index] && folder.editable.tileShape === "SQUARE"), "ordered one-Source Folder output and shared appearance");
+      check(folders[0].sources[0].editable.title === "My named List Source", "custom Source name applied");
+      check(JSON.stringify(project.collections[0].editable) === JSON.stringify(collection.editable), "parent settings unchanged");
+      if (mode === "new-collection") check(folders[0].editable.title === "Musicals" && folders[1].editable.title === "Musicals" && folders[0].sources[0].editable.tmdbId !== folders[1].sources[0].editable.tmdbId, "same visible name never blocks or merges identities");
+      if (mode === "hidden") check(project.collections.at(-1).editable.title === "\u200e" && folders.every(folder => folder.editable.title === "\u200e"), "hidden-title final validation needs no meaningless names");
+     }
+    }
+   }
+   cases.push({ mode, ready: expected, applyCalls: calls, revisionDelta: controller.getState().revision - original.revision, passed: true });
+   unsubscribe(); await act(async () => { root.render(null); await afterCommittedEffects(); }); check(document.body.style.overflow !== "hidden", "body lock released");
+  }
+ } finally { await act(async () => root.unmount()); host.remove(); }
+ return { width: innerWidth, height: innerHeight, lists: loaded.map(({ id, name, itemCount }) => ({ id, name, itemCount })), cases, requests: [...hierarchyListRequests] };
+}
+window.__runTmdbListHierarchyScenario = runTmdbListHierarchyScenario;
+
 async function runTmdbListLayoutScenario() {
 	const host = document.createElement("div");
 	document.body.append(host);
@@ -7732,15 +8029,19 @@ async function runTmdbListLayoutScenario() {
 			});
 			await clickAndSettle(requiredElement(buttonContaining(surface, "Resolve lists"), `${scope} Resolve lists`));
 			await waitForMountedCondition(() => surface.querySelectorAll(".tmdb-list-selected-items li").length === ids.length, { label: `${scope} TMDB List selection` });
-			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), "Continue to Appearance"), `${scope} Review lists`));
-			await waitForMountedCondition(() => surface.dataset.tmdbListStage === "review", { label: `${scope} TMDB List review` });
+			await clickAndSettle(requiredElement(buttonContaining(surface.querySelector(".add-source-actions"), "Continue to Names"), `${scope} Review lists`));
+			await waitForMountedCondition(() => surface.dataset.tmdbListStage === "names", { label: `${scope} TMDB List review` });
 
-			const collectionInput = surface.querySelector("#tmdb-list-collection-title");
-			const folderInput = requiredElement(surface.querySelector("#tmdb-list-folder-title"), `${scope} Folder name`);
-			const namesInitiallyEmpty = folderInput.value === "" && (scope !== "new-collection" || collectionInput?.value === "");
+			let collectionInput = surface.querySelector("#tmdb-list-collection-title");
+			let folderInput = requiredElement(surface.querySelector('input[id^="tmdb-list-folder-title-"]'), `${scope} Folder name`);
+			const folderNamesDefaulted = [...surface.querySelectorAll('input[id^="tmdb-list-folder-title-"]')].every((input, index) => input.value === `Mounted list ${ids[index]}`) && (scope !== "new-collection" || collectionInput?.value === "");
+			await act(async () => { setInputValue(folderInput, ""); await afterCommittedEffects(); });
 			const footer = requiredElement(surface.querySelector(".tmdb-list-actions"), `${scope} action footer`);
 			const action = requiredElement(footer.querySelector('button[type="submit"]'), `${scope} Create action`);
-			await clickAndSettle(action);
+			await clickAndSettle(action); // Names -> Appearance
+			await clickAndSettle(action); // final validation -> Names
+			collectionInput = surface.querySelector("#tmdb-list-collection-title");
+			folderInput = requiredElement(surface.querySelector('input[id^="tmdb-list-folder-title-"]'), `${scope} returned Folder name`);
 			const initialValidationMessage = requiredElement(footer.querySelector(".tmdb-list-footer-validation"), `${scope} required-name message`);
 			const initialMessageRect = initialValidationMessage.getBoundingClientRect();
 			const initialActionRect = action.getBoundingClientRect();
@@ -7759,7 +8060,10 @@ async function runTmdbListLayoutScenario() {
 				await afterCommittedEffects();
 			});
 			if (collectionInput) {
-				await clickAndSettle(action);
+				await clickAndSettle(action); // Names -> Appearance
+			await clickAndSettle(action); // final validation -> Names
+			collectionInput = surface.querySelector("#tmdb-list-collection-title");
+			folderInput = requiredElement(surface.querySelector('input[id^="tmdb-list-folder-title-"]'), `${scope} returned Folder name`);
 				folderOnlyValidation = {
 					message: footer.querySelector(".tmdb-list-footer-validation")?.textContent.trim() ?? null,
 					collectionInvalid: collectionInput.getAttribute("aria-invalid") === "true",
@@ -7773,10 +8077,17 @@ async function runTmdbListLayoutScenario() {
 			});
 			const requiredValidationCleared = footer.querySelector(".tmdb-list-footer-validation") === null && collectionInput?.getAttribute("aria-invalid") !== "true" && folderInput.getAttribute("aria-invalid") !== "true";
 
+			const reviewRows = [...surface.querySelectorAll(".tmdb-list-review-item")];
+			const sourceNames = requiredElement(surface.querySelector(".source-names-disclosure"), "secondary Source names");
+			const sourceNamesSecondary = !sourceNames.open && !sourceNames.querySelector("input");
+			await clickAndSettle(sourceNames.querySelector("summary"));
+			const sourceNameHelpers = sourceNames.textContent.includes("Optional names shown in Nuvio.") && sourceNames.querySelectorAll("[data-source-name]").length === ids.length;
+			await clickAndSettle(sourceNames.querySelector("summary"));
+			const namesNoHorizontalOverflow = reviewRows.every(row => row.scrollWidth <= row.clientWidth + 1);
+			await clickAndSettle(action);
 			const collectionPresentation = surface.querySelector('[data-hierarchy-collection-presentation="true"]');
 			const folderPresentation = surface.querySelector('[data-review-title-options="true"]');
 			const folderShape = surface.querySelector('[data-editor-field="folderTileShape"]');
-			const reviewRows = [...surface.querySelectorAll(".tmdb-list-review-item")];
 			const reviewScroll = requiredElement(surface.querySelector(".add-source-scroll"), `${scope} review scroll owner`);
 			reviewScroll.scrollTop = reviewScroll.scrollHeight;
 			await act(async () => afterCommittedEffects());
@@ -7794,7 +8105,7 @@ async function runTmdbListLayoutScenario() {
 				stageTitle: surface.querySelector(".tmdb-list-review .creation-stage-intro h3")?.textContent.trim() ?? null,
 				headerDescription: surface.closest(".creation-dialog")?.querySelector(".add-source-heading-description")?.textContent.trim() ?? null,
 				selectedCount: ids.length,
-				namesInitiallyEmpty,
+				folderNamesDefaulted,
 				collectionNamePresent: Boolean(collectionInput),
 				collectionControlsPresent: Boolean(collectionPresentation),
 				folderControlsPresent: Boolean(folderPresentation && folderShape),
@@ -7807,7 +8118,8 @@ async function runTmdbListLayoutScenario() {
 				originalOrder: reviewRows.every((row) => row.textContent.includes("Original order")),
 				noReviewPreview: reviewRows.every((row) => !buttonContaining(row, "Preview")),
 				focusGlowHidden: !surface.textContent.includes("Focus Glow") && !surface.textContent.includes("focusGlowEnabled"),
-				sourceNameHelpers: reviewRows.every((row) => row.querySelector(".editor-field-help")?.textContent.trim() === "This is the name shown in Nuvio. You can customise it."),
+				sourceNamesSecondary,
+				sourceNameHelpers,
 				initialRequiredValidation,
 				folderOnlyValidation,
 				requiredValidationCleared,
@@ -7816,8 +8128,9 @@ async function runTmdbListLayoutScenario() {
 				actionLineCount: Math.max(1, Math.round(actionContentHeight / actionLineHeight)),
 				oneScrollOwner: scrollOwners.length === 0 || (scrollOwners.length === 1 && scrollOwners[0] === reviewScroll),
 				footerReachable: action.closest("footer").getBoundingClientRect().bottom <= window.innerHeight + 1,
-				noHorizontalOverflow: surface.scrollWidth <= surface.clientWidth + 1 && reviewRows.every((row) => row.scrollWidth <= row.clientWidth + 1),
+				noHorizontalOverflow: surface.scrollWidth <= surface.clientWidth + 1 && namesNoHorizontalOverflow,
 			};
+			await clickAndSettle(requiredElement(document.querySelector('[data-action="back-to-tmdb-list-names"]'), "Appearance Back"));
 			await clickAndSettle(requiredElement(document.querySelector('.creation-dialog[data-creation-option="tmdb-lists"] [data-action="back-to-tmdb-list-selection"]'), `${scope} Review Back`));
 			result.backPreservedSelection = surface.querySelectorAll(".tmdb-list-selected-items li").length === ids.length;
 			result.backPreviewAvailable = Boolean(surface.querySelector(".tmdb-list-selected-items button"));

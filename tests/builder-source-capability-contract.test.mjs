@@ -52,7 +52,7 @@ const FAMILY_CAPABILITIES = Object.freeze({
 			preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "parseTmdbListBatch",
 		}),
 		guided: context("builder/src/ui/TmdbListSourceFlow.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, {
-			preview: "<SourceTitlePreviewDialog", sourceName: "tmdb-list-source-title", physicalIdentity: "parseTmdbListBatch",
+			preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "parseTmdbListBatch",
 		}),
 		edit: context("builder/src/ui/SourceEditorDialog.jsx", { media: F, sort: C, filtersAdvanced: U, roleCredit: N, preview: C, sourceName: C, physicalIdentity: F }, {
 			sort: "<TmdbListEditorFields", preview: "<SourceTitlePreviewDialog", sourceName: 'id="source-edit-title-input"',

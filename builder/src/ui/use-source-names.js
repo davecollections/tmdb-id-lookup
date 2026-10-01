@@ -21,7 +21,7 @@ export function useSourceNames(generatedDrafts, keyOf) {
 			return next;
 		}),
 		reset: (key) => reset([key]),
-		resetAll: () => reset(resolved.rows.map((row) => row.key)),
+		resetAll: ({ includeUnselected = false } = {}) => includeUnselected ? setNames({}) : reset(resolved.rows.map((row) => row.key)),
 		commit: (key = null) => reset(resolved.rows.filter((row) => (key === null || key === row.key)
 			&& (!row.value.trim() || row.value.trim() === row.generatedTitle)).map((row) => row.key)),
 	};

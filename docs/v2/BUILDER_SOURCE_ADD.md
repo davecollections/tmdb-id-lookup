@@ -154,3 +154,7 @@ Issue #14 remains the public-list lookup boundary. Issue #24 remains the direct 
 ## Completion gate
 
 The issue #65 owner UI and required current Nuvio Desktop evidence gates are complete, and PR #66 is merged. A second current Nuvio client remains desirable but non-blocking unless it later exposes conflicting behavior.
+
+## TMDB Lists placement by operation (#277)
+
+Selected-Folder Add Source retains **Select → Review → Add N sources**, its selected-Folder context, Source-name disclosure, duplicate override and elsewhere notices. It adds the selected ready LIST Sources directly to that Folder, preserving optional Source names, exact duplicate omission/override, elsewhere notices, order and one atomic insertion. It creates no Folders. Guided New Collection and New Folder use **Select → Names → Appearance** and create one Folder containing one LIST Source per ready selected List; see [TMDB Lists](./BUILDER_TMDB_LISTS.md). Existing imported or previously created multi-List Folders are preserved without migration or restructuring, and individual LIST Source Edit remains available in them.
