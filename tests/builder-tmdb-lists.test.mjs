@@ -1,3 +1,4 @@
+import { tmdbListHierarchyReview } from "../builder/src/ui/tmdb-list-review.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -43,6 +44,7 @@ function list(id, overrides = {}) {
 	return Object.freeze({
 		id,
 		name: `List ${id}`,
+		folderTitle: `List ${id}`,
 		description: `Description ${id}`,
 		itemCount: 2,
 		creator: "Dave",
@@ -249,21 +251,21 @@ test("Add Source omits exact folder duplicates, reports elsewhere, and explicit 
 	assert.equal(all.addedSourceCount, 2);
 });
 
-test("guided New Collection creates exactly one collection, one ordinary folder, and ordered native LIST sources in one revision", () => {
+test("guided New Collection creates one collection and ordered one-List folders in one revision", () => {
 	const controller = app();
 	const state = controller.getState();
-	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "My Lists", folderTitle: "Public picks", lists: [list(3), list(4, { sourceTitle: "Custom four" })] });
+	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "My Lists", lists: [list(3), list(4, { sourceTitle: "Custom four" })] });
 	assert.equal(planned.ok, true);
-	assert.deepEqual(planned.plan.counts, { collectionCount: 1, folderCount: 1, sourceCount: 2 });
+	assert.deepEqual(planned.plan.counts, { collectionCount: 1, folderCount: 2, sourceCount: 2 });
 	assert.deepEqual(planned.plan.collections[0].editable, { title: "My Lists", pinToTop: false, focusGlowEnabled: true, viewMode: "TABBED_GRID", showAllTab: true });
-	assert.deepEqual(planned.plan.collections[0].folders[0].editable, { title: "Public picks", tileShape: "POSTER", hideTitle: true });
-	assert.deepEqual(planned.plan.collections[0].folders[0].sources.map((entry) => entry.draft.editable.tmdbId), [3, 4]);
+	assert.deepEqual(planned.plan.collections[0].folders[0].editable, { title: "List 3", tileShape: "POSTER", hideTitle: true });
+	assert.deepEqual(planned.plan.collections[0].folders.map((folder) => folder.sources[0].draft.editable.tmdbId), [3, 4]);
 	const applied = applyTmdbListHierarchyPlan(controller, planned.plan);
 	assert.equal(applied.ok, true);
 	assert.equal(controller.getState().revision, state.revision + 1);
 	const output = controller.stringifyProject();
 	assert.equal(output.ok, true);
-	assert.deepEqual(output.value[0].folders[0].sources.map((source) => [source.tmdbSourceType, source.tmdbId, source.mediaType, source.sortBy]), [["LIST", 3, "MOVIE", "original"], ["LIST", 4, "MOVIE", "original"]]);
+	assert.deepEqual(output.value[0].folders.flatMap((folder) => folder.sources.map((source) => [source.tmdbSourceType, source.tmdbId, source.mediaType, source.sortBy])), [["LIST", 3, "MOVIE", "original"], ["LIST", 4, "MOVIE", "original"]]);
 	assert.equal((output.value[0].folders[0].catalogSources ?? []).some((source) => source.tmdbSourceType === "LIST"), false);
 });
 
@@ -278,10 +280,10 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 		viewMode: "ROWS",
 		showAllTab: false,
 		pinToTop: true,
-		folderTitle: "Visible folder",
+
 		folderTitleVisibility: "SHOW_EVERYWHERE",
 		folderTileShape: "LANDSCAPE",
-		lists: [list(31)],
+		lists: [list(31, { folderTitle: "Visible folder" })],
 	});
 	assert.equal(planned.ok, true);
 	assert.deepEqual(planned.plan.configuration, {
@@ -291,10 +293,10 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 		viewMode: "ROWS",
 		showAllTab: true,
 		pinToTop: true,
-		folderTitle: "Visible folder",
+
 		folderTitleVisibility: "SHOW_EVERYWHERE",
 		folderTileShape: "LANDSCAPE",
-		lists: [list(31)],
+		lists: [list(31, { folderTitle: "Visible folder" })],
 	});
 	assert.deepEqual(planned.plan.collections[0].editable, { title: NUVIO_INVISIBLE_TITLE, pinToTop: true, focusGlowEnabled: true, viewMode: "ROWS", showAllTab: true });
 	assert.deepEqual(planned.plan.collections[0].folders[0].editable, { title: "Visible folder", tileShape: "LANDSCAPE", hideTitle: false });
@@ -303,10 +305,10 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 		scope: "new-collection",
 		projectRevision: state.revision,
 		collectionTitle: "Lists",
-		folderTitle: "User supplied before hiding",
+
 		folderTitleVisibility: "HIDE_EVERYWHERE",
 		folderTileShape: "POSTER",
-		lists: [list(32)],
+		lists: [list(32, { folderTitle: "User supplied before hiding" })],
 	});
 	assert.equal(hiddenFolder.ok, true);
 	assert.deepEqual(hiddenFolder.plan.collections[0].folders[0].editable, { title: NUVIO_INVISIBLE_TITLE, tileShape: "POSTER", hideTitle: true });
@@ -314,7 +316,7 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 		{ viewMode: "FOLLOW_LAYOUT" },
 		{ folderTitleVisibility: "HIDDEN" },
 		{ folderTileShape: "FUTURE" },
-	]) assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", folderTitle: "Folder", lists: [list(33)], ...invalid }).ok, false);
+	]) assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", lists: [list(33)], ...invalid }).ok, false);
 });
 
 test("guided TMDB Lists validates remembered titles only when their final fields stay visible", () => {
@@ -325,27 +327,27 @@ test("guided TMDB Lists validates remembered titles only when their final fields
 		projectRevision: state.revision,
 		collectionTitle: "",
 		hideCollectionTitle: true,
-		folderTitle: "",
+
 		folderTitleVisibility: "HIDE_EVERYWHERE",
-		lists: [list(34)],
+		lists: [list(34, { folderTitle: "" })],
 	});
 	assert.equal(hidden.ok, true);
 	assert.equal(hidden.plan.configuration.collectionTitle, "");
-	assert.equal(hidden.plan.configuration.folderTitle, "");
+	assert.equal(hidden.plan.configuration.lists[0].folderTitle, "");
 	assert.equal(hidden.plan.collections[0].editable.title, NUVIO_INVISIBLE_TITLE);
 	assert.equal(hidden.plan.collections[0].folders[0].editable.title, NUVIO_INVISIBLE_TITLE);
-	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", folderTitle: "Folder", lists: [list(35)] }).ok, false);
-	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", folderTitle: "", lists: [list(36)] }).ok, false);
+	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "", lists: [list(35)] }).ok, false);
+	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", lists: [list(36, { folderTitle: "" })] }).ok, false);
 });
 
 test("guided TMDB Lists has no arbitrary bulk cap and a late atomic failure rolls back all hierarchy nodes", () => {
 	const controller = app();
 	let state = controller.getState();
 	const many = Array.from({ length: 125 }, (_, index) => list(index + 1));
-	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Many lists", folderTitle: "All lists", lists: many });
+	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Many lists", lists: many });
 	assert.equal(planned.ok, true);
-	assert.deepEqual(planned.plan.counts, { collectionCount: 1, folderCount: 1, sourceCount: 125 });
-	assert.deepEqual(planned.plan.collections[0].folders[0].sources.slice(-3).map((entry) => entry.draft.editable.tmdbId), [123, 124, 125]);
+	assert.deepEqual(planned.plan.counts, { collectionCount: 1, folderCount: 125, sourceCount: 125 });
+	assert.deepEqual(planned.plan.collections[0].folders.slice(-3).map((folder) => folder.sources[0].draft.editable.tmdbId), [123, 124, 125]);
 
 	let calls = 0;
 	const failing = createBuilderController({
@@ -354,7 +356,7 @@ test("guided TMDB Lists has no arbitrary bulk cap and a late atomic failure roll
 		initialProjectTitle: "Rollback",
 	});
 	state = failing.getState();
-	const rollbackPlan = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Rollback lists", folderTitle: "Lists", lists: many.slice(0, 10) });
+	const rollbackPlan = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Rollback lists", lists: many.slice(0, 10) });
 	assert.equal(rollbackPlan.ok, true);
 	const before = failing.getState();
 	assert.equal(applyTmdbListHierarchyPlan(failing, rollbackPlan.plan).ok, false);
@@ -362,7 +364,7 @@ test("guided TMDB Lists has no arbitrary bulk cap and a late atomic failure roll
 	assert.equal(failing.getState().revision, before.revision);
 });
 
-test("guided New Folder creates one folder, omits same-collection identities, keeps elsewhere matches, and blocks stale plans", () => {
+test("guided New Folder creates one folder per ready List, omits same-collection identities, keeps elsewhere matches, and blocks stale plans", () => {
 	const controller = app();
 	const destination = controller.createCollection({ editable: { title: "Destination" } });
 	const existing = controller.createFolder(destination.createdInternalId, { editable: { title: "Existing" } });
@@ -371,18 +373,18 @@ test("guided New Folder creates one folder, omits same-collection identities, ke
 	controller.createSource(existing.createdInternalId, buildTmdbListSourceDraft(list(5)).draft);
 	controller.createSource(elsewhereFolder.createdInternalId, buildTmdbListSourceDraft(list(6)).draft);
 	let state = controller.getState();
-	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination.createdInternalId, folderTitle: "Imported lists", folderTitleVisibility: "SHOW_EVERYWHERE", folderTileShape: "LANDSCAPE", lists: [list(5), list(6), list(7)] });
+	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination.createdInternalId, folderTitleVisibility: "SHOW_EVERYWHERE", folderTileShape: "LANDSCAPE", lists: [list(5), list(6), list(7)] });
 	assert.equal(planned.ok, true);
 	assert.deepEqual(planned.plan.outcomes.map((outcome) => outcome.status), [TMDB_LIST_PLACEMENT_STATUSES.ALREADY_IN_COLLECTION, TMDB_LIST_PLACEMENT_STATUSES.EXISTS_ELSEWHERE, TMDB_LIST_PLACEMENT_STATUSES.READY]);
-	assert.deepEqual(planned.plan.counts, { collectionCount: 0, folderCount: 1, sourceCount: 2 });
-	assert.deepEqual(planned.plan.folders[0].editable, { title: "Imported lists", tileShape: "LANDSCAPE", hideTitle: false });
-	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination.createdInternalId, collectionTitle: "Unexpected", folderTitle: "Folder", lists: [list(7)] }).ok, false);
+	assert.deepEqual(planned.plan.counts, { collectionCount: 0, folderCount: 2, sourceCount: 2 });
+	assert.deepEqual(planned.plan.folders[0].editable, { title: "List 6", tileShape: "LANDSCAPE", hideTitle: false });
+	assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination.createdInternalId, collectionTitle: "Unexpected", lists: [list(7)] }).ok, false);
 	const applied = applyTmdbListHierarchyPlan(controller, planned.plan);
 	assert.equal(applied.ok, true);
-	assert.deepEqual(controller.getState().project.collections[0].folders.at(-1).sources.map((source) => source.editable.tmdbId), [6, 7]);
+	assert.deepEqual(controller.getState().project.collections[0].folders.slice(-2).map((folder) => folder.sources[0].editable.tmdbId), [6, 7]);
 
 	state = controller.getState();
-	const stale = createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination.createdInternalId, folderTitle: "Later", lists: [list(8)] });
+	const stale = createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination.createdInternalId, lists: [list(8)] });
 	controller.createSource(existing.createdInternalId, buildTmdbListSourceDraft(list(8)).draft);
 	const changed = controller.getState();
 	assert.equal(validateTmdbListHierarchyPlan(stale.plan, { project: changed.project, projectRevision: changed.revision }).stale, true);
@@ -606,4 +608,164 @@ test("original import audit: all 339 populated-filter Lists open and preserve; 4
 		if (action === "unchanged" || action === "cancel") assert.equal(controller.getState().project, initial.project);
 	}
 	t.diagnostic(JSON.stringify({ total: rows.length, excludedNonTmdb: rows.length - native.length, editableTmdb: native.length - blocked.length, editableLists: lists.length, restoredLists: restored.length, remainingBlockedDiscover: blockedFolders, preservationActionsPerRestoredList: 4 }));
+});
+
+for (const scope of ["new-collection", "new-folder"]) for (const size of [1, 7]) {
+	test(`${scope} creates ${size} ordered one-List folders with one content notification`, () => {
+		const controller = app();
+		const destination = scope === "new-folder" ? controller.createCollection({ editable: { title: "Parent", viewMode: "ROWS", pinToTop: true } }).createdInternalId : null;
+		const state = controller.getState();
+		const selected = [17, 3, 12, 4, 10, 1, 9].slice(0, size).map((id) => list(id));
+		const result = createTmdbListHierarchyPlan(state.project, { scope, projectRevision: state.revision, ...(destination ? { destinationCollectionInternalId: destination } : { collectionTitle: "My Lists" }), lists: selected });
+		assert.equal(result.ok, true);
+		assert.deepEqual(result.plan.counts, { collectionCount: destination ? 0 : 1, folderCount: size, sourceCount: size });
+		const folders = destination ? result.plan.folders : result.plan.collections[0].folders;
+		assert.deepEqual(folders.map((folder) => [folder.editable.title, folder.sources.length, folder.sources[0].draft.editable.tmdbId]), selected.map((entry) => [entry.name, 1, entry.id]));
+		assert.ok(folders.every((folder) => Object.isFrozen(folder) && Object.isFrozen(folder.sources)));
+		let contentNotifications = 0;
+		controller.subscribe(() => { if (controller.getState().revision !== state.revision) contentNotifications += 1; });
+		assert.equal(applyTmdbListHierarchyPlan(controller, result.plan).ok, true);
+		assert.equal(controller.getState().revision, state.revision + 1);
+		assert.equal(contentNotifications, 1);
+		const output = controller.stringifyProject().value[0];
+		assert.deepEqual(output.folders.map((folder) => [folder.title, folder.sources]), selected.map((entry) => [entry.name, [buildTmdbListSourceDraft(entry).draft.editable]]));
+		if (destination) assert.deepEqual(controller.getState().project.collections[0].editable, state.project.collections[0].editable);
+	});
+}
+
+test("Folder and Source names follow List identity after removal/reordering, with truthful Folder defaults", () => {
+	const controller = app(), state = controller.getState();
+	const selected = [list(3, { folderTitle: "Folder three", sourceTitle: "Source three" }), list(4), list(5, { folderTitle: "Folder five", sourceTitle: "Source five" })];
+	const options = { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists" };
+	const result = createTmdbListHierarchyPlan(state.project, { ...options, lists: [selected[2], selected[0]] });
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.plan.collections[0].folders.map((folder) => [folder.editable.title, folder.sources[0].draft.editable.title, folder.sources[0].draft.editable.tmdbId]), [["Folder five", "Source five", 5], ["Folder three", "Source three", 3]]);
+	const defaults = createTmdbListHierarchyPlan(state.project, { ...options, lists: [list(6, { name: " ", folderTitle: undefined }), list(7, { name: "The Complete Hitchcock Collection", folderTitle: undefined })] });
+	assert.deepEqual(defaults.plan.collections[0].folders.map((folder) => folder.editable.title), ["TMDB List 6", "The Complete Hitchcock Collection"]);
+});
+
+test("invalid ready Folder names retain selected-order diagnostics, sibling drafts and Review counts", () => {
+	const controller = app(), state = controller.getState();
+	const options = { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", lists: [list(9, { folderTitle: "" }), list(2, { folderTitle: " " }), list(4)] };
+	const invalid = createTmdbListHierarchyPlan(state.project, options);
+	assert.equal(invalid.ok, false); assert.equal(invalid.plan, null);
+	assert.deepEqual(invalid.errors.map((error) => error.path), ["$tmdbListPlan.lists[9].folderTitle", "$tmdbListPlan.lists[2].folderTitle"]);
+	assert.deepEqual(invalid.review.counts, { collectionCount: 1, folderCount: 3, sourceCount: 3 });
+	const corrected = createTmdbListHierarchyPlan(state.project, { ...options, lists: [list(9, { folderTitle: "Fixed" }), options.lists[1], options.lists[2]] });
+	assert.deepEqual(corrected.errors.map((error) => error.path), ["$tmdbListPlan.lists[2].folderTitle"]);
+	for (const title of [null, 1, NUVIO_INVISIBLE_TITLE, " leading", "trailing "]) assert.equal(createTmdbListHierarchyPlan(state.project, { ...options, lists: [list(9, { folderTitle: title })] }).ok, false);
+});
+
+test("New Folder omits two of seven destination duplicates and complete overlap is a zero-mutation plan", () => {
+	const controller = app();
+	const destination = controller.createCollection({ editable: { title: "Destination" } }).createdInternalId;
+	const existing = controller.createFolder(destination, { editable: { title: "Old multi-list" } }).createdInternalId;
+	for (const id of [1, 2]) controller.createSource(existing, buildTmdbListSourceDraft(list(id)).draft);
+	const state = controller.getState(), before = controller.stringifyProject().value;
+	const options = { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: destination, lists: [1, 2, 3, 4, 5, 6, 7].map((id) => list(id, id < 3 ? { folderTitle: "" } : {})) };
+	const result = createTmdbListHierarchyPlan(state.project, options);
+	assert.equal(result.ok, true, "omitted Lists need no Folder name");
+	assert.deepEqual(result.plan.counts, { collectionCount: 0, folderCount: 5, sourceCount: 5 });
+	assert.equal(applyTmdbListHierarchyPlan(controller, result.plan).ok, true);
+	assert.deepEqual(controller.stringifyProject().value[0].folders[0], before[0].folders[0]);
+	assert.deepEqual(controller.getState().project.collections[0].folders.slice(1).map((folder) => folder.sources.map((source) => source.editable.tmdbId)), [[3], [4], [5], [6], [7]]);
+	const current = controller.getState();
+	const complete = createTmdbListHierarchyPlan(current.project, { ...options, projectRevision: current.revision, lists: options.lists.map((entry) => ({ ...entry, folderTitle: "" })) });
+	assert.equal(complete.ok, true); assert.deepEqual(complete.plan.counts, { collectionCount: 0, folderCount: 0, sourceCount: 0 }); assert.deepEqual(complete.plan.folders, []);
+	assert.equal(applyTmdbListHierarchyPlan(controller, complete.plan).ok, false);
+	assert.equal(controller.getState().project, current.project); assert.equal(controller.getState().revision, current.revision);
+	const separate = createTmdbListHierarchyPlan(current.project, { scope: "new-collection", projectRevision: current.revision, collectionTitle: "Separate", lists: [list(1), list(3)] });
+	assert.deepEqual(separate.plan.counts, { collectionCount: 1, folderCount: 2, sourceCount: 2 });
+	assert.ok(separate.plan.outcomes.every((entry) => entry.status === TMDB_LIST_PLACEMENT_STATUSES.EXISTS_ELSEWHERE));
+});
+
+test("revalidation rejects altered per-List names, order, presentation, bundles and counts", () => {
+	const controller = app(), state = controller.getState();
+	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", lists: [list(1), list(2)] });
+	for (const mutate of [
+		(plan) => { plan.configuration.lists[0].folderTitle = "Changed"; },
+		(plan) => { plan.configuration.lists.reverse(); },
+		(plan) => { plan.configuration.lists[0].sourceTitle = "Changed"; },
+		(plan) => { plan.configuration.folderTileShape = "SQUARE"; },
+		(plan) => { plan.collections[0].folders.pop(); },
+		(plan) => { plan.counts.folderCount = 1; },
+		(plan) => { plan.outcomes[0].status = TMDB_LIST_PLACEMENT_STATUSES.ALREADY_IN_COLLECTION; },
+	]) {
+		const tampered = structuredClone(planned.plan); mutate(tampered);
+		assert.equal(validateTmdbListHierarchyPlan(tampered, { project: state.project, projectRevision: state.revision }).ok, false);
+		assert.equal(applyTmdbListHierarchyPlan(controller, tampered).ok, false);
+		assert.equal(controller.getState().project, state.project); assert.equal(controller.getState().revision, state.revision);
+	}
+});
+
+test("late New Folder failure rolls back every sibling bundle", () => {
+	let calls = 0, failAt = Infinity;
+	const controller = createBuilderController({ idFactory: () => { if (++calls === failAt) throw new Error("late failure"); return `fail-${calls}`; }, nuvioIdFactory: ids("nuvio") });
+	const destination = controller.createCollection({ editable: { title: "Parent" } }).createdInternalId;
+	const before = controller.getState(); failAt = calls + 6;
+	const result = createTmdbListHierarchyPlan(before.project, { scope: "new-folder", projectRevision: before.revision, destinationCollectionInternalId: destination, lists: [1, 2, 3, 4, 5, 6, 7].map((id) => list(id)) });
+	assert.equal(result.ok, true); assert.equal(applyTmdbListHierarchyPlan(controller, result.plan).ok, false);
+	assert.equal(controller.getState().project, before.project); assert.equal(controller.getState().revision, before.revision);
+});
+
+test("old imported multi-List folders survive creation, round trip and individual Source Edit", () => {
+	const controller = app();
+	const raw = [{ id: "old-collection", title: "Imported", custom: { keep: true }, folders: [{ id: "old-folder", title: "Mixed list folder", coverImageUrl: "https://example.test/owner.jpg", hideTitle: true, community: [1, 2], sources: [3, 1, 2].map((id) => ({ ...buildTmdbListSourceDraft(list(id)).draft.editable, tmdbId: String(id), community: { keep: id }, title: `Custom ${id}` })) }] }];
+	assert.equal(controller.importValue(raw).ok, true);
+	let state = controller.getState(); const baseline = controller.stringifyProject().value[0].folders[0];
+	const planned = createTmdbListHierarchyPlan(state.project, { scope: "new-folder", projectRevision: state.revision, destinationCollectionInternalId: state.project.collections[0].internalId, lists: [list(4)] });
+	assert.equal(applyTmdbListHierarchyPlan(controller, planned.plan).ok, true);
+	assert.deepEqual(controller.stringifyProject().value[0].folders[0], baseline);
+	state = controller.getState(); const opened = createSourceEditSession(state.project, state.project.collections[0].folders[0].sources[1].internalId);
+	assert.equal(saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Deliberate source rename")).ok, true);
+	const expected = structuredClone(baseline); expected.sources[1].title = "Deliberate source rename";
+	assert.deepEqual(controller.stringifyProject().value[0].folders[0], expected);
+	const roundTrip = app(); assert.equal(roundTrip.importValue(controller.stringifyProject().value).ok, true);
+	assert.deepEqual(roundTrip.stringifyProject().value[0].folders[0], expected);
+});
+
+test("Add Source appends three ordered LIST Sources to one chosen Folder in one revision", () => {
+	const controller = app(); const collection = controller.createCollection({ editable: { title: "Existing" } }).createdInternalId;
+	const folder = controller.createFolder(collection, { editable: { title: "Chosen" } }).createdInternalId; controller.selectNode(folder);
+	const before = controller.getState(), selected = [list(9), list(3, { sourceTitle: "Custom source three" }), list(7)];
+	const result = createTmdbListSourceBundle(controller, { folderInternalId: folder, drafts: selected.map((entry) => buildTmdbListSourceDraft(entry, entry.sourceTitle).draft) });
+	assert.equal(result.ok, true); assert.equal(result.addedSourceCount, 3); assert.equal(controller.getState().revision, before.revision + 1);
+	assert.equal(controller.getState().project.collections[0].folders.length, 1);
+	assert.deepEqual(controller.getState().project.collections[0].folders[0].sources.map((source) => [source.editable.tmdbId, source.editable.title]), selected.map((entry) => [entry.id, entry.sourceTitle]));
+});
+
+
+test("Names separates ready/omitted/elsewhere evidence without deriving identity from titles", () => {
+ const selected = [{ id: 21608, folderTitle: "Musicals" }, { id: 5916, folderTitle: "musicals" }, { id: 7, folderTitle: "Musicals" }];
+ const other = { collectionInternalId: "other", folderInternalId: "elsewhere" };
+ const result = tmdbListHierarchyReview(selected, { outcomes: [
+  { status: "ready-to-create", elsewhere: [] },
+  { status: "exists-elsewhere", elsewhere: [other] },
+  { status: "already-in-this-collection", elsewhere: [other] },
+ ] });
+ assert.deepEqual(result.ready.map(({ list }) => list.id), [21608, 5916]);
+ assert.deepEqual(result.omitted.map(({ list }) => list.id), [7]);
+ assert.deepEqual(result.elsewhere.map(({ list }) => list.id), [5916]);
+ assert.deepEqual(result.duplicateNames, [{ title: "Musicals", ids: [21608, 5916] }]);
+ assert.equal(result.elsewhere[0].outcome.elsewhere[0], other);
+ assert.deepEqual(selected.map(list => list.folderTitle), ["Musicals", "musicals", "Musicals"]);
+});
+
+test("duplicate visible Folder-name advice ignores omissions, invalid drafts and hidden titles; it keeps articles", () => {
+ const selected = [{ id: 1, folderTitle: "  Film   Nights " }, { id: 2, folderTitle: "film nights" }, { id: 3, folderTitle: "The Film Nights" }, { id: 4, folderTitle: "  " }];
+ const review = { outcomes: selected.map(() => ({ status: "ready-to-create", elsewhere: [] })) };
+ assert.deepEqual(tmdbListHierarchyReview(selected, review).duplicateNames, [{ title: "Film   Nights", ids: [1, 2] }]);
+ assert.deepEqual(tmdbListHierarchyReview(selected, review, { folderTitleVisibility: "HIDE_EVERYWHERE" }).duplicateNames, []);
+ assert.deepEqual(tmdbListHierarchyReview(selected, null).ready, []);
+});
+
+test("same-name Musicals Lists remain distinct ready identities and non-blocking ordinary Folder bundles", () => {
+ const controller = app();
+ const state = controller.getState();
+ const made = createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Musicals", lists: [list(21608, { name: "Musicals", sourceTitle: "Musicals", folderTitle: "Musicals" }), list(5916, { name: "Musicals", sourceTitle: "Musicals", folderTitle: "Musicals" })] });
+ assert.equal(made.ok, true);
+ assert.deepEqual(made.plan.counts, { collectionCount: 1, folderCount: 2, sourceCount: 2 });
+ assert.notEqual(made.plan.outcomes[0].identity, made.plan.outcomes[1].identity);
+ assert.equal(applyTmdbListHierarchyPlan(controller, made.plan).ok, true);
+ assert.deepEqual(controller.getState().project.collections.at(-1).folders.map(folder => [folder.editable.title, folder.sources[0].editable.tmdbId]), [["Musicals", 21608], ["Musicals", 5916]]);
 });

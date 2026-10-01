@@ -8064,6 +8064,21 @@ body.hierarchy-pointer-dragging .builder-shell {
 	gap: 8px;
 }
 
+.tmdb-list-selection-reset {
+	min-height: 44px;
+	color: var(--muted);
+	background: transparent;
+	font-size: 0.75rem;
+}
+
+.tmdb-list-selected > .add-source-section-heading {
+	flex-wrap: wrap;
+}
+
+.tmdb-list-actions > .tmdb-list-selection-reset {
+	justify-self: start;
+}
+
 .tmdb-list-footer-validation {
 	min-width: 0;
 	margin: 0;
@@ -10127,3 +10142,28 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 }
 
 .hierarchy-sort-dialog .semantic-sort-choice-row label { min-height: 44px; }
+
+/* TMDB Lists hierarchy: placement and names are separate from appearance. */
+.tmdb-list-placement-summary { display: grid; gap: 10px; min-width: 0; }
+.tmdb-list-placement-summary p, .tmdb-list-empty p, .tmdb-list-group-title { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.tmdb-list-placement-summary > p, .tmdb-list-empty p { font-size: 0.8rem; }
+.tmdb-list-group-title { font-size: 0.875rem; }
+.tmdb-list-form[data-tmdb-list-stage="names"] .tmdb-list-review-item > div:first-child { flex-wrap: wrap; align-items: flex-start; }
+.tmdb-list-form[data-tmdb-list-stage="names"] .tmdb-list-review-item > div:first-child > strong { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+.tmdb-list-form[data-tmdb-list-stage="names"] .tmdb-list-review-item em { max-width: 100%; overflow-wrap: anywhere; }
+.tmdb-list-review-item em.tmdb-list-ready-elsewhere { color: #c8f2fb; }
+.tmdb-list-omitted, .tmdb-list-locations { min-width: 0; }
+.tmdb-list-omitted { padding: 0; }
+.tmdb-list-omitted summary, .tmdb-list-locations summary { min-height: 44px; padding: 12px; cursor: pointer; overflow-wrap: anywhere; }
+.tmdb-list-locations summary { color: var(--cyan-bright); font-size: 0.75rem; }
+.tmdb-list-form[data-tmdb-list-stage="names"] .tmdb-list-review-item:has(> .tmdb-list-locations) > .editor-field > .editor-field-error:empty { display: none; }
+.tmdb-list-form[data-tmdb-list-stage="names"] .tmdb-list-locations { margin-top: -4px; }
+.tmdb-list-form[data-tmdb-list-stage="names"] .tmdb-list-locations summary { padding-block: 8px; }
+.tmdb-list-omitted ul { display: grid; gap: 10px; margin: 0; padding: 0 12px 12px; list-style: none; }
+.tmdb-list-omitted li { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.tmdb-list-omitted li span { font-size: 0.72rem; }
+.tmdb-list-omitted summary:focus-visible, .tmdb-list-locations summary:focus-visible { outline: 2px solid var(--text); outline-offset: -3px; }
+@media (forced-colors: active) {
+	.tmdb-list-omitted, .tmdb-list-name-warning, .tmdb-list-placement-summary .studio-elsewhere-note { border: 1px solid CanvasText; }
+	.tmdb-list-review-item em.tmdb-list-ready-elsewhere { color: CanvasText; }
+}

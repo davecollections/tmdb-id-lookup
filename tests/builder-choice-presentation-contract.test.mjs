@@ -121,7 +121,7 @@ test("all nine guided families use explicit shared stage intros without imposing
 		CreationDialog: [[1, "Select", "Choose decades"], [2, "Configure", "Configure Decades"], [3, "Appearance", "Appearance"]],
 		PeopleSourceFlow: [[1, "Select", "People · TMDB"], [2, "Configure"], [3, "Appearance", "Appearance"]],
 		FranchiseSourceFlow: [[1, "Select", "Movie franchises · TMDB"], [2, "Appearance", "Appearance"]],
-		TmdbListSourceFlow: [[1, "Select", "TMDB lists"], [2, "Appearance", "Appearance"]],
+		TmdbListSourceFlow: [[1, "Select", "TMDB lists"], [2, "Names", "Names"], [3, "Appearance", "Appearance"]],
 		StudioHierarchyFlow: [[1, "Select", "Studios · TMDB"], [2, "Configure", "Configure Studios"], [3, "Appearance", "Appearance"]],
 		NetworkHierarchyFlow: [[1, "Select", "Networks · TMDB"], [2, "Configure", "Configure Networks"], [3, "Appearance", "Appearance"]],
 		GenreHierarchyFlow: [[1, "Select", "Select Genres"], [2, "Configure", "Configure Genres"], [3, "Structure", "Structure"], [4, "Appearance", "Appearance"]],

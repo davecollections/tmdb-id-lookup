@@ -1130,8 +1130,8 @@ test("all guided output-title fields reuse reversible fields and contextual hidd
 	assert.match(streaming, /kind="folder" plural=\{folders\.length > 1\}/);
 	assert.match(streaming, /options\.folderTitleVisibility === "HIDE_EVERYWHERE"/);
 	const lists = fs.readFileSync(path.join(rootDir, "builder", "src", "ui", "TmdbListSourceFlow.jsx"), "utf8");
-	assert.match(lists, /folderTitleHiddenEverywhere \? "tmdb-list-folder-title-hidden-help" : "tmdb-list-folder-help"/);
-	assert.match(lists, /!folderTitleHiddenEverywhere \? <p id="tmdb-list-folder-help"/);
+	assert.match(lists, /folderTitleHiddenEverywhere \? `\$\{folderInputId\}-hidden-help` : undefined/);
+	assert.match(lists, /<HiddenTitleFieldHelp id=\{`\$\{folderInputId\}-hidden-help`\} hidden=\{folderTitleHiddenEverywhere\}/);
 });
 
 test("folder Hide everywhere emits one U+200E and restores the original visible choice", () => {

@@ -134,7 +134,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			decades: { 1: "Configure", 2: "Appearance" },
 			people: { 1: "Configure", 2: "Appearance" },
 			franchises: { 1: "Appearance" },
-			"tmdb-lists": { 1: "Appearance" },
+			"tmdb-lists": { 1: "Names", 2: "Appearance" },
 			studios: { 1: "Configure", 2: "Appearance" },
 			networks: { 1: "Configure", 2: "Appearance" },
 			genres: { 1: "Configure", 2: "Structure", 3: "Appearance" },
@@ -230,7 +230,8 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await stage(1, "TMDB lists", "select");
 			await input("textarea", "5916"); await click(button("Resolve lists"));
 			await wait(() => dialog().querySelector(".tmdb-list-selected") || !primary().disabled, { label: "live public TMDB list resolution", timeoutMs: 30000 });
-			await next(); await stage(2, "Appearance", "review");
+			await next(); await stage(2, "Names", "names");
+			if (!nameRecovery) { await next(); await stage(3, "Appearance", "review"); }
 		} else if (family === "franchises" || family === "people") {
 			const people = family === "people", id = people ? "31" : "645";
 			await input('input[type="search"]', id);
@@ -289,15 +290,51 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 
 			check(!dialog().querySelector('[data-required-name][aria-invalid="true"]'), "untouched names unexpectedly have errors");
 			if (family === "tmdb-lists") {
-				await next();
+				const folder = () => dialog().querySelector('input[data-required-name][id*="folder"]');
+				const names = () => [fields()[0], folder()];
+				const expected = ["Recovered tmdb-lists 1"], folderName = "Custom Folder 1";
+				// Required names are intentionally on another stage from visibility.
+				await next(); await stage(3, "Appearance", "appearance");
+				await next(); await stage(2, "Names", "names");
 				check(document.activeElement === fields()[0], "List attempted create focuses Collection first");
-				for (const field of dialog().querySelectorAll('[data-required-name]')) {
-					assertNameFeedback(field, field.id.includes("collection") ? "collection" : "folder", true);
-					await input(`#${field.id}`, field.id.includes("collection") ? "Lists review" : "Lists folder");
+				assertNameFeedback(fields()[0], "collection", true); assertNameFeedback(folder(), "folder", false);
+				await input(`#${fields()[0].id}`, expected[0]); await input(`#${folder().id}`, folderName);
+				for (const field of names()) {
+					const kind = field.id.includes("collection") ? "collection" : "folder", label = field.labels[0].textContent;
+					field.focus(); await input(`#${field.id}`, "");
+					check(field.isConnected && document.activeElement === field && field.labels[0].textContent === label && !field.disabled && !primary().disabled, "blank name stays editable and focused");
+					assertNameFeedback(field, kind, true);
+					await input(`#${field.id}`, "   "); assertNameFeedback(field, kind, true);
+					await input(`#${field.id}`, kind === "collection" ? expected[0] : folderName);
+					check(document.activeElement === field, "correcting name replaced focused input"); assertNameFeedback(field, kind, false);
 				}
+				await next();
+				await click(dialog().querySelector('[data-editor-control="tmdbListPinToTop"]'));
+				await click(dialog().querySelector('input[name="tmdb-list-folder-shape"][value="SQUARE"]'));
+				await click(button("Back"));
+				for (const field of names()) await input(`#${field.id}`, "   ");
+				await click(button("Back")); await next();
+				check(names().every(field => field.value === "   "), "invalid names survive Select/Names navigation");
+				for (let index = 0; index < 2; index++) {
+					await next(); await stage(3, "Appearance", "appearance");
+					check(dialog().querySelector('[data-editor-control="tmdbListPinToTop"]').checked && dialog().querySelector('input[name="tmdb-list-folder-shape"][value="SQUARE"]').checked, "presentation survives cross-stage correction");
+					primary().focus(); await key("Enter"); await stage(2, "Names", "names");
+					check(document.activeElement === names()[index], "Enter focuses first invalid name in semantic order");
+					check(controller.getState().revision === revision, "invalid attempt mutated project");
+					for (const [pendingIndex, field] of names().entries()) assertNameFeedback(field, pendingIndex === 0 ? "collection" : "folder", pendingIndex >= index);
+					await input(`#${names()[index].id}`, index === 0 ? expected[0] : folderName);
+				}
+				await click(button("Back")); await next();
+				check(fields()[0].value === expected[0] && folder().value === folderName, "corrected names survive Back/return");
+				await next(); await next();
+				await wait(() => !document.querySelector('.add-source-dialog[role="dialog"]'), { label: "recovered List hierarchy created" });
+				const created = controller.getState().project.collections[0];
+				check(controller.getState().revision === revision + 1 && created.editable.title === expected[0] && created.folders[0].editable.title === folderName, "atomic corrected names output");
+				check(created.editable.pinToTop && created.folders[0].editable.tileShape === "SQUARE", "retained presentation applied");
+				return { family, width: innerWidth, enlargedText: Boolean(nameRecovery.enlargedText), structure: null, recoveredNames: expected, focusRetained: true, navigationRetained: true, noOverflow: true };
 			}
 			let folderInputs = [], folderNames = [];
-			if (["streaming-services", "tmdb-lists", "advanced-discover"].includes(family)) {
+			if (["streaming-services", "advanced-discover"].includes(family)) {
 				if (family === "streaming-services") await click(check(dialog().querySelector(".streaming-folder-names summary"), "Folder name disclosure"));
 				folderInputs = [...dialog().querySelectorAll('input[data-required-name]')].filter(node => node.id.includes("folder"));
 				check(folderInputs.length === (family === "streaming-services" ? 2 : 1), "required Folder names");

@@ -159,6 +159,7 @@ export {
 export {
 	applyTmdbListHierarchyPlan,
 	createTmdbListHierarchyPlan,
+	defaultTmdbListFolderTitle,
 	DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE,
 	DEFAULT_TMDB_LIST_FOLDER_TITLE_VISIBILITY,
 	TMDB_LIST_CREATION_SCOPES,

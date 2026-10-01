@@ -84,6 +84,9 @@ async function runMountedPage() {
 	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
 	const roundTripOnly = process.env.TMDB_SOURCE_ROUND_TRIP_ONLY === "1";
+	const listSelectionRecoveryOnly = process.env.TMDB_LIST_SELECTION_RECOVERY_ONLY === "1";
+	const listFinalRefinementOnly = process.env.TMDB_LIST_FINAL_REFINEMENT_ONLY === "1";
+	const listHierarchyOnly = listSelectionRecoveryOnly || listFinalRefinementOnly || process.env.TMDB_LIST_HIERARCHY_ONLY === "1";
 	const listEditOnly = process.env.TMDB_LIST_EDIT_ONLY === "1";
 	const networkMinimumVotesOnly = process.env.TMDB_NETWORK_MINIMUM_VOTES_ONLY === "1";
 	const studioMinimumVotesOnly = process.env.TMDB_STUDIO_MINIMUM_VOTES_ONLY === "1";
@@ -220,6 +223,15 @@ async function runMountedPage() {
 				.then(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish230Key()" }));
 		});
 		await resources.pageConnection.command("Runtime.addBinding", { name: "pressGuidedPresentationKey" });
+		// Native pointer activation exposes form default actions hidden by act().
+		resources.pageConnection.onEvent((message) => {
+			if (message.method !== "Runtime.bindingCalled" || message.params.name !== "clickTmdbListHierarchyControl") return;
+			const { x, y } = JSON.parse(message.params.payload);
+			resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 })
+				.then(() => resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }))
+				.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishListClick?.()" }));
+		});
+		await resources.pageConnection.command("Runtime.addBinding", { name: "clickTmdbListHierarchyControl" });
 		if (process.env.TMDB_204_SCREENSHOTS) {
 			await fsPromises.mkdir(process.env.TMDB_204_SCREENSHOTS, { recursive: true });
 			resources.pageConnection.onEvent((message) => {
@@ -268,7 +280,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${sourceNamesOnly || streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${listHierarchyOnly || sourceNamesOnly || streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -278,6 +290,29 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+
+    const listHierarchyCases = [];
+    if (listHierarchyOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+     timing.stage("TMDB List Folder hierarchy");
+     await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+     for (const view of ((listSelectionRecoveryOnly || listFinalRefinementOnly) ? [{ width: 393, height: 852 }, { width: 1280, height: 900 }] : [{ width: 360, height: 800 }, { width: 393, height: 852 }, { width: 900, height: 900 }, { width: 1280, height: 900 }, { width: 393, height: 400 }])) {
+      await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { ...view, deviceScaleFactor: 1, mobile: view.width < 900 });
+      const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runTmdbListHierarchyScenario(${JSON.stringify({ ...view, finalRefinement: listFinalRefinementOnly, selectionRecovery: listSelectionRecoveryOnly })})`, awaitPromise: true, returnByValue: true });
+      if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+      listHierarchyCases.push(checked.result.value); console.log("TMDB_LIST_HIERARCHY_CASE " + JSON.stringify(checked.result.value));
+     }
+     const listNameRecoveryCases = [];
+     for (const view of ((listSelectionRecoveryOnly || listFinalRefinementOnly) ? [] : [{ width: 393 }, { width: 393, enlargedText: true }, { width: 1280 }])) {
+      await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+      const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.__runGuidedPresentationScenario(${JSON.stringify({ family: "tmdb-lists", nameRecovery: view })})`, awaitPromise: true, returnByValue: true });
+      if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+      listNameRecoveryCases.push(checked.result.value);
+     }
+     console.log("TMDB_LIST_NAME_RECOVERY " + JSON.stringify(listNameRecoveryCases));
+     // Leave native-click hover state outside later scenarios and their idle-style assertions.
+     await resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+     if (listHierarchyOnly) return { listHierarchyCases, listNameRecoveryCases };
+    }
     const sourceNameCases = [];
     if (sourceNamesOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
      timing.stage("Optional Source names");
@@ -1194,7 +1229,7 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, sourceNameCases, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				return { ...result.results, listHierarchyCases, sourceNameCases, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -2121,11 +2156,11 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.equal(result.backPreviewAvailable, true, `${label} Back restores Choose Preview`);
 		assert.deepEqual(result.guidedNewCollection, {
 			scope: "new-collection",
-			stageKicker: "Step 2",
+			stageKicker: "Step 3",
 			stageTitle: "Appearance",
-			headerDescription: "Review names, appearance and where your lists will be added.",
+			headerDescription: "Choose the shared appearance of the new folders.",
 			selectedCount: 4,
-			namesInitiallyEmpty: true,
+			folderNamesDefaulted: true,
 			collectionNamePresent: true,
 			collectionControlsPresent: true,
 			folderControlsPresent: true,
@@ -2138,6 +2173,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			originalOrder: true,
 			noReviewPreview: true,
 			focusGlowHidden: true,
+			sourceNamesSecondary: true,
 			sourceNameHelpers: true,
 			initialRequiredValidation: {
 				message: "Collection and folder names are required.",
@@ -2166,11 +2202,11 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 		assert.ok(result.guidedNewCollection.actionLineCount <= 2, `${label} New Collection action wrapping`);
 		assert.deepEqual(result.guidedNewFolder, {
 			scope: "new-folder",
-			stageKicker: "Step 2",
+			stageKicker: "Step 3",
 			stageTitle: "Appearance",
-			headerDescription: "Review names, appearance and where your lists will be added.",
+			headerDescription: "Choose the shared appearance of the new folders.",
 			selectedCount: 1,
-			namesInitiallyEmpty: true,
+			folderNamesDefaulted: true,
 			collectionNamePresent: false,
 			collectionControlsPresent: false,
 			folderControlsPresent: true,
@@ -2183,6 +2219,7 @@ test("mounted TMDB Lists stays incremental, preview-safe, and responsive across 
 			originalOrder: true,
 			noReviewPreview: true,
 			focusGlowHidden: true,
+			sourceNamesSecondary: true,
 			sourceNameHelpers: true,
 			initialRequiredValidation: {
 				message: "Folder name is required.",
@@ -4194,4 +4231,17 @@ test("mounted ordinary editor order preserves live Preview and minimal saves", {
 test("mounted optional Source naming preserves recipes, recovery and responsive Add", () => {
  assert.equal(mountedResults.sourceNameCases.length, 29);
  for (const result of mountedResults.sourceNameCases) assert.ok(result.saved && result.noOverflow && result.recoverable && result.keyboard && result.rows > 0, JSON.stringify(result));
+});
+
+
+test("mounted TMDB List hierarchy creates ordered per-list Folders with live metadata", () => {
+ const selectionRecovery = process.env.TMDB_LIST_SELECTION_RECOVERY_ONLY === "1";
+ assert.deepEqual(mountedResults.listHierarchyCases.map(({ width, height }) => [width, height]), (selectionRecovery || process.env.TMDB_LIST_FINAL_REFINEMENT_ONLY === "1") ? [[393, 852], [1280, 900]] : [[360, 800], [393, 852], [900, 900], [1280, 900], [393, 400]]);
+ for (const result of mountedResults.listHierarchyCases) {
+  assert.deepEqual(result.cases.map(entry => entry.mode), selectionRecovery ? ["new-collection", "complete"] : process.env.TMDB_LIST_FINAL_REFINEMENT_ONLY === "1" ? ["complete", "new-collection", "new-folder", "partial", "add-source"] : ["new-collection", "new-folder", "partial", "complete", "stale", "single", "hidden", "add-source"]);
+  assert.ok(result.cases.every(entry => entry.passed));
+  assert.deepEqual(result.cases.map(entry => entry.applyCalls), selectionRecovery ? [0, 0] : process.env.TMDB_LIST_FINAL_REFINEMENT_ONLY === "1" ? [0, 1, 1, 1, 1] : [1, 1, 1, 0, 0, 1, 1, 1]);
+  assert.equal(result.lists.length, 11);
+  assert.ok(result.requests.every(url => /^\/3\/list\/\d+\?/.test(url)));
+ }
 });

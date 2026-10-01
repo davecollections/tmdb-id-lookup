@@ -14,6 +14,10 @@ function diagnostic(code, path, message) { return Object.freeze({ code, path, me
 function text(value) { return typeof value === "string" ? value.trim() : ""; }
 function plainObject(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 
+export function defaultTmdbListFolderTitle(list) {
+	return isValidVisibleNuvioTitle(text(list?.name)) ? text(list.name) : `TMDB List ${list?.id}`;
+}
+
 function occurrences(project, identity) {
 	const matches = [];
 	for (const collection of project.collections ?? []) for (const folder of collection.folders ?? []) for (const source of folder.sources ?? []) if (tmdbListPhysicalIdentity(source.editable) === identity) matches.push(Object.freeze({ collectionInternalId: collection.internalId, collectionTitle: text(collection.editable?.title), folderInternalId: folder.internalId, folderTitle: text(folder.editable?.title), sourceInternalId: source.internalId, sourceTitle: text(source.editable?.title), identity }));
@@ -22,6 +26,7 @@ function occurrences(project, identity) {
 
 export function createTmdbListHierarchyPlan(project, options) {
 	const errors = [];
+	const nameErrors = [];
 	if (!plainObject(project) || project.nodeType !== "project" || !Array.isArray(project.collections)) errors.push(diagnostic("INVALID_TMDB_LIST_PLAN_PROJECT", "$tmdbListPlan.project", "TMDB List planning requires the current Builder project."));
 	if (!plainObject(options)) errors.push(diagnostic("INVALID_TMDB_LIST_PLAN_OPTIONS", "$tmdbListPlan", "TMDB List planning requires explicit options."));
 	if (errors.length) return Object.freeze({ ok: false, plan: null, errors: Object.freeze(errors) });
@@ -32,7 +37,6 @@ export function createTmdbListHierarchyPlan(project, options) {
 	const folderTileShape = options.folderTileShape ?? DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE;
 	if (!FOLDER_TITLE_VISIBILITIES.has(folderTitleVisibility)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE_VISIBILITY", "$tmdbListPlan.folderTitleVisibility", "Choose an existing folder-title visibility outcome."));
 	if (!FOLDER_TILE_SHAPES.has(folderTileShape)) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TILE_SHAPE", "$tmdbListPlan.folderTileShape", "Choose the existing Poster, Square or Landscape folder tile shape."));
-	if (typeof options.folderTitle !== "string" || (folderTitleVisibility !== "HIDE_EVERYWHERE" && (!isValidVisibleNuvioTitle(options.folderTitle) || options.folderTitle !== text(options.folderTitle)))) errors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE", "$tmdbListPlan.folderTitle", "Enter a visible folder name."));
 	let hideCollectionTitle = null;
 	let viewMode = null;
 	let showAllTab = null;
@@ -42,7 +46,7 @@ export function createTmdbListHierarchyPlan(project, options) {
 		viewMode = options.viewMode ?? "TABBED_GRID";
 		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
-		if (typeof options.collectionTitle !== "string" || (hideCollectionTitle !== true && (!isValidVisibleNuvioTitle(options.collectionTitle) || options.collectionTitle !== text(options.collectionTitle)))) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE", "$tmdbListPlan.collectionTitle", "Enter a visible collection name."));
+		if (typeof options.collectionTitle !== "string" || (hideCollectionTitle !== true && (!isValidVisibleNuvioTitle(options.collectionTitle) || options.collectionTitle !== text(options.collectionTitle)))) nameErrors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE", "$tmdbListPlan.collectionTitle", "Enter a visible collection name."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE_VISIBILITY", "$tmdbListPlan.hideCollectionTitle", "Collection title visibility must be true or false."));
 		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_VIEW", "$tmdbListPlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_OPTIONS", "$tmdbListPlan", "Collection presentation options must be explicit boolean values."));
@@ -55,7 +59,7 @@ export function createTmdbListHierarchyPlan(project, options) {
 	for (const [index, list] of (options.lists ?? []).entries()) {
 		const built = buildTmdbListSourceDraft(list, list?.sourceTitle);
 		if (!built.ok) { errors.push(...built.errors.map((error) => ({ ...error, path: `$tmdbListPlan.lists[${index}]` }))); continue; }
-		entries.push(Object.freeze({ list: Object.freeze({ ...list, sourceTitle: built.draft.editable.title }), draft: Object.freeze({ category: built.draft.category, editable: Object.freeze({ ...built.draft.editable, filters: Object.freeze({}) }) }) }));
+		entries.push(Object.freeze({ list: Object.freeze({ ...list, sourceTitle: built.draft.editable.title, folderTitle: list.folderTitle === undefined ? defaultTmdbListFolderTitle(list) : list.folderTitle }), draft: Object.freeze({ category: built.draft.category, editable: Object.freeze({ ...built.draft.editable, filters: Object.freeze({}) }) }) }));
 	}
 	if (new Set(entries.map((entry) => entry.list.id)).size !== entries.length) errors.push(diagnostic("DUPLICATE_TMDB_LIST_PLAN_SELECTION", "$tmdbListPlan.lists", "Each TMDB list may appear only once."));
 	const destinationCollection = scope === "new-folder" ? project.collections.find((collection) => collection.internalId === options.destinationCollectionInternalId) ?? null : null;
@@ -71,24 +75,35 @@ export function createTmdbListHierarchyPlan(project, options) {
 		return Object.freeze({ identity, status, destination: Object.freeze(destination), elsewhere: Object.freeze(elsewhere) });
 	});
 	const readyEntries = scope === "new-folder" ? entries.filter((_, index) => outcomes[index].status !== TMDB_LIST_PLACEMENT_STATUSES.ALREADY_IN_COLLECTION) : entries;
-	const folder = Object.freeze({ editable: Object.freeze({ title: folderTitleVisibility === "HIDE_EVERYWHERE" ? NUVIO_INVISIBLE_TITLE : options.folderTitle, tileShape: folderTileShape, hideTitle: folderTitleVisibility !== "SHOW_EVERYWHERE" }), sources: Object.freeze(readyEntries.map((entry) => Object.freeze({ draft: entry.draft }))) });
-	const collections = scope === "new-collection" ? Object.freeze([Object.freeze({ editable: Object.freeze({ title: hideCollectionTitle ? NUVIO_INVISIBLE_TITLE : options.collectionTitle, pinToTop, focusGlowEnabled: true, viewMode, showAllTab }), folders: Object.freeze([folder]) })]) : Object.freeze([]);
-	const folders = scope === "new-folder" && readyEntries.length ? Object.freeze([folder]) : Object.freeze([]);
+	for (const entry of readyEntries) {
+		const title = entry.list.folderTitle;
+		if (typeof title !== "string" || (folderTitleVisibility !== "HIDE_EVERYWHERE" && (!isValidVisibleNuvioTitle(title) || title !== text(title)))) nameErrors.push(diagnostic("INVALID_TMDB_LIST_FOLDER_TITLE", `$tmdbListPlan.lists[${entry.list.id}].folderTitle`, "Enter a visible folder name."));
+	}
+	const readyFolders = Object.freeze(readyEntries.map((entry) => Object.freeze({
+		editable: Object.freeze({ title: folderTitleVisibility === "HIDE_EVERYWHERE" ? NUVIO_INVISIBLE_TITLE : entry.list.folderTitle, tileShape: folderTileShape, hideTitle: folderTitleVisibility !== "SHOW_EVERYWHERE" }),
+		sources: Object.freeze([Object.freeze({ draft: entry.draft })]),
+	})));
+	const collections = scope === "new-collection" ? Object.freeze([Object.freeze({ editable: Object.freeze({ title: hideCollectionTitle ? NUVIO_INVISIBLE_TITLE : options.collectionTitle, pinToTop, focusGlowEnabled: true, viewMode, showAllTab }), folders: readyFolders })]) : Object.freeze([]);
+	const folders = scope === "new-folder" ? readyFolders : Object.freeze([]);
+	const counts = Object.freeze({ collectionCount: collections.length, folderCount: readyFolders.length, sourceCount: readyFolders.reduce((total, folder) => total + folder.sources.length, 0) });
+	// Placement/count evidence stays visible while names are being corrected, but
+	// only a fully valid result exposes an applicable plan.
+	if (nameErrors.length) return Object.freeze({ ok: false, plan: null, review: Object.freeze({ outcomes: Object.freeze(outcomes), counts }), errors: Object.freeze(nameErrors) });
 	const plan = Object.freeze({
 		planType: TMDB_LIST_HIERARCHY_PLAN_TYPE,
 		captured: Object.freeze({ projectInternalId: project.internalId, projectRevision: options.projectRevision }),
-		configuration: Object.freeze({ scope, collectionTitle: scope === "new-collection" ? options.collectionTitle : null, hideCollectionTitle, viewMode, showAllTab, pinToTop, folderTitle: options.folderTitle, folderTitleVisibility, folderTileShape, lists: Object.freeze(entries.map((entry) => entry.list)) }),
+		configuration: Object.freeze({ scope, collectionTitle: scope === "new-collection" ? options.collectionTitle : null, hideCollectionTitle, viewMode, showAllTab, pinToTop, folderTitleVisibility, folderTileShape, lists: Object.freeze(entries.map((entry) => entry.list)) }),
 		destination: destinationCollection ? Object.freeze({ collectionInternalId: destinationCollection.internalId, collectionTitle: text(destinationCollection.editable?.title), viewMode: destinationCollection.editable?.viewMode ?? null, showAllTab: destinationCollection.editable?.showAllTab ?? null, pinToTop: destinationCollection.editable?.pinToTop ?? null, titleHidden: isInvisibleNuvioTitle(destinationCollection.editable?.title) }) : null,
 		collections,
 		folders,
 		outcomes: Object.freeze(outcomes),
-		counts: Object.freeze({ collectionCount: collections.length, folderCount: collections.length ? 1 : folders.length, sourceCount: readyEntries.length }),
+		counts,
 	});
 	return Object.freeze({ ok: true, plan, errors: Object.freeze([]) });
 }
 
 function rebuild(plan, revision) {
-	return { scope: plan.configuration.scope, projectRevision: revision, ...(plan.destination ? { destinationCollectionInternalId: plan.destination.collectionInternalId } : {}), ...(plan.configuration.scope === "new-collection" ? { collectionTitle: plan.configuration.collectionTitle, hideCollectionTitle: plan.configuration.hideCollectionTitle, viewMode: plan.configuration.viewMode, showAllTab: plan.configuration.showAllTab, pinToTop: plan.configuration.pinToTop } : {}), folderTitle: plan.configuration.folderTitle, folderTitleVisibility: plan.configuration.folderTitleVisibility, folderTileShape: plan.configuration.folderTileShape, lists: plan.configuration.lists };
+	return { scope: plan.configuration.scope, projectRevision: revision, ...(plan.destination ? { destinationCollectionInternalId: plan.destination.collectionInternalId } : {}), ...(plan.configuration.scope === "new-collection" ? { collectionTitle: plan.configuration.collectionTitle, hideCollectionTitle: plan.configuration.hideCollectionTitle, viewMode: plan.configuration.viewMode, showAllTab: plan.configuration.showAllTab, pinToTop: plan.configuration.pinToTop } : {}), folderTitleVisibility: plan.configuration.folderTitleVisibility, folderTileShape: plan.configuration.folderTileShape, lists: plan.configuration.lists };
 }
 function comparable(plan) { return JSON.stringify({ configuration: plan.configuration, destination: plan.destination, collections: plan.collections, folders: plan.folders, outcomes: plan.outcomes, counts: plan.counts }); }
 
