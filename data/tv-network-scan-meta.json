@@ -1,43 +1,43 @@
 {
   "last_scan": {
     "mode": "tmdb_export_sliced_enrichment",
-    "export_date": "10_01_2026",
-    "export_total_ids": 5646,
-    "offset": 0,
+    "export_date": "10_02_2026",
+    "export_total_ids": 5645,
+    "offset": 2822,
     "limit": 2823,
     "actual_limit": 2823,
     "lowest_id": 1,
-    "highest_id": 9543,
+    "highest_id": 9544,
     "checked": 2823,
     "found": 2823,
     "missing": 0,
-    "total_cached": 5646,
+    "total_cached": 5645,
     "month": "2026-10",
-    "export_fingerprint": "sha256:b795d180145f7d9e53152d997c1fb1001a73bb38b88ba727fca48b2e569bec57",
-    "slice_index": 0,
+    "export_fingerprint": "sha256:7a874ea671e2bf397be7413498b146402290cb6b33dcf2165a2707bf012133ea",
+    "slice_index": 1,
     "total_slices": 2,
     "current_ids": 2823,
     "base_current_requests": 5646,
     "max_reserved_requests": 15000,
     "results": {
-      "positive": 2606,
-      "zero": 217,
+      "positive": 2266,
+      "zero": 557,
       "failed": 0,
       "unavailable": 0
     },
     "catalogue_counts": {
-      "positive": 4881,
-      "zero": 765,
+      "positive": 4871,
+      "zero": 774,
       "unknown": 0
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "36885978372-1-network-series",
-      "reservation_sha256": "c906bd91e6e6f103b1544d107dcd4a3c624a061da1b08f5aed61d34b29f31c7a",
-      "utc_date": "2026-10-01",
+      "reservation_id": "37023711831-1-network-series",
+      "reservation_sha256": "0fc0b4c8378b25c892d16f7a70f33f8b455a86b010e5b70e6425c405e1dc46bd",
+      "utc_date": "2026-10-02",
       "planned_month": "2026-10",
       "workflow": "Monthly TMDB Network Refresh",
-      "run_id": "36885978372",
+      "run_id": "37023711831",
       "run_attempt": "1",
       "job": "collect-network-series",
       "allocation_key": "collection",
@@ -46,8 +46,8 @@
       "allowance": 15000,
       "attempts_used": 5646,
       "unused_allowance": 9354,
-      "first_attempt_at": "2026-10-01T15:40:20.432Z",
-      "last_attempt_at": "2026-10-01T15:54:44.699Z",
+      "first_attempt_at": "2026-10-02T14:59:45.720Z",
+      "last_attempt_at": "2026-10-02T15:07:59.693Z",
       "by_host": {
         "api.themoviedb.org": 5646,
         "files.tmdb.org": 0
@@ -57,7 +57,7 @@
       },
       "retries": 0
     },
-    "started_at": "2026-10-01T15:40:19.891Z",
-    "finished_at": "2026-10-01T15:54:44.947Z"
+    "started_at": "2026-10-02T14:59:45.615Z",
+    "finished_at": "2026-10-02T15:07:59.844Z"
   }
 }
