@@ -7,6 +7,7 @@ Issue [#49](https://github.com/davecollections/tmdb-id-lookup/issues/49) adds pr
 - Existing importer, serializer, migration, controller, automatic-ID, domain, and contract tests remain authoritative for their focused APIs and diagnostic details.
 - `canonical/native-addon-profile.json` connects all seven supported native TMDB types, evidence-backed Movie/TV combinations, multiple addon catalogs, genre metadata, duplicate projection identities, presentation fields, and exact collection/folder/source/projection ordering.
 - `preservation/comprehensive-imported-profile.json` connects native, addon, imported Trakt, and opaque/community evidence with unknown fields, raw-only values, missing/null/empty/false/zero distinctions, presentation/artwork fields, unrelated edits, and the source-removal boundary.
+- `preservation/native-trakt-profile.json` covers supported Movie/TV identities, imported alternate sorting and unknown fields, unsupported numeric/string/missing core values, addon/community boundaries, and exact two-cycle preservation. Existing synthetic Trakt IDs remain opaque evidence.
 - `identity/problematic-nuvio-ids.json` distinguishes direct-import acceptance from deterministic controller repair while keeping builder-only internal IDs separate and unique.
 - `invalid/serializer-required-text.json` gives file-backed serializer evidence for required collection/folder IDs and titles.
 - Existing issue #31 invalid fixtures remain the validation-only evidence for unsupported direct TMDB shapes, native projections, and addon projection violations.

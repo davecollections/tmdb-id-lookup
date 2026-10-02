@@ -92,3 +92,4 @@ export {
 	INITIAL_STUDIO_EDIT_COUNT_STATE,
 	unavailableStudioEditCounts,
 } from "./studio-edit-counts.js";
+export { TRAKT_LIST_SOURCE_EDITOR_ID, traktListSourceEditor } from "./trakt-list-editor.js";

@@ -1,5 +1,11 @@
 # Native Source Editing
 
+## Native Trakt name-only adapter (#279, PR #280)
+
+Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
+
+Supported `native-trakt` joins the ordinary Source Edit registry with a `trakt-list` adapter. It owns only `title`, shows fixed List/media/sort context and uses the existing minimal patch, no-op and stale-session guards. Unsupported Trakt imports retain Delete only. No creation mode, lookup, replacement, sort control, artwork or Preview is added. The capability contract explicitly permits this editor-only foundation. See [BUILDER_TRAKT_SOURCES.md](./BUILDER_TRAKT_SOURCES.md).
+
 ## One registered Source edit entry (#273, local owner review)
 
 Every supported physical Source has exactly **Edit source → Delete** in its menu; unsupported native/addon/opaque shapes have **Delete** only. The competing **Edit Discover** menu capability/callback is removed. Ordinary Edit resolves the current Source through `sourceEditorFor(source)` and opens its registered adapter. Movie Collection, TMDB List, People, Studio, Network, Decade, Genre and Streaming retain `SourceEditorDialog`; `advanced-discover` retains the existing `AdvancedDiscoverFlow`.
@@ -44,7 +50,7 @@ Last reviewed: 2026-09-06
 
 ## Scope
 
-The current narrow source-editing surface edits one existing physical source in place. It supports only:
+The current narrow source-editing surface edits one existing physical source in place. It supports the following TMDB families and the [name-only native Trakt contract](./BUILDER_TRAKT_SOURCES.md):
 
 - native TMDB movie collections with identity `tmdb|COLLECTION|<collection id>|MOVIE`;
 - native TMDB People sources with one of the four supported Acting/Directing and Movie/Series identities;

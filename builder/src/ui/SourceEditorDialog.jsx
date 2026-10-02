@@ -1,6 +1,7 @@
 import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
+import { TRAKT_LIST_SOURCE_EDITOR_ID } from "../source-edit/trakt-list-editor.js";
 import {
 	useEffect,
 	useLayoutEffect,
@@ -135,6 +136,7 @@ function SourceIdentity({ adapter, draft }) {
 				<h3 id="source-edit-identity-title">{adapter.label}</h3>
 			</div>
 			<code>{adapter.describeIdentity(draft)}</code>
+			{adapter.describeConfiguration ? <p>{adapter.describeConfiguration(draft)}</p> : null}
 		</section>
 	);
 }
@@ -915,6 +917,8 @@ export function SourceEditorDialog({
 											? "Update this People source role, media, name and title order."
 										: session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID
 											? "Update this TMDB List source name and title order."
+										: session.adapterId === TRAKT_LIST_SOURCE_EDITOR_ID
+											? "Update this Trakt List source name. List, media and sorting stay fixed."
 									: "Edit this source’s name and available settings."}
 						</p>
 					</header>
@@ -944,7 +948,7 @@ export function SourceEditorDialog({
 										: ![STUDIO_SOURCE_EDITOR_ID, NETWORK_SOURCE_EDITOR_ID, STREAMING_SOURCE_EDITOR_ID, DECADE_SOURCE_EDITOR_ID, GENRE_SOURCE_EDITOR_ID].includes(session.adapterId)
 											? <SourceIdentity adapter={adapter} draft={draft} />
 											: null}
-									{session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? titleField : null}
+									{[TMDB_LIST_SOURCE_EDITOR_ID, TRAKT_LIST_SOURCE_EDITOR_ID].includes(session.adapterId) ? titleField : null}
 									{session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? (
 										<TmdbListEditorFields draft={draft} sortRef={tmdbListSortRef} onSortChange={(optionId) => {
 											setDraft((current) => updateTmdbListSourceSort(current, optionId));
@@ -1064,7 +1068,7 @@ export function SourceEditorDialog({
 											}}
 										/>
 									) : null}
-									{localOnly ? null : <div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
+									{localOnly || session.adapterId === TRAKT_LIST_SOURCE_EDITOR_ID ? null : <div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
 										<button type="button" aria-haspopup="dialog" data-action="preview-source-edit" disabled={!previewAvailable || submitting} onClick={openPreview}>Preview titles</button>
 										{previewGuidance ? <p className="editor-field-help" role="status">{previewGuidance}</p> : null}
 									</div>}

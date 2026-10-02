@@ -1018,7 +1018,7 @@ export function createBuilderController(options = {}) {
 				"operation",
 				CONTROLLER_DIAGNOSTIC_CODES.INVALID_SOURCE_CATEGORY,
 				path,
-				"A source category must be native-tmdb, addon, or opaque.",
+				"A source category must be native-tmdb, native-trakt, addon, or opaque.",
 			);
 		}
 

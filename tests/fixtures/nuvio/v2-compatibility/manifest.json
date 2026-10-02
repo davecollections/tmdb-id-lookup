@@ -227,7 +227,7 @@
       "expectedDiagnostics": {
         "importErrors": [],
         "importWarnings": [
-          "AMBIGUOUS_SOURCE_PRESERVED_OPAQUE",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
           "AMBIGUOUS_SOURCE_PRESERVED_OPAQUE"
         ],
         "serializeErrors": [],
@@ -783,6 +783,86 @@
       ],
       "evidenceReferences": [
         "tests/nuvio-contracts.test.mjs"
+      ]
+    },
+    {
+      "id": "native-trakt-preservation-profile",
+      "category": "preservation",
+      "purpose": "Explicit supported and opaque Trakt tiers with addon isolation and stable two-cycle preservation.",
+      "input": "v2-compatibility/preservation/native-trakt-profile.json",
+      "pipeline": "direct-importer",
+      "assertionMode": "exact-json",
+      "sourceTypes": [
+        "native-trakt",
+        "opaque-trakt",
+        "addon",
+        "opaque-community"
+      ],
+      "mediaCombinations": [
+        "trakt:MOVIE",
+        "trakt:TV"
+      ],
+      "expectedCounts": {
+        "collections": 1,
+        "folders": 1,
+        "sources": 18,
+        "projections": 1
+      },
+      "expectedDiagnostics": {
+        "importErrors": [],
+        "importWarnings": [
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED",
+          "UNSUPPORTED_TRAKT_SOURCE_PRESERVED"
+        ],
+        "serializeErrors": [],
+        "serializeWarnings": [
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED",
+          "OPAQUE_SOURCE_PRESERVED"
+        ],
+        "validationErrors": []
+      },
+      "materialFieldPolicy": {
+        "builderOwnedOverlaid": [
+          "category-owned source fields"
+        ],
+        "canonicalizedDefaulted": [],
+        "copiedCanonicalData": [],
+        "rawPreservedOnly": [
+          "complete imported sources and unknown fields"
+        ],
+        "removed": []
+      },
+      "coverageTags": [
+        "native-trakt",
+        "imported-trakt",
+        "numeric-safe-identity",
+        "provider-led-classification",
+        "round-trip",
+        "native-projection-boundary"
+      ],
+      "evidenceReferences": [
+        "docs/v2/BUILDER_TRAKT_SOURCES.md",
+        "tests/builder-native-trakt.test.mjs"
       ]
     }
   ]

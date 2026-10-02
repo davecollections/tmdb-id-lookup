@@ -103,6 +103,27 @@ function entryById(id) {
 	return entry;
 }
 
+test("native Trakt corpus preserves supported and opaque tiers across two exact cycles", () => {
+	const entry = entryById("native-trakt-preservation-profile");
+	const input = loadEntry(entry);
+	const first = importNuvioCollections(input, { idFactory: countingIdFactory() });
+	assert.equal(first.ok, true);
+	assert.deepEqual(codes(first.warnings), entry.expectedDiagnostics.importWarnings);
+	const sources = first.project.collections[0].folders[0].sources;
+	assert.deepEqual(sources.map((source) => source.category), ["native-trakt", "native-trakt", "opaque", "native-trakt", "native-trakt", "opaque", "opaque", "opaque", "opaque", "opaque", "opaque", "addon", "opaque", "opaque", "opaque", "opaque", "opaque", "opaque"]);
+	assert.deepEqual(sources.map((source) => source.rawImported), input[0].folders[0].sources);
+	const serialized = serializeNuvioProject(first.project);
+	assert.equal(serialized.ok, true);
+	assert.deepEqual(countsFor(serialized.value), entry.expectedCounts);
+	assert.deepEqual(codes(serialized.warnings), entry.expectedDiagnostics.serializeWarnings);
+	assert.deepEqual(serialized.value, input);
+	const second = importNuvioCollections(serialized.value, { idFactory: countingIdFactory("second") });
+	const serializedAgain = serializeNuvioProject(second.project);
+	assert.equal(serializedAgain.ok, true); assert.deepEqual(serializedAgain.value, input);
+	assert.equal(serializedAgain.value[0].folders[0].catalogSources.length, 1);
+	assert.equal(serializedAgain.value[0].folders[0].catalogSources[0].addonId, "aio-metadata");
+});
+
 function fixturePath(relativePath) {
 	const resolved = path.resolve(fixtureRoot, ...relativePath.split("/"));
 	assert.ok(

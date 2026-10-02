@@ -280,6 +280,21 @@ test("supported source menus include simple Streaming and show Edit source immed
 	}
 });
 
+test("native Trakt is editor-only, with fixed context and no Preview, links or replacement controls", () => {
+	const controller = createController();
+	const value = { provider: "TrAkT", title: "Local List", traktListId: 123, mediaType: "tv", sortBy: "votes", sortHow: "desc" };
+	const folder = importSources(controller, [value, { ...value, traktListId: "saved-list" }]);
+	const workspace = renderWorkspace(controller);
+	assert.equal((workspace.match(/data-action="edit-source"/g) ?? []).length, 1);
+	assert.equal((workspace.match(/data-action="delete-source"/g) ?? []).length, 2);
+	assert.match(workspace, /Native Trakt/); assert.match(workspace, /Preserved source/);
+	const opened = openEdit(controller, folder.sources[0]);
+	const markup = renderToStaticMarkup(createElement(SourceEditorDialog, { session: opened.session, initialDraft: opened.draft, onCancel() {}, onSave() {} }));
+	assert.equal((markup.match(/<input/g) ?? []).length, 1);
+	assert.match(markup, /Source name/); assert.match(markup, /Trakt · List 123 · Series/); assert.match(markup, /Votes · Descending/);
+	assert.doesNotMatch(markup, /data-action="preview-source-edit"|<select|<a\s|Choose another/);
+});
+
 test("Source Edit exposes one draft-backed Preview action for all eight adapters immediately before the footer", () => {
 	const controller = createController();
 	const folder = importSources(controller, [collectionSource(), peopleSource(), studioSource(), networkSource(), streamingSource(), genreSource(), decadeSource()]);

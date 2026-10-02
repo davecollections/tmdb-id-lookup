@@ -63,8 +63,23 @@ async function waitForJson(url, timeoutMs = 10000) {
 	throw new Error(`Chrome DevTools did not become available: ${lastError?.message ?? "timeout"}`);
 }
 
+async function runTraktFoundationMatrix(connection, views) {
+	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+	const cases = [];
+	for (const view of views) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
+		await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+		const checked = await connection.command("Runtime.evaluate", { expression: `window.__runTraktFoundationScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+		if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+		cases.push(checked.result.value);
+	}
+	await connection.command("Emulation.setEmulatedMedia", { features: [] });
+	return cases;
+}
+
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
+	const traktFoundationOnly = process.env.TRAKT_SOURCE_FOUNDATION_ONLY === "1";
 	const sourceNamesOnly = process.env.TMDB_SOURCE_NAMES_ONLY === "1";
 	const editorOrderOnly = process.env.TMDB_EDITOR_ORDER_ONLY === "1";
 	const streamingHierarchyOnly = process.env.TMDB_STREAMING_HIERARCHY_ONLY === "1";
@@ -253,6 +268,18 @@ async function runMountedPage() {
   });
   await resources.pageConnection.command("Runtime.addBinding", { name: "sourceNamesSpace" });
 		const address = resources.vite.httpServer.address();
+		if (traktFoundationOnly) {
+			await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+			await resources.pageConnection.command("Page.navigate", { url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html?source-details-only` });
+			const deadline = Date.now() + 30000;
+			while (Date.now() < deadline) {
+				const state = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__builderSourceEditMounted?.status", returnByValue: true });
+				if (state.result.value === "complete") break;
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+			const cases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 360, height: 800 }, { width: 384, height: 800 }, { width: 393, height: 852 }, { width: 402, height: 800 }, { width: 412, height: 800 }, { width: 1280, height: 900 }, { width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true }]);
+			return { traktFoundationCases: cases };
+		}
 		if (previewPagesOnly) {
 			await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 			// Explicitly local unit artwork, only for the owner-approved mocked paging
@@ -290,6 +317,9 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (!new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+					result.results.traktFoundationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }]);
+				}
 
     const listHierarchyCases = [];
     if (listHierarchyOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
@@ -1466,6 +1496,11 @@ function assertRequiredNameFailure(result) {
 	assert.equal(result.serializedUnchanged, true);
 	assert.equal(result.label, "Source name");
 }
+
+test("mounted native Trakt foundation preserves local sources through accessible name-only editing", () => {
+	assert.equal(mountedResults.traktFoundationCases.length, process.env.TRAKT_SOURCE_FOUNDATION_ONLY === "1" ? 8 : 2);
+	for (const result of mountedResults.traktFoundationCases) { assert.equal(result.verified, true); assert.equal(result.requests, 0); }
+});
 
 test("mounted Workspace Source details remain compact, accessible and naturally wrapped", () => {
 	assert.equal(mountedResults.sourceDetailsVerified, true);

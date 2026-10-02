@@ -1,6 +1,7 @@
 import { DISCOVER_SORT_OPTIONS, resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
 import { normalizeAddonProjectionIdentityGenre } from "../nuvio/addon-projection-identity.js";
 import { SOURCE_EDITABLE_FIELDS } from "../nuvio/known-fields.js";
+import { inspectNativeTraktSource, nativeTraktSortLabel } from "../nuvio/trakt.js";
 import { inspectCanonicalDecadeSourceNode } from "../source-add/decades-classification.js";
 import { inspectEditableGenreSource } from "../source-edit/genre-editor.js";
 import { inspectSimpleStreamingSourceNode } from "../source-add/streaming-classification.js";
@@ -58,6 +59,13 @@ export function sourceCardDetails(source, { includeCatalogId = false } = {}) {
 	const editable = source.editable;
 	const metadata = [];
 	const add = (key, value) => { if (value) metadata.push({ key, value }); };
+	const trakt = inspectNativeTraktSource(source);
+	if (trakt) {
+		add("identity", `Trakt List ${trakt.traktListId}`);
+		add("media", trakt.mediaType === "MOVIE" ? "Movies" : "Series");
+		add("sort", nativeTraktSortLabel(source));
+		return { metadata, fallback: "Trakt List" };
+	}
 	if (source.category === "addon") {
 		const addon = text(editable.addonId);
 		const catalog = text(editable.catalogId);

@@ -261,7 +261,8 @@ test("all eight native source families have a complete cross-context capability 
 test("Add, guided creation, and Source Edit registries cover exactly the contracted native families", () => {
 	const expectedAdd = Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.add).sort();
 	const expectedGuided = Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.guided).sort();
-	const expectedEdit = Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.edit).sort();
+	// B2 is an editor-only foundation. No placeholder Add/Guided mode exists.
+	const expectedEdit = [...Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.edit), "trakt-list"].sort();
 	assert.deepEqual(AVAILABLE_SOURCE_MODES.map((mode) => mode.id).sort(), expectedAdd);
 	assert.deepEqual(CREATION_OPTIONS.filter((option) => option.id !== CREATION_OPTION_IDS.BLANK).map((option) => option.id).sort(), expectedGuided);
 	assert.deepEqual(SOURCE_EDITORS.map((editor) => editor.id).sort(), expectedEdit);

@@ -1,0 +1,167 @@
+[
+  {
+    "id": "trakt-contract",
+    "title": "Trakt foundation review",
+    "folders": [
+      {
+        "id": "trakt-contract-folder",
+        "title": "Local contract examples",
+        "sources": [
+          {
+            "title": "Local Movie source",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 123,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Local Series source",
+            "provider": "trakt",
+            "mediaType": "TV",
+            "traktListId": 123,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Preserved malformed source",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": "synthetic-list-42",
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Alternate imported sorting",
+            "provider": "TrAkT",
+            "mediaType": "tv",
+            "traktListId": 123,
+            "sortBy": "added",
+            "sortHow": "desc"
+          },
+          {
+            "title": "Unknown future field",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 123,
+            "sortBy": "rank",
+            "sortHow": "asc",
+            "future": {
+              "nil": null,
+              "flag": false,
+              "count": 0,
+              "text": "",
+              "items": []
+            }
+          },
+          {
+            "title": "Numeric string",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": "123",
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Saved string",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": "saved-list",
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Unsafe number",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 9007199254740992,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Missing media",
+            "provider": "trakt",
+            "traktListId": 123,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Unsupported sort",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 123,
+            "sortBy": "future",
+            "sortHow": "asc"
+          },
+          {
+            "title": "No explicit provider",
+            "mediaType": "MOVIE",
+            "traktListId": 123,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "provider": "addon",
+            "title": "Local addon contract",
+            "addonId": "aio-metadata",
+            "type": "movie",
+            "catalogId": "trakt.example"
+          },
+          {
+            "title": "Community preserved",
+            "provider": "community",
+            "mediaType": "MOVIE",
+            "traktListId": 123,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Missing direction",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 123,
+            "sortBy": "rank"
+          },
+          {
+            "title": "Missing ID",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Zero ID",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 0,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Negative ID",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": -1,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          },
+          {
+            "title": "Fractional ID",
+            "provider": "trakt",
+            "mediaType": "MOVIE",
+            "traktListId": 1.5,
+            "sortBy": "rank",
+            "sortHow": "asc"
+          }
+        ],
+        "catalogSources": [
+          {
+            "addonId": "aio-metadata",
+            "type": "movie",
+            "catalogId": "trakt.example"
+          }
+        ]
+      }
+    ]
+  }
+]

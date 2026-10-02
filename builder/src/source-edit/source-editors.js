@@ -6,6 +6,7 @@ import { peopleSourceEditor } from "./people-editor.js";
 import { studioSourceEditor } from "./studio-editor.js";
 import { streamingSourceEditor } from "./streaming-editor.js";
 import { tmdbListSourceEditor } from "./tmdb-list-editor.js";
+import { traktListSourceEditor } from "./trakt-list-editor.js";
 
 import { advancedDiscoverSourceEditor } from "./advanced-discover-editor.js";
 import { resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
@@ -15,6 +16,7 @@ import { officialGenreReference } from "../source-add/genre-catalogue.js";
 export const SOURCE_EDITORS = Object.freeze([
 	movieCollectionSourceEditor,
 	tmdbListSourceEditor,
+	traktListSourceEditor,
 	peopleSourceEditor,
 	studioSourceEditor,
 	networkSourceEditor,

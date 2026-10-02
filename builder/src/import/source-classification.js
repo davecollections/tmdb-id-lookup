@@ -1,5 +1,6 @@
 import { SOURCE_CATEGORIES } from "../domain/index.js";
 import { NATIVE_TMDB_SOURCE_TYPES } from "../nuvio/known-fields.js";
+import { validateNativeTraktSource } from "../nuvio/trakt.js";
 
 export { NATIVE_TMDB_SOURCE_TYPES };
 
@@ -20,10 +21,17 @@ const addonIdentityFields = Object.freeze([
  *
  * @param {{[key: string]: import("../domain/model.js").JsonValue}} source
  * @param {string} [path]
- * @returns {{category: "native-tmdb" | "addon" | "opaque", warnings: import("./nuvio-import.js").Diagnostic[]}}
+ * @returns {{category: "native-tmdb" | "native-trakt" | "addon" | "opaque", warnings: import("./nuvio-import.js").Diagnostic[]}}
  */
 export function classifyNuvioSource(source, path = "$") {
 	const provider = normalisedExplicitValue(source.provider);
+	if (provider === "trakt") {
+		const validation = validateNativeTraktSource(source);
+		return validation.ok ? { category: SOURCE_CATEGORIES.NATIVE_TRAKT, warnings: [] } : {
+			category: SOURCE_CATEGORIES.OPAQUE,
+			warnings: [{ code: "UNSUPPORTED_TRAKT_SOURCE_PRESERVED", path, message: `The Trakt source could not safely become native-trakt and was preserved as opaque. ${validation.errors.map((entry) => entry.message).join(" ")}` }],
+		};
+	}
 
 	if (provider === "tmdb") {
 		const sourceType = normalisedExplicitValue(source.tmdbSourceType)?.toUpperCase();

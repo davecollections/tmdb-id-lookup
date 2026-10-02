@@ -2,7 +2,7 @@ import {
 	COLLECTION_EDITABLE_FIELDS,
 	DISCOVER_FILTER_FIELDS,
 	FOLDER_EDITABLE_FIELDS,
-	SOURCE_EDITABLE_FIELDS,
+	sourceEditableFields,
 } from "../nuvio/known-fields.js";
 
 /**
@@ -24,11 +24,13 @@ export function extractFolderEditable(folder) {
 /**
  * @param {{[key: string]: import("../domain/model.js").JsonValue}} source
  * @param {string} path
+ * @param {string} [category]
  * @returns {{editable: {[key: string]: import("../domain/model.js").JsonValue}, warnings: import("./nuvio-import.js").Diagnostic[]}}
  */
-export function extractSourceEditable(source, path) {
-	const editable = pickOwnFields(source, SOURCE_EDITABLE_FIELDS);
+export function extractSourceEditable(source, path, category) {
+	const editable = pickOwnFields(source, sourceEditableFields(category));
 	const warnings = [];
+	if (category === "native-trakt") return { editable, warnings };
 
 	if (!Object.hasOwn(source, "filters")) {
 		return { editable, warnings };
