@@ -38,7 +38,7 @@ folder
 source
   nodeType: "source"
   internalId: string
-  category: "native-tmdb" | "addon" | "opaque"
+  category: "native-tmdb" | "native-trakt" | "addon" | "opaque"
   editable: { ...known source values }
   rawImported?: JSON value
 ```
@@ -68,6 +68,7 @@ Factories accept an injectable `idFactory`, which gives tests and the implemente
 ## Source categories
 
 - `native-tmdb` means a caller has explicitly identified a currently supported native TMDB source.
+- `native-trakt` means a safely recognized native Trakt List/media source; see [the Trakt contract](./BUILDER_TRAKT_SOURCES.md).
 - `addon` means a caller has explicitly identified an addon-backed source.
 - `opaque` means the builder preserves a source without interpreting it as a known provider shape.
 

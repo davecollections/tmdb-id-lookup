@@ -35,6 +35,15 @@ export const SOURCE_EDITABLE_FIELDS = Object.freeze([
 	"genre",
 ]);
 
+// Trakt ownership is intentionally separate from the legacy TMDB/addon/opaque set.
+export const NATIVE_TRAKT_EDITABLE_FIELDS = Object.freeze([
+	"provider", "title", "traktListId", "mediaType", "sortBy", "sortHow",
+]);
+
+export function sourceEditableFields(category) {
+	return category === "native-trakt" ? NATIVE_TRAKT_EDITABLE_FIELDS : SOURCE_EDITABLE_FIELDS;
+}
+
 export const NATIVE_TMDB_SOURCE_TYPES = Object.freeze([
 	"LIST",
 	"COLLECTION",

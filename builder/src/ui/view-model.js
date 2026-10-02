@@ -147,6 +147,7 @@ function buildFolder(folder, selectedInternalId) {
 function sourceCategoryLabel(category) {
 	return {
 		"native-tmdb": "Native TMDB",
+		"native-trakt": "Native Trakt",
 		addon: "Addon",
 		opaque: "Preserved source",
 	}[category] ?? "Preserved source";
@@ -173,6 +174,7 @@ function buildSource(source, selectedInternalId, sourceDetails = sourceCardDetai
 			detail("Provider", presentValue(editable.provider)),
 			source.category === "native-tmdb" ? detail("TMDB source type", presentValue(editable.tmdbSourceType)) : null,
 			source.category === "native-tmdb" ? detail("TMDB ID", presentValue(editable.tmdbId)) : null,
+			source.category === "native-trakt" ? detail("Trakt List ID", presentValue(editable.traktListId)) : null,
 			detail("Media type", presentValue(editable.mediaType)),
 			source.category === "addon" ? detail("Addon ID", presentValue(editable.addonId)) : null,
 			source.category === "addon" ? detail("Addon type", presentValue(editable.type)) : null,

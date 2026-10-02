@@ -149,7 +149,7 @@ export function importNuvioCollections(value, options = {}) {
 				folderNode.sources = sources.map((source, sourceIndex) => {
 					const sourcePath = `${folderPath}.sources[${sourceIndex}]`;
 					const classification = classifyNuvioSource(source, sourcePath);
-					const extracted = extractSourceEditable(source, sourcePath);
+					const extracted = extractSourceEditable(source, sourcePath, classification.category);
 					warnings.push(...classification.warnings, ...extracted.warnings);
 					return createSource({
 						category: classification.category,

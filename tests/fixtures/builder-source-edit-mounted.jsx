@@ -1,4 +1,5 @@
 import { runSourceNamesScenario } from "./builder-source-names-mounted.jsx";
+import { runTraktFoundationScenario } from "./builder-trakt-foundation-mounted.jsx";
 // Match main.jsx: shared styles load before component/lazy styles. Reversing this
 // order hides cascade regressions that occur in the actual Builder preview.
 import "../../builder/src/styles.css";
@@ -8884,6 +8885,7 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
 };
 window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runTraktFoundationScenario = (view) => runTraktFoundationScenario({ createController, MountedWorkspace, clickAndSettle, afterCommittedEffects, setInputValue }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
 window.__runGuidedPresentationScenario = (view) => runGuidedPresentationScenario({ createController, clickAndSettle, afterCommittedEffects, setInputValue, setTextareaValue, setSelectValue, waitForMountedCondition, serializedValue }, view);

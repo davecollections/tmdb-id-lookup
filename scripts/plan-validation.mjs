@@ -38,6 +38,7 @@ export const IMPACT_REGISTRY = Object.freeze({
 		"tests/builder-decades-ui.test.mjs",
 		"tests/builder-discover-core.test.mjs",
 		"tests/builder-domain.test.mjs",
+		"tests/builder-native-trakt.test.mjs",
 		"tests/builder-export-collections.test.mjs",
 		"tests/builder-export-defaults.test.mjs",
 		"tests/builder-family-advanced.test.mjs",

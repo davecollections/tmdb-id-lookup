@@ -58,7 +58,7 @@ export function validateProjectTree(project) {
 				validateNodeCommon(source, NODE_TYPES.SOURCE, sourcePath, errors, internalIds);
 				validateRawImported(source, sourcePath, errors);
 				if (!sourceCategories.has(source.category)) {
-					errors.push(diagnostic("INVALID_SOURCE_CATEGORY", sourcePath, "The source category must be native-tmdb, addon, or opaque."));
+					errors.push(diagnostic("INVALID_SOURCE_CATEGORY", sourcePath, "The source category must be native-tmdb, native-trakt, addon, or opaque."));
 				}
 			});
 		});

@@ -1,5 +1,9 @@
 # Repository Testing
 
+## Native Trakt B2 focused validation (#279)
+
+Run `node --test tests/builder-native-trakt.test.mjs` with affected domain/importer/serializer/migration, compatibility corpus, capability, source-details and Source Edit foundation/UI suites. `TRAKT_SOURCE_FOUNDATION_ONLY=1` with `node --test --test-name-pattern="mounted native Trakt foundation" tests/builder-source-edit-mounted.test.mjs` reuses the existing browser lifecycle for eight local layouts: 360/384/393/402/412/1280px, short height and forced colours with reduced motion. The default Source mounted runner retains the 393/1280 cases. It imports authored local contract structures and checks supported/opaque menus, fixed context, name-only/no-op/invalid saves, title-only serialization, focus, scroll and zero requests; no external-service response is fabricated. Optional screenshots use existing `TMDB_204_SCREENSHOTS`. The normal owner review fixture is `manual-tests/native-trakt-foundation/owner-review.json`. Run the production Builder build and Git hygiene; the B2 task reserves the full suite for the later integration/PR gate after owner review.
+
 ## TMDB List Folder-per-List hierarchy (#277)
 
 Run `node --test tests/builder-tmdb-lists.test.mjs tests/builder-tmdb-lists-ui.test.mjs tests/builder-source-capability-contract.test.mjs tests/builder-controller.test.mjs tests/builder-node-editing.test.mjs tests/builder-source-edit-foundation.test.mjs tests/builder-source-edit-preview.test.mjs tests/builder-source-edit-ui.test.mjs` for ordered one/seven-List hierarchy bundles, actual counts, collection-wide omission, independent Folder/Source names, stale/tampered plan rejection, atomic rollback, imported multi-List preservation, Add Source placement and existing Source Edit behavior. Synthetic external metadata is confined to pure unit tests.

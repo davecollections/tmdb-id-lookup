@@ -3,8 +3,9 @@ import {
 	COLLECTION_EDITABLE_FIELDS,
 	FOLDER_EDITABLE_FIELDS,
 	NATIVE_TMDB_SOURCE_TYPES,
-	SOURCE_EDITABLE_FIELDS,
+	sourceEditableFields,
 } from "../nuvio/known-fields.js";
+import { validateNativeTraktSource } from "../nuvio/trakt.js";
 import { createCatalogProjections } from "./catalog-projection.js";
 import {
 	cloneRawObject,
@@ -154,10 +155,10 @@ function serializeSource(source, path, errors, warnings) {
 	const output = overlayKnownFields(
 		cloneRawObject(source.rawImported),
 		source.editable,
-		SOURCE_EDITABLE_FIELDS,
+		sourceEditableFields(source.category),
 	);
 
-	if (Object.hasOwn(source.editable, "filters")) {
+	if (source.category !== SOURCE_CATEGORIES.NATIVE_TRAKT && Object.hasOwn(source.editable, "filters")) {
 		if (!isPlainObject(source.editable.filters)) {
 			errors.push(diagnostic("INVALID_EDITABLE_FILTERS", `${path}.filters`, "Editable filters must be a plain object when present."));
 		} else {
@@ -165,7 +166,10 @@ function serializeSource(source, path, errors, warnings) {
 		}
 	}
 
-	if (source.category === SOURCE_CATEGORIES.NATIVE_TMDB) {
+	if (source.category === SOURCE_CATEGORIES.NATIVE_TRAKT) {
+		const authored = !Object.hasOwn(source, "rawImported");
+		errors.push(...validateNativeTraktSource(authored ? source.editable : output, { authored, path }).errors);
+	} else if (source.category === SOURCE_CATEGORIES.NATIVE_TMDB) {
 		validateNativeSource(output, path, errors);
 	} else if (source.category === SOURCE_CATEGORIES.ADDON) {
 		validateAddonSource(output, path, errors);

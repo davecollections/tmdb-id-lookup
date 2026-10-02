@@ -1,5 +1,9 @@
 # Dingo's Collection Builder — Product Plan
 
+## Trakt B2 implementation checkpoint (#279, local owner review)
+
+Parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open. B1 service rollout is complete; [B2 #279](https://github.com/davecollections/tmdb-id-lookup/issues/279) implements the offline native-trakt domain/import/serialization/identity foundation, local source presentation and name-only Source Edit. [The current contract](./BUILDER_TRAKT_SOURCES.md) preserves unsafe imported shapes as opaque. No Trakt creation mode or service client is present. B3/C still owns API integration, search/browse/resolve, media selection/detection, New Collection, New Folder, Add Source, Preview, final About/Credits and complete end-to-end acceptance. Do not mark Trakt Lists complete.
+
 ## Local implementation checkpoint — hierarchy polish (#273, 2026-09-29)
 
 Owner-approved hierarchy ordering polish is implemented locally for review: icon-only panel Sort in the left title/utility group after Collections settings, with count and creation grouped on the right; Collection/Folder Move to top/bottom within current reorder groups; atomic pin-slot-preserving Collection sorting and exact Source sorting; and one registered **Edit source** entry for all nine adapters. Folder People options and existing family Discover Filters are retained. The [ordering](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review), [shell](./BUILDER_UI_SHELL.md#hierarchy-ordering-and-source-entry-273-local-owner-review) and [Source editing](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) contracts own current branch behavior.

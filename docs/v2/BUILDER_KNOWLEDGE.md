@@ -1,5 +1,9 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Native Trakt B2 foundation (#279, local owner review)
+
+B2 beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) adds distinct `native-trakt` domain/import/serialization/identity and name-only Source Edit. Supported explicit numeric List/media/sort cores retain complete raw evidence; unsafe/string/synthetic cores stay opaque. Unknown fields never become ordinary editable fields. New authoring is exactly provider trakt, positive safe-integer number ID, MOVIE/TV, rank/asc and title. Physical identity excludes title/sorting; bounded configured equivalence remains separate and fails closed for unknown extra semantics. Current TV/Mobile/Desktop source evidence still supports all eight Trakt sorts and asc/desc. See [the current contract and pinned evidence](./BUILDER_TRAKT_SOURCES.md). No Trakt network, creation UI, hierarchy plans, Add Source or Preview exists. Trakt Lists and parent #276 remain incomplete until B3/C and full acceptance.
+
 ## Hierarchy ordering and unified Source editing (#273, local owner review)
 
 The current [ordering contract](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review) adds current-state Collection/Folder boundary moves and one-time panel Sort for all three levels. Atomic Collection permutations retain raw pinned/ordinary slots; Source permutations retain exact objects and imported representations. A shared Builder title comparator preserves Folder/V1 parity and bounded People options. The [sole Source Edit route](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) reuses the existing registered editor and family Filters without capability expansion or provenance. This implementation is local and awaits owner review/integration.

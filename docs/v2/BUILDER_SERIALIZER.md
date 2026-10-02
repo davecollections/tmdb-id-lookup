@@ -1,5 +1,9 @@
 # Builder Nuvio Serializer
 
+## Native Trakt foundation (#279, local owner review)
+
+`native-trakt` has explicit category-aware serialization and dedicated diagnostics. New sources require the exact six-field numeric-ID MOVIE/TV rank/asc contract; imported supported sources retain casing, alternate recognized sorts and complete unknown raw fields. Trakt is never projected into `catalogSources`. See [BUILDER_TRAKT_SOURCES.md](./BUILDER_TRAKT_SOURCES.md).
+
 Status: implemented for issue [#36](https://github.com/davecollections/tmdb-id-lookup/issues/36)
 
 Last reviewed: 2026-07-11
@@ -113,7 +117,7 @@ If editable does not own `filters`, the raw value remains unchanged. If editable
 
 An explicit empty editable filter object clears recognised imported keys while preserving unknown ones. New sources export only recognised keys; an explicit filters object can therefore serialize as `{}`. A non-object editable filters value fails atomically.
 
-A supported native source cannot emit an unreplaced non-object raw filters value and fails with `INVALID_NATIVE_FILTERS`. An opaque source may preserve such a value without interpretation when editable does not replace it.
+A supported native TMDB source cannot emit an unreplaced non-object raw filters value and fails with `INVALID_NATIVE_FILTERS`. An opaque source may preserve such a value without interpretation when editable does not replace it.
 
 ## Addon compatibility projections
 
@@ -187,4 +191,4 @@ Repository tests prove that serialization leaves the complete input unchanged, p
 
 ## Deliberately deferred
 
-The serializer itself does not implement UI, project storage, legacy migration, Ultra MAX conversion, explicit property deletion, metadata or artwork language support, translated artwork, direct Nuvio connections, authentication, TMDB/addon requests, routing, Trakt, changes to v1 exporters, or production Worker changes. The [Collection export implementation](./BUILDER_EXPORT.md), introduced by #194 and extended by merged #244 / PR #245, consumes the existing controller `stringifyProject({ space: 2 })` pipeline for identical validated Copy JSON and Download JSON bytes. Export and Replace-only Send share the frozen canonical preparation in `serialize/collection-export.js`; Send adds delivery guards outside the serializer. No serializer output contract is changed.
+The serializer itself does not implement UI, project storage, legacy migration, Ultra MAX conversion, explicit property deletion, metadata or artwork language support, translated artwork, direct Nuvio connections, authentication, TMDB/addon requests, routing, Trakt networking/creation UI, changes to v1 exporters, or production Worker changes. The [Collection export implementation](./BUILDER_EXPORT.md), introduced by #194 and extended by merged #244 / PR #245, consumes the existing controller `stringifyProject({ space: 2 })` pipeline for identical validated Copy JSON and Download JSON bytes. Export and Replace-only Send share the frozen canonical preparation in `serialize/collection-export.js`; Send adds delivery guards outside the serializer. No serializer output contract is changed.

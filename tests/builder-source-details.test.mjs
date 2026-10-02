@@ -16,6 +16,9 @@ import { serializeNuvioProject } from "../builder/src/serialize/index.js";
 const native = (tmdbSourceType, mediaType = "MOVIE", extra = {}) => ({ nodeType: "source", category: "native-tmdb", editable: { provider: "tmdb", tmdbSourceType, mediaType, sortBy: "popularity.desc", filters: {}, ...extra } });
 const summary = (node) => sourceCardDetails(node).metadata.map((entry) => entry.value).join(" · ");
 const cases = [];
+for (const [mediaType, media] of [["MOVIE", "Movies"], ["TV", "Series"]]) {
+	cases.push(["Native Trakt " + mediaType, { nodeType: "source", category: "native-trakt", editable: { provider: "trakt", title: "Local List", traktListId: 123, mediaType, sortBy: "added", sortHow: "desc" } }, `Trakt List 123 · ${media} · Date added · Descending`, "Trakt List"]);
+}
 for (const [media, label] of [["MOVIE", "Movies"], ["TV", "Series"]]) {
 	for (const [type, id, role] of [["PERSON", 31, "Acting"], ["DIRECTOR", 488, "Directing"]]) cases.push([type + media, native(type, media, { tmdbId: id }), "Person · " + (role === "Acting" ? "Acting" : "Directed") + " " + label.toLowerCase() + " · Popular", role + " source"]);
 	cases.push(["Studio " + media, native("COMPANY", media, { tmdbId: 1003, sortBy: media === "MOVIE" ? "primary_release_date.desc" : "first_air_date.desc" }), "Studio · " + label + " · Recent", "Studio source"]);

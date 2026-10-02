@@ -10,6 +10,7 @@ export const NODE_TYPES = Object.freeze({
 
 export const SOURCE_CATEGORIES = Object.freeze({
 	NATIVE_TMDB: "native-tmdb",
+	NATIVE_TRAKT: "native-trakt",
 	ADDON: "addon",
 	OPAQUE: "opaque",
 });
@@ -50,7 +51,7 @@ const sourceCategories = new Set(Object.values(SOURCE_CATEGORIES));
  * @typedef {object} SourceNode
  * @property {"source"} nodeType
  * @property {string} internalId Builder-only identity; never exported automatically.
- * @property {"native-tmdb" | "addon" | "opaque"} category Explicit caller-selected category.
+ * @property {"native-tmdb" | "native-trakt" | "addon" | "opaque"} category Explicit caller-selected category.
  * @property {{[key: string]: JsonValue}} editable Current builder-editable values.
  * @property {JsonValue} [rawImported] Detached imported JSON snapshot.
  */
@@ -185,7 +186,7 @@ export function createFolder({ idFactory = defaultInternalIdFactory, editable = 
 
 /**
  * @param {object} options
- * @param {"native-tmdb" | "addon" | "opaque"} options.category
+ * @param {"native-tmdb" | "native-trakt" | "addon" | "opaque"} options.category
  * @param {() => string} [options.idFactory]
  * @param {{[key: string]: JsonValue}} [options.editable]
  * @param {JsonValue} [options.rawImported]

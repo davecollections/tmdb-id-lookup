@@ -1,5 +1,9 @@
 # Builder Nuvio Importer
 
+## Native Trakt foundation (#279, local owner review)
+
+Supported explicit Trakt sources now import as `native-trakt`: safe numeric List ID, MOVIE/TV and recognized sort/direction are required. Unsupported Trakt shapes remain opaque with `UNSUPPORTED_TRAKT_SOURCE_PRESERVED`. The six Trakt fields have category-specific extraction; all other families retain the existing field set. Complete raw data and unknown fields survive. See [BUILDER_TRAKT_SOURCES.md](./BUILDER_TRAKT_SOURCES.md) for the preservation tiers and evidence.
+
 Status: implemented for issue [#35](https://github.com/davecollections/tmdb-id-lookup/issues/35)
 
 Last reviewed: 2026-08-12
@@ -100,6 +104,7 @@ Warnings can accompany a successful import. Stable warning codes are:
 | `MISSING_SOURCES` | An absent `sources` property became an empty active source list. |
 | `CATALOG_SOURCES_NOT_ARRAY_PRESERVED` | A non-array compatibility value remains raw-only. |
 | `LEGACY_CATALOG_SOURCES_ONLY` | Populated compatibility data exists without authoritative active sources. |
+| `UNSUPPORTED_TRAKT_SOURCE_PRESERVED` | Explicit Trakt has an unsafe/unsupported core and remains opaque. |
 | `UNSUPPORTED_TMDB_SOURCE_PRESERVED` | A TMDB source type is missing or unsupported and remains opaque. |
 | `INCOMPLETE_ADDON_SOURCE` | An explicit addon source is missing a current identity field but remains a draft. |
 | `AMBIGUOUS_SOURCE_PRESERVED_OPAQUE` | Addon-looking fields exist without an explicit addon provider. |
@@ -132,7 +137,7 @@ Folder editable fields:
 - `focusGifEnabled`
 - `heroBackdropUrl`
 
-Source editable fields:
+Legacy TMDB/addon/opaque source editable fields (native Trakt uses its separate six-field set):
 
 - `provider`
 - `title`
@@ -152,10 +157,11 @@ Fields such as `addonName`, `manifestUrl`, `showInHome`, community metadata, fut
 Classification is deterministic, case-insensitive, and led only by the explicit `provider` value. Inspection never rewrites the original casing or raw object.
 
 - `native-tmdb`: provider is exactly `tmdb`, ignoring case, and `tmdbSourceType` is exactly one of `LIST`, `COLLECTION`, `COMPANY`, `NETWORK`, `DISCOVER`, `PERSON`, or `DIRECTOR`, ignoring case.
+- `native-trakt`: explicit Trakt provider, positive safe-integer number ID, Movie/TV and recognized explicit sort/direction; unknown extra raw fields remain preserved.
 - `addon`: provider is exactly `addon`, ignoring case. Missing `addonId`, `type`, or `catalogId` is permitted as an incomplete editor draft and produces a warning.
-- `opaque`: provider is absent, unknown, `community`, otherwise unrecognised, or explicitly TMDB with a missing or unsupported source type.
+- `opaque`: provider is absent, unknown, `community`, otherwise unrecognised, explicitly TMDB with a missing or unsupported source type, or explicit Trakt with an unsafe/unsupported core.
 
-`addonId`, `type`, `catalogId`, `genre`, `manifestUrl`, `addonName`, and `showInHome` do not prove addon category by themselves. When these addon-looking fields lack an explicit addon provider, the source remains opaque and a warning records the ambiguity.
+`addonId`, `type`, `catalogId`, `genre`, `manifestUrl`, `addonName`, and `showInHome` do not prove addon category by themselves. Without a supported explicit native provider or explicit addon provider, addon-looking fields leave the source opaque and a warning records the ambiguity.
 
 An unsupported TMDB source does not reject the import. Its complete object remains in `rawImported`, recognised fields remain editable, its category is `opaque`, and `UNSUPPORTED_TMDB_SOURCE_PRESERVED` records the unsupported interpretation.
 
@@ -204,4 +210,4 @@ This detection does not implement legacy migration or Ultra MAX compatibility. T
 
 ## Deliberately deferred
 
-This importer does not implement browser file selection, drag-and-drop, React UI, user-visible diagnostic presentation, export validation, serialization, editable-over-raw overlay, `catalogSources` projection generation, legacy migration, Ultra MAX transformations, a final project-file format, storage, undo/redo, TMDB or addon requests, routing, authentication, branding, Trakt, v1 changes, or Worker changes.
+This importer does not implement browser file selection, drag-and-drop, React UI, user-visible diagnostic presentation, export validation, serialization, editable-over-raw overlay, `catalogSources` projection generation, legacy migration, Ultra MAX transformations, a final project-file format, storage, undo/redo, TMDB or addon requests, routing, authentication, branding, Trakt networking/creation UI, v1 changes, or Worker changes.
