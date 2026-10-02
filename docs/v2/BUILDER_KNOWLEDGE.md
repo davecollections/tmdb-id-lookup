@@ -1,6 +1,8 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
-## Native Trakt B2 foundation (#279, local owner review)
+## Native Trakt B2 foundation (#279, PR #280)
+
+Owner review is approved; [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280) is open awaiting final owner merge review. [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
 
 B2 beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) adds distinct `native-trakt` domain/import/serialization/identity and name-only Source Edit. Supported explicit numeric List/media/sort cores retain complete raw evidence; unsafe/string/synthetic cores stay opaque. Unknown fields never become ordinary editable fields. New authoring is exactly provider trakt, positive safe-integer number ID, MOVIE/TV, rank/asc and title. Physical identity excludes title/sorting; bounded configured equivalence remains separate and fails closed for unknown extra semantics. Current TV/Mobile/Desktop source evidence still supports all eight Trakt sorts and asc/desc. See [the current contract and pinned evidence](./BUILDER_TRAKT_SOURCES.md). No Trakt network, creation UI, hierarchy plans, Add Source or Preview exists. Trakt Lists and parent #276 remain incomplete until B3/C and full acceptance.
 

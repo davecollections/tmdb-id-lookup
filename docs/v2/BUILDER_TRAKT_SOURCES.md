@@ -1,6 +1,10 @@
 # Native Trakt Source Foundation
 
-Status: local B2 implementation for [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279), beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276). Owner review and integration remain pending. Trakt Lists creation is not complete.
+## Status and validation
+
+B2 [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) is committed in open [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). Owner review is approved; the PR awaits final owner merge review. B3/C has not started. Trakt Lists is not complete, and parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open.
+
+Accepted implementation head [`a1017234ecc025794b810173f029db57e06589cb`](https://github.com/davecollections/tmdb-id-lookup/commit/a1017234ecc025794b810173f029db57e06589cb) passed the full canonical local suite, production Builder build and [hosted FULL PR validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/36954981756). Documentation-only follow-up heads receive separate automatic PR validation after push; these implementation-head results do not establish a follow-up head's check status.
 
 ## Category and authored contract
 
@@ -72,4 +76,4 @@ Focused coverage: `tests/builder-native-trakt.test.mjs`, the compatibility corpu
 
 Use `node --test --test-name-pattern="mounted native Trakt foundation" tests/builder-source-edit-mounted.test.mjs` with that environment variable. Optional `TMDB_204_SCREENSHOTS` captures local review evidence outside Git. Import `manual-tests/native-trakt-foundation/owner-review.json` in the normal production-style Builder preview for owner review.
 
-B2 has no Trakt networking, environment variables, API client, Cloudflare/service changes, creation modes, hierarchy family, Add Source option, search/browse/URL resolver or Preview provider. B3/C must build on this foundation for the actual Trakt Lists feature and its complete acceptance. Parent #276 remains open. The full repository suite is reserved for the later integration/PR gate after owner review.
+B2 has no Trakt networking, environment variables, API client, Cloudflare/service changes, creation modes, hierarchy family, Add Source option, search/browse/URL resolver or Preview provider. B3/C must build on this foundation for the actual Trakt Lists feature and its complete acceptance. Parent #276 remains open. See [status and validation](#status-and-validation) for the completed implementation checks and separate PR-head validation.
