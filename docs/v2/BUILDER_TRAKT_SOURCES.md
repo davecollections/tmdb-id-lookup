@@ -2,7 +2,7 @@
 
 ## Status and validation
 
-B2 [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) is committed in open [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). Owner review is approved; the PR awaits final owner merge review. B3/C has not started. Trakt Lists is not complete, and parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open.
+B2 implementation, owner review and validation are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). B3/C has not started. Trakt Lists is not complete, and parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open.
 
 Accepted implementation head [`a1017234ecc025794b810173f029db57e06589cb`](https://github.com/davecollections/tmdb-id-lookup/commit/a1017234ecc025794b810173f029db57e06589cb) passed the full canonical local suite, production Builder build and [hosted FULL PR validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/36954981756). Documentation-only follow-up heads receive separate automatic PR validation after push; these implementation-head results do not establish a follow-up head's check status.
 

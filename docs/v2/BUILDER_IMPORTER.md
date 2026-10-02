@@ -2,7 +2,7 @@
 
 ## Native Trakt foundation (#279, PR #280)
 
-Owner review is approved; [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280) is open awaiting final owner merge review. [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
+Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
 
 Supported explicit Trakt sources now import as `native-trakt`: safe numeric List ID, MOVIE/TV and recognized sort/direction are required. Unsupported Trakt shapes remain opaque with `UNSUPPORTED_TRAKT_SOURCE_PRESERVED`. The six Trakt fields have category-specific extraction; all other families retain the existing field set. Complete raw data and unknown fields survive. See [BUILDER_TRAKT_SOURCES.md](./BUILDER_TRAKT_SOURCES.md) for the preservation tiers and evidence.
 
