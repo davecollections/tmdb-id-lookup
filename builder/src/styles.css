@@ -10167,3 +10167,48 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 	.tmdb-list-omitted, .tmdb-list-name-warning, .tmdb-list-placement-summary .studio-elsewhere-note { border: 1px solid CanvasText; }
 	.tmdb-list-review-item em.tmdb-list-ready-elsewhere { color: CanvasText; }
 }
+/* Trakt reuses the creation shell, semantic selection treatment and review rows. */
+.trakt-list-form .add-source-scroll { display: flex; flex-direction: column; gap: 12px; }
+.trakt-list-form .add-source-scroll > * { flex-shrink: 0; }
+.creation-dialog #creation-title[tabindex="-1"]:focus { outline: none; }
+.trakt-list-form :is(input[type="text"], textarea) { min-width: 0; width: 100%; }
+.trakt-list-form textarea { resize: vertical; min-height: 7rem; }
+.trakt-modes, .trakt-inline-actions, .trakt-search { display: flex; flex-wrap: wrap; gap: .5rem; }
+.trakt-modes > button { flex: 1 1 auto; }
+.trakt-list-form button { min-height: 44px; white-space: normal; }
+.trakt-search > input { flex: 1 1 10rem; width: auto; }
+.trakt-results { display: grid; gap: .7rem; }
+.trakt-result { display: grid; gap: .35rem; padding: .9rem; cursor: pointer; border: 1px solid #34495f; border-radius: .7rem; min-width: 0; overflow-wrap: anywhere; }
+.trakt-result:has(input:focus-visible) { outline: 3px solid #8de4ff; outline-offset: 3px; }
+.trakt-result span, .trakt-result small { color: #b7c6d6; }
+.trakt-description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.trakt-line-results { padding-inline-start: 1.2rem; display: grid; gap: .6rem; overflow-wrap: anywhere; }
+.trakt-list-form :is(.tmdb-list-review-item, .trakt-selected, .trakt-placement) { min-width: 0; overflow-wrap: anywhere; }
+.trakt-list-form .tmdb-list-review-item { gap: 8px; padding: 10px 12px; }
+.trakt-list-form .tmdb-list-review-item .trakt-list-identity { display: grid; gap: 2px; justify-content: start; align-items: start; }
+.trakt-list-form .tmdb-list-review-item p { margin: 0; }
+.trakt-list-form .editor-field-error:empty { display: none; }
+.trakt-list-form .trakt-output-statuses { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .8rem; line-height: 1.5; }
+.trakt-list-form .tmdb-list-review-item > .trakt-placement { display: grid; gap: 8px; }
+.trakt-placement summary { min-height: 44px; padding-block: 12px; color: var(--cyan-bright); font-size: .75rem; cursor: pointer; }
+.trakt-media-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+.trakt-media-config { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.trakt-media-info { display: grid; gap: 2px; }
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
+ .trakt-media-config { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+ .trakt-media-config > .semantic-sort-choices { justify-self: start; }
+}
+.trakt-list-form .studio-selected-remove { width: 44px; min-width: 44px; }
+.trakt-list-form .semantic-sort-choices legend { margin: 0; }
+.trakt-list-form .semantic-sort-choice-row label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.trakt-results-tail { display: flex; flex-wrap: wrap; gap: 8px; }
+.trakt-results-tail:empty { display: none; }
+.trakt-results-tail button { font-size: .8rem; padding: 8px 12px; }
+.trakt-list-form .tmdb-list-omitted ul { display: grid; gap: 8px; margin: 0; padding-inline-start: 24px; }
+.trakt-list-form .tmdb-list-omitted p { margin: 2px 0 0; font-size: .8rem; }
+.trakt-plan-totals > div { padding: 8px 12px; }
+.trakt-plan-totals span { font-size: .8rem; }
+.trakt-selected .add-source-section-heading { flex-wrap: wrap; gap: .5rem; }
+@media (forced-colors: active) {
+ .trakt-result:has(input:focus-visible) { outline-color: Highlight; }
+}

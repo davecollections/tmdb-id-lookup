@@ -46,6 +46,7 @@ import {
 	GENRE_SOURCE_MODE_ID,
 	DECADE_SOURCE_MODE_ID,
 	TMDB_LIST_SOURCE_MODE_ID,
+	TRAKT_LIST_SOURCE_MODE_ID,
 } from "../source-add/index.js";
 import { createArtworkRuntimeClient } from "../../../js/artwork-runtime.mjs";
 import {
@@ -104,6 +105,9 @@ import { StudioSourceFlow } from "./StudioSourceFlow.jsx";
 import { StreamingSourceFlow } from "./StreamingSourceFlow.jsx";
 import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
 import { DecadeSourceFlow } from "./DecadeSourceFlow.jsx";
+import { createTraktClient } from "../source-add/trakt-client.js";
+import { applyTraktCreationPlan } from "../source-add/trakt-creation-plan.js";
+import { TraktSourceFlow } from "./TraktSourceFlow.jsx";
 import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
 import {
@@ -716,6 +720,7 @@ export function BuilderWorkspace({
 	initialAboutCreditsOpen = false,
 	sourceProvider = null,
 	listProvider = null,
+	traktClient = null,
 	peopleProvider = null,
 	networkCatalogueProvider = null,
 	networkCountProvider = null,
@@ -828,6 +833,12 @@ export function BuilderWorkspace({
 	const sourceProviderRef = useRef(null);
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
+	}
+	const traktClientRef = useRef(null);
+	if (traktClientRef.current === null) {
+		traktClientRef.current = traktClient ?? createTraktClient({
+			localPreview: typeof __TRAKT_LIVE_REVIEW__ === "boolean" ? __TRAKT_LIVE_REVIEW__ : false,
+		});
 	}
 	const listProviderRef = useRef(null);
 	if (listProviderRef.current === null) {
@@ -1752,6 +1763,29 @@ export function BuilderWorkspace({
   return result;
  }
 
+	function applyTraktPlan(plan, options) {
+  const scope = options.scope;
+  const matches = scope === "add-source"
+   ? visibleAddSourceSession?.context === "folder" && visibleAddSourceSession.folderInternalId === options.destinationFolderInternalId
+   : creationSession?.scope === scope && (scope !== "new-folder" || creationSession.destinationCollectionInternalId === options.destinationCollectionInternalId);
+  if (!matches || editorLocked || deleteLocked || returnConfirmationOpen || actionsMenuInternalId !== null || pointerInteractionLocked()) return { ok: false, errors: [{ message: "The destination is no longer available. Review the current project." }] };
+  const result = applyTraktCreationPlan(controller, plan, options);
+  if (!result.ok) return result;
+  if (scope === "add-source") {
+   addSourceRestoreFocusRef.current = null; setAddSourceSession(null);
+   setPendingCreatedSourceFocus(result.createdSourceInternalIds?.[0]);
+   setSourceCreationStatusText("Added " + result.counts.sourceCount + " Trakt sources.");
+  } else {
+   setCreationSession(null); creationRestoreFocusRef.current = null;
+   const nodeType = scope === "new-collection" ? "collection" : "folder";
+   const internalId = scope === "new-collection" ? result.createdCollectionInternalIds?.[0] : result.createdFolderInternalIds?.[0];
+   setMobileLevelOverride(nodeType === "collection" ? "collections" : "folders");
+   if (internalId) setCreatedCardTarget({ nodeType, internalId });
+   setCreationStatusText("Created " + result.counts.folderCount + " folders with " + result.counts.sourceCount + " Trakt sources.");
+  }
+  return result;
+ }
+
 	function applyTmdbListPlan(plan) {
 		if (!creationSession) return { ok: false, errors: [{ message: "The creation flow is no longer available." }] };
 		const result = applyTmdbListHierarchyPlan(controller, plan);
@@ -1859,7 +1893,7 @@ export function BuilderWorkspace({
 		if (
 			!visibleAddSourceSession
 			|| visibleAddSourceSession.context !== "folder"
-			|| !["advanced-discover", MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
+			|| !["advanced-discover", MOVIE_FRANCHISE_SOURCE_MODE_ID, TMDB_LIST_SOURCE_MODE_ID, TRAKT_LIST_SOURCE_MODE_ID, PEOPLE_SOURCE_MODE_ID, STUDIO_SOURCE_MODE_ID, NETWORK_SOURCE_MODE_ID, STREAMING_SOURCE_MODE_ID, GENRE_SOURCE_MODE_ID, DECADE_SOURCE_MODE_ID].includes(modeId)
 		) return;
 		setAddSourceSession((current) => current ? { ...current, modeId, returnFocusModeId: null } : current);
 	}
@@ -2987,6 +3021,10 @@ export function BuilderWorkspace({
 					onApplyGenres={applyGenrePlan}
 					onApplyStreaming={applyStreamingPlan}
 					onApplyTmdbLists={applyTmdbListPlan}
+					onApplyTraktLists={applyTraktPlan}
+					traktClient={traktClientRef.current}
+					currentProject={state.project}
+					currentProjectRevision={state.revision}
 					onApplyAdvancedDiscover={applyDiscoverPlan}
 					collectionProvider={sourceProviderRef.current}
 					listProvider={listProviderRef.current}
@@ -3074,6 +3112,8 @@ export function BuilderWorkspace({
 						onCancel={cancelAddSource}
 						onApply={applyPeopleSources}
 					/>
+				) : visibleAddSourceSession.modeId === TRAKT_LIST_SOURCE_MODE_ID ? (
+					<TraktSourceFlow project={state.project} projectRevision={state.revision} folder={addSourceFolder} client={traktClientRef.current} onBack={returnToSourceModePicker} onCancel={cancelAddSource} onApply={applyTraktPlan} />
 				) : visibleAddSourceSession.modeId === TMDB_LIST_SOURCE_MODE_ID ? (
 					<TmdbListSourceFlow
 						project={state.project}

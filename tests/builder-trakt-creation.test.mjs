@@ -114,6 +114,14 @@ test("manual recovery resolves only explicitly; unavailable blocks until success
 	await session.verifyPublic(1); assert.deepEqual(effectiveTraktMedia(session.getState().selection.byId[1].media), ["MOVIE", "TV"]);
 });
 
+test("returning to Media retains a verified manual choice without checking it again", async () => {
+ let calls = 0;
+ const session = createTraktSelectionSession({ client: { resolve: async () => {}, getMedia: async () => { calls++; return traktFailure("UPSTREAM_FAILURE"); } } });
+ session.select(list(1, "available")); await session.checkMediaBatch(); session.chooseMedia(1, "movies");
+ session.cancel(); session.select(list(2)); await session.checkMediaBatch();
+ assert.equal(calls, 2); assert.deepEqual(effectiveTraktMedia(session.getState().selection.byId[1].media), ["MOVIE"]);
+});
+
 test("New Collection uses B2 drafts and approved names; elsewhere matches remain informational; one atomic apply", () => {
 	const controller = app(), { f } = destinations(controller); source(controller, f, 1);
 	const before = controller.getState(), planned = planFor(controller, [selected(1, 1, 0), selected(2, 0, 1), selected(3)]);
@@ -226,9 +234,9 @@ test("late controller ID failure rolls the whole planned operation back", () => 
 	assert.equal(p.ok, true); assert.equal(applyTraktCreationPlan(controller, p.plan).ok, false); assert.equal(controller.getState().revision, before.revision); assert.deepEqual(controller.getState().project, before.project);
 });
 
-test("foundation remains absent from visible menus and B2 editor still owns title only", () => {
-	assert.equal(CREATION_OPTIONS.some(option => /trakt/i.test(option.id + option.label)), false);
-	assert.equal(AVAILABLE_SOURCE_MODES.some(option => /trakt/i.test(option.id + option.label)), false);
+test("Trakt is registered in all visible launchers and B2 editor still owns title only", () => {
+	assert.equal(CREATION_OPTIONS.some(option => /trakt/i.test(option.id + option.label)), true);
+	assert.equal(AVAILABLE_SOURCE_MODES.some(option => /trakt/i.test(option.id + option.label)), true);
 	const editor = fs.readFileSync(new URL("../builder/src/source-edit/trakt-list-editor.js", import.meta.url), "utf8");
 	assert.match(editor, /ownedFields: Object\.freeze\(\["title"\]\)/);
 });

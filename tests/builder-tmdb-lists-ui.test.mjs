@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
+const sharedPresentation = fs.readFileSync(new URL("../builder/src/ui/GuidedPresentationControls.jsx", import.meta.url), "utf8");
 const flow = read("builder/src/ui/TmdbListSourceFlow.jsx");
 const workspace = read("builder/src/ui/BuilderWorkspace.jsx");
 const creation = read("builder/src/ui/CreationDialog.jsx");
@@ -130,14 +131,14 @@ test("guided Lists defaults per-list Folder names, uses concise shared create co
 });
 
 test("guided Lists directly reuses standard Collection and Folder presentation controls while Add Source remains container-free", () => {
-	assert.match(flow, /import \{ HierarchyCollectionPresentationControls \} from "\.\/CollectionPresentationChoices\.jsx"/);
-	assert.match(flow, /import \{ FolderShapeChoices, HiddenTitleFieldHelp, PresentationSwitch, TitleOptions \} from "\.\/PresentationControls\.jsx"/);
-	assert.match(flow, /<TitleOptions[\s\S]*collectionTitleVisibility=\{scope === "new-collection"[\s\S]*folderTitleVisibility=/);
-	assert.match(flow, /<HierarchyCollectionPresentationControls[\s\S]*showAllTab=\{options\.showAllTab\}/);
-	assert.match(flow, /<PresentationSwitch label="Pin collection to top"/);
-	assert.match(flow, /<FolderShapeChoices selectedId=\{options\.folderTileShape\}/);
+	assert.match(sharedPresentation, /import \{ HierarchyCollectionPresentationControls \} from "\.\/CollectionPresentationChoices\.jsx"/);
+	assert.match(sharedPresentation, /import \{ FolderShapeChoices, PresentationSwitch, TitleOptions \} from "\.\/PresentationControls\.jsx"/);
+	assert.match(sharedPresentation, /<TitleOptions[\s\S]*collectionTitleVisibility=\{scope === "new-collection"[\s\S]*folderTitleVisibility=/);
+	assert.match(sharedPresentation, /<HierarchyCollectionPresentationControls[\s\S]*showAllTab=\{options\.showAllTab\}/);
+	assert.match(sharedPresentation, /<PresentationSwitch label="Pin collection to top"/);
+	assert.match(sharedPresentation, /<FolderShapeChoices selectedId=\{options\.folderTileShape\}/);
 	assert.match(flow, /activeStep === "appearance"[\s\S]*<GuidedPresentationControls/);
-	assert.match(flow, /Collection settings stay unchanged\./);
+	assert.match(sharedPresentation, /Collection settings stay unchanged\./);
 	assert.doesNotMatch(flow, /focusGlowEnabled/);
 });
 
@@ -182,10 +183,10 @@ test("TMDB hierarchy has Names then appearance-only controls, zero-output safe n
 test("TMDB Lists keeps Back separate from submit and explains hierarchy-only artwork", () => {
  assert.match(flow, /key="back-to-selection" className="editor-cancel" type="button"/);
  assert.match(flow, /key="forward" className="editor-apply" type="submit"/);
- const presentation = flow.slice(flow.indexOf("function GuidedPresentationControls"), flow.indexOf("function SelectedLists"));
+ const presentation = sharedPresentation;
  assert.match(presentation, /Folder artwork/);
  assert.match(presentation, /No artwork is assigned by this flow\. After creating, use Edit on each folder to add or change its artwork\./);
- assert.equal((flow.match(/tmdb-list-artwork-note-title">Folder artwork/g) ?? []).length, 1);
+ assert.equal((sharedPresentation.match(/tmdb-list-artwork-note-title">Folder artwork/g) ?? []).length, 1);
  assert.match(styles, /\.tmdb-list-form\[data-tmdb-list-stage="names"\] \.tmdb-list-locations summary \{ padding-block: 8px;/);
 });
 

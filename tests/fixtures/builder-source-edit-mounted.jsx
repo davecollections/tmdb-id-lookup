@@ -1,4 +1,5 @@
 import { runSourceNamesScenario } from "./builder-source-names-mounted.jsx";
+import { runTraktCreationScenario, mountTraktOwnerReview } from "./builder-trakt-creation-mounted.jsx";
 import { runTraktFoundationScenario } from "./builder-trakt-foundation-mounted.jsx";
 // Match main.jsx: shared styles load before component/lazy styles. Reversing this
 // order hides cascade regressions that occur in the actual Builder preview.
@@ -1530,7 +1531,10 @@ async function runBlankCreationScenario() {
 		collectionPeopleQuery.focus({ preventScroll: true });
 		const collectionExplicitSearchFocus = document.activeElement === collectionPeopleQuery;
 		await clickAndSettle(document.querySelector('[data-action="back-to-creation-launcher"]'));
-		const collectionBackFocus = document.activeElement === document.querySelector('[data-creation-option="blank"]');
+		const collectionBackFocus = {
+			headingFocused: document.activeElement === document.querySelector('[data-creation-dialog="true"] #creation-title'),
+			blankFocused: document.activeElement === document.querySelector('[data-creation-option="blank"]'),
+		};
 		await clickAndSettle(document.querySelector('[data-creation-option="people"]'));
 		await afterCommittedEffects();
 		const collectionReentryFocus = document.activeElement === document.querySelector("#people-mode-title");
@@ -1577,7 +1581,10 @@ async function runBlankCreationScenario() {
 		folderPeopleQuery.focus({ preventScroll: true });
 		const folderExplicitSearchFocus = document.activeElement === folderPeopleQuery;
 		await clickAndSettle(document.querySelector('[data-action="back-to-creation-launcher"]'));
-		const folderBackFocus = document.activeElement === document.querySelector('[data-creation-option="blank"]');
+		const folderBackFocus = {
+			headingFocused: document.activeElement === document.querySelector('[data-creation-dialog="true"] #creation-title'),
+			blankFocused: document.activeElement === document.querySelector('[data-creation-option="blank"]'),
+		};
 		await clickAndSettle(document.querySelector('[data-creation-option="people"]'));
 		await afterCommittedEffects();
 		const folderReentryFocus = document.activeElement === document.querySelector("#people-mode-title");
@@ -5086,7 +5093,8 @@ async function runDecadesNavigationScenario() {
 			launcherReturn: {
 				backAbsent: headerBack() === null,
 				footerAbsent: dialog()?.querySelector(".decades-creation-actions") === null,
-				firstOptionFocused: document.activeElement === dialog()?.querySelector('[data-creation-option="blank"]'),
+				headingFocused: document.activeElement === dialog()?.querySelector("#creation-title"),
+				blankFocused: document.activeElement === dialog()?.querySelector('[data-creation-option="blank"]'),
 			},
 			revisionUnchanged: controller.getState().revision === initialRevision,
 		};
@@ -7225,7 +7233,8 @@ async function runSourceChooserLayoutScenario({
 				},
 				cardGeometry: cards.map(launcherCardGeometry),
 				contentSafety: launcherContentSafety(dialog, list, cards),
-				firstOptionFocused: document.activeElement === firstCard,
+				headingFocused: document.activeElement === dialog.querySelector("#creation-title"),
+				blankFocused: document.activeElement === firstCard,
 				iconShellsCorrect: iconRects.every((rect) => {
 					const expectedSize = window.innerWidth <= 620 ? 36 : 42;
 					return rect && Math.abs(rect.width - expectedSize) <= 1 && Math.abs(rect.height - expectedSize) <= 1;
@@ -7435,18 +7444,28 @@ async function runTmdbListImportedSortScenario(supplied = null) {
 				const loaded = await liveTmdbListProvider.getList(Number(importedSource.tmdbId));
 				if (!loaded.ok || !loaded.data.items.length) throw new Error("Live Headliner sample is unavailable.");
 				const expectedItems = [...loaded.data.items];
-				if (sortBy === "vote_average.desc") expectedItems.sort((a, b) => b.voteAverage - a.voteAverage || b.date.localeCompare(a.date));
-				if (sortBy === "primary_release_date.desc") expectedItems.sort((a, b) => b.date.localeCompare(a.date));
-				if (sortBy === "vote_count.desc") expectedItems.sort((a, b) => b.voteCount - a.voteCount);
+				const requestedLabel = { "vote_average.desc": "Top rated", "primary_release_date.desc": "Recent", "vote_count.desc": "Most voted" }[sortBy];
+				const ranked = requestedLabel !== undefined;
+				// Inspect this cached normalized page: live metadata may be incomplete.
+				const metadataComplete = expectedItems.every((item) => sortBy === "vote_count.desc"
+					? Number.isSafeInteger(item.voteCount) && item.voteCount >= 0
+					: typeof item.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
+						&& (sortBy !== "vote_average.desc" || Number.isFinite(item.voteAverage) && item.voteAverage >= 0 && item.voteAverage <= 10));
+				const sorted = ranked && metadataComplete;
+				if (sorted && sortBy === "vote_average.desc") expectedItems.sort((a, b) => b.voteAverage - a.voteAverage || b.date.localeCompare(a.date));
+				if (sorted && sortBy === "primary_release_date.desc") expectedItems.sort((a, b) => b.date.localeCompare(a.date));
+				if (sorted && sortBy === "vote_count.desc") expectedItems.sort((a, b) => b.voteCount - a.voteCount);
+				const orderingState = ranked ? sorted ? "sorted" : "missing-data" : sortBy === "original" ? "original" : "unsupported";
+				const expectedNote = ranked && !sorted ? `Preview lacks the data needed for ${requestedLabel}; your saved sort will be kept.`
+					: ranked || sortBy === "original" ? undefined : `Preview can’t reproduce ‘${sortBy}’; your saved sort will be kept.`;
 				const expectedPosters = expectedItems.map((item) => buildTmdbPosterUrl(item.posterPath, "w342")).filter(Boolean);
 				const grid = requiredElement(modal.querySelector(".tmdb-list-preview-grid"), "live Headliner posters");
 				await waitForMountedCondition(() => [...grid.querySelectorAll("img")].filter(visibleElement).every((image) => image.complete && image.naturalWidth > 0), { label: "live Headliner images", timeoutMs: 30_000 });
 				const note = modal.querySelector(".tmdb-list-preview-ordering")?.textContent;
-				const ranked = ["vote_average.desc", "primary_release_date.desc", "vote_count.desc"].includes(sortBy);
 				const count = loaded.data.items.length;
 				const complete = count === loaded.data.itemCount;
-				const label = sortBy === "vote_average.desc" ? "Top rated" : sortBy === "primary_release_date.desc" ? "Recent" : sortBy === "vote_count.desc" ? "Most voted" : "List order";
-				const expectedSummary = `${complete ? count === 1 ? "Showing the only title." : `Showing all ${count} titles.` : loaded.data.itemCount > 100 ? `${loaded.data.itemCount} titles found. Preview is limited to 100.` : "Preview shows up to 100 titles."} · ${label}${ranked ? " within each page" : ""}`;
+				const label = sorted ? requestedLabel : "List order";
+				const expectedSummary = `${complete ? count === 1 ? "Showing the only title." : `Showing all ${count} titles.` : loaded.data.itemCount > 100 ? `${loaded.data.itemCount} titles found. Preview is limited to 100.` : "Preview shows up to 100 titles."} · ${label}${sorted ? " within each page" : ""}`;
 				const geometry = tmdbListPreviewGeometry(modal, grid);
 				const contained = geometry.gridInlineContained && geometry.closeReachable && geometry.verticalScrollOnly && grid.clientHeight > 0;
 				const ordered = JSON.stringify([...grid.querySelectorAll("img")].map((image) => image.src)) === JSON.stringify(expectedPosters);
@@ -7454,10 +7473,10 @@ async function runTmdbListImportedSortScenario(supplied = null) {
 				if (window.capture204Preview && action === "unchanged" && innerWidth === 393 && innerHeight === 800) await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `list-${variant.replaceAll(" ", "-")}-preview` })); });
 				await clickAndSettle(modal.querySelector("header button"));
 				if (window.capture204Preview && action === "unchanged" && innerWidth === 393 && innerHeight === 800) await new Promise((resolve) => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `list-${variant.replaceAll(" ", "-")}-editor` })); });
-				previews.push({ sortBy, ordered, loadedCount: loaded.data.items.length,
+				previews.push({ sortBy, orderingState, ordered, loadedCount: loaded.data.items.length,
 					filtersExplained: variant === "Headliner" ? !modal.querySelector(".tmdb-list-preview-filters") : modal.querySelector(".tmdb-list-preview-filters")?.textContent === "Imported filters aren’t applied in Preview. Your saved settings will be kept.",
 					neutral: !modal.querySelector('[role="alert"]'),
-					explained: modal.querySelector(".source-title-preview-summary").textContent === expectedSummary && !modal.querySelector(".studio-preview-single-media") && note === (ranked || sortBy === "original" ? undefined : `Preview can’t reproduce ‘${sortBy}’; your saved sort will be kept.`),
+					explained: modal.querySelector(".source-title-preview-summary").textContent === expectedSummary && !modal.querySelector(".studio-preview-single-media") && note === expectedNote,
 					contained,
 					preserved: selectionBefore === radios.filter((radio) => radio.checked).map((radio) => radio.value).join() && titleBefore === dialog.querySelector("#source-edit-title-input").value && JSON.stringify(serializeNuvioProject(controller.getState().project).value) === before && controller.getState().revision === initial.revision,
 					focusRestored: document.activeElement === trigger,
@@ -8885,6 +8904,8 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
 };
 window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runTraktCreationScenario = view => runTraktCreationScenario({ createController, MountedWorkspace, clickAndSettle, afterCommittedEffects, setInputValue, setTextareaValue }, view);
+if (new URLSearchParams(location.search).has("trakt-creation-review")) void mountTraktOwnerReview({ createController, MountedWorkspace });
 window.__runTraktFoundationScenario = (view) => runTraktFoundationScenario({ createController, MountedWorkspace, clickAndSettle, afterCommittedEffects, setInputValue }, view);
 window.__runNativeSourceVariantsScenario = (view) => runNativeSourceVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor, waitForMountedCondition, MountedWorkspace }, view);
 window.__runSourceSortVariantsScenario = (wordingOnly = false) => runSourceSortVariantsScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, inputContaining, setInputValue, titlePreviewGeometry, openEdit, withMountedEditor }, { wordingOnly });
@@ -8926,7 +8947,7 @@ window.__runTmdbListLivePreviewScenario = runTmdbListLivePreviewScenario;
 window.__prepareSourceChooserKeyboardScenario = prepareSourceChooserKeyboardScenario;
 window.__inspectSourceChooserKeyboardFocus = inspectSourceChooserKeyboardFocus;
 window.__finishSourceChooserKeyboardScenario = finishSourceChooserKeyboardScenario;
-(["preview-pages-only", "network-minimum-votes-only", "studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
+(["trakt-creation-review", "preview-pages-only", "network-minimum-votes-only", "studio-minimum-votes-only", "discover-preview-only", "list-edit-only", "source-details-only", "source-round-trip-only", "source-sort-variants-only", "native-source-variants-only"].some((key) => new URLSearchParams(window.location.search).has(key)) ? Promise.resolve({}) : runMountedRegressions()).then(
 	(results) => { window.__builderSourceEditMounted = { status: "complete", results }; },
 	(error) => {
 		window.__builderSourceEditMounted = {

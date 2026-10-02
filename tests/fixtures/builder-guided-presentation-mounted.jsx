@@ -1,6 +1,7 @@
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
+import { createReviewClient } from "./builder-trakt-creation-mounted.jsx";
 
 // Inspect computed CSS, including all four border styles: source-token checks alone
 // cannot detect a more-specific family border shorthand overriding exclusion.
@@ -20,7 +21,8 @@ export async function assertSelectionAppearance(node, kind, { wait, forcedColors
 }
 
 // Task-specific assertions in the existing source-edit browser harness. The real
-// workspace constructs its production providers; external data is never replaced.
+// workspace uses live TMDB providers. Trakt alone uses the owner-approved,
+// side-effect-free review client for deterministic mechanics, never live evidence.
 export async function runGuidedPresentationScenario(helpers, { family, forcedColors = false, capture = false, semanticOnly = false, nameRecovery = null, meaning = false, enlargedText = false }) {
 	const { createController, clickAndSettle: click, afterCommittedEffects: settle, setInputValue, setTextareaValue, setSelectValue, waitForMountedCondition: wait, serializedValue } = helpers;
 	const check = (value, message) => { if (!value) throw new Error(`${family}/${innerWidth}: ${message}`); return value; };
@@ -28,10 +30,22 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 	const originalFontSize = document.documentElement.style.fontSize;
 	if (nameRecovery?.enlargedText || enlargedText) document.documentElement.style.fontSize = "24px";
 	const controller = createController(), before = serializedValue(controller), revision = controller.getState().revision;
+	const traktClient = family === "trakt-lists" ? createReviewClient() : null;
+	const originalFetch = window.fetch, traktRequests = [];
+	if (traktClient) window.fetch = (request) => {
+		traktRequests.push(String(request?.url ?? request));
+		throw new Error("Uninjected request in guided Trakt mechanics");
+	};
+	function traktEvidence() {
+		if (!traktClient) return {};
+		check(traktRequests.length === 0, "Trakt mechanics attempted an external request");
+		check(JSON.stringify(traktClient.calls) === JSON.stringify([{ kind: "resolve", input: "101", refresh: false }, { kind: "media", id: 101 }]), "Trakt requires only one resolution and one selected-list media check");
+		return { trakt: { calls: [...traktClient.calls], requests: traktRequests.length, selectedId: 101, media: "MOVIE" } };
+	}
 	const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
 	function Workspace() {
 		const state = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState);
-		return createElement(BuilderWorkspace, { controller, state });
+		return createElement(BuilderWorkspace, { controller, state, ...(traktClient ? { traktClient } : {}) });
 	}
 	const evidence = { family, width: innerWidth, forcedColors, stages: [], filters: [], palettes: [], screenshots: [], noMutation: false, focusRestored: false, keyboard: false };
     async function saveShot(name) {
@@ -135,6 +149,7 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			people: { 1: "Configure", 2: "Appearance" },
 			franchises: { 1: "Appearance" },
 			"tmdb-lists": { 1: "Names", 2: "Appearance" },
+			"trakt-lists": { 1: "Media", 2: "Names", 3: "Appearance" },
 			studios: { 1: "Configure", 2: "Appearance" },
 			networks: { 1: "Configure", 2: "Appearance" },
 			genres: { 1: "Configure", 2: "Structure", 3: "Appearance" },
@@ -232,6 +247,26 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			await wait(() => dialog().querySelector(".tmdb-list-selected") || !primary().disabled, { label: "live public TMDB list resolution", timeoutMs: 30000 });
 			await next(); await stage(2, "Names", "names");
 			if (!nameRecovery) { await next(); await stage(3, "Appearance", "review"); }
+		} else if (family === "trakt-lists") {
+			check(traktClient.calls.length === 0, "Trakt startup is request-free");
+			await stage(1, "Trakt lists", "select");
+			await click(button("URL / ID")); await input("#trakt-input", "101"); await click(button("Resolve lists"));
+			await wait(() => dialog().querySelector(".trakt-selected strong")?.textContent === "Selected · 1" && !primary().disabled, { label: "deterministic Trakt list selected" });
+			check(dialog().querySelector(".trakt-selected").textContent.includes("Movie-only list"), "resolved Trakt identity retained");
+			check(traktClient.calls.length === 1 && traktClient.calls[0].kind === "resolve", "Select only resolves the explicit ID");
+			await next(); await stage(2, "Media", "media");
+			const media = await wait(() => {
+				const card = dialog().querySelector('[data-trakt-media-id="101"]');
+				return card?.querySelector(".trakt-list-identity small")?.textContent === "Trakt List 101 · Checked" && !primary().disabled && card;
+			}, { label: "selected Trakt media known" });
+			check(dialog().querySelectorAll("[data-trakt-media-id]").length === 1, "one selected Trakt list");
+			check(media.querySelector('input[value="automatic"]').checked && media.textContent.includes("Will create: Movies"), "Automatic produces the known movie-only output");
+			await next(); await stage(3, "Names", "names");
+			check(dialog().querySelector('[data-trakt-review-id="101"] .trakt-output-statuses').textContent === "Ready: Movies", "Names retains the physical movie result");
+			if (!nameRecovery) {
+				await input("#trakt-collection-title", "Guided Trakt collection");
+				await next(); await stage(4, "Appearance", "appearance");
+			}
 		} else if (family === "franchises" || family === "people") {
 			const people = family === "people", id = people ? "31" : "645";
 			await input('input[type="search"]', id);
@@ -273,7 +308,8 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				const descriptions = (field.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean).map(id => document.getElementById(id));
 				check(descriptions.length > 0 && descriptions.every(Boolean), `${kind} descriptions resolve`);
 				const message = descriptions.find(node => node.classList.contains("editor-field-error"));
-				check(message && message.textContent === (invalid ? `Enter a ${kind} name.` : ""), `${kind} plain-language field message`);
+				const requiredMessage = family === "trakt-lists" ? `Enter a ${kind} name without spaces at either end.` : `Enter a ${kind} name.`;
+				check(message && message.textContent === (invalid ? requiredMessage : ""), `${kind} plain-language field message`);
 				check(message.getAttribute("role") === "alert" && message.getAttribute("aria-atomic") === "true", `${kind} announced field feedback`);
 				check(document.querySelectorAll(`[id="${message.id}"]`).length === 1, `${kind} unique error association`);
 				if (invalid && !forcedColors) {
@@ -333,8 +369,17 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 				check(created.editable.pinToTop && created.folders[0].editable.tileShape === "SQUARE", "retained presentation applied");
 				return { family, width: innerWidth, enlargedText: Boolean(nameRecovery.enlargedText), structure: null, recoveredNames: expected, focusRetained: true, navigationRetained: true, noOverflow: true };
 			}
+			if (family === "trakt-lists") {
+				// Trakt validates required hierarchy names before leaving Names.
+				await next(); await stage(3, "Names", "names");
+				check(document.activeElement === fields()[0], "Trakt first invalid Collection name focused");
+				assertNameFeedback(fields()[0], "collection", true);
+				assertNameFeedback(dialog().querySelector("#trakt-folder-101"), "folder", false);
+				check(serializedValue(controller) === before && controller.getState().revision === revision, "invalid Trakt Names did not mutate");
+				await input("#trakt-collection-title", "Recovered trakt-lists 1");
+			}
 			let folderInputs = [], folderNames = [];
-			if (["streaming-services", "advanced-discover"].includes(family)) {
+			if (["streaming-services", "advanced-discover", "trakt-lists"].includes(family)) {
 				if (family === "streaming-services") await click(check(dialog().querySelector(".streaming-folder-names summary"), "Folder name disclosure"));
 				folderInputs = [...dialog().querySelectorAll('input[data-required-name]')].filter(node => node.id.includes("folder"));
 				check(folderInputs.length === (family === "streaming-services" ? 2 : 1), "required Folder names");
@@ -412,11 +457,12 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			check(fields().every((node, index) => node.value === expected[index]), "corrected names did not survive Back/return");
 			await next();
 			if (family === "advanced-discover") { await next(); await next(); }
+			if (family === "trakt-lists") { await stage(4, "Appearance", "appearance"); await next(); }
 			await wait(() => !document.querySelector('.add-source-dialog[role="dialog"]'), { label: "recovered hierarchy created" });
 			check(JSON.stringify(controller.getState().project.collections.map(node => node.editable.title)) === JSON.stringify(expected), "created Collections did not use corrected names");
 			check(controller.getState().revision === revision + 1, "creation was not atomic");
 			if (folderNames.length) check(JSON.stringify(controller.getState().project.collections[0].folders.map(node => node.editable.title)) === JSON.stringify(folderNames), "created Folders lost custom names");
-			return { family, width: innerWidth, enlargedText: Boolean(nameRecovery.enlargedText), structure: nameRecovery.structure ?? null, recoveredNames: expected, focusRetained: true, navigationRetained: true, noOverflow: true };
+			return { family, width: innerWidth, enlargedText: Boolean(nameRecovery.enlargedText), structure: nameRecovery.structure ?? null, recoveredNames: expected, focusRetained: true, navigationRetained: true, noOverflow: true, ...traktEvidence() };
 		}
 		if (!semanticOnly) await click(button("Back"));
 		check(dialog().querySelector(".creation-stage-intro"), "Back lost shared heading");
@@ -430,9 +476,10 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 		check(document.activeElement === trigger, "Close did not restore exact launcher trigger");
 		check(serializedValue(controller) === before && controller.getState().revision === revision, "presentation changed project");
 		evidence.noMutation = true; evidence.focusRestored = true;
-		return evidence;
+		return { ...evidence, ...traktEvidence() };
 	} finally {
 		await act(async () => { root.unmount(); await settle(); }); host.remove();
 		document.documentElement.style.fontSize = originalFontSize;
+		if (traktClient) window.fetch = originalFetch;
 	}
 }

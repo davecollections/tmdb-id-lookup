@@ -56,6 +56,7 @@ const expectedModes = Object.freeze([
 	["tmdb-streaming-services", "Streaming", "streaming-services", "Add a streaming service."],
 	["tmdb-studios", "Studios", "studios", "Add movies or series from a studio."],
 	["tmdb-lists", "TMDB lists", "lists", "Add one or more public TMDB lists."],
+	["trakt-lists", "Trakt Lists", "lists", "Add public Trakt lists as Movies or Series."],
 	["advanced-discover", "Discover", "genres", "Find titles with keywords and filters."],
 ]);
 
@@ -69,22 +70,23 @@ const expectedCreationOptions = Object.freeze([
 	["streaming-services", "Streaming", "streaming-services", "Build from streaming services."],
 	["studios", "Studios", "studios", "Build from movie or TV studios."],
 	["tmdb-lists", "TMDB Lists", "lists", "Build from public TMDB lists."],
+	["trakt-lists", "Trakt Lists", "lists", "Build from public Trakt lists."],
 	["advanced-discover", "Discover", "genres", "Build from keywords and filters."],
 ]);
 
-test("Add Source registry exposes nine ordered TMDB families with approved compact card metadata", () => {
+test("Add Source registry exposes ten ordered native families with approved compact card metadata", () => {
 	assert.deepEqual(AVAILABLE_SOURCE_MODES.map((mode) => [mode.id, mode.label, mode.icon, mode.description]), expectedModes);
-	assert.equal(AVAILABLE_SOURCE_MODES.length, 9);
-	assert.equal(AVAILABLE_SOURCE_MODES.every((mode) => mode.providerLabel === "TMDB" && mode.category === "native-tmdb"), true);
-	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 9);
+	assert.equal(AVAILABLE_SOURCE_MODES.length, 10);
+	assert.equal(AVAILABLE_SOURCE_MODES.every((mode) => mode.id === "trakt-lists" ? mode.providerLabel === "Trakt" && mode.category === "native-trakt" : mode.providerLabel === "TMDB" && mode.category === "native-tmdb"), true);
+	assert.equal(new Set(AVAILABLE_SOURCE_MODES.map((mode) => mode.id)).size, 10);
 });
 
 test("Add Source renders immediate-action launcher cards with unchanged helpers and no blanket provider disclosure", () => {
 	const markup = renderSourceChooser();
 	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), expectedModes.map(([id]) => id));
-	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 9);
-	assert.equal((markup.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, 9);
-	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 9);
+	assert.equal((markup.match(/<button class="source-mode-option" type="button"/g) ?? []).length, 10);
+	assert.equal((markup.match(/class="creation-option-icon-shell" aria-hidden="true"/g) ?? []).length, 10);
+	assert.equal((markup.match(/class="creation-option-icon" viewBox="0 0 24 24" focusable="false"/g) ?? []).length, 10);
 	assert.match(markup, /<ul class="add-source-scroll source-mode-list" aria-label="Source families">/);
 	assert.match(markup, /Choose what you want to add\./);
 	assert.doesNotMatch(markup, /All available source families use (?:<strong>)?TMDB/);
@@ -113,6 +115,7 @@ test("every Add Source card retains its exact existing destination flow", () => 
 	assert.deepEqual([...whitelist.matchAll(/([A-Z_]+SOURCE_MODE_ID)/g)].map((match) => match[1]), [
 		"MOVIE_FRANCHISE_SOURCE_MODE_ID",
 		"TMDB_LIST_SOURCE_MODE_ID",
+		"TRAKT_LIST_SOURCE_MODE_ID",
 		"PEOPLE_SOURCE_MODE_ID",
 		"STUDIO_SOURCE_MODE_ID",
 		"NETWORK_SOURCE_MODE_ID",
@@ -122,6 +125,7 @@ test("every Add Source card retains its exact existing destination flow", () => 
 	]);
 	for (const [mode, flow] of [
 		["TMDB_LIST_SOURCE_MODE_ID", "TmdbListSourceFlow"],
+		["TRAKT_LIST_SOURCE_MODE_ID", "TraktSourceFlow"],
 		["PEOPLE_SOURCE_MODE_ID", "PeopleSourceFlow"],
 		["STUDIO_SOURCE_MODE_ID", "StudioSourceFlow"],
 		["NETWORK_SOURCE_MODE_ID", "NetworkSourceFlow"],

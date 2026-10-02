@@ -131,6 +131,8 @@ export {
 	DECADE_SOURCE_MODE_ID,
 	TMDB_LIST_SOURCE_MODE,
 	TMDB_LIST_SOURCE_MODE_ID,
+	TRAKT_LIST_SOURCE_MODE,
+	TRAKT_LIST_SOURCE_MODE_ID,
 } from "./source-modes.js";
 export {
 	isCanonicalTmdbListId,

@@ -97,7 +97,7 @@ export function createTraktSelectionSession({ client, now = Date.now, onChange =
 	}
 	async function checkMediaBatch() {
 		if (batch || notBefore > now()) return snapshot();
-		const ids = selectedOrderedEntities(selection).filter(row => ["not-checked", "failed"].includes(row.media.status)).slice(0, TRAKT_MEDIA_BATCH_SIZE).map(row => row.id);
+		const ids = selectedOrderedEntities(selection).filter(row => ["not-checked", "failed"].includes(row.media.status) && !effectiveTraktMedia(row.media).length).slice(0, TRAKT_MEDIA_BATCH_SIZE).map(row => row.id);
 		const run = { canceled: false, stopped: false }; batch = run; publish();
 		let next = 0;
 		async function worker() {

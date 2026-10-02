@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import { EventEmitter } from "node:events";
+import { fileURLToPath } from "node:url";
+import { createElement } from "../builder/node_modules/react/index.js";
+import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
+import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
+import builderViteConfig from "../builder/vite.config.js";
+import { createBuilderController } from "../builder/src/application/index.js";
 import { TRAKT_API_ORIGIN, TRAKT_LOCAL_PROXY_PREFIX, traktApiBase } from "../builder/src/config/trakt-api.js";
 import { createTraktClient, normalizeTraktResponse, traktDiscoveryRequest, traktRetryNotBefore, traktFailure } from "../builder/src/source-add/trakt-client.js";
 import { createTraktPreviewMiddleware, localTraktPreviewPlugin } from "../builder/trakt-preview-proxy.js";
@@ -131,4 +137,126 @@ test("fixed opt-in local proxy strips credentials/Origin and rejects arbitrary r
 test("Phase A runtime client has no direct upstream credential or sample integration", () => {
 	const source = fs.readFileSync(new URL("../builder/src/source-add/trakt-client.js", import.meta.url), "utf8");
 	for (const forbidden of ["api.trakt.tv", "TRAKT_CLIENT_ID", "/items", "localStorage", "indexedDB"]) assert.equal(source.includes(forbidden), false);
+});
+
+// Executable wiring checks, using the existing Vite SSR/React test approach.
+// Only the factory export is observed; its real implementation and returned
+// client remain intact. Both browser and middleware fetches are intercepted.
+function observeTraktConstruction() {
+ return {
+  name: "test-observe-trakt-construction",
+  transform(source, id) {
+   if (!id.replaceAll("\\", "/").endsWith("/src/source-add/trakt-client.js")) return;
+   const factory = "export function createTraktClient(";
+   assert.ok(source.includes(factory));
+   return source.replace(factory, "function observedCreateTraktClient(") + `
+export const constructedClients = [];
+export function createTraktClient(options) {
+ const entry = { options };
+ constructedClients.push(entry);
+ entry.client = observedCreateTraktClient(options);
+ return entry.client;
+}
+`;
+  },
+ };
+}
+
+function liveReviewConfig(flag, { command = "serve", isPreview = false } = {}) {
+ const previous = process.env.TRAKT_LIVE_REVIEW;
+ try {
+  if (flag === undefined) delete process.env.TRAKT_LIVE_REVIEW;
+  else process.env.TRAKT_LIVE_REVIEW = flag;
+  return builderViteConfig({ command, isPreview, mode: command === "build" ? "production" : "development" });
+ } finally {
+  if (previous === undefined) delete process.env.TRAKT_LIVE_REVIEW;
+  else process.env.TRAKT_LIVE_REVIEW = previous;
+ }
+}
+
+for (const scenario of [
+ { name: "ordinary local default", host: "localhost", enabled: false },
+ { name: "explicit zero remains off", flag: "0", host: "localhost", enabled: false },
+ { name: "only exact flag 1 opts in", flag: "true", host: "localhost", enabled: false },
+ { name: "opt-in localhost", flag: "1", host: "localhost", enabled: true },
+ { name: "opt-in private LAN", flag: "1", host: "192.168.1.6", enabled: true },
+ { name: "public hostname fails closed", flag: "1", host: "dingo.build", enabled: true, rejects: true },
+ { name: "public IPv4 fails closed", flag: "1", host: "8.8.8.8", enabled: true, rejects: true },
+ { name: "production build ignores inherited opt-in", flag: "1", command: "build", host: "dingo.build", enabled: false },
+ { name: "built-asset preview ignores inherited opt-in", flag: "1", isPreview: true, host: "localhost", enabled: false },
+]) test("real Builder Trakt wiring: " + scenario.name, async t => {
+ const config = liveReviewConfig(scenario.flag, scenario);
+ assert.equal(config.define.__TRAKT_LIVE_REVIEW__, JSON.stringify(scenario.enabled));
+ const upstream = [], browser = [], installed = [];
+ t.mock.method(globalThis, "fetch", async (url, init) => {
+  upstream.push({ url, init });
+  assert.equal(url, TRAKT_API_ORIGIN + "/v1/trakt/search?mode=keyword&q=wiring&page=1&limit=30");
+  assert.deepEqual(init.headers, { Accept: "application/json" });
+  assert.equal(init.credentials, "omit");
+  assert.equal(init.redirect, "error");
+  return json(discovery([]));
+ });
+ const plugin = config.plugins.find(plugin => plugin.name === "local-trakt-live-review");
+ // Exercise both actual installation hooks with an intercepted upstream fetch.
+ for (const hook of ["configureServer", "configurePreviewServer"]) {
+  const handlers = [];
+  plugin[hook]({ middlewares: { use: handler => handlers.push(handler) } });
+  assert.equal(handlers.length, Number(scenario.enabled), hook);
+  if (hook === "configureServer") installed.push(...handlers);
+ }
+ t.mock.method(globalThis, "fetch", async (url, init) => {
+  browser.push({ url, init });
+  if (!scenario.enabled) return json(discovery([]));
+  assert.equal(installed.length, 1);
+  const request = Object.assign(new EventEmitter(), { url, method: init.method,
+   headers: { host: scenario.host + ":4173", origin: "http://" + scenario.host + ":4173" } });
+  const response = Object.assign(new EventEmitter(), { headers: {},
+   setHeader(key, value) { this.headers[key] = value; }, end(body) { this.body = body; } });
+  await installed[0](request, response, () => assert.fail("Expected fixed Trakt route"));
+  return new Response(response.body, { status: response.statusCode, headers: response.headers });
+ });
+ const globals = ["location", "__TRAKT_LIVE_REVIEW__"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+ Object.defineProperty(globalThis, "location", { configurable: true, value: { hostname: scenario.host } });
+ // Runtime global mutation must not override the compiled boolean, either way.
+ Object.defineProperty(globalThis, "__TRAKT_LIVE_REVIEW__", { configurable: true, value: !scenario.enabled });
+ let vite;
+ try {
+  vite = await createServer({ ...config, root: fileURLToPath(new URL("../builder", import.meta.url)),
+   configFile: false, appType: "custom", logLevel: "silent",
+   plugins: [...config.plugins, observeTraktConstruction()],
+   server: { middlewareMode: true, watch: null, ws: false },
+   optimizeDeps: { noDiscovery: true, include: [] },
+  });
+  const { BuilderApp } = await vite.ssrLoadModule("/src/ui/BuilderApp.jsx");
+  const { BuilderWorkspace } = await vite.ssrLoadModule("/src/ui/BuilderWorkspace.jsx");
+  const { constructedClients } = await vite.ssrLoadModule("/src/source-add/trakt-client.js");
+  const controller = createBuilderController();
+  const render = () => renderToStaticMarkup(createElement(BuilderApp, { controller, initialScreen: "workspace" }));
+  if (scenario.rejects) assert.throws(render, /Trakt live preview requires a local host/);
+  else assert.match(render(), /data-builder-shell/);
+  assert.equal(constructedClients.length, 1, "actual Builder constructs one client for the workspace");
+  assert.equal(constructedClients[0].options.localPreview, scenario.enabled);
+  assert.equal(browser.length, 0, "Builder construction/render is inert");
+  assert.equal(upstream.length, 0);
+  if (!scenario.rejects) {
+   const result = await constructedClients[0].client.searchKeyword("wiring");
+   assert.equal(result.ok, true);
+   assert.equal(browser.length, 1);
+   assert.equal(browser[0].url, (scenario.enabled ? TRAKT_LOCAL_PROXY_PREFIX : TRAKT_API_ORIGIN)
+    + "/v1/trakt/search?mode=keyword&q=wiring&page=1&limit=30");
+   assert.equal(upstream.length, Number(scenario.enabled));
+  }
+  const requestCount = browser.length;
+  assert.match(renderToStaticMarkup(createElement(BuilderWorkspace, {
+   controller, state: controller.getState(), traktClient: Object.freeze({}),
+  })), /data-builder-shell/);
+  assert.equal(constructedClients.length, 1, "injected fixture client bypasses default construction, including host guard");
+  assert.equal(browser.length, requestCount, "injected render remains inert");
+ } finally {
+  await vite?.close();
+  for (const [key, descriptor] of globals) {
+   if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+   else delete globalThis[key];
+  }
+ }
 });

@@ -125,15 +125,20 @@ function localTmdbPreviewProxy() {
 }
 
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, isPreview }) => {
+	// Only the dev server can pair this middleware with an opted-in client.
+	// Builds and previews of built assets always retain production transport.
+	const traktLiveReviewEnabled = command === "serve" && !isPreview
+		&& process.env.TRAKT_LIVE_REVIEW === "1";
 	const studioMockCountsEnabled = command === "serve"
 		&& process.env.TMDB_STUDIO_MOCK_COUNTS === "1";
 	const networkMockCountsEnabled = command === "serve"
 		&& process.env.TMDB_NETWORK_MOCK_COUNTS === "1";
 	return {
 		base: "./",
-		plugins: [react(), localCachedEntityCatalogues(), localEntityCountMock(studioMockCountsEnabled, networkMockCountsEnabled), localTraktPreviewPlugin(process.env.TRAKT_LIVE_REVIEW === "1")],
+		plugins: [react(), localCachedEntityCatalogues(), localEntityCountMock(studioMockCountsEnabled, networkMockCountsEnabled), localTraktPreviewPlugin(traktLiveReviewEnabled)],
 		define: {
+			__TRAKT_LIVE_REVIEW__: JSON.stringify(traktLiveReviewEnabled),
 			__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl),
 			__TMDB_STUDIO_MOCK_COUNTS__: JSON.stringify(studioMockCountsEnabled),
 			__TMDB_NETWORK_MOCK_COUNTS__: JSON.stringify(networkMockCountsEnabled),

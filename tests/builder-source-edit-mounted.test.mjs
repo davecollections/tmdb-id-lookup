@@ -7,10 +7,8 @@ import os from "node:os";
 import path from "node:path";
 import test, { before } from "node:test";
 import { fileURLToPath } from "node:url";
-import { mountedReactOptimizeDeps } from "./helpers/mounted-react-vite.mjs";
+import { createSourceEditMountedServer } from "./helpers/source-edit-mounted-server.mjs";
 
-import react from "../builder/node_modules/@vitejs/plugin-react/dist/index.js";
-import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import {
 	cleanupMountedBrowser,
@@ -23,7 +21,6 @@ import {
 } from "./helpers/mounted-browser-lifecycle.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const builderModules = path.join(rootDir, "builder", "node_modules");
 const tmdbProxyBaseUrl = extractTmdbProxyBaseUrl(fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8"));
 
 function chromeExecutable() {
@@ -63,13 +60,13 @@ async function waitForJson(url, timeoutMs = 10000) {
 	throw new Error(`Chrome DevTools did not become available: ${lastError?.message ?? "timeout"}`);
 }
 
-async function runTraktFoundationMatrix(connection, views) {
+async function runTraktFoundationMatrix(connection, views, entrypoint = "__runTraktFoundationScenario") {
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 	const cases = [];
 	for (const view of views) {
 		await connection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
-		await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }, { name: "prefers-reduced-motion", value: "reduce" }] });
-		const checked = await connection.command("Runtime.evaluate", { expression: `window.__runTraktFoundationScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+		await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }, { name: "prefers-reduced-motion", value: view.reducedMotion === false ? "no-preference" : "reduce" }] });
+		const checked = await connection.command("Runtime.evaluate", { expression: `window.${entrypoint}(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
 		if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
 		cases.push(checked.result.value);
 	}
@@ -79,6 +76,7 @@ async function runTraktFoundationMatrix(connection, views) {
 
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
+	const traktCreationOnly = process.env.TRAKT_CREATION_ONLY === "1";
 	const traktFoundationOnly = process.env.TRAKT_SOURCE_FOUNDATION_ONLY === "1";
 	const sourceNamesOnly = process.env.TMDB_SOURCE_NAMES_ONLY === "1";
 	const editorOrderOnly = process.env.TMDB_EDITOR_ORDER_ONLY === "1";
@@ -127,39 +125,7 @@ async function runMountedPage() {
 	const startedAt = Date.now();
 	const execution = await runWithLifecycleCleanup(async () => {
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-vite-"));
-		resources.vite = await createServer({
-			root: rootDir,
-			cacheDir: resources.viteCacheDir,
-			configFile: false,
-			appType: "spa",
-			logLevel: "silent",
-			plugins: [react(), {
-				name: "mounted-production-catalogue-paths",
-				configureServer(server) {
-					// The fixture base points at Builder's public assets; entity catalogues
-					// remain the same generated TMDB files served beside Builder in production.
-					server.middlewares.use((request, _response, next) => {
-						if (["/builder/data/companies.min.json", "/builder/data/tv-networks.min.json"].includes(request.url)) request.url = request.url.replace("/builder/data/", "/data/");
-						next();
-					});
-				},
-			}],
-			optimizeDeps: mountedReactOptimizeDeps(["tests/fixtures/builder-source-edit-mounted.html"]),
-			define: {
-				__TMDB_PROXY_BASE_URL__: JSON.stringify(tmdbProxyBaseUrl),
-				__TMDB_STUDIO_MOCK_COUNTS__: "false",
-				__TMDB_NETWORK_MOCK_COUNTS__: "false",
-			},
-			resolve: {
-				alias: [
-					{ find: /^react$/, replacement: path.join(builderModules, "react", "index.js") },
-					{ find: /^react\/jsx-runtime$/, replacement: path.join(builderModules, "react", "jsx-runtime.js") },
-					{ find: /^react-dom$/, replacement: path.join(builderModules, "react-dom", "index.js") },
-					{ find: /^react-dom\/client$/, replacement: path.join(builderModules, "react-dom", "client.js") },
-				],
-			},
-			server: { host: "127.0.0.1", port: 0 },
-		});
+		resources.vite = await createSourceEditMountedServer({ cacheDir: resources.viteCacheDir });
 		await resources.vite.listen();
 
 		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-mounted-"));
@@ -232,7 +198,7 @@ async function runMountedPage() {
 			if (message.method !== "Runtime.bindingCalled" || message.params.name !== "pressGuidedPresentationKey") return;
 			const key = JSON.parse(message.params.payload).key;
 			const code = key === " " ? "Space" : key;
-			const virtualKey = key === " " ? 32 : key === "Escape" ? 27 : key === "Enter" ? 13 : 9;
+			const virtualKey = key === " " ? 32 : key === "Escape" ? 27 : key === "Enter" ? 13 : key === "ArrowRight" ? 39 : key === "ArrowLeft" ? 37 : 9;
 			resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: virtualKey, ...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}) })
 				.then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: virtualKey }))
 				.then(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish230Key()" }));
@@ -268,7 +234,18 @@ async function runMountedPage() {
   });
   await resources.pageConnection.command("Runtime.addBinding", { name: "sourceNamesSpace" });
 		const address = resources.vite.httpServer.address();
-		if (traktFoundationOnly) {
+		if (traktFoundationOnly || traktCreationOnly) {
+			const externalRequests = [];
+			if (traktCreationOnly) {
+				await resources.pageConnection.command("Fetch.enable", { patterns: [{ urlPattern: "*" }] });
+				resources.pageConnection.onEvent(message => {
+					if (message.method !== "Fetch.requestPaused") return;
+					const { request, requestId } = message.params;
+					const url = new URL(request.url);
+					if (["127.0.0.1", "localhost"].includes(url.hostname)) void resources.pageConnection.command("Fetch.continueRequest", { requestId });
+					else { externalRequests.push(request.url); void resources.pageConnection.command("Fetch.failRequest", { requestId, errorReason: "BlockedByClient" }); }
+				});
+			}
 			await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 			await resources.pageConnection.command("Page.navigate", { url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html?source-details-only` });
 			const deadline = Date.now() + 30000;
@@ -277,6 +254,12 @@ async function runMountedPage() {
 				if (state.result.value === "complete") break;
 				await new Promise((resolve) => setTimeout(resolve, 50));
 			}
+			if (traktCreationOnly) {
+    const views = [{ width: 360, height: 800 }, { width: 384, height: 800 }, { width: 393, height: 852 }, { width: 402, height: 800 }, { width: 412, height: 800 }, { width: 1280, height: 900 }, { width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true }, { width: 393, height: 852, largeText: true }];
+    const traktCreationCases = await runTraktFoundationMatrix(resources.pageConnection, process.env.TRAKT_PRESENTATION_ONLY === "1" ? views.filter(view => [393, 412, 1280].includes(view.width)).map(view => view.width === 1280 ? { ...view, reducedMotion: false } : view) : views, "__runTraktCreationScenario");
+    assert.deepEqual(externalRequests, [], "No uninjected external requests, including captured fetch and image paths");
+    return { traktCreationCases };
+   }
 			const cases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 360, height: 800 }, { width: 384, height: 800 }, { width: 393, height: 852 }, { width: 402, height: 800 }, { width: 412, height: 800 }, { width: 1280, height: 900 }, { width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true }]);
 			return { traktFoundationCases: cases };
 		}
@@ -318,6 +301,7 @@ async function runMountedPage() {
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
 				if (!new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+					result.results.traktCreationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktCreationScenario");
 					result.results.traktFoundationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }]);
 				}
 
@@ -402,7 +386,7 @@ async function runMountedPage() {
 				if (requiredNamesOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
 					await resources.pageConnection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 					const structures = ["genre-folders", "media-folders", "separate-media-genre-folders", "separate-media-collections"];
-					const families = ["people", "franchises", "studios", "streaming-services", "networks", "decades", "tmdb-lists", "advanced-discover"];
+					const families = ["people", "franchises", "studios", "streaming-services", "networks", "decades", "tmdb-lists", "trakt-lists", "advanced-discover"];
 					const views = [
 						...[393, 1280].flatMap(width => [
 							...structures.map(structure => ({ width, family: "genres", nameRecovery: { structure } })),
@@ -1029,6 +1013,8 @@ async function runMountedPage() {
 					if (shortSourceChooserEvaluation.exceptionDetails) throw new Error(shortSourceChooserEvaluation.exceptionDetails.exception?.description ?? shortSourceChooserEvaluation.exceptionDetails.text);
 					shortHeightSourceChooser = shortSourceChooserEvaluation.result?.value;
 					return {
+						blankCreation: result.results.blankCreation,
+						decadesNavigation: result.results.decadesNavigation,
 						sourceChooserWidths,
 						sourceChooserTabletPortraitWidths,
 						sourceChooserTabletLandscape,
@@ -1414,7 +1400,7 @@ test("mounted guided presentation retains semantic choices and responsive stage 
 	assert.equal(mountedResults.launchers.length, 2);
     for (const entry of mountedResults.launchers) {
         assert.ok(entry.noMutation && entry.noHorizontalOverflow && entry.comfortableTargets && entry.backRestoredFocus && entry.finalCardReachable);
-        assert.deepEqual(entry.modeIds, ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
+        assert.deepEqual(entry.modeIds, ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "trakt-lists", "advanced-discover"]);
     }
     assert.equal(mountedResults.discoverChoices.length, 2);
 	for (const result of mountedResults.discoverChoices) assert.ok(result.scalarSortCyan && result.watchRegionCyan && result.liveProviderReady && result.noMutation);
@@ -1455,7 +1441,10 @@ test("mounted local Preview paging covers the requested widths and deliberate sc
 	console.log("PREVIEW_PAGES_LOCAL " + JSON.stringify(mountedResults.previewPages));
 });
 test("mounted required Collection names remain recoverable after clearing", () => {
-	assert.equal(mountedResults.requiredNameCases.length, 36);
+	assert.equal(mountedResults.requiredNameCases.length, 39);
+	const traktCases = mountedResults.requiredNameCases.filter(result => result.family === "trakt-lists");
+	assert.deepEqual(traktCases.map(({ width, enlargedText }) => ({ width, enlargedText })), [{ width: 393, enlargedText: false }, { width: 1280, enlargedText: false }, { width: 393, enlargedText: true }]);
+	for (const result of traktCases) assert.deepEqual(result.trakt, { calls: [{ kind: "resolve", input: "101", refresh: false }, { kind: "media", id: 101 }], requests: 0, selectedId: 101, media: "MOVIE" });
 	for (const result of mountedResults.requiredNameCases) assert.ok(result.focusRetained && result.navigationRetained && result.noOverflow, JSON.stringify(result));
 	console.log("REQUIRED_NAME_RECOVERY " + JSON.stringify(mountedResults.requiredNameCases));
 });
@@ -1529,6 +1518,8 @@ test("mounted imported List sorting preserves the complete export through Save a
 			assert.equal(entry.cancels, entry.action === "cancel" ? 1 : 0, label);
 		}
 	}
+	const previews = mountedResults.listImportedSortWidths.flatMap((result) => result.cases.flatMap((entry) => entry.previews));
+	console.log("LIST_SORT_LIVE " + JSON.stringify({ requests: mountedResults.listImportedSortWidths.flatMap((entry) => entry.requests), orderingStates: Object.fromEntries(["sorted", "missing-data", "original", "unsupported"].map((state) => [state, previews.filter((preview) => preview.orderingState === state).length])) }));
 });
 
 test("mounted Discover Preview follows current creation/edit drafts after switching and reopening", () => {
@@ -1941,9 +1932,9 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.ok(variant.cardWidth <= stress.growth[0].cardWidth, `${label} scrollbar card width`);
 		assert.ok(variant.helperWidth <= stress.growth[0].helperWidth, `${label} scrollbar helper width`);
 	}
-	const expectedModes = ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"];
-	const expectedCreationIds = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
-	const expectedCreationLabels = ["Blank", "Decades", "Franchises", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB Lists", "Discover"];
+	const expectedModes = ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "trakt-lists", "advanced-discover"];
+	const expectedCreationIds = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "trakt-lists", "advanced-discover"];
+	const expectedCreationLabels = ["Blank", "Decades", "Franchises", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB Lists", "Trakt Lists", "Discover"];
 	const expectedCreationHelpers = [
 		"Start manually.",
 		"Build by decade or year.",
@@ -1954,6 +1945,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		"Build from streaming services.",
 		"Build from movie or TV studios.",
 		"Build from public TMDB lists.",
+		"Build from public Trakt lists.",
 		"Build from keywords and filters.",
 	];	assert.deepEqual(mountedResults.sourceChooserWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.sourceChooserWidths) {
@@ -1961,7 +1953,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		const expectedPresentation = width <= 620 ? "phone-fullscreen" : "contained";
 		assertLauncherModal(result.modal, expectedPresentation, `${width}px Add Source`);
 		assert.deepEqual(result.modeIds, expectedModes, `${width}px registry order`);
-		assert.equal(result.cardCount, 9, `${width}px card count`);
+		assert.equal(result.cardCount, 10, `${width}px card count`);
 		assert.equal(result.columnCount, width <= 620 ? 2 : 4, `${width}px responsive columns`);
 		assert.ok(Math.abs(result.cardGeometry.at(-1).card.width - result.cardGeometry[0].card.width) <= 1, `${width}px partial final row retains normal card width`);
 		assert.equal(result.firstOptionFocused, true, `${width}px first-option focus`);
@@ -1994,13 +1986,13 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.bodyRestored, true, `${width}px body restoration`);
 		assert.equal(result.noMutation, true, `${width}px chooser navigation mutation`);
 		if (width <= 412) {
-			assertGrowthStress(result.stress, 9, `${width}px Add Source`);
+			assertGrowthStress(result.stress, 10, `${width}px Add Source`);
 			assert.equal(result.stress.growth[0].grid.scrollActive, false, `${width}px Add Source growth scroll behavior`);
 			if (width === 360) {
-				assertOrderStress(result.stress, 9, "360px Add Source");
-				assertClassicScrollbarStress(result.stress, 9, "360px Add Source");
+				assertOrderStress(result.stress, 10, "360px Add Source");
+				assertClassicScrollbarStress(result.stress, 10, "360px Add Source");
 			}
-		} else if (width === 1280) assertIntrinsicStress(result.stress, 9, 4, "1280px Add Source");
+		} else if (width === 1280) assertIntrinsicStress(result.stress, 10, 4, "1280px Add Source");
 		else assert.deepEqual(result.stress, { growth: [], order: [], classicScrollbar: null }, `${width}px no launcher stress fixture`);
 		assert.deepEqual(result.creationChoosers.map((chooser) => chooser.scope), ["new-collection", "new-folder"], `${width}px Creation scopes`);
 		for (const chooser of result.creationChoosers) {
@@ -2008,15 +2000,16 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.deepEqual(chooser.optionIds, expectedCreationIds, `${width}px ${chooser.scope} option order`);
 			assert.deepEqual(chooser.labels, expectedCreationLabels, `${width}px ${chooser.scope} labels`);
 			assert.deepEqual(chooser.helpers, expectedCreationHelpers, `${width}px ${chooser.scope} helpers`);
-			assert.equal(chooser.cardCount, 10, `${width}px ${chooser.scope} card count`);
+			assert.equal(chooser.cardCount, 11, `${width}px ${chooser.scope} card count`);
 			assert.equal(chooser.columnCount, width <= 620 ? 2 : 4, `${width}px ${chooser.scope} responsive columns`);
-			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 2] : [4, 4, 2], `${width}px ${chooser.scope} balanced rows`);
+			assert.deepEqual(chooser.rowCounts, width <= 620 ? [2, 2, 2, 2, 2, 1] : [4, 4, 3], `${width}px ${chooser.scope} balanced rows`);
 			const geometryEvidence = chooser.cardGeometry.map((card) => (
 				`${card.label}: cardTop=${card.card.top}px card=${card.card.width}x${card.card.height}px display=${card.display} grid=${card.gridTemplateColumns} gap=${card.gap} padding=${card.padding.top}/${card.padding.right}/${card.padding.bottom}/${card.padding.left} iconWidth=${card.iconWidth}px copyWidth=${card.copyWidth}px copyGrid=${card.copyGridTemplateColumns} titleWidth=${card.title.clientWidth}px titleLines=${card.title.lines} titleFont=${card.title.fontFamily}/${card.title.fontSize}/${card.title.fontWeight}/${card.title.lineHeight} helperWidth=${card.helper.clientWidth}px helperLines=${card.helper.lines} helperFont=${card.helper.fontFamily}/${card.helper.fontSize}/${card.helper.fontWeight}/${card.helper.lineHeight}`
 			)).join(" | ");
 			if (width <= 620) assert.ok(chooser.rowHeightSpread <= 14, `${width}px ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}; launcherGrid=${chooser.grid.width}px/${chooser.grid.gridTemplateColumns}/gap ${chooser.grid.gap}; ${geometryEvidence}`);
 			else assertContentSafety(chooser, `${width}px ${chooser.scope}`);
-			assert.equal(chooser.firstOptionFocused, true, `${width}px ${chooser.scope} first-option focus`);
+			assert.equal(chooser.headingFocused, true, `${width}px ${chooser.scope} heading focus`);
+			assert.equal(chooser.blankFocused, false, `${width}px ${chooser.scope} Blank is not auto-focused`);
 			assert.equal(chooser.iconShellsCorrect, true, `${width}px ${chooser.scope} icon shells`);
 			assert.equal(chooser.comfortableTargets, true, `${width}px ${chooser.scope} tap targets`);
 			assert.equal(chooser.cardsContained, true, `${width}px ${chooser.scope} card containment`);
@@ -2027,13 +2020,13 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.finalCardReachable, true, `${width}px ${chooser.scope} final card reachability`);
 			assert.equal(chooser.bodyRestored, true, `${width}px ${chooser.scope} body restoration`);
 			if (width <= 412) {
-				assertGrowthStress(chooser.stress, 10, `${width}px ${chooser.scope}`);
+				assertGrowthStress(chooser.stress, 11, `${width}px ${chooser.scope}`);
 				assert.equal(chooser.stress.growth[0].grid.scrollActive, false, `${width}px ${chooser.scope} current options fit before growth`);
 				if (width === 360) {
-					assertOrderStress(chooser.stress, 10, `360px ${chooser.scope}`);
-					assertClassicScrollbarStress(chooser.stress, 10, `360px ${chooser.scope}`);
+					assertOrderStress(chooser.stress, 11, `360px ${chooser.scope}`);
+					assertClassicScrollbarStress(chooser.stress, 11, `360px ${chooser.scope}`);
 				}
-			} else if (width === 1280) assertIntrinsicStress(chooser.stress, 10, 4, `1280px ${chooser.scope}`);
+			} else if (width === 1280) assertIntrinsicStress(chooser.stress, 11, 4, `1280px ${chooser.scope}`);
 			else assert.deepEqual(chooser.stress, { growth: [], order: [], classicScrollbar: null }, `${width}px ${chooser.scope} no launcher stress fixture`);
 		}
 	}
@@ -2058,7 +2051,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 		assert.equal(result.bodyLocked, true, `${size} Add Source body lock`);
 		assert.equal(result.finalCardReachable, true, `${size} Add Source final card reachability`);
 		assert.equal(result.closeRestoredTrigger, true, `${size} Add Source focus restoration`);
-		if (result.width === 768 || result.width === 1024) assertIntrinsicStress(result.stress, 9, expectedColumns, `${size} Add Source`);
+		if (result.width === 768 || result.width === 1024) assertIntrinsicStress(result.stress, 10, expectedColumns, `${size} Add Source`);
 		else assert.deepEqual(result.stress, { growth: [], order: [], classicScrollbar: null }, `${size} Add Source no stress fixture`);
 		for (const chooser of result.creationChoosers) {
 			assertLauncherModal(chooser.modal, "contained", `${size} ${chooser.scope}`);
@@ -2068,7 +2061,7 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 			assert.equal(chooser.noHorizontalOverflow, true, `${size} ${chooser.scope} horizontal overflow`);
 			assert.equal(chooser.finalCardReachable, true, `${size} ${chooser.scope} final card reachability`);
 			assert.equal(chooser.bodyRestored, true, `${size} ${chooser.scope} body restoration`);
-			if (result.width === 768 || result.width === 1024) assertIntrinsicStress(chooser.stress, 10, expectedColumns, `${size} ${chooser.scope}`);
+			if (result.width === 768 || result.width === 1024) assertIntrinsicStress(chooser.stress, 11, expectedColumns, `${size} ${chooser.scope}`);
 			else assert.deepEqual(chooser.stress, { growth: [], order: [], classicScrollbar: null }, `${size} ${chooser.scope} no stress fixture`);
 		}
 	}
@@ -2077,16 +2070,16 @@ test("mounted Add Source chooser uses the responsive Creation launcher language 
 	assertLauncherModal(wideFont.modal, "phone-fullscreen", "360px wide-font Add Source");
 	assert.equal(wideFont.iconShellsMatchCreation, true, "360px wide-font Add Source icon shells");
 	assert.ok(wideFont.rowHeightSpread <= 14, `360px wide-font Add Source balanced row heights: ${wideFont.rowHeightSpread}`);
-	assertGrowthStress(wideFont.stress, 9, "360px wide-font Add Source");
-	assertOrderStress(wideFont.stress, 9, "360px wide-font Add Source");
-	assertClassicScrollbarStress(wideFont.stress, 9, "360px wide-font Add Source");
+	assertGrowthStress(wideFont.stress, 10, "360px wide-font Add Source");
+	assertOrderStress(wideFont.stress, 10, "360px wide-font Add Source");
+	assertClassicScrollbarStress(wideFont.stress, 10, "360px wide-font Add Source");
 	for (const chooser of wideFont.creationChoosers) {
 		assertLauncherModal(chooser.modal, "phone-fullscreen", `360px wide-font ${chooser.scope}`);
 		assert.equal(chooser.iconShellsCorrect, true, `360px wide-font ${chooser.scope} icon shells`);
 		assert.ok(chooser.rowHeightSpread <= 14, `360px wide-font ${chooser.scope} balanced row heights: ${chooser.rowHeightSpread}`);
-		assertGrowthStress(chooser.stress, 10, `360px wide-font ${chooser.scope}`);
-		assertOrderStress(chooser.stress, 10, `360px wide-font ${chooser.scope}`);
-		assertClassicScrollbarStress(chooser.stress, 10, `360px wide-font ${chooser.scope}`);
+		assertGrowthStress(chooser.stress, 11, `360px wide-font ${chooser.scope}`);
+		assertOrderStress(chooser.stress, 11, `360px wide-font ${chooser.scope}`);
+		assertClassicScrollbarStress(chooser.stress, 11, `360px wide-font ${chooser.scope}`);
 	}
 });
 
@@ -2115,7 +2108,7 @@ test("mounted Add Source chooser remains reachable in the retained 393 by 320 sh
 		assert.equal(chooser.modal.presentation, "phone-fullscreen", `${chooser.scope} short-height presentation`);
 		assert.equal(chooser.modal.backdropTracksVisualViewport, true, `${chooser.scope} short-height visual viewport tracking`);
 		assert.equal(chooser.columnCount, 2, `${chooser.scope} short-height columns`);
-		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 2], `${chooser.scope} short-height rows`);
+		assert.deepEqual(chooser.rowCounts, [2, 2, 2, 2, 2, 1], `${chooser.scope} short-height rows`);
 		assert.ok(chooser.rowHeightSpread <= 14, `${chooser.scope} short-height balanced row heights: ${chooser.rowHeightSpread}`);
 		assert.ok(chooser.cardGeometry.every((card) => card.card.height >= 87), `${chooser.scope} short-height 87px card floor`);
 		assert.ok(chooser.cardGeometry.every((card) => card.helper.clientWidth >= card.title.clientWidth + 41), `${chooser.scope} short-height full-width helpers`);
@@ -2416,7 +2409,7 @@ test("mounted Blank collection and folder creation immediately unlock the next m
 			newCollection: {
 				initialBrowseHeading: true,
 				explicitSearch: true,
-				backToLauncher: true,
+				backToLauncher: { headingFocused: true, blankFocused: false },
 				reentryBrowseHeading: true,
 				cancelRestoredCanonicalTrigger: true,
 				revisionUnchanged: true,
@@ -2425,7 +2418,7 @@ test("mounted Blank collection and folder creation immediately unlock the next m
 				legacyLauncherAbsent: true,
 				initialBrowseHeading: true,
 				explicitSearch: true,
-				backToLauncher: true,
+				backToLauncher: { headingFocused: true, blankFocused: false },
 				reentryBrowseHeading: true,
 				cancelRestoredCanonicalTrigger: true,
 				revisionUnchanged: true,
@@ -3904,7 +3897,8 @@ test("mounted Decades Back navigation stays in the header, preserves drafts, and
 		launcherReturn: {
 			backAbsent: true,
 			footerAbsent: true,
-			firstOptionFocused: true,
+			headingFocused: true,
+			blankFocused: false,
 		},
 		revisionUnchanged: true,
 	});
@@ -4279,4 +4273,11 @@ test("mounted TMDB List hierarchy creates ordered per-list Folders with live met
   assert.equal(result.lists.length, 11);
   assert.ok(result.requests.every(url => /^\/3\/list\/\d+\?/.test(url)));
  }
+});
+
+
+test("mounted Trakt Lists creation uses injected mechanics across all three scopes", () => {
+ assert.equal(mountedResults.traktCreationCases.length, process.env.TRAKT_CREATION_ONLY === "1" ? process.env.TRAKT_PRESENTATION_ONLY === "1" ? 6 : 9 : 2);
+ for (const result of mountedResults.traktCreationCases) { assert.equal(result.requests, 0); assert.equal(result.verified, true); assert.equal(result.cases.length, 3); }
+ console.log("TRAKT_CREATION_MECHANICS " + JSON.stringify(mountedResults.traktCreationCases));
 });

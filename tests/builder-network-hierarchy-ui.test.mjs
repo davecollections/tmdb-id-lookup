@@ -99,7 +99,7 @@ function renderSearch({ hierarchy }) {
 }
 
 test("Networks remains between Genres and People in both hierarchy scopes", () => {
-	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
+	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "trakt-lists", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.ok(markup.includes(`data-creation-scope="${scope}"`));

@@ -156,7 +156,7 @@ test("source chooser retains the established first five modes before Lists, Genr
 	assert.ok(markup.includes('data-source-mode-option="tmdb-lists"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-genres"'));
 	assert.ok(markup.includes('data-source-mode-option="tmdb-decade"'));
-	assert.equal((markup.match(/<button/g) ?? []).length, 10);
+	assert.equal((markup.match(/<button/g) ?? []).length, 11); // Ten Add Source choices plus Close.
 });
 
 test("folder Search preserves TMDB order, disambiguates identities, and uses friendly profile states", () => {

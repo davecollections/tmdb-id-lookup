@@ -1,5 +1,6 @@
 export function CreationHeader({
 	title,
+	headingRef = null,
 	context,
 	description,
 	onBack = null,
@@ -15,7 +16,7 @@ export function CreationHeader({
 				{onBack ? (
 					<button className="add-source-header-action" type="button" data-action={backAction ?? undefined} disabled={backDisabled} onClick={onBack}><span aria-hidden="true">←</span> Back</button>
 				) : <span className="add-source-header-spacer" aria-hidden="true" />}
-				<div><h2 id="creation-title">{title}</h2>{context ? <p>{context}</p> : null}</div>
+				<div><h2 id="creation-title" ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{title}</h2>{context ? <p>{context}</p> : null}</div>
 				<button className="add-source-header-action add-source-close-action" type="button" aria-label="Close creation flow" disabled={backDisabled} onClick={onClose}>Close</button>
 			</div>
 			{actions ? <div className="add-source-heading-support"><p id="creation-description" className="add-source-heading-description">{description}</p>{actions}</div> : <p id="creation-description" className="add-source-heading-description">{description}</p>}
