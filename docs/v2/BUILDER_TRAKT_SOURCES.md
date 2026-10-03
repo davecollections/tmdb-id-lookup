@@ -2,7 +2,7 @@
 
 ## Status and validation
 
-B2 implementation, owner review and validation are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). B3/C has not started. Trakt Lists is not complete, and parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open.
+B2 implementation, owner review and validation are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). B3 subsequently merged in [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283). [C #284](https://github.com/davecollections/tmdb-id-lookup/issues/284) now has a nonvisual Phase A foundation pending owner code review; see [the C checkpoint](BUILDER_TRAKT_CREATION.md#c-phase-a-foundation--local-owner-review-gate). Trakt Lists is not complete, and parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open.
 
 Accepted implementation head [`a1017234ecc025794b810173f029db57e06589cb`](https://github.com/davecollections/tmdb-id-lookup/commit/a1017234ecc025794b810173f029db57e06589cb) passed the full canonical local suite, production Builder build and [hosted FULL PR validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/36954981756). Documentation-only follow-up heads receive separate automatic PR validation after push; these implementation-head results do not establish a follow-up head's check status.
 
@@ -10,7 +10,7 @@ Accepted implementation head [`a1017234ecc025794b810173f029db57e06589cb`](https:
 
 `SOURCE_CATEGORIES.NATIVE_TRAKT` is `native-trakt`, alongside unchanged `native-tmdb`, `addon` and `opaque`. Domain nodes retain the ordinary Source shape, internal ID and optional raw snapshot.
 
-`buildNativeTraktSourceDraft({ title, traktListId, mediaType })` in `builder/src/source-add/trakt-source.js` is the single offline constructor for future B3/C callers. Its paired validator rejects extra draft/input fields. It returns `{ ok, draft, errors }`; a valid draft is:
+`buildNativeTraktSourceDraft({ title, traktListId, mediaType })` in `builder/src/source-add/trakt-source.js` is the single offline creation constructor. Its paired validator rejects extra draft/input fields. It returns `{ ok, draft, errors }`; a valid draft is:
 
 ```json
 {
@@ -32,7 +32,7 @@ Series uses `TV`. The ID must already be a JavaScript number satisfying `Number.
 
 Classification remains explicit-provider-led. A case-insensitive `provider: trakt`, actual positive safe-integer numeric `traktListId`, case-insensitive `MOVIE`/`TV`, and recognized sort/direction establish supported `native-trakt`. Provider/media comparison changes no stored spelling or value. Import requires explicit sort fields; it never fills missing defaults.
 
-Recognized imported `sortBy` values are `rank`, `added`, `title`, `released`, `runtime`, `popularity`, `percentage`, and `votes`; `sortHow` is `asc` or `desc`. B2 conservatively recognizes these exact lowercase sort spellings. New authoring remains `rank`/`asc`; this is a product boundary, not a restriction of the upstream runtime's sort set.
+Recognized imported `sortBy` values are `rank`, `added`, `title`, `released`, `runtime`, `popularity`, `percentage`, and `votes`; `sortHow` is `asc` or `desc`. B2 conservatively recognizes these exact lowercase sort spellings. Creation remains `rank`/`asc`. Canonical authored/serializable sources allow all eight supported sorts and both directions, still requiring exactly the known fields, canonical provider/media, safe numeric ID and valid title. The creation validator adds rank/asc requirements; edited authored sources therefore export without weakening unrelated canonical rules.
 
 Explicit Trakt with missing/unsafe/string/fractional/nonpositive IDs, missing or unsupported media, or unsupported/missing sorting stays **opaque**. `UNSUPPORTED_TRAKT_SOURCE_PRESERVED` explains the unsafe fields using fixed sanitized diagnostic text without echoing imported values. Import succeeds and retains the complete source. Existing `synthetic-list-42` and `saved-list` strings remain preservation evidence, never canonical authoring examples. A lone `traktListId` does not imply a Trakt provider. Explicit addons, including AIO Metadata `trakt.*` catalog IDs, keep the addon contract; community providers remain opaque.
 
@@ -56,7 +56,7 @@ Trakt appears only in authoritative `sources`. `catalogSources` generation is un
 
 Supported sources use **Native Trakt** category presentation and compact **Trakt List ID**, Movies/Series and local human-readable sort metadata. No external Trakt URL is guessed. Unsupported imports retain Preserved source presentation.
 
-The `trakt-list` editor adapter uses the existing Source Edit modal/session/action path. Its only owned patch field is `title`. Provider, numeric List ID, media, sort and direction remain fixed, visible context; draft tampering with fixed values is rejected. Unknown fields and all untouched raw values survive. Untouched/equal-title saves return no-op without advancing project state. Shared project/source/category/identity/reorder/move/delete guards remain active; name-only changes do not change physical identity or require duplicate checks. Unsupported/opaque Trakt has Delete only.
+The `trakt-list` editor adapter uses the existing Source Edit modal/session/action path. Its C Phase A domain owns `title`, `sortBy` and `sortHow`; the visible UI remains name-only. Provider, numeric List ID and media stay immutable, with tampering rejected. Sort/direction drafts must use supported values and patch only changed fields. Unknown fields and all untouched raw values survive. Untouched/equal-value saves return no-op without advancing project state. Shared project/source/category/identity/reorder/move/delete guards remain active; title/sort changes do not change physical identity or require duplicate checks. Unsupported/opaque Trakt has Delete only.
 
 There is no List picker, media detection, sort control, artwork, replacement or Preview. The capability test explicitly represents this editor-only foundation, with no fake hidden Add/Guided mode.
 
@@ -76,4 +76,4 @@ Focused coverage: `tests/builder-native-trakt.test.mjs`, the compatibility corpu
 
 Use `node --test --test-name-pattern="mounted native Trakt foundation" tests/builder-source-edit-mounted.test.mjs` with that environment variable. Optional `TMDB_204_SCREENSHOTS` captures local review evidence outside Git. Import `manual-tests/native-trakt-foundation/owner-review.json` in the normal production-style Builder preview for owner review.
 
-B2 has no Trakt networking, environment variables, API client, Cloudflare/service changes, creation modes, hierarchy family, Add Source option, search/browse/URL resolver or Preview provider. B3/C must build on this foundation for the actual Trakt Lists feature and its complete acceptance. Parent #276 remains open. See [status and validation](#status-and-validation) for the completed implementation checks and separate PR-head validation.
+Historically, B2 added no Trakt networking, environment variables, API client, Cloudflare/service changes, creation modes, hierarchy family, Add Source option, search/browse/URL resolver or Preview provider. B3 built on this foundation for creation; C adds the bounded Preview/sorting foundations described above and retains separate visible-UI and acceptance gates. Parent #276 remains open. See [status and validation](#status-and-validation) for the completed implementation checks and separate PR-head validation.

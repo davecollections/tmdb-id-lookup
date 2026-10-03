@@ -23,8 +23,8 @@ export function validateNativeTraktSource(value, { authored = false, path = "$so
 	if (provider !== "trakt" || (authored && value.provider !== "trakt")) add("INVALID_NATIVE_TRAKT_PROVIDER", "provider", "A native Trakt source provider must be trakt.");
 	if (!isCanonicalTraktListId(value.traktListId)) add("NATIVE_TRAKT_LIST_ID_REQUIRED", "traktListId", "A native Trakt List ID must be a positive safe integer number.");
 	if (!["MOVIE", "TV"].includes(mediaType) || (authored && value.mediaType !== mediaType)) add("INVALID_NATIVE_TRAKT_MEDIA_TYPE", "mediaType", "A native Trakt source mediaType must be MOVIE or TV.");
-	if (!TRAKT_SORT_VALUES.includes(value.sortBy) || (authored && value.sortBy !== "rank")) add("UNSUPPORTED_NATIVE_TRAKT_SORT", "sortBy", authored ? "New native Trakt sources use rank sorting." : "The imported Trakt sort is missing or unsupported.");
-	if (!TRAKT_SORT_DIRECTIONS.includes(value.sortHow) || (authored && value.sortHow !== "asc")) add("UNSUPPORTED_NATIVE_TRAKT_SORT_DIRECTION", "sortHow", authored ? "New native Trakt sources use ascending sorting." : "The imported Trakt sort direction is missing or unsupported.");
+	if (!TRAKT_SORT_VALUES.includes(value.sortBy)) add("UNSUPPORTED_NATIVE_TRAKT_SORT", "sortBy", "The Trakt sort is missing or unsupported.");
+	if (!TRAKT_SORT_DIRECTIONS.includes(value.sortHow)) add("UNSUPPORTED_NATIVE_TRAKT_SORT_DIRECTION", "sortHow", "The Trakt sort direction is missing or unsupported.");
 	if (authored && !isValidNuvioTitle(value.title)) add("NATIVE_TRAKT_TITLE_REQUIRED", "title", "Enter a valid name for this Trakt source.");
 	return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }

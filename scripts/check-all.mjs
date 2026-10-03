@@ -37,7 +37,7 @@ export const validationChecks = Object.freeze([
 	["--test", path.join("tests", "global-count-precache-retirement.test.mjs")],
 	["--test", path.join("tests", "builder-domain.test.mjs")],
 	["--test", path.join("tests", "builder-native-trakt.test.mjs")],
-	["--test", path.join("tests", "builder-trakt-client.test.mjs"), path.join("tests", "builder-trakt-creation.test.mjs")],
+	["--test", path.join("tests", "builder-trakt-client.test.mjs"), path.join("tests", "builder-trakt-creation.test.mjs"), path.join("tests", "builder-trakt-preview.test.mjs")],
 	["--test", path.join("tests", "builder-import.test.mjs")],
 	["--test", path.join("tests", "builder-import-merge.test.mjs")],
 	["--test", path.join("tests", "builder-serializer.test.mjs")],

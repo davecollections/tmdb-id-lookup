@@ -17,7 +17,7 @@ const list = (id = 123, extra = {}) => ({ name: "Unit list", description: null, 
 const discovery = (rows = [list()], page = 1, limit = 30) => ({ apiVersion: 1, lists: rows, pagination: { page, limit, page_count: null, item_count: null } });
 const json = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...headers } });
 
-test("inert fixed client builds explicit discovery requests, rejects filtered users, and exposes no sample", async () => {
+test("inert fixed client builds explicit discovery requests, rejects filtered users, and does not automatically fetch samples", async () => {
 	const calls = [];
 	const client = createTraktClient({ fetchImpl: async (url, init) => { calls.push({ url: new URL(url), init }); const u = new URL(url); return json(discovery([], Number(u.searchParams.get("page")), Number(u.searchParams.get("limit")))); } });
 	assert.equal(calls.length, 0); assert.equal(client.getListSample, undefined);
@@ -125,7 +125,7 @@ test("fixed opt-in local proxy strips credentials/Origin and rejects arbitrary r
 	const fetchImpl = async (url, init) => { calls++; assert.equal(url, TRAKT_API_ORIGIN + "/v1/trakt/resolve?value=123"); assert.deepEqual(init.headers, { Accept: "application/json" }); assert.equal(init.credentials, "omit"); return json({ apiVersion: 1, error: { code: "UPSTREAM_BUDGET" } }, 429, { "Retry-After": "45", "Set-Cookie": "private" }); };
 	const result = await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/resolve?value=123", { fetchImpl, headers: { authorization: "private", cookie: "private", origin: "http://192.168.1.2:4173" } });
 	assert.equal(calls, 1); assert.equal(result.response.statusCode, 429); assert.equal(result.response.headers["Retry-After"], "45"); assert.equal(result.response.headers["Set-Cookie"], undefined);
-	for (const url of ["/v1/trakt/lists/1/items", "/v1/trakt/resolve?value=1&target=https://evil.example", "/v1/trakt/resolve?value=1&value=2", "/v1/trakt/../resolve?value=1", "https://evil.example", "/api/trakt"]) {
+	for (const url of ["/v1/trakt/lists/1/items?page=2", "/v1/trakt/resolve?value=1&target=https://evil.example", "/v1/trakt/resolve?value=1&value=2", "/v1/trakt/../resolve?value=1", "https://evil.example", "/api/trakt"]) {
 		const rejected = await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + url, { fetchImpl }); assert.ok(rejected.response.statusCode >= 400);
 	}
 	for (const options of [{ method: "POST" }, { headers: { host: "evil.example" } }, { headers: { origin: "https://evil.example" } }]) assert.ok((await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/resolve?value=1", { ...options, fetchImpl })).response.statusCode >= 400);
@@ -134,9 +134,9 @@ test("fixed opt-in local proxy strips credentials/Origin and rejects arbitrary r
 	assert.throws(() => traktApiBase({ localPreview: true, hostname: "dingo.build" }));
 });
 
-test("Phase A runtime client has no direct upstream credential or sample integration", () => {
+test("Phase A runtime client has no direct upstream credential or persistent cache", () => {
 	const source = fs.readFileSync(new URL("../builder/src/source-add/trakt-client.js", import.meta.url), "utf8");
-	for (const forbidden of ["api.trakt.tv", "TRAKT_CLIENT_ID", "/items", "localStorage", "indexedDB"]) assert.equal(source.includes(forbidden), false);
+	for (const forbidden of ["api.trakt.tv", "TRAKT_CLIENT_ID", "localStorage", "indexedDB"]) assert.equal(source.includes(forbidden), false);
 });
 
 // Executable wiring checks, using the existing Vite SSR/React test approach.
@@ -294,4 +294,128 @@ test("Trakt discovery cards present existing metadata without inline description
   assert.match(description, /Full &lt;script&gt;description&lt;\/script&gt;\nSecond paragraph\./);
   assert.doesNotMatch(description, /<script>/); assert.match(description, />Close<\/button>/);
  } finally { await vite.close(); }
+});
+
+// C Phase A: injected service contract cases only, never live external data.
+const sampleItem = (type = "movie", extra = {}) => ({ type, title: null, year: null, rank: null,
+	season: null, number: null, ids: { trakt: null, tmdb: null, imdb: null, slug: null, show_tmdb: null, show_slug: null }, ...extra });
+const sample = (items = [], id = 123, limit = 15) => ({ apiVersion: 1, id, sample: "first-page", items,
+	pagination: { page: 1, limit, page_count: null, item_count: null } });
+
+test("items use canonical fixed first-page requests and reject invalid caller identities/options without fetching", async () => {
+	const calls = [];
+	const client = createTraktClient({ fetchImpl: async (url, init) => {
+		calls.push({ url, init }); const parsed = new URL(url); return json(sample([], 123, Number(parsed.searchParams.get("limit"))));
+	} });
+	assert.equal(calls.length, 0);
+	for (const limit of [undefined, 1, 50]) {
+		assert.equal((await client.getItems(123, limit === undefined ? {} : { limit })).ok, true);
+		assert.equal(calls.at(-1).url, TRAKT_API_ORIGIN + "/v1/trakt/lists/123/items?page=1&limit=" + (limit ?? 15));
+		assert.equal(calls.at(-1).init.redirect, "error");
+	}
+	for (const id of ["123", 0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) assert.equal((await client.getItems(id)).error.code, "INVALID_REQUEST");
+	for (const options of [{ limit: 0 }, { limit: 51 }, { limit: 1.5 }, { limit: "15" }, { limit: null }, { page: 1 }, { page: 2 }]) assert.equal((await client.getItems(123, options)).error.code, "INVALID_REQUEST");
+	assert.equal(calls.length, 3);
+});
+
+test("items preserve all four types, null/zero fields, service order and repeated rows", () => {
+	const rows = [sampleItem("episode", { title: "Episode", season: 0, number: 1, rank: 9 }),
+		sampleItem("season", { number: 0 }), sampleItem("show", { year: 2026 }), sampleItem(), sampleItem()];
+	const result = normalizeTraktResponse(sample(rows), "items", { id: 123, limit: 15 });
+	assert.deepEqual(result.items.map(row => row.type), ["episode", "season", "show", "movie", "movie"]);
+	assert.equal(result.items.length, 5); assert.equal(result.items[0].season, 0); assert.equal(result.items[1].number, 0);
+	assert.equal(result.items[3].title, null); assert.equal(result.items[0].ids.showTmdb, null);
+	assert.deepEqual(result.items[3], result.items[4]); assert.equal(Object.isFrozen(result.items[0].ids), true);
+	const ids = { trakt: 1, tmdb: 2, imdb: "tt123", slug: "item-slug", show_tmdb: 3, show_slug: "series-slug" };
+	assert.deepEqual(normalizeTraktResponse(sample([sampleItem("episode", { ids })]), "items", { id: 123, limit: 15 }).items[0].ids,
+		{ trakt: 1, tmdb: 2, imdb: "tt123", slug: "item-slug", showTmdb: 3, showSlug: "series-slug" });
+});
+
+test("items fail closed for malformed envelopes, pagination and any malformed row", () => {
+	const valid = sample([sampleItem()]);
+	for (const changed of [{ apiVersion: 2 }, { id: "123" }, { id: 124 }, { sample: "complete" }, { items: null },
+		{ items: Array.from({ length: 16 }, () => sampleItem()) }, { pagination: null }, { pagination: {} },
+		{ pagination: { ...valid.pagination, page: 2 } }, { pagination: { ...valid.pagination, limit: 50 } },
+		{ pagination: { ...valid.pagination, item_count: -1 } }]) {
+		assert.throws(() => normalizeTraktResponse({ ...valid, ...changed }, "items", { id: 123, limit: 15 }));
+	}
+	for (const changed of [{ type: "person" }, { title: undefined }, { title: "a".repeat(2001) }, { year: -1 }, { rank: "1" },
+		{ season: 1.5 }, { number: undefined }, { ids: null }, { ids: { ...sampleItem().ids, tmdb: "1" } },
+		{ ids: { ...sampleItem().ids, show_tmdb: 0 } }, { ids: { ...sampleItem().ids, slug: "" } },
+		{ ids: { ...sampleItem().ids, slug: "a/b" } }, { ids: { ...sampleItem().ids, show_slug: "a".repeat(122) } },
+		{ ids: { ...sampleItem().ids, imdb: "123" } }, { ids: { ...sampleItem().ids, imdb: "tt" + "1".repeat(29) } }]) {
+		assert.throws(() => normalizeTraktResponse(sample([sampleItem(), sampleItem("movie", changed)]), "items", { id: 123, limit: 15 }));
+	}
+	const allNull = { page: null, limit: null, page_count: null, item_count: null };
+	assert.equal(normalizeTraktResponse({ ...valid, pagination: allNull }, "items", { id: 123, limit: 15 }).pagination.page, null);
+});
+
+test("items share bounded detached success cache, refresh, expiry and authoritative not-found invalidation", async () => {
+	let time = 0, calls = 0, missing = false;
+	const client = createTraktClient({ now: () => time, cacheMaxEntries: 1, fetchImpl: async url => {
+		calls++; const u = new URL(url), id = Number(u.pathname.split("/")[4]);
+		return missing ? json({ apiVersion: 1, error: { code: "LIST_NOT_FOUND" } }, 404) : json(sample([sampleItem()], id));
+	} });
+	await client.getItems(123); const cached = await client.getItems(123); cached.data.items[0].title = "Mutated";
+	assert.equal((await client.getItems(123)).data.items[0].title, null); assert.equal(calls, 1);
+	await client.getItems(123, { refresh: true }); assert.equal(calls, 2);
+	await client.getItems(124); await client.getItems(123); assert.equal(calls, 4);
+	time = 300001; await client.getItems(123); assert.equal(calls, 5);
+	missing = true; assert.equal((await client.getItems(123, { refresh: true })).error.code, "LIST_NOT_FOUND");
+	assert.equal((await client.getItems(123)).error.code, "LIST_NOT_FOUND"); assert.equal(calls, 7);
+	missing = false; assert.equal((await client.getItems(123)).ok, true); assert.equal(calls, 8);
+});
+
+test("items cancellation, body timeout and late results cannot populate a canceled sample cache", async () => {
+	let complete, signal, calls = 0;
+	const client = createTraktClient({ fetchImpl: async (url, init) => {
+		calls++; signal = init.signal; return { ok: true, headers: new Headers({ "Content-Type": "application/json" }),
+			json: () => new Promise(resolve => { complete = resolve; }) };
+	} });
+	const abort = new AbortController(), pending = client.getItems(123, { signal: abort.signal });
+	await new Promise(resolve => setImmediate(resolve));
+	abort.abort(); assert.equal((await pending).error.code, "ABORTED"); assert.equal(signal.aborted, true);
+	complete(sample());
+	await new Promise(resolve => setImmediate(resolve));
+	const nextAbort = new AbortController(), next = client.getItems(123, { signal: nextAbort.signal });
+	assert.equal(calls, 2); nextAbort.abort(); await next;
+	let bodyCalls = 0;
+	const timed = createTraktClient({ timeoutMs: 5, fetchImpl: async () => {
+		bodyCalls++; return { ok: true, headers: new Headers({ "Content-Type": "application/json" }), json: () => new Promise(() => {}) };
+	} });
+	assert.equal((await timed.getItems(123)).error.code, "TIMEOUT"); assert.equal(bodyCalls, 1);
+});
+
+test("items Retry-After shares cooldown with discovery and never auto-retries", async () => {
+	let now = 0, calls = 0;
+	const client = createTraktClient({ now: () => now, fetchImpl: async () => {
+		calls++; return json({ apiVersion: 1, error: { code: "UPSTREAM_RATE_LIMIT", message: "unsafe detail" } }, 429, { "Retry-After": "30" });
+	} });
+	const failed = await client.getItems(123); assert.equal(failed.error.notBefore, 30000);
+	assert.doesNotMatch(JSON.stringify(failed), /unsafe detail/);
+	await client.getItems(124); await client.browse("popular"); assert.equal(calls, 1);
+	now = 30000; assert.equal(calls, 1); await client.getItems(123, { refresh: true }); assert.equal(calls, 2);
+});
+
+test("items proxy allows only canonical first-page bounds with unchanged transport guards", async () => {
+	const calls = [];
+	const fetchImpl = async (url, init) => { calls.push({ url, init }); return json(sample()); };
+	for (const query of ["", "?page=1&limit=1", "?limit=50&page=1"]) {
+		const response = await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/lists/123/items" + query,
+			{ fetchImpl, headers: { authorization: "private", cookie: "private", origin: "http://192.168.1.2:4173" } });
+		assert.equal(response.response.statusCode, 200);
+		const last = calls.at(-1); assert.equal(last.url, TRAKT_API_ORIGIN + "/v1/trakt/lists/123/items?page=1&limit=" + (query.includes("50") ? 50 : query ? 1 : 15));
+		assert.deepEqual(last.init.headers, { Accept: "application/json" }); assert.equal(last.init.credentials, "omit"); assert.equal(last.init.redirect, "error");
+	}
+	for (const suffix of ["?page=2", "?page=01", "?page=", "?page=1&page=1", "?limit=0", "?limit=51", "?limit=01",
+		"?limit=1.5", "?limit=1e1", "?limit=", "?limit=15&limit=15", "?sort=rank", "?target=https://evil.example", "#fragment"]) {
+		assert.ok((await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/lists/123/items" + suffix, { fetchImpl })).response.statusCode >= 400, suffix);
+	}
+	for (const path of ["/lists/01/items", "/lists/0/items", "/lists/9007199254740992/items", "/lists/%31/items", "/lists/1/items/movie"]) {
+		assert.ok((await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt" + path, { fetchImpl })).response.statusCode >= 400);
+	}
+	assert.equal(calls.length, 3);
+	const redirected = await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/lists/123/items", {
+		fetchImpl: async (url, init) => { assert.equal(init.redirect, "error"); throw new TypeError("redirect rejected"); } });
+	assert.equal(redirected.response.statusCode, 502);
 });

@@ -94,7 +94,7 @@ test("category field ownership leaves TMDB/addon/opaque extraction and Additiona
 });
 
 test("new malformed Trakt nodes fail serialization with dedicated diagnostics", () => {
-	for (const [change, code] of [[{ provider: "tmdb" }, "INVALID_NATIVE_TRAKT_PROVIDER"], [{ traktListId: "123" }, "NATIVE_TRAKT_LIST_ID_REQUIRED"], [{ mediaType: "tv" }, "INVALID_NATIVE_TRAKT_MEDIA_TYPE"], [{ sortBy: "added" }, "UNSUPPORTED_NATIVE_TRAKT_SORT"], [{ sortHow: "desc" }, "UNSUPPORTED_NATIVE_TRAKT_SORT_DIRECTION"], [{ title: "" }, "NATIVE_TRAKT_TITLE_REQUIRED"], [{ filters: {} }, "INVALID_NATIVE_TRAKT_FIELDS"]]) {
+	for (const [change, code] of [[{ provider: "tmdb" }, "INVALID_NATIVE_TRAKT_PROVIDER"], [{ traktListId: "123" }, "NATIVE_TRAKT_LIST_ID_REQUIRED"], [{ mediaType: "tv" }, "INVALID_NATIVE_TRAKT_MEDIA_TYPE"], [{ sortBy: "future" }, "UNSUPPORTED_NATIVE_TRAKT_SORT"], [{ sortHow: "down" }, "UNSUPPORTED_NATIVE_TRAKT_SORT_DIRECTION"], [{ title: "" }, "NATIVE_TRAKT_TITLE_REQUIRED"], [{ filters: {} }, "INVALID_NATIVE_TRAKT_FIELDS"]]) {
 		const result = serializeNuvioSource(node(change)); assert.equal(result.ok, false); assert.ok(result.errors.some((entry) => entry.code === code), JSON.stringify(result.errors));
 	}
 });
@@ -117,16 +117,16 @@ test("physical identity ignores name/sort while configured equivalence is bounde
 	assert.equal(Object.isFrozen(all), true); assert.equal(Object.isFrozen(all[0]), true);
 });
 
-test("name-only editor patches exactly title, preserves raw values, and rejects fixed-field tampering", () => {
+test("title-only changes patch exactly title, preserves raw values, and rejects fixed-field tampering", () => {
 	const value = raw({ provider: "TrAkT", mediaType: "tv", sortBy: "added", sortHow: "desc", unknown: { keep: [false, 0, null] }, filters: { future: true }, addonId: null });
 	const app = appFor([value, value]); const opened = open(app), revision = app.getState().revision, project = app.getState().project;
 	assert.equal(opened.ok, true); assert.equal(opened.session.adapterId, "trakt-list");
-	assert.deepEqual(sourceEditorFor(first(app)).ownedFields, ["title"]); assert.equal(opened.draft.title, value.title);
+	assert.deepEqual(sourceEditorFor(first(app)).ownedFields, ["title", "sortBy", "sortHow"]); assert.equal(opened.draft.title, value.title);
 	assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false);
 	assert.equal(saveSourceEdit(app, opened.session, opened.draft).changed, false); assert.equal(app.getState().project, project);
 	assert.equal(saveSourceEdit(app, opened.session, updateSourceEditTitle(opened.draft, value.title)).changed, false);
 	assert.equal(saveSourceEdit(app, opened.session, updateSourceEditTitle(opened.draft, " ")).validationFailed, true);
-	for (const [field, changed] of Object.entries({ provider: "trakt", mediaType: "TV", traktListId: 124, sortBy: "rank", sortHow: "asc" })) {
+	for (const [field, changed] of Object.entries({ provider: "trakt", mediaType: "TV", traktListId: 124 })) {
 		assert.equal(saveSourceEdit(app, opened.session, { ...updateSourceEditTitle(opened.draft, "New"), [field]: changed }).validationFailed, true, field);
 		assert.equal(app.getState().revision, revision);
 	}
@@ -165,4 +165,61 @@ test("unsupported saved/synthetic fixtures stay opaque and cannot acquire Source
 	assert.equal(saved.category, "opaque"); assert.equal(sourceEditorFor(saved), null);
 	assert.equal(AVAILABLE_SOURCE_MODES.some((entry) => entry.id === "trakt-lists"), true);
 	assert.equal(CREATION_OPTIONS.some((entry) => entry.id === "trakt-lists"), true);
+});
+
+test("canonical authored sorts serialize across all 8 x 2 combinations while creation stays rank/asc", () => {
+	assert.equal(TRAKT_SORT_VALUES.length, 8);
+	for (const sortBy of TRAKT_SORT_VALUES) for (const sortHow of ["asc", "desc"]) {
+		const source = node({ sortBy, sortHow });
+		const serialized = serializeNuvioSource(source);
+		assert.equal(serialized.ok, true, sortBy + "/" + sortHow);
+		assert.deepEqual(serialized.value, raw({ sortBy, sortHow }));
+		assert.equal(validateNativeTraktSourceDraft({ category: source.category, editable: source.editable }).ok, sortBy === "rank" && sortHow === "asc");
+	}
+	for (const invalid of [{ provider: "TrAkT" }, { mediaType: "tv" }, { traktListId: "123" }, { future: true }, { title: "" }]) {
+		assert.equal(serializeNuvioSource(node({ sortBy: "title", sortHow: "desc", ...invalid })).ok, false);
+	}
+});
+
+test("newly created source exports rank/asc then Source Edit title/desc and reimports without identity change", () => {
+	const app = createBuilderController({ idFactory: ids() });
+	const collection = app.createCollection({ editable: { id: "collection", title: "Collection" } });
+	const folder = app.createFolder(collection.createdInternalId, { editable: { id: "folder", title: "Folder" } });
+	const created = buildNativeTraktSourceDraft({ title: "Source", mediaType: "MOVIE", traktListId: 123 });
+	assert.equal(app.createSource(folder.createdInternalId, created.draft).ok, true);
+	assert.deepEqual(app.serializeProject().value[0].folders[0].sources[0], created.draft.editable);
+	const originalIdentity = nativeTraktPhysicalIdentity(first(app)), opened = open(app);
+	assert.equal(opened.draft.sortBy, "rank"); assert.equal(opened.draft.sortHow, "asc");
+	const result = saveSourceEdit(app, opened.session, { ...opened.draft, sortBy: "title", sortHow: "desc" });
+	assert.equal(result.ok, true); assert.deepEqual(result.patch, { sortBy: "title", sortHow: "desc" });
+	assert.equal(nativeTraktPhysicalIdentity(first(app)), originalIdentity);
+	const exported = app.serializeProject(); assert.equal(exported.ok, true);
+	assert.deepEqual(exported.value[0].folders[0].sources[0], { ...created.draft.editable, sortBy: "title", sortHow: "desc" });
+	const roundTrip = importNuvioCollections(exported.value, { idFactory: ids() });
+	assert.equal(roundTrip.ok, true); assert.deepEqual(serializeNuvioProject(roundTrip.project).value, exported.value);
+});
+
+test("Source Edit emits only changed owned fields, preserves unknown raw data and leaves cancelled/no-op drafts inert", () => {
+	for (const change of [{ title: "Renamed" }, { sortBy: "title" }, { sortHow: "desc" }, { title: "Renamed", sortBy: "votes", sortHow: "desc" }]) {
+		const original = raw({ future: { keep: [false, 0, null] } });
+		const app = appFor([original]), opened = open(app), before = app.getState();
+		const draft = { ...opened.draft, ...change, titleTouched: Object.hasOwn(change, "title") };
+		assert.equal(app.getState(), before, "editing/cancelling a draft cannot mutate the controller");
+		const reverted = { ...draft, ...opened.draft };
+		assert.equal(saveSourceEdit(app, opened.session, reverted).changed, false);
+		assert.equal(app.getState().project, before.project);
+		const result = saveSourceEdit(app, opened.session, draft);
+		assert.equal(result.ok, true); assert.deepEqual(result.patch, change);
+		assert.deepEqual(first(app).rawImported, original);
+		assert.deepEqual(app.serializeProject().value[0].folders[0].sources[0], { ...original, ...change });
+	}
+	for (const change of [{ sortBy: "future" }, { sortHow: "DESC" }, { sortBy: null }, { sortHow: null }]) {
+		const app = appFor([raw()]), opened = open(app), before = app.getState().project;
+		assert.equal(saveSourceEdit(app, opened.session, { ...opened.draft, ...change }).validationFailed, true);
+		assert.equal(app.getState().project, before);
+		const importedApp = appFor([raw(change)]);
+		assert.equal(first(importedApp).category, "opaque"); assert.equal(sourceEditorFor(first(importedApp)), null);
+		assert.equal(open(importedApp).ok, false);
+		assert.deepEqual(importedApp.serializeProject().value, wrap([raw(change)]));
+	}
 });
