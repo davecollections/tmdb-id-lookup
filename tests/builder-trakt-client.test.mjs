@@ -260,3 +260,38 @@ for (const scenario of [
   }
  }
 });
+
+test("Trakt discovery cards present existing metadata without inline descriptions or backend state", async () => {
+ const vite = await createServer({ ...liveReviewConfig(undefined), root: fileURLToPath(new URL("../builder", import.meta.url)),
+  configFile: false, appType: "custom", logLevel: "silent",
+  server: { middlewareMode: true, watch: null, ws: false }, optimizeDeps: { noDiscovery: true, include: [] },
+ });
+ try {
+  const { TraktResultCard, TraktDescriptionDialog } = await vite.ssrLoadModule("/src/ui/TraktSourceFlow.jsx");
+  const metadata = { id: 123, name: "Example list", creator: { username: "owner" }, itemCount: 1, likeCount: 27, updatedAt: "2026-10-02T23:59:59Z", description: "Full <script>description</script>\nSecond paragraph.", availability: "unverified" };
+  const render = overrides => renderToStaticMarkup(createElement(TraktResultCard, { list: { ...metadata, ...overrides }, selected: false, onSelect() { assert.fail("Render must be inert"); }, onDescription() { assert.fail("Render must be inert"); } }));
+  const html = render();
+  assert.match(html, /<strong>Example list<\/strong>/);
+  assert.match(html, /@owner/); assert.match(html, /Trakt List 123/); assert.match(html, /1 title · Last updated/);
+  assert.match(html, /role="img" aria-label="27 likes"/); assert.match(html, /aria-hidden="true">♥/);
+  assert.match(html, /Last updated <time dateTime="2026-10-02T23:59:59Z">2 Oct 2026<\/time>/);
+  assert.doesNotMatch(html, /Full|Second paragraph|Public access not checked|Public list verified|\bitems?\b/);
+  assert.match(html, /<\/label><button[^>]*aria-haspopup="dialog"[^>]*>Read description<\/button>/);
+  assert.doesNotMatch(render({ availability: "available" }), /Public list verified/);
+  const absent = render({ creator: { username: null }, itemCount: 77, likeCount: null, updatedAt: null, description: null });
+  assert.match(absent, /77 titles/); assert.doesNotMatch(absent, /@owner|trakt-result-creator|trakt-result-likes|Last updated|<time|Read description/);
+  assert.match(render({ updatedAt: null }), /class="trakt-result-meta trakt-result-details">1 title<\/span>/);
+  assert.match(render({ itemCount: null }), /class="trakt-result-meta trakt-result-details">Last updated <time/);
+  assert.match(render({ itemCount: 0 }), /class="trakt-result-meta trakt-result-details">0 titles · Last updated/);
+  assert.doesNotMatch(render({ itemCount: null, updatedAt: null }), /trakt-result-details| · /);
+  assert.doesNotMatch(html, /Read full description|Preview|\/items/);
+  assert.doesNotMatch(render({ description: " \n\t " }), /Read description/);
+  assert.match(render({ likeCount: 0 }), /aria-label="0 likes"/); assert.match(render({ likeCount: 1 }), /aria-label="1 like"/);
+  const unavailable = render({ availability: "unavailable" }); assert.match(unavailable, /disabled=""/); assert.match(unavailable, />Unavailable</);
+  const description = renderToStaticMarkup(createElement(TraktDescriptionDialog, { list: metadata, onClose() {} }));
+  assert.match(description, /role="dialog" aria-modal="true" aria-labelledby="trakt-description-title"/);
+  assert.match(description, /id="trakt-description-title">Example list/);
+  assert.match(description, /Full &lt;script&gt;description&lt;\/script&gt;\nSecond paragraph\./);
+  assert.doesNotMatch(description, /<script>/); assert.match(description, />Close<\/button>/);
+ } finally { await vite.close(); }
+});

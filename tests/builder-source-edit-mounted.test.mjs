@@ -4278,6 +4278,6 @@ test("mounted TMDB List hierarchy creates ordered per-list Folders with live met
 
 test("mounted Trakt Lists creation uses injected mechanics across all three scopes", () => {
  assert.equal(mountedResults.traktCreationCases.length, process.env.TRAKT_CREATION_ONLY === "1" ? process.env.TRAKT_PRESENTATION_ONLY === "1" ? 6 : 9 : 2);
- for (const result of mountedResults.traktCreationCases) { assert.equal(result.requests, 0); assert.equal(result.verified, true); assert.equal(result.cases.length, 3); }
+ for (const result of mountedResults.traktCreationCases) { assert.equal(result.requests, 0); assert.equal(result.verified, true); assert.equal(result.cases.length, 3); assert.equal(result.resultCards.length, 3); for (const cards of result.resultCards) { assert.equal(cards.dimensions.length, 9); assert.equal(cards.focusReturn, true); assert.equal(cards.selectionUnchanged, true); assert.equal(cards.requestDelta, 0); } }
  console.log("TRAKT_CREATION_MECHANICS " + JSON.stringify(mountedResults.traktCreationCases));
 });

@@ -5,9 +5,25 @@ import { traktFailure } from "../../builder/src/source-add/trakt-client.js";
 
 // Owner-authorized deterministic mechanics/visual evidence. Never live acceptance.
 const names = { 101: "Movie-only list", 102: "Series-only list", 103: "Mixed list", 104: "Empty list", 105: "Detection unavailable", 106: "Unavailable list" };
+const shortDescription = "Deterministic owner-review metadata. A short description with <plain text>, not markup.";
+const longDescription = Array.from({ length: 18 }, (_, index) => "Paragraph " + (index + 1) + ". This complete description is already held in discovery metadata. It should scroll inside the description dialog while the selection and outer page remain unchanged.").join("\n\n") + "\n\n" + "LongUnbrokenDescriptionToken".repeat(18);
+export function reviewList(id, titleForId) {
+ const metadata = {
+  101: { description: shortDescription, itemCount: 12, likeCount: 27, updatedAt: "2026-10-02T12:30:00Z" },
+  102: { description: null, itemCount: 8 },
+  103: { description: longDescription, itemCount: 20, likeCount: 0, updatedAt: "2026-10-02T12:30:00Z" },
+  104: { creator: { username: null }, description: " \n ", itemCount: 0 },
+  105: { description: shortDescription, itemCount: 77, likeCount: 17 },
+  106: { description: null, likeCount: 0, updatedAt: "2026-10-02T12:30:00Z" },
+  107: { description: shortDescription, itemCount: 77, likeCount: 1, updatedAt: "2026-10-02T12:30:00Z" },
+  108: { description: null, itemCount: 1, availability: "unavailable" },
+  109: { description: null, itemCount: 1, updatedAt: "2026-10-02T12:30:00Z" },
+ };
+ return { id, name: titleForId?.(id) ?? names[id] ?? `Long public list ${id} — stories from around the world and across generations`, creator: { username: "review-user" }, description: null, itemCount: null, likeCount: null, updatedAt: null, availability: "unverified", ...metadata[id] };
+}
 export function createReviewClient({ titleForId } = {}) {
  const calls = [], overrides = new Map();
- const list = id => ({ id, name: titleForId?.(id) ?? names[id] ?? `Long public list ${id} — stories from around the world and across generations`, creator: { username: "review-user" }, description: "Deterministic owner-review example. No external list data is requested.", itemCount: id === 104 ? 0 : null, availability: "unverified" });
+ const list = id => reviewList(id, titleForId);
  const results = page => ({ ok: true, data: { lists: Array.from({ length: page === 1 ? 30 : 12 }, (_, index) => list(101 + (page - 1) * 30 + index)), pagination: { page, limit: 30, pageCount: 2, itemCount: 42 } } });
  const discovery = (kind, query, options) => { calls.push({ kind, query, page: options.page, limit: options.limit }); return Promise.resolve(results(options.page)); };
  return { calls, overrides, getNotBefore: () => 0,
@@ -40,7 +56,7 @@ export async function runTraktCreationScenario(helpers, view) {
  const ensure = (condition, message) => { if (!condition) throw new Error(`Trakt creation ${innerWidth}x${innerHeight}: ${message}`); };
  const originalFetch = window.fetch, requests = [];
  window.fetch = (input) => { requests.push(String(input?.url ?? input)); throw new Error("Uninjected request in deterministic Trakt mechanics"); };
- const results = [], presentation = [], density = [];
+ const results = [], presentation = [], density = [], resultCards = [];
  const screenshot = async suffix => { if (window.capture204Preview) await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: `trakt-b3-${view.width}-${view.height}-${view.forcedColors ? "forced-" : ""}${view.largeText ? "large-" : ""}${suffix}` })); }); };
  const settle = () => act(async () => { await afterCommittedEffects(); });
  const textButton = (text, root = document) => [...root.querySelectorAll("button")].find(button => button.textContent.trim() === text);
@@ -114,7 +130,64 @@ export async function runTraktCreationScenario(helpers, view) {
     await input("#trakt-query", "123"); await click("Search");
     ensure(client.calls[0].kind === "keyword" && client.calls[0].query === "123" && client.calls[0].limit === 30, "numeric keyword stays keyword");
     const select = async id => { const card = [...document.querySelectorAll(".trakt-result")].find(row => row.textContent.includes(`Trakt List ${id}`)); ensure(card, `result ${id}`); await clickAndSettle(card.querySelector("input")); };
+    const card = id => document.querySelector('[data-trakt-result-id="' + id + '"]');
+    ensure(!/Public access not checked|Public list verified|\bitems?\b/.test(document.querySelector('.trakt-results').textContent), 'cards omit backend state and use titles vocabulary');
+    ensure(card(101).querySelector('strong').textContent === 'Movie-only list' && card(101).textContent.includes('@review-user') && card(101).textContent.includes('12 titles'), 'name, username, canonical ID and plural title count visible');
+    ensure(card(109).textContent.includes('1 title') && !card(109).textContent.includes('1 titles'), 'singular title');
+    ensure(card(101).querySelector('.trakt-result-likes').getAttribute('aria-label') === '27 likes' && card(101).querySelector('.trakt-result-likes [aria-hidden="true"]').textContent === '♥', 'known likes have accessible count and decorative heart');
+    ensure(card(103).querySelector('.trakt-result-likes').getAttribute('aria-label') === '0 likes' && !card(102).querySelector('.trakt-result-likes'), 'zero is known; null likes omitted');
+    ensure(card(101).querySelector('time').textContent === '2 Oct 2026' && !card(102).querySelector('time') && !card(104).querySelector('.trakt-result-creator'), 'absolute known date and absent date/username');
+    ensure(!card(101).textContent.includes(shortDescription) && !card(103).textContent.includes('Paragraph 1.'), 'no inline description or snippet');
+    ensure(!card(102).querySelector('button') && !card(104).querySelector('button') && card(108).querySelector('input').disabled && card(108).textContent.includes('Unavailable'), 'null/blank descriptions omitted and unavailable remains disabled');
+    ensure(!document.querySelector('.trakt-result label button'), 'description action is a sibling of selectable label');
+    ensure(card(101).querySelector('.trakt-result-details').textContent === '12 titles · Last updated 2 Oct 2026' && card(105).querySelector('.trakt-result-details').textContent === '77 titles' && card(106).querySelector('.trakt-result-details').textContent === 'Last updated 2 Oct 2026' && !card(110).querySelector('.trakt-result-details'), 'left metadata combines known values with a conditional middle dot only');
+    ensure([...document.querySelectorAll('.trakt-description-action')].every(button => button.textContent === 'Read description') && !document.querySelector('.trakt-results').textContent.includes('Preview'), 'description action text is exact and no Preview placeholder exists');
+    for (const id of [101, 104]) {
+     const row = card(id), heading = row.querySelector('.trakt-result-heading').getBoundingClientRect(), identity = row.querySelector('.trakt-result-id').getBoundingClientRect(), details = row.querySelector('.trakt-result-details');
+     ensure(Math.abs(identity.right - heading.right) < 1, 'List ID stays right-aligned with or without a username');
+     ensure(Math.abs(details.getBoundingClientRect().left - heading.left) < 1 && getComputedStyle(details).display === 'block', 'count and date share ordinary left-aligned wrapping text');
+    }
+    const action = card(101).querySelector('.trakt-description-action').getBoundingClientRect(), choice = card(101).querySelector('label').getBoundingClientRect();
+    ensure(action.top >= choice.bottom && action.right < choice.right - 44 && Math.abs(action.left - card(101).querySelector('.trakt-result-heading').getBoundingClientRect().left) < 1, 'description remains bottom-left with bottom-right space unused');
+    for (const mode of ['Keyword', 'User', 'URL / ID']) {
+     const button = textButton(mode); ensure(button.classList.contains('trakt-mode-choice') && button.dataset.selectionMode === 'single', 'scoped mode class retains exact choice labels');
+     if (!view.forcedColors && button.getAttribute('aria-pressed') === 'false') ensure(getComputedStyle(button).color === getComputedStyle(document.querySelector('.creation-stage-intro h3')).color, 'unselected mode text uses the neutral heading token');
+    }
+    for (const label of ['Popular Lists', 'Trending Lists']) ensure(textButton(label).classList.contains('trakt-browse-action') && !textButton(label).hasAttribute('aria-pressed'), 'secondary browse actions have exact labels and no mode state');
+    const dimensions = [101, 102, 103, 104, 105, 106, 107, 108, 109].map(id => ({ id, height: card(id).getBoundingClientRect().height }));
+    ensure(Math.abs(dimensions[0].height - dimensions[2].height) < 1, 'short and long descriptions use the same compact card height');
+    for (const row of document.querySelectorAll('.trakt-result')) {
+     const title = row.querySelector('strong').getBoundingClientRect(), likes = row.querySelector('.trakt-result-likes')?.getBoundingClientRect();
+     ensure(row.scrollWidth <= row.clientWidth + 1 && (!likes || title.right <= likes.left), 'long titles wrap without likes collision or horizontal overflow');
+     ensure(row.querySelector('label').getBoundingClientRect().height >= 44, 'selection target remains usable');
+    }
+    const checkDescription = async (id, closeMethod) => {
+     const row = card(id), trigger = row.querySelector('button'), checkbox = row.querySelector('input'), checked = checkbox.checked;
+     const calls = client.calls.length, project = controller.getState().project, pageTop = window.scrollY, outer = document.querySelector('.trakt-list-form .add-source-scroll'), outerTop = outer.scrollTop;
+     trigger.focus({ preventScroll: true }); await key('Enter');
+     const dialog = document.querySelector('.trakt-description-modal'), body = dialog?.querySelector('.trakt-description-body'), close = dialog?.querySelector('button');
+     ensure(dialog && dialog.getAttribute('role') === 'dialog' && dialog.getAttribute('aria-modal') === 'true' && document.getElementById(dialog.getAttribute('aria-labelledby')).textContent === row.querySelector('strong').textContent, 'named modal opens through native keyboard action');
+     ensure(body.textContent === reviewList(id).description && !body.querySelector('*'), 'full description rendered as plain metadata text only inside modal');
+     ensure(document.activeElement === close && outer.closest('[role="dialog"]').inert, 'Close receives focus and parent dialog is inert');
+     const bounds = dialog.getBoundingClientRect();
+     ensure(bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight && body.scrollWidth <= body.clientWidth + 1, 'description dialog fits viewport without horizontal overflow');
+     ensure(close.getBoundingClientRect().height >= 44 && close.getBoundingClientRect().bottom <= bounds.bottom, 'Close target always reachable');
+     await key('Tab'); ensure(document.activeElement === body, 'description scroll region is keyboard reachable');
+     await key('Tab'); ensure(document.activeElement === close && close.matches(':focus-visible'), 'Tab loops within description dialog with visible focus');
+     if (id === 103) { ensure(body.scrollHeight > body.clientHeight, 'long description has its own scroll owner'); body.scrollTop = body.scrollHeight; await settle(); ensure(body.scrollTop > 0, 'long description end is reachable'); }
+     await screenshot(scope + '-description-' + id + '-' + closeMethod);
+     if (closeMethod === 'Escape') await key('Escape'); else await clickAndSettle(close);
+     ensure(!document.querySelector('.trakt-description-modal') && document.activeElement === trigger && !outer.closest('[role="dialog"]').inert, 'close restores exact trigger and parent interaction');
+     ensure(checkbox.checked === checked && client.calls.length === calls && controller.getState().project === project && mutations === 0, 'description never toggles selection, requests metadata/media or mutates project');
+     ensure(window.scrollY === pageTop && outer.scrollTop === outerTop, 'description keeps outer scroll position stable');
+    };
+    await screenshot(scope + '-results-unselected');
+    await checkDescription(103, 'Escape');
     await select(101);
+    await checkDescription(101, 'Close');
+    ensure(card(101).dataset.selected === 'true' && card(101).querySelector('input').checked && card(101).dataset.selectionMode === 'multiple', 'retained selection uses shared multiple-choice treatment');
+    resultCards.push({ scope, dimensions, description: true, focusReturn: true, selectionUnchanged: true, requestDelta: 0 });
+    checkLayout(); await screenshot(scope + '-results-selected');
     const keyboardChoice = document.querySelector('.trakt-result input'); keyboardChoice.focus({ preventScroll: true });
     for (let press = 0; press < 2; press++) await act(async () => { await new Promise(resolve => { window.__finish230Key = resolve; window.pressGuidedPresentationKey(JSON.stringify({ key: " " })); }); await afterCommittedEffects(); });
     ensure(keyboardChoice.checked && document.activeElement === keyboardChoice, "native Space preserves semantic checkbox and focus");
@@ -136,7 +209,7 @@ export async function runTraktCreationScenario(helpers, view) {
     await click("Load more"); ensure(document.querySelectorAll(".trakt-result").length === 42, "explicit page append");
     await returnToTop();
     await click("User"); await input("#trakt-query", "@review-user"); await click("Search"); await select(102);
-    await click("Trending"); await select(103); await click("Popular");
+    await click("Trending Lists"); await select(103); await click("Popular Lists");
     ensure(document.querySelectorAll('.trakt-result input:checked').length === 3, "selection survives modes and pages");
     await click("URL / ID"); await input("#trakt-input", "101\ninvalid\nhttps://app.trakt.tv/users/review-user/lists/103"); await click("Resolve lists");
     ensure(document.querySelector(".trakt-line-results").textContent.includes("Already selected") && document.querySelector(".trakt-line-results").textContent.includes("Line 2"), "per-line outcomes");
@@ -205,7 +278,7 @@ export async function runTraktCreationScenario(helpers, view) {
     try {
      await act(async () => { root.render(createElement(MountedWorkspace, { controller, traktClient: client, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, optionId: "trakt-lists", destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) })); await afterCommittedEffects(); });
      if (scope === "add-source") { await clickAndSettle(host.querySelector('[data-action="add-source"]')); await clickAndSettle([...document.querySelectorAll('[role="dialog"] button')].find(button => button.textContent.includes("Trakt Lists"))); }
-     if (scenario === "manual") { await click("Popular"); for (const id of [104, 105, 106]) await clickAndSettle([...document.querySelectorAll(".trakt-result")].find(row => row.textContent.includes(`Trakt List ${id}`)).querySelector("input")); }
+     if (scenario === "manual") { await click("Popular Lists"); for (const id of [104, 105, 106]) await clickAndSettle([...document.querySelectorAll(".trakt-result")].find(row => row.textContent.includes(`Trakt List ${id}`)).querySelector("input")); }
      else {
       await click("URL / ID"); await input("#trakt-input", densityCount ? Array.from({ length: densityCount }, (_, index) => String(201 + index)).join("\n") : scenario === "batch" ? Array.from({ length: 42 }, (_, index) => String(201 + index)).join("\n") : scenario === "empty" ? "101" : scenario === "variants" ? "110\n111" : scenario === "remove-long" ? "107\n103" : "103");
       await click("Resolve lists"); if (scenario === "batch") { ensure(document.querySelector(".trakt-selected").textContent.includes("25"), "resolve has explicit boundary"); await click("Resume resolving"); }
@@ -278,7 +351,7 @@ export async function runTraktCreationScenario(helpers, view) {
     } finally { await act(async () => root.unmount()); host.remove(); }
    }
   }
-  ensure(requests.length === 0, "zero uninjected requests"); return { ...view, cases: results, presentation, density, edges, requests: requests.length, verified: true };
+  ensure(requests.length === 0, "zero uninjected requests"); return { ...view, cases: results, presentation, density, resultCards, edges, requests: requests.length, verified: true };
  } finally { window.fetch = originalFetch; document.documentElement.style.fontSize = ""; }
 }
 
@@ -289,7 +362,7 @@ export async function mountTraktOwnerReview({ createController, MountedWorkspace
  const scope = new URLSearchParams(location.search).get("scope") ?? "new-collection";
  const controller = createController(), destination = seed(controller, scope), client = createReviewClient();
  const instructions = document.createElement("section"); instructions.style.cssText = "padding:16px;max-width:800px;margin:auto;color:#dce8f4";
- instructions.innerHTML = '<h1>Trakt Lists · local owner review</h1><p>Deterministic mechanics only. No live requests. Select lists 101, 102 and 103 for the three review scenarios. Popular shows all examples; Keyword and User use the same local examples. Multiline: use 101, 102, 103 or https://app.trakt.tv/users/review-user/lists/mixed.</p><p><a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-collection">A · New Collection</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-folder">B · New Folder</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=add-source">C · Add Source</a></p><p>Close the dialog to choose another scenario. Refresh resets this temporary project. For C, select Add Source, then Trakt Lists.</p>';
+ instructions.innerHTML = '<h1>Trakt Lists · local owner review</h1><p>Deterministic mechanics only. No live requests. Select lists 101, 102 and 103 for the three review scenarios. Popular Lists shows short/long/no descriptions, known/unknown likes and dates, missing username, a disabled List and long titles. Select any available card to compare selected/unselected states; Keyword and User use the same local examples. Multiline: use 101, 102, 103 or https://app.trakt.tv/users/review-user/lists/mixed.</p><p><a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-collection">A · New Collection</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-folder">B · New Folder</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=add-source">C · Add Source</a></p><p>Close the dialog to choose another scenario. Refresh resets this temporary project. For C, select Add Source, then Trakt Lists.</p>';
  host.before(instructions);
  root.render(createElement(MountedWorkspace, { controller, traktClient: client, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) }));
  window.__traktOwnerReview = { client, controller };
