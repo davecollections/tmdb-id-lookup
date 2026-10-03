@@ -36,7 +36,7 @@ const { GENRE_CONCEPTS } = await vite.ssrLoadModule("/src/source-add/index.js");
 after(() => vite.close());
 
 test("Genres follows Franchises in the canonical family order in both creation scopes", () => {
-	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
+	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "trakt-lists", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) assert.deepEqual(creationOptionsForScope(scope).map((option) => option.id), expected);
 	assert.match(dialogSource, /CREATION_OPTION_IDS\.GENRES/);
 	assert.match(dialogSource, /<GenreHierarchyFlow/);

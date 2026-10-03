@@ -27,6 +27,12 @@ function assertSemanticEvidence(source, token, label) {
 // Test-owned contract: selected-folder Add supports optional display names.
 // Guided creation and Source Edit retain their separate naming contracts.
 const FAMILY_CAPABILITIES = Object.freeze({
+ trakt: Object.freeze({
+  ids: Object.freeze({ add: "trakt-lists", guided: "trakt-lists", edit: "trakt-list" }),
+  add: context("builder/src/ui/TraktSourceFlow.jsx", { media: C, sort: F, filtersAdvanced: U, roleCredit: N, preview: U, sourceName: C, physicalIdentity: C }, { media: "session.chooseMedia", sourceName: "<SourceNamesDisclosure", physicalIdentity: "createTraktSelectionSession" }),
+  guided: context("builder/src/ui/TraktSourceFlow.jsx", { media: C, sort: F, filtersAdvanced: U, roleCredit: N, preview: U, sourceName: C, physicalIdentity: C }, { media: "session.chooseMedia", sourceName: "<SourceNamesDisclosure", physicalIdentity: "createTraktSelectionSession" }),
+  edit: context("builder/src/ui/SourceEditorDialog.jsx", { media: F, sort: F, filtersAdvanced: U, roleCredit: N, preview: U, sourceName: C, physicalIdentity: F }, { sourceName: 'id="source-edit-title-input"' }),
+ }),
  discover: Object.freeze({
   ids: Object.freeze({ add: "advanced-discover", guided: "advanced-discover", edit: "advanced-discover" }),
   add: context("builder/src/ui/AdvancedDiscoverFlow.jsx", { media: C, sort: C, filtersAdvanced: C, roleCredit: N, preview: C, sourceName: C, physicalIdentity: C }, { media: "DISCOVER_MEDIA_OPTIONS", sort: "Sources to create", filtersAdvanced: "<DiscoverDetailedControls", preview: "<SourceTitlePreviewDialog", sourceName: "<SourceNamesDisclosure", physicalIdentity: "compileAdvancedDiscover" }),
@@ -232,8 +238,8 @@ test("the entity-selection evidence guard fails when confirmed parity wiring is 
 	assert.throws(() => assertSemanticEvidence(source.replace(token, ""), token, "network.add.controls"), /lost UI evidence/);
 });
 
-test("all eight native source families have a complete cross-context capability contract backed by semantic UI evidence", () => {
-	assert.deepEqual(Object.keys(FAMILY_CAPABILITIES), ["discover", "franchise", "lists", "people", "studio", "network", "streaming", "genre", "decade"]);
+test("all native source families have a complete cross-context capability contract backed by semantic UI evidence", () => {
+	assert.deepEqual(Object.keys(FAMILY_CAPABILITIES), ["trakt", "discover", "franchise", "lists", "people", "studio", "network", "streaming", "genre", "decade"]);
 	const usedStatuses = new Set();
 	for (const [family, definition] of Object.entries(FAMILY_CAPABILITIES)) {
 		for (const contextId of CONTEXTS) {
@@ -261,8 +267,7 @@ test("all eight native source families have a complete cross-context capability 
 test("Add, guided creation, and Source Edit registries cover exactly the contracted native families", () => {
 	const expectedAdd = Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.add).sort();
 	const expectedGuided = Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.guided).sort();
-	// B2 is an editor-only foundation. No placeholder Add/Guided mode exists.
-	const expectedEdit = [...Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.edit), "trakt-list"].sort();
+	const expectedEdit = Object.values(FAMILY_CAPABILITIES).map((family) => family.ids.edit).sort();
 	assert.deepEqual(AVAILABLE_SOURCE_MODES.map((mode) => mode.id).sort(), expectedAdd);
 	assert.deepEqual(CREATION_OPTIONS.filter((option) => option.id !== CREATION_OPTION_IDS.BLANK).map((option) => option.id).sort(), expectedGuided);
 	assert.deepEqual(SOURCE_EDITORS.map((editor) => editor.id).sort(), expectedEdit);

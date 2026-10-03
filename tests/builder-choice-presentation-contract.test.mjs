@@ -22,6 +22,7 @@ const FAMILY_CHOICE_EVIDENCE = Object.freeze({
 	[CREATION_OPTION_IDS.DECADES]: Object.freeze({ file: "builder/src/ui/CreationDialog.jsx", token: "data-decade-preset" }),
 	[CREATION_OPTION_IDS.PEOPLE]: Object.freeze({ file: "builder/src/ui/PeopleSourceFlow.jsx", token: "people-result-selectable" }),
 	[CREATION_OPTION_IDS.FRANCHISES]: Object.freeze({ file: "builder/src/ui/FranchiseSourceFlow.jsx", token: "franchise-result-selectable" }),
+	[CREATION_OPTION_IDS.TRAKT_LISTS]: Object.freeze({ file: "builder/src/ui/TraktSourceFlow.jsx", token: 'data-selection-mode="single"' }),
 	[CREATION_OPTION_IDS.TMDB_LISTS]: Object.freeze({ file: "builder/src/ui/TmdbListSourceFlow.jsx", token: "parseTmdbListBatch" }),
 	[CREATION_OPTION_IDS.STUDIOS]: Object.freeze({ file: "builder/src/ui/StudioHierarchyFlow.jsx", token: "studio-result-selectable" }),
 	[CREATION_OPTION_IDS.NETWORKS]: Object.freeze({ file: "builder/src/ui/NetworkHierarchyFlow.jsx", token: "network-result-selectable" }),

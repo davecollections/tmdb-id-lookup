@@ -86,6 +86,9 @@ export const TMDB_LIST_SOURCE_MODE = Object.freeze({
 	category: "native-tmdb",
 });
 
+export const TRAKT_LIST_SOURCE_MODE_ID = "trakt-lists";
+export const TRAKT_LIST_SOURCE_MODE = Object.freeze({ id: TRAKT_LIST_SOURCE_MODE_ID, label: "Trakt Lists", icon: "lists", providerLabel: "Trakt", description: "Add public Trakt lists as Movies or Series.", category: "native-trakt" });
+
 export const ADVANCED_DISCOVER_SOURCE_MODE_ID = "advanced-discover";
 export const ADVANCED_DISCOVER_SOURCE_MODE = Object.freeze({ id: ADVANCED_DISCOVER_SOURCE_MODE_ID, label: "Discover", icon: "genres", providerLabel: "TMDB", description: "Find titles with keywords and filters.", category: "native-tmdb" });
 
@@ -99,5 +102,6 @@ export const AVAILABLE_SOURCE_MODES = Object.freeze([
 	STREAMING_SOURCE_MODE,
 	STUDIO_SOURCE_MODE,
 	TMDB_LIST_SOURCE_MODE,
+	TRAKT_LIST_SOURCE_MODE,
 	ADVANCED_DISCOVER_SOURCE_MODE,
 ]);

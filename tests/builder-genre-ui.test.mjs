@@ -96,7 +96,7 @@ test("Add Source preserves the approved canonical family order", () => {
 		onSelectMode() {},
 	}));
 	const modeIds = [...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]);
-	assert.deepEqual(modeIds, ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
+	assert.deepEqual(modeIds, ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "trakt-lists", "advanced-discover"]);
 	assert.ok(markup.includes("<strong>Genres</strong>"));
 	assert.ok(markup.includes("<strong>Decade</strong>"));
 });

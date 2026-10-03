@@ -64,7 +64,7 @@ function provider(id) {
 }
 
 test("Streaming follows People in the canonical launcher order in both Creation scopes", () => {
-	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"];
+	const expected = ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "trakt-lists", "advanced-discover"];
 	for (const scope of ["new-collection", "new-folder"]) {
 		const markup = renderToStaticMarkup(createElement(CreationDialog, baseCreationProps(scope)));
 		assert.deepEqual([...markup.matchAll(/data-creation-option="([^"]+)"/g)].map((match) => match[1]), expected);

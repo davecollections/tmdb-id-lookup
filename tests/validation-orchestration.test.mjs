@@ -100,8 +100,8 @@ test("workflow has one planner, independent Core, exactly gated optional workers
 	assert.match(workflow, /permissions:\s+actions: read\s+contents: read\s+# Only newer/);
 	assert.doesNotMatch(workflow, /paths-ignore:|paths:|deploy-pages@|continue-on-error|secrets\.|dorny\/|paths-filter/);
 	assert.equal((workflow.match(/npm ci/g) ?? []).length, 4);
-	assert.equal(selectValidationChecks().length, 112);
-	assert.equal(selectValidationChecks("core").length, 109);
+	assert.equal(selectValidationChecks().length, 113);
+	assert.equal(selectValidationChecks("core").length, 110);
 });
 
 test("workflow concurrency supersedes only the same PR and never groups main/manual runs together", () => {
@@ -156,7 +156,7 @@ const all = [...VALIDATION_GROUPS];
 const histories = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/validation-routing-history.json"), "utf8"));
 
 test("every audited narrow leaf has its approved route; additions are not inferred from test filenames", () => {
-	assert.deepEqual(Object.fromEntries(Object.entries(IMPACT_REGISTRY).map(([key, paths]) => [key, paths.length])), { core: 104, source: 21, workspace: 30, artwork: 3, sourceWorkspace: 7 });
+	assert.deepEqual(Object.fromEntries(Object.entries(IMPACT_REGISTRY).map(([key, paths]) => [key, paths.length])), { core: 106, source: 21, workspace: 30, artwork: 3, sourceWorkspace: 7 });
 	const seen = new Set();
 	for (const [domain, paths] of Object.entries(IMPACT_REGISTRY)) for (const file of paths) {
 		assert.ok(!seen.has(file), file); seen.add(file);

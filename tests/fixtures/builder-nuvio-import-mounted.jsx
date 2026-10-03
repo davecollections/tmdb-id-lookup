@@ -844,7 +844,7 @@ window.prepareWelcomeCreation = async (enlarged = false) => {
 	const actual = [...dialog.querySelectorAll("button[data-creation-option]")].map(node => node.dataset.creationOption);
 	assert(JSON.stringify(actual) === JSON.stringify(expected), "Welcome uses the canonical D01 family options and order");
 	assert(document.querySelectorAll("[role=dialog]").length === 1, "Exactly one dialog opens under StrictMode");
-	assert(document.activeElement === dialog.querySelector('[data-creation-option="blank"]'), "Existing picker first-option focus is retained");
+	assert(document.activeElement === dialog.querySelector('#creation-title'), "Picker opens on its heading, leaving immediate actions neutral");
 	assert($(".workspace-underlay").inert && document.body.style.position === "fixed", "Existing modal inert/background lock is reused");
 	root.render(<StrictMode><BuilderApp controller={controller} nuvioConnection={connection} /></StrictMode>); await frame();
 	assert(creationDialog() === dialog && controller.getState() === welcomeOpening, "Rerender does not reopen or repeat creation");

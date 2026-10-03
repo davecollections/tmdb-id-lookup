@@ -62,7 +62,7 @@ function renderFlow(existingDraftCount = 0) {
 
 test("ordinary Add Source retains its labels in the canonical family order", () => {
 	const markup = renderToStaticMarkup(createElement(SourceModeDialog, { folderName: "Decades", onCancel() {}, onSelectMode() {} }));
-	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
+	assert.deepEqual([...markup.matchAll(/data-source-mode-option="([^"]+)"/g)].map((match) => match[1]), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "trakt-lists", "advanced-discover"]);
 	assert.match(markup, /<strong>Decade<\/strong>/);
 	assert.doesNotMatch(markup, /<strong>Decades<\/strong>/);
 });

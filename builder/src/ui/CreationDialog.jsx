@@ -89,6 +89,7 @@ import { GenreHierarchyFlow } from "./GenreHierarchyFlow.jsx";
 import { NetworkHierarchyFlow } from "./NetworkHierarchyFlow.jsx";
 import { StudioHierarchyFlow } from "./StudioHierarchyFlow.jsx";
 import { StreamingHierarchyFlow } from "./StreamingHierarchyFlow.jsx";
+import { TraktSourceFlow } from "./TraktSourceFlow.jsx";
 import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { NestedPreviewDialog } from "./NestedPreviewDialog.jsx";
 import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
@@ -105,14 +106,13 @@ const statusLabels = Object.freeze({
 	[DECADES_PLACEMENT_STATUSES.EXISTS_ELSEWHERE]: "Exists elsewhere",
 });
 
-function CreationLauncher({ firstOptionRef, onSelect, scope }) {
+function CreationLauncher({ onSelect, scope }) {
 	const options = creationOptionsForScope(scope);
 	return (
 		<ul className="add-source-scroll creation-option-list">
-			{options.map((option, index) => (
+			{options.map((option) => (
 				<li key={option.id}>
 					<LauncherOptionCard
-						buttonRef={index === 0 ? firstOptionRef : null}
 						className="creation-option-card"
 						dataAttribute="data-creation-option"
 						icon={option.icon}
@@ -762,6 +762,10 @@ export function CreationDialog({
 	onApplyGenres,
 	onApplyStreaming,
 	onApplyTmdbLists,
+	onApplyTraktLists,
+	traktClient,
+	currentProject = project,
+	currentProjectRevision = projectRevision,
 	onApplyAdvancedDiscover,
 	collectionProvider,
 	listProvider,
@@ -781,7 +785,7 @@ export function CreationDialog({
 	const [optionId, setOptionId] = useState(() => creationOptionSupportsScope(initialOptionId, scope) ? initialOptionId : null);
 	const [viewportStyle, setViewportStyle] = useState(() => typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window));
 	const dialogRef = useRef(null);
-	const firstOptionRef = useRef(null);
+	const launcherHeadingRef = useRef(null);
 
 	usePrePaintLayoutEffect(() => {
 		const unlockBody = lockAddSourceDocumentBody();
@@ -790,13 +794,15 @@ export function CreationDialog({
 			? dialogRef.current?.querySelector?.("#people-mode-title")
 			: optionId === CREATION_OPTION_IDS.GENRES
 				? dialogRef.current?.querySelector?.("#genre-hierarchy-select-title")
-			: optionId === null ? firstOptionRef.current : dialogRef.current;
+			: optionId === CREATION_OPTION_IDS.TRAKT_LISTS
+				? dialogRef.current?.querySelector?.(".trakt-list-form .creation-stage-intro h3")
+			: optionId === null ? launcherHeadingRef.current : dialogRef.current;
 		focusElementWithoutScroll(initialTarget ?? dialogRef.current);
 		return () => { stopObserving(); unlockBody(); };
 	}, []);
 
 	useEffect(() => {
-		if (optionId === null) focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current);
+		if (optionId === null) focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current);
 	}, [optionId]);
 
 	function selectOption(nextOptionId) {
@@ -806,7 +812,7 @@ export function CreationDialog({
 			onCreateBlank();
 			return;
 		}
-		if ([CREATION_OPTION_IDS.ADVANCED_DISCOVER, CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.TMDB_LISTS, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
+		if ([CREATION_OPTION_IDS.ADVANCED_DISCOVER, CREATION_OPTION_IDS.DECADES, CREATION_OPTION_IDS.PEOPLE, CREATION_OPTION_IDS.FRANCHISES, CREATION_OPTION_IDS.TMDB_LISTS, CREATION_OPTION_IDS.TRAKT_LISTS, CREATION_OPTION_IDS.STUDIOS, CREATION_OPTION_IDS.NETWORKS, CREATION_OPTION_IDS.GENRES, CREATION_OPTION_IDS.STREAMING_SERVICES].includes(nextOptionId)) setOptionId(nextOptionId);
 	}
 
 	if (optionId === CREATION_OPTION_IDS.ADVANCED_DISCOVER) return <Suspense fallback={<p role="status">Opening Discover…</p>}><AdvancedDiscoverFlow bodyLockManaged scope={scope} project={project} projectRevision={projectRevision} collectionInternalId={destinationCollectionInternalId} studioProvider={studioCatalogueProvider} networkProvider={networkCatalogueProvider} streamingProvider={streamingCatalogueProvider} onBack={() => setOptionId(null)} onCancel={onCancel} onApply={onApplyAdvancedDiscover} /></Suspense>;
@@ -816,24 +822,26 @@ export function CreationDialog({
 			<div className="settings-modal-backdrop add-source-backdrop" style={viewportStyle ?? undefined} onMouseDown={(event) => { if (event.target === event.currentTarget) { event.preventDefault(); focusElementWithoutScroll(dialogRef.current); } }}>
 				<section ref={dialogRef} className="add-source-dialog creation-dialog" data-creation-dialog="true" data-creation-scope={scope} data-creation-option={optionId ?? undefined} role="dialog" aria-modal="true" aria-labelledby="creation-title" aria-describedby="creation-description" tabIndex={-1} onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, onCancel)}>
 					{launcher ? <>
-						<CreationHeader title={scope === "new-folder" ? "What folder would you like to create?" : "What collection would you like to create?"} description="Choose Blank or a guided starting point." onClose={onCancel} />
-						<CreationLauncher firstOptionRef={firstOptionRef} onSelect={selectOption} scope={scope} />
+						<CreationHeader headingRef={launcherHeadingRef} title={scope === "new-folder" ? "What folder would you like to create?" : "What collection would you like to create?"} description="Choose Blank or a guided starting point." onClose={onCancel} />
+						<CreationLauncher onSelect={selectOption} scope={scope} />
 					</> : optionId === CREATION_OPTION_IDS.DECADES ? (
-						<DecadesFlow project={project} projectRevision={projectRevision} scope={scope} currentYear={currentYear} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={decadePreviewProvider} onBackToLauncher={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyDecades} />
+						<DecadesFlow project={project} projectRevision={projectRevision} scope={scope} currentYear={currentYear} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={decadePreviewProvider} onBackToLauncher={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyDecades} />
 					) : optionId === CREATION_OPTION_IDS.PEOPLE ? (
-						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
+						<PeopleSourceFlow embedded context="hierarchy" hierarchyScope={scope} provider={peopleProvider} manifestClient={peopleManifestClient} project={project} projectRevision={projectRevision} collection={scope === "new-folder" ? project.collections.find((entry) => entry.internalId === destinationCollectionInternalId) ?? null : null} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyPeople} />
 					) : optionId === CREATION_OPTION_IDS.FRANCHISES ? (
-						<FranchiseSourceFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={collectionProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyFranchises} />
+						<FranchiseSourceFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={collectionProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyFranchises} />
+					) : optionId === CREATION_OPTION_IDS.TRAKT_LISTS ? (
+						<TraktSourceFlow scope={scope} project={currentProject} projectRevision={currentProjectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} client={traktClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTraktLists} />
 					) : optionId === CREATION_OPTION_IDS.TMDB_LISTS ? (
-						<TmdbListSourceFlow context="hierarchy" scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={listProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTmdbLists} />
+						<TmdbListSourceFlow context="hierarchy" scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={listProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTmdbLists} />
 					) : optionId === CREATION_OPTION_IDS.STUDIOS ? (
-						<StudioHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={studioCatalogueProvider} previewProvider={studioPreviewProvider} artworkRuntimeClient={studioArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStudios} />
+						<StudioHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={studioCatalogueProvider} previewProvider={studioPreviewProvider} artworkRuntimeClient={studioArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStudios} />
 					) : optionId === CREATION_OPTION_IDS.NETWORKS ? (
-						<NetworkHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={networkCatalogueProvider} previewProvider={networkPreviewProvider} artworkRuntimeClient={networkArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyNetworks} />
+						<NetworkHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={networkCatalogueProvider} previewProvider={networkPreviewProvider} artworkRuntimeClient={networkArtworkRuntimeClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyNetworks} />
 					) : optionId === CREATION_OPTION_IDS.GENRES ? (
-						<GenreHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={genrePreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyGenres} />
+						<GenreHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} previewProvider={genrePreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyGenres} />
 					) : optionId === CREATION_OPTION_IDS.STREAMING_SERVICES ? (
-						<StreamingHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={streamingCatalogueProvider} previewProvider={streamingPreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(firstOptionRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStreaming} />
+						<StreamingHierarchyFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} catalogueProvider={streamingCatalogueProvider} previewProvider={streamingPreviewProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyStreaming} />
 					) : null}
 				</section>
 			</div>

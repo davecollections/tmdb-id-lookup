@@ -107,9 +107,17 @@ test("All-tab consumers share source-within-folder meaning and keep the Decades 
  assert.match(shared, /For each folder with two or more sources[^"\n]*All tab[^"\n]*its sources/);
  for (const file of ["CreationDialog", "PeopleSourceFlow", "FranchiseSourceFlow", "StudioHierarchyFlow", "NetworkHierarchyFlow", "GenreHierarchyFlow", "StreamingHierarchyFlow", "TmdbListSourceFlow", "AdvancedDiscoverFlow"]) {
   const source = read(`builder/src/ui/${file}.jsx`);
-  assert.match(source, /HierarchyCollectionPresentationControls/);
+  if (file === "TmdbListSourceFlow") {
+   assert.match(source, /import \{ GuidedPresentationControls \} from "\.\/GuidedPresentationControls\.jsx";/);
+   assert.match(source, /<GuidedPresentationControls scope=\{scope\} options=\{presentation\} folderCount=\{count\} destinationCollectionTitle=\{destinationCollectionTitle\} onChange=\{updatePresentation\} \/>/);
+   assert.doesNotMatch(source, /HierarchyCollectionPresentationControls/);
+  } else assert.match(source, /HierarchyCollectionPresentationControls/);
   assert.doesNotMatch(source, /showAllDescription=|Combine all (?:person|franchise|studio|network|genre|provider) folders|combines every folder/i);
  }
+ const guided = read("builder/src/ui/GuidedPresentationControls.jsx");
+ assert.match(guided, /import \{ HierarchyCollectionPresentationControls \} from "\.\/CollectionPresentationChoices\.jsx";/);
+ assert.match(guided, /<HierarchyCollectionPresentationControls selectedId=\{options\.viewMode\} name="tmdb-list-collection-layout" showAllTab=\{options\.showAllTab\} onPresentationChange=\{onChange\} showAllDescriptionId="tmdb-list-all-tab-help" showAllControlName="tmdbListShowAllTab" \/>/);
+ assert.doesNotMatch(guided, /showAllDescription=|Combine all (?:person|franchise|studio|network|genre|provider) folders|combines every folder/i);
  assert.match(read("builder/src/ui/CreationDialog.jsx"), /All tab combines this folder’s sources, while Decade overview is one source/);
 });
 

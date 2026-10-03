@@ -110,11 +110,11 @@ function addSource(current, editable = canonicalSource()) {
 }
 
 test("the shared creation registry keeps Blank first and leaves a stable future-option seam", () => {
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.id), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "advanced-discover"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.id), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "tmdb-lists", "trakt-lists", "advanced-discover"]);
 	assert.equal(Object.isFrozen(CREATION_OPTIONS), true);
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.label), ["Blank", "Decades", "Franchises", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB Lists", "Discover"]);
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "lists", "genres"]);
-	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), ["Start manually.", "Build by decade or year.", "Build from a movie franchise.", "Build by genre.", "Build from TV networks.", "Build around actors or directors.", "Build from streaming services.", "Build from movie or TV studios.", "Build from public TMDB lists.", "Build from keywords and filters."]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.label), ["Blank", "Decades", "Franchises", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB Lists", "Trakt Lists", "Discover"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.icon), ["blank", "decades", "franchises", "genres", "networks", "people", "streaming-services", "studios", "lists", "lists", "genres"]);
+	assert.deepEqual(CREATION_OPTIONS.map((option) => option.supportingText), ["Start manually.", "Build by decade or year.", "Build from a movie franchise.", "Build by genre.", "Build from TV networks.", "Build around actors or directors.", "Build from streaming services.", "Build from movie or TV studios.", "Build from public TMDB lists.", "Build from public Trakt lists.", "Build from keywords and filters."]);
 
 	assert.equal(CREATION_OPTIONS.every((option) => option.description === undefined), true);
 });
@@ -980,6 +980,6 @@ test("Pass C output summaries use actual hierarchy scope and omit unchanged cont
 
 test("Pass C source chooser retains approved labels and follows the shared family order", async () => {
  const { AVAILABLE_SOURCE_MODES } = await import("../builder/src/source-add/source-modes.js");
- assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ id }) => id), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "advanced-discover"]);
- assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ label }) => label), ["Decade", "Movie franchise", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB lists", "Discover"]);
+ assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ id }) => id), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "trakt-lists", "advanced-discover"]);
+ assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ label }) => label), ["Decade", "Movie franchise", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB lists", "Trakt Lists", "Discover"]);
 });

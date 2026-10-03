@@ -163,6 +163,6 @@ test("unsupported saved/synthetic fixtures stay opaque and cannot acquire Source
 	const result = importNuvioCollections(old, { idFactory: ids() });
 	const saved = result.project.collections.flatMap((c) => c.folders.flatMap((f) => f.sources)).find((s) => s.rawImported.traktListId === "synthetic-list-42");
 	assert.equal(saved.category, "opaque"); assert.equal(sourceEditorFor(saved), null);
-	assert.equal(AVAILABLE_SOURCE_MODES.some((entry) => /trakt/i.test(JSON.stringify(entry))), false);
-	assert.equal(CREATION_OPTIONS.some((entry) => /trakt/i.test(JSON.stringify(entry))), false);
+	assert.equal(AVAILABLE_SOURCE_MODES.some((entry) => entry.id === "trakt-lists"), true);
+	assert.equal(CREATION_OPTIONS.some((entry) => entry.id === "trakt-lists"), true);
 });

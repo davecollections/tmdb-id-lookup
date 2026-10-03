@@ -10167,3 +10167,69 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 	.tmdb-list-omitted, .tmdb-list-name-warning, .tmdb-list-placement-summary .studio-elsewhere-note { border: 1px solid CanvasText; }
 	.tmdb-list-review-item em.tmdb-list-ready-elsewhere { color: CanvasText; }
 }
+/* Trakt reuses the creation shell, semantic selection treatment and review rows. */
+.trakt-list-form .add-source-scroll { display: flex; flex-direction: column; gap: 12px; }
+.trakt-list-form .add-source-scroll > * { flex-shrink: 0; }
+.creation-dialog #creation-title[tabindex="-1"]:focus { outline: none; }
+.trakt-list-form :is(input[type="text"], textarea) { min-width: 0; width: 100%; }
+.trakt-list-form textarea { resize: vertical; min-height: 7rem; }
+.trakt-modes, .trakt-inline-actions, .trakt-search { display: flex; flex-wrap: wrap; gap: .5rem; }
+.trakt-modes > button { flex: 1 1 auto; }
+.trakt-list-form button { min-height: 44px; white-space: normal; }
+.trakt-search > input { flex: 1 1 10rem; width: auto; }
+.trakt-results { display: grid; gap: .7rem; }
+.trakt-result { display: grid; border: 1px solid #34495f; border-radius: .7rem; min-width: 0; overflow-wrap: anywhere; }
+.trakt-result-choice { display: grid; gap: 2px; padding: 8px 12px; min-width: 0; min-height: 44px; cursor: pointer; }
+.trakt-result:has(input:disabled) .trakt-result-choice { color: var(--muted); cursor: not-allowed; }
+.trakt-result:has(input:focus-visible) { outline: 3px solid #8de4ff; outline-offset: 3px; }
+.trakt-result-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; font-size: .9rem; line-height: 1.3; }
+.trakt-result-likes { color: var(--muted); white-space: nowrap; font-size: .75rem; line-height: 1.68; font-weight: 500; }
+.trakt-result-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; min-width: 0; color: #b7c6d6; font-size: .75rem; line-height: 1.35; }
+.trakt-result-meta > span { min-width: 0; }
+.trakt-result-id { margin-inline-start: auto; color: var(--muted); font-size: .72rem; text-align: right; }
+.trakt-result-details { display: block; }
+.trakt-result-unavailable { color: var(--muted); font-size: .75rem; }
+.trakt-result:has(.trakt-description-action) .trakt-result-choice { padding-bottom: 0; }
+.trakt-list-form .trakt-description-action { justify-self: start; margin: 0 12px 2px; padding: 4px 0; color: #b7c6d6; background: transparent; border: 0; border-radius: 4px; font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer; text-align: left; }
+.trakt-modes .trakt-mode-choice, .trakt-inline-actions .trakt-browse-action { color: var(--text); }
+.trakt-description-modal { width: min(560px, 100%); grid-template-rows: auto minmax(0, 1fr); }
+.trakt-description-modal > header { align-items: start; }
+.trakt-description-modal h3 { font-size: 1rem; line-height: 1.4; }
+.trakt-description-body { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; line-height: 1.6; }
+.trakt-description-action:focus-visible, .trakt-description-body:focus-visible { outline: 3px solid var(--cyan-bright); outline-offset: 2px; }
+@media (forced-colors: active) {
+ .trakt-result-meta, .trakt-result-id, .trakt-result-likes, .trakt-result-unavailable { color: CanvasText; }
+ .trakt-list-form .trakt-description-action, .trakt-modes .trakt-mode-choice, .trakt-inline-actions .trakt-browse-action { color: ButtonText; }
+ .trakt-description-modal { border-color: CanvasText; }
+ .trakt-description-action:focus-visible, .trakt-description-body:focus-visible { outline-color: Highlight; }
+}
+.trakt-line-results { padding-inline-start: 1.2rem; display: grid; gap: .6rem; overflow-wrap: anywhere; }
+.trakt-list-form :is(.tmdb-list-review-item, .trakt-selected, .trakt-placement) { min-width: 0; overflow-wrap: anywhere; }
+.trakt-list-form .tmdb-list-review-item { gap: 8px; padding: 10px 12px; }
+.trakt-list-form .tmdb-list-review-item .trakt-list-identity { display: grid; gap: 2px; justify-content: start; align-items: start; }
+.trakt-list-form .tmdb-list-review-item p { margin: 0; }
+.trakt-list-form .editor-field-error:empty { display: none; }
+.trakt-list-form .trakt-output-statuses { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .8rem; line-height: 1.5; }
+.trakt-list-form .tmdb-list-review-item > .trakt-placement { display: grid; gap: 8px; }
+.trakt-placement summary { min-height: 44px; padding-block: 12px; color: var(--cyan-bright); font-size: .75rem; cursor: pointer; }
+.trakt-media-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+.trakt-media-config { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.trakt-media-info { display: grid; gap: 2px; }
+@media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
+ .trakt-media-config { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+ .trakt-media-config > .semantic-sort-choices { justify-self: start; }
+}
+.trakt-list-form .studio-selected-remove { width: 44px; min-width: 44px; }
+.trakt-list-form .semantic-sort-choices legend { margin: 0; }
+.trakt-list-form .semantic-sort-choice-row label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.trakt-results-tail { display: flex; flex-wrap: wrap; gap: 8px; }
+.trakt-results-tail:empty { display: none; }
+.trakt-results-tail button { font-size: .8rem; padding: 8px 12px; }
+.trakt-list-form .tmdb-list-omitted ul { display: grid; gap: 8px; margin: 0; padding-inline-start: 24px; }
+.trakt-list-form .tmdb-list-omitted p { margin: 2px 0 0; font-size: .8rem; }
+.trakt-plan-totals > div { padding: 8px 12px; }
+.trakt-plan-totals span { font-size: .8rem; }
+.trakt-selected .add-source-section-heading { flex-wrap: wrap; gap: .5rem; }
+@media (forced-colors: active) {
+ .trakt-result:has(input:focus-visible) { outline-color: Highlight; }
+}
