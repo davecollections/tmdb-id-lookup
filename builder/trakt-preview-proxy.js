@@ -1,6 +1,7 @@
+import { isTraktSourcePreviewContext } from "./src/nuvio/trakt.js";
 import { TRAKT_API_ORIGIN, TRAKT_LOCAL_PROXY_PREFIX, isLocalTraktPreviewHost } from "./src/config/trakt-api.js";
 
-// Local Vite middleware only. No forwarded client headers, configurable target or /items route.
+// Local Vite middleware only. No forwarded client headers or configurable target.
 export function createTraktPreviewMiddleware({ fetchImpl = globalThis.fetch, timeoutMs = 25000 } = {}) {
 	return async (request, response, next) => {
 		if (!request.url?.startsWith(TRAKT_LOCAL_PROXY_PREFIX)) return next();
@@ -12,14 +13,27 @@ export function createTraktPreviewMiddleware({ fetchImpl = globalThis.fetch, tim
 			if (request.headers.origin && new URL(request.headers.origin).origin !== host.origin) return fail(403, "ORIGIN_DENIED");
 			if (request.method !== "GET") return fail(405, "METHOD_NOT_ALLOWED");
 			const rawPath = request.url.slice(TRAKT_LOCAL_PROXY_PREFIX.length).split("?")[0];
+			const items = /^\/v1\/trakt\/lists\/([1-9]\d*)\/items$/.exec(rawPath);
 			const allowed = rawPath === "/v1/trakt/search" ? ["mode", "q", "page", "limit"]
 				: rawPath === "/v1/trakt/browse" ? ["kind", "page", "limit"]
 					: rawPath === "/v1/trakt/resolve" ? ["value"]
-						: /^\/v1\/trakt\/lists\/[1-9]\d*\/media$/.test(rawPath) ? [] : null;
+						: /^\/v1\/trakt\/lists\/[1-9]\d*\/media$/.test(rawPath) ? [] : items ? ["page", "limit", "type", "sort_by", "sort_how"] : null;
 			if (!allowed) return fail(404, "NOT_FOUND");
 			target = new URL(request.url.slice(TRAKT_LOCAL_PROXY_PREFIX.length), TRAKT_API_ORIGIN);
 			if (target.origin !== TRAKT_API_ORIGIN || target.pathname !== rawPath || target.hash) return fail(400, "INVALID_REQUEST");
 			for (const key of target.searchParams.keys()) if (!allowed.includes(key) || target.searchParams.getAll(key).length !== 1) return fail(400, "INVALID_REQUEST");
+			if (items) {
+				const page = target.searchParams.get("page") ?? "1", limit = target.searchParams.get("limit") ?? "15";
+				if (!Number.isSafeInteger(Number(items[1])) || page !== "1" || !/^[1-9]\d*$/.test(limit)
+					|| !Number.isSafeInteger(Number(limit)) || Number(limit) > 50) return fail(400, "INVALID_REQUEST");
+				const query = new URLSearchParams({ page: "1", limit });
+				if (["type", "sort_by", "sort_how"].some(key => target.searchParams.has(key))) {
+					const context = { type: target.searchParams.get("type"), sortBy: target.searchParams.get("sort_by"), sortHow: target.searchParams.get("sort_how") };
+					if (!isTraktSourcePreviewContext(context)) return fail(400, "INVALID_REQUEST");
+					query.set("type", context.type); query.set("sort_by", context.sortBy); query.set("sort_how", context.sortHow);
+				}
+				target.search = query.toString();
+			}
 		} catch { return fail(400, "INVALID_REQUEST"); }
 		const controller = new AbortController(), abort = () => controller.abort();
 		const timer = setTimeout(abort, timeoutMs);

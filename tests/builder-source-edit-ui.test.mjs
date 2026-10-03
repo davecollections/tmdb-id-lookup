@@ -280,7 +280,7 @@ test("supported source menus include simple Streaming and show Edit source immed
 	}
 });
 
-test("native Trakt is editor-only, with fixed context and no Preview, links or replacement controls", () => {
+test("native Trakt has shared Preview with fixed context and no links or replacement controls", () => {
 	const controller = createController();
 	const value = { provider: "TrAkT", title: "Local List", traktListId: 123, mediaType: "tv", sortBy: "votes", sortHow: "desc" };
 	const folder = importSources(controller, [value, { ...value, traktListId: "saved-list" }]);
@@ -290,9 +290,15 @@ test("native Trakt is editor-only, with fixed context and no Preview, links or r
 	assert.match(workspace, /Native Trakt/); assert.match(workspace, /Preserved source/);
 	const opened = openEdit(controller, folder.sources[0]);
 	const markup = renderToStaticMarkup(createElement(SourceEditorDialog, { session: opened.session, initialDraft: opened.draft, onCancel() {}, onSave() {} }));
-	assert.equal((markup.match(/<input/g) ?? []).length, 1);
+	assert.equal((markup.match(/<input/g) ?? []).length, 11);
+ const sort = markup.match(/name="trakt-edit-sort"[^>]+value="([^"]+)"/g) ?? [];
+ assert.deepEqual(sort.map(value => value.match(/value="([^"]+)"/)[1]), ["rank", "added", "title", "released", "runtime", "popularity", "percentage", "votes"]);
+ assert.match(markup, /name="trakt-edit-sort"[^>]+checked=""[^>]+value="votes"|name="trakt-edit-sort"[^>]+value="votes"[^>]+checked=""/);
+ assert.match(markup, /name="trakt-edit-direction"[^>]+value="desc"/);
+ assert.doesNotMatch(markup, />Reset</);
 	assert.match(markup, /Source name/); assert.match(markup, /Trakt · List 123 · Series/); assert.match(markup, /Votes · Descending/);
-	assert.doesNotMatch(markup, /data-action="preview-source-edit"|<select|<a\s|Choose another/);
+	assert.match(markup, /data-action="preview-source-edit"/);
+	assert.doesNotMatch(markup, /<select|<a\s|Choose another/);
 });
 
 test("Source Edit exposes one draft-backed Preview action for all eight adapters immediately before the footer", () => {

@@ -5,7 +5,7 @@ import { PosterOnlyPreviewGrid } from "./PosterOnlyPreviewGrid.jsx";
 import { PreviewScrollContext } from "./SourcePreviewContent.jsx";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 
-export function TitlePreviewResults({ data: initialData, listPreview = false, hasImportedFilters = false, ...gridProps }) {
+export function TitlePreviewResults({ data: initialData, listPreview = false, hasImportedFilters = false, previewLimit, ...gridProps }) {
 	const [data, setData] = useState(initialData);
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState(null);
@@ -79,7 +79,7 @@ export function TitlePreviewResults({ data: initialData, listPreview = false, ha
 	return <>
 		<PosterOnlyPreviewGrid {...gridProps} items={represented.results} displayAll embedded emptyMessage={null}
 			renderSummary={(displayedCount) => <div className="source-title-preview-context">
-				<p className="source-title-preview-summary" role="status" data-preview-empty-state={displayedCount === 0 ? "true" : undefined}>{titlePreviewSummary(represented, displayedCount)}{listPreview && represented.orderingLabel ? ` · ${represented.orderingLabel}${represented.orderingLabel !== "List order" ? " within each page" : ""}` : ""}</p>
+				<p className="source-title-preview-summary" role="status" data-preview-empty-state={displayedCount === 0 ? "true" : undefined}>{titlePreviewSummary(represented, displayedCount, previewLimit)}{listPreview && represented.orderingLabel ? ` · ${represented.orderingLabel}${represented.orderingLabel !== "List order" ? " within each page" : ""}` : ""}</p>
 				{represented.orderingNote ? <p className="source-title-preview-summary tmdb-list-preview-ordering">{represented.orderingNote}</p> : null}
 				{hasImportedFilters ? <p className="source-title-preview-summary tmdb-list-preview-filters">Imported filters aren’t applied in Preview. Your saved settings will be kept.</p> : null}
 			</div>}

@@ -107,6 +107,7 @@ import { GenreSourceFlow } from "./GenreSourceFlow.jsx";
 import { DecadeSourceFlow } from "./DecadeSourceFlow.jsx";
 import { createTraktClient } from "../source-add/trakt-client.js";
 import { applyTraktCreationPlan } from "../source-add/trakt-creation-plan.js";
+import { createTmdbTitlePosterProvider } from "../source-add/tmdb-title-poster-provider.js";
 import { TraktSourceFlow } from "./TraktSourceFlow.jsx";
 import { TmdbListSourceFlow } from "./TmdbListSourceFlow.jsx";
 import { useExactUrlPreviewFailure } from "./exact-url-preview.js";
@@ -721,6 +722,8 @@ export function BuilderWorkspace({
 	sourceProvider = null,
 	listProvider = null,
 	traktClient = null,
+	traktPosterProvider = null,
+	traktPosterUrl = undefined,
 	peopleProvider = null,
 	networkCatalogueProvider = null,
 	networkCountProvider = null,
@@ -834,6 +837,8 @@ export function BuilderWorkspace({
 	if (sourceProviderRef.current === null) {
 		sourceProviderRef.current = sourceProvider ?? createTmdbCollectionProvider();
 	}
+	const traktPosterProviderRef = useRef(null);
+	if (traktPosterProviderRef.current === null) traktPosterProviderRef.current = traktPosterProvider ?? createTmdbTitlePosterProvider();
 	const traktClientRef = useRef(null);
 	if (traktClientRef.current === null) {
 		traktClientRef.current = traktClient ?? createTraktClient({
@@ -3023,6 +3028,7 @@ export function BuilderWorkspace({
 					onApplyTmdbLists={applyTmdbListPlan}
 					onApplyTraktLists={applyTraktPlan}
 					traktClient={traktClientRef.current}
+					traktPosterProvider={traktPosterProviderRef.current} traktPosterUrl={traktPosterUrl}
 					currentProject={state.project}
 					currentProjectRevision={state.revision}
 					onApplyAdvancedDiscover={applyDiscoverPlan}
@@ -3113,7 +3119,7 @@ export function BuilderWorkspace({
 						onApply={applyPeopleSources}
 					/>
 				) : visibleAddSourceSession.modeId === TRAKT_LIST_SOURCE_MODE_ID ? (
-					<TraktSourceFlow project={state.project} projectRevision={state.revision} folder={addSourceFolder} client={traktClientRef.current} onBack={returnToSourceModePicker} onCancel={cancelAddSource} onApply={applyTraktPlan} />
+					<TraktSourceFlow project={state.project} projectRevision={state.revision} folder={addSourceFolder} client={traktClientRef.current} posterProvider={traktPosterProviderRef.current} posterUrlForPath={traktPosterUrl} onBack={returnToSourceModePicker} onCancel={cancelAddSource} onApply={applyTraktPlan} />
 				) : visibleAddSourceSession.modeId === TMDB_LIST_SOURCE_MODE_ID ? (
 					<TmdbListSourceFlow
 						project={state.project}
@@ -3187,6 +3193,8 @@ export function BuilderWorkspace({
 			) : null}
 			{sourceEdit ? (sourceEdit.session.adapterId === "advanced-discover" ? <Suspense fallback={<p role="status">Opening Discover…</p>}><AdvancedDiscoverFlow initialDraft={sourceEdit.draft} collectionInternalId={sourceEdit.session.collectionInternalId} folderInternalId={sourceEdit.session.folderInternalId} project={state.project} projectRevision={state.revision} studioProvider={studioCatalogueProviderRef.current} networkProvider={networkCatalogueProviderRef.current} streamingProvider={streamingCatalogueProviderRef.current} onCancel={cancelSourceEdit} onSave={applySourceEdit} /></Suspense> :
 				<SourceEditorDialog
+					traktClient={traktClientRef.current}
+					traktPosterProvider={traktPosterProviderRef.current} traktPosterUrl={traktPosterUrl}
 					localOnly={exportOpen}
 					provider={sourceProviderRef.current}
 					listProvider={listProviderRef.current}

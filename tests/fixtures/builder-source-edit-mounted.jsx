@@ -1,4 +1,5 @@
 import { runSourceNamesScenario } from "./builder-source-names-mounted.jsx";
+import { runTraktPreviewScenario } from "./builder-trakt-preview-mounted.jsx";
 import { runTraktCreationScenario, mountTraktOwnerReview } from "./builder-trakt-creation-mounted.jsx";
 import { runTraktFoundationScenario } from "./builder-trakt-foundation-mounted.jsx";
 // Match main.jsx: shared styles load before component/lazy styles. Reversing this
@@ -8904,6 +8905,7 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
 };
 window.__runStudioMinimumVotesScenario = (view) => runStudioMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runNetworkMinimumVotesScenario = (view) => runNetworkMinimumVotesScenario({ createController, importSources, clickAndSettle, afterCommittedEffects, serializedValue, setInputValue, titlePreviewGeometry, waitForMountedCondition }, view);
+window.__runTraktPreviewScenario = view => runTraktPreviewScenario({ createController, MountedWorkspace, clickAndSettle, afterCommittedEffects, setInputValue }, view);
 window.__runTraktCreationScenario = view => runTraktCreationScenario({ createController, MountedWorkspace, clickAndSettle, afterCommittedEffects, setInputValue, setTextareaValue }, view);
 if (new URLSearchParams(location.search).has("trakt-creation-review")) void mountTraktOwnerReview({ createController, MountedWorkspace });
 window.__runTraktFoundationScenario = (view) => runTraktFoundationScenario({ createController, MountedWorkspace, clickAndSettle, afterCommittedEffects, setInputValue }, view);

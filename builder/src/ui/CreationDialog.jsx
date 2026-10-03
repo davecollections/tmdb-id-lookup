@@ -764,6 +764,8 @@ export function CreationDialog({
 	onApplyTmdbLists,
 	onApplyTraktLists,
 	traktClient,
+	traktPosterProvider,
+	traktPosterUrl,
 	currentProject = project,
 	currentProjectRevision = projectRevision,
 	onApplyAdvancedDiscover,
@@ -831,7 +833,7 @@ export function CreationDialog({
 					) : optionId === CREATION_OPTION_IDS.FRANCHISES ? (
 						<FranchiseSourceFlow scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={collectionProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyFranchises} />
 					) : optionId === CREATION_OPTION_IDS.TRAKT_LISTS ? (
-						<TraktSourceFlow scope={scope} project={currentProject} projectRevision={currentProjectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} client={traktClient} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTraktLists} />
+						<TraktSourceFlow scope={scope} project={currentProject} projectRevision={currentProjectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} client={traktClient} posterProvider={traktPosterProvider} posterUrlForPath={traktPosterUrl} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTraktLists} />
 					) : optionId === CREATION_OPTION_IDS.TMDB_LISTS ? (
 						<TmdbListSourceFlow context="hierarchy" scope={scope} project={project} projectRevision={projectRevision} destinationCollectionInternalId={destinationCollectionInternalId} destinationCollectionTitle={destinationCollectionTitle} provider={listProvider} onBack={() => { setOptionId(null); queueMicrotask(() => focusElementWithoutScroll(launcherHeadingRef.current ?? dialogRef.current)); }} onCancel={onCancel} onApply={onApplyTmdbLists} />
 					) : optionId === CREATION_OPTION_IDS.STUDIOS ? (

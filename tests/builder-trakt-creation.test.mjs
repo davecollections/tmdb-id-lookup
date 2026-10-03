@@ -234,9 +234,9 @@ test("late controller ID failure rolls the whole planned operation back", () => 
 	assert.equal(p.ok, true); assert.equal(applyTraktCreationPlan(controller, p.plan).ok, false); assert.equal(controller.getState().revision, before.revision); assert.deepEqual(controller.getState().project, before.project);
 });
 
-test("Trakt is registered in all visible launchers and B2 editor still owns title only", () => {
+test("Trakt launchers remain registered and the nonvisual C editor owns title and sorting", () => {
 	assert.equal(CREATION_OPTIONS.some(option => /trakt/i.test(option.id + option.label)), true);
 	assert.equal(AVAILABLE_SOURCE_MODES.some(option => /trakt/i.test(option.id + option.label)), true);
 	const editor = fs.readFileSync(new URL("../builder/src/source-edit/trakt-list-editor.js", import.meta.url), "utf8");
-	assert.match(editor, /ownedFields: Object\.freeze\(\["title"\]\)/);
+	assert.match(editor, /ownedFields: Object\.freeze\(\["title", "sortBy", "sortHow"\]\)/);
 });

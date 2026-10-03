@@ -1,3 +1,5 @@
+import { inspectNativeTraktSource, nativeTraktConfigurationKey } from "../nuvio/trakt.js";
+import { TRAKT_LIST_SOURCE_EDITOR_ID } from "./trakt-list-editor.js";
 import { exactDiscoverPreviewQuery } from "../source-add/advanced-discover.js";
 import { networkPreviewQuery } from "../source-add/network-advanced.js";
 import { studioPreviewQuery } from "../source-add/studio-advanced.js";
@@ -93,6 +95,14 @@ export function prepareSourceEditPreview(session, draft) {
 	const candidateSource = detachedCandidate(exact.source, patch);
 
 	switch (session.adapterId) {
+		case TRAKT_LIST_SOURCE_EDITOR_ID: {
+			const source = inspectNativeTraktSource(candidateSource);
+			if (!source || nativeTraktConfigurationKey(candidateSource) === null) return freezeFailure("These imported Trakt settings cannot be previewed exactly. They will be preserved when you save.");
+			return ready(candidateSource, {
+				kind: "trakt", listId: source.traktListId, mediaType: source.mediaType, label: draft.title,
+				sourcePreview: Object.freeze({ type: source.mediaType === "TV" ? "show" : "movie", sortBy: source.sortBy, sortHow: source.sortHow }),
+			});
+		}
 		case TMDB_LIST_SOURCE_EDITOR_ID: {
 			const effective = resolveEffectiveDiscoverSource(candidateSource);
 			if (!effective.ok) return freezeFailure(FIX_CURRENT_FIELDS_GUIDANCE);

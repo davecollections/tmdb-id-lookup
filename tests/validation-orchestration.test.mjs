@@ -156,7 +156,7 @@ const all = [...VALIDATION_GROUPS];
 const histories = JSON.parse(fs.readFileSync(path.join(root, "tests/fixtures/validation-routing-history.json"), "utf8"));
 
 test("every audited narrow leaf has its approved route; additions are not inferred from test filenames", () => {
-	assert.deepEqual(Object.fromEntries(Object.entries(IMPACT_REGISTRY).map(([key, paths]) => [key, paths.length])), { core: 106, source: 21, workspace: 30, artwork: 3, sourceWorkspace: 7 });
+	assert.deepEqual(Object.fromEntries(Object.entries(IMPACT_REGISTRY).map(([key, paths]) => [key, paths.length])), { core: 107, source: 21, workspace: 30, artwork: 3, sourceWorkspace: 7 });
 	const seen = new Set();
 	for (const [domain, paths] of Object.entries(IMPACT_REGISTRY)) for (const file of paths) {
 		assert.ok(!seen.has(file), file); seen.add(file);

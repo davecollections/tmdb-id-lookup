@@ -1,3 +1,4 @@
+import { isTraktSourcePreviewContext } from "../nuvio/trakt.js";
 import { traktApiBase } from "../config/trakt-api.js";
 import { isCanonicalTraktListId } from "../nuvio/trakt.js";
 import { createBoundedResponseCache } from "./bounded-response-cache.js";
@@ -59,6 +60,28 @@ export function normalizeTraktList(value) {
 		url: value.url, itemCount: value.item_count, likeCount: value.like_count, updatedAt: value.updated_at, availability: value.availability });
 }
 
+export function normalizeTraktItem(value) {
+	const nullableId = value => value === null || isCanonicalTraktListId(value);
+	const nullableSlug = value => value === null || (typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,120}$/.test(value));
+	if (!object(value) || !["movie", "show", "season", "episode"].includes(value.type)
+		|| !nullableText(value.title) || (value.title !== null && value.title.length > 2000)
+		|| ![value.year, value.rank, value.season, value.number].every(nullableCount)
+		|| !object(value.ids)) invalid();
+	const ids = value.ids;
+	if (![ids.trakt, ids.tmdb, ids.show_tmdb].every(nullableId)
+		|| ![ids.slug, ids.show_slug].every(nullableSlug)
+		|| !(ids.imdb === null || (typeof ids.imdb === "string" && ids.imdb.length <= 30 && /^tt\d+$/.test(ids.imdb)))) invalid();
+	return Object.freeze({ type: value.type, title: value.title, year: value.year, rank: value.rank,
+		season: value.season, number: value.number, ids: Object.freeze({ trakt: ids.trakt, tmdb: ids.tmdb,
+			imdb: ids.imdb, slug: ids.slug, showTmdb: ids.show_tmdb, showSlug: ids.show_slug }) });
+}
+
+function normalizePagination(value, page, limit) {
+	if (!object(value) || ![value.page, value.limit, value.page_count, value.item_count].every(nullableCount)
+		|| (value.page !== null && value.page !== page) || (value.limit !== null && value.limit !== limit)) invalid();
+	return Object.freeze({ page: value.page, limit: value.limit, pageCount: value.page_count, itemCount: value.item_count });
+}
+
 export function normalizeTraktResponse(payload, operation, { id, page = 1, limit = 30 } = {}) {
 	if (!object(payload) || payload.apiVersion !== 1) invalid();
 	if (operation === "resolve") {
@@ -74,12 +97,14 @@ export function normalizeTraktResponse(payload, operation, { id, page = 1, limit
 		if (media.composition !== composition) invalid();
 		return Object.freeze({ id, composition, movieCount: media.movie_count, showCount: media.show_count });
 	}
+	if (operation === "items") {
+		if (!isCanonicalTraktListId(id) || payload.id !== id || payload.sample !== "first-page"
+			|| !Array.isArray(payload.items) || payload.items.length > limit || page !== 1) invalid();
+		return Object.freeze({ id, sample: "first-page", items: Object.freeze(payload.items.map(normalizeTraktItem)),
+			pagination: normalizePagination(payload.pagination, 1, limit) });
+	}
 	if (!["keyword", "user", "popular", "trending"].includes(operation) || !Array.isArray(payload.lists) || payload.lists.length > limit || !object(payload.pagination)) invalid();
-	const p = payload.pagination;
-	if (![p.page, p.limit, p.page_count, p.item_count].every(nullableCount)
-		|| (p.page !== null && p.page !== page) || (p.limit !== null && p.limit !== limit)) invalid();
-	return Object.freeze({ lists: Object.freeze(payload.lists.map(normalizeTraktList)),
-		pagination: Object.freeze({ page: p.page, limit: p.limit, pageCount: p.page_count, itemCount: p.item_count }) });
+	return Object.freeze({ lists: Object.freeze(payload.lists.map(normalizeTraktList)), pagination: normalizePagination(payload.pagination, page, limit) });
 }
 
 // URL forms remain opaque input to the authoritative service resolver.
@@ -161,6 +186,17 @@ export function createTraktClient({ fetchImpl = globalThis.fetch, now = Date.now
 		getMedia: (id, options) => isCanonicalTraktListId(id)
 			? request({ path: `/v1/trakt/lists/${id}/media`, operation: "media", id }, options)
 			: Promise.resolve(traktFailure("INVALID_REQUEST")),
+		getItems: (id, options = {}) => {
+			const { limit = 15, sourcePreview } = options;
+			if (!isCanonicalTraktListId(id) || !Number.isSafeInteger(limit) || limit < 1 || limit > 50
+				|| Object.hasOwn(options, "page") || (Object.hasOwn(options, "sourcePreview") && !isTraktSourcePreviewContext(sourcePreview))) return Promise.resolve(traktFailure("INVALID_REQUEST"));
+			const query = new URLSearchParams({ page: "1", limit: String(limit) });
+			if (sourcePreview) {
+				query.set("type", sourcePreview.type); query.set("sort_by", sourcePreview.sortBy); query.set("sort_how", sourcePreview.sortHow);
+			}
+			return request({ path: "/v1/trakt/lists/" + id + "/items?" + query,
+				operation: "items", id, page: 1, limit }, options);
+		},
 		getNotBefore: () => cooldown?.notBefore ?? 0,
 	});
 }

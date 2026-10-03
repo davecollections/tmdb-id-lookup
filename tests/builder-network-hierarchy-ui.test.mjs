@@ -191,7 +191,7 @@ test("Configure retains Series knowledge while Preview totals belong to the exac
 	const countLabel = flow.slice(flow.indexOf("function configureCountLabel"), flow.indexOf("function SelectedNetworks"));
 	assert.match(countLabel, /exactCount === undefined \? network\?\.seriesCount : exactCount/);
 	assert.match(flow, /preview\?\.status === "ready".*setExactCounts/);
-	assert.match(read("builder/src/ui/TitlePreviewResults.jsx"), /titlePreviewSummary\(represented, displayedCount\)/);
+	assert.match(read("builder/src/ui/TitlePreviewResults.jsx"), /titlePreviewSummary\(represented, displayedCount, previewLimit\)/);
 	assert.doesNotMatch(flow.slice(flow.indexOf("const planResult"), flow.indexOf("const configureEntries")), /exactCounts|totalResults/);
 });
 

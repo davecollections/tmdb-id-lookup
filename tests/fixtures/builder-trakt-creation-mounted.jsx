@@ -1,10 +1,11 @@
+import { createReviewPreviewProviders } from "./builder-trakt-preview-data.js";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { buildNativeTraktSourceDraft } from "../../builder/src/source-add/trakt-source.js";
 import { traktFailure } from "../../builder/src/source-add/trakt-client.js";
 
 // Owner-authorized deterministic mechanics/visual evidence. Never live acceptance.
-const names = { 101: "Movie-only list", 102: "Series-only list", 103: "Mixed list", 104: "Empty list", 105: "Detection unavailable", 106: "Unavailable list" };
+const names = { 101: "Movie-only list", 102: "Series-only list", 103: "Mixed list", 104: "Empty list", 105: "Detection unavailable", 106: "Unavailable list", 112: "Count clarity example" };
 const shortDescription = "Deterministic owner-review metadata. A short description with <plain text>, not markup.";
 const longDescription = Array.from({ length: 18 }, (_, index) => "Paragraph " + (index + 1) + ". This complete description is already held in discovery metadata. It should scroll inside the description dialog while the selection and outer page remain unchanged.").join("\n\n") + "\n\n" + "LongUnbrokenDescriptionToken".repeat(18);
 export function reviewList(id, titleForId) {
@@ -16,6 +17,7 @@ export function reviewList(id, titleForId) {
   105: { description: shortDescription, itemCount: 77, likeCount: 17 },
   106: { description: null, likeCount: 0, updatedAt: "2026-10-02T12:30:00Z" },
   107: { description: shortDescription, itemCount: 77, likeCount: 1, updatedAt: "2026-10-02T12:30:00Z" },
+  112: { itemCount: 215 },
   108: { description: null, itemCount: 1, availability: "unavailable" },
   109: { description: null, itemCount: 1, updatedAt: "2026-10-02T12:30:00Z" },
  };
@@ -26,19 +28,19 @@ export function createReviewClient({ titleForId } = {}) {
  const list = id => reviewList(id, titleForId);
  const results = page => ({ ok: true, data: { lists: Array.from({ length: page === 1 ? 30 : 12 }, (_, index) => list(101 + (page - 1) * 30 + index)), pagination: { page, limit: 30, pageCount: 2, itemCount: 42 } } });
  const discovery = (kind, query, options) => { calls.push({ kind, query, page: options.page, limit: options.limit }); return Promise.resolve(results(options.page)); };
- return { calls, overrides, getNotBefore: () => 0,
+ return { calls, overrides, ...createReviewPreviewProviders(calls),
   searchKeyword: (query, options) => discovery("keyword", query, options), searchUser: (query, options) => discovery("user", query, options), browse: (kind, options) => discovery(kind, null, options),
   async resolve(input, options) { calls.push({ kind: "resolve", input, refresh: options?.refresh === true }); const tail = input.split("/").at(-1), id = Number(input) || Number(tail) || ({ "movie-only": 101, "series-only": 102, mixed: 103 })[tail]; return Number.isSafeInteger(id) && id > 0 ? { ok: true, data: { ...list(id), availability: "available" } } : traktFailure("INVALID_REQUEST"); },
   async getMedia(id, options) {
    calls.push({ kind: "media", id }); if (overrides.has(id)) return overrides.get(id)(options);
    if (id === 105) return traktFailure("UPSTREAM_FAILURE"); if (id === 106) return traktFailure("LIST_NOT_FOUND");
-   const movieCount = id === 102 || id === 104 ? 0 : 12, showCount = id === 101 || id === 104 ? 0 : 8;
+   const movieCount = id === 112 ? 46 : id === 102 || id === 104 ? 0 : 12, showCount = id === 112 ? 3 : id === 101 || id === 104 ? 0 : 8;
    return { ok: true, data: { id, movieCount, showCount, composition: movieCount ? showCount ? "mixed" : "movie-only" : showCount ? "show-only" : "zero" } };
   },
  };
 }
 
-function seed(controller, scope) {
+export function seed(controller, scope) {
  const c = controller.createCollection({ editable: { title: "Review destination" } }).createdInternalId;
  const f = controller.createFolder(c, { editable: { title: "Existing folder" } }).createdInternalId;
  const add = (folder, id, mediaType = "MOVIE", sortBy = "rank") => { const draft = buildNativeTraktSourceDraft({ title: `Saved ${id}`, traktListId: id, mediaType }).draft; controller.createSource(folder, { ...draft, editable: { ...draft.editable, sortBy }, ...(id === 111 ? { rawImported: { ...draft.editable, futureSetting: true } } : {}) }); };
@@ -109,7 +111,7 @@ export async function runTraktCreationScenario(helpers, view) {
    let mutations = 0, previous = initial.project;
    const unsubscribe = controller.subscribe(() => { const next = controller.getState().project; if (next !== previous) { mutations++; previous = next; } });
    try {
-    await act(async () => { root.render(createElement(MountedWorkspace, { controller, traktClient: client, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) })); await afterCommittedEffects(); });
+    await act(async () => { root.render(createElement(MountedWorkspace, { controller, traktClient: client, traktPosterProvider: client.posterProvider, traktPosterUrl: client.posterUrlForPath, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) })); await afterCommittedEffects(); });
     if (scope === "add-source") { await clickAndSettle(host.querySelector('[data-action="add-source"]')); }
     if (scope !== 'add-source') {
      const heading = document.querySelector('#creation-title'), blank = document.querySelector('button[data-creation-option="blank"]');
@@ -131,24 +133,24 @@ export async function runTraktCreationScenario(helpers, view) {
     ensure(client.calls[0].kind === "keyword" && client.calls[0].query === "123" && client.calls[0].limit === 30, "numeric keyword stays keyword");
     const select = async id => { const card = [...document.querySelectorAll(".trakt-result")].find(row => row.textContent.includes(`Trakt List ${id}`)); ensure(card, `result ${id}`); await clickAndSettle(card.querySelector("input")); };
     const card = id => document.querySelector('[data-trakt-result-id="' + id + '"]');
-    ensure(!/Public access not checked|Public list verified|\bitems?\b/.test(document.querySelector('.trakt-results').textContent), 'cards omit backend state and use titles vocabulary');
-    ensure(card(101).querySelector('strong').textContent === 'Movie-only list' && card(101).textContent.includes('@review-user') && card(101).textContent.includes('12 titles'), 'name, username, canonical ID and plural title count visible');
-    ensure(card(109).textContent.includes('1 title') && !card(109).textContent.includes('1 titles'), 'singular title');
+    ensure(!/Public access not checked|Public list verified|\d+ titles?\b/.test(document.querySelector('.trakt-results').textContent), 'cards omit backend state and use item vocabulary');
+    ensure(card(101).querySelector('strong').textContent === 'Movie-only list' && card(101).textContent.includes('@review-user') && card(101).textContent.includes('12 items'), 'name, username, canonical ID and plural item count visible');
+    ensure(card(109).textContent.includes('1 item') && !card(109).textContent.includes('1 items'), 'singular item');
     ensure(card(101).querySelector('.trakt-result-likes').getAttribute('aria-label') === '27 likes' && card(101).querySelector('.trakt-result-likes [aria-hidden="true"]').textContent === '♥', 'known likes have accessible count and decorative heart');
     ensure(card(103).querySelector('.trakt-result-likes').getAttribute('aria-label') === '0 likes' && !card(102).querySelector('.trakt-result-likes'), 'zero is known; null likes omitted');
     ensure(card(101).querySelector('time').textContent === '2 Oct 2026' && !card(102).querySelector('time') && !card(104).querySelector('.trakt-result-creator'), 'absolute known date and absent date/username');
     ensure(!card(101).textContent.includes(shortDescription) && !card(103).textContent.includes('Paragraph 1.'), 'no inline description or snippet');
-    ensure(!card(102).querySelector('button') && !card(104).querySelector('button') && card(108).querySelector('input').disabled && card(108).textContent.includes('Unavailable'), 'null/blank descriptions omitted and unavailable remains disabled');
+    ensure(!card(102).querySelector('.trakt-description-action') && !card(104).querySelector('.trakt-description-action') && card(108).querySelector('input').disabled && card(108).textContent.includes('Unavailable'), 'null/blank descriptions omitted and unavailable remains disabled');
     ensure(!document.querySelector('.trakt-result label button'), 'description action is a sibling of selectable label');
-    ensure(card(101).querySelector('.trakt-result-details').textContent === '12 titles · Last updated 2 Oct 2026' && card(105).querySelector('.trakt-result-details').textContent === '77 titles' && card(106).querySelector('.trakt-result-details').textContent === 'Last updated 2 Oct 2026' && !card(110).querySelector('.trakt-result-details'), 'left metadata combines known values with a conditional middle dot only');
-    ensure([...document.querySelectorAll('.trakt-description-action')].every(button => button.textContent === 'Read description') && !document.querySelector('.trakt-results').textContent.includes('Preview'), 'description action text is exact and no Preview placeholder exists');
+    ensure(card(101).querySelector('.trakt-result-details').textContent === '12 items · Last updated 2 Oct 2026' && card(105).querySelector('.trakt-result-details').textContent === '77 items' && card(106).querySelector('.trakt-result-details').textContent === 'Last updated 2 Oct 2026' && !card(110).querySelector('.trakt-result-details'), 'left metadata combines known values with a conditional middle dot only');
+    ensure([...document.querySelectorAll('.trakt-description-action')].every(button => button.textContent === 'Read description') && document.querySelectorAll('.trakt-preview-action').length === 30, 'description action text is exact and every result has a separate Preview action');
     for (const id of [101, 104]) {
      const row = card(id), heading = row.querySelector('.trakt-result-heading').getBoundingClientRect(), identity = row.querySelector('.trakt-result-id').getBoundingClientRect(), details = row.querySelector('.trakt-result-details');
      ensure(Math.abs(identity.right - heading.right) < 1, 'List ID stays right-aligned with or without a username');
      ensure(Math.abs(details.getBoundingClientRect().left - heading.left) < 1 && getComputedStyle(details).display === 'block', 'count and date share ordinary left-aligned wrapping text');
     }
     const action = card(101).querySelector('.trakt-description-action').getBoundingClientRect(), choice = card(101).querySelector('label').getBoundingClientRect();
-    ensure(action.top >= choice.bottom && action.right < choice.right - 44 && Math.abs(action.left - card(101).querySelector('.trakt-result-heading').getBoundingClientRect().left) < 1, 'description remains bottom-left with bottom-right space unused');
+    ensure(action.top >= choice.bottom && action.right < choice.right - 44 && Math.abs(action.left - card(101).querySelector('.trakt-result-heading').getBoundingClientRect().left) < 1, 'description remains bottom-left with room for the Preview action');
     for (const mode of ['Keyword', 'User', 'URL / ID']) {
      const button = textButton(mode); ensure(button.classList.contains('trakt-mode-choice') && button.dataset.selectionMode === 'single', 'scoped mode class retains exact choice labels');
      if (!view.forcedColors && button.getAttribute('aria-pressed') === 'false') ensure(getComputedStyle(button).color === getComputedStyle(document.querySelector('.creation-stage-intro h3')).color, 'unselected mode text uses the neutral heading token');
@@ -220,6 +222,13 @@ export async function runTraktCreationScenario(helpers, view) {
     const callsBeforeKeys = client.calls.length;
     await key('ArrowRight'); ensure(mediaChoice('movies').checked && document.querySelector('[data-trakt-media-id="101"]').querySelectorAll('input:checked').length === 1, 'native radio arrows retain exclusive choice');
     await key('ArrowLeft'); ensure(mediaChoice('automatic').checked && client.calls.length === callsBeforeKeys, 'radio interaction preserves automatic choice without requests');
+    ensure(client.itemRequests.length === 0 && document.querySelectorAll(".trakt-initial-sort-note").length === 1, "all scopes enter Media without Preview requests and show one sort note");
+    const mediaPreview = document.querySelector('[data-trakt-media-id="101"] .trakt-media-preview'), mediaCount = client.calls.filter(call => call.kind === "media").length;
+    await clickAndSettle(mediaPreview);
+    ensure(client.itemRequests.length === 1 && new URL(client.itemRequests[0].url).search === "?page=1&limit=50", "only explicit Media Preview requests the combined bounded sample");
+    ensure(client.calls.filter(call => call.kind === "media").length === mediaCount && mutations === 0, "Preview does not recheck media or mutate the project");
+    await key("Escape"); ensure(document.activeElement === mediaPreview && !document.querySelector(".source-edit-preview-modal"), "Media Preview closes to its exact trigger");
+
     await clickAndSettle(document.querySelector('[data-action="back-trakt"]')); headingFocused(); await click("Continue to Media"); headingFocused();
     ensure(client.calls.filter(call => call.kind === "media").length === 3, "completed results retained on Back");
     await click(`Continue to ${scope === "add-source" ? "Review" : "Names"}`);
@@ -246,7 +255,7 @@ export async function runTraktCreationScenario(helpers, view) {
     const namesHeight = document.querySelector('[data-trakt-review-id="103"]').getBoundingClientRect().height;
     const totals = document.querySelector('.trakt-plan-totals');
     if (totals) { const cells = [...totals.children].map(cell => cell.getBoundingClientRect()); ensure(cells.every(cell => Math.abs(cell.top - cells[0].top) < 1), 'count cells stay in one row'); }
-    if (view.width === 1280) ensure(mediaHeight < 125 && namesHeight < 220, 'desktop simple cards are substantially compact');
+    if (view.width === 1280) ensure(mediaHeight < 145 && namesHeight < 220, 'desktop cards retain compact density with the additional Trakt total line');
     presentation.push({ scope, mediaHeight, namesHeight, summaryHeight: totals?.getBoundingClientRect().height ?? null });
     const disclosure = document.querySelector(".source-names-disclosure"); ensure(disclosure && !disclosure.open, "optional names collapsed"); ensure(document.querySelectorAll(".source-names-disclosure").length === 1 && !disclosure.closest(".tmdb-list-review-item"), "one shared names disclosure outside Folder cards"); await clickAndSettle(disclosure.querySelector("summary"));
     ensure(disclosure.querySelectorAll('input[type="text"]').length === expectedSources, "ready-only source names");
@@ -260,6 +269,8 @@ export async function runTraktCreationScenario(helpers, view) {
     if (scope === "new-collection") { const created = project.collections.at(-1); ensure(created.folders.length === 3 && created.folders.flatMap(folder => folder.sources).length === 4, "A 3 folders / 4 sources"); }
     if (scope === "new-folder") { const folders = project.collections[0].folders; ensure(folders.length === 3 && folders[2].sources.length === 1 && folders[2].sources[0].editable.mediaType === "TV", "B partial creates sibling TV only"); }
     if (scope === "add-source") ensure(project.collections[0].folders[0].sources.length === 6, "C three new physical sources");
+    const existingIds = new Set(before.project.collections.flatMap(collection => collection.folders).flatMap(folder => folder.sources).map(source => source.internalId));
+    ensure(project.collections.flatMap(collection => collection.folders).flatMap(folder => folder.sources).filter(source => !existingIds.has(source.internalId)).every(source => source.editable.sortBy === "rank" && source.editable.sortHow === "asc"), "all three creation scopes retain rank/asc for newly created sources");
     results.push({ scope, sources: expectedSources, atomic: true });
    } finally { unsubscribe(); await act(async () => root.unmount()); host.remove(); }
   }
@@ -276,7 +287,7 @@ export async function runTraktCreationScenario(helpers, view) {
     if (scenario === "cancel") client.overrides.set(103, () => new Promise(resolve => { release = resolve; }));
     if (scenario === "cooldown") client.overrides.set(103, async () => traktFailure("UPSTREAM_BUDGET", Date.now() + 1200));
     try {
-     await act(async () => { root.render(createElement(MountedWorkspace, { controller, traktClient: client, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, optionId: "trakt-lists", destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) })); await afterCommittedEffects(); });
+     await act(async () => { root.render(createElement(MountedWorkspace, { controller, traktClient: client, traktPosterProvider: client.posterProvider, traktPosterUrl: client.posterUrlForPath, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, optionId: "trakt-lists", destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) })); await afterCommittedEffects(); });
      if (scope === "add-source") { await clickAndSettle(host.querySelector('[data-action="add-source"]')); await clickAndSettle([...document.querySelectorAll('[role="dialog"] button')].find(button => button.textContent.includes("Trakt Lists"))); }
      if (scenario === "manual") { await click("Popular Lists"); for (const id of [104, 105, 106]) await clickAndSettle([...document.querySelectorAll(".trakt-result")].find(row => row.textContent.includes(`Trakt List ${id}`)).querySelector("input")); }
      else {
@@ -362,8 +373,8 @@ export async function mountTraktOwnerReview({ createController, MountedWorkspace
  const scope = new URLSearchParams(location.search).get("scope") ?? "new-collection";
  const controller = createController(), destination = seed(controller, scope), client = createReviewClient();
  const instructions = document.createElement("section"); instructions.style.cssText = "padding:16px;max-width:800px;margin:auto;color:#dce8f4";
- instructions.innerHTML = '<h1>Trakt Lists · local owner review</h1><p>Deterministic mechanics only. No live requests. Select lists 101, 102 and 103 for the three review scenarios. Popular Lists shows short/long/no descriptions, known/unknown likes and dates, missing username, a disabled List and long titles. Select any available card to compare selected/unselected states; Keyword and User use the same local examples. Multiline: use 101, 102, 103 or https://app.trakt.tv/users/review-user/lists/mixed.</p><p><a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-collection">A · New Collection</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-folder">B · New Folder</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=add-source">C · Add Source</a></p><p>Close the dialog to choose another scenario. Refresh resets this temporary project. For C, select Add Source, then Trakt Lists.</p>';
+ instructions.innerHTML = '<h1>Trakt Lists · local owner review</h1><p>Deterministic mechanics only. No live requests. Select lists 101, 102 and 103 for the three review scenarios. Popular Lists shows short/long/no descriptions, known/unknown likes and dates, missing username, a disabled List and long titles. Select any available card to compare selected/unselected states; Keyword and User use the same local examples. Multiline: use 101, 102, 103 or https://app.trakt.tv/users/review-user/lists/mixed.</p><p><a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-collection">A · New Collection</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=new-folder">B · New Folder</a> · <a href="/tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review&scope=add-source">C · Add Source</a></p><p>Preview examples: 101 mixed posters, 104 empty, 105 error then Retry, 106 unavailable, 107 all posters, 109 no usable posters. Close the creation dialog and use Saved 101 → Edit source to change the unsaved sort/direction then click Preview titles. Select List 112 (Count clarity example) for 215 items, 46 Movies and 3 Series and the count-info dialog. Lists 101, 102 and 103 have matching totals. Media cards also have Preview titles and the rank/asc note. Sorted samples use local fixture order; the question-mark toolbar button opens About &amp; Credits. Refresh resets this temporary project. For C, select Add Source, then Trakt Lists.</p>';
  host.before(instructions);
- root.render(createElement(MountedWorkspace, { controller, traktClient: client, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) }));
+ root.render(createElement(MountedWorkspace, { controller, traktClient: client, traktPosterProvider: client.posterProvider, traktPosterUrl: client.posterUrlForPath, ...(scope === "add-source" ? {} : { initialCreationSession: { scope, destinationCollectionInternalId: destination.c, destinationCollectionTitle: "Review destination" } }) }));
  window.__traktOwnerReview = { client, controller };
 }

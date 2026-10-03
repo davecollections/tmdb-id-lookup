@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { buildTmdbPosterUrl } from "../source-add/index.js";
 
-function posterCandidates(items, size) {
+function posterCandidates(items, size, posterUrlForPath) {
 	if (!Array.isArray(items)) return [];
 	return items.map((item, index) => Object.freeze({
 		item,
 		index,
-		source: buildTmdbPosterUrl(item?.posterPath, size),
+		source: item?.posterPath ? posterUrlForPath(item.posterPath, size) : null,
 	})).filter((candidate) => candidate.source !== null);
 }
 
@@ -21,9 +21,10 @@ export function PosterOnlyPreviewGrid({
 	altPrefix = "Title",
 	emptyMessage = "No posters available.",
 	renderSummary,
+	posterUrlForPath = buildTmdbPosterUrl,
 }) {
 	const [failedSources, setFailedSources] = useState(() => new Set());
-	const candidates = posterCandidates(items, size).filter((candidate) => !failedSources.has(candidate.source));
+	const candidates = posterCandidates(items, size, posterUrlForPath).filter((candidate) => !failedSources.has(candidate.source));
 	const visible = displayAll ? candidates : candidates.slice(0, limit);
 	if (visible.length === 0) {
 		return <>{renderSummary?.(0)}{emptyMessage ? <p className="add-source-empty-results preview-posters-empty" data-preview-empty-state="true">{emptyMessage}</p> : null}</>;

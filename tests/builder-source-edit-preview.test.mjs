@@ -275,3 +275,27 @@ for (const [family, original, previewQuery, inclusionField] of [
 		}
 	});
 }
+
+
+for (const mediaType of ["MOVIE", "TV"]) for (const sortBy of ["rank", "added", "title", "released", "runtime", "popularity", "percentage", "votes"]) for (const sortHow of ["asc", "desc"]) {
+ test(`Trakt detached draft Preview ${mediaType}/${sortBy}/${sortHow} preserves the saved Source`, () => {
+  const controller = createProject([{ provider: "trakt", title: "Saved List", traktListId: 123, mediaType, sortBy: "rank", sortHow: "asc" }]);
+  const opened = openedAt(controller, 0), before = controller.stringifyProject().json, state = controller.getState();
+  const result = prepareSourceEditPreview(opened.session, { ...opened.draft, sortBy, sortHow });
+  assert.equal(result.previewable, true);
+  assert.deepEqual(result.request, { kind: "trakt", listId: 123, label: "Saved List", mediaType,
+   sourcePreview: { type: mediaType === "MOVIE" ? "movie" : "show", sortBy, sortHow } });
+  assert.equal(controller.stringifyProject().json, before); assert.equal(controller.getState(), state);
+  assert.notEqual(result.candidateSource, state.project.collections[0].folders[0].sources[0]);
+  assert.equal(result.candidateSource.editable.sortBy, sortBy); assert.equal(result.candidateSource.editable.sortHow, sortHow);
+ });
+}
+test("Trakt Preview rejects changed identity, invalid sorts and unknown extra semantics without modifying imports", () => {
+ for (const extras of [{}, { future: true }]) {
+  const controller = createProject([{ provider: "trakt", title: "Saved", traktListId: 123, mediaType: "MOVIE", sortBy: "rank", sortHow: "asc", ...extras }]);
+  const opened = openedAt(controller, 0), before = controller.stringifyProject().json;
+  for (const patch of [{ mediaType: "TV" }, { traktListId: 124 }, { sortBy: "random" }, { sortHow: "descending" }]) assert.equal(prepareSourceEditPreview(opened.session, { ...opened.draft, ...patch }).previewable, false);
+  if (extras.future) assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false);
+  assert.equal(controller.stringifyProject().json, before);
+ }
+});

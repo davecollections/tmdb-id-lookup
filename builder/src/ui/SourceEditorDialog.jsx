@@ -1,7 +1,9 @@
+import { TRAKT_SORT_LABELS } from "../nuvio/trakt.js";
+import { TRAKT_TITLE_PREVIEW_LIMIT } from "../source-add/trakt-preview.js";
 import { DiscoverFamilyAdvancedOptions } from "./DiscoverFamilyAdvancedOptions.jsx";
 import { MinimumVotesAdvancedOptions } from "./MinimumVotesAdvancedOptions.jsx";
 import { StudioAdvancedOptions } from "./StudioAdvancedOptions.jsx";
-import { TRAKT_LIST_SOURCE_EDITOR_ID } from "../source-edit/trakt-list-editor.js";
+import { TRAKT_LIST_SOURCE_EDITOR_ID, TRAKT_EDIT_SORT_OPTIONS, TRAKT_EDIT_DIRECTION_OPTIONS, updateTraktSourceSort, updateTraktSourceDirection } from "../source-edit/trakt-list-editor.js";
 import {
 	useEffect,
 	useLayoutEffect,
@@ -97,6 +99,7 @@ const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useL
 
 const editableFieldByDiagnosticPath = Object.freeze({
 	"$sourceEdit.sortBy": "sort",
+	"$sourceEdit.sortHow": "direction",
 	"$sourceEdit.title": "title",
 });
 
@@ -105,6 +108,7 @@ function diagnosticField(path) {
 	if (path?.endsWith(".combinationId")) return "combination";
 	if (path?.endsWith(".tmdbId")) return "collection";
 	if (path?.endsWith(".sortBy")) return "sort";
+	if (path?.endsWith(".sortHow")) return "direction";
 	return "dialog";
 }
 
@@ -162,6 +166,13 @@ function PeopleSourceIdentity({ draft }) {
 			TMDB person <strong>{draft.tmdbId}</strong>
 		</p>
 	);
+}
+
+export function TraktListEditorFields({ draft, sortRef, directionRef, onSortChange, onDirectionChange }) {
+ return <>
+  <SemanticSortChoices options={TRAKT_EDIT_SORT_OPTIONS} selectedId={draft.sortBy} name="trakt-edit-sort" firstInputRef={sortRef} onChange={onSortChange} />
+  <SemanticSortChoices options={TRAKT_EDIT_DIRECTION_OPTIONS} selectedId={draft.sortHow} name="trakt-edit-direction" legend="Direction" firstInputRef={directionRef} onChange={onDirectionChange} />
+ </>;
 }
 
 export function TmdbListEditorFields({ draft, sortRef, onSortChange }) {
@@ -480,11 +491,16 @@ function MovieCollectionEditorFields({ titleField = null, draft, session, choose
 	);
 }
 
-function SourceEditTitlePreview({ preview, onClose, onRetry }) {
+function SourceEditTitlePreview({ preview, posterUrlForPath, onClose, onRetry }) {
+	const request = preview.candidate.request;
+	const context = request.kind === "trakt" ? `${request.mediaType === "TV" ? "Series" : "Movies"} · ${TRAKT_SORT_LABELS[request.sourcePreview.sortBy]} · ${request.sourcePreview.sortHow === "asc" ? "Ascending" : "Descending"}` : null;
 	return (
 		<SourceTitlePreviewDialog
 			preview={preview}
 			titleId="source-edit-preview-title"
+			context={context}
+			previewLimit={request.kind === "trakt" ? TRAKT_TITLE_PREVIEW_LIMIT : undefined}
+			posterUrlForPath={request.kind === "trakt" ? posterUrlForPath : undefined}
 			backdropProps={{ "data-source-edit-preview-backdrop": "true" }}
 			onClose={onClose}
 			onRetry={onRetry}
@@ -494,6 +510,9 @@ function SourceEditTitlePreview({ preview, onClose, onRetry }) {
 
 export function SourceEditorDialog({
 	localOnly = false,
+	traktClient,
+	traktPosterProvider,
+	traktPosterUrl,
 	provider,
 	listProvider,
 	peopleProvider,
@@ -516,6 +535,7 @@ export function SourceEditorDialog({
 	onSave,
 }) {
 	if (localOnly) {
+		traktClient = traktPosterProvider = null;
 		provider = listProvider = peopleProvider = networkPreviewProvider = networkCatalogueProvider = networkCountProvider = null;
 		genrePreviewProvider = streamingCatalogueProvider = streamingPreviewProvider = studioCatalogueProvider = studioCountProvider = studioPreviewProvider = decadePreviewProvider = null;
 		initialPeopleCountState = { status: "not-requested" };
@@ -581,6 +601,7 @@ export function SourceEditorDialog({
 	const decadeSortRef = useRef(null);
 	const genreSortRef = useRef(null);
 	const tmdbListSortRef = useRef(null);
+	const traktSortRef = useRef(null), traktDirectionRef = useRef(null);
 	const genreSecondaryHeadingRef = useRef(null);
 	const genreSecondaryReturnFocusRef = useRef(null);
 	const pickerInputRef = useRef(null);
@@ -628,6 +649,8 @@ export function SourceEditorDialog({
 	const previewCandidate = useMemo(() => prepareSourceEditPreview(session, draft), [draft, session]);
 	const previewProviders = useMemo(() => Object.freeze({
 		collection: provider,
+		trakt: traktClient,
+		traktPosters: traktPosterProvider,
 		list: listProvider,
 		people: peopleProvider,
 		studio: studioPreviewProvider,
@@ -635,7 +658,7 @@ export function SourceEditorDialog({
 		streaming: streamingPreviewProvider,
 		genre: genrePreviewProvider,
 		decade: decadePreviewProvider,
-	}), [decadePreviewProvider, genrePreviewProvider, listProvider, networkPreviewProvider, peopleProvider, provider, streamingPreviewProvider, studioPreviewProvider]);
+	}), [traktClient, traktPosterProvider, decadePreviewProvider, genrePreviewProvider, listProvider, networkPreviewProvider, peopleProvider, provider, streamingPreviewProvider, studioPreviewProvider]);
 	const previewAvailable = previewCandidate.previewable && sourceTitlePreviewProviderAvailable(previewCandidate.request, previewProviders);
 	const previewGuidance = previewCandidate.guidance ?? (!previewAvailable ? "Preview is unavailable right now." : null);
 
@@ -744,8 +767,8 @@ export function SourceEditorDialog({
 	useEffect(() => {
 		if (!failure || !pendingFailureFocusRef.current) return;
 		pendingFailureFocusRef.current = false;
-		const sortRef = tmdbListSortRef.current ? tmdbListSortRef : peopleSortRef.current ? peopleSortRef : networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
-		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, title: titleInputRef });
+		const sortRef = traktSortRef.current ? traktSortRef : tmdbListSortRef.current ? tmdbListSortRef : peopleSortRef.current ? peopleSortRef : networkSortRef.current ? networkSortRef : streamingSortRef.current ? streamingSortRef : decadeSortRef.current ? decadeSortRef : genreSortRef.current ? genreSortRef : studioSortRef;
+		const invalidField = firstMountedInvalidField(failure, { sort: sortRef, direction: traktDirectionRef, title: titleInputRef });
 		if (invalidField) {
 			scrollFieldIntoViewIfNeeded(invalidField, scrollRef.current);
 			focusElementWithoutScroll(invalidField);
@@ -918,7 +941,7 @@ export function SourceEditorDialog({
 										: session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID
 											? "Update this TMDB List source name and title order."
 										: session.adapterId === TRAKT_LIST_SOURCE_EDITOR_ID
-											? "Update this Trakt List source name. List, media and sorting stay fixed."
+											? "Update this Trakt List source name and sorting. List and media stay fixed."
 									: "Edit this source’s name and available settings."}
 						</p>
 					</header>
@@ -949,7 +972,10 @@ export function SourceEditorDialog({
 											? <SourceIdentity adapter={adapter} draft={draft} />
 											: null}
 									{[TMDB_LIST_SOURCE_EDITOR_ID, TRAKT_LIST_SOURCE_EDITOR_ID].includes(session.adapterId) ? titleField : null}
-									{session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? (
+									{session.adapterId === TRAKT_LIST_SOURCE_EDITOR_ID ? <TraktListEditorFields draft={draft} sortRef={traktSortRef} directionRef={traktDirectionRef}
+          onSortChange={value => { setDraft(current => updateTraktSourceSort(current, value)); clearFieldDiagnostic("sort"); }}
+          onDirectionChange={value => { setDraft(current => updateTraktSourceDirection(current, value)); clearFieldDiagnostic("direction"); }} /> : null}
+         {session.adapterId === TMDB_LIST_SOURCE_EDITOR_ID ? (
 										<TmdbListEditorFields draft={draft} sortRef={tmdbListSortRef} onSortChange={(optionId) => {
 											setDraft((current) => updateTmdbListSourceSort(current, optionId));
 											clearFieldDiagnostic("sort");
@@ -1068,7 +1094,7 @@ export function SourceEditorDialog({
 											}}
 										/>
 									) : null}
-									{localOnly || session.adapterId === TRAKT_LIST_SOURCE_EDITOR_ID ? null : <div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
+									{localOnly ? null : <div className="source-edit-preview-action genre-hierarchy-configure-row-actions">
 										<button type="button" aria-haspopup="dialog" data-action="preview-source-edit" disabled={!previewAvailable || submitting} onClick={openPreview}>Preview titles</button>
 										{previewGuidance ? <p className="editor-field-help" role="status">{previewGuidance}</p> : null}
 									</div>}
@@ -1087,7 +1113,7 @@ export function SourceEditorDialog({
 					</form>
 				</section>
 			</div>
-			{preview ? <SourceEditTitlePreview preview={preview} onClose={closePreview} onRetry={() => loadPreview(preview.candidate)} /> : null}
+			{preview ? <SourceEditTitlePreview preview={preview} posterUrlForPath={traktPosterUrl} onClose={closePreview} onRetry={preview.error?.retryable === false ? undefined : () => loadPreview(preview.candidate)} /> : null}
 		</div>
 	);
 
