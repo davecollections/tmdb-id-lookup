@@ -8656,6 +8656,85 @@ window.__runNativeSharedAdvancedScenario = (view) => runNativeSharedAdvancedScen
 
 // #220 uses the existing mounted shell, controller, live providers and screenshot
 // binding. No external response or artwork is replaced by fixture data.
+window.__runImportedDiscoverCompatibilityScenario = async ({ mediaType = "MOVIE", preview = false }) => {
+ const check = (value, message) => { if (!value) throw new Error(`Imported Discover/${innerWidth}/${mediaType}: ${message}`); return value; };
+ const click = clickAndSettle, wait = waitForMountedCondition;
+ const button = (root, text) => [...root.querySelectorAll("button")].find((entry) => entry.textContent.trim() === text);
+ const [studios, networks, providers] = await Promise.all([liveStudioCatalogueProvider.loadCatalogue(), liveNetworkCatalogueProvider.loadCatalogue(), liveStreamingCatalogueProvider.loadCatalogue()]);
+ for (const result of [studios, networks, providers]) check(result.ok, result.error?.message);
+ const names = [["withCompanies", 3, studios.data.studios], ["withWatchProviders", 8, providers.data.providers], ["withWatchProviders", 1796, providers.data.providers], ...(mediaType === "TV" ? [["withNetworks", 213, networks.data.networks]] : [])].map(([field, id, rows]) => ({ field, id, name: check(rows.find((row) => row.id === id), "real catalogue selection " + id).name }));
+ const filters = { withGenres: mediaType === "MOVIE" ? "28" : "18", withWatchProviders: "8|1796", with_watch_providers: "8|1796", watchRegion: "US", watch_region: "US", withCompanies: "3", ...(mediaType === "TV" ? { withNetworks: "213" } : {}), withoutGenres: "16,99", without_genres: "16,99", withoutKeywords: "210024|222243", without_keywords: "210024|222243", voteCountGte: 50, "vote_count.gte": 50, voteAverageLte: null, sortBy: "popularity.desc" };
+ const controller = createController(), folder = importSources(controller, [{ title: "Imported Discover", provider: "tmdb", tmdbSourceType: "DISCOVER", tmdbId: null, mediaType, sortBy: "popularity.desc", filters }]);
+ const initial = controller.getState(), before = serializedValue(controller), source = folder.sources[0];
+ const opened = createSourceEditSession(initial.project, source.internalId); check(opened.ok && opened.session.adapterId === "genre", "ordinary Genre editor unavailable");
+ const requests = [];
+ const fetchImpl = async (input, init) => {
+  const response = await fetch(input, init), url = new URL(input instanceof Request ? input.url : input);
+  if (url.pathname.startsWith("/builder/discover/")) requests.push({ url: url.toString(), status: response.status, body: await response.clone().json() });
+  return response;
+ };
+ const host = document.createElement("div"), root = createRoot(host); document.body.append(host);
+ const savedDrafts = [], saves = [];
+ let mountKey = 0;
+ const mount = async () => {
+  await act(async () => { root.render(createElement(SourceEditorDialog, { key: mountKey++, session: opened.session, initialDraft: opened.draft, genrePreviewProvider: createTmdbGenrePreviewProvider({ fetchImpl }), onCancel() {}, onSave(draft) { savedDrafts.push(draft); const result = saveSourceEdit(controller, opened.session, draft); saves.push(result); return result; } })); await afterCommittedEffects(); });
+ };
+ try {
+  await mount();
+  let dialog = check(document.querySelector('.source-edit-dialog'), "source editor");
+  let advanced = check(dialog.querySelector('.genre-advanced-options'), "Family Advanced");
+  await click(advanced.querySelector('summary'));
+  await wait(() => !advanced.textContent.includes("Unavailable saved selection") && names.every(({ field, name }) => advanced.querySelector(`[data-picker="${field}"]`)?.textContent.includes(name)), { label: "saved catalogue names", timeoutMs: 60000 });
+  await wait(() => advanced.querySelector('[data-picker="withKeywords"] .discover-chips')?.textContent.includes("anime"), { label: "saved keyword names", timeoutMs: 60000 });
+  check(!advanced.textContent.includes("cannot be edited here"), "supported pipe keywords locked");
+  check(requests.length === 0 && serializedValue(controller) === before, "hydration requested titles or mutated the source");
+  await click(dialog.querySelector('button[type="submit"]'));
+  check(saves[0]?.ok && saves[0].changed === false, "hydration generated a Save patch");
+  check(savedDrafts[0].advancedTouched === false && savedDrafts[0].touchedFilters.length === 0, "hydration touched semantic state");
+  check(JSON.stringify(savedDrafts[0]) === JSON.stringify(opened.draft), "hydration changed the opening draft");
+  check(controller.getState().project === initial.project && controller.getState().revision === initial.revision && serializedValue(controller) === before, "no-op Save changed identity or serialization");
+  await mount();
+  dialog = document.querySelector('.source-edit-dialog'); advanced = dialog.querySelector('.genre-advanced-options');
+  await click(advanced.querySelector('summary'));
+  await wait(() => advanced.querySelector('[data-picker="withKeywords"] .discover-chips')?.textContent.includes("anime"), { label: "reopened saved names", timeoutMs: 60000 });
+  const keywords = advanced.querySelector('[data-picker="withKeywords"]');
+  const removals = [...keywords.querySelectorAll('.discover-chips button')]; check(removals.length === 2, "imported exclusion chips missing");
+  const retainedName = removals[0].closest('li').querySelector('span').textContent.replace(/^Excluded: /, "");
+  await click(removals[1]);
+  // A real catalogue suggestion adds a member after shrinking the imported pipe to one.
+  await click(button(keywords.querySelector('.discover-mode'), "Exclude"));
+  let area = keywords;
+  if (innerWidth <= 900) { await click(keywords.querySelector('.discover-picker-launch')); area = check(document.querySelector('.discover-selection-dialog'), "keyword selection dialog"); }
+  const search = area.querySelector('input[type="search"]');
+  await act(async () => { setInputValue(search, "shark"); await afterCommittedEffects(); });
+  await click(await wait(() => area.querySelector('[data-tmdb-id="15097"]'), { label: "real shark keyword" }));
+  if (area !== keywords) await click(button(area, "Done"));
+  check(keywords.textContent.includes(retainedName) && keywords.textContent.includes("shark"), "edited keyword selections");
+  if (preview) {
+   const trigger = check(button(dialog, "Preview titles"), "Preview trigger"); check(!trigger.disabled, "exact pipe Preview disabled"); await click(trigger);
+   const modal = await wait(() => document.querySelector('.source-edit-preview-modal'), { label: "exact Preview modal" });
+   await wait(() => requests.length && !modal.querySelector('.studio-preview-state'), { label: "production pipe Preview", timeoutMs: 60000 });
+   const response = requests[0], query = new URL(response.url).searchParams;
+   check(response.status === 200, "production Worker rejected pipe query: " + response.status);
+   check(query.get("without_keywords") === "210024|15097" && query.get("with_watch_providers") === "8|1796" && query.get("without_genres") === "16,99", "Preview did not use exact unsaved filters");
+   const images = [...modal.querySelectorAll('img')];
+   await wait(() => images.every((image) => image.complete && image.naturalWidth > 0), { label: "real Preview posters", timeoutMs: 30000 });
+   check(images.length || modal.querySelector('[data-preview-empty-state]'), "missing real posters/empty state");
+   check(images.every((image) => response.body.results.some((row) => row.poster_path && new URL(image.src).pathname.endsWith(row.poster_path))), "posters differ from actual response");
+   await click(button(modal, "Close")); check(document.activeElement === trigger, "Preview focus restoration");
+   check(serializedValue(controller) === before && saves.length === 1, "Preview saved changes");
+  }
+  check(dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth + 1 && window.scrollY === 0, "editor overflow");
+  await click(dialog.querySelector('button[type="submit"]'));
+  check(saves[1]?.ok && saves[1].changed, "deliberate edit failed: " + JSON.stringify(saves[1]));
+  check(savedDrafts[1].touchedFilters.join() === "withoutKeywords", "unrelated filters touched");
+  const out = controller.serializeProject().value[0].folders[0].sources[0];
+  const expected = { ...filters, withoutKeywords: "210024|15097", without_keywords: "210024|15097" };
+  check(Object.keys(out.filters).length === Object.keys(expected).length && Object.entries(expected).every(([field, value]) => JSON.stringify(out.filters[field]) === JSON.stringify(value)), "membership edit changed unrelated fields/mirrors: " + JSON.stringify(out.filters));
+  return { width: innerWidth, mediaType, names: names.map(({ name }) => name), hydrationNoOp: true, pipeRetained: true, previewRequests: requests.length };
+ } finally { await act(async () => root.unmount()); host.remove(); }
+};
+
 window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false }) => {
  const check = (value, message) => { if (!value) throw new Error(`${family}/${scope}/${innerWidth}: ${message}`); return value; };
  const click = clickAndSettle, wait = waitForMountedCondition, settle = afterCommittedEffects;

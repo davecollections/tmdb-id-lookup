@@ -1,4 +1,4 @@
-import { validateAdvancedFilters, deriveAdvancedDiscoverFilters } from "./advanced-discover.js";
+import { validateAdvancedFilters, deriveAdvancedDiscoverFilters, editableDiscoverExclusion } from "./advanced-discover.js";
 import { canonicalizeDiscoverFiltersForComparison, resolveEffectiveDiscoverSource } from "../nuvio/discover.js";
 import { discoverImportedMirrors, inspectDiscoverMirrors } from "../nuvio/discover-imported-filters.js";
 import { validateMinimumVotesFilters } from "./minimum-votes.js";
@@ -30,7 +30,7 @@ function validateGroup(filters, mediaType, fields) {
  const errors = Object.entries(values).flatMap(([field, value]) => {
   if (value === undefined || value === null || value === "") return [];
   if (field === "year" || field.startsWith("vote") ? !["string", "number"].includes(typeof value) : typeof value !== "string") return [error(field, "This setting must use a supported scalar value.")];
-  if (field.startsWith("without") && value.includes("|")) return [error(field, "These imported exclusions must be preserved; new exclusions use a comma list.")];
+  if (field.startsWith("without") && !editableDiscoverExclusion(field, value)) return [error(field, "These imported exclusions must be preserved.")];
   return [];
  });
  if (errors.length) return { ok: false, filters: {}, errors };

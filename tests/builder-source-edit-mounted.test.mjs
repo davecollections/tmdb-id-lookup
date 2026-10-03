@@ -94,6 +94,7 @@ async function runMountedPage() {
 	const contentCardsOnly = process.env.TMDB_DECADES_CONTENT_ONLY === "1";
 	const genreRulesOnly = process.env.TMDB_GENRE_RULES_ONLY === "1";
 	const familyAdvancedOnly = process.env.TMDB_FAMILY_ADVANCED_ONLY === "1";
+	const importedDiscoverOnly = process.env.TMDB_IMPORTED_DISCOVER_ONLY === "1";
 	const sharedAdvancedOnly = process.env.TMDB_NATIVE_SHARED_ADVANCED_ONLY === "1";
 	const launcherOnly = process.env.TMDB_ID_LOOKUP_LAUNCHER_ONLY === "1";
 	const sourceDetailsOnly = process.env.TMDB_SOURCE_DETAILS_ONLY === "1";
@@ -300,7 +301,7 @@ async function runMountedPage() {
 			return { previewPages: cases, posterlessPreview: empty.result.value };
 		}
 		await resources.pageConnection.command("Page.navigate", {
-			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${listHierarchyOnly || sourceNamesOnly || streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
+			url: `http://127.0.0.1:${address.port}/tests/fixtures/builder-source-edit-mounted.html${importedDiscoverOnly || listHierarchyOnly || sourceNamesOnly || streamingHierarchyOnly || editorOrderOnly || meaningOnly || requiredNamesOnly || semanticPresentationOnly || guidedPresentationOnly || previewPresentationOnly || decadesBoundaryOnly || genrePreviewOnly || decadesArtworkOnly || contentCardsOnly || genreRulesOnly || familyAdvancedOnly || sharedAdvancedOnly ? "?native-source-variants-only" : networkMinimumVotesOnly ? "?network-minimum-votes-only" : studioMinimumVotesOnly ? "?studio-minimum-votes-only" : discoverPreviewOnly ? "?discover-preview-only" : listEditOnly ? "?list-edit-only" : nativeVariantsOnly ? "?native-source-variants-only" : multiSortOnly ? "?source-sort-variants-only" : roundTripOnly ? "?source-round-trip-only" : sourceDetailsOnly ? "?source-details-only" : ""}`,
 		});
 		const deadline = Date.now() + 30000;
 		while (Date.now() < deadline) {
@@ -310,6 +311,17 @@ async function runMountedPage() {
 			});
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
+				if (importedDiscoverOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+					result.results.importedDiscoverCases = [];
+					for (const view of (importedDiscoverOnly ? [{ width: 360 }, { width: 384 }, { width: 393, preview: true }, { width: 402 }, { width: 412 }, { width: 1280, mediaType: "TV", preview: true }] : [{ width: 393, preview: true }, { width: 1280, mediaType: "TV", preview: true }])) {
+						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__runImportedDiscoverCompatibilityScenario(" + JSON.stringify(view) + ")", awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						result.results.importedDiscoverCases.push(checked.result.value);
+						console.log("IMPORTED_DISCOVER_COMPATIBILITY " + JSON.stringify(checked.result.value));
+					}
+					if (importedDiscoverOnly) return result.results;
+				}
 				if (!new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
 					result.results.traktCreationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktCreationScenario");
 					result.results.traktPreviewCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktPreviewScenario");
@@ -4191,6 +4203,15 @@ test("mounted #198 wording stays scoped to creation, Preview and single-Source e
 test("mounted native Shared Advanced combines eight surfaces and responsive disclosure evidence", () => {
  assert.equal(mountedResults.sharedAdvancedCases.length, process.env.TMDB_NATIVE_SHARED_ADVANCED_ONLY === "1" ? 12 : 8);
  for (const result of mountedResults.sharedAdvancedCases) { assert.ok(result.sharedAdvanced.noImplicitRequests && result.sharedAdvanced.boundedScroll); if (!result.sharedAdvanced.layoutOnly) assert.ok(result.atomic && result.preservation && result.previews.length); }
+});
+
+test("mounted imported Discover hydrates without edits and previews preserved pipe exclusions", () => {
+ assert.equal(mountedResults.importedDiscoverCases.length, process.env.TMDB_IMPORTED_DISCOVER_ONLY === "1" ? 6 : 2);
+ for (const result of mountedResults.importedDiscoverCases) {
+  assert.equal(result.hydrationNoOp, true); assert.equal(result.pipeRetained, true);
+  assert.equal(result.previewRequests, [393, 1280].includes(result.width) ? 1 : 0);
+  assert.equal(result.names.length, result.mediaType === "TV" ? 4 : 3);
+ }
 });
 
 test("mounted family Advanced combines twelve surfaces and responsive disclosure evidence", () => {

@@ -1425,7 +1425,7 @@ for (const [tmdbSourceType, mediaType] of [["COMPANY", "MOVIE"], ["COMPANY", "TV
   }
  });
  test(tmdbSourceType + "/" + mediaType + " opaque shared fields retain title/no-op/unrelated edits and block exact Preview", () => {
-  for (const filters of [{ withOriginalLanguage: "en|fr" }, { withOriginCountry: ["US"] }, { with_genres: "16" }, { withGenres: "16", with_genres: "35" }, { withoutGenres: "16|35" }, { withKeywords: "1|2,3" }, { withoutKeywords: "1|2" }, { releaseDateGte: "2021-02-29" }, { year: 2020, releaseDateLte: "2019-12-31" }]) {
+  for (const filters of [{ withOriginalLanguage: "en|fr" }, { withOriginCountry: ["US"] }, { with_genres: "16" }, { withGenres: "16", with_genres: "35" }, { withoutGenres: "16|35" }, { withKeywords: "1|2,3" }, { withoutKeywords: "1|2,3" }, { releaseDateGte: "2021-02-29" }, { year: 2020, releaseDateLte: "2019-12-31" }]) {
    const app = createController(); importFolder(app, [native(filters)]); const opened = sessionFor(app);
    assert.equal(prepareSourceEditPreview(opened.session, opened.draft).previewable, false, JSON.stringify(filters));
    assert.equal(saveSourceEdit(app, opened.session, opened.draft).ok, true);

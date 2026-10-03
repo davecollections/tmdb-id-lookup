@@ -37,7 +37,7 @@ export function compileAnchoredDiscoverFilters(optional, fixed, mediaMode, media
  const errors = [];
  for (const [field, value] of Object.entries(optional)) {
   if (!fields.includes(field) || Object.hasOwn(fixed, field)) errors.push(error(field, "This setting is fixed by the selected source."));
-  if (field.startsWith("without") && meaningful(value) && (typeof value !== "string" || value.includes("|"))) errors.push(error(field, "Choose individual exclusions; exclusion matching cannot be changed here."));
+  if (field.startsWith("without") && meaningful(value) && !editableDiscoverExclusion(field, value)) errors.push(error(field, "These imported exclusions must be preserved."));
  }
  // Derivation precedes coupling validation: fixed provider/region and period values
  // must participate in overlap checks with the optional settings.
@@ -55,6 +55,11 @@ export function validDiscoverExpression(value, single = false) {
  if (typeof value !== "string" || !(single ? /^[1-9]\d*$/ : /^(?:[1-9]\d*)(?:(?:,[1-9]\d*)+|(?:\|[1-9]\d*)+)?$/).test(value)) return false;
  const ids = discoverExpressionIds(value);
  return ids.every((id) => Number.isSafeInteger(id) && id <= MAX_ID) && new Set(ids).size === ids.length;
+}
+// Current client round-trip/query evidence explicitly covers these pipe exclusions.
+// Other exclusion groups retain their existing comma-only editing boundary.
+export function editableDiscoverExclusion(field, value) {
+ return validDiscoverExpression(value) && (!value.includes("|") || ["withoutKeywords", "withoutWatchProviders"].includes(field));
 }
 export function discoverGenreAvailability(filters, mediaType) {
  const otherMedia = mediaType === "TV" ? "MOVIE" : "TV";
@@ -191,7 +196,7 @@ export function exactDiscoverPreviewQuery(sourceDraft) {
   const value = filters[field];
   if (!meaningful(value)) continue;
   if (valueType === "string" ? typeof value !== "string" : !["string", "number"].includes(typeof value)) return null;
-  if (field.startsWith("without") && value.includes("|")) return null;
+  if (field.startsWith("without") && !editableDiscoverExclusion(field, value)) return null;
  }
  const mirrors = inspectDiscoverMirrors(source);
  if (mirrors.unresolved.length) return null;
@@ -201,12 +206,16 @@ export function exactDiscoverPreviewQuery(sourceDraft) {
 }
 export function setDiscoverSelection(draft, field, entry, { remove = false, operator } = {}) {
  if (!remove && discoverSelectionConflict(draft, field, entry.id)) return draft;
+ if (meaningful(draft.filters[field]) && !validDiscoverExpression(draft.filters[field])) return draft;
  const ids = discoverExpressionIds(draft.filters[field]);
  const next = remove ? ids.filter((id) => id !== entry.id) : ids.includes(entry.id) ? ids : [...ids, entry.id];
- const separator = field.startsWith("without") ? "," : operator ?? discoverSelectionOperator(draft, field);
+ const stored = draft.filters[field];
+ const separator = field.startsWith("without")
+  ? (stored?.includes("|") ? "|" : stored?.includes(",") ? "," : draft.operators?.[field] ?? ",")
+  : operator ?? discoverSelectionOperator(draft, field);
  const filters = { ...draft.filters };
  if (next.length) filters[field] = next.join(separator); else delete filters[field];
- return { ...draft, filters, operators: { ...draft.operators, ...(field.startsWith("without") ? {} : { [field]: separator }) }, labels: { ...draft.labels, [field + ":" + entry.id]: entry.name } };
+ return { ...draft, filters, operators: { ...draft.operators, [field]: separator }, labels: { ...draft.labels, [field + ":" + entry.id]: entry.name } };
 }
 export function discoverDraftIdentity(draft) { return discoverSourceIdentity(draft?.editable).key; }
 
