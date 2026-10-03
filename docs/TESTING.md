@@ -1,5 +1,11 @@
 # Repository Testing
 
+## Imported Discover Advanced compatibility (#286)
+
+Run `node --test tests/builder-family-advanced.test.mjs tests/builder-advanced-discover.test.mjs tests/builder-advanced-discover-worker.test.mjs tests/builder-native-source-variants.test.mjs tests/builder-source-edit-foundation.test.mjs tests/builder-source-edit-preview.test.mjs tests/builder-source-edit-ui.test.mjs` for the narrow pure-pipe exclusion contract, delimiter/order retention through membership edits, equivalent-mirror ownership, unsafe preservation, exact unsaved queries and display-only name resolution. Synthetic catalogue/failure values are confined to pure units.
+
+Set `TMDB_IMPORTED_DISCOVER_ONLY=1`, then run `node --test --test-name-pattern="mounted imported Discover" tests/builder-source-edit-mounted.test.mjs`. The existing harness covers 360/384/393/402/412/1280px with actual Studio/Network/provider and keyword catalogues. It verifies exact opening-draft equality after hydration, untouched flags, zero-change Save/serialization/revision, reopening, keyword removal/addition through a one-member pipe draft, equivalent-mirror updates and containment. Explicit Movie/TV Preview uses the production Worker and real TMDB responses/posters, checks the unsaved query and focus restoration, and never saves. The normal broad runner retains the 393/1280 cases. No screenshots or private collection are required or stored.
+
 ## Native Trakt B2 focused validation (#279)
 
 Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](v2/BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.

@@ -8,7 +8,7 @@ import { discoverExpressionIds, deriveAdvancedDiscoverFilters } from "../source-
 import { GENRE_LANGUAGE_OPTIONS, GENRE_COUNTRY_OPTIONS } from "../source-add/genre-advanced.js";
 import { loadDiscoverNamedCodes } from "../source-add/discover-codes.js";
 import { keywordCatalogueClient } from "../source-add/keyword-catalogue-client.js";
-import { discoverFilterRows } from "../source-add/discover-selection-labels.js";
+import { discoverFilterRows, mergeDiscoverSelectionLabels, resolveDiscoverEntityLabels } from "../source-add/discover-selection-labels.js";
 import { NATIVE_EXTRA_FIELDS, NATIVE_GENRE_FIELDS, customizeNativeGenres, resolveNativeGenreFilters, useDefaultNativeGenres, validateNativeAdvancedDraft } from "../source-add/native-shared-advanced.js";
 import "./native-shared-advanced.css";
 import { createStudioCatalogueProvider } from "../source-add/studio-catalogue.js";
@@ -49,9 +49,20 @@ export function NativeExtraAdvancedControls({ draft, onChange, entities = [], ex
  const [codes, setCodes] = useState(null), [catalogue, setCatalogue] = useState({ status: "idle" });
  const [panel, setPanel] = useState(null), [context, setContext] = useState("default"), [genreUi, setGenreUi] = useState({});
  const [attempt, setAttempt] = useState(0);
+ const [hydratedLabels, setHydratedLabels] = useState({});
  const titleId = useId();
  const mediaMode = draft.mediaMode ?? (draft.mediaType === "TV" ? "series" : "movies");
- const value = { ...draft, mediaMode, labels: draft.labels ?? {} };
+ // Catalogue hydration is display state, never a user edit or a touched filter.
+ const value = mergeDiscoverSelectionLabels({ ...draft, mediaMode, labels: draft.labels ?? {} }, hydratedLabels);
+ const entitySelections = JSON.stringify([draft.filters.withCompanies, draft.filters.withoutCompanies, draft.filters.withNetworks, draft.filters.withWatchProviders, draft.filters.withoutWatchProviders]);
+ useEffect(() => {
+  if (!expanded || !catalogueControls) return;
+  let alive = true;
+  resolveDiscoverEntityLabels({ ...latest.current.draft, labels: latest.current.draft.labels ?? {} }, { studioProvider, networkProvider, streamingProvider }).then(({ labels }) => {
+   if (alive) setHydratedLabels((current) => ({ ...current, ...labels }));
+  });
+  return () => { alive = false; };
+ }, [expanded, catalogueControls, entitySelections, studioProvider, networkProvider, streamingProvider]);
  const errors = catalogueControls ? (mediaMode === "both" ? ["MOVIE", "TV"] : [mediaMode === "series" ? "TV" : "MOVIE"]).flatMap((media) => deriveAdvancedDiscoverFilters(value, media).errors) : validateNativeAdvancedDraft(value.filters, mediaMode).errors;
  const allowed = (field) => draft.extraEditable?.[field] !== false;
  const preserved = (label) => <p className="editor-field-help">These imported {label} settings cannot be edited here. Their original values will be preserved.</p>;
@@ -68,9 +79,9 @@ export function NativeExtraAdvancedControls({ draft, onChange, entities = [], ex
    if (!ids.length) return;
    const rows = await client.resolve(ids);
    if (!alive) return;
-   const current = latest.current.draft, labels = { ...current.labels };
+   const current = latest.current.draft, labels = {};
    for (const field of fields) for (const row of rows) if (discoverExpressionIds(current.filters[field]).includes(row.id)) labels[field + ":" + row.id] = row.name ?? "Unavailable saved keyword " + row.id;
-   latest.current.onChange({ ...current, labels });
+   setHydratedLabels((current) => ({ ...current, ...labels }));
   }).catch((error) => { if (alive) setCatalogue({ status: "error", error: error.message }); });
   return () => { alive = false; };
  }, [expanded, attempt, client]);

@@ -5,18 +5,133 @@ import { buildGenreSourceDrafts } from "../builder/src/source-add/genre-source.j
 import { buildCanonicalDecadePeriodDrafts, buildDecadesSourceDrafts } from "../builder/src/source-add/decades-source.js";
 import { buildStreamingSourceDrafts, validateStreamingSourceDrafts } from "../builder/src/source-add/streaming-source.js";
 import { createStreamingHierarchyPlan, applyStreamingHierarchyPlan } from "../builder/src/source-add/streaming-plan.js";
-import { validateAdvancedFilters, exactDiscoverPreviewQuery } from "../builder/src/source-add/advanced-discover.js";
+import { validateAdvancedFilters, exactDiscoverPreviewQuery, setDiscoverSelection, touchDiscoverFilters } from "../builder/src/source-add/advanced-discover.js";
+import { createSourceEditSession, saveSourceEdit } from "../builder/src/source-edit/source-edit-actions.js";
+import { prepareSourceEditPreview } from "../builder/src/source-edit/source-edit-preview.js";
+import { discoverSelectionLabel, mergeDiscoverSelectionLabels, resolveDiscoverEntityLabels } from "../builder/src/source-add/discover-selection-labels.js";
 import { createBuilderController } from "../builder/src/application/index.js";
 import { sourceEditorFor } from "../builder/src/source-edit/source-editors.js";
 import { updateGenreSourceAdvanced, updateDecadeSourceAdvanced, updateStreamingSourceAdvanced } from "../builder/src/source-edit/source-edit-actions.js";
 import { createDecadesCreationState, toggleDecadePreset, setDecadesGenresForContext, setDecadesOrdinaryExclusionsForContext, setDecadesGenreExclusionsForContext, setDecadesExclusionInheritance, decadesOrdinaryExclusionsForContext, decadesGenreExclusionsForContext, buildDecadesCreationPlan } from "../builder/src/ui/decades-creation-state.js";
 import { buildDecadesPreviewGroups } from "../builder/src/source-add/decades-preview.js";
 import { discoverSourceIdentity } from "../builder/src/nuvio/discover.js";
+import { validateNativeAdvancedFilters } from "../builder/src/source-add/native-shared-advanced.js";
+import { studioPreviewQuery } from "../builder/src/source-add/studio-advanced.js";
+import { networkPreviewQuery } from "../builder/src/source-add/network-advanced.js";
 
 const catalogueFilters = { withKeywords: "15097|9715", withoutKeywords: "210024", withCompanies: "3|174", withoutCompanies: "2", withNetworks: "213", watchRegion: "AU", withWatchProviders: "8", withoutWatchProviders: "9" };
 const scalar = { minimumVotes: "0", minimumRating: "0", maximumRating: "8.25", originalLanguage: "en", originCountry: "AU" };
 const provider = { id: 8, name: "Service eight", moviePriorities: { AU: 1, US: 1 }, tvPriorities: { AU: 1, US: 1 } };
 const node = (filters, mediaType = "MOVIE") => ({ category: "native-tmdb", nodeType: "source", editable: { provider: "tmdb", tmdbSourceType: "DISCOVER", tmdbId: null, title: "Recipe", sortBy: "popularity.desc", mediaType, filters } });
+
+test("imported exclusions retain their separator and order through membership edits", () => {
+ for (const field of ["withoutKeywords", "withoutWatchProviders"]) for (const separator of ["|", ","]) {
+  const original = { filters: { [field]: [3, 1, 2].join(separator) }, labels: {} }, before = structuredClone(original);
+  let draft = setDiscoverSelection(original, field, { id: 1, name: "one" }, { remove: true });
+  assert.equal(draft.filters[field], [3, 2].join(separator));
+  draft = setDiscoverSelection(draft, field, { id: 3, name: "three" }, { remove: true });
+  assert.equal(draft.filters[field], "2");
+  draft = setDiscoverSelection(draft, field, { id: 4, name: "four" });
+  assert.equal(draft.filters[field], [2, 4].join(separator), "one-member intermediate retains the imported operator");
+  assert.deepEqual(original, before);
+  assert.equal(setDiscoverSelection(original, field, { id: 4, name: "four" }).filters[field], [3, 1, 2, 4].join(separator));
+ }
+ const empty = { filters: {}, labels: {} };
+ assert.equal(setDiscoverSelection(setDiscoverSelection(empty, "withoutKeywords", { id: 1 }), "withoutKeywords", { id: 2 }).filters.withoutKeywords, "1,2");
+ for (const bad of ["1|2,3", "01|2", "0|2", "1|1", "1|2147483648", "1|", [1, 2]]) {
+  const draft = { filters: { withoutKeywords: bad }, labels: {} };
+  assert.strictEqual(setDiscoverSelection(draft, "withoutKeywords", { id: 4 }), draft, "unsafe imports cannot be normalized by selection");
+ }
+});
+
+test("native Studio/Network keyword editing and exact queries share the supported pipe contract", () => {
+ for (const [mediaType, query] of [["MOVIE", studioPreviewQuery], ["TV", studioPreviewQuery], ["TV", networkPreviewQuery]]) {
+  const filters = { withoutKeywords: "9715|818", without_keywords: "9715|818" };
+  assert.equal(validateNativeAdvancedFilters({ withoutKeywords: filters.withoutKeywords }, mediaType).ok, true);
+  assert.equal(query(3, { mediaType, sortBy: "popularity.desc", filters }).queryParameters.without_keywords, "9715|818");
+  for (const unsafe of [{ ...filters, without_keywords: "818|9715" }, { ...filters, future: true }, { withoutKeywords: "9715|818,2" }, { withoutGenres: "16|99" }]) assert.equal(query(3, { mediaType, sortBy: "popularity.desc", filters: unsafe }), null);
+ }
+});
+
+test("pipe excluded providers use the same touched-only mirror and identity rules", () => {
+ const source = node({ withGenres: "28", withoutWatchProviders: "9|337", without_watch_providers: "9|337", watchRegion: "US", watch_region: "US" });
+ source.rawImported = structuredClone(source.editable);
+ const editor = sourceEditorFor(source), initial = editor.readInitialState(source), before = structuredClone(source);
+ const controls = { filters: initial.advanced.filters, labels: {} };
+ const next = setDiscoverSelection(setDiscoverSelection(controls, "withoutWatchProviders", { id: 337 }, { remove: true }), "withoutWatchProviders", { id: 2 });
+ const draft = updateGenreSourceAdvanced(initial, { ...initial.advanced, filters: next.filters, ui: { operators: next.operators } });
+ assert.equal(editor.validateDraft({ source, draft }).ok, true);
+ assert.deepEqual(draft.touchedFilters, ["withoutWatchProviders"]);
+ const patch = editor.buildPatch({ source, draft });
+ assert.deepEqual(patch.filters, { ...source.editable.filters, withoutWatchProviders: "9|2", without_watch_providers: "9|2" });
+ const candidate = { ...source, editable: { ...source.editable, ...patch } };
+ assert.equal(exactDiscoverPreviewQuery(candidate).queryParameters.without_watch_providers, "9|2");
+ assert.notEqual(discoverSourceIdentity(candidate.editable).key, discoverSourceIdentity(source.editable).key);
+ assert.notEqual(discoverSourceIdentity(candidate.editable).key, discoverSourceIdentity({ ...candidate.editable, filters: { ...candidate.editable.filters, withoutWatchProviders: "2|9", without_watch_providers: "2|9" } }).key, "exclusion order remains identity-significant");
+ assert.deepEqual(source, before);
+});
+
+test("shared entity labels preserve names, filters, identities and missing-ID fallbacks", async () => {
+ const draft = { filters: { withCompanies: "3", withoutCompanies: "2", withNetworks: "213", withWatchProviders: "8|1796", withoutWatchProviders: "9|999" }, labels: { "withCompanies:3": "Retained studio" }, mediaMode: "series", touchedFilters: [], advancedTouched: false };
+ const before = structuredClone(draft), calls = [];
+ const provider = (key, rows) => ({ loadCatalogue: async () => { calls.push(key); return { ok: true, data: { [key]: rows } }; } });
+ const providers = { studioProvider: provider("studios", [{ id: 3, name: "Studio three" }, { id: 2, name: "Studio two" }]), networkProvider: provider("networks", [{ id: 213, name: "Network" }]), streamingProvider: provider("providers", [{ id: 8, name: "Provider eight" }, { id: 1796, name: "Provider other" }, { id: 9, name: "Provider nine" }]) };
+ const loaded = await resolveDiscoverEntityLabels(draft, providers), display = mergeDiscoverSelectionLabels(draft, loaded.labels);
+ assert.deepEqual(calls.sort(), ["networks", "providers", "studios"]);
+ for (const [field, id, name] of [["withCompanies", 3, "Retained studio"], ["withoutCompanies", 2, "Studio two"], ["withNetworks", 213, "Network"], ["withWatchProviders", 8, "Provider eight"], ["withWatchProviders", 1796, "Provider other"], ["withoutWatchProviders", 9, "Provider nine"]]) assert.equal(discoverSelectionLabel(display, field, id), name);
+ assert.equal(discoverSelectionLabel(display, "withoutWatchProviders", 999), "Unavailable saved selection 999");
+ assert.deepEqual({ ...display, labels: draft.labels }, before);
+ assert.deepEqual(draft, before);
+ const failed = await resolveDiscoverEntityLabels(draft, { ...providers, streamingProvider: { loadCatalogue: async () => { throw new Error("offline"); } } });
+ assert.equal(failed.warnings.length, 1);
+ assert.deepEqual(mergeDiscoverSelectionLabels(draft, failed.labels).filters, before.filters);
+ const removed = { ...draft, filters: {} };
+ assert.deepEqual(mergeDiscoverSelectionLabels(removed, loaded.labels), removed, "late lookup does not restore removed selections");
+});
+
+test("supported pipe exclusions reopen, preview unsaved values, and patch only equivalent mirrors", () => {
+ for (const [anchor, expected, update] of [[{ withGenres: "28" }, "genre", updateGenreSourceAdvanced], [{ releaseDateGte: "1980-01-01", releaseDateLte: "1989-12-31" }, "decade", updateDecadeSourceAdvanced], [{ withWatchProviders: "8", watchRegion: "US" }, "streaming", updateStreamingSourceAdvanced], [{ withGenres: "28", withWatchProviders: "8|1796", with_watch_providers: "8|1796", watchRegion: "US", watch_region: "US" }, "genre", updateGenreSourceAdvanced], [{ withWatchProviders: "8|1796", with_watch_providers: "8|1796", watchRegion: "US", watch_region: "US" }, "advanced-discover", null]]) {
+  const raw = node({ ...anchor, withoutGenres: "16,99", without_genres: "16,99", withoutKeywords: "210024|222243", without_keywords: "210024|222243", withoutWatchProviders: "9|337", without_watch_providers: "9|337", watchRegion: "US", voteCountGte: 50, "vote_count.gte": 50, voteAverageLte: null, sortBy: "popularity.desc" }).editable;
+  const c = createBuilderController();
+  assert.equal(c.importValue([{ id: "c", title: "Collection", folders: [{ id: "f", title: "Folder", sources: [{ ...raw, custom: { keep: true } }] }] }]).ok, true);
+  const state = c.getState(), source = state.project.collections[0].folders[0].sources[0], opening = createSourceEditSession(state.project, source.internalId), before = c.stringifyProject().json;
+  assert.equal(opening.ok, true); assert.equal(opening.session.adapterId, expected);
+  assert.equal(opening.draft.extraEditable.withKeywords, true); assert.equal(opening.draft.extraEditable.withoutWatchProviders, true);
+  assert.deepEqual(sourceEditorFor(source).buildPatch({ source, draft: opening.draft }), {});
+  assert.equal(saveSourceEdit(c, opening.session, opening.draft).changed, false);
+  assert.equal(c.stringifyProject().json, before);
+  if (expected !== "advanced-discover") {
+   const preview = prepareSourceEditPreview(opening.session, opening.draft);
+   assert.equal(preview.previewable, true, JSON.stringify(preview));
+  }
+  assert.equal(exactDiscoverPreviewQuery({ category: "native-tmdb", editable: raw }).queryParameters.without_keywords, "210024|222243");
+  const controls = update ? { ...opening.draft.advanced.ui, filters: opening.draft.advanced.filters, labels: {} } : opening.draft;
+  const selected = setDiscoverSelection(controls, "withoutKeywords", { id: 222243, name: "removed" }, { remove: true });
+  const next = setDiscoverSelection(selected, "withoutKeywords", { id: 818, name: "added" });
+  const draft = update ? update(opening.draft, { ...opening.draft.advanced, filters: next.filters, ui: { ...next, filters: undefined } }) : touchDiscoverFilters(opening.draft, next);
+  assert.deepEqual(draft.touchedFilters, ["withoutKeywords"]);
+  const candidate = { ...source, editable: { ...source.editable, ...sourceEditorFor(source).buildPatch({ source, draft }) } };
+  assert.equal(exactDiscoverPreviewQuery(candidate).queryParameters.without_keywords, "210024|818");
+  if (expected !== "advanced-discover") assert.equal(prepareSourceEditPreview(opening.session, draft).previewable, true);
+  assert.equal(c.getState().project, state.project); assert.equal(c.stringifyProject().json, before, "Preview never saves");
+  const saved = saveSourceEdit(c, opening.session, draft); assert.equal(saved.ok, true, JSON.stringify(saved));
+  const out = c.serializeProject().value[0].folders[0].sources[0];
+  assert.deepEqual(out.filters, { ...raw.filters, withoutKeywords: "210024|818", without_keywords: "210024|818" });
+  assert.deepEqual(c.getState().project.collections[0].folders[0].sources[0].rawImported, source.rawImported);
+  const round = createBuilderController(); assert.equal(round.importValue(c.serializeProject().value).ok, true); assert.deepEqual(round.serializeProject().value, c.serializeProject().value);
+ }
+});
+
+test("pipe compatibility keeps unsafe and unevidenced expressions preservation-only", () => {
+ for (const filters of [{ withoutKeywords: "1|2,3" }, { withoutKeywords: "1|1" }, { withoutKeywords: "0|2" }, { withoutKeywords: "1|2147483648" }, { withoutKeywords: [1, 2] }, { withoutKeywords: "1|2", without_keywords: "2|1" }, { without_keywords: "1|2" }, { withoutKeywords: "1|2", future: true }, { withoutGenres: "16|99" }, { withoutCompanies: "2|3" }, { withNetworks: "213", withoutKeywords: "1|2" }]) {
+  const source = node({ withGenres: "28", ...filters }); source.rawImported = structuredClone(source.editable);
+  assert.equal(exactDiscoverPreviewQuery(source), null, JSON.stringify(filters));
+  const editor = sourceEditorFor(source); assert.ok(editor);
+  const draft = editor.readInitialState(source);
+  assert.deepEqual(editor.buildPatch({ source, draft }), {});
+  if (filters.withoutKeywords && !filters.future && !filters.withNetworks) assert.equal(draft.extraEditable.withKeywords, false, JSON.stringify(filters));
+ }
+});
 
 test("Genre combined Advanced derives full Movie/TV candidates with exact dates and fixed Genre", () => {
  const result = buildGenreSourceDrafts(["Comedy"], { sharedMediaChoice: "both", advanced: { ...scalar, filters: { ...catalogueFilters, releaseDateGte: "2001-02-03", releaseDateLte: "2004-05-06", year: "2003" }, exclusionsByGenre: { Comedy: ["Documentary"] } } });
@@ -53,7 +168,7 @@ test("Streaming candidates, full configured equality and bundle validation inclu
 
 test("authored optional groups reject containers, booleans, invalid grammar, coupling and fixed writes", () => {
  for (const value of [[], [0], {}, false, true]) for (const field of ["voteCountGte", "voteAverageGte", "year", "withOriginalLanguage", "withKeywords", "releaseDateGte"]) assert.equal(validateAdvancedFilters({ [field]: value }, "TV").ok, false, field + JSON.stringify(value));
- for (const filters of [{ withKeywords: "1|2,3" }, { withKeywords: "2147483648" }, { withoutKeywords: "1|2" }, { year: 2000, releaseDateGte: "2001-01-01" }, { releaseDateGte: "2001-02-29" }, { withCompanies: "3", withoutCompanies: "3" }, { withWatchProviders: "8" }, { watchRegion: "AU" }, { withGenres: "18" }]) assert.equal(buildGenreSourceDrafts(["Comedy"], { advanced: { filters } }).ok, false, JSON.stringify(filters));
+ for (const filters of [{ withKeywords: "1|2,3" }, { withKeywords: "2147483648" }, { withoutKeywords: "1|2,3" }, { withoutCompanies: "1|2" }, { year: 2000, releaseDateGte: "2001-01-01" }, { releaseDateGte: "2001-02-29" }, { withCompanies: "3", withoutCompanies: "3" }, { withWatchProviders: "8" }, { watchRegion: "AU" }, { withGenres: "18" }]) assert.equal(buildGenreSourceDrafts(["Comedy"], { advanced: { filters } }).ok, false, JSON.stringify(filters));
  for (const field of ["releaseDateGte", "releaseDateLte", "year", "withGenres"]) assert.equal(buildCanonicalDecadePeriodDrafts({ periodId: "1980s", mediaMode: "movies", advanced: { filters: { [field]: "" } } }).ok, false, field);
  for (const filters of [{ withWatchProviders: "9" }, { watchRegion: "US" }, { withoutWatchProviders: "8,9" }]) assert.equal(buildStreamingSourceDrafts(provider, { regionCodes: ["AU"], mediaChoice: "both", advanced: { filters } }).ok, false);
 });
