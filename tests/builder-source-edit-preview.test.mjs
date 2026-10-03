@@ -299,3 +299,92 @@ test("Trakt Preview rejects changed identity, invalid sorts and unknown extra se
   assert.equal(controller.stringifyProject().json, before);
  }
 });
+
+const traktImported = (extra = {}) => ({ provider: "TrAkT", title: "Saved source", traktListId: 123, mediaType: "tv", sortBy: "rank", sortHow: "asc", ...extra });
+const traktCommunityMetadata = {
+	id: "captain-source", name: "Retained external name", genre: "Drama",
+	filters: { voteCountGte: 100, "vote_count.gte": 200 },
+};
+const traktDesktopMetadata = { addonId: null, type: null, catalogId: null, genre: null, tmdbSourceType: null, tmdbId: null, filters: null };
+
+test("Trakt Preview accepts each bounded metadata field and leaves filter contents uninterpreted", () => {
+	for (const extras of [
+		{ id: "", name: "", genre: "" }, { id: "community-source" }, { id: null }, { name: "External" }, { name: null }, { genre: "Drama" }, { genre: null },
+		{ filters: {} }, { filters: null }, { filters: { voteCountGte: 100 } }, { filters: { "vote_count.gte": 100 } },
+		...Object.entries(traktDesktopMetadata).map(([field, value]) => ({ [field]: value })),
+		traktCommunityMetadata, traktDesktopMetadata,
+		// Native Trakt ignores the entire filter object. No Discover semantic/member validation,
+		// alias reconciliation, or client-wide import-deserialization certification is implied.
+		{ filters: { voteCountGte: -1, year: -1, withGenres: "35|18", "vote_count.gte": { retained: [false, null] }, future: [0, "", {}] } },
+	]) {
+		const original = traktImported(extras), controller = createProject([original]), opened = openedAt(controller, 0);
+		const state = controller.getState(), before = controller.stringifyProject().json;
+		const preview = prepareSourceEditPreview(opened.session, opened.draft);
+		assert.equal(preview.previewable, true, JSON.stringify(extras));
+		assert.deepEqual(preview.request, { kind: "trakt", listId: 123, mediaType: "TV", label: "Saved source", sourcePreview: { type: "show", sortBy: "rank", sortHow: "asc" } });
+		assert.deepEqual(preview.candidateSource.rawImported, original);
+		assert.notEqual(preview.candidateSource.rawImported, state.project.collections[0].folders[0].sources[0].rawImported);
+		assert.equal(controller.getState(), state);
+		assert.equal(controller.stringifyProject().json, before);
+	}
+});
+
+test("Trakt metadata survives detached unsaved Preview, Cancel, no-op, owned edits and export/reimport", () => {
+	for (const metadata of [traktCommunityMetadata, traktDesktopMetadata, { ...traktDesktopMetadata, ...traktCommunityMetadata }]) {
+		for (const change of [{ title: "New display name" }, { sortBy: "title" }, { sortHow: "desc" }, { sortBy: "votes", sortHow: "desc" }]) {
+			const original = traktImported(metadata), controller = createProject([original]), opened = openedAt(controller, 0);
+			const state = controller.getState(), before = controller.stringifyProject().json;
+			const draft = { ...opened.draft, ...change, titleTouched: Object.hasOwn(change, "title") };
+			const preview = prepareSourceEditPreview(opened.session, draft);
+			assert.equal(preview.previewable, true);
+			assert.equal(preview.request.label, draft.title);
+			assert.deepEqual(preview.request.sourcePreview, { type: "show", sortBy: draft.sortBy, sortHow: draft.sortHow });
+			assert.deepEqual(preview.candidateSource.rawImported, original);
+			assert.equal(controller.getState(), state, "opening/closing Preview has no save authority");
+			assert.equal(controller.stringifyProject().json, before);
+			// Mutating the detached preserved payload must not affect the Source or future Previews.
+			preview.candidateSource.rawImported.filters = { changedOutside: true };
+			assert.deepEqual(prepareSourceEditPreview(opened.session, draft).candidateSource.rawImported, original);
+			const cancelled = openedAt(controller, 0);
+			assert.deepEqual(cancelled.draft, opened.draft, "discarding unsaved draft retains the exact original");
+			assert.equal(saveSourceEdit(controller, cancelled.session, cancelled.draft).changed, false);
+			assert.equal(controller.getState(), state);
+			const saved = saveSourceEdit(controller, opened.session, draft);
+			assert.equal(saved.ok, true); assert.deepEqual(saved.patch, change);
+			assert.equal(controller.getState().revision, state.revision + 1);
+			const output = controller.serializeProject().value[0].folders[0].sources[0];
+			assert.deepEqual(output, { ...original, ...change }, "only deliberately edited owned fields change");
+			assert.deepEqual(controller.getState().project.collections[0].folders[0].sources[0].rawImported, original);
+			const reimported = createProject([output]);
+			assert.deepEqual(reimported.serializeProject().value[0].folders[0].sources[0], output);
+			assert.equal(prepareSourceEditPreview(openedAt(reimported, 0).session, openedAt(reimported, 0).draft).previewable, true);
+		}
+	}
+});
+
+test("Trakt Preview rejects unknown top-level metadata and incompatible containers but still preserves them on Save", () => {
+	const blocked = [null, false, "", {}, []].map(value => ({ future: value }));
+	for (const field of ["id", "name", "genre"]) for (const value of [0, true, [], {}]) blocked.push({ [field]: value });
+	for (const value of [false, "", 0, [], ["retained"]]) blocked.push({ filters: value });
+	for (const field of ["addonId", "type", "catalogId", "tmdbSourceType", "tmdbId"]) {
+		for (const value of ["", "active", 0, false, {}, []]) blocked.push({ [field]: value });
+	}
+	for (const extras of blocked) {
+		const original = traktImported(extras), controller = createProject([original]), opened = openedAt(controller, 0);
+		const before = controller.stringifyProject().json;
+		const preview = prepareSourceEditPreview(opened.session, opened.draft);
+		assert.equal(preview.previewable, false, JSON.stringify(extras)); assert.equal(preview.request, null);
+		assert.equal(controller.stringifyProject().json, before);
+		assert.equal(saveSourceEdit(controller, opened.session, opened.draft).changed, false);
+		assert.equal(saveSourceEdit(controller, opened.session, updateSourceEditTitle(opened.draft, "Renamed")).ok, true);
+		assert.deepEqual(controller.serializeProject().value[0].folders[0].sources[0], { ...original, title: "Renamed" });
+	}
+});
+
+test("Trakt metadata eligibility cannot bypass fixed-identity or core draft guards", () => {
+	const controller = createProject([traktImported(traktCommunityMetadata)]), opened = openedAt(controller, 0), state = controller.getState();
+	for (const patch of [{ provider: "trakt" }, { traktListId: 124 }, { traktListId: "123" }, { mediaType: "TV" }, { mediaType: "SERIES" }, { sortBy: "random" }, { sortHow: "DESC" }]) {
+		assert.equal(prepareSourceEditPreview(opened.session, { ...opened.draft, ...patch }).previewable, false, JSON.stringify(patch));
+	}
+	assert.equal(controller.getState(), state);
+});

@@ -1,5 +1,11 @@
 # Native Source Editing
 
+## Imported native Trakt exact Preview (#288)
+
+The current Trakt editor owns title and supported sort/direction; provider, List ID and media stay fixed. Its detached unsaved Preview now admits the explicit [preserved metadata boundary](./BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288): string/null id/name/genre, null/plain-object filters (including populated criteria), and null-only generic Desktop placeholders. Native Trakt runtime ignores those fields; no Discover validation or raw-data rewriting is applied. Unknown top-level fields still fail closed, including null/false/empty values. Preview never saves; Cancel, no-op and deliberate minimal title/sort saves retain raw metadata.
+
+This is Preview-only. Strict configured keys, occurrence evidence, creation/duplicate behavior and full serialized Import/Merge equality remain unchanged. There is no Worker/service or transport change. Earlier B2 name-only/no-Preview descriptions below are historical; the current contract and new acceptance boundary are in the linked Trakt document.
+
 ## Native Trakt name-only adapter (#279, PR #280)
 
 Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
