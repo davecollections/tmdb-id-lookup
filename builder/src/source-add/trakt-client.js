@@ -1,3 +1,4 @@
+import { isTraktSourcePreviewContext } from "../nuvio/trakt.js";
 import { traktApiBase } from "../config/trakt-api.js";
 import { isCanonicalTraktListId } from "../nuvio/trakt.js";
 import { createBoundedResponseCache } from "./bounded-response-cache.js";
@@ -186,10 +187,14 @@ export function createTraktClient({ fetchImpl = globalThis.fetch, now = Date.now
 			? request({ path: `/v1/trakt/lists/${id}/media`, operation: "media", id }, options)
 			: Promise.resolve(traktFailure("INVALID_REQUEST")),
 		getItems: (id, options = {}) => {
-			const { limit = 15 } = options;
+			const { limit = 15, sourcePreview } = options;
 			if (!isCanonicalTraktListId(id) || !Number.isSafeInteger(limit) || limit < 1 || limit > 50
-				|| Object.hasOwn(options, "page")) return Promise.resolve(traktFailure("INVALID_REQUEST"));
-			return request({ path: "/v1/trakt/lists/" + id + "/items?page=1&limit=" + limit,
+				|| Object.hasOwn(options, "page") || (Object.hasOwn(options, "sourcePreview") && !isTraktSourcePreviewContext(sourcePreview))) return Promise.resolve(traktFailure("INVALID_REQUEST"));
+			const query = new URLSearchParams({ page: "1", limit: String(limit) });
+			if (sourcePreview) {
+				query.set("type", sourcePreview.type); query.set("sort_by", sourcePreview.sortBy); query.set("sort_how", sourcePreview.sortHow);
+			}
+			return request({ path: "/v1/trakt/lists/" + id + "/items?" + query,
 				operation: "items", id, page: 1, limit }, options);
 		},
 		getNotBefore: () => cooldown?.notBefore ?? 0,

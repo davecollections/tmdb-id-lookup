@@ -77,9 +77,13 @@ test("About & Credits retains TMDB and JustWatch attribution with ordered relate
 	const markup = renderToStaticMarkup(createElement(AboutCreditsDialog, { onClose() {} }));
 	const credits = markup.match(/<section[^>]+aria-label="Data credits"[^>]*>([\s\S]*?)<\/section>/)?.[1];
 	assert.ok(credits);
-	assert.equal((credits.match(/class="about-credit-row"/g) ?? []).length, 2);
+	assert.equal((credits.match(/class="about-credit-row"/g) ?? []).length, 3);
 	assert.deepEqual([...credits.matchAll(/<img[^>]+alt="([^"]+)"/g)].map((match) => match[1]), ["TMDB", "JustWatch"]);
-	assert.equal(credits.includes("Trakt"), false);
+	assert.ok(credits.includes("Public list data is supplied by Trakt. Dingo is not affiliated with or endorsed by Trakt."));
+ assert.match(credits, /href="https:\/\/trakt\.tv\/"[^>]*>Trakt<\/a>/);
+ assert.doesNotMatch(credits, /<img[^>]+Trakt/);
+ const copy = "Public list data is supplied by Trakt.";
+ assert.deepEqual(fs.readdirSync(path.join(rootDir, "builder/src/ui")).filter(name => name.endsWith(".jsx") && read("builder/src/ui/" + name).includes(copy)), ["AboutCreditsDialog.jsx"]);
 	assert.ok(credits.includes("This product uses the TMDB API but is not endorsed or certified by TMDB."));
 	assert.ok(credits.includes("Streaming provider availability data supplied by JustWatch via TMDB."));
 	assert.match(markup, /href="https:\/\/www\.themoviedb\.org\/"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
@@ -110,7 +114,7 @@ test("credits share one compact borderless group while retaining the divided cre
 	const markup = renderToStaticMarkup(createElement(AboutCreditsDialog, { onClose() {} }));
 	const styles = read("builder/src/styles.css");
 	assert.equal((markup.match(/class="about-credits-attributions"/g) ?? []).length, 1);
-	assert.equal((markup.match(/class="about-credit-row"/g) ?? []).length, 2);
+	assert.equal((markup.match(/class="about-credit-row"/g) ?? []).length, 3);
 	assert.equal(markup.includes("about-credit-block"), false);
 	assert.equal(styles.includes(".about-credit-block"), false);
 	assert.match(styles, /\.about-credits-attributions\s*\{/);

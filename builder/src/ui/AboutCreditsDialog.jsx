@@ -107,6 +107,10 @@ export function AboutCreditsDialog({ onClose }) {
 									<p>Streaming provider availability data supplied by JustWatch via TMDB.</p>
 								</div>
 							</div>
+							<div className="about-credit-row">
+        <a className="about-credit-link about-credit-text" href="https://trakt.tv/" target="_blank" rel="noopener noreferrer" aria-label="Visit Trakt">Trakt</a>
+        <div className="about-credit-copy"><p>Public list data is supplied by Trakt. Dingo is not affiliated with or endorsed by Trakt.</p></div>
+       </div>
 						</section>
 						<footer className="about-credits-footer">
 							<p className="about-credits-creator">

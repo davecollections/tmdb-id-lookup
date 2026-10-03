@@ -5,7 +5,15 @@ import { isValidNuvioTitle } from "./titles.js";
 
 // Current client contract and its evidence: docs/v2/BUILDER_TRAKT_SOURCES.md.
 export const TRAKT_SORT_VALUES = Object.freeze(["rank", "added", "title", "released", "runtime", "popularity", "percentage", "votes"]);
+export const TRAKT_SORT_LABELS = Object.freeze({ rank: "List order", added: "Date added", title: "Title", released: "Release date", runtime: "Runtime", popularity: "Popularity", percentage: "Rating", votes: "Votes" });
 export const TRAKT_SORT_DIRECTIONS = Object.freeze(["asc", "desc"]);
+// Source Preview context is all-or-nothing; never normalize a caller's values.
+export function isTraktSourcePreviewContext(value) {
+ return value !== null && typeof value === "object"
+  && ["movie", "show"].includes(value.type)
+  && TRAKT_SORT_VALUES.includes(value.sortBy) && TRAKT_SORT_DIRECTIONS.includes(value.sortHow)
+  && Object.keys(value).length === 3;
+}
 export const isCanonicalTraktListId = (value) => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
 export function validateNativeTraktSource(value, { authored = false, path = "$source" } = {}) {
@@ -58,6 +66,5 @@ export function nativeTraktConfigurationKey(source, { includeTitle = false } = {
 export function nativeTraktSortLabel(source) {
 	const inspected = inspectNativeTraktSource(source);
 	if (!inspected) return null;
-	const labels = { rank: "List order", added: "Date added", title: "Title", released: "Release date", runtime: "Runtime", popularity: "Popularity", percentage: "Rating", votes: "Votes" };
-	return `${labels[inspected.sortBy]} · ${inspected.sortHow === "asc" ? "Ascending" : "Descending"}`;
+	return `${TRAKT_SORT_LABELS[inspected.sortBy]} · ${inspected.sortHow === "asc" ? "Ascending" : "Descending"}`;
 }

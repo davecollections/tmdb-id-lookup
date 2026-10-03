@@ -28,6 +28,9 @@ export function SourceTitlePreviewDialog({
 	dialogProps = {},
 	selectorGroups = [],
 	context = null,
+	parentTrigger = null,
+	previewLimit,
+	posterUrlForPath,
 	onClose,
 	onRetry,
 }) {
@@ -44,6 +47,7 @@ export function SourceTitlePreviewDialog({
 			dialogProps={dialogProps}
 			dialogRef={dialogRef}
 			initialFocusRef={closeRef}
+			parentTrigger={parentTrigger}
 			onClose={onClose}
 		>
 			<header><div><p className="panel-kicker">Title preview</p><h3 id={titleId}>{preview.candidate.request.label || "Current source"}</h3></div><button ref={closeRef} type="button" onClick={onClose}>Close</button></header>
@@ -51,10 +55,10 @@ export function SourceTitlePreviewDialog({
 				{context ? <p className="studio-preview-single-media">{context}</p> : null}
 				{selectorGroups.length > 0 ? (
 					<SourcePreviewSelectors groups={selectorGroups} />
-				) : !listPreview ? <p className="studio-preview-single-media">{label}</p> : null}
+				) : !listPreview && !context ? <p className="studio-preview-single-media">{label}</p> : null}
 				{preview.status === "loading" ? <p className="studio-preview-state" role="status">Preparing preview…</p> : null}
-				{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This title preview could not be prepared."}</p><button type="button" onClick={onRetry}>Retry</button></div> : null}
-				{preview.status === "ready" ? <TitlePreviewResults data={preview.data} listPreview={listPreview} hasImportedFilters={preview.candidate.request.hasImportedFilters} className={`franchise-preview-grid studio-preview-grid source-edit-preview-grid${listPreview ? " tmdb-list-preview-grid" : ""}`} ariaLabel={`${label} poster preview`} altPrefix={label} /> : null}
+				{preview.status === "error" ? <div className="studio-preview-state add-source-request-state" role="alert"><p>{preview.error?.message ?? "This title preview could not be prepared."}</p>{onRetry ? <button type="button" onClick={onRetry}>Retry</button> : null}</div> : null}
+				{preview.status === "ready" ? <TitlePreviewResults data={preview.data} previewLimit={previewLimit} posterUrlForPath={posterUrlForPath} listPreview={listPreview} hasImportedFilters={preview.candidate.request.hasImportedFilters} className={`franchise-preview-grid studio-preview-grid source-edit-preview-grid${listPreview ? " tmdb-list-preview-grid" : ""}`} ariaLabel={`${label} poster preview`} altPrefix={label} /> : null}
 			</SourcePreviewContent>
 		</NestedPreviewDialog>
 	);

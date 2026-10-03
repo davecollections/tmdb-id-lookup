@@ -267,24 +267,26 @@ test("Trakt discovery cards present existing metadata without inline description
   server: { middlewareMode: true, watch: null, ws: false }, optimizeDeps: { noDiscovery: true, include: [] },
  });
  try {
-  const { TraktResultCard, TraktDescriptionDialog } = await vite.ssrLoadModule("/src/ui/TraktSourceFlow.jsx");
+  const { TraktResultCard, TraktDescriptionDialog, TraktMediaCounts, TraktCountInfoDialog } = await vite.ssrLoadModule("/src/ui/TraktSourceFlow.jsx");
   const metadata = { id: 123, name: "Example list", creator: { username: "owner" }, itemCount: 1, likeCount: 27, updatedAt: "2026-10-02T23:59:59Z", description: "Full <script>description</script>\nSecond paragraph.", availability: "unverified" };
-  const render = overrides => renderToStaticMarkup(createElement(TraktResultCard, { list: { ...metadata, ...overrides }, selected: false, onSelect() { assert.fail("Render must be inert"); }, onDescription() { assert.fail("Render must be inert"); } }));
+  const render = overrides => renderToStaticMarkup(createElement(TraktResultCard, { list: { ...metadata, ...overrides }, selected: false, onSelect() { assert.fail("Render must be inert"); }, onDescription() { assert.fail("Render must be inert"); }, onPreview() { assert.fail("Render must be inert"); } }));
   const html = render();
   assert.match(html, /<strong>Example list<\/strong>/);
-  assert.match(html, /@owner/); assert.match(html, /Trakt List 123/); assert.match(html, /1 title · Last updated/);
+  assert.match(html, /@owner/); assert.match(html, /Trakt List 123/); assert.match(html, /1 item · Last updated/);
   assert.match(html, /role="img" aria-label="27 likes"/); assert.match(html, /aria-hidden="true">♥/);
   assert.match(html, /Last updated <time dateTime="2026-10-02T23:59:59Z">2 Oct 2026<\/time>/);
-  assert.doesNotMatch(html, /Full|Second paragraph|Public access not checked|Public list verified|\bitems?\b/);
-  assert.match(html, /<\/label><button[^>]*aria-haspopup="dialog"[^>]*>Read description<\/button>/);
+  assert.doesNotMatch(html, /Full|Second paragraph|Public access not checked|Public list verified|\d+ titles?\b/);
+  assert.match(html, /<\/label><div class="trakt-result-actions"><button[^>]*aria-haspopup="dialog"[^>]*>Read description<\/button>/);
   assert.doesNotMatch(render({ availability: "available" }), /Public list verified/);
   const absent = render({ creator: { username: null }, itemCount: 77, likeCount: null, updatedAt: null, description: null });
-  assert.match(absent, /77 titles/); assert.doesNotMatch(absent, /@owner|trakt-result-creator|trakt-result-likes|Last updated|<time|Read description/);
-  assert.match(render({ updatedAt: null }), /class="trakt-result-meta trakt-result-details">1 title<\/span>/);
+  assert.match(absent, /77 items/); assert.doesNotMatch(absent, /@owner|trakt-result-creator|trakt-result-likes|Last updated|<time|Read description/);
+  assert.match(render({ updatedAt: null }), /class="trakt-result-meta trakt-result-details">1 item<\/span>/);
   assert.match(render({ itemCount: null }), /class="trakt-result-meta trakt-result-details">Last updated <time/);
-  assert.match(render({ itemCount: 0 }), /class="trakt-result-meta trakt-result-details">0 titles · Last updated/);
+  assert.match(render({ itemCount: 0 }), /class="trakt-result-meta trakt-result-details">0 items · Last updated/);
   assert.doesNotMatch(render({ itemCount: null, updatedAt: null }), /trakt-result-details| · /);
-  assert.doesNotMatch(html, /Read full description|Preview|\/items/);
+  assert.doesNotMatch(html, /Read full description|\/items/);
+  assert.match(html, /class="source-preview-button trakt-preview-action"[^>]*aria-label="Preview titles: Example list"[^>]*>Preview titles<\/button>/);
+  assert.match(absent, />Preview titles<\/button>/);
   assert.doesNotMatch(render({ description: " \n\t " }), /Read description/);
   assert.match(render({ likeCount: 0 }), /aria-label="0 likes"/); assert.match(render({ likeCount: 1 }), /aria-label="1 like"/);
   const unavailable = render({ availability: "unavailable" }); assert.match(unavailable, /disabled=""/); assert.match(unavailable, />Unavailable</);
@@ -293,6 +295,49 @@ test("Trakt discovery cards present existing metadata without inline description
   assert.match(description, /id="trakt-description-title">Example list/);
   assert.match(description, /Full &lt;script&gt;description&lt;\/script&gt;\nSecond paragraph\./);
   assert.doesNotMatch(description, /<script>/); assert.match(description, />Close<\/button>/);
+  const counts = (itemCount, composition) => renderToStaticMarkup(createElement(TraktMediaCounts, { itemCount, composition, onCountInfo() { assert.fail("Counts render must be inert"); } }));
+  const mixed = { movieCount: 46, showCount: 3 };
+  const discrepancy = counts(215, mixed);
+  assert.match(discrepancy, /215 items in this Trakt List/);
+  assert.match(discrepancy, /In Nuvio: 46 Movies · 3 Series/);
+  assert.match(discrepancy, /type="button" aria-label="Why can these numbers be different\?" aria-haspopup="dialog"/);
+  assert.doesNotMatch(discrepancy, /166|missing|episodes|seasons|Preview titles|\/items/i);
+  for (const count of [49, 48, null]) {
+   const markup = counts(count, mixed);
+   assert.match(markup, /In Nuvio: 46 Movies · 3 Series/);
+   assert.doesNotMatch(markup, /trakt-count-info|button/);
+   if (count === null) assert.doesNotMatch(markup, /items in this Trakt List|49/);
+   else assert.match(markup, new RegExp(count + " items in this Trakt List"));
+  }
+  assert.match(counts(0, { movieCount: 0, showCount: 0 }), /0 items in this Trakt List.*In Nuvio: 0 Movies · 0 Series/);
+  assert.match(counts(1, { movieCount: 1, showCount: 1 }), /1 item in this Trakt List.*In Nuvio: 1 Movie · 1 Series/);
+  assert.doesNotMatch(counts(1, { movieCount: 1, showCount: 1 }), /trakt-count-info/);
+  assert.match(counts(2, { movieCount: 2, showCount: 0 }), /2 items in this Trakt List.*In Nuvio: 2 Movies/);
+  assert.doesNotMatch(counts(215, null), /In Nuvio|trakt-count-info/);
+  assert.equal(counts(null, null), "");
+  const countDialog = renderToStaticMarkup(createElement(TraktCountInfoDialog, { onClose() {} }));
+  assert.match(countDialog, /role="dialog" aria-modal="true" aria-labelledby="trakt-count-info-title"/);
+  for (const copy of ["Why can the numbers be different?", "A Trakt List can contain:", "Movies — whole movies", "Series — whole TV shows", "Seasons — one season from a TV show", "Episodes — one episode from a TV show", "Nuvio builds these collections from the whole Movies and Series in the list.", "Individual Seasons and Episodes aren&#x27;t added as separate collection items.", "You can still open a Series in Nuvio and watch its seasons and episodes normally."]) assert.ok(countDialog.includes(copy), copy);
+  assert.doesNotMatch(countDialog, /166|missing|API|endpoint|enum|resolver/);
+  const { SourceTitlePreviewDialog } = await vite.ssrLoadModule("/src/ui/SourceTitlePreviewDialog.jsx");
+  const preview = { status: "ready", candidate: { request: { kind: "list", label: "List example" } }, data: {
+   sourcePositions: 50, totalResults: null, complete: false, results: [{ id: 1, posterPath: "/poster.jpg", title: "Hidden title", year: 2026 }],
+  } };
+  const shared = props => renderToStaticMarkup(createElement(SourceTitlePreviewDialog, { preview, onClose() {}, onRetry() {}, ...props }));
+  const sharedDefault = shared({}), bounded = shared({ previewLimit: 50 });
+  assert.match(sharedDefault, /Preview shows up to 100 titles/);
+  assert.match(bounded, /Preview shows up to 50 titles/);
+  for (const markup of [sharedDefault, bounded]) {
+   assert.match(markup, /panel-kicker">Title preview/);
+   assert.match(markup, /poster-only-preview-grid/);
+   assert.match(markup, /loading="lazy"/);
+   assert.match(markup, /https:\/\/image\.tmdb\.org\/t\/p\/w342\/poster\.jpg/);
+   assert.doesNotMatch(markup, /Hidden title|2026|trakt-preview-row|Load more/);
+  }
+  assert.match(shared({ preview: { ...preview, data: { ...preview.data, results: [] } } }), /No posters available/);
+  const failed = { ...preview, status: "error", error: { message: "Unavailable" } };
+  assert.match(shared({ preview: failed }), />Retry<\/button>/);
+  assert.doesNotMatch(shared({ preview: failed, onRetry: undefined }), />Retry<\/button>/);
  } finally { await vite.close(); }
 });
 
@@ -418,4 +463,35 @@ test("items proxy allows only canonical first-page bounds with unchanged transpo
 	const redirected = await proxyRequest(TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/lists/123/items", {
 		fetchImpl: async (url, init) => { assert.equal(init.redirect, "error"); throw new TypeError("redirect rejected"); } });
 	assert.equal(redirected.response.statusCode, 502);
+});
+
+
+test("source items strictly map all media/sort/direction combinations and cache each context separately", async () => {
+ const calls = [], client = createTraktClient({ fetchImpl: async url => { calls.push(url); return json(sample([], 123, 50)); } });
+ await client.getItems(123, { limit: 50 });
+ for (const type of ["movie", "show"]) for (const sortBy of ["rank", "added", "title", "released", "runtime", "popularity", "percentage", "votes"]) for (const sortHow of ["asc", "desc"]) {
+  const options = { limit: 50, sourcePreview: { type, sortBy, sortHow } };
+  assert.equal((await client.getItems(123, options)).ok, true);
+  assert.equal(calls.at(-1), TRAKT_API_ORIGIN + `/v1/trakt/lists/123/items?page=1&limit=50&type=${type}&sort_by=${sortBy}&sort_how=${sortHow}`);
+  const count = calls.length; await client.getItems(123, options); assert.equal(calls.length, count);
+ }
+ assert.equal(calls.length, 33); assert.equal(new Set(calls).size, 33);
+ const valid = { type: "movie", sortBy: "rank", sortHow: "asc" };
+ for (const sourcePreview of [null, undefined, {}, { type: "movie" }, { sortBy: "rank", sortHow: "asc" },
+  ...["season", "episode", "movie,show", "MOVIE", "../movie"].map(type => ({ ...valid, type })),
+  { ...valid, sortBy: "title " }, { ...valid, sortHow: "ASC" }, { ...valid, extra: true }]) {
+  assert.equal((await client.getItems(123, { sourcePreview })).error.code, "INVALID_REQUEST");
+ }
+ assert.equal(calls.length, 33);
+});
+test("sorted local proxy forwards only the exact validated source context", async () => {
+ const calls = [], fetchImpl = async url => { calls.push(url); return json(sample()); };
+ const base = TRAKT_LOCAL_PROXY_PREFIX + "/v1/trakt/lists/123/items?";
+ for (const type of ["movie", "show"]) {
+  const query = `type=${type}&sort_by=title&sort_how=desc&page=1&limit=50`;
+  assert.equal((await proxyRequest(base + query, { fetchImpl })).response.statusCode, 200);
+  assert.equal(calls.at(-1), TRAKT_API_ORIGIN + `/v1/trakt/lists/123/items?page=1&limit=50&type=${type}&sort_by=title&sort_how=desc`);
+ }
+ for (const query of ["type=movie", "sort_by=title&sort_how=desc", "type=movie&sort_by=title", "type=movie&sort_how=asc", "type=season&sort_by=title&sort_how=asc", "type=movie&sort_by=Title&sort_how=asc", "type=movie&sort_by=title&sort_how=ASC", "type=movie&type=movie&sort_by=title&sort_how=asc", "type=movie&sort_by=title&sort_by=title&sort_how=asc", "type=movie&sort_by=title&sort_how=asc&sort_how=asc", "type=movie&sort_by=title&sort_how=asc&page=2"]) assert.equal((await proxyRequest(base + query, { fetchImpl })).response.statusCode, 400, query);
+ assert.equal(calls.length, 2);
 });

@@ -18,6 +18,7 @@ export function NestedPreviewDialog({
 	dialogProps = {},
 	dialogRef = null,
 	initialFocusRef = null,
+	parentTrigger = null,
 	onClose,
 }) {
 	const localDialogRef = useRef(null);
@@ -26,6 +27,16 @@ export function NestedPreviewDialog({
 		typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window)
 	));
 	usePrePaintLayoutEffect(() => observeAddSourceViewport(setViewportStyle), []);
+	usePrePaintLayoutEffect(() => {
+		if (!parentTrigger) return undefined;
+		const parent = parentTrigger.closest('[role="dialog"]');
+		const wasInert = parent?.inert, wasHidden = parent?.getAttribute("aria-hidden");
+		if (parent) { parent.inert = true; parent.setAttribute("aria-hidden", "true"); }
+		return () => {
+			if (parent) { parent.inert = wasInert; if (wasHidden === null) parent.removeAttribute("aria-hidden"); else parent.setAttribute("aria-hidden", wasHidden); }
+			focusElementWithoutScroll(parentTrigger);
+		};
+	}, [parentTrigger]);
 	useEffect(() => {
 		focusElementWithoutScroll(initialFocusRef?.current ?? activeDialogRef.current);
 	}, []);

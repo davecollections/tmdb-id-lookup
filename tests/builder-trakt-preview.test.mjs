@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeTraktResponse } from "../builder/src/source-add/trakt-client.js";
-import { normalizeTraktPreview, traktPosterIdentity } from "../builder/src/source-add/trakt-preview.js";
+import { normalizeTraktPreview, traktPosterIdentity, requestTraktTitlePreview, TRAKT_TITLE_PREVIEW_LIMIT } from "../builder/src/source-add/trakt-preview.js";
 import { createTmdbTitlePosterProvider } from "../builder/src/source-add/tmdb-title-poster-provider.js";
 import { createTmdbJsonRequester } from "../builder/src/source-add/tmdb-json-requester.js";
 import { createTmdbCollectionProvider } from "../builder/src/source-add/tmdb-collection-provider.js";
@@ -192,4 +192,61 @@ test("authoritative unavailable handling cannot add/remove/reorder selected list
 	assert.equal(session.getState().selection.byId[1].media.publicRead, false);
 	assert.equal(session.getState().selection.byId[1].media.status, "unavailable");
 	assert.equal(calls, 0);
+});
+
+test("Trakt adapts exactly 50 first-page positions to shared poster results without paging or metadata captions", async () => {
+ const rows = Array.from({ length: 50 }, (_, index) => item("movie", { title: "Hidden title " + index, ids: { tmdb: index + 1 } }));
+ rows[1] = rows[0];
+ rows[2] = item("show", { ids: { tmdb: 1 } });
+ rows[3] = item("season", { number: 0, ids: { show_tmdb: 1 } });
+ rows[4] = item("episode");
+ rows.forEach(row => { row.ids = { ...item().ids, ...row.ids }; });
+ const data = normalizeTraktResponse({ apiVersion: 1, id: 123, sample: "first-page", items: rows,
+  pagination: { page: 1, limit: 50, page_count: 9, item_count: 430 } }, "items", { id: 123, limit: 50 });
+ const calls = [], artwork = [];
+ const client = { getItems: async (id, options) => { calls.push({ id, options }); return { ok: true, data }; } };
+ const posterProvider = createTmdbTitlePosterProvider({ baseUrl, fetchImpl: async url => {
+  artwork.push(url); const id = Number(new URL(url).pathname.split("/").at(-1));
+  return id === 8 ? json({}, 502) : json({ id, poster_path: id === 7 ? null : "/poster-" + id + ".jpg" });
+ } });
+ const result = await requestTraktTitlePreview({ client, posterProvider, listId: 123 });
+ assert.equal(TRAKT_TITLE_PREVIEW_LIMIT, 50);
+ assert.deepEqual(calls, [{ id: 123, options: { signal: undefined, limit: 50 } }]);
+ assert.equal(artwork.length, 47);
+ assert.equal(artwork.filter(url => url.endsWith("/movie/1")).length, 1);
+ assert.equal(artwork.filter(url => url.endsWith("/tv/1")).length, 1);
+ assert.equal(result.data.sourcePositions, 50);
+ assert.equal(result.data.results.filter(row => row.posterPath).length, 45);
+ assert.deepEqual(result.data.results.slice(0, 2).map(row => [row.id, row.mediaType]), [[1, "MOVIE"], [1, "TV"]]);
+ assert.ok(result.data.results.every(row => Object.keys(row).sort().join(",") === "id,mediaType,posterPath"));
+ assert.equal(result.data.totalResults, null);
+ assert.equal(result.data.canLoadMore, false);
+ assert.equal(result.data.nextPage, null);
+ assert.equal(result.data.loadMore, undefined);
+});
+
+test("Trakt poster adapter stops before enrichment on failure or cancellation and represents artwork absence", async () => {
+ const failure = { ok: false, error: { code: "LIST_NOT_FOUND" } };
+ const options = { listId: 123, posterProvider: { getPosters() { assert.fail("Artwork must not run"); } } };
+ assert.equal(await requestTraktTitlePreview({ ...options, client: { getItems: async () => failure } }), failure);
+ const abort = new AbortController();
+ const success = { ok: true, data: sample([item("movie")]) };
+ assert.equal(await requestTraktTitlePreview({ ...options, signal: abort.signal, client: { getItems: async () => { abort.abort(); return success; } } }), success);
+ const missing = await requestTraktTitlePreview({ listId: 123, client: { getItems: async () => success } });
+ assert.equal(missing.data.sourcePositions, 1);
+ assert.equal(missing.data.results[0].posterPath, null);
+});
+
+
+test("sorted source Preview delegates context and preserves supplied order through asynchronous enrichment", async () => {
+ const { requestSourceTitlePreview, sourceTitlePreviewProviderAvailable } = await import("../builder/src/source-add/source-title-preview.js");
+ const sourcePreview = { type: "movie", sortBy: "title", sortHow: "desc" }, calls = [], completions = [];
+ const providers = { trakt: { async getItems(id, options) { calls.push({ id, options }); return { ok: true, data: sample([9, 2, 5].map(id => item("movie", { title: `Opposite ${id}`, rank: id, ids: { ...item().ids, tmdb: id } }))) }; } },
+  traktPosters: { async getPosters(identities) { return Promise.all(identities.map(async ({ id }) => { await new Promise(resolve => setTimeout(resolve, id)); completions.push(id); return { status: "ready", posterPath: `/${id}.jpg` }; })); } } };
+ const request = { kind: "trakt", listId: 123, mediaType: "MOVIE", sourcePreview }, signal = new AbortController().signal;
+ assert.equal(sourceTitlePreviewProviderAvailable(request, providers), true);
+ const result = await requestSourceTitlePreview(request, providers, signal);
+ assert.deepEqual(calls, [{ id: 123, options: { limit: 50, sourcePreview, signal } }]);
+ assert.deepEqual(completions, [2, 5, 9]); assert.deepEqual(result.data.results.map(row => row.id), [9, 2, 5]);
+ assert.equal(result.data.loadMore, undefined);
 });

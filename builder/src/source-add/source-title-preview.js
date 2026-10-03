@@ -1,3 +1,4 @@
+import { requestTraktTitlePreview } from "./trakt-preview.js";
 import { buildPeopleTitlePreview, PEOPLE_SOURCE_COMBINATIONS, peopleSortOptionId, peopleSourceVariantKey } from "./person-source.js";
 import { studioSourceVariantKey } from "./studio-source.js";
 import { networkSourceVariantKey } from "./network-source.js";
@@ -116,6 +117,7 @@ export function sourceTitlePreviewRequest(kind, sourceDraft, { person = null } =
 }
 
 export function sourceTitlePreviewProviderAvailable(request, providers) {
+	if (request?.kind === "trakt") return typeof providers?.trakt?.getItems === "function" && typeof providers?.traktPosters?.getPosters === "function";
 	if (!request) return false;
 	if (request.kind === "collection") return typeof providers.collection?.getCollection === "function";
 	if (request.kind === "list") return typeof providers.list?.getList === "function";
@@ -130,6 +132,7 @@ export function sourceTitlePreviewProviderAvailable(request, providers) {
 }
 
 export async function requestSourceTitlePreview(request, providers, signal) {
+	if (request.kind === "trakt") return requestTraktTitlePreview({ client: providers.trakt, posterProvider: providers.traktPosters, listId: request.listId, sourcePreview: request.sourcePreview, signal });
 	if (request.kind === "list") {
 		if (providers.list.getListPreview) return providers.list.getListPreview(request.tmdbId, { sortBy: request.sortBy, signal });
 		const result = await providers.list.getList(request.tmdbId, { signal });

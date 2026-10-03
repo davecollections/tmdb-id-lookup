@@ -61,8 +61,8 @@ test("list resolution and Preview use only the injected provider and the shared 
 	assert.match(flow, /requestSourceTitlePreview\(candidate\.request, \{ list: provider \}/);
 	assert.match(flow, /<SourceTitlePreviewDialog/);
 	assert.match(previewDialog, /const listPreview = preview\.candidate\.request\.kind === "list"/);
-	assert.match(previewDialog, /<TitlePreviewResults data=\{preview.data\} listPreview=\{listPreview\}/);
-	assert.match(results, /titlePreviewSummary\(represented, displayedCount\)/);
+	assert.match(previewDialog, /<TitlePreviewResults data=\{preview.data\} previewLimit=\{previewLimit\} posterUrlForPath=\{posterUrlForPath\} listPreview=\{listPreview\}/);
+	assert.match(results, /titlePreviewSummary\(represented, displayedCount, previewLimit\)/);
 	assert.match(results, /displayAll embedded/);
 	assert.match(posterGrid, /renderSummary\?\.\(visible\.length\)/);
 	assert.doesNotMatch(editorDialog, /tmdb-list-sort-help|Nuvio applies Recent/);

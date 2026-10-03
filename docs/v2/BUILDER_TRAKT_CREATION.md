@@ -1,10 +1,65 @@
 # Trakt Lists creation
 
+## C #284 count clarity and physical acceptance — 2026-10-03
+
+Discovery labels Trakt `itemCount` as **item/items**. Media review shows the existing
+Trakt total first (`215 items in this Trakt List`), then existing movie/show counts
+(`In Nuvio: 46 Movies · 3 Series`), then the unchanged “Will create” line. Null totals
+are omitted, zero and singular values survive, and no total is inferred. The quiet
+44px information button appears only when both counts are known and the Trakt total
+is greater than Movies + Series. Equal or reversed totals omit it without correcting
+either authoritative value. The shared nested dialog explains whole Movies/Series
+versus individual Seasons/Episodes and normal episode access inside a Series; it
+never invents a remainder or sends a request. “Preview titles” and the separate
+stage-level rank/asc note retain their existing meaning and behavior.
+
+The owner reported a real Nuvio Desktop import and re-export of a Builder-created
+Collection for **MARVEL Cinematic Universe**, Trakt List **1248149**: Trakt metadata
+reported **215 items**; Media and Nuvio displayed **46 Movies and 3 Series**.
+Individual Season/Episode entries did not appear as separate Collection items.
+The round-trip retained both physical sources (`provider=trakt`, List ID 1248149,
+`mediaType=MOVIE` and `TV`, each `sortBy=rank`, `sortHow=asc`). Nuvio added its normal
+nullable compatibility fields.
+
+Physical Nuvio Desktop acceptance for C is now **complete**. The subsequent
+Builder export with Series `TV/title/desc` imported successfully; its visible order
+matched the real sorted Builder Preview. Nuvio's re-export preserved provider,
+List ID, media, sort and direction: Movies remained `MOVIE/rank/asc`, and Series
+remained `TV/title/desc`. Normal nullable compatibility fields and
+`focusGifEnabled=true` were additive and did not change Trakt source semantics.
+The mixed rank/asc and edited-sort cases together complete the required physical
+acceptance; neither needs repeating for integration.
+
+## C #284 current local Preview refinement — 2026-10-03
+
+The approved shared poster-only discovery Preview is also available explicitly on each
+selected List's Media card. Its standard Preview titles button occupies the reserved
+right-hand region on wide screens and wraps on phones; remove remains top-right.
+Entering Media, media detection and choice changes never request an item sample.
+Discovery and Media share the combined first-page/50-item sample and bounded cache.
+
+The single stage helper says: “New Trakt sources use List order · Ascending. You can
+change the sorting later by editing the Source.” All three creation scopes still author
+`rank` / `asc`, with no creation sort controls. The [current Source Edit contract](BUILDER_TRAKT_SOURCES.md#c-284-current-local-refinement--2026-10-03)
+adds an explicit upstream-sorted Preview of the unsaved fixed-media draft through the
+narrow Dingo sorted-items extension. It supersedes earlier Source Edit Preview deferral,
+no-service-change and text-fallback assumptions; historical foundation notes below remain
+as the record of that earlier gate. The sorted-items dependency merged in
+[service PR #28](https://github.com/davecollections/trakt-list-lookup/pull/28) and is
+deployed. Real Source Edit TV/title/desc Preview passed with one Trakt GET/cost one,
+three TV detail requests and preserved poster order. Preview used the unsaved draft
+while the saved source stayed rank/asc until explicit Save.
+
+The owner fixture injects both the item client and TMDB poster provider. Its source sort
+examples are synthetic service-order samples used only for the authorized local review;
+they are not real external data or a product-side sorting implementation.
+
+
 [B3 #282](https://github.com/davecollections/tmdb-id-lookup/issues/282) implements the approved design from [#281](https://github.com/davecollections/tmdb-id-lookup/issues/281), beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276). B3 includes the Phase A foundation and owner-approved visible Trakt Lists creation flows. The Phase A foundation was approved in commit `3b2b144266a6f94489576b94e84bb17e87f0f561`. Owner UI review and bounded real Builder production-path acceptance are complete. C remains separate from B3.
 
 ## C Phase A foundation — local owner-review gate
 
-[C #284](https://github.com/davecollections/tmdb-id-lookup/issues/284) adds nonvisual foundations after B3 merged. Visible result cards, Preview, Source Edit controls and About & Credits remain unchanged. Phase A is pending owner code review; C is not complete.
+[C #284](https://github.com/davecollections/tmdb-id-lookup/issues/284) Phase A was owner-approved and committed as `1be435b19c0208137d3c3b78ca4156c93c34d234`. The following foundation notes describe that historical nonvisual gate. The current visible contract and completed live/physical acceptance are recorded above; C integration remains subject to PR validation and owner merge review.
 
 - `getItems(id, { signal, limit = 15, refresh = false })` extends the existing client. It requests only page 1, accepts limits 1–50 and strictly normalizes matching v1 first-page samples, including nullable movie/show/season/episode fields. Service order and repeated rows survive. The existing 40-entry, five-minute success cache, invalidation, cancellation, timeout and cooldown remain shared.
 - The opt-in local middleware accepts only canonical numeric `/lists/<id>/items` with page 1 and limit 1–50. Existing fixed target, same-origin/host, GET, omitted-credential and redirect restrictions remain. Phase A does not enable live review.
@@ -23,7 +78,7 @@ This belongs **only** in the existing **About & Credits → Data credits** secti
 
 ## Current boundary
 
-Trakt Lists is registered in the existing New Collection, New Folder and selected-Folder Add Source launchers. One `TraktSourceFlow` uses the Phase A client, selection session and planner. Construction and opening remain request-free; discovery and selected-only media work require explicit actions. The visible Source Edit remains name-only; C Phase A extends its nonvisual domain as described above. The mounted and deterministic owner-review fixtures provide explicitly owner-authorized injected mechanics evidence, with zero production Trakt requests. Separate bounded real Builder production-path acceptance has passed using the same production client and flow. Service code, Cloudflare configuration, CORS, credentials, dependencies and v1 are unchanged.
+Trakt Lists is registered in the existing New Collection, New Folder and selected-Folder Add Source launchers. One `TraktSourceFlow` uses the Phase A client, selection session and planner. Construction and opening remain request-free; discovery and selected-only media work require explicit actions. Source Edit now exposes title, the eight supported sorts, direction and explicit unsaved-draft Preview; provider/List/media stay fixed. The mounted and deterministic owner-review fixtures provide explicitly owner-authorized injected mechanics evidence, with zero production Trakt requests. Separate bounded real Builder production-path acceptance has passed using the same production client and flow. Service code, Cloudflare configuration, CORS, credentials, dependencies and v1 are unchanged.
 
 ## Visible flow and reuse
 
@@ -41,7 +96,7 @@ Phase B extends the Phase A media batching rule to skip a valid verified manual 
 
 ## Client and discovery
 
-`builder/src/config/trakt-api.js` owns the fixed `https://api.dingo.build` origin. `createTraktClient` in `source-add/trakt-client.js` exposes `searchKeyword`, `searchUser`, `browse`, `resolve`, `getMedia` and the C Phase A `getItems` method. Items remain unwired from the UI. Requests use GET, Accept JSON, omitted credentials, rejected redirects, AbortSignal and a 25-second timeout covering response-body reads. Strict v1 normalization validates canonical numeric IDs, required structures, nullable values and consistent media counts. Errors are sanitized typed values, never raw upstream messages. Retry-After delta seconds and HTTP dates become a not-before timestamp; there are no automatic retries.
+`builder/src/config/trakt-api.js` owns the fixed `https://api.dingo.build` origin. `createTraktClient` in `source-add/trakt-client.js` exposes `searchKeyword`, `searchUser`, `browse`, `resolve`, `getMedia` and the C Phase A `getItems` method. Explicit discovery, Media and Source Edit Preview use `getItems`. Requests use GET, Accept JSON, omitted credentials, rejected redirects, AbortSignal and a 25-second timeout covering response-body reads. Strict v1 normalization validates canonical numeric IDs, required structures, nullable values and consistent media counts. Errors are sanitized typed values, never raw upstream messages. Retry-After delta seconds and HTTP dates become a not-before timestamp; there are no automatic retries.
 
 The existing bounded success cache holds at most 40 entries for five minutes in session memory. It does not own selections. An authoritative `LIST_NOT_FOUND` replaces this small cache so cached URL aliases cannot restore old public access; explicit public verification bypasses success-cache reads. A superseded cache cannot be repopulated by older pending requests. There is no extra coalescer or persistence.
 
@@ -81,4 +136,4 @@ The B3 canonical pure suites are `tests/builder-trakt-client.test.mjs` and `test
 
 Owner review uses the same fixture at `tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review`, served by the extracted `createSourceEditMountedServer` helper with `reviewOnly: true`. The helper is shared with the existing automated harness; no production mock switch exists. Review-only CSP restricts connections/images to local assets. Choose lists 101, 102 and 103 for A: New Collection (3 Folders/4 Sources), B: New Folder (2 new sibling Folders/2 Sources), and C: Add Source (3 new Sources). Review Keyword, User, multiline URL/ID, Popular/Trending, overrides, Back and phone layout. All data is explicitly deterministic. `TRAKT_LIVE_REVIEW` remains disabled. This fixture remains mechanics evidence, separate from the completed real Builder production-path acceptance.
 
-C owns an explicit-open, first-page `/items` sample, Source Edit sorting and restrained credits. Text/list data stays authoritative; optional posters must use existing TMDB infrastructure only, never Trakt artwork URLs, and failures retain usable text. Samples do not prove composition, exact physical-source output or saved-sort fidelity. The nonvisual C Phase A foundation is described above; visible UI and live acceptance require subsequent owner gates. Service deployment-status documentation was corrected separately without runtime changes.
+C owns explicit first-page `/items` Preview, Source Edit sorting and restrained credits. The shared Preview is poster-only, uses existing TMDB infrastructure and omits missing posters; no Trakt artwork is used. Samples do not prove composition. Real sorted Source Edit Preview and physical Nuvio Desktop rank/asc and title/desc round trips have passed. The sorted-items service dependency is merged/deployed; Builder integration remains subject to canonical validation, PR CI and owner merge approval.

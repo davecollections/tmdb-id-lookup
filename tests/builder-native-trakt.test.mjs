@@ -1,3 +1,4 @@
+import { updateTraktSourceSort, updateTraktSourceDirection } from "../builder/src/source-edit/trakt-list-editor.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -197,6 +198,17 @@ test("newly created source exports rank/asc then Source Edit title/desc and reim
 	assert.deepEqual(exported.value[0].folders[0].sources[0], { ...created.draft.editable, sortBy: "title", sortHow: "desc" });
 	const roundTrip = importNuvioCollections(exported.value, { idFactory: ids() });
 	assert.equal(roundTrip.ok, true); assert.deepEqual(serializeNuvioProject(roundTrip.project).value, exported.value);
+});
+
+test("Trakt UI draft helpers preserve the independent field and immutable identity for every sort/direction", () => {
+ const app = appFor([raw({ sortBy: "votes", sortHow: "desc" })]), opened = open(app);
+ for (const sortBy of TRAKT_SORT_VALUES) {
+  const draft = updateTraktSourceSort(opened.draft, sortBy);
+  assert.deepEqual(draft, { ...opened.draft, sortBy });
+  for (const sortHow of ["asc", "desc"]) assert.deepEqual(updateTraktSourceDirection(draft, sortHow), { ...draft, sortHow });
+ }
+ assert.equal(opened.draft.sortBy, "votes"); assert.equal(opened.draft.sortHow, "desc");
+ for (const draft of [updateTraktSourceSort(opened.draft, "invalid"), updateTraktSourceDirection(opened.draft, "invalid")]) assert.equal(saveSourceEdit(app, opened.session, draft).validationFailed, true);
 });
 
 test("Source Edit emits only changed owned fields, preserves unknown raw data and leaves cancelled/no-op drafts inert", () => {

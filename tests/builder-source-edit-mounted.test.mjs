@@ -76,6 +76,7 @@ async function runTraktFoundationMatrix(connection, views, entrypoint = "__runTr
 
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
+	const traktPreviewOnly = process.env.TRAKT_PREVIEW_ONLY === "1";
 	const traktCreationOnly = process.env.TRAKT_CREATION_ONLY === "1";
 	const traktFoundationOnly = process.env.TRAKT_SOURCE_FOUNDATION_ONLY === "1";
 	const sourceNamesOnly = process.env.TMDB_SOURCE_NAMES_ONLY === "1";
@@ -196,11 +197,13 @@ async function runMountedPage() {
 		// Native keys are also used by name recovery in the default CI matrix.
 		resources.pageConnection.onEvent((message) => {
 			if (message.method !== "Runtime.bindingCalled" || message.params.name !== "pressGuidedPresentationKey") return;
-			const key = JSON.parse(message.params.payload).key;
+			const requestedKey = JSON.parse(message.params.payload).key;
+			const key = requestedKey === "Shift+Tab" ? "Tab" : requestedKey;
+			const modifiers = requestedKey === "Shift+Tab" ? 8 : 0;
 			const code = key === " " ? "Space" : key;
 			const virtualKey = key === " " ? 32 : key === "Escape" ? 27 : key === "Enter" ? 13 : key === "ArrowRight" ? 39 : key === "ArrowLeft" ? 37 : 9;
-			resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, windowsVirtualKeyCode: virtualKey, ...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}) })
-				.then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, windowsVirtualKeyCode: virtualKey }))
+			resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers, windowsVirtualKeyCode: virtualKey, ...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}) })
+				.then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers, windowsVirtualKeyCode: virtualKey }))
 				.then(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish230Key()" }));
 		});
 		await resources.pageConnection.command("Runtime.addBinding", { name: "pressGuidedPresentationKey" });
@@ -234,15 +237,15 @@ async function runMountedPage() {
   });
   await resources.pageConnection.command("Runtime.addBinding", { name: "sourceNamesSpace" });
 		const address = resources.vite.httpServer.address();
-		if (traktFoundationOnly || traktCreationOnly) {
+		if (traktFoundationOnly || traktCreationOnly || traktPreviewOnly) {
 			const externalRequests = [];
-			if (traktCreationOnly) {
+			if (traktCreationOnly || traktPreviewOnly) {
 				await resources.pageConnection.command("Fetch.enable", { patterns: [{ urlPattern: "*" }] });
 				resources.pageConnection.onEvent(message => {
 					if (message.method !== "Fetch.requestPaused") return;
 					const { request, requestId } = message.params;
 					const url = new URL(request.url);
-					if (["127.0.0.1", "localhost"].includes(url.hostname)) void resources.pageConnection.command("Fetch.continueRequest", { requestId });
+					if (["127.0.0.1", "localhost"].includes(url.hostname) || url.protocol === "data:") void resources.pageConnection.command("Fetch.continueRequest", { requestId });
 					else { externalRequests.push(request.url); void resources.pageConnection.command("Fetch.failRequest", { requestId, errorReason: "BlockedByClient" }); }
 				});
 			}
@@ -254,6 +257,13 @@ async function runMountedPage() {
 				if (state.result.value === "complete") break;
 				await new Promise((resolve) => setTimeout(resolve, 50));
 			}
+			if (traktPreviewOnly) {
+    const views = [360, 384, 393, 402, 412, 899, 900, 901, 1280].map(width => ({ width, height: width < 900 ? 852 : 900 }));
+    views.push({ width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true }, { width: 393, height: 852, largeText: true }, { width: 1280, height: 900, reducedMotion: false });
+    const traktPreviewCases = await runTraktFoundationMatrix(resources.pageConnection, views, "__runTraktPreviewScenario");
+    assert.deepEqual(externalRequests, [], "No external API or image requests");
+    return { traktPreviewCases };
+   }
 			if (traktCreationOnly) {
     const views = [{ width: 360, height: 800 }, { width: 384, height: 800 }, { width: 393, height: 852 }, { width: 402, height: 800 }, { width: 412, height: 800 }, { width: 1280, height: 900 }, { width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true }, { width: 393, height: 852, largeText: true }];
     const traktCreationCases = await runTraktFoundationMatrix(resources.pageConnection, process.env.TRAKT_PRESENTATION_ONLY === "1" ? views.filter(view => [393, 412, 1280].includes(view.width)).map(view => view.width === 1280 ? { ...view, reducedMotion: false } : view) : views, "__runTraktCreationScenario");
@@ -302,6 +312,7 @@ async function runMountedPage() {
 			if (result?.status === "complete") {
 				if (!new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
 					result.results.traktCreationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktCreationScenario");
+					result.results.traktPreviewCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktPreviewScenario");
 					result.results.traktFoundationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }]);
 				}
 
@@ -4275,6 +4286,12 @@ test("mounted TMDB List hierarchy creates ordered per-list Folders with live met
  }
 });
 
+
+test("mounted Trakt C Preview and sorting use deterministic responsive evidence", () => {
+ assert.equal(mountedResults.traktPreviewCases.length, process.env.TRAKT_PREVIEW_ONLY === "1" ? 13 : 2);
+ assert.ok(mountedResults.traktPreviewCases.every(result => result.verified && result.requests === 0));
+ console.log("TRAKT_C_PREVIEW " + JSON.stringify(mountedResults.traktPreviewCases));
+});
 
 test("mounted Trakt Lists creation uses injected mechanics across all three scopes", () => {
  assert.equal(mountedResults.traktCreationCases.length, process.env.TRAKT_CREATION_ONLY === "1" ? process.env.TRAKT_PRESENTATION_ONLY === "1" ? 6 : 9 : 2);

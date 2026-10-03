@@ -679,6 +679,7 @@ test("production UI keeps local Builder assets and approved links while excludin
 		"https://github.com/davecollections/tmdb-id-lookup/issues/new/choose",
 		"https://nuvio.tv/",
 		"https://trakt-list-lookup.pages.dev/",
+		"https://trakt.tv/",
 		"https://developer.themoviedb.org/docs/getting-started",
 	].sort());
 });

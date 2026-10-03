@@ -1,7 +1,12 @@
-import { TRAKT_SORT_VALUES, TRAKT_SORT_DIRECTIONS, inspectNativeTraktSource, nativeTraktPhysicalIdentity, nativeTraktSortLabel } from "../nuvio/trakt.js";
+import { TRAKT_SORT_VALUES, TRAKT_SORT_DIRECTIONS, TRAKT_SORT_LABELS, inspectNativeTraktSource, nativeTraktPhysicalIdentity, nativeTraktSortLabel } from "../nuvio/trakt.js";
 import { diagnostic, validateTouchedSourceTitle } from "./source-edit-utils.js";
 
 export const TRAKT_LIST_SOURCE_EDITOR_ID = "trakt-list";
+export const TRAKT_EDIT_SORT_OPTIONS = Object.freeze(TRAKT_SORT_VALUES.map(id => Object.freeze({ id, label: TRAKT_SORT_LABELS[id] })));
+export const TRAKT_EDIT_DIRECTION_OPTIONS = Object.freeze(TRAKT_SORT_DIRECTIONS.map(id => Object.freeze({ id, label: id === "asc" ? "Ascending" : "Descending" })));
+export const updateTraktSourceSort = (draft, sortBy) => Object.freeze({ ...draft, sortBy });
+export const updateTraktSourceDirection = (draft, sortHow) => Object.freeze({ ...draft, sortHow });
+
 const fixedFields = Object.freeze(["provider", "traktListId", "mediaType"]);
 
 export const traktListSourceEditor = Object.freeze({

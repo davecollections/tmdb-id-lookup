@@ -50,8 +50,8 @@ export async function runTraktFoundationScenario({ createController, MountedWork
 			const dialog = document.querySelector('[data-source-edit-modal="true"]');
 			ensure(dialog?.dataset.sourceEditAdapter === "trakt-list", "registered editor");
 			const field = dialog.querySelector("#source-edit-title-input");
-			ensure(dialog.querySelectorAll("input,select,textarea").length === 1 && field, "name-only input");
-			ensure(!dialog.querySelector('[data-action="preview-source-edit"]') && !dialog.querySelector("a"), "no Preview or external link");
+			ensure(dialog.querySelectorAll("input,select,textarea").length === 11 && field, "name plus eight sort and two direction choices");
+			ensure(dialog.querySelector('[data-action="preview-source-edit"]') && !dialog.querySelector("a"), "shared Preview action and no external link");
 			ensure(dialog.textContent.includes(index ? "Date added · Descending" : "List order · Ascending"), "fixed sorting context");
 			ensure(dialog.textContent.includes(index ? "Trakt · List 123 · Series" : `Trakt · List ${Number.MAX_SAFE_INTEGER} · Movies`), "fixed List/media context");
 			ensure(document.querySelector('[data-source-edit-open="true"] [inert]'), "workspace inert");

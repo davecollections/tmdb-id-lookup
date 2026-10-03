@@ -7824,7 +7824,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 	gap: 7px;
 }
 
-.genre-hierarchy-configure-row-actions button {
+.genre-hierarchy-configure-row-actions button,
+.source-preview-button {
 	min-height: 40px;
 	padding: 5px 9px;
 	color: var(--cyan-bright);
@@ -10189,20 +10190,23 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 .trakt-result-id { margin-inline-start: auto; color: var(--muted); font-size: .72rem; text-align: right; }
 .trakt-result-details { display: block; }
 .trakt-result-unavailable { color: var(--muted); font-size: .75rem; }
-.trakt-result:has(.trakt-description-action) .trakt-result-choice { padding-bottom: 0; }
-.trakt-list-form .trakt-description-action { justify-self: start; margin: 0 12px 2px; padding: 4px 0; color: #b7c6d6; background: transparent; border: 0; border-radius: 4px; font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer; text-align: left; }
+.trakt-result .trakt-result-choice { padding-bottom: 0; }
+.trakt-result-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 12px; margin: 6px 12px 2px; min-width: 0; }
+.trakt-result-actions .trakt-preview-action { margin-inline-start: auto; }
+.trakt-list-form .trakt-description-action { min-height: 44px; min-width: 44px; max-width: 100%; padding: 4px 0; color: #b7c6d6; background: transparent; border: 0; border-radius: 4px; font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer; text-align: left; }
 .trakt-modes .trakt-mode-choice, .trakt-inline-actions .trakt-browse-action { color: var(--text); }
 .trakt-description-modal { width: min(560px, 100%); grid-template-rows: auto minmax(0, 1fr); }
 .trakt-description-modal > header { align-items: start; }
 .trakt-description-modal h3 { font-size: 1rem; line-height: 1.4; }
 .trakt-description-body { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; line-height: 1.6; }
-.trakt-description-action:focus-visible, .trakt-description-body:focus-visible { outline: 3px solid var(--cyan-bright); outline-offset: 2px; }
+.trakt-description-action:focus-visible, .trakt-preview-action:focus-visible, .trakt-description-body:focus-visible { outline: 3px solid var(--cyan-bright); outline-offset: 2px; }
 @media (forced-colors: active) {
  .trakt-result-meta, .trakt-result-id, .trakt-result-likes, .trakt-result-unavailable { color: CanvasText; }
  .trakt-list-form .trakt-description-action, .trakt-modes .trakt-mode-choice, .trakt-inline-actions .trakt-browse-action { color: ButtonText; }
  .trakt-description-modal { border-color: CanvasText; }
- .trakt-description-action:focus-visible, .trakt-description-body:focus-visible { outline-color: Highlight; }
+ .trakt-description-action:focus-visible, .trakt-preview-action:focus-visible, .trakt-description-body:focus-visible { outline-color: Highlight; }
 }
+.about-credit-text { color: var(--text); font-size: .8rem; font-weight: 700; text-underline-offset: 3px; }
 .trakt-line-results { padding-inline-start: 1.2rem; display: grid; gap: .6rem; overflow-wrap: anywhere; }
 .trakt-list-form :is(.tmdb-list-review-item, .trakt-selected, .trakt-placement) { min-width: 0; overflow-wrap: anywhere; }
 .trakt-list-form .tmdb-list-review-item { gap: 8px; padding: 10px 12px; }
@@ -10214,9 +10218,23 @@ section.decades-preview-catalogue > .editor-field-help { margin-bottom: 8px; }
 .trakt-placement summary { min-height: 44px; padding-block: 12px; color: var(--cyan-bright); font-size: .75rem; cursor: pointer; }
 .trakt-media-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
 .trakt-media-config { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
-.trakt-media-info { display: grid; gap: 2px; }
+.trakt-media-preview { margin-left: auto; }
+.trakt-initial-sort-note { margin-top: -4px; }
+.trakt-media-info { display: grid; gap: 2px; min-width: 0; }
+.trakt-nuvio-counts { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.trakt-nuvio-counts > p { min-width: 0; overflow-wrap: anywhere; }
+.trakt-list-form .trakt-count-info { flex: 0 0 44px; min-width: 44px; min-height: 44px; padding: 0; color: #b7c6d6; background: transparent; border: 1px solid transparent; border-radius: 6px; font: inherit; font-size: 1rem; cursor: pointer; }
+.trakt-count-info:focus-visible { outline: 3px solid var(--cyan-bright); outline-offset: 2px; }
+.trakt-count-info-body { white-space: normal; }
+.trakt-count-info-body p { margin: 0 0 16px; }
+.trakt-count-info-body p:last-child { margin-bottom: 0; }
+.trakt-count-info-body ul { padding-left: 20px; margin: 0 0 16px; }
+@media (forced-colors: active) {
+ .trakt-list-form .trakt-count-info { color: ButtonText; }
+ .trakt-count-info:focus-visible { outline-color: Highlight; }
+}
 @media (min-width: 900px), (min-width: 621px) and (min-height: 601px) {
- .trakt-media-config { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+ .trakt-media-config { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) auto; }
  .trakt-media-config > .semantic-sort-choices { justify-self: start; }
 }
 .trakt-list-form .studio-selected-remove { width: 44px; min-width: 44px; }
