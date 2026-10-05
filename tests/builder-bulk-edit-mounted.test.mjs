@@ -40,7 +40,8 @@ let projectFindMounted;
 const collectionCorrectionOnly = process.env.COLLECTION_FOLDERS_CORRECTION_ONLY === "1";
 const backToTopOnly = process.env.BUILDER_BACK_TO_TOP_ONLY === "1";
 const nuvioSendOnly = process.env.NUVIO_SEND_ONLY === "1";
-const nuvioWelcomeOnly = process.env.NUVIO_WELCOME_ONLY === "1";
+const welcomeHandoffOnly = process.env.WELCOME_HANDOFF_ONLY === "1";
+const nuvioWelcomeOnly = welcomeHandoffOnly || process.env.NUVIO_WELCOME_ONLY === "1";
 const workspaceImportOnly = process.env.WORKSPACE_IMPORT_ONLY === "1";
 const nuvioImportOnly = nuvioWelcomeOnly || process.env.NUVIO_IMPORT_ONLY === "1";
 const presentationOnly = process.env.BUILDER_MANAGEMENT_PRESENTATION_ONLY === "1";
@@ -276,6 +277,15 @@ async function runWelcomeCreationChecks(connection) {
 	return results;
 }
 
+async function runWelcomeHandoffChecks(connection) {
+ const results = [];
+ for (const width of welcomeHandoffOnly ? [360, 384, 393, 402, 412, 1280] : [393, 1280]) {
+  await connection.command("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 900 });
+  results.push(await evaluate(connection, 'window.runWelcomeHandoffCases(' + (width === 393) + ')'));
+ }
+ return results;
+}
+
 async function runNuvioImportChecks(connection, origin) {
 	await connection.command("Page.navigate", { url: `${origin}/tests/fixtures/builder-nuvio-import-mounted.html` });
 	const deadline = Date.now() + 30000;
@@ -283,9 +293,11 @@ async function runNuvioImportChecks(connection, origin) {
 	assert.equal(await evaluate(connection, "window.nuvioFixtureReady === true"), true, "Nuvio fixture loads");
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
+	const handoff = await runWelcomeHandoffChecks(connection);
+	if (welcomeHandoffOnly) return { handoff, errors: await evaluate(connection, "window.__mountedErrors") };
 	const creation = await runWelcomeCreationChecks(connection);
 	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
-	if (nuvioWelcomeOnly) return { ...await runWelcomeImportChecks(connection), creation };
+	if (nuvioWelcomeOnly) return { ...await runWelcomeImportChecks(connection), creation, handoff };
 	const local = await evaluate(connection, "window.runNuvioLocalCases()");
 	const layouts = [];
 	const screenshots = process.env.NUVIO_IMPORT_SCREENSHOT_DIR;
@@ -321,7 +333,7 @@ async function runNuvioImportChecks(connection, origin) {
 	assert.equal(await evaluate(connection, '(() => { const choice = document.querySelector(".nuvio-choice[data-selected=true]"); const inset = getComputedStyle(choice, "::after"); return inset.borderStyle === "solid" && parseFloat(inset.borderWidth) >= 1 && choice.querySelector("input").checked; })()'), true, "Shared forced-colour inset preserves non-hue selection");
 	await connection.command("Emulation.setEmulatedMedia", { features: [] });
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: false });
-	return { local, layouts, creation, errors: await evaluate(connection, "window.__mountedErrors") };
+	return { local, layouts, creation, handoff, errors: await evaluate(connection, "window.__mountedErrors") };
 }
 
 async function runMountedPage() {
@@ -414,7 +426,9 @@ async function runMountedPage() {
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
 		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 30000 });
 		const fixtureErrors = [];
+		const externalRequests = [];
 		resources.pageConnection.onEvent(({ method, params }) => {
+			if (nuvioWelcomeOnly && method === "Network.requestWillBeSent" && /^https?:/.test(params.request.url) && new URL(params.request.url).hostname !== "127.0.0.1") externalRequests.push(params.request.url);
 			if (method === "Runtime.exceptionThrown") fixtureErrors.push(params.exceptionDetails.exception?.description ?? params.exceptionDetails.text);
 			if (method === "Network.loadingFailed") fixtureErrors.push(params.errorText);
 			if (method === "Network.responseReceived" && params.response.status >= 400) fixtureErrors.push(`${params.response.status} ${params.response.url}`);
@@ -456,6 +470,10 @@ async function runMountedPage() {
 		timing.stage("Import scenarios");
 		const nuvioImport = nuvioImportOnly || (!collectionCorrectionOnly && !presentationOnly && !backToTopOnly)
 			? await runNuvioImportChecks(resources.pageConnection, `http://127.0.0.1:${address.port}`) : null;
+		if (nuvioWelcomeOnly) {
+			assert.deepEqual(externalRequests, [], "Local Welcome checks dispatch no external requests");
+			console.log("Welcome handoff:", nuvioImport.handoff.length, "widths; external requests:", externalRequests.length);
+		}
 		if (nuvioImportOnly) return { nuvioImport };
 		timing.stage("Bulk Edit, branding and header layouts");
 		let unrelatedResults = {};
@@ -728,7 +746,12 @@ test("mounted Nuvio Send retains safe outcomes and one responsive Export shell",
 	console.log("Compact Send measurements:", JSON.stringify(mounted.nuvioSend.layouts.filter(layout => [393, 1280].includes(layout.width) && layout.height === 900 && ["export", "review", "sending", "verified"].includes(layout.screen))));
 });
 
-test(nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+test(welcomeHandoffOnly ? "mounted Welcome direct import handoff keeps diagnostics off outgoing DOM" : nuvioWelcomeOnly ? "mounted Nuvio welcome selector retains local drafts, busy guard and responsive access" : "mounted Nuvio local mock flow preserves expiry-safe snapshots, local merge and responsive access", { skip: hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || nuvioSendOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly }, () => {
+	assert.equal(mounted.nuvioImport.handoff.length, welcomeHandoffOnly ? 6 : 2);
+	assert.ok(mounted.nuvioImport.handoff.every(result => result.passed && result.successes.length === 3));
+	assert.equal(mounted.nuvioImport.handoff.find(result => result.width === 393).failures.length, 9);
+	assert.deepEqual(mounted.nuvioImport.errors, []);
+	if (welcomeHandoffOnly) return;
 	assert.deepEqual(mounted.nuvioImport.local, nuvioWelcomeOnly ? { passed: true, externalServiceExercised: false } : { passed: true, mocked: true });
 	assert.equal(mounted.nuvioImport.layouts.length, nuvioWelcomeOnly ? 44 : 63);
 	assert.equal(mounted.nuvioImport.creation.length, 4);

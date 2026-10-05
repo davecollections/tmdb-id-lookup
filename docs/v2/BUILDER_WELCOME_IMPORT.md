@@ -2,7 +2,7 @@
 
 Status: Local JSON import was introduced by [#41](https://github.com/davecollections/tmdb-id-lookup/issues/41); unified connected Import is merged through #238 / PR #239 and shared PIN/retained Send presentation through #244 / PR #245.
 
-Last reviewed: 2026-09-26
+Last reviewed: 2026-10-05
 
 ## Purpose and scope
 
@@ -109,6 +109,16 @@ Every UI diagnostic has exactly `code`, `path`, and `message`; the path is `$ui.
 Welcome errors use `role="alert"` and stable messages/codes; importer warnings remain non-fatal. Connected Import groups preservation/limited-editing notes in its Review. The workspace does not render an import-warning panel: connected Import supplies transient success feedback that survives selection/scrolling and clears on the next project content change.
 
 Operation diagnostics and non-interactive migration notices retain their separate workspace treatment.
+
+### Direct-import handoff (#290)
+
+While a direct File/JSON action is busy, Welcome does not mount its diagnostic lists. Failure releases busy and exposes the existing local/controller errors on Welcome; success enters Workspace with the import warnings still retained in the controller. This is a local presentation boundary, with no delay, animation, diagnostic clearing, importer change or data normalization. The existing `Importing…`, disabled controls, synchronous action gate and pasted browser-task yield remain unchanged.
+
+The pre-fix mounted Chrome trace on `2189f67b339a359a30465afe1b4a5c72b4462199` confirmed both methods: idle Welcome → busy Welcome → controller publishes `UNSUPPORTED_TMDB_SOURCE_PRESERVED` → a warning node is inserted into connected, busy Welcome while Workspace is absent → Workspace. `useSyncExternalStore` can commit the published diagnostics before the awaited `runWelcomeAction` continuation changes screens. The fix prevents those diagnostic nodes from being created during that interval instead of covering them with CSS or waiting for a paint.
+
+Start New clears controller diagnostics on success and retains its existing creation/cancellation behavior. Connected Import and Workspace Add/Merge/Replace use detached Review and synchronous `applySnapshot` → `onImported` in `useCollectionImportReview`, without the direct-import awaited handoff. Those flows and their legitimate Review warnings are unchanged; their audit did not identify this direct-import transition boundary. No new Nuvio-client contract is introduced.
+
+The [focused mounted regression](../TESTING.md#welcome-direct-import-handoff-290) observes actual DOM mutations outside React `act`, including inserted nodes that may already be detached by observer delivery. Final Workspace assertions alone are insufficient for this defect. Issue: [#290](https://github.com/davecollections/tmdb-id-lookup/issues/290); implementation remains at local owner review until separately authorized integration.
 
 ## Privacy boundary
 

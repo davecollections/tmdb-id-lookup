@@ -1,5 +1,31 @@
 # Repository Testing
 
+## Welcome direct-import handoff (#290)
+
+The existing `builder-nuvio-import-mounted.jsx` fixture and Workspace browser lifecycle cover the [direct-import presentation boundary](v2/BUILDER_WELCOME_IMPORT.md#direct-import-handoff-290). Run the focused matrix with:
+
+```powershell
+$env:WELCOME_HANDOFF_ONLY = '1'
+node --test --test-name-pattern='mounted Welcome direct import handoff' tests/builder-bulk-edit-mounted.test.mjs
+Remove-Item Env:WELCOME_HANDOFF_ONLY
+```
+
+At 360/384/393/402/412/1280px, it exercises native file reads, controlled delayed file reads and pasted JSON through the real `BuilderApp`, controller subscription, action coordinator and importer under StrictMode. Local authored JSON reuses the existing fixture's unsupported-source preservation warning; no external service is exercised or substituted. `MutationObserver` records busy commits and diagnostic insertions, inspecting added nodes even if removed before delivery. Actions run outside React `act` so test batching cannot erase the transient commit. The regression failed against unchanged production main `2189f67b…` with the warning mounted on connected busy Welcome before Workspace, then passed with the presentation fix.
+
+Success assertions require committed `Importing…`/disabled state before controller publication (including the existing pasted browser yield), no successful warning DOM on outgoing Welcome, one clean revision despite overlapping actions, exact raw data/export preservation and retained controller warnings. Nine failure/retry cases at 393px cover malformed and structurally invalid file/pasted JSON, empty pasted input, missing/unsupported/oversize files and read rejection. They require visible safe alerts after busy clears, retained prior project/selection/dirty state, retained pasted drafts and successful retry. The focused runner counts browser HTTP(S) requests and requires zero external requests. Normal Welcome/Nuvio mounted runs retain the 393/1280 cases, so existing CI also exercises the regression.
+
+Adjacent local Welcome coverage remains `NUVIO_WELCOME_ONLY=1` with `--test-name-pattern='mounted Nuvio welcome'` in the same runner: 44 layouts, four Start New/creation cases and the shared handoff cases. This local mode opens the real disconnected Nuvio dialog without signing in or manufacturing service responses.
+
+```powershell
+node --test tests/builder-welcome-import.test.mjs tests/builder-import.test.mjs tests/builder-controller.test.mjs tests/builder-import-merge.test.mjs
+node scripts/check-frontend.mjs
+npm run build --prefix builder
+git diff --check
+git status --short
+```
+
+The mounted run compiles the changed JSX fixture; `node --check tests/builder-bulk-edit-mounted.test.mjs` checks its runner. Full canonical validation is deliberately deferred at this narrow uncommitted owner-review gate: only Welcome diagnostic rendering changes in production. Importer/controller/serializer, Workspace, connected Review, Worker/service and styling implementations remain unchanged. Browser evidence is emulated Chrome; physical-device owner review remains separate.
+
 ## Imported Trakt exact Preview (#288)
 
 The [explicit metadata boundary and upstream evidence](v2/BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288) are Preview-specific. Focused pure regression commands:
