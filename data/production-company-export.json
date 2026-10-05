@@ -1,8 +1,8 @@
 {
-  "export_date": "10_04_2026",
-  "total_ids": 261801,
-  "target_fingerprint": "sha256:9480a334988d9f502b67b4b21e3d963b0f0de6ef8ccc0e74a9989e36101c72b1",
-  "last_offset": 56100,
-  "last_limit": 18700,
-  "updated_at": "2026-10-04T15:20:24.034Z"
+  "export_date": "10_05_2026",
+  "total_ids": 261884,
+  "target_fingerprint": "sha256:bdf5612bbe5ba157c75f2708e31b617cd4de5e9ee3e3b3b1036250b45c678d27",
+  "last_offset": 74824,
+  "last_limit": 18706,
+  "updated_at": "2026-10-05T19:09:00.924Z"
 }
