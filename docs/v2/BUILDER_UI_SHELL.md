@@ -1,6 +1,8 @@
 # Builder UI Shell and Hierarchy Navigator
 
-## Hierarchy ordering and Source entry (#273, local owner review)
+<a id="hierarchy-ordering-and-source-entry-273-local-owner-review"></a>
+
+## Hierarchy ordering and Source entry (#273, merged PR #274)
 
 Collections, Folders and Sources use compact wrapping panel headers. The left/title group contains the heading, Collections-only **Global display settings**, then icon-only **Sort**. The right group contains only the count badge and primary creation action, kept together without internal wrapping. Sort reuses the Global settings utility-button styling: a 44px target, inset rounded border/surface, restrained hover treatment and 18px native paired-arrow SVG distinct from the settings sliders. There is no dedicated Sort row. Headers fit one row at the fifteen reviewed ordinary widths; enlarged text may wrap the title/utility group while keeping count/create together, without shrinking targets or adding horizontal scrolling within the header. Enlarged-text acceptance for #273 covers its headers, Sort dialogs and hierarchy menus; ordinary text retains whole-page containment. Existing Source-card category-badge overflow at enlarged text is tracked separately in [#275](https://github.com/davecollections/tmdb-id-lookup/issues/275). Accessible names are **Sort Collections**, **Sort Folders**, **Sort Sources**, with dialog semantics. Controls remain visible but disabled without a selected parent or two siblings; Collections instead require two members in at least one pin group. One pinned plus one ordinary Collection therefore cannot sort. Only panel-header creation labels use **+ Collection**, **+ Folder**, and **+ Source**, with explicit accessible names **New collection**, **New folder**, and **Add source**; each plus stays decorative. Bottom-of-list actions keep their full wording, and empty states and modal/page titles are unchanged. At max-width 389px, panel-header creation reuses the existing 46px plus-only presentation while retaining the full accessible names and decorative plus; 390–899px retains full compact labels. Existing narrow-desktop (900–1239px) plus-only creation stays intentional. Within 900–1023.98px, 1px horizontal header padding, zero inter-group/count-create gaps and 44px creation buttons leave at least 4px measured reserve; heading size, utility targets and grouping remain unchanged. A padding-only handoff uses 4px horizontal header padding at 1024–1079.98px, then restores normal 12px padding at 1080px; the larger heading, gaps and 46px plus-only creation remain unchanged throughout this handoff. Controls retain at least 44px targets, wrap at enlarged text sizes and preserve the active phone level. The workspace product title also wraps under text enlargement instead of widening the mobile viewport.
 
@@ -8,7 +10,9 @@ The [ordering contract](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-o
 
 Hierarchy action menus measure with a viewport-bounded maximum size before placement, retain upward flipping and use one internal vertical scroller when too tall. Their ordinary 156px width is retained; shared menu buttons can shrink and wrap complete enlarged labels inside their content width (`min-width: 0; overflow-wrap: anywhere`) without truncation, smaller text or horizontal scrolling. Self-scroll keeps the menu open; outside scroll/viewport changes retain dismissal. Arrow keys cycle enabled items and scroll focused items into view; Escape restores the trigger. Home/End behavior is unchanged (not implemented). Supported Sources expose only **Edit source → Delete**, unsupported Sources only **Delete**. The [registered editor](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) owns the sole route; Source boundary actions are not added.
 
-## Move folders (#263, pending merge)
+<a id="move-folders-263-pending-merge"></a>
+
+## Move folders (#263, merged PR #264)
 
 Both hierarchy menu entries use [one staged flow](./BUILDER_NODE_EDITING.md#move-folders-263-pending-merge) integrated with the existing modal/navigation lock: inert/aria-hidden underlay, closed menus, no dragging/keyboard reorder or Edit/Create/Import/Export/Find behind it. The single portal uses shared pre-paint body/Visual Viewport handling, an opaque phone guard below 900px, bounded centered desktop surface, header Back/Close, one main body scroller and fixed footer. Native checkbox/radio cards retain full-row focus, 44px targets and non-hue selected inset. Select never autofocuses an input.
 
@@ -22,9 +26,9 @@ At short landscape heights, the compact Sort body can scroll while its heading a
 
 **Export & Send**, completed through [#244 / PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245), appears beneath the first-row Back/help controls when a Collection contains a Folder with a Source, or when retained Send history must remain reachable. The compact modal shows totals, filename and blocking problems, then Send to Nuvio, Download JSON and Copy JSON; non-blocking preservation warnings remain internal. Send reuses the shell, focus trap and body lock, with non-dismissible active progress and readback-verified success. Verified history stays in Last Send inside Export & Send; unresolved attempts retain compact workspace attention. The application owns the memory-only connection and Send coordinator across view/project changes. Diagnostic editors return to current validation and restore focus. See [the Export contract](./BUILDER_EXPORT.md) and [the connection contract](./BUILDER_NUVIO_CONNECTION.md).
 
-Status: current Builder shell includes eight-family selected-folder Add Source and guided hierarchy creation through issue [#170](https://github.com/davecollections/tmdb-id-lookup/issues/170) / merged [PR #171](https://github.com/davecollections/tmdb-id-lookup/pull/171), shared live reversible title behavior through issue [#172](https://github.com/davecollections/tmdb-id-lookup/issues/172) / merged [PR #173](https://github.com/davecollections/tmdb-id-lookup/pull/173), and the local uncommitted selectable-choice presentation contract tracked by issue [#178](https://github.com/davecollections/tmdb-id-lookup/issues/178)
+Status: current shell includes the merged TMDB/Trakt creation families and standalone Discover, Workspace Import, Find, Move folders and hierarchy ordering/Source Edit polish. The [Product Plan checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) owns current completion status; dated implementation evidence below remains historical.
 
-Last reviewed: 2026-09-03
+Last reviewed: 2026-10-05 (current-status reconciliation)
 
 Ordinary Source editors place identity/context before the existing Source name/reset, then editable role/media, sort, Filters and Preview titles where supported. Fixed identities stay fixed. Franchise replacement stays with identity; its existing default-name reset follows naming. Full Discover retains its separate Filters → Review editor. No additional Source-name controls are implied for Add Source flows.
 
@@ -38,7 +42,9 @@ Discover's full **Filters** stage stays directly visible. **Advanced tips** in D
 
 Operation headings, purpose-based stages and output summaries follow [the hierarchy creation contract](./BUILDER_HIERARCHY_CREATION.md#3-flow-and-state). This current contract supersedes historical Review & Appearance and Advanced disclosure wording in the milestone descriptions below.
 
-## Find in project (#261, pending merge)
+<a id="find-in-project-261-pending-merge"></a>
+
+## Find in project (#261, merged PR #262)
 
 The workspace **Find** action precedes Import and Export & Send. It opens a navigation-only modal for the current local project's Collections, Folders and Sources. Empty projects disable the action. Existing workspace modal, menu, creation/edit, Import/Export and reorder guards protect entry; while open, Find participates in the same inert underlay/navigation lock. It makes no remote request and stores no search history.
 
@@ -50,7 +56,7 @@ A jump re-resolves the exact ID in the current project using the existing hierar
 
 Phone Find remains full-screen below 900px. Its existing outer portal covers the entire layout viewport with an opaque surface while the inner surface follows Visual Viewport resize/scroll, retaining safe areas and body locking through keyboard transitions. Compact phone spacing reduces padding/gaps without dropping title/type/path/optional Position context, readable fonts, the cyan input focus ring, or 44px action targets. Desktop keeps its 680px maximum width and normal dimmed backdrop; idle/no-result height follows content and results grow naturally up to 640px or the available viewport, with one scrolling results region. Capped counts use the concise English-number format, for example “1,096 matches · showing first 100. Refine your search.” Search semantics and the 100-row limit are unchanged.
 
-Search autofocuses because typing is this surface's primary task. Header Close and Escape restore the Find trigger; successful jumps focus the target instead. Shared Visual Viewport geometry, body lock and native Tab trapping support one scrolling results region. Visible counts update immediately and a separate polite status announces settled counts after 300 ms. There is no global shortcut, dependency, persistence or API integration. This contract is pending owner review/merge, not a release claim.
+Search autofocuses because typing is this surface's primary task. Header Close and Escape restore the Find trigger; successful jumps focus the target instead. Shared Visual Viewport geometry, body lock and native Tab trapping support one scrolling results region. Visible counts update immediately and a separate polite status announces settled counts after 300 ms. There is no global shortcut, dependency, persistence or API integration. Completed through [PR #262](https://github.com/davecollections/tmdb-id-lookup/pull/262); this remains separate from public-release approval.
 
 ## Purpose and scope
 

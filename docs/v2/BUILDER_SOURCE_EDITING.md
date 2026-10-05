@@ -6,19 +6,25 @@ The current Trakt editor owns title and supported sort/direction; provider, List
 
 This is Preview-only. Strict configured keys, occurrence evidence, creation/duplicate behavior and full serialized Import/Merge equality remain unchanged. There is no Worker/service or transport change. Earlier B2 name-only/no-Preview descriptions below are historical; the current contract and new acceptance boundary are in the linked Trakt document.
 
-## Native Trakt name-only adapter (#279, PR #280)
+<a id="native-trakt-name-only-adapter-279-pr-280"></a>
 
-Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
+## Historical native Trakt name-only adapter (#279, PR #280)
+
+The paragraph below records B2 scope. Completed C (#284 / PR #285) and #288 / PR #289 supersede its name-only/no-Preview limits.
+
+Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3 and C subsequently completed through [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283) and [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285); parent #276 is closed.
 
 Supported `native-trakt` joins the ordinary Source Edit registry with a `trakt-list` adapter. It owns only `title`, shows fixed List/media/sort context and uses the existing minimal patch, no-op and stale-session guards. Unsupported Trakt imports retain Delete only. No creation mode, lookup, replacement, sort control, artwork or Preview is added. The capability contract explicitly permits this editor-only foundation. See [BUILDER_TRAKT_SOURCES.md](./BUILDER_TRAKT_SOURCES.md).
 
-## One registered Source edit entry (#273, local owner review)
+<a id="one-registered-source-edit-entry-273-local-owner-review"></a>
+
+## One registered Source edit entry (#273, merged PR #274)
 
 Every supported physical Source has exactly **Edit source → Delete** in its menu; unsupported native/addon/opaque shapes have **Delete** only. The competing **Edit Discover** menu capability/callback is removed. Ordinary Edit resolves the current Source through `sourceEditorFor(source)` and opens its registered adapter. Movie Collection, TMDB List, People, Studio, Network, Decade, Genre and Streaming retain `SourceEditorDialog`; `advanced-discover` retains the existing `AdvancedDiscoverFlow`.
 
 Genre, Decade and Streaming already reuse the shared Discover Filters controls inside their family editor. Their field components and adapters are unchanged by this consolidation: defining Genre/media, period/included Genre/media, and provider/region/media anchors remain fixed. Studio and Network remain native `COMPANY`/`NETWORK` editors with their existing narrower native filter contract; internal Discover resolution does not make them DISCOVER identities.
 
-Structural classification remains authoritative, with no persisted creator provenance. An overlapping provider plus structural Genre/period may legitimately reopen through Advanced Discover. This is accepted behavior. Existing readiness classifications, unknown/raw/alias preservation, minimal/no-op updates, duplicate/stale guards, exact current-draft Preview gates and one modal lifecycle remain unchanged. No filters, source types, sort values, locale/provider/company/network or role semantics are expanded. Local implementation awaits owner review and integration.
+Structural classification remains authoritative, with no persisted creator provenance. An overlapping provider plus structural Genre/period may legitimately reopen through Advanced Discover. This is accepted behavior. Existing readiness classifications, unknown/raw/alias preservation, minimal/no-op updates, duplicate/stale guards, exact current-draft Preview gates and one modal lifecycle remain unchanged. No filters, source types, sort values, locale/provider/company/network or role semantics are expanded. Completed through [PR #274](https://github.com/davecollections/tmdb-id-lookup/pull/274).
 
 Current Preview contract: [Shared TMDB title Preview (#226)](./BUILDER_TITLE_PREVIEW.md). Supported exact sources expand to the first 100 ordered source-result positions; representative samples remain bounded. Implemented and merged through #226 / PR #227. Earlier checkpoint limits below are historical where superseded by that contract.
 

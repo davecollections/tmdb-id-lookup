@@ -1,12 +1,16 @@
 # Builder Application Controller
 
-## Atomic hierarchy sorting (#273, local owner review)
+<a id="atomic-hierarchy-sorting-273-local-owner-review"></a>
+
+## Atomic hierarchy sorting (#273, merged PR #274)
 
 `reorderCollections(orderedCollectionInternalIds)` and `reorderSources(folderInternalId, orderedSourceInternalIds)` wrap the corresponding framework-independent domain operations. Alongside `reorderFolders`, each requires a dense, complete, unique permutation of one unambiguous parent's direct children. Collection permutations must preserve the pinned/ordinary classification of every raw slot. Validation rejects the complete request before replacement; content/revision/selection remain unchanged on failure, while existing diagnostic reporting remains available.
 
 A changed order retains exact child/subtree objects and uses one `commitProjectEdit`, one content revision and one listener cycle. Identical order returns the exact same Project and no content revision; clearing existing diagnostics may produce a diagnostic-only notification. Source payloads/raw data and Collection pin flags are untouched. Single-item boundary movement continues through ordinary `moveNode` splice semantics, separately from atomic list sorting. See [the ordering UI and title contract](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review).
 
-## Move folders (#263, pending merge)
+<a id="move-folders-263-pending-merge"></a>
+
+## Move folders (#263, merged PR #264)
 
 `moveFolders({ openingProject, sourceCollectionInternalId, folderInternalIds, destination, deleteEmptySource? })` accepts `{ kind: "existing", internalId }` or `{ kind: "new", editable }` as destination. New settings use the existing Collection presentation validator, required title, normal Collection/Nuvio ID factories and domain defaults. The new Collection appends in ordinary creation order; existing pinned-group display/export rules remain authoritative.
 

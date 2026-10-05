@@ -1,12 +1,49 @@
 # Dingo's Collection Builder — Product Plan
 
-## Trakt B2 implementation checkpoint (#279, PR #280)
+## Current checkpoint - 2026-10-05
+
+**Verified main:** `872379b71fba494a2611e2d3e087dd46e237dba2`, after merged [PR #291](https://github.com/davecollections/tmdb-id-lookup/pull/291). This documentation reconciliation is tracked in [#292](https://github.com/davecollections/tmdb-id-lookup/issues/292). The [canonical roadmap](#18-roadmap-and-mandatory-gates) owns current priorities; earlier checkpoints below retain historical evidence and superseded task-stage gates.
+
+**Completed since the September checkpoint:**
+
+| Issue / merged PR | Completed capability or evidence |
+| --- | --- |
+| [#247](https://github.com/davecollections/tmdb-id-lookup/issues/247) / [PR #248](https://github.com/davecollections/tmdb-id-lookup/pull/248) | Four validation groups; dependency-aware PR routing subsequently completed by #270/#271 below |
+| [#249](https://github.com/davecollections/tmdb-id-lookup/issues/249) / [PR #250](https://github.com/davecollections/tmdb-id-lookup/pull/250), [#251](https://github.com/davecollections/tmdb-id-lookup/issues/251) / [PR #252](https://github.com/davecollections/tmdb-id-lookup/pull/252), [#253](https://github.com/davecollections/tmdb-id-lookup/issues/253) / [PR #254](https://github.com/davecollections/tmdb-id-lookup/pull/254), [#255](https://github.com/davecollections/tmdb-id-lookup/issues/255) / [PR #256](https://github.com/davecollections/tmdb-id-lookup/pull/256), [#257](https://github.com/davecollections/tmdb-id-lookup/issues/257) / [PR #258](https://github.com/davecollections/tmdb-id-lookup/pull/258) | Required-name recovery and bounded consistency passes: vocabulary, shared interaction, summaries/Preview/context and optional Add Source naming |
+| [#259](https://github.com/davecollections/tmdb-id-lookup/issues/259) / [PR #260](https://github.com/davecollections/tmdb-id-lookup/pull/260) | Workspace Nuvio/file/JSON Import and preservation-first Merge artwork policies |
+| [#261](https://github.com/davecollections/tmdb-id-lookup/issues/261) / [PR #262](https://github.com/davecollections/tmdb-id-lookup/pull/262) | Find/current-project navigation |
+| [#263](https://github.com/davecollections/tmdb-id-lookup/issues/263) / [PR #264](https://github.com/davecollections/tmdb-id-lookup/pull/264) | Atomic Move folders to an existing or new Collection |
+| [#265](https://github.com/davecollections/tmdb-id-lookup/issues/265), then [#266](https://github.com/davecollections/tmdb-id-lookup/issues/266) / [PR #267](https://github.com/davecollections/tmdb-id-lookup/pull/267) | Completed performance investigation and shared occurrence evidence for Genres, Decades hierarchy, People, Studios and Networks; not a claim that every performance opportunity is finished |
+| [#268](https://github.com/davecollections/tmdb-id-lookup/issues/268) / [PR #269](https://github.com/davecollections/tmdb-id-lookup/pull/269) | Related standalone Trakt List Lookup link in About; later C work adds separate Trakt data attribution |
+| [#270](https://github.com/davecollections/tmdb-id-lookup/issues/270) / [PR #271](https://github.com/davecollections/tmdb-id-lookup/pull/271) | Dependency-aware PR validation, with full main/manual validation retained |
+| [#273](https://github.com/davecollections/tmdb-id-lookup/issues/273) / [PR #274](https://github.com/davecollections/tmdb-id-lookup/pull/274) | Hierarchy ordering polish and one registered Source Edit entry |
+| [#277](https://github.com/davecollections/tmdb-id-lookup/issues/277) / [PR #278](https://github.com/davecollections/tmdb-id-lookup/pull/278) | One Folder per TMDB List in hierarchy creation; physical Add Source stays separate |
+| [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280), [#281](https://github.com/davecollections/tmdb-id-lookup/issues/281), [#282](https://github.com/davecollections/tmdb-id-lookup/issues/282) / [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283), [#284](https://github.com/davecollections/tmdb-id-lookup/issues/284) / [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) | Trakt foundation, creation/API design, all three creation scopes, Preview, Source Edit sorting, credits and bounded live/physical acceptance. Parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) is complete, including the separately delivered service programme |
+| [#286](https://github.com/davecollections/tmdb-id-lookup/issues/286) / [PR #287](https://github.com/davecollections/tmdb-id-lookup/pull/287) | Imported Discover display-label hydration and supported pipe keyword/provider exclusions |
+| [#288](https://github.com/davecollections/tmdb-id-lookup/issues/288) / [PR #289](https://github.com/davecollections/tmdb-id-lookup/pull/289) | Exact first-page Preview for supported preserved imported Trakt metadata, without relaxing configured duplicate identity or preservation |
+| [#290](https://github.com/davecollections/tmdb-id-lookup/issues/290) / [PR #291](https://github.com/davecollections/tmdb-id-lookup/pull/291) | Welcome direct-import diagnostic-flash fix; stored diagnostics and failure/retry behavior retained |
+
+Current capability includes native TMDB and Trakt Lists, supported exact Preview, preservation-first editing, local Import/Merge, Find, hierarchy management and Export & Send. Focused contracts own exact support and evidence limits. Historical owner/device acceptance is bounded to the tested flows and builds; it is not universal Nuvio/client certification.
+
+PR validation is dependency-aware: Core always runs; `scripts/plan-validation.mjs` routes Source, Workspace and Artwork by audited dependencies. Narrow owned changes require only their groups, and approved Markdown/core-only paths may require Core alone. Shared/broad/unclassified changes, stylesheets and uncertain diffs fail closed to all four groups. Final `validate` requires a valid successful planner, Core and every required worker; explicitly non-required workers may be skipped. Main pushes and `workflow_dispatch` run all four groups. [Testing](../TESTING.md#local-and-ci-validation-groups-247) owns the exact contract.
+
+**Release status:** Dingo remains unreleased at the existing `/builder/` preview with `noindex, nofollow`. Standalone `dingo.build`, a Dingo-specific visual system and the subsequent production-domain acceptance/release gate are confirmed pre-launch direction, not completed migration or release approval. V1 stays at its existing location.
+
+<a id="trakt-b2-implementation-checkpoint-279-pr-280"></a>
+
+## Historical Trakt B2 implementation checkpoint (#279, PR #280)
+
+**Superseded status:** this records the B2 stage only. B3 and C subsequently merged through PRs #283 and #285; parent #276 is closed. The current checkpoint and focused Trakt contracts above supersede every pending/future statement in this record.
 
 Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
 
 Parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open. B1 service rollout is complete; [B2 #279](https://github.com/davecollections/tmdb-id-lookup/issues/279) implements the offline native-trakt domain/import/serialization/identity foundation, local source presentation and name-only Source Edit. [The current contract](./BUILDER_TRAKT_SOURCES.md) preserves unsafe imported shapes as opaque. No Trakt creation mode or service client is present. B3/C still owns API integration, search/browse/resolve, media selection/detection, New Collection, New Folder, Add Source, Preview, final About/Credits and complete end-to-end acceptance. Do not mark Trakt Lists complete.
 
-## Local implementation checkpoint — hierarchy polish (#273, 2026-09-29)
+<a id="local-implementation-checkpoint--hierarchy-polish-273-2026-09-29"></a>
+
+## Historical local implementation checkpoint — hierarchy polish (#273, 2026-09-29)
+
+**Superseded gate:** #273 is complete through merged PR #274. The following retains the local-review record, not a current integration requirement.
 
 Owner-approved hierarchy ordering polish is implemented locally for review: icon-only panel Sort in the left title/utility group after Collections settings, with count and creation grouped on the right; Collection/Folder Move to top/bottom within current reorder groups; atomic pin-slot-preserving Collection sorting and exact Source sorting; and one registered **Edit source** entry for all nine adapters. Folder People options and existing family Discover Filters are retained. The [ordering](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review), [shell](./BUILDER_UI_SHELL.md#hierarchy-ordering-and-source-entry-273-local-owner-review) and [Source editing](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) contracts own current branch behavior.
 
@@ -14,7 +51,11 @@ This checkpoint supersedes older menu-placement descriptions only. It introduces
 
 <a id="current-checkpoint---2026-09-22"></a>
 
-## Current checkpoint - 2026-09-24
+<a id="current-checkpoint---2026-09-24"></a>
+
+## Historical checkpoint - 2026-09-24
+
+The Send acceptance below is retained historical evidence. Its former next-five sequence and current-status wording are superseded by the 2026-10-05 checkpoint and Section 18.
 
 Closed [#244](https://github.com/davecollections/tmdb-id-lookup/issues/244) / merged [PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245) delivered Replace-only Send and Export & Send at main `2dd4652fe23a9ee7d38d5238a3c843504ecca172`. Final PR validation, [post-merge Nuvio Contract Validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35972599861) and [automatic Pages publication](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35972599829) succeeded. Direct read/import #238 / PR #239 and its #240 / PR #241 image-fallback repair remain complete. Documentation reconciliation #242 is closed through merged PR #243.
 
@@ -83,15 +124,18 @@ This former queue is superseded by the [canonical roadmap](#18-roadmap-and-manda
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-09-22 (publication/status reconciliation #242; verified through #240 / PR #241)
+Last reviewed: 2026-10-05 (roadmap/status reconciliation #292; verified main `872379b71fba494a2611e2d3e087dd46e237dba2`)
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
 Decision labels mean:
 
+- **Completed:** implemented/merged capability or a finished investigation, within its recorded evidence limits.
 - **Confirmed:** an owner decision that agrees with current repository evidence.
 - **Confirmed direction:** an approved direction whose detailed design remains future work.
+- **Investigate first:** establish a supported contract before any implementation commitment.
 - **Deferred:** intentionally later than the current roadmap gate.
+- **Release gate:** explicit acceptance/owner approval required before public promotion or removing `noindex`.
 - **Open decision:** evidence or owner approval is still required.
 - **Rejected:** not part of the intended product.
 - **Superseded:** replaced by a later decision or stronger evidence.
@@ -120,7 +164,7 @@ The #198 owner-approved wording refinement labels creation choices **Sources to 
 - V2 must not replace or destabilise V1.
 - The Builder should make collection creation approachable without requiring knowledge of TMDB IDs, raw JSON, source envelopes, `catalogSources`, Discover syntax, or Nuvio implementation details.
 
-The Builder is active but isolated under `/builder/`. It is still unlinked and marked `noindex, nofollow`; this document does not describe it as publicly released.
+The Builder is active but isolated under `/builder/`. It is still unlinked and marked `noindex, nofollow`; this document does not describe it as publicly released. The confirmed pre-launch direction is a standalone Dingo site at `dingo.build`, while V1 remains at its existing location; migration mechanics and release approval remain separate gates.
 
 ## 2. Audience
 
@@ -143,7 +187,7 @@ Progressive disclosure should let a beginner reach a useful result while preserv
 
 - The product name is **Dingo's Collection Builder**.
 - A supporting line such as **Made for Nuvio** may be used; final wording needs later review.
-- The visual direction is modern, dark, sleek, and mobile-first, with restrained TMDB-inspired blue, cyan, and green accents. It is not warm or cosy.
+- The existing UI is dark and mobile-first, with blue/cyan/green accents. A Dingo-specific pre-launch visual identity investigation supersedes the former blanket rejection of warmth; see [Branding](#17-branding). Existing accessibility and state semantics remain in force until an owner-approved shared-system rollout.
 - No account, personal TMDB API key, or personal information is required to complete the core build-and-export journey.
 - Core importing and editing remain local-first in the browser.
 - **Copy JSON** and **Download JSON** are complete supported paths, not fallback-only features.
@@ -274,7 +318,8 @@ Search/Add should cover, within the confirmed compatibility contract:
 - Language;
 - Country;
 - Streaming provider;
-- Custom TMDB Discover.
+- Custom TMDB Discover;
+- Public TMDB Lists and Trakt Lists through their current family contracts.
 
 Suitable categories should support both single and bulk selection. For example, a user can create an Actors collection, select several search results, and let the Builder create the appropriate folders and native `PERSON` sources. The user should not repeat collection → folder → source setup for every actor.
 
@@ -483,7 +528,7 @@ Owner-supplied current Nuvio evidence confirms collection-level `focusGlowEnable
 - The preservation-first importer and serializer are core product advantages.
 - Unknown and community fields survive unrelated edits.
 - Opaque sources remain preservable, movable, and removable without being guessed into known source types.
-- Supported physical Movie Collection, People, Studio, Network, simple Streaming, official Genre, canonical Decade and native List sources retain their family-specific editing contracts; #202 additionally supports safe standalone Discover editing. Editing remains fail-closed with owned-field changes, duplicate rejection, stale-session protection and minimal patches; unsupported source shapes remain preservation-only for editing.
+- Supported physical Movie Collection, People, Studio, Network, simple Streaming, official Genre, canonical Decade and native TMDB/Trakt List sources retain their family-specific editing contracts; #202 additionally supports safe standalone Discover editing. Editing remains fail-closed with owned-field changes, duplicate rejection, stale-session protection and minimal patches; unsupported source shapes remain preservation-only for editing.
 - Imported artwork and presentation values remain protected unless changed by the user.
 - Import and export should be understandable without requiring raw-JSON editing.
 
@@ -493,7 +538,7 @@ Nuvio client import behaviour can be destructive or can change by client and ver
 
 **Implemented and merged through [#194 / PR #195](https://github.com/davecollections/tmdb-id-lookup/pull/195) and [#244 / PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245):** the Builder remains the editing, arrangement and reordering interface. **Export & Send** shows current Collection/Folder/Source totals, the local-date filename and blocking problems, followed by Send to Nuvio, Download JSON and Copy JSON. Non-blocking preservation warnings remain in diagnostics but are not shown in Export & Send. Existing diagnostic editors return with current validation/counts.
 
-Users create or import, edit in the Builder, review the output, then choose manual Download/Copy or reviewed Replace-only Send. Manual actions require no Nuvio connection. Add/Merge help explains Nuvio.tv's separate matching rules and retains the dated TV, hosted-URL, beta and TMDB Enrichment guidance. A visual Nuvio layout preview remains deferred pending demand and focused design. See [the Export contract](./BUILDER_EXPORT.md).
+Users create or import, edit in the Builder, review the output, then choose manual Download/Copy or reviewed Replace-only Send. Manual actions require no Nuvio connection. Current Add/Merge help explains Nuvio.tv's separate matching rules and retains dated TV, hosted-URL, beta and TMDB Enrichment guidance. **Confirmed pre-launch redesign:** make **How to import into Nuvio** discoverable in Export / Export & Send, adapt the established V1 helper, and remove “Nuvio is currently in beta, so these import steps may change.” from Dingo's user-facing help. Clearly separate Dingo direct Send/Replace, Nuvio.tv manual Add/Merge/Overwrite, TV file/URL import and relevant TMDB enrichment guidance. Reverify current routes/devices and instructions during that focused implementation; no guidance or application UI is changed by this roadmap reconciliation. A visual Nuvio layout preview remains deferred pending demand and focused design. See [the Export contract](./BUILDER_EXPORT.md).
 
 <a id="16-optional-future-nuvio-connection"></a>
 
@@ -531,23 +576,23 @@ The third concept is documented in the [Nuvio Integration Development Guide](htt
 
 ## 17. Branding
 
-**Deferred product direction**
+**Confirmed pre-launch direction; exact palette and final logo remain open.**
 
-- A Dave Collections master brand is preferred to a product logo that could imply official TMDB endorsement.
-- Product colourways may distinguish Nuvio and possible future tools.
-- The product title should remain ordinary UI text rather than being permanently embedded in a logo.
-- Final logo design is deferred and must not delay functional Builder work.
-- The welcome footer's text **About** control and the workspace header's single **?** now open a compact **About & Credits** modal; the workspace control replaces the former V1 backlink instead of adding another header action. A shared borderless credits group contains restrained left-logo/right-copy TMDB and JustWatch rows above a divided compact creator/action footer linking davecollections, the **TMDB ID Lookup**, the related standalone Dave Collections tool [**Trakt List Lookup**](https://trakt-list-lookup.pages.dev/), and GitHub issue chooser. Data credits remain exactly TMDB and JustWatch; the Trakt link does not imply Builder Trakt API use or integrated lookup/source assistance. One muted text-only line at the bottom states that this is an independent community tool for Nuvio collections. TMDB remains attribution rather than primary Builder branding, and its official mark must not become more prominent than the application identity.
+Dingo becomes an independent standalone community tool for Nuvio Collections at `dingo.build`. Stable V1 remains at its existing location. Dave Collections creator/related-tool identity can remain, but the earlier preference for only a master brand does not substitute for Dingo's own recognisable identity. Keep the product title as ordinary UI text rather than permanently embedding it in a logo.
 
-Builder-integrated Trakt list lookup is approved future scope in the canonical roadmap. A possible future colourway does not expand that scope to watch history, tracking or account management.
+The substantial visual identity/design-system task preserves the workflow, information architecture, hierarchy layout, creation/edit flows, density and fundamental visual structure. Explore Australian/dingo-inspired character with restrained warmth: potential ochre/rust/clay/sand, eucalyptus/sage accents and charcoal/dusk/navy surfaces. These are prototype directions, not approved colour tokens. Aim for a professional utility tool, avoiding neon-tech, childish or novelty/cartoon styling.
+
+Review colour tokens, surfaces, borders, shadows, gradients, buttons, chips/badges, selected/current states, focus, semantic success/warning/error/destructive colours and subtle decoration as one coherent system. Maintain strong contrast, accessibility, non-colour state distinctions and grayscale/forced-colours usability. **Process:** investigation/prototypes → owner selects/tunes direction → systematic shared-token/component rollout. Existing state/presentation contracts continue until that approved rollout; do not recolour piecemeal.
+
+About & Credits remains the discoverable attribution surface. Current data credits include TMDB, JustWatch and the restrained Trakt text attribution/non-affiliation statement delivered by #284 / PR #285; the standalone Trakt List Lookup link remains a separate related-tool link. Dingo remains independent of Nuvio and data providers. Preserve TMDB/JustWatch attribution obligations, the release-time TMDB notice in [Product identity and trust](#3-product-identity-and-trust-promise), and application prominence over the TMDB mark. This direction approves neither a final logo nor broader Trakt account features.
 
 ## 18. Roadmap and mandatory gates
 
-**Canonical roadmap and product-direction owner.** This section reconciles the owner-approved direction and retained repository plans as of 2026-09-24 after merged #244 / PR #245. It is a dependency-aware direction, not a rigid release schedule: no dates, release allocation or implementation promises are implied. Each implementation needs its own focused owner-approved scope. Listing a candidate does not create an issue or select it as the next task. Technical contracts and historical evidence remain in their focused documents.
+**Canonical roadmap and product-direction owner.** This section reconciles the owner-approved direction and retained repository plans as of 2026-10-05 at main `872379b71fba494a2611e2d3e087dd46e237dba2`, after the completed Trakt/import sequence. It is a dependency-aware direction, not a rigid release schedule: no dates, release allocation or implementation promises are implied. Each implementation needs its own focused owner-approved scope. Listing a candidate does not create an issue or select it as the next task. Technical contracts and historical evidence remain in their focused documents.
 
 ### Current state
 
-The Builder includes eight established hierarchy families plus standalone Discover, physical Source editing, preservation-first import/edit, JSON export, Global display settings, Source/Folder/Collection reordering, multi-sort creation and native People/Studio/Network Source variants. Unsupported or ambiguous imports remain preserved and structured editing/Preview fails closed where semantics cannot be represented safely. V2 stays isolated and unadvertised under `/builder/`, with `noindex, nofollow`; stable V1 lookup/copy-ID/export remains supported.
+The Builder includes nine hierarchy families (Decades, People, Franchises, Studios, Networks, Genres, Streaming, TMDB Lists and Trakt Lists) plus standalone Discover, physical Source editing, preservation-first import/edit, JSON export, Global display settings, Source/Folder/Collection reordering, multi-sort creation and native People/Studio/Network Source variants. Unsupported or ambiguous imports remain preserved and structured editing/Preview fails closed where semantics cannot be represented safely. V2 stays isolated and unadvertised under `/builder/`, with `noindex, nofollow`; stable V1 lookup/copy-ID/export remains supported.
 
 The approved **Shared Advanced** sequence is complete across Studios, Networks, Genres, Decades, Streaming and standalone Discover. #216 / PR #217 added native rating bounds, #218 / PR #219 completed approved Studio/Network fields, and #220 / PR #221 aligned and expanded the three Discover families. Supported fields cover minimum votes, minimum/maximum rating, scalar language/country, evidenced Genre/keyword rules and applicable date/year, Studio/Network and provider/region controls according to each family's contract. Studio/Network identities, fixed Genre inclusion, Decade/year periods and Streaming provider/region remain defining constraints. This does not mean all TMDB Discover filters are supported; see [remaining capability investigations](#investigate-first).
 
@@ -559,20 +604,32 @@ Genre Square and curated artwork (#222 / PR #223), Decades curated artwork (#224
 
 **Direct Nuvio read/import (#238 / merged PR #239)** includes unified Import, grouped Review notes, local Add separate/Merge exact/Replace and no read-only import backup. #240 / PR #241 repaired the shared image-fallback race. **Send and Export & Send (#244 / merged PR #245)** add reviewed whole-profile replacement, optional raw backup, fresh preflight, one dispatch without automatic retry and exact readback verification. Owner-operated iPhone acceptance, final validation and automatic Pages publication are complete. Core use remains independent of login.
 
-The [current checkpoint](#current-checkpoint---2026-09-24) records the verified base and completed sequence. Open non-PR product/maintenance issues checked on 2026-09-19 are [#9](https://github.com/davecollections/tmdb-id-lookup/issues/9) (V1/public-project screenshots and preview assets, not the next Builder milestone), [#14](https://github.com/davecollections/tmdb-id-lookup/issues/14) (public TMDB List keyword/name lookup; known URL/ID resolution already exists), [#19](https://github.com/davecollections/tmdb-id-lookup/issues/19) (ongoing cache-report maintenance), and [#24](https://github.com/davecollections/tmdb-id-lookup/issues/24) (blocked on a verified native direct TV/season source contract). #210 is closed. That is a dated backlog observation, not a fresh issue inventory. Reconciliations #234 and #242 are closed through merged PRs #235 and #243; Send #244 is closed through merged PR #245.
+**Workspace Import, Find and Move folders are complete** (#259/#260, #261/#262, #263/#264). Nuvio/file/JSON acquisition shares detached Review and Add/Merge/Replace; Merge offers Keep existing artwork, Fill missing artwork and Prefer incoming artwork without missing-incoming deletion. Find navigates current display names locally. Move folders preserves exact subtrees and appends in source order to an existing or new Collection, with optional explicit empty-source deletion. #265 investigation and #266/#267 completed bounded large-project planning improvements. #273/#274 adds hierarchy Sort/boundary moves and the unified Source Edit entry.
+
+**List-backed creation and Trakt are complete within their focused contracts.** TMDB hierarchy creates one Folder per ready List (#277/#278), retaining physical Add Source and old imported structures. Trakt public lookup/discovery, New Collection/New Folder/Add Source, selected-only media verification, first-page Preview, Source Edit sorting and About attribution are merged through B2/B3/C; parent #276 is closed. Creation defaults remain rank/asc; Source Edit owns the eight evidenced sorts and both directions. Trakt Preview is a bounded first-page/50-item path, distinct from TMDB Preview-100. Its service/API availability does not mean the Dingo website has moved to `dingo.build`. [Trakt creation](./BUILDER_TRAKT_CREATION.md) and [source/Preview preservation](./BUILDER_TRAKT_SOURCES.md) own details; no OAuth, private-list, history/scrobbling or account-sync expansion is implied.
+
+**Recent import compatibility and handoff fixes are complete.** #286/#287 supports display-only Discover label hydration and evidenced pure-pipe keyword/provider exclusions while unsafe expressions remain preserved/fail-closed. #288/#289 separates supported imported Trakt runtime-equivalent Preview metadata from stricter configured duplicate comparison; it does not normalize community fields. #290/#291 prevents transient diagnostics on outgoing Welcome after successful direct import while retaining stored diagnostics and failed-import feedback.
+
+The [current checkpoint](#current-checkpoint---2026-10-05) records the completed sequence and CI contract. Open non-PR issues independently checked on 2026-10-05, before creating reconciliation #292, are [#9](https://github.com/davecollections/tmdb-id-lookup/issues/9) (public-project screenshots/preview assets), [#14](https://github.com/davecollections/tmdb-id-lookup/issues/14) (public TMDB List keyword/name lookup; known URL/ID resolution already exists), [#19](https://github.com/davecollections/tmdb-id-lookup/issues/19) (cache audit reports), [#24](https://github.com/davecollections/tmdb-id-lookup/issues/24) (direct TV/season source work blocked on verified upstream support), and [#275](https://github.com/davecollections/tmdb-id-lookup/issues/275) (Source category badges at enlarged text). #275 is a real pre-launch polish candidate. Older V1/maintenance items are not automatically Dingo launch blockers. #292 tracks only this documentation reconciliation.
 
 ### Next
 
-**Owner-approved near-term sequence.** The selected Move folders task is tracked in #263 below and remains pending acceptance/merge. Later features need their own focused scope. Completed #242 and #244 work is recorded in Current state; earlier item checkpoints retain their task-stage context.
+**Owner-approved pre-launch direction.** The order below expresses dependencies, not an immutable schedule or authorization to create every issue now. Each selected implementation needs focused scope. Investigation and open-decision entries do not promise implementation. The intended visual system should be in place before the final sweep and readiness assessment.
 
-1. **Merge artwork policy + workspace Import — implemented in #259, pending owner review/integration.** Source-neutral Keep existing (default), Fill missing and Prefer incoming apply field-by-field without missing-incoming deletion. Workspace Import offers Nuvio/file/pasted JSON with compact method acquisition followed by shared full-width Review, header Back/source context and fixed footer Apply in the same modal. Mode/artwork choices stay stacked and Replace remains in that shell. Welcome and Send retain standalone entry. Authenticated embedded review and physical-phone acceptance remain required before merge. See [the import contract](./BUILDER_WELCOME_IMPORT.md#workspace-import-and-merge-artwork-259).
-2. **Find (previously Find / Jump) — task #261 in progress, completion pending merge.** The approved scope is local display-name navigation across current Collections, Folders and Sources, with exact internal-ID selection, desktop card focus/scroll and the result's own hierarchy level on phones. It has no mutation, remote search, shortcut or API dependency. See [the task's UI contract](./BUILDER_UI_SHELL.md#find-in-project-261-pending-merge). Do not mark this roadmap item implemented until its PR merges.
-3. **Move Folder(s) between Collections — task #263, pending owner acceptance and merge.** One Move folders flow relocates exact existing Folder subtrees to an existing Collection or a new Collection configured through ordinary settings. New Collection is the split workflow. Source-order append, identity/data preservation, stale rejection and one atomic revision are required. An emptied source is kept by default; Review may explicitly request atomic deletion. Both menu entries, draft-only stages and destination/first-Folder focus are defined in [the editing contract](./BUILDER_NODE_EDITING.md#move-folders-263-pending-merge). Do not mark complete before merge. Subsequent Collection/Folder Move to top and easier Sort access remain outside #263, as does workspace header redesign.
-4. **Trakt list lookup — future / not implemented.** Support lookup by user and list ID/slug/URL, browsing a user's lists, popular/trending lists where supported by the API, basic list metadata and useful TMDB/IMDb identifiers/mapping for the Builder's lookup/source workflow where appropriate. This approves lookup scope, not an unevidenced Nuvio source type. Watch history, tracking/scrobbling, account-library synchronization and broader Trakt account management remain out of scope.
-5. **Changes since opening — future / not implemented.** Summarize local Builder changes since the opening/session baseline: Collections added/removed/changed/reordered; Folders added/removed/moved/changed; Sources added/removed/changed; ordering at every level; and relevant settings. This is not remote Nuvio synchronization status. Persistence/history architecture remains undecided.
-6. **Assess launch readiness and remaining gaps** before choosing the next major wave. This assessment does not authorize public release or removal of `noindex`.
-
-Other parked concepts remain outside this sequence; discussion alone does not promote them into Next.
+1. **Changes since opening — confirmed near-term feature.** Provide a user-readable summary since the opening/session baseline: Collections added/removed/changed/reordered; Folders added/removed/moved/changed/reordered; Sources added/removed/changed/reordered; and relevant settings. This is local Builder change reporting, not remote Nuvio synchronization status. Persistence/history architecture is an open design question.
+2. **Import from Community Collections — investigate first.** Explore an acquisition option specifically for community Collections that do not require an addon. Establish the authoritative catalogue/source, access method, exact Collection/source JSON shapes, update/preservation metadata, identity/duplicates, trust/safety, attribution/licensing and whether these remain ordinary preservation-first Dingo imports. Do not guess fields or normalize community metadata. Implementation depends on a supported bounded contract and separate approval.
+3. **Running Collections-created count — open decision.** Retain the product idea, but define the metric first: current project/session/local count, or a genuine persistent aggregate such as “X Collections created with Dingo”. A site-wide/lifetime count requires deliberate storage, privacy and counting semantics. Existing Export Collection/Folder/Source totals are separate. No solution is selected here.
+4. **Pinned Collection badge — confirmed polish.** Make active existing pin/pin-to-top state obvious in the hierarchy using an accessible badge/icon with non-colour distinction. Reuse state without changing pin semantics or ordering.
+5. **Dingo visual identity investigation and prototypes — confirmed substantial design task.** Explore the direction in [Branding](#17-branding) while preserving flows and structural layout. Owner selection/tuning precedes implementation; no exact palette is approved.
+6. **Implement the approved launch visual system — conditional on step 5 approval.** Roll out shared tokens/components coherently across the complete system, preserving accessibility and semantic distinctions.
+7. **Export / How to import into Nuvio redesign — confirmed pre-launch work.** Make the existing help discoverable, adapt V1's dedicated helper, remove Dingo's beta caveat and distinguish supported routes/devices as set out in [Export](#15-export-and-installation-journey). Reverify current Nuvio instructions when implemented.
+8. **#275 and bounded accessibility/polish findings.** Retain [Source category badge reflow at enlarged text](https://github.com/davecollections/tmdb-id-lookup/issues/275) as its own open issue. Do not absorb or close it in this reconciliation; scope other findings separately.
+9. **Owner full visual/product sweep.** Hands-on desktop/mobile review of key flows for visual inconsistency, wording, spacing/layout, friction and unfinished states. Turn findings into bounded issues, not one giant cleanup branch.
+10. **Launch-readiness/gap assessment.** Assess the intended launch visual system and near-term polish across core journeys; desktop/mobile; import/create/edit/Preview/export/send; empty/loading/error states; accessibility/responsiveness; wording/discoverability; stale documentation; and actual release blockers versus post-launch ideas. Assessment is not release approval.
+11. **Resolve actual launch blockers.** Select bounded work from the assessment and verify each repair; do not promote every parked idea into a blocker.
+12. **Move Dingo to `dingo.build` — confirmed pre-launch direction.** V2 becomes its own product/site; V1 stays at its existing location and is neither replaced nor moved. Investigate hosting/deployment architecture, base paths/assets, canonical URLs, origin-sensitive integrations/settings, Pages assumptions, the deliberate redirect/handoff/other treatment of the old `/builder/` URL, and `noindex` transition timing. Technical choices remain open.
+13. **Production-domain acceptance.** After migration, verify the key journeys and integration behavior on the actual intended production domain, with V1 still available in place.
+14. **Explicit public-release / `noindex` gate.** Only separate owner approval may authorize public promotion and removal of `noindex, nofollow`. Until then Dingo remains unreleased, including after automatic publication or domain migration. Verify attribution obligations before this gate.
 
 ### Later
 
@@ -586,17 +643,17 @@ These are retained product features and polish candidates, not a ranked release 
 
 - **Expanded artwork/image requesting and runtime integration — product candidate.** Extend the useful People request-image experience to applicable gaps in other fields/categories. Existing #140 assistance already supports eligible blank fields for exact People, Studio, Network and official Genre authorities; do not reimplement that coverage. First inventory which family/field combinations are automatically resolved, requestable, imported-only or unsupported. Reuse the existing artwork architecture and published authorities, preserve nonblank imported/custom data, and keep asset production/publication in its owning project. Broader automation, provider-logo Folder artwork, Collection-backdrop suggestions and refresh policy need their own evidence and scope; per-item URLs/focus remain ordinary Folder-edit work, not bulk-creator controls.
 
-- **Remaining management work.** Folder moves are in the approved Next sequence. Source multi-delete, Collection multi-delete, copying and broader generic management transactions remain deferred. Collection-scoped multi-Folder removal and one-time atomic Folder sorting are already implemented through #232; they do not establish a generic bulk-management framework.
+- **Remaining management work.** Folder moves are complete through #263 / PR #264. Source multi-delete, Collection multi-delete, copying and broader generic management transactions remain deferred. Collection-scoped multi-Folder removal and one-time atomic Folder sorting are already implemented through #232; they do not establish a generic bulk-management framework.
 
 - **Folder / Collection merging — explicit management action.** Consider **Edit / Merge / Delete → choose merge destination → review result → confirm**. Drag already means reorder and must not become merge. Preserve source identity, duplicates/variants, order, unknown imported fields and presentation safely. Copying while retaining the original remains conceptually separate from true Merge unless later design deliberately combines them.
 
 - **Retained Search/Add and whole-Builder improvements — later candidates.** Keep Quick Add/multi-add with clear Added/duplicate feedback, bounded bulk collection lookup with ambiguity/unmatched handling, and transparent spelling/singular/plural suggestions that never blindly rewrite input. Retain shared-code consolidation, accumulated UX rough edges, source-name parity decisions and deliberate artwork-runtime integration. Logical/bundle editing, person replacement, and Streaming Provider/Region/media replacement remain separate designs; current physical editors do not authorize them. Preserve the dense three-column desktop direction and current focus/scroll/accessibility contracts.
 
-- **Public-release readiness — mandatory release gate.** Explicit owner approval is required before removing `noindex` or promoting V2. Verify the visible official TMDB logo and exact required notice in [Product identity and trust](#3-product-identity-and-trust-promise), with TMDB less prominent than Dingo; existing About & Credits is not by itself a new release approval. Retain current attribution and JustWatch obligations. Final Dave Collections branding/supporting wording/logo remain deferred design decisions and must not delay functional work. V1 remains independently supported.
+- **Final logo and supporting copy.** Exact assets/wording remain design decisions within the pre-launch Dingo identity work. Public-release readiness is a mandatory gate in Next, not an optional later feature; V1 stays independently supported.
 
 ### Investigate first
 
-These are capability investigations, not approvals to expose new settings. Preserve the distinction between TMDB accepting a query, Nuvio storing it, a client applying it and Builder Preview reproducing it.
+These are capability investigations, not approvals to expose new settings. The near-term no-addon Community Collections investigation is specified in Next; it is not a committed acquisition feature. Preserve the distinction between TMDB accepting a query, Nuvio storing it, a client applying it and Builder Preview reproducing it.
 
 - **Nuvio Advanced-filter capability refresh.** Eventually prepare controlled JSON covering every currently known Nuvio filter field, plus selected plausible TMDB-only candidate fields not currently modeled by Nuvio, with sensible populated values, meaningful explicit zero cases and absent/unset comparisons. Include Movie, Series, Studio, Network and Discover examples where relevant. Observe what current clients preserve, change or remove. **Preservation does not prove application to title results**: a newly preserved field needs a focused application test before Dingo exposes it. Choose the smallest useful client matrix when scoped; another four-route mega-test is not an automatic prerequisite, and this does not reopen completed #206 acceptance.
 - **Compound language/country and remaining locale compatibility.** Keep the **48 blocked International Cinema Discover sources (40 Movie, 8 TV)** visible as preservation-only structured-editing cases. The [original audit](./SHARED_ADVANCED_ASSESSMENT.md#all-48-original-import-discover-cases) proves exact round-trip preservation; literal client forwarding does not establish independent Movie/TV language/country semantics, and the production gateway rejects compound values. Do not flatten, split or normalize expressions or substitute language codes without verified meaning. Resolve field/media behavior and catalogue gaps before a narrow validator/Preview/Worker change with owner deployment. Remaining origin-country/original-language cross-client questions belong here, not in a duplicate workstream.
@@ -619,11 +676,13 @@ Optional Direct Nuvio read/import is merged through #238 / PR #239 and Replace-o
 
 ### Explicitly deferred / not currently planned
 
+- **ARVIO** remains parked and out of scope; this reconciliation does not promote it.
+
 - **Mixed AND/OR grouping** remains deferred; a single evidenced operator does not authorize nested/mixed Boolean groups or treating several sources as one group.
 - **Unsupported filters/source types** remain preservation-only where applicable. Runtime minimum/maximum and vote-count maximum are not modeled by the current Nuvio source contract. Certification, release type, status/type and other additional fields remain capability questions requiring evidence before exposure; direct movie/series/season types must not be invented. Lists and Franchises do not inherit Discover controls.
 - **Saved Builder project format** is unnecessary for today's local JSON flow; revisit only if persistence provides a concrete user need. Cloud projects/storage are not a prerequisite.
 - **Visual Nuvio layout preview** remains deferred pending demonstrated demand and a focused design; shared title Preview does not itself approve a full client-layout simulation.
-- **Broader management and integration scope** is not bundled into the candidates above: permanent automatic sorting, implicit drag-to-merge, all bulk actions at once, a new recommendation engine, playback/watch history and mandatory accounts remain outside current plans. Approved future Trakt list lookup excludes tracking/scrobbling, account-library synchronization and broader account management. The [non-goals](#20-explicit-product-non-goals) continue to apply.
+- **Broader management and integration scope** is not bundled into the candidates above: permanent automatic sorting, implicit drag-to-merge, all bulk actions at once, a new recommendation engine, playback/watch history and mandatory accounts remain outside current plans. Completed Trakt Lists scope excludes tracking/scrobbling, account-library synchronization and broader account management. The [non-goals](#20-explicit-product-non-goals) continue to apply.
 
 ## 19. Open decisions
 
@@ -631,7 +690,7 @@ Optional Direct Nuvio read/import is merged through #238 / PR #239 and Replace-o
 | --- | --- |
 | Additional Advanced capabilities | The approved Shared Advanced sequence is complete. Unmodeled fields, People filters, compound language/country and compound Streaming still need focused evidence. |
 | MDBList trial | Whether to build lookup/search-only first and its presentation remain undecided; native creation needs a verified Nuvio contract. |
-| Remaining management semantics | Folder removal and one-time sorting are implemented. Folder moves remain an approved future feature with UX/implementation open. Merge artwork policy and its Keep existing default are decided and implemented by #259, pending review/integration. Source/Collection multi-delete, copying, generic transactions and broader merge conflict outcomes remain deferred. |
+| Remaining management semantics | Folder removal/sorting, Move folders and Merge artwork policies (Keep existing default) are merged. Source/Collection multi-delete, copying, generic transactions and broader merge conflict outcomes remain deferred. |
 | Final public name for the one-click feature | Dave’s 1-Click Setup is the working name; final product copy needs review. |
 | Final template names | Essential, Complete, Full, and Dave’s Setup are recovered concepts, not approved public labels. |
 | Exact Essential / Complete / Full contents | Requires a dedicated recipe-design issue and size/performance judgement. |
@@ -640,12 +699,16 @@ Optional Direct Nuvio read/import is merged through #238 / PR #239 and Replace-o
 | Quick Setup region/provider defaults | The selected-folder Streaming flow explicitly chooses Region(s) and then one eligible Provider; future recipe/Quick Setup defaults still need product and regional-relevance decisions. |
 | Exact TV / phone / both defaults | Must follow current client evidence and owner UI review. |
 | Startup-screen visual layout | The four routes are decided; their presentation is not. |
-| Future Search/Add destination and action wording | All eight current families now have evidenced selected-folder and/or hierarchy routes. Any new destination model or wording still requires a focused decision rather than being inferred from those implementations. |
+| Future Search/Add destination and action wording | The current TMDB and Trakt families have evidenced selected-folder and/or hierarchy routes. Any new destination model or wording still requires a focused decision rather than being inferred from those implementations. |
 | Source-name parity across bulk creators | Source names are source-level where appropriate, but current family semantics differ; do not require hundreds of generated name inputs without focused design and evidence. |
 | Later Nuvio write modes and connection capabilities | Read/import and Replace-only Send are merged. Remote Add/Merge/selected-Collection semantics, pairing and persistent/refresh login remain deferred decisions. |
 | Saved Builder project format | Not needed for the current local JSON flow; revisit only when persistence needs justify it. |
 | Removal of `noindex` | Requires explicit release-readiness approval. |
-| Final Dave Collections branding | Preferred direction is recorded; design remains deferred. |
+| Dingo visual identity | Exact palette/logo and supporting copy await prototypes and owner selection; preserve workflows and shared state semantics. |
+| Changes since opening | Session baseline, persistence and history architecture need focused design. |
+| Collections-created count | Local/project/session versus persistent aggregate, counting rules, storage and privacy remain unresolved; Export totals are separate. |
+| Community Collections acquisition | Source/catalogue, access, JSON/preservation/identity contract, trust and licensing must be established before deciding implementation. |
+| Dingo domain migration | Hosting, base paths/assets, canonical URLs, origin-sensitive settings, old `/builder/` handling and noindex timing remain open; V1 stays in place. |
 
 Roadmap placement and investigation boundaries are owned by the [canonical roadmap](#18-roadmap-and-mandatory-gates), rather than a second parked-work list here.
 
@@ -665,7 +728,7 @@ Roadmap placement and investigation boundaries are owned by the [canonical roadm
 - treating Stremio addon manifests or Nuvio plugin-repository manifests as collection-source JSON;
 - making optional integrations mandatory;
 - plugin-repository development as a core Builder feature;
-- Trakt watch history, tracking/scrobbling, account-library synchronization and broader account management; only future list lookup is approved.
+- Trakt watch history, tracking/scrobbling, account-library synchronization and broader account management; completed public Lists workflows do not authorize those features.
 
 ## Historical foundation checkpoints
 

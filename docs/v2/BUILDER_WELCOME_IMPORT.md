@@ -118,7 +118,7 @@ The pre-fix mounted Chrome trace on `2189f67b339a359a30465afe1b4a5c72b4462199` c
 
 Start New clears controller diagnostics on success and retains its existing creation/cancellation behavior. Connected Import and Workspace Add/Merge/Replace use detached Review and synchronous `applySnapshot` → `onImported` in `useCollectionImportReview`, without the direct-import awaited handoff. Those flows and their legitimate Review warnings are unchanged; their audit did not identify this direct-import transition boundary. No new Nuvio-client contract is introduced.
 
-The [focused mounted regression](../TESTING.md#welcome-direct-import-handoff-290) observes actual DOM mutations outside React `act`, including inserted nodes that may already be detached by observer delivery. Final Workspace assertions alone are insufficient for this defect. Issue: [#290](https://github.com/davecollections/tmdb-id-lookup/issues/290); implementation remains at local owner review until separately authorized integration.
+The [focused mounted regression](../TESTING.md#welcome-direct-import-handoff-290) observes actual DOM mutations outside React `act`, including inserted nodes that may already be detached by observer delivery. Final Workspace assertions alone are insufficient for this defect. Issue: [#290](https://github.com/davecollections/tmdb-id-lookup/issues/290); completed through merged [PR #291](https://github.com/davecollections/tmdb-id-lookup/pull/291), with owner confirmation that the flash is gone.
 
 ## Privacy boundary
 

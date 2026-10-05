@@ -1,5 +1,7 @@
 # Native Trakt Source Foundation
 
+**Current status — 2026-10-05:** B2 [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280), B3 [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283), C [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) and imported Preview [PR #289](https://github.com/davecollections/tmdb-id-lookup/pull/289) are merged; parent #276 is complete. Earlier phase/checkpoint descriptions retain their dated evidence, not open integration gates. The [Product Plan](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) owns the current roadmap.
+
 ## Imported exact Preview boundary (#288)
 
 [Issue #288](https://github.com/davecollections/tmdb-id-lookup/issues/288) separates native Trakt **runtime equivalence for first-page Preview** from **configured equivalence for creation/duplicates**. This checkpoint supersedes earlier statements that every extra imported field blocks Preview. The Preview correction changes only the Trakt domain inspection and its Source Edit caller; no Worker/service, transport, importer or serializer production code changes. The owner-approved #288 presentation amendment adds only a Native Trakt Source-card badge colour/background override in `builder/src/styles.css`: `#b7a3d6` on `rgb(183 163 214 / 8%)`. Native TMDB, Addon and Preserved source retain their existing palettes. Badge wording, typography, spacing, geometry and accessibility structure are unchanged; system forced colours remain enabled. Category-badge reflow #275 remains outside this task.
@@ -31,9 +33,11 @@ All raw fields remain raw-only. Preview works from the current unsaved title/sor
 
 Relevant native editor, import/preservation, catalog/runtime callers and serialization/resolver tests were also inspected. Upstream tests cover core sorting and some raw-extra preservation; they were read, not executed, and do not establish populated Trakt-filter runtime acceptance. GPL-3.0 licences were verified; only contract facts informed this independent implementation.
 
-The owner-reported community round-trip evidence contained 329 Trakt sources with id/name/genre/filters, including 86 populated filter objects. That corpus was not independently recounted here; its client build/export path is not established by the inspected TV implementation. The retained real Desktop export establishes null compatibility fields for MOVIE/rank/asc and TV/title/desc. No new physical-client or hosted-web acceptance is claimed. [Focused tests and remaining owner acceptance](../TESTING.md#imported-trakt-exact-preview-288) keep those evidence boundaries separate.
+The owner-reported community round-trip evidence contained 329 Trakt sources with id/name/genre/filters, including 86 populated filter objects. That corpus was not independently recounted here; its client build/export path is not established by the inspected TV implementation. The retained real Desktop export establishes null compatibility fields for MOVIE/rank/asc and TV/title/desc. No new physical-client or hosted-web acceptance is claimed. [Focused tests and bounded completed owner acceptance](../TESTING.md#imported-trakt-exact-preview-288) keep those evidence boundaries separate.
 
-## C #284 current local refinement — 2026-10-03
+<a id="c-284-current-local-refinement--2026-10-03"></a>
+
+## Historical C #284 local refinement — 2026-10-03
 
 The owner approved the real populated discovery Preview. The current local Phase B
 refinement supersedes the older name-only/no-Preview editor and text-fallback assumptions
@@ -66,14 +70,13 @@ is complete. The mixed MOVIE/TV rank/asc Builder export imported successfully. T
 subsequent TV/title/desc export displayed the same order as real Builder Preview.
 Re-export retained provider, List ID, media, sort and direction; Movies stayed
 rank/asc and Series stayed title/desc. Added nullable compatibility fields and
-`focusGifEnabled=true` did not alter source semantics. Builder integration remains
-subject to canonical validation, PR CI and owner merge review. Trakt attribution
+`focusGifEnabled=true` did not alter source semantics. Builder integration subsequently completed through PR #285. Trakt attribution
 stays exclusively in About & Credits → Data credits; the related-tool link stays separate.
 
 
 ## Status and validation
 
-B2 implementation, owner review and validation are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). B3 subsequently merged in [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283). [C #284](https://github.com/davecollections/tmdb-id-lookup/issues/284) has owner-approved Phase A and visible Phase B, with production sorted Preview and required physical Nuvio acceptance complete; see [the C checkpoint](BUILDER_TRAKT_CREATION.md#c-284-count-clarity-and-physical-acceptance--2026-10-03). Integration still requires canonical validation, PR CI and owner merge approval; parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) remains open.
+B2 implementation, owner review and validation are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). B3 merged through [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283), and C through [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285). The [C checkpoint](BUILDER_TRAKT_CREATION.md#c-284-count-clarity-and-physical-acceptance--2026-10-03) retains bounded production/physical acceptance. Parent [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) is closed. Imported metadata Preview followed in #288 / PR #289; its owner real-source Preview and deliberate-sort/export preservation acceptance are complete, without new universal client certification.
 
 Accepted implementation head [`a1017234ecc025794b810173f029db57e06589cb`](https://github.com/davecollections/tmdb-id-lookup/commit/a1017234ecc025794b810173f029db57e06589cb) passed the full canonical local suite, production Builder build and [hosted FULL PR validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/36954981756). Documentation-only follow-up heads receive separate automatic PR validation after push; these implementation-head results do not establish a follow-up head's check status.
 
@@ -147,4 +150,4 @@ Focused coverage: `tests/builder-native-trakt.test.mjs`, the compatibility corpu
 
 Use `node --test --test-name-pattern="mounted native Trakt foundation" tests/builder-source-edit-mounted.test.mjs` with that environment variable. Optional `TMDB_204_SCREENSHOTS` captures local review evidence outside Git. Import `manual-tests/native-trakt-foundation/owner-review.json` in the normal production-style Builder preview for owner review.
 
-Historically, B2 added no Trakt networking, environment variables, API client, Cloudflare/service changes, creation modes, hierarchy family, Add Source option, search/browse/URL resolver or Preview provider. B3 built on this foundation for creation; C completes the bounded Preview/sorting behavior and accepted visible/live/physical cases described above, with repository integration still gated by validation and owner PR merge approval. Parent #276 remains open. See [status and validation](#status-and-validation) for the completed implementation checks and separate PR-head validation.
+Historically, B2 added no Trakt networking, environment variables, API client, Cloudflare/service changes, creation modes, hierarchy family, Add Source option, search/browse/URL resolver or Preview provider. B3 built on this foundation for creation; C completed the bounded Preview/sorting behavior and accepted visible/live/physical cases described above, with integration through PR #285 and parent #276 closed. See [status and validation](#status-and-validation) for the completed implementation checks and separate PR-head validation.
