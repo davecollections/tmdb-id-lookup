@@ -1,10 +1,16 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Current checkpoint - 2026-10-05
+
+Verified main is `872379b71fba494a2611e2d3e087dd46e237dba2`. The [Product Plan checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) records the merged sequence and the [canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) owns priorities. Workspace Import/Merge artwork (#259/#260), Find (#261/#262), Move folders (#263/#264), bounded planning performance (#265, #266/#267), dependency-aware PR CI (#270/#271), ordering/Source Edit (#273/#274), TMDB Folder-per-List (#277/#278), the complete Trakt programme (#276), imported Discover (#286/#287), imported Trakt Preview (#288/#289) and Welcome handoff (#290/#291) are complete. Focused contracts below own semantics and evidence limits; historical task-stage gates are not current pending work.
+
+Dingo remains unreleased at `/builder/` with `noindex, nofollow`. Its standalone `dingo.build` move and visual identity refresh are pre-launch direction, with technical/design decisions and explicit release approval still open. V1 stays in place. Current CI routing is owned by [Testing](../TESTING.md#local-and-ci-validation-groups-247); PRs need all required groups, while main/manual runs remain full.
+
 ## Imported native Trakt Preview compatibility (#288)
 
 The [current Trakt boundary and 2026-10-04 upstream evidence](./BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288) distinguish runtime equivalence from configured equivalence. A separate Preview-only inspector permits bounded preserved community metadata, populated runtime-inert filters and Desktop null placeholders. Unknown top-level keys remain fail-closed. It reuses existing Trakt core validation and never normalizes or saves preserved metadata. Strict configuration keys, occurrence/creation planning and complete serialized Import/Merge equality remain unchanged. No Worker/service changes are needed.
 
-This supersedes the historical B2 name-only/no-Preview limitations below. It does not establish new installed-client acceptance; [testing](../TESTING.md#imported-trakt-exact-preview-288) separates local contract/mounted evidence from remaining owner review.
+This supersedes the historical B2 name-only/no-Preview limitations below. It does not establish new installed-client acceptance; [testing](../TESTING.md#imported-trakt-exact-preview-288) separates local contract/mounted evidence from historical owner-review procedures and completed #288/#289 acceptance.
 
 ## Imported Discover Advanced compatibility (#286)
 
@@ -14,31 +20,39 @@ This supersedes the historical B2 name-only/no-Preview limitations below. It doe
 
 Family Advanced reuses `resolveDiscoverEntityLabels` and `mergeDiscoverSelectionLabels` for Studio, Network and watch-provider names. Entity and keyword hydration are local display state: existing labels win, missing names retain the ID fallback, and lookup completion does not call the edit callback, touch filters, set `advancedTouched`, change identities/Preview queries or produce a no-op Save patch. Importer/serializer architecture, raw imported data and unknown-field preservation are unchanged. The existing standalone Worker validator already accepts the supported pure expressions; no Worker source/deployment change is required.
 
-## Native Trakt B2 foundation (#279, PR #280)
+<a id="native-trakt-b2-foundation-279-pr-280"></a>
 
-Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
+## Historical native Trakt B2 foundation (#279, PR #280)
 
-B2 beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) adds distinct `native-trakt` domain/import/serialization/identity and name-only Source Edit. Supported explicit numeric List/media/sort cores retain complete raw evidence; unsafe/string/synthetic cores stay opaque. Unknown fields never become ordinary editable fields. New authoring is exactly provider trakt, positive safe-integer number ID, MOVIE/TV, rank/asc and title. Physical identity excludes title/sorting; bounded configured equivalence remains separate and fails closed for unknown extra semantics. Current TV/Mobile/Desktop source evidence still supports all eight Trakt sorts and asc/desc. See [the current contract and pinned evidence](./BUILDER_TRAKT_SOURCES.md). No Trakt network, creation UI, hierarchy plans, Add Source or Preview exists. Trakt Lists and parent #276 remain incomplete until B3/C and full acceptance.
+Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](./BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3 and C subsequently completed through [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283) and [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285); parent #276 is closed.
 
-## Hierarchy ordering and unified Source editing (#273, local owner review)
+B2 beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276) adds distinct `native-trakt` domain/import/serialization/identity and name-only Source Edit. Supported explicit numeric List/media/sort cores retain complete raw evidence; unsafe/string/synthetic cores stay opaque. Unknown fields never become ordinary editable fields. New authoring is exactly provider trakt, positive safe-integer number ID, MOVIE/TV, rank/asc and title. Physical identity excludes title/sorting; bounded configured equivalence remains separate and fails closed for unknown extra semantics. Current TV/Mobile/Desktop source evidence still supports all eight Trakt sorts and asc/desc. See [the current contract and pinned evidence](./BUILDER_TRAKT_SOURCES.md). At the B2 checkpoint there was no Trakt networking, creation UI, hierarchy plan, Add Source or Preview. Those limitations are superseded by completed B3/C; the current contract owns creation, sorting and Preview.
 
-The current [ordering contract](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review) adds current-state Collection/Folder boundary moves and one-time panel Sort for all three levels. Atomic Collection permutations retain raw pinned/ordinary slots; Source permutations retain exact objects and imported representations. A shared Builder title comparator preserves Folder/V1 parity and bounded People options. The [sole Source Edit route](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) reuses the existing registered editor and family Filters without capability expansion or provenance. This implementation is local and awaits owner review/integration.
+<a id="hierarchy-ordering-and-unified-source-editing-273-local-owner-review"></a>
+
+## Hierarchy ordering and unified Source editing (#273, merged PR #274)
+
+The current [ordering contract](./BUILDER_NODE_EDITING.md#hierarchy-ordering-273-local-owner-review) adds current-state Collection/Folder boundary moves and one-time panel Sort for all three levels. Atomic Collection permutations retain raw pinned/ordinary slots; Source permutations retain exact objects and imported representations. A shared Builder title comparator preserves Folder/V1 parity and bounded People options. The [sole Source Edit route](./BUILDER_SOURCE_EDITING.md#one-registered-source-edit-entry-273-local-owner-review) reuses the existing registered editor and family Filters without capability expansion or provenance. This implementation is complete through [PR #274](https://github.com/davecollections/tmdb-id-lookup/pull/274).
 
 The proportionate 2026-09-29 upstream review inspected GPL-3.0 TV `71632b9271e8bce6783e415d64f34cfa4e8b894c` ([model](https://github.com/NuvioMedia/NuvioTV/blob/71632b9271e8bce6783e415d64f34cfa4e8b894c/app/src/main/java/com/nuvio/tv/domain/model/Collection.kt), [store](https://github.com/NuvioMedia/NuvioTV/blob/71632b9271e8bce6783e415d64f34cfa4e8b894c/app/src/main/java/com/nuvio/tv/data/local/CollectionsDataStore.kt)) and GPL-3.0 Desktop `b1e00724c55e65f8f325d4d9d52eb6827872a7c2` ([preserver](https://github.com/NuvioMedia/NuvioDesktop/blob/b1e00724c55e65f8f325d4d9d52eb6827872a7c2/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/CollectionJsonPreserver.kt), [serialization tests](https://github.com/NuvioMedia/NuvioDesktop/blob/b1e00724c55e65f8f325d4d9d52eb6827872a7c2/composeApp/src/commonTest/kotlin/com/nuvio/app/features/collection/CollectionSourceSerializationTest.kt)). Ordered lists and a separate pin flag support retaining Dingo's approved ordering UX. Desktop preservation keys can be narrower than Dingo's variant identity; its normalization is not copied. `sources` remains authoritative with addon compatibility fallback/projection. No substantive upstream code was reused. Mobile/web/device behavior was not newly certified; existing client differences and fail-closed Preview remain in force.
 
 ## Shared hierarchy evidence (#266)
 
-Genres, Decades hierarchy, People, Studios and Networks now reuse ephemeral evidence owned by the exact immutable Project. One ordered Source/location snapshot supports lazy, separate DISCOVER and native-family indexes while preserving existing identity, placement and apply-time authority. The [hierarchy architecture contract](./BUILDER_HIERARCHY_CREATION.md#ephemeral-source-occurrence-evidence-266) owns the cache and family boundaries; [testing](../TESTING.md#shared-source-occurrence-evidence-266) owns deterministic parity, laziness and invalidation coverage. Issue #266 remains the implementation/evidence record; owner desktop and physical-phone acceptance passed, and PR integration remains pending.
+Genres, Decades hierarchy, People, Studios and Networks now reuse ephemeral evidence owned by the exact immutable Project. One ordered Source/location snapshot supports lazy, separate DISCOVER and native-family indexes while preserving existing identity, placement and apply-time authority. The [hierarchy architecture contract](./BUILDER_HIERARCHY_CREATION.md#ephemeral-source-occurrence-evidence-266) owns the cache and family boundaries; [testing](../TESTING.md#shared-source-occurrence-evidence-266) owns deterministic parity, laziness and invalidation coverage. Issue #266 remains the implementation/evidence record; owner desktop and physical-phone acceptance passed, and integration completed through [PR #267](https://github.com/davecollections/tmdb-id-lookup/pull/267).
 
-## Move folders (#263, pending merge)
+<a id="move-folders-263-pending-merge"></a>
 
-The [editing](./BUILDER_NODE_EDITING.md#move-folders-263-pending-merge) and [controller](./BUILDER_CONTROLLER.md#move-folders-263-pending-merge) contracts define exact-ID local relocation to an existing or newly configured Collection. Existing Folder objects, Source order/IDs, rawImported/unknown data and serialized Folder payloads stay unchanged. Source-order append and optional explicit empty-source deletion commit once. New Collection settings/defaults reuse ordinary editor/domain contracts. Draft-only stages reject stale authority and recover exact destination/first-Folder focus. Owner acceptance and merge remain pending.
+## Move folders (#263, merged PR #264)
+
+The [editing](./BUILDER_NODE_EDITING.md#move-folders-263-pending-merge) and [controller](./BUILDER_CONTROLLER.md#move-folders-263-pending-merge) contracts define exact-ID local relocation to an existing or newly configured Collection. Existing Folder objects, Source order/IDs, rawImported/unknown data and serialized Folder payloads stay unchanged. Source-order append and optional explicit empty-source deletion commit once. New Collection settings/defaults reuse ordinary editor/domain contracts. Draft-only stages reject stale authority and recover exact destination/first-Folder focus. Completed through [PR #264](https://github.com/davecollections/tmdb-id-lookup/pull/264).
 
 Proportionate upstream recheck on 2026-09-27: NuvioTV `5e9e68b3ad21fd87256ac0e8c151bf1958b57d7a` [Collection model](https://github.com/NuvioMedia/NuvioTV/blob/5e9e68b3ad21fd87256ac0e8c151bf1958b57d7a/app/src/main/java/com/nuvio/tv/domain/model/Collection.kt) owns ordered Folder lists; Folder IDs/Sources belong to the Folder with no parent-ID field. [CollectionsDataStore](https://github.com/NuvioMedia/NuvioTV/blob/5e9e68b3ad21fd87256ac0e8c151bf1958b57d7a/app/src/main/java/com/nuvio/tv/data/local/CollectionsDataStore.kt) maps folders in list order and carries IDs through serialization/deserialization. GPL-3.0 was verified; no upstream code was copied. This changes location only, introduces no Nuvio field/provider/request and retains Dingo's stronger unknown-field preservation. Existing client normalization differences remain recorded in the reordering evidence; no new Nuvio-client acceptance is claimed.
 
-## Find in project (#261, pending merge)
+<a id="find-in-project-261-pending-merge"></a>
 
-Find is local display-name navigation for current Collections/Folders/Sources. The shared card-title contracts supply meaningful searchable names and safe parent paths; exact internal identity drives selection and current-state stale checks. Search uses a two-character minimum, literal case-insensitive substring matching, exact/prefix/substring tiers and a 100-row render cap with real totals. Successful jumps preserve project/revision/dirty state, focus/scroll the exact card and reveal its own hierarchy level on phones. The modal preserves the controller snapshot until a result is chosen and reuses existing locks, focus and viewport helpers. No Nuvio schema/export behavior, remote provider, Worker, dependency or persistence changes. See [the UI contract](./BUILDER_UI_SHELL.md#find-in-project-261-pending-merge) and [focused validation](../TESTING.md#find-in-project-261-pending-merge). Completion remains pending owner review and merge.
+## Find in project (#261, merged PR #262)
+
+Find is local display-name navigation for current Collections/Folders/Sources. The shared card-title contracts supply meaningful searchable names and safe parent paths; exact internal identity drives selection and current-state stale checks. Search uses a two-character minimum, literal case-insensitive substring matching, exact/prefix/substring tiers and a 100-row render cap with real totals. Successful jumps preserve project/revision/dirty state, focus/scroll the exact card and reveal its own hierarchy level on phones. The modal preserves the controller snapshot until a result is chosen and reuses existing locks, focus and viewport helpers. No Nuvio schema/export behavior, remote provider, Worker, dependency or persistence changes. See [the UI contract](./BUILDER_UI_SHELL.md#find-in-project-261-pending-merge) and [focused validation](../TESTING.md#find-in-project-261-pending-merge). Completed through [PR #262](https://github.com/davecollections/tmdb-id-lookup/pull/262).
 
 ## Selected-folder optional Source names (#257)
 
@@ -58,7 +72,11 @@ Review compares **Nuvio now** with **From Dingo**, reports exact removals only w
 
 <a id="current-checkpoint---2026-09-22"></a>
 
-## Current checkpoint - 2026-09-24
+<a id="current-checkpoint---2026-09-24"></a>
+
+## Historical checkpoint - 2026-09-24
+
+This retains the dated Send acceptance. The 2026-10-05 checkpoint supersedes its current-status and sequencing references.
 
 Closed [#244](https://github.com/davecollections/tmdb-id-lookup/issues/244) / merged [PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245) delivered Replace-only Send and Export & Send at main `2dd4652fe23a9ee7d38d5238a3c843504ecca172`. Final PR validation, [post-merge Nuvio Contract Validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35972599861) and [automatic Pages publication](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35972599829) succeeded. Direct read/import #238 / PR #239 and its #240 / PR #241 image-fallback repair remain complete. Documentation reconciliation #242 is closed through merged PR #243.
 
@@ -140,7 +158,7 @@ Issue [#200](https://github.com/davecollections/tmdb-id-lookup/issues/200) compl
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-09-22 (publication/status reconciliation #242; verified through #240 / PR #241)
+Last reviewed: 2026-10-05 (current-status reconciliation #292; earlier evidence retains its original dates)
 
 
 ## 2026-09-07 - Multiple creation sorts (#198; approved for publication)
@@ -243,12 +261,12 @@ Historical #194 / merged PR #195 introduced the compact manual Export modal, can
 - v1 is working and stable.
 - v2 changes the product from primarily an ID lookup/export utility into the visual **Dingo's Collection Builder**, built for Nuvio collections and powered primarily by TMDB.
 - The active React/Vite builder remains isolated under `/builder/`, unlinked, and `noindex, nofollow`; it is not a released replacement for v1.
-- **Merged through issue #104 / PR #105 from the requirement recorded by issue [#85](https://github.com/davecollections/tmdb-id-lookup/issues/85):** the welcome footer's text **About** control and the Builder workspace header's single global **?** open a compact **About & Credits** modal; the workspace control replaces the former separate V1 backlink. One shared borderless credits group uses the same approved local TMDB square as V1 beside the required notice **“This product uses the TMDB API but is not endorsed or certified by TMDB.”**, plus an official local gold JustWatch mark beside centralized watch-provider attribution. Its divided footer credits and links davecollections, opens the **TMDB ID Lookup**, links to the related standalone Dave Collections tool [**Trakt List Lookup**](https://trakt-list-lookup.pages.dev/), links to the GitHub issue chooser, and ends with one muted text-only Nuvio independence note. Data credits remain exactly TMDB and JustWatch; Builder-integrated Trakt lookup/source assistance and Trakt API use remain future scope.
+- **Merged through issue #104 / PR #105 from the requirement recorded by issue [#85](https://github.com/davecollections/tmdb-id-lookup/issues/85):** the welcome footer's text **About** control and the Builder workspace header's single global **?** open a compact **About & Credits** modal; the workspace control replaces the former separate V1 backlink. One shared borderless credits group uses the same approved local TMDB square as V1 beside the required notice **“This product uses the TMDB API but is not endorsed or certified by TMDB.”**, plus an official local gold JustWatch mark beside centralized watch-provider attribution. Its divided footer credits and links davecollections, opens the **TMDB ID Lookup**, links to the related standalone Dave Collections tool [**Trakt List Lookup**](https://trakt-list-lookup.pages.dev/), links to the GitHub issue chooser, and ends with one muted text-only Nuvio independence note. The later #284 / PR #285 adds a separate Trakt text data-credit/non-affiliation row. Public Trakt Lists integration is complete; the related-tool link remains distinct.
 - Lookup and copy-ID tools remain available.
 - v2 should be mobile-first, modern, and sleek.
-- No login is required for the complete core build-and-export journey. Any future Nuvio connection must remain optional.
+- No login is required for the complete core build-and-export journey. The implemented Nuvio Import/Send connection remains optional.
 - Playback is outside project scope and should normally remain unmentioned.
-- Startup routes, Dave’s 1-Click Setup, templates/recipes, the Kaptain onboarding comparison, product privacy, branding, and the optional Nuvio connection are maintained in the product plan rather than duplicated here. Exact template contents, final naming, and the connection product contract remain open.
+- Startup routes, Dave’s 1-Click Setup, templates/recipes, the Kaptain onboarding comparison, product privacy, branding, and the optional Nuvio connection are maintained in the product plan rather than duplicated here. Exact template contents and final naming remain open; the focused connection contract owns implemented Import/Send and deferred extensions.
 
 ## 2. Evidence levels
 

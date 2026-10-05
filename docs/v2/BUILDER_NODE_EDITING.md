@@ -1,6 +1,8 @@
 # Builder Collection and Folder Editing
 
-## Hierarchy ordering (#273, local owner review)
+<a id="hierarchy-ordering-273-local-owner-review"></a>
+
+## Hierarchy ordering (#273, merged PR #274)
 
 The current menus are **Collection: Edit → Move to top → Move to bottom → Move folders → Delete folders → Delete collection** and **Folder: Edit → Move to top → Move to bottom → Move folders → Delete**. Boundary actions remain visible and are disabled at the corresponding endpoint, both for a one-item group. Activation resolves the current item by internal ID and delegates once through the existing sibling movement helper/controller. Collections stay within their current pinned or ordinary group without changing `pinToTop`; Folders stay within their current Collection. A real move retains exact subtree/selection identity, commits one revision, focuses the moved handle and announces the destination (Collections explicitly say “of its group”). A satisfied boundary does not mutate or announce movement.
 
@@ -8,9 +10,11 @@ Each panel owns an icon-only **Sort** utility in its left title group, after Col
 
 `reorderCollections(project, ids)` and `reorderSources(project, folderId, ids)` join `reorderFolders` with explicit controller wrappers. They require dense complete permutations of unique, unambiguous direct-child IDs and fully validate before replacement. Collections sort each pin group independently into its existing raw slots; crossing a pin slot is rejected. This atomic list Sort deliberately differs from the existing single-item splice operation. Sources retain their exact native/addon/opaque objects, editable data, raw imports and unknown fields. Changed content commits one revision/listener cycle; identical order returns the same Project and no content revision. Clearing prior diagnostics may still notify without a content change.
 
-The shared compact `HierarchySortDialog` captures immutable Project, hierarchy level, parent/target, options and trigger. A content change requires reopening; selection-only changes remain valid. Apply uses exactly one matching reorder operation, returns focus to Sort and announces either completion or already-in-order. Cancel/Apply preserve descendant selection and current mobile level. Delete folders remains in the separate existing confirmation component. This local implementation awaits owner review and integration.
+The shared compact `HierarchySortDialog` captures immutable Project, hierarchy level, parent/target, options and trigger. A content change requires reopening; selection-only changes remain valid. Apply uses exactly one matching reorder operation, returns focus to Sort and announces either completion or already-in-order. Cancel/Apply preserve descendant selection and current mobile level. Delete folders remains in the separate existing confirmation component. Completed through [PR #274](https://github.com/davecollections/tmdb-id-lookup/pull/274).
 
-## Move folders (#263, pending merge)
+<a id="move-folders-263-pending-merge"></a>
+
+## Move folders (#263, merged PR #264)
 
 Both Collection and Folder menus use **Move folders** (no ellipsis), opening one responsive Select → Destination → optional Configure new Collection → Review dialog. Collection entry starts with none selected; Folder entry preselects its exact ID. Native full-row checkboxes show all direct-child Folders in current source order, with selected count, Select all and Clear all. No search, pagination, selection limit or separate Split feature is introduced.
 

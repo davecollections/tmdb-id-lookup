@@ -1,5 +1,7 @@
 # Trakt Lists creation
 
+**Current status — 2026-10-05:** B3 [#282 / PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283) and C [#284 / PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) are merged, including the separately delivered service dependency and bounded production/physical acceptance. Parent #276 is complete. #288 / PR #289 subsequently extends supported imported Source Edit Preview metadata; see [the current source contract](./BUILDER_TRAKT_SOURCES.md). Dated phase gates below are historical; the [Product Plan](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) owns current status and priorities.
+
 ## C #284 count clarity and physical acceptance — 2026-10-03
 
 Discovery labels Trakt `itemCount` as **item/items**. Media review shows the existing
@@ -30,7 +32,9 @@ remained `TV/title/desc`. Normal nullable compatibility fields and
 The mixed rank/asc and edited-sort cases together complete the required physical
 acceptance; neither needs repeating for integration.
 
-## C #284 current local Preview refinement — 2026-10-03
+<a id="c-284-current-local-preview-refinement--2026-10-03"></a>
+
+## Historical C #284 local Preview refinement — 2026-10-03
 
 The approved shared poster-only discovery Preview is also available explicitly on each
 selected List's Media card. Its standard Preview titles button occupies the reserved
@@ -50,16 +54,18 @@ deployed. Real Source Edit TV/title/desc Preview passed with one Trakt GET/cost 
 three TV detail requests and preserved poster order. Preview used the unsaved draft
 while the saved source stayed rank/asc until explicit Save.
 
-The owner fixture injects both the item client and TMDB poster provider. Its source sort
+The historical owner-review fixture injected both the item client and TMDB poster provider. Its source sort
 examples are synthetic service-order samples used only for the authorized local review;
 they are not real external data or a product-side sorting implementation.
 
 
 [B3 #282](https://github.com/davecollections/tmdb-id-lookup/issues/282) implements the approved design from [#281](https://github.com/davecollections/tmdb-id-lookup/issues/281), beneath [#276](https://github.com/davecollections/tmdb-id-lookup/issues/276). B3 includes the Phase A foundation and owner-approved visible Trakt Lists creation flows. The Phase A foundation was approved in commit `3b2b144266a6f94489576b94e84bb17e87f0f561`. Owner UI review and bounded real Builder production-path acceptance are complete. C remains separate from B3.
 
-## C Phase A foundation — local owner-review gate
+<a id="c-phase-a-foundation--local-owner-review-gate"></a>
 
-[C #284](https://github.com/davecollections/tmdb-id-lookup/issues/284) Phase A was owner-approved and committed as `1be435b19c0208137d3c3b78ca4156c93c34d234`. The following foundation notes describe that historical nonvisual gate. The current visible contract and completed live/physical acceptance are recorded above; C integration remains subject to PR validation and owner merge review.
+## Historical C Phase A foundation — local owner-review gate
+
+[C #284](https://github.com/davecollections/tmdb-id-lookup/issues/284) Phase A was owner-approved and committed as `1be435b19c0208137d3c3b78ca4156c93c34d234`. The following foundation notes describe that historical nonvisual gate. The current visible contract and completed live/physical acceptance are recorded above; C integration subsequently completed through PR #285.
 
 - `getItems(id, { signal, limit = 15, refresh = false })` extends the existing client. It requests only page 1, accepts limits 1–50 and strictly normalizes matching v1 first-page samples, including nullable movie/show/season/episode fields. Service order and repeated rows survive. The existing 40-entry, five-minute success cache, invalidation, cancellation, timeout and cooldown remain shared.
 - The opt-in local middleware accepts only canonical numeric `/lists/<id>/items` with page 1 and limit 1–50. Existing fixed target, same-origin/host, GET, omitted-credential and redirect restrictions remain. Phase A does not enable live review.
@@ -78,7 +84,7 @@ This belongs **only** in the existing **About & Credits → Data credits** secti
 
 ## Current boundary
 
-Trakt Lists is registered in the existing New Collection, New Folder and selected-Folder Add Source launchers. One `TraktSourceFlow` uses the Phase A client, selection session and planner. Construction and opening remain request-free; discovery and selected-only media work require explicit actions. Source Edit now exposes title, the eight supported sorts, direction and explicit unsaved-draft Preview; provider/List/media stay fixed. The mounted and deterministic owner-review fixtures provide explicitly owner-authorized injected mechanics evidence, with zero production Trakt requests. Separate bounded real Builder production-path acceptance has passed using the same production client and flow. Service code, Cloudflare configuration, CORS, credentials, dependencies and v1 are unchanged.
+Trakt Lists is registered in the existing New Collection, New Folder and selected-Folder Add Source launchers. One `TraktSourceFlow` uses the Phase A client, selection session and planner. Construction and opening remain request-free; discovery and selected-only media work require explicit actions. Source Edit now exposes title, the eight supported sorts, direction and explicit unsaved-draft Preview; provider/List/media stay fixed. The historical mounted and deterministic owner-review fixtures supplied explicitly owner-authorized injected mechanics evidence, with zero production Trakt requests; those records are not a standing exception to the current live-service policy in [Testing](../TESTING.md#live-external-service-boundary). Separate bounded real Builder production-path acceptance has passed using the same production client and flow. B3 left service code/configuration unchanged; C consumes the separately delivered sorted-items extension recorded above. Credentials remain server-side, and V1 is unchanged.
 
 ## Visible flow and reuse
 
@@ -130,10 +136,12 @@ Plans capture immutable configuration and project authority. `validateTraktCreat
 
 Production CORS does not permit local/LAN browser origins. `builder/trakt-preview-proxy.js` therefore supplies a local Vite middleware under `/__trakt_preview__`, enabled for the Vite dev server (`npm run dev`) only with `TRAKT_LIVE_REVIEW=1`. Vite derives one boolean for both middleware installation and the real Builder workspace client’s `localPreview` option. The client retains its localhost/private-LAN fail-closed guard and its existing workspace lifetime; injected review clients are unchanged. Outside the opted-in local dev-server mode, the client calls `https://api.dingo.build` directly. Production builds and previews of built assets always disable this seam, even when the shell flag is set; there is no runtime or user-facing switch. The fixed target is the production Dingo API; allowed paths are search, browse, resolve, media and the bounded C first-page items route. GET-only path/query allowlisting, local Host/same-origin checks, omitted credentials, no Authorization/Cookie/Origin forwarding and rejected redirects keep it narrow. It forwards Retry-After and is not a production route or CORS change. Merely enabling it makes no request. Phase A did not enable or exercise it against the live service.
 
-## Validation and later work
+<a id="validation-and-later-work"></a>
 
-The B3 canonical pure suites are `tests/builder-trakt-client.test.mjs` and `tests/builder-trakt-creation.test.mjs`. They are in `check-all` and the Core test-path registry; production foundation/configuration changes retain conservative full CI routing. Phase B also updates existing capability/launcher contracts and the existing `builder-source-edit-mounted.test.mjs` harness. Run the focused injected matrix with `TRAKT_CREATION_ONLY=1` and `--test-name-pattern="mounted Trakt Lists creation"`. The matrix covers all three entry points at 360, 384, 393, 402, 412 and 1280 pixels, short height, enlarged text, forced colours, reduced motion, keyboard selection and atomic output, with dedicated batching/recovery/cancellation/stale/duplicate scenarios at phone and desktop widths. Browser interception blocks and counts external attempts; the fixture also rejects uninjected fetches.
+## Historical validation and owner-review procedure
 
-Owner review uses the same fixture at `tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review`, served by the extracted `createSourceEditMountedServer` helper with `reviewOnly: true`. The helper is shared with the existing automated harness; no production mock switch exists. Review-only CSP restricts connections/images to local assets. Choose lists 101, 102 and 103 for A: New Collection (3 Folders/4 Sources), B: New Folder (2 new sibling Folders/2 Sources), and C: Add Source (3 new Sources). Review Keyword, User, multiline URL/ID, Popular/Trending, overrides, Back and phone layout. All data is explicitly deterministic. `TRAKT_LIVE_REVIEW` remains disabled. This fixture remains mechanics evidence, separate from the completed real Builder production-path acceptance.
+The B3 canonical pure suites were `tests/builder-trakt-client.test.mjs` and `tests/builder-trakt-creation.test.mjs`. They were registered in `check-all` and the Core test-path registry; production foundation/configuration changes retained conservative full CI routing. Phase B also updated existing capability/launcher contracts and the existing `builder-source-edit-mounted.test.mjs` harness. At the B3 review gate, the focused injected matrix ran with `TRAKT_CREATION_ONLY=1` and `--test-name-pattern="mounted Trakt Lists creation"`. The matrix covered all three entry points at 360, 384, 393, 402, 412 and 1280 pixels, short height, enlarged text, forced colours, reduced motion, keyboard selection and atomic output, with dedicated batching/recovery/cancellation/stale/duplicate scenarios at phone and desktop widths. Browser interception blocked and counted external attempts; the fixture also rejected uninjected fetches.
 
-C owns explicit first-page `/items` Preview, Source Edit sorting and restrained credits. The shared Preview is poster-only, uses existing TMDB infrastructure and omits missing posters; no Trakt artwork is used. Samples do not prove composition. Real sorted Source Edit Preview and physical Nuvio Desktop rank/asc and title/desc round trips have passed. The sorted-items service dependency is merged/deployed; Builder integration remains subject to canonical validation, PR CI and owner merge approval.
+Owner review used the same fixture at `tests/fixtures/builder-source-edit-mounted.html?trakt-creation-review`, served by the extracted `createSourceEditMountedServer` helper with `reviewOnly: true`. The helper was shared with the existing automated harness; no production mock switch was added. Review-only CSP restricted connections/images to local assets. The procedure selected lists 101, 102 and 103 for A: New Collection (3 Folders/4 Sources), B: New Folder (2 new sibling Folders/2 Sources), and C: Add Source (3 new Sources). Review covered Keyword, User, multiline URL/ID, Popular/Trending, overrides, Back and phone layout. All fixture data was explicitly deterministic. `TRAKT_LIVE_REVIEW` remained disabled. This fixture remains historical mechanics evidence, separate from the completed real Builder production-path acceptance.
+
+C owns explicit first-page `/items` Preview, Source Edit sorting and restrained credits. The shared Preview is poster-only, uses existing TMDB infrastructure and omits missing posters; no Trakt artwork is used. Samples do not prove composition. Real sorted Source Edit Preview and physical Nuvio Desktop rank/asc and title/desc round trips have passed. The sorted-items service dependency is merged/deployed; Builder C integration subsequently completed through [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285). Current validation policy is owned by [Testing](../TESTING.md#live-external-service-boundary); the historical injected procedure above establishes no exception.

@@ -24,7 +24,7 @@ git diff --check
 git status --short
 ```
 
-The mounted run compiles the changed JSX fixture; `node --check tests/builder-bulk-edit-mounted.test.mjs` checks its runner. Full canonical validation is deliberately deferred at this narrow uncommitted owner-review gate: only Welcome diagnostic rendering changes in production. Importer/controller/serializer, Workspace, connected Review, Worker/service and styling implementations remain unchanged. Browser evidence is emulated Chrome; physical-device owner review remains separate.
+The mounted run compiles the changed JSX fixture; `node --check tests/builder-bulk-edit-mounted.test.mjs` checks its runner. Historical implementation validation was focused because only Welcome diagnostic rendering changed in production. #290 subsequently completed through [PR #291](https://github.com/davecollections/tmdb-id-lookup/pull/291), with owner confirmation that the flash is gone and PR CI supplying broad integration validation. Importer/controller/serializer, Workspace, connected Review, Worker/service and styling implementations remain unchanged. Browser evidence is emulated Chrome; physical-device owner review remains separate.
 
 ## Imported Trakt exact Preview (#288)
 
@@ -60,9 +60,12 @@ git diff --check
 git status --short
 ```
 
-The Vite-backed Source Edit UI and Trakt client suites need writable local caches. A full canonical run is deferred at this bounded uncommitted review gate; no importer, serializer, planner, UI behavior, transport or Worker implementation changed; the approved badge amendment changes only its two CSS colour declarations.
+The Vite-backed Source Edit UI and Trakt client suites need writable local caches. At the historical #288 uncommitted review gate, a full canonical run was deferred; no importer, serializer, planner, UI behavior, transport or Worker implementation changed; the approved badge amendment changes only its two CSS colour declarations.
 
-Remaining owner acceptance (using the ordinary Builder and approved production integration):
+**Completed integration:** #288 merged through [PR #289](https://github.com/davecollections/tmdb-id-lookup/pull/289). Its final acceptance record confirms real imported Preview, deliberate sort Save/export preservation and approved badge presentation. The list below retains the original owner-review procedure, not an outstanding merge gate or proof that every device/client combination was certified.
+
+Historical owner acceptance procedure (ordinary Builder and approved production integration):
+
 1. Import the real community source for List 35016391 and an actual populated-filter example. Confirm exact Preview enables without a request on opening the editor.
 2. Open Preview explicitly, check current saved ordering, close, change sort/direction without saving, reopen Preview and compare the requested/displayed order. Closing Preview and Cancel must leave serialized JSON unchanged.
 3. Deliberately Save title-only and sort-only changes; compare JSON values so only the owned changes differ, including unchanged external id/name/genre/filter aliases. Export/reimport and repeat a no-op Save.
@@ -77,7 +80,7 @@ Set `TMDB_IMPORTED_DISCOVER_ONLY=1`, then run `node --test --test-name-pattern="
 
 ## Native Trakt B2 focused validation (#279)
 
-Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](v2/BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3/C has not started.
+Owner review and B2 integration validation are complete. Implementation and evidence are recorded in [#279](https://github.com/davecollections/tmdb-id-lookup/issues/279) / [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280). [B2 validation history](v2/BUILDER_TRAKT_SOURCES.md#status-and-validation) records the accepted implementation head's passed canonical local and hosted FULL checks separately from documentation follow-up checks. B3 and C subsequently completed through [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283) and [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285); parent #276 is closed.
 
 Run `node --test tests/builder-native-trakt.test.mjs` with affected domain/importer/serializer/migration, compatibility corpus, capability, source-details and Source Edit foundation/UI suites. `TRAKT_SOURCE_FOUNDATION_ONLY=1` with `node --test --test-name-pattern="mounted native Trakt foundation" tests/builder-source-edit-mounted.test.mjs` reuses the existing browser lifecycle for eight local layouts: 360/384/393/402/412/1280px, short height and forced colours with reduced motion. The default Source mounted runner retains the 393/1280 cases. It imports authored local contract structures and checks supported/opaque menus, fixed context, name-only/no-op/invalid saves, title-only serialization, focus, scroll and zero requests; no external-service response is fabricated. Optional screenshots use existing `TMDB_204_SCREENSHOTS`. The normal owner review fixture is `manual-tests/native-trakt-foundation/owner-review.json`. Run the production Builder build and Git hygiene.
 
@@ -93,7 +96,7 @@ For the final selection-reset polish, set `TMDB_LIST_SELECTION_RECOVERY_ONLY=1` 
 
 For unchanged LIST Source Edit, set `TMDB_LIST_EDIT_ONLY=1` and run `node --test --test-name-pattern="mounted imported List sorting" tests/builder-source-edit-mounted.test.mjs`. This existing live matrix checks 96 edit cases and 264 Preview openings across eight layouts, with actual response ordering, preservation, sort changes, Cancel, focus and cache reuse. Do not combine the two opt-in flags. An unavailable live service is a failed external check, never permission to substitute responses. The optional `TMDB_LIST_IMPORT_FILE` original-export audit is separate.
 
-The first local owner-review gate uses these focused checks, the production Builder build and `git diff --check`. The complete canonical local suite is deferred until after owner UI/physical review and before integration; no runtime or physical Nuvio acceptance is implied by mounted browser evidence.
+The historical #277 first local review gate used these focused checks, the production Builder build and `git diff --check`, with broader validation reserved for integration. #277 is now complete through [PR #278](https://github.com/davecollections/tmdb-id-lookup/pull/278). Mounted browser evidence alone does not establish physical Nuvio acceptance.
 
 ## Hierarchy ordering and unified Source edit (#273)
 
@@ -114,7 +117,9 @@ Run `node --test tests/builder-source-occurrences.test.mjs tests/builder-native-
 Captured pre-refactor complete-output hashes cover Genre/Decades and People/Studio/Network helper/planner parity without retaining duplicate production implementations. Native cases specifically preserve effective raw/editable variant identity versus the separate editable-only structural entity check, along with destination/elsewhere, repeated locations, partial/split/complete placement, malformed imports and family-specific comparison. Existing family/controller/Import/Merge/Move suites remain required regressions. Runtime measurements use actual production flows and the approved live service path whenever external data is involved.
 
 
-## Move folders (#263, pending merge)
+<a id="move-folders-263-pending-merge"></a>
+
+## Move folders (#263, merged PR #264)
 
 `tests/builder-move-folders.test.mjs` covers existing/new destinations, non-contiguous source-order relocation, duplicate names, exact Folder/Source/raw object identity, serialized payload equality, Collection defaults/settings, Keep/Delete empty source, one revision/notification, stale project/draft rejection, invalid membership/settings and factory failures. Failures retain the entire state snapshot. It is in the normal core inventory.
 
@@ -124,7 +129,9 @@ The 194-layout matrix covers 360/384/393/402/412/899/900/901/1280px, short deskt
 
 The final Review correction also asserts no artwork row/note, normal side-by-side footer order and Move-first stacking when the dialog is at most 20rem wide. Action text retains its normal size. Stacked cases require at least 120px of body scroll area; the 360/393px long-name cases run with 200% text. Linux PR CI supplies independent font/platform coverage after Windows focused checks. This does not test or change the deferred cross-Builder physical-iPhone pinch-zoom behavior.
 
-## Find in project (#261, pending merge)
+<a id="find-in-project-261-pending-merge"></a>
+
+## Find in project (#261, merged PR #262)
 
 `node --test tests/builder-project-find.test.mjs` covers title-only indexing, shared Source fallback parity, hidden/invalid parent names, safe paths, query minimum/trim/case/literal matching, ranking/order, exact identities, duplicate positional context, selection-only behavior, the 100-row cap and true totals. The local scale fixture contains 20 Collections, 400 Folders and 4,000 Sources. These are authored local project structures; no external-service result is substituted.
 
