@@ -52,6 +52,9 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvi
 		actionGateRef.current = createWelcomeActionGate();
 	}
 	const isBusy = busyAction !== null;
+	// The controller publishes import diagnostics before the screen handoff.
+	// Failures expose them when busy clears; success leaves Welcome entirely.
+	const isImporting = busyAction === "file" || busyAction === "pasted";
 
 	const controllerErrors = [
 		...state.diagnostics.operation.errors,
@@ -175,8 +178,10 @@ export function BuilderWelcome({ controller, state, onEnterWorkspace, onOpenNuvi
 			</section>
 
 			<div className="welcome-diagnostic-stack">
-				<DiagnosticList diagnostics={visibleErrors} kind="error" />
-				<DiagnosticList diagnostics={visibleWarnings} kind="warning" />
+				{!isImporting ? <>
+					<DiagnosticList diagnostics={visibleErrors} kind="error" />
+					<DiagnosticList diagnostics={visibleWarnings} kind="warning" />
+				</> : null}
 			</div>
 
 			<section className="welcome-import" aria-labelledby="import-title">

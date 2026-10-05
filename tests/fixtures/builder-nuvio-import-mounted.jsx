@@ -1,5 +1,6 @@
 import { act, StrictMode, useLayoutEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import { serializeNuvioProject } from "../../builder/src/serialize/index.js";
 import { createBuilderController } from "../../builder/src/application/controller.js";
 import { createNuvioConnection } from "../../builder/src/nuvio-connection/session.js";
 import { creationOptionsForScope } from "../../builder/src/ui/creation-options.js";
@@ -273,6 +274,147 @@ window.runNuvioLocalCases = async () => {
 };
 
 window.runWelcomeLayoutCases = async () => { await checkAvatarFallback(); return checkLanding(); };
+
+// Local authored JSON exercises preservation diagnostics, not an external service.
+// Observe real commits outside act: act can batch away this external-store handoff.
+function observeWelcomeHandoff() {
+ const welcome = $("[data-builder-welcome]");
+ const trace = [];
+ const insertedDiagnostics = [];
+ const sample = (phase) => {
+  const entry = {
+   phase, welcome: welcome.isConnected, busy: welcome.getAttribute("aria-busy"),
+   workspace: Boolean($("[data-builder-shell]")),
+   diagnostics: [...welcome.querySelectorAll(".welcome-diagnostics")].map(node => node.textContent),
+   importing: [...welcome.querySelectorAll("button")].some(node => node.textContent === "Importing…"),
+   actionsDisabled: [...welcome.querySelectorAll("button, input, textarea")].every(node => node.disabled),
+  };
+  trace.push(entry);
+ };
+ const consume = (records) => {
+  for (const record of records) {
+   if (!welcome.contains(record.target)) continue;
+   // Added nodes remain inspectable even if React removes Welcome before delivery.
+   for (const node of record.addedNodes) {
+    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+    const diagnostics = [...node.querySelectorAll(".welcome-diagnostics")];
+    if (node.matches(".welcome-diagnostics")) diagnostics.unshift(node);
+    insertedDiagnostics.push(...diagnostics.map(entry => entry.textContent));
+   }
+  }
+  sample("DOM commit");
+ };
+ const observer = new MutationObserver(consume);
+ observer.observe($("#root"), { childList: true, subtree: true, attributes: true, characterData: true });
+ let published;
+ const unsubscribe = controller.subscribe(() => { published = controller.getState(); sample("controller publication"); });
+ sample("before submit");
+ return {
+  finish() {
+   const pending = observer.takeRecords(); if (pending.length) consume(pending);
+   observer.disconnect(); unsubscribe();
+   return { trace, insertedDiagnostics, published };
+  },
+ };
+}
+
+async function checkWelcomeSuccess(method, { delayed = false, prepared = false } = {}) {
+ if (!prepared) {
+  await mount({ open: false, localOnly: true });
+  await click($('[data-action=choose-import-' + method + ']'));
+ }
+ let releaseRead;
+ if (method === "file") {
+  const chosen = await setWorkspaceFile(incoming, "handoff.json");
+  if (delayed) Object.defineProperty(chosen, "text", { value: () => new Promise(resolve => { releaseRead = resolve; }) });
+ } else await setWorkspaceText(JSON.stringify(incoming));
+ const before = controller.getState();
+ const observation = observeWelcomeHandoff();
+ let evidence;
+ try {
+  const action = $('[data-action=' + (method === "file" ? "import-file" : "import-pasted-json") + ']');
+  action.click();
+  // Dispatch before repaint as well as while disabled: the synchronous gate must win.
+  action.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  $('[data-action=start-new-project]').click();
+  if (delayed) {
+   await until(() => Boolean(releaseRead));
+   assert(controller.getState() === before, "Pending read leaves the controller unchanged");
+   assert($('[data-builder-welcome]').getAttribute("aria-busy") === "true" && action.textContent === "Importing…", "File busy state remains visible during delayed read");
+   $('[data-action=choose-import-json]').click(); $('[data-action=open-nuvio-import]').click();
+   assert(!$("[data-nuvio-dialog]") && !$('[data-import-control=file]').closest('form').hidden, "Busy methods cannot overlap");
+   releaseRead(JSON.stringify(incoming));
+  }
+  await until(() => $("[data-builder-shell]"));
+ } finally { evidence = observation.finish(); }
+ const { trace, insertedDiagnostics, published } = evidence;
+ const warningCode = "UNSUPPORTED_TMDB_SOURCE_PRESERVED";
+ const transient = trace.filter(entry => entry.welcome && entry.diagnostics.some(text => text.includes(warningCode)));
+ assert(!transient.length && !insertedDiagnostics.some(text => text.includes(warningCode)), method + " successful handoff mounted new diagnostics: " + JSON.stringify({ trace, insertedDiagnostics }));
+ const publication = trace.find(entry => entry.phase === "controller publication");
+ assert(publication?.welcome && !publication.workspace && publication.busy === "true" && publication.importing && publication.actionsDisabled, "Import publishes only after committed busy/disabled presentation (including pasted browser yield)");
+ assert(trace.some(entry => entry.phase === "DOM commit" && entry.welcome && entry.busy === "true" && entry.importing), "Busy DOM is observed before Workspace");
+ const state = controller.getState();
+ assert(state.revision === before.revision + 1 && !state.dirty, "Only one clean import occurs despite competing actions");
+ assert(state.project.editable.title === (method === "file" ? "handoff" : "Imported project"), "Existing project-title semantics preserved");
+ assert(published.diagnostics.import.warnings === state.diagnostics.import.warnings && state.diagnostics.import.warnings.some(entry => entry.code === warningCode), "Successful import warnings remain internally preserved");
+ const serialized = serializeNuvioProject(state.project);
+ assert(JSON.stringify(state.project.collections.map(node => node.rawImported)) === JSON.stringify(incoming), "Exact imported raw data survives the handoff");
+ const expected = incoming.map(collection => ({ ...collection, folders: collection.folders.map(folder => ({ ...folder, catalogSources: [] })) }));
+ assert(serialized.ok && JSON.stringify(serialized.value) === JSON.stringify(expected), "Export preserves every imported value plus the existing empty addon projection");
+ assert(!$("[data-builder-welcome]") && !$("[data-creation-dialog]") && !document.body.textContent.includes(warningCode), "Ordinary final Workspace has no import notes or creation picker");
+ assert(document.querySelectorAll("h1").length === 1, "Workspace retains one page heading");
+ return { method, delayed, passed: true, diagnosticInsertions: insertedDiagnostics.length, retainedWarnings: state.diagnostics.import.warnings.map(entry => entry.code) };
+}
+
+async function checkWelcomeFailures() {
+ const cases = [
+  ...["file", "json"].flatMap(method => [
+   { method, kind: "malformed", text: "[{]", code: "JSON_PARSE_ERROR" },
+   { method, kind: "structure", text: "{}", code: "ROOT_NOT_ARRAY" },
+  ]),
+  { method: "json", kind: "empty", text: "  ", code: "IMPORT_TEXT_REQUIRED" },
+  { method: "file", kind: "missing", code: "IMPORT_FILE_REQUIRED" },
+  { method: "file", kind: "type", code: "UNSUPPORTED_IMPORT_FILE" },
+  { method: "file", kind: "size", code: "IMPORT_FILE_TOO_LARGE" },
+  { method: "file", kind: "read", code: "IMPORT_FILE_READ_FAILED" },
+ ];
+ const results = [];
+ for (const entry of cases) {
+  await mount({ open: false, localOnly: true });
+  assert(controller.importValue([{ id: "kept", title: "Kept project", folders: [] }]).ok, "Existing clean project seeded"); await frame();
+  const before = controller.getState();
+  await click($('[data-action=choose-import-' + entry.method + ']'));
+  if (entry.method === "json") await setWorkspaceText(entry.text);
+  else if (entry.kind !== "missing") {
+   const file = new File([entry.text ?? JSON.stringify(incoming)], entry.kind === "type" ? "wrong.txt" : "failure.json", { type: entry.kind === "type" ? "text/plain" : "application/json" });
+   if (entry.kind === "size") Object.defineProperty(file, "size", { value: 10 * 1024 * 1024 + 1 });
+   if (entry.kind === "read") Object.defineProperty(file, "text", { value: async () => { throw Error("PRIVATE_READ_DETAIL"); } });
+   const data = new DataTransfer(); data.items.add(file);
+   $("#builder-import-file").files = data.files; $("#builder-import-file").dispatchEvent(new Event("change", { bubbles: true })); await frame();
+  }
+  await click($('[data-action=' + (entry.method === "file" ? "import-file" : "import-pasted-json") + ']'));
+  await until(() => $('[data-builder-welcome][aria-busy=false] [role=alert]'));
+  const alert = $('[data-builder-welcome] [role=alert]');
+  assert(alert.textContent.includes(entry.code) && !alert.textContent.includes("PRIVATE_READ_DETAIL"), "Failure diagnostic renders safely after busy clears: " + entry.code);
+  assert(!$("[data-builder-shell]") && controller.getState().project === before.project && controller.getState().dirty === before.dirty && controller.getState().selection === before.selection, "Failure atomically retains prior work");
+  assert([...document.querySelectorAll('[data-builder-welcome] button, [data-builder-welcome] input, [data-builder-welcome] textarea')].every(node => !node.disabled), "Failure releases all Welcome actions");
+  if (entry.method === "json") assert($("#builder-import-text").value === entry.text, "Failed pasted input is retained");
+  await checkWelcomeSuccess(entry.method, { prepared: true });
+  results.push(entry.code);
+ }
+ return results;
+}
+
+window.runWelcomeHandoffCases = async (failures = false) => {
+ document.documentElement.style.fontSize = "";
+ const successes = [];
+ successes.push(await checkWelcomeSuccess("file"));
+ successes.push(await checkWelcomeSuccess("file", { delayed: true }));
+ successes.push(await checkWelcomeSuccess("json"));
+ return { width: innerWidth, passed: true, successes, failures: failures ? await checkWelcomeFailures() : [], externalServiceExercised: false };
+};
+
 window.prepareNuvioScreen = async (stage = "review") => {
 	if (stage.startsWith("landing")) {
 		await mount({ open: false, localOnly: true });
