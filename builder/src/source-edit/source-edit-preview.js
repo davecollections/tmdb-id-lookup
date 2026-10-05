@@ -1,4 +1,4 @@
-import { inspectNativeTraktSource, nativeTraktConfigurationKey } from "../nuvio/trakt.js";
+import { inspectNativeTraktPreviewSource } from "../nuvio/trakt.js";
 import { TRAKT_LIST_SOURCE_EDITOR_ID } from "./trakt-list-editor.js";
 import { exactDiscoverPreviewQuery } from "../source-add/advanced-discover.js";
 import { networkPreviewQuery } from "../source-add/network-advanced.js";
@@ -96,8 +96,8 @@ export function prepareSourceEditPreview(session, draft) {
 
 	switch (session.adapterId) {
 		case TRAKT_LIST_SOURCE_EDITOR_ID: {
-			const source = inspectNativeTraktSource(candidateSource);
-			if (!source || nativeTraktConfigurationKey(candidateSource) === null) return freezeFailure("These imported Trakt settings cannot be previewed exactly. They will be preserved when you save.");
+			const source = inspectNativeTraktPreviewSource(candidateSource);
+			if (!source) return freezeFailure("These imported Trakt settings cannot be previewed exactly. They will be preserved when you save.");
 			return ready(candidateSource, {
 				kind: "trakt", listId: source.traktListId, mediaType: source.mediaType, label: draft.title,
 				sourcePreview: Object.freeze({ type: source.mediaType === "TV" ? "show" : "movie", sortBy: source.sortBy, sortHow: source.sortHow }),

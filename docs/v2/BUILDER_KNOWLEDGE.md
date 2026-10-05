@@ -1,5 +1,11 @@
 # TMDB ID Lookup v2 — Builder Knowledge Base
 
+## Imported native Trakt Preview compatibility (#288)
+
+The [current Trakt boundary and 2026-10-04 upstream evidence](./BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288) distinguish runtime equivalence from configured equivalence. A separate Preview-only inspector permits bounded preserved community metadata, populated runtime-inert filters and Desktop null placeholders. Unknown top-level keys remain fail-closed. It reuses existing Trakt core validation and never normalizes or saves preserved metadata. Strict configuration keys, occurrence/creation planning and complete serialized Import/Merge equality remain unchanged. No Worker/service changes are needed.
+
+This supersedes the historical B2 name-only/no-Preview limitations below. It does not establish new installed-client acceptance; [testing](../TESTING.md#imported-trakt-exact-preview-288) separates local contract/mounted evidence from remaining owner review.
+
 ## Imported Discover Advanced compatibility (#286)
 
 **Confirmed from current Nuvio source code, inspected 2026-10-03:** [Desktop `3356668`](https://github.com/NuvioMedia/NuvioDesktop/blob/3356668ba640d25802c30cdef6ceffe6929e2c6b/composeApp/src/commonTest/kotlin/com/nuvio/app/features/collection/CollectionSourceSerializationTest.kt) (`Dev`) and [Mobile `7be1b56`](https://github.com/NuvioMedia/NuvioMobile/blob/7be1b56c0ed0dd562b4d05bf0426735d81afc65f/composeApp/src/commonTest/kotlin/com/nuvio/app/features/collection/CollectionSourceSerializationTest.kt) (`cmp-rewrite`) explicitly round-trip pure pipe `withoutKeywords` and `withoutWatchProviders` and retain the exact strings in Discover queries. Their nullable-string models, editors, raw-envelope preservation helpers and resolver mappings were inspected. [TV `d31ea2f`](https://github.com/NuvioMedia/NuvioTV/blob/d31ea2f291d785f87291eca1a0a74f8b0d47b8ad/app/src/main/java/com/nuvio/tv/core/tmdb/TmdbCollectionSourceResolver.kt) (`dev`) likewise forwards these filters for Movie/TV; its resolver tests retain pipe excluded providers. TV `main` at `9f17e8bf4abc799dc8c832d2894a8b3b166e4353` was also inspected. All three repositories declare GPL-3.0; only contract facts informed independent Builder changes. This establishes source contracts, not new installed-client or nuvio.tv acceptance.

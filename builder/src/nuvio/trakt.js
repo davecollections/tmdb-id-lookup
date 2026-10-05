@@ -48,6 +48,23 @@ export function inspectNativeTraktSource(source) {
 	} catch { return null; }
 }
 
+// Preview runtime equivalence is deliberately separate from configured equivalence.
+// Current native Trakt resolvers ignore these preserved fields. Filters are checked
+// only as a JSON object/null container, never as Discover criteria or aliases.
+// See BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288 for evidence.
+export function inspectNativeTraktPreviewSource(source) {
+	const inspected = inspectNativeTraktSource(source);
+	if (!inspected) return null;
+	for (const [field, value] of Object.entries(inspected.value)) {
+		if (NATIVE_TRAKT_EDITABLE_FIELDS.includes(field)) continue;
+		if (["id", "name", "genre"].includes(field) && (value === null || typeof value === "string")) continue;
+		if (field === "filters" && (value === null || isPlainObject(value))) continue;
+		if (["addonId", "type", "catalogId", "tmdbSourceType", "tmdbId"].includes(field) && value === null) continue;
+		return null;
+	}
+	return inspected;
+}
+
 export function nativeTraktPhysicalIdentity(source) {
 	const inspected = inspectNativeTraktSource(source);
 	return inspected ? `trakt|${inspected.traktListId}|${inspected.mediaType}` : null;

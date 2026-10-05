@@ -3837,6 +3837,11 @@ body.hierarchy-pointer-dragging .builder-shell {
 	border-radius: 5px;
 }
 
+.source-button[data-source-category="native-trakt"] .source-category {
+	color: #b7a3d6;
+	background: rgb(183 163 214 / 8%);
+}
+
 .source-button[data-source-category="addon"] .source-category {
 	color: var(--green);
 	background: rgb(99 230 190 / 8%);

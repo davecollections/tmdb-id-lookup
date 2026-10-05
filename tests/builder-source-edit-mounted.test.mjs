@@ -240,7 +240,8 @@ async function runMountedPage() {
 		const address = resources.vite.httpServer.address();
 		if (traktFoundationOnly || traktCreationOnly || traktPreviewOnly) {
 			const externalRequests = [];
-			if (traktCreationOnly || traktPreviewOnly) {
+			{
+				// Local-only checks must fail, without dispatching, if any external request escapes.
 				await resources.pageConnection.command("Fetch.enable", { patterns: [{ urlPattern: "*" }] });
 				resources.pageConnection.onEvent(message => {
 					if (message.method !== "Fetch.requestPaused") return;
@@ -272,6 +273,7 @@ async function runMountedPage() {
     return { traktCreationCases };
    }
 			const cases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 360, height: 800 }, { width: 384, height: 800 }, { width: 393, height: 852 }, { width: 402, height: 800 }, { width: 412, height: 800 }, { width: 1280, height: 900 }, { width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true }]);
+			assert.deepEqual(externalRequests, [], "Local Source Edit eligibility checks make no external API or image requests");
 			return { traktFoundationCases: cases };
 		}
 		if (previewPagesOnly) {
@@ -1509,7 +1511,7 @@ function assertRequiredNameFailure(result) {
 	assert.equal(result.label, "Source name");
 }
 
-test("mounted native Trakt foundation preserves local sources through accessible name-only editing", () => {
+test("mounted native Trakt foundation preserves imported metadata and exact Preview eligibility through local editing", () => {
 	assert.equal(mountedResults.traktFoundationCases.length, process.env.TRAKT_SOURCE_FOUNDATION_ONLY === "1" ? 8 : 2);
 	for (const result of mountedResults.traktFoundationCases) { assert.equal(result.verified, true); assert.equal(result.requests, 0); }
 });

@@ -1,5 +1,48 @@
 # Repository Testing
 
+## Imported Trakt exact Preview (#288)
+
+The [explicit metadata boundary and upstream evidence](v2/BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288) are Preview-specific. Focused pure regression commands:
+
+```powershell
+node --test tests/builder-native-trakt.test.mjs tests/builder-source-edit-preview.test.mjs tests/builder-trakt-creation.test.mjs tests/builder-import-merge.test.mjs
+node --test tests/builder-import.test.mjs tests/builder-serializer.test.mjs tests/builder-migration.test.mjs tests/builder-compatibility-corpus.test.mjs tests/builder-source-edit-foundation.test.mjs tests/builder-source-edit-ui.test.mjs tests/builder-source-capability-contract.test.mjs tests/builder-trakt-client.test.mjs tests/builder-trakt-preview.test.mjs
+```
+
+These cover the complete media/sort/direction matrix, individual/combined community fields, populated camel-case/alias filters, Desktop null placeholders, malformed/core/tampering boundaries, immutable detached candidates, no-op/Cancel/minimal saves and export/reimport. They retain strict configured-key/occurrence evidence, all three creation scopes, known variants/unknown comparisons, stale/rebuilt plan rejection and full serialized Import/Merge equality. Synthetic external-shaped values remain confined to pure unit contracts.
+
+The **existing** local Source Edit foundation harness now includes community-shaped and Desktop-shaped imported sources:
+
+```powershell
+$env:TRAKT_SOURCE_FOUNDATION_ONLY = '1'
+node --test --test-name-pattern="mounted native Trakt foundation" tests/builder-source-edit-mounted.test.mjs
+Remove-Item Env:TRAKT_SOURCE_FOUNDATION_ONLY
+```
+
+It checks 360/384/393/402/412/1280px, short height and forced colours/reduced motion. Original minimal and unknown/opaque cases remain; metadata-bearing sources expose an enabled Preview action before and after unsaved sort changes. It checks exact no-op/Cancel/owned-sort serialization, reopened saved values, accessible controls, focus, scrolling and one project-content mutation per deliberate Save (selection revisions are separate). Providers remain the real production implementations but Preview is **not opened**: this is eligibility and local editing coverage, not fetched-title acceptance. The opt-in runner blocks and fails unexpected external API/image dispatch; the scenario also asserts zero fetches. It does not manufacture service responses. The ordinary mounted runner retains its 393/1280 local cases. The approved badge amendment adds local TMDB/Addon comparison sources to this same fixture: computed styles verify Trakt muted lavender, unchanged TMDB cyan/Addon green/Preserved grey, shared badge typography/padding/radius/wrapping, ordinary responsive containment and system forced-colour text. No new test infrastructure or external data is used.
+
+Browser compilation and existing fixture guards:
+
+```powershell
+node scripts/check-frontend.mjs
+node scripts/check-builder-add-source-fixture.mjs
+node scripts/check-builder-source-edit-fixture.mjs
+node scripts/check-builder-people-fixture.mjs
+node scripts/check-builder-genre-fixture.mjs
+npm run build --prefix builder
+git diff --check
+git status --short
+```
+
+The Vite-backed Source Edit UI and Trakt client suites need writable local caches. A full canonical run is deferred at this bounded uncommitted review gate; no importer, serializer, planner, UI behavior, transport or Worker implementation changed; the approved badge amendment changes only its two CSS colour declarations.
+
+Remaining owner acceptance (using the ordinary Builder and approved production integration):
+1. Import the real community source for List 35016391 and an actual populated-filter example. Confirm exact Preview enables without a request on opening the editor.
+2. Open Preview explicitly, check current saved ordering, close, change sort/direction without saving, reopen Preview and compare the requested/displayed order. Closing Preview and Cancel must leave serialized JSON unchanged.
+3. Deliberately Save title-only and sort-only changes; compare JSON values so only the owned changes differ, including unchanged external id/name/genre/filter aliases. Export/reimport and repeat a no-op Save.
+4. Repeat with the retained actual Desktop re-export and inspect desktop/mobile layouts, including 360/384/393/402/412px. Preserve existing physical-client evidence; no new physical Nuvio acceptance is implied or required during implementation.
+5. Record exact new Trakt/TMDB request counts and outcomes if that later live acceptance is authorized. Unavailable service means failed external evidence, never substituted titles/counts/artwork.
+
 ## Imported Discover Advanced compatibility (#286)
 
 Run `node --test tests/builder-family-advanced.test.mjs tests/builder-advanced-discover.test.mjs tests/builder-advanced-discover-worker.test.mjs tests/builder-native-source-variants.test.mjs tests/builder-source-edit-foundation.test.mjs tests/builder-source-edit-preview.test.mjs tests/builder-source-edit-ui.test.mjs` for the narrow pure-pipe exclusion contract, delimiter/order retention through membership edits, equivalent-mirror ownership, unsafe preservation, exact unsaved queries and display-only name resolution. Synthetic catalogue/failure values are confined to pure units.

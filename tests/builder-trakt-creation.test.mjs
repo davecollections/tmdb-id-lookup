@@ -240,3 +240,43 @@ test("Trakt launchers remain registered and the nonvisual C editor owns title an
 	const editor = fs.readFileSync(new URL("../builder/src/source-edit/trakt-list-editor.js", import.meta.url), "utf8");
 	assert.match(editor, /ownedFields: Object\.freeze\(\["title", "sortBy", "sortHow"\]\)/);
 });
+
+for (const scope of ["new-collection", "new-folder", "add-source"]) {
+	test(`Preview-compatible metadata retains existing ${scope} duplicate and placement rules`, () => {
+		const controller = app();
+		const raw = (traktListId, extra = {}) => ({ title: "Imported", provider: "trakt", mediaType: "MOVIE", traktListId, sortBy: "rank", sortHow: "asc", ...extra });
+		const originals = [
+			raw(1), raw(2, { sortBy: "title" }),
+			raw(3, { id: "community-source", name: "External name", genre: "Drama", filters: { voteCountGte: 100, "vote_count.gte": 200 } }),
+			raw(4, { addonId: null, type: null, catalogId: null, genre: null, tmdbSourceType: null, tmdbId: null, filters: null }),
+		];
+		assert.equal(controller.importValue([{ title: "C", folders: [{ title: "F", sources: originals, catalogSources: [] }] }]).ok, true);
+		const state = controller.getState(), collection = state.project.collections[0], folder = collection.folders[0];
+		const options = { scope, projectRevision: state.revision, lists: [1, 2, 3, 4, 5].map(id => selected(id, 1, 0)),
+			...(scope === "new-collection" ? { collectionTitle: "New" } : scope === "new-folder" ? { destinationCollectionInternalId: collection.internalId } : { destinationFolderInternalId: folder.internalId }) };
+		const result = createTraktCreationPlan(state.project, options);
+		assert.equal(result.ok, true);
+		const expected = scope === "new-collection" ? [1, 5, 5, 0] : scope === "new-folder" ? [0, 1, 1, 4] : [0, 0, 4, 1];
+		assert.deepEqual(result.plan.counts, Object.fromEntries(["collectionCount", "folderCount", "sourceCount", "omittedCount"].map((key, index) => [key, expected[index]])));
+		for (const [index, comparison] of ["equivalent", "known-variant", "unknown-comparison", "unknown-comparison"].entries()) {
+			const outcome = result.plan.outcomes[index], entry = [...outcome.ready, ...outcome.omitted][0];
+			if (scope === "new-collection") { assert.equal(entry.destination.length, 0); assert.equal(entry.elsewhere.length, 1); }
+			else assert.equal(entry.destination[0].comparison, comparison);
+			if (index >= 2) assert.equal((scope === "new-collection" ? entry.elsewhere : entry.destination)[0].configurationKey, null);
+		}
+		assert.equal(validateTraktCreationPlan(result.plan, { project: state.project, projectRevision: state.revision }).ok, true);
+		const tampered = structuredClone(result.plan);
+		const metadataEntry = [...tampered.outcomes[2].ready, ...tampered.outcomes[2].omitted][0];
+		(scope === "new-collection" ? metadataEntry.elsewhere : metadataEntry.destination)[0].configurationKey = "presumed-equivalent";
+		assert.equal(validateTraktCreationPlan(tampered, { project: state.project, projectRevision: state.revision }).ok, false);
+		assert.equal(applyTraktCreationPlan(controller, result.plan).ok, true);
+		assert.equal(controller.getState().revision, state.revision + 1);
+		assert.deepEqual(controller.serializeProject().value[0].folders[0].sources.slice(0, 4), originals);
+		const created = scope === "add-source" ? result.plan.sources : result.plan.folders.flatMap(folder => folder.sources);
+		for (const source of created) {
+			assert.deepEqual(Object.keys(source.editable).sort(), ["provider", "title", "traktListId", "mediaType", "sortBy", "sortHow"].sort());
+			assert.equal(source.editable.sortBy, "rank"); assert.equal(source.editable.sortHow, "asc");
+		}
+		assert.equal(applyTraktCreationPlan(controller, result.plan).stale, true);
+	});
+}

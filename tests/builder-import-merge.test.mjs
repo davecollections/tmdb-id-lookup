@@ -293,3 +293,25 @@ test("preview/apply agree on complete artwork merge with inserted nodes and ID r
 		assert.equal(c.getState().revision, before.revision + 1);
 	}
 });
+
+test("Trakt Import/Merge still requires full serialized equality for Preview-inert metadata", () => {
+	const original = { provider: "trakt", title: "Saved", traktListId: 123, mediaType: "TV", sortBy: "rank", sortHow: "asc",
+		id: "community-source", name: "External name", genre: "Drama", filters: { voteCountGte: 100, "vote_count.gte": 200 },
+		addonId: null, type: null, catalogId: null, tmdbSourceType: null, tmdbId: null };
+	const wrap = sources => [collection("Trakt", [folder("Lists", sources)])];
+	const identical = plan(wrap([original]), wrap([structuredClone(original)]));
+	assert.equal(identical.counts.duplicateSourcesSkipped, 1); assert.equal(identical.counts.sourcesAdded, 0);
+	const changed = [
+		{ id: "other-external-id" }, { name: "Other external name" }, { genre: null }, { filters: {} }, { filters: null },
+		{ filters: { voteCountGte: 200, "vote_count.gte": 200 } }, { title: "Other title" }, { future: null },
+	].map(patch => ({ ...original, ...patch }));
+	for (const field of ["id", "name", "genre", "filters", "addonId", "type", "catalogId", "tmdbSourceType", "tmdbId"]) {
+		const absent = structuredClone(original); delete absent[field]; changed.push(absent);
+	}
+	for (const incoming of changed) {
+		const result = plan(wrap([original]), wrap([incoming]));
+		assert.equal(result.counts.duplicateSourcesSkipped, 0, JSON.stringify(incoming));
+		assert.equal(result.counts.sourcesAdded, 1);
+		assert.deepEqual(serializeNuvioProject(result.project).value[0].folders[0].sources, [original, incoming]);
+	}
+});

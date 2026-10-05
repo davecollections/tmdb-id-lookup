@@ -9,7 +9,7 @@ import { importNuvioCollections, classifyNuvioSource } from "../builder/src/impo
 import { extractSourceEditable } from "../builder/src/import/editable-fields.js";
 import { validateMigrationProject } from "../builder/src/migrate/validation.js";
 import { NATIVE_TRAKT_EDITABLE_FIELDS, SOURCE_EDITABLE_FIELDS } from "../builder/src/nuvio/known-fields.js";
-import { TRAKT_SORT_VALUES, inspectNativeTraktSource, nativeTraktPhysicalIdentity, nativeTraktConfigurationKey } from "../builder/src/nuvio/trakt.js";
+import { TRAKT_SORT_VALUES, inspectNativeTraktSource, inspectNativeTraktPreviewSource, nativeTraktPhysicalIdentity, nativeTraktConfigurationKey } from "../builder/src/nuvio/trakt.js";
 import { buildNativeTraktSourceDraft, validateNativeTraktSourceDraft } from "../builder/src/source-add/trakt-source.js";
 import { AVAILABLE_SOURCE_MODES } from "../builder/src/source-add/source-modes.js";
 import { CREATION_OPTIONS } from "../builder/src/ui/creation-options.js";
@@ -234,4 +234,44 @@ test("Source Edit emits only changed owned fields, preserves unknown raw data an
 		assert.equal(open(importedApp).ok, false);
 		assert.deepEqual(importedApp.serializeProject().value, wrap([raw(change)]));
 	}
+});
+
+test("Preview metadata inspection leaves strict configuration keys and occurrence evidence unchanged", () => {
+	const examples = [
+		{ id: "community-source" }, { name: "External name" }, { genre: "Drama" },
+		{ id: null, name: null, genre: null }, { filters: {} }, { filters: null },
+		{ filters: { voteCountGte: 100 } }, { filters: { "vote_count.gte": 100 } },
+		{ id: "captain-source", name: "Original name", genre: "", filters: { voteCountGte: 100, "vote_count.gte": 200 } },
+		{ addonId: null, type: null, catalogId: null, genre: null, tmdbSourceType: null, tmdbId: null, filters: null },
+	];
+	for (const extras of examples) {
+		const value = raw(extras), project = imported([value]).project, source = project.collections[0].folders[0].sources[0];
+		const inspected = inspectNativeTraktPreviewSource(source);
+		assert.deepEqual(inspected, inspectNativeTraktSource(source));
+		assert.equal(nativeTraktConfigurationKey(source), null);
+		assert.equal(nativeTraktConfigurationKey(source, { includeTitle: true }), null);
+		const evidence = nativeTraktSourceOccurrences(project, node());
+		assert.equal(evidence.length, 1);
+		assert.equal(evidence[0].configurationKey, null);
+		assert.deepEqual(serializeNuvioProject(project).value, wrap([value]));
+		assert.deepEqual(Object.keys(source.editable).sort(), [...NATIVE_TRAKT_EDITABLE_FIELDS].sort());
+	}
+});
+
+test("Preview inspection reuses core validation and accepts canonical authored sources across media and sorting", () => {
+	for (const mediaType of ["MOVIE", "TV"]) for (const sortBy of TRAKT_SORT_VALUES) for (const sortHow of ["asc", "desc"]) {
+		assert.ok(inspectNativeTraktPreviewSource(node({ mediaType, sortBy, sortHow })));
+	}
+	for (const change of [
+		{ provider: "tmdb" }, { provider: null }, { traktListId: "123" }, { traktListId: 0 },
+		{ traktListId: -1 }, { traktListId: 1.5 }, { traktListId: Number.MAX_SAFE_INTEGER + 1 },
+		{ mediaType: "SERIES" }, { mediaType: null }, { sortBy: "RANK" }, { sortBy: "future" },
+		{ sortHow: "DESC" }, { sortHow: null },
+	]) assert.equal(inspectNativeTraktPreviewSource(node(change)), null, JSON.stringify(change));
+	for (const field of ["provider", "traktListId", "mediaType", "sortBy", "sortHow"]) {
+		const source = node(); delete source.editable[field];
+		assert.equal(inspectNativeTraktPreviewSource(source), null, field);
+	}
+	assert.equal(inspectNativeTraktPreviewSource({ ...node(), category: "opaque" }), null);
+	assert.equal(inspectNativeTraktPreviewSource({ ...node(), rawImported: [] }), null);
 });
