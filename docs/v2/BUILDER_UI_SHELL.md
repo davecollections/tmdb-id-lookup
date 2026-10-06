@@ -1,5 +1,11 @@
 # Builder UI Shell and Hierarchy Navigator
 
+## Collection pin status (#294)
+
+Collection cards expose strict `editable.pinToTop === true` through a visible **PINNED** status pill after Folder and Source counts in the existing metadata row, inside the ordinary Collection selection button. False, absent and unsupported values have no badge. A Collection-specific wrapper keeps the existing muted separator outside the coloured pill. The compact rounded badge uses the current green accent, a restrained surface tint and a visible border; forced colours retain text and border. Metadata wraps naturally on narrow screens and at enlarged text sizes, and card height may grow with that content. Title width, existing hidden-title badge placement, selection styling, and the independent 46px reorder/menu targets remain unchanged.
+
+Visible-title buttons naturally include **PINNED** once in their accessible name. Hidden-title buttons keep their existing explicit accessible name and reference one hidden **Pinned to top** description through `aria-describedby`; their visible pin wrapper is `aria-hidden` to avoid duplicate wording. The pill has no handler, role, focus target or pointer-specific behavior. Clicking or tapping it selects the Collection through its owning button. There is no standalone pin SVG, absolute/trailing pin placement or tooltip. Existing Edit, Global display settings and import updates drive the view-model; rendering does not mutate project, revision, dirty state, selection, pin semantics, ordering or serialization. Mounted coverage reuses the existing Workspace/hierarchy fixture with locally authored Collections and zero external requests. Source category-badge reflow remains separate in #275.
+
 <a id="hierarchy-ordering-and-source-entry-273-local-owner-review"></a>
 
 ## Hierarchy ordering and Source entry (#273, merged PR #274)

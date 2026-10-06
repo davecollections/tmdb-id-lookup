@@ -3422,6 +3422,35 @@ button:disabled {
 	border-radius: 12px;
 }
 
+.collection-pin-meta {
+	display: inline-flex;
+	align-items: center;
+}
+
+.collection-pin-badge {
+	display: inline-flex;
+	align-items: center;
+	min-height: 20px;
+	padding: 1px 6px;
+	color: var(--green);
+	font-size: 0.64rem;
+	font-weight: 750;
+	line-height: 1.4;
+	letter-spacing: 0.035em;
+	white-space: nowrap;
+	background: rgb(99 230 190 / 8%);
+	border: 1px solid rgb(99 230 190 / 28%);
+	border-radius: 999px;
+}
+
+@media (forced-colors: active) {
+	.collection-pin-badge {
+		color: CanvasText;
+		background: Canvas;
+		border-color: CanvasText;
+	}
+}
+
 .hierarchy-card-main.is-selected {
 	background: linear-gradient(105deg, rgb(1 180 228 / 15%), rgb(16 45 61 / 88%));
 	border-color: var(--border-strong);

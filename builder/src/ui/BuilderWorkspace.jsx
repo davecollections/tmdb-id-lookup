@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { FindProjectDialog } from "./FindProjectDialog.jsx";
 import { MoveFoldersDialog } from "./MoveFoldersDialog.jsx";
 import { applyReviewedFolderMove } from "./move-folders.js";
@@ -354,6 +354,8 @@ function HierarchyCard({
 	registerActionsTrigger,
 	...reorderHandlers
 }) {
+	const pinDescriptionId = useId();
+	const describePinned = noun === "collection" && node.pinned && node.titleHidden;
 	const actionsOpen = actionsMenuInternalId === node.internalId;
 	const dropPosition = dragState?.indicatorInternalId === node.internalId
 		? dragState.indicatorEdge
@@ -389,6 +391,7 @@ function HierarchyCard({
 					<NodeButton
 						node={node}
 						type={noun}
+						describedBy={describePinned ? pinDescriptionId : undefined}
 						onSelect={onSelect}
 						disabled={navigationLocked}
 						registerPrimaryControl={registerPrimaryControl}
@@ -397,7 +400,8 @@ function HierarchyCard({
 					>
 						{children}
 					</NodeButton>
-				<HierarchyActionsMenu
+					{describePinned ? <span id={pinDescriptionId} hidden>Pinned to top</span> : null}
+					<HierarchyActionsMenu
 						node={node}
 						noun={noun}
 						open={actionsOpen}
@@ -426,6 +430,7 @@ function NodeButton({
 	registerPrimaryControl,
 	enableDoubleClickEdit = false,
 	onDoubleClickEdit = null,
+	describedBy,
 }) {
 	return (
 		<button
@@ -435,6 +440,7 @@ function NodeButton({
 			data-node-type={type}
 			aria-pressed={node.selected}
 			aria-label={node.titleHidden ? node.accessibleName : undefined}
+			aria-describedby={describedBy}
 			disabled={disabled}
 			onClick={() => onSelect(node.internalId)}
 			onDoubleClick={(event) => {
@@ -474,6 +480,11 @@ function CollectionList({ collections, actionProps, createdCardTarget, createdCa
 						<span className="node-meta">
 							<span>{collection.folderCountLabel}</span>
 							<span>{collection.sourceCountLabel}</span>
+							{collection.pinned ? (
+								<span className="collection-pin-meta" aria-hidden={collection.titleHidden ? "true" : undefined}>
+									<span className="collection-pin-badge">PINNED</span>
+								</span>
+							) : null}
 						</span>
 					</HierarchyCard>
 				</li>
