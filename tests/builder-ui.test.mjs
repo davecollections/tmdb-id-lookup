@@ -723,3 +723,49 @@ test("responsive helper matches the established breakpoint and respects reduced 
 	assert.equal(builderCardScrollBehavior(mobileMatchMedia), "smooth");
 	assert.equal(builderCardScrollBehavior(reducedMotionMatchMedia), "auto");
 });
+
+
+test("Collection pin status accepts only true, preserves imported values and renders without mutation", () => {
+	const controller = createController();
+	const values = [false, true, undefined, "true", 1, null, { future: true }, true];
+	assert.equal(controller.importValue(values.map((pinToTop, index) => ({
+		id: "pin-" + index, title: index === 7 ? "\u200e" : "Collection " + index,
+		...(pinToTop === undefined ? {} : { pinToTop }), folders: [],
+	}))).ok, true);
+	const imported = controller.getState().project.collections;
+	controller.selectNode(imported.find(node => node.editable.id === "pin-7").internalId);
+	const before = controller.getState();
+	const serialized = controller.serializeProject();
+	let notifications = 0;
+	const unsubscribe = controller.subscribe(() => notifications++);
+	const view = buildBuilderViewModel(before);
+	assert.deepEqual(view.collections.map(node => node.pinned), [true, true, false, false, false, false, false, false]);
+	assert.deepEqual(view.collections.map(node => node.internalId), [1, 7, 0, 2, 3, 4, 5, 6].map(index => imported[index].internalId));
+	assert.equal(view.selectedCollection.titleHidden, true);
+	assert.equal(view.selectedCollection.pinned, true);
+	const markup = render(controller);
+	const badges = markup.match(/class="collection-pin-badge"/g) ?? [];
+	assert.equal(badges.length, 2);
+	assert.equal((markup.match(/class="collection-pin-badge">PINNED<\/span>/g) ?? []).length, 2);
+	assert.doesNotMatch(markup, /collection-pin-tooltip|data-pin-tooltip/);
+	const ordinaryPinned = [...markup.matchAll(/<button[^>]*data-node-type="collection"[^>]*>[\s\S]*?<\/button>/g)].map(match => match[0]).find(button => button.includes("Collection 1"));
+	assert.ok(ordinaryPinned.includes('class="collection-pin-badge">PINNED</span>'));
+	assert.doesNotMatch(ordinaryPinned, /aria-describedby|aria-label|aria-hidden/);
+	assert.equal(view.selectedCollection.details.find(item => item.label === "Pinned to top").value, "Yes");
+	const describedButtons = [...markup.matchAll(/<button[^>]*data-node-type="collection"[^>]*aria-describedby="([^"]+)"[^>]*>/g)];
+	assert.equal(describedButtons.length, 1);
+	assert.equal(new Set(describedButtons.map(match => match[1])).size, 1);
+	for (const [, id] of describedButtons) {
+		assert.equal(markup.split('<span id="' + id + '" hidden="">Pinned to top</span>').length, 2);
+	}
+	assert.ok(describedButtons.some(([button]) => button.includes('aria-label="' + view.selectedCollection.accessibleName + '"') && button.includes('aria-pressed="true"')));
+	assert.equal(controller.getState(), before);
+	assert.equal(notifications, 0);
+	assert.deepEqual(controller.serializeProject(), serialized);
+	unsubscribe();
+	const ordinary = imported.find(node => node.editable.id === "pin-0");
+	assert.equal(controller.updateNode(ordinary.internalId, { pinToTop: true }).ok, true);
+	assert.equal(buildBuilderViewModel(controller.getState()).collections.filter(node => node.pinned).length, 3);
+	assert.equal(controller.updateNode(ordinary.internalId, { pinToTop: false }).ok, true);
+	assert.equal(buildBuilderViewModel(controller.getState()).collections.filter(node => node.pinned).length, 2);
+});

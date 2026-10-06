@@ -46,6 +46,99 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		assert.equal(await evaluate(connection,"window.isOrderingMenuTriggerFocused()"),true,"Enlarged menu Escape restores its exact trigger element");
 		return {...menu,reached};
 	}
+	const pinnedCollections = { layouts: [], menus: [], touch: [], clicks: [], updates: [], externalRequests: [] };
+	const pinGeometryEvidence = [];
+	const stopPinRequests = connection.onEvent(({ method, params }) => {
+		if (method === "Network.requestWillBeSent" && /^https?:/.test(params.request.url) && new URL(params.request.url).hostname !== "127.0.0.1") pinnedCollections.externalRequests.push(params.request.url);
+	});
+	try {
+		for (const width of [360,384,393,402,412,900,1024,1280]) {
+			await viewport(width, 1000);
+			await connection.command("Emulation.setTouchEmulationEnabled", { enabled: width < 900, maxTouchPoints: 1 });
+			for (const enlarged of [false,true]) {
+				for (const forced of [false,true]) {
+					await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: forced ? "active" : "none" }, { name: "prefers-reduced-motion", value: forced ? "reduce" : "no-preference" }] });
+					await evaluate(connection, 'document.documentElement.style.fontSize=' + JSON.stringify(enlarged ? "200%" : ""));
+					const layout = await evaluate(connection, "window.prepareCollectionPins()");
+					assert.equal(layout.badges, 4);
+					assert.equal(layout.rootFontSize, enlarged ? "32px" : "16px");
+					const tree = await connection.command("Accessibility.getFullAXTree");
+					const described = tree.nodes.filter(node => !node.ignored && node.role?.value === "button" && node.description?.value === "Pinned to top");
+					const named = tree.nodes.filter(node => !node.ignored && node.role?.value === "button" && /\bPINNED\b/.test(node.name?.value ?? ""));
+					assert.equal(described.length, 1, "Hidden-title Collection retains one pinned description");
+					assert.equal(named.length, 3, "Visible-title Collection names include visible pin status");
+					assert.ok(named.every(node => node.name.value.split("PINNED").length === 2 && !node.description?.value), "No duplicate pin meaning in accessible names/descriptions");
+					assert.ok(named.some(node => node.properties.some(property => property.name === "pressed" && property.value.value === "true")), "Selected pinned Collection keeps pressed state");
+					assert.equal(described[0].name.value, layout.buttons.find(button => button.hidden).name, "Hidden-title accessible fallback is preserved");
+					assert.ok(!tree.nodes.some(node => !node.ignored && node.role?.value === "StaticText" && node.name?.value === "Pinned to top"), "Hidden description is not repeated in reading order");
+					const { geometry, ...summary } = layout;
+					pinnedCollections.layouts.push(summary);
+					if (screenshots) pinGeometryEvidence.push(layout);
+					const suffix = width + (enlarged ? "-200pct" : "") + (forced ? "-forced" : "");
+					if ([393,900,1280].includes(width)) await capture("pinned-metadata-" + suffix);
+					if (screenshots && width === 900 && enlarged && !forced) {
+						const shot = await connection.command("Page.captureScreenshot", {format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width,height:1400,scale:1}});
+						await fs.writeFile(path.join(screenshots,"pinned-metadata-900-200pct-complete.png"),Buffer.from(shot.data,"base64"));
+					}
+					await evaluate(connection,"window.beginPinMenuCheck()");
+					await key("Enter","Enter",13);
+					pinnedCollections.menus.push({width,enlarged,forced,...await evaluate(connection,"window.checkPinMenu()")});
+					if ([393,1280].includes(width) && !enlarged && !forced) await capture("pinned-metadata-" + width + "-menu-open");
+					await key("Escape","Escape",27);
+					if ([360,393].includes(width) && !enlarged && !forced) {
+						for (const side of ["left","right"]) {
+							await evaluate(connection,"window.prepareCollectionPins()");
+							const point = await evaluate(connection,"window.beginPinSelectionCheck()");
+							await connection.command("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:point[side],y:point.y}]});
+							await connection.command("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]}); await frame();
+							pinnedCollections.touch.push({width,side,...await evaluate(connection,"window.checkPinSelection()")});
+						}
+					}
+					if (width === 1280 && !enlarged && !forced) {
+						const point = await evaluate(connection,"window.beginPinSelectionCheck()");
+						for (const type of ["mousePressed","mouseReleased"]) await connection.command("Input.dispatchMouseEvent",{type,x:point.x,y:point.y,button:"left",clickCount:1});
+						await frame();
+						pinnedCollections.clicks.push(await evaluate(connection,"window.checkPinSelection()"));
+					}
+				}
+			}
+		}
+		await connection.command("Emulation.setTouchEmulationEnabled", {enabled:false});
+		await connection.command("Emulation.setEmulatedMedia", { features: [] });
+		await evaluate(connection, 'document.documentElement.style.fontSize=""');
+		for (const width of [393,1280]) {
+			await viewport(width,1000);
+			await evaluate(connection, "window.prepareCollectionPins()");
+			await evaluate(connection, 'document.querySelector("[data-node-type=collection]").focus()');
+			await key("Tab","Tab",9);
+			assert.equal(await evaluate(connection,"document.activeElement.dataset.action"), "open-collection-actions", "Tab goes directly to original menu target");
+			await key("Tab","Tab",9,8);
+			assert.equal(await evaluate(connection,"document.activeElement.dataset.nodeType"), "collection", "Reverse Tab returns to selection button");
+			await key("Tab","Tab",9,8);
+			assert.equal(await evaluate(connection,'document.activeElement.className'), "reorder-handle", "Original reorder handle remains immediately before selection");
+			await key(" ","Space",32);
+			await key("Escape","Escape",27);
+			assert.equal(await evaluate(connection,'document.activeElement.className'), "reorder-handle", "Keyboard reorder still cancels on its handle");
+			const hidden = await evaluate(connection,"window.selectHiddenPinnedCollection()");
+			assert.ok(hidden.buttons.some(button => button.hidden && button.selected));
+			const updates = [];
+			updates.push(await evaluate(connection,"window.changeCollectionPinThroughEditor()"));
+			updates.push(await evaluate(connection,"window.changeCollectionPinsGlobally(true)"));
+			updates.push(await evaluate(connection,"window.changeCollectionPinsGlobally(false)"));
+			updates.push(await evaluate(connection,"window.replaceCollectionPinImport()"));
+			assert.deepEqual(updates.map(update => update.badges), [3,7,0,4]);
+			pinnedCollections.updates.push({width, updates});
+		}
+		assert.deepEqual(pinnedCollections.externalRequests, [], "Local pin scenarios require zero external requests");
+		if (screenshots) await fs.writeFile(path.join(screenshots,"pinned-metadata-evidence.json"), JSON.stringify({ ...pinnedCollections, layouts: pinGeometryEvidence }, null, 2) + "\n");
+	} finally {
+		stopPinRequests();
+		// Leave the pointer off controls before the existing header-style comparisons.
+		await connection.command("Input.dispatchMouseEvent", {type:"mouseMoved",x:0,y:0});
+		await connection.command("Emulation.setTouchEmulationEnabled", {enabled:false});
+		await connection.command("Emulation.setEmulatedMedia", {features: []});
+		await evaluate(connection, 'document.documentElement.style.fontSize=""');
+	}
 	const menuDiagnostics=process.env.BUILDER_ORDERING_MENU_DIAGNOSTICS==="1";
 	await evaluate(connection,"window.orderingMenuDiagnostics="+menuDiagnostics);
 	const layouts=[], actions=[], enlargedChecks=[], ordinaryMenus=[];
@@ -214,5 +307,5 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		await new Promise(resolve=>setTimeout(resolve,50));
 	}
 	await viewport(1280,900);
-	return {layouts,actions,enlargedChecks,ordinaryMenus,shortMenu,reducedMenu,headerLayouts,errors};
+	return {layouts,actions,enlargedChecks,ordinaryMenus,shortMenu,reducedMenu,headerLayouts,pinnedCollections,errors};
 }

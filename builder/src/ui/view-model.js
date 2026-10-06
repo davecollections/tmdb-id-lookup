@@ -86,6 +86,7 @@ function buildCollection(collection, selectedInternalId) {
 		title: title.text,
 		titleHidden: title.hidden,
 		accessibleName: title.accessibleName,
+		pinned: collection.editable.pinToTop === true,
 		folderCount,
 		sourceCount,
 		folderCountLabel: countLabel(folderCount, "folder"),

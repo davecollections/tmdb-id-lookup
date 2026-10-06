@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
+import { collectionViewModels } from "../../builder/src/ui/view-model.js";
 import { buildGenreSourceDrafts } from "../../builder/src/source-add/index.js";
 import { loadFolderArtworkSuggestions } from "../../builder/src/folder-artwork-suggestions.js";
 import importedPeople from "../../manual-tests/nuvio-clients/issue-74-builder-add-people/results/nuvio-desktop-immediate-export.json";
@@ -842,4 +843,194 @@ window.finishSourceOrderingDrag = async () => {
 	assert(after[1]===before[0]&&after[0]===before[1],"Source drag remains usable after sorting: "+JSON.stringify({width:innerWidth,before:before.map(s=>s.editable.title),after:after.map(s=>s.editable.title),revision:controller.getState().revision,opening:beforeDrag.revision,status:$("[data-movement-status]").textContent}));
 	assert(controller.getState().revision===beforeDrag.revision+1,"Post-sort drag commits once");
 	return true;
+};
+
+
+// Pin status uses authored local hierarchy data, with no external catalogue or service.
+function collectionPinProject() {
+	const folders = (count) => Array.from({ length: count }, (_, index) => ({
+		id: "local-folder-" + index, title: "Local folder " + index,
+		sources: [{ provider: "local-review", title: "Authored local source " + index }],
+	}));
+	return [
+		{ id: "ordinary-false", title: "Not pinned", pinToTop: false, folders: [] },
+		{ id: "pinned-genres", title: "Genres", pinToTop: true, folders: folders(27) },
+		{ id: "ordinary-absent", title: "Pin not set", folders: [] },
+		{ id: "pinned-long", title: "International documentaries and independent cinema from around the world", pinToTop: true, folders: folders(123) },
+		{ id: "ordinary-unsupported", title: "Imported setting", pinToTop: "true", folders: [] },
+		{ id: "pinned-hidden", title: "\u200e", pinToTop: true, folders: [] },
+		{ id: "pinned-very-long", title: "A very long locally authored Collection title with multilingual cinema, documentaries, independent releases and restored classics from many decades — ".repeat(3), pinToTop: true, folders: [] },
+	];
+}
+const pinCards = () => $$('[data-hierarchy-card="collection"]');
+const pinButton = (card) => card.querySelector('[data-node-type="collection"]');
+const pinSnapshot = () => {
+	const serialized = JSON.stringify(controller.serializeProject());
+	return { state: controller.getState(), serialized };
+};
+function assertPinReadOnly(before) {
+	const after = controller.getState();
+	assert(after === before.state && after.project === before.state.project && after.revision === before.state.revision && after.dirty === before.state.dirty, "Pin rendering leaves project, revision, dirty state and selection unchanged");
+	assert(JSON.stringify(controller.serializeProject()) === before.serialized, "Pin rendering leaves serialization unchanged");
+	assert(fetches.length === 0, "Pin UI makes no fetch requests");
+}
+window.prepareCollectionPins = async () => {
+	await mount(collectionPinProject());
+	const selected = controller.getState().project.collections.find(node => node.editable.id === "pinned-long");
+	controller.selectNode(selected.internalId);
+	await frame();
+	await showCollections();
+	// Edit/Cancel is an existing route that retains a selected Collection on phones.
+	await click(pinCards()[1].querySelector('[data-action="open-collection-actions"]'));
+	await click($('[data-actions-menu="collection"]:not([hidden]) [data-action="edit-collection"]'));
+	await closeEditor();
+	document.activeElement?.blur();
+	await frame();
+	return window.measureCollectionPins();
+};
+window.measureCollectionPins = () => {
+	const before = pinSnapshot();
+	const rect = element => {
+		const r = element.getBoundingClientRect();
+		return [r.x, r.y, r.width, r.height];
+	};
+	const titleLines = element => {
+		const box = element.getBoundingClientRect(), range = document.createRange(); range.selectNodeContents(element);
+		return [...range.getClientRects()].map(r => [r.x - box.x, r.y - box.y, r.width, r.height]);
+	};
+	const geometry = () => pinCards().map(card => ({
+		card: rect(card), button: rect(pinButton(card)), content: rect(card.querySelector(".node-button-content")),
+		title: titleLines(card.querySelector(".node-title")), meta: rect(card.querySelector(".node-meta")),
+		actions: rect(card.querySelector('[data-action="open-collection-actions"]')),
+		reorder: rect(card.querySelector(".reorder-handle")),
+	}));
+	const withBadge = geometry(), buttons = [];
+	const project = controller.getState().project;
+	const models = collectionViewModels(project).map(view => project.collections.find(node => node.internalId === view.internalId));
+	assert(!$(".collection-pin-tooltip, [data-pin-tooltip-open]"), "No standalone tooltip or hover state remains");
+	pinCards().forEach((card, index) => {
+		const primary = pinButton(card), badge = card.querySelector(".collection-pin-badge");
+		const expected = models[index].editable.pinToTop === true;
+		assert(Boolean(badge) === expected, "Badge matches strict saved true, including unsupported imports");
+		assert([...card.querySelectorAll("button")].filter(button => button.getClientRects().length).length === 3, "Only original reorder, selection and menu buttons remain");
+		const description = primary.getAttribute("aria-describedby"), hidden = primary.hasAttribute("aria-label");
+		assert(Boolean(description) === (expected && hidden), "Only pinned hidden-title buttons need an extra description");
+		if (!badge) return;
+		const wrapper = badge.parentElement, meta = wrapper.parentElement;
+		assert(badge.textContent === "PINNED" && primary.contains(badge) && meta.classList.contains("node-meta"), "Visible status belongs to selection metadata");
+		assert(meta.lastElementChild === wrapper && meta.children[0].textContent === models[index].folders.length + (models[index].folders.length === 1 ? " folder" : " folders"), "Status follows existing counts");
+		assert(!badge.querySelector("svg, button, a, [tabindex], [role]") && !badge.hasAttribute("tabindex") && !badge.hasAttribute("role") && !badge.hasAttribute("title"), "No icon, tooltip, extra control or focus target");
+		if (hidden) {
+			assert(wrapper.getAttribute("aria-hidden") === "true", "Hidden-title visible badge does not duplicate the description");
+			assert(description.split(/\s+/).length === 1 && document.getElementById(description)?.textContent === "Pinned to top" && document.getElementById(description).hidden, "One hidden-title pin description");
+		} else {
+			assert(!wrapper.hasAttribute("aria-hidden") && primary.textContent.split("PINNED").length === 2, "Ordinary pin wording occurs once in the accessible button content");
+		}
+		const b = badge.getBoundingClientRect(), owner = primary.getBoundingClientRect(), menu = card.querySelector('.hierarchy-actions-trigger').getBoundingClientRect();
+		assert(b.left >= owner.left && b.right <= owner.right + 0.1 && b.top >= owner.top && b.bottom <= owner.bottom + 0.1, "Badge remains entirely in selection bounds");
+		assert(b.right < menu.left, "Metadata badge is clear of menu hit target");
+		assert(menu.width === 46 && menu.height === 46 && card.querySelector('.reorder-handle').getBoundingClientRect().width === 46, "Independent targets keep 46px dimensions");
+		assert(b.top >= card.querySelector('.node-title').getBoundingClientRect().bottom, "Metadata never covers title");
+		const invisible = card.querySelector('.hidden-title-badge');
+		if (invisible) assert(b.top >= invisible.getBoundingClientRect().bottom, "Invisible status retains its own place above metadata");
+		const range = document.createRange(); range.selectNodeContents(badge);
+		assert(range.getClientRects().length === 1 && range.getBoundingClientRect().width <= badge.clientWidth && badge.scrollWidth <= badge.clientWidth, "PINNED stays fully readable without truncation");
+		const css = getComputedStyle(badge);
+		assert(css.position === "static" && css.borderStyle === "solid" && parseFloat(css.borderWidth) >= 1, "Ordinary flow and visible badge border");
+		assert(getComputedStyle(wrapper).backgroundColor.endsWith(", 0)") && getComputedStyle(wrapper,"::before").content.includes("·"), "Existing muted separator sits outside the tinted pill: " + JSON.stringify({width:innerWidth,forced:matchMedia("(forced-colors: active)").matches,background:getComputedStyle(wrapper).backgroundColor,separator:getComputedStyle(wrapper,"::before").content}));
+		if (matchMedia("(forced-colors: active)").matches) assert(css.borderColor === css.color && css.color !== css.backgroundColor, "Forced colours retain readable text and border");
+		if (b.top >= 0 && b.bottom <= innerHeight && !$('[data-actions-menu]:not([hidden])')) {
+			for (const x of [b.left + 1, b.right - 1]) assert(document.elementFromPoint(x, b.y + b.height / 2)?.closest('button') === primary, "Both badge edges belong to the ordinary selection button");
+		}
+		buttons.push({ name: primary.getAttribute("aria-label") ?? primary.textContent.trim(), selected: primary.getAttribute("aria-pressed") === "true", hidden, badge: rect(badge), selection: rect(primary), menu: rect(card.querySelector('.hierarchy-actions-trigger')) });
+	});
+	for (const wrapper of $$(".collection-pin-meta")) wrapper.style.display = "none";
+	const withoutBadge = geometry();
+	for (const [index, withPin] of withBadge.entries()) {
+		const withoutPin = withoutBadge[index];
+		for (const part of ["button","content","meta"]) assert(withPin[part][0] === withoutPin[part][0] && withPin[part][2] === withoutPin[part][2], "Badge preserves text/control horizontal bounds");
+		assert(JSON.stringify(withPin.title) === JSON.stringify(withoutPin.title), "Title wrapping is unchanged");
+		for (const part of ["actions","reorder"]) assert(withPin[part][0] === withoutPin[part][0] && withPin[part][2] === withoutPin[part][2] && withPin[part][3] === withoutPin[part][3], "Menu/reorder targets retain position and size while card height may grow");
+	}
+	for (const wrapper of $$(".collection-pin-meta")) wrapper.style.removeProperty("display");
+	assert(document.documentElement.scrollWidth <= innerWidth, "Metadata wrapping produces no page overflow");
+	assertPinReadOnly(before);
+	return { width: innerWidth, rootFontSize: getComputedStyle(document.documentElement).fontSize, forcedColours: matchMedia("(forced-colors: active)").matches, reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches, badges: buttons.length, buttons, geometry: withBadge, cardHeightChanges: withBadge.map((card,i) => card.card[3] - withoutBadge[i].card[3]), unchangedState: true };
+};
+window.changeCollectionPinThroughEditor = async () => {
+	const before = controller.getState();
+	const target = before.project.collections.find(node => node.editable.id === "pinned-genres");
+	await click(pinCards()[0].querySelector('[data-action="open-collection-actions"]'));
+	await click($('[data-actions-menu="collection"]:not([hidden]) [data-action="edit-collection"]'));
+	await click($('[data-editor-field="pinToTop"] input'));
+	assert(controller.getState().project === before.project, "Pin draft is detached until Apply");
+	await click($('[data-action="apply-node-edit"]'));
+	await showCollections();
+	const after = controller.getState();
+	assert(after.revision === before.revision + 1 && after.dirty, "Edit pin uses one ordinary controller revision");
+	assert(after.project.collections.find(node => node.internalId === target.internalId).editable.pinToTop === false, "Edit saves false");
+	assert($$(".collection-pin-badge").length === 3, "Edit immediately removes one badge");
+	window.measureCollectionPins();
+	return { badges: 3, revisions: 1 };
+};
+window.changeCollectionPinsGlobally = async (value) => {
+	const before = controller.getState();
+	await click($('[data-action="open-bulk-edit"]'));
+	await click($('[data-bulk-edit-field="pinToTop"] input[value="' + (value ? "ON" : "OFF") + '"]'));
+	await click($('[data-action="apply-bulk-edit"]'));
+	await showCollections();
+	const after = controller.getState();
+	assert(after.revision === before.revision + 1, "Global pin setting uses one ordinary controller revision");
+	assert(after.project.collections.every(node => node.editable.pinToTop === value), "Global setting reaches all Collections");
+	assert($$(".collection-pin-badge").length === (value ? 7 : 0), "Global pin setting updates all badges immediately");
+	window.measureCollectionPins();
+	return { badges: value ? 7 : 0, revisions: 1 };
+};
+window.replaceCollectionPinImport = async () => {
+	assert(controller.importValue(collectionPinProject(), { discardChanges: true }).ok, "Replace import succeeds while Workspace remains mounted");
+	await frame(); await showCollections();
+	const state = controller.getState();
+	assert(!state.dirty, "Imported baseline stays clean after badge rendering");
+	assert(state.project.collections.find(node => node.editable.id === "ordinary-unsupported").editable.pinToTop === "true", "Unsupported imported value is preserved");
+	const measurement = window.measureCollectionPins();
+	assert(measurement.badges === 4, "Import refreshes mixed badges");
+	return { badges: measurement.badges, dirty: state.dirty };
+};
+window.selectHiddenPinnedCollection = async () => {
+	const card = pinCards().find(card => pinButton(card).hasAttribute("aria-label"));
+	await click(pinButton(card));
+	assert(pinButton(card).getAttribute("aria-pressed") === "true", "Hidden-title Collection remains selectable");
+	await showCollections();
+	await click(card.querySelector('[data-action="open-collection-actions"]'));
+	await click($('[data-actions-menu="collection"]:not([hidden]) [data-action="edit-collection"]'));
+	await closeEditor();
+	return window.measureCollectionPins();
+};
+
+
+let pinInteractionOpening;
+window.beginPinSelectionCheck = () => {
+	const card = pinCards()[0], badge = card.querySelector('.collection-pin-badge');
+	pinInteractionOpening = { ...pinSnapshot(), card, button: pinButton(card) };
+	const rect = badge.getBoundingClientRect();
+	return { left: rect.left + 1, right: rect.right - 1, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+};
+window.checkPinSelection = () => {
+	const { state, button } = pinInteractionOpening, after = controller.getState();
+	assert(after.project === state.project && after.revision === state.revision && after.dirty === state.dirty, "Badge click/touch makes no content mutation");
+	assert(button.getAttribute('aria-pressed') === 'true', "Badge selects its owning Collection");
+	if (innerWidth < 900) assert($('.workspace').dataset.mobileLevel === 'folders', "Badge follows normal phone drill-down");
+	assert(!$('[data-actions-menu]:not([hidden])') && !$('.collection-pin-tooltip'), "Badge never opens menu or tooltip");
+	return { selected: true, unchangedContent: true };
+};
+window.beginPinMenuCheck = () => {
+	pinInteractionOpening = pinSnapshot();
+	pinCards()[0].querySelector('.hierarchy-actions-trigger').focus();
+};
+window.checkPinMenu = () => {
+	const card = pinCards()[0], badge = card.querySelector('.collection-pin-badge').getBoundingClientRect(), trigger = card.querySelector('.hierarchy-actions-trigger');
+	assert(trigger.getAttribute('aria-expanded') === 'true', "Actual pinned Collection menu is open");
+	assert(badge.right < trigger.getBoundingClientRect().left, "Open menu target remains clear of metadata status");
+	assertPinReadOnly(pinInteractionOpening);
+	return { gap: trigger.getBoundingClientRect().left - badge.right, unchangedState: true };
 };

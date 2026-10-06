@@ -1007,6 +1007,12 @@ test("mounted Move folders preserves atomic relocation, accessible stages and ex
 });
 
 test("mounted hierarchy ordering preserves pin slots, focus, panels and scrollable menus", { skip: !hierarchyOrderingOnly && (moveFoldersOnly || projectFindOnly || workspaceImportOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly) }, () => {
+	assert.equal(hierarchyOrderingMounted.pinnedCollections.layouts.length,32);
+	assert.equal(hierarchyOrderingMounted.pinnedCollections.updates.length,2);
+	assert.equal(hierarchyOrderingMounted.pinnedCollections.menus.length,32);
+	assert.equal(hierarchyOrderingMounted.pinnedCollections.clicks.length,1);
+	assert.equal(hierarchyOrderingMounted.pinnedCollections.touch.length,4);
+	assert.deepEqual(hierarchyOrderingMounted.pinnedCollections.externalRequests,[]);
 	assert.equal(hierarchyOrderingMounted.layouts.length,54);
 	assert.equal(hierarchyOrderingMounted.actions.length,10);
 	assert.equal(hierarchyOrderingMounted.headerLayouts.length,3);
