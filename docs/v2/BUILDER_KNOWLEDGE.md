@@ -3,7 +3,7 @@
 
 ## Collection Follow Home Layout (#296)
 
-[Issue #296](https://github.com/davecollections/tmdb-id-lookup/issues/296) implements the third generic Collection presentation choice locally, owner-approved and awaiting integration. This supersedes older Collection Follow Layout preservation-only checkpoints; it does not change Folder tile-shape semantics.
+[Issue #296](https://github.com/davecollections/tmdb-id-lookup/issues/296) is complete; [PR #297](https://github.com/davecollections/tmdb-id-lookup/pull/297) merged the third generic Collection presentation choice on 2026-10-07. Feature commit: `fad745b35df897df019046df4eae33271c1802df`; test correction: `5d9982be972a21cc80489b2074fefad1d3aef99d`; normal merge commit: `40f8922e12093206a55e46692fd3f4a7fb9b4b45`. The contract below remains authoritative and supersedes older Collection Follow Layout preservation-only checkpoints; Folder tile-shape semantics are unchanged.
 
 ### Current upstream evidence (2026-10-07)
 
@@ -1040,7 +1040,7 @@ Quick Setup, Dave's 1-Click Setup, templates/recipes, the Kaptain comparison, pr
 - Do not silently replace prior conclusions.
 - Move superseded findings into the decision history below.
 - Keep large copied sections from GPL or unlicensed repositories out of this document.
-- GitHub issues remain the source of truth for implementation scope.
+- The approved task scope, with the relevant GitHub issue when one exists, remains the source of truth for implementation scope; bounded work may use its scope and PR without a separate issue.
 
 ## Evidence register
 
