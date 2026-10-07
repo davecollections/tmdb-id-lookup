@@ -39,14 +39,34 @@ export async function runCollectionLayoutChecks(connection, baseUrl, evaluate) {
 		for (const [width, height] of sizes) {
 			await viewport(width, height);
 			for (const surface of ["edit", "bulk", "creation"]) {
+				let beforeGeometry = null;
+				let afterGeometry = null;
 				try {
-					layouts.push({ variant, ...await evaluate(connection, `window.prepareCollectionLayout('${surface}', ${variant === "enlarged"})`) });
-					const outerScrollExpression = `(() => { const dialog = document.querySelector('[role=dialog]'); const ownsScroll = /(auto|scroll)/.test(getComputedStyle(dialog).overflowY) && dialog.scrollHeight > dialog.clientHeight + 1; return [scrollX, scrollY, dialog.getBoundingClientRect().top, ownsScroll ? null : dialog.scrollTop]; })()`;
-					const outerScroll = await evaluate(connection, outerScrollExpression);
+					const layout = { variant, ...await evaluate(connection, `window.prepareCollectionLayout('${surface}', ${variant === "enlarged"})`) };
+					layouts.push(layout);
+					const geometryExpression = `(() => {
+						const dialog = document.querySelector('[role=dialog]');
+						const rect = dialog.getBoundingClientRect();
+						const ownsScroll = /(auto|scroll)/.test(getComputedStyle(dialog).overflowY) && dialog.scrollHeight > dialog.clientHeight + 1;
+						return { scrollX, scrollY, ownsScroll, scrollTop: dialog.scrollTop,
+							left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
+							width: rect.width, height: rect.height, centerY: (rect.top + rect.bottom) / 2,
+							viewportWidth: innerWidth, viewportHeight: innerHeight };
+					})()`;
+					beforeGeometry = await evaluate(connection, geometryExpression);
 					await evaluate(connection, "document.querySelector('input[value=FOLLOW_LAYOUT]').focus()");
 					await key("ArrowLeft", "ArrowLeft", 37);
 					await key("ArrowRight", "ArrowRight", 39);
-					assert.deepEqual(await evaluate(connection, outerScrollExpression), outerScroll, "Radio focus scrolls only the intended content owner, with stable outer modal and document");
+					afterGeometry = await evaluate(connection, geometryExpression);
+					layout.focusGeometry = { before: beforeGeometry, after: afterGeometry };
+					assert.equal(afterGeometry.scrollX, beforeGeometry.scrollX, "Radio focus preserves document horizontal scroll");
+					assert.equal(afterGeometry.scrollY, beforeGeometry.scrollY, "Radio focus preserves document vertical scroll");
+					if (!afterGeometry.ownsScroll) assert.equal(afterGeometry.scrollTop, beforeGeometry.scrollTop, "Radio focus does not scroll a dialog that is not the scroll owner");
+					const geometryTolerance = 1;
+					assert.ok(afterGeometry.left >= -geometryTolerance && afterGeometry.right <= afterGeometry.viewportWidth + geometryTolerance && afterGeometry.top >= -geometryTolerance && afterGeometry.bottom <= afterGeometry.viewportHeight + geometryTolerance, "Radio focus keeps the dialog within the viewport");
+					assert.ok(Math.abs(afterGeometry.left - beforeGeometry.left) <= geometryTolerance && Math.abs(afterGeometry.right - beforeGeometry.right) <= geometryTolerance, "Radio focus preserves horizontal dialog placement");
+					// Contextual helper reflow may change height/top while the auto-height dialog stays centered.
+					assert.ok(Math.abs(afterGeometry.centerY - beforeGeometry.centerY) <= geometryTolerance, "Radio focus preserves the vertical dialog center");
 					assert.equal(await evaluate(connection, "document.activeElement.value === 'FOLLOW_LAYOUT' && document.activeElement.checked"), true, "Native radio arrow navigation selects Follow");
 					await evaluate(connection, `window.measureCollectionShowAll('${surface}', 'FOLLOW_LAYOUT')`);
 					assert.equal(await evaluate(connection, "parseFloat(getComputedStyle(document.activeElement.closest('label')).outlineWidth) >= 2"), true, "Complete card keyboard focus");
@@ -80,7 +100,11 @@ export async function runCollectionLayoutChecks(connection, baseUrl, evaluate) {
 					}
 					await key("Escape", "Escape", 27);
 					assert.equal(await evaluate(connection, "window.checkCollectionLayoutClosed()"), true);
-				} catch (error) { await capture(`failed-${width}-${variant}-${surface}`); throw error; }
+				} catch (error) {
+					error.message += "\nCollection layout context: " + JSON.stringify({ variant, width, height, surface, before: beforeGeometry, after: afterGeometry });
+					await capture(`failed-${width}-${variant}-${surface}`);
+					throw error;
+				}
 			}
 		}
 	}
