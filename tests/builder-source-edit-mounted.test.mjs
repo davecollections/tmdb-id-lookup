@@ -3214,7 +3214,7 @@ test("mounted Streaming New Collection offers a zero-overlap imported collection
 		assert.deepEqual(result.review.planTotals, [0, 1, 2], `${result.width}px new sibling-only delta`);
 		assert.equal(result.review.heading, "What will change", `${result.width}px change heading`);
 		assert.deepEqual(result.review.outcomes, [{ status: "new-folder", text: "CrunchyrollNew folder2 sources will be created" }], `${result.width}px strict folder trust keeps the provider in a new sibling`);
-		assert.equal(result.review.collectionSettings, "Collection settings stay unchanged.Streaming Services · Tabs. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.", `${result.width}px existing collection settings boundary`);
+		assert.equal(result.review.collectionSettings, "Collection settings stay unchanged.Streaming Services · Tabbed Grid. This operation does not rename or reconfigure the existing collection; appearance choices below apply only to new folders.", `${result.width}px existing collection settings boundary`);
 		assert.equal(result.review.applyLabel, "Create folder", `${result.width}px honest Create action`);
 		assert.deepEqual(result.layout, {
 			singleInnerScroll: true,

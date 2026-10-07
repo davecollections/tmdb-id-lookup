@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import { tmdbListHierarchyReview } from "../builder/src/ui/tmdb-list-review.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -313,7 +314,7 @@ test("guided TMDB Lists maps the shared Collection and Folder presentation choic
 	assert.equal(hiddenFolder.ok, true);
 	assert.deepEqual(hiddenFolder.plan.collections[0].folders[0].editable, { title: NUVIO_INVISIBLE_TITLE, tileShape: "POSTER", hideTitle: true });
 	for (const invalid of [
-		{ viewMode: "FOLLOW_LAYOUT" },
+		{ viewMode: "FUTURE_LAYOUT" },
 		{ folderTitleVisibility: "HIDDEN" },
 		{ folderTileShape: "FUTURE" },
 	]) assert.equal(createTmdbListHierarchyPlan(state.project, { scope: "new-collection", projectRevision: state.revision, collectionTitle: "Lists", lists: [list(33)], ...invalid }).ok, false);
@@ -768,4 +769,8 @@ test("same-name Musicals Lists remain distinct ready identities and non-blocking
  assert.notEqual(made.plan.outcomes[0].identity, made.plan.outcomes[1].identity);
  assert.equal(applyTmdbListHierarchyPlan(controller, made.plan).ok, true);
  assert.deepEqual(controller.getState().project.collections.at(-1).folders.map(folder => [folder.editable.title, folder.sources[0].editable.tmdbId]), [["Musicals", 21608], ["Musicals", 5916]]);
+});
+
+test("tmdb-lists supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: app, plan: (app, choices) => createTmdbListHierarchyPlan(app.getState().project, { projectRevision: app.getState().revision, ...(choices.scope === "new-collection" ? { collectionTitle: "Lists" } : {}), lists: [list(32)], ...choices }), apply: applyTmdbListHierarchyPlan });
 });

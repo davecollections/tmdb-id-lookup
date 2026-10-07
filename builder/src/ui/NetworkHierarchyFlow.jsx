@@ -1,3 +1,4 @@
+import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext } from "./creation-context.js";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
@@ -124,7 +125,7 @@ function AppearanceStep({ planResult, options, onOptionsChange, onArtworkChange,
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="network-pin-help" controlName="networkPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
 			</> : <>
-				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan?.destination.titleHidden ? "Hidden collection" : plan?.destination.collectionTitle || options.destinationCollectionTitle || "Hidden collection"}{plan ? ` · ${plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}` : ""}</span></div>
+				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan?.destination.titleHidden ? "Hidden collection" : plan?.destination.collectionTitle || options.destinationCollectionTitle || "Hidden collection"}{plan ? ` · ${collectionViewModeLabel(plan.destination.viewMode) ?? "Imported layout"}` : ""}</span></div>
 				<TitleOptions idPrefix="network-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "network-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 				<ArtworkChoices options={options} onArtworkChange={onArtworkChange} disabled={isPreparing} />
 			</>}

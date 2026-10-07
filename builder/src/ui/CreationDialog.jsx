@@ -1,3 +1,4 @@
+import { collectionLayoutSummary } from "../nuvio/collection-presentation.js";
 import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { creationContext } from "./creation-context.js";
@@ -164,18 +165,11 @@ function DecadesSettingsDisclosure({ id, title, summary, children }) {
 	);
 }
 
-function collectionAppearanceSummary({ viewMode, showAllTab, pinToTop }) {
-	const layout = typeof viewMode === "string" && viewMode.toUpperCase() === "ROWS" ? "Rows" : "Tabs";
-	return `${layout}${layout === "Tabs" ? ` · All tab ${showAllTab ? "on" : "off"}` : ""} · ${pinToTop ? "pinned" : "not pinned"}`;
-}
-
 function inheritedCollectionAppearanceSummary(presentation) {
 	if (!presentation) return "Inherited from the selected collection";
-	const normalizedLayout = typeof presentation.viewMode === "string" ? presentation.viewMode.toUpperCase() : "";
-	const layout = normalizedLayout === "ROWS" ? "Rows" : normalizedLayout === "TABBED_GRID" ? "Tabs" : "Imported layout";
-	const allTab = typeof presentation.showAllTab === "boolean" ? `All tab ${presentation.showAllTab ? "on" : "off"}` : "All tab inherited";
+	const layout = collectionLayoutSummary(presentation.viewMode, presentation.showAllTab, { includeStoredPreference: true });
 	const pin = typeof presentation.pinToTop === "boolean" ? (presentation.pinToTop ? "pinned" : "not pinned") : "pin inherited";
-	return `${layout} · ${allTab} · title ${isInvisibleNuvioTitle(presentation.title) ? "hidden" : "visible"} · ${pin}`;
+	return `${layout} · title ${isInvisibleNuvioTitle(presentation.title) ? "hidden" : "visible"} · ${pin}`;
 }
 
 export function DecadePresetStep({ state, headingRef, onToggle, onSelectAll, onClearAll }) {
@@ -391,12 +385,11 @@ function DecadesOrdering({ state, onStateChange }) {
 }
 
 function CollectionAppearance({ state, onStateChange }) {
-	const showOverviewAllTabNote = state.content.wholeDecade && state.viewMode === "TABBED_GRID" && state.showAllTab;
+	const showOverviewAllTabNote = state.content.wholeDecade && ["TABBED_GRID", "FOLLOW_LAYOUT"].includes(state.viewMode) && state.showAllTab;
 	return (
 		<section className="review-layout-options" data-review-layout="true" data-decades-settings="layout" aria-labelledby="decades-layout-title">
-			<div className="review-presentation-heading"><h4 id="decades-layout-title">Collection layout</h4><span>{collectionAppearanceSummary(state)}</span></div>
 			<fieldset className="editor-field editor-choice-field decades-presentation">
-				<legend>Collection layout</legend>
+				<legend id="decades-layout-title">Collection layout</legend>
 				<p className="editor-field-help">Choose how each Decade folder displays its sources in Nuvio.</p>
 				<HierarchyCollectionPresentationControls selectedId={state.viewMode} name="decades-view" showAllTab={state.showAllTab} onPresentationChange={(patch) => onStateChange(Object.freeze({ ...state, ...patch }))} showAllDescriptionId="decades-all-tab-help" showAllControlName="showAllTab" />
 			</fieldset>
@@ -405,7 +398,7 @@ function CollectionAppearance({ state, onStateChange }) {
 					<PresentationSwitch label="Pin generated collection(s) to top" description="Pinned collections appear before unpinned collections." descriptionId="decades-pin-help" controlName="pinToTop" checked={state.pinToTop} onChange={(pinToTop) => onStateChange(Object.freeze({ ...state, pinToTop }))} />
 				</div>
 			</div>
-			{showOverviewAllTabNote ? <p className="decades-information-note" data-decades-overview-all-tab-note="true">Decade overview is also enabled. The All tab combines this folder’s sources, while Decade overview is one source covering the full Decade, so their results and ordering may differ.</p> : null}
+			{showOverviewAllTabNote ? <p className="decades-information-note" data-decades-overview-all-tab-note="true">Decade overview is also enabled. When Nuvio uses tabs, the All tab combines this folder’s sources, while Decade overview is one source covering the full Decade, so their results and ordering may differ.</p> : null}
 		</section>
 	);
 }

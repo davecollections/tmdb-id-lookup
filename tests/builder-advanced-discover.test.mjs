@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
@@ -578,4 +579,8 @@ test("date edits retain unrelated and opposite-media imported settings", () => {
  assert.equal(saveSourceEdit(c, opened.session, { ...opened.draft, filters: {}, touchedFilters: ["releaseDateGte"] }).ok, false);
  const filters = c.serializeProject().value[0].folders[0].sources[0].filters;
  assert.deepEqual(filters, raw.filters);
+});
+
+test("advanced-discover supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controllerWithFolder, plan: (app, choices) => createAdvancedDiscoverPlan(app.getState().project, { ...options(app, choices.scope), ...(choices.destinationCollectionInternalId ? { collectionInternalId: choices.destinationCollectionInternalId } : {}), appearance: { viewMode: choices.viewMode, showAllTab: choices.showAllTab } }), apply: applyAdvancedDiscoverPlan });
 });

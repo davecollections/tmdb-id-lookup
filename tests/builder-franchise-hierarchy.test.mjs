@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -239,4 +240,8 @@ test("revalidation blocks stale exact-ID placement and leaves the project byte-i
 	const before = state.project;
 	assert.equal(applyFranchiseHierarchyPlan(app, planned.plan).ok, false);
 	assert.equal(app.getState().project, before);
+});
+
+test("franchise-hierarchy supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controller, plan: (app, choices) => createFranchiseHierarchyPlan(app.getState().project, { projectRevision: app.getState().revision, franchises: [franchise(10, "Example Collection")], ...choices }), apply: applyFranchiseHierarchyPlan });
 });

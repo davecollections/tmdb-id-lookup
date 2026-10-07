@@ -140,7 +140,7 @@ function measure(expanded = false) {
 			assert(!setup.querySelector('input,button,select'),'Setup is read-only');
 			assert(Boolean($('.move-folders-selected').compareDocumentPosition(setup) & Node.DOCUMENT_POSITION_FOLLOWING),'Setup follows selected folders');
 			const fields=Object.fromEntries([...setup.querySelectorAll('dl > div')].map(el=>[el.querySelector('dt').textContent,el.querySelector('dd').textContent]));
-			assert(fields.Layout==='Tabs' || fields.Layout==='Rows','Friendly layout label');
+			assert(fields.Layout==='Tabbed Grid' || fields.Layout==='Rows','Friendly layout label');
 			assert(fields.Layout==='Rows' ? !('All tab' in fields) && fields.Position==='Pinned' : fields['All tab']==='On','All tab only applies to Tabs');
 			assert(['Pinned','Not pinned'].includes(fields.Position) && fields.Title==='Visible' && !('Artwork' in fields),'Friendly setup values omit Collection artwork');
 			assert(!body.textContent.includes('artwork') && !body.textContent.includes('Backdrop'),'New Collection Review has no artwork row or note');

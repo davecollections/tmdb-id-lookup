@@ -1,5 +1,6 @@
 import "../../builder/src/styles.css";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { PeopleReviewStep } from "../../builder/src/ui/PeopleSourceFlow.jsx";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
@@ -1033,4 +1034,172 @@ window.checkPinMenu = () => {
 	assert(badge.right < trigger.getBoundingClientRect().left, "Open menu target remains clear of metadata status");
 	assertPinReadOnly(pinInteractionOpening);
 	return { gap: trigger.getBoundingClientRect().left - badge.right, unchangedState: true };
+};
+
+
+// #296 exercises only local authored Collection settings through the real workspace.
+let layoutOpeningState;
+let layoutTrigger;
+window.prepareCollectionLayout = async (surface = "edit", enlarged = false, showAllTab = false) => {
+ document.documentElement.style.fontSize = enlarged ? "200%" : "";
+ await mount([{ id: "layout-review", title: "Home layout review", viewMode: "Follow_Layout", showAllTab, community: { retain: true }, folders: [{ id: "local-folder", title: "Local folder", sources: [] }] }]);
+ await showCollections();
+ layoutOpeningState = controller.getState();
+ if (surface === "edit") layoutTrigger = await open("edit-collection");
+ else if (surface === "bulk") { layoutTrigger = $('[data-action="open-bulk-edit"]'); await click(layoutTrigger); }
+ else {
+  layoutTrigger = $('[data-action="create-collection"]'); await click(layoutTrigger);
+  await click($('[data-creation-option="decades"]'));
+  await click($('[data-decade-preset="2020s"]'));
+  await click(button("Continue to Configure"));
+  await click(button("Continue to Appearance"));
+  await click($('input[value="FOLLOW_LAYOUT"]'));
+ }
+ const follow = $('input[value="FOLLOW_LAYOUT"]');
+ assert(follow, "Follow option exists in " + surface);
+ if (surface !== "bulk") assert(follow.checked, "Follow is selected");
+ assert(controller.getState().project === layoutOpeningState.project && controller.getState().revision === layoutOpeningState.revision, "Opening/rendering does not change project");
+ return window.measureCollectionLayout(surface);
+};
+window.measureCollectionLayout = (surface) => {
+ const dialog = $('[role="dialog"]'), rect = dialog.getBoundingClientRect();
+ assert(rect.left >= -1 && rect.right <= innerWidth + 1 && rect.top >= -1 && rect.bottom <= innerHeight + 1, "Dialog fits viewport");
+ assert(dialog.scrollWidth <= dialog.clientWidth + 1, "Dialog has no horizontal overflow");
+ assert(document.documentElement.scrollWidth <= innerWidth + 1, "Document has no horizontal overflow");
+ const follow = $('input[value="FOLLOW_LAYOUT"]'), label = follow.closest('label');
+ assert(label.getBoundingClientRect().height >= (surface === "bulk" ? 32 : 44), "Follow uses the existing card/pill target size");
+ assert(label.textContent.includes("Follow Home Layout"), "Official label");
+ assert($('.workspace-underlay').inert && document.body.classList.contains("settings-modal-open"), "Modal locks background");
+ const scrollOwners = [dialog, ...dialog.querySelectorAll('*')].filter(el => /(auto|scroll)/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight + 1);
+ assert(scrollOwners.length <= 1, "One intentional scroll owner: " + scrollOwners.map(el => el.className).join(','));
+ assert(fetches.every(url => !/^https?:/.test(url) || new URL(url, location.href).origin === location.origin), "No external fetches for settings");
+ const enlarged = parseFloat(getComputedStyle(document.documentElement).fontSize) > 16;
+ const cards = measureCollectionCards(dialog, enlarged);
+ if (surface === "creation") {
+  assert([...dialog.querySelectorAll("h4, legend")].filter(node => node.textContent === "Collection layout").length === 1, "One editable Collection layout heading");
+  assert(!dialog.querySelector(".review-presentation-heading"), "No redundant live summary");
+ }
+ return { surface, width: innerWidth, height: innerHeight, enlarged, scrollOwners: scrollOwners.length, targetHeight: label.getBoundingClientRect().height, cards };
+};
+function measureCollectionCards(dialog, enlarged) {
+ const cards = [...dialog.querySelectorAll('.editor-layout-choice')].map(card => {
+  const bounds = card.getBoundingClientRect(), preview = card.querySelector('.source-layout-preview').getBoundingClientRect();
+  for (const text of card.querySelectorAll('strong, small')) assert(text.scrollWidth <= text.clientWidth + 1 && text.scrollHeight <= text.clientHeight + 1, "Labels and helpers wrap without clipping");
+  return { title: card.querySelector('strong').textContent, x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, previewTop: preview.top, previewHeight: preview.height };
+ });
+ if (cards.length) {
+  assert(cards.map(card => card.title).join('|') === 'Tabbed Grid|Rows|Follow Home Layout', "Three peer labels");
+  const rowCount = new Set(cards.map(card => Math.round(card.y))).size;
+  if (!enlarged && innerWidth >= 900) assert(rowCount === 1, "Ordinary desktop uses one three-card row");
+  if (enlarged || innerWidth <= 412) assert(rowCount > 1, "Phone and enlarged text reflow");
+  for (const card of cards) for (const peer of cards.filter(other => Math.abs(other.y - card.y) < 1)) {
+   assert(Math.abs(card.width - peer.width) < 1 && Math.abs(card.height - peer.height) < 1, "Peer cards have equal dimensions");
+   assert(Math.abs(card.previewTop - peer.previewTop) < 1 && Math.abs(card.previewHeight - peer.previewHeight) < 1, "Peer illustrations align");
+  }
+  const posters = [...dialog.querySelectorAll('[data-layout-preview="tabs"] .source-layout-preview-poster-grid > span')];
+  assert(posters.length === 10 && new Set(posters.map(poster => Math.round(poster.getBoundingClientRect().top))).size === 2, "Tabbed Grid has two visible poster rows");
+  const home = dialog.querySelector('[data-layout-preview="follow-home-layout"]');
+  assert(home.getAttribute('aria-hidden') === 'true' && home.textContent.includes('Home'), "Decorative Home cue");
+  assert(home.querySelectorAll('.source-layout-mini').length === 3 && !home.querySelector('.source-layout-preview-poster-grid'), "Follow shows several abstract layouts, not one fixed grid");
+  const modern = [...home.querySelectorAll('.source-layout-mini-modern > span')].map(node => node.getBoundingClientRect());
+  const grid = [...home.querySelectorAll('.source-layout-mini-grid > span')].map(node => node.getBoundingClientRect());
+  const classic = [...home.querySelectorAll('.source-layout-mini-classic > span')].map(node => node.getBoundingClientRect());
+  assert(modern.length === 4 && modern[0].width > modern[1].width * 2 && modern[0].height > modern[1].height, "Modern hero above a short card row");
+  assert(grid.length === 6 && new Set(grid.map(tile => Math.round(tile.top))).size === 2, "Grid has two regular tile rows");
+  assert(classic.length === 9 && new Set(classic.map(tile => Math.round(tile.top))).size === 3 && classic[0].height < grid[0].height, "Classic has three distinct horizontal tile rows");
+  assert(home.textContent.trim() === 'Home', "Silhouettes need no extra labels");
+  assert(home.scrollWidth <= home.clientWidth + 1, "Miniatures fit the preview");
+  assert(dialog.textContent.includes('Switch between sources with tabs and browse titles in a grid.'), "Approved Tabbed Grid helper unchanged");
+  assert(dialog.textContent.includes('Show each source as its own horizontal row.'), "Approved Rows helper unchanged");
+  assert(dialog.textContent.includes('Matches the layout used on your Nuvio Home screen.'), "Simple Follow helper");
+  assert(dialog.textContent.includes('Used when your Nuvio Home layout is Grid View. Adds an All tab to folders with two or more sources.'), "Conditional Show All helper remains visible for Follow");
+ }
+ return cards;
+}
+window.checkCollectionLayoutClosed = () => {
+ assert(!$('[role="dialog"]'), "Dialog closed");
+ assert(controller.getState().project === layoutOpeningState.project && controller.getState().revision === layoutOpeningState.revision, "Cancel/Escape leaves project untouched");
+ assert(document.activeElement === layoutTrigger, "Exact trigger restored");
+ return true;
+};
+// Assert visible copy through the actual controls and their accessible descriptions.
+window.measureCollectionShowAll = (surface, mode) => {
+ const expected = {
+  FOLLOW_LAYOUT: "Used when your Nuvio Home layout is Grid View. Adds an All tab to folders with two or more sources.",
+  TABBED_GRID: "Adds an All tab to folders with two or more sources.",
+  ROWS: "Rows do not show an All tab. This preference is saved for layouts that use tabs.",
+ };
+ const control = surface === "bulk" ? $('[data-bulk-edit-field="showAllTab"]') : $('input[data-editor-control="showAllTab"]');
+ if (surface === "creation" && mode === "ROWS") {
+  assert(!control, "Guided Rows retains its existing hidden Show All control");
+  return { surface, mode, visible: false };
+ }
+ assert(control && !control.disabled && control.getClientRects().length, "Show All remains available for " + surface + " " + mode);
+ const description = document.getElementById(control.getAttribute('aria-describedby'));
+ assert(description?.textContent === expected[mode], "Contextual Show All accessible description for " + mode);
+ assert(description.scrollWidth <= description.clientWidth + 1 && description.scrollHeight <= description.clientHeight + 1, "Show All helper wraps without clipping");
+ assert(document.documentElement.scrollWidth <= innerWidth + 1, "Show All copy has no horizontal overflow");
+ return { surface, mode, width: innerWidth, visible: true, description: description.textContent, checked: control.checked };
+};
+window.reviewCollectionShowAll = async (surface, mode) => {
+ await click($('input[value="' + mode + '"]'));
+ const result = window.measureCollectionShowAll(surface, mode);
+ const control = surface === "bulk" ? $('[data-bulk-edit-field="showAllTab"]') : $('input[data-editor-control="showAllTab"]');
+ if (control) document.getElementById(control.getAttribute('aria-describedby')).scrollIntoView({ block: 'center' });
+ await frame();
+ return result;
+};
+window.exerciseCollectionLayout = async () => {
+ for (const showAll of [false, true]) {
+  await window.prepareCollectionLayout("edit", false, showAll);
+  for (const mode of ["TABBED_GRID", "FOLLOW_LAYOUT", "TABBED_GRID", "ROWS", "FOLLOW_LAYOUT", "ROWS", "FOLLOW_LAYOUT"]) {
+   await click($('input[value="' + mode + '"]'));
+   assert($('input[data-editor-control="showAllTab"]').checked === showAll, "Layout does not reset Show All");
+   window.measureCollectionShowAll("edit", mode);
+  }
+  await click($('[data-action="cancel-node-edit"]'));
+  window.checkCollectionLayoutClosed();
+ }
+ await window.prepareCollectionLayout("edit");
+ await click($('[data-action="apply-node-edit"]'));
+ assert(controller.getState().project === layoutOpeningState.project && controller.getState().revision === layoutOpeningState.revision, "No-op Save does not rewrite imported casing");
+ await window.prepareCollectionLayout("bulk");
+ await click($('input[name="layout"][value="FOLLOW_LAYOUT"]'));
+ await click($('[data-action="apply-bulk-edit"]'));
+ const saved = controller.getState().project.collections[0];
+ assert(saved.editable.viewMode === "FOLLOW_LAYOUT" && saved.editable.showAllTab === false, "Bulk explicitly canonicalizes layout alone");
+ assert(controller.getState().revision === layoutOpeningState.revision + 1, "Bulk applies once");
+ await window.prepareCollectionLayout("creation");
+ const all = $('input[data-editor-control="showAllTab"]');
+ assert(all, "Hierarchy Follow exposes Show All");
+ await click(all);
+ assert(!all.checked, "Hierarchy Follow permits off");
+ await click($('input[value="TABBED_GRID"]'));
+ assert(!$('input[data-editor-control="showAllTab"]').checked, "Follow to Tabs preserves hierarchy preference");
+ return { passed: true, externalServiceExercised: false };
+};
+
+// Local component-only People Appearance evidence: empty selection, no person,
+// external metadata, responses or output counts. Production component and CSS.
+function LocalPeopleAppearance() {
+ const [options, setOptions] = useState({ title: "People", hideTitle: false, viewMode: "FOLLOW_LAYOUT", showAllTab: true, pinToTop: false });
+ const [shape, setShape] = useState("POSTER");
+ const [visibility, setVisibility] = useState("HIDE_HOME_SCREEN");
+ return <main className="builder-shell"><PeopleReviewStep scope="new-collection" planResult={null} entries={[]} collectionOptions={options} onCollectionOptionsChange={setOptions} folderTileShape={shape} onFolderTileShapeChange={setShape} folderTitleVisibility={visibility} onFolderTitleVisibilityChange={setVisibility} /></main>;
+}
+window.prepareLocalPeopleLayout = async (enlarged = false) => {
+ if (root) root.unmount();
+ await frame();
+ document.documentElement.style.fontSize = enlarged ? "200%" : "";
+ root = createRoot(document.getElementById("root"));
+ root.render(<LocalPeopleAppearance />);
+ await frame();
+ const surface = $('.people-review-step');
+ assert([...surface.querySelectorAll('h4, legend')].filter(node => node.textContent === 'Collection layout').length === 1, 'People has one editable Collection layout heading');
+ assert(!surface.querySelector('.review-presentation-heading'), 'People has no live presentation summary');
+ assert(document.documentElement.scrollWidth <= innerWidth + 1, 'People has no horizontal overflow');
+ const cards = measureCollectionCards(surface, enlarged);
+ $('input[value="FOLLOW_LAYOUT"]').focus();
+ await frame();
+ return { width: innerWidth, enlarged, cards, externalData: false };
 };

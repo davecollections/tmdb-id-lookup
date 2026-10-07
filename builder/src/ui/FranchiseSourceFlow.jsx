@@ -1,3 +1,4 @@
+import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
@@ -104,7 +105,7 @@ function ReviewStep({ scope, planResult, options, onOptionsChange, onPreview, di
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="franchise-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="franchise-all-tab-help" showAllControlName="franchiseShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="franchise-pin-help" controlName="franchisePinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : plan ? <>
-				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
+				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {collectionViewModeLabel(plan.destination.viewMode) ?? "Imported layout"}</span></div>
 				<TitleOptions idPrefix="franchise" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "franchise-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 			</> : null}
 			<p className="decades-defaults-note" data-franchise-artwork-rule="poster-only">Franchise folders use the TMDB collection poster by default. You can change the artwork later in Edit Folder.</p>

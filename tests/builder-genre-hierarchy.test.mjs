@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -462,4 +463,8 @@ test("stale placement and late bundle failure leave project content and revision
 	assert.equal(failed.ok, false);
 	assert.equal(failingApp.getState().project, before.project);
 	assert.equal(failingApp.getState().revision, before.revision);
+});
+
+test("genre-hierarchy supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controller, plan: (app, choices) => createGenreHierarchyPlan(app.getState().project, { projectRevision: app.getState().revision, genres: ["Comedy"], ...choices }), apply: applyGenreHierarchyPlan });
 });

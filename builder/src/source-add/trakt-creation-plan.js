@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { cloneJsonValue } from "../domain/model.js";
 import { nativeTraktSourceOccurrences } from "../domain/trakt-source-occurrences.js";
 import { isCanonicalTraktListId, nativeTraktConfigurationKey, nativeTraktPhysicalIdentity } from "../nuvio/trakt.js";
@@ -44,7 +45,7 @@ export function createTraktCreationPlan(project, options) {
 	const showAllTab = configuration.showAllTab ?? true, pinToTop = configuration.pinToTop ?? false;
 	if (!["HIDE_HOME_SCREEN", "HIDE_EVERYWHERE", "SHOW_EVERYWHERE"].includes(folderTitleVisibility)
 		|| !["POSTER", "SQUARE", "LANDSCAPE"].includes(folderTileShape)
-		|| !["TABBED_GRID", "ROWS"].includes(viewMode) || ![hideCollectionTitle, showAllTab, pinToTop].every(value => typeof value === "boolean")) return failure("INVALID_TRAKT_PRESENTATION", "Choose supported presentation settings.");
+		|| !COLLECTION_VIEW_MODES.includes(viewMode) || ![hideCollectionTitle, showAllTab, pinToTop].every(value => typeof value === "boolean")) return failure("INVALID_TRAKT_PRESENTATION", "Choose supported presentation settings.");
 	const nameErrors = [], outcomes = [], bundles = [], readySources = [], ids = new Set();
 	if (scope === "new-collection" && (typeof configuration.collectionTitle !== "string" || (!hideCollectionTitle && !validName(configuration.collectionTitle)))) nameErrors.push(error("TRAKT_COLLECTION_NAME_REQUIRED", "Enter a Collection name."));
 	for (const row of configuration.lists) {

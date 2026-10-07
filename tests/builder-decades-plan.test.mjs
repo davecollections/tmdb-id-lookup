@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import { resolveDecadesArtwork } from "../builder/src/source-add/decades-folder-artwork.js";
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -603,4 +604,8 @@ test("the accepted bounded maximum creates exactly 452 stable canonical sources 
 	assert.equal(current.getState().project.collections.length, 2);
 	assert.equal(current.getState().project.collections.reduce((count, collection) => count + collection.folders.length, 0), 16);
 	assert.equal(current.getState().project.collections.reduce((count, collection) => count + collection.folders.reduce((subtotal, folder) => subtotal + folder.sources.length, 0), 0), 452);
+});
+
+test("decades-plan supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controller, plan: (app, choices) => planFor(app, choices), apply: applyDecadesHierarchyPlan });
 });

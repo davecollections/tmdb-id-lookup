@@ -104,7 +104,8 @@ test("destination copy identifies actual hierarchy names with readable hidden-ti
 
 test("All-tab consumers share source-within-folder meaning and keep the Decades overview distinction", () => {
  const shared = read("builder/src/ui/CollectionPresentationChoices.jsx");
- assert.match(shared, /For each folder with two or more sources[^"\n]*All tab[^"\n]*its sources/);
+ assert.ok(shared.includes("Adds an All tab to folders with two or more sources."));
+ assert.ok(shared.includes("Used when your Nuvio Home layout is Grid View."));
  for (const file of ["CreationDialog", "PeopleSourceFlow", "FranchiseSourceFlow", "StudioHierarchyFlow", "NetworkHierarchyFlow", "GenreHierarchyFlow", "StreamingHierarchyFlow", "TmdbListSourceFlow", "AdvancedDiscoverFlow"]) {
   const source = read(`builder/src/ui/${file}.jsx`);
   if (file === "TmdbListSourceFlow") {

@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -910,4 +911,8 @@ test("new collection Streaming plan applies through the existing full-hierarchy 
 	assert.equal(applied.ok, true);
 	assert.equal(controller.getState().revision, beforeRevision + 1);
 	assert.deepEqual(controller.getState().project.collections[0].folders[0].sources.map((source) => source.editable.title), ["Movies (AU)", "Series (AU)"]);
+});
+
+test("streaming-hierarchy supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: createController, plan: (app, choices) => { const options = baseOptions(app, choices); if (choices.scope === "new-folder") for (const key of ["collectionTitle", "hideCollectionTitle", "viewMode", "showAllTab", "pinToTop"]) delete options[key]; return createStreamingHierarchyPlan(app.getState().project, options); }, apply: applyStreamingHierarchyPlan });
 });

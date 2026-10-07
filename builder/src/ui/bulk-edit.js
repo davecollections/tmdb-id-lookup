@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import {
 	isValidVisibleNuvioTitle,
 	NUVIO_INVISIBLE_TITLE,
@@ -6,7 +7,7 @@ import {
 export const BULK_EDIT_NO_CHANGE = "NO_CHANGE";
 
 const draftFields = Object.freeze({
-	layout: new Set([BULK_EDIT_NO_CHANGE, "TABBED_GRID", "ROWS"]),
+	layout: new Set([BULK_EDIT_NO_CHANGE, ...COLLECTION_VIEW_MODES]),
 	showAllTab: new Set([BULK_EDIT_NO_CHANGE, "ON", "OFF"]),
 	pinToTop: new Set([BULK_EDIT_NO_CHANGE, "ON", "OFF"]),
 	collectionTitles: new Set([BULK_EDIT_NO_CHANGE, "HIDE"]),

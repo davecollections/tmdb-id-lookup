@@ -1,3 +1,4 @@
+import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
@@ -273,7 +274,7 @@ function AppearanceStep({ scope, advancedUi, planResult, options, onOptionsChang
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="genre-hierarchy-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="genre-hierarchy-all-tab-help" showAllControlName="genreHierarchyShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="genre-hierarchy-pin-help" controlName="genreHierarchyPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : plan ? <>
-				<div className="franchise-inherited-summary"><strong>Parent presentation is inherited</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle || "Untitled collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"} · parent unchanged</span></div>
+				<div className="franchise-inherited-summary"><strong>Parent presentation is inherited</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle || "Untitled collection"} · {collectionViewModeLabel(plan.destination.viewMode) ?? "Imported layout"} · parent unchanged</span></div>
 				<TitleOptions idPrefix="genre-hierarchy" folderTitleVisibility={folderTitleVisibility} />
 				{mediaFolders ? <p className="genre-fixed-media-note">Movies and Series folders use the safe folder fallback, so their titles remain visible.</p> : null}
 			</> : null}

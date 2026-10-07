@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import {
 	isInvisibleNuvioTitle,
 	isValidNuvioTitle,
@@ -11,7 +12,7 @@ import {
 } from "../folder-artwork-suggestions.js";
 
 const editableNodeTypes = new Set(["collection", "folder"]);
-const collectionLayoutValues = new Set(["TABBED_GRID", "ROWS"]);
+const collectionLayoutValues = new Set(COLLECTION_VIEW_MODES);
 const folderShapeValues = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 const folderTitleVisibilityValues = new Set([
 	"SHOW_EVERYWHERE",
@@ -131,7 +132,6 @@ export function createNodeEditorDraft(node) {
 			node,
 			"viewMode",
 			collectionLayoutValues,
-			"FOLLOW_LAYOUT",
 		);
 		const showAllTab = originalBooleanField(node, "showAllTab");
 		const pinToTop = originalBooleanField(node, "pinToTop");

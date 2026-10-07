@@ -1,3 +1,4 @@
+import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { nodeTitle, sourceTitle } from "./node-titles.js";
 export { nodeTitle } from "./node-titles.js";
 import {
@@ -74,10 +75,7 @@ function buildCollection(collection, selectedInternalId) {
 	const folderCount = collection.folders.length;
 	const sourceCount = collection.folders.reduce((total, folder) => total + folder.sources.length, 0);
 	const title = nodeTitle(collection.editable.title, "collection");
-	const layout = friendlyChoice(collection.editable.viewMode, {
-		TABBED_GRID: "Tabs",
-		ROWS: "Rows",
-	});
+	const layout = collectionViewModeLabel(collection.editable.viewMode);
 	const pinToTop = supportedBoolean(collection.editable.pinToTop);
 	const showAllTab = supportedBoolean(collection.editable.showAllTab);
 	const focusGlowEnabled = supportedBoolean(collection.editable.focusGlowEnabled);

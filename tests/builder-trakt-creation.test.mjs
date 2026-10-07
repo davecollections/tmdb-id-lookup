@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
@@ -280,3 +281,7 @@ for (const scope of ["new-collection", "new-folder", "add-source"]) {
 		assert.equal(applyTraktCreationPlan(controller, result.plan).stale, true);
 	});
 }
+
+test("trakt-creation supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: app, plan: (app, choices) => createTraktCreationPlan(app.getState().project, { projectRevision: app.getState().revision, lists: [selected(1)], ...(choices.scope === "new-collection" ? { collectionTitle: "Lists" } : {}), ...choices }), apply: applyTraktCreationPlan });
+});

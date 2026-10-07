@@ -1,3 +1,4 @@
+import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { lockAddSourceDocumentBody, observeAddSourceViewport, resolveAddSourceViewportStyle } from "./add-source-modal-lifecycle.js";
@@ -116,8 +117,8 @@ export function MoveFoldersDialog({ session, onCancel, onApply }) {
 						{kind === "new" ? <section className="move-folders-setup" aria-labelledby="move-folders-setup-title" data-move-new-summary="true">
 							<h4 id="move-folders-setup-title">Collection setup</h4>
 							<dl>
-								<div><dt>Layout</dt><dd>{draft.values.viewMode === "ROWS" ? "Rows" : "Tabs"}</dd></div>
-								{draft.values.viewMode !== "ROWS" ? <div><dt>All tab</dt><dd>{draft.values.showAllTab ? "On" : "Off"}</dd></div> : null}
+								<div><dt>Layout</dt><dd>{collectionViewModeLabel(draft.values.viewMode) ?? "Imported layout"}</dd></div>
+								{["TABBED_GRID", "FOLLOW_LAYOUT"].includes(draft.values.viewMode) ? <div><dt>All tab</dt><dd>{draft.values.showAllTab ? "On" : "Off"}{draft.values.viewMode === "FOLLOW_LAYOUT" ? " when using tabs" : ""}</dd></div> : null}
 								<div><dt>Position</dt><dd>{draft.values.pinToTop ? "Pinned" : "Not pinned"}</dd></div>
 								<div><dt>Title</dt><dd>{draft.values.hideNuvioTitle ? "Hidden" : "Visible"}</dd></div>
 							</dl>

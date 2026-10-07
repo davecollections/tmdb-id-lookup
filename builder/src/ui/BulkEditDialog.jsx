@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { handleDialogKeyDown } from "./modal-focus.js";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
+import { collectionShowAllDescription } from "./CollectionPresentationChoices.jsx";
 import {
 	BULK_EDIT_NO_CHANGE,
 	hasBulkEditChanges,
@@ -11,8 +12,9 @@ export const BULK_EDIT_TITLE_CONFIRMATION_MESSAGE = "This will replace the curre
 const fieldOptions = Object.freeze({
 	layout: [
 		{ id: BULK_EDIT_NO_CHANGE, label: "No change" },
-		{ id: "TABBED_GRID", label: "Tabs" },
+		{ id: "TABBED_GRID", label: "Tabbed Grid" },
 		{ id: "ROWS", label: "Rows" },
+		{ id: "FOLLOW_LAYOUT", label: "Follow Home Layout" },
 	],
 	showAllTab: [
 		{ id: BULK_EDIT_NO_CHANGE, label: "No change" },
@@ -131,7 +133,8 @@ export function BulkEditDialog({
 						{!availability.hasCollections ? <p className="bulk-edit-availability">No Collections to update.</p> : null}
 						<div className="editor-settings-section-content">
 							<BulkEditField field="layout" label="Layout" value={draft.layout} onChange={onChange} />
-							<BulkEditField field="showAllTab" label="Show All tab" value={draft.showAllTab} onChange={onChange} />
+							<BulkEditField field="showAllTab" label="Show All tab" value={draft.showAllTab} onChange={onChange} describedBy="bulk-all-tab-help" />
+							<p className="editor-field-help" id="bulk-all-tab-help">{collectionShowAllDescription(draft.layout)}</p>
 							<BulkEditField field="pinToTop" label="Pin to Top" value={draft.pinToTop} onChange={onChange} />
 							<BulkEditField field="collectionTitles" label="Collection titles" value={draft.collectionTitles} onChange={onChange} />
 						</div>

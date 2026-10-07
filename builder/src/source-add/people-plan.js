@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { inspectNativeHierarchyPlacement, nativeHierarchyCounts, resolveNativeHierarchyPlacements } from "./native-source-variants.js";
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { normalizeHierarchyShowAllTab } from "./hierarchy-presentation.js";
@@ -29,7 +30,7 @@ const OPTION_KEYS = new Set([
 	"folderTitleVisibility",
 	"people",
 ]);
-const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 export const DEFAULT_PEOPLE_FOLDER_TITLE_VISIBILITY = "HIDE_HOME_SCREEN";
 
@@ -130,7 +131,7 @@ export function createPeopleHierarchyPlan(project, options) {
 		pinToTop = options.pinToTop ?? false;
 		if (typeof collectionTitle !== "string" || (hideCollectionTitle !== true && (!collectionTitle.trim() || collectionTitle !== collectionTitle.trim()))) errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_TITLE", "$peoplePlan.collectionTitle", "The People collection name must be a nonblank trimmed string."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_TITLE_VISIBILITY", "$peoplePlan.hideCollectionTitle", "Collection title visibility must be true or false."));
-		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_VIEW", "$peoplePlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
+		if (!collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_VIEW", "$peoplePlan.viewMode", "Choose the Tabbed Grid, Rows or Follow Home Layout collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_PEOPLE_COLLECTION_OPTIONS", "$peoplePlan", "Collection options must be explicit boolean values."));
 		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 		if (options.destinationCollectionInternalId !== undefined && options.destinationCollectionInternalId !== null) errors.push(diagnostic("UNEXPECTED_PEOPLE_DESTINATION", "$peoplePlan.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));

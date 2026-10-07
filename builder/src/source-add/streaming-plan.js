@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import {
 	discoverSourceIdentity,
 } from "../nuvio/discover.js";
@@ -57,7 +58,7 @@ const optionKeys = new Set([
 	"providers",
 ]);
 const folderTitleVisibilities = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
-const collectionViewModes = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 
 function plainObject(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);

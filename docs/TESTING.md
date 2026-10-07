@@ -1,5 +1,21 @@
 # Repository Testing
 
+## Collection Follow Home Layout (#296)
+
+The [three-mode contract and pinned client evidence](v2/BUILDER_KNOWLEDGE.md#collection-follow-home-layout-296) are covered by the existing node-editor, presentation-update, Bulk Edit, view-model and creation-family suites. The shared pure helper exercises all ten planners with every layout and boolean Show All value, real atomic application/revalidation, rejection of unknown authored modes, and unchanged existing parent metadata when creating folders. Editor tests cover case-insensitive supported imports, original casing, absent/unknown/unusual JSON values, untouched-only patches, no-op, unrelated edits and export/reimport.
+
+The existing Workspace browser lifecycle and Collection Folder fixture add local Edit Collection, Global display settings and real Decades Appearance scenarios:
+
+```powershell
+$env:BUILDER_FOLLOW_LAYOUT_ONLY = '1'
+node --test --test-name-pattern='mounted Follow Home Layout' tests/builder-bulk-edit-mounted.test.mjs
+Remove-Item Env:BUILDER_FOLLOW_LAYOUT_ONLY
+```
+
+This checks 57 surface/viewport variants: 360/384/393/402/412px, 620/768px, 899/900/901px, 1024/1280px, short desktop height, 200% root text, forced colours and reduced motion. Native radio arrow keys, card/pill focus, accessible checked names, Tab/Shift-Tab containment, Escape/exact-trigger restoration, one scroll owner, responsive containment, no-op Save and cancellation are asserted. Ordinary edit transitions preserve both imported Show All booleans through Tabs → Follow → Tabs and Rows → Follow → Rows; Bulk writes only layout; shared creation exposes Follow with either boolean. The shared helper explicitly names **Grid View** for Follow, uses the concise All-tab explanation for Tabbed Grid, and explains the saved preference for ordinary Rows editing. Desktop/phone comparisons assert these helpers and their accessible descriptions without changing control visibility. These scenarios use local authored collections with empty folders, production Workspace components/providers and no fetched titles or artwork. The runner requires zero external HTTP(S) requests during these checks. The owner-requested presentation refinement also asserts three equal desktop cards, natural text reflow, aligned illustrations, two Tabbed Grid poster rows and the decorative Home cue with distinct Modern/Grid/Classic silhouettes, and one editable Decades Collection layout heading. Seven additional phone/desktop, 200% text and forced-colour cases render the actual People Appearance component with an empty local draft, no selected person or fabricated external metadata/counts, and verify the same controls and absence of its live summary. This establishes component presentation, not People service integration. Existing pure tests retain the inherited/read-only summary assertions; the separate Discover final Review and Move review compositions remain unchanged. No external responses are substituted. Optional `BUILDER_LAYOUT_SCREENSHOT_DIR` writes evidence outside Git. The same scenarios run in the ordinary full Workspace suite.
+
+The cross-cutting change warrants the full `node scripts/check-all.mjs` sequence once at owner-review readiness, plus `npm run build --prefix builder` and Git hygiene. For the subsequent bounded copy/card refinement, run focused node-editing, view-model, Decades UI, Bulk/Move and choice-presentation checks, the mounted matrix and a fresh build; do not repeat the full suite solely for these presentation changes. Live integration cases in the full suite retain the approved production request paths; local setting checks do not establish installed-Nuvio or physical-device acceptance.
+
 ## Welcome direct-import handoff (#290)
 
 The existing `builder-nuvio-import-mounted.jsx` fixture and Workspace browser lifecycle cover the [direct-import presentation boundary](v2/BUILDER_WELCOME_IMPORT.md#direct-import-handoff-290). Run the focused matrix with:

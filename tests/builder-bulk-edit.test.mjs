@@ -100,9 +100,30 @@ test("Bulk Edit draft starts entirely at No change and rejects unsupported value
 	const draft = createBulkEditDraft();
 	assert.deepEqual(Object.values(draft), Array(6).fill(BULK_EDIT_NO_CHANGE));
 	assert.equal(hasBulkEditChanges(draft), false);
-	assert.equal(updateBulkEditDraft(draft, "layout", "FOLLOW_LAYOUT"), draft);
+	assert.equal(updateBulkEditDraft(draft, "layout", "FUTURE_LAYOUT"), draft);
 	assert.equal(updateBulkEditDraft(draft, "unknown", "ROWS"), draft);
 	assert.equal(hasBulkEditChanges(updateBulkEditDraft(draft, "layout", "ROWS")), true);
+});
+
+test("Bulk Follow Home Layout is explicit and leaves every stored All-tab preference unchanged", () => {
+	const values = [true, false, null, { raw: true }, undefined];
+	const tree = values.map((showAllTab, i) => ({ id: `c-${i}`, title: `Collection ${i}`, viewMode: i ? "FUTURE_LAYOUT" : "FOLLOW_LAYOUT",
+		...(showAllTab === undefined ? {} : { showAllTab }), community: { keep: i }, folders: [] }));
+	const controller = createController(tree), before = controller.getState();
+	const draft = updateBulkEditDraft(createBulkEditDraft(), "layout", "FOLLOW_LAYOUT");
+	const plan = buildBulkEditPlan(before.project, draft);
+	assert.equal(plan.ok, true);
+	assert.ok(plan.updates.every(update => JSON.stringify(update.patch) === JSON.stringify({ viewMode: "FOLLOW_LAYOUT" })));
+	assert.equal(controller.applyPresentationUpdates(plan.updates).ok, true);
+	assert.equal(controller.getState().revision, before.revision + 1);
+	for (const [i, collection] of controller.getState().project.collections.entries()) {
+		assert.equal(collection.editable.viewMode, "FOLLOW_LAYOUT");
+		assert.deepEqual(collection.editable.showAllTab, values[i]);
+		assert.deepEqual(collection.rawImported.community, { keep: i });
+	}
+	const repeated = buildBulkEditPlan(controller.getState().project, draft);
+	assert.equal(controller.applyPresentationUpdates(repeated.updates).ok, true);
+	assert.equal(controller.getState().revision, before.revision + 1);
 });
 
 test("combined explicit Collection and Folder choices build narrow patches and commit once", () => {
@@ -289,7 +310,7 @@ test("Global display settings and confirmation markup expose only the approved a
 	]) assert.ok(dialog.includes(text), text);
 	assert.ok(dialog.indexOf('data-action="apply-bulk-edit"') < dialog.indexOf('data-action="cancel-bulk-edit"'));
 	assert.equal((dialog.match(/No change/g) ?? []).length, 6);
-	assert.equal((dialog.match(/type="radio"/g) ?? []).length, 18);
+	assert.equal((dialog.match(/type="radio"/g) ?? []).length, 19);
 	assert.equal((dialog.match(/checked=""/g) ?? []).length, 6);
 	assert.equal((dialog.match(/data-selected="true"/g) ?? []).length, 6);
 	assert.equal((dialog.match(/studio-sort-choices/g) ?? []).length, 6);

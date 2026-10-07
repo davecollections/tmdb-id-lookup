@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { compileAdvancedDiscover } from "./advanced-discover.js";
 import { NEW_FOLDER_DEFAULTS } from "../domain/node-defaults.js";
 // The Genre duplicate inspector already compares full effective Discover identity.
@@ -50,7 +51,7 @@ export function createAdvancedDiscoverPlan(project, options) {
   }
   if (config.scope === "new-collection") {
    if (!isValidVisibleNuvioTitle(config.collectionTitle) || config.collectionTitle !== config.collectionTitle.trim()) return fail("Enter a collection name.");
-   if (!["TABBED_GRID", "ROWS"].includes(appearance.viewMode ?? "TABBED_GRID") || ["showAllTab", "pinToTop", "hideCollectionTitle"].some((k) => appearance[k] !== undefined && typeof appearance[k] !== "boolean")) return fail("Choose supported collection presentation.");
+   if (!COLLECTION_VIEW_MODES.includes(appearance.viewMode ?? "TABBED_GRID") || ["showAllTab", "pinToTop", "hideCollectionTitle"].some((k) => appearance[k] !== undefined && typeof appearance[k] !== "boolean")) return fail("Choose supported collection presentation.");
   }
  }
  const collectionEditable = config.scope !== "new-collection" ? null : {

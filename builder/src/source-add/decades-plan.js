@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { discoverSourceOccurrences } from "./discover-source-occurrences.js";
 import { resolveDecadesArtwork, resolveDecadesArtworkIdentity } from "./decades-folder-artwork.js";
 import { discoverSourceIdentity } from "../nuvio/discover.js";
@@ -41,7 +42,7 @@ const PLAN_OPTION_KEYS = new Set([
 	"collectionTitles",
 	"source",
 ]);
-const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const FOLDER_TILE_SHAPES = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 
@@ -373,7 +374,7 @@ export function createDecadesHierarchyPlan(project, options) {
 			errors.push(diagnostic("UNEXPECTED_DECADES_LAYOUT", "$decadesPlan.layout", "A media layout is only applicable when Both is selected."));
 		}
 		viewMode = options.viewMode ?? "TABBED_GRID";
-		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_DECADES_VIEW_MODE", "$decadesPlan.viewMode", "New Decades collections must use the existing Tabs or Rows value."));
+		if (!collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_DECADES_VIEW_MODE", "$decadesPlan.viewMode", "New Decades collections must use Tabbed Grid, Rows or Follow Home Layout."));
 		const requestedShowAllTab = options.showAllTab ?? true;
 		pinToTop = options.pinToTop ?? false;
 		hideCollectionTitle = options.hideCollectionTitle ?? false;
