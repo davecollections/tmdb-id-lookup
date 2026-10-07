@@ -618,6 +618,9 @@ test("People Review keeps shared Title options and Layout visible and only colla
 	}));
 	assert.ok(markup.includes("Title options"));
 	assert.ok(markup.includes("Collection layout"));
+	assert.equal((markup.match(/>Collection layout</g) ?? []).length, 1);
+	assert.equal(markup.includes("review-presentation-heading"), false, "Editable Appearance has no redundant live summary");
+	assert.equal(markup.includes("Tabbed Grid · All tab on"), false);
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Folder title visibility"));
 	assert.equal(markup.includes("Person folder titles"), false);
@@ -656,7 +659,7 @@ test("People Review keeps shared Title options and Layout visible and only colla
 		onCollectionOptionsChange() {}, folderTileShape: "POSTER", onFolderTileShapeChange() {}, folderTitleVisibility: "HIDE_HOME_SCREEN", onFolderTitleVisibilityChange() {}, applyDiagnostic: null, headingRef: null,
 	}));
 	assert.equal(rowsMarkup.includes("Show All tab"), false);
-	assert.ok(rowsMarkup.includes("Rows · pinned"));
+	assert.equal(rowsMarkup.includes("Rows · pinned"), false, "No redundant editable layout summary");
 });
 
 test("People New Folder Review keeps parent presentation read-only while generated folder appearance stays editable", () => {
@@ -680,7 +683,7 @@ test("People New Folder Review keeps parent presentation read-only while generat
 		headingRef: null,
 	}));
 	assert.ok(markup.includes("Collection settings stay unchanged."));
-	assert.ok(markup.includes("New folders use this Collection’s Rows layout."));
+	assert.ok(markup.includes("New folders inherit this Collection’s layout."));
 	assert.ok(markup.includes("parent unchanged"));
 	assert.ok(markup.includes("Title options"));
 	assert.ok(markup.includes("Folder title visibility"));

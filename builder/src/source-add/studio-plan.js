@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { freezeNativeGenreOverrides, validateNativeAdvancedDraft } from "./native-shared-advanced.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
 import { inspectNativeHierarchyPlacement, nativeHierarchyCounts, resolveNativeHierarchyPlacements } from "./native-source-variants.js";
@@ -37,7 +38,7 @@ const OPTION_KEYS = new Set([
 	"hideCollectionTitle", "viewMode", "showAllTab", "pinToTop", "folderTitleVisibility",
 	"mediaMode", "sortOptionId", "sortOptionIds", "studios", "filters",
 ]);
-const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 const ARTWORK_SOURCES = new Set(["runtime", "tmdb-logo", "emoji"]);
 
@@ -155,7 +156,7 @@ export function createStudioHierarchyPlan(project, options) {
 		pinToTop = options.pinToTop ?? false;
 		if (typeof collectionTitle !== "string" || (hideCollectionTitle !== true && (!collectionTitle.trim() || collectionTitle !== collectionTitle.trim()))) errors.push(diagnostic("INVALID_STUDIO_COLLECTION_TITLE", "$studioPlan.collectionTitle", "The Studios collection name must be a nonblank trimmed string."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_STUDIO_COLLECTION_TITLE_VISIBILITY", "$studioPlan.hideCollectionTitle", "Collection title visibility must be true or false."));
-		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_STUDIO_COLLECTION_VIEW", "$studioPlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
+		if (!collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_STUDIO_COLLECTION_VIEW", "$studioPlan.viewMode", "Choose the Tabbed Grid, Rows or Follow Home Layout collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_STUDIO_COLLECTION_OPTIONS", "$studioPlan", "Collection options must be explicit boolean values."));
 		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 		if (options.destinationCollectionInternalId !== undefined && options.destinationCollectionInternalId !== null) errors.push(diagnostic("UNEXPECTED_STUDIO_DESTINATION", "$studioPlan.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));

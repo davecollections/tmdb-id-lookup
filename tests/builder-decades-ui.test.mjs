@@ -836,7 +836,8 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 	const review = renderToStaticMarkup(createElement(DecadesReviewStep, { state: prepareDecadesReview(state), planResult: plan, onCollectionTitleChange() {}, onStateChange() {} }));
 	assert.equal(JSON.stringify(plan.plan), serializedPlanBeforeRender);
 	assert.ok(review.indexOf("Title options") < review.indexOf("Collection layout"));
-	for (const summary of ["Rows · pinned", "Landscape"]) assert.ok(review.includes(summary), summary);
+	assert.equal(review.includes("Rows · pinned"), false, "No redundant editable layout summary");
+	assert.ok(review.includes("Landscape"));
 	assert.equal(review.includes("Show All tab"), false);
 	assert.match(review, /id="decades-collection-mixed" type="text"[^>]*disabled=""[^>]*value=""/);
 	assert.equal((review.match(/Collection titles are intentionally hidden in Nuvio\. Turn this off to edit visible titles\./g) ?? []).length, 1);
@@ -852,7 +853,7 @@ test("Review presentation controls reflect state and the overview/All-tab note i
 	const notePlan = buildDecadesCreationPlan(current.getState().project, current.getState().revision, noteState);
 	const withNote = renderToStaticMarkup(createElement(DecadesReviewStep, { state: noteState, planResult: notePlan, onCollectionTitleChange() {}, onStateChange() {} }));
 	assert.ok(withNote.includes('data-decades-overview-all-tab-note="true"'));
-	assert.ok(withNote.includes("The All tab combines this folder’s sources"));
+	assert.ok(withNote.includes("When Nuvio uses tabs, the All tab combines this folder’s sources"));
 	assert.equal(noteState.showAllTab, true);
 	assert.equal(noteState.content.wholeDecade, true);
 	for (const withoutNoteState of [
@@ -982,4 +983,25 @@ test("Pass C source chooser retains approved labels and follows the shared famil
  const { AVAILABLE_SOURCE_MODES } = await import("../builder/src/source-add/source-modes.js");
  assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ id }) => id), ["tmdb-decade", "tmdb-movie-franchise", "tmdb-genres", "tmdb-networks", "tmdb-people", "tmdb-streaming-services", "tmdb-studios", "tmdb-lists", "trakt-lists", "advanced-discover"]);
  assert.deepEqual(AVAILABLE_SOURCE_MODES.map(({ label }) => label), ["Decade", "Movie franchise", "Genres", "Networks", "People", "Streaming", "Studios", "TMDB lists", "Trakt Lists", "Discover"]);
+});
+
+
+test("Follow Home Layout review exposes conditional Show All and inherited presentation stays read-only", () => {
+ const current = controller();
+ let state = toggleDecadePreset(createDecadesCreationState({ scope: "new-collection", currentYear: 2026 }), "2020s");
+ state = prepareDecadesReview({ ...state, viewMode: "FOLLOW_LAYOUT", showAllTab: false });
+ const plan = buildDecadesCreationPlan(current.getState().project, current.getState().revision, state);
+ const markup = renderToStaticMarkup(createElement(DecadesReviewStep, { state, planResult: plan, onCollectionTitleChange() {}, onStateChange() {} }));
+ assert.match(markup, /data-editor-choice="follow-home-layout"[^>]*checked="" value="FOLLOW_LAYOUT"/);
+ assert.equal(markup.includes("Follow Home Layout · All tab off when using tabs"), false, "Editable appearance has no redundant live summary");
+ assert.equal((markup.match(/>Collection layout</g) ?? []).length, 1);
+ assert.ok(markup.includes("Used when your Nuvio Home layout is Grid View. Adds an All tab to folders with two or more sources."));
+ const destination = current.createCollection({ editable: { title: "Home", viewMode: "FOLLOW_LAYOUT", showAllTab: false } });
+ const before = current.getState();
+ const inherited = prepareDecadesReview({ ...state, scope: "new-folder", destinationCollectionInternalId: destination.createdInternalId });
+ const inheritedPlan = buildDecadesCreationPlan(before.project, before.revision, inherited);
+ const review = renderToStaticMarkup(createElement(DecadesReviewStep, { state: inherited, planResult: inheritedPlan, onStateChange() {} }));
+ assert.ok(review.includes("Follow Home Layout · All tab off when using tabs"));
+ assert.equal(review.includes('name="decades-view"'), false);
+ assert.equal(current.getState(), before);
 });

@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { freezeNativeGenreOverrides } from "./native-shared-advanced.js";
 import { validateNetworkAdvancedFilters } from "./network-advanced.js";
 import { orderedSourceSortIds } from "./source-sort-variants.js";
@@ -46,7 +47,7 @@ const OPTION_KEYS = new Set([
 	"sortOptionIds",
 	"networks",
 ]);
-const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 const ARTWORK_SOURCES = new Set(["runtime", "tmdb-logo", "emoji"]);
 const ARTWORK_ORIENTATIONS = new Set(Object.values(NETWORK_ARTWORK_ORIENTATIONS));
@@ -190,7 +191,7 @@ export function createNetworkHierarchyPlan(project, options) {
 		pinToTop = options.pinToTop ?? false;
 		if (typeof collectionTitle !== "string" || (hideCollectionTitle !== true && (!collectionTitle.trim() || collectionTitle !== collectionTitle.trim()))) errors.push(diagnostic("INVALID_NETWORK_COLLECTION_TITLE", "$networkPlan.collectionTitle", "The Networks collection name must be a nonblank trimmed string."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_NETWORK_COLLECTION_TITLE_VISIBILITY", "$networkPlan.hideCollectionTitle", "Collection title visibility must be true or false."));
-		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_NETWORK_COLLECTION_VIEW", "$networkPlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
+		if (!collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_NETWORK_COLLECTION_VIEW", "$networkPlan.viewMode", "Choose the Tabbed Grid, Rows or Follow Home Layout collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_NETWORK_COLLECTION_OPTIONS", "$networkPlan", "Collection options must be explicit boolean values."));
 		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 		if (options.destinationCollectionInternalId !== undefined && options.destinationCollectionInternalId !== null) errors.push(diagnostic("UNEXPECTED_NETWORK_DESTINATION", "$networkPlan.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));

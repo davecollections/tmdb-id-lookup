@@ -5021,7 +5021,7 @@ async function runDecadesNavigationScenario() {
 			removedSummariesAbsent: dialog().querySelector(".decades-review-configuration") === null,
 			sectionLabels: [
 				dialog().querySelector(".review-title-options h4")?.textContent.trim(),
-				dialog().querySelector('[data-decades-settings="layout"] h4')?.textContent.trim(),
+				dialog().querySelector('[data-decades-settings="layout"] legend#decades-layout-title')?.textContent.trim(),
 				dialog().querySelector('[data-decades-settings="folder-options"] legend')?.textContent.trim(),
 				dialog().querySelector(".decades-review-details > summary")?.textContent.split(" · ")[0].trim(),
 			],

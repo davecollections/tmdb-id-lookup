@@ -1,3 +1,4 @@
+import { collectionLayoutSummary } from "../nuvio/collection-presentation.js";
 import { creationContext, destinationContext, sourceDestinationContext } from "./creation-context.js";
 import { SourceNamesDisclosure } from "./SourceNamesDisclosure.jsx";
 import { useSourceNames } from "./use-source-names.js";
@@ -450,10 +451,9 @@ const peoplePlacementLabels = Object.freeze({
 
 function inheritedPeopleCollectionSummary(destination) {
 	if (!destination) return "Inherited from the selected collection";
-	const layout = typeof destination.viewMode === "string" && destination.viewMode.toUpperCase() === "ROWS" ? "Rows" : "Tabs";
-	const allTab = typeof destination.showAllTab === "boolean" ? `All tab ${destination.showAllTab ? "on" : "off"}` : "All tab inherited";
+	const layout = collectionLayoutSummary(destination.viewMode, destination.showAllTab, { includeStoredPreference: true });
 	const pin = typeof destination.pinToTop === "boolean" ? (destination.pinToTop ? "pinned" : "not pinned") : "pin inherited";
-	return `${layout} · ${allTab} · ${pin}`;
+	return `${layout} · ${pin}`;
 }
 
 export function PeopleFolderAppearance({
@@ -543,7 +543,7 @@ export function PeopleReviewStep({
 					</div></div>
 					{titleOptions}
 					<section className="review-layout-options people-review-layout" data-review-layout="true" aria-labelledby="people-review-layout-title">
-						<div className="review-presentation-heading"><h4 id="people-review-layout-title">Collection layout</h4><span>{collectionOptions.viewMode === "ROWS" ? "Rows" : `Tabs · All tab ${collectionOptions.showAllTab ? "on" : "off"}`} · {collectionOptions.pinToTop ? "pinned" : "not pinned"}</span></div>
+						<h4 id="people-review-layout-title">Collection layout</h4>
 						<HierarchyCollectionPresentationControls selectedId={collectionOptions.viewMode} name="people-collection-view" showAllTab={collectionOptions.showAllTab} onPresentationChange={(patch) => onCollectionOptionsChange({ ...collectionOptions, ...patch })} showAllDescriptionId="people-show-all-help" showAllControlName="peopleShowAllTab" />
 						<PresentationSwitch label="Pin collection to top" description="Keep this collection near the top in Nuvio." descriptionId="people-pin-help" controlName="peoplePinToTop" checked={collectionOptions.pinToTop} onChange={(pinToTop) => onCollectionOptionsChange({ ...collectionOptions, pinToTop })} />
 					</section>
@@ -552,7 +552,7 @@ export function PeopleReviewStep({
 				<>
 					<div className="decades-destination-summary"><strong>Destination</strong><span>{plan.destination.titleHidden ? "Hidden-title collection" : plan.destination.collectionTitle}</span><small>{inheritedPeopleCollectionSummary(plan.destination)} · parent unchanged</small></div>
 					{titleOptions}
-					<div className="decades-inherited-presentation" data-people-inherited-presentation="true"><strong>Collection settings stay unchanged.</strong><span>{inheritedPeopleCollectionSummary(plan.destination)}</span><small>New folders use this Collection’s {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"} layout.</small></div>
+					<div className="decades-inherited-presentation" data-people-inherited-presentation="true"><strong>Collection settings stay unchanged.</strong><span>{inheritedPeopleCollectionSummary(plan.destination)}</span><small>New folders inherit this Collection’s layout.</small></div>
 				</>
 			) : null}
 			{scope === "new-folder" ? <p className="editor-field-help">Appearance applies only to new folders.</p> : null}

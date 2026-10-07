@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -326,3 +327,7 @@ for (const scope of ["new-collection", "new-folder"]) for (const minimum of [und
   }
  });
 }
+
+test("network-hierarchy supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controller, plan: (app, choices) => createNetworkHierarchyPlan(app.getState().project, { projectRevision: app.getState().revision, networks: planEntries([network(3)]), ...choices }), apply: applyNetworkHierarchyPlan });
+});

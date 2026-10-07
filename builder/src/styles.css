@@ -1471,10 +1471,14 @@ body.settings-modal-open {
 	line-height: 1.45;
 }
 
+.editor-choice-grid.editor-layout-choice-grid {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+
 .editor-layout-choice {
-	min-height: 184px;
+	min-height: 44px;
 	grid-template-columns: minmax(0, 1fr);
-	align-items: start;
+	align-items: stretch;
 }
 
 .editor-layout-choice > input {
@@ -1486,9 +1490,20 @@ body.settings-modal-open {
 	min-width: 0;
 }
 
+.editor-layout-choice-content {
+	display: flex;
+	flex-direction: column;
+}
+
+.editor-layout-choice-content > small {
+	flex: 1;
+}
+
 .source-layout-preview {
 	display: grid;
 	width: 100%;
+	min-height: calc(90px + 0.6rem);
+	align-content: start;
 	margin-top: 10px;
 	padding: 8px;
 	overflow: hidden;
@@ -1553,7 +1568,55 @@ body.settings-modal-open {
 }
 
 .source-layout-preview-rows {
+	align-content: center;
 	gap: 7px;
+}
+
+.source-layout-preview-follow {
+	align-content: center;
+	gap: 7px;
+}
+
+.source-layout-preview-home {
+	font-size: 0.6rem;
+	font-weight: 750;
+	line-height: 1.2;
+}
+
+.source-layout-preview-variants {
+	display: grid;
+	grid-template-columns: repeat(3, 48px);
+	gap: 6px;
+}
+
+.source-layout-mini {
+	display: grid;
+	height: 44px;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	grid-template-rows: repeat(2, minmax(0, 1fr));
+	gap: 3px;
+	padding: 4px;
+	border: 1px solid rgb(124 154 166 / 40%);
+	border-radius: 3px;
+}
+
+.source-layout-mini > span {
+	background: rgb(98 225 255 / 20%);
+	border: 1px solid rgb(98 225 255 / 40%);
+	border-radius: 1px;
+}
+
+.source-layout-mini-modern {
+	grid-template-rows: 2fr 1fr;
+}
+
+.source-layout-mini-modern > span:first-child {
+	grid-column: 1 / -1;
+}
+
+.source-layout-mini-classic {
+	grid-template-rows: repeat(3, minmax(0, 1fr));
+	row-gap: 5px;
 }
 
 .source-layout-preview-row {
@@ -5501,23 +5564,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 	border-radius: 5px;
 }
 
-.review-presentation-heading {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 10px;
-}
-
-.review-presentation-heading h4 {
-	margin: 0;
-	font-size: 0.8rem;
-}
-
-.review-presentation-heading span {
-	color: var(--muted);
-	font-size: 0.64rem;
-}
-
 .people-folder-appearance {
 	display: grid;
 	min-width: 0;
@@ -6494,12 +6540,6 @@ body.hierarchy-pointer-dragging .builder-shell {
 	.people-bulk-actions {
 		grid-column: 2 / -1;
 		justify-content: flex-end;
-	}
-
-	.review-presentation-heading {
-		align-items: flex-start;
-		flex-direction: column;
-		gap: 3px;
 	}
 
 	.people-folder-appearance-heading {

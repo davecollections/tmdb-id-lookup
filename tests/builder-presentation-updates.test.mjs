@@ -286,7 +286,7 @@ test("presentation values are strict while the intentional invisible title remai
 	const invalidValues = [
 		["collection", collectionA, "title", ""],
 		["collection", collectionA, "title", " \t "],
-		["collection", collectionA, "viewMode", "FOLLOW_LAYOUT"],
+		["collection", collectionA, "viewMode", "FUTURE_LAYOUT"],
 		["collection", collectionA, "viewMode", "rows"],
 		["collection", collectionA, "showAllTab", "false"],
 		["collection", collectionA, "pinToTop", null],

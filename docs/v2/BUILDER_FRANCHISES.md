@@ -46,7 +46,7 @@ Franchise folder tiles are fixed to **Poster**. Each generated Folder maps the s
 
 The creator exposes no Folder-shape or per-item artwork controls. It retains only folder-title visibility and concise guidance that individual artwork can be customised later through ordinary **Edit Folder**. Folder titles default to **Hide on home screen only**.
 
-New Collection Review reuses the shared collection name, Collection title visibility, folder title visibility, Tabs/Rows, Tabs-specific Show All tab, and Pin controls. Rows hides Show All while plans retain `showAllTab: true` for later compatibility. New Folder Review exposes captured parent presentation as read-only evidence and patches no parent field.
+New Collection Review reuses the shared collection name, Collection title visibility, folder title visibility, Tabs/Rows/Follow Home Layout, Tabs/Follow conditional Show All tab, and Pin controls. Rows hides Show All while plans retain `showAllTab: true` for later compatibility. New Folder Review exposes captured parent presentation as read-only evidence and patches no parent field.
 
 ## Search, selection, and preview
 

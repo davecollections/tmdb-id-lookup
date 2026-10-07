@@ -59,6 +59,64 @@ const {
 } = await vite.ssrLoadModule("/src/ui/PresentationControls.jsx");
 after(() => vite.close());
 
+test("supported Follow imports preserve casing, Show All presence and raw fields through no-op and unrelated edits", () => {
+	for (const viewMode of ["FOLLOW_LAYOUT", "follow_layout", "FoLlOw_LaYoUt"]) {
+		for (const preference of [{}, ...[true, false, null, "false", 0, [], { community: true }].map(showAllTab => ({ showAllTab }))]) {
+			const input = [{ id: "c", title: "Original", viewMode, ...preference, community: { keep: [1, "raw"] }, folders: [] }];
+			const controller = importTree(input), before = controller.getState();
+			const draft = createNodeEditorDraft(before.project.collections[0]);
+			assert.equal(draft.original.viewMode.status, "supported");
+			assert.equal(draft.values.viewMode, viewMode);
+			assert.deepEqual(buildNodeEditorPatch(draft), {});
+			renderWorkspace(controller, { draft });
+			assert.equal(controller.getState(), before, "opening/rendering does not mutate the project");
+			assert.equal(applyNodeEditorDraft(controller, draft).ok, true);
+			assert.equal(controller.getState().revision, before.revision);
+			assert.deepEqual(serializeNuvioProject(controller.getState().project).value, input);
+			const renamed = updateNodeEditorField(draft, "title", "Renamed");
+			assert.deepEqual(buildNodeEditorPatch(renamed), { title: "Renamed" });
+			assert.equal(applyNodeEditorDraft(controller, renamed).ok, true);
+			const exported = serializeNuvioProject(controller.getState().project).value;
+			assert.deepEqual(exported, [{ ...input[0], title: "Renamed" }]);
+			const reimported = importTree(exported);
+			assert.deepEqual(serializeNuvioProject(reimported.getState().project).value, exported);
+			assert.deepEqual(buildNodeEditorPatch(createNodeEditorDraft(reimported.getState().project.collections[0])), {});
+		}
+	}
+});
+
+test("all Collection layout transitions preserve the independent Show All preference", () => {
+	for (const viewMode of ["TABBED_GRID", "ROWS", "FOLLOW_LAYOUT"]) for (const showAllTab of [true, false]) {
+		const input = [{ id: "c", title: "Original", viewMode, showAllTab, folders: [] }];
+		const controller = importTree(input), before = controller.getState();
+		let draft = createNodeEditorDraft(before.project.collections[0]);
+		for (const next of ["TABBED_GRID", "FOLLOW_LAYOUT", "TABBED_GRID", "ROWS", "FOLLOW_LAYOUT", "ROWS", viewMode]) {
+			draft = updateNodeEditorField(draft, "viewMode", next);
+			assert.equal(draft.values.showAllTab, showAllTab);
+			assert.deepEqual(buildNodeEditorPatch(draft), next === viewMode ? {} : { viewMode: next });
+		}
+		assert.equal(applyNodeEditorDraft(controller, draft).ok, true);
+		assert.equal(controller.getState().revision, before.revision);
+		assert.deepEqual(serializeNuvioProject(controller.getState().project).value, input);
+		draft = updateNodeEditorField(draft, "showAllTab", !showAllTab);
+		assert.deepEqual(buildNodeEditorPatch(draft), { showAllTab: !showAllTab });
+	}
+});
+
+test("deliberate Follow replacement is canonical without normalizing unknown layout or All-tab imports", () => {
+	for (const layout of [{}, ...["FUTURE_LAYOUT", "", null, 17, ["FOLLOW_LAYOUT"], { value: "FOLLOW_LAYOUT" }].map(viewMode => ({ viewMode }))]) {
+		const input = [{ id: "c", title: "Original", ...layout, showAllTab: { raw: true }, community: true, folders: [] }];
+		const controller = importTree(input), before = controller.getState();
+		const draft = createNodeEditorDraft(before.project.collections[0]);
+		assert.equal(draft.original.viewMode.supported, false);
+		assert.deepEqual(buildNodeEditorPatch(draft), {});
+		const followed = updateNodeEditorField(draft, "viewMode", "FOLLOW_LAYOUT");
+		assert.deepEqual(buildNodeEditorPatch(followed), { viewMode: "FOLLOW_LAYOUT" });
+		assert.equal(applyNodeEditorDraft(controller, followed).ok, true);
+		assert.deepEqual(serializeNuvioProject(controller.getState().project).value, [{ ...input[0], viewMode: "FOLLOW_LAYOUT" }]);
+	}
+});
+
 function countingIdFactory(prefix = "internal") {
 	let count = 0;
 	return () => `${prefix}-${++count}`;
@@ -379,7 +437,7 @@ test("collection presentation updates accept only canonical supported values", (
 	}]).getState().project.collections[0];
 	const original = createNodeEditorDraft(collection);
 
-	assert.equal(updateNodeEditorField(original, "viewMode", "FOLLOW_LAYOUT"), original);
+	assert.equal(updateNodeEditorField(original, "viewMode", "FUTURE_LAYOUT"), original);
 	assert.equal(updateNodeEditorField(original, "viewMode", "rows"), original);
 
 	let draft = updateNodeEditorField(original, "viewMode", "ROWS");
@@ -566,7 +624,7 @@ test("unusual imported Folder visual values remain opaque until their own fields
 	assert.equal(output.coverImageUrl, null);
 });
 
-test("Follow Layout is preserved while imported Square is a supported untouched choice", () => {
+test("Follow Home Layout and imported Square are supported untouched choices", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Collection",
@@ -583,11 +641,11 @@ test("Follow Layout is preserved while imported Square is a supported untouched 
 	const collectionDraft = createNodeEditorDraft(collection);
 	const folderDraft = createNodeEditorDraft(folder);
 
-	assert.equal(collectionDraft.values.viewMode, "");
-	assert.equal(collectionDraft.original.viewMode.status, "preserved");
+	assert.equal(collectionDraft.values.viewMode, "FOLLOW_LAYOUT");
+	assert.equal(collectionDraft.original.viewMode.status, "supported");
 	assert.equal(folderDraft.values.tileShape, "SQUARE");
 	assert.equal(folderDraft.original.tileShape.status, "supported");
-	assert.equal(JSON.stringify(collectionDraft).includes("FOLLOW_LAYOUT"), false);
+	assert.equal(JSON.stringify(collectionDraft).includes("FOLLOW_LAYOUT"), true);
 	assert.equal(JSON.stringify(folderDraft).includes("SQUARE"), true);
 	assert.deepEqual(buildNodeEditorPatch(changedDraft(collection, { title: "Renamed" })), { title: "Renamed" });
 	assert.deepEqual(
@@ -2054,12 +2112,12 @@ test("collection settings render exactly one accessible modal with stable marker
 	assert.ok(markup.includes("Collection settings"));
 	assert.equal((markup.match(/<legend>Collection layout<\/legend>/g) ?? []).length, 1);
 	assert.ok(markup.includes("Choose how each folder in this collection displays its sources in Nuvio."));
-	assert.ok(markup.includes("<strong>Tabs (recommended)</strong>"));
+	assert.ok(markup.includes("<strong>Tabbed Grid</strong>"));
 	assert.ok(openingTag(markup, 'data-editor-choice="tabs"').includes('value="TABBED_GRID"'));
 	assert.ok(markup.includes(
-		"Switch between sources using tabs. An optional All tab combines them.",
+		"Switch between sources with tabs and browse titles in a grid.",
 	));
-	assert.ok(markup.includes("Show each source as its own horizontal content row."));
+	assert.ok(markup.includes("Show each source as its own horizontal row."));
 	assert.equal((markup.match(/data-layout-preview="tabs"/g) ?? []).length, 1);
 	assert.equal((markup.match(/data-layout-preview="rows"/g) ?? []).length, 1);
 	assert.ok(openingTag(markup, 'data-layout-preview="tabs"').includes('aria-hidden="true"'));
@@ -2073,11 +2131,11 @@ test("collection settings render exactly one accessible modal with stable marker
 	assert.ok(markup.includes("Hide collection title in Nuvio"));
 	assert.ok(markup.includes("Show All tab"));
 	assert.ok(markup.includes(
-		"For each folder with two or more sources, adds an All tab that combines its sources.",
+		"Adds an All tab to folders with two or more sources.",
 	));
 	assert.ok(markup.includes("Pin to top"));
 	assert.ok(markup.includes(
-		"Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list.",
+		"Pinned collections appear before unpinned collections. When exporting, pinned collections keep their order from the collection list.",
 	));
 	assert.equal(markup.includes('data-editor-field="focusGlowEnabled"'), false);
 	assert.equal(markup.includes('data-editor-control="focusGlowEnabled"'), false);
@@ -2507,7 +2565,7 @@ test("unusual imported values show calm replacement guidance without raw values"
 	assert.equal(markup.includes("RAW_BACKDROP"), false);
 	assert.match(markup, /<option value="" disabled="" selected="">Imported setting \(preserved\)<\/option>/);
 	assert.doesNotMatch(markup, /<option value="false" selected/);
-	assert.ok(markup.includes("will be preserved until you choose Tabs or Rows"));
+	assert.ok(markup.includes("will be preserved until you choose Tabbed Grid, Rows or Follow Home Layout"));
 	assert.ok(markup.includes("cannot be shown safely"));
 	assert.ok(markup.includes("The current imported value is preserved until this field is edited."));
 });
@@ -2531,7 +2589,7 @@ test("Rows keeps the saved All-tab preference enabled, editable, and independent
 	assert.ok(openingTag(markup, 'data-editor-control="showAllTab"').includes("checked"));
 	assert.ok(markup.includes("Show All tab"));
 	assert.ok(markup.includes(
-		"Rows do not show tabs. This preference will be used if the collection is later changed to Tabs.",
+		"Rows do not show an All tab. This preference is saved for layouts that use tabs.",
 	));
 	assert.equal(draft.values.showAllTab, true);
 	assert.deepEqual(buildNodeEditorPatch(draft), {});
@@ -2550,7 +2608,7 @@ test("Rows keeps the saved All-tab preference enabled, editable, and independent
 	});
 });
 
-test("Follow Layout retains replacement guidance and Square renders as a normal checked choice", () => {
+test("Follow Home Layout and Square render as normal checked choices", () => {
 	const controller = importTree([{
 		id: "collection",
 		title: "Imported collection",
@@ -2567,8 +2625,10 @@ test("Follow Layout retains replacement guidance and Square renders as a normal 
 	controller.selectNode(collection.internalId);
 	const collectionDraft = createNodeEditorDraft(collection);
 	const collectionMarkup = renderWorkspace(controller, { draft: collectionDraft });
-	assert.ok(collectionMarkup.includes("This imported Follow Layout setting is being preserved."));
-	assert.equal(collectionMarkup.includes('value="FOLLOW_LAYOUT"'), false);
+	assert.equal(collectionMarkup.includes("This imported Follow Layout setting is being preserved."), false);
+	assert.ok(openingTag(collectionMarkup, 'data-editor-choice="follow-home-layout"').includes("checked"));
+	assert.ok(collectionMarkup.includes("Used when your Nuvio Home layout is Grid View. Adds an All tab to folders with two or more sources."));
+	assert.equal(collectionMarkup.includes('value="FOLLOW_LAYOUT"'), true);
 	const replacedCollectionDraft = updateNodeEditorField(
 		collectionDraft,
 		"viewMode",
@@ -2781,7 +2841,7 @@ test("styles keep card actions touch-safe and responsive while the modal stays b
 	);
 	assert.match(styles, /\.editor-compact-radio\s*\{[\s\S]*min-height:\s*54px/);
 	assert.match(styles, /\.editor-compact-radio input:not\(\.choice-card-input\)\s*\{[\s\S]*width:\s*18px[\s\S]*height:\s*18px/);
-	assert.match(styles, /\.editor-layout-choice\s*\{[\s\S]*min-height:\s*184px/);
+	assert.match(styles, /\.editor-layout-choice\s*\{[\s\S]*min-height:\s*44px/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*min-width:\s*0/);
 	assert.match(styles, /\.source-layout-preview\s*\{[\s\S]*overflow:\s*hidden/);
 	assert.match(styles, /\.source-layout-preview-tab-bar\s*\{[\s\S]*display:\s*flex/);

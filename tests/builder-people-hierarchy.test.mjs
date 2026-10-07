@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -404,4 +405,8 @@ test("People plan revalidation rejects materially changed destination evidence b
 	const before = state.project;
 	assert.equal(applyPeopleHierarchyPlan(app, planned.plan).ok, false);
 	assert.equal(app.getState().project, before);
+});
+
+test("people-hierarchy supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controller, plan: (app, choices) => createPeopleHierarchyPlan(app.getState().project, { projectRevision: app.getState().revision, people: [planEntry({ id: 31, name: "Tom Hanks" }, ["acting-movies"])], ...choices }), apply: applyPeopleHierarchyPlan });
 });

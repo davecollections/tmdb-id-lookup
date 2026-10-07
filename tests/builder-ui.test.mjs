@@ -8,6 +8,7 @@ import { createElement } from "../builder/node_modules/react/index.js";
 import { renderToStaticMarkup } from "../builder/node_modules/react-dom/server.js";
 import { createServer } from "../builder/node_modules/vite/dist/node/index.js";
 import { createBuilderController } from "../builder/src/application/index.js";
+import { collectionLayoutSummary, collectionViewModeLabel } from "../builder/src/nuvio/collection-presentation.js";
 import { createDraftCollection, createDraftFolder } from "../builder/src/ui/draft-actions.js";
 import { createTargetedNodeEditorDraft } from "../builder/src/ui/hierarchy-actions.js";
 import {
@@ -189,7 +190,7 @@ test("view model presents only supported collection and folder settings with fri
 		title: "Unsupported",
 		pinToTop: "RAW_PIN",
 		focusGlowEnabled: { raw: true },
-		viewMode: "FOLLOW_LAYOUT",
+		viewMode: "FUTURE_LAYOUT",
 		showAllTab: { raw: true },
 		folders: [{
 			id: "unsupported-folder",
@@ -768,4 +769,26 @@ test("Collection pin status accepts only true, preserves imported values and ren
 	assert.equal(buildBuilderViewModel(controller.getState()).collections.filter(node => node.pinned).length, 3);
 	assert.equal(controller.updateNode(ordinary.internalId, { pinToTop: false }).ok, true);
 	assert.equal(buildBuilderViewModel(controller.getState()).collections.filter(node => node.pinned).length, 2);
+});
+
+
+test("Follow Home Layout has supported friendly labels without guessing unknown layouts", () => {
+ for (const mode of ["FOLLOW_LAYOUT", "follow_layout", "Follow_Layout"]) {
+  const controller = createController();
+  controller.importValue([{ id: "follow", title: "Follow", viewMode: mode, showAllTab: false, folders: [] }]);
+  controller.selectNode(controller.getState().project.collections[0].internalId);
+  const before = controller.getState();
+  const view = buildBuilderViewModel(before);
+  assert.ok(view.selectedCollection.details.some(entry => entry.label === "Layout" && entry.value === "Follow Home Layout"));
+  assert.equal(collectionViewModeLabel(mode), "Follow Home Layout");
+  assert.equal(collectionLayoutSummary(mode, false), "Follow Home Layout · All tab off when using tabs");
+  assert.equal(controller.getState(), before);
+ }
+ for (const mode of [undefined, null, "FUTURE_LAYOUT", {}, [], 0]) {
+  assert.equal(collectionViewModeLabel(mode), null);
+  assert.equal(collectionLayoutSummary(mode, true), "Imported layout");
+ }
+ assert.equal(collectionLayoutSummary("FOLLOW_LAYOUT", { raw: true }), "Follow Home Layout · All tab inherited when using tabs");
+ assert.equal(collectionLayoutSummary("ROWS", false, { includeStoredPreference: true }), "Rows · All tab off");
+ assert.equal(collectionLayoutSummary("FUTURE_LAYOUT", null, { includeStoredPreference: true }), "Imported layout · All tab inherited");
 });

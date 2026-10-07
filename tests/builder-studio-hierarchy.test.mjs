@@ -1,3 +1,4 @@
+import { assertCollectionLayoutPlanContract } from "./helpers/collection-layout-contract.mjs";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -373,4 +374,8 @@ test("aborted Preview work is suppressed and never cached", async () => {
 	assert.equal((await pending).error.kind, "aborted");
 	assert.equal((await provider.getStudioPreview(4, { mediaType: "MOVIE", sortOptionId: "popular" })).fromCache, false);
 	assert.equal(calls, 2);
+});
+
+test("studio-hierarchy supports all Collection layouts and preserves Follow Home Layout parent preferences", () => {
+	assertCollectionLayoutPlanContract({ controller: controller, plan: (app, choices) => createStudioHierarchyPlan(app.getState().project, { projectRevision: app.getState().revision, studios: planEntries([studio(3)]), ...choices }), apply: applyStudioHierarchyPlan });
 });

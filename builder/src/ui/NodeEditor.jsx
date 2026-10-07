@@ -13,7 +13,7 @@ import {
 	handleDialogKeyDown,
 	initializeTitleInput,
 } from "./modal-focus.js";
-import { ALL_TAB_DESCRIPTION, CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
+import { collectionShowAllDescription, CollectionPresentationChoices } from "./CollectionPresentationChoices.jsx";
 import { CollectionArtworkField } from "./CollectionArtworkField.jsx";
 import {
 	FolderArtworkFields,
@@ -51,17 +51,15 @@ function ChoiceStatus({ original, kind, replacementPending, statusId }) {
 
 	const isLayout = kind === "layout";
 	let message;
-	if (original.status === "preserved") {
-		message = isLayout
-			? "This imported Follow Layout setting is being preserved. Choose Tabs or Rows only if you want to replace it."
-			: "This imported Follow Layout shape is being preserved. Choose Poster, Square or Landscape only if you want to replace it.";
+	if (original.status === "preserved" && !isLayout) {
+		message = "This imported Follow Layout shape is being preserved. Choose Poster, Square or Landscape only if you want to replace it.";
 	} else if (original.status === "absent") {
 		message = isLayout
-			? "No imported layout choice is set. Choose Tabs or Rows only if you want to add one."
+			? "No imported layout choice is set. Choose Tabbed Grid, Rows or Follow Home Layout only if you want to add one."
 			: "No imported tile shape is set. Choose Poster, Square or Landscape only if you want to add one.";
 	} else {
 		message = isLayout
-			? "The imported layout is not offered here and will be preserved until you choose Tabs or Rows."
+			? "The imported layout is not offered here and will be preserved until you choose Tabbed Grid, Rows or Follow Home Layout."
 			: "The imported tile shape is not offered here and will be preserved until you choose Poster, Square or Landscape.";
 	}
 
@@ -93,7 +91,8 @@ function isSelected(value, canonicalValue) {
 function CollectionPresentationFields({ draft, prefix, onChange }) {
 	const tabsSelected = isSelected(draft.values.viewMode, "TABBED_GRID");
 	const rowsSelected = isSelected(draft.values.viewMode, "ROWS");
-	const layoutReplacementPending = draft.touched.viewMode && (tabsSelected || rowsSelected);
+	const followSelected = isSelected(draft.values.viewMode, "FOLLOW_LAYOUT");
+	const layoutReplacementPending = draft.touched.viewMode && (tabsSelected || rowsSelected || followSelected);
 	const allTabReplacementPending = (
 		draft.touched.showAllTab
 		&& typeof draft.values.showAllTab === "boolean"
@@ -146,9 +145,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			<div className="editor-switch-field" data-editor-field="showAllTab">
 				<PresentationSwitch
 					label="Show All tab"
-					description={tabsSelected
-						? ALL_TAB_DESCRIPTION
-						: "Rows do not show tabs. This preference will be used if the collection is later changed to Tabs."}
+					description={collectionShowAllDescription(draft.values.viewMode)}
 					descriptionId={`${prefix}-all-tab-help`}
 					describedBy={allTabDescriptionIds}
 					controlName="showAllTab"
@@ -167,7 +164,7 @@ function CollectionPresentationFields({ draft, prefix, onChange }) {
 			<div className="editor-switch-field" data-editor-field="pinToTop">
 				<PresentationSwitch
 					label="Pin to top"
-					description="Pinned collections appear before unpinned collections. In Builder exports, pinned collections keep their relative order from the collection list."
+					description="Pinned collections appear before unpinned collections. When exporting, pinned collections keep their order from the collection list."
 					descriptionId={`${prefix}-pin-help`}
 					describedBy={pinDescriptionIds}
 					controlName="pinToTop"

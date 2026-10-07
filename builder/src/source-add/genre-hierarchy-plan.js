@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { isInvisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { createGenreAdvancedState, emptyGenreAdvancedState } from "./genre-advanced.js";
 import { officialGenreConcept } from "./genre-catalogue.js";
@@ -50,7 +51,7 @@ const OPTION_KEYS = new Set([
 	"sortOptionIds",
 	"advanced",
 ]);
-const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 const FOLDER_TILE_SHAPES = new Set(GENRE_ARTWORK_SHAPES);
 const STRUCTURE_IDS = new Set(GENRE_HIERARCHY_STRUCTURES.map((entry) => entry.id));
@@ -176,7 +177,7 @@ export function createGenreHierarchyPlan(project, options) {
 			if (options.collectionTitles !== undefined && Object.keys(options.collectionTitles ?? {}).length > 0) errors.push(diagnostic("UNEXPECTED_GENRE_HIERARCHY_COLLECTION_TITLES", "$genreHierarchy.collectionTitles", "This structure creates one collection."));
 		}
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_TITLE_VISIBILITY", "$genreHierarchy.hideCollectionTitle", "Collection title visibility must be true or false."));
-		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_VIEW", "$genreHierarchy.viewMode", "Choose the existing Tabs or Rows layout."));
+		if (!collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_VIEW", "$genreHierarchy.viewMode", "Choose Tabbed Grid, Rows or Follow Home Layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_GENRE_HIERARCHY_COLLECTION_OPTIONS", "$genreHierarchy", "Collection options must use explicit boolean values."));
 		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 		if (options.destinationCollectionInternalId !== undefined && options.destinationCollectionInternalId !== null) errors.push(diagnostic("UNEXPECTED_GENRE_HIERARCHY_DESTINATION", "$genreHierarchy.destinationCollectionInternalId", "New Collection scope does not target an existing collection."));

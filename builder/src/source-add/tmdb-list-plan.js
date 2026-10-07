@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import { isInvisibleNuvioTitle, isValidVisibleNuvioTitle, NUVIO_INVISIBLE_TITLE } from "../nuvio/titles.js";
 import { normalizeHierarchyShowAllTab } from "./hierarchy-presentation.js";
 import { buildTmdbListSourceDraft, tmdbListPhysicalIdentity } from "./tmdb-list-source.js";
@@ -7,7 +8,7 @@ export const TMDB_LIST_CREATION_SCOPES = Object.freeze(["new-collection", "new-f
 export const TMDB_LIST_PLACEMENT_STATUSES = Object.freeze({ READY: "ready-to-create", ALREADY_IN_COLLECTION: "already-in-this-collection", EXISTS_ELSEWHERE: "exists-elsewhere" });
 export const DEFAULT_TMDB_LIST_FOLDER_TITLE_VISIBILITY = "HIDE_HOME_SCREEN";
 export const DEFAULT_TMDB_LIST_FOLDER_TILE_SHAPE = "POSTER";
-const COLLECTION_VIEW_MODES = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const FOLDER_TITLE_VISIBILITIES = new Set(["SHOW_EVERYWHERE", "HIDE_HOME_SCREEN", "HIDE_EVERYWHERE"]);
 const FOLDER_TILE_SHAPES = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 function diagnostic(code, path, message) { return Object.freeze({ code, path, message }); }
@@ -48,7 +49,7 @@ export function createTmdbListHierarchyPlan(project, options) {
 		pinToTop = options.pinToTop ?? false;
 		if (typeof options.collectionTitle !== "string" || (hideCollectionTitle !== true && (!isValidVisibleNuvioTitle(options.collectionTitle) || options.collectionTitle !== text(options.collectionTitle)))) nameErrors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE", "$tmdbListPlan.collectionTitle", "Enter a visible collection name."));
 		if (typeof hideCollectionTitle !== "boolean") errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_TITLE_VISIBILITY", "$tmdbListPlan.hideCollectionTitle", "Collection title visibility must be true or false."));
-		if (!COLLECTION_VIEW_MODES.has(viewMode)) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_VIEW", "$tmdbListPlan.viewMode", "Choose the existing Tabs or Rows collection layout."));
+		if (!collectionViewModes.has(viewMode)) errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_VIEW", "$tmdbListPlan.viewMode", "Choose the Tabbed Grid, Rows or Follow Home Layout collection layout."));
 		if (typeof requestedShowAllTab !== "boolean" || typeof pinToTop !== "boolean") errors.push(diagnostic("INVALID_TMDB_LIST_COLLECTION_OPTIONS", "$tmdbListPlan", "Collection presentation options must be explicit boolean values."));
 		showAllTab = normalizeHierarchyShowAllTab(viewMode, requestedShowAllTab);
 	} else if (scope === "new-folder") {

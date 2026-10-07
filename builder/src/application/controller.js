@@ -1,3 +1,4 @@
+import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import {
 	checkInternalIdUniqueness,
 	cloneJsonValue,
@@ -80,7 +81,7 @@ const stringPresentationFields = new Set([
 	"titleLogoUrl",
 	"focusGifUrl",
 ]);
-const collectionViewModes = new Set(["TABBED_GRID", "ROWS"]);
+const collectionViewModes = new Set(COLLECTION_VIEW_MODES);
 const folderTileShapes = new Set(["POSTER", "SQUARE", "LANDSCAPE"]);
 
 /**

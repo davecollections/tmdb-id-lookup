@@ -156,3 +156,21 @@ for (const fixture of ["valid/mixed-native-and-addon.json", "valid/opaque-commun
 	const exported = serializeNuvioProject(controller.getState().project); assert.equal(exported.ok,true);
 	assert.equal(JSON.stringify(exported.value.find(collection=>collection.id===after.editable.id).folders),JSON.stringify(expected));
 });
+
+
+test("Move into a new Follow Home Layout Collection preserves both Show All choices and Folder payloads", () => {
+ for (const showAllTab of [true, false]) {
+  const { controller, state, source } = setup();
+  let draft = createMoveCollectionDraft();
+  for (const [field, value] of Object.entries({ title: "Follow destination", viewMode: "FOLLOW_LAYOUT", showAllTab })) draft = updateNodeEditorField(draft, field, value);
+  const review = reviewFolderMove({ project: state.project, collection: source }, [source.folders[0].internalId], { kind: "new" }, draft);
+  assert.equal(review.ok, true);
+  assert.equal(controller.getState(), state);
+  assert.equal(applyReviewedFolderMove(controller, review, draft, false).ok, true);
+  const created = controller.getState().project.collections.at(-1);
+  assert.equal(created.editable.viewMode, "FOLLOW_LAYOUT");
+  assert.equal(created.editable.showAllTab, showAllTab);
+  assert.equal(created.folders[0], source.folders[0]);
+  assert.equal(controller.getState().revision, state.revision + 1);
+ }
+});

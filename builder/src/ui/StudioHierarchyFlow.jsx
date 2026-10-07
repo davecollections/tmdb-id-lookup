@@ -1,3 +1,4 @@
+import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { creationContext } from "./creation-context.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
@@ -116,7 +117,7 @@ function AppearanceStep({ scope, planResult, options, onOptionsChange, diagnosti
 				<fieldset className="editor-field editor-choice-field"><legend>Collection layout</legend><HierarchyCollectionPresentationControls selectedId={options.viewMode} name="studio-collection-layout" showAllTab={options.showAllTab} onPresentationChange={onOptionsChange} showAllDescriptionId="studio-all-tab-help" showAllControlName="studioShowAllTab" /></fieldset>
 				<PresentationSwitch label="Pin collection to top" description="Keeps this collection near the top of Nuvio." descriptionId="studio-pin-help" controlName="studioPinToTop" checked={options.pinToTop} onChange={(pinToTop) => onOptionsChange({ pinToTop })} />
 			</> : plan ? <>
-				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {plan.destination.viewMode === "ROWS" ? "Rows" : "Tabs"}</span></div>
+				<div className="franchise-inherited-summary"><strong>Collection settings stay unchanged.</strong><span>{plan.destination.collectionTitle || "Hidden collection"} · {collectionViewModeLabel(plan.destination.viewMode) ?? "Imported layout"}</span></div>
 				<TitleOptions idPrefix="studio-hierarchy" folderTitleVisibility={{ selectedId: options.folderTitleVisibility, name: "studio-folder-title-visibility", onChange: (folderTitleVisibility) => onOptionsChange({ folderTitleVisibility }) }} />
 			</> : null}
 			{!plan && (otherErrors.length > 0 || !planResult?.errors?.length) ? <div className="editor-diagnostics" role="alert"><p>{otherErrors[0]?.message ?? "The Studio plan could not be prepared."}</p></div> : null}
